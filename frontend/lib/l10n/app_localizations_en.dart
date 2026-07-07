@@ -9251,6 +9251,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyReportGrandTotalLabel => 'Grand total';
 
   @override
+  String get pharmacyReportTotalAmountSoldLabel => 'Total amount sold';
+
+  @override
+  String get pharmacyPrintAmountColumnLabel => 'Amount';
+
+  @override
+  String get pharmacyPrintRowNumberColumnLabel => '#';
+
+  @override
   String get navigationClaimsLabel => 'Insurance claims';
 
   @override

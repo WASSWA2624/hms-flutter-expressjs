@@ -288,6 +288,7 @@ $renderedPages
     required List<String> headers,
     required List<List<String>> rows,
     required String emptyText,
+    List<String>? footerRow,
   }) {
     if (headers.isEmpty) {
       return '<p class="print-template-empty">${escape(emptyText)}</p>';
@@ -295,6 +296,10 @@ $renderedPages
     if (rows.isEmpty) {
       return '<p class="print-template-empty">${escape(emptyText)}</p>';
     }
+
+    final String footerHtml = footerRow == null || footerRow.isEmpty
+        ? ''
+        : '<tr class="print-template-table-footer">${footerRow.map((String cell) => '<td>${escape(cell)}</td>').join()}</tr>';
 
     return '''
 <table class="print-template-table">
@@ -305,6 +310,7 @@ $renderedPages
     ${rows.map((List<String> row) {
       return '<tr>${row.map((String cell) => '<td>${escape(cell)}</td>').join()}</tr>';
     }).join()}
+    $footerHtml
   </tbody>
 </table>
 ''';
@@ -837,6 +843,10 @@ $pageFooter
   }
   .print-template-table th {
     background: #f3f4f6;
+    font-weight: 800;
+  }
+  .print-template-table tr.print-template-table-footer td {
+    border-top: 2px solid #9ca3af;
     font-weight: 800;
   }
   .print-template-empty {

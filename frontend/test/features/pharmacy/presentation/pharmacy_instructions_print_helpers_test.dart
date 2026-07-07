@@ -20,7 +20,7 @@ void main() {
   });
 
   group('pharmacyInstructionsHtml', () {
-    testWidgets('renders medicines table without duplicate metadata', (
+    testWidgets('renders numbered medicines table without duplicate metadata', (
       tester,
     ) async {
       late String html;
@@ -45,15 +45,22 @@ void main() {
       );
 
       expect(html, contains('print-template-table'));
+      expect(html, contains('<td>1</td>'));
       expect(html, contains('Artemether + Lumefantrine'));
       expect(html, contains('4 tablets'));
       expect(html, contains('twice daily'));
+      expect(html, contains('Unit price'));
+      expect(html, contains('Amount'));
+      expect(html, contains(pharmacyPrintPriceUnavailable));
+      expect(html, contains('Total amount sold'));
+      expect(html, contains('print-template-table-footer'));
       expect(html, isNot(contains('print-template-kv')));
       expect(html, isNot(contains('<ul class="print-template-list">')));
       expect(html, isNot(contains('BID')));
+      expect(html, isNot(contains('Grand total')));
     });
 
-    testWidgets('includes pricing columns and grand total when priced', (
+    testWidgets('includes priced amount and total amount sold row', (
       tester,
     ) async {
       late String html;
@@ -84,10 +91,12 @@ void main() {
       );
 
       expect(html, contains('Unit price'));
-      expect(html, contains('Line total'));
-      expect(html, contains('Grand total'));
+      expect(html, contains('Amount'));
+      expect(html, contains('Total amount sold'));
+      expect(html, contains('UGX'));
       expect(html, contains('three times daily'));
       expect(html, isNot(contains('TID')));
+      expect(html, isNot(contains('Grand total')));
     });
   });
 

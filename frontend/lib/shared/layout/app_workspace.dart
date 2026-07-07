@@ -439,7 +439,7 @@ class AppWorkspaceSplitContent extends StatelessWidget {
 
 class AppWorkspaceDetailPanel extends StatelessWidget {
   const AppWorkspaceDetailPanel({
-    required this.title,
+    this.title,
     required this.child,
     this.description,
     this.actions = const <Widget>[],
@@ -447,7 +447,7 @@ class AppWorkspaceDetailPanel extends StatelessWidget {
     super.key,
   });
 
-  final String title;
+  final String? title;
   final String? description;
   final List<Widget> actions;
   final Widget child;
@@ -466,54 +466,56 @@ class AppWorkspaceDetailPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Padding(
-            padding: EdgeInsets.all(theme.spacing.lg),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Row(
-                        children: <Widget>[
-                          if (titleIcon != null) ...<Widget>[
-                            Icon(
-                              titleIcon,
-                              size: theme.appTokens.listIconSize,
-                              color: colorScheme.primary,
+          if (title != null && title!.trim().isNotEmpty) ...<Widget>[
+            Padding(
+              padding: EdgeInsets.all(theme.spacing.lg),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Row(
+                          children: <Widget>[
+                            if (titleIcon != null) ...<Widget>[
+                              Icon(
+                                titleIcon,
+                                size: theme.appTokens.listIconSize,
+                                color: colorScheme.primary,
+                              ),
+                              SizedBox(width: theme.spacing.sm),
+                            ],
+                            Expanded(
+                              child: Text(
+                                title!,
+                                style: theme.textTheme.titleMedium,
+                              ),
                             ),
-                            SizedBox(width: theme.spacing.sm),
                           ],
-                          Expanded(
-                            child: Text(
-                              title,
-                              style: theme.textTheme.titleMedium,
+                        ),
+                        if (description != null &&
+                            description!.isNotEmpty) ...<Widget>[
+                          SizedBox(height: theme.spacing.xs),
+                          Text(
+                            description!,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
-                      ),
-                      if (description != null &&
-                          description!.isNotEmpty) ...<Widget>[
-                        SizedBox(height: theme.spacing.xs),
-                        Text(
-                          description!,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
                       ],
-                    ],
+                    ),
                   ),
-                ),
-                if (actions.isNotEmpty) ...<Widget>[
-                  SizedBox(width: theme.spacing.sm),
-                  Wrap(spacing: theme.spacing.xs, children: actions),
+                  if (actions.isNotEmpty) ...<Widget>[
+                    SizedBox(width: theme.spacing.sm),
+                    Wrap(spacing: theme.spacing.xs, children: actions),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          const Divider(height: 1),
+            const Divider(height: 1),
+          ],
           Padding(padding: EdgeInsets.all(theme.spacing.lg), child: child),
         ],
       ),

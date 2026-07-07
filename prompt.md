@@ -1,74 +1,86 @@
-# Pharmacy — Medication Instructions Print Layout Refinement
+# Pharmacy — Medication Instructions Print & Prescription Detail Polish
 
 ## Objective
 
-Improve the **Medication instructions** printout (`_pharmacyInstructionsHtml` in `frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart`) so it is patient-friendly, non-redundant, and shows clear pricing — without raw clinical abbreviations.
+Polish two pharmacy prescription surfaces shown in the attached screenshots:
 
-**Trigger:** `AppReportActionButton.print` → `printFormTemplateDocument` (pharmacy actions panel).
+1. **Medication instructions** printout (triggered by **Print instructions** on prescription detail)
+2. **Prescription detail** → Medicines table in the workspace dialog
+
+Align both with HOSSPI print and workspace patterns: clear numbering, consistent pricing columns, patient-readable content, and clean table layout.
 
 ---
 
 ## Scope
 
-**In:** print HTML body, helper(s) for readable prescription lines, i18n for new column/total labels.  
-**Out:** print shell/header branding, dispense workflow, workspace UI tables.
+| In | Out |
+| -- | --- |
+| Print medicines table layout (`pharmacy_instructions_print_helpers.dart`) | Print header/branding, patient context block, signatures |
+| Prescription detail medicines panel (`_MedicationItemsPanel` in `pharmacy_workspace_page.dart`) | Dispense/attest/return workflow, billing gates |
+| i18n for any new/changed labels | Backend/API changes |
+| Widget/helper tests for print HTML and panel layout | |
 
 ---
 
-## Requirements
+## 1. Medication instructions printout
 
-### 1. Remove duplicate metadata
+**Current state (screenshot):** Table has Medication, Quantity, Instructions only. No row numbers; pricing columns hidden when price is unavailable.
 
-Drop the `PrintFormTemplate.keyValueGrid` block (Patient / Order) from `bodyHtml`. Patient name, patient ID, encounter ID, and order ref are already rendered by `buildPrintFormPatientContext` and `PrintFormContextReference` in the print header.
+**Target layout:**
 
-### 2. Replace bullet list with a medicines table
+| # | Medication | Quantity | Instructions | Unit price | Amount |
+| - | ---------- | -------- | ------------ | ---------- | ------ |
+| 1 | … | … | … | … or `—` | … or `—` |
+| … | | | | | |
+| | | | | **Total amount sold** | **UGX …** or `—` |
 
-Replace `PrintFormTemplate.unorderedList` (pipe-separated single-line entries) with `PrintFormTemplate.table`.
+### Requirements
 
-| Column | Content |
-| ------ | ------- |
-| Medicine | Drug name |
-| Quantity | Prescribed qty + unit (e.g. `4 tablets`) |
-| Instructions | Human-readable sig (see §3) |
-| Unit price | Formatted price when available; `—` when not |
-| Total | Line total when price available |
+- **Row numbering:** Add a leftmost `#` column (1-based index per medicine line).
+- **Pricing columns always visible:** Show **Unit price** and **Amount** (line total) on every printout — not gated behind `showPricing`.
+- **Missing values:** When unit price or line amount is unavailable, render `—` (reuse `pharmacyPrintPriceUnavailable`).
+- **Currency on amounts:** Format monetary cells with currency via `clinicalRequestPriceLabel` / existing pharmacy pricing helpers (`resolvePharmacyItemUnitPrice`, `resolvePharmacyItemLineTotal`, `resolvePharmacyItemCurrency`).
+- **Total row:** Append a final table row labeled **Total amount sold** (add arb key if needed; do not reuse “Grand total” prose below the table). Show the summed line totals with currency when any priced lines exist; otherwise `—`.
+- **Preserve existing behavior:** Patient-readable instructions (no raw `BID`, `ORAL`, etc.), no duplicate patient/order metadata in the body, section title “Medicines”.
 
-Add a **grand total** row/footer below the table (sum of line totals with currency). Omit price columns/total when no priced items.
+### Implementation notes
 
-Reuse pricing helpers: `resolvePharmacyItemUnitPrice`, `resolvePharmacyItemLineTotal`, `resolvePharmacyItemCurrency`, `clinicalRequestPriceLabel` from `pharmacy_order_item_pricing_helpers.dart`.
-
-### 3. Human-readable prescription text
-
-Do **not** print raw codes (`BID`, `TID`, `ORAL`, etc.) in the instructions column.
-
-- Reuse or extend `clinicalPrescriptionReadableSummary` (`clinical_prescription_display.dart`) for `PharmacyOrderItem` fields (dose, route, frequency, duration, free-text instructions).
-- Map frequency codes dynamically (e.g. `BID` → “twice daily”, `TID` → “three times daily”).
-- Fall back to title-cased labels for unknown codes — never expose enum/API tokens to patients.
-
-### 4. Visual cleanup
-
-- No badge/tag styling or pipe-delimited shorthand in the print body.
-- Keep section title (`pharmacyMedicationPanelTitle` / “Medicines”).
-- Preserve existing footer note and signature blocks.
+- Primary file: `frontend/lib/features/pharmacy/presentation/pharmacy_instructions_print_helpers.dart`
+- Extend `PrintFormTemplate.table` usage (or add optional footer-row support) so the total is the **last table row**, not a separate `<p>` below the table.
+- Update `frontend/test/features/pharmacy/presentation/pharmacy_instructions_print_helpers_test.dart` for numbering, always-on price columns, dash fallbacks, and total row.
 
 ---
 
-## Implementation
+## 2. Prescription detail — Medicines panel
 
-| Area | Guidance |
-| ---- | -------- |
-| Primary file | `pharmacy_workspace_page.dart` — refactor `_pharmacyInstructionsHtml` |
-| Shared logic | Extract `pharmacyOrderItemReadableSummary(PharmacyOrderItem)` if needed; avoid duplicating `_frequencyReadable` |
-| i18n | Add arb keys for table headers and total label |
-| Tests | Update/add `print_form_template_test.dart` or pharmacy print helper tests for HTML structure and readable frequency mapping |
+**Current state (screenshot):** Panel shows **Medicines** title + descriptive subtitle; `#` column is misaligned vertically with Medication/Dose/Quantity cells.
+
+### Requirements
+
+- **Remove panel chrome:** Drop `title` and `description` from the medicines `AppWorkspaceDetailPanel` — show the table only (columns already convey structure).
+- **Fix `#` alignment:** Row numbers must align with the top of each row’s primary content (match Dose, Quantity, Price, Actions vertical alignment). Likely fix: top-align `#` cells in `AppListTable` data rows and/or remove extra top padding in numbered cells when row content is multi-line (`_MedicationCell`).
+
+### Implementation notes
+
+- Primary file: `frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart` (`_MedicationItemsPanel`)
+- If the misalignment is shared, fix in `frontend/lib/shared/components/app_list_table.dart` without breaking other tables.
+
+---
+
+## Standards
+
+- All new user-visible strings in `app_en.arb`; run codegen.
+- Reuse shared printing, pricing, and clinical display helpers — no duplicate formatting logic.
+- Responsive: print layout readable on A4; workspace table unchanged on mobile card layout.
+- Quality gate: `dart format`, `flutter analyze`, `flutter test` (pharmacy print + relevant widget tests).
 
 ---
 
 ## Done when
 
-- [ ] Patient/order metadata appears once (header only)
-- [ ] Medicines render in a structured table, not bullets
-- [ ] Each line shows name, qty+unit, readable instructions, unit price, line total
-- [ ] Grand total shown when pricing exists
-- [ ] Frequencies/routes are patient-readable (no raw `BID`, `ORAL`, etc.)
-- [ ] `flutter analyze` passes
+- [ ] Print table: `#`, Unit price, Amount columns on every line; `—` when price missing
+- [ ] Print table: final **Total amount sold** row with currency (or `—`)
+- [ ] Instructions remain patient-readable; no duplicate header metadata
+- [ ] Prescription detail medicines panel has no title/description
+- [ ] `#` column vertically aligns with sibling cells in the medicines table
+- [ ] Tests updated; analyze clean

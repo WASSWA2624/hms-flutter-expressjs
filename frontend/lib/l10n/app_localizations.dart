@@ -17218,6 +17218,24 @@ abstract class AppLocalizations {
   /// **'Grand total'**
   String get pharmacyReportGrandTotalLabel;
 
+  /// Footer total row label on pharmacy medication instructions printout.
+  ///
+  /// In en, this message translates to:
+  /// **'Total amount sold'**
+  String get pharmacyReportTotalAmountSoldLabel;
+
+  /// Amount column header on pharmacy medication instructions printout.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get pharmacyPrintAmountColumnLabel;
+
+  /// Row number column header on pharmacy medication instructions printout.
+  ///
+  /// In en, this message translates to:
+  /// **'#'**
+  String get pharmacyPrintRowNumberColumnLabel;
+
   /// Localized text for navigationClaimsLabel.
   ///
   /// In en, this message translates to:

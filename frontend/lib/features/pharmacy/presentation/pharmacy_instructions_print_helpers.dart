@@ -40,22 +40,21 @@ String pharmacyInstructionsHtml(
   final List<PharmacyOrderItem> items = workflow.items.isEmpty
       ? order.items
       : workflow.items;
-  final bool showPricing = items.any(
-    (PharmacyOrderItem item) => _hasPrintablePrice(order: order, item: item),
-  );
 
   final List<String> headers = <String>[
+    l10n.pharmacyPrintRowNumberColumnLabel,
     l10n.pharmacyMedicationColumnLabel,
     l10n.pharmacyQuantityColumnLabel,
     l10n.clinicalInstructionsLabel,
-    if (showPricing) l10n.clinicalRequestUnitPriceLabel,
-    if (showPricing) l10n.pharmacyLineTotalLabel,
+    l10n.clinicalRequestUnitPriceLabel,
+    l10n.pharmacyPrintAmountColumnLabel,
   ];
 
   num grandTotal = 0;
   String? grandTotalCurrency;
   final List<List<String>> rows = <List<String>>[];
-  for (final PharmacyOrderItem item in items) {
+  for (var index = 0; index < items.length; index += 1) {
+    final PharmacyOrderItem item = items[index];
     final num? unitPrice = resolvePharmacyItemUnitPrice(
       order: order,
       item: item,
@@ -74,39 +73,41 @@ String pharmacyInstructionsHtml(
     }
 
     rows.add(<String>[
+      (index + 1).toString(),
       item.medicationLabel,
       pharmacyOrderItemQuantityLabel(item),
       _printInstructionsCell(item),
-      if (showPricing)
-        _printPriceLabel(context, unitPrice: unitPrice, currency: currency),
-      if (showPricing)
-        _printPriceLabel(context, unitPrice: lineTotal, currency: currency),
+      _printPriceLabel(context, unitPrice: unitPrice, currency: currency),
+      _printPriceLabel(context, unitPrice: lineTotal, currency: currency),
     ]);
   }
+
+  final List<String> footerRow = <String>[
+    '',
+    '',
+    '',
+    '',
+    l10n.pharmacyReportTotalAmountSoldLabel,
+    grandTotal > 0
+        ? _printPriceLabel(
+            context,
+            unitPrice: grandTotal,
+            currency: grandTotalCurrency,
+          )
+        : pharmacyPrintPriceUnavailable,
+  ];
 
   final String tableHtml = PrintFormTemplate.table(
     headers: headers,
     rows: rows,
     emptyText: l10n.pharmacyNoMedicationBody,
+    footerRow: rows.isEmpty ? null : footerRow,
   );
-  final String totalHtml = showPricing && grandTotal > 0
-      ? '''
-<p class="print-template-note"><strong>${PrintFormTemplate.escape(l10n.pharmacyReportGrandTotalLabel)}: ${PrintFormTemplate.escape(_printPriceLabel(context, unitPrice: grandTotal, currency: grandTotalCurrency))}</strong></p>
-'''
-      : '';
 
   return PrintFormTemplate.section(
     title: l10n.pharmacyMedicationPanelTitle,
-    bodyHtml: '$tableHtml$totalHtml',
+    bodyHtml: tableHtml,
   );
-}
-
-bool _hasPrintablePrice({
-  required PharmacyOrder order,
-  required PharmacyOrderItem item,
-}) {
-  final num? unitPrice = resolvePharmacyItemUnitPrice(order: order, item: item);
-  return unitPrice != null && unitPrice > 0;
 }
 
 String _printInstructionsCell(PharmacyOrderItem item) {

@@ -152,18 +152,17 @@ void main() {
 
   group('PharmacyOrderItemDto', () {
     test('maps catalog pricing fields from workflow item payload', () {
-      final PharmacyOrderItem item = const PharmacyOrderItemDto(
-        <String, Object?>{
-          'id': 'item-1',
-          'drug_display_name': 'Artemether Tablet',
-          'quantity_prescribed': 24,
-          'pharmacy_unit_price': 500,
-          'facility_unit_price': 450,
-          'pharmacy_currency': 'TZS',
-          'facility_currency': 'TZS',
-          'is_offered_at_facility': true,
-        },
-      ).toEntity();
+      final PharmacyOrderItem item =
+          const PharmacyOrderItemDto(<String, Object?>{
+            'id': 'item-1',
+            'drug_display_name': 'Artemether Tablet',
+            'quantity_prescribed': 24,
+            'pharmacy_unit_price': 500,
+            'facility_unit_price': 450,
+            'pharmacy_currency': 'TZS',
+            'facility_currency': 'TZS',
+            'is_offered_at_facility': true,
+          }).toEntity();
 
       expect(item.pharmacyUnitPrice, 500);
       expect(item.facilityUnitPrice, 450);

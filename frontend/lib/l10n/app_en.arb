@@ -11903,6 +11903,18 @@
   "@pharmacyReportGrandTotalLabel": {
     "description": "Grand total label on pharmacy medication instructions printout."
   },
+  "pharmacyReportTotalAmountSoldLabel": "Total amount sold",
+  "@pharmacyReportTotalAmountSoldLabel": {
+    "description": "Footer total row label on pharmacy medication instructions printout."
+  },
+  "pharmacyPrintAmountColumnLabel": "Amount",
+  "@pharmacyPrintAmountColumnLabel": {
+    "description": "Amount column header on pharmacy medication instructions printout."
+  },
+  "pharmacyPrintRowNumberColumnLabel": "#",
+  "@pharmacyPrintRowNumberColumnLabel": {
+    "description": "Row number column header on pharmacy medication instructions printout."
+  },
   "navigationClaimsLabel": "Insurance claims",
   "@navigationClaimsLabel": {
     "description": "Localized text for navigationClaimsLabel."

@@ -1555,11 +1555,7 @@ class _NumberedMobileListItem extends StatelessWidget {
         SizedBox(
           width: _rowNumberColumnWidth,
           child: Padding(
-            padding: EdgeInsets.only(
-              top: theme.spacing.xs,
-              left: theme.spacing.xs,
-              right: theme.spacing.xs,
-            ),
+            padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
             child: Text(
               number.toString(),
               textAlign: TextAlign.center,
@@ -1767,9 +1763,12 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
             },
       cells: <DataCell>[
         DataCell(
-          SizedBox(
-            width: _rowNumberColumnWidth,
-            child: Text((index + 1).toString(), textAlign: TextAlign.center),
+          Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(
+              width: _rowNumberColumnWidth,
+              child: Text((index + 1).toString(), textAlign: TextAlign.center),
+            ),
           ),
         ),
         for (final AppListTableColumn<T> column in widget.columns)

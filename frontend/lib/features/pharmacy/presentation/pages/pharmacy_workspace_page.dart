@@ -791,8 +791,6 @@ class _MedicationItemsPanel extends ConsumerWidget {
         : workflow.items;
 
     return AppWorkspaceDetailPanel(
-      title: l10n.pharmacyMedicationPanelTitle,
-      description: l10n.pharmacyMedicationPanelDescription,
       child: AppListTable<PharmacyOrderItem>(
         items: items,
         shrinkWrap: true,
