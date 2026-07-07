@@ -80,7 +80,6 @@ class _PharmacyCatalogDialogState
     return AppDialog(
       title: Text(l10n.pharmacyCatalogPanelTitle),
       icon: const Icon(Icons.inventory_2_outlined),
-      scrollable: false,
       maxWidth: 1080,
       content: PharmacyCatalogPanel(state: state, fillHeight: true),
     );
