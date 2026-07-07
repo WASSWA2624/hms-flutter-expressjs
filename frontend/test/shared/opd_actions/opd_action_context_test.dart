@@ -132,9 +132,9 @@ void main() {
         stage: 'IN_LAB',
         displayCode: 'IN_LAB',
       );
-      final OpdFlowDetail detail = OpdFlowDetail(
+      const OpdFlowDetail detail = OpdFlowDetail(
         summary: flow,
-        timeline: const <OpdTimelineItem>[
+        timeline: <OpdTimelineItem>[
           OpdTimelineItem(action: 'RECORD_VITALS', stage: 'WAITING_VITALS'),
           OpdTimelineItem(
             action: 'DOCTOR_REVIEW',

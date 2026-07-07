@@ -7,12 +7,10 @@ import 'package:hosspi_hms/app/app.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/startup/app_startup_initializer.dart';
 import 'package:hosspi_hms/app/startup/app_startup_state.dart';
-import 'package:hosspi_hms/app/startup/startup_providers.dart';
 import 'package:hosspi_hms/core/config/app_config.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
-import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
@@ -190,7 +188,9 @@ Future<void> pumpPatrolE2eApp(
   String initialLocation = '/login',
   Size viewport = patrolDesktopViewport,
 }) async {
+  // ignore: invalid_use_of_visible_for_testing_member
   SharedPreferences.setMockInitialValues(<String, Object>{});
+  // ignore: invalid_use_of_visible_for_testing_member
   FlutterSecureStorage.setMockInitialValues(<String, String>{});
 
   final AppStartupResult startup = await const AppStartupInitializer()
@@ -203,16 +203,20 @@ Future<void> pumpPatrolE2eApp(
     storageReadiness: startup.state.storageReadiness,
     sessionReadiness: unauthenticated,
   );
+  final AppStartupResult unauthenticatedStartup = AppStartupResult(
+    config: startup.config,
+    preferences: startup.preferences,
+    secureStorage: startup.secureStorage,
+    state: startupState,
+  );
 
   setTestViewport($.tester, viewport);
 
   await $.pumpWidget(
     ProviderScope(
-      overrides: <Object?>[
-        ...startup.providerOverrides(initialLocation: initialLocation),
-        initialSessionStateProvider.overrideWithValue(unauthenticated),
-        appStartupStateProvider.overrideWithValue(startupState),
-      ].cast(),
+      overrides: unauthenticatedStartup
+          .providerOverrides(initialLocation: initialLocation)
+          .cast(),
       child: const HosspiHmsApp(),
     ),
   );
@@ -290,20 +294,21 @@ Future<void> expectAnyVisible(
   Iterable<String> labels, {
   Duration timeout = const Duration(seconds: 20),
 }) async {
-  final Set<String> remaining = labels.toSet();
+  final List<String> targets = labels.toList(growable: false);
   final Stopwatch stopwatch = Stopwatch()..start();
 
+  bool anyVisible() => targets.any(
+    (String label) => find.text(label).evaluate().isNotEmpty,
+  );
+
   while (stopwatch.elapsed < timeout) {
-    remaining.removeWhere(
-      (String label) => find.text(label).evaluate().isNotEmpty,
-    );
-    if (remaining.isEmpty) {
+    if (anyVisible()) {
       return;
     }
     await $.pump(const Duration(milliseconds: 200));
   }
 
-  expect(remaining, isEmpty, reason: 'Expected one of: ${labels.join(', ')}');
+  expect(anyVisible(), isTrue, reason: 'Expected one of: ${targets.join(', ')}');
 }
 
 AppLocalizations patrolL10n(PatrolIntegrationTester $) {

@@ -21,7 +21,14 @@ class ShellNavigationLoadingController extends Notifier<bool> {
     if (!ref.mounted) {
       return;
     }
-    setLoading(false);
+    // Deferred so it is safe to call from a widget's dispose(), which runs
+    // during tree finalization where synchronous provider mutation is illegal.
+    Future<void>.microtask(() {
+      if (!ref.mounted) {
+        return;
+      }
+      setLoading(false);
+    });
   }
 }
 

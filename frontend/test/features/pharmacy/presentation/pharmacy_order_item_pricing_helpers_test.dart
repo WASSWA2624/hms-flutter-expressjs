@@ -5,7 +5,7 @@ import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_order_item_pr
 
 void main() {
   group('pharmacy order item pricing helpers', () {
-    final PharmacyOrderItem item = PharmacyOrderItem(
+    const PharmacyOrderItem item = PharmacyOrderItem(
       id: 'item-1',
       drugDisplayName: 'Artemether Tablet',
       quantityPrescribed: 24,
@@ -17,7 +17,7 @@ void main() {
     );
 
     test('defaults clinical orders to facility price when offered', () {
-      final PharmacyOrder order = PharmacyOrder(
+      const PharmacyOrder order = PharmacyOrder(
         id: 'order-1',
         orderSource: 'CLINICAL',
         encounterId: 'ENC-1',
@@ -32,7 +32,7 @@ void main() {
     });
 
     test('defaults walk-in orders to pharmacy price', () {
-      final PharmacyOrder order = PharmacyOrder(
+      const PharmacyOrder order = PharmacyOrder(
         id: 'order-2',
         orderSource: 'PHARMACY',
         items: <PharmacyOrderItem>[item],
@@ -46,7 +46,7 @@ void main() {
     });
 
     test('persists selected price source from billing line items', () {
-      final PharmacyOrder order = PharmacyOrder(
+      const PharmacyOrder order = PharmacyOrder(
         id: 'order-3',
         orderSource: 'CLINICAL',
         encounterId: 'ENC-1',
@@ -72,7 +72,7 @@ void main() {
     });
 
     test('builds billing payload when switching price source', () {
-      final PharmacyOrder order = PharmacyOrder(
+      const PharmacyOrder order = PharmacyOrder(
         id: 'order-4',
         orderSource: 'CLINICAL',
         encounterId: 'ENC-1',

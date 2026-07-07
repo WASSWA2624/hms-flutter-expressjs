@@ -2,5 +2,5 @@
 
 ```yaml
 - generic [ref=e5]:
-  - generic: Test starting...
+  - generic: Test finished.
 ```
