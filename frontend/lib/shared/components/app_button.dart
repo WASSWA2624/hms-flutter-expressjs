@@ -7,7 +7,6 @@ import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
 enum AppButtonVariant { primary, secondary, tertiary }
 
 const Duration _buttonAnimationDuration = Duration(milliseconds: 140);
-const OutlinedBorder _buttonShape = RoundedRectangleBorder();
 
 /// Borderless action button: icon + label (or icon-only in compact toolbars).
 class AppButton extends StatelessWidget {
@@ -241,7 +240,11 @@ class AppButton extends StatelessWidget {
             : Size(spacing.none, theme.appTokens.minInteractiveDimension),
       ),
       padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(padding),
-      shape: const WidgetStatePropertyAll<OutlinedBorder>(_buttonShape),
+      shape: WidgetStatePropertyAll<OutlinedBorder>(
+        RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(theme.radius.sm),
+        ),
+      ),
       textStyle: WidgetStatePropertyAll<TextStyle?>(
         theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
       ),

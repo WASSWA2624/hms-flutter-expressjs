@@ -239,7 +239,11 @@ class _AppDialogState extends State<AppDialog> {
           ? Alignment.topCenter
           : Alignment.center,
       elevation: theme.dialogTheme.elevation ?? 24,
-      shape: const RoundedRectangleBorder(),
+      shape: _isMaximized
+          ? const RoundedRectangleBorder()
+          : RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(theme.radius.lg),
+            ),
       clipBehavior: Clip.antiAlias,
       backgroundColor: colorScheme.surface,
       shadowColor: colorScheme.shadow.withValues(alpha: 0.28),

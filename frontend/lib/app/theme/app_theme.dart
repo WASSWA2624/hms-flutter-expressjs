@@ -13,10 +13,30 @@ abstract final class AppTheme {
   static ThemeData _buildTheme(AppThemePalette palette) {
     final ColorScheme colorScheme = palette.colorScheme;
     final Brightness brightness = colorScheme.brightness;
-    const RoundedRectangleBorder rectangularShape = RoundedRectangleBorder();
     const AppSpacingTokens spacing = AppSpacingTokens.standard;
+    const AppRadiusTokens radius = AppRadiusTokens.standard;
     const AppDesignTokens appTokens = AppDesignTokens.standard;
     const Size minimumControlSize = Size(40, 40);
+
+    // Modern shape language derived from the shared radius tokens so every
+    // surface stays uniform: small radius for controls, medium for overlays,
+    // large for elevated surfaces.
+    final BorderRadius controlRadius = BorderRadius.circular(radius.sm);
+    final BorderRadius overlayRadius = BorderRadius.circular(radius.md);
+    final BorderRadius surfaceRadius = BorderRadius.circular(radius.lg);
+    final RoundedRectangleBorder controlShape = RoundedRectangleBorder(
+      borderRadius: controlRadius,
+    );
+    final RoundedRectangleBorder overlayShape = RoundedRectangleBorder(
+      borderRadius: overlayRadius,
+    );
+    final RoundedRectangleBorder surfaceShape = RoundedRectangleBorder(
+      borderRadius: surfaceRadius,
+    );
+    // Soft, low-alpha shadow that reads as gentle depth rather than a hard
+    // drop shadow on the light/dark surfaces.
+    final Color softShadow = colorScheme.shadow.withValues(alpha: 0.12);
+
     final EdgeInsets buttonPadding = EdgeInsets.symmetric(
       horizontal: spacing.lg,
       vertical: spacing.sm,
@@ -31,18 +51,18 @@ abstract final class AppTheme {
       ).white,
     };
     final OutlineInputBorder inputBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.zero,
+      borderRadius: controlRadius,
       borderSide: BorderSide(
         color: palette.borderColor,
         width: appTokens.dividerThickness,
       ),
     );
     final OutlineInputBorder focusedInputBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.zero,
+      borderRadius: controlRadius,
       borderSide: BorderSide(color: palette.focusedBorderColor, width: 1.4),
     );
     final OutlineInputBorder errorInputBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.zero,
+      borderRadius: controlRadius,
       borderSide: BorderSide(
         color: statusColors.error,
         width: appTokens.dividerThickness,
@@ -70,6 +90,7 @@ abstract final class AppTheme {
       hoverColor: palette.hoverColor,
       splashColor: palette.splashColor,
       highlightColor: palette.highlightColor,
+      shadowColor: softShadow,
       visualDensity: VisualDensity.standard,
       materialTapTargetSize: MaterialTapTargetSize.padded,
       textTheme: textTheme,
@@ -85,10 +106,14 @@ abstract final class AppTheme {
         surfaceTintColor: palette.appBarSurfaceTintColor,
         centerTitle: false,
         elevation: 0,
-        scrolledUnderElevation: 0,
+        scrolledUnderElevation: 2,
+        shadowColor: softShadow,
       ),
-      cardTheme: const CardThemeData(
-        shape: rectangularShape,
+      cardTheme: CardThemeData(
+        shape: surfaceShape,
+        elevation: 1,
+        shadowColor: softShadow,
+        surfaceTintColor: Colors.transparent,
         clipBehavior: Clip.antiAlias,
       ),
       dividerTheme: DividerThemeData(
@@ -99,7 +124,9 @@ abstract final class AppTheme {
         style: ElevatedButton.styleFrom(
           minimumSize: minimumControlSize,
           padding: buttonPadding,
-          shape: rectangularShape,
+          shape: controlShape,
+          elevation: 1,
+          shadowColor: softShadow,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
         ),
@@ -108,7 +135,7 @@ abstract final class AppTheme {
         style: FilledButton.styleFrom(
           minimumSize: minimumControlSize,
           padding: buttonPadding,
-          shape: rectangularShape,
+          shape: controlShape,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
         ),
@@ -117,7 +144,7 @@ abstract final class AppTheme {
         style: OutlinedButton.styleFrom(
           minimumSize: minimumControlSize,
           padding: buttonPadding,
-          shape: rectangularShape,
+          shape: controlShape,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
         ),
@@ -126,7 +153,7 @@ abstract final class AppTheme {
         style: TextButton.styleFrom(
           minimumSize: minimumControlSize,
           padding: buttonPadding,
-          shape: rectangularShape,
+          shape: controlShape,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
         ),
@@ -135,7 +162,7 @@ abstract final class AppTheme {
         style: IconButton.styleFrom(
           minimumSize: const Size.square(40),
           padding: EdgeInsets.all(spacing.xs),
-          shape: rectangularShape,
+          shape: controlShape,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.compact,
         ),
@@ -184,16 +211,30 @@ abstract final class AppTheme {
           fontWeight: FontWeight.w400,
         ),
       ),
-      navigationBarTheme: const NavigationBarThemeData(
-        indicatorShape: rectangularShape,
+      navigationBarTheme: NavigationBarThemeData(
+        indicatorShape: controlShape,
       ),
-      navigationRailTheme: const NavigationRailThemeData(
-        indicatorShape: rectangularShape,
+      navigationRailTheme: NavigationRailThemeData(
+        indicatorShape: controlShape,
       ),
       drawerTheme: DrawerThemeData(
         backgroundColor: palette.drawerBackgroundColor,
         width: 280,
-        shape: rectangularShape,
+        elevation: 1,
+        shadowColor: softShadow,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topRight: Radius.circular(radius.xl),
+            bottomRight: Radius.circular(radius.xl),
+          ),
+        ),
+        endShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(radius.xl),
+            bottomLeft: Radius.circular(radius.xl),
+          ),
+        ),
       ),
       listTileTheme: ListTileThemeData(
         contentPadding: EdgeInsets.symmetric(horizontal: spacing.sm),
@@ -202,7 +243,7 @@ abstract final class AppTheme {
         minLeadingWidth: 24,
         minTileHeight: 40,
         minVerticalPadding: spacing.xs,
-        shape: rectangularShape,
+        shape: controlShape,
         visualDensity: VisualDensity.compact,
       ),
       dataTableTheme: DataTableThemeData(
@@ -212,11 +253,81 @@ abstract final class AppTheme {
         horizontalMargin: spacing.md,
         columnSpacing: spacing.xl,
       ),
-      snackBarTheme: const SnackBarThemeData(
-        shape: rectangularShape,
-        behavior: SnackBarBehavior.fixed,
+      snackBarTheme: SnackBarThemeData(
+        shape: controlShape,
+        behavior: SnackBarBehavior.floating,
+        elevation: 3,
+        insetPadding: EdgeInsets.all(spacing.lg),
       ),
-      dialogTheme: const DialogThemeData(shape: rectangularShape),
+      dialogTheme: DialogThemeData(
+        shape: surfaceShape,
+        elevation: 3,
+        shadowColor: softShadow,
+        surfaceTintColor: Colors.transparent,
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        shape: overlayShape,
+        elevation: 3,
+        shadowColor: softShadow,
+        surfaceTintColor: Colors.transparent,
+        color: colorScheme.surface,
+      ),
+      menuTheme: MenuThemeData(
+        style: MenuStyle(
+          shape: WidgetStatePropertyAll<OutlinedBorder>(overlayShape),
+          elevation: const WidgetStatePropertyAll<double>(3),
+          shadowColor: WidgetStatePropertyAll<Color>(softShadow),
+          surfaceTintColor: const WidgetStatePropertyAll<Color>(
+            Colors.transparent,
+          ),
+          backgroundColor: WidgetStatePropertyAll<Color>(colorScheme.surface),
+        ),
+      ),
+      dropdownMenuTheme: DropdownMenuThemeData(
+        menuStyle: MenuStyle(
+          shape: WidgetStatePropertyAll<OutlinedBorder>(overlayShape),
+          elevation: const WidgetStatePropertyAll<double>(3),
+          shadowColor: WidgetStatePropertyAll<Color>(softShadow),
+          surfaceTintColor: const WidgetStatePropertyAll<Color>(
+            Colors.transparent,
+          ),
+          backgroundColor: WidgetStatePropertyAll<Color>(colorScheme.surface),
+        ),
+      ),
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color: colorScheme.inverseSurface.withValues(alpha: 0.94),
+          borderRadius: controlRadius,
+        ),
+        textStyle: textTheme.bodySmall?.copyWith(
+          color: colorScheme.onInverseSurface,
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: spacing.sm,
+          vertical: spacing.xs,
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        shape: controlShape,
+        side: BorderSide(color: palette.borderColor),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        surfaceTintColor: Colors.transparent,
+        shadowColor: softShadow,
+        elevation: 3,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(radius.xl),
+            topRight: Radius.circular(radius.xl),
+          ),
+        ),
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: SegmentedButton.styleFrom(shape: controlShape),
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        borderRadius: BorderRadius.circular(radius.xs),
+      ),
     );
   }
 }
