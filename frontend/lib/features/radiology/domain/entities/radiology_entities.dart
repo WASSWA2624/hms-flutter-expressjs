@@ -42,11 +42,7 @@ const List<String> radiologyResultStatuses = <String>[
   'AMENDED',
 ];
 
-const List<String> radiologyPriorities = <String>[
-  'ROUTINE',
-  'URGENT',
-  'STAT',
-];
+const List<String> radiologyPriorities = <String>['ROUTINE', 'URGENT', 'STAT'];
 
 const List<String> radiologyBillingGateFilters = <String>[
   'AWAITING',

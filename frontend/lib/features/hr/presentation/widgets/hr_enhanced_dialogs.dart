@@ -630,111 +630,112 @@ Future<void> showHrScheduleTemplateDetailDialog(
     builder: (BuildContext dialogContext) {
       final AppLocalizations l10n = dialogContext.l10n;
       final ThemeData theme = Theme.of(dialogContext);
-        final HrWeeklyScheduleDraft schedule =
-            HrWeeklyScheduleDraft.fromTemplateExtra(template.extra);
-        final String? facilityId = template.extra['facility_id']?.toString();
-        final String? departmentLabel = referenceData.facilities
-            .where((HrOption option) => option.value == facilityId)
-            .map((HrOption option) => option.label)
-            .firstOrNull;
-        final String? shiftType = template.extra['shift_type']?.toString();
-        final bool isActive = template.extra['is_active'] != false;
-        final DateTime? createdAt = _parseTemplateDateTime(
-          template.extra['created_at'],
-        );
-        final DateTime? updatedAt = _parseTemplateDateTime(
-          template.extra['updated_at'],
-        );
+      final HrWeeklyScheduleDraft schedule =
+          HrWeeklyScheduleDraft.fromTemplateExtra(template.extra);
+      final String? facilityId = template.extra['facility_id']?.toString();
+      final String? departmentLabel = referenceData.facilities
+          .where((HrOption option) => option.value == facilityId)
+          .map((HrOption option) => option.label)
+          .firstOrNull;
+      final String? shiftType = template.extra['shift_type']?.toString();
+      final bool isActive = template.extra['is_active'] != false;
+      final DateTime? createdAt = _parseTemplateDateTime(
+        template.extra['created_at'],
+      );
+      final DateTime? updatedAt = _parseTemplateDateTime(
+        template.extra['updated_at'],
+      );
 
-        return AppDialog(
-          title: Text(template.label),
-          icon: const Icon(Icons.view_week_outlined),
-          scrollable: true,
-          maxWidth: 980,
-          content: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              AppInfoTileGrid(
-                emptyValue: l10n.profileUnknownValue,
-                items: <AppInfoTileData>[
+      return AppDialog(
+        title: Text(template.label),
+        icon: const Icon(Icons.view_week_outlined),
+        scrollable: true,
+        maxWidth: 980,
+        content: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            AppInfoTileGrid(
+              emptyValue: l10n.profileUnknownValue,
+              items: <AppInfoTileData>[
+                AppInfoTileData(
+                  label: l10n.hrScheduleTemplateIdLabel,
+                  value: template.displayId ?? template.value,
+                  icon: Icons.confirmation_number_outlined,
+                  copyable: true,
+                ),
+                AppInfoTileData(
+                  label: l10n.hrShiftTypeLabel,
+                  value: hrShiftTypeLabel(l10n, shiftType),
+                  icon: Icons.schedule_outlined,
+                ),
+                if ((departmentLabel ?? '').trim().isNotEmpty)
                   AppInfoTileData(
-                    label: l10n.hrScheduleTemplateIdLabel,
-                    value: template.displayId ?? template.value,
-                    icon: Icons.confirmation_number_outlined,
-                    copyable: true,
+                    label: l10n.hrDepartmentLabel,
+                    value: departmentLabel,
+                    icon: Icons.account_tree_outlined,
                   ),
+                AppInfoTileData(
+                  label: l10n.hrStatusLabel,
+                  value: isActive
+                      ? l10n.hrScheduleTemplateActiveLabel
+                      : l10n.hrScheduleTemplateInactiveLabel,
+                  icon: Icons.flag_outlined,
+                ),
+                if (createdAt != null)
                   AppInfoTileData(
-                    label: l10n.hrShiftTypeLabel,
-                    value: hrShiftTypeLabel(l10n, shiftType),
-                    icon: Icons.schedule_outlined,
-                  ),
-                  if ((departmentLabel ?? '').trim().isNotEmpty)
-                    AppInfoTileData(
-                      label: l10n.hrDepartmentLabel,
-                      value: departmentLabel,
-                      icon: Icons.account_tree_outlined,
+                    label: l10n.hrCreatedAtLabel,
+                    value: AppFormatters.dateTime(
+                      createdAt,
+                      Localizations.localeOf(dialogContext),
                     ),
+                    icon: Icons.event_outlined,
+                  ),
+                if (updatedAt != null)
                   AppInfoTileData(
-                    label: l10n.hrStatusLabel,
-                    value: isActive
-                        ? l10n.hrScheduleTemplateActiveLabel
-                        : l10n.hrScheduleTemplateInactiveLabel,
-                    icon: Icons.flag_outlined,
+                    label: l10n.hrUpdatedAtLabel,
+                    value: AppFormatters.dateTime(
+                      updatedAt,
+                      Localizations.localeOf(dialogContext),
+                    ),
+                    icon: Icons.update_outlined,
                   ),
-                  if (createdAt != null)
-                    AppInfoTileData(
-                      label: l10n.hrCreatedAtLabel,
-                      value: AppFormatters.dateTime(
-                        createdAt,
-                        Localizations.localeOf(dialogContext),
-                      ),
-                      icon: Icons.event_outlined,
-                    ),
-                  if (updatedAt != null)
-                    AppInfoTileData(
-                      label: l10n.hrUpdatedAtLabel,
-                      value: AppFormatters.dateTime(
-                        updatedAt,
-                        Localizations.localeOf(dialogContext),
-                      ),
-                      icon: Icons.update_outlined,
-                    ),
-                ],
-              ),
-              SizedBox(height: theme.spacing.md),
-              HrWeeklyScheduleEditor(
-                schedule: schedule,
-                onChanged: () {},
-                readOnly: true,
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            AppButton.secondary(
-              label: l10n.hrSchedulePatternEditAction,
-              leadingIcon: Icons.edit_outlined,
-              onPressed: () async {
-                Navigator.of(dialogContext).pop();
-                await showHrShiftTemplateDialog(context, ref, template);
-              },
+              ],
             ),
-            AppButton(
-              label: l10n.hrSchedulePatternDeleteAction,
-              leadingIcon: Icons.delete_outline,
-              semanticLabel: l10n.hrSchedulePatternDeleteAction,
-              tooltip: l10n.hrSchedulePatternDeleteAction,
-              onPressed: () async {
-                final AppFailure? failure = await controller
-                    .deleteShiftTemplate(template.value);
-                if (context.mounted) {
-                  Navigator.of(dialogContext).pop();
-                  showHrMutationSnackBar(context, failure);
-                }
-              },
+            SizedBox(height: theme.spacing.md),
+            HrWeeklyScheduleEditor(
+              schedule: schedule,
+              onChanged: () {},
+              readOnly: true,
             ),
           ],
-        );
+        ),
+        actions: <Widget>[
+          AppButton.secondary(
+            label: l10n.hrSchedulePatternEditAction,
+            leadingIcon: Icons.edit_outlined,
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              await showHrShiftTemplateDialog(context, ref, template);
+            },
+          ),
+          AppButton(
+            label: l10n.hrSchedulePatternDeleteAction,
+            leadingIcon: Icons.delete_outline,
+            semanticLabel: l10n.hrSchedulePatternDeleteAction,
+            tooltip: l10n.hrSchedulePatternDeleteAction,
+            onPressed: () async {
+              final AppFailure? failure = await controller.deleteShiftTemplate(
+                template.value,
+              );
+              if (context.mounted) {
+                Navigator.of(dialogContext).pop();
+                showHrMutationSnackBar(context, failure);
+              }
+            },
+          ),
+        ],
+      );
     },
   );
 }

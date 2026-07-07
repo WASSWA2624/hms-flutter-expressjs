@@ -562,9 +562,13 @@ class AppWorkspacePatientContextHeader extends StatelessWidget {
             .where((AppWorkspacePatientContextField field) => field.hasValue)
             .toList(growable: false);
     final List<AppWorkspacePatientContextField> metaInlineFields =
-        mergeFieldsIntoMetaLine ? visibleFields : const <AppWorkspacePatientContextField>[];
+        mergeFieldsIntoMetaLine
+        ? visibleFields
+        : const <AppWorkspacePatientContextField>[];
     final List<AppWorkspacePatientContextField> separateFields =
-        mergeFieldsIntoMetaLine ? const <AppWorkspacePatientContextField>[] : visibleFields;
+        mergeFieldsIntoMetaLine
+        ? const <AppWorkspacePatientContextField>[]
+        : visibleFields;
     final bool hasIdentityContent =
         showPatientName ||
         showAvatar ||

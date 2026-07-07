@@ -165,7 +165,11 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
   @override
   Future<Result<PharmacyDrug>> setupDrug(PharmacyDrugInput input) {
     return _apiClient.post<PharmacyDrug>(
-      ApiEndpoints.apiV1(<String>[HmsApiResource.pharmacy.path, 'drugs', 'setup']),
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.pharmacy.path,
+        'drugs',
+        'setup',
+      ]),
       data: _withoutEmpty(input.toSetupJson()),
       decoder: (Object? data) {
         final PharmacyJsonMap response = _expectMap(data);
@@ -384,7 +388,11 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
     String? facilityId,
   }) {
     return _apiClient.get<PharmacyStorageLayout>(
-      ApiEndpoints.apiV1(<String>[HmsApiResource.pharmacy.path, 'storage', 'layout']),
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.pharmacy.path,
+        'storage',
+        'layout',
+      ]),
       queryParameters: _withoutEmpty(<String, Object?>{
         'include_inactive': includeInactive ? true : null,
         'facility_id': facilityId,
@@ -401,7 +409,11 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
     PharmacyStorageRoomInput input,
   ) {
     return _apiClient.post<PharmacyStorageRoom>(
-      ApiEndpoints.apiV1(<String>[HmsApiResource.pharmacy.path, 'storage', 'rooms']),
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.pharmacy.path,
+        'storage',
+        'rooms',
+      ]),
       data: _withoutEmpty(input.toJson()),
       decoder: (Object? data) {
         final PharmacyJsonMap response = _expectMap(data);

@@ -51,11 +51,10 @@ void main() {
             selectionOrder: <String>['third', 'second'],
           );
 
-      expect(ordered.map((ClinicalActionCatalogOption item) => item.id).toList(), <String>[
-        'third',
-        'second',
-        'first',
-      ]);
+      expect(
+        ordered.map((ClinicalActionCatalogOption item) => item.id).toList(),
+        <String>['third', 'second', 'first'],
+      );
     });
   });
 }

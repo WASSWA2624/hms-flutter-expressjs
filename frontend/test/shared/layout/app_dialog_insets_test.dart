@@ -28,38 +28,38 @@ void main() {
       );
     });
 
-    test('maximized mobile padding fills the viewport without outer gutter', () {
-      expect(
-        AppDialogInsets.paddingFor(
-          AppBreakpoint.sm,
-          designTokens: tokens,
-          maximized: true,
-        ),
-        EdgeInsets.zero,
-      );
-    });
-
     test(
-      'maximized desktop padding clears only the shell header',
+      'maximized mobile padding fills the viewport without outer gutter',
       () {
         expect(
           AppDialogInsets.paddingFor(
-            AppBreakpoint.lg,
+            AppBreakpoint.sm,
             designTokens: tokens,
             maximized: true,
           ),
-          const EdgeInsets.only(top: AppShellLayout.headerHeight),
-        );
-        expect(
-          AppDialogInsets.paddingFor(
-            AppBreakpoint.xl,
-            designTokens: tokens,
-            maximized: true,
-          ),
-          const EdgeInsets.only(top: AppShellLayout.headerHeight),
+          EdgeInsets.zero,
         );
       },
     );
+
+    test('maximized desktop padding clears only the shell header', () {
+      expect(
+        AppDialogInsets.paddingFor(
+          AppBreakpoint.lg,
+          designTokens: tokens,
+          maximized: true,
+        ),
+        const EdgeInsets.only(top: AppShellLayout.headerHeight),
+      );
+      expect(
+        AppDialogInsets.paddingFor(
+          AppBreakpoint.xl,
+          designTokens: tokens,
+          maximized: true,
+        ),
+        const EdgeInsets.only(top: AppShellLayout.headerHeight),
+      );
+    });
 
     test('available size uses full viewport on mobile when maximized', () {
       final Size available = AppDialogInsets.availableSizeFor(
@@ -73,19 +73,16 @@ void main() {
       expect(available.height, 700);
     });
 
-    test(
-      'available size clears shell header when maximized on desktop',
-      () {
-        final Size available = AppDialogInsets.availableSizeFor(
-          const Size(1000, 700),
-          AppBreakpoint.lg,
-          designTokens: tokens,
-          maximized: true,
-        );
+    test('available size clears shell header when maximized on desktop', () {
+      final Size available = AppDialogInsets.availableSizeFor(
+        const Size(1000, 700),
+        AppBreakpoint.lg,
+        designTokens: tokens,
+        maximized: true,
+      );
 
-        expect(available.width, 1000);
-        expect(available.height, 700 - AppShellLayout.headerHeight);
-      },
-    );
+      expect(available.width, 1000);
+      expect(available.height, 700 - AppShellLayout.headerHeight);
+    });
   });
 }

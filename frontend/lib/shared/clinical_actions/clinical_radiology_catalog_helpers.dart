@@ -382,7 +382,10 @@ List<ClinicalActionCatalogOption> orderClinicalRadiologyRequestCatalogItems(
       unselected.add(option);
     }
   }
-  selected.sort((ClinicalActionCatalogOption left, ClinicalActionCatalogOption right) {
+  selected.sort((
+    ClinicalActionCatalogOption left,
+    ClinicalActionCatalogOption right,
+  ) {
     final int leftRank = selectionRank[left.apiId] ?? selectionOrder.length;
     final int rightRank = selectionRank[right.apiId] ?? selectionOrder.length;
     return leftRank.compareTo(rightRank);

@@ -166,10 +166,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
             )
             .toList(growable: false);
     final List<AppSelectOption<String>> modalityOptions =
-        clinicalRadiologyModalityOptions(
-          l10n,
-          _catalogOptions,
-        );
+        clinicalRadiologyModalityOptions(l10n, _catalogOptions);
     final List<AppSelectOption<String>> bodyRegionOptions =
         clinicalRadiologyBodyRegionOptions(
           _catalogOptions,
@@ -221,9 +218,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
                   if (!_isStagedSelected(item)) {
                     return null;
                   }
-                  return colorScheme.primaryContainer.withValues(
-                    alpha: 0.35,
-                  );
+                  return colorScheme.primaryContainer.withValues(alpha: 0.35);
                 },
             search: AppListTableSearch<ClinicalActionCatalogOption>(
               controller: _searchController,
@@ -259,10 +254,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
                     trailing: Checkbox(
                       value: _isStagedSelected(item),
                       onChanged: (bool? value) {
-                        _toggleSelection(
-                          item,
-                          selected: value ?? false,
-                        );
+                        _toggleSelection(item, selected: value ?? false);
                       },
                       visualDensity: VisualDensity.compact,
                     ),
@@ -423,7 +415,8 @@ class _ClinicalRadiologyRequestCatalogDialogState
       _noteController.text,
     );
     return <ClinicalRadiologyCatalogSelection>[
-      for (final ClinicalRadiologyCatalogSelection selection in _stagedSelections)
+      for (final ClinicalRadiologyCatalogSelection selection
+          in _stagedSelections)
         ClinicalRadiologyCatalogSelection(
           option: selection.option,
           clinicalNote: clinicalNote ?? selection.clinicalNote,
@@ -496,8 +489,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
             ),
         cellBuilder: (BuildContext context, ClinicalActionCatalogOption item) {
           return Text(
-            clinicalRadiologyOptionBodyRegion(item) ??
-                l10n.profileUnknownValue,
+            clinicalRadiologyOptionBodyRegion(item) ?? l10n.profileUnknownValue,
           );
         },
       ),
@@ -540,12 +532,13 @@ class _ClinicalRadiologyRequestCatalogDialogState
         return ValueListenableBuilder<TextEditingValue>(
           valueListenable: _searchController,
           builder: (BuildContext context, TextEditingValue value, Widget? _) {
-            final List<ClinicalActionCatalogOption> visibleItems = _sortedCatalogItems(
-              _filteredCatalog(_catalogOptions),
-            ).where((ClinicalActionCatalogOption item) {
-              return _matchesCatalogSearch(item, value.text) &&
-                  _matchesModalityFilter(item);
-            }).toList(growable: false);
+            final List<ClinicalActionCatalogOption> visibleItems =
+                _sortedCatalogItems(_filteredCatalog(_catalogOptions))
+                    .where((ClinicalActionCatalogOption item) {
+                      return _matchesCatalogSearch(item, value.text) &&
+                          _matchesModalityFilter(item);
+                    })
+                    .toList(growable: false);
             final bool allSelected =
                 visibleItems.isNotEmpty &&
                 visibleItems.every(_isStagedSelected);
@@ -593,10 +586,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
         allLabel: l10n.labScopeAll,
         choices: <AppSearchBarFilterChoice>[
           for (final AppSelectOption<String> option in modalityOptions)
-            AppSearchBarFilterChoice(
-              value: option.value,
-              label: option.label,
-            ),
+            AppSearchBarFilterChoice(value: option.value, label: option.label),
         ],
       ),
     ];
@@ -677,10 +667,7 @@ class _ClinicalRadiologyRequestCatalogDialogState
         clinicalActionNormalizedCatalogToken(modality);
   }
 
-  bool _matchesCatalogSearch(
-    ClinicalActionCatalogOption item,
-    String query,
-  ) {
+  bool _matchesCatalogSearch(ClinicalActionCatalogOption item, String query) {
     final String normalized = query.trim().toLowerCase();
     if (normalized.isEmpty) {
       return true;

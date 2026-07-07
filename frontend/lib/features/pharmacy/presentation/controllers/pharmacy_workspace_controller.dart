@@ -407,18 +407,19 @@ final class PharmacyWorkspaceController
       resolvedShelfId = null;
     }
 
-    final PharmacyInventoryStockQuery nextQuery = current.inventoryQuery.copyWith(
-      storageRoomId: storageRoomId,
-      storageShelfId: resolvedShelfId,
-      clearStorageRoomId: storageRoomId == null,
-      clearStorageShelfId: resolvedShelfId == null,
-      lowStockOnly: stockStatusChoice == 'LOW_STOCK',
-      expiredOnly: stockStatusChoice == 'EXPIRED',
-      expiringWithinDays: stockStatusChoice == 'EXPIRING_SOON' ? 30 : null,
-      clearStockStatus: stockStatusChoice == null,
-      clearExpiringWithinDays: stockStatusChoice != 'EXPIRING_SOON',
-      pageRequest: current.inventoryQuery.pageRequest.first(),
-    );
+    final PharmacyInventoryStockQuery nextQuery = current.inventoryQuery
+        .copyWith(
+          storageRoomId: storageRoomId,
+          storageShelfId: resolvedShelfId,
+          clearStorageRoomId: storageRoomId == null,
+          clearStorageShelfId: resolvedShelfId == null,
+          lowStockOnly: stockStatusChoice == 'LOW_STOCK',
+          expiredOnly: stockStatusChoice == 'EXPIRED',
+          expiringWithinDays: stockStatusChoice == 'EXPIRING_SOON' ? 30 : null,
+          clearStockStatus: stockStatusChoice == null,
+          clearExpiringWithinDays: stockStatusChoice != 'EXPIRING_SOON',
+          pageRequest: current.inventoryQuery.pageRequest.first(),
+        );
 
     _emit(
       current.copyWith(
@@ -482,7 +483,9 @@ final class PharmacyWorkspaceController
     return _refreshInventory(showLoading: true);
   }
 
-  Future<AppFailure?> applyInventoryFilter(PharmacyInventoryFilter filter) async {
+  Future<AppFailure?> applyInventoryFilter(
+    PharmacyInventoryFilter filter,
+  ) async {
     final PharmacyWorkspaceState? current = _currentState;
     if (current == null) {
       return refresh();
@@ -613,9 +616,7 @@ final class PharmacyWorkspaceController
   ) {
     switch (tab) {
       case PharmacyCatalogTab.drugs:
-        unawaited(
-          _refreshDrugs(showLoading: current.drugs.items.isEmpty),
-        );
+        unawaited(_refreshDrugs(showLoading: current.drugs.items.isEmpty));
       case PharmacyCatalogTab.formulary:
         unawaited(
           _refreshFormulary(showLoading: current.formularyItems.items.isEmpty),
@@ -628,7 +629,9 @@ final class PharmacyWorkspaceController
         );
       case PharmacyCatalogTab.storage:
         unawaited(
-          _refreshStorageLayout(showLoading: current.storageLayout.rooms.isEmpty),
+          _refreshStorageLayout(
+            showLoading: current.storageLayout.rooms.isEmpty,
+          ),
         );
     }
   }
@@ -641,11 +644,11 @@ final class PharmacyWorkspaceController
     if (showLoading) {
       _emit(current.copyWith(isRefreshingStorage: true));
     }
-    final Result<PharmacyStorageLayout> result =
-        await _repository.loadStorageLayout(
-      includeInactive: true,
-      facilityId: resolveFacilityId(),
-    );
+    final Result<PharmacyStorageLayout> result = await _repository
+        .loadStorageLayout(
+          includeInactive: true,
+          facilityId: resolveFacilityId(),
+        );
     final PharmacyWorkspaceState? latest = _currentState;
     if (latest == null) {
       return;
@@ -653,10 +656,7 @@ final class PharmacyWorkspaceController
     result.when(
       success: (PharmacyStorageLayout layout) {
         _emit(
-          latest.copyWith(
-            storageLayout: layout,
-            isRefreshingStorage: false,
-          ),
+          latest.copyWith(storageLayout: layout, isRefreshingStorage: false),
         );
       },
       failure: (_) {
@@ -666,8 +666,8 @@ final class PharmacyWorkspaceController
   }
 
   Future<AppFailure?> createStorageRoom(PharmacyStorageRoomInput input) async {
-    final Result<PharmacyStorageRoom> result =
-        await _repository.createStorageRoom(input);
+    final Result<PharmacyStorageRoom> result = await _repository
+        .createStorageRoom(input);
     return result.when(
       success: (_) async {
         await _refreshStorageLayout();
@@ -681,8 +681,8 @@ final class PharmacyWorkspaceController
     String roomId,
     PharmacyStorageRoomUpdateInput input,
   ) async {
-    final Result<PharmacyStorageRoom> result =
-        await _repository.updateStorageRoom(roomId, input);
+    final Result<PharmacyStorageRoom> result = await _repository
+        .updateStorageRoom(roomId, input);
     return result.when(
       success: (_) async {
         await _refreshStorageLayout();
@@ -696,8 +696,8 @@ final class PharmacyWorkspaceController
     String roomId,
     PharmacyStorageShelfInput input,
   ) async {
-    final Result<PharmacyStorageShelf> result =
-        await _repository.createStorageShelf(roomId, input);
+    final Result<PharmacyStorageShelf> result = await _repository
+        .createStorageShelf(roomId, input);
     return result.when(
       success: (_) async {
         await _refreshStorageLayout();
@@ -711,8 +711,8 @@ final class PharmacyWorkspaceController
     String shelfId,
     PharmacyStorageShelfUpdateInput input,
   ) async {
-    final Result<PharmacyStorageShelf> result =
-        await _repository.updateStorageShelf(shelfId, input);
+    final Result<PharmacyStorageShelf> result = await _repository
+        .updateStorageShelf(shelfId, input);
     return result.when(
       success: (_) async {
         await _refreshStorageLayout();
@@ -730,19 +730,22 @@ final class PharmacyWorkspaceController
     return result.when(
       success: (PharmacyDrug drug) async {
         if (facilityOffering != null) {
-          final Result<PharmacyDrug> offeringResult =
-              await _repository.upsertFacilityOffering(
-            drug.id,
-            PharmacyFacilityOfferingInput(
-              unitPrice: facilityOffering.unitPrice,
-              currency: facilityOffering.currency,
-              isActive: facilityOffering.isActive,
-              facilityId:
-                  facilityOffering.facilityId ?? input.facilityId ?? resolveFacilityId(),
-              defaultStorageShelfId:
-                  facilityOffering.defaultStorageShelfId ?? input.storageShelfId,
-            ),
-          );
+          final Result<PharmacyDrug> offeringResult = await _repository
+              .upsertFacilityOffering(
+                drug.id,
+                PharmacyFacilityOfferingInput(
+                  unitPrice: facilityOffering.unitPrice,
+                  currency: facilityOffering.currency,
+                  isActive: facilityOffering.isActive,
+                  facilityId:
+                      facilityOffering.facilityId ??
+                      input.facilityId ??
+                      resolveFacilityId(),
+                  defaultStorageShelfId:
+                      facilityOffering.defaultStorageShelfId ??
+                      input.storageShelfId,
+                ),
+              );
           final AppFailure? offeringFailure = offeringResult.when(
             success: (_) => null,
             failure: (AppFailure failure) => failure,
@@ -753,16 +756,16 @@ final class PharmacyWorkspaceController
         } else if (input.storageShelfId != null) {
           final String? facilityId = input.facilityId ?? resolveFacilityId();
           if (facilityId != null) {
-            final Result<PharmacyDrug> offeringResult =
-                await _repository.upsertFacilityOffering(
-              drug.id,
-              PharmacyFacilityOfferingInput(
-                unitPrice: 0,
-                isActive: false,
-                facilityId: facilityId,
-                defaultStorageShelfId: input.storageShelfId,
-              ),
-            );
+            final Result<PharmacyDrug> offeringResult = await _repository
+                .upsertFacilityOffering(
+                  drug.id,
+                  PharmacyFacilityOfferingInput(
+                    unitPrice: 0,
+                    isActive: false,
+                    facilityId: facilityId,
+                    defaultStorageShelfId: input.storageShelfId,
+                  ),
+                );
             final AppFailure? offeringFailure = offeringResult.when(
               success: (_) => null,
               failure: (AppFailure failure) => failure,
@@ -794,11 +797,8 @@ final class PharmacyWorkspaceController
     return result.when(
       success: (_) async {
         if (facilityOffering != null) {
-          final Result<PharmacyDrug> offeringResult =
-              await _repository.upsertFacilityOffering(
-            drugId,
-            facilityOffering,
-          );
+          final Result<PharmacyDrug> offeringResult = await _repository
+              .upsertFacilityOffering(drugId, facilityOffering);
           final AppFailure? offeringFailure = offeringResult.when(
             success: (_) => null,
             failure: (AppFailure failure) => failure,
@@ -818,10 +818,8 @@ final class PharmacyWorkspaceController
     String drugId,
     PharmacyFacilityOfferingInput input,
   ) async {
-    final Result<PharmacyDrug> result = await _repository.upsertFacilityOffering(
-      drugId,
-      input,
-    );
+    final Result<PharmacyDrug> result = await _repository
+        .upsertFacilityOffering(drugId, input);
     return result.when(
       success: (_) async {
         await _refreshDrugs(showLoading: false);
@@ -1040,7 +1038,9 @@ final class PharmacyWorkspaceController
   Future<Result<PharmacyWorkspaceState>> _loadInitialState() async {
     const PharmacyWorkbenchQuery query = PharmacyWorkbenchQuery();
     final String? facilityId = resolveFacilityId();
-    final PharmacyDrugQuery drugQuery = PharmacyDrugQuery(facilityId: facilityId);
+    final PharmacyDrugQuery drugQuery = PharmacyDrugQuery(
+      facilityId: facilityId,
+    );
     const PharmacyFormularyQuery formularyQuery = PharmacyFormularyQuery();
     final PharmacyInventoryStockQuery inventoryQuery =
         PharmacyInventoryStockQuery(facilityId: facilityId);
@@ -1055,21 +1055,26 @@ final class PharmacyWorkspaceController
 
     final List<Future<Object?>> initialLoads = <Future<Object?>>[
       _loadDrugPage(drugQuery),
-      _repository.getInventoryStock(inventoryQuery).then(
-        (Result<PharmacyInventoryWorkbench> result) => result.when(
-          success: (PharmacyInventoryWorkbench value) => value,
-          failure: (_) => null,
-        ),
-      ),
-      _repository.loadStorageLayout(facilityId: facilityId).then(
-        (Result<PharmacyStorageLayout> result) => result.when(
-          success: (PharmacyStorageLayout value) => value,
-          failure: (_) => null,
-        ),
-      ),
+      _repository
+          .getInventoryStock(inventoryQuery)
+          .then(
+            (Result<PharmacyInventoryWorkbench> result) => result.when(
+              success: (PharmacyInventoryWorkbench value) => value,
+              failure: (_) => null,
+            ),
+          ),
+      _repository
+          .loadStorageLayout(facilityId: facilityId)
+          .then(
+            (Result<PharmacyStorageLayout> result) => result.when(
+              success: (PharmacyStorageLayout value) => value,
+              failure: (_) => null,
+            ),
+          ),
     ];
     final List<Object?> loadResults = await Future.wait(initialLoads);
-    final AppPage<PharmacyDrug> drugs = loadResults[0]! as AppPage<PharmacyDrug>;
+    final AppPage<PharmacyDrug> drugs =
+        loadResults[0]! as AppPage<PharmacyDrug>;
     final PharmacyInventoryWorkbench inventoryWorkbench =
         loadResults[1] as PharmacyInventoryWorkbench? ??
         PharmacyInventoryWorkbench(
@@ -1081,7 +1086,8 @@ final class PharmacyWorkspaceController
           ),
         );
     final PharmacyStorageLayout storageLayout =
-        loadResults[2] as PharmacyStorageLayout? ?? const PharmacyStorageLayout();
+        loadResults[2] as PharmacyStorageLayout? ??
+        const PharmacyStorageLayout();
     return Result<PharmacyWorkspaceState>.success(
       PharmacyWorkspaceState(
         query: query,

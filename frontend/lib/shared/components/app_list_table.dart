@@ -697,11 +697,16 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     required Widget? searchBar,
     bool usesExternalSearchListenable = false,
   }) {
-    final ({bool disablePagination, List<T> items, int totalSortedCount, AppPage<T>? page}) data =
-        _visibleData(
-          query,
-          usesExternalSearchListenable: usesExternalSearchListenable,
-        );
+    final ({
+      bool disablePagination,
+      List<T> items,
+      int totalSortedCount,
+      AppPage<T>? page,
+    })
+    data = _visibleData(
+      query,
+      usesExternalSearchListenable: usesExternalSearchListenable,
+    );
     final Widget content = _wrapIncrementalScroll(
       context,
       totalSortedCount: data.totalSortedCount,
@@ -751,11 +756,13 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     );
   }
 
-  ({bool disablePagination, List<T> items, int totalSortedCount, AppPage<T>? page})
-  _visibleData(
-    String query, {
-    required bool usesExternalSearchListenable,
-  }) {
+  ({
+    bool disablePagination,
+    List<T> items,
+    int totalSortedCount,
+    AppPage<T>? page,
+  })
+  _visibleData(String query, {required bool usesExternalSearchListenable}) {
     final AppPage<T>? page = widget.page;
     final List<T> sourceItems = page?.items ?? widget.items ?? <T>[];
     final String normalizedQuery = query.trim();

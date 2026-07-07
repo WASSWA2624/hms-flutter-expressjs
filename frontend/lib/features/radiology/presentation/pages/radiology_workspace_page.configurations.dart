@@ -315,7 +315,9 @@ class _RadiologyConfigurationsDialogState
               label: l10n.radiologyEnableProcedureAction,
               tooltip: l10n.radiologyEnableProcedureAction,
               enabled: !tableBusy,
-              onPressed: tableBusy ? null : () => _openEnableProcedureDialog(context),
+              onPressed: tableBusy
+                  ? null
+                  : () => _openEnableProcedureDialog(context),
             ),
           if (_selectedOfferingIds.isNotEmpty)
             AppSearchBarAction(
@@ -410,7 +412,9 @@ class _RadiologyConfigurationsDialogState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Checkbox(
-                    value: _selectedOfferingIds.contains(_offeringSelectionKey(item)),
+                    value: _selectedOfferingIds.contains(
+                      _offeringSelectionKey(item),
+                    ),
                     onChanged: tableBusy
                         ? null
                         : (bool? value) => _toggleOfferingSelection(
@@ -495,7 +499,10 @@ class _RadiologyConfigurationsDialogState
   Future<void> _refreshConfigurations(BuildContext context) async {
     final AppFailure? failure = await ref
         .read(radiologyWorkspaceControllerProvider.notifier)
-        .loadFacilityCatalogConfig(_catalogScope, search: _searchController.text.trim());
+        .loadFacilityCatalogConfig(
+          _catalogScope,
+          search: _searchController.text.trim(),
+        );
     if (context.mounted) {
       _showFailureIfNeeded(context, failure);
     }
@@ -555,12 +562,8 @@ class _RadiologyConfigurationsDialogState
       barrierDismissible: false,
       builder: (_) => RadiologyEditFacilityOfferingDialog(
         item: item,
-        onUpdate: (String id, Map<String, Object?> payload) =>
-            controller.upsertRadiologyTestOffering(
-              id,
-              payload,
-              scope: _catalogScope,
-            ),
+        onUpdate: (String id, Map<String, Object?> payload) => controller
+            .upsertRadiologyTestOffering(id, payload, scope: _catalogScope),
       ),
     );
     if (!context.mounted || saved != true) {
@@ -702,10 +705,8 @@ class _RadiologyConfigurationsDialogState
           value: _selectedOfferingIds.contains(_offeringSelectionKey(item)),
           onChanged: isBusy
               ? null
-              : (bool? value) => _toggleOfferingSelection(
-                  item,
-                  selected: value ?? false,
-                ),
+              : (bool? value) =>
+                    _toggleOfferingSelection(item, selected: value ?? false),
           visualDensity: VisualDensity.compact,
         );
       },

@@ -115,7 +115,8 @@ class PharmacyStoragePanel extends ConsumerWidget {
                             .map(
                               (PharmacyStorageShelf shelf) => ListTile(
                                 title: Text(shelf.displayLabel),
-                                subtitle: shelf.label == null ||
+                                subtitle:
+                                    shelf.label == null ||
                                         shelf.label!.trim().isEmpty
                                     ? null
                                     : Text(shelf.label!),
@@ -157,11 +158,12 @@ class PharmacyStoragePanel extends ConsumerWidget {
               requirement: writeRequirement,
               builder: (BuildContext context, bool isAllowed) =>
                   AppButton.secondary(
-                label: l10n.pharmacyAddStorageRoomAction,
-                leadingIcon: Icons.add,
-                enabled: isAllowed,
-                onPressed: () => openPharmacyStorageRoomDialog(context, ref),
-              ),
+                    label: l10n.pharmacyAddStorageRoomAction,
+                    leadingIcon: Icons.add,
+                    enabled: isAllowed,
+                    onPressed: () =>
+                        openPharmacyStorageRoomDialog(context, ref),
+                  ),
             ),
           ),
           SizedBox(height: theme.spacing.md),
@@ -179,11 +181,12 @@ class PharmacyStoragePanel extends ConsumerWidget {
                 requirement: writeRequirement,
                 builder: (BuildContext context, bool isAllowed) =>
                     AppButton.secondary(
-                  label: l10n.pharmacyAddStorageRoomAction,
-                  leadingIcon: Icons.add,
-                  enabled: isAllowed,
-                  onPressed: () => openPharmacyStorageRoomDialog(context, ref),
-                ),
+                      label: l10n.pharmacyAddStorageRoomAction,
+                      leadingIcon: Icons.add,
+                      enabled: isAllowed,
+                      onPressed: () =>
+                          openPharmacyStorageRoomDialog(context, ref),
+                    ),
               ),
             ]
           : const <Widget>[],
@@ -277,7 +280,9 @@ class _StorageRoomDialogState extends ConsumerState<_StorageRoomDialog> {
           onPressed: () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
-          label: isEdit ? l10n.commonSaveActionLabel : l10n.pharmacyAddStorageRoomAction,
+          label: isEdit
+              ? l10n.commonSaveActionLabel
+              : l10n.pharmacyAddStorageRoomAction,
           leadingIcon: isEdit ? Icons.save_outlined : Icons.add,
           isLoading: _isSaving,
           onPressed: _submit,
@@ -332,7 +337,8 @@ class _StorageShelfDialog extends ConsumerStatefulWidget {
   final PharmacyStorageShelf? shelf;
 
   @override
-  ConsumerState<_StorageShelfDialog> createState() => _StorageShelfDialogState();
+  ConsumerState<_StorageShelfDialog> createState() =>
+      _StorageShelfDialogState();
 }
 
 class _StorageShelfDialogState extends ConsumerState<_StorageShelfDialog> {
@@ -345,7 +351,9 @@ class _StorageShelfDialogState extends ConsumerState<_StorageShelfDialog> {
   @override
   void initState() {
     super.initState();
-    _codeController = TextEditingController(text: widget.shelf?.shelfCode ?? '');
+    _codeController = TextEditingController(
+      text: widget.shelf?.shelfCode ?? '',
+    );
     _labelController = TextEditingController(text: widget.shelf?.label ?? '');
     _isActive = widget.shelf?.isActive ?? true;
   }
@@ -399,7 +407,9 @@ class _StorageShelfDialogState extends ConsumerState<_StorageShelfDialog> {
           onPressed: () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
-          label: isEdit ? l10n.commonSaveActionLabel : l10n.pharmacyAddStorageShelfAction,
+          label: isEdit
+              ? l10n.commonSaveActionLabel
+              : l10n.pharmacyAddStorageShelfAction,
           leadingIcon: isEdit ? Icons.save_outlined : Icons.add,
           isLoading: _isSaving,
           onPressed: _submit,

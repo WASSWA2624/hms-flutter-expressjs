@@ -367,7 +367,8 @@ final class RadiologyWorkspaceController
     return failure;
   }
 
-  Future<Result<List<RadiologyCatalogTest>>> searchPlatformRadiologyCatalogForOffering({
+  Future<Result<List<RadiologyCatalogTest>>>
+  searchPlatformRadiologyCatalogForOffering({
     required RadiologyCatalogScope scope,
     String? query,
     int limit = 100,
@@ -379,12 +380,9 @@ final class RadiologyWorkspaceController
     }
 
     final Future<Result<List<RadiologyCatalogTest>>> platformFuture =
-        _repository.listRadiologyCatalogTests(
-          search: query,
-          limit: limit,
-        );
-    final Future<Result<List<RadiologyCatalogTest>>> offeredFuture =
-        _repository.listFacilityRadiologyTests(
+        _repository.listRadiologyCatalogTests(search: query, limit: limit);
+    final Future<Result<List<RadiologyCatalogTest>>> offeredFuture = _repository
+        .listFacilityRadiologyTests(
           tenantId: scope.tenantId,
           facilityId: scope.facilityId,
           offeredOnly: true,
@@ -631,7 +629,10 @@ final class RadiologyWorkspaceController
   }
 
   Future<AppFailure?> deleteRadiologyTest(String testId) {
-    return disableRadiologyTestOffering(testId, 'Removed from facility catalog');
+    return disableRadiologyTestOffering(
+      testId,
+      'Removed from facility catalog',
+    );
   }
 
   Future<AppFailure?> selectOrder(RadiologyOrder order) async {
@@ -1182,8 +1183,6 @@ final class RadiologyWorkspaceController
         item.apiId == updated.apiId ||
         item.apiId == normalizedRequestId ||
         item.id == normalizedRequestId ||
-        (itemCode != null &&
-            itemCode.isNotEmpty &&
-            itemCode == updatedCode);
+        (itemCode != null && itemCode.isNotEmpty && itemCode == updatedCode);
   }
 }

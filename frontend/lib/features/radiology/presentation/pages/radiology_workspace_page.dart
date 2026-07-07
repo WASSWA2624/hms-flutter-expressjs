@@ -913,8 +913,7 @@ class _RadiologyViewModeSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final bool imagingFloor =
-        viewMode == RadiologyDetailViewMode.imagingFloor;
+    final bool imagingFloor = viewMode == RadiologyDetailViewMode.imagingFloor;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -4019,9 +4018,7 @@ AppListTableColumn<RadiologyOrder> _radiologyPatientIdColumn(
   );
 }
 
-AppListTableColumn<RadiologyOrder> _radiologyStudyColumn(
-  BuildContext context,
-) {
+AppListTableColumn<RadiologyOrder> _radiologyStudyColumn(BuildContext context) {
   final AppLocalizations l10n = context.l10n;
   return AppListTableColumn<RadiologyOrder>(
     id: 'study',

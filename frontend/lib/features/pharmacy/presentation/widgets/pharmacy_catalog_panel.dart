@@ -30,9 +30,14 @@ const String _formularyActiveFilterKey = 'is_active';
 const String _drugStockStatusFilterKey = 'stock_status';
 
 class PharmacyCatalogPanel extends ConsumerStatefulWidget {
-  const PharmacyCatalogPanel({required this.state, super.key});
+  const PharmacyCatalogPanel({
+    required this.state,
+    this.fillHeight = false,
+    super.key,
+  });
 
   final PharmacyWorkspaceState state;
+  final bool fillHeight;
 
   @override
   ConsumerState<PharmacyCatalogPanel> createState() =>
@@ -50,7 +55,8 @@ class _PharmacyCatalogPanelState extends ConsumerState<PharmacyCatalogPanel> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final PharmacyWorkspaceState state = ref
+    final PharmacyWorkspaceState state =
+        ref
             .watch(pharmacyWorkspaceControllerProvider)
             .value
             ?.when(
@@ -65,6 +71,27 @@ class _PharmacyCatalogPanelState extends ConsumerState<PharmacyCatalogPanel> {
     final List<PharmacyCatalogTabDescriptor> tabDescriptors =
         pharmacyCatalogTabDescriptors(l10n);
 
+    final Widget tabContent = switch (tab) {
+      PharmacyCatalogTab.drugs => _DrugCatalogTab(
+        state: state,
+        writeRequirement: _writeRequirement,
+      ),
+      PharmacyCatalogTab.formulary => _FormularyCatalogTab(
+        state: state,
+        writeRequirement: _writeRequirement,
+      ),
+      PharmacyCatalogTab.inventory => _InventoryCatalogTab(
+        state: state,
+        writeRequirement: _writeRequirement,
+      ),
+      PharmacyCatalogTab.storage => PharmacyStoragePanel(
+        state: state,
+        writeRequirement: _writeRequirement,
+        showHeaderActions: false,
+        compact: true,
+      ),
+    };
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -74,26 +101,7 @@ class _PharmacyCatalogPanelState extends ConsumerState<PharmacyCatalogPanel> {
           onTabSelected: controller.setCatalogTab,
         ),
         SizedBox(height: Theme.of(context).spacing.md),
-        switch (tab) {
-          PharmacyCatalogTab.drugs => _DrugCatalogTab(
-            state: state,
-            writeRequirement: _writeRequirement,
-          ),
-          PharmacyCatalogTab.formulary => _FormularyCatalogTab(
-            state: state,
-            writeRequirement: _writeRequirement,
-          ),
-          PharmacyCatalogTab.inventory => _InventoryCatalogTab(
-            state: state,
-            writeRequirement: _writeRequirement,
-          ),
-          PharmacyCatalogTab.storage => PharmacyStoragePanel(
-            state: state,
-            writeRequirement: _writeRequirement,
-            showHeaderActions: false,
-            compact: true,
-          ),
-        },
+        if (widget.fillHeight) Expanded(child: tabContent) else tabContent,
       ],
     );
   }
@@ -164,141 +172,141 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
           unawaited(_applyDrugCatalogFilter(controller, value));
         },
         trailingActions: _catalogSearchTrailingActions(
-              ref: ref,
-              writeRequirement: widget.writeRequirement,
-              isBusy: widget.state.isRefreshingDrugs,
-              selectionActions: _selectedDrugIds.isEmpty
-                  ? const <AppSearchBarAction>[]
-                  : <AppSearchBarAction>[
-                      AppSearchBarAction(
-                        icon: Icons.delete_outline,
-                        label: l10n.pharmacyDeleteSelectedDrugsAction,
-                        tooltip: l10n.pharmacyDeleteSelectedDrugsAction,
-                        destructive: true,
-                        enabled: !widget.state.isRefreshingDrugs,
-                        onPressed: widget.state.isRefreshingDrugs
-                            ? null
-                            : () => _confirmDeleteSelectedDrugs(context),
-                      ),
-                    ],
-              addLabel: l10n.pharmacyAddDrugAction,
-              onAdd: () => _openDrugDialog(context),
-            ),
-          ),
-        onPageChanged: controller.changeDrugPage,
-        emptyBuilder: (_) => AppWorkspaceStatePanel.state(
-          variant: AppStateViewVariant.empty,
-          title: l10n.pharmacyNoDrugsTitle,
-          body: l10n.pharmacyNoDrugsBody,
-          icon: Icons.medication_outlined,
+          ref: ref,
+          writeRequirement: widget.writeRequirement,
+          isBusy: widget.state.isRefreshingDrugs,
+          selectionActions: _selectedDrugIds.isEmpty
+              ? const <AppSearchBarAction>[]
+              : <AppSearchBarAction>[
+                  AppSearchBarAction(
+                    icon: Icons.delete_outline,
+                    label: l10n.pharmacyDeleteSelectedDrugsAction,
+                    tooltip: l10n.pharmacyDeleteSelectedDrugsAction,
+                    destructive: true,
+                    enabled: !widget.state.isRefreshingDrugs,
+                    onPressed: widget.state.isRefreshingDrugs
+                        ? null
+                        : () => _confirmDeleteSelectedDrugs(context),
+                  ),
+                ],
+          addLabel: l10n.pharmacyAddDrugAction,
+          onAdd: () => _openDrugDialog(context),
         ),
-        columns: <AppListTableColumn<PharmacyDrug>>[
-          _selectionColumn<PharmacyDrug>(
-            visibleItems: widget.state.drugs.items,
-            selectedKeys: _selectedDrugIds,
-            isBusy: widget.state.isRefreshingDrugs,
-            itemKey: (PharmacyDrug item) => item.id,
-            onToggle: (PharmacyDrug item, bool selected) {
-              setState(() {
-                if (selected) {
-                  _selectedDrugIds.add(item.id);
-                } else {
+      ),
+      onPageChanged: controller.changeDrugPage,
+      emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+        variant: AppStateViewVariant.empty,
+        title: l10n.pharmacyNoDrugsTitle,
+        body: l10n.pharmacyNoDrugsBody,
+        icon: Icons.medication_outlined,
+      ),
+      columns: <AppListTableColumn<PharmacyDrug>>[
+        _selectionColumn<PharmacyDrug>(
+          visibleItems: widget.state.drugs.items,
+          selectedKeys: _selectedDrugIds,
+          isBusy: widget.state.isRefreshingDrugs,
+          itemKey: (PharmacyDrug item) => item.id,
+          onToggle: (PharmacyDrug item, bool selected) {
+            setState(() {
+              if (selected) {
+                _selectedDrugIds.add(item.id);
+              } else {
+                _selectedDrugIds.remove(item.id);
+              }
+            });
+          },
+          onToggleAll: (List<PharmacyDrug> items, bool selected) {
+            setState(() {
+              if (!selected) {
+                for (final PharmacyDrug item in items) {
                   _selectedDrugIds.remove(item.id);
                 }
-              });
-            },
-            onToggleAll: (List<PharmacyDrug> items, bool selected) {
-              setState(() {
-                if (!selected) {
-                  for (final PharmacyDrug item in items) {
-                    _selectedDrugIds.remove(item.id);
-                  }
-                  return;
-                }
-                for (final PharmacyDrug item in items) {
-                  _selectedDrugIds.add(item.id);
-                }
-              });
-            },
+                return;
+              }
+              for (final PharmacyDrug item in items) {
+                _selectedDrugIds.add(item.id);
+              }
+            });
+          },
+        ),
+        AppListTableColumn<PharmacyDrug>(
+          label: l10n.pharmacyDrugNameLabel,
+          cellBuilder: (_, PharmacyDrug item) => Text(item.displayTitle),
+        ),
+        AppListTableColumn<PharmacyDrug>(
+          label: l10n.pharmacyDrugCodeLabel,
+          cellBuilder: (_, PharmacyDrug item) => Text(item.code ?? ''),
+        ),
+        AppListTableColumn<PharmacyDrug>(
+          label: l10n.pharmacyPharmacyPriceLabel,
+          cellBuilder: (_, PharmacyDrug item) =>
+              Text(_priceText(item.pharmacyUnitPrice ?? item.unitPrice)),
+        ),
+        AppListTableColumn<PharmacyDrug>(
+          label: l10n.pharmacyFacilityPriceLabel,
+          cellBuilder: (_, PharmacyDrug item) =>
+              Text(_priceText(item.facilityUnitPrice)),
+        ),
+        AppListTableColumn<PharmacyDrug>(
+          label: l10n.pharmacyStorageLocationColumnLabel,
+          cellBuilder: (_, PharmacyDrug item) =>
+              Text(item.storageLocationLabel ?? '—'),
+        ),
+        AppListTableColumn<PharmacyDrug>(
+          label: l10n.pharmacyReorderLevelColumnLabel,
+          numeric: true,
+          cellBuilder: (_, PharmacyDrug item) {
+            final num reorderLevel = item.stockRows.isNotEmpty
+                ? item.stockRows.first.reorderLevel
+                : 0;
+            return Text(reorderLevel.toString());
+          },
+        ),
+        AppListTableColumn<PharmacyDrug>(
+          label: l10n.pharmacyStockStatusFilterLabel,
+          cellBuilder: (BuildContext context, PharmacyDrug item) {
+            return AppWorkspaceStatusBadge(
+              status: _stockStatus(context, item.stockStatus),
+            );
+          },
+        ),
+        AppListTableColumn<PharmacyDrug>(
+          label: '',
+          alwaysVisible: true,
+          cellBuilder: (BuildContext context, PharmacyDrug item) {
+            return _catalogRowActions(
+              context: context,
+              writeRequirement: widget.writeRequirement,
+              isBusy: widget.state.isRefreshingDrugs,
+              editLabel: l10n.pharmacyEditDrugAction,
+              deleteLabel: l10n.pharmacyDeleteDrugAction,
+              onEdit: () => _openDrugDialog(context, drug: item),
+              onDelete: () => _confirmDeleteDrug(context, item),
+            );
+          },
+        ),
+      ],
+      mobileItemBuilder: (BuildContext context, PharmacyDrug item) {
+        return ListTile(
+          leading: Checkbox(
+            value: _selectedDrugIds.contains(item.id),
+            onChanged: widget.state.isRefreshingDrugs
+                ? null
+                : (bool? value) {
+                    setState(() {
+                      if (value ?? false) {
+                        _selectedDrugIds.add(item.id);
+                      } else {
+                        _selectedDrugIds.remove(item.id);
+                      }
+                    });
+                  },
+            visualDensity: VisualDensity.compact,
           ),
-          AppListTableColumn<PharmacyDrug>(
-            label: l10n.pharmacyDrugNameLabel,
-            cellBuilder: (_, PharmacyDrug item) => Text(item.displayTitle),
-          ),
-          AppListTableColumn<PharmacyDrug>(
-            label: l10n.pharmacyDrugCodeLabel,
-            cellBuilder: (_, PharmacyDrug item) => Text(item.code ?? ''),
-          ),
-          AppListTableColumn<PharmacyDrug>(
-            label: l10n.pharmacyPharmacyPriceLabel,
-            cellBuilder: (_, PharmacyDrug item) =>
-                Text(_priceText(item.pharmacyUnitPrice ?? item.unitPrice)),
-          ),
-          AppListTableColumn<PharmacyDrug>(
-            label: l10n.pharmacyFacilityPriceLabel,
-            cellBuilder: (_, PharmacyDrug item) =>
-                Text(_priceText(item.facilityUnitPrice)),
-          ),
-          AppListTableColumn<PharmacyDrug>(
-            label: l10n.pharmacyStorageLocationColumnLabel,
-            cellBuilder: (_, PharmacyDrug item) =>
-                Text(item.storageLocationLabel ?? '—'),
-          ),
-          AppListTableColumn<PharmacyDrug>(
-            label: l10n.pharmacyReorderLevelColumnLabel,
-            numeric: true,
-            cellBuilder: (_, PharmacyDrug item) {
-              final num reorderLevel = item.stockRows.isNotEmpty
-                  ? item.stockRows.first.reorderLevel
-                  : 0;
-              return Text(reorderLevel.toString());
-            },
-          ),
-          AppListTableColumn<PharmacyDrug>(
-            label: l10n.pharmacyStockStatusFilterLabel,
-            cellBuilder: (BuildContext context, PharmacyDrug item) {
-              return AppWorkspaceStatusBadge(
-                status: _stockStatus(context, item.stockStatus),
-              );
-            },
-          ),
-          AppListTableColumn<PharmacyDrug>(
-            label: '',
-            alwaysVisible: true,
-            cellBuilder: (BuildContext context, PharmacyDrug item) {
-              return _catalogRowActions(
-                context: context,
-                writeRequirement: widget.writeRequirement,
-                isBusy: widget.state.isRefreshingDrugs,
-                editLabel: l10n.pharmacyEditDrugAction,
-                deleteLabel: l10n.pharmacyDeleteDrugAction,
-                onEdit: () => _openDrugDialog(context, drug: item),
-                onDelete: () => _confirmDeleteDrug(context, item),
-              );
-            },
-          ),
-        ],
-        mobileItemBuilder: (BuildContext context, PharmacyDrug item) {
-          return ListTile(
-            leading: Checkbox(
-              value: _selectedDrugIds.contains(item.id),
-              onChanged: widget.state.isRefreshingDrugs
-                  ? null
-                  : (bool? value) {
-                      setState(() {
-                        if (value ?? false) {
-                          _selectedDrugIds.add(item.id);
-                        } else {
-                          _selectedDrugIds.remove(item.id);
-                        }
-                      });
-                    },
-              visualDensity: VisualDensity.compact,
-            ),
-            title: Text(item.displayTitle),
-            subtitle: Text(item.code ?? ''),
-          );
-        },
+          title: Text(item.displayTitle),
+          subtitle: Text(item.code ?? ''),
+        );
+      },
     );
   }
 
@@ -491,103 +499,101 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
           onAdd: () => _openFormularyDialog(context),
         ),
       ),
-        emptyBuilder: (_) => AppWorkspaceStatePanel.state(
-          variant: AppStateViewVariant.empty,
-          title: l10n.pharmacyNoFormularyTitle,
-          body: l10n.pharmacyNoFormularyBody,
-          icon: Icons.list_alt_outlined,
-        ),
-        columns: <AppListTableColumn<PharmacyFormularyItem>>[
-          _selectionColumn<PharmacyFormularyItem>(
-            visibleItems: widget.state.formularyItems.items,
-            selectedKeys: _selectedFormularyIds,
-            isBusy: isBusy,
-            itemKey: (PharmacyFormularyItem item) => item.id,
-            onToggle: (PharmacyFormularyItem item, bool selected) {
-              setState(() {
-                if (selected) {
-                  _selectedFormularyIds.add(item.id);
-                } else {
+      emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+        variant: AppStateViewVariant.empty,
+        title: l10n.pharmacyNoFormularyTitle,
+        body: l10n.pharmacyNoFormularyBody,
+        icon: Icons.list_alt_outlined,
+      ),
+      columns: <AppListTableColumn<PharmacyFormularyItem>>[
+        _selectionColumn<PharmacyFormularyItem>(
+          visibleItems: widget.state.formularyItems.items,
+          selectedKeys: _selectedFormularyIds,
+          isBusy: isBusy,
+          itemKey: (PharmacyFormularyItem item) => item.id,
+          onToggle: (PharmacyFormularyItem item, bool selected) {
+            setState(() {
+              if (selected) {
+                _selectedFormularyIds.add(item.id);
+              } else {
+                _selectedFormularyIds.remove(item.id);
+              }
+            });
+          },
+          onToggleAll: (List<PharmacyFormularyItem> items, bool selected) {
+            setState(() {
+              if (!selected) {
+                for (final PharmacyFormularyItem item in items) {
                   _selectedFormularyIds.remove(item.id);
                 }
-              });
-            },
-            onToggleAll: (List<PharmacyFormularyItem> items, bool selected) {
-              setState(() {
-                if (!selected) {
-                  for (final PharmacyFormularyItem item in items) {
-                    _selectedFormularyIds.remove(item.id);
-                  }
-                  return;
-                }
-                for (final PharmacyFormularyItem item in items) {
-                  _selectedFormularyIds.add(item.id);
-                }
-              });
-            },
+                return;
+              }
+              for (final PharmacyFormularyItem item in items) {
+                _selectedFormularyIds.add(item.id);
+              }
+            });
+          },
+        ),
+        AppListTableColumn<PharmacyFormularyItem>(
+          label: l10n.pharmacyDrugNameLabel,
+          cellBuilder: (_, PharmacyFormularyItem item) =>
+              Text(item.drugNameLabel ?? '—'),
+        ),
+        AppListTableColumn<PharmacyFormularyItem>(
+          label: l10n.pharmacyFormularyIdLabel,
+          cellBuilder: (_, PharmacyFormularyItem item) =>
+              Text(item.displayId ?? item.id),
+        ),
+        AppListTableColumn<PharmacyFormularyItem>(
+          label: l10n.pharmacyFormularyActiveLabel,
+          cellBuilder: (BuildContext context, PharmacyFormularyItem item) {
+            return AppWorkspaceStatusBadge(
+              status: AppWorkspaceStatus(
+                label: item.isActive ? l10n.commonYesLabel : l10n.commonNoLabel,
+                tone: item.isActive
+                    ? AppWorkspaceStatusTone.success
+                    : AppWorkspaceStatusTone.neutral,
+              ),
+            );
+          },
+        ),
+        AppListTableColumn<PharmacyFormularyItem>(
+          label: '',
+          alwaysVisible: true,
+          cellBuilder: (BuildContext context, PharmacyFormularyItem item) {
+            return _catalogRowActions(
+              context: context,
+              writeRequirement: widget.writeRequirement,
+              isBusy: isBusy,
+              editLabel: l10n.pharmacyEditFormularyAction,
+              deleteLabel: l10n.pharmacyDeleteFormularyAction,
+              onEdit: () => _openFormularyDialog(context, item: item),
+              onDelete: () => _confirmDeleteFormulary(context, item),
+            );
+          },
+        ),
+      ],
+      mobileItemBuilder: (BuildContext context, PharmacyFormularyItem item) {
+        return ListTile(
+          leading: Checkbox(
+            value: _selectedFormularyIds.contains(item.id),
+            onChanged: isBusy
+                ? null
+                : (bool? value) {
+                    setState(() {
+                      if (value ?? false) {
+                        _selectedFormularyIds.add(item.id);
+                      } else {
+                        _selectedFormularyIds.remove(item.id);
+                      }
+                    });
+                  },
+            visualDensity: VisualDensity.compact,
           ),
-          AppListTableColumn<PharmacyFormularyItem>(
-            label: l10n.pharmacyDrugNameLabel,
-            cellBuilder: (_, PharmacyFormularyItem item) =>
-                Text(item.drugNameLabel ?? '—'),
-          ),
-          AppListTableColumn<PharmacyFormularyItem>(
-            label: l10n.pharmacyFormularyIdLabel,
-            cellBuilder: (_, PharmacyFormularyItem item) =>
-                Text(item.displayId ?? item.id),
-          ),
-          AppListTableColumn<PharmacyFormularyItem>(
-            label: l10n.pharmacyFormularyActiveLabel,
-            cellBuilder: (BuildContext context, PharmacyFormularyItem item) {
-              return AppWorkspaceStatusBadge(
-                status: AppWorkspaceStatus(
-                  label: item.isActive
-                      ? l10n.commonYesLabel
-                      : l10n.commonNoLabel,
-                  tone: item.isActive
-                      ? AppWorkspaceStatusTone.success
-                      : AppWorkspaceStatusTone.neutral,
-                ),
-              );
-            },
-          ),
-          AppListTableColumn<PharmacyFormularyItem>(
-            label: '',
-            alwaysVisible: true,
-            cellBuilder: (BuildContext context, PharmacyFormularyItem item) {
-              return _catalogRowActions(
-                context: context,
-                writeRequirement: widget.writeRequirement,
-                isBusy: isBusy,
-                editLabel: l10n.pharmacyEditFormularyAction,
-                deleteLabel: l10n.pharmacyDeleteFormularyAction,
-                onEdit: () => _openFormularyDialog(context, item: item),
-                onDelete: () => _confirmDeleteFormulary(context, item),
-              );
-            },
-          ),
-        ],
-        mobileItemBuilder: (BuildContext context, PharmacyFormularyItem item) {
-          return ListTile(
-            leading: Checkbox(
-              value: _selectedFormularyIds.contains(item.id),
-              onChanged: isBusy
-                  ? null
-                  : (bool? value) {
-                      setState(() {
-                        if (value ?? false) {
-                          _selectedFormularyIds.add(item.id);
-                        } else {
-                          _selectedFormularyIds.remove(item.id);
-                        }
-                      });
-                    },
-              visualDensity: VisualDensity.compact,
-            ),
-            title: Text(item.drugNameLabel ?? item.displayId ?? item.id),
-            subtitle: item.drugCode == null ? null : Text(item.drugCode!),
-          );
-        },
+          title: Text(item.drugNameLabel ?? item.displayId ?? item.id),
+          subtitle: item.drugCode == null ? null : Text(item.drugCode!),
+        );
+      },
     );
   }
 
@@ -743,7 +749,8 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
           success: (PharmacyWorkspaceState value) => value,
           failure: (_) => null,
         );
-    final AppPage<PharmacyDrug> drugsPage = workspaceState?.drugs ??
+    final AppPage<PharmacyDrug> drugsPage =
+        workspaceState?.drugs ??
         const AppPage<PharmacyDrug>(
           items: <PharmacyDrug>[],
           request: AppPageRequest(pageSize: 10),
@@ -950,7 +957,8 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
     );
     final bool isBusy = widget.state.isRefreshingInventory;
 
-    final PharmacyInventoryStockQuery inventoryQuery = widget.state.inventoryQuery;
+    final PharmacyInventoryStockQuery inventoryQuery =
+        widget.state.inventoryQuery;
 
     return AppListTable<PharmacyInventoryStock>(
       page: widget.state.inventoryWorkbench.stocks,
@@ -980,143 +988,144 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
           unawaited(_applyInventoryCatalogFilter(controller, value));
         },
         trailingActions: _selectedInventoryIds.isEmpty
-                ? const <AppSearchBarAction>[]
-                : <AppSearchBarAction>[
-                    AppSearchBarAction(
-                      icon: Icons.delete_outline,
-                      label: l10n.pharmacyClearSelectedInventoryAction,
-                      tooltip: l10n.pharmacyClearSelectedInventoryAction,
-                      destructive: true,
-                      enabled: !isBusy,
-                      onPressed: isBusy
-                          ? null
-                          : () => _confirmClearSelectedInventory(context),
-                    ),
-                  ],
-          ),
-            onPageChanged: controller.changeInventoryPage,
-            emptyBuilder: (_) => AppWorkspaceStatePanel.state(
-              variant: AppStateViewVariant.empty,
-              title: l10n.pharmacyNoInventoryTitle,
-              body: l10n.pharmacyNoInventoryBody,
-              icon: Icons.warehouse_outlined,
-            ),
-            columns: <AppListTableColumn<PharmacyInventoryStock>>[
-              _selectionColumn<PharmacyInventoryStock>(
-                visibleItems: widget.state.inventoryWorkbench.stocks.items,
-                selectedKeys: _selectedInventoryIds,
-                isBusy: isBusy,
-                itemKey: (PharmacyInventoryStock item) => _inventorySelectionKey(item),
-                onToggle: (PharmacyInventoryStock item, bool selected) {
-                  setState(() {
-                    final String key = _inventorySelectionKey(item);
-                    if (selected) {
-                      _selectedInventoryIds.add(key);
-                    } else {
-                      _selectedInventoryIds.remove(key);
-                    }
-                  });
-                },
-                onToggleAll: (List<PharmacyInventoryStock> items, bool selected) {
-                  setState(() {
-                    if (!selected) {
-                      for (final PharmacyInventoryStock item in items) {
-                        _selectedInventoryIds.remove(_inventorySelectionKey(item));
-                      }
-                      return;
-                    }
-                    for (final PharmacyInventoryStock item in items) {
-                      _selectedInventoryIds.add(_inventorySelectionKey(item));
-                    }
-                  });
-                },
-              ),
-              AppListTableColumn<PharmacyInventoryStock>(
-                label: l10n.pharmacyInventoryItemLabel,
-                cellBuilder: (_, PharmacyInventoryStock item) {
-                  return Text(
-                    item.inventoryItem?.displayTitle ?? item.displayId ?? '',
-                  );
-                },
-              ),
-              AppListTableColumn<PharmacyInventoryStock>(
-                label: l10n.pharmacyInventoryQuantityColumnLabel,
-                numeric: true,
-                cellBuilder: (_, PharmacyInventoryStock item) =>
-                    Text(item.quantity.toString()),
-              ),
-              AppListTableColumn<PharmacyInventoryStock>(
-                label: l10n.pharmacyReorderLevelColumnLabel,
-                numeric: true,
-                cellBuilder: (_, PharmacyInventoryStock item) =>
-                    Text(item.reorderLevel.toString()),
-              ),
-              AppListTableColumn<PharmacyInventoryStock>(
-                label: l10n.pharmacyStorageLocationColumnLabel,
-                cellBuilder: (_, PharmacyInventoryStock item) =>
-                    Text(item.storageLocationLabel ?? '—'),
-              ),
-              AppListTableColumn<PharmacyInventoryStock>(
-                label: l10n.pharmacyNextExpiryColumnLabel,
-                cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
-                  return _expiryCell(context, item);
-                },
-              ),
-              AppListTableColumn<PharmacyInventoryStock>(
-                label: l10n.pharmacyBatchCountColumnLabel,
-                numeric: true,
-                cellBuilder: (_, PharmacyInventoryStock item) =>
-                    Text(item.batchCount.toString()),
-              ),
-              AppListTableColumn<PharmacyInventoryStock>(
-                label: l10n.pharmacyStockStatusFilterLabel,
-                cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
-                  return AppWorkspaceStatusBadge(
-                    status: _stockStatus(context, item.stockStatus),
-                  );
-                },
-              ),
-              AppListTableColumn<PharmacyInventoryStock>(
-                label: '',
-                alwaysVisible: true,
-                cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
-                  return _catalogRowActions(
-                    context: context,
-                    writeRequirement: widget.writeRequirement,
-                    isBusy: isBusy,
-                    editLabel: l10n.pharmacyAdjustStockAction,
-                    deleteLabel: l10n.pharmacyDeleteInventoryStockAction,
-                    onEdit: () => _openAdjustDialog(context, item),
-                    onDelete: () => _confirmClearInventoryStock(context, item),
-                  );
-                },
-              ),
-            ],
-            mobileItemBuilder: (BuildContext context, PharmacyInventoryStock item) {
-              final String selectionKey = _inventorySelectionKey(item);
-              return ListTile(
-                leading: Checkbox(
-                  value: _selectedInventoryIds.contains(selectionKey),
-                  onChanged: isBusy
+            ? const <AppSearchBarAction>[]
+            : <AppSearchBarAction>[
+                AppSearchBarAction(
+                  icon: Icons.delete_outline,
+                  label: l10n.pharmacyClearSelectedInventoryAction,
+                  tooltip: l10n.pharmacyClearSelectedInventoryAction,
+                  destructive: true,
+                  enabled: !isBusy,
+                  onPressed: isBusy
                       ? null
-                      : (bool? value) {
-                          setState(() {
-                            if (value ?? false) {
-                              _selectedInventoryIds.add(selectionKey);
-                            } else {
-                              _selectedInventoryIds.remove(selectionKey);
-                            }
-                          });
-                        },
-                  visualDensity: VisualDensity.compact,
+                      : () => _confirmClearSelectedInventory(context),
                 ),
-                title: Text(item.inventoryItem?.displayTitle ?? ''),
-                subtitle: Text(
-                  '${item.quantity} · ${l10n.pharmacyReorderLevelColumnLabel}: ${item.reorderLevel}',
-                ),
-                trailing: _expiryCell(context, item),
-              );
-            },
+              ],
+      ),
+      onPageChanged: controller.changeInventoryPage,
+      emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+        variant: AppStateViewVariant.empty,
+        title: l10n.pharmacyNoInventoryTitle,
+        body: l10n.pharmacyNoInventoryBody,
+        icon: Icons.warehouse_outlined,
+      ),
+      columns: <AppListTableColumn<PharmacyInventoryStock>>[
+        _selectionColumn<PharmacyInventoryStock>(
+          visibleItems: widget.state.inventoryWorkbench.stocks.items,
+          selectedKeys: _selectedInventoryIds,
+          isBusy: isBusy,
+          itemKey: (PharmacyInventoryStock item) =>
+              _inventorySelectionKey(item),
+          onToggle: (PharmacyInventoryStock item, bool selected) {
+            setState(() {
+              final String key = _inventorySelectionKey(item);
+              if (selected) {
+                _selectedInventoryIds.add(key);
+              } else {
+                _selectedInventoryIds.remove(key);
+              }
+            });
+          },
+          onToggleAll: (List<PharmacyInventoryStock> items, bool selected) {
+            setState(() {
+              if (!selected) {
+                for (final PharmacyInventoryStock item in items) {
+                  _selectedInventoryIds.remove(_inventorySelectionKey(item));
+                }
+                return;
+              }
+              for (final PharmacyInventoryStock item in items) {
+                _selectedInventoryIds.add(_inventorySelectionKey(item));
+              }
+            });
+          },
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          label: l10n.pharmacyInventoryItemLabel,
+          cellBuilder: (_, PharmacyInventoryStock item) {
+            return Text(
+              item.inventoryItem?.displayTitle ?? item.displayId ?? '',
+            );
+          },
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          label: l10n.pharmacyInventoryQuantityColumnLabel,
+          numeric: true,
+          cellBuilder: (_, PharmacyInventoryStock item) =>
+              Text(item.quantity.toString()),
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          label: l10n.pharmacyReorderLevelColumnLabel,
+          numeric: true,
+          cellBuilder: (_, PharmacyInventoryStock item) =>
+              Text(item.reorderLevel.toString()),
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          label: l10n.pharmacyStorageLocationColumnLabel,
+          cellBuilder: (_, PharmacyInventoryStock item) =>
+              Text(item.storageLocationLabel ?? '—'),
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          label: l10n.pharmacyNextExpiryColumnLabel,
+          cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
+            return _expiryCell(context, item);
+          },
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          label: l10n.pharmacyBatchCountColumnLabel,
+          numeric: true,
+          cellBuilder: (_, PharmacyInventoryStock item) =>
+              Text(item.batchCount.toString()),
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          label: l10n.pharmacyStockStatusFilterLabel,
+          cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
+            return AppWorkspaceStatusBadge(
+              status: _stockStatus(context, item.stockStatus),
+            );
+          },
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          label: '',
+          alwaysVisible: true,
+          cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
+            return _catalogRowActions(
+              context: context,
+              writeRequirement: widget.writeRequirement,
+              isBusy: isBusy,
+              editLabel: l10n.pharmacyAdjustStockAction,
+              deleteLabel: l10n.pharmacyDeleteInventoryStockAction,
+              onEdit: () => _openAdjustDialog(context, item),
+              onDelete: () => _confirmClearInventoryStock(context, item),
+            );
+          },
+        ),
+      ],
+      mobileItemBuilder: (BuildContext context, PharmacyInventoryStock item) {
+        final String selectionKey = _inventorySelectionKey(item);
+        return ListTile(
+          leading: Checkbox(
+            value: _selectedInventoryIds.contains(selectionKey),
+            onChanged: isBusy
+                ? null
+                : (bool? value) {
+                    setState(() {
+                      if (value ?? false) {
+                        _selectedInventoryIds.add(selectionKey);
+                      } else {
+                        _selectedInventoryIds.remove(selectionKey);
+                      }
+                    });
+                  },
+            visualDensity: VisualDensity.compact,
+          ),
+          title: Text(item.inventoryItem?.displayTitle ?? ''),
+          subtitle: Text(
+            '${item.quantity} · ${l10n.pharmacyReorderLevelColumnLabel}: ${item.reorderLevel}',
+          ),
+          trailing: _expiryCell(context, item),
+        );
+      },
     );
   }
 
@@ -1205,7 +1214,9 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
     bool showFailureSnackBar = true,
   }) async {
     if (stock.quantity <= 0) {
-      setState(() => _selectedInventoryIds.remove(_inventorySelectionKey(stock)));
+      setState(
+        () => _selectedInventoryIds.remove(_inventorySelectionKey(stock)),
+      );
       return;
     }
     final AppFailure? failure = await ref
@@ -1213,9 +1224,7 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
         .adjustInventoryStock(
           PharmacyInventoryAdjustInput(
             inventoryItemId:
-                stock.inventoryItemId ??
-                stock.inventoryItem?.id ??
-                stock.id,
+                stock.inventoryItemId ?? stock.inventoryItem?.id ?? stock.id,
             quantityDelta: -stock.quantity.toInt(),
             reason: 'DAMAGE',
             facilityId: stock.facilityId,
@@ -1225,12 +1234,16 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
       return;
     }
     if (failure == null) {
-      setState(() => _selectedInventoryIds.remove(_inventorySelectionKey(stock)));
+      setState(
+        () => _selectedInventoryIds.remove(_inventorySelectionKey(stock)),
+      );
       return;
     }
     if (showFailureSnackBar) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.pharmacyCatalogDeleteFailedMessage)),
+        SnackBar(
+          content: Text(context.l10n.pharmacyCatalogDeleteFailedMessage),
+        ),
       );
     }
   }
@@ -1296,7 +1309,8 @@ class _InventoryAdjustDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final PharmacyStorageLayout storageLayout = ref
+    final PharmacyStorageLayout storageLayout =
+        ref
             .watch(pharmacyWorkspaceControllerProvider)
             .value
             ?.when(
@@ -1364,7 +1378,8 @@ class _InventoryAdjustDialogState
               invalidDateMessage: l10n.pharmacyExpiryDateLabel,
               firstDate: DateTime(2000),
               lastDate: DateTime(2100),
-              onChanged: (DateTime? value) => setState(() => _expiryDate = value),
+              onChanged: (DateTime? value) =>
+                  setState(() => _expiryDate = value),
             ),
             if (activeRooms.isNotEmpty)
               AppResponsiveFieldRow.two(
@@ -1384,18 +1399,11 @@ class _InventoryAdjustDialogState
                   onChanged: (String? value) {
                     setState(() {
                       _storageRoomId = value;
-                      final List<PharmacyStorageShelf> nextShelves =
-                          activeRooms
-                              .where(
-                                (PharmacyStorageRoom room) => room.id == value,
-                              )
-                              .expand(
-                                (PharmacyStorageRoom room) => room.shelves,
-                              )
-                              .where(
-                                (PharmacyStorageShelf shelf) => shelf.isActive,
-                              )
-                              .toList(growable: false);
+                      final List<PharmacyStorageShelf> nextShelves = activeRooms
+                          .where((PharmacyStorageRoom room) => room.id == value)
+                          .expand((PharmacyStorageRoom room) => room.shelves)
+                          .where((PharmacyStorageShelf shelf) => shelf.isActive)
+                          .toList(growable: false);
                       if (_storageShelfId != null &&
                           !nextShelves.any(
                             (PharmacyStorageShelf shelf) =>
@@ -1500,9 +1508,7 @@ AppListTableColumn<T> _selectionColumn<T>({
 }) {
   final bool allSelected =
       visibleItems.isNotEmpty &&
-      visibleItems.every(
-        (T item) => selectedKeys.contains(itemKey(item)),
-      );
+      visibleItems.every((T item) => selectedKeys.contains(itemKey(item)));
   final bool someSelected = visibleItems.any(
     (T item) => selectedKeys.contains(itemKey(item)),
   );
@@ -1709,8 +1715,10 @@ List<AppSearchBarFilterGroup> _storageLocationFilterGroups({
   ];
 
   if (storageRoomId != null) {
-    final List<PharmacyStorageShelf> shelves =
-        _shelfOptionsForRoom(layout, storageRoomId);
+    final List<PharmacyStorageShelf> shelves = _shelfOptionsForRoom(
+      layout,
+      storageRoomId,
+    );
     if (shelves.isNotEmpty) {
       groups.add(
         AppSearchBarFilterGroup(
@@ -1853,11 +1861,12 @@ AppSearchBarFilterValue _catalogStorageFilterValue({
 }
 
 AppSearchBarFilterValue _drugCatalogFilterValue(PharmacyDrugQuery query) {
-  final Map<String, String> options =
-      Map<String, String>.from(_catalogStorageFilterValue(
-    storageRoomId: query.storageRoomId,
-    storageShelfId: query.storageShelfId,
-  ).options);
+  final Map<String, String> options = Map<String, String>.from(
+    _catalogStorageFilterValue(
+      storageRoomId: query.storageRoomId,
+      storageShelfId: query.storageShelfId,
+    ).options,
+  );
   if (query.stockStatus != null && query.stockStatus!.isNotEmpty) {
     options[_drugStockStatusFilterKey] = query.stockStatus!;
   }
@@ -1883,11 +1892,12 @@ AppSearchBarFilterValue _formularyCatalogFilterValue(
 AppSearchBarFilterValue _inventoryCatalogFilterValue(
   PharmacyInventoryStockQuery query,
 ) {
-  final Map<String, String> options =
-      Map<String, String>.from(_catalogStorageFilterValue(
-    storageRoomId: query.storageRoomId,
-    storageShelfId: query.storageShelfId,
-  ).options);
+  final Map<String, String> options = Map<String, String>.from(
+    _catalogStorageFilterValue(
+      storageRoomId: query.storageRoomId,
+      storageShelfId: query.storageShelfId,
+    ).options,
+  );
 
   final String? stockChoice;
   if (query.lowStockOnly) {

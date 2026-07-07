@@ -165,10 +165,12 @@ final class PharmacyInventoryStockQuery {
           ? null
           : expiringWithinDays ?? this.expiringWithinDays,
       expiredOnly: expiredOnly ?? this.expiredOnly,
-      storageRoomId:
-          clearStorageRoomId ? null : storageRoomId ?? this.storageRoomId,
-      storageShelfId:
-          clearStorageShelfId ? null : storageShelfId ?? this.storageShelfId,
+      storageRoomId: clearStorageRoomId
+          ? null
+          : storageRoomId ?? this.storageRoomId,
+      storageShelfId: clearStorageShelfId
+          ? null
+          : storageShelfId ?? this.storageShelfId,
       facilityId: clearFacilityId ? null : facilityId ?? this.facilityId,
       inventoryItemId: clearInventoryItemId
           ? null
@@ -182,9 +184,8 @@ final class PharmacyInventoryStockQuery {
       PharmacyInventoryFilter.lowStock => const PharmacyInventoryStockQuery(
         lowStockOnly: true,
       ),
-      PharmacyInventoryFilter.almostOutOfStock => const PharmacyInventoryStockQuery(
-        stockStatus: 'ALMOST_OUT_OF_STOCK',
-      ),
+      PharmacyInventoryFilter.almostOutOfStock =>
+        const PharmacyInventoryStockQuery(stockStatus: 'ALMOST_OUT_OF_STOCK'),
       PharmacyInventoryFilter.expiringSoon => const PharmacyInventoryStockQuery(
         expiringWithinDays: 30,
       ),
@@ -329,7 +330,8 @@ final class PharmacyDrugInput {
         'batch_number': batchNumber!.trim(),
       if (manufacturedAt != null)
         'manufactured_at': manufacturedAt!.toUtc().toIso8601String(),
-      if (expiryDate != null) 'expiry_date': expiryDate!.toUtc().toIso8601String(),
+      if (expiryDate != null)
+        'expiry_date': expiryDate!.toUtc().toIso8601String(),
       if (expiryAlertLeadDays != null)
         'expiry_alert_lead_days': expiryAlertLeadDays,
       if (storageRoomId != null) 'storage_room_id': storageRoomId,
@@ -464,7 +466,8 @@ final class PharmacyInventoryAdjustInput {
         'batch_number': batchNumber!.trim(),
       if (manufacturedAt != null)
         'manufactured_at': manufacturedAt!.toUtc().toIso8601String(),
-      if (expiryDate != null) 'expiry_date': expiryDate!.toUtc().toIso8601String(),
+      if (expiryDate != null)
+        'expiry_date': expiryDate!.toUtc().toIso8601String(),
       if (expiryAlertLeadDays != null)
         'expiry_alert_lead_days': expiryAlertLeadDays,
       if (drugId != null) 'drug_id': drugId,
@@ -538,7 +541,9 @@ final class PharmacyWorkbenchQuery {
       pendingPayment: clearPendingPayment
           ? null
           : pendingPayment ?? this.pendingPayment,
-      partialStock: clearPartialStock ? null : partialStock ?? this.partialStock,
+      partialStock: clearPartialStock
+          ? null
+          : partialStock ?? this.partialStock,
       urgent: clearUrgent ? null : urgent ?? this.urgent,
       priority: clearPriority ? null : priority ?? this.priority,
       from: clearFrom ? null : from ?? this.from,
@@ -577,9 +582,7 @@ final class PharmacyWorkbenchQuery {
       PharmacyOrderFilter.partialStock => const PharmacyWorkbenchQuery(
         partialStock: true,
       ),
-      PharmacyOrderFilter.urgent => const PharmacyWorkbenchQuery(
-        urgent: true,
-      ),
+      PharmacyOrderFilter.urgent => const PharmacyWorkbenchQuery(urgent: true),
     };
   }
 }
@@ -637,10 +640,12 @@ final class PharmacyDrugQuery {
       form: clearForm ? null : form ?? this.form,
       strength: clearStrength ? null : strength ?? this.strength,
       stockStatus: clearStockStatus ? null : stockStatus ?? this.stockStatus,
-      storageRoomId:
-          clearStorageRoomId ? null : storageRoomId ?? this.storageRoomId,
-      storageShelfId:
-          clearStorageShelfId ? null : storageShelfId ?? this.storageShelfId,
+      storageRoomId: clearStorageRoomId
+          ? null
+          : storageRoomId ?? this.storageRoomId,
+      storageShelfId: clearStorageShelfId
+          ? null
+          : storageShelfId ?? this.storageShelfId,
       facilityId: clearFacilityId ? null : facilityId ?? this.facilityId,
       pageRequest: pageRequest ?? this.pageRequest,
     );

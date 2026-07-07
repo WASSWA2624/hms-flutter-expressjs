@@ -723,11 +723,8 @@ void main() {
   ) async {
     final List<_RowItem> manyItems = List<_RowItem>.generate(
       10,
-      (int index) => _RowItem(
-        id: 'item-$index',
-        title: 'Item $index',
-        status: 'Active',
-      ),
+      (int index) =>
+          _RowItem(id: 'item-$index', title: 'Item $index', status: 'Active'),
     );
 
     await pumpComponent(

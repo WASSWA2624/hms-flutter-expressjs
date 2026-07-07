@@ -303,8 +303,8 @@ void main() {
       const Size viewport = Size(1000, 700);
       const AppDesignTokens designTokens = AppDesignTokens.standard;
       final double inset = designTokens.dialogInsetTablet;
-      final double maxHeight = viewport.height - (inset * 2) -
-          designTokens.dialogSnackBarClearance;
+      final double maxHeight =
+          viewport.height - (inset * 2) - designTokens.dialogSnackBarClearance;
       final double expectedHeight = (maxHeight * 0.75).clamp(
         designTokens.dialogMinHeight,
         maxHeight,
@@ -351,76 +351,77 @@ void main() {
     },
   );
 
-  testWidgets('maximized dialog fills viewport on mobile and workspace on tablet', (
-    WidgetTester tester,
-  ) async {
-    const AppDesignTokens designTokens = AppDesignTokens.standard;
+  testWidgets(
+    'maximized dialog fills viewport on mobile and workspace on tablet',
+    (WidgetTester tester) async {
+      const AppDesignTokens designTokens = AppDesignTokens.standard;
 
-    for (final ({Size viewport, AppBreakpoint breakpoint, bool fillsViewport})
-        config
-        in <({Size viewport, AppBreakpoint breakpoint, bool fillsViewport})>[
-          (
-            viewport: const Size(400, 700),
-            breakpoint: AppBreakpoint.sm,
-            fillsViewport: true,
-          ),
-          (
-            viewport: const Size(800, 700),
-            breakpoint: AppBreakpoint.md,
-            fillsViewport: false,
-          ),
-        ]) {
-      final Size expectedMaximizedSize = AppDialogInsets.availableSizeFor(
-        config.viewport,
-        config.breakpoint,
-        designTokens: designTokens,
-        maximized: true,
-      );
+      for (final ({Size viewport, AppBreakpoint breakpoint, bool fillsViewport})
+          config
+          in <({Size viewport, AppBreakpoint breakpoint, bool fillsViewport})>[
+            (
+              viewport: const Size(400, 700),
+              breakpoint: AppBreakpoint.sm,
+              fillsViewport: true,
+            ),
+            (
+              viewport: const Size(800, 700),
+              breakpoint: AppBreakpoint.md,
+              fillsViewport: false,
+            ),
+          ]) {
+        final Size expectedMaximizedSize = AppDialogInsets.availableSizeFor(
+          config.viewport,
+          config.breakpoint,
+          designTokens: designTokens,
+          maximized: true,
+        );
 
-      await pumpComponent(
-        tester,
-        Builder(
-          builder: (BuildContext context) {
-            return TextButton(
-              onPressed: () {
-                unawaited(
-                  showAppDialog<void>(
-                    context: context,
-                    builder: (_) => const AppDialog(
-                      title: Text('Maximized form'),
-                      content: SizedBox(
-                        height: 120,
-                        child: Text('Dialog body'),
+        await pumpComponent(
+          tester,
+          Builder(
+            builder: (BuildContext context) {
+              return TextButton(
+                onPressed: () {
+                  unawaited(
+                    showAppDialog<void>(
+                      context: context,
+                      builder: (_) => const AppDialog(
+                        title: Text('Maximized form'),
+                        content: SizedBox(
+                          height: 120,
+                          child: Text('Dialog body'),
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
-              child: const Text('Open dialog'),
-            );
-          },
-        ),
-        size: config.viewport,
-      );
+                  );
+                },
+                child: const Text('Open dialog'),
+              );
+            },
+          ),
+          size: config.viewport,
+        );
 
-      await tester.tap(find.text('Open dialog'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Open dialog'));
+        await tester.pumpAndSettle();
 
-      final RenderBox shell = _dialogShellRenderBox(tester);
-      expect(shell.size.width, closeTo(expectedMaximizedSize.width, 1));
-      expect(shell.size.height, closeTo(expectedMaximizedSize.height, 1));
-      if (config.fillsViewport) {
-        expect(shell.size.width, closeTo(config.viewport.width, 1));
-        expect(shell.size.height, closeTo(config.viewport.height, 1));
-      } else {
-        expect(shell.size.height, lessThan(config.viewport.height));
+        final RenderBox shell = _dialogShellRenderBox(tester);
+        expect(shell.size.width, closeTo(expectedMaximizedSize.width, 1));
+        expect(shell.size.height, closeTo(expectedMaximizedSize.height, 1));
+        if (config.fillsViewport) {
+          expect(shell.size.width, closeTo(config.viewport.width, 1));
+          expect(shell.size.height, closeTo(config.viewport.height, 1));
+        } else {
+          expect(shell.size.height, lessThan(config.viewport.height));
+        }
+
+        await tester.binding.setSurfaceSize(null);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
       }
-
-      await tester.binding.setSurfaceSize(null);
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
-    }
-  });
+    },
+  );
 
   testWidgets('desktop corner resize updates shell size', (
     WidgetTester tester,

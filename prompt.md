@@ -1,94 +1,94 @@
-# Task: Fix Pharmacy "Catalog and stock" dialog + default queue filter
+# Pharmacy — Catalog and Stock Dialog Bug Fix
 
-## Goal
+## Objective
 
-On the Pharmacy workspace (`/pharmacy`), fix two issues:
+Fix a **modal lifecycle bug** on the Pharmacy workbench (`/pharmacy`): clicking **Catalog and stock** leaves the page unresponsive. The dialog does not appear, dismissal leaves a blank white screen, and only a full page refresh restores interactivity.
 
-1. **Catalog and stock dialog** — clicking the toolbar button must reliably open the dialog; the page must not become inactive with no visible dialog.
-2. **Default queue filter** — the worklist should load with **All fields** (no status filter) instead of **Ready**, so all pharmacy orders are shown by default.
+---
 
-## Observed behavior (from screenshots)
+## Bug Report
 
-| Issue | What happens |
-|-------|----------------|
-| Catalog dialog | Clicking **Catalog and stock** dims/blocks the page (modal barrier) but the dialog does not appear. A full page refresh restores interactivity; the dialog may work again after refresh. |
-| Queue filter | **Queue filter → Queue status** defaults to **Ready**. With no matching orders, the table shows the empty state (*"No pharmacy orders"*). User expects **All fields** so the full queue is visible on first load. |
+### Environment
 
-## Target files
+| Item | Value |
+| ---- | ----- |
+| Module | Pharmacy |
+| Route | `/pharmacy` |
+| Platform | Web (reproduced at `127.0.0.1:5201/pharmacy`) |
+| Trigger | Header action **Catalog and stock** (`pharmacyCatalogPanelTitle`) |
 
-**Catalog dialog fix (shared + pharmacy):**
+### Steps to reproduce
 
-- `frontend/lib/shared/components/app_dialog.dart` — dialog shell, `showAppDialog`, sizing/visibility
-- `frontend/lib/shared/layout/app_dialog_insets.dart` — inset/sizing for normal and maximized modes
-- `frontend/lib/features/pharmacy/presentation/pharmacy_catalog_dialog.dart` — `openPharmacyCatalogDialog`
-- `frontend/lib/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart` — `prepareCatalogTab` / catalog data refresh
+1. Open the Pharmacy workbench with at least one order visible in the queue table.
+2. Click **Catalog and stock** in the workspace toolbar (overflow section or promoted inline action).
+3. Observe the page.
 
-**Default filter fix (pharmacy):**
+### Actual behavior
 
-- `frontend/lib/features/pharmacy/domain/entities/pharmacy_entities.dart` — `PharmacyWorkbenchQuery` default, `isDefaultFilters`, `fromChip`
-- `frontend/lib/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart` — `_loadInitialState`
-- `frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart` — `_pharmacyFilterValue`, `_pharmacyQueryFromFilterValue`, filter UI wiring
+1. The underlying workbench becomes **inactive** (modal barrier / focus trap engages).
+2. The **Catalog and stock** dialog (`AppDialog` titled "Catalog and stock") **does not render**.
+3. Pressing **Escape** removes the dimmed overlay but the page turns **white** and remains **non-interactive**.
+4. A **full browser refresh** is required to restore the workspace.
 
-## Root-cause hints
+### Expected behavior
 
-### Catalog dialog
+1. **Catalog and stock** opens an `AppDialog` containing `PharmacyCatalogPanel` (drugs, formulary, inventory, storage tabs).
+2. The dialog is visible, scrollable, and closable via the close button, Escape, or barrier tap.
+3. After dismissal, the Pharmacy workbench is fully interactive with no orphaned route or barrier.
+4. The same fix applies to related entry points that call `openPharmacyCatalogDialog` (e.g. inventory summary alerts, storage tab shortcut).
 
-- `openPharmacyCatalogDialog` calls `showAppDialog` with `AppDialog(initialMaximized: false, maxWidth: 1080)`.
-- If controller state is null, a loading `AppDialog` is shown; if state never resolves or the dialog is sized/positioned off-screen or behind the barrier, the user sees only an inactive page.
-- Investigate whether a failed/pending `pharmacyWorkspaceControllerProvider` state, dialog layout (insets, zero size, off-viewport position), or focus/barrier handling prevents the dialog from rendering.
-- Fix at the **shared dialog layer** where possible; avoid one-off pharmacy patches unless the bug is pharmacy-specific.
+---
 
-### Default filter
+## Relevant Code
 
-- `PharmacyWorkbenchQuery()` currently defaults to `status: 'ORDERED'`, which maps to **Ready** in the queue filter UI.
-- `PharmacyOrderFilter.all` correctly uses `status: null` (all statuses).
-- `_pharmacyQueryFromFilterValue` falls back with `status: status ?? 'ORDERED'`, which can re-apply **Ready** when clearing filters — align this with **All fields** semantics (`status: null`).
-- Update `isDefaultFilters` so the new unfiltered default is not treated as an active filter.
+| File | Role |
+| ---- | ---- |
+| `frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart` | Toolbar action invokes `openPharmacyCatalogDialog` |
+| `frontend/lib/features/pharmacy/presentation/pharmacy_catalog_dialog.dart` | `showAppDialog` + `AppDialog` + `Consumer` wrapper |
+| `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart` | Dialog body |
+| `frontend/lib/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart` | `prepareCatalogTab` / catalog data refresh |
+| `frontend/lib/shared/components/app_dialog.dart` | `AppDialog`, `showAppDialog` (focus restore, barrier) |
 
-## Expected behavior
+**Likely failure modes to investigate:**
 
-### Catalog and stock
+- Dialog route pushed but content fails to build (silent widget error or zero-size shell).
+- `prepareCatalogTab` triggering a controller emit/refresh that disposes or rebuilds the dialog host before first frame.
+- `Consumer` inside `showAppDialog` losing provider scope or context on web.
+- Escape/barrier popping the route without cleaning up barrier or focus state (orphaned `ModalRoute`).
+- Mismatch between `initialMaximized: false`, `scrollable: true`, and desktop shell height (see existing `app_dialog_test.dart` catalog scenario).
 
-- Clicking **Catalog and stock** (toolbar or overflow menu) always opens a visible, interactive **Catalog and stock** dialog.
-- The modal barrier appears **with** the dialog; closing the dialog or pressing Escape restores page interactivity.
-- Dialog works on first visit without requiring a page refresh.
-- Existing catalog tabs (drugs, inventory, storage) and maximize/resize/close behavior remain intact.
+---
 
-### Queue filter default
+## Fix Requirements
 
-- On initial Pharmacy page load, **Queue status** shows **All fields** (no status chip selected).
-- The worklist query uses `status: null` and returns orders across all statuses (subject only to search/pagination).
-- **Clear filters** resets queue status to **All fields**, not **Ready**.
-- Quick-filter chips (e.g. summary notifications for Ready, Partial) still apply their specific filters when clicked.
-- `hasActiveFilters` is `false` for the new default state.
+1. **Root cause** — Identify and fix why the catalog dialog does not render while the modal barrier activates.
+2. **Clean dismissal** — Escape, close button, and barrier tap must fully pop the dialog and restore workbench interactivity.
+3. **No regressions** — Preserve modal-first pattern per [prompts/18-pharmacy-module-prompt.md](prompts/18-pharmacy-module-prompt.md); do not navigate to a new route for catalog/stock.
+4. **All entry points** — Verify toolbar button, overflow **Storage** shortcut, and inventory alert shortcuts.
+5. **Responsive** — Dialog works on mobile, tablet, and desktop breakpoints.
 
-## Implementation constraints
+---
 
-- Preserve responsive behavior on mobile, tablet, and desktop.
-- Reuse existing `AppSearchBarFilterGroup` / **All fields** pattern (`l10n.opdAllFieldsFilterLabel`) — do not introduce duplicate labels.
-- Do not change backend API contracts; this is a frontend default/query-mapping fix.
-- Keep **Ready** available as an explicit filter option; only change the **initial/default** filter.
+## Acceptance Criteria
 
-## Acceptance criteria
+- [ ] Clicking **Catalog and stock** shows the dialog with title, tabs, and content.
+- [ ] Dialog can be closed by close button, Escape, and barrier tap; workbench is immediately usable.
+- [ ] No white-screen or frozen state after open or dismiss.
+- [ ] No full-page refresh needed to recover.
+- [ ] Existing `app_dialog_test.dart` scenarios pass; add a widget test for `openPharmacyCatalogDialog` if none exists.
 
-- [ ] **Catalog and stock** opens reliably on first click without a page refresh.
-- [ ] No invisible modal barrier — dialog is always visible and dismissible.
-- [ ] Pharmacy worklist loads with **All fields** queue status on first visit.
-- [ ] Empty state appears only when no orders match the current search/filter, not because **Ready** is pre-selected.
-- [ ] Clear filters resets to **All fields** for queue status.
-- [ ] Existing pharmacy and dialog tests pass; add/update tests for default query and dialog open behavior where practical.
+---
 
-## Verification
+## Quality Gate
+
+From `frontend/`:
 
 ```bash
-cd frontend
-flutter test test/shared/components/app_dialog_test.dart test/shared/layout/app_dialog_insets_test.dart
+flutter pub get
+dart format --set-exit-if-changed .
+flutter analyze
+flutter test test/shared/components/app_dialog_test.dart
+flutter test test/features/pharmacy/
 ```
 
-**Manual checks (desktop web, `http://127.0.0.1:5201/pharmacy`):**
-
-1. Navigate to Pharmacy without refreshing — click **Catalog and stock** → dialog appears and is usable.
-2. Close dialog → page remains interactive.
-3. Open **Queue filter** → **Queue status** shows **All fields** on first load.
-4. Confirm orders from multiple statuses appear (if data exists).
-5. Select **Ready**, then **Clear filters** → status returns to **All fields**, not **Ready**.
+Manual smoke test on web at `/pharmacy`: open dialog → interact with a tab → close → confirm queue table remains clickable.

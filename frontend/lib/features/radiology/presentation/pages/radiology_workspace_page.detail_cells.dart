@@ -400,9 +400,7 @@ Widget _radiologyWorklistTextCell(BuildContext context, String? value) {
 }
 
 String _radiologyStudyLabel(RadiologyOrder item, AppLocalizations l10n) {
-  return item.testsSummary ??
-      item.testDisplayName ??
-      l10n.profileUnknownValue;
+  return item.testsSummary ?? item.testDisplayName ?? l10n.profileUnknownValue;
 }
 
 AppSearchBarFilterValue _radiologyFilterValue(RadiologyWorkspaceQuery query) {
@@ -550,7 +548,9 @@ AppWorkspaceStatusTone _billingGateTone(RadiologyOrder order) {
     return AppWorkspaceStatusTone.warning;
   }
 
-  final String payment = (order.effectivePaymentStatus ?? '').trim().toUpperCase();
+  final String payment = (order.effectivePaymentStatus ?? '')
+      .trim()
+      .toUpperCase();
   return switch (payment) {
     'PAID' || 'CONFIRMED' => AppWorkspaceStatusTone.success,
     'PARTIAL' || 'UNPAID' || 'AWAITING' => AppWorkspaceStatusTone.warning,

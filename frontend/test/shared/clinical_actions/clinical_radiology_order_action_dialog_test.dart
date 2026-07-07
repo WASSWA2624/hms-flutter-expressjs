@@ -17,15 +17,11 @@ const List<ClinicalActionCatalogOption> _radiologyCatalogFixtures =
         code: 'CT-CHEST',
         category: 'CT',
         searchText: 'ct chest thorax',
-        metadata: <String, Object?>{
-          'modality': 'CT',
-          'body_region': 'Chest',
-        },
+        metadata: <String, Object?>{'modality': 'CT', 'body_region': 'Chest'},
       ),
     ];
 
-Future<Result<List<ClinicalActionCatalogOption>>>
-_mockSearchRadiologyTests({
+Future<Result<List<ClinicalActionCatalogOption>>> _mockSearchRadiologyTests({
   required String termType,
   String? query,
   int? limit,
@@ -39,49 +35,49 @@ _mockSearchRadiologyTests({
   }
   final List<ClinicalActionCatalogOption> matches = _radiologyCatalogFixtures
       .where(
-        (ClinicalActionCatalogOption option) => (option.name ?? '')
-            .toLowerCase()
-            .contains(normalized),
+        (ClinicalActionCatalogOption option) =>
+            (option.name ?? '').toLowerCase().contains(normalized),
       )
       .toList(growable: false);
   return Result<List<ClinicalActionCatalogOption>>.success(matches);
 }
 
 void main() {
-  testWidgets('radiology order dialog shows patient context and selected table', (
-    WidgetTester tester,
-  ) async {
-    await _pumpDialog(
-      tester,
-      ClinicalRadiologyOrderActionDialog(
-        referenceData: const ClinicalActionReferenceData(
-          radiologyTests: _radiologyCatalogFixtures,
+  testWidgets(
+    'radiology order dialog shows patient context and selected table',
+    (WidgetTester tester) async {
+      await _pumpDialog(
+        tester,
+        ClinicalRadiologyOrderActionDialog(
+          referenceData: const ClinicalActionReferenceData(
+            radiologyTests: _radiologyCatalogFixtures,
+          ),
+          patientContext: const ClinicalRequestPatientContext(
+            patientName: 'Jane Doe',
+            patientId: 'PAT-001',
+            encounterId: 'ENC-42',
+          ),
+          onSearchRadiologyTests: _mockSearchRadiologyTests,
+          onSubmit:
+              ({
+                required List<ClinicalActionRadiologyRequest> requests,
+                ClinicalRequestBillingSubmit? billing,
+              }) async {
+                return null;
+              },
         ),
-        patientContext: const ClinicalRequestPatientContext(
-          patientName: 'Jane Doe',
-          patientId: 'PAT-001',
-          encounterId: 'ENC-42',
-        ),
-        onSearchRadiologyTests: _mockSearchRadiologyTests,
-        onSubmit:
-            ({
-              required List<ClinicalActionRadiologyRequest> requests,
-              ClinicalRequestBillingSubmit? billing,
-            }) async {
-              return null;
-            },
-      ),
-    );
+      );
 
-    expect(find.textContaining('Patient name:'), findsOneWidget);
-    expect(find.textContaining('Jane Doe'), findsOneWidget);
-    expect(find.textContaining('PAT-001'), findsOneWidget);
-    expect(find.textContaining('ENC-42'), findsOneWidget);
-    expect(find.byType(AppCopyableIdentifier), findsNWidgets(2));
-    expect(find.text('Add study'), findsOneWidget);
-    expect(find.text('Review billing'), findsOneWidget);
-    expect(find.text('Cancel'), findsNothing);
-  });
+      expect(find.textContaining('Patient name:'), findsOneWidget);
+      expect(find.textContaining('Jane Doe'), findsOneWidget);
+      expect(find.textContaining('PAT-001'), findsOneWidget);
+      expect(find.textContaining('ENC-42'), findsOneWidget);
+      expect(find.byType(AppCopyableIdentifier), findsNWidgets(2));
+      expect(find.text('Add study'), findsOneWidget);
+      expect(find.text('Review billing'), findsOneWidget);
+      expect(find.text('Cancel'), findsNothing);
+    },
+  );
 
   testWidgets(
     'radiology catalog search remains editable when a query has no matches',

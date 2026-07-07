@@ -409,7 +409,8 @@ final class PharmacyDrugDto {
           _number(json['pharmacy_unit_price']) ?? _number(json['unit_price']),
       facilityUnitPrice: _number(json['facility_unit_price']),
       currency: _string(json['currency']),
-      pharmacyCurrency: _string(json['pharmacy_currency']) ?? _string(json['currency']),
+      pharmacyCurrency:
+          _string(json['pharmacy_currency']) ?? _string(json['currency']),
       facilityCurrency: _string(json['facility_currency']),
       isOfferedAtFacility: _bool(json['is_offered_at_facility']),
       quantityOnHand: _number(json['quantity_on_hand']) ?? 0,

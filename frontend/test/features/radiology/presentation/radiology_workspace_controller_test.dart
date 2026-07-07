@@ -304,10 +304,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) async => const Result<List<RadiologyCatalogTest>>.success(
-          <RadiologyCatalogTest>[
-            _platformRadiologyTest,
-            _offeredRadiologyTest,
-          ],
+          <RadiologyCatalogTest>[_platformRadiologyTest, _offeredRadiologyTest],
         ),
       );
       when(

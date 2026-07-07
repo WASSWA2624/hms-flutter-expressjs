@@ -235,9 +235,7 @@ class _RadiologyOrderDialogState
           context: context,
           onSearchRadiologyTests: widget.onSearchRadiologyTests,
           initialSelections: _requests
-              .map(
-                (_PendingRadiologyRequest request) => request.selection,
-              )
+              .map((_PendingRadiologyRequest request) => request.selection)
               .toList(growable: false),
         );
     if (!mounted || confirmed == null) {
@@ -282,7 +280,9 @@ class _RadiologyOrderDialogState
     setState(() => _billingSubmit = billing);
   }
 
-  Future<void> _confirmAndDeleteRequest(_PendingRadiologyRequest request) async {
+  Future<void> _confirmAndDeleteRequest(
+    _PendingRadiologyRequest request,
+  ) async {
     final AppLocalizations l10n = context.l10n;
     final bool confirmed =
         await showClinicalRequestRemoveItemsConfirmationDialog(

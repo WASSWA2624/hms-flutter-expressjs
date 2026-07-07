@@ -66,8 +66,9 @@ class _RadiologyEnableFacilityOfferingDialogState
   }
 
   List<RadiologyCatalogTest> get _sortedFilteredCatalogItems {
-    final List<RadiologyCatalogTest> items =
-        List<RadiologyCatalogTest>.of(_filteredCatalogItems);
+    final List<RadiologyCatalogTest> items = List<RadiologyCatalogTest>.of(
+      _filteredCatalogItems,
+    );
     items.sort((RadiologyCatalogTest left, RadiologyCatalogTest right) {
       if (left.isOfferedAtFacility != right.isOfferedAtFacility) {
         return left.isOfferedAtFacility ? -1 : 1;
@@ -275,26 +276,25 @@ class _RadiologyEnableFacilityOfferingDialogState
                     setState(() => _filterValue = value);
                   },
                 ),
-                emptyBuilder: (_) => AppMutedText(
-                  l10n.radiologyEnableOfferingNoItemsLabel,
-                ),
+                emptyBuilder: (_) =>
+                    AppMutedText(l10n.radiologyEnableOfferingNoItemsLabel),
                 columns: _enableOfferingColumns(context),
                 mobileItemBuilder:
                     (BuildContext context, RadiologyCatalogTest item) {
-                  return ListTile(
-                    title: Text(item.name),
-                    subtitle: Text(item.code ?? l10n.profileUnknownValue),
-                    trailing: item.isOfferedAtFacility
-                        ? AppMutedText(
-                            l10n.radiologyEnableOfferingAlreadyOfferedLabel,
-                          )
-                        : const Icon(Icons.chevron_right),
-                    enabled: !item.isOfferedAtFacility,
-                    onTap: item.isOfferedAtFacility
-                        ? null
-                        : () => unawaited(_openPriceDialog(item)),
-                  );
-                },
+                      return ListTile(
+                        title: Text(item.name),
+                        subtitle: Text(item.code ?? l10n.profileUnknownValue),
+                        trailing: item.isOfferedAtFacility
+                            ? AppMutedText(
+                                l10n.radiologyEnableOfferingAlreadyOfferedLabel,
+                              )
+                            : const Icon(Icons.chevron_right),
+                        enabled: !item.isOfferedAtFacility,
+                        onTap: item.isOfferedAtFacility
+                            ? null
+                            : () => unawaited(_openPriceDialog(item)),
+                      );
+                    },
               ),
           ],
         ],
@@ -345,7 +345,9 @@ class _RadiologyEnableFacilityOfferingDialogState
         label: l10n.radiologyStatusColumnLabel,
         cellBuilder: (_, RadiologyCatalogTest item) {
           if (item.isOfferedAtFacility) {
-            return AppMutedText(l10n.radiologyEnableOfferingAlreadyOfferedLabel);
+            return AppMutedText(
+              l10n.radiologyEnableOfferingAlreadyOfferedLabel,
+            );
           }
           return AppMutedText(l10n.radiologyEnableOfferingAvailableLabel);
         },
@@ -423,7 +425,10 @@ class _RadiologyEnableOfferingPriceDialogState
             ),
             if (item.code != null && item.code!.isNotEmpty)
               AppMutedText(
-                <String?>[item.code, item.modality].whereType<String>().join(' · '),
+                <String?>[
+                  item.code,
+                  item.modality,
+                ].whereType<String>().join(' · '),
               ),
             AppCurrencyAmountField(
               amountController: _priceController,
@@ -438,7 +443,8 @@ class _RadiologyEnableOfferingPriceDialogState
                   _currency = value ?? appDefaultCurrencyCode;
                 });
               },
-              validator: (String? value) => _positiveUnitPriceValidator(l10n, value),
+              validator: (String? value) =>
+                  _positiveUnitPriceValidator(l10n, value),
             ),
           ],
         ),
@@ -462,16 +468,14 @@ class _RadiologyEnableOfferingPriceDialogState
       _isSaving = true;
       _failure = null;
     });
-    final AppFailure? failure = await widget.onEnable(
-      widget.item.apiId,
-      <String, Object?>{
-        'radiology_test_id': widget.item.apiId,
-        'is_active': true,
-        'unit_price':
-            num.tryParse(normalizeCurrencyAmount(_priceController.text)) ?? 0,
-        'currency': _currency,
-      },
-    );
+    final AppFailure? failure = await widget
+        .onEnable(widget.item.apiId, <String, Object?>{
+          'radiology_test_id': widget.item.apiId,
+          'is_active': true,
+          'unit_price':
+              num.tryParse(normalizeCurrencyAmount(_priceController.text)) ?? 0,
+          'currency': _currency,
+        });
     if (!mounted) {
       return;
     }
@@ -565,7 +569,8 @@ class _RadiologyEditFacilityOfferingDialogState
                   _currency = value ?? appDefaultCurrencyCode;
                 });
               },
-              validator: (String? value) => _positiveUnitPriceValidator(l10n, value),
+              validator: (String? value) =>
+                  _positiveUnitPriceValidator(l10n, value),
             ),
           ],
         ),
@@ -589,16 +594,14 @@ class _RadiologyEditFacilityOfferingDialogState
       _isSaving = true;
       _failure = null;
     });
-    final AppFailure? failure = await widget.onUpdate(
-      widget.item.apiId,
-      <String, Object?>{
-        'radiology_test_id': widget.item.apiId,
-        'is_active': true,
-        'unit_price':
-            num.tryParse(normalizeCurrencyAmount(_priceController.text)) ?? 0,
-        'currency': _currency,
-      },
-    );
+    final AppFailure? failure = await widget
+        .onUpdate(widget.item.apiId, <String, Object?>{
+          'radiology_test_id': widget.item.apiId,
+          'is_active': true,
+          'unit_price':
+              num.tryParse(normalizeCurrencyAmount(_priceController.text)) ?? 0,
+          'currency': _currency,
+        });
     if (!mounted) {
       return;
     }

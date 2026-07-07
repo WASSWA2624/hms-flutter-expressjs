@@ -4,10 +4,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 
 @immutable
 final class PharmacyDrugFormOption {
-  const PharmacyDrugFormOption({
-    required this.value,
-    this.shortLabel,
-  });
+  const PharmacyDrugFormOption({required this.value, this.shortLabel});
 
   final String value;
   final String? shortLabel;
@@ -67,14 +64,34 @@ const List<PharmacyDrugFormOption> pharmacyDrugFormOptions =
 
 const List<PharmacyInventoryUnitOption> pharmacyInventoryUnitCatalog =
     <PharmacyInventoryUnitOption>[
-      PharmacyInventoryUnitOption(value: 'tablet', label: 'Tablet', shortLabel: 'tab'),
-      PharmacyInventoryUnitOption(value: 'capsule', label: 'Capsule', shortLabel: 'cap'),
+      PharmacyInventoryUnitOption(
+        value: 'tablet',
+        label: 'Tablet',
+        shortLabel: 'tab',
+      ),
+      PharmacyInventoryUnitOption(
+        value: 'capsule',
+        label: 'Capsule',
+        shortLabel: 'cap',
+      ),
       PharmacyInventoryUnitOption(value: 'strip', label: 'Strip'),
       PharmacyInventoryUnitOption(value: 'box', label: 'Box'),
-      PharmacyInventoryUnitOption(value: 'bottle', label: 'Bottle', shortLabel: 'btl'),
-      PharmacyInventoryUnitOption(value: 'mL', label: 'Millilitre', shortLabel: 'mL'),
+      PharmacyInventoryUnitOption(
+        value: 'bottle',
+        label: 'Bottle',
+        shortLabel: 'btl',
+      ),
+      PharmacyInventoryUnitOption(
+        value: 'mL',
+        label: 'Millilitre',
+        shortLabel: 'mL',
+      ),
       PharmacyInventoryUnitOption(value: 'L', label: 'Litre', shortLabel: 'L'),
-      PharmacyInventoryUnitOption(value: 'ampoule', label: 'Ampoule', shortLabel: 'amp'),
+      PharmacyInventoryUnitOption(
+        value: 'ampoule',
+        label: 'Ampoule',
+        shortLabel: 'amp',
+      ),
       PharmacyInventoryUnitOption(value: 'vial', label: 'Vial'),
       PharmacyInventoryUnitOption(value: 'tube', label: 'Tube'),
       PharmacyInventoryUnitOption(value: 'jar', label: 'Jar'),
@@ -119,25 +136,22 @@ const Map<String, List<String>> _strengthSuggestionsByFormFamily =
       'other': <String>['As directed'],
     };
 
-const Map<String, List<String>> _unitValuesByFormFamily = <String, List<String>>{
-  'solid_oral': <String>['tablet', 'capsule', 'strip', 'box'],
-  'liquid_oral': <String>['bottle', 'mL', 'L'],
-  'injectable': <String>['ampoule', 'vial', 'box'],
-  'topical': <String>['tube', 'jar', 'g'],
-  'inhaler_drops': <String>['inhaler', 'bottle', 'pack'],
-  'other': <String>['unit', 'box', 'pack'],
-};
+const Map<String, List<String>> _unitValuesByFormFamily =
+    <String, List<String>>{
+      'solid_oral': <String>['tablet', 'capsule', 'strip', 'box'],
+      'liquid_oral': <String>['bottle', 'mL', 'L'],
+      'injectable': <String>['ampoule', 'vial', 'box'],
+      'topical': <String>['tube', 'jar', 'g'],
+      'inhaler_drops': <String>['inhaler', 'bottle', 'pack'],
+      'other': <String>['unit', 'box', 'pack'],
+    };
 
 String? pharmacyFormFamilyForValue(String? form) {
   final String normalized = (form ?? '').trim().toLowerCase();
   if (normalized.isEmpty) {
     return null;
   }
-  if (<String>{
-    'tablet',
-    'capsule',
-    'chewable tablet',
-  }.contains(normalized)) {
+  if (<String>{'tablet', 'capsule', 'chewable tablet'}.contains(normalized)) {
     return 'solid_oral';
   }
   if (<String>{'syrup', 'suspension', 'solution'}.contains(normalized)) {
@@ -182,10 +196,8 @@ List<AppSelectOption<String>> pharmacyDrugFormSelectOptions(
 List<AppSelectOption<String>> pharmacyStrengthSelectOptions(String? form) {
   return pharmacyStrengthSuggestionsForForm(form)
       .map(
-        (String strength) => AppSelectOption<String>(
-          value: strength,
-          label: strength,
-        ),
+        (String strength) =>
+            AppSelectOption<String>(value: strength, label: strength),
       )
       .toList(growable: false);
 }
@@ -201,17 +213,18 @@ List<PharmacyInventoryUnitOption> pharmacyInventoryUnitsForForm(String? form) {
       .map(
         (String value) => pharmacyInventoryUnitCatalog.firstWhere(
           (PharmacyInventoryUnitOption option) => option.value == value,
-          orElse: () => PharmacyInventoryUnitOption(
-            value: value,
-            label: value,
-          ),
+          orElse: () => PharmacyInventoryUnitOption(value: value, label: value),
         ),
       )
       .toList(growable: false);
   final Set<String> seen = prioritized.map((e) => e.value).toSet();
-  final List<PharmacyInventoryUnitOption> remainder = pharmacyInventoryUnitCatalog
-      .where((PharmacyInventoryUnitOption option) => !seen.contains(option.value))
-      .toList(growable: false);
+  final List<PharmacyInventoryUnitOption> remainder =
+      pharmacyInventoryUnitCatalog
+          .where(
+            (PharmacyInventoryUnitOption option) =>
+                !seen.contains(option.value),
+          )
+          .toList(growable: false);
   return <PharmacyInventoryUnitOption>[...prioritized, ...remainder];
 }
 
@@ -246,14 +259,12 @@ IconData pharmacyInventoryUnitIcon(String value) {
   }
 }
 
-String? pharmacyInventoryUnitDisplayLabel(
-  AppLocalizations l10n,
-  String? unit,
-) {
+String? pharmacyInventoryUnitDisplayLabel(AppLocalizations l10n, String? unit) {
   if (unit == null || unit.trim().isEmpty) {
     return null;
   }
-  for (final PharmacyInventoryUnitOption option in pharmacyInventoryUnitCatalog) {
+  for (final PharmacyInventoryUnitOption option
+      in pharmacyInventoryUnitCatalog) {
     if (option.value == unit) {
       return option.displayLabel(l10n);
     }
@@ -271,7 +282,8 @@ List<AppSelectOption<String>> pharmacyInventoryUnitSelectOptions(
           value: option.value,
           label: option.displayLabel(l10n),
           leadingIcon: Icon(pharmacyInventoryUnitIcon(option.value)),
-          searchText: '${option.label} ${option.shortLabel ?? ''} ${option.value}',
+          searchText:
+              '${option.label} ${option.shortLabel ?? ''} ${option.value}',
         ),
       )
       .toList(growable: false);

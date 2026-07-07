@@ -825,10 +825,7 @@ class _PaymentModeRadioOption extends StatelessWidget {
               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
               visualDensity: VisualDensity.compact,
             ),
-            Icon(
-              icon,
-              size: theme.appTokens.listIconSize,
-            ),
+            Icon(icon, size: theme.appTokens.listIconSize),
             SizedBox(width: theme.spacing.xs),
             Text(
               label,

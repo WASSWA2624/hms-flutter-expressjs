@@ -334,7 +334,9 @@ void main() {
 
       final Offset patientIdTop = tester.getTopLeft(find.text('Patient ID:'));
       final Offset studyTop = tester.getTopLeft(find.textContaining('Study'));
-      final Offset paymentTop = tester.getTopLeft(find.textContaining('Payment'));
+      final Offset paymentTop = tester.getTopLeft(
+        find.textContaining('Payment'),
+      );
 
       expect(studyTop.dy - patientIdTop.dy, lessThan(50));
       expect(paymentTop.dy - patientIdTop.dy, lessThan(50));

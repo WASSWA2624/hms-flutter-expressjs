@@ -632,26 +632,27 @@ class _AttachedSearchBarOverflowMenu extends StatelessWidget {
           EdgeInsets.all(theme.spacing.xs),
         ),
       ),
-      builder: (BuildContext context, MenuController controller, Widget? child) {
-        return _AttachedSearchBarButton(
-          borderColor: borderColor,
-          enabled: enabled,
-          active: controller.isOpen,
-          showLabel: showLabel,
-          icon: Icons.more_vert,
-          label: label,
-          tooltip: label,
-          onPressed: enabled
-              ? () {
-                  if (controller.isOpen) {
-                    controller.close();
-                  } else {
-                    controller.open();
-                  }
-                }
-              : null,
-        );
-      },
+      builder:
+          (BuildContext context, MenuController controller, Widget? child) {
+            return _AttachedSearchBarButton(
+              borderColor: borderColor,
+              enabled: enabled,
+              active: controller.isOpen,
+              showLabel: showLabel,
+              icon: Icons.more_vert,
+              label: label,
+              tooltip: label,
+              onPressed: enabled
+                  ? () {
+                      if (controller.isOpen) {
+                        controller.close();
+                      } else {
+                        controller.open();
+                      }
+                    }
+                  : null,
+            );
+          },
       menuChildren: <Widget>[
         for (final AppSearchBarAction action in actions)
           MenuItemButton(
@@ -727,7 +728,8 @@ class _AttachedSearchBarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final Color foreground = foregroundColor ??
+    final Color foreground =
+        foregroundColor ??
         (active ? colorScheme.primary : colorScheme.onSurfaceVariant);
     final Color background = active
         ? colorScheme.primaryContainer.withValues(alpha: 0.54)

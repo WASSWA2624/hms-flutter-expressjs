@@ -22,7 +22,8 @@ class PharmacyDrugEditDialog extends ConsumerStatefulWidget {
       _PharmacyDrugEditDialogState();
 }
 
-class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog> {
+class _PharmacyDrugEditDialogState
+    extends ConsumerState<PharmacyDrugEditDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _codeController;
@@ -59,8 +60,10 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
     _facilityPriceController = TextEditingController(
       text: _priceText(drug?.facilityUnitPrice),
     );
-    _pharmacyCurrency = drug?.pharmacyCurrency ?? drug?.currency ?? appDefaultCurrencyCode;
-    _facilityCurrency = drug?.facilityCurrency ?? drug?.currency ?? appDefaultCurrencyCode;
+    _pharmacyCurrency =
+        drug?.pharmacyCurrency ?? drug?.currency ?? appDefaultCurrencyCode;
+    _facilityCurrency =
+        drug?.facilityCurrency ?? drug?.currency ?? appDefaultCurrencyCode;
     _initialStockController = TextEditingController();
     final num? existingReorderLevel = drug?.stockRows.isNotEmpty == true
         ? drug!.stockRows.first.reorderLevel
@@ -215,11 +218,13 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
     PharmacyWorkspaceController controller,
     num? facilityPrice,
   ) {
-    final num? offeringPrice = facilityPrice ??
+    final num? offeringPrice =
+        facilityPrice ??
         widget.drug?.facilityUnitPrice ??
         widget.drug?.pharmacyUnitPrice ??
         widget.drug?.unitPrice;
-    final bool shouldUpsertOffering = facilityPrice != null ||
+    final bool shouldUpsertOffering =
+        facilityPrice != null ||
         _storageShelfId != null ||
         widget.drug?.storageShelfId != null;
     if (!shouldUpsertOffering || offeringPrice == null) {
@@ -249,7 +254,8 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
     );
     final List<PharmacyExpiryAlertLeadOption> expiryLeadOptions =
         pharmacyExpiryAlertLeadOptions(l10n);
-    final PharmacyStorageLayout storageLayout = ref
+    final PharmacyStorageLayout storageLayout =
+        ref
             .watch(pharmacyWorkspaceControllerProvider)
             .value
             ?.when(
@@ -287,7 +293,9 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
                   controller: _nameController,
                   labelText: l10n.pharmacyDrugNameLabel,
                   isRequired: true,
-                  validator: AppValidators.requiredText(l10n.validationRequired),
+                  validator: AppValidators.requiredText(
+                    l10n.validationRequired,
+                  ),
                 ),
                 right: AppTextField(
                   controller: _codeController,
@@ -408,7 +416,9 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
                   controller: _reorderLevelController,
                   labelText: inventoryUnitLabel == null
                       ? l10n.pharmacyReorderLevelLabel
-                      : l10n.pharmacyReorderLevelLabelWithUnit(inventoryUnitLabel),
+                      : l10n.pharmacyReorderLevelLabelWithUnit(
+                          inventoryUnitLabel,
+                        ),
                   helperText: inventoryUnitLabel == null
                       ? l10n.pharmacyReorderLevelSelectUnitHelper
                       : l10n.pharmacyReorderLevelHelperWithUnit,
@@ -471,9 +481,9 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
                         .map(
                           (PharmacyExpiryAlertLeadOption option) =>
                               AppSelectOption<int>(
-                            value: option.days,
-                            label: option.label,
-                          ),
+                                value: option.days,
+                                label: option.label,
+                              ),
                         )
                         .toList(growable: false),
                     onChanged: (int? value) =>
@@ -569,7 +579,9 @@ class _PharmacyDrugEditDialogState extends ConsumerState<PharmacyDrugEditDialog>
         facilityOffering: facilityOffering,
       );
       if (failure == null) {
-        final int? reorderLevel = int.tryParse(_reorderLevelController.text.trim());
+        final int? reorderLevel = int.tryParse(
+          _reorderLevelController.text.trim(),
+        );
         final String? inventoryItemId = _resolveInventoryItemId(widget.drug!);
         if (reorderLevel != null && inventoryItemId != null) {
           failure = await controller.adjustInventoryStock(
