@@ -1,126 +1,85 @@
-# Pharmacy — Catalog and Stock Dialog (Web Testing Prompt)
+# Pharmacist Role — Module Access & Navigation Fix
 
 ## Objective
 
-Fix and verify the **Catalog and stock** modal on the Pharmacy workbench (`/pharmacy`) so it opens reliably on **web**, dismisses cleanly, and leaves the queue table interactive. Cover the fix with **unit**, **integration**, and **Patrol E2E** tests run **exclusively on the web platform** (`chrome`).
+Restore correct **Pharmacist** access in HOSSPI HMS so pharmacy staff can reach their operational modules from the app shell — not only the role dashboard and Settings.
 
-**Reference:** [prompts/18-pharmacy-module-prompt.md](prompts/18-pharmacy-module-prompt.md) · [frontend/.cursor/testing.mdc](frontend/.cursor/testing.mdc)
+## Problem (observed)
 
----
+When logging in as the demo pharmacist (`pharmacy@hosspi.com`, **Harper Demo**, role **Pharmacist**), the sidebar shows only:
 
-## Bug Report (from production UI)
+- **Overview → Dashboard** (Pharmacy workload)
+- **Administration → Settings**
 
-| Item | Value |
-| ---- | ----- |
-| Module | Pharmacy |
-| Route | `/pharmacy` |
-| Platform | **Web only** (`127.0.0.1:5201/pharmacy`) |
-| Trigger | Toolbar action **Catalog and stock** |
-| Login | `pharmacy@hosspi.com` (seeded demo) |
+Missing from navigation: **Pharmacy**, **Reports**, and **Patient Registry** — even though the pharmacist dashboard profile, quick actions, and shortcuts are already defined for this role.
 
-### Steps to reproduce
+**Evidence:** Pharmacist session on `127.0.0.1:5201` — Pharmacy workload dashboard renders, but shell navigation is restricted to Dashboard and Settings.
 
-1. Open `/pharmacy` with the order queue loaded (patient rows visible).
-2. Click **Catalog and stock** in the workspace toolbar (inline or overflow).
-3. Observe the page.
+## Expected behavior
 
-### Actual (broken)
+After login, a Pharmacist with an active tenant subscription should have shell access aligned with peer diagnostic roles (Lab, Radiology):
 
-- Workbench becomes inactive (modal barrier / focus trap).
-- **Catalog and stock** `AppDialog` does not render.
-- Escape may remove the dim overlay but leave a white, non-interactive page.
-- Full browser refresh required to recover.
+| Module | Access level | Purpose |
+| ------ | ------------ | ------- |
+| **Pharmacy** (`/pharmacy`) | Full workbench | Dispense, stock, orders, returns — per [pharmacy-flow.mdc](.cursor/flows/pharmacy-flow.mdc) |
+| **Reports** (`/reports`) | Read-only, pharmacy-relevant | Dispensing throughput, stock pressure, order metrics |
+| **Patient Registry** (`/patients`) | Read-only, pharmacy-scoped | Search patients; view demographics plus **pharmacy-related context only** (active/past orders, prescriptions, dispense history, allergies relevant to dispensing) |
+| **Dashboard** | Unchanged | Pharmacy workload summary cards and quick actions |
+| **Settings** | Unchanged | Profile, password, personal preferences |
 
-### Expected
+### Out of scope (must remain blocked)
 
-- `AppDialog` titled **Catalog and stock** opens with `PharmacyCatalogPanel` (Drugs, Formulary, Inventory, Storage tabs).
-- Close via close button, Escape, or barrier tap restores full workbench interactivity.
-- Same behavior for all `openPharmacyCatalogDialog` entry points (toolbar, inventory alerts, storage shortcut).
+- OPD / IPD stage control, clinical documentation, nursing MAR, billing reconciliation, HR, access admin, tenant/facility setup, and other non-pharmacy modules.
 
----
+## Likely root causes (investigate in this order)
 
-## UI Under Test (screenshot)
+1. **RBAC gap** — `PHARMACIST` lacks permissions granted to similar roles:
+   - `backend/src/config/permissions.js` — no `PATIENT_READ` or `REPORTS_READ` (compare `RADIOLOGY_TECH`, `BILLING`)
+   - `frontend/lib/core/permissions/access_policy.dart` — mirror the same permission set
+2. **Route role gate** — Pharmacist excluded from patient registry:
+   - `frontend/lib/app/router/app_routes.dart` → `patientRegistryRoles`
+3. **Module entitlement alignment** — shell routes require subscription modules:
+   - Pharmacy → `pharmacy-dispensing`
+   - Reports → `reporting-analytics`
+   - Patients → `patient-registry` + `patient:read`
+   - Verify demo tenant entitlements in `backend/src/lib/subscriptions/tenant-entitlements.js` and auth payload (`module_entitlements` on login)
+4. **Home action module slug mismatch** — home quick actions use `pharmacy` / `reports` while routes use `pharmacy-dispensing` / `reporting-analytics`:
+   - `frontend/lib/features/home/presentation/pages/home_page.dart`
+   - `frontend/lib/features/home/domain/entities/home_dashboard_profiles.dart` (pharmacist `shortcutIds`: `pharmacy`, `reports`)
+5. **Patient registry UI scope** — registry may need a pharmacy-limited detail panel (pattern: department-scoped read, not full clinical record).
 
-Pharmacy workbench at desktop width:
+## Implementation requirements
 
-- **Toolbar:** primary dispense action + **Catalog and stock** secondary action.
-- **Queue:** searchable table (`Patient`, `Order`, `Care location`, `Items`, `Dispense`).
-- **Sidebar:** Pharmacy module selected; other modules visible.
+1. **Align RBAC** — Add `patient:read` and `reports:read` to `PHARMACIST` in backend permissions and frontend `AppAccessPolicy`; keep write access limited to pharmacy scope.
+2. **Open shell routes** — Ensure `AppRoutes.pharmacy`, `AppRoutes.reports`, and `AppRoutes.patients` pass `AccessRequirement.isAllowed` for Pharmacist when tenant modules are active.
+3. **Add Pharmacist to patient registry roles** — Include `AppRole.pharmacist` in `patientRegistryRoles`; enforce read-only via permissions and UI gates.
+4. **Pharmacy-scoped patient view** — In patient registry detail, show pharmacy context (orders, dispense status, formulary/allergy flags); hide unrelated clinical tabs/actions.
+5. **Backend authorization** — Mirror frontend access on pharmacy, reports, and patient read APIs; backend must enforce, not rely on UI hiding alone.
+6. **Demo seed** — Confirm `pharmacy@hosspi.com` demo user inherits updated role permissions after re-seed or migration.
+7. **Preserve module boundaries** — Pharmacist dispenses only; no OPD/IPD stage mutations per [opd-flow.mdc](.cursor/flows/opd-flow.mdc) §5 and [pharmacy-flow.mdc](.cursor/flows/pharmacy-flow.mdc) §5.
 
----
+## Source of truth
 
-## Relevant Code
+1. [pharmacy-flow.mdc](.cursor/flows/pharmacy-flow.mdc)
+2. [opd-flow.mdc](.cursor/flows/opd-flow.mdc) — Pharmacy role: workspace only
+3. [app-write-up.mdc](.cursor/app-write-up.mdc) — Pharmacy module boundaries
+4. [prompts/18-pharmacy-module-prompt.md](prompts/18-pharmacy-module-prompt.md)
+5. [prompts/08-patients-module-prompt.md](prompts/08-patients-module-prompt.md)
+6. [prompts/04-access-admin-module-prompt.md](prompts/04-access-admin-module-prompt.md)
 
-| File | Role |
-| ---- | ---- |
-| `frontend/lib/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart` | Toolbar invokes `openPharmacyCatalogDialog` |
-| `frontend/lib/features/pharmacy/presentation/pharmacy_catalog_dialog.dart` | `showAppDialog` + `AppDialog` host |
-| `frontend/lib/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart` | Dialog body (tabs + catalog tables) |
-| `frontend/lib/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart` | `prepareCatalogTab` / catalog data refresh |
-| `frontend/lib/shared/components/app_dialog.dart` | Shared modal shell, focus restore, barrier |
+## Acceptance criteria
 
-**Known failure modes:** dialog route pushed but shell has zero size; `prepareCatalogTab` emit during first frame disposes host; `scrollable: true` + fixed-height content mismatch on web; orphaned `ModalRoute` after Escape.
+- [ ] Login as `pharmacy@hosspi.com` → sidebar shows **Pharmacy**, **Reports**, and **Patients** (plus Dashboard, Settings).
+- [ ] `/pharmacy` loads the pharmacy workbench; dispense queue and stock panels are usable.
+- [ ] `/reports` loads; pharmacist sees pharmacy-appropriate reports only.
+- [ ] `/patients` loads; pharmacist can search/view patients but cannot edit demographics or launch non-pharmacy workflows.
+- [ ] Patient detail shows pharmacy-related information; unrelated clinical sections are hidden or read-blocked.
+- [ ] Dashboard quick actions (`dispense_medication`, `run_report`) and shortcuts (`pharmacy`, `reports`) are visible and navigable.
+- [ ] Direct URL access to blocked modules (e.g. `/opd`, `/clinical`, `/billing`) is denied with consistent access messaging.
+- [ ] Backend APIs reject unauthorized pharmacist mutations outside pharmacy scope.
 
----
+## Quality gate
 
-## Test Strategy (web platform only)
-
-| Layer | Tool | Target file(s) | What to assert |
-| ----- | ---- | -------------- | -------------- |
-| Unit | `flutter_test` | `test/features/pharmacy/data/`, `domain/`, helper tests | DTO mapping, query filters, pricing/print helpers |
-| Widget | `flutter_test` + mocks | `test/features/pharmacy/presentation/pharmacy_catalog_dialog_test.dart` | `openPharmacyCatalogDialog` renders `CATALOG AND STOCK`, visible shell, close + Escape |
-| Widget | `flutter_test` + mocks | `test/features/pharmacy/presentation/pharmacy_workspace_page_test.dart` | Toolbar **Catalog and stock** opens/closes dialog from full page |
-| Integration | `integration_test` (desktop runner, web viewport) | `integration_test/pharmacy_catalog_dialog_test.dart` | Dialog open/dismiss on mocked workspace at 1440×900 |
-| Web widget | `flutter_test` on **chrome** | `test/features/pharmacy/presentation/` | Same assertions compiled for web (Patrol complement) |
-| E2E | **Patrol** on **chrome** | `patrol_test/pharmacy_flow_test.dart` | Real login as `pharmacy@hosspi.com`; catalog dialog open + close on seeded backend |
-| Shared | `flutter_test` | `test/shared/components/app_dialog_test.dart` | Desktop scrollable catalog shell height scenario |
-
-**Platform rule:** Flutter `integration_test` does not yet support `-d chrome`. Run integration suites on a desktop device (`-d windows` / `-d macos` / `-d linux`) with a desktop web viewport, and run `test/features/pharmacy/presentation/` with `-d chrome` plus Patrol for true web coverage.
-
----
-
-## Fix Requirements
-
-1. Restore reliable modal lifecycle in `pharmacy_catalog_dialog.dart` (no invisible barrier).
-2. Call `prepareCatalogTab` synchronously in `initState`; watch controller state in `build`.
-3. Do **not** set `scrollable: true` on the catalog dialog — use fixed-height `SizedBox` + `fillHeight` panel.
-4. Ensure Escape, close, and barrier dismissal fully pop the route and restore focus.
-5. Preserve modal-first pattern — no new routes for catalog/stock.
-
----
-
-## Acceptance Criteria
-
-- [ ] **Catalog and stock** shows dialog with title, tabs, and content on web.
-- [ ] Dialog closes cleanly; queue table remains clickable without refresh.
-- [ ] No white-screen or frozen state after open or dismiss.
-- [ ] All web tests below pass.
-
----
-
-## Quality Gate (from `frontend/`)
-
-```powershell
-# Unit + widget (VM — fast feedback)
-flutter test test/features/pharmacy/
-flutter test test/shared/components/app_dialog_test.dart
-
-# Web widget compilation
-flutter test test/features/pharmacy/presentation/ -d chrome
-
-# Integration (desktop runner; web viewport inside test)
-flutter test integration_test/pharmacy_catalog_dialog_test.dart -d windows
-
-# Patrol E2E — web only (seeded backend on :3000 required)
-.\tool\run_patrol_tests.ps1 -Target patrol_test/pharmacy_flow_test.dart -Device chrome
-```
-
-Manual smoke: open `/pharmacy` → **Catalog and stock** → switch a tab → close → confirm queue interaction.
-
----
-
-## Deliverables
-
-1. Root-cause fix in pharmacy catalog dialog and related modal code.
-2. Widget + integration + Patrol coverage as specified above.
-3. All applicable **web** tests green before merge.
+- `frontend/`: `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test` (include `route_guards_test.dart`, pharmacy/home tests)
+- `backend/`: targeted `npm test` for permissions, auth session, module-entitlement middleware, pharmacy-workspace
+- Manual smoke: pharmacist login on web (`127.0.0.1:5201`) — verify nav, routes, and patient pharmacy panel

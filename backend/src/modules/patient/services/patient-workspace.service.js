@@ -365,6 +365,16 @@ const serializeAdmission = (record) => ({
   updated_at: record?.updated_at || null,
 });
 
+const serializePharmacyOrder = (record) => ({
+  human_friendly_id: resolvePublicIdentifier(record?.human_friendly_id, record?.id),
+  status: record?.status || null,
+  priority: record?.priority || null,
+  ordered_at: record?.ordered_at || null,
+  dispensed_at: record?.dispensed_at || null,
+  created_at: record?.created_at || null,
+  updated_at: record?.updated_at || null,
+});
+
 const serializeFollowUp = (record) => ({
   human_friendly_id: resolvePublicIdentifier(record?.human_friendly_id, record?.id),
   encounter_id: resolvePublicIdentifier(record?.encounter?.human_friendly_id, record?.encounter_id),
@@ -1303,6 +1313,7 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
     latestReferrals,
     latestInvoices,
     latestPayments,
+    latestPharmacyOrders,
     latestPhiLogs,
     duplicateCandidates,
     timeline,
@@ -1431,6 +1442,27 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
         })
     ),
     runSafePatientWorkspaceSection(
+      'workspace.pharmacy_orders',
+      scope,
+      [],
+      () =>
+        prisma.pharmacy_order.findMany({
+          where: { patient_id: patient.id, deleted_at: null },
+          orderBy: { ordered_at: 'desc' },
+          take: 8,
+          select: {
+            id: true,
+            human_friendly_id: true,
+            status: true,
+            priority: true,
+            ordered_at: true,
+            dispensed_at: true,
+            created_at: true,
+            updated_at: true,
+          },
+        })
+    ),
+    runSafePatientWorkspaceSection(
       'workspace.phi_access_logs',
       scope,
       [],
@@ -1469,6 +1501,7 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
       referrals: latestReferrals.map(serializeReferral),
       invoices: latestInvoices.map(serializeInvoice),
       payments: latestPayments.map(serializePayment),
+      pharmacy_orders: latestPharmacyOrders.map(serializePharmacyOrder),
       phi_access_logs: latestPhiLogs.map(serializePhiAccessLog),
       duplicate_candidates: duplicateCandidates,
       summary_counts: {
@@ -1482,6 +1515,7 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
         referrals: latestReferrals.length,
         invoices: latestInvoices.length,
         payments: latestPayments.length,
+        pharmacy_orders: latestPharmacyOrders.length,
       },
     },
     timeline: timeline.items,

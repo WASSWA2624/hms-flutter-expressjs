@@ -297,6 +297,8 @@ final class AuthRepositoryImpl implements AuthRepository {
           final permissions = AuthSessionDto.permissionsFromResponseData(
             payload,
           );
+          final moduleEntitlements =
+              AuthSessionDto.moduleEntitlementsFromResponseData(payload);
           final subscriptionSummary =
               AuthSessionDto.subscriptionSummaryFromResponseData(payload);
           final platformAdminContact =
@@ -307,6 +309,11 @@ final class AuthRepositoryImpl implements AuthRepository {
           }
           if (permissions.isNotEmpty) {
             enriched = enriched.copyWith(permissions: permissions);
+          }
+          if (moduleEntitlements.isNotEmpty) {
+            enriched = enriched.copyWith(
+              moduleEntitlements: moduleEntitlements,
+            );
           }
           if (subscriptionSummary != null) {
             enriched = enriched.copyWith(

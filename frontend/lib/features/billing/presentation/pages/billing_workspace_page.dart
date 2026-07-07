@@ -521,7 +521,8 @@ Future<void> _showBillingDetailDialog(
           enabled: item.isInvoice,
           tooltip: l10n.billingPrintInvoiceTooltip,
           onPressed: item.isInvoice
-              ? () => printBillingInvoice(ref: ref, context: context, item: item)
+              ? () =>
+                    printBillingInvoice(ref: ref, context: context, item: item)
               : null,
         ),
         AppReportActionButton.download(

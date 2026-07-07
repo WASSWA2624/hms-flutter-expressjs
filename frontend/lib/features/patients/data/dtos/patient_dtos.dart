@@ -297,6 +297,10 @@ final class PatientWorkspaceDto {
       admissions: _summaryRecords(snapshot['admissions'], 'admission'),
       invoices: _summaryRecords(snapshot['invoices'], 'invoice'),
       payments: _summaryRecords(snapshot['payments'], 'payment'),
+      pharmacyOrders: _summaryRecords(
+        snapshot['pharmacy_orders'],
+        'pharmacy_order',
+      ),
       duplicateCandidates: _list(snapshot['duplicate_candidates'])
           .map(PatientDuplicateCandidateDto.new)
           .map((PatientDuplicateCandidateDto dto) => dto.toEntity())
@@ -568,6 +572,8 @@ PatientSummaryRecord _summaryRecord(PatientJsonMap json, String kind) {
       _string(json['provider_name']) ??
       _string(json['transaction_ref']) ??
       _string(json['document_type']) ??
+      _string(json['human_friendly_id']) ??
+      _string(json['priority']) ??
       status;
   final DateTime? occurredAt =
       _date(json['scheduled_start']) ??
@@ -575,6 +581,8 @@ PatientSummaryRecord _summaryRecord(PatientJsonMap json, String kind) {
       _date(json['admitted_at']) ??
       _date(json['issued_at']) ??
       _date(json['paid_at']) ??
+      _date(json['ordered_at']) ??
+      _date(json['dispensed_at']) ??
       _date(json['created_at']) ??
       _date(json['updated_at']);
 

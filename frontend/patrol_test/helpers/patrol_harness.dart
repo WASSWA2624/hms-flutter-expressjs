@@ -160,10 +160,7 @@ Future<void> pumpPatrolApp(
   setTestViewport($.tester, viewport);
 
   await $.pumpWidget(
-    ProviderScope(
-      overrides: overrides.cast(),
-      child: const HosspiHmsApp(),
-    ),
+    ProviderScope(overrides: overrides.cast(), child: const HosspiHmsApp()),
   );
   await $.pumpAndSettle(timeout: const Duration(seconds: 30));
 }
@@ -175,10 +172,7 @@ Future<void> pumpPatrolShellApp(
 }) {
   return pumpPatrolApp(
     $,
-    overrides: <Object?>[
-      ...patrolShellOverrides(),
-      ...overrides,
-    ],
+    overrides: <Object?>[...patrolShellOverrides(), ...overrides],
     viewport: viewport,
   );
 }
@@ -297,9 +291,8 @@ Future<void> expectAnyVisible(
   final List<String> targets = labels.toList(growable: false);
   final Stopwatch stopwatch = Stopwatch()..start();
 
-  bool anyVisible() => targets.any(
-    (String label) => find.text(label).evaluate().isNotEmpty,
-  );
+  bool anyVisible() =>
+      targets.any((String label) => find.text(label).evaluate().isNotEmpty);
 
   while (stopwatch.elapsed < timeout) {
     if (anyVisible()) {
@@ -308,7 +301,11 @@ Future<void> expectAnyVisible(
     await $.pump(const Duration(milliseconds: 200));
   }
 
-  expect(anyVisible(), isTrue, reason: 'Expected one of: ${targets.join(', ')}');
+  expect(
+    anyVisible(),
+    isTrue,
+    reason: 'Expected one of: ${targets.join(', ')}',
+  );
 }
 
 AppLocalizations patrolL10n(PatrolIntegrationTester $) {

@@ -59,9 +59,9 @@ void _stubPharmacyBootstrap(_MockPharmacyRepository repository) {
   when(() => repository.loadWorkbench(any())).thenAnswer(
     (_) async => const Result<PharmacyWorkbench>.success(_workbench),
   );
-  when(() => repository.searchDrugs(any())).thenAnswer(
-    (_) async => Result<AppPage<PharmacyDrug>>.success(_drugPage()),
-  );
+  when(
+    () => repository.searchDrugs(any()),
+  ).thenAnswer((_) async => Result<AppPage<PharmacyDrug>>.success(_drugPage()));
   when(() => repository.getInventoryStock(any())).thenAnswer(
     (_) async =>
         const Result<PharmacyInventoryWorkbench>.success(_inventoryWorkbench),
@@ -123,47 +123,48 @@ void main() {
     registerFallbackValue(const PharmacyInventoryStockQuery());
   });
 
-  testWidgets('catalog dialog lays out populated table with semantics enabled', (
-    WidgetTester tester,
-  ) async {
-    final SemanticsHandle handle = tester.ensureSemantics();
+  testWidgets(
+    'catalog dialog lays out populated table with semantics enabled',
+    (WidgetTester tester) async {
+      final SemanticsHandle handle = tester.ensureSemantics();
 
-    tester.view.physicalSize = const Size(1200, 800);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+      tester.view.physicalSize = const Size(1200, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
 
-    _stubPharmacyBootstrap(repository);
+      _stubPharmacyBootstrap(repository);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          pharmacyRepositoryProvider.overrideWithValue(repository),
-          initialSessionStateProvider.overrideWithValue(
-            const SessionState.ready(),
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            pharmacyRepositoryProvider.overrideWithValue(repository),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+          ],
+          child: const MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(body: _CatalogDialogLauncher()),
           ),
-        ],
-        child: const MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(body: _CatalogDialogLauncher()),
         ),
-      ),
-    );
-    await tester.pump();
-    await tester.pump();
+      );
+      await tester.pump();
+      await tester.pump();
 
-    await tester.tap(find.text('Open catalog'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
-    await tester.pumpAndSettle();
+      await tester.tap(find.text('Open catalog'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
-    expect(find.text('CATALOG AND STOCK'), findsOneWidget);
-    expect(find.byType(AppDialog), findsOneWidget);
-    // Confirms the populated DataTable (with action-button cells) laid out.
-    expect(find.text('DRG-0'), findsOneWidget);
-    expect(tester.takeException(), isNull);
+      expect(find.text('CATALOG AND STOCK'), findsOneWidget);
+      expect(find.byType(AppDialog), findsOneWidget);
+      // Confirms the populated DataTable (with action-button cells) laid out.
+      expect(find.text('DRG-0'), findsOneWidget);
+      expect(tester.takeException(), isNull);
 
-    handle.dispose();
-  });
+      handle.dispose();
+    },
+  );
 }

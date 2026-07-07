@@ -272,6 +272,32 @@ final class AppModuleEntitlement {
     return value.trim().toUpperCase().replaceAll(RegExp(r'[\s-]+'), '_');
   }
 
+  static String resolveModuleCode(String value) {
+    final normalized = normalizeModuleCode(value);
+    return switch (normalized) {
+      'PHARMACY' => 'PHARMACY_DISPENSING',
+      'REPORTS' => 'REPORTING_ANALYTICS',
+      'LAB' => 'LAB_WORKFLOWS',
+      'RADIOLOGY' => 'RADIOLOGY_WORKFLOWS',
+      'PATIENTS' => 'PATIENT_REGISTRY',
+      'SCHEDULING' => 'SCHEDULING_QUEUE',
+      'CLINICAL' => 'ENCOUNTERS_VITALS',
+      'NURSING' => 'INPATIENT_BED_MANAGEMENT',
+      'ROOMS_BEDS' => 'INPATIENT_BED_MANAGEMENT',
+      'BILLING' => 'BILLING_INSURANCE',
+      'HR' => 'HR_ROSTERS',
+      'OPERATIONS' => 'FACILITIES_MAINTENANCE',
+      'BIOMEDICAL' => 'BIOMEDICAL_ENGINEERING_SUITE',
+      'COMMUNICATIONS' => 'NOTIFICATIONS_COMMUNICATIONS',
+      'INTEGRATIONS' => 'INTEGRATIONS_CORE',
+      'MORTUARY' => 'MORTUARY',
+      'THEATER' => 'THEATRE_ANESTHESIA',
+      'PHYSIOTHERAPY' => 'PHYSIOTHERAPY',
+      'EMERGENCY' => 'SCHEDULING_QUEUE',
+      _ => normalized,
+    };
+  }
+
   static String? _firstPresentString(
     Map<Object?, Object?> payload,
     Iterable<String> keys,

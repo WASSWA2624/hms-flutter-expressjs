@@ -3879,6 +3879,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsAllergiesSectionTitle => 'Allergies';
 
   @override
+  String get patientsPharmacyOrdersSectionTitle => 'Pharmacy orders';
+
+  @override
+  String get patientsNoPharmacyOrders =>
+      'No pharmacy orders recorded for this patient.';
+
+  @override
+  String get patientsOpenPharmacyWorkbenchAction => 'Open pharmacy';
+
+  @override
   String get patientsMedicalHistorySectionTitle => 'Medical history';
 
   @override

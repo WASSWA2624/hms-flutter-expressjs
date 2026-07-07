@@ -67,14 +67,14 @@ void main() {
           patientDisplayName: 'Amina Kato',
           patientAgeSex: '32 / F',
         );
-      const ClinicalWorklistEntry withIdOnly = ClinicalWorklistEntry(
-        id: 'encounter-2',
-        sourceQueue: 'OPD',
-        encounterId: 'encounter-2',
-        patientDisplayName: 'John Doe',
-        patientPublicId: 'PAT000002',
-        patientPhone: '+256700000002',
-      );
+        const ClinicalWorklistEntry withIdOnly = ClinicalWorklistEntry(
+          id: 'encounter-2',
+          sourceQueue: 'OPD',
+          encounterId: 'encounter-2',
+          patientDisplayName: 'John Doe',
+          patientPublicId: 'PAT000002',
+          patientPhone: '+256700000002',
+        );
 
         expect(withAgeSex.worklistPatientSecondaryLine, '32 / F');
         expect(withIdOnly.worklistPatientSecondaryLine, 'PAT000002');

@@ -300,11 +300,13 @@ final class AppAccessPolicy {
       return true;
     }
     if (moduleEntitlements.isEmpty) {
-      return false;
+      return !hasTenantContext;
     }
 
     final normalizedCode = AppModuleEntitlement.normalizeModuleCode(moduleCode);
-    return moduleEntitlements[normalizedCode]?.isAvailable == true;
+    final resolvedCode = AppModuleEntitlement.resolveModuleCode(moduleCode);
+    return moduleEntitlements[normalizedCode]?.isAvailable == true ||
+        moduleEntitlements[resolvedCode]?.isAvailable == true;
   }
 
   bool hasAllActiveModules(Iterable<String> moduleCodes) {
@@ -454,6 +456,8 @@ final class AppAccessPolicy {
       AppRole.pharmacist => const <AppPermission>[
         AppPermissions.pharmacyRead,
         AppPermissions.pharmacyWrite,
+        AppPermissions.patientRead,
+        AppPermissions.reportsRead,
         AppPermissions.communicationsRead,
         AppPermissions.communicationsWrite,
         AppPermissions.profileRead,

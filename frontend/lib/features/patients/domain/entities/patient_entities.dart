@@ -527,6 +527,7 @@ final class PatientWorkspaceSnapshot {
     this.admissions = const <PatientSummaryRecord>[],
     this.invoices = const <PatientSummaryRecord>[],
     this.payments = const <PatientSummaryRecord>[],
+    this.pharmacyOrders = const <PatientSummaryRecord>[],
     this.duplicateCandidates = const <PatientDuplicateCandidate>[],
     this.summaryCounts = const <String, int>{},
   });
@@ -537,6 +538,7 @@ final class PatientWorkspaceSnapshot {
   final List<PatientSummaryRecord> admissions;
   final List<PatientSummaryRecord> invoices;
   final List<PatientSummaryRecord> payments;
+  final List<PatientSummaryRecord> pharmacyOrders;
   final List<PatientDuplicateCandidate> duplicateCandidates;
   final Map<String, int> summaryCounts;
 }

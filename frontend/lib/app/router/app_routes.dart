@@ -76,6 +76,7 @@ abstract final class AppRoutes {
     AppRole.doctor,
     AppRole.nurse,
     AppRole.receptionist,
+    AppRole.pharmacist,
     AppRole.wardManager,
     AppRole.icuManager,
     AppRole.theatreManager,

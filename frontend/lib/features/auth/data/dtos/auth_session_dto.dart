@@ -173,6 +173,16 @@ final class AuthSessionDto {
     return PlatformAdminContact.fromJson(contact);
   }
 
+  static List<AppModuleEntitlement> moduleEntitlementsFromResponseData(
+    Object? data,
+  ) {
+    if (data is! Map<String, Object?>) {
+      return const <AppModuleEntitlement>[];
+    }
+
+    return _moduleEntitlementsFromSource(data);
+  }
+
   static AuthUserProfile? _userProfileFromUser(Map<String, Object?> user) {
     final profile = _map(user['profile']);
     final tenant = _map(user['tenant']);

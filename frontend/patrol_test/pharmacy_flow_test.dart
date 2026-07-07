@@ -41,20 +41,16 @@ void main() {
   patrolTestWithDiagnostics(
     'pharmacy catalog and stock dialog opens and closes on web',
     ($) async {
-      await loginAndOpenRoute(
-        $,
-        DemoAccount.pharmacy,
-        AppRoutes.pharmacy.path,
-      );
+      await loginAndOpenRoute($, DemoAccount.pharmacy, AppRoutes.pharmacy.path);
 
-      await expectAnyVisible($, <String>['Pharmacy'], timeout: const Duration(seconds: 60));
+      await expectAnyVisible($, <String>[
+        'Pharmacy',
+      ], timeout: const Duration(seconds: 60));
       await $.pumpAndSettle();
 
-      await expectAnyVisible(
-        $,
-        <String>['Catalog and stock'],
-        timeout: const Duration(seconds: 90),
-      );
+      await expectAnyVisible($, <String>[
+        'Catalog and stock',
+      ], timeout: const Duration(seconds: 90));
       while (find.text('Loading pharmacy workspace').evaluate().isNotEmpty) {
         await $.pump(const Duration(milliseconds: 250));
       }

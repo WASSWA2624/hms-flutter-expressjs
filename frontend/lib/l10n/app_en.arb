@@ -5091,6 +5091,18 @@
   "@patientsAllergiesSectionTitle": {
     "description": "Patient allergies section title."
   },
+  "patientsPharmacyOrdersSectionTitle": "Pharmacy orders",
+  "@patientsPharmacyOrdersSectionTitle": {
+    "description": "Pharmacy orders section title on the patient detail dialog."
+  },
+  "patientsNoPharmacyOrders": "No pharmacy orders recorded for this patient.",
+  "@patientsNoPharmacyOrders": {
+    "description": "Empty state when a patient has no pharmacy orders."
+  },
+  "patientsOpenPharmacyWorkbenchAction": "Open pharmacy",
+  "@patientsOpenPharmacyWorkbenchAction": {
+    "description": "Action that opens the pharmacy workbench from patient detail."
+  },
   "patientsMedicalHistorySectionTitle": "Medical history",
   "@patientsMedicalHistorySectionTitle": {
     "description": "Patient medical history section title."

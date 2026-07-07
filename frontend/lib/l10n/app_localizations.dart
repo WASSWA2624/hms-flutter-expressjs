@@ -7468,6 +7468,24 @@ abstract class AppLocalizations {
   /// **'Allergies'**
   String get patientsAllergiesSectionTitle;
 
+  /// Pharmacy orders section title on the patient detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy orders'**
+  String get patientsPharmacyOrdersSectionTitle;
+
+  /// Empty state when a patient has no pharmacy orders.
+  ///
+  /// In en, this message translates to:
+  /// **'No pharmacy orders recorded for this patient.'**
+  String get patientsNoPharmacyOrders;
+
+  /// Action that opens the pharmacy workbench from patient detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Open pharmacy'**
+  String get patientsOpenPharmacyWorkbenchAction;
+
   /// Patient medical history section title.
   ///
   /// In en, this message translates to:

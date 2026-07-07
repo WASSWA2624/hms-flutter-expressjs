@@ -216,7 +216,10 @@ int opdFlowStageIndex(String? stage) {
 }
 
 /// Returns a compact slice of workflow stages around [currentStage].
-List<String> opdWorkflowStagesAround(String? currentStage, {int lookAhead = 2}) {
+List<String> opdWorkflowStagesAround(
+  String? currentStage, {
+  int lookAhead = 2,
+}) {
   final String normalized = _normalizedOpdStage(currentStage);
   if (normalized.isEmpty) {
     return const <String>[];

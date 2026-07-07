@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -36,6 +37,42 @@ void main() {
       expect(policy.grants(AppPermissions.rosterPublish), isTrue);
       expect(policy.grants(AppPermissions.emergencyWrite), isTrue);
     });
+
+    test(
+      'grants pharmacist patient and reports read without patient write',
+      () {
+        final session = AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['PHARMACIST']),
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'pharmacy-dispensing',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'reporting-analytics',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'patient-registry',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+
+        final policy = AppAccessPolicy.fromSession(session);
+
+        expect(policy.grants(AppPermissions.pharmacyRead), isTrue);
+        expect(policy.grants(AppPermissions.patientRead), isTrue);
+        expect(policy.grants(AppPermissions.reportsRead), isTrue);
+        expect(policy.grants(AppPermissions.patientWrite), isFalse);
+        expect(policy.hasActiveModule('pharmacy'), isTrue);
+        expect(policy.hasActiveModule('reports'), isTrue);
+        expect(AppRoutes.patients.accessRequirement.isAllowed(policy), isTrue);
+        expect(AppRoutes.pharmacy.accessRequirement.isAllowed(policy), isTrue);
+        expect(AppRoutes.reports.accessRequirement.isAllowed(policy), isTrue);
+      },
+    );
 
     test('normalizes display-form elevated role names', () {
       final session = AuthSession(

@@ -63,9 +63,7 @@ void main() {
             'last_name': 'Demo-Alpha',
           },
         },
-        'flow': <String, Object?>{
-          'stage': 'IN_LAB',
-        },
+        'flow': <String, Object?>{'stage': 'IN_LAB'},
       },
     );
 

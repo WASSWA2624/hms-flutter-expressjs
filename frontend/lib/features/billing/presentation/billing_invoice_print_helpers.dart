@@ -36,7 +36,10 @@ Future<void> printBillingInvoice({
 }
 
 String billingInvoiceSubtitle(BuildContext context, BillingWorkItem item) {
-  final List<PrintFormMetadataItem> items = _invoiceSubtitleItems(context, item);
+  final List<PrintFormMetadataItem> items = _invoiceSubtitleItems(
+    context,
+    item,
+  );
   return items
       .map((PrintFormMetadataItem entry) => '${entry.label}: ${entry.value};')
       .join(' , ');

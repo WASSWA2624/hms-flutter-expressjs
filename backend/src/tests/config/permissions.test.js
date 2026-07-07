@@ -45,6 +45,20 @@ describe('permissions config', () => {
     expect(normalizeRoleName('imaging_tech')).toBe(ROLES.RADIOLOGY_TECH);
   });
 
+  it('grants pharmacy, patient read, and reports read to PHARMACIST', () => {
+    expect(ROLE_PERMISSIONS[ROLES.PHARMACIST]).toEqual(
+      expect.arrayContaining([
+        PERMISSIONS.PHARMACY_READ,
+        PERMISSIONS.PHARMACY_WRITE,
+        PERMISSIONS.PATIENT_READ,
+        PERMISSIONS.REPORTS_READ,
+      ])
+    );
+    expect(ROLE_PERMISSIONS[ROLES.PHARMACIST]).not.toContain(
+      PERMISSIONS.PATIENT_WRITE
+    );
+  });
+
   it('normalizes display-form administrator roles to canonical roles', () => {
     expect(normalizeRoleName('Super Admin')).toBe(ROLES.SUPER_ADMIN);
     expect(normalizeRoleName('super-admin')).toBe(ROLES.SUPER_ADMIN);

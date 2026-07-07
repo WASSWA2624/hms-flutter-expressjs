@@ -173,12 +173,30 @@ final class SessionTokenProvider {
                   );
                   final permissions =
                       AuthSessionDto.permissionsFromResponseData(payload);
+                  final moduleEntitlements =
+                      AuthSessionDto.moduleEntitlementsFromResponseData(
+                        payload,
+                      );
+                  final subscriptionSummary =
+                      AuthSessionDto.subscriptionSummaryFromResponseData(
+                        payload,
+                      );
                   var enriched = session;
                   if (profile != null) {
                     enriched = enriched.enrichFromUserProfile(profile);
                   }
                   if (permissions.isNotEmpty) {
                     enriched = enriched.copyWith(permissions: permissions);
+                  }
+                  if (moduleEntitlements.isNotEmpty) {
+                    enriched = enriched.copyWith(
+                      moduleEntitlements: moduleEntitlements,
+                    );
+                  }
+                  if (subscriptionSummary != null) {
+                    enriched = enriched.copyWith(
+                      subscriptionSummary: subscriptionSummary,
+                    );
                   }
                   return enriched;
                 },
