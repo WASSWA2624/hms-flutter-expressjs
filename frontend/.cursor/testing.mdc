@@ -10,6 +10,7 @@ Defines the minimum testing structure for the reusable app foundation.
 ## Mandatory rules
 - Use `flutter_test` for unit and widget tests.
 - Use `integration_test` for startup, navigation, and important flows.
+- Use `patrol` (via `patrol_test/`) for end-to-end module workspace flows and failure diagnostics.
 - Use `mocktail` or provider overrides for repository/data-source tests.
 - Keep tests close to source structure where practical.
 - Test controllers, value objects, mappers, validators, and shared components.
@@ -23,6 +24,7 @@ Defines the minimum testing structure for the reusable app foundation.
 | Unit | validators, mappers, use cases, value objects |
 | Widget | components, pages, responsive layout, forms |
 | Integration | startup, routing, auth shell, platform-critical flows |
+| Patrol E2E | module workspace shells, cross-module navigation, failure diagnostics |
 | Golden | optional, for stable shared UI only |
 
 ## Acceptance checklist

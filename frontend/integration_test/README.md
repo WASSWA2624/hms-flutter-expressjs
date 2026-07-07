@@ -3,6 +3,9 @@
 Integration tests cover startup, navigation, and platform-critical flows that
 must run without production services or secrets.
 
+For Patrol end-to-end suites (module workspaces, failure diagnostics, web/native
+automation), see [`patrol_test/README.md`](../patrol_test/README.md).
+
 Run the integration suite locally with:
 
 ```sh

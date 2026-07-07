@@ -37,7 +37,18 @@ dev_dependencies:
   integration_test:
     sdk: flutter
   mocktail: ^1.0.5
+  patrol: ^4.6.1
   riverpod_lint: ^3.1.4
+
+patrol:
+  app_name: HOSSPI Hospital Management System
+  test_directory: patrol_test
+  android:
+    package_name: com.example.flutter_template
+  ios:
+    bundle_id: com.example.flutterTemplate
+  macos:
+    bundle_id: com.example.flutterTemplate
 
 flutter:
   generate: true

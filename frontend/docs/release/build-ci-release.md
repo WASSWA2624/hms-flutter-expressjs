@@ -25,6 +25,7 @@ dart format --set-exit-if-changed .
 flutter analyze
 flutter test
 flutter test integration_test
+patrol test -t patrol_test/smoke_test.dart -d chrome --web-headless=true
 ```
 
 Use `git diff --exit-code -- .` after generation to fail fast when committed
@@ -32,6 +33,12 @@ generated files are stale. Use `flutter test integration_test -d <deviceId>` if
 more than one Flutter device is connected; CI runs the integration smoke test on
 Linux under `xvfb` for deterministic desktop coverage. Use
 `flutter test --coverage` when coverage output is needed for a release review.
+
+Patrol smoke runs on Chrome in CI. Run the full Patrol suite locally with
+`./tool/run_patrol_tests.ps1 -FullSuite` (Windows) or
+`PATROL_FULL_SUITE=true ./tool/run_patrol_tests.sh`. See
+[`patrol_test/README.md`](../patrol_test/README.md) for platform requirements and
+failure report locations.
 
 ## CI Workflow
 
