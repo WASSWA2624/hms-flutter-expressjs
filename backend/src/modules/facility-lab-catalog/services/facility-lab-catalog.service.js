@@ -33,6 +33,43 @@ const {
   mapClinicalCatalogLabTestRow,
   mergeLabTestWithOffering,
 } = require('@services/lab-workspace/facility-lab-catalog.merge');
+const { emitToUsers, DIAGNOSTIC_EVENTS } = require('@lib/websocket');
+const {
+  resolveFacilityLabCatalogRecipients,
+} = require('@services/lab-workspace/lab.realtime');
+
+const publishLabCatalogRealtimeUpdate = async ({
+  tenantId,
+  facilityId,
+  termType,
+  action,
+  resourceId = null,
+  isActive = null,
+  actorUserId = null,
+} = {}) => {
+  try {
+    const recipientUserIds = await resolveFacilityLabCatalogRecipients({
+      tenantId,
+      facilityId,
+      actorUserId,
+    });
+    if (!recipientUserIds.length) return;
+
+    emitToUsers(recipientUserIds, DIAGNOSTIC_EVENTS.LAB_CATALOG_UPDATED, {
+      tenant_id: tenantId || null,
+      facility_id: facilityId || null,
+      term_type: String(termType || 'LAB_TEST').toUpperCase(),
+      resource_type: 'facility_lab_catalog',
+      resource_id: resourceId,
+      is_active: isActive,
+      action: String(action || 'UPDATED').trim().toUpperCase(),
+      occurred_at: new Date().toISOString(),
+      target_path: '/lab',
+    });
+  } catch (_error) {
+    // Realtime updates must never block catalog persistence.
+  }
+};
 
 const hasOwn = (value, key) => Object.prototype.hasOwnProperty.call(value || {}, key);
 const normalizeText = (value) => String(value || '').trim();
@@ -667,6 +704,16 @@ const upsertFacilityLabTestOffering = async (payload = {}, context = {}) => {
     ip_address: context.ip_address,
   }).catch(() => {});
 
+  publishLabCatalogRealtimeUpdate({
+    tenantId,
+    facilityId,
+    termType: 'LAB_TEST',
+    action: existing ? 'UPDATED' : 'ENABLED',
+    resourceId: labTestId,
+    isActive: offering.is_active,
+    actorUserId: userId,
+  });
+
   return mapMergedLabTestRecord(masterTest, offering);
 };
 
@@ -706,6 +753,16 @@ const disableFacilityLabTestOffering = async (labTestIdentifier, payload = {}, c
     diff: { before: offering, reason: normalizeText(payload.reason) },
     ip_address: context.ip_address,
   }).catch(() => {});
+
+  publishLabCatalogRealtimeUpdate({
+    tenantId,
+    facilityId,
+    termType: 'LAB_TEST',
+    action: 'DISABLED',
+    resourceId: labTestId,
+    isActive: false,
+    actorUserId: userId,
+  });
 
   return updated;
 };
@@ -758,6 +815,16 @@ const upsertFacilityLabPanelOffering = async (payload = {}, context = {}) => {
     ip_address: context.ip_address,
   }).catch(() => {});
 
+  publishLabCatalogRealtimeUpdate({
+    tenantId,
+    facilityId,
+    termType: 'LAB_PANEL',
+    action: existing ? 'UPDATED' : 'ENABLED',
+    resourceId: labPanelId,
+    isActive: offering.is_active,
+    actorUserId: userId,
+  });
+
   return mapMergedLabPanelRecord(masterPanel, offering);
 };
 
@@ -795,6 +862,16 @@ const disableFacilityLabPanelOffering = async (labPanelIdentifier, payload = {},
     diff: { before: offering, reason: normalizeText(payload.reason) },
     ip_address: context.ip_address,
   }).catch(() => {});
+
+  publishLabCatalogRealtimeUpdate({
+    tenantId,
+    facilityId,
+    termType: 'LAB_PANEL',
+    action: 'DISABLED',
+    resourceId: labPanelId,
+    isActive: false,
+    actorUserId: userId,
+  });
 
   return updated;
 };

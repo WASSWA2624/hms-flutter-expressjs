@@ -722,6 +722,28 @@ final class PharmacyWorkspaceController
     );
   }
 
+  Future<AppFailure?> deleteStorageRoom(String roomId) async {
+    final Result<void> result = await _repository.deleteStorageRoom(roomId);
+    return result.when(
+      success: (_) async {
+        await _refreshStorageLayout();
+        return null;
+      },
+      failure: (AppFailure failure) => failure,
+    );
+  }
+
+  Future<AppFailure?> deleteStorageShelf(String shelfId) async {
+    final Result<void> result = await _repository.deleteStorageShelf(shelfId);
+    return result.when(
+      success: (_) async {
+        await _refreshStorageLayout();
+        return null;
+      },
+      failure: (AppFailure failure) => failure,
+    );
+  }
+
   Future<AppFailure?> createDrug(
     PharmacyDrugInput input, {
     PharmacyFacilityOfferingInput? facilityOffering,

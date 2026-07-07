@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_events.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/lab/data/repositories/lab_repository_impl.dart';
@@ -69,7 +71,9 @@ final class LabWorkspaceController
       ref: ref,
       events: RealtimeEventGroups.lab,
       shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
-      onRefresh: (_) => _syncFromRealtime(),
+      onRefresh: (RealtimeMessage message) => _syncFromRealtime(
+        refreshCatalogs: message.event == RealtimeEvents.labCatalogUpdated,
+      ),
     );
     final Result<LabWorkspaceState> result = await runWorkspaceInitialLoad(
       ref,
@@ -81,12 +85,12 @@ final class LabWorkspaceController
     return result;
   }
 
-  Future<void> _syncFromRealtime() async {
+  Future<void> _syncFromRealtime({bool refreshCatalogs = false}) async {
     if (_isSyncing || (_currentState?.isSaving ?? false)) {
       _refreshPending = true;
       return;
     }
-    await _syncVisibleData();
+    await _syncVisibleData(refreshCatalogs: refreshCatalogs);
     _drainPendingRefresh();
   }
 

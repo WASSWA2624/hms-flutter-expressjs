@@ -9015,6 +9015,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyEditStorageShelfAction => 'Edit shelf';
 
   @override
+  String get pharmacyDeleteStorageRoomAction => 'Delete room';
+
+  @override
+  String get pharmacyDeleteStorageShelfAction => 'Delete shelf';
+
+  @override
+  String get pharmacyDeleteStorageRoomDialogTitle => 'Delete room';
+
+  @override
+  String get pharmacyDeleteStorageRoomDialogBody =>
+      'Remove this storage room and all its shelves? Drugs stored here will lose this location.';
+
+  @override
+  String get pharmacyDeleteStorageShelfDialogTitle => 'Delete shelf';
+
+  @override
+  String get pharmacyDeleteStorageShelfDialogBody =>
+      'Remove this shelf? Drugs stored here will lose this location.';
+
+  @override
   String get pharmacyStorageRoomNameLabel => 'Room name';
 
   @override

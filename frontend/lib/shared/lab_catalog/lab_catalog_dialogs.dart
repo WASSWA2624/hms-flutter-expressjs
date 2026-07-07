@@ -1577,6 +1577,7 @@ class _LabEnableFacilityOfferingDialogState
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCloseActionLabel,
+          leadingIcon: Icons.close,
           onPressed: () => Navigator.of(context).pop(false),
         ),
       ],
@@ -1768,6 +1769,7 @@ class _LabEnableOfferingPriceDialogState
             : l10n.labEnablePanelAction,
         isSaving: _isSaving,
         onSubmit: _submit,
+        submitIcon: Icons.check_circle_outline,
       ),
     );
   }
@@ -2395,16 +2397,19 @@ List<Widget> _dialogActions(
   required String submitLabel,
   required bool isSaving,
   VoidCallback? onSubmit,
+  IconData submitIcon = Icons.check,
 }) {
   final AppLocalizations l10n = context.l10n;
   return <Widget>[
     AppButton.tertiary(
       label: l10n.commonCancelActionLabel,
+      leadingIcon: Icons.close,
       enabled: !isSaving,
       onPressed: () => Navigator.of(context).pop(false),
     ),
     AppButton.primary(
       label: submitLabel,
+      leadingIcon: submitIcon,
       isLoading: isSaving,
       enabled: onSubmit != null && !isSaving,
       onPressed: onSubmit,

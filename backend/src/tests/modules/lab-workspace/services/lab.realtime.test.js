@@ -5,7 +5,10 @@ jest.mock('@prisma/client', () => ({
 }));
 
 const prisma = require('@prisma/client');
-const { resolveLabRealtimeRecipients } = require('@services/lab-workspace/lab.realtime');
+const {
+  resolveLabRealtimeRecipients,
+  resolveFacilityLabCatalogRecipients,
+} = require('@services/lab-workspace/lab.realtime');
 
 describe('lab.realtime', () => {
   beforeEach(() => {
@@ -45,5 +48,34 @@ describe('lab.realtime', () => {
 
     expect(recipients).toEqual([]);
     expect(prisma.user_role.findMany).not.toHaveBeenCalled();
+  });
+
+  describe('resolveFacilityLabCatalogRecipients', () => {
+    it('resolves lab-capable users in the facility and excludes the actor', async () => {
+      prisma.user_role.findMany.mockResolvedValue([
+        { user_id: 'lab-tech-1' },
+        { user_id: 'doctor-1' },
+        { user_id: 'actor-1' },
+        { user_id: 'lab-tech-1' },
+      ]);
+
+      const recipients = await resolveFacilityLabCatalogRecipients({
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+        actorUserId: 'actor-1',
+      });
+
+      expect(recipients).toEqual(['lab-tech-1', 'doctor-1']);
+      expect(prisma.user_role.findMany).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns an empty list when tenant id is missing', async () => {
+      const recipients = await resolveFacilityLabCatalogRecipients({
+        facilityId: 'facility-1',
+      });
+
+      expect(recipients).toEqual([]);
+      expect(prisma.user_role.findMany).not.toHaveBeenCalled();
+    });
   });
 });

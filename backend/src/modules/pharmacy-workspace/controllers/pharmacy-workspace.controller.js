@@ -268,6 +268,26 @@ const updatePharmacyStorageShelf = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.pharmacy_workspace.storage.shelf.update.success', data);
 });
 
+const deletePharmacyStorageRoom = asyncHandler(async (req, res) => {
+  const data = await pharmacyWorkspaceService.deletePharmacyStorageRoom(
+    req.params.roomId,
+    req.user?.id,
+    req.ip,
+    req.user || {}
+  );
+  return sendSuccess(res, 200, 'messages.pharmacy_workspace.storage.room.delete.success', data);
+});
+
+const deletePharmacyStorageShelf = asyncHandler(async (req, res) => {
+  const data = await pharmacyWorkspaceService.deletePharmacyStorageShelf(
+    req.params.shelfId,
+    req.user?.id,
+    req.ip,
+    req.user || {}
+  );
+  return sendSuccess(res, 200, 'messages.pharmacy_workspace.storage.shelf.delete.success', data);
+});
+
 module.exports = {
   getPharmacyWorkbench,
   getPharmacyOrderWorkflow,
@@ -287,4 +307,6 @@ module.exports = {
   updatePharmacyStorageRoom,
   createPharmacyStorageShelf,
   updatePharmacyStorageShelf,
+  deletePharmacyStorageRoom,
+  deletePharmacyStorageShelf,
 };

@@ -87,6 +87,24 @@ const txUpdateStorageShelf = async (tx, id, data) =>
     data,
   });
 
+const txSoftDeleteStorageRoom = async (tx, id, deletedAt = new Date()) =>
+  tx.pharmacy_storage_room.update({
+    where: { id },
+    data: { deleted_at: deletedAt, is_active: false },
+  });
+
+const txSoftDeleteShelvesForRoom = async (tx, storageRoomId, deletedAt = new Date()) =>
+  tx.pharmacy_storage_shelf.updateMany({
+    where: { storage_room_id: storageRoomId, deleted_at: null },
+    data: { deleted_at: deletedAt, is_active: false },
+  });
+
+const txSoftDeleteStorageShelf = async (tx, id, deletedAt = new Date()) =>
+  tx.pharmacy_storage_shelf.update({
+    where: { id },
+    data: { deleted_at: deletedAt, is_active: false },
+  });
+
 const findDrugBatchesWithStorageByDrugIds = async (drugIds = []) =>
   withDbErrorHandling(() => {
     const normalized = Array.from(new Set((drugIds || []).filter(Boolean)));
@@ -189,6 +207,9 @@ module.exports = {
   txUpdateStorageRoom,
   txCreateStorageShelf,
   txUpdateStorageShelf,
+  txSoftDeleteStorageRoom,
+  txSoftDeleteShelvesForRoom,
+  txSoftDeleteStorageShelf,
   findDrugBatchesWithStorageByDrugIds,
   findInventoryItemIdsByStorageFilters,
   findDrugIdsByStorageFilters,

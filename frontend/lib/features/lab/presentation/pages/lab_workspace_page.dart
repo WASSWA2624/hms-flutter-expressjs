@@ -874,8 +874,10 @@ class _LabConfigurationsDialogState
   }
 
   bool get _canEnableOfferings {
+    // Mirrors backend LAB_CONFIG_WRITE_ROLES (super/tenant/facility admin +
+    // lab tech): all of these hold the lab:write permission.
     final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
-    return policy.isElevated || policy.hasRole(AppRole.tenantAdmin);
+    return policy.grants(AppPermissions.labWrite);
   }
 
   @override

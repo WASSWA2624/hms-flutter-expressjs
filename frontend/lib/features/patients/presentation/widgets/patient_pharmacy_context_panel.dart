@@ -55,7 +55,7 @@ class PatientPharmacyContextPanel extends StatelessWidget {
                   );
             final String subtitle = <String>[
               if ((order.status ?? '').trim().isNotEmpty) order.status!.trim(),
-              if (occurredAt != null) occurredAt,
+              ?occurredAt,
             ].join(' · ');
 
             return Padding(

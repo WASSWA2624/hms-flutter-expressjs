@@ -56,8 +56,10 @@ class PharmacyStoragePanel extends ConsumerWidget {
           const SizedBox.shrink()
         else
           ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: !compact,
+            physics: compact
+                ? const AlwaysScrollableScrollPhysics()
+                : const NeverScrollableScrollPhysics(),
             itemCount: rooms.length,
             separatorBuilder: (_, _) => SizedBox(height: theme.spacing.sm),
             itemBuilder: (BuildContext context, int index) {
@@ -101,6 +103,15 @@ class PharmacyStoragePanel extends ConsumerWidget {
                             room: room,
                           ),
                         ),
+                        AppButton(
+                          iconOnly: true,
+                          leadingIcon: Icons.delete_outline,
+                          label: l10n.pharmacyDeleteStorageRoomAction,
+                          semanticLabel: l10n.pharmacyDeleteStorageRoomAction,
+                          color: theme.colorScheme.error,
+                          enabled: isAllowed,
+                          onPressed: () => _confirmDeleteRoom(context, ref, room),
+                        ),
                       ],
                     ),
                   ),
@@ -120,9 +131,12 @@ class PharmacyStoragePanel extends ConsumerWidget {
                                         shelf.label!.trim().isEmpty
                                     ? null
                                     : Text(shelf.label!),
-                                trailing: shelf.isActive
-                                    ? null
-                                    : Text(l10n.pharmacyStorageInactiveLabel),
+                                trailing: _buildShelfTrailing(
+                                  context,
+                                  ref,
+                                  room,
+                                  shelf,
+                                ),
                                 onTap: writeRequirement.allows(ref)
                                     ? () => _openShelfDialog(
                                         context,
@@ -167,7 +181,7 @@ class PharmacyStoragePanel extends ConsumerWidget {
             ),
           ),
           SizedBox(height: theme.spacing.md),
-          roomContent,
+          Expanded(child: roomContent),
         ],
       );
     }
@@ -203,6 +217,133 @@ class PharmacyStoragePanel extends ConsumerWidget {
     return showAppDialog<bool>(
       context: context,
       builder: (_) => _StorageShelfDialog(room: room, shelf: shelf),
+    );
+  }
+
+  Widget _buildShelfTrailing(
+    BuildContext context,
+    WidgetRef ref,
+    PharmacyStorageRoom room,
+    PharmacyStorageShelf shelf,
+  ) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    return AppAccessActionGate(
+      requirement: writeRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        if (!isAllowed) {
+          return shelf.isActive
+              ? const SizedBox.shrink()
+              : Text(l10n.pharmacyStorageInactiveLabel);
+        }
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (!shelf.isActive)
+              Padding(
+                padding: EdgeInsets.only(right: theme.spacing.xs),
+                child: Text(
+                  l10n.pharmacyStorageInactiveLabel,
+                  style: theme.textTheme.labelSmall,
+                ),
+              ),
+            AppButton(
+              iconOnly: true,
+              leadingIcon: Icons.edit_outlined,
+              label: l10n.pharmacyEditStorageShelfAction,
+              semanticLabel: l10n.pharmacyEditStorageShelfAction,
+              onPressed: () =>
+                  _openShelfDialog(context, ref, room, shelf: shelf),
+            ),
+            AppButton(
+              iconOnly: true,
+              leadingIcon: Icons.delete_outline,
+              label: l10n.pharmacyDeleteStorageShelfAction,
+              semanticLabel: l10n.pharmacyDeleteStorageShelfAction,
+              color: theme.colorScheme.error,
+              onPressed: () => _confirmDeleteShelf(context, ref, shelf),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _confirmDeleteRoom(
+    BuildContext context,
+    WidgetRef ref,
+    PharmacyStorageRoom room,
+  ) async {
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (_) => AppDialog(
+        title: Text(l10n.pharmacyDeleteStorageRoomDialogTitle),
+        content: Text(l10n.pharmacyDeleteStorageRoomDialogBody),
+        actions: <Widget>[
+          AppButton.tertiary(
+            label: l10n.commonCancelActionLabel,
+            leadingIcon: Icons.close,
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
+          AppButton.primary(
+            label: l10n.pharmacyDeleteStorageRoomAction,
+            leadingIcon: Icons.delete_outline,
+            onPressed: () => Navigator.of(context).pop(true),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+    final AppFailure? failure = await ref
+        .read(pharmacyWorkspaceControllerProvider.notifier)
+        .deleteStorageRoom(room.id);
+    if (!context.mounted || failure == null) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.pharmacyCatalogDeleteFailedMessage)),
+    );
+  }
+
+  Future<void> _confirmDeleteShelf(
+    BuildContext context,
+    WidgetRef ref,
+    PharmacyStorageShelf shelf,
+  ) async {
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (_) => AppDialog(
+        title: Text(l10n.pharmacyDeleteStorageShelfDialogTitle),
+        content: Text(l10n.pharmacyDeleteStorageShelfDialogBody),
+        actions: <Widget>[
+          AppButton.tertiary(
+            label: l10n.commonCancelActionLabel,
+            leadingIcon: Icons.close,
+            onPressed: () => Navigator.of(context).pop(false),
+          ),
+          AppButton.primary(
+            label: l10n.pharmacyDeleteStorageShelfAction,
+            leadingIcon: Icons.delete_outline,
+            onPressed: () => Navigator.of(context).pop(true),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+    final AppFailure? failure = await ref
+        .read(pharmacyWorkspaceControllerProvider.notifier)
+        .deleteStorageShelf(shelf.id);
+    if (!context.mounted || failure == null) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.pharmacyCatalogDeleteFailedMessage)),
     );
   }
 }

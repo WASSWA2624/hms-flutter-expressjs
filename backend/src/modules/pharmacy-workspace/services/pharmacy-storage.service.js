@@ -370,6 +370,54 @@ const updatePharmacyStorageShelf = async (identifier, payload = {}, userId, ipAd
   return mapStorageShelfRecord({ ...updated, storage_room: existing.storage_room });
 };
 
+const deletePharmacyStorageRoom = async (identifier, userId, ipAddress, user = {}) => {
+  const scope = resolveScopedUserContext(user);
+  const existing = await pharmacyStorageRepository.findStorageRoomById(identifier, true);
+  if (!existing || !matchesTenantScope(existing, scope)) {
+    throw new HttpError('errors.resource.not_found', 404);
+  }
+  const roomId = existing.id;
+
+  await pharmacyWorkspaceRepository.withTransaction(async (tx) => {
+    await pharmacyStorageRepository.txSoftDeleteShelvesForRoom(tx, roomId);
+    await pharmacyStorageRepository.txSoftDeleteStorageRoom(tx, roomId);
+  });
+
+  createAuditLog({
+    tenant_id: existing.tenant_id,
+    user_id: userId,
+    action: 'DELETE',
+    entity: 'pharmacy_storage_room',
+    entity_id: roomId,
+    ip_address: ipAddress,
+  }).catch(() => {});
+
+  return { id: toPublicIdentifier(existing.human_friendly_id, existing.id), deleted: true };
+};
+
+const deletePharmacyStorageShelf = async (identifier, userId, ipAddress, user = {}) => {
+  const scope = resolveScopedUserContext(user);
+  const existing = await pharmacyStorageRepository.findStorageShelfById(identifier, true);
+  if (!existing || !matchesTenantScope(existing, scope)) {
+    throw new HttpError('errors.resource.not_found', 404);
+  }
+
+  await pharmacyWorkspaceRepository.withTransaction((tx) =>
+    pharmacyStorageRepository.txSoftDeleteStorageShelf(tx, existing.id)
+  );
+
+  createAuditLog({
+    tenant_id: existing.tenant_id,
+    user_id: userId,
+    action: 'DELETE',
+    entity: 'pharmacy_storage_shelf',
+    entity_id: existing.id,
+    ip_address: ipAddress,
+  }).catch(() => {});
+
+  return { id: toPublicIdentifier(existing.human_friendly_id, existing.id), deleted: true };
+};
+
 const matchesTenantScope = (record, scope) => {
   if (!record) return false;
   if (scope?.can_manage_all_tenants) return true;
@@ -389,4 +437,6 @@ module.exports = {
   updatePharmacyStorageRoom,
   createPharmacyStorageShelf,
   updatePharmacyStorageShelf,
+  deletePharmacyStorageRoom,
+  deletePharmacyStorageShelf,
 };

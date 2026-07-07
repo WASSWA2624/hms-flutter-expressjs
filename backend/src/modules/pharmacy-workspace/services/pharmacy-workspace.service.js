@@ -59,6 +59,8 @@ const {
   updatePharmacyStorageRoom,
   createPharmacyStorageShelf,
   updatePharmacyStorageShelf,
+  deletePharmacyStorageRoom,
+  deletePharmacyStorageShelf,
 } = require('@services/pharmacy-workspace/pharmacy-storage.service');
 const { resolveIdentifierForPayload } = require('@lib/identifiers/service-identifier-resolution');
 const { resolveOperationalFacilityId } = require('@lib/facility-context');
@@ -2488,4 +2490,6 @@ module.exports = {
   updatePharmacyStorageRoom,
   createPharmacyStorageShelf,
   updatePharmacyStorageShelf,
+  deletePharmacyStorageRoom,
+  deletePharmacyStorageShelf,
 };

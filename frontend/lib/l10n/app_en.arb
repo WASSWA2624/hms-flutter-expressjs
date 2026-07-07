@@ -11607,6 +11607,30 @@
   "@pharmacyEditStorageShelfAction": {
     "description": "Pharmacy edit storage shelf action."
   },
+  "pharmacyDeleteStorageRoomAction": "Delete room",
+  "@pharmacyDeleteStorageRoomAction": {
+    "description": "Pharmacy delete storage room action."
+  },
+  "pharmacyDeleteStorageShelfAction": "Delete shelf",
+  "@pharmacyDeleteStorageShelfAction": {
+    "description": "Pharmacy delete storage shelf action."
+  },
+  "pharmacyDeleteStorageRoomDialogTitle": "Delete room",
+  "@pharmacyDeleteStorageRoomDialogTitle": {
+    "description": "Pharmacy delete storage room confirmation title."
+  },
+  "pharmacyDeleteStorageRoomDialogBody": "Remove this storage room and all its shelves? Drugs stored here will lose this location.",
+  "@pharmacyDeleteStorageRoomDialogBody": {
+    "description": "Pharmacy delete storage room confirmation body."
+  },
+  "pharmacyDeleteStorageShelfDialogTitle": "Delete shelf",
+  "@pharmacyDeleteStorageShelfDialogTitle": {
+    "description": "Pharmacy delete storage shelf confirmation title."
+  },
+  "pharmacyDeleteStorageShelfDialogBody": "Remove this shelf? Drugs stored here will lose this location.",
+  "@pharmacyDeleteStorageShelfDialogBody": {
+    "description": "Pharmacy delete storage shelf confirmation body."
+  },
   "pharmacyStorageRoomNameLabel": "Room name",
   "@pharmacyStorageRoomNameLabel": {
     "description": "Pharmacy storage room name field label."

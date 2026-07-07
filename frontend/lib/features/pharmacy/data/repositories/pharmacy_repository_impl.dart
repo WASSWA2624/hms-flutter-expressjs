@@ -482,6 +482,32 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
       },
     );
   }
+
+  @override
+  Future<Result<void>> deleteStorageRoom(String roomId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.pharmacy.path,
+        'storage',
+        'rooms',
+        roomId,
+      ]),
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<void>> deleteStorageShelf(String shelfId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.pharmacy.path,
+        'storage',
+        'shelves',
+        shelfId,
+      ]),
+      decoder: (_) {},
+    );
+  }
 }
 
 PharmacyJsonMap _expectMap(Object? value) {

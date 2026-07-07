@@ -109,6 +109,7 @@ const CRITICAL_ALERT_EVENTS = {
  */
 const DIAGNOSTIC_EVENTS = {
   LAB_WORKFLOW_UPDATED: 'diagnostic.lab_workflow_updated',
+  LAB_CATALOG_UPDATED: 'diagnostic.lab_catalog_updated',
   LAB_RESULT_READY: 'diagnostic.lab_result_ready',
   LAB_RESULT_UPDATED: 'diagnostic.lab_result_updated',
   LAB_RESULT_CRITICAL: 'diagnostic.lab_result_critical',

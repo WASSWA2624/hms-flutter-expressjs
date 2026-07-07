@@ -7,8 +7,6 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
-const double _catalogDialogHeightFactor = 0.72;
-
 PharmacyWorkspaceState? _readPharmacyWorkspaceState(WidgetRef ref) {
   return ref
       .read(pharmacyWorkspaceControllerProvider)
@@ -74,19 +72,12 @@ class _PharmacyCatalogDialogState
               failure: (_) => widget.initialState,
             ) ??
         widget.initialState;
-    final double dialogHeight =
-        MediaQuery.sizeOf(context).height * _catalogDialogHeightFactor;
 
     return AppDialog(
       title: Text(l10n.pharmacyCatalogPanelTitle),
       icon: const Icon(Icons.inventory_2_outlined),
-      initialMaximized: false,
       maxWidth: 1080,
-      content: SizedBox(
-        height: dialogHeight,
-        width: double.infinity,
-        child: PharmacyCatalogPanel(state: state, fillHeight: true),
-      ),
+      content: PharmacyCatalogPanel(state: state, fillHeight: true),
     );
   }
 }

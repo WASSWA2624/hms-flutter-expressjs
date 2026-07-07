@@ -58,7 +58,40 @@ const resolveLabRealtimeRecipients = async ({
     : recipients.filter(Boolean);
 };
 
+const resolveFacilityLabCatalogRecipients = async ({
+  tenantId = null,
+  facilityId = null,
+  actorUserId = null,
+} = {}) => {
+  const normalizedTenantId = String(tenantId || '').trim();
+  if (!normalizedTenantId || !prisma?.user_role?.findMany) {
+    return [];
+  }
+
+  const normalizedFacilityId = String(facilityId || '').trim() || null;
+  const rows = await prisma.user_role.findMany({
+    where: {
+      deleted_at: null,
+      tenant_id: normalizedTenantId,
+      role: {
+        name: { in: LAB_RECIPIENT_ROLES },
+        deleted_at: null,
+      },
+      ...(normalizedFacilityId
+        ? { OR: [{ facility_id: null }, { facility_id: normalizedFacilityId }] }
+        : {}),
+    },
+    select: { user_id: true },
+  });
+
+  const recipients = [...new Set(rows.map((row) => row.user_id).filter(Boolean))];
+  return actorUserId
+    ? recipients.filter((userId) => userId && userId !== actorUserId)
+    : recipients;
+};
+
 module.exports = {
   LAB_RECIPIENT_ROLES,
   resolveLabRealtimeRecipients,
+  resolveFacilityLabCatalogRecipients,
 };

@@ -185,4 +185,20 @@ router.put(
   pharmacyWorkspaceController.updatePharmacyStorageShelf
 );
 
+router.delete(
+  '/storage/rooms/:roomId',
+  validateRequest({ params: pharmacyStorageRoomParamsSchema }),
+  authenticate(),
+  authorize(INVENTORY_WRITE_SCOPES, 'permission'),
+  pharmacyWorkspaceController.deletePharmacyStorageRoom
+);
+
+router.delete(
+  '/storage/shelves/:shelfId',
+  validateRequest({ params: pharmacyStorageShelfParamsSchema }),
+  authenticate(),
+  authorize(INVENTORY_WRITE_SCOPES, 'permission'),
+  pharmacyWorkspaceController.deletePharmacyStorageShelf
+);
+
 module.exports = router;

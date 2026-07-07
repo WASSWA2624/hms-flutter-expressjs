@@ -175,6 +175,7 @@ abstract final class RealtimeEventGroups {
 
   static const Set<String> lab = <String>{
     RealtimeEvents.labWorkflowUpdated,
+    RealtimeEvents.labCatalogUpdated,
     RealtimeEvents.labResultReady,
     RealtimeEvents.labResultUpdated,
     RealtimeEvents.labResultCritical,

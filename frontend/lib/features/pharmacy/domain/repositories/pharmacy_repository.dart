@@ -105,4 +105,8 @@ abstract interface class PharmacyRepository {
     String shelfId,
     PharmacyStorageShelfUpdateInput input,
   );
+
+  Future<Result<void>> deleteStorageRoom(String roomId);
+
+  Future<Result<void>> deleteStorageShelf(String shelfId);
 }

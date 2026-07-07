@@ -16816,6 +16816,42 @@ abstract class AppLocalizations {
   /// **'Edit shelf'**
   String get pharmacyEditStorageShelfAction;
 
+  /// Pharmacy delete storage room action.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete room'**
+  String get pharmacyDeleteStorageRoomAction;
+
+  /// Pharmacy delete storage shelf action.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete shelf'**
+  String get pharmacyDeleteStorageShelfAction;
+
+  /// Pharmacy delete storage room confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete room'**
+  String get pharmacyDeleteStorageRoomDialogTitle;
+
+  /// Pharmacy delete storage room confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this storage room and all its shelves? Drugs stored here will lose this location.'**
+  String get pharmacyDeleteStorageRoomDialogBody;
+
+  /// Pharmacy delete storage shelf confirmation title.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete shelf'**
+  String get pharmacyDeleteStorageShelfDialogTitle;
+
+  /// Pharmacy delete storage shelf confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this shelf? Drugs stored here will lose this location.'**
+  String get pharmacyDeleteStorageShelfDialogBody;
+
   /// Pharmacy storage room name field label.
   ///
   /// In en, this message translates to:

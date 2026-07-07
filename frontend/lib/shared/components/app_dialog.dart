@@ -311,9 +311,15 @@ class _AppDialogState extends State<AppDialog> {
         : insetAvailableWidth;
 
     if (_isMaximized) {
+      final Size restoredSize =
+          _preMaximizeSize ??
+          Size(
+            defaultWidth,
+            math.min(insetAvailableHeight, insetAvailableHeight * 0.85),
+          );
       setState(() {
         _isMaximized = false;
-        _desktopSize = _preMaximizeSize;
+        _desktopSize = restoredSize;
         _dragOffset = _preMaximizeDragOffset ?? Offset.zero;
         _preMaximizeSize = null;
         _preMaximizeDragOffset = null;
