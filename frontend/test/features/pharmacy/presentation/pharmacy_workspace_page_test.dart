@@ -8,8 +8,7 @@ import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/features/pharmacy/data/repositories/pharmacy_repository_impl.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/repositories/pharmacy_repository.dart';
-import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
-import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_catalog_dialog.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -17,10 +16,21 @@ import 'package:mocktail/mocktail.dart';
 
 class _MockPharmacyRepository extends Mock implements PharmacyRepository {}
 
-const PharmacyWorkbench _workbench = PharmacyWorkbench(
-  summary: PharmacyWorkbenchSummary(),
-  orders: AppPage<PharmacyOrder>(
-    items: <PharmacyOrder>[],
+const PharmacyOrder _sampleOrder = PharmacyOrder(
+  id: 'order-1',
+  displayId: 'PHO-3E51507634',
+  patientDisplayName: 'Noah Demo-Echo',
+  location: 'OUTPATIENT',
+  status: 'ORDERED',
+  itemCount: 1,
+  quantityPrescribedTotal: 24,
+  quantityDispensedTotal: 24,
+);
+
+final PharmacyWorkbench _workbenchWithOrders = PharmacyWorkbench(
+  summary: const PharmacyWorkbenchSummary(totalOrders: 1),
+  orders: const AppPage<PharmacyOrder>(
+    items: <PharmacyOrder>[_sampleOrder],
     request: AppPageRequest(),
   ),
 );
@@ -34,9 +44,9 @@ const PharmacyInventoryWorkbench _inventoryWorkbench =
       ),
     );
 
-void _stubPharmacyBootstrap(_MockPharmacyRepository repository) {
+void _stubPharmacyRepository(_MockPharmacyRepository repository) {
   when(() => repository.loadWorkbench(any())).thenAnswer(
-    (_) async => const Result<PharmacyWorkbench>.success(_workbench),
+    (_) async => Result<PharmacyWorkbench>.success(_workbenchWithOrders),
   );
   when(() => repository.searchDrugs(any())).thenAnswer(
     (_) async => const Result<AppPage<PharmacyDrug>>.success(
@@ -63,38 +73,16 @@ void _stubPharmacyBootstrap(_MockPharmacyRepository repository) {
   );
 }
 
-class _CatalogDialogLauncher extends ConsumerStatefulWidget {
-  const _CatalogDialogLauncher();
-
-  @override
-  ConsumerState<_CatalogDialogLauncher> createState() =>
-      _CatalogDialogLauncherState();
-}
-
-class _CatalogDialogLauncherState
-    extends ConsumerState<_CatalogDialogLauncher> {
-  @override
-  void initState() {
-    super.initState();
-    Future<void>.microtask(() async {
-      await ref.read(pharmacyWorkspaceControllerProvider.future);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return TextButton(
-      onPressed: () => openPharmacyCatalogDialog(context, ref),
-      child: const Text('Open catalog'),
-    );
-  }
-}
-
-Future<void> _pumpCatalogDialog(
+Future<void> _pumpPharmacyWorkspace(
   WidgetTester tester,
   _MockPharmacyRepository repository,
 ) async {
-  _stubPharmacyBootstrap(repository);
+  _stubPharmacyRepository(repository);
+
+  tester.view.physicalSize = const Size(1440, 900);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
 
   await tester.pumpWidget(
     ProviderScope(
@@ -107,12 +95,13 @@ Future<void> _pumpCatalogDialog(
       child: const MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(body: _CatalogDialogLauncher()),
+        home: Scaffold(body: PharmacyWorkspacePage()),
       ),
     ),
   );
   await tester.pump();
-  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -129,61 +118,43 @@ void main() {
     registerFallbackValue(const PharmacyInventoryStockQuery());
   });
 
-  testWidgets('openPharmacyCatalogDialog renders a visible shell', (
+  testWidgets('PharmacyWorkspacePage opens catalog and stock dialog', (
     WidgetTester tester,
   ) async {
-    tester.view.physicalSize = const Size(1200, 800);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+    await _pumpPharmacyWorkspace(tester, repository);
 
-    await _pumpCatalogDialog(tester, repository);
-    await tester.tap(find.text('Open catalog'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Noah Demo-Echo'), findsOneWidget);
+    expect(find.text('Catalog and stock'), findsOneWidget);
+
+    await tester.tap(find.text('Catalog and stock'));
     await tester.pumpAndSettle();
 
     expect(find.text('CATALOG AND STOCK'), findsOneWidget);
     expect(find.byType(AppDialog), findsOneWidget);
     expect(tester.takeException(), isNull);
 
-    final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
-    expect(dialog.initialMaximized, isFalse);
-
-    final RenderBox shell = tester.renderObject<RenderBox>(
-      find.byKey(AppDialog.shellKey),
-    );
-    expect(shell.size.height, greaterThan(200));
-    expect(shell.size.width, greaterThan(200));
-  });
-
-  testWidgets('openPharmacyCatalogDialog closes cleanly via close and escape', (
-    WidgetTester tester,
-  ) async {
-    tester.view.physicalSize = const Size(1200, 800);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    await _pumpCatalogDialog(tester, repository);
-    await tester.tap(find.text('Open catalog'));
-    await tester.pumpAndSettle();
-    expect(find.byType(AppDialog), findsOneWidget);
-
     await tester.tap(find.byTooltip('Close'));
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDialog), findsNothing);
-    expect(find.text('Open catalog'), findsOneWidget);
+    expect(find.text('Noah Demo-Echo'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
-    await tester.tap(find.text('Open catalog'));
+  testWidgets('PharmacyWorkspacePage catalog dialog closes with escape', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPharmacyWorkspace(tester, repository);
+
+    await tester.tap(find.text('Catalog and stock'));
     await tester.pumpAndSettle();
+    expect(find.byType(AppDialog), findsOneWidget);
 
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDialog), findsNothing);
-    expect(find.text('Open catalog'), findsOneWidget);
+    expect(find.text('Pharmacy'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

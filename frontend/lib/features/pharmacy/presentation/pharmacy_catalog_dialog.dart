@@ -57,19 +57,23 @@ class _PharmacyCatalogDialogState
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      ref
-          .read(pharmacyWorkspaceControllerProvider.notifier)
-          .prepareCatalogTab(widget.initialTab);
-    });
+    ref
+        .read(pharmacyWorkspaceControllerProvider.notifier)
+        .prepareCatalogTab(widget.initialTab);
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final PharmacyWorkspaceState state =
+        ref
+            .watch(pharmacyWorkspaceControllerProvider)
+            .value
+            ?.when(
+              success: (PharmacyWorkspaceState value) => value,
+              failure: (_) => widget.initialState,
+            ) ??
+        widget.initialState;
     final double dialogHeight =
         MediaQuery.sizeOf(context).height * _catalogDialogHeightFactor;
 
@@ -77,19 +81,11 @@ class _PharmacyCatalogDialogState
       title: Text(l10n.pharmacyCatalogPanelTitle),
       icon: const Icon(Icons.inventory_2_outlined),
       initialMaximized: false,
-      scrollable: true,
       maxWidth: 1080,
       content: SizedBox(
         height: dialogHeight,
-        child: PharmacyCatalogPanel(state: _initialState, fillHeight: true),
+        child: PharmacyCatalogPanel(state: state, fillHeight: true),
       ),
     );
-  }
-
-  PharmacyWorkspaceState get _initialState {
-    if (widget.initialState.catalogTab == widget.initialTab) {
-      return widget.initialState;
-    }
-    return widget.initialState.copyWith(catalogTab: widget.initialTab);
   }
 }
