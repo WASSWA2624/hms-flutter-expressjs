@@ -266,19 +266,6 @@ class _PharmacyWorkspaceContentState
                   unawaited(openPharmacyCatalogDialog(context, ref));
                 },
               ),
-              AppButton.secondary(
-                label: l10n.pharmacyStoragePanelTitle,
-                leadingIcon: Icons.warehouse_outlined,
-                onPressed: () {
-                  unawaited(
-                    openPharmacyCatalogDialog(
-                      context,
-                      ref,
-                      initialTab: PharmacyCatalogTab.storage,
-                    ),
-                  );
-                },
-              ),
             ],
           ),
           const AppToolbarOverflowSection(showsNotifications: true),

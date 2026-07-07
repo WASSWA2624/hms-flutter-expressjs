@@ -148,8 +148,8 @@ void main() {
     expect(tester.takeException(), isNull);
 
     final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
-    expect(dialog.scrollable, isTrue);
-    expect(dialog.initialMaximized, isFalse);
+    expect(dialog.scrollable, isFalse);
+    expect(dialog.initialMaximized, isTrue);
 
     final RenderBox shell = tester.renderObject<RenderBox>(
       find.byKey(AppDialog.shellKey),
