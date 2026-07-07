@@ -205,8 +205,13 @@ AppWorkspaceStatusTone opdBillingTone(OpdBillingState state) {
   };
 }
 
-String? opdMoneyLabel(BuildContext context, num? amount, String? currency) {
-  if (amount == null || amount == 0) {
+String? opdMoneyLabel(
+  BuildContext context,
+  num? amount,
+  String? currency, {
+  bool allowZero = false,
+}) {
+  if (amount == null || (!allowZero && amount == 0)) {
     return null;
   }
 

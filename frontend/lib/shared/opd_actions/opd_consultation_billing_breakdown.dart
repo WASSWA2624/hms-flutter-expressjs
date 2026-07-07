@@ -35,9 +35,7 @@ OpdConsultationBillingBreakdown opdConsultationBillingBreakdown(
   return OpdConsultationBillingBreakdown(
     requiredAmount: requiredAmount,
     paidAmount: paidAmount > 0 ? paidAmount : null,
-    remainingBalance: remainingBalance != null && remainingBalance > 0
-        ? remainingBalance
-        : 0,
+    remainingBalance: remainingBalance,
     currency: source.consultationCurrency,
   );
 }
@@ -73,6 +71,7 @@ class OpdConsultationBillingBreakdownPanel extends StatelessWidget {
       context,
       breakdown.remainingBalance,
       breakdown.currency,
+      allowZero: true,
     );
 
     return DecoratedBox(

@@ -36,7 +36,6 @@ Future<void> showHrCompensationDialog(
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
     maxWidth: 720,
-    scrollable: true,
     buildFields:
         (
           BuildContext context,

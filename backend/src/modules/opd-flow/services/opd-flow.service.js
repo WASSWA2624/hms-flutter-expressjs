@@ -24,6 +24,7 @@ const {
   throwIfActiveOpdLockError
 } = require('@lib/opd-active-encounter');
 const { CONSULTATION_FEE_PRACTITIONER_TYPES } = require('@lib/hr/reference-data');
+const { recalculateInvoiceStateTx, computeInvoiceFinancials } = require('@lib/billing/financials');
 
 const STAGES = {
   WAITING_CONSULTATION_PAYMENT: 'WAITING_CONSULTATION_PAYMENT',
@@ -928,6 +929,44 @@ const resolveConsultationPaymentStatus = ({ consultation = {}, invoice = null, p
     invoice?.status ||
     (consultation.is_paid ? 'COMPLETED' : consultation.require_payment ? 'PENDING' : 'NOT_REQUIRED')
   );
+};
+
+/**
+ * Recompute an invoice's status/billing_status from ALL of its payments,
+ * refunds, and adjustments (the same canonical billing math the billing
+ * workspace uses), then mirror the result onto the consultation snapshot so the
+ * OPD flow and the billing workspace stay synchronized. Handles partial
+ * payments, multiple payments, refunds, and adjustments — not just the single
+ * payment being recorded. Mutates `consultation` in place and returns the
+ * refreshed invoice plus derived flags.
+ */
+const applyConsultationBillingSnapshot = async (
+  tx,
+  { invoiceId, payment = null, consultation, currency = null, paymentStatus = null } = {}
+) => {
+  const recalculated = await recalculateInvoiceStateTx(tx, invoiceId);
+  const invoice =
+    recalculated?.invoice || (await tx.invoice.findFirst({ where: { id: invoiceId, deleted_at: null } }));
+  const financials = recalculated?.financials || computeInvoiceFinancials(invoice || {});
+  const netPaidTotal = toDecimalNumber(financials.net_paid_total);
+  const balanceDue = toDecimalNumber(financials.balance_due);
+  const isPaid = PAID_BILLING_STATUSES.has(normalizeUpper(invoice?.billing_status));
+
+  consultation.invoice_id = invoice?.id || invoiceId || consultation.invoice_id || null;
+  if (payment?.id) {
+    consultation.payment_id = payment.id;
+  }
+  consultation.payment_status = normalizeUpper(invoice?.billing_status) || paymentStatus || consultation.payment_status || null;
+  consultation.is_paid = isPaid;
+  consultation.paid_amount = netPaidTotal > 0 ? netPaidTotal.toFixed(2) : null;
+  consultation.balance_due = balanceDue > 0 ? balanceDue.toFixed(2) : '0.00';
+  consultation.paid_at =
+    isPaid && payment?.paid_at ? payment.paid_at.toISOString() : consultation.paid_at || null;
+  if (currency) {
+    consultation.currency = currency;
+  }
+
+  return { invoice, financials, isPaid, netPaidTotal, balanceDue };
 };
 
 const enrichConsultationBillingForListItems = async (items = []) => {
@@ -3274,21 +3313,19 @@ const updateActiveEncounterContext = async (id, data, context = {}) => {
             transaction_ref: data.pay_now.transaction_ref || null
           }
         });
-        const isPaid =
-          paymentStatus === 'COMPLETED' && toDecimalNumber(amount) >= toDecimalNumber(invoice.total_amount);
-        await tx.invoice.update({
-          where: { id: invoice.id },
-          data: {
-            status: isPaid ? 'PAID' : 'SENT',
-            billing_status: paymentStatus === 'COMPLETED' ? (isPaid ? 'PAID' : 'PARTIAL') : 'ISSUED',
-            currency
-          }
+        if (currency && normalizeUpper(invoice.currency) !== normalizeUpper(currency)) {
+          invoice = await tx.invoice.update({
+            where: { id: invoice.id },
+            data: { currency }
+          });
+        }
+        await applyConsultationBillingSnapshot(tx, {
+          invoiceId: invoice.id,
+          payment,
+          consultation,
+          currency,
+          paymentStatus
         });
-        consultation.payment_id = payment.id;
-        consultation.payment_status = paymentStatus;
-        consultation.is_paid = isPaid;
-        consultation.paid_amount = isPaid ? amount : null;
-        consultation.paid_at = isPaid && payment.paid_at ? payment.paid_at.toISOString() : null;
       } else if (!consultation.payment_status) {
         consultation.payment_status = consultation.require_payment ? 'PENDING' : 'NOT_REQUIRED';
       }
@@ -3473,40 +3510,27 @@ const payConsultation = async (id, data, context = {}) => {
 
       const correctedInvoiceTotal =
         isCorrection && data.amount ? amount : normalizeDecimalString(invoice.total_amount, amount);
-      if (
+      const shouldUpdateTotal =
         isCorrection &&
         data.amount &&
-        toDecimalNumber(correctedInvoiceTotal) !== toDecimalNumber(invoice.total_amount)
-      ) {
-        invoice = await tx.invoice.update({
-          where: { id: invoice.id },
-          data: {
-            total_amount: correctedInvoiceTotal,
-            currency
-          }
-        });
-      }
+        toDecimalNumber(correctedInvoiceTotal) !== toDecimalNumber(invoice.total_amount);
 
-      const invoiceTotal = toDecimalNumber(correctedInvoiceTotal);
-      const paidAmount = toDecimalNumber(amount);
-      const isPaid = paymentStatus === 'COMPLETED' && paidAmount >= invoiceTotal;
-
-      await tx.invoice.update({
+      invoice = await tx.invoice.update({
         where: { id: invoice.id },
         data: {
-          status: isPaid ? 'PAID' : 'SENT',
           currency,
-          billing_status: paymentStatus === 'COMPLETED' ? (isPaid ? 'PAID' : 'PARTIAL') : 'ISSUED'
+          ...(shouldUpdateTotal ? { total_amount: correctedInvoiceTotal } : {})
         }
       });
 
       consultation.invoice_id = invoice.id;
-      consultation.payment_id = payment.id;
-      consultation.payment_status = paymentStatus;
-      consultation.is_paid = isPaid;
-      consultation.paid_amount = isPaid ? amount : null;
-      consultation.paid_at = isPaid && payment.paid_at ? payment.paid_at.toISOString() : null;
-      consultation.currency = currency;
+      await applyConsultationBillingSnapshot(tx, {
+        invoiceId: invoice.id,
+        payment,
+        consultation,
+        currency,
+        paymentStatus
+      });
       flow.consultation = consultation;
 
       if (flow.stage === STAGES.WAITING_CONSULTATION_PAYMENT && consultation.is_paid) {
