@@ -42,15 +42,15 @@ void main() {
 
   setUp(() {
     repository = _MockPharmacyRepository();
-    final PharmacyWorkbench workbench = PharmacyWorkbench(
-      summary: const PharmacyWorkbenchSummary(totalOrders: 1),
-      orders: const AppPage<PharmacyOrder>(
+    const PharmacyWorkbench workbench = PharmacyWorkbench(
+      summary: PharmacyWorkbenchSummary(totalOrders: 1),
+      orders: AppPage<PharmacyOrder>(
         items: <PharmacyOrder>[_sampleOrder],
         request: AppPageRequest(),
       ),
     );
     when(() => repository.loadWorkbench(any())).thenAnswer(
-      (_) async => Result<PharmacyWorkbench>.success(workbench),
+      (_) async => const Result<PharmacyWorkbench>.success(workbench),
     );
     when(() => repository.searchDrugs(any())).thenAnswer(
       (_) async => const Result<AppPage<PharmacyDrug>>.success(

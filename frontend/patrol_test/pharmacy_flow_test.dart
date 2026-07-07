@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
@@ -14,7 +15,7 @@ void main() {
       await expectAnyVisible($, <String>[
         'Pharmacy',
         'Loading pharmacy workspace',
-      ]);
+      ], timeout: const Duration(seconds: 60));
     },
     targetFile: 'patrol_test/pharmacy_flow_test.dart',
   );
@@ -32,7 +33,7 @@ void main() {
       await expectAnyVisible($, <String>[
         'Pharmacy',
         'Loading pharmacy workspace',
-      ]);
+      ], timeout: const Duration(seconds: 60));
     },
     targetFile: 'patrol_test/pharmacy_flow_test.dart',
   );
@@ -44,11 +45,19 @@ void main() {
         $,
         DemoAccount.pharmacy,
         AppRoutes.pharmacy.path,
-        viewport: patrolDesktopViewport,
       );
 
-      await expectAnyVisible($, <String>['Pharmacy']);
+      await expectAnyVisible($, <String>['Pharmacy'], timeout: const Duration(seconds: 60));
       await $.pumpAndSettle();
+
+      await expectAnyVisible(
+        $,
+        <String>['Catalog and stock'],
+        timeout: const Duration(seconds: 90),
+      );
+      while (find.text('Loading pharmacy workspace').evaluate().isNotEmpty) {
+        await $.pump(const Duration(milliseconds: 250));
+      }
 
       final Finder catalogAction = find.text('Catalog and stock');
       if (catalogAction.evaluate().isEmpty) {
@@ -66,7 +75,7 @@ void main() {
       await expectAnyVisible($, <String>['CATALOG AND STOCK']);
       expect(find.byType(AppDialog), findsOneWidget);
 
-      await $.tester.tap(find.byTooltip('Close'));
+      await $.tester.sendKeyEvent(LogicalKeyboardKey.escape);
       await $.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsNothing);

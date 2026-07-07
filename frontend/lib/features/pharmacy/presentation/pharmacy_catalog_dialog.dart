@@ -84,6 +84,7 @@ class _PharmacyCatalogDialogState
       maxWidth: 1080,
       content: SizedBox(
         height: dialogHeight,
+        width: double.infinity,
         child: PharmacyCatalogPanel(state: state, fillHeight: true),
       ),
     );

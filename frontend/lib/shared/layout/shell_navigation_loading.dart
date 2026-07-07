@@ -16,6 +16,13 @@ class ShellNavigationLoadingController extends Notifier<bool> {
       state = loading;
     }
   }
+
+  void clearLoadingIfMounted() {
+    if (!ref.mounted) {
+      return;
+    }
+    setLoading(false);
+  }
 }
 
 /// Enables [AsyncStateScaffold] to defer full-page loading UI to the shell bar.
@@ -190,7 +197,7 @@ class _ShellLoadingReporterState extends ConsumerState<ShellLoadingReporter> {
 
   @override
   void dispose() {
-    _loadingController?.setLoading(false);
+    _loadingController?.clearLoadingIfMounted();
     super.dispose();
   }
 

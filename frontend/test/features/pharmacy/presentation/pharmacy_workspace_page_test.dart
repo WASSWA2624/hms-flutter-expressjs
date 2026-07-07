@@ -27,9 +27,9 @@ const PharmacyOrder _sampleOrder = PharmacyOrder(
   quantityDispensedTotal: 24,
 );
 
-final PharmacyWorkbench _workbenchWithOrders = PharmacyWorkbench(
-  summary: const PharmacyWorkbenchSummary(totalOrders: 1),
-  orders: const AppPage<PharmacyOrder>(
+const PharmacyWorkbench _workbenchWithOrders = PharmacyWorkbench(
+  summary: PharmacyWorkbenchSummary(totalOrders: 1),
+  orders: AppPage<PharmacyOrder>(
     items: <PharmacyOrder>[_sampleOrder],
     request: AppPageRequest(),
   ),
@@ -46,7 +46,7 @@ const PharmacyInventoryWorkbench _inventoryWorkbench =
 
 void _stubPharmacyRepository(_MockPharmacyRepository repository) {
   when(() => repository.loadWorkbench(any())).thenAnswer(
-    (_) async => Result<PharmacyWorkbench>.success(_workbenchWithOrders),
+    (_) async => const Result<PharmacyWorkbench>.success(_workbenchWithOrders),
   );
   when(() => repository.searchDrugs(any())).thenAnswer(
     (_) async => const Result<AppPage<PharmacyDrug>>.success(

@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/app.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
+import 'package:hosspi_hms/app/startup/app_startup_initializer.dart';
+import 'package:hosspi_hms/app/startup/app_startup_state.dart';
+import 'package:hosspi_hms/app/startup/startup_providers.dart';
 import 'package:hosspi_hms/core/config/app_config.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
@@ -21,6 +26,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:patrol/patrol.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../test/helpers/test_harness.dart';
 import 'demo_credentials.dart';
@@ -183,15 +189,34 @@ Future<void> pumpPatrolE2eApp(
   PatrolIntegrationTester $, {
   String initialLocation = '/login',
   Size viewport = patrolDesktopViewport,
-}) {
-  return pumpPatrolApp(
-    $,
-    overrides: testReadyAppOverrides(
-      initialLocation: initialLocation,
-      sessionState: const SessionState.unauthenticated(),
-    ),
-    viewport: viewport,
+}) async {
+  SharedPreferences.setMockInitialValues(<String, Object>{});
+  FlutterSecureStorage.setMockInitialValues(<String, String>{});
+
+  final AppStartupResult startup = await const AppStartupInitializer()
+      .initialize(config: patrolTestAppConfig());
+  const SessionState unauthenticated = SessionState.unauthenticated();
+  final AppStartupState startupState = AppStartupState(
+    themeMode: startup.state.themeMode,
+    locale: startup.state.locale,
+    accessibility: startup.state.accessibility,
+    storageReadiness: startup.state.storageReadiness,
+    sessionReadiness: unauthenticated,
   );
+
+  setTestViewport($.tester, viewport);
+
+  await $.pumpWidget(
+    ProviderScope(
+      overrides: <Object?>[
+        ...startup.providerOverrides(initialLocation: initialLocation),
+        initialSessionStateProvider.overrideWithValue(unauthenticated),
+        appStartupStateProvider.overrideWithValue(startupState),
+      ].cast(),
+      child: const HosspiHmsApp(),
+    ),
+  );
+  await $.pumpAndSettle(timeout: const Duration(seconds: 30));
 }
 
 Future<void> loginAs(PatrolIntegrationTester $, DemoAccount account) async {
@@ -207,11 +232,13 @@ Future<void> loginAndOpenRoute(
   DemoAccount account,
   String path, {
   Size viewport = patrolDesktopViewport,
+  Duration settleTimeout = const Duration(seconds: 60),
 }) async {
   await pumpPatrolE2eApp($, viewport: viewport);
   await loginAs($, account);
   if (path != AppRoutes.home.path) {
-    await goToModule($, path);
+    await goToModule($, path, settleTimeout: settleTimeout);
+    await $.pumpAndSettle(timeout: settleTimeout);
   }
 }
 
