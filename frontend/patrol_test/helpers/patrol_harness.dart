@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/app.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/config/app_config.dart';
-import 'package:hosspi_hms/core/config/app_config_provider.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
@@ -66,13 +65,8 @@ AppConfig patrolTestAppConfig() {
   );
 }
 
-List<Object?> patrolE2eOverrides() {
-  return <Object?>[appConfigProvider.overrideWithValue(patrolTestAppConfig())];
-}
-
 List<Object?> patrolShellOverrides() {
   return <Object?>[
-    ...patrolE2eOverrides(),
     homeRepositoryProvider.overrideWithValue(_patrolHomeRepository),
   ];
 }
@@ -157,14 +151,13 @@ List<Object?> patrolAuthenticatedOverrides({
 Future<void> pumpPatrolApp(
   PatrolIntegrationTester $, {
   List<Object?> overrides = const <Object?>[],
-  List<Object?> baseOverrides = const <Object?>[],
   Size viewport = patrolDesktopViewport,
 }) async {
   setTestViewport($.tester, viewport);
 
   await $.pumpWidget(
     ProviderScope(
-      overrides: <Object?>[...baseOverrides, ...overrides].cast(),
+      overrides: overrides.cast(),
       child: const HosspiHmsApp(),
     ),
   );
@@ -178,8 +171,10 @@ Future<void> pumpPatrolShellApp(
 }) {
   return pumpPatrolApp(
     $,
-    baseOverrides: patrolShellOverrides(),
-    overrides: overrides,
+    overrides: <Object?>[
+      ...patrolShellOverrides(),
+      ...overrides,
+    ],
     viewport: viewport,
   );
 }
@@ -191,8 +186,10 @@ Future<void> pumpPatrolE2eApp(
 }) {
   return pumpPatrolApp(
     $,
-    baseOverrides: patrolE2eOverrides(),
-    overrides: testReadyAppOverrides(initialLocation: initialLocation),
+    overrides: testReadyAppOverrides(
+      initialLocation: initialLocation,
+      sessionState: const SessionState.unauthenticated(),
+    ),
     viewport: viewport,
   );
 }

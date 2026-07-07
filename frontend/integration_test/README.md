@@ -15,6 +15,7 @@ see [`patrol_test/README.md`](../patrol_test/README.md).
 | `routing_guards_test.dart` | Protected workspace routes reject unauthenticated users |
 | `responsive_shell_test.dart` | Shell renders at mobile + desktop viewports |
 | `module_navigation_test.dart` | Deep-link to each workspace route with mocked session |
+| `pharmacy_catalog_dialog_test.dart` | Pharmacy **Catalog and stock** dialog open/dismiss (desktop runner, web viewport) |
 
 ## Run locally
 
