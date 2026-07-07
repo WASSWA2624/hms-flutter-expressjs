@@ -16240,6 +16240,24 @@ abstract class AppLocalizations {
   /// **'Record returned quantities so order status and stock are synchronized.'**
   String get pharmacyReturnDialogBody;
 
+  /// Pharmacy return dialog return quantity column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Return qty'**
+  String get pharmacyReturnQuantityColumnLabel;
+
+  /// Pharmacy return dialog edit line action.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get pharmacyReturnEditLineAction;
+
+  /// Pharmacy return dialog edit line title.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit return line'**
+  String get pharmacyReturnEditLineDialogTitle;
+
   /// Pharmacy cancel dialog title.
   ///
   /// In en, this message translates to:

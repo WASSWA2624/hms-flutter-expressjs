@@ -1699,6 +1699,7 @@ class _ReturnDialogState extends ConsumerState<_ReturnDialog> {
   late final TextEditingController _reasonController;
   late final TextEditingController _notesController;
   late final List<_LineEditState> _lines;
+  final Set<String> _selectedLineIds = <String>{};
   bool _isSaving = false;
   AppFailure? _failure;
 
@@ -1707,7 +1708,10 @@ class _ReturnDialogState extends ConsumerState<_ReturnDialog> {
     super.initState();
     _reasonController = TextEditingController();
     _notesController = TextEditingController();
-    _lines = widget.workflow.items
+    final List<PharmacyOrderItem> items = widget.workflow.items.isEmpty
+        ? widget.workflow.order.items
+        : widget.workflow.items;
+    _lines = items
         .where((PharmacyOrderItem item) => item.quantityDispensed > 0)
         .map((PharmacyOrderItem item) => _LineEditState.forReturn(item))
         .toList(growable: false);
@@ -1743,6 +1747,8 @@ class _ReturnDialogState extends ConsumerState<_ReturnDialog> {
             controller: _reasonController,
             labelText: l10n.pharmacyReasonLabel,
             enabled: !_isSaving,
+            isRequired: true,
+            validator: AppValidators.requiredText(l10n.validationRequired),
           ),
           AppTextField(
             controller: _notesController,
@@ -1750,12 +1756,19 @@ class _ReturnDialogState extends ConsumerState<_ReturnDialog> {
             enabled: !_isSaving,
             maxLines: 3,
           ),
-          for (final _LineEditState line in _lines)
-            _LineEditTile(
-              line: line,
-              mode: _LineEditMode.returned,
-              isSaving: _isSaving,
-            ),
+          _ReturnMedicationsTable(
+            lines: _lines,
+            selectedLineIds: _selectedLineIds,
+            isSaving: _isSaving,
+            onSelectedLineIdsChanged: (Set<String> value) {
+              setState(() {
+                _selectedLineIds
+                  ..clear()
+                  ..addAll(value);
+              });
+            },
+            onEditLine: _editLine,
+          ),
         ],
       ),
       actions: _dialogActions(
@@ -1763,8 +1776,24 @@ class _ReturnDialogState extends ConsumerState<_ReturnDialog> {
         l10n.pharmacyReturnAction,
         _isSaving,
         _submit,
+        cancelLeadingIcon: Icons.close,
+        submitLeadingIcon: Icons.keyboard_return_outlined,
       ),
     );
+  }
+
+  Future<void> _editLine(_LineEditState line) async {
+    final bool? saved = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) =>
+          _ReturnLineEditDialog(line: line, isSaving: _isSaving),
+    );
+    if (saved == true && mounted) {
+      setState(() {
+        _selectedLineIds.add(line.item.id);
+      });
+    }
   }
 
   Future<void> _submit() async {
@@ -1772,6 +1801,7 @@ class _ReturnDialogState extends ConsumerState<_ReturnDialog> {
       return;
     }
     final List<PharmacyReturnLineInput> selected = _lines
+        .where((_LineEditState line) => _selectedLineIds.contains(line.item.id))
         .map((line) => line.toReturnInput())
         .whereType<PharmacyReturnLineInput>()
         .toList(growable: false);
@@ -1805,6 +1835,296 @@ class _ReturnDialogState extends ConsumerState<_ReturnDialog> {
       _failure = failure;
       _isSaving = false;
     });
+  }
+}
+
+const String _returnTableSelectColumnKey = 'select';
+const String _returnTableMedicationColumnKey = 'medication';
+const String _returnTableDoseColumnKey = 'dose';
+const String _returnTableQuantityColumnKey = 'quantity';
+const String _returnTableReturnQuantityColumnKey = 'return_quantity';
+const String _returnTableActionsColumnKey = 'actions';
+
+class _ReturnMedicationsTable extends StatelessWidget {
+  const _ReturnMedicationsTable({
+    required this.lines,
+    required this.selectedLineIds,
+    required this.isSaving,
+    required this.onSelectedLineIdsChanged,
+    required this.onEditLine,
+  });
+
+  final List<_LineEditState> lines;
+  final Set<String> selectedLineIds;
+  final bool isSaving;
+  final ValueChanged<Set<String>> onSelectedLineIdsChanged;
+  final ValueChanged<_LineEditState> onEditLine;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: AppListTable<_LineEditState>(
+        items: lines,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        displayMode: AppListTableDisplayMode.table,
+        tableHorizontalMargin: theme.spacing.sm,
+        itemKeyBuilder: (_LineEditState line) => ValueKey<String>(line.item.id),
+        columns: _columns(context),
+        emptyBuilder: (BuildContext context) {
+          return Padding(
+            padding: EdgeInsets.all(theme.spacing.lg),
+            child: Center(
+              child: Text(
+                l10n.pharmacyNoMedicationBody,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          );
+        },
+        mobileItemBuilder: (BuildContext context, _LineEditState line) {
+          return Padding(
+            padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Checkbox(
+                      value: selectedLineIds.contains(line.item.id),
+                      onChanged: isSaving
+                          ? null
+                          : (bool? value) =>
+                                _toggleLine(line.item.id, value ?? false),
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    Expanded(child: _MedicationCell(item: line.item)),
+                  ],
+                ),
+                SizedBox(height: theme.spacing.xs),
+                Text(line.item.doseLine, style: theme.textTheme.bodySmall),
+                SizedBox(height: theme.spacing.xs),
+                Text(line.item.quantityLine, style: theme.textTheme.bodySmall),
+                SizedBox(height: theme.spacing.xs),
+                Text(
+                  '${l10n.pharmacyReturnQuantityColumnLabel}: '
+                  '${_returnQuantityLabel(line)}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: theme.spacing.sm),
+                AppButton.tertiary(
+                  label: l10n.pharmacyReturnEditLineAction,
+                  leadingIcon: Icons.edit_outlined,
+                  enabled: !isSaving,
+                  onPressed: () => onEditLine(line),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  List<AppListTableColumn<_LineEditState>> _columns(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+
+    return <AppListTableColumn<_LineEditState>>[
+      _selectionColumn(),
+      AppListTableColumn<_LineEditState>(
+        id: _returnTableMedicationColumnKey,
+        label: l10n.pharmacyMedicationColumnLabel,
+        cellBuilder: (BuildContext context, _LineEditState line) {
+          return Align(
+            alignment: Alignment.topLeft,
+            child: _MedicationCell(item: line.item),
+          );
+        },
+      ),
+      AppListTableColumn<_LineEditState>(
+        id: _returnTableDoseColumnKey,
+        label: l10n.pharmacyDoseColumnLabel,
+        cellBuilder: (BuildContext context, _LineEditState line) {
+          return Align(
+            alignment: Alignment.topLeft,
+            child: Text(line.item.doseLine),
+          );
+        },
+      ),
+      AppListTableColumn<_LineEditState>(
+        id: _returnTableQuantityColumnKey,
+        label: l10n.pharmacyQuantityColumnLabel,
+        cellBuilder: (BuildContext context, _LineEditState line) {
+          return Align(
+            alignment: Alignment.topLeft,
+            child: Text(line.item.quantityLine),
+          );
+        },
+      ),
+      AppListTableColumn<_LineEditState>(
+        id: _returnTableReturnQuantityColumnKey,
+        label: l10n.pharmacyReturnQuantityColumnLabel,
+        cellBuilder: (BuildContext context, _LineEditState line) {
+          return Align(
+            alignment: Alignment.topLeft,
+            child: Text(
+              _returnQuantityLabel(line),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          );
+        },
+      ),
+      AppListTableColumn<_LineEditState>(
+        id: _returnTableActionsColumnKey,
+        label: l10n.pharmacyLineActionsColumnLabel,
+        alwaysVisible: true,
+        cellBuilder: (BuildContext context, _LineEditState line) {
+          return Align(
+            alignment: Alignment.topLeft,
+            child: AppButton.tertiary(
+              label: l10n.pharmacyReturnEditLineAction,
+              leadingIcon: Icons.edit_outlined,
+              enabled: !isSaving,
+              onPressed: () => onEditLine(line),
+            ),
+          );
+        },
+      ),
+    ];
+  }
+
+  AppListTableColumn<_LineEditState> _selectionColumn() {
+    return AppListTableColumn<_LineEditState>(
+      id: _returnTableSelectColumnKey,
+      label: '',
+      alwaysVisible: true,
+      headerBuilder: (BuildContext context) {
+        final bool allSelected =
+            lines.isNotEmpty &&
+            lines.every(
+              (_LineEditState line) => selectedLineIds.contains(line.item.id),
+            );
+        final bool someSelected = lines.any(
+          (_LineEditState line) => selectedLineIds.contains(line.item.id),
+        );
+        return Checkbox(
+          tristate: true,
+          value: allSelected
+              ? true
+              : someSelected
+              ? null
+              : false,
+          onChanged: isSaving || lines.isEmpty
+              ? null
+              : (bool? checked) => _toggleAll(checked ?? false),
+          visualDensity: VisualDensity.compact,
+        );
+      },
+      cellBuilder: (BuildContext context, _LineEditState line) {
+        return Checkbox(
+          value: selectedLineIds.contains(line.item.id),
+          onChanged: isSaving
+              ? null
+              : (bool? value) => _toggleLine(line.item.id, value ?? false),
+          visualDensity: VisualDensity.compact,
+        );
+      },
+    );
+  }
+
+  void _toggleLine(String lineId, bool selected) {
+    final Set<String> next = Set<String>.from(selectedLineIds);
+    if (selected) {
+      next.add(lineId);
+    } else {
+      next.remove(lineId);
+    }
+    onSelectedLineIdsChanged(next);
+  }
+
+  void _toggleAll(bool selected) {
+    if (!selected) {
+      onSelectedLineIdsChanged(<String>{});
+      return;
+    }
+    onSelectedLineIdsChanged(
+      lines.map((_LineEditState line) => line.item.id).toSet(),
+    );
+  }
+}
+
+String _returnQuantityLabel(_LineEditState line) {
+  final int quantity = int.tryParse(line.quantityController.text.trim()) ?? 0;
+  if (quantity <= 0) {
+    return '—';
+  }
+  return _wholeNumber(quantity);
+}
+
+class _ReturnLineEditDialog extends StatefulWidget {
+  const _ReturnLineEditDialog({required this.line, required this.isSaving});
+
+  final _LineEditState line;
+  final bool isSaving;
+
+  @override
+  State<_ReturnLineEditDialog> createState() => _ReturnLineEditDialogState();
+}
+
+class _ReturnLineEditDialogState extends State<_ReturnLineEditDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return AppDialog(
+      title: Text(l10n.pharmacyReturnEditLineDialogTitle),
+      icon: const Icon(Icons.edit_outlined),
+      content: AppFormShell(
+        formKey: _formKey,
+        enabled: !widget.isSaving,
+        children: <Widget>[
+          _LineEditTile(
+            line: widget.line,
+            mode: _LineEditMode.returned,
+            isSaving: widget.isSaving,
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: Icons.close,
+          enabled: !widget.isSaving,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: l10n.commonSaveActionLabel,
+          leadingIcon: Icons.check,
+          enabled: !widget.isSaving,
+          onPressed: () {
+            if (_formKey.currentState?.validate() ?? false) {
+              Navigator.of(context).pop(true);
+            }
+          },
+        ),
+      ],
+    );
   }
 }
 
@@ -2039,17 +2359,21 @@ List<Widget> _dialogActions(
   BuildContext context,
   String submitLabel,
   bool isSaving,
-  VoidCallback onSubmit,
-) {
+  VoidCallback onSubmit, {
+  IconData? cancelLeadingIcon,
+  IconData? submitLeadingIcon,
+}) {
   final AppLocalizations l10n = context.l10n;
   return <Widget>[
     AppButton.tertiary(
       label: l10n.commonCancelActionLabel,
+      leadingIcon: cancelLeadingIcon,
       enabled: !isSaving,
       onPressed: () => Navigator.of(context).pop(false),
     ),
     AppButton.primary(
       label: submitLabel,
+      leadingIcon: submitLeadingIcon,
       isLoading: isSaving,
       onPressed: onSubmit,
     ),

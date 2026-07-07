@@ -11190,6 +11190,18 @@
   "@pharmacyReturnDialogBody": {
     "description": "Pharmacy return dialog body."
   },
+  "pharmacyReturnQuantityColumnLabel": "Return qty",
+  "@pharmacyReturnQuantityColumnLabel": {
+    "description": "Pharmacy return dialog return quantity column label."
+  },
+  "pharmacyReturnEditLineAction": "Edit",
+  "@pharmacyReturnEditLineAction": {
+    "description": "Pharmacy return dialog edit line action."
+  },
+  "pharmacyReturnEditLineDialogTitle": "Edit return line",
+  "@pharmacyReturnEditLineDialogTitle": {
+    "description": "Pharmacy return dialog edit line title."
+  },
   "pharmacyCancelDialogTitle": "Cancel pharmacy order",
   "@pharmacyCancelDialogTitle": {
     "description": "Pharmacy cancel dialog title."

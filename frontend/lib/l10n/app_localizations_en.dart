@@ -8701,6 +8701,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Record returned quantities so order status and stock are synchronized.';
 
   @override
+  String get pharmacyReturnQuantityColumnLabel => 'Return qty';
+
+  @override
+  String get pharmacyReturnEditLineAction => 'Edit';
+
+  @override
+  String get pharmacyReturnEditLineDialogTitle => 'Edit return line';
+
+  @override
   String get pharmacyCancelDialogTitle => 'Cancel pharmacy order';
 
   @override
