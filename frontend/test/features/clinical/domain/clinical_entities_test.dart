@@ -67,7 +67,7 @@ void main() {
           patientDisplayName: 'Amina Kato',
           patientAgeSex: '32 / F',
         );
-      final ClinicalWorklistEntry withIdOnly = const ClinicalWorklistEntry(
+      const ClinicalWorklistEntry withIdOnly = ClinicalWorklistEntry(
         id: 'encounter-2',
         sourceQueue: 'OPD',
         encounterId: 'encounter-2',
@@ -107,7 +107,7 @@ void main() {
         isFalse,
       );
       expect(
-        entry.matchesFilters(
+        _entry().matchesFilters(
           const ClinicalWorklistFilters(
             provider: clinicalUnassignedProviderFilterValue,
           ),
