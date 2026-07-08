@@ -5,13 +5,15 @@ import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles
 
 void main() {
   group('home dashboard layout', () {
-    test('frontline roles hide charts and prioritize queue', () {
+    test('frontline roles hide charts and cap density', () {
       final profile = homeProfileForRole(AppRole.doctor);
 
       expect(profile.layoutTier, HomeDashboardLayoutTier.clinicalQueue);
       expect(profile.showCharts, isFalse);
       expect(profile.queueBeforeMetrics, isTrue);
-      expect(profile.maxStatusCards, 4);
+      expect(profile.effectiveMaxStatusCards, 3);
+      expect(profile.maxQuickActions, 2);
+      expect(profile.showQueuePanelFor(const []), isFalse);
     });
 
     test('HR profile is KPI-first workforce layout', () {
@@ -20,26 +22,29 @@ void main() {
       expect(profile.layoutTier, HomeDashboardLayoutTier.workforce);
       expect(profile.showCharts, isFalse);
       expect(profile.showQueuePanel, isFalse);
-      expect(profile.maxStatusCards, 8);
+      expect(profile.effectiveMaxStatusCards, 6);
+      expect(profile.maxQuickActions, 0);
       expect(profile.suppressHomeQuickActions, isTrue);
       expect(profile.suppressHomeShortcuts, isTrue);
     });
 
-    test('facility admin keeps charts and six KPI cap', () {
+    test('facility admin keeps admin shortcuts only', () {
       final profile = homeProfileForRole(AppRole.facilityAdmin);
 
       expect(profile.layoutTier, HomeDashboardLayoutTier.facilityCommand);
-      expect(profile.showCharts, isTrue);
-      expect(profile.queueBeforeMetrics, isFalse);
-      expect(profile.maxStatusCards, 6);
+      expect(profile.showCharts, isFalse);
+      expect(profile.effectiveMaxStatusCards, 4);
+      expect(profile.maxShortcutTiles, 2);
+      expect(profile.showQueuePanelFor(const []), isTrue);
     });
 
-    test('department roles hide activity and shortcuts', () {
+    test('department roles hide shortcuts and empty queues', () {
       final profile = homeProfileForRole(AppRole.labTech);
 
       expect(profile.layoutTier, HomeDashboardLayoutTier.departmentQueue);
       expect(profile.showActivityPanel(hasQueueItems: true), isFalse);
       expect(profile.showShortcutsSection(quickActionCount: 2), isFalse);
+      expect(profile.showQueuePanelFor(const []), isFalse);
     });
   });
 }

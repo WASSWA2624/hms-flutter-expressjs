@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 
@@ -50,17 +52,58 @@ HomeDashboardLayoutTier homeLayoutTierForRole(AppRole role) {
 extension HomeDashboardProfileLayout on HomeDashboardProfile {
   HomeDashboardLayoutTier get layoutTier => homeLayoutTierForRole(role);
 
-  bool get showCharts {
-    return switch (layoutTier) {
+  int get effectiveMaxStatusCards {
+    final int tierCap = switch (layoutTier) {
       HomeDashboardLayoutTier.platform ||
-      HomeDashboardLayoutTier.clinicalQueue ||
-      HomeDashboardLayoutTier.departmentQueue ||
-      HomeDashboardLayoutTier.taskFirst ||
-      HomeDashboardLayoutTier.workforce ||
-      HomeDashboardLayoutTier.patient =>
-        false,
-      _ => true,
+      HomeDashboardLayoutTier.organization ||
+      HomeDashboardLayoutTier.facilityCommand =>
+        4,
+      HomeDashboardLayoutTier.workforce => 6,
+      _ => 3,
     };
+    return math.min(maxStatusCards, tierCap);
+  }
+
+  int get maxQuickActions {
+    if (suppressHomeQuickActions) {
+      return 0;
+    }
+    return switch (layoutTier) {
+      HomeDashboardLayoutTier.workforce => 0,
+      HomeDashboardLayoutTier.platform ||
+      HomeDashboardLayoutTier.organization ||
+      HomeDashboardLayoutTier.facilityCommand =>
+        3,
+      _ => 2,
+    };
+  }
+
+  int get maxQueueItems => 3;
+
+  int get maxShortcutTiles => switch (layoutTier) {
+    HomeDashboardLayoutTier.platform ||
+    HomeDashboardLayoutTier.organization =>
+      3,
+    HomeDashboardLayoutTier.facilityCommand => 2,
+    _ => 0,
+  };
+
+  bool get compactMetrics {
+    return layoutTier != HomeDashboardLayoutTier.workforce &&
+        layoutTier != HomeDashboardLayoutTier.platform &&
+        layoutTier != HomeDashboardLayoutTier.organization &&
+        layoutTier != HomeDashboardLayoutTier.facilityCommand;
+  }
+
+  bool get showCharts {
+    return false;
+  }
+
+  bool showChartsWhenData({
+    required HomeDashboardTrend trend,
+    required HomeDashboardDistribution distribution,
+  }) {
+    return showCharts && (trend.hasData || distribution.hasData);
   }
 
   bool get queueBeforeMetrics {
@@ -73,32 +116,22 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     };
   }
 
-  bool showActivityPanel({required bool hasQueueItems}) {
-    if (suppressHomeShortcuts && layoutTier == HomeDashboardLayoutTier.workforce) {
-      return false;
-    }
-    return switch (layoutTier) {
-      HomeDashboardLayoutTier.departmentQueue ||
-      HomeDashboardLayoutTier.taskFirst ||
-      HomeDashboardLayoutTier.patient =>
-        false,
-      HomeDashboardLayoutTier.clinicalQueue => !hasQueueItems,
-      _ => true,
-    };
+  bool showActivityPanel({required bool hasQueueItems}) => false;
+
+  bool showAlertsPanel(List<HomeAlertItem> alerts) {
+    return alerts.any((HomeAlertItem alert) => alert.count > 0);
   }
 
   bool showShortcutsSection({required int quickActionCount}) {
-    if (suppressHomeShortcuts || shortcutIds.isEmpty) {
+    if (suppressHomeShortcuts || shortcutIds.isEmpty || maxShortcutTiles == 0) {
       return false;
     }
     return switch (layoutTier) {
-      HomeDashboardLayoutTier.departmentQueue ||
-      HomeDashboardLayoutTier.taskFirst ||
-      HomeDashboardLayoutTier.workforce ||
-      HomeDashboardLayoutTier.patient =>
-        false,
-      HomeDashboardLayoutTier.clinicalQueue => quickActionCount > 3,
-      _ => true,
+      HomeDashboardLayoutTier.platform ||
+      HomeDashboardLayoutTier.organization ||
+      HomeDashboardLayoutTier.facilityCommand =>
+        true,
+      _ => false,
     };
   }
 
@@ -107,4 +140,22 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
   bool get showQueuePanel {
     return layoutTier != HomeDashboardLayoutTier.workforce;
   }
+
+  bool showQueuePanelFor(List<HomeQueueItem> items) {
+    if (!showQueuePanel) {
+      return false;
+    }
+    if (items.isNotEmpty) {
+      return true;
+    }
+    return switch (layoutTier) {
+      HomeDashboardLayoutTier.platform ||
+      HomeDashboardLayoutTier.organization ||
+      HomeDashboardLayoutTier.facilityCommand =>
+        true,
+      _ => false,
+    };
+  }
+
+  bool get showQueuePanelTitle => false;
 }

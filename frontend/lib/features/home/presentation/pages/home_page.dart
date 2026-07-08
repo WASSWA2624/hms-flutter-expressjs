@@ -71,18 +71,18 @@ class _HomeDashboardContent extends ConsumerWidget {
     final ThemeData theme = Theme.of(context);
     final AppSpacingTokens spacing = theme.spacing;
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final HomeDashboardProfile profile = dashboard.profile;
     final List<_HomeActionDefinition> actions = _visibleActions(
       dashboard.quickActionIds,
       policy,
+      maxCount: profile.maxQuickActions,
     );
     final List<_HomeShortcutDefinition> shortcuts =
         _shortcutsExcludingQuickActions(
           _visibleShortcuts(dashboard.shortcutIds, policy),
           actions,
-          dashboard.profile,
+          profile,
         );
-    final HomeDashboardProfile profile = dashboard.profile;
-    final bool hasQueueItems = dashboard.queuePreview.isNotEmpty;
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -126,7 +126,6 @@ class _HomeDashboardContent extends ConsumerWidget {
                 policy: policy,
                 actions: actions,
                 shortcuts: shortcuts,
-                hasQueueItems: hasQueueItems,
                 spacing: spacing,
               ),
             ],
@@ -143,7 +142,6 @@ List<Widget> _buildRoleDashboardSections({
   required AppAccessPolicy policy,
   required List<_HomeActionDefinition> actions,
   required List<_HomeShortcutDefinition> shortcuts,
-  required bool hasQueueItems,
   required AppSpacingTokens spacing,
 }) {
   final Widget statusStrip = profile.showMetricsSection
@@ -160,18 +158,17 @@ List<Widget> _buildRoleDashboardSections({
     dashboard: dashboard,
     actions: actions,
     shortcuts: shortcuts,
-    hasQueueItems: hasQueueItems,
   );
 
   if (profile.queueBeforeMetrics) {
     return <Widget>[
       workGrid,
       if (profile.showMetricsSection && dashboard.statusCards.isNotEmpty) ...<Widget>[
-        SizedBox(height: spacing.lg),
+        SizedBox(height: spacing.md),
         statusStrip,
       ],
       if (!profile.suppressHomeQuickActions && actions.isNotEmpty) ...<Widget>[
-        SizedBox(height: spacing.lg),
+        SizedBox(height: spacing.md),
         quickActions,
       ],
     ];
@@ -181,10 +178,12 @@ List<Widget> _buildRoleDashboardSections({
     if (profile.showMetricsSection && dashboard.statusCards.isNotEmpty) statusStrip,
     if (!profile.suppressHomeQuickActions && actions.isNotEmpty) ...<Widget>[
       if (profile.showMetricsSection && dashboard.statusCards.isNotEmpty)
-        SizedBox(height: spacing.lg),
+        SizedBox(height: spacing.md),
       quickActions,
     ],
-    SizedBox(height: spacing.lg),
+    if (profile.showMetricsSection && dashboard.statusCards.isNotEmpty ||
+        (!profile.suppressHomeQuickActions && actions.isNotEmpty))
+      SizedBox(height: spacing.md),
     workGrid,
   ];
 }
@@ -204,7 +203,7 @@ class _HomeStatusStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final List<HomeStatusCard> visibleCards = cards
-        .take(profile.maxStatusCards)
+        .take(profile.effectiveMaxStatusCards)
         .toList(growable: false);
 
     if (visibleCards.isEmpty) {
@@ -215,7 +214,7 @@ class _HomeStatusStrip extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints constraints) {
         final double gap = theme.spacing.sm;
         final int columns = constraints.maxWidth >= 1180
-            ? math.min(visibleCards.length, profile.maxStatusCards)
+            ? math.min(visibleCards.length, profile.effectiveMaxStatusCards)
             : constraints.maxWidth >= 760
             ? 4
             : constraints.maxWidth >= 340
@@ -235,7 +234,8 @@ class _HomeStatusStrip extends StatelessWidget {
                   card: card,
                   profile: profile,
                   policy: policy,
-                  compact: constraints.maxWidth < AppBreakpoints.md,
+                  compact: profile.compactMetrics ||
+                      constraints.maxWidth < AppBreakpoints.md,
                 ),
               ),
           ],
@@ -283,13 +283,12 @@ class _HomeMetricCard extends ConsumerWidget {
         : '$label: $value';
 
     final Widget cardBody = Padding(
-      padding: EdgeInsets.all(theme.spacing.md),
+      padding: EdgeInsets.all(compact ? theme.spacing.sm : theme.spacing.md),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Container(
-            width: 38,
-            height: 38,
+            width: compact ? 32 : 38,
+            height: compact ? 32 : 38,
             decoration: BoxDecoration(
               color: accent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(theme.radius.md),
@@ -316,7 +315,10 @@ class _HomeMetricCard extends ConsumerWidget {
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.headlineSmall?.copyWith(
+                  style: (compact
+                          ? theme.textTheme.titleLarge
+                          : theme.textTheme.headlineSmall)
+                      ?.copyWith(
                     color: accent,
                     fontWeight: FontWeight.w800,
                   ),
@@ -426,103 +428,99 @@ class _HomeMainGrid extends StatelessWidget {
     required this.dashboard,
     required this.actions,
     required this.shortcuts,
-    required this.hasQueueItems,
   });
 
   final HomeDashboard dashboard;
   final List<_HomeActionDefinition> actions;
   final List<_HomeShortcutDefinition> shortcuts;
-  final bool hasQueueItems;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final HomeDashboardProfile profile = dashboard.profile;
-    final double gap = theme.spacing.lg;
-    final bool showCharts = profile.showCharts;
-    final bool showQueue = profile.showQueuePanel;
-    final bool showActivity = profile.showActivityPanel(
-      hasQueueItems: hasQueueItems,
+    final double gap = theme.spacing.md;
+    final bool showCharts = profile.showChartsWhenData(
+      trend: dashboard.trend,
+      distribution: dashboard.distribution,
     );
+    final bool showQueue = profile.showQueuePanelFor(dashboard.queuePreview);
+    final bool showAlerts = profile.showAlertsPanel(dashboard.alerts);
     final bool showShortcuts = profile.showShortcutsSection(
       quickActionCount: actions.length,
     );
+    final int queueLimit = profile.maxQueueItems;
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final bool twoColumns = constraints.maxWidth >= 980;
+        final bool wide = constraints.maxWidth >= 980;
         final Widget charts = showCharts
             ? _HomeChartsRow(
                 role: profile.role,
                 trend: dashboard.trend,
                 distribution: dashboard.distribution,
-                twoColumns: twoColumns,
+                twoColumns: wide,
                 gap: gap,
               )
             : const SizedBox.shrink();
         final Widget primary = showQueue
             ? _PrimaryQueuePanel(
-                title: _queueTitle(profile.role),
+                title: profile.showQueuePanelTitle
+                    ? _queueTitle(profile.role)
+                    : null,
                 items: dashboard.queuePreview,
                 emptyMessage: profile.emptyMessage,
                 emptyActions: _visibleEmptyActions(
                   profile.emptyActionIds,
                   actions,
                 ),
+                maxItems: queueLimit,
               )
             : const SizedBox.shrink();
-        final Widget alerts = _AlertsPanel(
-          role: profile.role,
-          alerts: dashboard.alerts,
-        );
-        final Widget activity = showActivity
-            ? _ActivityPanel(activity: dashboard.activity)
+        final Widget alerts = showAlerts
+            ? _AlertsPanel(
+                role: profile.role,
+                alerts: dashboard.alerts,
+              )
             : const SizedBox.shrink();
-        final bool hasWorkContent =
-            showQueue || dashboard.alerts.isNotEmpty || showActivity;
-        final Widget secondary = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            alerts,
-            if (showActivity) ...<Widget>[
-              SizedBox(height: gap),
-              activity,
-            ],
-          ],
-        );
-        final Widget? work = hasWorkContent
-            ? (twoColumns && showQueue
+        final bool hasQueueContent = showQueue && dashboard.queuePreview.isNotEmpty;
+        final bool hasWorkContent = hasQueueContent || showAlerts;
+
+        if (!hasWorkContent && !showCharts && !showShortcuts) {
+          return const SizedBox.shrink();
+        }
+
+        final Widget work = hasWorkContent
+            ? (wide && hasQueueContent && showAlerts
                   ? Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Expanded(flex: 3, child: primary),
                         SizedBox(width: gap),
-                        Expanded(flex: 2, child: secondary),
+                        Expanded(flex: 2, child: alerts),
                       ],
                     )
-                  : twoColumns && !showQueue
-                  ? secondary
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         if (showQueue) primary,
-                        if (showQueue &&
-                            (dashboard.alerts.isNotEmpty || showActivity))
-                          SizedBox(height: gap),
-                        secondary,
+                        if (showQueue && showAlerts) SizedBox(height: gap),
+                        if (showAlerts) alerts,
                       ],
                     ))
-            : null;
+            : const SizedBox.shrink();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            ?work,
-            if (showCharts && work != null) SizedBox(height: gap),
+            if (hasWorkContent) work,
+            if (showCharts && hasWorkContent) SizedBox(height: gap),
             if (showCharts) charts,
             if (showShortcuts) ...<Widget>[
               SizedBox(height: gap),
-              _ShortcutsSection(shortcuts: shortcuts),
+              _ShortcutsSection(
+                shortcuts: shortcuts,
+                maxTiles: profile.maxShortcutTiles,
+              ),
             ],
           ],
         );
@@ -578,42 +576,54 @@ class _HomeChartsRow extends StatelessWidget {
 
 class _PrimaryQueuePanel extends StatelessWidget {
   const _PrimaryQueuePanel({
-    required this.title,
+    this.title,
     required this.items,
     required this.emptyMessage,
     required this.emptyActions,
+    this.maxItems = 3,
   });
 
-  final String title;
+  final String? title;
   final List<HomeQueueItem> items;
   final String emptyMessage;
   final List<_HomeActionDefinition> emptyActions;
+  final int maxItems;
 
   @override
   Widget build(BuildContext context) {
     return AppSectionPanel(
       title: title,
       leadingIcon: Icons.format_list_bulleted,
-      trailing: _ViewAllButton(target: _firstQueueTarget(items)),
+      trailing: items.isEmpty
+          ? null
+          : _ViewAllButton(target: _firstQueueTarget(items)),
       children: <Widget>[
         if (items.isEmpty)
           _EmptyStateInline(message: emptyMessage, actions: emptyActions)
         else
-          for (final HomeQueueItem item in items.take(5)) _QueueRow(item: item),
+          for (final HomeQueueItem item in items.take(maxItems))
+            _QueueRow(item: item),
       ],
     );
   }
 }
 
 class _AlertsPanel extends StatelessWidget {
-  const _AlertsPanel({required this.role, required this.alerts});
+  const _AlertsPanel({
+    required this.role,
+    required this.alerts,
+  });
 
   final AppRole role;
   final List<HomeAlertItem> alerts;
 
   @override
   Widget build(BuildContext context) {
-    if (alerts.isEmpty) {
+    final List<HomeAlertItem> visibleAlerts = alerts
+        .where((HomeAlertItem alert) => alert.count > 0)
+        .take(3)
+        .toList(growable: false);
+    if (visibleAlerts.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -621,38 +631,17 @@ class _AlertsPanel extends StatelessWidget {
       title: _alertsTitle(role),
       leadingIcon: Icons.warning_amber_outlined,
       children: <Widget>[
-        for (final HomeAlertItem alert in alerts.take(4)) _AlertRow(alert: alert),
-      ],
-    );
-  }
-}
-
-class _ActivityPanel extends StatelessWidget {
-  const _ActivityPanel({required this.activity});
-
-  final List<HomeActivityItem> activity;
-
-  @override
-  Widget build(BuildContext context) {
-    if (activity.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return AppSectionPanel(
-      title: 'Activity',
-      leadingIcon: Icons.history,
-      children: <Widget>[
-        for (final HomeActivityItem item in activity.take(6))
-          _ActivityRow(item: item),
+        for (final HomeAlertItem alert in visibleAlerts) _AlertRow(alert: alert),
       ],
     );
   }
 }
 
 class _ShortcutsSection extends StatelessWidget {
-  const _ShortcutsSection({required this.shortcuts});
+  const _ShortcutsSection({required this.shortcuts, required this.maxTiles});
 
   final List<_HomeShortcutDefinition> shortcuts;
+  final int maxTiles;
 
   @override
   Widget build(BuildContext context) {
@@ -662,7 +651,7 @@ class _ShortcutsSection extends StatelessWidget {
 
     return AppResponsiveWrap(
       children: <Widget>[
-        for (final _HomeShortcutDefinition shortcut in shortcuts)
+        for (final _HomeShortcutDefinition shortcut in shortcuts.take(maxTiles))
           _ShortcutTile(shortcut: shortcut),
       ],
     );
@@ -1096,28 +1085,6 @@ class _AlertRow extends StatelessWidget {
         tone: _severityTone(alert.severity),
       ),
       target: alert.target,
-    );
-  }
-}
-
-class _ActivityRow extends StatelessWidget {
-  const _ActivityRow({required this.item});
-
-  final HomeActivityItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    return _LinkedDashboardRow(
-      icon: _moduleIcon(item.moduleSlug),
-      title: item.label,
-      subtitle: _timeLabel(item.occurredAt),
-      status: item.status == null
-          ? null
-          : AppWorkspaceStatus(
-              label: _statusLabel(item.status),
-              tone: _severityTone(item.status),
-            ),
-      target: item.target,
     );
   }
 }
@@ -2390,13 +2357,18 @@ const Map<String, _HomeShortcutDefinition> _shortcutLibrary =
 
 List<_HomeActionDefinition> _visibleActions(
   List<String> ids,
-  AppAccessPolicy policy,
-) {
-  return ids
+  AppAccessPolicy policy, {
+  int? maxCount,
+}) {
+  final List<_HomeActionDefinition> actions = ids
       .map((String id) => _actionLibrary[id])
       .whereType<_HomeActionDefinition>()
       .where((_HomeActionDefinition action) => action.isAllowed(policy))
       .toList(growable: false);
+  if (maxCount == null || maxCount <= 0) {
+    return actions;
+  }
+  return actions.take(maxCount).toList(growable: false);
 }
 
 List<_HomeShortcutDefinition> _shortcutsExcludingQuickActions(
@@ -2559,24 +2531,24 @@ String _distributionTitle(AppRole role, String fallback) {
 
 String _queueTitle(AppRole role) {
   return switch (role) {
-    AppRole.superAdmin => 'Platform review queue',
-    AppRole.tenantAdmin => 'Organization action queue',
-    AppRole.facilityAdmin => 'Facility operations queue',
-    AppRole.doctor => 'Clinical action queue',
-    AppRole.nurse => 'Nursing action queue',
-    AppRole.labTech => 'Laboratory action queue',
-    AppRole.radiologyTech => 'Imaging action queue',
-    AppRole.pharmacist => 'Pharmacy action queue',
-    AppRole.receptionist => 'Front desk action queue',
-    AppRole.billing => 'Billing action queue',
-    AppRole.operations => 'Operations action queue',
-    AppRole.hr => 'Workforce action queue',
-    AppRole.biomed || AppRole.biomedManager => 'Biomedical service queue',
+    AppRole.superAdmin => 'Review',
+    AppRole.tenantAdmin => 'Actions',
+    AppRole.facilityAdmin => 'Operations',
+    AppRole.doctor => 'Worklist',
+    AppRole.nurse => 'Tasks',
+    AppRole.labTech => 'Lab queue',
+    AppRole.radiologyTech => 'Imaging',
+    AppRole.pharmacist => 'Orders',
+    AppRole.receptionist => 'Desk',
+    AppRole.billing => 'Billing',
+    AppRole.operations => 'Ops queue',
+    AppRole.hr => 'Workforce',
+    AppRole.biomed || AppRole.biomedManager => 'Service',
     AppRole.houseKeeper ||
-    AppRole.housekeepingManager => 'Housekeeping action queue',
-    AppRole.ambulanceOperator => 'Ambulance action queue',
-    AppRole.patient => 'My care updates',
-    _ => 'Primary queue',
+    AppRole.housekeepingManager => 'Cleaning',
+    AppRole.ambulanceOperator => 'Dispatch',
+    AppRole.patient => 'Updates',
+    _ => 'Queue',
   };
 }
 

@@ -50,9 +50,6 @@ void main() {
           'create_facility',
           'manage_users_roles',
           'manage_subscription',
-          'add_staff_profile',
-          'run_report',
-          'review_audit',
         ]),
       );
       for (final actionId in <String>[
@@ -96,7 +93,7 @@ void main() {
       expect(profile.quickActionIds, isEmpty);
       expect(profile.shortcutIds, isEmpty);
       expect(profile.emptyActionIds, isEmpty);
-      expect(profile.maxStatusCards, 8);
+      expect(profile.maxStatusCards, 6);
       expect(
         profile.toolbarActionIds,
         contains(HomeToolbarActionId.openHrWorkspace),
@@ -123,7 +120,7 @@ void main() {
       final profile = homeProfileForRole(AppRole.doctor);
 
       expect(profile.quickActionIds, isNotEmpty);
-      expect(profile.shortcutIds, isNotEmpty);
+      expect(profile.shortcutIds, isEmpty);
     });
   });
 }

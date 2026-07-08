@@ -11,7 +11,6 @@ import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/home/data/dtos/home_dashboard_dtos.dart';
 import 'package:hosspi_hms/features/home/data/dtos/home_dashboard_lookups_dtos.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
-import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_guided_content.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
 import 'package:hosspi_hms/features/home/domain/repositories/home_repository.dart';
@@ -130,14 +129,13 @@ final class HomeRepositoryImpl implements HomeRepository {
     final List<String> quickActionIds = localProfile.suppressHomeQuickActions
         ? const <String>[]
         : dashboard.quickActionIds.isEmpty
-        ? mergedHomeQuickActions(_accessPolicy.roles)
+        ? localProfile.quickActionIds
         : dashboard.quickActionIds;
     final List<String> shortcutIds = localProfile.suppressHomeShortcuts
         ? const <String>[]
-        : _mergeIds(<Iterable<String>>[
-            dashboard.shortcutIds,
-            mergedHomeShortcuts(_accessPolicy.roles),
-          ]);
+        : dashboard.shortcutIds.isEmpty
+        ? localProfile.shortcutIds
+        : dashboard.shortcutIds;
 
     return dashboard.copyWith(
       profile: profile,
@@ -181,21 +179,6 @@ final class HomeRepositoryImpl implements HomeRepository {
     required bool usesFallbackData,
   }) {
     final AuthUserProfile? user = _session?.user;
-    final Set<AppRole> roles = _accessPolicy.roles.isEmpty
-        ? <AppRole>{profile.role}
-        : _accessPolicy.roles;
-    final List<String> quickActions = profile.suppressHomeQuickActions
-        ? const <String>[]
-        : _mergeIds(<Iterable<String>>[
-            profile.quickActionIds,
-            mergedHomeQuickActions(roles),
-          ]);
-    final List<String> shortcuts = profile.suppressHomeShortcuts
-        ? const <String>[]
-        : _mergeIds(<Iterable<String>>[
-            profile.shortcutIds,
-            mergedHomeShortcuts(roles),
-          ]);
 
     return HomeDashboard(
       state: HomeDashboardLoadState.ready,
@@ -211,22 +194,18 @@ final class HomeRepositoryImpl implements HomeRepository {
       statusCards: profile.fallbackStatusCards(),
       trend: HomeDashboardTrend.empty,
       distribution: HomeDashboardDistribution.empty,
-      quickActionIds: quickActions,
-      shortcutIds: shortcuts,
-      queuePreview: guidedFallbackQueueHints(profile),
-      alerts: guidedFallbackAlerts(profile),
+      quickActionIds: profile.suppressHomeQuickActions
+        ? const <String>[]
+        : profile.quickActionIds,
+      shortcutIds: profile.suppressHomeShortcuts
+        ? const <String>[]
+        : profile.shortcutIds,
+      queuePreview: const <HomeQueueItem>[],
+      alerts: const <HomeAlertItem>[],
       activity: const <HomeActivityItem>[],
       tenantOptions: const <HomeTenantOption>[],
       generatedAt: DateTime.now().toUtc(),
       usesFallbackData: usesFallbackData,
     );
-  }
-
-  List<String> _mergeIds(Iterable<Iterable<String>> groups) {
-    final ids = <String>{};
-    for (final Iterable<String> group in groups) {
-      ids.addAll(group.where((String id) => id.trim().isNotEmpty));
-    }
-    return ids.toList(growable: false);
   }
 }
