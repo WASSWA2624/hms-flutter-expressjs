@@ -53,6 +53,9 @@ class _IcuWorkspacePageState extends ConsumerState<IcuWorkspacePage> {
     }
     _deepLinkHandled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
       unawaited(_handleDeepLink(query));
     });
   }
@@ -1723,6 +1726,9 @@ class _ManageTransferDialogState extends ConsumerState<_ManageTransferDialog> {
         .when(success: (IcuWorkspaceState s) => s, failure: (_) => null);
     if (state != null && state.bedBoard.beds.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
         ref.read(icuWorkspaceControllerProvider.notifier).loadBedBoard();
       });
     }
@@ -1992,6 +1998,9 @@ class _AssignBedDialogState extends ConsumerState<_AssignBedDialog> {
     final IcuWorkspaceState? state = _readIcuState(ref);
     if (state != null && state.bedBoard.beds.isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
         ref.read(icuWorkspaceControllerProvider.notifier).loadBedBoard();
       });
     }

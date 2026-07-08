@@ -427,6 +427,9 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
       text: widget.state.formularyQuery.search,
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
       if (widget.state.formularyItems.items.isEmpty) {
         unawaited(
           ref
@@ -721,6 +724,9 @@ class _FormularyItemDialogState extends ConsumerState<_FormularyItemDialog> {
     _drugSearchController = TextEditingController();
     if (!_isEditing) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
         unawaited(
           ref
               .read(pharmacyWorkspaceControllerProvider.notifier)
@@ -933,6 +939,9 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
       text: widget.state.inventoryQuery.search,
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
       if (widget.state.inventoryWorkbench.stocks.items.isEmpty) {
         unawaited(
           ref

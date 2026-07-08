@@ -48,6 +48,9 @@ class _TheaterWorkspacePageState extends ConsumerState<TheaterWorkspacePage> {
     }
     _deepLinkHandled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
       unawaited(_handleDeepLink(query));
     });
   }
@@ -144,6 +147,9 @@ class _TheaterWorkspaceContentState
     _tableColumnController =
         AppListTableColumnVisibilityController<TheaterCase>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
       unawaited(_maybeOpenScheduleDialog());
     });
   }

@@ -51,6 +51,9 @@ class _DischargeWorkspacePageState
     }
     _deepLinkHandled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
       unawaited(_handleDeepLink(query));
     });
   }

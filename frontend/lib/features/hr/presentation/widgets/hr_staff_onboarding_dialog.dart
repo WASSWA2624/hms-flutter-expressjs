@@ -255,6 +255,9 @@ class HrStaffOnboardingFormState extends ConsumerState<HrStaffOnboardingForm> {
       _staffNumberMode = StaffNumberEntryMode.manual;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
       _recomputeClinicalSections();
       unawaited(
         ref

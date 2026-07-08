@@ -52,6 +52,7 @@ class _PhysiotherapyWorkspacePageState
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<TherapyWorkItem>
   _columnVisibilityController;
+  String? _pendingSearchControllerText;
 
   @override
   void initState() {
@@ -99,9 +100,7 @@ class _PhysiotherapyWorkspacePageState
         controller.refresh();
       },
       dataBuilder: (BuildContext context, PhysiotherapyWorkspaceState state) {
-        if (_searchController.text != state.query.search) {
-          _searchController.text = state.query.search;
-        }
+        _syncSearchControllerAfterBuild(state.query.search);
         return _PhysiotherapyWorkspace(
           state: state,
           searchController: _searchController,
@@ -109,6 +108,29 @@ class _PhysiotherapyWorkspacePageState
         );
       },
     );
+  }
+
+  void _syncSearchControllerAfterBuild(String search) {
+    if (_searchController.text == search ||
+        _pendingSearchControllerText == search) {
+      return;
+    }
+
+    _pendingSearchControllerText = search;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _pendingSearchControllerText != search) {
+        return;
+      }
+      _pendingSearchControllerText = null;
+      if (_searchController.text == search) {
+        return;
+      }
+      _searchController.value = _searchController.value.copyWith(
+        text: search,
+        selection: TextSelection.collapsed(offset: search.length),
+        composing: TextRange.empty,
+      );
+    });
   }
 }
 

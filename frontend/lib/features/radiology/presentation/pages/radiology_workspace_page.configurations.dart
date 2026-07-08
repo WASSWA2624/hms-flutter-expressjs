@@ -61,6 +61,9 @@ class _RadiologyConfigurationsDialogState
     _testColumnController =
         AppListTableColumnVisibilityController<RadiologyCatalogTest>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
       unawaited(_initializeScope());
     });
   }

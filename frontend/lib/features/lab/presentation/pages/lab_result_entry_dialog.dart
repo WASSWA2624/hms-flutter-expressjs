@@ -21,6 +21,7 @@ part 'lab_result_entry_status.dart';
 
 const String _labReportFlagFilterKey = 'flag';
 const String _labReportSelectionFilterKey = 'selection';
+const int _maxVisibleLabReportPreviewItems = 120;
 
 /// Full-screen lab result entry workspace opened from the lab worklist or queue.
 class LabResultEntryDialog extends ConsumerStatefulWidget {
@@ -3048,6 +3049,7 @@ class _LabReportPreview extends StatelessWidget {
         SizedBox(height: theme.spacing.md),
         AppListTable<LabOrderItem>(
           items: items,
+          maxVisibleItems: _maxVisibleLabReportPreviewItems,
           columns: columns,
           columnChoices: columnChoices,
           columnVisibilityController: columnVisibilityController,

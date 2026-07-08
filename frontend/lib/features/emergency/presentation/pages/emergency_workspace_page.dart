@@ -92,6 +92,9 @@ class _EmergencyWorkspaceContentState
         AppListTableColumnVisibilityController<EmergencyCaseSummary>();
     if (widget.initialQuery.hasRouteTargeting) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
         unawaited(_applyDeepLink(widget.initialQuery));
       });
     }

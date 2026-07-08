@@ -889,6 +889,9 @@ class _LabConfigurationsDialogState
     _columnVisibilityController =
         AppListTableColumnVisibilityController<LabCatalogItem>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
       unawaited(_initializeScope());
     });
   }

@@ -169,6 +169,9 @@ class TheaterScheduleCaseFormState
 
     if (!widget.rescheduleOnly) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
         unawaited(_searchPatients(''));
         final String? patientId = _selectedPatientId;
         if (patientId != null) {

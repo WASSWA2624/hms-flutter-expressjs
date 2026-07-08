@@ -111,7 +111,12 @@ class _NursingWorkspaceContentState
     super.initState();
     _searchController = TextEditingController(text: widget.state.query.search);
     _filterValue = _filterValueFromQuery(widget.state.query);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _handleDeepLink());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_handleDeepLink());
+    });
   }
 
   Future<void> _handleDeepLink() async {

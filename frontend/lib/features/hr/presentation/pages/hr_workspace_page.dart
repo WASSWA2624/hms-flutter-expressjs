@@ -108,6 +108,9 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     }
     _deepLinkHandled = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
       unawaited(_handleDeepLink(query));
     });
   }

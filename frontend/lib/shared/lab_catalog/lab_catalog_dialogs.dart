@@ -15,6 +15,8 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_reference_range_list_field.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
+const int _maxVisibleLabCatalogDialogItems = 160;
+
 typedef LabCatalogUpdateSubmit =
     Future<AppFailure?> Function(String id, Map<String, Object?> payload);
 
@@ -1497,6 +1499,7 @@ class _LabEnableFacilityOfferingDialogState
           else
             AppListTable<LabCatalogItem>(
               items: _filteredCatalogItems,
+              maxVisibleItems: _maxVisibleLabCatalogDialogItems,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               tableHorizontalMargin: 0,
