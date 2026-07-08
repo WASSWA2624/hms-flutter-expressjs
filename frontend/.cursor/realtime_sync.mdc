@@ -10,11 +10,12 @@ Purpose: keep visible UI state aligned with backend persistence through authenti
 ## Sync model
 
 1. **Writes** — UI controllers call repositories over HTTP (`dio`). Repositories persist through REST endpoints.
-2. **Persistence** — backend services commit mutations, audit, then publish domain events.
-3. **Broadcast** — connected clients receive `{ "event": "...", "payload": {} }` envelopes.
-4. **Refresh** — frontend controllers subscribe through `listenForRealtimeRefresh` and reload visible data.
+2. **Local patch** — mutation responses update in-memory workspace state immediately (no full refetch).
+3. **Persistence** — backend services commit mutations, audit, then publish domain events.
+4. **Broadcast** — connected clients receive `{ "event": "...", "payload": {} }` envelopes.
+5. **Targeted refresh** — controllers map each event to the smallest `WorkspaceRefreshPlan` slice set and re-fetch only those HTTP endpoints. Full refetch is reserved for manual refresh and websocket-offline fallback polling.
 
-WebSockets are for **server → client** state propagation. CRUD mutations must not be sent over WebSockets.
+WebSockets are for **server → client** change notification. CRUD mutations must not be sent over WebSockets.
 
 ## Mandatory rules
 
@@ -24,7 +25,8 @@ WebSockets are for **server → client** state propagation. CRUD mutations must 
 - Use `RealtimeEventGroups` for event sets; do not duplicate long event lists per module.
 - Filter events with `RealtimeScope` when the workspace is tenant/facility scoped.
 - Debounce bursty events (default 250ms); defer refresh while local saves are in flight.
-- Refresh by re-fetching authoritative HTTP data — do not merge raw websocket payloads into domain entities.
+- Prefer **targeted HTTP refresh** via `WorkspaceRefreshPlan` — avoid full workspace refetch after local mutations.
+- Disable periodic polling while WebSocket is connected; poll only as an offline fallback.
 - Websocket failures must not block writes; HTTP remains source of truth for mutations.
 - Reconnect on auth token rotation via `realtimeMessagesProvider`.
 - Use `includeCrudMutations: true` when a workspace should refresh on audit-driven `{entity}.{operation}` events from any backend module.

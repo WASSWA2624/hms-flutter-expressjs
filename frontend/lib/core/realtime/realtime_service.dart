@@ -8,6 +8,8 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 
 typedef RealtimeSocketConnector = WebSocketChannel Function(Uri uri);
 
+enum RealtimeConnectionState { disconnected, connecting, connected }
+
 final class RealtimeService {
   RealtimeService({
     required AppConfig config,
@@ -22,6 +24,8 @@ final class RealtimeService {
   final RealtimeSocketConnector _connectSocket;
   final StreamController<RealtimeMessage> _messages =
       StreamController<RealtimeMessage>.broadcast();
+  final StreamController<RealtimeConnectionState> _connectionState =
+      StreamController<RealtimeConnectionState>.broadcast();
 
   WebSocketChannel? _channel;
   StreamSubscription<Object?>? _subscription;
@@ -33,6 +37,15 @@ final class RealtimeService {
   int _socketGeneration = 0;
 
   Stream<RealtimeMessage> get messages => _messages.stream;
+  Stream<RealtimeConnectionState> get connectionStateChanges =>
+      _connectionState.stream;
+  RealtimeConnectionState _currentConnectionState =
+      RealtimeConnectionState.disconnected;
+
+  RealtimeConnectionState get connectionState => _currentConnectionState;
+
+  bool get isConnected =>
+      _currentConnectionState == RealtimeConnectionState.connected;
 
   Future<void> connect(String accessToken) async {
     if (_disposed) {
@@ -53,6 +66,7 @@ final class RealtimeService {
     _shouldReconnect = true;
     _reconnectAttempts = 0;
     _reconnectTimer?.cancel();
+    _setConnectionState(RealtimeConnectionState.connecting);
     await _openSocket();
   }
 
@@ -63,12 +77,14 @@ final class RealtimeService {
     _socketGeneration++;
     _reconnectTimer?.cancel();
     await _closeSocket();
+    _setConnectionState(RealtimeConnectionState.disconnected);
   }
 
   Future<void> dispose() async {
     _disposed = true;
     await disconnect();
     await _messages.close();
+    await _connectionState.close();
   }
 
   static Uri buildWebSocketUri({
@@ -137,6 +153,7 @@ final class RealtimeService {
 
     if (message.event == RealtimeEvents.authenticated) {
       _reconnectAttempts = 0;
+      _setConnectionState(RealtimeConnectionState.connected);
     }
 
     if (message.event == RealtimeEvents.ping) {
@@ -168,7 +185,22 @@ final class RealtimeService {
 
     _subscription = null;
     _channel = null;
+    if (_shouldReconnect) {
+      _setConnectionState(RealtimeConnectionState.connecting);
+    } else {
+      _setConnectionState(RealtimeConnectionState.disconnected);
+    }
     _scheduleReconnect();
+  }
+
+  void _setConnectionState(RealtimeConnectionState next) {
+    if (_currentConnectionState == next) {
+      return;
+    }
+    _currentConnectionState = next;
+    if (!_connectionState.isClosed) {
+      _connectionState.add(next);
+    }
   }
 
   void _scheduleReconnect() {

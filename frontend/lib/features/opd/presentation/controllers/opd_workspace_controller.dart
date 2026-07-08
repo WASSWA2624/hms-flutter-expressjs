@@ -5,12 +5,18 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/network_failure_mapper.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
+import 'package:hosspi_hms/core/realtime/realtime_providers.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/realtime/realtime_service.dart';
+import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
+import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_bootstrap_helpers.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
+import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_refresh_plan.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 final opdWorkspaceControllerProvider =
@@ -24,39 +30,66 @@ final class OpdWorkspaceController
 
   OpdRepository get _repository => ref.read(opdRepositoryProvider);
 
-  Timer? _syncTimer;
+  final WorkspaceAdaptivePolling _adaptivePolling = WorkspaceAdaptivePolling();
   bool _isSyncing = false;
   bool _refreshPending = false;
+  WorkspaceRefreshPlan? _pendingRefreshPlan;
 
   @override
   Future<Result<OpdWorkspaceState>> build() async {
     ref.onDispose(() {
-      _syncTimer?.cancel();
+      _adaptivePolling.dispose();
     });
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.opd,
+      includeCrudMutations: true,
       shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
-      onRefresh: (_) => _syncFromRealtime(),
+      onRefresh: _syncFromRealtime,
+    );
+    ref.listen<AsyncValue<RealtimeConnectionState>>(
+      realtimeConnectionStateProvider,
+      (_, _) => _adaptivePolling.onConnectionStateChanged(),
     );
     final Result<OpdWorkspaceState> result = await runWorkspaceInitialLoad(
       ref,
       _loadInitialState,
     );
-    _startVisibleDataSync();
+    _startAdaptivePolling();
     return result;
   }
 
-  Future<void> _syncFromRealtime() async {
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
     if (_isSyncing || (_currentState?.isSaving ?? false)) {
       _refreshPending = true;
+      _pendingRefreshPlan = _mergePendingPlan(
+        OpdWorkspaceRefreshPlan.forMessage(message),
+      );
       return;
     }
-    await _syncVisibleData();
+    final WorkspaceRefreshPlan plan = OpdWorkspaceRefreshPlan.forMessage(
+      message,
+    );
+    if (plan.isEmpty) {
+      return;
+    }
+    await _syncVisibleData(plan: plan);
+  }
+
+  WorkspaceRefreshPlan _mergePendingPlan(WorkspaceRefreshPlan plan) {
+    final WorkspaceRefreshPlan? pending = _pendingRefreshPlan;
+    if (pending == null) {
+      return plan;
+    }
+    return pending.merge(plan);
   }
 
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(showLoading: true, refreshProviders: true);
+    return _syncVisibleData(
+      showLoading: true,
+      refreshProviders: true,
+      plan: WorkspaceRefreshPlan.full,
+    );
   }
 
   Future<AppFailure?> applySearch(String value) async {
@@ -92,7 +125,10 @@ final class OpdWorkspaceController
       ),
     );
 
-    return _refreshVisiblePages(showLoading: true);
+    return _refreshVisiblePages(
+      showLoading: true,
+      plan: WorkspaceRefreshPlan.full,
+    );
   }
 
   Future<AppFailure?> applyAppointmentStatus(String? status) async {
@@ -417,7 +453,6 @@ final class OpdWorkspaceController
         'queued_at': DateTime.now().toUtc().toIso8601String(),
         'reuse_open_encounter': true,
       }),
-      refreshAfter: true,
     );
   }
 
@@ -498,7 +533,6 @@ final class OpdWorkspaceController
         'provider_user_id': entry.providerUserId,
         'reuse_open_encounter': true,
       }),
-      refreshAfter: true,
     );
   }
 
@@ -507,7 +541,6 @@ final class OpdWorkspaceController
       () => _repository.assignDoctor(flow.apiId, <String, Object?>{
         'provider_user_id': providerUserId,
       }),
-      refreshAfter: true,
     );
   }
 
@@ -517,7 +550,6 @@ final class OpdWorkspaceController
   ) {
     return _mutateFlow(
       () => _repository.payConsultation(flow.apiId, payload),
-      refreshAfter: true,
     );
   }
 
@@ -527,7 +559,6 @@ final class OpdWorkspaceController
   ) {
     return _mutateFlow(
       () => _repository.recordVitals(flow.apiId, payload),
-      refreshAfter: true,
     );
   }
 
@@ -540,7 +571,6 @@ final class OpdWorkspaceController
         'vitals': vitals,
         'update_existing': true,
       }),
-      refreshAfter: true,
     );
   }
 
@@ -554,7 +584,6 @@ final class OpdWorkspaceController
         'stage_to': stage,
         'reason': reason,
       }),
-      refreshAfter: true,
     );
   }
 
@@ -564,7 +593,6 @@ final class OpdWorkspaceController
   ) {
     return _mutateFlow(
       () => _repository.doctorReview(flow.apiId, payload),
-      refreshAfter: true,
     );
   }
 
@@ -606,7 +634,6 @@ final class OpdWorkspaceController
         'triage_level': triageLevel,
         'emergency': emergency,
       }),
-      refreshAfter: true,
     );
   }
 
@@ -626,7 +653,7 @@ final class OpdWorkspaceController
         }
       }
       return _repository.disposition(flow.apiId, payload);
-    }, refreshAfter: true);
+    });
   }
 
   Future<AppFailure?> createReferral({
@@ -667,7 +694,13 @@ final class OpdWorkspaceController
       return null;
     }
     _refreshPending = false;
-    return _syncVisibleData();
+    final WorkspaceRefreshPlan plan =
+        _pendingRefreshPlan ?? WorkspaceRefreshPlan.full;
+    _pendingRefreshPlan = null;
+    if (plan.isEmpty) {
+      return null;
+    }
+    return _syncVisibleData(plan: plan);
   }
 
   Future<Result<OpdWorkspaceState>> _loadInitialState() async {
@@ -676,37 +709,46 @@ final class OpdWorkspaceController
     const OpdFlowQuery flowQuery = OpdFlowQuery();
     const OpdTriageQueueQuery triageQueueQuery = OpdTriageQueueQuery();
 
-    final Result<AppPage<OpdAppointment>> appointmentsResult = await _repository
-        .listAppointments(appointmentQuery);
+    final List<Object?> bootstrapResults = await Future.wait<Object?>(<Future<Object?>>[
+      _repository.listAppointments(appointmentQuery),
+      _repository.listVisitQueues(queueQuery),
+      _repository.listOpdFlows(flowQuery),
+      _repository.getOpdSummaryCounts(),
+      _repository.listTriageQueue(triageQueueQuery),
+    ]);
+
+    final Result<AppPage<OpdAppointment>> appointmentsResult =
+        bootstrapResults[0]! as Result<AppPage<OpdAppointment>>;
+    final Result<AppPage<OpdQueueEntry>> queueResult =
+        bootstrapResults[1]! as Result<AppPage<OpdQueueEntry>>;
+    final Result<AppPage<OpdFlowSummary>> flowsResult =
+        bootstrapResults[2]! as Result<AppPage<OpdFlowSummary>>;
+    final Result<OpdFlowAggregateCounts> summaryCountsResult =
+        bootstrapResults[3]! as Result<OpdFlowAggregateCounts>;
+    final Result<AppPage<OpdFlowSummary>> triageQueueResult =
+        bootstrapResults[4]! as Result<AppPage<OpdFlowSummary>>;
+
     final AppPage<OpdAppointment> appointments = workspacePageOrEmptyOnFailure(
       appointmentsResult,
       appointmentQuery.pageRequest,
     );
     final AppFailure? appointmentsFailure = _failureOrNull(appointmentsResult);
 
-    final Result<AppPage<OpdQueueEntry>> queueResult = await _repository
-        .listVisitQueues(queueQuery);
     final AppPage<OpdQueueEntry> queue = workspacePageOrEmptyOnFailure(
       queueResult,
       queueQuery.pageRequest,
     );
     final AppFailure? queueFailure = _failureOrNull(queueResult);
 
-    final Result<AppPage<OpdFlowSummary>> flowsResult = await _repository
-        .listOpdFlows(flowQuery);
     final AppPage<OpdFlowSummary> flows = workspacePageOrEmptyOnFailure(
       flowsResult,
       flowQuery.pageRequest,
     );
     final AppFailure? flowsFailure = _failureOrNull(flowsResult);
 
-    final Result<OpdFlowAggregateCounts> summaryCountsResult = await _repository
-        .getOpdSummaryCounts();
     final OpdFlowAggregateCounts summaryCounts =
         _successOrNull(summaryCountsResult) ?? OpdFlowAggregateCounts.empty;
 
-    final Result<AppPage<OpdFlowSummary>> triageQueueResult = await _repository
-        .listTriageQueue(triageQueueQuery);
     final AppPage<OpdFlowSummary> triageQueue = workspacePageOrEmptyOnFailure(
       triageQueueResult,
       triageQueueQuery.pageRequest,
@@ -736,9 +778,14 @@ final class OpdWorkspaceController
       return Result<OpdWorkspaceState>.failure(firstFailure);
     }
 
+    final List<Object?> referenceResults = await Future.wait<Object?>(<Future<Object?>>[
+      _clinicalAlertThresholds(),
+      _providerSchedules(),
+    ]);
     final List<OpdClinicalAlertThreshold> thresholds =
-        await _clinicalAlertThresholds();
-    final List<OpdProviderSchedule> schedules = await _providerSchedules();
+        referenceResults[0]! as List<OpdClinicalAlertThreshold>;
+    final List<OpdProviderSchedule> schedules =
+        referenceResults[1]! as List<OpdProviderSchedule>;
     final List<OpdAvailabilitySlot> slots = await _availabilitySlots(schedules);
 
     return Result<OpdWorkspaceState>.success(
@@ -760,22 +807,32 @@ final class OpdWorkspaceController
     );
   }
 
-  void _startVisibleDataSync() {
-    _syncTimer ??= Timer.periodic(_syncInterval, (_) {
-      unawaited(_syncVisibleData());
-    });
+  void _startAdaptivePolling() {
+    _adaptivePolling.start(
+      intervalWhenDisconnected: _syncInterval,
+      isRealtimeConnected: () =>
+          ref.read(realtimeServiceProvider).isConnected,
+      onTick: () => unawaited(
+        _syncVisibleData(plan: WorkspaceRefreshPlan.full),
+      ),
+    );
   }
 
   Future<AppFailure?> _syncVisibleData({
     bool showLoading = false,
     bool refreshProviders = false,
+    WorkspaceRefreshPlan plan = WorkspaceRefreshPlan.full,
   }) async {
+    if (plan.isEmpty) {
+      return null;
+    }
     final OpdWorkspaceState? current = _currentState;
     if (current == null) {
       return null;
     }
     if (_isSyncing || current.isSaving) {
       _refreshPending = true;
+      _pendingRefreshPlan = _mergePendingPlan(plan);
       return null;
     }
 
@@ -783,11 +840,11 @@ final class OpdWorkspaceController
     if (showLoading) {
       _emit(
         current.copyWith(
-          isRefreshingAppointments: true,
-          isRefreshingQueue: true,
-          isRefreshingFlows: true,
-          isRefreshingTriageQueue: true,
-          isRefreshingDetail: current.selectedFlow != null,
+          isRefreshingAppointments: plan.appointments,
+          isRefreshingQueue: plan.queue,
+          isRefreshingFlows: plan.flows,
+          isRefreshingTriageQueue: plan.triage,
+          isRefreshingDetail: plan.selectedDetail && current.selectedFlow != null,
           clearLastFailure: true,
         ),
       );
@@ -796,6 +853,7 @@ final class OpdWorkspaceController
     try {
       final AppFailure? failure = await _refreshVisiblePages(
         showLoading: showLoading,
+        plan: plan,
       );
       if (failure != null) {
         return failure;
@@ -835,131 +893,170 @@ final class OpdWorkspaceController
         );
       }
       _isSyncing = false;
+      if (_refreshPending && !(_currentState?.isSaving ?? false)) {
+        unawaited(_flushPendingRefresh());
+      }
     }
   }
 
-  Future<AppFailure?> _refreshVisiblePages({required bool showLoading}) async {
+  Future<AppFailure?> _refreshVisiblePages({
+    required bool showLoading,
+    required WorkspaceRefreshPlan plan,
+  }) async {
     final OpdWorkspaceState? current = _currentState;
     if (current == null) {
       return null;
     }
 
     AppFailure? firstFailure;
-    final Future<Result<AppPage<OpdAppointment>>> appointmentsFuture =
-        _repository.listAppointments(current.appointmentQuery);
-    final Future<Result<AppPage<OpdQueueEntry>>> queueFuture = _repository
-        .listVisitQueues(current.queueQuery);
-    final Future<Result<AppPage<OpdFlowSummary>>> flowsFuture = _repository
-        .listOpdFlows(current.flowQuery);
-    final Future<Result<AppPage<OpdFlowSummary>>> triageFuture = _repository
-        .listTriageQueue(current.triageQueueQuery);
-    final Future<Result<OpdFlowAggregateCounts>> summaryCountsFuture =
-        _repository.getOpdSummaryCounts();
-    final OpdFlowDetail? currentSelectedFlow = current.selectedFlow;
-    final Future<Result<OpdFlowDetail>>? selectedDetailFuture =
-        currentSelectedFlow == null
-        ? null
-        : _repository.getOpdFlow(currentSelectedFlow.summary.apiId);
+    final List<Future<void>> refreshTasks = <Future<void>>[];
 
-    final Result<AppPage<OpdAppointment>> appointmentsResult =
-        await appointmentsFuture;
-    final Result<AppPage<OpdQueueEntry>> queueResult = await queueFuture;
-    final Result<AppPage<OpdFlowSummary>> flowsResult = await flowsFuture;
-    final Result<AppPage<OpdFlowSummary>> triageResult = await triageFuture;
-    final Result<OpdFlowAggregateCounts> summaryCountsResult =
-        await summaryCountsFuture;
-    final Result<OpdFlowDetail>? selectedDetailResult =
-        selectedDetailFuture == null ? null : await selectedDetailFuture;
-
-    OpdWorkspaceState nextState = current;
-
-    appointmentsResult.when(
-      success: (AppPage<OpdAppointment> page) {
-        nextState = nextState.copyWith(appointments: page);
-      },
-      failure: (AppFailure failure) {
-        firstFailure ??= failure;
-      },
-    );
-
-    queueResult.when(
-      success: (AppPage<OpdQueueEntry> page) {
-        nextState = nextState.copyWith(queueEntries: page);
-      },
-      failure: (AppFailure failure) {
-        firstFailure ??= failure;
-      },
-    );
-
-    flowsResult.when(
-      success: (AppPage<OpdFlowSummary> page) {
-        final AppPage<OpdFlowSummary> stablePage = _stableFlowPage(
-          page,
-          current.flows,
+    if (plan.appointments) {
+      refreshTasks.add(() async {
+        final Result<AppPage<OpdAppointment>> result = await _repository
+            .listAppointments(current.appointmentQuery);
+        result.when(
+          success: (AppPage<OpdAppointment> page) {
+            final OpdWorkspaceState? latest = _currentState;
+            if (latest != null) {
+              _emit(latest.copyWith(appointments: page));
+            }
+          },
+          failure: (AppFailure failure) {
+            firstFailure ??= failure;
+          },
         );
-        final OpdFlowDetail? selected = _selectedAfterFlowRefresh(
-          stablePage,
-          nextState.selectedFlow,
-        );
-        nextState = nextState.copyWith(
-          flows: stablePage,
-          selectedFlow: selected,
-          clearSelectedFlow: selected == null,
-        );
-      },
-      failure: (AppFailure failure) {
-        firstFailure ??= failure;
-      },
-    );
+      }());
+    }
 
-    triageResult.when(
-      success: (AppPage<OpdFlowSummary> page) {
-        nextState = nextState.copyWith(
-          triageQueue: _stableFlowPage(page, current.triageQueue),
+    if (plan.queue) {
+      refreshTasks.add(() async {
+        final Result<AppPage<OpdQueueEntry>> result = await _repository
+            .listVisitQueues(current.queueQuery);
+        result.when(
+          success: (AppPage<OpdQueueEntry> page) {
+            final OpdWorkspaceState? latest = _currentState;
+            if (latest != null) {
+              _emit(latest.copyWith(queueEntries: page));
+            }
+          },
+          failure: (AppFailure failure) {
+            firstFailure ??= failure;
+          },
         );
-      },
-      failure: (AppFailure failure) {
-        firstFailure ??= failure;
-      },
-    );
+      }());
+    }
 
-    summaryCountsResult.when(
-      success: (OpdFlowAggregateCounts counts) {
-        nextState = nextState.copyWith(summaryCounts: counts);
-      },
-      failure: (AppFailure failure) {
-        firstFailure ??= failure;
-      },
-    );
-
-    selectedDetailResult?.when(
-      success: (OpdFlowDetail detail) {
-        nextState = nextState.copyWith(
-          selectedFlow: detail.summary.isTerminal ? null : detail,
-          clearSelectedFlow: detail.summary.isTerminal,
-          flows: _upsertOrRemoveFlow(nextState.flows, detail.summary),
-          triageQueue: _upsertOrRemoveTriageFlow(
-            nextState.triageQueue,
-            detail.summary,
-          ),
+    if (plan.flows) {
+      refreshTasks.add(() async {
+        final Result<AppPage<OpdFlowSummary>> result = await _repository
+            .listOpdFlows(current.flowQuery);
+        result.when(
+          success: (AppPage<OpdFlowSummary> page) {
+            final OpdWorkspaceState? latest = _currentState;
+            if (latest == null) {
+              return;
+            }
+            final AppPage<OpdFlowSummary> stablePage = _stableFlowPage(
+              page,
+              latest.flows,
+            );
+            final OpdFlowDetail? selected = _selectedAfterFlowRefresh(
+              stablePage,
+              latest.selectedFlow,
+            );
+            _emit(
+              latest.copyWith(
+                flows: stablePage,
+                selectedFlow: selected,
+                clearSelectedFlow: selected == null,
+              ),
+            );
+          },
+          failure: (AppFailure failure) {
+            firstFailure ??= failure;
+          },
         );
-      },
-      failure: (_) {},
-    );
+      }());
+    }
 
-    _emit(
-      nextState.copyWith(
-        isRefreshingAppointments: showLoading
-            ? false
-            : nextState.isRefreshingAppointments,
-        isRefreshingQueue: showLoading ? false : nextState.isRefreshingQueue,
-        isRefreshingFlows: showLoading ? false : nextState.isRefreshingFlows,
-        isRefreshingTriageQueue: showLoading
-            ? false
-            : nextState.isRefreshingTriageQueue,
-        lastFailure: firstFailure,
-      ),
-    );
+    if (plan.triage) {
+      refreshTasks.add(() async {
+        final Result<AppPage<OpdFlowSummary>> result = await _repository
+            .listTriageQueue(current.triageQueueQuery);
+        result.when(
+          success: (AppPage<OpdFlowSummary> page) {
+            final OpdWorkspaceState? latest = _currentState;
+            if (latest != null) {
+              _emit(
+                latest.copyWith(
+                  triageQueue: _stableFlowPage(page, latest.triageQueue),
+                ),
+              );
+            }
+          },
+          failure: (AppFailure failure) {
+            firstFailure ??= failure;
+          },
+        );
+      }());
+    }
+
+    if (plan.summaryCounts) {
+      refreshTasks.add(() async {
+        final Result<OpdFlowAggregateCounts> result = await _repository
+            .getOpdSummaryCounts();
+        result.when(
+          success: (OpdFlowAggregateCounts counts) {
+            final OpdWorkspaceState? latest = _currentState;
+            if (latest != null) {
+              _emit(latest.copyWith(summaryCounts: counts));
+            }
+          },
+          failure: (AppFailure failure) {
+            firstFailure ??= failure;
+          },
+        );
+      }());
+    }
+
+    if (plan.selectedDetail && current.selectedFlow != null) {
+      final String flowId = current.selectedFlow!.summary.apiId;
+      refreshTasks.add(() async {
+        final Result<OpdFlowDetail> result = await _repository.getOpdFlow(
+          flowId,
+        );
+        result.when(
+          success: (OpdFlowDetail detail) {
+            final OpdWorkspaceState? latest = _currentState;
+            if (latest == null) {
+              return;
+            }
+            _emit(
+              latest.copyWith(
+                selectedFlow: detail.summary.isTerminal ? null : detail,
+                clearSelectedFlow: detail.summary.isTerminal,
+                flows: _upsertOrRemoveFlow(latest.flows, detail.summary),
+                triageQueue: _upsertOrRemoveTriageFlow(
+                  latest.triageQueue,
+                  detail.summary,
+                ),
+              ),
+            );
+          },
+          failure: (_) {},
+        );
+      }());
+    }
+
+    if (refreshTasks.isNotEmpty) {
+      await Future.wait<void>(refreshTasks);
+    }
+
+    final OpdWorkspaceState? latest = _currentState;
+    if (latest != null && firstFailure != null) {
+      _emit(latest.copyWith(lastFailure: firstFailure));
+    }
 
     return firstFailure;
   }
@@ -1051,7 +1148,7 @@ final class OpdWorkspaceController
         );
         await _flushPendingRefresh();
         if (refreshFlowsAfter) {
-          return _syncVisibleData();
+          return _syncVisibleData(plan: WorkspaceRefreshPlan.flowWorkspace);
         }
         return null;
       },
@@ -1064,13 +1161,9 @@ final class OpdWorkspaceController
   }
 
   Future<AppFailure?> _mutateFlow(
-    Future<Result<OpdFlowDetail>> Function() action, {
-    required bool refreshAfter,
-  }) async {
-    final Result<OpdFlowDetail> result = await _mutateFlowDetail(
-      action,
-      refreshAfter: refreshAfter,
-    );
+    Future<Result<OpdFlowDetail>> Function() action,
+  ) async {
+    final Result<OpdFlowDetail> result = await _mutateFlowDetail(action);
     return result.when(
       success: (_) => null,
       failure: (AppFailure failure) => failure,
@@ -1090,7 +1183,6 @@ final class OpdWorkspaceController
             ..remove('existing_encounter_id')
             ..remove('reuse_open_encounter'),
         ),
-        refreshAfter: true,
       );
     }
 
@@ -1101,21 +1193,19 @@ final class OpdWorkspaceController
         ...payload,
         'reuse_open_encounter': true,
       }),
-      refreshAfter: true,
     );
   }
 
   Future<Result<OpdFlowDetail>> _mutateFlowDetail(
-    Future<Result<OpdFlowDetail>> Function() action, {
-    required bool refreshAfter,
-  }) async {
+    Future<Result<OpdFlowDetail>> Function() action,
+  ) async {
     final OpdWorkspaceState? current = _currentState;
     if (current == null) {
       final AppFailure? failure = await refresh();
       if (failure != null) {
         return Result<OpdFlowDetail>.failure(failure);
       }
-      return _mutateFlowDetail(action, refreshAfter: refreshAfter);
+      return _mutateFlowDetail(action);
     }
 
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
@@ -1139,19 +1229,18 @@ final class OpdWorkspaceController
             );
           }
           await _flushPendingRefresh();
-          if (refreshAfter) {
-            final AppFailure? syncFailure = await _syncVisibleData();
-            if (syncFailure != null) {
-              return Result<OpdFlowDetail>.failure(syncFailure);
-            }
-          }
           return Result<OpdFlowDetail>.success(detail);
         },
         failure: (AppFailure failure) async {
           _emitMutationFailure(failure);
           await _flushPendingRefresh();
           if (failure.category == AppFailureCategory.notFound) {
-            unawaited(_syncVisibleData(showLoading: true));
+            unawaited(
+              _syncVisibleData(
+                showLoading: true,
+                plan: WorkspaceRefreshPlan.flowWorkspace,
+              ),
+            );
           }
           return Result<OpdFlowDetail>.failure(failure);
         },

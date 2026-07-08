@@ -17,6 +17,18 @@ final realtimeServiceProvider = Provider<RealtimeService>((ref) {
   return service;
 });
 
+final realtimeConnectionStateProvider = StreamProvider<RealtimeConnectionState>(
+  (ref) {
+    final RealtimeService service = ref.watch(realtimeServiceProvider);
+    // Keep the socket lifecycle aligned with session-backed message streaming.
+    ref.watch(realtimeMessagesProvider);
+    return () async* {
+      yield service.connectionState;
+      yield* service.connectionStateChanges;
+    }();
+  },
+);
+
 final realtimeMessagesProvider = StreamProvider<RealtimeMessage>((ref) {
   final String? accessToken = ref.watch(
     sessionStateProvider.select((SessionState state) {
