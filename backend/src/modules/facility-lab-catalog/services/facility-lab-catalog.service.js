@@ -207,7 +207,6 @@ const resolveOrCreateStandardLabPanel = async ({
       is_required: true,
       sort_order: index,
       instructions: null,
-      unit: definition.unit || null,
     });
   }
 

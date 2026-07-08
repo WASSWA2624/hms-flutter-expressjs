@@ -365,12 +365,41 @@ const serializeAdmission = (record) => ({
   updated_at: record?.updated_at || null,
 });
 
+const resolvePharmacyOrderPriority = (record) => {
+  const items = Array.isArray(record?.items) ? record.items : [];
+  if (items.some((item) => String(item?.frequency || '').trim().toUpperCase() === 'STAT')) {
+    return 'STAT';
+  }
+  return items.length ? 'ROUTINE' : null;
+};
+
+const resolvePharmacyOrderDispensedAt = (record) => {
+  const items = Array.isArray(record?.items) ? record.items : [];
+  let latest = null;
+  for (const item of items) {
+    for (const log of item?.dispense_logs || []) {
+      const dispensedAt = log?.dispensed_at;
+      if (!dispensedAt) continue;
+      if (!latest || new Date(dispensedAt) > new Date(latest)) {
+        latest = dispensedAt;
+      }
+    }
+  }
+  if (latest) return latest;
+
+  const status = String(record?.status || '').trim().toUpperCase();
+  if (status === 'DISPENSED' || status === 'PARTIALLY_DISPENSED') {
+    return record?.updated_at || null;
+  }
+  return null;
+};
+
 const serializePharmacyOrder = (record) => ({
   human_friendly_id: resolvePublicIdentifier(record?.human_friendly_id, record?.id),
   status: record?.status || null,
-  priority: record?.priority || null,
+  priority: resolvePharmacyOrderPriority(record),
   ordered_at: record?.ordered_at || null,
-  dispensed_at: record?.dispensed_at || null,
+  dispensed_at: resolvePharmacyOrderDispensedAt(record),
   created_at: record?.created_at || null,
   updated_at: record?.updated_at || null,
 });
@@ -1454,11 +1483,20 @@ const buildPatientWorkspacePayload = async (patient, scope = {}, userContext = {
             id: true,
             human_friendly_id: true,
             status: true,
-            priority: true,
             ordered_at: true,
-            dispensed_at: true,
             created_at: true,
             updated_at: true,
+            items: {
+              where: { deleted_at: null },
+              select: {
+                frequency: true,
+                dispense_logs: {
+                  where: { deleted_at: null },
+                  select: { dispensed_at: true },
+                  orderBy: { dispensed_at: 'desc' },
+                },
+              },
+            },
           },
         })
     ),

@@ -36,6 +36,87 @@ const STANDARD_LAB_TESTS = Object.freeze({
     "unit": null,
     "description": "Standard complete blood count profile."
   },
+  "CBC_HGB": {
+    "name": "Hemoglobin",
+    "code": "HGB",
+    "category": "HEMATOLOGY",
+    "specimen_type": "WHOLE_BLOOD",
+    "result_kind": "NUMERIC",
+    "unit": "g/dL",
+    "description": "Hemoglobin concentration for anemia and bleeding assessment."
+  },
+  "CBC_HCT": {
+    "name": "Hematocrit",
+    "code": "HCT",
+    "category": "HEMATOLOGY",
+    "specimen_type": "WHOLE_BLOOD",
+    "result_kind": "NUMERIC",
+    "unit": "%",
+    "description": "Packed cell volume estimate."
+  },
+  "CBC_RBC": {
+    "name": "Red Blood Cell Count",
+    "code": "RBC",
+    "category": "HEMATOLOGY",
+    "specimen_type": "WHOLE_BLOOD",
+    "result_kind": "NUMERIC",
+    "unit": "x10^12/L",
+    "description": "Red cell concentration for anemia and marrow assessment."
+  },
+  "CBC_WBC": {
+    "name": "White Blood Cell Count",
+    "code": "WBC",
+    "category": "HEMATOLOGY",
+    "specimen_type": "WHOLE_BLOOD",
+    "result_kind": "NUMERIC",
+    "unit": "x10^9/L",
+    "description": "Leukocyte count for infection and marrow monitoring."
+  },
+  "CBC_PLT": {
+    "name": "Platelet Count",
+    "code": "PLT",
+    "category": "HEMATOLOGY",
+    "specimen_type": "WHOLE_BLOOD",
+    "result_kind": "NUMERIC",
+    "unit": "x10^9/L",
+    "description": "Platelet count for bleeding and thrombosis risk assessment."
+  },
+  "CBC_MCV": {
+    "name": "Mean Corpuscular Volume",
+    "code": "MCV",
+    "category": "HEMATOLOGY",
+    "specimen_type": "WHOLE_BLOOD",
+    "result_kind": "NUMERIC",
+    "unit": "fL",
+    "description": "Average red cell volume."
+  },
+  "CBC_MCH": {
+    "name": "Mean Corpuscular Hemoglobin",
+    "code": "MCH",
+    "category": "HEMATOLOGY",
+    "specimen_type": "WHOLE_BLOOD",
+    "result_kind": "NUMERIC",
+    "unit": "pg",
+    "description": "Average hemoglobin content per red cell."
+  },
+  "CBC_MCHC": {
+    "name": "Mean Corpuscular Hemoglobin Concentration",
+    "code": "MCHC",
+    "category": "HEMATOLOGY",
+    "specimen_type": "WHOLE_BLOOD",
+    "result_kind": "NUMERIC",
+    "unit": "g/dL",
+    "description": "Average hemoglobin concentration in red cells."
+  },
+  "CBC_RDW": {
+    "name": "Red Cell Distribution Width",
+    "code": "RDW",
+    "category": "HEMATOLOGY",
+    "specimen_type": "WHOLE_BLOOD",
+    "result_kind": "NUMERIC",
+    "unit": "%",
+    "description": "Variation in red cell size."
+  },
   "BMP": {
     "name": "Basic Metabolic Panel",
     "code": "BMP",
@@ -45029,9 +45110,21 @@ const STANDARD_LAB_TESTS = Object.freeze({
   }
 });
 
+const CBC_COMPONENT_TEST_CODES = Object.freeze([
+  "CBC_HGB",
+  "CBC_HCT",
+  "CBC_RBC",
+  "CBC_WBC",
+  "CBC_PLT",
+  "CBC_MCV",
+  "CBC_MCH",
+  "CBC_MCHC",
+  "CBC_RDW"
+]);
+
 const STANDARD_LAB_PANELS = Object.freeze({
   "CBC_PANEL": [
-    "CBC"
+    ...CBC_COMPONENT_TEST_CODES
   ],
   "CHEMISTRY_BASIC": [
     "BMP",
@@ -45042,19 +45135,19 @@ const STANDARD_LAB_PANELS = Object.freeze({
     "BMP"
   ],
   "FEVER_SCREEN": [
-    "CBC",
+    ...CBC_COMPONENT_TEST_CODES,
     "MALARIA_RDT",
     "CRP",
     "BLOOD_CULTURE"
   ],
   "PRE_OP": [
-    "CBC",
+    ...CBC_COMPONENT_TEST_CODES,
     "CMP",
     "PT_INR",
     "HIV_SCREEN"
   ],
   "ANTENATAL_BASIC": [
-    "CBC",
+    ...CBC_COMPONENT_TEST_CODES,
     "HIV_SCREEN",
     "URINALYSIS",
     "PREGNANCY_TEST"

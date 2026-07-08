@@ -315,6 +315,22 @@ describe('lab-order.service', () => {
     );
   });
 
+  it('models the standard CBC offering as a multi-test panel', () => {
+    expect(labOrderService.STANDARD_LAB_PANELS.CBC_PANEL).toEqual([
+      'CBC_HGB',
+      'CBC_HCT',
+      'CBC_RBC',
+      'CBC_WBC',
+      'CBC_PLT',
+      'CBC_MCV',
+      'CBC_MCH',
+      'CBC_MCHC',
+      'CBC_RDW',
+    ]);
+    expect(labOrderService.STANDARD_LAB_PANELS.CBC_PANEL).not.toContain('CBC');
+    expect(labOrderService.STANDARD_LAB_TESTS.CBC).toBeDefined();
+  });
+
   it('rejects creating a lab order without resolved tests', async () => {
     resolveModelRecordOrThrow.mockResolvedValueOnce({
       id: 'patient-internal-1',
