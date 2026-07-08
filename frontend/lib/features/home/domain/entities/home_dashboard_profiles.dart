@@ -38,8 +38,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.superAdmin,
     roleLabel: 'Platform administrator',
     homeTitle: 'Platform command center',
-    homeSubtitle:
-        'Select a tenant or review system-wide items that need attention.',
     emptyMessage: 'Choose a tenant to view operational dashboards.',
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'tenants_active', label: 'Tenants active'),
@@ -86,8 +84,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.tenantAdmin,
     roleLabel: 'Organization administrator',
     homeTitle: 'Organization overview',
-    homeSubtitle:
-        'Monitor patient flow, revenue, staffing, module readiness, and subscription health across your organization.',
     emptyMessage: 'Start by setting up patients, staff, services, and billing.',
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
@@ -146,8 +142,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.facilityAdmin,
     roleLabel: 'Facility administrator',
     homeTitle: 'Facility operations dashboard',
-    homeSubtitle:
-        'Track today\'s flow, bed readiness, staffing, revenue, and operational blockers for this facility.',
     emptyMessage:
         'Facility setup is ready for daily work once patients, services, beds, and staff are configured.',
     statusCards: <HomeStatusCardTemplate>[
@@ -202,9 +196,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.doctor,
     roleLabel: 'Doctor / clinician',
     homeTitle: 'Clinical worklist',
-    homeSubtitle:
-        'Review assigned consultations, results, admissions, and urgent follow-up.',
     emptyMessage: 'No assigned clinical work right now.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'assigned', label: 'Assigned consultations'),
       HomeStatusCardTemplate(
@@ -247,9 +240,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.nurse,
     roleLabel: 'Nurse',
     homeTitle: 'Nursing work dashboard',
-    homeSubtitle:
-        'Coordinate patient observations, medications, ward tasks, and handovers.',
     emptyMessage: 'No nursing tasks are assigned right now.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'inpatient_flow', label: 'Active inpatients'),
       HomeStatusCardTemplate(
@@ -291,9 +283,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.labTech,
     roleLabel: 'Laboratory technologist',
     homeTitle: 'Laboratory queue',
-    homeSubtitle:
-        'Process samples, update results, and highlight critical findings.',
     emptyMessage: 'No lab work is pending.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'orders_today', label: 'Lab orders today'),
       HomeStatusCardTemplate(id: 'in_process', label: 'Orders in process'),
@@ -315,9 +306,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.radiologyTech,
     roleLabel: 'Radiology / imaging technologist',
     homeTitle: 'Imaging worklist',
-    homeSubtitle:
-        'Track imaging requests, studies in progress, reports, and urgent imaging findings.',
     emptyMessage: 'No imaging work is pending.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
         id: 'orders_today',
@@ -342,9 +332,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.pharmacist,
     roleLabel: 'Pharmacist',
     homeTitle: 'Pharmacy workload',
-    homeSubtitle:
-        'Dispense medications, manage stock pressure, and review pending orders.',
     emptyMessage: 'No medication orders are waiting.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
         id: 'orders_today',
@@ -376,9 +365,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.receptionist,
     roleLabel: 'Reception / front desk',
     homeTitle: 'Front desk dashboard',
-    homeSubtitle:
-        'Manage registrations, appointments, arrivals, queue movement, and first billing steps.',
     emptyMessage: 'No front-desk queue items right now.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
         id: 'registrations_today',
@@ -413,9 +401,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.billing,
     roleLabel: 'Billing / cashier',
     homeTitle: 'Billing workbench',
-    homeSubtitle:
-        'Manage invoices, payments, overdue balances, claims, and day close.',
     emptyMessage: 'No billing items need action right now.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
         id: 'invoices_today',
@@ -449,8 +436,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.operations,
     roleLabel: 'Operations',
     homeTitle: 'Operations readiness dashboard',
-    homeSubtitle:
-        'Track beds, maintenance, housekeeping backlog, and facility readiness.',
     emptyMessage: 'No operations items need action right now.',
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'occupied_beds', label: 'Occupied beds'),
@@ -495,8 +480,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.hr,
     roleLabel: 'HR / workforce',
     homeTitle: 'Workforce dashboard',
-    homeSubtitle:
-        'Operational snapshot of staff coverage, leave, shifts, and payroll.',
     emptyMessage: 'No HR tasks are pending.',
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
@@ -522,7 +505,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     ],
     quickActionIds: <String>[],
     shortcutIds: <String>[],
-    heroFullWidth: true,
     maxStatusCards: 8,
     suppressHomeQuickActions: true,
     suppressHomeShortcuts: true,
@@ -566,9 +548,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.biomed,
     roleLabel: 'Biomedical technician',
     homeTitle: 'Biomedical service queue',
-    homeSubtitle:
-        'Manage equipment work orders, incidents, downtime, and service-risk items.',
     emptyMessage: 'No biomedical work is pending.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'open_work_orders', label: 'Open work orders'),
       HomeStatusCardTemplate(id: 'open_incidents', label: 'Open incidents'),
@@ -606,8 +587,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.houseKeeper,
     roleLabel: 'Housekeeping staff',
     homeTitle: 'My cleaning tasks',
-    homeSubtitle: 'Complete assigned cleaning, turnover, and sanitation tasks.',
     emptyMessage: 'No cleaning tasks are assigned right now.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'pending_tasks', label: 'Pending tasks'),
       HomeStatusCardTemplate(
@@ -634,9 +615,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.ambulanceOperator,
     roleLabel: 'Ambulance / emergency transport',
     homeTitle: 'Ambulance dispatch board',
-    homeSubtitle:
-        'Track dispatches, active trips, emergency handovers, and fleet availability.',
     emptyMessage: 'No ambulance dispatches are active.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'dispatches_today', label: 'Dispatches today'),
       HomeStatusCardTemplate(id: 'active_trips', label: 'Active trips'),
@@ -660,9 +640,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.unitManager,
     roleLabel: 'Unit manager',
     homeTitle: 'Unit management dashboard',
-    homeSubtitle:
-        'Monitor unit workload, staff coverage, rosters, and operational blockers.',
     emptyMessage: 'No unit management items need action.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'unit_census', label: 'Unit census'),
       HomeStatusCardTemplate(id: 'staff_on_shift', label: 'Staff on shift'),
@@ -689,9 +668,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.wardManager,
     roleLabel: 'Ward manager / charge nurse',
     homeTitle: 'Ward command view',
-    homeSubtitle:
-        'Track ward census, bed movement, nursing work, handovers, and staffing coverage.',
     emptyMessage: 'No ward issues are currently pending.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'ward_census', label: 'Ward census'),
       HomeStatusCardTemplate(id: 'occupied_beds', label: 'Occupied beds'),
@@ -728,9 +706,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.icuManager,
     roleLabel: 'ICU manager',
     homeTitle: 'ICU oversight dashboard',
-    homeSubtitle:
-        'Monitor critical patients, ICU bed pressure, staffing, escalations, and transfer readiness.',
     emptyMessage: 'No ICU oversight items need action.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'icu_census', label: 'ICU census'),
       HomeStatusCardTemplate(
@@ -769,9 +746,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.theatreManager,
     roleLabel: 'Theatre manager',
     homeTitle: 'Theatre schedule dashboard',
-    homeSubtitle:
-        'Coordinate procedure readiness, theatre flow, staffing, and post-operative handovers.',
     emptyMessage: 'No theatre cases need action.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'procedures_today', label: 'Procedures today'),
       HomeStatusCardTemplate(
@@ -809,8 +785,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.housekeepingManager,
     roleLabel: 'Housekeeping manager',
     homeTitle: 'Housekeeping control dashboard',
-    homeSubtitle:
-        'Manage cleaning workload, turnover readiness, staff coverage, and blocked rooms.',
     emptyMessage: 'No housekeeping backlog is pending.',
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
@@ -857,8 +831,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.biomedManager,
     roleLabel: 'Biomedical manager',
     homeTitle: 'Biomedical risk dashboard',
-    homeSubtitle:
-        'Oversee equipment risk, technician workload, incidents, downtime, and maintenance compliance.',
     emptyMessage: 'No biomedical risk items need action.',
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'open_work_orders', label: 'Open work orders'),
@@ -889,9 +861,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.mortuaryStaff,
     roleLabel: 'Mortuary staff',
     homeTitle: 'Mortuary work queue',
-    homeSubtitle:
-        'Manage custody, storage, viewings, post-mortem requests, and billable events.',
     emptyMessage: 'No mortuary tasks are pending.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
         id: 'active_mortuary_cases',
@@ -930,8 +901,6 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.mortuaryManager,
     roleLabel: 'Mortuary manager',
     homeTitle: 'Mortuary oversight dashboard',
-    homeSubtitle:
-        'Oversee custody compliance, storage capacity, release authorization, audit, and export readiness.',
     emptyMessage: 'No mortuary approvals need action.',
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
@@ -977,9 +946,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.patient,
     roleLabel: 'Patient portal account',
     homeTitle: 'My care dashboard',
-    homeSubtitle:
-        'View upcoming visits, care updates, bills, prescriptions, and personal profile information.',
     emptyMessage: 'Your care updates will appear here.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(
         id: 'my_upcoming_appointments',
@@ -1011,9 +979,9 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.other,
     roleLabel: 'Limited account',
     homeTitle: 'Account dashboard',
-    homeSubtitle: 'Access the areas assigned to your account.',
     emptyMessage:
         'Your account has limited access. Contact an administrator if you need more modules.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'profile_status', label: 'Profile status'),
       HomeStatusCardTemplate(id: 'assigned_links', label: 'Assigned links'),

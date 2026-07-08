@@ -11,9 +11,9 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_context_panel.dart';
-import 'package:hosspi_hms/features/home/presentation/widgets/home_hero_panel.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_metric_routes.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_toolbar_actions.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_workspace_dialogs.dart';
@@ -75,14 +75,14 @@ class _HomeDashboardContent extends ConsumerWidget {
       dashboard.quickActionIds,
       policy,
     );
-    final List<_HomeShortcutDefinition> shortcuts = _visibleShortcuts(
-      dashboard.shortcutIds,
-      policy,
-    );
-    final String contextLine = homeDashboardContextLine(
-      role: dashboard.profile.role,
-      context: dashboard.context,
-    );
+    final List<_HomeShortcutDefinition> shortcuts =
+        _shortcutsExcludingQuickActions(
+          _visibleShortcuts(dashboard.shortcutIds, policy),
+          actions,
+          dashboard.profile,
+        );
+    final HomeDashboardProfile profile = dashboard.profile;
+    final bool hasQueueItems = dashboard.queuePreview.isNotEmpty;
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -112,14 +112,6 @@ class _HomeDashboardContent extends ConsumerWidget {
                 showHousekeepingRequest: false,
               ),
             ),
-            SizedBox(height: spacing.md),
-            HomeHeroPanel(
-              subtitle: dashboard.profile.homeSubtitle,
-              contextLine: contextLine,
-              generatedAt: dashboard.generatedAt,
-              usesFallbackData: dashboard.usesFallbackData,
-              fullWidth: dashboard.profile.heroFullWidth,
-            ),
             if (dashboard.isTenantContextRequired) ...<Widget>[
               SizedBox(height: spacing.lg),
               HomeTenantContextPanel(
@@ -128,20 +120,14 @@ class _HomeDashboardContent extends ConsumerWidget {
               ),
             ] else ...<Widget>[
               SizedBox(height: spacing.lg),
-              _HomeStatusStrip(
-                cards: dashboard.statusCards,
-                profile: dashboard.profile,
-                policy: policy,
-              ),
-              if (actions.isNotEmpty) ...<Widget>[
-                SizedBox(height: spacing.lg),
-                _HomeQuickActions(actions: actions),
-              ],
-              SizedBox(height: spacing.lg),
-              _HomeMainGrid(
+              ..._buildRoleDashboardSections(
                 dashboard: dashboard,
+                profile: profile,
+                policy: policy,
                 actions: actions,
                 shortcuts: shortcuts,
+                hasQueueItems: hasQueueItems,
+                spacing: spacing,
               ),
             ],
           ],
@@ -149,6 +135,58 @@ class _HomeDashboardContent extends ConsumerWidget {
       ),
     );
   }
+}
+
+List<Widget> _buildRoleDashboardSections({
+  required HomeDashboard dashboard,
+  required HomeDashboardProfile profile,
+  required AppAccessPolicy policy,
+  required List<_HomeActionDefinition> actions,
+  required List<_HomeShortcutDefinition> shortcuts,
+  required bool hasQueueItems,
+  required AppSpacingTokens spacing,
+}) {
+  final Widget statusStrip = profile.showMetricsSection
+      ? _HomeStatusStrip(
+          cards: dashboard.statusCards,
+          profile: profile,
+          policy: policy,
+        )
+      : const SizedBox.shrink();
+  final Widget quickActions = profile.suppressHomeQuickActions || actions.isEmpty
+      ? const SizedBox.shrink()
+      : _HomeQuickActions(actions: actions);
+  final Widget workGrid = _HomeMainGrid(
+    dashboard: dashboard,
+    actions: actions,
+    shortcuts: shortcuts,
+    hasQueueItems: hasQueueItems,
+  );
+
+  if (profile.queueBeforeMetrics) {
+    return <Widget>[
+      workGrid,
+      if (profile.showMetricsSection && dashboard.statusCards.isNotEmpty) ...<Widget>[
+        SizedBox(height: spacing.lg),
+        statusStrip,
+      ],
+      if (!profile.suppressHomeQuickActions && actions.isNotEmpty) ...<Widget>[
+        SizedBox(height: spacing.lg),
+        quickActions,
+      ],
+    ];
+  }
+
+  return <Widget>[
+    if (profile.showMetricsSection && dashboard.statusCards.isNotEmpty) statusStrip,
+    if (!profile.suppressHomeQuickActions && actions.isNotEmpty) ...<Widget>[
+      if (profile.showMetricsSection && dashboard.statusCards.isNotEmpty)
+        SizedBox(height: spacing.lg),
+      quickActions,
+    ],
+    SizedBox(height: spacing.lg),
+    workGrid,
+  ];
 }
 
 class _HomeStatusStrip extends StatelessWidget {
@@ -165,7 +203,6 @@ class _HomeStatusStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final AppLocalizations l10n = context.l10n;
     final List<HomeStatusCard> visibleCards = cards
         .take(profile.maxStatusCards)
         .toList(growable: false);
@@ -174,43 +211,36 @@ class _HomeStatusStrip extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        _SectionHeader(title: l10n.homeTodayAtAGlanceTitle),
-        SizedBox(height: theme.spacing.sm),
-        LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final double gap = theme.spacing.sm;
-            final int columns = constraints.maxWidth >= 1180
-                ? math.min(visibleCards.length, profile.maxStatusCards)
-                : constraints.maxWidth >= 760
-                ? 4
-                : constraints.maxWidth >= 340
-                ? 2
-                : 1;
-            final double width =
-                (constraints.maxWidth - (gap * (columns - 1))) / columns;
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double gap = theme.spacing.sm;
+        final int columns = constraints.maxWidth >= 1180
+            ? math.min(visibleCards.length, profile.maxStatusCards)
+            : constraints.maxWidth >= 760
+            ? 4
+            : constraints.maxWidth >= 340
+            ? 2
+            : 1;
+        final double width =
+            (constraints.maxWidth - (gap * (columns - 1))) / columns;
 
-            return Wrap(
-              spacing: gap,
-              runSpacing: gap,
-              children: <Widget>[
-                for (final HomeStatusCard card in visibleCards)
-                  SizedBox(
-                    width: math.max(0, width),
-                    child: _HomeMetricCard(
-                      card: card,
-                      profile: profile,
-                      policy: policy,
-                      compact: constraints.maxWidth < AppBreakpoints.md,
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
-      ],
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: <Widget>[
+            for (final HomeStatusCard card in visibleCards)
+              SizedBox(
+                width: math.max(0, width),
+                child: _HomeMetricCard(
+                  card: card,
+                  profile: profile,
+                  policy: policy,
+                  compact: constraints.maxWidth < AppBreakpoints.md,
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -372,27 +402,20 @@ class _HomeQuickActions extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Wrap(
+      spacing: theme.spacing.sm,
+      runSpacing: theme.spacing.sm,
       children: <Widget>[
-        const _SectionHeader(title: 'Quick actions'),
-        SizedBox(height: theme.spacing.sm),
-        Wrap(
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.sm,
-          children: <Widget>[
-            for (final _HomeActionDefinition action in actions)
-              Semantics(
-                button: true,
-                label: action.label,
-                child: AppButton.secondary(
-                  label: action.label,
-                  leadingIcon: action.icon,
-                  onPressed: () => _invokeHomeAction(context, ref, action),
-                ),
-              ),
-          ],
-        ),
+        for (final _HomeActionDefinition action in actions)
+          Semantics(
+            button: true,
+            label: action.label,
+            child: AppButton.secondary(
+              label: action.label,
+              leadingIcon: action.icon,
+              onPressed: () => _invokeHomeAction(context, ref, action),
+            ),
+          ),
       ],
     );
   }
@@ -403,94 +426,101 @@ class _HomeMainGrid extends StatelessWidget {
     required this.dashboard,
     required this.actions,
     required this.shortcuts,
+    required this.hasQueueItems,
   });
 
   final HomeDashboard dashboard;
   final List<_HomeActionDefinition> actions;
   final List<_HomeShortcutDefinition> shortcuts;
+  final bool hasQueueItems;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final HomeDashboardProfile profile = dashboard.profile;
+    final double gap = theme.spacing.lg;
+    final bool showCharts = profile.showCharts;
+    final bool showQueue = profile.showQueuePanel;
+    final bool showActivity = profile.showActivityPanel(
+      hasQueueItems: hasQueueItems,
+    );
+    final bool showShortcuts = profile.showShortcutsSection(
+      quickActionCount: actions.length,
+    );
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool twoColumns = constraints.maxWidth >= 980;
-        final double gap = theme.spacing.lg;
-        final Widget trend = _HomeTrendPanel(
-          role: dashboard.profile.role,
-          trend: dashboard.trend,
-        );
-        final Widget distribution = _HomeDistributionPanel(
-          role: dashboard.profile.role,
-          distribution: dashboard.distribution,
-        );
-        final Widget charts = twoColumns
-            ? Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(flex: 3, child: trend),
-                  SizedBox(width: gap),
-                  Expanded(flex: 2, child: distribution),
-                ],
+        final Widget charts = showCharts
+            ? _HomeChartsRow(
+                role: profile.role,
+                trend: dashboard.trend,
+                distribution: dashboard.distribution,
+                twoColumns: twoColumns,
+                gap: gap,
               )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  trend,
-                  SizedBox(height: gap),
-                  distribution,
-                ],
-              );
-        final Widget primary = _PrimaryQueuePanel(
-          title: _queueTitle(dashboard.profile.role),
-          description: _queueDescription(dashboard.profile.role),
-          items: dashboard.queuePreview,
-          emptyMessage: dashboard.profile.emptyMessage,
-          emptyActions: _visibleEmptyActions(
-            dashboard.profile.emptyActionIds,
-            actions,
-          ),
-          usesFallbackData: dashboard.usesFallbackData,
+            : const SizedBox.shrink();
+        final Widget primary = showQueue
+            ? _PrimaryQueuePanel(
+                title: _queueTitle(profile.role),
+                items: dashboard.queuePreview,
+                emptyMessage: profile.emptyMessage,
+                emptyActions: _visibleEmptyActions(
+                  profile.emptyActionIds,
+                  actions,
+                ),
+              )
+            : const SizedBox.shrink();
+        final Widget alerts = _AlertsPanel(
+          role: profile.role,
+          alerts: dashboard.alerts,
         );
+        final Widget activity = showActivity
+            ? _ActivityPanel(activity: dashboard.activity)
+            : const SizedBox.shrink();
+        final bool hasWorkContent =
+            showQueue || dashboard.alerts.isNotEmpty || showActivity;
         final Widget secondary = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            _AlertsPanel(
-              title: _alertsTitle(dashboard.profile.role),
-              description: _alertsDescription(dashboard.profile.role),
-              alerts: dashboard.alerts,
-              usesFallbackData: dashboard.usesFallbackData,
-            ),
-            SizedBox(height: gap),
-            _ActivityPanel(activity: dashboard.activity),
+            alerts,
+            if (showActivity) ...<Widget>[
+              SizedBox(height: gap),
+              activity,
+            ],
           ],
         );
-        final Widget work = twoColumns
-            ? Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(flex: 3, child: primary),
-                  SizedBox(width: gap),
-                  Expanded(flex: 2, child: secondary),
-                ],
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  primary,
-                  SizedBox(height: gap),
-                  secondary,
-                ],
-              );
+        final Widget? work = hasWorkContent
+            ? (twoColumns && showQueue
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Expanded(flex: 3, child: primary),
+                        SizedBox(width: gap),
+                        Expanded(flex: 2, child: secondary),
+                      ],
+                    )
+                  : twoColumns && !showQueue
+                  ? secondary
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        if (showQueue) primary,
+                        if (showQueue &&
+                            (dashboard.alerts.isNotEmpty || showActivity))
+                          SizedBox(height: gap),
+                        secondary,
+                      ],
+                    ))
+            : null;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            charts,
-            SizedBox(height: gap),
-            work,
-            if (shortcuts.isNotEmpty) ...<Widget>[
+            ?work,
+            if (showCharts && work != null) SizedBox(height: gap),
+            if (showCharts) charts,
+            if (showShortcuts) ...<Widget>[
               SizedBox(height: gap),
               _ShortcutsSection(shortcuts: shortcuts),
             ],
@@ -501,32 +531,68 @@ class _HomeMainGrid extends StatelessWidget {
   }
 }
 
-class _PrimaryQueuePanel extends StatelessWidget {
-  const _PrimaryQueuePanel({
-    required this.title,
-    required this.description,
-    required this.items,
-    required this.emptyMessage,
-    required this.emptyActions,
-    required this.usesFallbackData,
+class _HomeChartsRow extends StatelessWidget {
+  const _HomeChartsRow({
+    required this.role,
+    required this.trend,
+    required this.distribution,
+    required this.twoColumns,
+    required this.gap,
   });
 
-  final String title;
-  final String description;
-  final List<HomeQueueItem> items;
-  final String emptyMessage;
-  final List<_HomeActionDefinition> emptyActions;
-  final bool usesFallbackData;
+  final AppRole role;
+  final HomeDashboardTrend trend;
+  final HomeDashboardDistribution distribution;
+  final bool twoColumns;
+  final double gap;
 
   @override
   Widget build(BuildContext context) {
-    final String panelDescription = usesFallbackData && items.isNotEmpty
-        ? '$description Profile shortcuts until live dashboard data is available.'
-        : description;
+    final Widget trendPanel = _HomeTrendPanel(role: role, trend: trend);
+    final Widget distributionPanel = _HomeDistributionPanel(
+      role: role,
+      distribution: distribution,
+    );
 
+    if (twoColumns) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Expanded(flex: 3, child: trendPanel),
+          SizedBox(width: gap),
+          Expanded(flex: 2, child: distributionPanel),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        trendPanel,
+        SizedBox(height: gap),
+        distributionPanel,
+      ],
+    );
+  }
+}
+
+class _PrimaryQueuePanel extends StatelessWidget {
+  const _PrimaryQueuePanel({
+    required this.title,
+    required this.items,
+    required this.emptyMessage,
+    required this.emptyActions,
+  });
+
+  final String title;
+  final List<HomeQueueItem> items;
+  final String emptyMessage;
+  final List<_HomeActionDefinition> emptyActions;
+
+  @override
+  Widget build(BuildContext context) {
     return AppSectionPanel(
       title: title,
-      description: panelDescription,
       leadingIcon: Icons.format_list_bulleted,
       trailing: _ViewAllButton(target: _firstQueueTarget(items)),
       children: <Widget>[
@@ -540,32 +606,22 @@ class _PrimaryQueuePanel extends StatelessWidget {
 }
 
 class _AlertsPanel extends StatelessWidget {
-  const _AlertsPanel({
-    required this.title,
-    required this.description,
-    required this.alerts,
-    required this.usesFallbackData,
-  });
+  const _AlertsPanel({required this.role, required this.alerts});
 
-  final String title;
-  final String description;
+  final AppRole role;
   final List<HomeAlertItem> alerts;
-  final bool usesFallbackData;
 
   @override
   Widget build(BuildContext context) {
+    if (alerts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return AppSectionPanel(
-      title: title,
-      description: usesFallbackData && alerts.isNotEmpty
-          ? '$description Open linked modules for live signals.'
-          : description,
+      title: _alertsTitle(role),
       leadingIcon: Icons.warning_amber_outlined,
       children: <Widget>[
-        if (alerts.isEmpty)
-          const _QuietState(message: 'No alerts need attention.')
-        else
-          for (final HomeAlertItem alert in alerts.take(4))
-            _AlertRow(alert: alert),
+        for (final HomeAlertItem alert in alerts.take(4)) _AlertRow(alert: alert),
       ],
     );
   }
@@ -578,16 +634,16 @@ class _ActivityPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (activity.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return AppSectionPanel(
-      title: 'Recent activity',
-      description: 'Updates relevant to this dashboard.',
+      title: 'Activity',
       leadingIcon: Icons.history,
       children: <Widget>[
-        if (activity.isEmpty)
-          const _QuietState(message: 'No recent activity is available.')
-        else
-          for (final HomeActivityItem item in activity.take(6))
-            _ActivityRow(item: item),
+        for (final HomeActivityItem item in activity.take(6))
+          _ActivityRow(item: item),
       ],
     );
   }
@@ -600,23 +656,14 @@ class _ShortcutsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
     if (shortcuts.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return AppResponsiveWrap(
       children: <Widget>[
-        const _SectionHeader(title: 'Shortcuts'),
-        SizedBox(height: theme.spacing.sm),
-        AppResponsiveWrap(
-          children: <Widget>[
-            for (final _HomeShortcutDefinition shortcut in shortcuts)
-              _ShortcutTile(shortcut: shortcut),
-          ],
-        ),
+        for (final _HomeShortcutDefinition shortcut in shortcuts)
+          _ShortcutTile(shortcut: shortcut),
       ],
     );
   }
@@ -631,13 +678,9 @@ class _HomeTrendPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final String subtitle = trend.subtitle.isEmpty
-        ? l10n.homeTrendDefaultSubtitle
-        : trend.subtitle;
 
     return AppSectionPanel(
       title: _trendTitle(role, trend.title),
-      description: subtitle,
       leadingIcon: Icons.show_chart_outlined,
       children: <Widget>[
         if (trend.points.isEmpty)
@@ -716,13 +759,9 @@ class _HomeDistributionPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final String subtitle = distribution.subtitle.isEmpty
-        ? l10n.homeDistributionDefaultSubtitle
-        : distribution.subtitle;
 
     return AppSectionPanel(
       title: _distributionTitle(role, distribution.title),
-      description: subtitle,
       leadingIcon: Icons.donut_large_outlined,
       children: <Widget>[
         if (!distribution.hasData)
@@ -1051,7 +1090,7 @@ class _AlertRow extends StatelessWidget {
     return _LinkedDashboardRow(
       icon: Icons.warning_amber_outlined,
       title: alert.label,
-      subtitle: alert.count > 0 ? '${alert.count} item(s)' : 'Monitor',
+      subtitle: alert.count > 0 ? '${alert.count}' : '',
       status: AppWorkspaceStatus(
         label: _statusLabel(alert.severity),
         tone: _severityTone(alert.severity),
@@ -1118,13 +1157,15 @@ class _LinkedDashboardRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(title, style: theme.textTheme.titleSmall),
-                SizedBox(height: theme.spacing.xs),
-                Text(
-                  subtitle,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                if (subtitle.isNotEmpty) ...<Widget>[
+                  SizedBox(height: theme.spacing.xs),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -1231,26 +1272,33 @@ class _EmptyStateInline extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        AppMessagePanel(message: message, icon: Icons.inbox_outlined),
-        if (actions.isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.sm),
-          Wrap(
-            spacing: theme.spacing.sm,
-            runSpacing: theme.spacing.sm,
-            children: <Widget>[
-              for (final _HomeActionDefinition action in actions.take(3))
-                AppButton.secondary(
-                  label: action.label,
-                  leadingIcon: action.icon,
-                  onPressed: () => _invokeHomeAction(context, ref, action),
-                ),
-            ],
+    return Semantics(
+      label: message,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(
+            Icons.inbox_outlined,
+            size: 28,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
+          if (actions.isNotEmpty) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            Wrap(
+              spacing: theme.spacing.sm,
+              runSpacing: theme.spacing.sm,
+              children: <Widget>[
+                for (final _HomeActionDefinition action in actions.take(3))
+                  AppButton.secondary(
+                    label: action.label,
+                    leadingIcon: action.icon,
+                    onPressed: () => _invokeHomeAction(context, ref, action),
+                  ),
+              ],
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }
@@ -1264,23 +1312,14 @@ class _QuietState extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    return Text(
-      message,
-      style: theme.textTheme.bodyMedium?.copyWith(
+    return Semantics(
+      label: message,
+      child: Icon(
+        Icons.check_circle_outline,
+        size: 24,
         color: theme.colorScheme.onSurfaceVariant,
       ),
     );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(title, style: Theme.of(context).textTheme.titleMedium);
   }
 }
 
@@ -2360,6 +2399,25 @@ List<_HomeActionDefinition> _visibleActions(
       .toList(growable: false);
 }
 
+List<_HomeShortcutDefinition> _shortcutsExcludingQuickActions(
+  List<_HomeShortcutDefinition> shortcuts,
+  List<_HomeActionDefinition> actions,
+  HomeDashboardProfile profile,
+) {
+  if (!profile.showShortcutsSection(quickActionCount: actions.length)) {
+    return const <_HomeShortcutDefinition>[];
+  }
+  final Set<String> actionRoutes = actions
+      .map((_HomeActionDefinition action) => action.route.path)
+      .toSet();
+  return shortcuts
+      .where(
+        (_HomeShortcutDefinition shortcut) =>
+            !actionRoutes.contains(shortcut.route.path),
+      )
+      .toList(growable: false);
+}
+
 List<_HomeShortcutDefinition> _visibleShortcuts(
   List<String> ids,
   AppAccessPolicy policy,
@@ -2522,28 +2580,10 @@ String _queueTitle(AppRole role) {
   };
 }
 
-String _queueDescription(AppRole role) {
-  return switch (role) {
-    AppRole.patient => 'Care items and updates tied to your account.',
-    AppRole.superAdmin => 'Platform items that need review or follow-up.',
-    AppRole.tenantAdmin => 'Organization items that need attention.',
-    AppRole.hr => 'Pending workforce items in your scope.',
-    _ => 'Pending work routed to your account and scope.',
-  };
-}
-
 String _alertsTitle(AppRole role) {
   return switch (role) {
-    AppRole.doctor => 'Critical attention/alerts',
-    _ => 'Alerts and insights',
-  };
-}
-
-String _alertsDescription(AppRole role) {
-  return switch (role) {
-    AppRole.doctor => 'Critical lab, patient, and consultation signals.',
-    AppRole.patient => 'Care reminders and facility messages.',
-    _ => 'Risk signals, blockers, and reminders.',
+    AppRole.doctor => 'Critical alerts',
+    _ => 'Alerts',
   };
 }
 
@@ -2620,7 +2660,7 @@ String _statusLabel(String? value) {
 
 String _timeLabel(DateTime? value) {
   if (value == null) {
-    return 'No timestamp';
+    return '';
   }
   return DateFormat('MMM d, HH:mm').format(value.toLocal());
 }

@@ -96,7 +96,6 @@ void main() {
       expect(profile.quickActionIds, isEmpty);
       expect(profile.shortcutIds, isEmpty);
       expect(profile.emptyActionIds, isEmpty);
-      expect(profile.heroFullWidth, isTrue);
       expect(profile.maxStatusCards, 8);
       expect(
         profile.toolbarActionIds,

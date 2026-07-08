@@ -170,7 +170,6 @@ final class HomeDashboardProfile {
     required this.role,
     required this.roleLabel,
     required this.homeTitle,
-    required this.homeSubtitle,
     required this.emptyMessage,
     required this.statusCards,
     required this.quickActionIds,
@@ -179,7 +178,6 @@ final class HomeDashboardProfile {
     this.metricRouteTargets = const <String, HomeMetricRouteTarget>{},
     this.metricActionTargets = const <String, HomeMetricActionTarget>{},
     this.toolbarActionIds = const <HomeToolbarActionId>[],
-    this.heroFullWidth = false,
     this.maxStatusCards = 6,
     this.showEmptyWorkspaceLink = false,
     this.suppressHomeQuickActions = false,
@@ -190,7 +188,6 @@ final class HomeDashboardProfile {
   final AppRole role;
   final String roleLabel;
   final String homeTitle;
-  final String homeSubtitle;
   final String emptyMessage;
   final List<HomeStatusCardTemplate> statusCards;
   final List<String> quickActionIds;
@@ -199,7 +196,6 @@ final class HomeDashboardProfile {
   final Map<String, HomeMetricRouteTarget> metricRouteTargets;
   final Map<String, HomeMetricActionTarget> metricActionTargets;
   final List<HomeToolbarActionId> toolbarActionIds;
-  final bool heroFullWidth;
   final int maxStatusCards;
   final bool showEmptyWorkspaceLink;
   final bool suppressHomeQuickActions;
