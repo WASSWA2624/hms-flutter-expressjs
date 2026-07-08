@@ -7,8 +7,13 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
+import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
@@ -40,31 +45,61 @@ final class NursingWorkspaceController
   ClinicalRepository get _clinicalRepository =>
       ref.read(clinicalRepositoryProvider);
 
-  Timer? _syncTimer;
+  final WorkspaceAdaptivePolling _adaptivePolling = WorkspaceAdaptivePolling();
+  final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
   bool _isSyncing = false;
+
+  static const WorkspaceRefreshPlan _manualRefreshWithContext =
+      WorkspaceRefreshPlan(
+    primaryList: true,
+    selectedDetail: true,
+    referenceData: true,
+    context: true,
+  );
 
   @override
   Future<Result<NursingWorkspaceState>> build() async {
-    ref.onDispose(() => _syncTimer?.cancel());
+    ref.onDispose(_adaptivePolling.dispose);
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.nursing,
-      onRefresh: (_) => _syncFromRealtime(),
+      includeCrudMutations: true,
+      shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
+      onRefresh: _syncFromRealtime,
     );
     final Result<NursingWorkspaceState> result = await runWorkspaceInitialLoad(
       ref,
       _loadInitialState,
     );
-    _startSync();
+    _startAdaptivePolling();
     return result;
   }
 
-  Future<void> _syncFromRealtime() async {
-    await _syncVisibleData(refreshContext: true);
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
+    if (_isSyncing || (_currentState?.isSaving ?? false)) {
+      _pendingRefresh.defer(
+        WorkspaceEventRefreshPlan.forMessage(
+          message,
+          profile: WorkspaceRefreshProfile.admissions,
+        ),
+      );
+      return;
+    }
+    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
+      message,
+      profile: WorkspaceRefreshProfile.admissions,
+    );
+    if (plan.isEmpty) {
+      return;
+    }
+    await _syncVisibleData(plan: plan);
   }
 
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(showLoading: true, refreshContext: true);
+    return _syncVisibleData(
+      showLoading: true,
+      plan: _manualRefreshWithContext,
+    );
   }
 
   Future<AppFailure?> applySearch(String value) {
@@ -774,7 +809,10 @@ final class NursingWorkspaceController
       <String, Object?>{'accepted_notes': notes},
     );
     return result.when(
-      success: (_) => _syncVisibleData(showLoading: true, refreshContext: true),
+      success: (_) => _syncVisibleData(
+        showLoading: true,
+        plan: _manualRefreshWithContext,
+      ),
       failure: (AppFailure failure) {
         final NursingWorkspaceState? latest = _currentState;
         if (latest != null) {
@@ -832,18 +870,34 @@ final class NursingWorkspaceController
     );
   }
 
-  void _startSync() {
-    _syncTimer ??= Timer.periodic(_syncInterval, (_) {
-      unawaited(_syncVisibleData(refreshContext: true));
-    });
+  void _startAdaptivePolling() {
+    installWorkspaceAdaptivePolling(
+      ref: ref,
+      polling: _adaptivePolling,
+      intervalWhenDisconnected: _syncInterval,
+      onDisconnectedPoll: () => unawaited(
+        _syncVisibleData(plan: WorkspaceRefreshPlan.admissionManualRefresh),
+      ),
+    );
   }
 
   Future<AppFailure?> _syncVisibleData({
     bool showLoading = false,
-    bool refreshContext = false,
+    WorkspaceRefreshPlan plan = WorkspaceRefreshPlan.admissionManualRefresh,
   }) async {
+    if (plan.isEmpty) {
+      return null;
+    }
     final NursingWorkspaceState? current = _currentState;
     if (current == null || _isSyncing || current.isSaving) {
+      _pendingRefresh.defer(plan);
+      return null;
+    }
+
+    final bool refreshContext = plan.context;
+    final bool refreshWorklist =
+        workspacePlanRefreshesPrimaryList(plan) || plan.selectedDetail;
+    if (!refreshWorklist && !refreshContext) {
       return null;
     }
 
@@ -865,18 +919,33 @@ final class NursingWorkspaceController
       final List<NursingRosterAssignment> rosters = refreshContext
           ? await _safeCurrentRosters()
           : current.rosters;
-      final AppFailure? failure = await _refreshWorklist(
-        showLoading: showLoading,
-        handovers: handovers,
-        rosters: rosters,
-      );
-      if (failure != null) {
-        return failure;
+
+      if (refreshWorklist) {
+        final AppFailure? failure = await _refreshWorklist(
+          showLoading: showLoading,
+          handovers: handovers,
+          rosters: rosters,
+        );
+        if (failure != null) {
+          return failure;
+        }
+      } else if (refreshContext) {
+        final NursingWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              pendingHandovers: handovers,
+              rosters: rosters,
+            ),
+          );
+        }
       }
 
-      final NursingPatientDetail? selected = _currentState?.selectedDetail;
-      if (selected != null) {
-        await selectPatient(selected.enrichedSummary);
+      if (plan.selectedDetail) {
+        final NursingPatientDetail? selected = _currentState?.selectedDetail;
+        if (selected != null) {
+          await selectPatient(selected.enrichedSummary);
+        }
       }
 
       return null;
@@ -886,6 +955,13 @@ final class NursingWorkspaceController
         _emit(latest.copyWith(isRefreshing: false, isRefreshingDetail: false));
       }
       _isSyncing = false;
+      if (_pendingRefresh.refreshPending &&
+          !(_currentState?.isSaving ?? false)) {
+        final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
+        if (!pendingPlan.isEmpty) {
+          unawaited(_syncVisibleData(plan: pendingPlan));
+        }
+      }
     }
   }
 
@@ -1076,7 +1152,11 @@ final class NursingWorkspaceController
             ),
           );
         }
-        unawaited(_syncVisibleData(refreshContext: true));
+        unawaited(
+          _syncVisibleData(
+            plan: const WorkspaceRefreshPlan(context: true),
+          ),
+        );
         return null;
       },
       failure: (AppFailure failure) {

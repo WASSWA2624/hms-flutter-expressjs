@@ -4,8 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
+import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
@@ -30,31 +35,53 @@ final class TheaterWorkspaceController
   ClinicalRepository get _clinicalRepository =>
       ref.read(clinicalRepositoryProvider);
 
-  Timer? _syncTimer;
+  final WorkspaceAdaptivePolling _adaptivePolling = WorkspaceAdaptivePolling();
+  final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
   bool _isSyncing = false;
 
   @override
   Future<Result<TheaterWorkspaceState>> build() async {
-    ref.onDispose(() => _syncTimer?.cancel());
+    ref.onDispose(_adaptivePolling.dispose);
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.theater,
-      onRefresh: (_) => _syncFromRealtime(),
+      includeCrudMutations: true,
+      shouldDefer: () => _isSyncing || (_currentState?.isMutating ?? false),
+      onRefresh: _syncFromRealtime,
     );
     final Result<TheaterWorkspaceState> result = await runWorkspaceInitialLoad(
       ref,
       _loadInitialState,
     );
-    _startSync();
+    _startAdaptivePolling();
     return result;
   }
 
-  Future<void> _syncFromRealtime() async {
-    await _syncVisibleData();
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
+    if (_isSyncing || (_currentState?.isMutating ?? false)) {
+      _pendingRefresh.defer(
+        WorkspaceEventRefreshPlan.forMessage(
+          message,
+          profile: WorkspaceRefreshProfile.admissions,
+        ),
+      );
+      return;
+    }
+    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
+      message,
+      profile: WorkspaceRefreshProfile.admissions,
+    );
+    if (plan.isEmpty) {
+      return;
+    }
+    await _syncVisibleData(plan: plan);
   }
 
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(showLoading: true);
+    return _syncVisibleData(
+      showLoading: true,
+      plan: WorkspaceRefreshPlan.admissionManualRefresh,
+    );
   }
 
   Future<AppFailure?> applySearch(String value) async {
@@ -471,15 +498,33 @@ final class TheaterWorkspaceController
     );
   }
 
-  void _startSync() {
-    _syncTimer ??= Timer.periodic(_syncInterval, (_) {
-      unawaited(_syncVisibleData());
-    });
+  void _startAdaptivePolling() {
+    installWorkspaceAdaptivePolling(
+      ref: ref,
+      polling: _adaptivePolling,
+      intervalWhenDisconnected: _syncInterval,
+      onDisconnectedPoll: () => unawaited(
+        _syncVisibleData(plan: WorkspaceRefreshPlan.admissionManualRefresh),
+      ),
+    );
   }
 
-  Future<AppFailure?> _syncVisibleData({bool showLoading = false}) async {
+  Future<AppFailure?> _syncVisibleData({
+    bool showLoading = false,
+    WorkspaceRefreshPlan plan = WorkspaceRefreshPlan.admissionManualRefresh,
+  }) async {
+    if (plan.isEmpty) {
+      return null;
+    }
     final TheaterWorkspaceState? current = _currentState;
     if (current == null || _isSyncing || current.isMutating) {
+      _pendingRefresh.defer(plan);
+      return null;
+    }
+
+    final bool refreshCases =
+        workspacePlanRefreshesPrimaryList(plan) || plan.selectedDetail;
+    if (!refreshCases) {
       return null;
     }
 
@@ -495,30 +540,34 @@ final class TheaterWorkspaceController
     }
 
     try {
-      final AppFailure? failure = await _refreshCases(showLoading: showLoading);
-      if (failure != null) {
-        return failure;
+      if (refreshCases) {
+        final AppFailure? failure = await _refreshCases(showLoading: showLoading);
+        if (failure != null) {
+          return failure;
+        }
       }
 
-      final TheaterCase? selected = _currentState?.selectedCase;
-      if (selected != null) {
-        final Result<TheaterCase> detailResult = await _repository.getCase(
-          selected.effectiveDisplayId,
-        );
-        detailResult.when(
-          success: (TheaterCase detail) {
-            final TheaterWorkspaceState? latest = _currentState;
-            if (latest != null) {
-              _emit(
-                latest.copyWith(
-                  selectedCase: detail,
-                  cases: _replaceCase(latest.cases, detail),
-                ),
-              );
-            }
-          },
-          failure: (_) {},
-        );
+      if (plan.selectedDetail) {
+        final TheaterCase? selected = _currentState?.selectedCase;
+        if (selected != null) {
+          final Result<TheaterCase> detailResult = await _repository.getCase(
+            selected.effectiveDisplayId,
+          );
+          detailResult.when(
+            success: (TheaterCase detail) {
+              final TheaterWorkspaceState? latest = _currentState;
+              if (latest != null) {
+                _emit(
+                  latest.copyWith(
+                    selectedCase: detail,
+                    cases: _replaceCase(latest.cases, detail),
+                  ),
+                );
+              }
+            },
+            failure: (_) {},
+          );
+        }
       }
 
       return null;
@@ -528,6 +577,13 @@ final class TheaterWorkspaceController
         _emit(latest.copyWith(isRefreshing: false, isRefreshingDetail: false));
       }
       _isSyncing = false;
+      if (_pendingRefresh.refreshPending &&
+          !(_currentState?.isMutating ?? false)) {
+        final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
+        if (!pendingPlan.isEmpty) {
+          unawaited(_syncVisibleData(plan: pendingPlan));
+        }
+      }
     }
   }
 

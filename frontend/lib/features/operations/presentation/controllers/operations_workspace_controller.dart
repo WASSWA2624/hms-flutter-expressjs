@@ -4,7 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
+import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/operations/data/repositories/operations_repository_impl.dart';
 import 'package:hosspi_hms/features/operations/domain/entities/operations_entities.dart';
@@ -24,29 +29,47 @@ final class OperationsWorkspaceController
   OperationsRepository get _repository =>
       ref.read(operationsRepositoryProvider);
 
-  Timer? _syncTimer;
+  final WorkspaceAdaptivePolling _adaptivePolling = WorkspaceAdaptivePolling();
+  final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
   bool _isSyncing = false;
 
   @override
   Future<Result<OperationsWorkspaceState>> build() async {
-    ref.onDispose(() => _syncTimer?.cancel());
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.operations,
-      onRefresh: (_) => _syncFromRealtime(),
+      includeCrudMutations: true,
+      shouldDefer: () => _isSyncing || (_currentState?.isMutating ?? false),
+      onRefresh: _syncFromRealtime,
     );
     final Result<OperationsWorkspaceState> result =
         await runWorkspaceInitialLoad(ref, _loadInitialState);
-    _startSync();
+    _startAdaptivePolling();
     return result;
   }
 
-  Future<void> _syncFromRealtime() async {
-    await _syncVisibleData();
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
+    if (_isSyncing || (_currentState?.isMutating ?? false)) {
+      _pendingRefresh.defer(
+        WorkspaceEventRefreshPlan.forMessage(
+          message,
+          profile: WorkspaceRefreshProfile.operations,
+        ),
+      );
+      return;
+    }
+    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
+      message,
+      profile: WorkspaceRefreshProfile.operations,
+    );
+    if (plan.isEmpty) {
+      return;
+    }
+    await _syncVisibleData(plan: plan);
   }
 
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(showLoading: true, refreshAssets: true);
+    return _syncVisibleData(showLoading: true, plan: WorkspaceRefreshPlan.full);
   }
 
   Future<AppFailure?> applySearch(String value) async {
@@ -323,18 +346,40 @@ final class OperationsWorkspaceController
     );
   }
 
-  void _startSync() {
-    _syncTimer ??= Timer.periodic(_syncInterval, (_) {
-      unawaited(_syncVisibleData());
-    });
+  void _startAdaptivePolling() {
+    installWorkspaceAdaptivePolling(
+      ref: ref,
+      polling: _adaptivePolling,
+      intervalWhenDisconnected: _syncInterval,
+      onDisconnectedPoll: () => unawaited(
+        _syncVisibleData(
+          plan: const WorkspaceRefreshPlan(
+            primaryList: true,
+            selectedDetail: true,
+          ),
+        ),
+      ),
+    );
   }
 
   Future<AppFailure?> _syncVisibleData({
     bool showLoading = false,
-    bool refreshAssets = false,
+    WorkspaceRefreshPlan plan = WorkspaceRefreshPlan.full,
   }) async {
+    if (plan.isEmpty) {
+      return null;
+    }
     final OperationsWorkspaceState? current = _currentState;
     if (current == null || _isSyncing || current.isMutating) {
+      _pendingRefresh.defer(plan);
+      return null;
+    }
+
+    final bool refreshRequests = workspacePlanRefreshesPrimaryList(plan);
+    final bool refreshDetail = plan.selectedDetail;
+    final bool refreshAssets =
+        plan.referenceData || plan.context || plan.catalogs;
+    if (!refreshRequests && !refreshDetail && !refreshAssets) {
       return null;
     }
 
@@ -354,11 +399,20 @@ final class OperationsWorkspaceController
         await _refreshAssets();
       }
 
-      final AppFailure? failure = await _refreshRequests(
-        showLoading: showLoading,
-      );
-      if (failure != null) {
-        return failure;
+      if (refreshRequests) {
+        final AppFailure? failure = await _refreshRequests(
+          showLoading: showLoading,
+        );
+        if (failure != null) {
+          return failure;
+        }
+      }
+
+      if (refreshDetail) {
+        final OperationsWorkItem? selected = _currentState?.selectedItem;
+        if (selected != null) {
+          await selectItem(selected);
+        }
       }
 
       return null;
@@ -368,6 +422,13 @@ final class OperationsWorkspaceController
         _emit(latest.copyWith(isRefreshing: false, isRefreshingDetail: false));
       }
       _isSyncing = false;
+      if (_pendingRefresh.refreshPending &&
+          !(_currentState?.isMutating ?? false)) {
+        final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
+        if (!pendingPlan.isEmpty) {
+          unawaited(_syncVisibleData(plan: pendingPlan));
+        }
+      }
     }
   }
 

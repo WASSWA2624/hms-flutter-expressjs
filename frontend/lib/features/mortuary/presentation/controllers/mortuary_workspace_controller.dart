@@ -4,7 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
+import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/mortuary/data/repositories/mortuary_repository_impl.dart';
 import 'package:hosspi_hms/features/mortuary/domain/entities/mortuary_entities.dart';
@@ -23,27 +28,53 @@ final class MortuaryWorkspaceController
 
   MortuaryRepository get _repository => ref.read(mortuaryRepositoryProvider);
 
-  Timer? _syncTimer;
+  final WorkspaceAdaptivePolling _adaptivePolling = WorkspaceAdaptivePolling();
+  final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
   bool _isSyncing = false;
 
   @override
   Future<Result<MortuaryWorkspaceState>> build() async {
-    ref.onDispose(() => _syncTimer?.cancel());
+    ref.onDispose(_adaptivePolling.dispose);
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.mortuary,
-      onRefresh: (_) => _syncVisibleData(),
+      includeCrudMutations: true,
+      shouldDefer: () => _isSyncing,
+      onRefresh: _syncFromRealtime,
     );
     final Result<MortuaryWorkspaceState> result = await runWorkspaceInitialLoad(
       ref,
       _loadInitialState,
     );
-    _startSync();
+    _startAdaptivePolling();
     return result;
   }
 
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
+    if (_isSyncing) {
+      _pendingRefresh.defer(
+        WorkspaceEventRefreshPlan.forMessage(
+          message,
+          profile: WorkspaceRefreshProfile.admissions,
+        ),
+      );
+      return;
+    }
+    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
+      message,
+      profile: WorkspaceRefreshProfile.admissions,
+    );
+    if (plan.isEmpty) {
+      return;
+    }
+    await _syncVisibleData(plan: plan);
+  }
+
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(showLoading: true);
+    return _syncVisibleData(
+      showLoading: true,
+      plan: WorkspaceRefreshPlan.admissionManualRefresh,
+    );
   }
 
   Future<AppFailure?> applySearch(String value) async {
@@ -270,15 +301,33 @@ final class MortuaryWorkspaceController
     );
   }
 
-  void _startSync() {
-    _syncTimer ??= Timer.periodic(_syncInterval, (_) {
-      unawaited(_syncVisibleData());
-    });
+  void _startAdaptivePolling() {
+    installWorkspaceAdaptivePolling(
+      ref: ref,
+      polling: _adaptivePolling,
+      intervalWhenDisconnected: _syncInterval,
+      onDisconnectedPoll: () => unawaited(
+        _syncVisibleData(plan: WorkspaceRefreshPlan.admissionManualRefresh),
+      ),
+    );
   }
 
-  Future<AppFailure?> _syncVisibleData({bool showLoading = false}) async {
+  Future<AppFailure?> _syncVisibleData({
+    bool showLoading = false,
+    WorkspaceRefreshPlan plan = WorkspaceRefreshPlan.admissionManualRefresh,
+  }) async {
+    if (plan.isEmpty) {
+      return null;
+    }
     final MortuaryWorkspaceState? current = _currentState;
     if (current == null || _isSyncing) {
+      _pendingRefresh.defer(plan);
+      return null;
+    }
+
+    final bool refreshWorkspace =
+        workspacePlanRefreshesPrimaryList(plan) || plan.selectedDetail;
+    if (!refreshWorkspace) {
       return null;
     }
 
@@ -308,6 +357,12 @@ final class MortuaryWorkspaceController
         _emit(latest.copyWith(isRefreshing: false, isRefreshingDetail: false));
       }
       _isSyncing = false;
+      if (_pendingRefresh.refreshPending) {
+        final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
+        if (!pendingPlan.isEmpty) {
+          unawaited(_syncVisibleData(plan: pendingPlan));
+        }
+      }
     }
   }
 

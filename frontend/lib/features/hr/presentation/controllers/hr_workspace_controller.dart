@@ -4,8 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
+import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/hr/data/repositories/hr_repository_impl.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
@@ -23,31 +28,53 @@ final class HrWorkspaceController
 
   HrRepository get _repository => ref.read(hrRepositoryProvider);
 
-  Timer? _syncTimer;
+  final WorkspaceAdaptivePolling _adaptivePolling = WorkspaceAdaptivePolling();
+  final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
   bool _isSyncing = false;
 
   @override
   Future<Result<HrWorkspaceState>> build() async {
-    ref.onDispose(() => _syncTimer?.cancel());
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.hr,
-      onRefresh: (_) => _syncFromRealtime(),
+      includeCrudMutations: true,
+      shouldDefer: () => _isSyncing || (_currentState?.isMutating ?? false),
+      onRefresh: _syncFromRealtime,
     );
     final Result<HrWorkspaceState> result = await runWorkspaceInitialLoad(
       ref,
       _loadInitialState,
     );
-    _startSync();
+    _startAdaptivePolling();
     return result;
   }
 
-  Future<void> _syncFromRealtime() async {
-    await _syncVisibleData();
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
+    if (_isSyncing || (_currentState?.isMutating ?? false)) {
+      _pendingRefresh.defer(
+        WorkspaceEventRefreshPlan.forMessage(
+          message,
+          profile: WorkspaceRefreshProfile.hr,
+        ),
+      );
+      return;
+    }
+    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
+      message,
+      profile: WorkspaceRefreshProfile.hr,
+    );
+    if (plan.isEmpty) {
+      return;
+    }
+    await _syncVisibleData(plan: plan);
   }
 
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(showLoading: true, refreshReferences: true);
+    return _syncVisibleData(
+      showLoading: true,
+      refreshReferences: true,
+      plan: WorkspaceRefreshPlan.full,
+    );
   }
 
   /// Loads facility-scoped reference data when onboarding dropdowns are empty.
@@ -1227,18 +1254,43 @@ final class HrWorkspaceController
     );
   }
 
-  void _startSync() {
-    _syncTimer ??= Timer.periodic(_syncInterval, (_) {
-      unawaited(_syncVisibleData());
-    });
+  void _startAdaptivePolling() {
+    installWorkspaceAdaptivePolling(
+      ref: ref,
+      polling: _adaptivePolling,
+      intervalWhenDisconnected: _syncInterval,
+      onDisconnectedPoll: () => unawaited(
+        _syncVisibleData(plan: WorkspaceRefreshPlan.full),
+      ),
+    );
   }
 
   Future<AppFailure?> _syncVisibleData({
     bool showLoading = false,
     bool refreshReferences = false,
+    WorkspaceRefreshPlan plan = WorkspaceRefreshPlan.full,
   }) async {
+    if (plan.isEmpty) {
+      return null;
+    }
     final HrWorkspaceState? current = _currentState;
     if (current == null || _isSyncing || current.isMutating) {
+      _pendingRefresh.defer(plan);
+      return null;
+    }
+
+    final bool refreshOverview = plan.summaryCounts;
+    final bool refreshStaff = plan.primaryList;
+    final bool refreshWorkItems = plan.primaryList;
+    final bool refreshRefs =
+        refreshReferences || workspacePlanRefreshesReferenceData(plan);
+    final bool refreshDetail =
+        plan.selectedDetail && current.selectedStaff != null;
+    if (!refreshOverview &&
+        !refreshStaff &&
+        !refreshWorkItems &&
+        !refreshRefs &&
+        !refreshDetail) {
       return null;
     }
 
@@ -1247,24 +1299,37 @@ final class HrWorkspaceController
       _emit(
         current.copyWith(
           isRefreshing: true,
-          isRefreshingStaff: true,
-          isRefreshingWorkItems: true,
+          isRefreshingStaff: refreshStaff,
+          isRefreshingWorkItems: refreshWorkItems,
+          isRefreshingDetail: refreshDetail,
           clearLastFailure: true,
         ),
       );
     }
 
     try {
-      final AppFailure? overviewFailure = await _refreshOverview();
-      final AppFailure? staffFailure = await _refreshStaff(
-        showLoading: showLoading,
-      );
-      final AppFailure? workItemsFailure = await _refreshWorkItems(
-        showLoading: showLoading,
-      );
+      AppFailure? overviewFailure;
+      AppFailure? staffFailure;
+      AppFailure? workItemsFailure;
       AppFailure? referencesFailure;
-      if (refreshReferences) {
+
+      if (refreshOverview) {
+        overviewFailure = await _refreshOverview();
+      }
+      if (refreshStaff) {
+        staffFailure = await _refreshStaff(showLoading: showLoading);
+      }
+      if (refreshWorkItems) {
+        workItemsFailure = await _refreshWorkItems(showLoading: showLoading);
+      }
+      if (refreshRefs) {
         referencesFailure = await _refreshReferences();
+      }
+      if (refreshDetail) {
+        final HrStaffProfile? profile = _currentState?.selectedStaff?.profile;
+        if (profile != null) {
+          await _refreshSelectedDetail(profile);
+        }
       }
 
       return overviewFailure ??
@@ -1284,6 +1349,13 @@ final class HrWorkspaceController
         );
       }
       _isSyncing = false;
+      if (_pendingRefresh.refreshPending &&
+          !(_currentState?.isMutating ?? false)) {
+        final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
+        if (!pendingPlan.isEmpty) {
+          unawaited(_syncVisibleData(plan: pendingPlan));
+        }
+      }
     }
   }
 

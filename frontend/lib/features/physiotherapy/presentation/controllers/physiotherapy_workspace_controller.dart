@@ -4,8 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
+import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/physiotherapy/data/repositories/physiotherapy_repository_impl.dart';
 import 'package:hosspi_hms/features/physiotherapy/domain/entities/physiotherapy_entities.dart';
@@ -25,25 +30,30 @@ final class PhysiotherapyWorkspaceController
   PhysiotherapyRepository get _repository =>
       ref.read(physiotherapyRepositoryProvider);
 
-  Timer? _syncTimer;
+  final WorkspaceAdaptivePolling _adaptivePolling = WorkspaceAdaptivePolling();
+  final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
   bool _isSyncing = false;
 
   @override
   Future<Result<PhysiotherapyWorkspaceState>> build() async {
-    ref.onDispose(() => _syncTimer?.cancel());
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.physiotherapy,
-      onRefresh: (_) => _syncFromRealtime(),
+      includeCrudMutations: true,
+      shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
+      onRefresh: _syncFromRealtime,
     );
     final Result<PhysiotherapyWorkspaceState> result =
         await runWorkspaceInitialLoad(ref, _loadInitialState);
-    _startSync();
+    _startAdaptivePolling();
     return result;
   }
 
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(showLoading: true);
+    return _syncVisibleData(
+      showLoading: true,
+      plan: WorkspaceRefreshPlan.full,
+    );
   }
 
   Future<AppFailure?> applySearch(String value, {bool showLoading = true}) {
@@ -307,8 +317,24 @@ final class PhysiotherapyWorkspaceController
     );
   }
 
-  Future<void> _syncFromRealtime() async {
-    await _syncVisibleData();
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
+    if (_isSyncing || (_currentState?.isSaving ?? false)) {
+      _pendingRefresh.defer(
+        WorkspaceEventRefreshPlan.forMessage(
+          message,
+          profile: WorkspaceRefreshProfile.clinicalFlow,
+        ),
+      );
+      return;
+    }
+    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
+      message,
+      profile: WorkspaceRefreshProfile.clinicalFlow,
+    );
+    if (plan.isEmpty) {
+      return;
+    }
+    await _syncVisibleData(plan: plan);
   }
 
   Future<Result<PhysiotherapyWorkspaceState>> _loadInitialState() async {
@@ -321,10 +347,25 @@ final class PhysiotherapyWorkspaceController
     );
   }
 
-  Future<AppFailure?> _syncVisibleData({bool showLoading = false}) async {
-    if (_isSyncing) {
+  Future<AppFailure?> _syncVisibleData({
+    bool showLoading = false,
+    WorkspaceRefreshPlan plan = WorkspaceRefreshPlan.full,
+  }) async {
+    if (plan.isEmpty) {
       return null;
     }
+    if (_isSyncing || (_currentState?.isSaving ?? false)) {
+      _pendingRefresh.defer(plan);
+      return null;
+    }
+
+    final bool refreshWorklist = workspacePlanRefreshesPrimaryList(plan);
+    final bool refreshDetail =
+        plan.selectedDetail && (_currentState?.selectedDetail != null);
+    if (!refreshWorklist && !refreshDetail) {
+      return null;
+    }
+
     _isSyncing = true;
     try {
       final PhysiotherapyWorkspaceState? current = _currentState;
@@ -336,11 +377,35 @@ final class PhysiotherapyWorkspaceController
         return _failureOrNull(result);
       }
       if (showLoading) {
-        _emit(current.copyWith(isRefreshing: true, clearLastFailure: true));
+        _emit(
+          current.copyWith(
+            isRefreshing: refreshWorklist,
+            isRefreshingDetail: refreshDetail,
+            clearLastFailure: true,
+          ),
+        );
       }
-      return _refreshWorklist(showLoading: showLoading);
+
+      AppFailure? failure;
+      if (refreshWorklist) {
+        failure = await _refreshWorklist(showLoading: showLoading);
+      }
+      if (failure == null && refreshDetail) {
+        final TherapyWorkItem? item = _currentState?.selectedDetail?.item;
+        if (item != null) {
+          failure = await selectWorkItem(item);
+        }
+      }
+      return failure;
     } finally {
       _isSyncing = false;
+      if (_pendingRefresh.refreshPending &&
+          !(_currentState?.isSaving ?? false)) {
+        final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
+        if (!pendingPlan.isEmpty) {
+          unawaited(_syncVisibleData(plan: pendingPlan));
+        }
+      }
     }
   }
 
@@ -420,11 +485,15 @@ final class PhysiotherapyWorkspaceController
     );
   }
 
-  void _startSync() {
-    _syncTimer?.cancel();
-    _syncTimer = Timer.periodic(_syncInterval, (_) {
-      unawaited(_syncVisibleData());
-    });
+  void _startAdaptivePolling() {
+    installWorkspaceAdaptivePolling(
+      ref: ref,
+      polling: _adaptivePolling,
+      intervalWhenDisconnected: _syncInterval,
+      onDisconnectedPoll: () => unawaited(
+        _syncVisibleData(plan: WorkspaceRefreshPlan.flowWorkspace),
+      ),
+    );
   }
 
   AppPage<TherapyWorkItem> _replaceItem(

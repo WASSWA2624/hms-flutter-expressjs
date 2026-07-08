@@ -9,6 +9,10 @@ import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
+import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
@@ -35,31 +39,48 @@ final class ClinicalWorkspaceController
   OpdRepository get _opdRepository => ref.read(opdRepositoryProvider);
   IpdRepository get _ipdRepository => ref.read(ipdRepositoryProvider);
 
-  Timer? _syncTimer;
+  final WorkspaceAdaptivePolling _adaptivePolling = WorkspaceAdaptivePolling();
+  final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
   bool _isSyncing = false;
 
   @override
   Future<Result<ClinicalWorkspaceState>> build() async {
-    ref.onDispose(() {
-      _syncTimer?.cancel();
-    });
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.clinical,
-      shouldRefresh: _clinicalRealtimeEventTouchesVisibleData,
-      onRefresh: _handleClinicalRealtime,
+      includeCrudMutations: true,
+      shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
+      onRefresh: _syncFromRealtime,
     );
     final Result<ClinicalWorkspaceState> result = await runWorkspaceInitialLoad(
       ref,
       _loadInitialState,
     );
-    _startSync();
+    _startAdaptivePolling();
     return result;
   }
 
-  Future<void> _handleClinicalRealtime(RealtimeMessage message) async {
-    _maybeSetRealtimeNotice(message);
-    await _syncVisibleData();
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
+    if (RealtimeEventGroups.diagnostics.contains(message.event)) {
+      _maybeSetRealtimeNotice(message);
+    }
+    if (_isSyncing || (_currentState?.isSaving ?? false)) {
+      _pendingRefresh.defer(
+        WorkspaceEventRefreshPlan.forMessage(
+          message,
+          profile: WorkspaceRefreshProfile.clinicalFlow,
+        ),
+      );
+      return;
+    }
+    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
+      message,
+      profile: WorkspaceRefreshProfile.clinicalFlow,
+    );
+    if (plan.isEmpty) {
+      return;
+    }
+    await _syncVisibleData(plan: plan);
   }
 
   void _maybeSetRealtimeNotice(RealtimeMessage message) {
@@ -108,7 +129,11 @@ final class ClinicalWorkspaceController
   }
 
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(showLoading: true, refreshReferenceData: true);
+    return _syncVisibleData(
+      showLoading: true,
+      refreshReferenceData: true,
+      plan: WorkspaceRefreshPlan.full,
+    );
   }
 
   Future<AppFailure?> applySearch(
@@ -901,10 +926,15 @@ final class ClinicalWorkspaceController
     );
   }
 
-  void _startSync() {
-    _syncTimer ??= Timer.periodic(_syncInterval, (_) {
-      unawaited(_syncVisibleData());
-    });
+  void _startAdaptivePolling() {
+    installWorkspaceAdaptivePolling(
+      ref: ref,
+      polling: _adaptivePolling,
+      intervalWhenDisconnected: _syncInterval,
+      onDisconnectedPoll: () => unawaited(
+        _syncVisibleData(plan: WorkspaceRefreshPlan.full),
+      ),
+    );
   }
 
   bool _clinicalRealtimeEventTouchesVisibleData(RealtimeMessage message) {
@@ -1048,9 +1078,23 @@ final class ClinicalWorkspaceController
   Future<AppFailure?> _syncVisibleData({
     bool showLoading = false,
     bool refreshReferenceData = false,
+    WorkspaceRefreshPlan plan = WorkspaceRefreshPlan.full,
   }) async {
+    if (plan.isEmpty) {
+      return null;
+    }
     final ClinicalWorkspaceState? current = _currentState;
     if (current == null || _isSyncing || current.isSaving) {
+      _pendingRefresh.defer(plan);
+      return null;
+    }
+
+    final bool refreshWorklist = workspacePlanRefreshesPrimaryList(plan);
+    final bool refreshRefs =
+        refreshReferenceData || workspacePlanRefreshesReferenceData(plan);
+    final bool refreshDetail =
+        plan.selectedDetail && current.selectedBundle != null;
+    if (!refreshWorklist && !refreshRefs && !refreshDetail) {
       return null;
     }
 
@@ -1058,22 +1102,24 @@ final class ClinicalWorkspaceController
     if (showLoading) {
       _emit(
         current.copyWith(
-          isRefreshing: true,
-          isRefreshingDetail: current.selectedBundle != null,
+          isRefreshing: refreshWorklist,
+          isRefreshingDetail: refreshDetail,
           clearLastFailure: true,
         ),
       );
     }
 
     try {
-      final AppFailure? failure = await _refreshWorklist(
-        showLoading: showLoading,
-      );
-      if (failure != null) {
-        return failure;
+      if (refreshWorklist) {
+        final AppFailure? failure = await _refreshWorklist(
+          showLoading: showLoading,
+        );
+        if (failure != null) {
+          return failure;
+        }
       }
 
-      if (refreshReferenceData) {
+      if (refreshRefs) {
         final ClinicalReferenceData referenceData = await _referenceData();
         final ClinicalWorkspaceState? latest = _currentState;
         if (latest != null) {
@@ -1081,9 +1127,11 @@ final class ClinicalWorkspaceController
         }
       }
 
-      final ClinicalWorklistEntry? selected = _selectedEntry;
-      if (selected != null) {
-        await _refreshSelectedEntry(selected, showLoading: showLoading);
+      if (refreshDetail) {
+        final ClinicalWorklistEntry? selected = _selectedEntry;
+        if (selected != null) {
+          await _refreshSelectedEntry(selected, showLoading: showLoading);
+        }
       }
 
       return null;
@@ -1093,6 +1141,13 @@ final class ClinicalWorkspaceController
         _emit(latest.copyWith(isRefreshing: false, isRefreshingDetail: false));
       }
       _isSyncing = false;
+      if (_pendingRefresh.refreshPending &&
+          !(_currentState?.isSaving ?? false)) {
+        final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
+        if (!pendingPlan.isEmpty) {
+          unawaited(_syncVisibleData(plan: pendingPlan));
+        }
+      }
     }
   }
 

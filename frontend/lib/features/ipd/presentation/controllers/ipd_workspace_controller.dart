@@ -4,8 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
+import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
@@ -30,31 +35,53 @@ final class IpdWorkspaceController
   ClinicalRepository get _clinicalRepository =>
       ref.read(clinicalRepositoryProvider);
 
-  Timer? _syncTimer;
+  final WorkspaceAdaptivePolling _adaptivePolling = WorkspaceAdaptivePolling();
+  final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
   bool _isSyncing = false;
 
   @override
   Future<Result<IpdWorkspaceState>> build() async {
-    ref.onDispose(() => _syncTimer?.cancel());
+    ref.onDispose(_adaptivePolling.dispose);
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.ipd,
-      onRefresh: (_) => _syncFromRealtime(),
+      includeCrudMutations: true,
+      shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
+      onRefresh: _syncFromRealtime,
     );
     final Result<IpdWorkspaceState> result = await runWorkspaceInitialLoad(
       ref,
       _loadInitialState,
     );
-    _startSync();
+    _startAdaptivePolling();
     return result;
   }
 
-  Future<void> _syncFromRealtime() async {
-    await _syncVisibleData();
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
+    if (_isSyncing || (_currentState?.isSaving ?? false)) {
+      _pendingRefresh.defer(
+        WorkspaceEventRefreshPlan.forMessage(
+          message,
+          profile: WorkspaceRefreshProfile.admissions,
+        ),
+      );
+      return;
+    }
+    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
+      message,
+      profile: WorkspaceRefreshProfile.admissions,
+    );
+    if (plan.isEmpty) {
+      return;
+    }
+    await _syncVisibleData(plan: plan);
   }
 
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(showLoading: true, refreshReferenceData: true);
+    return _syncVisibleData(
+      showLoading: true,
+      plan: WorkspaceRefreshPlan.admissionManualRefresh,
+    );
   }
 
   Future<AppFailure?> applyRouteQuery(IpdAdmissionQuery query) async {
@@ -63,7 +90,7 @@ final class IpdWorkspaceController
       _emitLoading(query);
       final Result<IpdWorkspaceState> result = await _loadInitialState(query);
       state = AsyncData<Result<IpdWorkspaceState>>(result);
-      _startSync();
+      _startAdaptivePolling();
       return result.when(success: (_) => null, failure: (failure) => failure);
     }
 
@@ -732,18 +759,36 @@ final class IpdWorkspaceController
     );
   }
 
-  void _startSync() {
-    _syncTimer ??= Timer.periodic(_syncInterval, (_) {
-      unawaited(_syncVisibleData());
-    });
+  void _startAdaptivePolling() {
+    installWorkspaceAdaptivePolling(
+      ref: ref,
+      polling: _adaptivePolling,
+      intervalWhenDisconnected: _syncInterval,
+      onDisconnectedPoll: () => unawaited(
+        _syncVisibleData(plan: WorkspaceRefreshPlan.admissionManualRefresh),
+      ),
+    );
   }
 
   Future<AppFailure?> _syncVisibleData({
     bool showLoading = false,
     bool refreshReferenceData = false,
+    WorkspaceRefreshPlan plan = WorkspaceRefreshPlan.admissionManualRefresh,
   }) async {
+    if (plan.isEmpty) {
+      return null;
+    }
     final IpdWorkspaceState? current = _currentState;
     if (current == null || _isSyncing || current.isSaving) {
+      _pendingRefresh.defer(plan);
+      return null;
+    }
+
+    final bool refreshWorklist =
+        workspacePlanRefreshesPrimaryList(plan) || plan.selectedDetail;
+    final bool refreshRefs =
+        refreshReferenceData || workspacePlanRefreshesReferenceData(plan);
+    if (!refreshWorklist && !refreshRefs) {
       return null;
     }
 
@@ -759,14 +804,16 @@ final class IpdWorkspaceController
     }
 
     try {
-      final AppFailure? failure = await _refreshWorklist(
-        showLoading: showLoading,
-      );
-      if (failure != null) {
-        return failure;
+      if (refreshWorklist) {
+        final AppFailure? failure = await _refreshWorklist(
+          showLoading: showLoading,
+        );
+        if (failure != null) {
+          return failure;
+        }
       }
 
-      if (refreshReferenceData) {
+      if (refreshRefs) {
         final IpdReferenceData referenceData = await _referenceData();
         final IpdWorkspaceState? latest = _currentState;
         if (latest != null) {
@@ -774,10 +821,12 @@ final class IpdWorkspaceController
         }
       }
 
-      final IpdAdmissionSummary? selected =
-          _currentState?.selectedAdmission?.summary;
-      if (selected != null) {
-        await selectAdmission(selected);
+      if (plan.selectedDetail) {
+        final IpdAdmissionSummary? selected =
+            _currentState?.selectedAdmission?.summary;
+        if (selected != null) {
+          await selectAdmission(selected);
+        }
       }
 
       return null;
@@ -787,6 +836,13 @@ final class IpdWorkspaceController
         _emit(latest.copyWith(isRefreshing: false, isRefreshingDetail: false));
       }
       _isSyncing = false;
+      if (_pendingRefresh.refreshPending &&
+          !(_currentState?.isSaving ?? false)) {
+        final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
+        if (!pendingPlan.isEmpty) {
+          unawaited(_syncVisibleData(plan: pendingPlan));
+        }
+      }
     }
   }
 

@@ -4,9 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
+import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/pharmacy/data/repositories/pharmacy_repository_impl.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
@@ -25,27 +30,45 @@ final class PharmacyWorkspaceController
 
   PharmacyRepository get _repository => ref.read(pharmacyRepositoryProvider);
 
-  Timer? _syncTimer;
+  final WorkspaceAdaptivePolling _adaptivePolling = WorkspaceAdaptivePolling();
+  final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
   bool _isSyncing = false;
 
   @override
   Future<Result<PharmacyWorkspaceState>> build() async {
-    ref.onDispose(() => _syncTimer?.cancel());
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.pharmacyWorkspace,
-      onRefresh: (_) => _syncFromRealtime(),
+      includeCrudMutations: true,
+      shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
+      onRefresh: _syncFromRealtime,
     );
     final Result<PharmacyWorkspaceState> result = await runWorkspaceInitialLoad(
       ref,
       _loadInitialState,
     );
-    _startSync();
+    _startAdaptivePolling();
     return result;
   }
 
-  Future<void> _syncFromRealtime() async {
-    await _syncVisibleData();
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
+    if (_isSyncing || (_currentState?.isSaving ?? false)) {
+      _pendingRefresh.defer(
+        WorkspaceEventRefreshPlan.forMessage(
+          message,
+          profile: WorkspaceRefreshProfile.pharmacy,
+        ),
+      );
+      return;
+    }
+    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
+      message,
+      profile: WorkspaceRefreshProfile.pharmacy,
+    );
+    if (plan.isEmpty) {
+      return;
+    }
+    await _syncVisibleData(plan: plan);
   }
 
   Future<AppFailure?> refresh({
@@ -54,9 +77,12 @@ final class PharmacyWorkspaceController
   }) {
     return _syncVisibleData(
       showLoading: true,
-      refreshDrugs: refreshCatalog,
-      refreshFormulary: refreshCatalog,
-      refreshInventory: refreshInventory || refreshCatalog,
+      plan: WorkspaceRefreshPlan(
+        primaryList: true,
+        selectedDetail: true,
+        catalogs: refreshCatalog,
+        inventory: refreshInventory || refreshCatalog,
+      ),
     );
   }
 
@@ -956,7 +982,6 @@ final class PharmacyWorkspaceController
             ),
           );
         }
-        unawaited(_refreshOrders(showLoading: false));
         return null;
       },
       failure: (AppFailure failure) {
@@ -1129,20 +1154,44 @@ final class PharmacyWorkspaceController
     );
   }
 
-  void _startSync() {
-    _syncTimer ??= Timer.periodic(_syncInterval, (_) {
-      unawaited(_syncVisibleData(refreshInventory: true));
-    });
+  void _startAdaptivePolling() {
+    installWorkspaceAdaptivePolling(
+      ref: ref,
+      polling: _adaptivePolling,
+      intervalWhenDisconnected: _syncInterval,
+      onDisconnectedPoll: () => unawaited(
+        _syncVisibleData(
+          plan: const WorkspaceRefreshPlan(
+            primaryList: true,
+            selectedDetail: true,
+            inventory: true,
+          ),
+        ),
+      ),
+    );
   }
 
   Future<AppFailure?> _syncVisibleData({
     bool showLoading = false,
-    bool refreshDrugs = false,
-    bool refreshFormulary = false,
-    bool refreshInventory = false,
+    WorkspaceRefreshPlan plan = WorkspaceRefreshPlan.full,
   }) async {
+    if (plan.isEmpty) {
+      return null;
+    }
     final PharmacyWorkspaceState? current = _currentState;
     if (current == null || _isSyncing || current.isSaving) {
+      _pendingRefresh.defer(plan);
+      return null;
+    }
+
+    final bool refreshOrders = workspacePlanRefreshesPrimaryList(plan);
+    final bool refreshCatalogs = plan.catalogs;
+    final bool refreshInventory = plan.inventory;
+    final bool refreshDetail = plan.selectedDetail;
+    if (!refreshOrders &&
+        !refreshCatalogs &&
+        !refreshInventory &&
+        !refreshDetail) {
       return null;
     }
 
@@ -1152,8 +1201,8 @@ final class PharmacyWorkspaceController
         current.copyWith(
           isRefreshingOrders: true,
           isRefreshingDetail: current.selectedWorkflow != null,
-          isRefreshingDrugs: refreshDrugs,
-          isRefreshingFormulary: refreshFormulary,
+          isRefreshingDrugs: refreshCatalogs,
+          isRefreshingFormulary: refreshCatalogs,
           isRefreshingInventory: refreshInventory,
           clearLastFailure: true,
         ),
@@ -1161,26 +1210,28 @@ final class PharmacyWorkspaceController
     }
 
     try {
-      final AppFailure? failure = await _refreshOrders(
-        showLoading: showLoading,
-      );
-      if (failure != null) {
-        return failure;
+      if (refreshOrders) {
+        final AppFailure? failure = await _refreshOrders(
+          showLoading: showLoading,
+        );
+        if (failure != null) {
+          return failure;
+        }
       }
 
-      if (refreshDrugs) {
+      if (refreshCatalogs) {
         await _refreshDrugs(showLoading: showLoading);
-      }
-      if (refreshFormulary) {
         await _refreshFormulary(showLoading: showLoading);
       }
       if (refreshInventory) {
         await _refreshInventory(showLoading: showLoading);
       }
 
-      final PharmacyOrderWorkflow? selected = _currentState?.selectedWorkflow;
-      if (selected != null) {
-        await selectOrder(selected.order);
+      if (refreshDetail) {
+        final PharmacyOrderWorkflow? selected = _currentState?.selectedWorkflow;
+        if (selected != null) {
+          await selectOrder(selected.order);
+        }
       }
 
       return null;
@@ -1198,6 +1249,13 @@ final class PharmacyWorkspaceController
         );
       }
       _isSyncing = false;
+      if (_pendingRefresh.refreshPending &&
+          !(_currentState?.isSaving ?? false)) {
+        final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
+        if (!pendingPlan.isEmpty) {
+          unawaited(_syncVisibleData(plan: pendingPlan));
+        }
+      }
     }
   }
 
@@ -1393,7 +1451,6 @@ final class PharmacyWorkspaceController
             ),
           );
         }
-        unawaited(_refreshOrders(showLoading: false));
         if (refreshDrugsAfter) {
           unawaited(_refreshDrugs(showLoading: false));
         }

@@ -4,7 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
+import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/biomedical/data/repositories/biomedical_repository_impl.dart';
 import 'package:hosspi_hms/features/biomedical/domain/entities/biomedical_entities.dart';
@@ -24,25 +29,47 @@ final class BiomedicalWorkspaceController
   BiomedicalRepository get _repository =>
       ref.read(biomedicalRepositoryProvider);
 
-  Timer? _syncTimer;
+  final WorkspaceAdaptivePolling _adaptivePolling = WorkspaceAdaptivePolling();
+  final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
   bool _isSyncing = false;
 
   @override
   Future<Result<BiomedicalWorkspaceState>> build() async {
-    ref.onDispose(() => _syncTimer?.cancel());
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.biomedical,
-      onRefresh: (_) => _syncVisibleData(),
+      includeCrudMutations: true,
+      shouldDefer: () => _isSyncing || (_currentState?.isMutating ?? false),
+      onRefresh: _syncFromRealtime,
     );
     final Result<BiomedicalWorkspaceState> result =
         await runWorkspaceInitialLoad(ref, _loadInitialState);
-    _startSync();
+    _startAdaptivePolling();
     return result;
   }
 
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
+    if (_isSyncing || (_currentState?.isMutating ?? false)) {
+      _pendingRefresh.defer(
+        WorkspaceEventRefreshPlan.forMessage(
+          message,
+          profile: WorkspaceRefreshProfile.biomedical,
+        ),
+      );
+      return;
+    }
+    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
+      message,
+      profile: WorkspaceRefreshProfile.biomedical,
+    );
+    if (plan.isEmpty) {
+      return;
+    }
+    await _syncVisibleData(plan: plan);
+  }
+
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(showLoading: true);
+    return _syncVisibleData(showLoading: true, plan: WorkspaceRefreshPlan.full);
   }
 
   Future<AppFailure?> applySearch(String value) {
@@ -341,15 +368,38 @@ final class BiomedicalWorkspaceController
     return _refreshWorkbench(showLoading: true);
   }
 
-  void _startSync() {
-    _syncTimer ??= Timer.periodic(_syncInterval, (_) {
-      unawaited(_syncVisibleData());
-    });
+  void _startAdaptivePolling() {
+    installWorkspaceAdaptivePolling(
+      ref: ref,
+      polling: _adaptivePolling,
+      intervalWhenDisconnected: _syncInterval,
+      onDisconnectedPoll: () => unawaited(
+        _syncVisibleData(
+          plan: const WorkspaceRefreshPlan(
+            primaryList: true,
+            selectedDetail: true,
+          ),
+        ),
+      ),
+    );
   }
 
-  Future<AppFailure?> _syncVisibleData({bool showLoading = false}) async {
+  Future<AppFailure?> _syncVisibleData({
+    bool showLoading = false,
+    WorkspaceRefreshPlan plan = WorkspaceRefreshPlan.full,
+  }) async {
+    if (plan.isEmpty) {
+      return null;
+    }
     final BiomedicalWorkspaceState? current = _currentState;
     if (current == null || _isSyncing || current.isMutating) {
+      _pendingRefresh.defer(plan);
+      return null;
+    }
+
+    final bool refreshList = workspacePlanRefreshesPrimaryList(plan);
+    final bool refreshDetail = plan.selectedDetail;
+    if (!refreshList && !refreshDetail) {
       return null;
     }
 
@@ -359,13 +409,38 @@ final class BiomedicalWorkspaceController
     }
 
     try {
-      return await _refreshWorkbench(showLoading: showLoading);
+      if (refreshList) {
+        final AppFailure? failure = await _refreshWorkbench(
+          showLoading: showLoading,
+        );
+        if (failure != null) {
+          return failure;
+        }
+      }
+
+      if (refreshDetail && !refreshList) {
+        final AppFailure? failure = await _refreshWorkbench(
+          showLoading: showLoading,
+        );
+        if (failure != null) {
+          return failure;
+        }
+      }
+
+      return null;
     } finally {
       final BiomedicalWorkspaceState? latest = _currentState;
       if (showLoading && latest != null) {
         _emit(latest.copyWith(isRefreshing: false));
       }
       _isSyncing = false;
+      if (_pendingRefresh.refreshPending &&
+          !(_currentState?.isMutating ?? false)) {
+        final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
+        if (!pendingPlan.isEmpty) {
+          unawaited(_syncVisibleData(plan: pendingPlan));
+        }
+      }
     }
   }
 
@@ -441,7 +516,6 @@ final class BiomedicalWorkspaceController
             ),
           );
         }
-        await _refreshWorkbench(showLoading: false);
         return null;
       },
       failure: (AppFailure failure) {

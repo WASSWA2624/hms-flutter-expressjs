@@ -4,7 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
+import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/radiology/data/repositories/radiology_repository_impl.dart';
 import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
@@ -23,12 +28,12 @@ final class RadiologyWorkspaceController
 
   RadiologyRepository get _repository => ref.read(radiologyRepositoryProvider);
 
-  Timer? _syncTimer;
+  final WorkspaceAdaptivePolling _adaptivePolling = WorkspaceAdaptivePolling();
+  final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
   bool _isSyncing = false;
 
   @override
   Future<Result<RadiologyWorkspaceState>> build() async {
-    ref.onDispose(() => _syncTimer?.cancel());
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.radiology,
@@ -37,20 +42,36 @@ final class RadiologyWorkspaceController
         final RadiologyWorkspaceState? current = _currentState;
         return _isSyncing || (current?.isMutating ?? false);
       },
-      onRefresh: (_) => _syncFromRealtime(),
+      onRefresh: _syncFromRealtime,
     );
     final Result<RadiologyWorkspaceState> result =
         await runWorkspaceInitialLoad(ref, _loadInitialState);
-    _startSync();
+    _startAdaptivePolling();
     return result;
   }
 
-  Future<void> _syncFromRealtime() async {
-    await _syncVisibleData();
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
+    if (_isSyncing || (_currentState?.isMutating ?? false)) {
+      _pendingRefresh.defer(
+        WorkspaceEventRefreshPlan.forMessage(
+          message,
+          profile: WorkspaceRefreshProfile.radiology,
+        ),
+      );
+      return;
+    }
+    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
+      message,
+      profile: WorkspaceRefreshProfile.radiology,
+    );
+    if (plan.isEmpty) {
+      return;
+    }
+    await _syncVisibleData(plan: plan);
   }
 
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(showLoading: true);
+    return _syncVisibleData(showLoading: true, plan: WorkspaceRefreshPlan.full);
   }
 
   Future<AppFailure?> applySearch(String value) async {
@@ -916,15 +937,38 @@ final class RadiologyWorkspaceController
     );
   }
 
-  void _startSync() {
-    _syncTimer ??= Timer.periodic(_syncInterval, (_) {
-      unawaited(_syncVisibleData());
-    });
+  void _startAdaptivePolling() {
+    installWorkspaceAdaptivePolling(
+      ref: ref,
+      polling: _adaptivePolling,
+      intervalWhenDisconnected: _syncInterval,
+      onDisconnectedPoll: () => unawaited(
+        _syncVisibleData(
+          plan: const WorkspaceRefreshPlan(
+            primaryList: true,
+            selectedDetail: true,
+          ),
+        ),
+      ),
+    );
   }
 
-  Future<AppFailure?> _syncVisibleData({bool showLoading = false}) async {
+  Future<AppFailure?> _syncVisibleData({
+    bool showLoading = false,
+    WorkspaceRefreshPlan plan = WorkspaceRefreshPlan.full,
+  }) async {
+    if (plan.isEmpty) {
+      return null;
+    }
     final RadiologyWorkspaceState? current = _currentState;
     if (current == null || _isSyncing || current.isMutating) {
+      _pendingRefresh.defer(plan);
+      return null;
+    }
+
+    final bool refreshWorkbench = workspacePlanRefreshesPrimaryList(plan);
+    final bool refreshDetail = plan.selectedDetail;
+    if (!refreshWorkbench && !refreshDetail) {
       return null;
     }
 
@@ -940,31 +984,35 @@ final class RadiologyWorkspaceController
     }
 
     try {
-      final AppFailure? failure = await _refreshWorkbench(
-        showLoading: showLoading,
-      );
-      if (failure != null) {
-        return failure;
+      if (refreshWorkbench) {
+        final AppFailure? failure = await _refreshWorkbench(
+          showLoading: showLoading,
+        );
+        if (failure != null) {
+          return failure;
+        }
       }
 
-      final RadiologyWorkflow? selected = _currentState?.selectedWorkflow;
-      if (selected != null) {
-        final Result<RadiologyWorkflow> detailResult = await _repository
-            .getWorkflow(selected.order.effectiveDisplayId);
-        detailResult.when(
-          success: (RadiologyWorkflow workflow) {
-            final RadiologyWorkspaceState? latest = _currentState;
-            if (latest != null) {
-              _emit(
-                latest.copyWith(
-                  selectedWorkflow: workflow,
-                  orders: _replaceOrder(latest.orders, workflow.order),
-                ),
-              );
-            }
-          },
-          failure: (_) {},
-        );
+      if (refreshDetail) {
+        final RadiologyWorkflow? selected = _currentState?.selectedWorkflow;
+        if (selected != null) {
+          final Result<RadiologyWorkflow> detailResult = await _repository
+              .getWorkflow(selected.order.effectiveDisplayId);
+          detailResult.when(
+            success: (RadiologyWorkflow workflow) {
+              final RadiologyWorkspaceState? latest = _currentState;
+              if (latest != null) {
+                _emit(
+                  latest.copyWith(
+                    selectedWorkflow: workflow,
+                    orders: _replaceOrder(latest.orders, workflow.order),
+                  ),
+                );
+              }
+            },
+            failure: (_) {},
+          );
+        }
       }
 
       return null;
@@ -974,6 +1022,13 @@ final class RadiologyWorkspaceController
         _emit(latest.copyWith(isRefreshing: false, isRefreshingDetail: false));
       }
       _isSyncing = false;
+      if (_pendingRefresh.refreshPending &&
+          !(_currentState?.isMutating ?? false)) {
+        final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
+        if (!pendingPlan.isEmpty) {
+          unawaited(_syncVisibleData(plan: pendingPlan));
+        }
+      }
     }
   }
 
@@ -1072,7 +1127,6 @@ final class RadiologyWorkspaceController
             ),
           );
         }
-        await _refreshWorkbench(showLoading: false);
         return null;
       },
       failure: (AppFailure failure) {

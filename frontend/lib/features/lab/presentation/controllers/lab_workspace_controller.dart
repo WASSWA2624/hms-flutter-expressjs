@@ -5,9 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
-import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
+import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/lab/data/repositories/lab_repository_impl.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
@@ -59,47 +62,46 @@ final class LabWorkspaceController
 
   LabRepository get _repository => ref.read(labRepositoryProvider);
 
-  Timer? _syncTimer;
+  final WorkspaceAdaptivePolling _adaptivePolling = WorkspaceAdaptivePolling();
+  final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
   bool _isSyncing = false;
-  bool _refreshPending = false;
   int _workbenchRefreshSequence = 0;
 
   @override
   Future<Result<LabWorkspaceState>> build() async {
-    ref.onDispose(() => _syncTimer?.cancel());
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.lab,
+      includeCrudMutations: true,
       shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
-      onRefresh: (RealtimeMessage message) => _syncFromRealtime(
-        refreshCatalogs: message.event == RealtimeEvents.labCatalogUpdated,
-      ),
+      onRefresh: _syncFromRealtime,
     );
     final Result<LabWorkspaceState> result = await runWorkspaceInitialLoad(
       ref,
       _loadInitialState,
     );
-    if (result.isSuccess) {
-      _startSync();
-    }
+    _startAdaptivePolling();
     return result;
   }
 
-  Future<void> _syncFromRealtime({bool refreshCatalogs = false}) async {
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
     if (_isSyncing || (_currentState?.isSaving ?? false)) {
-      _refreshPending = true;
+      _pendingRefresh.defer(
+        WorkspaceEventRefreshPlan.forMessage(
+          message,
+          profile: WorkspaceRefreshProfile.lab,
+        ),
+      );
       return;
     }
-    await _syncVisibleData(refreshCatalogs: refreshCatalogs);
-    _drainPendingRefresh();
-  }
-
-  void _drainPendingRefresh() {
-    if (!_refreshPending || _isSyncing || (_currentState?.isSaving ?? false)) {
+    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
+      message,
+      profile: WorkspaceRefreshProfile.lab,
+    );
+    if (plan.isEmpty) {
       return;
     }
-    _refreshPending = false;
-    unawaited(_syncVisibleData());
+    await _syncVisibleData(plan: plan);
   }
 
   Future<AppFailure?> refresh() async {
@@ -111,12 +113,12 @@ final class LabWorkspaceController
       );
       state = AsyncData<Result<LabWorkspaceState>>(result);
       if (result.isSuccess) {
-        _startSync();
+        _startAdaptivePolling();
       }
       return _failureOrNull(result);
     }
 
-    return _syncVisibleData(showLoading: true, refreshCatalogs: true);
+    return _syncVisibleData(showLoading: true, plan: WorkspaceRefreshPlan.full);
   }
 
   Future<AppFailure?> applySearch(String value) async {
@@ -355,7 +357,6 @@ final class LabWorkspaceController
                 ),
               );
             }
-            unawaited(_refreshWorkbench(showLoading: false));
             return null;
           },
           failure: (AppFailure failure) {
@@ -1101,19 +1102,34 @@ final class LabWorkspaceController
     );
   }
 
-  void _startSync() {
-    _syncTimer ??= Timer.periodic(_syncInterval, (_) {
-      unawaited(_syncVisibleData());
-    });
+  void _startAdaptivePolling() {
+    installWorkspaceAdaptivePolling(
+      ref: ref,
+      polling: _adaptivePolling,
+      intervalWhenDisconnected: _syncInterval,
+      onDisconnectedPoll: () => unawaited(
+        _syncVisibleData(plan: WorkspaceRefreshPlan.full),
+      ),
+    );
   }
 
   Future<AppFailure?> _syncVisibleData({
     bool showLoading = false,
-    bool refreshCatalogs = false,
+    WorkspaceRefreshPlan plan = WorkspaceRefreshPlan.full,
   }) async {
+    if (plan.isEmpty) {
+      return null;
+    }
     final LabWorkspaceState? current = _currentState;
     if (current == null || _isSyncing || current.isSaving) {
-      _refreshPending = true;
+      _pendingRefresh.defer(plan);
+      return null;
+    }
+
+    final bool refreshWorkbench = workspacePlanRefreshesPrimaryList(plan);
+    final bool refreshCatalogs = plan.catalogs;
+    final bool refreshDetail = plan.selectedDetail;
+    if (!refreshWorkbench && !refreshCatalogs && !refreshDetail) {
       return null;
     }
 
@@ -1129,56 +1145,21 @@ final class LabWorkspaceController
     }
 
     try {
-      final AppFailure? failure = await _refreshWorkbench(
-        showLoading: showLoading,
-      );
-      if (failure != null) {
-        return failure;
+      if (refreshWorkbench) {
+        final AppFailure? failure = await _refreshWorkbench(
+          showLoading: showLoading,
+        );
+        if (failure != null) {
+          return failure;
+        }
       }
 
       if (refreshCatalogs) {
-        final List<LabQcLog> qcLogs = await _qcLogs();
-        final LabWorkspaceState? latest = _currentState;
-        if (latest != null) {
-          final bool catalogsLoaded =
-              latest.catalogTests.isNotEmpty || latest.catalogPanels.isNotEmpty;
-          if (catalogsLoaded) {
-            final List<LabCatalogItem> tests = await _facilityTests();
-            final List<LabCatalogItem> panels = await _facilityPanels();
-            _emit(
-              latest.copyWith(
-                catalogTests: tests,
-                catalogPanels: panels,
-                qcLogs: qcLogs,
-              ),
-            );
-          } else {
-            _emit(latest.copyWith(qcLogs: qcLogs));
-          }
-        }
+        await _refreshCatalogs();
       }
 
-      final List<LabOrderWorkflow> selectedWorkflows =
-          _currentSelectedWorkflows();
-      if (selectedWorkflows.isNotEmpty) {
-        final List<LabOrderWorkflow> refreshed = <LabOrderWorkflow>[];
-        for (final LabOrderWorkflow selected in selectedWorkflows) {
-          final Result<LabOrderWorkflow> detailResult = await _repository
-              .loadOrderWorkflow(selected.order.apiId);
-          detailResult.when(success: refreshed.add, failure: (_) {});
-        }
-        if (refreshed.isNotEmpty) {
-          final LabWorkspaceState? latest = _currentState;
-          if (latest != null) {
-            _emit(
-              latest.copyWith(
-                selectedWorkflow: refreshed.first,
-                selectedWorkflows: refreshed,
-                worklist: _replaceOrders(latest.worklist, refreshed),
-              ),
-            );
-          }
-        }
+      if (refreshDetail) {
+        await _refreshSelectedWorkflows();
       }
 
       return null;
@@ -1188,7 +1169,68 @@ final class LabWorkspaceController
         _emit(latest.copyWith(isRefreshing: false, isRefreshingDetail: false));
       }
       _isSyncing = false;
-      _drainPendingRefresh();
+      if (_pendingRefresh.refreshPending &&
+          !(_currentState?.isSaving ?? false)) {
+        final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
+        if (!pendingPlan.isEmpty) {
+          unawaited(_syncVisibleData(plan: pendingPlan));
+        }
+      }
+    }
+  }
+
+  Future<void> _refreshCatalogs() async {
+    final List<LabQcLog> qcLogs = await _qcLogs();
+    final LabWorkspaceState? latest = _currentState;
+    if (latest == null) {
+      return;
+    }
+    final bool catalogsLoaded =
+        latest.catalogTests.isNotEmpty || latest.catalogPanels.isNotEmpty;
+    if (catalogsLoaded) {
+      final List<LabCatalogItem> tests = await _facilityTests();
+      final List<LabCatalogItem> panels = await _facilityPanels();
+      final LabWorkspaceState? current = _currentState;
+      if (current != null) {
+        _emit(
+          current.copyWith(
+            catalogTests: tests,
+            catalogPanels: panels,
+            qcLogs: qcLogs,
+          ),
+        );
+      }
+    } else {
+      _emit(latest.copyWith(qcLogs: qcLogs));
+    }
+  }
+
+  Future<void> _refreshSelectedWorkflows() async {
+    final List<LabOrderWorkflow> selectedWorkflows =
+        _currentSelectedWorkflows();
+    if (selectedWorkflows.isEmpty) {
+      return;
+    }
+
+    final List<LabOrderWorkflow> refreshed = <LabOrderWorkflow>[];
+    for (final LabOrderWorkflow selected in selectedWorkflows) {
+      final Result<LabOrderWorkflow> detailResult = await _repository
+          .loadOrderWorkflow(selected.order.apiId);
+      detailResult.when(success: refreshed.add, failure: (_) {});
+    }
+    if (refreshed.isEmpty) {
+      return;
+    }
+
+    final LabWorkspaceState? latest = _currentState;
+    if (latest != null) {
+      _emit(
+        latest.copyWith(
+          selectedWorkflow: refreshed.first,
+          selectedWorkflows: refreshed,
+          worklist: _replaceOrders(latest.worklist, refreshed),
+        ),
+      );
     }
   }
 
@@ -1277,7 +1319,6 @@ final class LabWorkspaceController
             ),
           );
         }
-        unawaited(_refreshWorkbench(showLoading: false));
         return null;
       },
       failure: (AppFailure failure) {
