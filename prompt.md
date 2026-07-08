@@ -1,28 +1,54 @@
-# Pharmacy — Catalog & Stock Dialog: Fixes, Feature Completion, and Web Test Coverage
+# Bug: OPD queue status not syncing after lab results are verified
 
-## Context
-The **Pharmacy** module exposes a **Catalog and Stock** dialog (opened from the Pharmacy screen) with four tabs: **Drugs**, **Formulary**, **Inventory**, and **Storage layout**. Review this dialog end to end and bring it to full, production-quality working order across both frontend and backend.
+## Summary
 
-## Defects to fix
-1. **Maximize by default.** The Catalog and Stock dialog opens un-maximized. Every dialog in the Diagnostics & Pharmacy (pharmacy) module — including this one and all nested dialogs (add/edit/delete forms, adjust-stock, room/shelf editors, etc.) — must open maximized by default.
-2. **Layout overflow.** The dialog content overflows (e.g. "BOTTOM OVERFLOWED BY 40 PIXELS"). Fix all overflow so the layout is clean and fully responsive on mobile, tablet, and desktop, with consistent UI.
+Lab completion state is not reflected in the OPD flow. A patient whose lab results are **Verified** in the Laboratory worklist still appears as **Lab pending** with next step **Lab handoff** on the OPD flow table.
 
-## Functional requirements
-All create/edit/delete actions below must be fully wired on **frontend and backend**, persist correctly, and reflect in the UI in **real time with no delay** (no manual refresh):
+## Evidence
 
-- **Drugs tab:** Add drug, Edit drug, Delete drug.
-- **Formulary tab:** Add formulary item, Edit formulary item, Delete formulary item.
-- **Inventory tab:** Adjust stock and Clear stock.
-- **Storage layout tab:** Add / Edit / Delete a room; within a room, Add / Edit / Delete a shelf.
+| Module | Patient | Queue / result state |
+|--------|---------|----------------------|
+| **OPD flow** (`/opd`) | Samuel Demo-Bravo (`PAT-9456CE18C9`) | Queue status: **Lab pending** · Next step: **Lab handoff** |
+| **Laboratory** (`/lab`) | Samuel Demo-Bravo (same patient) | Result status: **Verified** |
 
-## Access control
-The Catalog and Stock dialog must be accessible to **every user with access to any pharmacy**, with full access granted to **pharmacists, facility admins, tenant admins, and super admins**. Verify this on both frontend (route/UI gating) and backend (authorization).
+See attached screenshots for the mismatch.
 
-## Testing (web platform only)
-- Add and/or update **unit, integration, E2E, and Patrol** tests covering all of the above: maximize-by-default behavior, overflow-free responsive layout, every add/edit/delete/adjust/clear action (frontend + backend), real-time UI updates, and role-based access for all four roles.
-- Run the **entire** test suite **exclusively on the web platform**.
-- **Resolve every applicable test failure until all web tests pass.**
+## Expected behavior
 
-## Constraints
-- Maximize code reuse; keep the UI uniform and responsive across mobile, tablet, and desktop.
-- Follow existing project conventions and applicable `.cursor` rules.
+When all active lab order items for an encounter are verified/completed:
+
+1. **OPD flow** queue status should advance from **Lab pending** to **Results ready** (or the correct downstream state).
+2. **Next step** should update from **Lab handoff** to **Review results** (or equivalent).
+3. Status should stay consistent across OPD, Lab, and any other modules that surface the same encounter.
+
+## Actual behavior
+
+OPD continues to show **Lab pending** / **Lab handoff** after lab verification, while the Laboratory worklist shows **Verified**.
+
+## Scope
+
+- **Frontend:** OPD flow table (`frontend/lib/features/opd/`), Lab worklist (`frontend/lib/features/lab/`)
+- **Backend:** OPD display resolution and lab→OPD sync (`backend/src/modules/opd-flow/services/opd-flow.service.js`, `backend/src/modules/lab-workspace/services/lab-workspace.service.js`)
+
+## Likely investigation areas
+
+1. **`resolveLabState()`** — OPD treats lab work as incomplete unless orders/items are `COMPLETED` and no results are `PENDING`. Confirm whether **Verified** result status is handled correctly.
+2. **`syncOpdFlowForOrder()` / `syncDiagnosticsStage()`** — Lab verification should trigger OPD stage sync (`LAB_RESULTS_VERIFIED`). Verify this runs and that the encounter stage advances out of `LAB_REQUESTED`.
+3. **Realtime / cache refresh** — Confirm OPD UI refreshes after lab verification (websocket event or refetch), not only on manual reload.
+4. **Encounter linkage** — Confirm the lab order and OPD encounter refer to the same encounter ID.
+
+## Acceptance criteria
+
+- [ ] Reproduce with Samuel Demo-Bravo (or equivalent seeded data): verify lab results, then confirm OPD updates without a full page reload.
+- [ ] OPD queue status and next step match the resolved lab state for that encounter.
+- [ ] Partial completion (some items verified, others pending) still shows an in-progress lab state; full verification shows results ready.
+- [ ] Existing tests pass; add or extend coverage in `opd-flow.diagnostics-sync.service.test.js` and lab-workspace sync tests if a gap is found.
+- [ ] No regression for encounters with concurrent radiology/pharmacy workflows.
+
+## Test plan
+
+1. Open OPD flow and note a patient in **Lab pending**.
+2. Open Laboratory worklist for the same patient/encounter.
+3. Verify all lab results (or use already-verified seed data).
+4. Return to OPD flow — confirm status is **Results ready** and next step is **Review results**.
+5. Repeat on mobile, tablet, and desktop widths to ensure responsive UI is unaffected.

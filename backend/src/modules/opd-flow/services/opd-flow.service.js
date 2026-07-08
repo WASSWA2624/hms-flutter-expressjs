@@ -1564,35 +1564,7 @@ const hasRecordedVitals = (encounter) =>
 
 const activeItems = (items) => (Array.isArray(items) ? items.filter((item) => !item?.deleted_at) : []);
 
-const resolveLabState = (orders = []) => {
-  const activeOrders = activeItems(orders).filter((order) => normalizeStatus(order.status) !== 'CANCELLED');
-  if (!activeOrders.length) return { code: null, pending: false, ready: false };
-  const hasPendingSample = activeOrders.some((order) =>
-    activeItems(order.samples).some((sample) => ['PENDING', 'REJECTED'].includes(normalizeStatus(sample.status)))
-  );
-  const hasInLab = activeOrders.some((order) =>
-    ['COLLECTED', 'IN_PROCESS'].includes(normalizeStatus(order.status)) ||
-    activeItems(order.items).some((item) => ['COLLECTED', 'IN_PROCESS'].includes(normalizeStatus(item.status)))
-  );
-  const hasIncomplete = activeOrders.some((order) =>
-    normalizeStatus(order.status) !== 'COMPLETED' ||
-    activeItems(order.items).some((item) => normalizeStatus(item.status) !== 'COMPLETED') ||
-    activeItems(order.items).some((item) => activeItems(item.results).some((result) => normalizeStatus(result.status) === 'PENDING'))
-  );
-  const ready = activeOrders.some(
-    (order) =>
-      normalizeStatus(order.status) === 'COMPLETED' ||
-      activeItems(order.items).some((item) =>
-        activeItems(item.results).some((result) => normalizeStatus(result.status) !== 'PENDING')
-      )
-  );
-  return {
-    code: hasIncomplete ? (hasPendingSample ? 'SAMPLE_PENDING' : hasInLab ? 'IN_LAB' : 'LAB_PENDING') : 'RESULTS_READY',
-    pending: hasIncomplete,
-    ready: ready || !hasIncomplete
-  };
-};
-
+const { resolveLabState } = require('@services/opd-flow/opd-diagnostics-state');
 const resolveRadiologyState = (orders = []) => {
   const activeOrders = activeItems(orders).filter((order) => normalizeStatus(order.status) !== 'CANCELLED');
   if (!activeOrders.length) return { code: null, pending: false, ready: false };

@@ -59,6 +59,24 @@ const completedLabOrder = {
   samples: [{ deleted_at: null, status: 'RECEIVED' }],
 };
 
+const completedLabOrderWithCancelledItem = {
+  status: 'IN_PROCESS',
+  deleted_at: null,
+  items: [
+    {
+      deleted_at: null,
+      status: 'COMPLETED',
+      results: [{ deleted_at: null, status: 'NORMAL' }],
+    },
+    {
+      deleted_at: null,
+      status: 'CANCELLED',
+      results: [],
+    },
+  ],
+  samples: [{ deleted_at: null, status: 'PENDING' }],
+};
+
 const pendingLabOrder = {
   status: 'IN_PROCESS',
   deleted_at: null,
@@ -122,6 +140,22 @@ describe('opd-flow syncDiagnosticsStage', () => {
     expect(txEncounter.update).toHaveBeenCalledTimes(1);
     const updateArg = txEncounter.update.mock.calls[0][0];
     expect(updateArg.where).toEqual({ id: 'encounter-1' });
+    expect(updateArg.data.extension_json.opd_flow.stage).toBe('WAITING_DISPOSITION');
+  });
+
+  it('advances when only active lab items are complete and cancelled items remain', async () => {
+    txEncounter.findFirst
+      .mockResolvedValueOnce(
+        buildEncounter({ lab_orders: [completedLabOrderWithCancelledItem] })
+      )
+      .mockResolvedValue(null);
+
+    await opdFlowService.syncDiagnosticsStage('ENC0000001', {
+      trigger: 'LAB_RESULTS_VERIFIED',
+    });
+
+    expect(txEncounter.update).toHaveBeenCalledTimes(1);
+    const updateArg = txEncounter.update.mock.calls[0][0];
     expect(updateArg.data.extension_json.opd_flow.stage).toBe('WAITING_DISPOSITION');
   });
 
