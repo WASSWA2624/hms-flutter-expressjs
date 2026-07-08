@@ -161,7 +161,29 @@ const extractRole = (value) => {
   return null;
 };
 
-const resolveEffectiveRole = (user = {}) => {
+const DASHBOARD_MANAGER_OVERLAY_ROLES = new Set([
+  ROLES.UNIT_MANAGER,
+  ROLES.WARD_MANAGER,
+  ROLES.ICU_MANAGER,
+  ROLES.THEATRE_MANAGER,
+  ROLES.HOUSEKEEPING_MANAGER,
+  ROLES.BIOMED_MANAGER,
+  ROLES.MORTUARY_MANAGER,
+]);
+
+const pickHighestRankedRole = (roleNames = []) => {
+  const unique = Array.from(new Set(roleNames.filter(Boolean)));
+  if (!unique.length) return null;
+
+  return unique.reduce((winner, roleName) => {
+    if (!winner) return roleName;
+    const winnerRank = ROLE_HIERARCHY[winner] || 0;
+    const challengerRank = ROLE_HIERARCHY[roleName] || 0;
+    return challengerRank > winnerRank ? roleName : winner;
+  }, null);
+};
+
+const collectRoleCandidates = (user = {}) => {
   const roleCandidates = [];
   const roleSource = Array.isArray(user.roles) ? user.roles : [];
 
@@ -173,15 +195,21 @@ const resolveEffectiveRole = (user = {}) => {
   const directRole = extractRole(user.role || user.role_name);
   if (directRole) roleCandidates.push(directRole);
 
-  const unique = Array.from(new Set(roleCandidates));
-  if (!unique.length) return ROLES.OTHER;
+  return roleCandidates;
+};
 
-  return unique.reduce((winner, roleName) => {
-    if (!winner) return roleName;
-    const winnerRank = ROLE_HIERARCHY[winner] || 0;
-    const challengerRank = ROLE_HIERARCHY[roleName] || 0;
-    return challengerRank > winnerRank ? roleName : winner;
-  }, null);
+const resolveEffectiveRole = (user = {}) => {
+  const roleCandidates = collectRoleCandidates(user);
+  return pickHighestRankedRole(roleCandidates) || ROLES.OTHER;
+};
+
+const resolveDashboardRole = (user = {}) => {
+  const roleCandidates = collectRoleCandidates(user);
+  const operationalRoles = roleCandidates.filter(
+    (roleName) => !DASHBOARD_MANAGER_OVERLAY_ROLES.has(roleName)
+  );
+  const candidates = operationalRoles.length ? operationalRoles : roleCandidates;
+  return pickHighestRankedRole(candidates) || ROLES.OTHER;
 };
 
 const resolveProfileId = (effectiveRole) => ROLE_PROFILE_IDS[effectiveRole] || 'other';
@@ -799,7 +827,7 @@ const metricsToRoleSummary = (packId, metrics = {}) =>
 const buildDashboardSummary = async ({ query = {}, user = {}, repository }) => {
   try {
     const days = Number(query.days || 7);
-    const effectiveRole = resolveEffectiveRole(user);
+    const effectiveRole = resolveDashboardRole(user);
     const roleProfileId = resolveProfileId(effectiveRole);
     const packId = resolvePackId(roleProfileId);
     const scope = await resolveScope(query, user, effectiveRole, repository);
@@ -980,6 +1008,7 @@ module.exports = {
   buildDashboardSummary,
   metricsToRoleSummary,
   resolveEffectiveRole,
+  resolveDashboardRole,
   resolvePackId,
   resolveProfileId,
   resolveScope,

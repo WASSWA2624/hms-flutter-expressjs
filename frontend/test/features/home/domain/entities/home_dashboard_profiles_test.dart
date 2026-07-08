@@ -122,5 +122,35 @@ void main() {
       expect(profile.quickActionIds, isNotEmpty);
       expect(profile.shortcutIds, isEmpty);
     });
+
+    test('manager overlay roles do not override primary dashboard role', () {
+      expect(
+        homeProfileForRoles(<AppRole>[AppRole.doctor, AppRole.theatreManager]).role,
+        AppRole.doctor,
+      );
+      expect(
+        homeProfileForRoles(<AppRole>[
+          AppRole.nurse,
+          AppRole.wardManager,
+          AppRole.icuManager,
+        ]).role,
+        AppRole.nurse,
+      );
+      expect(
+        homeProfileForRoles(<AppRole>[AppRole.biomed, AppRole.biomedManager]).role,
+        AppRole.biomed,
+      );
+      expect(
+        homeProfileForRoles(<AppRole>[
+          AppRole.houseKeeper,
+          AppRole.housekeepingManager,
+        ]).role,
+        AppRole.houseKeeper,
+      );
+      expect(
+        homeProfileForRoles(<AppRole>[AppRole.tenantAdmin, AppRole.unitManager]).role,
+        AppRole.tenantAdmin,
+      );
+    });
   });
 }

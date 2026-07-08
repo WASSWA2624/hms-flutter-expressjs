@@ -13,6 +13,7 @@ import 'package:hosspi_hms/features/home/data/dtos/home_dashboard_lookups_dtos.d
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_scope.dart';
 import 'package:hosspi_hms/features/home/domain/repositories/home_repository.dart';
 
 final homeRepositoryProvider = Provider<HomeRepository>((ref) {
@@ -123,24 +124,9 @@ final class HomeRepositoryImpl implements HomeRepository {
     HomeDashboardProfile localProfile,
     HomeDashboard dashboard,
   ) {
-    final HomeDashboardProfile profile = dashboard.profile.role == AppRole.other
-        ? localProfile
-        : dashboard.profile;
-    final List<String> quickActionIds = localProfile.suppressHomeQuickActions
-        ? const <String>[]
-        : dashboard.quickActionIds.isEmpty
-        ? localProfile.quickActionIds
-        : dashboard.quickActionIds;
-    final List<String> shortcutIds = localProfile.suppressHomeShortcuts
-        ? const <String>[]
-        : dashboard.shortcutIds.isEmpty
-        ? localProfile.shortcutIds
-        : dashboard.shortcutIds;
-
-    return dashboard.copyWith(
-      profile: profile,
-      quickActionIds: quickActionIds,
-      shortcutIds: shortcutIds,
+    return mergeHomeDashboardForProfile(
+      profile: localProfile,
+      dashboard: dashboard,
     );
   }
 

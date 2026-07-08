@@ -3,6 +3,16 @@ import 'dart:collection';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 
+const Set<AppRole> _homeDashboardManagerOverlayRoles = <AppRole>{
+  AppRole.unitManager,
+  AppRole.wardManager,
+  AppRole.icuManager,
+  AppRole.theatreManager,
+  AppRole.housekeepingManager,
+  AppRole.biomedManager,
+  AppRole.mortuaryManager,
+};
+
 const Map<AppRole, int> _homeRoleRanks = <AppRole, int>{
   AppRole.other: 0,
   AppRole.patient: 1,
@@ -868,16 +878,23 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
 };
 
 HomeDashboardProfile homeProfileForRoles(Iterable<AppRole> roles) {
-  final List<AppRole> normalizedRoles = roles.toSet().toList(growable: false);
+  final Set<AppRole> normalizedRoles = roles.toSet();
   if (normalizedRoles.isEmpty) {
     return homeDashboardProfiles[AppRole.other]!;
   }
 
-  normalizedRoles.sort((AppRole left, AppRole right) {
+  final List<AppRole> operationalRoles = normalizedRoles
+      .where((AppRole role) => !_homeDashboardManagerOverlayRoles.contains(role))
+      .toList(growable: false);
+  final List<AppRole> candidates = operationalRoles.isNotEmpty
+      ? operationalRoles
+      : normalizedRoles.toList(growable: false);
+
+  candidates.sort((AppRole left, AppRole right) {
     return (_homeRoleRanks[right] ?? 0).compareTo(_homeRoleRanks[left] ?? 0);
   });
 
-  return homeDashboardProfiles[normalizedRoles.first] ??
+  return homeDashboardProfiles[candidates.first] ??
       homeDashboardProfiles[AppRole.other]!;
 }
 
