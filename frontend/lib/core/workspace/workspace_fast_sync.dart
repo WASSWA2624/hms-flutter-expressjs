@@ -4,19 +4,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/realtime/realtime_providers.dart';
 import 'package:hosspi_hms/core/realtime/realtime_service.dart';
 import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
+import 'package:hosspi_hms/core/workspace/workspace_disconnect_poll_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 
 export 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart'
     show WorkspaceAdaptivePolling;
+export 'package:hosspi_hms/core/workspace/workspace_disconnect_poll_plan.dart'
+    show WorkspaceDisconnectPollPlan;
 export 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart'
     show WorkspaceRefreshPlan;
+export 'package:hosspi_hms/core/workspace/workspace_realtime_sync.dart'
+    show WorkspaceSyncEngine, WorkspaceSyncIgnored, WorkspaceSyncNeedsHttp,
+        WorkspaceSyncOutcome, WorkspaceSyncPatched, mergeWorkspaceRefreshPlan,
+        resolveWorkspaceRealtime;
 
 /// Wires adaptive polling that runs only while WebSocket transport is down.
 void installWorkspaceAdaptivePolling({
   required Ref ref,
   required WorkspaceAdaptivePolling polling,
   required Duration intervalWhenDisconnected,
-  required void Function() onDisconnectedPoll,
+  required WorkspaceRefreshProfile disconnectProfile,
+  required Future<void> Function(WorkspaceRefreshPlan plan) syncOnDisconnect,
 }) {
   ref.onDispose(polling.dispose);
   ref.listen<AsyncValue<RealtimeConnectionState>>(
@@ -26,7 +35,11 @@ void installWorkspaceAdaptivePolling({
   polling.start(
     intervalWhenDisconnected: intervalWhenDisconnected,
     isRealtimeConnected: () => ref.read(realtimeServiceProvider).isConnected,
-    onTick: onDisconnectedPoll,
+    onTick: () => unawaited(
+      syncOnDisconnect(
+        WorkspaceDisconnectPollPlan.forProfile(disconnectProfile),
+      ),
+    ),
   );
 }
 

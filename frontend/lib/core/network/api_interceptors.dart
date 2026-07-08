@@ -31,7 +31,7 @@ final class LocaleInterceptor extends Interceptor {
   }
 }
 
-final class AuthInterceptor extends QueuedInterceptor {
+final class AuthInterceptor extends Interceptor {
   AuthInterceptor({
     required AuthTokenReader readAccessToken,
     TokenRefreshHandler? onTokenRefresh,

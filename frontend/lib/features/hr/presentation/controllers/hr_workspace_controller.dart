@@ -1259,9 +1259,8 @@ final class HrWorkspaceController
       ref: ref,
       polling: _adaptivePolling,
       intervalWhenDisconnected: _syncInterval,
-      onDisconnectedPoll: () => unawaited(
-        _syncVisibleData(plan: WorkspaceRefreshPlan.full),
-      ),
+      disconnectProfile: WorkspaceRefreshProfile.hr,
+      syncOnDisconnect: (WorkspaceRefreshPlan plan) => _syncVisibleData(plan: plan),
     );
   }
 

@@ -351,14 +351,8 @@ final class OperationsWorkspaceController
       ref: ref,
       polling: _adaptivePolling,
       intervalWhenDisconnected: _syncInterval,
-      onDisconnectedPoll: () => unawaited(
-        _syncVisibleData(
-          plan: const WorkspaceRefreshPlan(
-            primaryList: true,
-            selectedDetail: true,
-          ),
-        ),
-      ),
+      disconnectProfile: WorkspaceRefreshProfile.operations,
+      syncOnDisconnect: (WorkspaceRefreshPlan plan) => _syncVisibleData(plan: plan),
     );
   }
 

@@ -547,9 +547,8 @@ final class PatientRegistryController
       ref: ref,
       polling: _adaptivePolling,
       intervalWhenDisconnected: _syncInterval,
-      onDisconnectedPoll: () => unawaited(
-        _syncVisibleData(plan: WorkspaceRefreshPlan.admissionWorkspace),
-      ),
+      disconnectProfile: WorkspaceRefreshProfile.patientRegistry,
+      syncOnDisconnect: (WorkspaceRefreshPlan plan) => _syncVisibleData(plan: plan),
     );
   }
 

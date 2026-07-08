@@ -373,14 +373,8 @@ final class BiomedicalWorkspaceController
       ref: ref,
       polling: _adaptivePolling,
       intervalWhenDisconnected: _syncInterval,
-      onDisconnectedPoll: () => unawaited(
-        _syncVisibleData(
-          plan: const WorkspaceRefreshPlan(
-            primaryList: true,
-            selectedDetail: true,
-          ),
-        ),
-      ),
+      disconnectProfile: WorkspaceRefreshProfile.biomedical,
+      syncOnDisconnect: (WorkspaceRefreshPlan plan) => _syncVisibleData(plan: plan),
     );
   }
 

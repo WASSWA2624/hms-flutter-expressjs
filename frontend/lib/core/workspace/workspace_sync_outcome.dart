@@ -6,9 +6,13 @@ sealed class WorkspaceSyncOutcome {
 }
 
 /// Local state was updated; [residualPlan] may request a small HTTP follow-up.
-final class WorkspaceSyncPatched extends WorkspaceSyncOutcome {
-  const WorkspaceSyncPatched({this.residualPlan = WorkspaceRefreshPlan.none});
+final class WorkspaceSyncPatched<T> extends WorkspaceSyncOutcome {
+  const WorkspaceSyncPatched({
+    required this.state,
+    this.residualPlan = WorkspaceRefreshPlan.none,
+  });
 
+  final T state;
   final WorkspaceRefreshPlan residualPlan;
 }
 

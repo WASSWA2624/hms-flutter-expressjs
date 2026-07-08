@@ -17,6 +17,8 @@ import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.da
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_realtime_sync.dart';
+import 'package:hosspi_hms/features/opd/presentation/controllers/opd_realtime_delta_applier.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 final opdWorkspaceControllerProvider =
@@ -70,14 +72,31 @@ final class OpdWorkspaceController
       );
       return;
     }
-    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
-      message,
+
+    final OpdWorkspaceState? current = _currentState;
+    final WorkspaceSyncOutcome outcome = resolveWorkspaceRealtime<OpdWorkspaceState>(
+      message: message,
       profile: WorkspaceRefreshProfile.clinicalFlow,
+      currentState: current,
+      applyDelta: OpdRealtimeDeltaApplier.apply,
     );
-    if (plan.isEmpty) {
+
+    if (outcome is WorkspaceSyncIgnored) {
       return;
     }
-    await _syncVisibleData(plan: plan);
+    if (outcome is WorkspaceSyncPatched<OpdWorkspaceState>) {
+      _emit(outcome.state);
+      if (!outcome.residualPlan.isEmpty) {
+        await _syncVisibleData(plan: outcome.residualPlan);
+      }
+      return;
+    }
+    if (outcome is WorkspaceSyncNeedsHttp) {
+      if (outcome.plan.isEmpty) {
+        return;
+      }
+      await _syncVisibleData(plan: outcome.plan);
+    }
   }
 
   WorkspaceRefreshPlan _mergePendingPlan(WorkspaceRefreshPlan plan) {
@@ -699,7 +718,10 @@ final class OpdWorkspaceController
     }
     _refreshPending = false;
     final WorkspaceRefreshPlan plan =
-        _pendingRefreshPlan ?? WorkspaceRefreshPlan.full;
+        _pendingRefreshPlan ??
+        WorkspaceDisconnectPollPlan.forProfile(
+          WorkspaceRefreshProfile.clinicalFlow,
+        );
     _pendingRefreshPlan = null;
     if (plan.isEmpty) {
       return null;
@@ -817,7 +839,11 @@ final class OpdWorkspaceController
       isRealtimeConnected: () =>
           ref.read(realtimeServiceProvider).isConnected,
       onTick: () => unawaited(
-        _syncVisibleData(plan: WorkspaceRefreshPlan.full),
+        _syncVisibleData(
+          plan: WorkspaceDisconnectPollPlan.forProfile(
+            WorkspaceRefreshProfile.clinicalFlow,
+          ),
+        ),
       ),
     );
   }

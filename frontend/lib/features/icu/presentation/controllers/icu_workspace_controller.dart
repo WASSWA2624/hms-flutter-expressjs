@@ -551,9 +551,8 @@ final class IcuWorkspaceController
       ref: ref,
       polling: _adaptivePolling,
       intervalWhenDisconnected: _syncInterval,
-      onDisconnectedPoll: () => unawaited(
-        _syncVisibleData(plan: WorkspaceRefreshPlan.admissionManualRefresh),
-      ),
+      disconnectProfile: WorkspaceRefreshProfile.admissions,
+      syncOnDisconnect: (WorkspaceRefreshPlan plan) => _syncVisibleData(plan: plan),
     );
   }
 

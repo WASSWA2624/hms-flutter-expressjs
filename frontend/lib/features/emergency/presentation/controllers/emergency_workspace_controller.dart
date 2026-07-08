@@ -311,9 +311,8 @@ final class EmergencyWorkspaceController
       ref: ref,
       polling: _adaptivePolling,
       intervalWhenDisconnected: _syncInterval,
-      onDisconnectedPoll: () => unawaited(
-        _syncVisibleData(plan: WorkspaceRefreshPlan.admissionManualRefresh),
-      ),
+      disconnectProfile: WorkspaceRefreshProfile.emergency,
+      syncOnDisconnect: (WorkspaceRefreshPlan plan) => _syncVisibleData(plan: plan),
     );
   }
 

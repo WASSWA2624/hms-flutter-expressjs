@@ -490,9 +490,8 @@ final class PhysiotherapyWorkspaceController
       ref: ref,
       polling: _adaptivePolling,
       intervalWhenDisconnected: _syncInterval,
-      onDisconnectedPoll: () => unawaited(
-        _syncVisibleData(plan: WorkspaceRefreshPlan.flowWorkspace),
-      ),
+      disconnectProfile: WorkspaceRefreshProfile.clinicalFlow,
+      syncOnDisconnect: (WorkspaceRefreshPlan plan) => _syncVisibleData(plan: plan),
     );
   }
 

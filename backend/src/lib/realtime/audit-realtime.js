@@ -116,6 +116,15 @@ const publishAuditRealtime = async (auditData = {}, resolvedTenantId, resolvedAc
     if (resource.patient_id) affected.patient_id = resource.patient_id;
     if (resource.provider_user_id) affected.provider_user_id = resource.provider_user_id;
 
+    const diff = auditData.diff || auditData.details || {};
+    const after = diff.after && typeof diff.after === 'object' ? diff.after : {};
+    const before = diff.before && typeof diff.before === 'object' ? diff.before : {};
+    const snapshot = Object.keys(after).length > 0 ? after : before;
+    const entitySnapshot =
+      snapshot && typeof snapshot === 'object' && Object.keys(snapshot).length > 1
+        ? snapshot
+        : null;
+
     return await publishCrudRealtimeEvent({
       event,
       resource,
@@ -129,6 +138,7 @@ const publishAuditRealtime = async (auditData = {}, resolvedTenantId, resolvedAc
         patient_id: resource.patient_id || null,
         provider_user_id: resource.provider_user_id || null,
         status: resource.status,
+        ...(entitySnapshot ? { entity: entitySnapshot, action: operation === 'deleted' ? 'remove' : 'upsert' } : {}),
         ...(auditData.realtime_payload || {})
       }
     });

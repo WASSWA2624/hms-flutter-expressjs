@@ -1159,15 +1159,8 @@ final class PharmacyWorkspaceController
       ref: ref,
       polling: _adaptivePolling,
       intervalWhenDisconnected: _syncInterval,
-      onDisconnectedPoll: () => unawaited(
-        _syncVisibleData(
-          plan: const WorkspaceRefreshPlan(
-            primaryList: true,
-            selectedDetail: true,
-            inventory: true,
-          ),
-        ),
-      ),
+      disconnectProfile: WorkspaceRefreshProfile.pharmacy,
+      syncOnDisconnect: (WorkspaceRefreshPlan plan) => _syncVisibleData(plan: plan),
     );
   }
 

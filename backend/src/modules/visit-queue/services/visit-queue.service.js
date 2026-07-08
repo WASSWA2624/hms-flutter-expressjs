@@ -12,6 +12,7 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { logger } = require('@lib/logging');
 const { publishDomainEvent, VISIT_QUEUE_EVENTS } = require('@lib/websocket');
+const { buildRealtimeEntityEnvelope } = require('@lib/realtime/entity-envelope');
 const { ROLES } = require('@config/roles');
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const {
@@ -63,20 +64,24 @@ const publishVisitQueueRealtimeEvent = async (event, entry = {}, actorUserId = n
         provider_user_id: providerUserId
       },
       recipient_user_ids: recipientUserIds,
-      payload: {
-        queue_id: queueId,
-        queue_public_id: queuePublicId,
-        patient_id: patientId,
-        appointment_id: appointmentId,
-        provider_user_id: providerUserId,
-        tenant_id: tenantId,
-        facility_id: facilityId,
-        status: entry?.status || null,
-        queued_at: entry?.queued_at || null,
-        actor_user_id: actorUserId || null,
-        target_path: '/opd',
-        occurred_at: occurredAt
-      }
+      payload: buildRealtimeEntityEnvelope(
+        event === VISIT_QUEUE_EVENTS.VISIT_QUEUE_DELETED ? 'remove' : 'upsert',
+        entry,
+        {
+          queue_id: queueId,
+          queue_public_id: queuePublicId,
+          patient_id: patientId,
+          appointment_id: appointmentId,
+          provider_user_id: providerUserId,
+          tenant_id: tenantId,
+          facility_id: facilityId,
+          status: entry?.status || null,
+          queued_at: entry?.queued_at || null,
+          actor_user_id: actorUserId || null,
+          target_path: '/opd',
+          occurred_at: occurredAt
+        }
+      )
     });
   } catch (error) {
     logger.error('Failed to publish visit queue realtime event', {

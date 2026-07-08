@@ -942,14 +942,8 @@ final class RadiologyWorkspaceController
       ref: ref,
       polling: _adaptivePolling,
       intervalWhenDisconnected: _syncInterval,
-      onDisconnectedPoll: () => unawaited(
-        _syncVisibleData(
-          plan: const WorkspaceRefreshPlan(
-            primaryList: true,
-            selectedDetail: true,
-          ),
-        ),
-      ),
+      disconnectProfile: WorkspaceRefreshProfile.radiology,
+      syncOnDisconnect: (WorkspaceRefreshPlan plan) => _syncVisibleData(plan: plan),
     );
   }
 

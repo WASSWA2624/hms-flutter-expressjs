@@ -611,6 +611,21 @@ const formatStageLabel = (stage) =>
     .replace(/_/g, ' ')
     .toLowerCase();
 
+const buildOpdFlowListEntry = (snapshot) => {
+  const encounter = snapshot?.encounter;
+  if (!encounter) {
+    return null;
+  }
+  const flow = snapshot?.flow || encounter?.extension_json?.opd_flow;
+  if (!flow) {
+    return null;
+  }
+  return {
+    encounter,
+    flow: attachResolvedDisplayToFlow(encounter, flow)
+  };
+};
+
 const buildFlowSummary = (snapshot) => {
   const flow = snapshot?.flow || {};
   const timeline = Array.isArray(flow.timeline)
@@ -662,6 +677,8 @@ const buildRealtimePayload = ({ snapshot, transition, context }) => {
     provider_internal_user_id: providerInternalId,
     actor_internal_user_id: actorInternalId,
     occurred_at: occurredAt,
+    action: 'upsert',
+    list_entry: buildOpdFlowListEntry(snapshot),
     flow_summary: buildFlowSummary(snapshot),
     target_path: encounterPublicId ? `/scheduling/opd-flows/${encounterPublicId}` : '/scheduling/opd-flows'
   };
