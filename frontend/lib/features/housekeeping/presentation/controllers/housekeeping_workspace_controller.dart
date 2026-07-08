@@ -1,8 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
+import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/housekeeping/data/repositories/housekeeping_repository_impl.dart';
 import 'package:hosspi_hms/features/housekeeping/domain/entities/housekeeping_entities.dart';
@@ -20,12 +26,17 @@ final class HousekeepingWorkspaceController
   HousekeepingRepository get _repository =>
       ref.read(housekeepingRepositoryProvider);
 
+  final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
+  bool _isSyncing = false;
+
   @override
   Future<Result<HousekeepingWorkspaceState>> build() async {
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.housekeeping,
-      onRefresh: (_) => _syncFromRealtime(),
+      includeCrudMutations: true,
+      shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
+      onRefresh: _syncFromRealtime,
     );
     return runWorkspaceInitialLoad(ref, () async {
       const HousekeepingWorkspaceQuery query = HousekeepingWorkspaceQuery();
@@ -49,8 +60,72 @@ final class HousekeepingWorkspaceController
     });
   }
 
-  Future<void> _syncFromRealtime() async {
-    await refresh();
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
+    if (_isSyncing || (_currentState?.isSaving ?? false)) {
+      _pendingRefresh.defer(
+        WorkspaceEventRefreshPlan.forMessage(
+          message,
+          profile: WorkspaceRefreshProfile.operations,
+        ),
+      );
+      return;
+    }
+    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
+      message,
+      profile: WorkspaceRefreshProfile.operations,
+    );
+    if (plan.isEmpty) {
+      return;
+    }
+    await _syncVisibleData(plan: plan);
+  }
+
+  Future<AppFailure?> _syncVisibleData({
+    WorkspaceRefreshPlan plan = const WorkspaceRefreshPlan(
+      primaryList: true,
+      selectedDetail: true,
+    ),
+  }) async {
+    if (plan.isEmpty) {
+      return null;
+    }
+    final HousekeepingWorkspaceState? current = _currentState;
+    if (current == null || _isSyncing || current.isSaving) {
+      _pendingRefresh.defer(plan);
+      return null;
+    }
+
+    final bool refreshList = workspacePlanRefreshesPrimaryList(plan);
+    if (!refreshList && !plan.selectedDetail) {
+      return null;
+    }
+
+    _isSyncing = true;
+    try {
+      if (refreshList) {
+        final AppFailure? failure = await _refreshWorkspace(
+          preferredSelectedId: current.selectedItem?.id,
+        );
+        if (failure != null) {
+          return failure;
+        }
+      }
+      if (plan.selectedDetail && !refreshList) {
+        final HousekeepingWorkItem? selected = _currentState?.selectedItem;
+        if (selected != null) {
+          selectItem(selected);
+        }
+      }
+      return null;
+    } finally {
+      _isSyncing = false;
+      if (_pendingRefresh.refreshPending && !(_currentState?.isSaving ?? false)) {
+        final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
+        if (!pendingPlan.isEmpty) {
+          unawaited(_syncVisibleData(plan: pendingPlan));
+        }
+      }
+    }
   }
 
   Future<AppFailure?> refresh() async {
@@ -327,15 +402,30 @@ final class HousekeepingWorkspaceController
     final Result<void> result = await submit();
     return result.when<Future<AppFailure?>>(
       success: (_) async {
-        return _refreshWorkspace(
+        final AppFailure? failure = await _refreshWorkspace(
           preferredSelectedId: preferredSelectedId ?? current.selectedItem?.id,
         );
+        await _flushPendingRealtimeRefresh();
+        return failure;
       },
       failure: (AppFailure failure) async {
         _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
+        await _flushPendingRealtimeRefresh();
         return failure;
       },
     );
+  }
+
+  Future<void> _flushPendingRealtimeRefresh() async {
+    if (!_pendingRefresh.refreshPending ||
+        _isSyncing ||
+        (_currentState?.isSaving ?? false)) {
+      return;
+    }
+    final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
+    if (!pendingPlan.isEmpty) {
+      await _syncVisibleData(plan: pendingPlan);
+    }
   }
 
   Future<AppFailure?> _refreshWorkspace({String? preferredSelectedId}) async {

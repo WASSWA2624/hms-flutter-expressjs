@@ -6,6 +6,11 @@ import 'package:hosspi_hms/core/realtime/realtime_service.dart';
 import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
 import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 
+export 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart'
+    show WorkspaceAdaptivePolling;
+export 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart'
+    show WorkspaceRefreshPlan;
+
 /// Wires adaptive polling that runs only while WebSocket transport is down.
 void installWorkspaceAdaptivePolling({
   required Ref ref,

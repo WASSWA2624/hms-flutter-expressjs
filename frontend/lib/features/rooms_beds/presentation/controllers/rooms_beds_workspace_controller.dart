@@ -28,6 +28,8 @@ final class RoomsBedsWorkspaceController
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.roomsBeds,
+      includeCrudMutations: true,
+      shouldDefer: () => _currentState?.isSaving ?? false,
       shouldRefresh: (RealtimeMessage message) {
         final String? facilityId = ref.read(appAccessPolicyProvider).facilityId;
         return RealtimeScope.matchesMessage(

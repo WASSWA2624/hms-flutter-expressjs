@@ -1,8 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
+import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/claims/data/repositories/claims_repository_impl.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
@@ -19,12 +25,17 @@ final class ClaimsWorkspaceController
     extends AsyncNotifier<Result<ClaimsWorkspaceState>> {
   ClaimsRepository get _repository => ref.read(claimsRepositoryProvider);
 
+  final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
+  bool _isSyncing = false;
+
   @override
   Future<Result<ClaimsWorkspaceState>> build() async {
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.claims,
-      onRefresh: (_) => _syncFromRealtime(),
+      includeCrudMutations: true,
+      shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
+      onRefresh: _syncFromRealtime,
     );
     return runWorkspaceInitialLoad(ref, () async {
       const ClaimsQueueQuery query = ClaimsQueueQuery();
@@ -71,8 +82,67 @@ final class ClaimsWorkspaceController
     );
   }
 
-  Future<void> _syncFromRealtime() async {
-    await refresh();
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
+    if (_isSyncing || (_currentState?.isSaving ?? false)) {
+      _pendingRefresh.defer(
+        WorkspaceEventRefreshPlan.forMessage(
+          message,
+          profile: WorkspaceRefreshProfile.fullOnMatch,
+        ),
+      );
+      return;
+    }
+    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
+      message,
+      profile: WorkspaceRefreshProfile.fullOnMatch,
+    );
+    if (plan.isEmpty) {
+      return;
+    }
+    await _syncVisibleData(plan: plan);
+  }
+
+  Future<AppFailure?> _syncVisibleData({
+    WorkspaceRefreshPlan plan = WorkspaceRefreshPlan.full,
+  }) async {
+    if (plan.isEmpty) {
+      return null;
+    }
+    final ClaimsWorkspaceState? current = _currentState;
+    if (current == null || _isSyncing || current.isSaving) {
+      _pendingRefresh.defer(plan);
+      return null;
+    }
+
+    final bool refreshList = workspacePlanRefreshesPrimaryList(plan);
+    if (!refreshList && !plan.selectedDetail) {
+      return null;
+    }
+
+    _isSyncing = true;
+    try {
+      if (refreshList) {
+        final AppFailure? failure = await _refreshQueue();
+        if (failure != null) {
+          return failure;
+        }
+      }
+      if (plan.selectedDetail) {
+        final ClaimsQueueDetail? selected = _currentState?.selectedDetail;
+        if (selected != null) {
+          await selectItem(selected.item);
+        }
+      }
+      return null;
+    } finally {
+      _isSyncing = false;
+      if (_pendingRefresh.refreshPending && !(_currentState?.isSaving ?? false)) {
+        final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
+        if (!pendingPlan.isEmpty) {
+          unawaited(_syncVisibleData(plan: pendingPlan));
+        }
+      }
+    }
   }
 
   Future<AppFailure?> refresh() async {
@@ -333,7 +403,7 @@ final class ClaimsWorkspaceController
       selectedItem,
     );
     return detailResult.when(
-      success: (ClaimsQueueDetail detail) {
+      success: (ClaimsQueueDetail detail) async {
         _emit(
           _currentState!.copyWith(
             selectedDetail: detail,
@@ -341,9 +411,10 @@ final class ClaimsWorkspaceController
             isRefreshingDetail: false,
           ),
         );
+        await _flushPendingRealtimeRefresh();
         return null;
       },
-      failure: (AppFailure failure) {
+      failure: (AppFailure failure) async {
         _emit(
           _currentState!.copyWith(
             isSaving: false,
@@ -351,9 +422,22 @@ final class ClaimsWorkspaceController
             lastFailure: failure,
           ),
         );
+        await _flushPendingRealtimeRefresh();
         return failure;
       },
     );
+  }
+
+  Future<void> _flushPendingRealtimeRefresh() async {
+    if (!_pendingRefresh.refreshPending ||
+        _isSyncing ||
+        (_currentState?.isSaving ?? false)) {
+      return;
+    }
+    final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
+    if (!pendingPlan.isEmpty) {
+      await _syncVisibleData(plan: pendingPlan);
+    }
   }
 
   Future<AppFailure?> _refreshQueue() async {

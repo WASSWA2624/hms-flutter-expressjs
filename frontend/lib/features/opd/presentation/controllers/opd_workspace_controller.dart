@@ -16,7 +16,7 @@ import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
-import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 final opdWorkspaceControllerProvider =
@@ -63,12 +63,16 @@ final class OpdWorkspaceController
     if (_isSyncing || (_currentState?.isSaving ?? false)) {
       _refreshPending = true;
       _pendingRefreshPlan = _mergePendingPlan(
-        OpdWorkspaceRefreshPlan.forMessage(message),
+        WorkspaceEventRefreshPlan.forMessage(
+          message,
+          profile: WorkspaceRefreshProfile.clinicalFlow,
+        ),
       );
       return;
     }
-    final WorkspaceRefreshPlan plan = OpdWorkspaceRefreshPlan.forMessage(
+    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
       message,
+      profile: WorkspaceRefreshProfile.clinicalFlow,
     );
     if (plan.isEmpty) {
       return;

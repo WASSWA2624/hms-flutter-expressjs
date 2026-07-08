@@ -2,7 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/billing/data/repositories/billing_repository_impl.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
@@ -27,8 +30,9 @@ final class BillingWorkspaceController
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.billingWorkspace,
+      includeCrudMutations: true,
       shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
-      onRefresh: (_) => _syncFromRealtime(),
+      onRefresh: _syncFromRealtime,
     );
     return runWorkspaceInitialLoad(ref, () async {
       const BillingWorkspaceQuery query = BillingWorkspaceQuery();
@@ -62,7 +66,14 @@ final class BillingWorkspaceController
     });
   }
 
-  Future<void> _syncFromRealtime() async {
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
+    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
+      message,
+      profile: WorkspaceRefreshProfile.fullOnMatch,
+    );
+    if (plan.isEmpty) {
+      return;
+    }
     if (_isSyncing || (_currentState?.isSaving ?? false)) {
       _refreshPending = true;
       return;

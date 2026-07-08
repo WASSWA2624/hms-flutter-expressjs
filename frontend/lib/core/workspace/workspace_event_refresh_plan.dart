@@ -174,11 +174,13 @@ abstract final class WorkspaceEventRefreshPlan {
   static WorkspaceRefreshPlan forEmergency(String event) {
     if (RealtimeEventGroups.emergencyWorkspace.contains(event) ||
         RealtimeCrudEvents.matches(event)) {
-      return const WorkspaceRefreshPlan(
+      final bool refreshReference =
+          event == RealtimeEvents.ambulanceDispatched ||
+          event == RealtimeEvents.ambulanceArrivalUpdated;
+      return WorkspaceRefreshPlan(
         primaryList: true,
         selectedDetail: true,
-        referenceData: event == RealtimeEvents.ambulanceDispatched ||
-            event == RealtimeEvents.ambulanceArrivalUpdated,
+        referenceData: refreshReference,
       );
     }
     return WorkspaceRefreshPlan.none;

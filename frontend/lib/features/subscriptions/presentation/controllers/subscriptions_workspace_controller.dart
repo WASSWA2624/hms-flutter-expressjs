@@ -30,6 +30,8 @@ final class SubscriptionsWorkspaceController
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.subscriptions,
+      includeCrudMutations: true,
+      shouldDefer: () => _currentState?.isSaving ?? false,
       onRefresh: (RealtimeMessage message) async {
         if (message.event == RealtimeEvents.moduleEntitlementUpdated) {
           await _refreshSession();

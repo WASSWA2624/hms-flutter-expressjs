@@ -31,6 +31,8 @@ final class AccessAdminWorkspaceController
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.accessAdmin,
+      includeCrudMutations: true,
+      shouldDefer: () => _currentState?.isSaving ?? false,
       onRefresh: (RealtimeMessage message) async {
         if (message.event == RealtimeEvents.moduleEntitlementUpdated) {
           await _refreshSession();

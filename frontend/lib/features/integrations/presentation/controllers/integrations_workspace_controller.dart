@@ -27,6 +27,8 @@ final class IntegrationsWorkspaceController
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.integrations,
+      includeCrudMutations: true,
+      shouldDefer: () => _currentState?.isSaving ?? false,
       onRefresh: (_) => refresh(),
     );
     return runWorkspaceInitialLoad(

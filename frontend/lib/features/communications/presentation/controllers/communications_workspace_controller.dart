@@ -1,9 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
+import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/communications/data/repositories/communications_repository_impl.dart';
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
@@ -25,12 +31,17 @@ final class CommunicationsWorkspaceController
   final Map<CommunicationsPanel, CommunicationsWorkspaceState> _panelSnapshots =
       <CommunicationsPanel, CommunicationsWorkspaceState>{};
 
+  final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
+  bool _isSyncing = false;
+
   @override
   Future<Result<CommunicationsWorkspaceState>> build() async {
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.communications,
-      onRefresh: (_) => _syncFromRealtime(),
+      includeCrudMutations: true,
+      shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
+      onRefresh: _syncFromRealtime,
     );
     return runWorkspaceInitialLoad(
       ref,
@@ -38,8 +49,57 @@ final class CommunicationsWorkspaceController
     );
   }
 
-  Future<void> _syncFromRealtime() async {
-    await refresh();
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
+    if (_isSyncing || (_currentState?.isSaving ?? false)) {
+      _pendingRefresh.defer(
+        WorkspaceEventRefreshPlan.forMessage(
+          message,
+          profile: WorkspaceRefreshProfile.fullOnMatch,
+        ),
+      );
+      return;
+    }
+    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
+      message,
+      profile: WorkspaceRefreshProfile.fullOnMatch,
+    );
+    if (plan.isEmpty) {
+      return;
+    }
+    await _syncVisibleData(plan: plan);
+  }
+
+  Future<AppFailure?> _syncVisibleData({
+    WorkspaceRefreshPlan plan = WorkspaceRefreshPlan.full,
+  }) async {
+    if (plan.isEmpty) {
+      return null;
+    }
+    final CommunicationsWorkspaceState? current = _currentState;
+    if (current == null || _isSyncing || current.isSaving) {
+      _pendingRefresh.defer(plan);
+      return null;
+    }
+
+    if (!workspacePlanRefreshesPrimaryList(plan) && !plan.selectedDetail) {
+      return null;
+    }
+
+    _isSyncing = true;
+    try {
+      return await _refreshWorkspace(
+        preserveSelection: true,
+        preserveConversation: true,
+      );
+    } finally {
+      _isSyncing = false;
+      if (_pendingRefresh.refreshPending && !(_currentState?.isSaving ?? false)) {
+        final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
+        if (!pendingPlan.isEmpty) {
+          unawaited(_syncVisibleData(plan: pendingPlan));
+        }
+      }
+    }
   }
 
   Future<AppFailure?> refresh() async {
@@ -804,17 +864,36 @@ final class CommunicationsWorkspaceController
     }
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
     if (alreadySubmittedByHandler) {
-      return onSuccess(current);
+      final AppFailure? failure = await onSuccess(current);
+      await _flushPendingRealtimeRefresh();
+      return failure;
     }
 
     final Result<T> result = await submit();
     return result.when<Future<AppFailure?>>(
-      success: (_) => onSuccess(current),
+      success: (_) async {
+        final AppFailure? failure = await onSuccess(current);
+        await _flushPendingRealtimeRefresh();
+        return failure;
+      },
       failure: (AppFailure failure) async {
         _emit(current.copyWith(isSaving: false, lastFailure: failure));
+        await _flushPendingRealtimeRefresh();
         return failure;
       },
     );
+  }
+
+  Future<void> _flushPendingRealtimeRefresh() async {
+    if (!_pendingRefresh.refreshPending ||
+        _isSyncing ||
+        (_currentState?.isSaving ?? false)) {
+      return;
+    }
+    final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
+    if (!pendingPlan.isEmpty) {
+      await _syncVisibleData(plan: pendingPlan);
+    }
   }
 
   CommunicationsWorkspaceState? get _currentState {
