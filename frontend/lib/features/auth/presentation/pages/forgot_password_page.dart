@@ -6,6 +6,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
 import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/auth_primary_button.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_text_link.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -43,10 +44,9 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            AppButton.primary(
+            AuthPrimaryButton(
               label: l10n.authResetPasswordWithCodeActionLabel,
               leadingIcon: Icons.pin_outlined,
-              fullWidth: true,
               onPressed: () => context.go(
                 AppRoutes.resetPassword.location(
                   queryParameters: <String, String>{
@@ -120,11 +120,10 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
             ],
             if (state.identifyTenants.length <= 1) ...<Widget>[
               SizedBox(height: theme.spacing.lg),
-              AppButton.primary(
+              AuthPrimaryButton(
                 label: l10n.authForgotPasswordSubmitLabel,
-                leadingIcon: Icons.mail_outline,
+                leadingIcon: Icons.mail_outline_rounded,
                 isLoading: state.isSubmitting,
-                fullWidth: true,
                 onPressed: _submit,
               ),
             ],

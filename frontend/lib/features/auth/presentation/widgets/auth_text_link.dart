@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 
 class AuthTextLink extends StatelessWidget {
   const AuthTextLink({
@@ -15,12 +15,25 @@ class AuthTextLink extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
     return Align(
       alignment: alignment,
-      child: AppButton.tertiary(
-        label: label,
+      child: TextButton(
         onPressed: onPressed,
-        semanticLabel: label,
+        style: TextButton.styleFrom(
+          foregroundColor: colorScheme.primary,
+          padding: EdgeInsets.symmetric(
+            horizontal: theme.spacing.md,
+            vertical: theme.spacing.sm,
+          ),
+          textStyle: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+        child: Text(label),
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/auth_primary_button.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_text_link.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -77,10 +78,9 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
         title: l10n.authResetPasswordCompletedTitle,
         subtitle: l10n.authResetPasswordCompletedBody,
         maxWidth: 460,
-        child: AppButton.primary(
+        child: AuthPrimaryButton(
           label: l10n.authLoginActionLabel,
-          leadingIcon: Icons.login,
-          fullWidth: true,
+          leadingIcon: Icons.login_rounded,
           onPressed: () => context.go(AppRoutes.login.location()),
         ),
       );
@@ -195,11 +195,10 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
               onFieldSubmitted: (_) => _submit(),
             ),
             SizedBox(height: theme.spacing.lg),
-            AppButton.primary(
+            AuthPrimaryButton(
               label: l10n.authResetPasswordActionLabel,
               leadingIcon: Icons.lock_reset_outlined,
               isLoading: state.isSubmitting,
-              fullWidth: true,
               onPressed: _submit,
             ),
             if (!_usesLinkToken)

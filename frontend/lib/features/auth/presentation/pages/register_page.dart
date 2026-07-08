@@ -6,6 +6,7 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/auth_primary_button.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_text_link.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -219,11 +220,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
               enabled: !state.isSubmitting,
             ),
             SizedBox(height: theme.spacing.lg),
-            AppButton.primary(
+            AuthPrimaryButton(
               label: l10n.authRegisterActionLabel,
-              leadingIcon: Icons.person_add_alt_1_outlined,
+              leadingIcon: Icons.person_add_alt_1_rounded,
               isLoading: state.isSubmitting,
-              fullWidth: true,
               onPressed: _submit,
             ),
             AuthTextLink(

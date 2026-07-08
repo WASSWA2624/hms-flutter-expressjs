@@ -9,7 +9,7 @@ class AuthPageFrame extends StatelessWidget {
     required this.child,
     this.subtitle,
     this.maxWidth = 420,
-    this.useCard = false,
+    this.useCard = true,
     super.key,
   });
 
@@ -22,8 +22,15 @@ class AuthPageFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final bool showCard = useCard && breakpoint.index >= AppBreakpoint.lg.index;
+
+    final EdgeInsets panelPadding = EdgeInsets.all(
+      switch (breakpoint) {
+        AppBreakpoint.xs || AppBreakpoint.sm => theme.spacing.lg,
+        _ => theme.spacing.xl,
+      },
+    );
 
     Widget content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -32,38 +39,53 @@ class AuthPageFrame extends StatelessWidget {
         Text(
           title,
           textAlign: TextAlign.center,
-          style: theme.textTheme.titleLarge?.copyWith(
-            color: theme.colorScheme.onSurface,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            color: colorScheme.onSurface,
             fontWeight: FontWeight.w700,
-            fontSize: 24,
+            fontSize: switch (breakpoint) {
+              AppBreakpoint.xs || AppBreakpoint.sm => 22,
+              _ => 24,
+            },
             height: 1.2,
+            letterSpacing: -0.3,
           ),
         ),
         if (subtitle != null) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
+          SizedBox(height: theme.spacing.sm),
           Text(
             subtitle!,
             textAlign: TextAlign.center,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+              color: colorScheme.onSurfaceVariant,
               fontSize: 14,
-              height: 1.4,
+              height: 1.5,
             ),
           ),
         ],
-        SizedBox(height: theme.spacing.lg),
+        SizedBox(height: theme.spacing.xl),
         child,
       ],
     );
 
-    if (showCard) {
-      content = Card(
-        elevation: 1,
-        margin: EdgeInsets.zero,
-        child: Padding(
-          padding: EdgeInsets.all(theme.spacing.xl),
-          child: content,
+    if (useCard) {
+      content = DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(
+            context.responsiveRadius(theme.radius.lg),
+          ),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.55),
+          ),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: colorScheme.shadow.withValues(alpha: 0.07),
+              blurRadius: 28,
+              offset: const Offset(0, 10),
+            ),
+          ],
         ),
+        child: Padding(padding: panelPadding, child: content),
       );
     }
 

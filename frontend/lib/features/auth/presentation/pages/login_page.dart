@@ -6,6 +6,7 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/auth_primary_button.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_text_link.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -46,7 +47,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     return AuthPageFrame(
       title: l10n.authLoginTitle,
       subtitle: l10n.authLoginBody,
-      useCard: true,
       child: AutofillGroup(
         child: Form(
           key: _formKey,
@@ -100,12 +100,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 enabled: !state.isSubmitting,
                 onFieldSubmitted: (_) => _submit(),
               ),
-              SizedBox(height: theme.spacing.lg),
-              AppButton.primary(
+              SizedBox(height: theme.spacing.xl),
+              AuthPrimaryButton(
                 label: l10n.authLoginActionLabel,
-                leadingIcon: Icons.login,
+                leadingIcon: Icons.login_rounded,
                 isLoading: state.isSubmitting,
-                fullWidth: true,
                 onPressed: _submit,
               ),
               AuthTextLink(
@@ -113,6 +112,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 onPressed: state.isSubmitting
                     ? null
                     : () => context.go(AppRoutes.forgotPassword.location()),
+              ),
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: theme.spacing.md),
+                child: Divider(
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.45,
+                  ),
+                  height: 1,
+                ),
               ),
               AuthTextLink(
                 label: l10n.authCreateAccountActionLabel,

@@ -7,6 +7,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/auth_primary_button.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_text_link.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -97,10 +98,9 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
             ],
             if (_isVerified) ...<Widget>[
               if (!_awaitingPlatformApproval)
-                AppButton.primary(
+                AuthPrimaryButton(
                   label: l10n.authLoginActionLabel,
-                  leadingIcon: Icons.login,
-                  fullWidth: true,
+                  leadingIcon: Icons.login_rounded,
                   onPressed: () => context.go(AppRoutes.login.location()),
                 ),
             ] else ...<Widget>[
@@ -129,11 +129,10 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
                 onFieldSubmitted: (_) => _verifyCode(),
               ),
               SizedBox(height: theme.spacing.lg),
-              AppButton.primary(
+              AuthPrimaryButton(
                 label: l10n.authVerifyEmailActionLabel,
                 leadingIcon: Icons.mark_email_read_outlined,
                 isLoading: _isSubmitting,
-                fullWidth: true,
                 onPressed: _isResending ? null : _verifyCode,
               ),
               SizedBox(height: theme.spacing.sm),
