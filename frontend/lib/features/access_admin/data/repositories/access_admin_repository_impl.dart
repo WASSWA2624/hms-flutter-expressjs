@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/network/api_endpoints.dart';
@@ -154,8 +155,8 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
   }
 
   @override
-  Future<Result<void>> createRole(AccessAdminRoleDraft draft) {
-    return _apiClient.post<void>(
+  Future<Result<void>> createRole(AccessAdminRoleDraft draft) async {
+    final Result<Object?> createResult = await _apiClient.post<Object?>(
       ApiEndpoints.collection(HmsApiResource.roles),
       data: _withoutEmpty(<String, Object?>{
         'tenant_id': draft.tenantId,
@@ -163,7 +164,39 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         'name': draft.name,
         'description': draft.description,
       }),
-      decoder: (_) {},
+      decoder: (Object? responseData) {
+        if (responseData is Map<String, dynamic>) {
+          final Object? payload = responseData['data'] ?? responseData;
+          if (payload is Map<String, dynamic>) {
+            return payload;
+          }
+        }
+        return responseData;
+      },
+    );
+
+    return createResult.when(
+      success: (Object? payload) async {
+        final String? roleId = _extractRecordId(payload);
+        if (roleId == null || roleId.isEmpty) {
+          return const Result<void>.failure(AppFailure.unexpected());
+        }
+
+        for (final String permissionId in draft.permissionIds) {
+          final Result<void> assignResult = await assignRolePermission(
+            AccessAdminRolePermissionDraft(
+              roleId: roleId,
+              permissionId: permissionId,
+            ),
+          );
+          if (assignResult case ResultFailure<void>(:final failure)) {
+            return Result<void>.failure(failure);
+          }
+        }
+
+        return const Result<void>.success(null);
+      },
+      failure: (AppFailure failure) => Result<void>.failure(failure),
     );
   }
 
@@ -280,5 +313,17 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
       normalized[key] = value;
     });
     return normalized;
+  }
+
+  String? _extractRecordId(Object? payload) {
+    if (payload is! Map<String, dynamic>) {
+      return null;
+    }
+    final Object? id = payload['id'] ?? payload['human_friendly_id'];
+    if (id == null) {
+      return null;
+    }
+    final String normalized = id.toString().trim();
+    return normalized.isEmpty ? null : normalized;
   }
 }

@@ -1,115 +1,104 @@
-# Platform Admin Dashboard — Quick Actions & Management Dialogs
+# Home Dashboard Quick Actions — Dialog UX & Role Permissions
 
 ## Context
 
-The super-admin home dashboard layout is acceptable. The remaining work is to **wire up and synchronize** platform-administration actions so Quick Actions and the Follow-ups panel open the correct modal workflows, support full CRUD, and work end-to-end against the backend.
+Home dashboard quick actions (`create_tenant`, `create_facility`, `create_role`) open modal dialogs. The flows work, but dialog layout, shared components, validation, and role creation are incomplete. Align all three with existing `AppDialog` / shared patterns.
 
-**Current issues (see screenshots):**
-- **Quick Actions** shows three overlapping actions (`Select tenant/facility`, `Create tenant`, `Create facility`) that route to the same setup page instead of focused create dialogs.
-- **Follow-ups** (empty state: “No follow-ups required”) duplicates Quick Action buttons instead of offering management shortcuts.
-- **Tenant Profile** and **Facility Profile** saves fail with **“Enter a valid Id.”** when saving existing records (e.g. DemoCare General Hospital) — likely a UUID vs friendly-ID mismatch on update routes, or a missing/invalid `id` on PUT.
-- **Branches** management UI exists but is empty; nested actions (add branch, etc.) must work from management dialogs.
-
-## Goal
-
-Refactor the **platform admin** (`AppRole.superAdmin`) dashboard so:
-
-1. **Quick Actions** = four **create** shortcuts (modal dialogs).
-2. **Follow-ups panel empty state** = four **manage** shortcuts (list dialogs with tables, filters, and CRUD).
-3. All flows are **backend-synchronized**, **permission-gated**, and **reusable** by tenant admin / facility admin where applicable.
+**Entry points**
+- `homeInvokeAction` → `showTenantFacilityTenantFormDialog`, `showTenantFacilityFacilityFormDialog`, `showAccessAdminCreateRoleDialog`
+- Forms live in `tenant_facility_setup_page.dart`; role dialog in `access_admin_dialogs.dart`
 
 ---
 
-## Quick Actions (create shortcuts)
+## 1. Create Tenant dialog
 
-Replace current super-admin quick actions with these four. Each opens a **modal dialog** (not full-page navigation). Reuse existing dialog patterns where possible (`showAppDialog`, `_SetupDetailDialog`, `showHrStaffOnboardingDialog`, etc.).
+**Current issues (see screenshot):** Active toggle layout is inconsistent; Save sits inside scrollable form content.
 
-| Action | Behavior |
-|--------|----------|
-| **Create tenant** | Modal form: tenant name, optional slug, contact fields as needed. On create: account is **auto-verified** (no email verification step). Platform-admin–created tenants skip self-registration verification. |
-| **Create facility** | Modal form: facility details (name, type, phone, address, logo, active). **Require tenant selection** first (dropdown/search of existing tenants). Creating a facility is separate from creating a tenant. |
-| **Create role** | Modal to define a new role / access level (name, description, permissions). Reuse or extend HR access role dialogs (`showHrCreateRoleDialog` pattern). |
-| **Create user** | Modal to onboard a user and **assign role(s)**. Reuse or extend staff/user onboarding (`showHrStaffOnboardingDialog` pattern). Support attaching roles during creation. |
-
-**Remove** `Select tenant/facility` from Quick Actions — context selection belongs in management dialogs or the app shell, not as a primary create shortcut.
-
-Update `homeDashboardProfiles` → `AppRole.superAdmin.quickActionIds` and `homeActionLibrary` / `homeInvokeAction` handlers accordingly.
+**Requirements**
+- Use shared `AppSwitchField` for the Active field (do not use a raw `Switch` / `SwitchListTile`).
+- Move all action buttons (**Save tenant**, **Cancel**) into `AppDialog.actions` with `pinActionsToBottom: true` and `scrollable: true` so the footer stays fixed while the form scrolls.
+- Save button: `AppButton.primary` with `Icons.save_outlined`.
+- Cancel button: `AppButton.secondary` with a leading icon.
+- Refactor `_SetupDetailDialog` / `_TenantProfileForm` (and facility form below) to support footer actions—prefer `showAppWorkspaceMutationDialog` or an equivalent shared pattern already used in `tenant_facility_management_dialogs.dart`.
 
 ---
 
-## Follow-ups panel → Management shortcuts
+## 2. Create Facility dialog
 
-When the follow-ups queue is empty, show **management shortcuts** (not duplicate create buttons):
+**Current issues (see screenshots):** Save is inside the form body; email is optional; logo upload is feature-local.
 
-| Shortcut | Opens |
-|----------|-------|
-| **Manage tenants** | Dialog with searchable/filterable **tenant table**. Row actions: view, edit, activate/deactivate, delete (where permitted). Footer: Close, primary actions as needed. Support **nested dialogs** for edit/create/detail (e.g. edit tenant profile, add branch under a tenant). |
-| **Manage facilities** | Dialog with facility table (filter by tenant, status, type). Row actions: view, edit, activate/deactivate, delete. Nested dialogs for facility profile, branches, departments, etc. |
-| **Manage roles & access** | Dialog with roles/permissions tables. CRUD for roles and permission assignment. Reuse `showHrAccessWorkspaceDialog` / access-admin patterns where possible. |
-| **Manage users** | Dialog with users table (filters: tenant, facility, role, status). CRUD + role assignment. Nested dialogs for user detail and role attachment. |
+**Requirements**
 
-**Dialog requirements:**
-- Search bar + column filters (match existing `AppSearchBar` / `AppListTable` patterns).
-- Paginated table with footer actions (Close, Save, Add, etc.).
-- **Nested dialog support** — an action inside a management dialog opens a child dialog without losing parent context.
-- Responsive on mobile, tablet, and desktop.
+### Dialog footer
+- Same footer pattern as tenant: **Cancel** + **Save facility** pinned to `AppDialog` footer (`pinActionsToBottom: true`).
+- Save uses `Icons.save_outlined`; footer must not scroll with form content.
 
-Update `homeDashboardProfiles` → `AppRole.superAdmin.emptyActionIds` (and related mapper wiring in `home_dashboard_mapper.dart`).
+### Validation
+- **Email** is **required** (`AppEmailField` with `isRequired: true` and validation). Facilities need a contact email for communication and account workflows.
 
----
+### Facility type
+- Keep existing `AppSelectField<FacilitySetupType>` options: Hospital, Clinic, Lab, Pharmacy, Other (with icons).
 
-## Bug fixes (blocking)
-
-### 1. “Enter a valid Id.” on tenant/facility save
-
-Fix save failures on **Tenant Profile** and **Facility Profile** forms:
-- Investigate `tenant_facility_setup_page.dart` → `saveTenant` / `saveFacility` and `tenant_facility_repository_impl.dart`.
-- Backend tenant/facility **param schemas** use `uuidSchema` (`backend/src/modules/tenant/schemas`, `facility/schemas`) while the app may use **friendly IDs** (e.g. `TEN0001`). Align on `uuidOrFriendlyIdentifierSchema` for route params, or ensure the frontend always sends the correct identifier format.
-- Ensure **create** uses POST without `id`; **update** uses PUT only when a valid `id` is present.
-- Map API validation errors to user-friendly field labels (not generic “Id”).
-
-### 2. Clear stale errors
-
-Dismiss validation/error messages when dialogs open, close, or when the user edits fields.
+### Logo upload — shared reusable component
+- Extract `FacilityLogoUploadField` into `shared/components` as a generic image upload field (e.g. `AppImageUploadField`).
+- Support **single-file** upload now; API/design should allow **multi-file** later without breaking callers.
+- Preserve current behavior: square preview, JPG/PNG/WebP, 5 MB limit, choose/clear actions, pending-bytes preview.
+- Replace facility-specific usage with the shared component; keep `pickFacilityLogoFile` logic reusable.
 
 ---
 
-## Backend ↔ frontend synchronization
+## 3. Create Role dialog
 
-- All create/update/delete operations must call existing REST endpoints (`/tenants`, `/facilities`, `/branches`, access-admin / HR user-role APIs).
-- After successful mutations, refresh dashboard metrics (tenants, facilities, subscriptions, entitlements) and any open management dialog lists.
-- Respect `AppAccessPolicy` / `AppPermission` gates (`systemAdmin`, `tenantAdmin`, `facilityAdmin`).
+**Current issues (see screenshot):** Name + description only; Cancel/Save lack icons; no permission assignment.
 
----
+**Requirements**
 
-## Reusability & roles
+### Reusable dialog
+- Build a shared **Create/Edit Role** dialog (e.g. `showRoleMutationDialog`) usable from:
+  - Home quick action (`create_role`)
+  - Access Admin workspace
+  - Any future HR/access flows
+- Accept mode (`create` | `edit`), optional existing role, tenant/facility context, and callbacks.
 
-- Implement dialogs and actions as **shared, reusable widgets** under `tenant_facility`, `access_admin`, and/or `shared/` — not super-admin-only.
-- Gate visibility via `HomeActionDefinition` permissions and `allowedRoles` so tenant admin and facility admin can reuse the same components where their permissions overlap.
-- Platform admin sees all four quick actions and all four management shortcuts; other roles see subsets per existing permission model.
+### Form fields
+- **Role name** (required)
+- **Description** (optional)
+- **Permissions** (required: at least one permission selected)
 
----
+### Permission picker
+- Source permissions from the **predefined catalog** (`AppPermissions` + `permissionCatalogLabel` / access-admin lookups)—do **not** hardcode permission lists in the UI.
+- Fetch available permissions from `AccessAdminWorkspaceState.data.lookups.permissions` (or equivalent provider).
+- Render as **grouped checkbox lists** by module/domain (e.g. Clinical, Lab, Radiology, HR, Operations, Admin).
+- Support select one, select many, and bulk deselect per group.
+- On save, attach selected permissions to the role via existing role-permission APIs (`AccessAdminRolePermissionDraft` / `assignRolePermission`).
 
-## Key files
+### Data model & API
+- Extend `AccessAdminRoleDraft` with `permissionIds` (mirror `AccessAdminUserDraft`).
+- Update `createRole` repository/controller to create the role, then assign permissions—or send `permission_ids` if the API supports it.
 
-| Area | Files |
-|------|-------|
-| Dashboard config | `frontend/lib/features/home/domain/entities/home_dashboard_profiles.dart` |
-| Action handlers | `frontend/lib/features/home/presentation/widgets/home_dashboard_actions.dart` |
-| Dashboard mapping | `frontend/lib/features/home/presentation/widgets/home_dashboard_mapper.dart` |
-| Tenant/facility UI | `frontend/lib/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart` |
-| Access / roles / users | `frontend/lib/features/hr/presentation/widgets/hr_access_dialogs.dart`, `frontend/lib/features/access_admin/` |
-| Backend schemas | `backend/src/modules/tenant/schemas/`, `backend/src/modules/facility/schemas/` |
+### Dialog footer
+- **Cancel** (`AppButton.secondary`, icon) and **Save** (`AppButton.primary`, `Icons.save_outlined`) in `AppDialog.actions` with `pinActionsToBottom: true`.
 
 ---
 
 ## Acceptance criteria
 
-- [ ] Super-admin Quick Actions shows exactly: **Create tenant**, **Create facility**, **Create role**, **Create user** — each opens the correct modal.
-- [ ] Empty Follow-ups panel shows: **Manage tenants**, **Manage facilities**, **Manage roles & access**, **Manage users** — each opens a filterable table dialog with CRUD.
-- [ ] Nested dialogs work (e.g. Manage tenants → edit tenant → add branch).
-- [ ] Tenant and facility profile saves succeed for both new and existing records (no “Enter a valid Id.”).
-- [ ] Branches can be added and listed from facility/tenant management flows.
-- [ ] Dashboard metric cards refresh after mutations.
-- [ ] Components are permission-gated and reusable by tenant/facility admins where applicable.
-- [ ] UI is responsive on mobile, tablet, and desktop.
+| Area | Done when |
+|------|-----------|
+| Tenant | Active toggle uses `AppSwitchField`; Save/Cancel in fixed footer |
+| Facility | Email required; Save/Cancel in fixed footer; logo uses shared upload component |
+| Role | Permissions grouped & selectable; Save/Cancel have icons; dialog reusable; permissions persisted on create |
+| All | Responsive on mobile, tablet, desktop; matches existing `AppDialog` / `AppButton` styling |
+
+---
+
+## Files to touch (indicative)
+
+- `frontend/lib/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart`
+- `frontend/lib/features/tenant_facility/presentation/widgets/facility_logo_upload_field.dart` → migrate to shared
+- `frontend/lib/shared/components/` (new image upload field; export via `components.dart`)
+- `frontend/lib/features/access_admin/presentation/widgets/access_admin_dialogs.dart`
+- `frontend/lib/features/access_admin/domain/entities/access_admin_entities.dart`
+- `frontend/lib/features/access_admin/data/repositories/access_admin_repository_impl.dart`
+- `frontend/lib/features/home/presentation/widgets/home_dashboard_actions.dart` (wire reusable role dialog)
+- `frontend/lib/l10n/app_en.arb` (labels for permission groups if needed)

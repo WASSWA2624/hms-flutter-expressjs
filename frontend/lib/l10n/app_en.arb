@@ -709,6 +709,18 @@
   "@commonCloseActionLabel": {
     "description": "Label for actions that close the current dialog."
   },
+  "appImageCropTitle": "Crop image",
+  "@appImageCropTitle": {
+    "description": "Title for the image crop dialog."
+  },
+  "appImageCropBody": "Drag and zoom to frame the image, then apply the crop.",
+  "@appImageCropBody": {
+    "description": "Helper text shown in the image crop dialog."
+  },
+  "appImageCropApplyAction": "Apply crop",
+  "@appImageCropApplyAction": {
+    "description": "Primary action that confirms the image crop."
+  },
   "appDateInvalidMessage": "Enter a valid date.",
   "@appDateInvalidMessage": {
     "description": "Validation message for manually typed date fields."
@@ -6243,7 +6255,7 @@
   "@tenantFacilityLogoLabel": {
     "description": "Facility logo upload field label."
   },
-  "tenantFacilityLogoHelper": "Upload a square image (JPG, PNG, or WebP, up to 5 MB).",
+  "tenantFacilityLogoHelper": "Upload a square image (JPG, PNG, or WebP, up to 5 MB). You can crop after choosing.",
   "@tenantFacilityLogoHelper": {
     "description": "Facility logo upload helper text."
   },
@@ -22833,6 +22845,18 @@
   "accessAdminCreateRoleAction": "Create role",
   "@accessAdminCreateRoleAction": {
     "description": "Access admin create role action."
+  },
+  "accessAdminEditRoleAction": "Edit role",
+  "@accessAdminEditRoleAction": {
+    "description": "Access admin edit role action."
+  },
+  "accessAdminRolePermissionsLabel": "Permissions",
+  "@accessAdminRolePermissionsLabel": {
+    "description": "Access admin role permissions field label."
+  },
+  "accessAdminRolePermissionsRequired": "Select at least one permission for this role.",
+  "@accessAdminRolePermissionsRequired": {
+    "description": "Validation message when no permissions are selected for a role."
   },
   "accessAdminEmailLabel": "Email",
   "@accessAdminEmailLabel": {

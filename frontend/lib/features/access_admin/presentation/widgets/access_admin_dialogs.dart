@@ -8,6 +8,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/pages/access_admin_workspace_page.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/role_mutation_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
@@ -274,72 +275,25 @@ Future<void> _showCreateRoleDialog(
   WidgetRef ref,
   AccessAdminWorkspaceState state,
 ) async {
-  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController descriptionController = TextEditingController();
-
-  await showAppDialog<void>(
-    context: context,
-    builder: (BuildContext dialogContext) => AppDialog(
-      title: Text(context.l10n.accessAdminCreateRoleAction),
-      icon: const Icon(Icons.badge_outlined),
-      content: Form(
-        key: formKey,
-        child: Column(
-          children: <Widget>[
-            AppTextField(
-              controller: nameController,
-              labelText: context.l10n.accessAdminRoleNameLabel,
-              validator: (String? value) => (value ?? '').trim().isEmpty
-                  ? context.l10n.validationRequired
-                  : null,
-            ),
-            SizedBox(height: Theme.of(context).spacing.md),
-            AppTextField(
-              controller: descriptionController,
-              labelText: context.l10n.accessAdminRoleDescriptionLabel,
-              maxLines: 2,
-            ),
-          ],
-        ),
+  final String? tenantId =
+      state.query.tenantId ?? state.data.lookups.tenants.firstOrNull?.id;
+  if (tenantId == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.l10n.accessAdminTenantContextRequiredBody),
       ),
-      actions: <Widget>[
-        AppButton.secondary(
-          label: context.l10n.commonCancelActionLabel,
-          onPressed: () => Navigator.of(dialogContext).pop(),
-        ),
-        AppButton.primary(
-          label: context.l10n.commonSaveActionLabel,
-          onPressed: () async {
-            if (formKey.currentState?.validate() != true) return;
-            final String? tenantId =
-                state.query.tenantId ??
-                state.data.lookups.tenants.firstOrNull?.id;
-            if (tenantId == null) return;
-            final AppFailure? failure = await ref
-                .read(accessAdminWorkspaceControllerProvider.notifier)
-                .createRole(
-                  AccessAdminRoleDraft(
-                    tenantId: tenantId,
-                    facilityId: state.query.facilityId,
-                    name: nameController.text.trim().toUpperCase(),
-                    description: descriptionController.text.trim(),
-                  ),
-                );
-            if (!dialogContext.mounted) return;
-            if (failure == null) {
-              Navigator.of(dialogContext).pop();
-            } else {
-              ScaffoldMessenger.of(dialogContext).showSnackBar(
-                SnackBar(content: Text(context.l10n.failureMessage(failure))),
-              );
-            }
-          },
-        ),
-      ],
-    ),
-  );
+    );
+    return;
+  }
 
-  nameController.dispose();
-  descriptionController.dispose();
+  await showRoleMutationDialog(
+    context: context,
+    mode: RoleMutationMode.create,
+    permissionLookups: state.data.lookups.permissions,
+    tenantId: tenantId,
+    facilityId: state.query.facilityId,
+    onSubmit: (AccessAdminRoleDraft draft) => ref
+        .read(accessAdminWorkspaceControllerProvider.notifier)
+        .createRole(draft),
+  );
 }

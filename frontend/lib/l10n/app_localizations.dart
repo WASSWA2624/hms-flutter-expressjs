@@ -1114,6 +1114,24 @@ abstract class AppLocalizations {
   /// **'Close'**
   String get commonCloseActionLabel;
 
+  /// Title for the image crop dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Crop image'**
+  String get appImageCropTitle;
+
+  /// Helper text shown in the image crop dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag and zoom to frame the image, then apply the crop.'**
+  String get appImageCropBody;
+
+  /// Primary action that confirms the image crop.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply crop'**
+  String get appImageCropApplyAction;
+
   /// Validation message for manually typed date fields.
   ///
   /// In en, this message translates to:
@@ -9073,7 +9091,7 @@ abstract class AppLocalizations {
   /// Facility logo upload helper text.
   ///
   /// In en, this message translates to:
-  /// **'Upload a square image (JPG, PNG, or WebP, up to 5 MB).'**
+  /// **'Upload a square image (JPG, PNG, or WebP, up to 5 MB). You can crop after choosing.'**
   String get tenantFacilityLogoHelper;
 
   /// Facility logo file picker action label.
@@ -33062,6 +33080,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create role'**
   String get accessAdminCreateRoleAction;
+
+  /// Access admin edit role action.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit role'**
+  String get accessAdminEditRoleAction;
+
+  /// Access admin role permissions field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get accessAdminRolePermissionsLabel;
+
+  /// Validation message when no permissions are selected for a role.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one permission for this role.'**
+  String get accessAdminRolePermissionsRequired;
 
   /// Access admin email field label.
   ///

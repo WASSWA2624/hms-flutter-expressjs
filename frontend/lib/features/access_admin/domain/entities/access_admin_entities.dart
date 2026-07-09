@@ -406,12 +406,14 @@ final class AccessAdminRoleDraft {
     required this.name,
     this.facilityId,
     this.description,
+    this.permissionIds = const <String>[],
   });
 
   final String tenantId;
   final String? facilityId;
   final String name;
   final String? description;
+  final List<String> permissionIds;
 }
 
 @immutable

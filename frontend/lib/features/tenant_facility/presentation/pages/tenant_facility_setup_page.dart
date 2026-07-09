@@ -15,7 +15,6 @@ import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_fac
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_catalog_config_panel.dart';
-import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_logo_upload_field.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_wizard.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -291,6 +290,128 @@ class _SetupDetailDialog extends ConsumerWidget {
   }
 }
 
+typedef _ProfileFormSubmitRegistrar = void Function(
+  Future<bool> Function() submit,
+);
+
+typedef _SetupProfileFormBuilder =
+    Widget Function(
+      BuildContext context,
+      FacilitySetupSnapshot snapshot,
+      bool canManageTenant,
+      bool canManageFacility,
+      bool canEditHrStructure,
+      _ProfileFormSubmitRegistrar registerSubmitHandler,
+    );
+
+class _SetupProfileDialog extends ConsumerStatefulWidget {
+  const _SetupProfileDialog({
+    required this.title,
+    required this.icon,
+    required this.saveLabel,
+    required this.formBuilder,
+  });
+
+  final String title;
+  final IconData icon;
+  final String saveLabel;
+  final _SetupProfileFormBuilder formBuilder;
+
+  @override
+  ConsumerState<_SetupProfileDialog> createState() =>
+      _SetupProfileDialogState();
+}
+
+class _SetupProfileDialogState extends ConsumerState<_SetupProfileDialog> {
+  Future<bool> Function()? _submitHandler;
+
+  void _registerSubmitHandler(Future<bool> Function() submit) {
+    _submitHandler = submit;
+  }
+
+  Future<void> _handleSave() async {
+    final Future<bool> Function()? submit = _submitHandler;
+    if (submit == null) {
+      return;
+    }
+    final bool saved = await submit();
+    if (!mounted) {
+      return;
+    }
+    if (saved) {
+      _showSaved(context);
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final accessPolicy = ref.watch(appAccessPolicyProvider);
+    final TenantFacilitySetupSubmissionState submission = ref.watch(
+      tenantFacilitySetupSubmissionProvider,
+    );
+    final setup = ref.watch(tenantFacilitySetupControllerProvider);
+
+    return AppDialog(
+      title: Text(widget.title),
+      icon: Icon(widget.icon),
+      scrollable: true,
+      pinActionsToBottom: true,
+      maxWidth: 880,
+      closeEnabled: !submission.isSubmitting,
+      content: setup.when(
+        data: (result) => result.when(
+          success: (FacilitySetupSnapshot snapshot) =>
+              widget.formBuilder(
+                context,
+                snapshot,
+                accessPolicy.canManageTenant(),
+                accessPolicy.canManageFacility(),
+                accessPolicy.canEditFacilitySetupStructure(),
+                _registerSubmitHandler,
+              ),
+          failure: (AppFailure failure) => AppFailureStateView(
+            failure: failure,
+            onRetry: () {
+              ref
+                  .read(tenantFacilitySetupControllerProvider.notifier)
+                  .refresh();
+            },
+          ),
+        ),
+        error: (Object error, StackTrace stackTrace) => AppFailureStateView(
+          failure: _setupFailure(error),
+          onRetry: () {
+            ref.read(tenantFacilitySetupControllerProvider.notifier).refresh();
+          },
+        ),
+        loading: () => AppStateView(
+          variant: AppStateViewVariant.loading,
+          title: l10n.tenantFacilitySetupLoadingTitle,
+          body: l10n.tenantFacilitySetupLoadingBody,
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: Icons.close,
+          enabled: !submission.isSubmitting,
+          onPressed: submission.isSubmitting
+              ? null
+              : () => Navigator.of(context).pop(),
+        ),
+        AppButton.primary(
+          label: widget.saveLabel,
+          leadingIcon: Icons.save_outlined,
+          isLoading: submission.isSubmitting,
+          onPressed: submission.isSubmitting ? null : _handleSave,
+        ),
+      ],
+    );
+  }
+}
+
 Future<void> _openTenantProfileModal(
   BuildContext context, {
   TenantProfile? tenant,
@@ -306,21 +427,25 @@ Future<void> _openTenantProfileModal(
         ref
             .read(tenantFacilitySetupSubmissionProvider.notifier)
             .clearFailure();
-        return _SetupDetailDialog(
+        return _SetupProfileDialog(
           title: l10n.tenantFacilityTenantSectionTitle,
           icon: Icons.apartment_outlined,
-          builder:
+          saveLabel: l10n.tenantFacilitySaveTenantAction,
+          formBuilder:
               (
                 BuildContext context,
                 FacilitySetupSnapshot snapshot,
                 bool canManageTenant,
                 bool canManageFacility,
                 bool canEditHrStructure,
+                _ProfileFormSubmitRegistrar registerSubmitHandler,
               ) => _TenantProfileForm(
                 tenant: resolvedTenant ?? snapshot.tenant,
                 canSubmit: canManageTenant,
                 framed: false,
                 isCreate: forceCreate || resolvedTenant == null,
+                hideSubmitButton: true,
+                registerSubmitHandler: registerSubmitHandler,
               ),
         );
       },
@@ -343,16 +468,18 @@ Future<void> _openFacilityProfileModal(
         ref
             .read(tenantFacilitySetupSubmissionProvider.notifier)
             .clearFailure();
-        return _SetupDetailDialog(
+        return _SetupProfileDialog(
           title: l10n.tenantFacilityFacilitySectionTitle,
           icon: Icons.local_hospital_outlined,
-          builder:
+          saveLabel: l10n.tenantFacilitySaveFacilityAction,
+          formBuilder:
               (
                 BuildContext context,
                 FacilitySetupSnapshot snapshot,
                 bool canManageTenant,
                 bool canManageFacility,
                 bool canEditHrStructure,
+                _ProfileFormSubmitRegistrar registerSubmitHandler,
               ) => _FacilityProfileForm(
                 snapshot: snapshot,
                 canSubmit: canManageFacility,
@@ -360,6 +487,8 @@ Future<void> _openFacilityProfileModal(
                 tenantId: tenantId,
                 facility: facility,
                 requireTenantPicker: requireTenantPicker,
+                hideSubmitButton: true,
+                registerSubmitHandler: registerSubmitHandler,
               ),
         );
       },
@@ -772,12 +901,16 @@ class _TenantProfileForm extends ConsumerStatefulWidget {
     required this.canSubmit,
     this.framed = true,
     this.isCreate = false,
+    this.hideSubmitButton = false,
+    this.registerSubmitHandler,
   });
 
   final TenantProfile? tenant;
   final bool canSubmit;
   final bool framed;
   final bool isCreate;
+  final bool hideSubmitButton;
+  final _ProfileFormSubmitRegistrar? registerSubmitHandler;
 
   @override
   ConsumerState<_TenantProfileForm> createState() => _TenantProfileFormState();
@@ -795,6 +928,9 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
     _nameController = TextEditingController(text: widget.tenant?.name);
     _slugController = TextEditingController(text: widget.tenant?.slug);
     _isActive = widget.tenant?.isActive ?? true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.registerSubmitHandler?.call(_submit);
+    });
   }
 
   @override
@@ -847,12 +983,18 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
               });
             },
           ),
-          _SubmitButton(
-            enabled: widget.canSubmit,
-            isLoading: submission.isSubmitting,
-            label: l10n.tenantFacilitySaveTenantAction,
-            onPressed: _submit,
-          ),
+          if (!widget.hideSubmitButton)
+            _SubmitButton(
+              enabled: widget.canSubmit,
+              isLoading: submission.isSubmitting,
+              label: l10n.tenantFacilitySaveTenantAction,
+              onPressed: _submit,
+            )
+          else
+            _SubmissionFeedback(
+              enabled: widget.canSubmit,
+              failure: submission.failure,
+            ),
         ],
       ),
     );
@@ -880,12 +1022,12 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
     );
   }
 
-  Future<void> _submit() async {
+  Future<bool> _submit() async {
     if (_formKey.currentState?.validate() != true) {
-      return;
+      return false;
     }
 
-    await ref
+    return ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveTenant(
           id: widget.isCreate ? null : widget.tenant?.id,
@@ -904,6 +1046,8 @@ class _FacilityProfileForm extends ConsumerStatefulWidget {
     this.tenantId,
     this.facility,
     this.requireTenantPicker = false,
+    this.hideSubmitButton = false,
+    this.registerSubmitHandler,
   });
 
   final FacilitySetupSnapshot snapshot;
@@ -912,6 +1056,8 @@ class _FacilityProfileForm extends ConsumerStatefulWidget {
   final String? tenantId;
   final FacilityProfile? facility;
   final bool requireTenantPicker;
+  final bool hideSubmitButton;
+  final _ProfileFormSubmitRegistrar? registerSubmitHandler;
 
   @override
   ConsumerState<_FacilityProfileForm> createState() =>
@@ -933,6 +1079,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   List<int>? _logoBytes;
   String? _logoMimeType;
   bool _logoCleared = false;
+  AppImageUploadPendingItem? _pendingLogoItem;
   String? _selectedTenantId;
   List<TenantProfile> _tenantOptions = const <TenantProfile>[];
   bool _loadingTenants = false;
@@ -971,6 +1118,9 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     if (widget.requireTenantPicker) {
       unawaited(_loadTenantOptions());
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.registerSubmitHandler?.call(_submit);
+    });
   }
 
   Future<void> _loadTenantOptions() async {
@@ -1007,6 +1157,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       _logoBytes = null;
       _logoMimeType = null;
       _logoCleared = false;
+      _pendingLogoItem = null;
       _phoneController.text = widget.snapshot.contactAddress.phone ?? '';
       _emailController.text = widget.snapshot.contactAddress.email ?? '';
       _addressLineController.text =
@@ -1030,14 +1181,17 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   }
 
   Future<void> _pickLogo() async {
-    final FacilityLogoPickResult? picked = await pickFacilityLogoFile(
+    final AppImageUploadPendingItem? picked = await pickAppImageFile(
       context.l10n,
+      context: context,
+      typeGroupLabel: 'facility-logo',
     );
     if (picked == null || !mounted) {
       return;
     }
 
     setState(() {
+      _pendingLogoItem = picked;
       _logoFileName = picked.fileName;
       _logoBytes = picked.bytes;
       _logoMimeType = picked.mimeType;
@@ -1047,12 +1201,20 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
 
   void _clearLogo() {
     setState(() {
+      _pendingLogoItem = null;
       _logoFileName = null;
       _logoBytes = null;
       _logoMimeType = null;
       _existingLogoUrl = null;
       _logoCleared = true;
     });
+  }
+
+  List<AppImageUploadPendingItem> get _pendingLogoItems {
+    if (_pendingLogoItem == null) {
+      return const <AppImageUploadPendingItem>[];
+    }
+    return <AppImageUploadPendingItem>[_pendingLogoItem!];
   }
 
   @override
@@ -1147,15 +1309,15 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
               }
             },
           ),
-          FacilityLogoUploadField(
+          AppImageUploadField(
             label: l10n.tenantFacilityLogoLabel,
             helperText: l10n.tenantFacilityLogoHelper,
             chooseLabel: l10n.tenantFacilityChooseLogoAction,
             removeLabel: l10n.tenantFacilityRemoveLogoAction,
             enabled: canEdit,
-            existingLogoUrl: _logoCleared ? null : _existingLogoUrl,
-            pendingFileName: _logoFileName,
-            pendingBytes: _logoBytes,
+            existingImageUrl: _logoCleared ? null : _existingLogoUrl,
+            pendingItems: _pendingLogoItems,
+            placeholderIcon: Icons.local_hospital_outlined,
             onChoose: _pickLogo,
             onClear: _clearLogo,
           ),
@@ -1176,6 +1338,8 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
             controller: _emailController,
             enabled: canEdit,
             labelText: l10n.profileEmailLabel,
+            isRequired: true,
+            requiredMessage: l10n.validationRequired,
             invalidEmailMessage: l10n.authEmailInvalidMessage,
           ),
           AppTextField(
@@ -1208,12 +1372,18 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
               });
             },
           ),
-          _SubmitButton(
-            enabled: widget.canSubmit,
-            isLoading: submission.isSubmitting,
-            label: l10n.tenantFacilitySaveFacilityAction,
-            onPressed: _submit,
-          ),
+          if (!widget.hideSubmitButton)
+            _SubmitButton(
+              enabled: widget.canSubmit,
+              isLoading: submission.isSubmitting,
+              label: l10n.tenantFacilitySaveFacilityAction,
+              onPressed: _submit,
+            )
+          else
+            _SubmissionFeedback(
+              enabled: widget.canSubmit,
+              failure: submission.failure,
+            ),
         ],
       ),
     );
@@ -1241,18 +1411,18 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     );
   }
 
-  Future<void> _submit() async {
+  Future<bool> _submit() async {
     if (_formKey.currentState?.validate() != true) {
-      return;
+      return false;
     }
 
     final String? tenantId =
         _selectedTenantId ?? widget.tenantId ?? widget.snapshot.tenant?.id;
     if (tenantId == null) {
-      return;
+      return false;
     }
 
-    await ref
+    return ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveFacility(
           id: widget.facility?.id ?? _activeFacility?.id,
@@ -3211,6 +3381,42 @@ class _SetupGrid extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _SubmissionFeedback extends StatelessWidget {
+  const _SubmissionFeedback({required this.enabled, this.failure});
+
+  final bool enabled;
+  final AppFailure? failure;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        if (!enabled) ...<Widget>[
+          Text(
+            l10n.tenantFacilityPermissionRequired,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+        if (failure != null) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            l10n.failureMessage(failure!),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.statusColors.error,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

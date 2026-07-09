@@ -547,6 +547,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonCloseActionLabel => 'Close';
 
   @override
+  String get appImageCropTitle => 'Crop image';
+
+  @override
+  String get appImageCropBody =>
+      'Drag and zoom to frame the image, then apply the crop.';
+
+  @override
+  String get appImageCropApplyAction => 'Apply crop';
+
+  @override
   String get appDateInvalidMessage => 'Enter a valid date.';
 
   @override
@@ -4847,7 +4857,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityLogoHelper =>
-      'Upload a square image (JPG, PNG, or WebP, up to 5 MB).';
+      'Upload a square image (JPG, PNG, or WebP, up to 5 MB). You can crop after choosing.';
 
   @override
   String get tenantFacilityChooseLogoAction => 'Choose image';
@@ -17755,6 +17765,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessAdminCreateRoleAction => 'Create role';
+
+  @override
+  String get accessAdminEditRoleAction => 'Edit role';
+
+  @override
+  String get accessAdminRolePermissionsLabel => 'Permissions';
+
+  @override
+  String get accessAdminRolePermissionsRequired =>
+      'Select at least one permission for this role.';
 
   @override
   String get accessAdminEmailLabel => 'Email';

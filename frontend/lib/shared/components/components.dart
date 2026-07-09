@@ -14,6 +14,8 @@ export 'app_field_label.dart';
 export 'app_file_upload_panel.dart';
 export 'app_form_information_banner.dart';
 export 'app_gender_field.dart';
+export 'app_image_crop_dialog.dart';
+export 'app_image_upload_field.dart';
 export 'app_info_sheet.dart';
 export 'app_info_tile.dart';
 export 'app_list_item_text.dart';
