@@ -17882,6 +17882,71 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminCreateUserAction => 'Create user';
 
   @override
+  String get accessAdminEditUserAction => 'Edit user';
+
+  @override
+  String get accessAdminDeleteUserAction => 'Delete user';
+
+  @override
+  String get accessAdminViewUserAction => 'View';
+
+  @override
+  String get accessAdminCreateUserIntro =>
+      'Create an account for a staff member. Select the tenant and facility first, then complete the profile, roles, and permissions.';
+
+  @override
+  String get accessAdminCreateUserScopeSectionDescription =>
+      'Select the tenant and facility this user belongs to. Roles and permissions load from that organization.';
+
+  @override
+  String get accessAdminCreateUserDetailsSectionTitle => 'User details';
+
+  @override
+  String get accessAdminCreateUserDetailsSectionDescription =>
+      'Provide contact details, position title, and account status.';
+
+  @override
+  String get accessAdminCreateUserRolesSectionDescription =>
+      'Assign one or more roles. Effective permissions include both role grants and direct assignments below.';
+
+  @override
+  String get accessAdminCreateUserPermissionsSectionDescription =>
+      'Grant additional permissions directly to this user, on top of any role assignments.';
+
+  @override
+  String get accessAdminCreateUserLoadingFacilities => 'Loading facilities…';
+
+  @override
+  String get accessAdminCreateUserSelectScopeTitle =>
+      'Select tenant and facility';
+
+  @override
+  String get accessAdminCreateUserSelectScopeMessage =>
+      'Choose a tenant and facility above to enable the rest of this form.';
+
+  @override
+  String get accessAdminCreateUserNoFacilitiesTitle =>
+      'No facilities available';
+
+  @override
+  String get accessAdminCreateUserNoFacilitiesMessage =>
+      'Create a facility for this tenant before adding users.';
+
+  @override
+  String get accessAdminCreateUserNoRolesTitle => 'No roles available';
+
+  @override
+  String get accessAdminCreateUserNoRolesMessage =>
+      'Create roles for this organization before assigning them to users.';
+
+  @override
+  String get accessAdminPasswordOptionalLabel => 'New password (optional)';
+
+  @override
+  String get accessAdminPasswordOptionalHint =>
+      'Leave blank to keep the current password.';
+
+  @override
   String get accessAdminCreateRoleAction => 'Create role';
 
   @override

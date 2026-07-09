@@ -292,6 +292,8 @@ final class AccessAdminItem {
     required this.title,
     this.subtitle,
     this.status,
+    this.tenantId,
+    this.facilityId,
     this.email,
     this.phone,
     this.positionTitle,
@@ -323,6 +325,8 @@ final class AccessAdminItem {
   final String title;
   final String? subtitle;
   final String? status;
+  final String? tenantId;
+  final String? facilityId;
   final String? email;
   final String? phone;
   final String? positionTitle;
@@ -382,9 +386,9 @@ final class AccessAdminUserDraft {
     required this.tenantId,
     required this.email,
     required this.positionTitle,
-    required this.password,
     this.facilityId,
     this.phone,
+    this.password,
     this.status = 'ACTIVE',
     this.permissionIds = const <String>[],
   });
@@ -394,9 +398,20 @@ final class AccessAdminUserDraft {
   final String email;
   final String? phone;
   final String positionTitle;
-  final String password;
+  final String? password;
   final String status;
   final List<String> permissionIds;
+}
+
+@immutable
+final class AccessAdminUserRoleAssignment {
+  const AccessAdminUserRoleAssignment({
+    required this.id,
+    this.roleId,
+  });
+
+  final String id;
+  final String? roleId;
 }
 
 @immutable

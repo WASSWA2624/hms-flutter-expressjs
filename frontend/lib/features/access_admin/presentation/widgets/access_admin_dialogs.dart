@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
@@ -10,9 +9,11 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
+import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/pages/access_admin_workspace_page.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/role_mutation_dialog.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/user_mutation_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -52,7 +53,7 @@ Future<void> showAccessAdminCreateUserDialog(
   );
   return refreshed.when(
     success: (AccessAdminWorkspaceState value) =>
-        _showCreateUserDialog(context, ref, value),
+        openAccessAdminCreateUserDialog(context, ref, value),
     failure: (AppFailure failure) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.failureMessage(failure))),
@@ -159,123 +160,54 @@ Future<void> showAccessAdminUserFormDialog(
   WidgetRef ref,
   AccessAdminWorkspaceState state,
 ) {
-  return _showCreateUserDialog(context, ref, state);
+  return openAccessAdminCreateUserDialog(context, ref, state);
 }
 
-Future<void> _showCreateUserDialog(
+Future<void> openAccessAdminCreateUserDialog(
   BuildContext context,
   WidgetRef ref,
   AccessAdminWorkspaceState state,
 ) async {
-  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
-  final TextEditingController titleController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  String status = 'ACTIVE';
+  if (!context.mounted) {
+    return;
+  }
 
-  await showAppDialog<void>(
+  await showUserMutationDialog(
     context: context,
-    builder: (BuildContext dialogContext) => AppDialog(
-      title: Text(context.l10n.accessAdminCreateUserAction),
-      icon: const Icon(Icons.person_add_alt_1_outlined),
-      content: Form(
-        key: formKey,
-        child: Column(
-          children: <Widget>[
-            AppTextField(
-              controller: emailController,
-              labelText: context.l10n.accessAdminEmailLabel,
-              validator: (String? value) => (value ?? '').contains('@')
-                  ? null
-                  : context.l10n.validationRequired,
-            ),
-            SizedBox(height: Theme.of(context).spacing.md),
-            AppTextField(
-              controller: titleController,
-              labelText: context.l10n.accessAdminPositionLabel,
-              validator: (String? value) => (value ?? '').trim().isEmpty
-                  ? context.l10n.validationRequired
-                  : null,
-            ),
-            SizedBox(height: Theme.of(context).spacing.md),
-            AppTextField(
-              controller: passwordController,
-              labelText: context.l10n.accessAdminPasswordLabel,
-              obscureText: true,
-              validator: (String? value) => (value ?? '').length >= 8
-                  ? null
-                  : context.l10n.accessAdminPasswordHint,
-            ),
-            SizedBox(height: Theme.of(context).spacing.md),
-            AppSelectField<String>(
-              labelText: context.l10n.accessAdminStatusLabel,
-              value: status,
-              options: state.data.lookups.userStatuses
-                  .map(
-                    (String value) =>
-                        AppSelectOption<String>(value: value, label: value),
-                  )
-                  .toList(growable: false),
-              onChanged: (String? value) {
-                if (value != null) status = value;
-              },
-            ),
-          ],
-        ),
-      ),
-      actions: <Widget>[
-        AppButton.secondary(
-          label: context.l10n.commonCancelActionLabel,
-          onPressed: () => Navigator.of(dialogContext).pop(),
-        ),
-        AppButton.primary(
-          label: context.l10n.commonSaveActionLabel,
-          onPressed: () async {
-            if (formKey.currentState?.validate() != true) return;
-            final String? tenantId =
-                state.query.tenantId ??
-                state.data.lookups.tenants.firstOrNull?.id;
-            if (tenantId == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    context.l10n.accessAdminTenantContextRequiredBody,
-                  ),
-                ),
-              );
-              return;
-            }
-            final AppFailure? failure = await _submitAccessAdminUserCreate(
-              ref,
-              AccessAdminUserDraft(
-                tenantId: tenantId,
-                facilityId: state.query.facilityId,
-                email: emailController.text.trim(),
-                phone: phoneController.text.trim(),
-                positionTitle: titleController.text.trim(),
-                password: passwordController.text,
-                status: status,
-              ),
-            );
-            if (!dialogContext.mounted) return;
-            if (failure == null) {
-              Navigator.of(dialogContext).pop();
-            } else {
-              ScaffoldMessenger.of(dialogContext).showSnackBar(
-                SnackBar(content: Text(context.l10n.failureMessage(failure))),
-              );
-            }
-          },
-        ),
-      ],
-    ),
+    ref: ref,
+    mode: UserMutationMode.create,
+    state: state,
+    onSubmit: (AccessAdminUserDraft draft, List<String> roleIds) =>
+        _submitAccessAdminUserCreate(ref, draft, roleIds),
   );
+}
 
-  emailController.dispose();
-  phoneController.dispose();
-  titleController.dispose();
-  passwordController.dispose();
+Future<void> openAccessAdminEditUserDialog(
+  BuildContext context,
+  WidgetRef ref,
+  AccessAdminWorkspaceState state, {
+  required AccessAdminItem user,
+  AccessAdminUserDetail? detail,
+}) async {
+  if (!context.mounted) {
+    return;
+  }
+
+  await showUserMutationDialog(
+    context: context,
+    ref: ref,
+    mode: UserMutationMode.edit,
+    state: state,
+    initialUser: user,
+    initialDetail: detail,
+    onSubmit: (AccessAdminUserDraft draft, List<String> roleIds) =>
+        _submitAccessAdminUserUpdate(
+          ref,
+          user.id,
+          draft,
+          roleIds,
+        ),
+  );
 }
 
 Future<void> openAccessAdminCreateRoleDialog(
@@ -302,7 +234,7 @@ Future<void> openAccessAdminCreateRoleDialog(
     context: context,
     mode: RoleMutationMode.create,
     loadTenantOptions: requireTenantPicker
-        ? () => _loadAccessAdminTenantOptions(
+        ? () => loadAccessAdminTenantOptions(
             ref,
             state,
             preferTenantFacilityApi: isCrossTenantAdmin,
@@ -367,14 +299,67 @@ Future<void> openAccessAdminEditRoleDialog(
 Future<AppFailure?> _submitAccessAdminUserCreate(
   WidgetRef ref,
   AccessAdminUserDraft draft,
+  List<String> roleIds,
 ) async {
-  final Result<void> result = await ref
-      .read(accessAdminRepositoryProvider)
-      .createUser(draft);
-  return result.when(
+  final AccessAdminRepository repository = ref.read(accessAdminRepositoryProvider);
+  final Result<String> createResult = await repository.createUser(draft);
+  final String? userId = createResult.when(
+    success: (String value) => value,
+    failure: (AppFailure failure) {
+      return null;
+    },
+  );
+  if (userId == null) {
+    return createResult.when(
+      success: (_) => null,
+      failure: (AppFailure failure) => failure,
+    );
+  }
+
+  return repository
+      .syncUserRoles(
+        userId: userId,
+        tenantId: draft.tenantId,
+        facilityId: draft.facilityId,
+        roleIds: roleIds,
+      )
+      .then(
+        (Result<void> result) => result.when(
+          success: (_) => null,
+          failure: (AppFailure failure) => failure,
+        ),
+      );
+}
+
+Future<AppFailure?> _submitAccessAdminUserUpdate(
+  WidgetRef ref,
+  String userId,
+  AccessAdminUserDraft draft,
+  List<String> roleIds,
+) async {
+  final AccessAdminRepository repository = ref.read(accessAdminRepositoryProvider);
+  final Result<void> updateResult = await repository.updateUser(userId, draft);
+  final AppFailure? updateFailure = updateResult.when(
     success: (_) => null,
     failure: (AppFailure failure) => failure,
   );
+  if (updateFailure != null) {
+    return updateFailure;
+  }
+
+  return repository
+      .syncUserRoles(
+        userId: userId,
+        tenantId: draft.tenantId,
+        facilityId: draft.facilityId,
+        roleIds: roleIds,
+      )
+      .then(
+        (Result<void> result) => result.when(
+          success: (_) => null,
+          failure: (AppFailure failure) => failure,
+        ),
+      );
 }
 
 Future<AppFailure?> _submitAccessAdminRoleCreate(
@@ -440,7 +425,7 @@ Future<Result<List<AccessAdminLookupOption>>> _loadAccessAdminPermissionLookups(
   );
 }
 
-Future<List<AccessAdminLookupOption>> _loadAccessAdminTenantOptions(
+Future<List<AccessAdminLookupOption>> loadAccessAdminTenantOptions(
   WidgetRef ref,
   AccessAdminWorkspaceState state, {
   bool preferTenantFacilityApi = false,

@@ -22990,6 +22990,78 @@
   "@accessAdminCreateUserAction": {
     "description": "Access admin create user action."
   },
+  "accessAdminEditUserAction": "Edit user",
+  "@accessAdminEditUserAction": {
+    "description": "Access admin edit user action."
+  },
+  "accessAdminDeleteUserAction": "Delete user",
+  "@accessAdminDeleteUserAction": {
+    "description": "Access admin delete user action."
+  },
+  "accessAdminViewUserAction": "View",
+  "@accessAdminViewUserAction": {
+    "description": "Access admin view user detail action."
+  },
+  "accessAdminCreateUserIntro": "Create an account for a staff member. Select the tenant and facility first, then complete the profile, roles, and permissions.",
+  "@accessAdminCreateUserIntro": {
+    "description": "Introductory helper text at the top of the create user dialog."
+  },
+  "accessAdminCreateUserScopeSectionDescription": "Select the tenant and facility this user belongs to. Roles and permissions load from that organization.",
+  "@accessAdminCreateUserScopeSectionDescription": {
+    "description": "Section description for tenant and facility selection in the user form."
+  },
+  "accessAdminCreateUserDetailsSectionTitle": "User details",
+  "@accessAdminCreateUserDetailsSectionTitle": {
+    "description": "Section title for user profile fields."
+  },
+  "accessAdminCreateUserDetailsSectionDescription": "Provide contact details, position title, and account status.",
+  "@accessAdminCreateUserDetailsSectionDescription": {
+    "description": "Section description for user profile fields."
+  },
+  "accessAdminCreateUserRolesSectionDescription": "Assign one or more roles. Effective permissions include both role grants and direct assignments below.",
+  "@accessAdminCreateUserRolesSectionDescription": {
+    "description": "Section description for role assignment in the user form."
+  },
+  "accessAdminCreateUserPermissionsSectionDescription": "Grant additional permissions directly to this user, on top of any role assignments.",
+  "@accessAdminCreateUserPermissionsSectionDescription": {
+    "description": "Section description for direct permission assignment in the user form."
+  },
+  "accessAdminCreateUserLoadingFacilities": "Loading facilities…",
+  "@accessAdminCreateUserLoadingFacilities": {
+    "description": "Loading label while facilities are fetched for the selected tenant."
+  },
+  "accessAdminCreateUserSelectScopeTitle": "Select tenant and facility",
+  "@accessAdminCreateUserSelectScopeTitle": {
+    "description": "Title shown when user form fields are disabled pending scope selection."
+  },
+  "accessAdminCreateUserSelectScopeMessage": "Choose a tenant and facility above to enable the rest of this form.",
+  "@accessAdminCreateUserSelectScopeMessage": {
+    "description": "Message shown when user form fields are disabled pending scope selection."
+  },
+  "accessAdminCreateUserNoFacilitiesTitle": "No facilities available",
+  "@accessAdminCreateUserNoFacilitiesTitle": {
+    "description": "Title when no facilities exist for the selected tenant."
+  },
+  "accessAdminCreateUserNoFacilitiesMessage": "Create a facility for this tenant before adding users.",
+  "@accessAdminCreateUserNoFacilitiesMessage": {
+    "description": "Message when no facilities exist for the selected tenant."
+  },
+  "accessAdminCreateUserNoRolesTitle": "No roles available",
+  "@accessAdminCreateUserNoRolesTitle": {
+    "description": "Title when no roles exist for the selected tenant."
+  },
+  "accessAdminCreateUserNoRolesMessage": "Create roles for this organization before assigning them to users.",
+  "@accessAdminCreateUserNoRolesMessage": {
+    "description": "Message when no roles exist for the selected tenant."
+  },
+  "accessAdminPasswordOptionalLabel": "New password (optional)",
+  "@accessAdminPasswordOptionalLabel": {
+    "description": "Optional password field label when editing a user."
+  },
+  "accessAdminPasswordOptionalHint": "Leave blank to keep the current password.",
+  "@accessAdminPasswordOptionalHint": {
+    "description": "Helper text for optional password field when editing a user."
+  },
   "accessAdminCreateRoleAction": "Create role",
   "@accessAdminCreateRoleAction": {
     "description": "Access admin create role action."

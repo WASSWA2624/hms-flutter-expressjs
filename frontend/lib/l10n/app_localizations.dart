@@ -33261,6 +33261,114 @@ abstract class AppLocalizations {
   /// **'Create user'**
   String get accessAdminCreateUserAction;
 
+  /// Access admin edit user action.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit user'**
+  String get accessAdminEditUserAction;
+
+  /// Access admin delete user action.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete user'**
+  String get accessAdminDeleteUserAction;
+
+  /// Access admin view user detail action.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get accessAdminViewUserAction;
+
+  /// Introductory helper text at the top of the create user dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Create an account for a staff member. Select the tenant and facility first, then complete the profile, roles, and permissions.'**
+  String get accessAdminCreateUserIntro;
+
+  /// Section description for tenant and facility selection in the user form.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the tenant and facility this user belongs to. Roles and permissions load from that organization.'**
+  String get accessAdminCreateUserScopeSectionDescription;
+
+  /// Section title for user profile fields.
+  ///
+  /// In en, this message translates to:
+  /// **'User details'**
+  String get accessAdminCreateUserDetailsSectionTitle;
+
+  /// Section description for user profile fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Provide contact details, position title, and account status.'**
+  String get accessAdminCreateUserDetailsSectionDescription;
+
+  /// Section description for role assignment in the user form.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign one or more roles. Effective permissions include both role grants and direct assignments below.'**
+  String get accessAdminCreateUserRolesSectionDescription;
+
+  /// Section description for direct permission assignment in the user form.
+  ///
+  /// In en, this message translates to:
+  /// **'Grant additional permissions directly to this user, on top of any role assignments.'**
+  String get accessAdminCreateUserPermissionsSectionDescription;
+
+  /// Loading label while facilities are fetched for the selected tenant.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading facilities…'**
+  String get accessAdminCreateUserLoadingFacilities;
+
+  /// Title shown when user form fields are disabled pending scope selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Select tenant and facility'**
+  String get accessAdminCreateUserSelectScopeTitle;
+
+  /// Message shown when user form fields are disabled pending scope selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a tenant and facility above to enable the rest of this form.'**
+  String get accessAdminCreateUserSelectScopeMessage;
+
+  /// Title when no facilities exist for the selected tenant.
+  ///
+  /// In en, this message translates to:
+  /// **'No facilities available'**
+  String get accessAdminCreateUserNoFacilitiesTitle;
+
+  /// Message when no facilities exist for the selected tenant.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a facility for this tenant before adding users.'**
+  String get accessAdminCreateUserNoFacilitiesMessage;
+
+  /// Title when no roles exist for the selected tenant.
+  ///
+  /// In en, this message translates to:
+  /// **'No roles available'**
+  String get accessAdminCreateUserNoRolesTitle;
+
+  /// Message when no roles exist for the selected tenant.
+  ///
+  /// In en, this message translates to:
+  /// **'Create roles for this organization before assigning them to users.'**
+  String get accessAdminCreateUserNoRolesMessage;
+
+  /// Optional password field label when editing a user.
+  ///
+  /// In en, this message translates to:
+  /// **'New password (optional)'**
+  String get accessAdminPasswordOptionalLabel;
+
+  /// Helper text for optional password field when editing a user.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank to keep the current password.'**
+  String get accessAdminPasswordOptionalHint;
+
   /// Access admin create role action.
   ///
   /// In en, this message translates to:

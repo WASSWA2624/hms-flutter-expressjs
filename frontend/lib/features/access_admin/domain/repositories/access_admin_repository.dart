@@ -22,11 +22,25 @@ abstract interface class AccessAdminRepository {
     String? facilityId,
   });
 
-  Future<Result<void>> createUser(AccessAdminUserDraft draft);
+  Future<Result<String>> createUser(AccessAdminUserDraft draft);
 
   Future<Result<void>> updateUser(String userId, AccessAdminUserDraft draft);
 
+  Future<Result<void>> deleteUser(String userId);
+
   Future<Result<void>> setUserStatus(String userId, String status);
+
+  Future<Result<List<AccessAdminUserRoleAssignment>>> listUserRoles({
+    required String userId,
+    String? tenantId,
+  });
+
+  Future<Result<void>> syncUserRoles({
+    required String userId,
+    required String tenantId,
+    required List<String> roleIds,
+    String? facilityId,
+  });
 
   Future<Result<void>> createRole(AccessAdminRoleDraft draft);
 

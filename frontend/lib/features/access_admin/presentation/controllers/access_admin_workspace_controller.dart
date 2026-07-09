@@ -185,7 +185,13 @@ final class AccessAdminWorkspaceController
   }
 
   Future<AppFailure?> createUser(AccessAdminUserDraft draft) {
-    return _submitAction(() => _repository.createUser(draft));
+    return _submitAction(() async {
+      final Result<String> result = await _repository.createUser(draft);
+      return result.when(
+        success: (_) => const Result<void>.success(null),
+        failure: (AppFailure failure) => Result<void>.failure(failure),
+      );
+    });
   }
 
   Future<AppFailure?> createRole(AccessAdminRoleDraft draft) {

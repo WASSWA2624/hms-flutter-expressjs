@@ -112,11 +112,42 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
   }
 
   @override
-  Future<Result<void>> createUser(AccessAdminUserDraft draft) {
-    return _apiClient.post<void>(
+  Future<Result<String>> createUser(AccessAdminUserDraft draft) async {
+    final Result<String?> createResult = await _apiClient.post<String?>(
       ApiEndpoints.collection(HmsApiResource.users),
       data: _withoutEmpty(<String, Object?>{
         'tenant_id': draft.tenantId,
+        'facility_id': draft.facilityId,
+        'email': draft.email,
+        'phone': draft.phone,
+        'position_title': draft.positionTitle,
+        'password': draft.password,
+        'status': draft.status,
+        'permission_ids': draft.permissionIds,
+      }),
+      decoder: (Object? responseData) => _extractRecordId(
+        responseData is Map<String, dynamic>
+            ? responseData['data'] ?? responseData
+            : responseData,
+      ),
+    );
+
+    return createResult.when(
+      success: (String? userId) {
+        if (userId == null || userId.isEmpty) {
+          return const Result<String>.failure(AppFailure.unexpected());
+        }
+        return Result<String>.success(userId);
+      },
+      failure: (AppFailure failure) => Result<String>.failure(failure),
+    );
+  }
+
+  @override
+  Future<Result<void>> updateUser(String userId, AccessAdminUserDraft draft) {
+    return _apiClient.put<void>(
+      ApiEndpoints.byId(HmsApiResource.users, userId),
+      data: _withoutEmpty(<String, Object?>{
         'facility_id': draft.facilityId,
         'email': draft.email,
         'phone': draft.phone,
@@ -130,17 +161,9 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
   }
 
   @override
-  Future<Result<void>> updateUser(String userId, AccessAdminUserDraft draft) {
-    return _apiClient.put<void>(
+  Future<Result<void>> deleteUser(String userId) {
+    return _apiClient.delete<void>(
       ApiEndpoints.byId(HmsApiResource.users, userId),
-      data: _withoutEmpty(<String, Object?>{
-        'facility_id': draft.facilityId,
-        'email': draft.email,
-        'phone': draft.phone,
-        'position_title': draft.positionTitle,
-        'status': draft.status,
-        'permission_ids': draft.permissionIds,
-      }),
       decoder: (_) {},
     );
   }
@@ -241,6 +264,159 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
       decoder: (_) {},
     );
   }
+
+  @override
+  Future<Result<List<AccessAdminUserRoleAssignment>>> listUserRoles({
+    required String userId,
+    String? tenantId,
+  }) async {
+    final List<AccessAdminUserRoleAssignment> all =
+        <AccessAdminUserRoleAssignment>[];
+    var pageIndex = 0;
+    const int pageSize = AppPageRequest.maxPageSize;
+
+    while (true) {
+      final Result<List<AccessAdminUserRoleAssignment>> result =
+          await _fetchUserRolesPage(
+            userId: userId,
+            tenantId: tenantId,
+            pageIndex: pageIndex,
+            pageSize: pageSize,
+          );
+      final AppFailure? failure = result.when(
+        success: (_) => null,
+        failure: (AppFailure value) => value,
+      );
+      if (failure != null) {
+        return Result<List<AccessAdminUserRoleAssignment>>.failure(failure);
+      }
+
+      final List<AccessAdminUserRoleAssignment> page = result.when(
+        success: (List<AccessAdminUserRoleAssignment> value) => value,
+        failure: (_) => throw StateError('unreachable'),
+      );
+      all.addAll(page);
+      if (page.length < pageSize) {
+        break;
+      }
+      pageIndex += 1;
+    }
+
+    return Result<List<AccessAdminUserRoleAssignment>>.success(all);
+  }
+
+  Future<Result<List<AccessAdminUserRoleAssignment>>> _fetchUserRolesPage({
+    required String userId,
+    String? tenantId,
+    required int pageIndex,
+    required int pageSize,
+  }) {
+    return _apiClient.get<List<AccessAdminUserRoleAssignment>>(
+      ApiEndpoints.collection(HmsApiResource.userRoles),
+      queryParameters: _withoutEmpty(<String, Object?>{
+        'user_id': userId,
+        'tenant_id': tenantId,
+        'page': pageIndex + 1,
+        'limit': pageSize,
+      }),
+      decoder: (Object? data) {
+        final Map<String, Object?> response = data is Map<String, Object?>
+            ? data
+            : <String, Object?>{};
+        final List<Object?> rows = response['data'] is List<Object?>
+            ? response['data']! as List<Object?>
+            : const <Object?>[];
+        return rows
+            .whereType<Map<String, Object?>>()
+            .map((Map<String, Object?> json) {
+              final Map<String, Object?> role = json['role'] is Map<String, Object?>
+                  ? json['role']! as Map<String, Object?>
+                  : <String, Object?>{};
+              final String assignmentId =
+                  _string(json['id']) ??
+                  _string(json['backend_identifier']) ??
+                  _string(json['display_id']) ??
+                  '';
+              final String? roleId =
+                  _nullableString(json['role_id']) ??
+                  _nullableString(role['id']) ??
+                  _nullableString(role['display_id']);
+              return AccessAdminUserRoleAssignment(
+                id: assignmentId,
+                roleId: roleId,
+              );
+            })
+            .where(
+              (AccessAdminUserRoleAssignment item) => item.id.isNotEmpty,
+            )
+            .toList(growable: false);
+      },
+    );
+  }
+
+  @override
+  Future<Result<void>> syncUserRoles({
+    required String userId,
+    required String tenantId,
+    required List<String> roleIds,
+    String? facilityId,
+  }) async {
+    final Result<List<AccessAdminUserRoleAssignment>> currentResult =
+        await listUserRoles(userId: userId, tenantId: tenantId);
+    final List<AccessAdminUserRoleAssignment> currentRoles = currentResult.when(
+      success: (List<AccessAdminUserRoleAssignment> value) => value,
+      failure: (_) => const <AccessAdminUserRoleAssignment>[],
+    );
+    final Set<String> desiredRoleIds = roleIds.toSet();
+    final Set<String> currentRoleIds = currentRoles
+        .map((AccessAdminUserRoleAssignment role) => role.roleId)
+        .whereType<String>()
+        .toSet();
+
+    AppFailure? lastFailure;
+    for (final AccessAdminUserRoleAssignment assignment in currentRoles) {
+      final String? roleId = assignment.roleId;
+      if (roleId == null || desiredRoleIds.contains(roleId)) {
+        continue;
+      }
+      final Result<void> result = await revokeUserRole(assignment.id);
+      if (result case ResultFailure<void>(:final failure)) {
+        lastFailure ??= failure;
+      }
+    }
+
+    for (final String roleId in desiredRoleIds) {
+      if (currentRoleIds.contains(roleId)) {
+        continue;
+      }
+      final Result<void> result = await assignUserRole(
+        AccessAdminUserRoleDraft(
+          userId: userId,
+          roleId: roleId,
+          tenantId: tenantId,
+          facilityId: facilityId,
+        ),
+      );
+      if (result case ResultFailure<void>(:final failure)) {
+        lastFailure ??= failure;
+      }
+    }
+
+    if (lastFailure != null) {
+      return Result<void>.failure(lastFailure);
+    }
+    return const Result<void>.success(null);
+  }
+
+  String? _nullableString(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    final String normalized = value.toString().trim();
+    return normalized.isEmpty ? null : normalized;
+  }
+
+  String? _string(Object? value) => _nullableString(value);
 
   @override
   Future<Result<void>> assignRolePermission(

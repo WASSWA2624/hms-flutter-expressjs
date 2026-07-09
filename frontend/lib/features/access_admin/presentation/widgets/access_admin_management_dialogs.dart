@@ -189,9 +189,88 @@ class _ManageUsersDialogState extends _ScopedAccessAdminListDialogState<_ManageU
     if (state == null || !mounted) {
       return;
     }
-    await showAccessAdminUserFormDialog(context, ref, state);
+    await openAccessAdminCreateUserDialog(context, ref, state);
     if (mounted) {
       await reload(resetPage: true);
+    }
+  }
+
+  Future<void> _openEditUserDialog(
+    AccessAdminItem item, {
+    AccessAdminUserDetail? detail,
+  }) async {
+    final AccessAdminWorkspaceState? state = buildWorkspaceState();
+    if (state == null || !mounted) {
+      return;
+    }
+
+    AccessAdminUserDetail? resolvedDetail = detail;
+    if (resolvedDetail == null) {
+      setState(() => mutating = true);
+      final Result<AccessAdminUserDetail> detailResult = await repository
+          .getUserDetail(
+            item.id,
+            tenantId: workspaceData?.query.tenantId,
+            facilityId: workspaceData?.query.facilityId,
+          );
+      if (!mounted) return;
+      setState(() => mutating = false);
+      resolvedDetail = detailResult.when(
+        success: (AccessAdminUserDetail value) => value,
+        failure: (_) => null,
+      );
+      if (resolvedDetail == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              detailResult.when(
+                success: (_) => '',
+                failure: (AppFailure loadFailure) =>
+                    context.l10n.failureMessage(loadFailure),
+              ),
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
+    if (!mounted) return;
+    await openAccessAdminEditUserDialog(
+      context,
+      ref,
+      state,
+      user: resolvedDetail.item,
+      detail: resolvedDetail,
+    );
+    if (mounted) {
+      await reload(resetPage: false);
+    }
+  }
+
+  Future<void> _confirmDeleteUser(AccessAdminItem user) async {
+    if (user.isDemo || user.isSystemCritical) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.accessAdminDeleteUserAction,
+        body: l10n.tenantFacilityDeleteConfirmationBody,
+        submitLabel: l10n.tenantFacilityDeleteConfirmAction,
+        icon: const Icon(Icons.delete_outline),
+        onConfirm: () async {
+          final Result<void> result = await repository.deleteUser(user.id);
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await reload(resetPage: items.length <= 1);
     }
   }
 
@@ -242,6 +321,14 @@ class _ManageUsersDialogState extends _ScopedAccessAdminListDialogState<_ManageU
             failure: (AppFailure failure) => failure,
           );
         },
+        onEdit: () {
+          Navigator.of(dialogContext).pop();
+          unawaited(_openEditUserDialog(detail.item, detail: detail));
+        },
+        onDelete: () {
+          Navigator.of(dialogContext).pop();
+          unawaited(_confirmDeleteUser(detail.item));
+        },
       ),
     );
     if (mounted) {
@@ -252,6 +339,7 @@ class _ManageUsersDialogState extends _ScopedAccessAdminListDialogState<_ManageU
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
     return AppDialog(
       title: Text(l10n.homeManageUsersTitle),
@@ -295,6 +383,51 @@ class _ManageUsersDialogState extends _ScopedAccessAdminListDialogState<_ManageU
                     cellBuilder: (_, AccessAdminItem item) =>
                         Text(item.status ?? '—'),
                   ),
+                  if (canWrite)
+                    AppListTableColumn<AccessAdminItem>(
+                      label: '',
+                      alwaysVisible: true,
+                      cellBuilder:
+                          (BuildContext context, AccessAdminItem user) {
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            AppButton.tertiary(
+                              leadingIcon: Icons.visibility_outlined,
+                              label: l10n.accessAdminViewUserAction,
+                              semanticLabel: l10n.accessAdminViewUserAction,
+                              tooltip: l10n.accessAdminViewUserAction,
+                              enabled: !loading && !mutating,
+                              onPressed: !loading && !mutating
+                                  ? () => unawaited(_openUserDetail(user))
+                                  : null,
+                            ),
+                            AppButton.tertiary(
+                              leadingIcon: Icons.edit_outlined,
+                              label: l10n.accessAdminEditUserAction,
+                              semanticLabel: l10n.accessAdminEditUserAction,
+                              tooltip: l10n.accessAdminEditUserAction,
+                              enabled: !loading && !mutating,
+                              onPressed: !loading && !mutating
+                                  ? () => unawaited(_openEditUserDialog(user))
+                                  : null,
+                            ),
+                            if (!user.isDemo && !user.isSystemCritical)
+                              AppButton.tertiary(
+                                leadingIcon: Icons.delete_outline,
+                                label: l10n.accessAdminDeleteUserAction,
+                                semanticLabel: l10n.accessAdminDeleteUserAction,
+                                tooltip: l10n.accessAdminDeleteUserAction,
+                                color: colorScheme.error,
+                                enabled: !loading && !mutating,
+                                onPressed: !loading && !mutating
+                                    ? () => unawaited(_confirmDeleteUser(user))
+                                    : null,
+                              ),
+                          ],
+                        );
+                      },
+                    ),
                 ],
               ),
             ),
@@ -494,12 +627,16 @@ class _AccessAdminUserDetailDialog extends StatefulWidget {
     required this.detail,
     required this.canWrite,
     required this.onStatusChanged,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   final AccessAdminItem item;
   final AccessAdminUserDetail detail;
   final bool canWrite;
   final Future<AppFailure?> Function(String status) onStatusChanged;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   @override
   State<_AccessAdminUserDetailDialog> createState() =>
@@ -573,18 +710,49 @@ class _AccessAdminUserDetailDialogState
             Text(
               '${detail.effectivePermissions.length} ${l10n.accessAdminPermissionsLabel}',
             ),
+            if (detail.directPermissions.isNotEmpty) ...<Widget>[
+              SizedBox(height: Theme.of(context).spacing.sm),
+              Text(
+                l10n.hrAccessDirectPermissionsLabel,
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              Wrap(
+                spacing: Theme.of(context).spacing.xs,
+                children: detail.directPermissions
+                    .map(
+                      (AccessAdminPermissionRef permission) =>
+                          Chip(label: Text(permission.name)),
+                    )
+                    .toList(growable: false),
+              ),
+            ],
           ],
         ],
       ),
       actions: <Widget>[
-        if (widget.canWrite)
+        if (widget.canWrite) ...<Widget>[
           AppButton.secondary(
+            leadingIcon: Icons.edit_outlined,
+            label: l10n.accessAdminEditUserAction,
+            onPressed: _saving ? null : widget.onEdit,
+          ),
+          if (!item.isDemo && !item.isSystemCritical)
+            AppButton.secondary(
+              leadingIcon: Icons.delete_outline,
+              label: l10n.accessAdminDeleteUserAction,
+              onPressed: _saving ? null : widget.onDelete,
+            ),
+          AppButton.secondary(
+            leadingIcon: item.status == 'ACTIVE'
+                ? Icons.person_off_outlined
+                : Icons.person_outline,
             label: item.status == 'ACTIVE'
                 ? l10n.accessAdminDeactivateAction
                 : l10n.accessAdminActivateAction,
             isLoading: _saving,
             onPressed: _saving ? null : _toggleStatus,
           ),
+        ],
         AppButton.secondary(
           label: l10n.commonCloseActionLabel,
           leadingIcon: Icons.close,
