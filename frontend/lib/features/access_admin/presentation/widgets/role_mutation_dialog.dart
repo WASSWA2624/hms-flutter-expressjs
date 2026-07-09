@@ -175,7 +175,6 @@ Future<bool?> showRoleMutationDialog({
                 children: <Widget>[
                   if (mode == RoleMutationMode.create) ...<Widget>[
                     AppMessagePanel(
-                      tone: AppWorkspaceStatusTone.info,
                       icon: Icons.lightbulb_outline,
                       message: l10n.accessAdminCreateRoleIntro,
                       density: AppContentPanelDensity.compact,
@@ -302,7 +301,6 @@ Future<bool?> showRoleMutationDialog({
                           !tenantSelected &&
                           !isLoadingTenants)
                         AppMessagePanel(
-                          tone: AppWorkspaceStatusTone.info,
                           icon: Icons.touch_app_outlined,
                           title: l10n.accessAdminPermissionCatalogSelectTenantTitle,
                           message:
