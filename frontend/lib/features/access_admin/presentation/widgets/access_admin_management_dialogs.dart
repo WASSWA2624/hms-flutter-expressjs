@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -74,14 +75,16 @@ abstract class _ScopedAccessAdminListDialogState<T extends ConsumerStatefulWidge
     });
   }
 
-  Future<void> reload({required bool resetPage}) async {
+  Future<void> reload({required bool resetPage, bool silent = false}) async {
     if (resetPage) {
       pageRequest = pageRequest.first();
     }
-    setState(() {
-      loading = true;
-      failure = null;
-    });
+    if (!silent) {
+      setState(() {
+        loading = true;
+        failure = null;
+      });
+    }
 
     final Result<AccessAdminWorkspaceData> result = await repository.getWorkspace(
       listQuery.copyWith(
@@ -104,7 +107,9 @@ abstract class _ScopedAccessAdminListDialogState<T extends ConsumerStatefulWidge
         setState(() {
           loading = false;
           failure = loadFailure;
-          items = const <AccessAdminItem>[];
+          if (!silent) {
+            items = const <AccessAdminItem>[];
+          }
         });
       },
     );
@@ -192,7 +197,7 @@ class _ManageUsersDialogState extends _ScopedAccessAdminListDialogState<_ManageU
     }
     await openAccessAdminCreateUserDialog(context, ref, state);
     if (mounted) {
-      await reload(resetPage: true);
+      unawaited(reload(resetPage: true, silent: true));
     }
   }
 
@@ -245,7 +250,7 @@ class _ManageUsersDialogState extends _ScopedAccessAdminListDialogState<_ManageU
       detail: resolvedDetail,
     );
     if (mounted) {
-      await reload(resetPage: false);
+      unawaited(reload(resetPage: false, silent: true));
     }
   }
 
@@ -271,7 +276,13 @@ class _ManageUsersDialogState extends _ScopedAccessAdminListDialogState<_ManageU
       ),
     );
     if (confirmed == true && mounted) {
-      await reload(resetPage: items.length <= 1);
+      setState(() {
+        items = items
+            .where((AccessAdminItem entry) => entry.id != user.id)
+            .toList(growable: false);
+        totalItemCount = math.max(0, totalItemCount - 1);
+      });
+      unawaited(reload(resetPage: items.isEmpty, silent: true));
     }
   }
 
@@ -333,7 +344,7 @@ class _ManageUsersDialogState extends _ScopedAccessAdminListDialogState<_ManageU
       ),
     );
     if (mounted) {
-      await reload(resetPage: false);
+      unawaited(reload(resetPage: false, silent: true));
     }
   }
 
@@ -466,7 +477,7 @@ class _ManageRolesPermissionsDialogState
     }
     await openAccessAdminCreateRoleDialog(context, ref, state);
     if (mounted) {
-      await reload(resetPage: true);
+      unawaited(reload(resetPage: true, silent: true));
     }
   }
 
@@ -477,7 +488,7 @@ class _ManageRolesPermissionsDialogState
     }
     await openAccessAdminEditRoleDialog(context, ref, state, role);
     if (mounted) {
-      await reload(resetPage: false);
+      unawaited(reload(resetPage: false, silent: true));
     }
   }
 
@@ -503,7 +514,13 @@ class _ManageRolesPermissionsDialogState
       ),
     );
     if (confirmed == true && mounted) {
-      await reload(resetPage: items.length <= 1);
+      setState(() {
+        items = items
+            .where((AccessAdminItem entry) => entry.id != role.id)
+            .toList(growable: false);
+        totalItemCount = math.max(0, totalItemCount - 1);
+      });
+      unawaited(reload(resetPage: items.isEmpty, silent: true));
     }
   }
 

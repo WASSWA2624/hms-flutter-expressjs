@@ -66,7 +66,7 @@ void main() {
         profile.quickActionIds,
         containsAll(<String>[
           'create_facility',
-          'manage_users_roles',
+          'manage_users',
           'manage_subscription',
         ]),
       );

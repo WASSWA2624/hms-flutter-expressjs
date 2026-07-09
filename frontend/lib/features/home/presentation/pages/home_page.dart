@@ -25,6 +25,7 @@ class HomePage extends ConsumerWidget {
 
     return AsyncStateScaffold<HomeDashboard>(
       value: dashboard,
+      keepPreviousDataDuringRefresh: true,
       loadingTitle: l10n.homeLoadingTitle,
       loadingBody: l10n.homeLoadingBody,
       maxWidth: PageMaxWidth.dataHeavy,
@@ -96,6 +97,7 @@ class _HomeDashboardContent extends ConsumerWidget {
                     context: context,
                     ref: ref,
                     actions: actions,
+                    request: request,
                   ),
                 ),
                 priorityPanel: DashboardPriorityPanel(
@@ -107,6 +109,7 @@ class _HomeDashboardContent extends ConsumerWidget {
                     shortcuts: shortcuts,
                     policy: policy,
                     l10n: l10n,
+                    request: request,
                   ),
                 ),
                 charts: LayoutBuilder(

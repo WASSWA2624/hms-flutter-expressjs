@@ -114,7 +114,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     ],
     quickActionIds: <String>[
       'create_facility',
-      'manage_users_roles',
+      'manage_users',
       'manage_subscription',
     ],
     shortcutIds: <String>['tenant_facility_setup', 'settings', 'subscriptions'],

@@ -87,6 +87,7 @@ List<DashboardQuickActionData> homeDashboardQuickActions({
   required BuildContext context,
   required WidgetRef ref,
   required List<HomeActionDefinition> actions,
+  HomeDashboardRequest request = HomeDashboardRequest.empty,
 }) {
   return actions
       .map(
@@ -94,7 +95,12 @@ List<DashboardQuickActionData> homeDashboardQuickActions({
           label: action.label,
           icon: action.icon,
           semanticsLabel: action.label,
-          onPressed: () => homeInvokeAction(context, ref, action),
+          onPressed: () => homeInvokeAction(
+            context,
+            ref,
+            action,
+            request: request,
+          ),
         ),
       )
       .toList(growable: false);
@@ -108,6 +114,7 @@ DashboardPriorityPanelData homeDashboardPriorityData({
   required List<HomeShortcutDefinition> shortcuts,
   required AppAccessPolicy policy,
   required AppLocalizations l10n,
+  HomeDashboardRequest request = HomeDashboardRequest.empty,
 }) {
   final HomeDashboardProfile profile = dashboard.profile;
   final bool showQueue = profile.showQueuePanel;
@@ -143,7 +150,13 @@ DashboardPriorityPanelData homeDashboardPriorityData({
     emptyMessage: profile.id == 'super_admin'
         ? l10n.homePlatformManagementDescription
         : profile.emptyMessage,
-    emptyActions: homeDashboardEmptyActions(context, ref, profile, policy),
+    emptyActions: homeDashboardEmptyActions(
+      context,
+      ref,
+      profile,
+      policy,
+      request: request,
+    ),
     maxQueueItems: profile.maxQueueItems,
     alertsTitle: showAlerts ? homeAlertsTitle(profile.role) : null,
     alertItems: showAlerts
@@ -203,15 +216,21 @@ List<DashboardQuickActionData> homeDashboardEmptyActions(
   BuildContext context,
   WidgetRef ref,
   HomeDashboardProfile profile,
-  AppAccessPolicy policy,
-) {
+  AppAccessPolicy policy, {
+  HomeDashboardRequest request = HomeDashboardRequest.empty,
+}) {
   return homeVisibleEmptyActions(profile.emptyActionIds, policy)
       .map(
         (HomeActionDefinition action) => DashboardQuickActionData(
           label: action.label,
           icon: action.icon,
           semanticsLabel: action.label,
-          onPressed: () => homeInvokeAction(context, ref, action),
+          onPressed: () => homeInvokeAction(
+            context,
+            ref,
+            action,
+            request: request,
+          ),
         ),
       )
       .toList(growable: false);

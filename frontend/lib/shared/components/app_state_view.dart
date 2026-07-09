@@ -247,6 +247,7 @@ class AsyncStateScaffold<T> extends StatelessWidget {
     this.scrollable = true,
     this.safeArea = true,
     this.deferLoadingToShell,
+    this.keepPreviousDataDuringRefresh = false,
     super.key,
   }) : assert(
          emptyPredicate == null || (emptyTitle != null && emptyBody != null),
@@ -274,9 +275,29 @@ class AsyncStateScaffold<T> extends StatelessWidget {
   /// Defaults to [ShellNavigationScope.deferLoadingToShellOf] when null.
   final bool? deferLoadingToShell;
 
+  /// When true, a background refresh keeps the last successful payload visible
+  /// instead of replacing the page with a loading scaffold.
+  final bool keepPreviousDataDuringRefresh;
+
   bool _shouldDeferLoadingToShell(BuildContext context) {
     return deferLoadingToShell ??
         ShellNavigationScope.deferLoadingToShellOf(context);
+  }
+
+  Widget? _previousDataWidget(BuildContext context) {
+    if (!keepPreviousDataDuringRefresh || !value.hasValue) {
+      return null;
+    }
+
+    return value.requireValue.when(
+      success: (T data) {
+        if (emptyPredicate?.call(data) ?? false) {
+          return null;
+        }
+        return dataBuilder(context, data);
+      },
+      failure: (_) => null,
+    );
   }
 
   @override
@@ -347,6 +368,11 @@ class AsyncStateScaffold<T> extends StatelessWidget {
           );
         },
         loading: () {
+          final Widget? previousData = _previousDataWidget(context);
+          if (previousData != null) {
+            return previousData;
+          }
+
           if (_shouldDeferLoadingToShell(context)) {
             return const SizedBox.shrink();
           }

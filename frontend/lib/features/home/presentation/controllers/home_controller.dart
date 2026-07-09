@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
@@ -17,7 +18,7 @@ final homeControllerProvider =
         ref: ref,
         events: _homeDashboardRealtimeEvents,
         includeCrudMutations: true,
-        debounce: const Duration(milliseconds: 600),
+        debounce: const Duration(milliseconds: 200),
         shouldRefresh: (RealtimeMessage message) {
           return _matchesDashboardScope(request, message.payload);
         },
@@ -26,7 +27,7 @@ final homeControllerProvider =
         },
       );
 
-      return ref.watch(homeRepositoryProvider).loadDashboard(request);
+      return ref.read(homeRepositoryProvider).loadDashboard(request);
     });
 
 final homeLookupsControllerProvider =
@@ -51,6 +52,8 @@ const Set<String> _homeDashboardRealtimeEvents = <String>{
   ...RealtimeEventGroups.hr,
   ...RealtimeEventGroups.biomedical,
   ...RealtimeEventGroups.communications,
+  RealtimeEvents.facilityLayoutUpdated,
+  ...RealtimeEventGroups.subscriptions,
 };
 
 bool _matchesDashboardScope(

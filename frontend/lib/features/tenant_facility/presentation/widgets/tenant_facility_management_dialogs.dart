@@ -334,7 +334,9 @@ class _ManageFacilitiesDialogState
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
-    unawaited(_loadTenants());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_loadTenants());
+    });
     unawaited(_reload(resetPage: true));
   }
 

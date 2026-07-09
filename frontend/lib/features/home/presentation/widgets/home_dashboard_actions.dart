@@ -1227,8 +1227,8 @@ List<HomeActionDefinition> homeVisibleEmptyActions(
       .toList(growable: false);
 }
 
-void homeRefreshDashboard(WidgetRef ref) {
-  ref.invalidate(homeControllerProvider);
+void homeRefreshDashboard(WidgetRef ref, HomeDashboardRequest request) {
+  ref.invalidate(homeControllerProvider(request));
 }
 
 HomeRouteTarget? homeFirstQueueTarget(List<HomeQueueItem> items) {
@@ -1286,10 +1286,15 @@ void homeGoToRoute(
 void homeInvokeAction(
   BuildContext context,
   WidgetRef ref,
-  HomeActionDefinition action,
-) {
+  HomeActionDefinition action, {
+  HomeDashboardRequest request = HomeDashboardRequest.empty,
+}) {
   if (action.id == 'add_staff_profile' || action.id == 'staff_profile') {
-    unawaited(showHrStaffOnboardingDialog(context, ref));
+    unawaited(
+      showHrStaffOnboardingDialog(context, ref).then((_) {
+        homeRefreshDashboard(ref, request);
+      }),
+    );
     return;
   }
   if (action.id == 'select_context') {
@@ -1299,7 +1304,7 @@ void homeInvokeAction(
   if (action.id == 'create_tenant') {
     unawaited(
       showTenantFacilityTenantFormDialog(context, forceCreate: true).then((_) {
-        homeRefreshDashboard(ref);
+        homeRefreshDashboard(ref, request);
       }),
     );
     return;
@@ -1310,7 +1315,7 @@ void homeInvokeAction(
         context,
         requireTenantPicker: true,
       ).then((_) {
-        homeRefreshDashboard(ref);
+        homeRefreshDashboard(ref, request);
       }),
     );
     return;
@@ -1318,7 +1323,7 @@ void homeInvokeAction(
   if (action.id == 'create_role') {
     unawaited(
       showAccessAdminCreateRoleDialog(context, ref).then((_) {
-        homeRefreshDashboard(ref);
+        homeRefreshDashboard(ref, request);
       }),
     );
     return;
@@ -1326,7 +1331,7 @@ void homeInvokeAction(
   if (action.id == 'create_user') {
     unawaited(
       showAccessAdminCreateUserDialog(context, ref).then((_) {
-        homeRefreshDashboard(ref);
+        homeRefreshDashboard(ref, request);
       }),
     );
     return;
@@ -1334,7 +1339,7 @@ void homeInvokeAction(
   if (action.id == 'manage_tenants') {
     unawaited(
       showManageTenantsDialog(context, ref).then((_) {
-        homeRefreshDashboard(ref);
+        homeRefreshDashboard(ref, request);
       }),
     );
     return;
@@ -1342,7 +1347,7 @@ void homeInvokeAction(
   if (action.id == 'manage_facilities') {
     unawaited(
       showManageFacilitiesDialog(context, ref).then((_) {
-        homeRefreshDashboard(ref);
+        homeRefreshDashboard(ref, request);
       }),
     );
     return;
@@ -1350,7 +1355,7 @@ void homeInvokeAction(
   if (action.id == 'manage_roles_access') {
     unawaited(
       showManageRolesPermissionsDialog(context, ref).then((_) {
-        homeRefreshDashboard(ref);
+        homeRefreshDashboard(ref, request);
       }),
     );
     return;
@@ -1358,13 +1363,17 @@ void homeInvokeAction(
   if (action.id == 'manage_users') {
     unawaited(
       showManageUsersDialog(context, ref).then((_) {
-        homeRefreshDashboard(ref);
+        homeRefreshDashboard(ref, request);
       }),
     );
     return;
   }
   if (action.id == 'manage_users_roles') {
-    unawaited(showAccessAdminWorkspaceDialog(context));
+    unawaited(
+      showManageUsersDialog(context, ref).then((_) {
+        homeRefreshDashboard(ref, request);
+      }),
+    );
     return;
   }
   homeGoToRoute(context, action.route, queryParameters: action.routeQuery);
