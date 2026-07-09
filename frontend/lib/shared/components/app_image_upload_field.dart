@@ -177,10 +177,7 @@ class _ImagePreviewTile extends StatelessWidget {
         ),
       );
     } else {
-      child = Icon(
-        placeholderIcon,
-        color: theme.colorScheme.onSurfaceVariant,
-      );
+      child = Icon(placeholderIcon, color: theme.colorScheme.onSurfaceVariant);
     }
 
     return ClipRRect(

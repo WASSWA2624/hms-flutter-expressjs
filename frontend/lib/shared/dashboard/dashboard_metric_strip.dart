@@ -32,17 +32,18 @@ class DashboardMetricStrip extends StatelessWidget {
         final bool wide = constraints.maxWidth >= AppBreakpoints.md;
         final List<Widget> cardWidgets = <Widget>[
           for (final DashboardMetricCardData card in visibleCards)
-            _DashboardMetricCard(
-              card: card,
-              compact: compact || !wide,
-            ),
+            _DashboardMetricCard(card: card, compact: compact || !wide),
         ];
 
         if (wide) {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              for (int index = 0; index < cardWidgets.length; index += 1) ...<Widget>[
+              for (
+                int index = 0;
+                index < cardWidgets.length;
+                index += 1
+              ) ...<Widget>[
                 if (index > 0) SizedBox(width: gap),
                 Expanded(child: cardWidgets[index]),
               ],
@@ -53,7 +54,11 @@ class DashboardMetricStrip extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            for (int index = 0; index < cardWidgets.length; index += 1) ...<Widget>[
+            for (
+              int index = 0;
+              index < cardWidgets.length;
+              index += 1
+            ) ...<Widget>[
               if (index > 0) SizedBox(height: gap),
               cardWidgets[index],
             ],
@@ -98,14 +103,15 @@ class _DashboardMetricCard extends StatelessWidget {
             card.value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: (compact
-                    ? theme.textTheme.titleLarge
-                    : theme.textTheme.headlineSmall)
-                ?.copyWith(
-              color: card.accent,
-              fontWeight: FontWeight.w800,
-              height: 1.1,
-            ),
+            style:
+                (compact
+                        ? theme.textTheme.titleLarge
+                        : theme.textTheme.headlineSmall)
+                    ?.copyWith(
+                      color: card.accent,
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
+                    ),
           ),
           SizedBox(width: theme.spacing.xs),
           Expanded(
@@ -115,9 +121,9 @@ class _DashboardMetricCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: (theme.textTheme.labelMedium ?? theme.textTheme.bodySmall)
                   ?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
           ),
           if (isActionable) ...<Widget>[

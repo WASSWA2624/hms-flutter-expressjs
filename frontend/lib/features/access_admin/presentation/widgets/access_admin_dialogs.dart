@@ -18,9 +18,8 @@ Future<void> showAccessAdminWorkspaceDialog(
 }) async {
   await showAppDialog<void>(
     context: context,
-    builder: (BuildContext dialogContext) => _AccessAdminWorkspaceDialogShell(
-      initialPanel: initialPanel,
-    ),
+    builder: (BuildContext dialogContext) =>
+        _AccessAdminWorkspaceDialogShell(initialPanel: initialPanel),
   );
 }
 
@@ -31,8 +30,9 @@ Future<void> showAccessAdminCreateUserDialog(
   final AccessAdminWorkspaceController controller = ref.read(
     accessAdminWorkspaceControllerProvider.notifier,
   );
-  final Result<AccessAdminWorkspaceState> stateResult =
-      await ref.read(accessAdminWorkspaceControllerProvider.future);
+  final Result<AccessAdminWorkspaceState> stateResult = await ref.read(
+    accessAdminWorkspaceControllerProvider.future,
+  );
   final AccessAdminWorkspaceState? state = stateResult.when(
     success: (AccessAdminWorkspaceState value) => value,
     failure: (_) => null,
@@ -40,8 +40,9 @@ Future<void> showAccessAdminCreateUserDialog(
   if (state == null) {
     await controller.refresh();
   }
-  final Result<AccessAdminWorkspaceState> refreshed =
-      await ref.read(accessAdminWorkspaceControllerProvider.future);
+  final Result<AccessAdminWorkspaceState> refreshed = await ref.read(
+    accessAdminWorkspaceControllerProvider.future,
+  );
   return refreshed.when(
     success: (AccessAdminWorkspaceState value) =>
         _showCreateUserDialog(context, ref, value),
@@ -60,8 +61,9 @@ Future<void> showAccessAdminCreateRoleDialog(
   final AccessAdminWorkspaceController controller = ref.read(
     accessAdminWorkspaceControllerProvider.notifier,
   );
-  final Result<AccessAdminWorkspaceState> stateResult =
-      await ref.read(accessAdminWorkspaceControllerProvider.future);
+  final Result<AccessAdminWorkspaceState> stateResult = await ref.read(
+    accessAdminWorkspaceControllerProvider.future,
+  );
   final AccessAdminWorkspaceState? state = stateResult.when(
     success: (AccessAdminWorkspaceState value) => value,
     failure: (_) => null,
@@ -69,8 +71,9 @@ Future<void> showAccessAdminCreateRoleDialog(
   if (state == null) {
     await controller.refresh();
   }
-  final Result<AccessAdminWorkspaceState> refreshed =
-      await ref.read(accessAdminWorkspaceControllerProvider.future);
+  final Result<AccessAdminWorkspaceState> refreshed = await ref.read(
+    accessAdminWorkspaceControllerProvider.future,
+  );
   return refreshed.when(
     success: (AccessAdminWorkspaceState value) =>
         _showCreateRoleDialog(context, ref, value),
@@ -232,7 +235,9 @@ Future<void> _showCreateUserDialog(
             if (tenantId == null) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(context.l10n.accessAdminTenantContextRequiredBody),
+                  content: Text(
+                    context.l10n.accessAdminTenantContextRequiredBody,
+                  ),
                 ),
               );
               return;

@@ -12,11 +12,14 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
+import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_catalog_config_panel.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
-import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_wizard.dart';
+import 'package:hosspi_hms/core/utils/app_slug.dart';
+import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_similarity.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_similarity_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -290,9 +293,8 @@ class _SetupDetailDialog extends ConsumerWidget {
   }
 }
 
-typedef _ProfileFormSubmitRegistrar = void Function(
-  Future<bool> Function() submit,
-);
+typedef _ProfileFormSubmitRegistrar =
+    void Function(Future<bool> Function() submit);
 
 typedef _SetupProfileFormBuilder =
     Widget Function(
@@ -362,15 +364,14 @@ class _SetupProfileDialogState extends ConsumerState<_SetupProfileDialog> {
       closeEnabled: !submission.isSubmitting,
       content: setup.when(
         data: (result) => result.when(
-          success: (FacilitySetupSnapshot snapshot) =>
-              widget.formBuilder(
-                context,
-                snapshot,
-                accessPolicy.canManageTenant(),
-                accessPolicy.canManageFacility(),
-                accessPolicy.canEditFacilitySetupStructure(),
-                _registerSubmitHandler,
-              ),
+          success: (FacilitySetupSnapshot snapshot) => widget.formBuilder(
+            context,
+            snapshot,
+            accessPolicy.canManageTenant(),
+            accessPolicy.canManageFacility(),
+            accessPolicy.canEditFacilitySetupStructure(),
+            _registerSubmitHandler,
+          ),
           failure: (AppFailure failure) => AppFailureStateView(
             failure: failure,
             onRetry: () {
@@ -418,19 +419,26 @@ Future<void> _openTenantProfileModal(
   bool forceCreate = false,
 }) {
   final AppLocalizations l10n = context.l10n;
-  final TenantProfile? resolvedTenant = forceCreate ? null : tenant;
 
   return showAppDialog<void>(
     context: context,
     builder: (BuildContext dialogContext) => Consumer(
       builder: (BuildContext context, WidgetRef ref, _) {
-        ref
-            .read(tenantFacilitySetupSubmissionProvider.notifier)
-            .clearFailure();
+        ref.read(tenantFacilitySetupSubmissionProvider.notifier).clearFailure();
+        final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+        final String dialogTitle = forceCreate
+            ? l10n.tenantFacilityCreateTenantTitle
+            : tenant != null
+            ? l10n.tenantFacilityEditTenantTitle
+            : l10n.tenantFacilityTenantSectionTitle;
+        final String saveLabel = forceCreate
+            ? l10n.tenantFacilityCreateTenantAction
+            : l10n.tenantFacilitySaveTenantAction;
+
         return _SetupProfileDialog(
-          title: l10n.tenantFacilityTenantSectionTitle,
+          title: dialogTitle,
           icon: Icons.apartment_outlined,
-          saveLabel: l10n.tenantFacilitySaveTenantAction,
+          saveLabel: saveLabel,
           formBuilder:
               (
                 BuildContext context,
@@ -439,14 +447,29 @@ Future<void> _openTenantProfileModal(
                 bool canManageFacility,
                 bool canEditHrStructure,
                 _ProfileFormSubmitRegistrar registerSubmitHandler,
-              ) => _TenantProfileForm(
-                tenant: resolvedTenant ?? snapshot.tenant,
-                canSubmit: canManageTenant,
-                framed: false,
-                isCreate: forceCreate || resolvedTenant == null,
-                hideSubmitButton: true,
-                registerSubmitHandler: registerSubmitHandler,
-              ),
+              ) {
+                final TenantProfile? formTenant = forceCreate
+                    ? null
+                    : (tenant ?? snapshot.tenant);
+                final bool isCreate = forceCreate || formTenant == null;
+
+                return _TenantProfileForm(
+                  tenant: formTenant,
+                  canSubmit: isCreate
+                      ? accessPolicy.canCreateTenant()
+                      : canManageTenant,
+                  framed: false,
+                  isCreate: isCreate,
+                  sectionBody: isCreate
+                      ? l10n.tenantFacilityCreateTenantBody
+                      : l10n.tenantFacilityTenantSectionBody,
+                  permissionDeniedMessage: isCreate
+                      ? l10n.tenantFacilityCreateTenantPermissionRequired
+                      : l10n.tenantFacilityPermissionRequired,
+                  hideSubmitButton: true,
+                  registerSubmitHandler: registerSubmitHandler,
+                );
+              },
         );
       },
     ),
@@ -465,9 +488,7 @@ Future<void> _openFacilityProfileModal(
     context: context,
     builder: (BuildContext dialogContext) => Consumer(
       builder: (BuildContext context, WidgetRef ref, _) {
-        ref
-            .read(tenantFacilitySetupSubmissionProvider.notifier)
-            .clearFailure();
+        ref.read(tenantFacilitySetupSubmissionProvider.notifier).clearFailure();
         return _SetupProfileDialog(
           title: l10n.tenantFacilityFacilitySectionTitle,
           icon: Icons.local_hospital_outlined,
@@ -901,6 +922,8 @@ class _TenantProfileForm extends ConsumerStatefulWidget {
     required this.canSubmit,
     this.framed = true,
     this.isCreate = false,
+    this.sectionBody,
+    this.permissionDeniedMessage,
     this.hideSubmitButton = false,
     this.registerSubmitHandler,
   });
@@ -909,6 +932,8 @@ class _TenantProfileForm extends ConsumerStatefulWidget {
   final bool canSubmit;
   final bool framed;
   final bool isCreate;
+  final String? sectionBody;
+  final String? permissionDeniedMessage;
   final bool hideSubmitButton;
   final _ProfileFormSubmitRegistrar? registerSubmitHandler;
 
@@ -917,10 +942,19 @@ class _TenantProfileForm extends ConsumerStatefulWidget {
 }
 
 class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
+  static const AppPageRequest _duplicateLookupRequest = AppPageRequest(
+    pageSize: 100,
+  );
+
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _slugController;
   late bool _isActive;
+  bool _slugManuallyEdited = false;
+  String? _nameErrorText;
+  String? _slugErrorText;
+  List<TenantSimilarityMatch> _similarMatches = const <TenantSimilarityMatch>[];
+  bool _similarityAccepted = false;
 
   @override
   void initState() {
@@ -928,6 +962,10 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
     _nameController = TextEditingController(text: widget.tenant?.name);
     _slugController = TextEditingController(text: widget.tenant?.slug);
     _isActive = widget.tenant?.isActive ?? true;
+    _slugManuallyEdited =
+        widget.tenant?.slug != null && widget.tenant!.slug!.trim().isNotEmpty;
+    _nameController.addListener(_handleNameChanged);
+    _slugController.addListener(_handleSlugChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       widget.registerSubmitHandler?.call(_submit);
     });
@@ -940,14 +978,60 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
       _nameController.text = widget.tenant?.name ?? '';
       _slugController.text = widget.tenant?.slug ?? '';
       _isActive = widget.tenant?.isActive ?? true;
+      _slugManuallyEdited =
+          widget.tenant?.slug != null && widget.tenant!.slug!.trim().isNotEmpty;
+      _clearDuplicateState();
     }
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _slugController.dispose();
+    _nameController
+      ..removeListener(_handleNameChanged)
+      ..dispose();
+    _slugController
+      ..removeListener(_handleSlugChanged)
+      ..dispose();
     super.dispose();
+  }
+
+  void _handleNameChanged() {
+    _clearDuplicateState();
+    if (!widget.isCreate || _slugManuallyEdited) {
+      return;
+    }
+
+    final String slug = slugify(_nameController.text);
+    if (_slugController.text != slug) {
+      _slugController.text = slug;
+    }
+  }
+
+  void _handleSlugChanged() {
+    _clearDuplicateState();
+    if (!widget.isCreate) {
+      return;
+    }
+
+    final String autoSlug = slugify(_nameController.text);
+    final String currentSlug = _slugController.text.trim();
+    _slugManuallyEdited = currentSlug.isNotEmpty && currentSlug != autoSlug;
+  }
+
+  void _clearDuplicateState() {
+    if (_nameErrorText == null &&
+        _slugErrorText == null &&
+        _similarMatches.isEmpty &&
+        !_similarityAccepted) {
+      return;
+    }
+
+    setState(() {
+      _nameErrorText = null;
+      _slugErrorText = null;
+      _similarMatches = const <TenantSimilarityMatch>[];
+      _similarityAccepted = false;
+    });
   }
 
   @override
@@ -955,6 +1039,8 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
+    final String sectionBody =
+        widget.sectionBody ?? l10n.tenantFacilityTenantSectionBody;
 
     final Widget form = Form(
       key: _formKey,
@@ -966,12 +1052,14 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
             labelText: l10n.tenantFacilityTenantNameLabel,
             isRequired: true,
             textCapitalization: TextCapitalization.words,
+            errorText: _nameErrorText,
             validator: AppValidators.requiredText(l10n.validationRequired),
           ),
           AppTextField(
             controller: _slugController,
             enabled: widget.canSubmit && !submission.isSubmitting,
             labelText: l10n.tenantFacilityTenantSlugLabel,
+            errorText: _slugErrorText,
           ),
           AppSwitchField(
             title: l10n.tenantFacilityActiveLabel,
@@ -983,17 +1071,23 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
               });
             },
           ),
+          if (_similarMatches.isNotEmpty)
+            TenantSimilarityWarningPanel(matches: _similarMatches),
           if (!widget.hideSubmitButton)
             _SubmitButton(
               enabled: widget.canSubmit,
               isLoading: submission.isSubmitting,
-              label: l10n.tenantFacilitySaveTenantAction,
+              label: widget.isCreate
+                  ? l10n.tenantFacilityCreateTenantAction
+                  : l10n.tenantFacilitySaveTenantAction,
               onPressed: _submit,
+              permissionDeniedMessage: widget.permissionDeniedMessage,
             )
           else
             _SubmissionFeedback(
               enabled: widget.canSubmit,
               failure: submission.failure,
+              permissionDeniedMessage: widget.permissionDeniedMessage,
             ),
         ],
       ),
@@ -1001,8 +1095,10 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
 
     if (widget.framed) {
       return AppScreenSection(
-        title: l10n.tenantFacilityTenantSectionTitle,
-        body: l10n.tenantFacilityTenantSectionBody,
+        title: widget.isCreate
+            ? l10n.tenantFacilityCreateTenantTitle
+            : l10n.tenantFacilityTenantSectionTitle,
+        body: sectionBody,
         child: form,
       );
     }
@@ -1011,7 +1107,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
-          l10n.tenantFacilityTenantSectionBody,
+          sectionBody,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -1027,6 +1123,13 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
       return false;
     }
 
+    if (widget.isCreate) {
+      final bool canProceed = await _guardAgainstDuplicates();
+      if (!canProceed) {
+        return false;
+      }
+    }
+
     return ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveTenant(
@@ -1035,6 +1138,94 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
           slug: _slugController.text,
           isActive: _isActive,
         );
+  }
+
+  Future<bool> _guardAgainstDuplicates() async {
+    final AppLocalizations l10n = context.l10n;
+    final List<TenantProfile> existing = await _loadExistingTenants();
+    final TenantDuplicateCheckResult result = checkTenantDuplicates(
+      name: _nameController.text,
+      slug: _slugController.text,
+      existing: existing,
+      excludeTenantId: widget.tenant?.id,
+    );
+
+    if (result.hasExactConflict) {
+      setState(() {
+        _nameErrorText = result.exactNameConflict
+            ? l10n.tenantFacilityTenantNameAlreadyInUse
+            : null;
+        _slugErrorText = result.exactSlugConflict
+            ? l10n.tenantFacilityTenantSlugAlreadyInUse
+            : null;
+        _similarMatches = const <TenantSimilarityMatch>[];
+      });
+      return false;
+    }
+
+    final List<TenantSimilarityMatch> similarMatches =
+        result.nonExactSimilarMatches;
+    if (similarMatches.isEmpty || _similarityAccepted) {
+      setState(() {
+        _similarMatches = const <TenantSimilarityMatch>[];
+      });
+      return true;
+    }
+
+    final bool proceed = await showTenantSimilarityDialog(
+      context,
+      matches: similarMatches,
+    );
+    if (!mounted) {
+      return false;
+    }
+    if (!proceed) {
+      setState(() {
+        _similarMatches = similarMatches;
+      });
+      return false;
+    }
+
+    setState(() {
+      _similarMatches = similarMatches;
+      _similarityAccepted = true;
+    });
+    return true;
+  }
+
+  Future<List<TenantProfile>> _loadExistingTenants() async {
+    final TenantFacilityRepository repository = ref.read(
+      tenantFacilityRepositoryProvider,
+    );
+    final String name = _nameController.text.trim();
+    final String slug = _slugController.text.trim();
+    final Set<String> seenIds = <String>{};
+    final List<TenantProfile> tenants = <TenantProfile>[];
+
+    Future<void> appendMatches(String? search) async {
+      final Result<AppPage<TenantProfile>> result = await repository
+          .listTenants(request: _duplicateLookupRequest, search: search);
+      result.when(
+        success: (AppPage<TenantProfile> page) {
+          for (final TenantProfile tenant in page.items) {
+            if (seenIds.add(tenant.id)) {
+              tenants.add(tenant);
+            }
+          }
+        },
+        failure: (_) {},
+      );
+    }
+
+    await appendMatches(name.isEmpty ? null : name);
+    if (slug.isNotEmpty && slug != name) {
+      await appendMatches(slug);
+    }
+    if (tenants.isEmpty) {
+      await appendMatches(null);
+    }
+
+    return tenants;
   }
 }
 
@@ -1084,7 +1275,8 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   List<TenantProfile> _tenantOptions = const <TenantProfile>[];
   bool _loadingTenants = false;
 
-  FacilityProfile? get _activeFacility => widget.facility ?? widget.snapshot.facility;
+  FacilityProfile? get _activeFacility =>
+      widget.facility ?? widget.snapshot.facility;
 
   @override
   void initState() {
@@ -1095,10 +1287,14 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     _nameController = TextEditingController(text: facility?.name);
     _existingLogoUrl = facility?.logoUrl;
     _phoneController = TextEditingController(
-      text: widget.facility == null ? widget.snapshot.contactAddress.phone : null,
+      text: widget.facility == null
+          ? widget.snapshot.contactAddress.phone
+          : null,
     );
     _emailController = TextEditingController(
-      text: widget.facility == null ? widget.snapshot.contactAddress.email : null,
+      text: widget.facility == null
+          ? widget.snapshot.contactAddress.email
+          : null,
     );
     _addressLineController = TextEditingController(
       text: widget.facility == null
@@ -1106,7 +1302,9 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
           : null,
     );
     _cityController = TextEditingController(
-      text: widget.facility == null ? widget.snapshot.contactAddress.city : null,
+      text: widget.facility == null
+          ? widget.snapshot.contactAddress.city
+          : null,
     );
     _countryController = TextEditingController(
       text: widget.facility == null
@@ -3386,22 +3584,29 @@ class _SetupGrid extends StatelessWidget {
 }
 
 class _SubmissionFeedback extends StatelessWidget {
-  const _SubmissionFeedback({required this.enabled, this.failure});
+  const _SubmissionFeedback({
+    required this.enabled,
+    this.failure,
+    this.permissionDeniedMessage,
+  });
 
   final bool enabled;
   final AppFailure? failure;
+  final String? permissionDeniedMessage;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final String deniedMessage =
+        permissionDeniedMessage ?? l10n.tenantFacilityPermissionRequired;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         if (!enabled) ...<Widget>[
           Text(
-            l10n.tenantFacilityPermissionRequired,
+            deniedMessage,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -3427,12 +3632,14 @@ class _SubmitButton extends ConsumerWidget {
     required this.isLoading,
     required this.label,
     required this.onPressed,
+    this.permissionDeniedMessage,
   });
 
   final bool enabled;
   final bool isLoading;
   final String label;
   final VoidCallback onPressed;
+  final String? permissionDeniedMessage;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -3457,7 +3664,7 @@ class _SubmitButton extends ConsumerWidget {
         if (!enabled) ...<Widget>[
           SizedBox(height: Theme.of(context).spacing.xs),
           Text(
-            l10n.tenantFacilityPermissionRequired,
+            permissionDeniedMessage ?? l10n.tenantFacilityPermissionRequired,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),

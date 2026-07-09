@@ -18,18 +18,13 @@ Future<Uint8List?> showAppImageCropDialog({
   return showAppDialog<Uint8List?>(
     context: context,
     barrierDismissible: false,
-    builder: (BuildContext dialogContext) => _AppImageCropDialog(
-      imageBytes: imageBytes,
-      aspectRatio: aspectRatio,
-    ),
+    builder: (BuildContext dialogContext) =>
+        _AppImageCropDialog(imageBytes: imageBytes, aspectRatio: aspectRatio),
   );
 }
 
 class _AppImageCropDialog extends StatefulWidget {
-  const _AppImageCropDialog({
-    required this.imageBytes,
-    this.aspectRatio,
-  });
+  const _AppImageCropDialog({required this.imageBytes, this.aspectRatio});
 
   final Uint8List imageBytes;
   final double? aspectRatio;
@@ -110,9 +105,7 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
           label: l10n.commonCancelActionLabel,
           leadingIcon: Icons.close,
           enabled: !_isCropping,
-          onPressed: _isCropping
-              ? null
-              : () => Navigator.of(context).pop(),
+          onPressed: _isCropping ? null : () => Navigator.of(context).pop(),
         ),
         AppButton.primary(
           label: l10n.appImageCropApplyAction,

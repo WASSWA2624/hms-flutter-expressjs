@@ -138,6 +138,8 @@ abstract final class ValidationMessagePresenter {
       'password' => l10n.authPasswordLabel,
       'old_password' => l10n.authCurrentPasswordLabel,
       'new_password' => l10n.authNewPasswordLabel,
+      'name' => l10n.tenantFacilityTenantNameLabel,
+      'slug' => l10n.tenantFacilityTenantSlugLabel,
       _ => AppDisplay.apiLabel(field),
     };
   }

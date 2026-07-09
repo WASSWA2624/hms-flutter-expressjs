@@ -111,7 +111,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
     await _reload(resetPage: false);
   }
 
-  bool get _canManage => ref.read(appAccessPolicyProvider).canManageTenant();
+  bool get _canCreate => ref.read(appAccessPolicyProvider).canCreateTenant();
 
   @override
   Widget build(BuildContext context) {
@@ -160,7 +160,8 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                       previousPageLabel: l10n.hrPreviousPageLabel,
                       nextPageLabel: l10n.hrNextPageLabel,
                       pageLabelBuilder: (AppPage<TenantProfile> page) {
-                        final int total = page.totalItemCount ?? page.items.length;
+                        final int total =
+                            page.totalItemCount ?? page.items.length;
                         if (total == 0) return l10n.commonTableEmptyLabel;
                         final int start = page.pageIndex * page.pageSize + 1;
                         final int end = start + page.items.length - 1;
@@ -191,17 +192,18 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                         title: l10n.tenantFacilityManageTenantsTitle,
                         body: l10n.tenantFacilityNoTenants,
                       ),
-                      mobileItemBuilder: (BuildContext context, TenantProfile tenant) {
-                        return ListTile(
-                          title: Text(tenant.name),
-                          subtitle: Text(tenant.slug ?? tenant.id),
-                          trailing: Text(
-                            tenant.isActive
-                                ? l10n.commonYesLabel
-                                : l10n.commonNoLabel,
-                          ),
-                        );
-                      },
+                      mobileItemBuilder:
+                          (BuildContext context, TenantProfile tenant) {
+                            return ListTile(
+                              title: Text(tenant.name),
+                              subtitle: Text(tenant.slug ?? tenant.id),
+                              trailing: Text(
+                                tenant.isActive
+                                    ? l10n.commonYesLabel
+                                    : l10n.commonNoLabel,
+                              ),
+                            );
+                          },
                     ),
             ),
           ],
@@ -215,7 +217,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
               ? null
               : () => unawaited(_reload(resetPage: false)),
         ),
-        if (_canManage)
+        if (_canCreate)
           AppButton.primary(
             label: l10n.tenantFacilityAddTenantAction,
             leadingIcon: Icons.add_business_outlined,
@@ -246,7 +248,8 @@ class _ManageFacilitiesDialog extends ConsumerStatefulWidget {
       _ManageFacilitiesDialogState();
 }
 
-class _ManageFacilitiesDialogState extends ConsumerState<_ManageFacilitiesDialog> {
+class _ManageFacilitiesDialogState
+    extends ConsumerState<_ManageFacilitiesDialog> {
   static const int _pageSize = 12;
 
   final TextEditingController _searchController = TextEditingController();
@@ -427,7 +430,8 @@ class _ManageFacilitiesDialogState extends ConsumerState<_ManageFacilitiesDialog
                       previousPageLabel: l10n.hrPreviousPageLabel,
                       nextPageLabel: l10n.hrNextPageLabel,
                       pageLabelBuilder: (AppPage<FacilityProfile> page) {
-                        final int total = page.totalItemCount ?? page.items.length;
+                        final int total =
+                            page.totalItemCount ?? page.items.length;
                         if (total == 0) return l10n.commonTableEmptyLabel;
                         final int start = page.pageIndex * page.pageSize + 1;
                         final int end = start + page.items.length - 1;
@@ -465,16 +469,16 @@ class _ManageFacilitiesDialogState extends ConsumerState<_ManageFacilitiesDialog
                       ),
                       mobileItemBuilder:
                           (BuildContext context, FacilityProfile facility) {
-                        return ListTile(
-                          title: Text(facility.name),
-                          subtitle: Text(_tenantLabel(facility.tenantId)),
-                          trailing: Text(
-                            facility.isActive
-                                ? l10n.commonYesLabel
-                                : l10n.commonNoLabel,
-                          ),
-                        );
-                      },
+                            return ListTile(
+                              title: Text(facility.name),
+                              subtitle: Text(_tenantLabel(facility.tenantId)),
+                              trailing: Text(
+                                facility.isActive
+                                    ? l10n.commonYesLabel
+                                    : l10n.commonNoLabel,
+                              ),
+                            );
+                          },
                     ),
             ),
           ],

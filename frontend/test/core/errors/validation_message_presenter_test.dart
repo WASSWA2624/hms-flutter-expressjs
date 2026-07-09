@@ -46,6 +46,17 @@ void main() {
       );
     });
 
+    test('maps tenant field errors to form labels', () {
+      final AppFailure failure = AppFailure.validation(
+        fieldMessages: <String, String>{'slug': 'slug is already in use'},
+      );
+
+      expect(
+        ValidationMessagePresenter.displayMessage(failure, l10n),
+        'Tenant slug is already in use.',
+      );
+    });
+
     test('preserves already human-readable backend messages', () {
       final AppFailure failure = AppFailure.validation(
         detailMessage: 'Invalid email format',

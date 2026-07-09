@@ -427,10 +427,7 @@ class _AccessAdminWorkspaceContentState
     final String? tenantId =
         state.query.tenantId ?? state.data.lookups.tenants.firstOrNull?.id;
     if (tenantId == null) {
-      _showSnack(
-        context,
-        context.l10n.accessAdminTenantContextRequiredBody,
-      );
+      _showSnack(context, context.l10n.accessAdminTenantContextRequiredBody);
       return;
     }
 

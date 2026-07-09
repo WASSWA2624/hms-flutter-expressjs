@@ -9070,6 +9070,84 @@ abstract class AppLocalizations {
   /// **'Save tenant'**
   String get tenantFacilitySaveTenantAction;
 
+  /// Create tenant dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Create tenant'**
+  String get tenantFacilityCreateTenantTitle;
+
+  /// Create tenant dialog body.
+  ///
+  /// In en, this message translates to:
+  /// **'Register a new organization on the platform.'**
+  String get tenantFacilityCreateTenantBody;
+
+  /// Edit tenant dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit tenant'**
+  String get tenantFacilityEditTenantTitle;
+
+  /// Create tenant primary action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Create tenant'**
+  String get tenantFacilityCreateTenantAction;
+
+  /// Shown when create tenant is disabled by permissions.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not have permission to create tenants.'**
+  String get tenantFacilityCreateTenantPermissionRequired;
+
+  /// Inline validation when tenant name duplicates an existing tenant.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant name is already in use.'**
+  String get tenantFacilityTenantNameAlreadyInUse;
+
+  /// Inline validation when tenant slug duplicates an existing tenant.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant slug is already in use.'**
+  String get tenantFacilityTenantSlugAlreadyInUse;
+
+  /// Title for similar tenant confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar tenant found'**
+  String get tenantFacilitySimilarTenantDialogTitle;
+
+  /// Body for similar tenant confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'The tenant you are creating looks similar to existing organizations. Review the matches below before continuing.'**
+  String get tenantFacilitySimilarTenantDialogBody;
+
+  /// Warning banner title for similar tenant matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Potential duplicate tenant'**
+  String get tenantFacilitySimilarTenantWarningTitle;
+
+  /// Warning banner body for similar tenant matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the similar tenants below before saving.'**
+  String get tenantFacilitySimilarTenantWarningBody;
+
+  /// Similarity score label for tenant duplicate review.
+  ///
+  /// In en, this message translates to:
+  /// **'{score}% match'**
+  String tenantFacilitySimilarTenantScoreLabel(int score);
+
+  /// Confirm create tenant despite similar matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Proceed anyway'**
+  String get tenantFacilityProceedCreateTenantAction;
+
   /// Facility profile form section title.
   ///
   /// In en, this message translates to:

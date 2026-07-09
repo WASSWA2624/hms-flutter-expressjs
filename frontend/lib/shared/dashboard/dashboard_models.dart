@@ -85,11 +85,7 @@ final class DashboardShortcutData {
 
 @immutable
 final class DashboardTrendPointData {
-  const DashboardTrendPointData({
-    required this.value,
-    this.label,
-    this.date,
-  });
+  const DashboardTrendPointData({required this.value, this.label, this.date});
 
   final num value;
   final String? label;
@@ -178,10 +174,7 @@ final class DashboardPriorityPanelData {
 
 @immutable
 final class DashboardChartsData {
-  const DashboardChartsData({
-    required this.trend,
-    required this.distribution,
-  });
+  const DashboardChartsData({required this.trend, required this.distribution});
 
   final DashboardTrendChartData trend;
   final DashboardDistributionChartData distribution;

@@ -233,10 +233,7 @@ DashboardChartsData homeDashboardChartsData({
           .toList(growable: false),
     ),
     distribution: DashboardDistributionChartData(
-      title: homeDistributionTitle(
-        profile.role,
-        dashboard.distribution.title,
-      ),
+      title: homeDistributionTitle(profile.role, dashboard.distribution.title),
       total: dashboard.distribution.total,
       emptyMessage: l10n.homeDistributionEmptyMessage,
       totalLabel: 'total',

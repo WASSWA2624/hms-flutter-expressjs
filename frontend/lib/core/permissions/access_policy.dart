@@ -257,6 +257,10 @@ final class AppAccessPolicy {
     return isElevated || grants(AppPermissions.tenantAdmin);
   }
 
+  bool canCreateTenant() {
+    return isElevated || grants(AppPermissions.systemAdmin);
+  }
+
   bool canManageFacility() {
     return isElevated ||
         grantsAny(const <AppPermission>[

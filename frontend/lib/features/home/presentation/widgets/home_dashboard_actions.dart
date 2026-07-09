@@ -1347,11 +1347,21 @@ void homeInvokeAction(
     return;
   }
   if (action.id == 'manage_roles_access') {
-    unawaited(showAccessAdminWorkspaceDialog(context, initialPanel: AccessAdminPanel.roles));
+    unawaited(
+      showAccessAdminWorkspaceDialog(
+        context,
+        initialPanel: AccessAdminPanel.roles,
+      ),
+    );
     return;
   }
   if (action.id == 'manage_users') {
-    unawaited(showAccessAdminWorkspaceDialog(context, initialPanel: AccessAdminPanel.directory));
+    unawaited(
+      showAccessAdminWorkspaceDialog(
+        context,
+        initialPanel: AccessAdminPanel.directory,
+      ),
+    );
     return;
   }
   if (action.id == 'manage_users_roles') {

@@ -136,7 +136,9 @@ class _DashboardDistributionPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool hasData =
         chart.total > 0 ||
-        chart.segments.any((DashboardDistributionSegmentData s) => s.value != 0);
+        chart.segments.any(
+          (DashboardDistributionSegmentData s) => s.value != 0,
+        );
 
     return AppSectionPanel(
       title: chart.title,

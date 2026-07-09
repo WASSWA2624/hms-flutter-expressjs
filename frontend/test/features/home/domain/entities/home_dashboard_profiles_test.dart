@@ -44,24 +44,18 @@ void main() {
     test('super admin profile uses platform create and manage actions', () {
       final profile = homeProfileForRole(AppRole.superAdmin);
 
-      expect(
-        profile.quickActionIds,
-        <String>[
-          'create_tenant',
-          'create_facility',
-          'create_role',
-          'create_user',
-        ],
-      );
-      expect(
-        profile.emptyActionIds,
-        <String>[
-          'manage_tenants',
-          'manage_facilities',
-          'manage_roles_access',
-          'manage_users',
-        ],
-      );
+      expect(profile.quickActionIds, <String>[
+        'create_tenant',
+        'create_facility',
+        'create_role',
+        'create_user',
+      ]);
+      expect(profile.emptyActionIds, <String>[
+        'manage_tenants',
+        'manage_facilities',
+        'manage_roles_access',
+        'manage_users',
+      ]);
       expect(profile.quickActionIds, isNot(contains('select_context')));
     });
 

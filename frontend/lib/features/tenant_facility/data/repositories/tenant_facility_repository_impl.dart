@@ -65,8 +65,7 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
           'order': 'asc',
         }),
       ),
-      decoder: (Object? data) =>
-          _decodeTenantPage(data, request: request).page,
+      decoder: (Object? data) => _decodeTenantPage(data, request: request).page,
     );
   }
 

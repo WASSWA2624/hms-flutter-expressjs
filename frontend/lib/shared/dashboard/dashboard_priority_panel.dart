@@ -245,11 +245,7 @@ class _DashboardWorklistRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(
-            item.icon,
-            size: iconSize,
-            color: colorScheme.primary,
-          ),
+          Icon(item.icon, size: iconSize, color: colorScheme.primary),
           SizedBox(width: theme.spacing.sm),
           Expanded(
             child: Row(
@@ -291,7 +287,11 @@ class _DashboardWorklistRow extends StatelessWidget {
       return row;
     }
 
-    return InkWell(onTap: item.onTap, borderRadius: BorderRadius.circular(theme.radius.md), child: row);
+    return InkWell(
+      onTap: item.onTap,
+      borderRadius: BorderRadius.circular(theme.radius.md),
+      child: row,
+    );
   }
 }
 
@@ -378,11 +378,7 @@ class _DashboardQuietState extends StatelessWidget {
       padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
       child: Row(
         children: <Widget>[
-          Icon(
-            Icons.check_circle_outline,
-            size: 24,
-            color: successColor,
-          ),
+          Icon(Icons.check_circle_outline, size: 24, color: successColor),
           SizedBox(width: theme.spacing.sm),
           Text(
             'All clear',

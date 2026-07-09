@@ -4846,6 +4846,54 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilitySaveTenantAction => 'Save tenant';
 
   @override
+  String get tenantFacilityCreateTenantTitle => 'Create tenant';
+
+  @override
+  String get tenantFacilityCreateTenantBody =>
+      'Register a new organization on the platform.';
+
+  @override
+  String get tenantFacilityEditTenantTitle => 'Edit tenant';
+
+  @override
+  String get tenantFacilityCreateTenantAction => 'Create tenant';
+
+  @override
+  String get tenantFacilityCreateTenantPermissionRequired =>
+      'You do not have permission to create tenants.';
+
+  @override
+  String get tenantFacilityTenantNameAlreadyInUse =>
+      'Tenant name is already in use.';
+
+  @override
+  String get tenantFacilityTenantSlugAlreadyInUse =>
+      'Tenant slug is already in use.';
+
+  @override
+  String get tenantFacilitySimilarTenantDialogTitle => 'Similar tenant found';
+
+  @override
+  String get tenantFacilitySimilarTenantDialogBody =>
+      'The tenant you are creating looks similar to existing organizations. Review the matches below before continuing.';
+
+  @override
+  String get tenantFacilitySimilarTenantWarningTitle =>
+      'Potential duplicate tenant';
+
+  @override
+  String get tenantFacilitySimilarTenantWarningBody =>
+      'Review the similar tenants below before saving.';
+
+  @override
+  String tenantFacilitySimilarTenantScoreLabel(int score) {
+    return '$score% match';
+  }
+
+  @override
+  String get tenantFacilityProceedCreateTenantAction => 'Proceed anyway';
+
+  @override
   String get tenantFacilityFacilitySectionTitle => 'Facility profile';
 
   @override

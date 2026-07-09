@@ -6243,6 +6243,63 @@
   "@tenantFacilitySaveTenantAction": {
     "description": "Save tenant button label."
   },
+  "tenantFacilityCreateTenantTitle": "Create tenant",
+  "@tenantFacilityCreateTenantTitle": {
+    "description": "Create tenant dialog title."
+  },
+  "tenantFacilityCreateTenantBody": "Register a new organization on the platform.",
+  "@tenantFacilityCreateTenantBody": {
+    "description": "Create tenant dialog body."
+  },
+  "tenantFacilityEditTenantTitle": "Edit tenant",
+  "@tenantFacilityEditTenantTitle": {
+    "description": "Edit tenant dialog title."
+  },
+  "tenantFacilityCreateTenantAction": "Create tenant",
+  "@tenantFacilityCreateTenantAction": {
+    "description": "Create tenant primary action label."
+  },
+  "tenantFacilityCreateTenantPermissionRequired": "You do not have permission to create tenants.",
+  "@tenantFacilityCreateTenantPermissionRequired": {
+    "description": "Shown when create tenant is disabled by permissions."
+  },
+  "tenantFacilityTenantNameAlreadyInUse": "Tenant name is already in use.",
+  "@tenantFacilityTenantNameAlreadyInUse": {
+    "description": "Inline validation when tenant name duplicates an existing tenant."
+  },
+  "tenantFacilityTenantSlugAlreadyInUse": "Tenant slug is already in use.",
+  "@tenantFacilityTenantSlugAlreadyInUse": {
+    "description": "Inline validation when tenant slug duplicates an existing tenant."
+  },
+  "tenantFacilitySimilarTenantDialogTitle": "Similar tenant found",
+  "@tenantFacilitySimilarTenantDialogTitle": {
+    "description": "Title for similar tenant confirmation dialog."
+  },
+  "tenantFacilitySimilarTenantDialogBody": "The tenant you are creating looks similar to existing organizations. Review the matches below before continuing.",
+  "@tenantFacilitySimilarTenantDialogBody": {
+    "description": "Body for similar tenant confirmation dialog."
+  },
+  "tenantFacilitySimilarTenantWarningTitle": "Potential duplicate tenant",
+  "@tenantFacilitySimilarTenantWarningTitle": {
+    "description": "Warning banner title for similar tenant matches."
+  },
+  "tenantFacilitySimilarTenantWarningBody": "Review the similar tenants below before saving.",
+  "@tenantFacilitySimilarTenantWarningBody": {
+    "description": "Warning banner body for similar tenant matches."
+  },
+  "tenantFacilitySimilarTenantScoreLabel": "{score}% match",
+  "@tenantFacilitySimilarTenantScoreLabel": {
+    "description": "Similarity score label for tenant duplicate review.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "tenantFacilityProceedCreateTenantAction": "Proceed anyway",
+  "@tenantFacilityProceedCreateTenantAction": {
+    "description": "Confirm create tenant despite similar matches."
+  },
   "tenantFacilityFacilitySectionTitle": "Facility profile",
   "@tenantFacilityFacilitySectionTitle": {
     "description": "Facility profile form section title."

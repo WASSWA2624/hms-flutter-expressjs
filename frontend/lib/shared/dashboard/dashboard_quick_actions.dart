@@ -31,9 +31,7 @@ class DashboardQuickActions extends StatelessWidget {
       density: AppContentPanelDensity.spacious,
       backgroundColor: dashboardSectionBackgroundColor(colorScheme),
       borderColor: dashboardSectionBorderColor(colorScheme),
-      children: <Widget>[
-        DashboardActionButtonRow(actions: actions),
-      ],
+      children: <Widget>[DashboardActionButtonRow(actions: actions)],
     );
   }
 }
@@ -82,11 +80,14 @@ class DashboardActionButtonRow extends StatelessWidget {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              for (int index = 0; index < actionTiles.length; index += 1)
-                ...<Widget>[
-                  if (index > 0) SizedBox(width: gap),
-                  Expanded(child: actionTiles[index]),
-                ],
+              for (
+                int index = 0;
+                index < actionTiles.length;
+                index += 1
+              ) ...<Widget>[
+                if (index > 0) SizedBox(width: gap),
+                Expanded(child: actionTiles[index]),
+              ],
             ],
           );
         }
@@ -94,7 +95,11 @@ class DashboardActionButtonRow extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            for (int index = 0; index < actionTiles.length; index += 1) ...<Widget>[
+            for (
+              int index = 0;
+              index < actionTiles.length;
+              index += 1
+            ) ...<Widget>[
               if (index > 0) SizedBox(height: gap),
               actionTiles[index],
             ],
