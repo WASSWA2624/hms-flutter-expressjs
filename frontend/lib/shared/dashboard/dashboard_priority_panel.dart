@@ -5,6 +5,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
+import 'package:hosspi_hms/shared/dashboard/dashboard_quick_actions.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 class DashboardPriorityPanel extends StatelessWidget {
@@ -112,11 +113,14 @@ class _DashboardQueuePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isEmpty = items.isEmpty;
+
     return AppSectionPanel(
-      title: title,
+      title: isEmpty ? null : title,
+      description: isEmpty ? emptyMessage : null,
       leadingIcon: Icons.format_list_bulleted,
       density: AppContentPanelDensity.spacious,
-      trailing: items.isEmpty || onViewAll == null
+      trailing: isEmpty || onViewAll == null
           ? null
           : AppButton.tertiary(
               label: viewAllLabel,
@@ -124,12 +128,9 @@ class _DashboardQueuePanel extends StatelessWidget {
               onPressed: onViewAll,
             ),
       children: <Widget>[
-        if (items.isEmpty)
-          _DashboardEmptyState(
-            message: emptyMessage,
-            actions: emptyActions,
-          )
-        else
+        if (isEmpty && emptyActions.isNotEmpty)
+          _DashboardEmptyState(actions: emptyActions),
+        if (!isEmpty)
           for (final DashboardWorklistItemData item in items.take(maxItems))
             _DashboardWorklistRow(item: item),
       ],
@@ -342,50 +343,13 @@ class _DashboardShortcutTile extends StatelessWidget {
 }
 
 class _DashboardEmptyState extends StatelessWidget {
-  const _DashboardEmptyState({required this.message, required this.actions});
+  const _DashboardEmptyState({required this.actions});
 
-  final String message;
   final List<DashboardQuickActionData> actions;
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final DashboardQuickActionData? primaryAction =
-        actions.isNotEmpty ? actions.first : null;
-
-    return Semantics(
-      label: message,
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: theme.spacing.md),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(
-              Icons.dashboard_customize_outlined,
-              size: 32,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            SizedBox(height: theme.spacing.sm),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            if (primaryAction != null) ...<Widget>[
-              SizedBox(height: theme.spacing.md),
-              AppButton.primary(
-                label: primaryAction.label,
-                leadingIcon: primaryAction.icon,
-                onPressed: primaryAction.onPressed,
-                semanticLabel: primaryAction.semanticsLabel,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
+    return DashboardActionButtonRow(actions: actions);
   }
 }
 

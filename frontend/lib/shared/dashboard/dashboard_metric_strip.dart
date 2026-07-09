@@ -1,9 +1,6 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
-import 'package:hosspi_hms/shared/dashboard/dashboard_layout.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
 
 class DashboardMetricStrip extends StatelessWidget {
@@ -32,26 +29,16 @@ class DashboardMetricStrip extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints constraints) {
         final ThemeData theme = Theme.of(context);
         final double gap = theme.spacing.sm;
-        final int columns = dashboardMetricColumnCount(
-          constraints.maxWidth,
-          visibleCards.length,
-        );
-        final double width =
-            (constraints.maxWidth - (gap * (columns - 1))) / columns;
-        final bool singleRow = columns == visibleCards.length;
+        final bool wide = constraints.maxWidth >= AppBreakpoints.md;
         final List<Widget> cardWidgets = <Widget>[
           for (final DashboardMetricCardData card in visibleCards)
-            SizedBox(
-              width: singleRow ? null : math.max(0, width),
-              child: _DashboardMetricCard(
-                card: card,
-                compact:
-                    compact || constraints.maxWidth < AppBreakpoints.md,
-              ),
+            _DashboardMetricCard(
+              card: card,
+              compact: compact || !wide,
             ),
         ];
 
-        if (singleRow) {
+        if (wide) {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
@@ -63,10 +50,14 @@ class DashboardMetricStrip extends StatelessWidget {
           );
         }
 
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: cardWidgets,
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            for (int index = 0; index < cardWidgets.length; index += 1) ...<Widget>[
+              if (index > 0) SizedBox(height: gap),
+              cardWidgets[index],
+            ],
+          ],
         );
       },
     );
@@ -103,34 +94,29 @@ class _DashboardMetricCard extends StatelessWidget {
             child: Icon(card.icon, color: card.accent, size: 18),
           ),
           SizedBox(width: theme.spacing.sm),
+          Text(
+            card.value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: (compact
+                    ? theme.textTheme.titleLarge
+                    : theme.textTheme.headlineSmall)
+                ?.copyWith(
+              color: card.accent,
+              fontWeight: FontWeight.w800,
+              height: 1.1,
+            ),
+          ),
+          SizedBox(width: theme.spacing.xs),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  card.value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: (compact
-                          ? theme.textTheme.titleLarge
-                          : theme.textTheme.headlineSmall)
-                      ?.copyWith(
-                    color: card.accent,
-                    fontWeight: FontWeight.w800,
-                    height: 1.1,
-                  ),
-                ),
-                Text(
-                  card.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+            child: Text(
+              card.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           if (isActionable) ...<Widget>[

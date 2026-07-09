@@ -4192,7 +4192,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeViewAllAction => 'View all';
 
   @override
-  String get homeDashboardNextStepsTitle => 'Next steps';
+  String get homeDashboardNextStepsTitle => 'Quick actions';
 
   @override
   String get homeDashboardQuickLinksTitle => 'Quick links';

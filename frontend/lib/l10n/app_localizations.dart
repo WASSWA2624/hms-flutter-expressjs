@@ -8023,7 +8023,7 @@ abstract class AppLocalizations {
   /// Section title for home dashboard quick-action buttons.
   ///
   /// In en, this message translates to:
-  /// **'Next steps'**
+  /// **'Quick actions'**
   String get homeDashboardNextStepsTitle;
 
   /// Section title for home dashboard shortcut tiles.

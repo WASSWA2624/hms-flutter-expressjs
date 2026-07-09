@@ -1,31 +1,23 @@
 import 'dart:math' as math;
 
-/// Desktop: one column per visible card (even widths for 2–4 cards).
-/// Tablet: up to two per row; mobile: one or two per row.
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+
+/// Desktop & tablet (≥ md): one column per visible card on a single row.
+/// Mobile (< md): one card per row.
 int dashboardMetricColumnCount(double maxWidth, int cardCount) {
   final int count = math.max(1, cardCount);
-  if (maxWidth >= 1180) {
+  if (maxWidth >= AppBreakpoints.md) {
     return count;
-  }
-  if (maxWidth >= 760) {
-    return math.min(count, 2);
-  }
-  if (maxWidth >= 340) {
-    return math.min(count, 2);
   }
   return 1;
 }
 
+/// Desktop & tablet (≥ md): all actions on one row (max 4).
+/// Mobile (< md): one action per row.
 int dashboardQuickActionColumnCount(double maxWidth, int actionCount) {
-  final int count = math.max(1, actionCount);
-  if (maxWidth >= 1180) {
+  final int count = math.max(1, math.min(actionCount, 4));
+  if (maxWidth >= AppBreakpoints.md) {
     return count;
-  }
-  if (maxWidth >= 760) {
-    return math.min(count, 2);
-  }
-  if (maxWidth >= 340) {
-    return math.min(count, 2);
   }
   return 1;
 }
