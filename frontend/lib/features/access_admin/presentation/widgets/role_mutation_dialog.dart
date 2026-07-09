@@ -8,8 +8,9 @@ import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_en
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/forms/app_form_section.dart';
+import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
 import 'package:hosspi_hms/shared/forms/app_validators.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_mutation_dialog.dart';
 
 enum RoleMutationMode { create, edit }
@@ -133,7 +134,7 @@ Future<bool?> showRoleMutationDialog({
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
     cancelIcon: Icons.close_outlined,
-    maxWidth: 840,
+    maxWidth: 920,
     buildFields:
         (
           BuildContext context,
@@ -169,148 +170,195 @@ Future<bool?> showRoleMutationDialog({
                 );
               }
 
-              return AppFormSection(
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  if (showTenantPicker) ...<Widget>[
-                    if (isLoadingTenants)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 16),
-                        child: Center(child: CircularProgressIndicator()),
-                      )
-                    else if (tenantOptions.isEmpty)
-                      AppFormInformationBanner(
-                        title: l10n.accessAdminTenantContextRequiredTitle,
-                        message: l10n.tenantFacilitySelectTenantLoadError,
-                        variant: AppFormInformationVariant.warning,
-                        icon: Icons.apartment_outlined,
-                        children: loadTenantOptions != null
-                            ? <Widget>[
-                                AppButton.secondary(
-                                  label: l10n.commonRetryActionLabel,
-                                  enabled: !isSubmitting,
-                                  onPressed: () {
-                                    setState(() {
-                                      tenantLoadAttempted = false;
-                                      scheduledInitialTenantLoad = false;
-                                    });
-                                    unawaited(reloadTenantOptions(setState));
-                                  },
-                                ),
-                              ]
-                            : const <Widget>[],
-                      )
-                    else
-                      AppSelectField<String>.searchable(
-                        value: selectedTenantId,
-                        enabled: !isSubmitting,
-                        labelText: l10n.tenantFacilitySelectTenantLabel,
-                        isRequired: true,
-                        menuHeight: 320,
-                        options: tenantOptions
-                            .map(
-                              (AccessAdminLookupOption tenant) =>
-                                  AppSelectOption<String>(
-                                    value: tenant.id,
-                                    label: tenant.label,
-                                  ),
-                            )
-                            .toList(growable: false),
-                        onChanged: (String? value) {
-                          setState(() {
-                            selectedTenantId = value;
-                            permissionLoadAttempted = false;
-                            scheduledInitialPermissionLoad = false;
-                          });
-                          if ((value ?? '').isEmpty) {
-                            setState(() {
-                              currentPermissionLookups =
-                                  <AccessAdminLookupOption>[];
-                            });
-                            return;
-                          }
-                          unawaited(
-                            loadPermissionsForSelectedTenant(setState),
-                          );
-                        },
-                        validator: (String? value) =>
-                            (value ?? '').trim().isEmpty
-                            ? l10n.validationRequired
-                            : null,
-                      ),
+                  if (mode == RoleMutationMode.create) ...<Widget>[
+                    AppMessagePanel(
+                      tone: AppWorkspaceStatusTone.info,
+                      icon: Icons.lightbulb_outline,
+                      message: l10n.accessAdminCreateRoleIntro,
+                      density: AppContentPanelDensity.compact,
+                    ),
                     SizedBox(height: Theme.of(context).spacing.md),
                   ],
-                  AppTextField(
-                    controller: nameController,
-                    enabled: fieldsEnabled,
-                    labelText: l10n.accessAdminRoleNameLabel,
-                    isRequired: true,
-                    validator: AppValidators.requiredText(
-                      l10n.validationRequired,
-                    ),
-                  ),
-                  AppTextField(
-                    controller: descriptionController,
-                    enabled: fieldsEnabled,
-                    labelText: l10n.accessAdminRoleDescriptionLabel,
-                    maxLines: 2,
-                  ),
-                  Text(
-                    l10n.accessAdminRolePermissionsLabel,
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  SizedBox(height: Theme.of(context).spacing.xs),
-                  if (showTenantPicker && !tenantSelected && !isLoadingTenants)
-                    AppFormInformationBanner(
-                      title: l10n.accessAdminPermissionCatalogSelectTenantTitle,
-                      message: l10n.accessAdminPermissionCatalogSelectTenantMessage,
-                      icon: Icons.apartment_outlined,
-                    )
-                  else if (isLoadingPermissions)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 24),
-                      child: Center(child: CircularProgressIndicator()),
-                    )
-                  else if (permissionOptions.isEmpty)
-                    AppFormInformationBanner(
-                      title: l10n.accessAdminPermissionCatalogUnavailableTitle,
-                      message: l10n.accessAdminPermissionCatalogUnavailableMessage,
-                      variant: AppFormInformationVariant.warning,
-                      icon: Icons.security_outlined,
-                      children: loadPermissionsForTenant != null && tenantSelected
-                          ? <Widget>[
-                              AppButton.secondary(
-                                label: l10n.commonRetryActionLabel,
-                                enabled: !isSubmitting,
-                                onPressed: () => unawaited(
-                                  loadPermissionsForSelectedTenant(setState),
-                                ),
-                              ),
-                            ]
-                          : const <Widget>[],
-                    )
-                  else ...<Widget>[
-                    AppPermissionAssignmentPicker(
-                      permissions: permissionOptions,
-                      selectedPermissionIds: selectedPermissionIds,
-                      enabled: fieldsEnabled,
-                      onSelectionChanged: fieldsEnabled
-                          ? (Set<String> next) {
+                  if (showTenantPicker)
+                    AppSectionPanel(
+                      title: l10n.accessAdminCreateRoleScopeSectionTitle,
+                      description:
+                          l10n.accessAdminCreateRoleScopeSectionDescription,
+                      leadingIcon: Icons.apartment_outlined,
+                      tone: AppWorkspaceStatusTone.info,
+                      children: <Widget>[
+                        if (isLoadingTenants)
+                          _RoleMutationLoadingIndicator(
+                            label: l10n.accessAdminCreateRoleLoadingTenants,
+                          )
+                        else if (tenantOptions.isEmpty)
+                          AppFormInformationBanner(
+                            title: l10n.accessAdminTenantContextRequiredTitle,
+                            message: l10n.tenantFacilitySelectTenantLoadError,
+                            variant: AppFormInformationVariant.warning,
+                            icon: Icons.apartment_outlined,
+                            children: loadTenantOptions != null
+                                ? <Widget>[
+                                    AppButton.secondary(
+                                      label: l10n.commonRetryActionLabel,
+                                      enabled: !isSubmitting,
+                                      onPressed: () {
+                                        setState(() {
+                                          tenantLoadAttempted = false;
+                                          scheduledInitialTenantLoad = false;
+                                        });
+                                        unawaited(reloadTenantOptions(setState));
+                                      },
+                                    ),
+                                  ]
+                                : const <Widget>[],
+                          )
+                        else
+                          AppSelectField<String>.searchable(
+                            value: selectedTenantId,
+                            enabled: !isSubmitting,
+                            labelText: l10n.tenantFacilitySelectTenantLabel,
+                            isRequired: true,
+                            menuHeight: 320,
+                            options: tenantOptions
+                                .map(
+                                  (AccessAdminLookupOption tenant) =>
+                                      AppSelectOption<String>(
+                                        value: tenant.id,
+                                        label: tenant.label,
+                                      ),
+                                )
+                                .toList(growable: false),
+                            onChanged: (String? value) {
                               setState(() {
-                                selectedPermissionIds
-                                  ..clear()
-                                  ..addAll(next);
+                                selectedTenantId = value;
+                                permissionLoadAttempted = false;
+                                scheduledInitialPermissionLoad = false;
                               });
-                            }
-                          : (_) {},
+                              if ((value ?? '').isEmpty) {
+                                setState(() {
+                                  currentPermissionLookups =
+                                      <AccessAdminLookupOption>[];
+                                });
+                                return;
+                              }
+                              unawaited(
+                                loadPermissionsForSelectedTenant(setState),
+                              );
+                            },
+                            validator: (String? value) =>
+                                (value ?? '').trim().isEmpty
+                                ? l10n.validationRequired
+                                : null,
+                          ),
+                      ],
                     ),
-                    if (selectedPermissionIds.isEmpty)
-                      Text(
-                        l10n.accessAdminRolePermissionsRequired,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.error,
+                  if (showTenantPicker)
+                    SizedBox(height: Theme.of(context).spacing.md),
+                  AppSectionPanel(
+                    title: l10n.accessAdminCreateRoleDetailsSectionTitle,
+                    description: l10n.accessAdminCreateRoleDetailsSectionDescription,
+                    leadingIcon: Icons.badge_outlined,
+                    children: <Widget>[
+                      AppResponsiveFieldRow.two(
+                        gap: AppResponsiveFieldRowGap.form,
+                        breakpoint: 720,
+                        left: AppTextField(
+                          controller: nameController,
+                          enabled: fieldsEnabled,
+                          labelText: l10n.accessAdminRoleNameLabel,
+                          isRequired: true,
+                          textCapitalization: TextCapitalization.characters,
+                          validator: AppValidators.requiredText(
+                            l10n.validationRequired,
+                          ),
+                        ),
+                        right: AppTextField(
+                          controller: descriptionController,
+                          enabled: fieldsEnabled,
+                          labelText: l10n.accessAdminRoleDescriptionLabel,
+                          maxLines: 2,
                         ),
                       ),
-                  ],
+                    ],
+                  ),
+                  SizedBox(height: Theme.of(context).spacing.md),
+                  AppSectionPanel(
+                    title: l10n.accessAdminRolePermissionsLabel,
+                    description:
+                        l10n.accessAdminCreateRolePermissionsSectionDescription,
+                    leadingIcon: Icons.security_outlined,
+                    trailing: permissionOptions.isNotEmpty
+                        ? _RoleMutationSelectionChip(
+                            selectedCount: selectedPermissionIds.length,
+                            totalCount: permissionOptions.length,
+                          )
+                        : null,
+                    children: <Widget>[
+                      if (showTenantPicker &&
+                          !tenantSelected &&
+                          !isLoadingTenants)
+                        AppMessagePanel(
+                          tone: AppWorkspaceStatusTone.info,
+                          icon: Icons.touch_app_outlined,
+                          title: l10n.accessAdminPermissionCatalogSelectTenantTitle,
+                          message:
+                              l10n.accessAdminPermissionCatalogSelectTenantMessage,
+                          density: AppContentPanelDensity.compact,
+                        )
+                      else if (isLoadingPermissions)
+                        _RoleMutationLoadingIndicator(
+                          label: l10n.accessAdminCreateRoleLoadingPermissions,
+                        )
+                      else if (permissionOptions.isEmpty)
+                        AppFormInformationBanner(
+                          title: l10n.accessAdminPermissionCatalogUnavailableTitle,
+                          message:
+                              l10n.accessAdminPermissionCatalogUnavailableMessage,
+                          variant: AppFormInformationVariant.warning,
+                          icon: Icons.security_outlined,
+                          children: loadPermissionsForTenant != null &&
+                                  tenantSelected
+                              ? <Widget>[
+                                  AppButton.secondary(
+                                    label: l10n.commonRetryActionLabel,
+                                    enabled: !isSubmitting,
+                                    onPressed: () => unawaited(
+                                      loadPermissionsForSelectedTenant(setState),
+                                    ),
+                                  ),
+                                ]
+                              : const <Widget>[],
+                        )
+                      else ...<Widget>[
+                        AppPermissionAssignmentPicker(
+                          permissions: permissionOptions,
+                          selectedPermissionIds: selectedPermissionIds,
+                          enabled: fieldsEnabled,
+                          onSelectionChanged: fieldsEnabled
+                              ? (Set<String> next) {
+                                  setState(() {
+                                    selectedPermissionIds
+                                      ..clear()
+                                      ..addAll(next);
+                                  });
+                                }
+                              : (_) {},
+                        ),
+                        if (selectedPermissionIds.isEmpty)
+                          Text(
+                            l10n.accessAdminRolePermissionsRequired,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                          ),
+                      ],
+                    ],
+                  ),
                 ],
               );
             },
@@ -339,4 +387,81 @@ Future<bool?> showRoleMutationDialog({
   nameController.dispose();
   descriptionController.dispose();
   return saved;
+}
+
+class _RoleMutationLoadingIndicator extends StatelessWidget {
+  const _RoleMutationLoadingIndicator({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: theme.spacing.lg),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            SizedBox(height: theme.spacing.sm),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RoleMutationSelectionChip extends StatelessWidget {
+  const _RoleMutationSelectionChip({
+    required this.selectedCount,
+    required this.totalCount,
+  });
+
+  final int selectedCount;
+  final int totalCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final bool hasSelection = selectedCount > 0;
+
+    return Chip(
+      avatar: Icon(
+        hasSelection ? Icons.check_circle_outline : Icons.radio_button_unchecked,
+        size: 16,
+        color: hasSelection ? colors.primary : colors.onSurfaceVariant,
+      ),
+      label: Text(
+        context.l10n.hrPermissionAssignmentSelectedCount(
+          selectedCount,
+          totalCount,
+        ),
+        style: theme.textTheme.labelSmall,
+      ),
+      backgroundColor: hasSelection
+          ? colors.primaryContainer
+          : colors.surfaceContainerHighest,
+      side: BorderSide(
+        color: hasSelection ? colors.primary.withValues(alpha: 0.24) : colors.outlineVariant,
+      ),
+      visualDensity: VisualDensity.compact,
+      padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
+    );
+  }
 }

@@ -91,6 +91,9 @@ class _AppPermissionAssignmentPickerState
   void _onSearchChanged() {
     setState(() {
       _searchQuery = _searchController.text.trim().toLowerCase();
+      if (_searchQuery.isNotEmpty) {
+        _expandedGroupKeys.addAll(_groupedPermissions().keys);
+      }
     });
   }
 
@@ -132,6 +135,10 @@ class _AppPermissionAssignmentPickerState
         .toList(growable: false);
   }
 
+  List<AppPermissionAssignmentOption> get _scopePermissions {
+    return _searchQuery.isEmpty ? widget.permissions : _filteredPermissions;
+  }
+
   Map<String, List<AppPermissionAssignmentOption>> _groupedPermissions() {
     final Map<String, List<AppPermissionAssignmentOption>> grouped =
         <String, List<AppPermissionAssignmentOption>>{};
@@ -164,14 +171,25 @@ class _AppPermissionAssignmentPickerState
     _updateSelection(next);
   }
 
-  void _selectAll() {
-    _updateSelection(
-      widget.permissions.map((AppPermissionAssignmentOption p) => p.id).toSet(),
-    );
+  void _selectInScope() {
+    final Set<String> next = Set<String>.from(widget.selectedPermissionIds);
+    for (final AppPermissionAssignmentOption permission in _scopePermissions) {
+      next.add(permission.id);
+    }
+    _updateSelection(next);
   }
 
-  void _clearAll() {
-    _updateSelection(<String>{});
+  void _clearInScope() {
+    if (_searchQuery.isEmpty) {
+      _updateSelection(<String>{});
+      return;
+    }
+
+    final Set<String> next = Set<String>.from(widget.selectedPermissionIds);
+    for (final AppPermissionAssignmentOption permission in _scopePermissions) {
+      next.remove(permission.id);
+    }
+    _updateSelection(next);
   }
 
   void _selectGroup(List<AppPermissionAssignmentOption> groupPermissions) {
@@ -190,6 +208,14 @@ class _AppPermissionAssignmentPickerState
     _updateSelection(next);
   }
 
+  void _toggleGroup(List<AppPermissionAssignmentOption> groupPermissions) {
+    if (_selectedCountInGroup(groupPermissions) == groupPermissions.length) {
+      _clearGroup(groupPermissions);
+    } else {
+      _selectGroup(groupPermissions);
+    }
+  }
+
   int _selectedCountInGroup(List<AppPermissionAssignmentOption> groupPermissions) {
     return groupPermissions
         .where(
@@ -199,6 +225,25 @@ class _AppPermissionAssignmentPickerState
         .length;
   }
 
+  int _selectedCountInScope(List<AppPermissionAssignmentOption> scopePermissions) {
+    return scopePermissions
+        .where(
+          (AppPermissionAssignmentOption permission) =>
+              widget.selectedPermissionIds.contains(permission.id),
+        )
+        .length;
+  }
+
+  void _handleExpansionChanged(String groupKey, bool expanded) {
+    setState(() {
+      if (expanded) {
+        _expandedGroupKeys.add(groupKey);
+      } else {
+        _expandedGroupKeys.remove(groupKey);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -206,6 +251,14 @@ class _AppPermissionAssignmentPickerState
     final int selectedCount = widget.selectedPermissionIds.length;
     final int totalCount = widget.permissions.length;
     final bool canChange = widget.enabled;
+    final bool isFiltering = _searchQuery.isNotEmpty;
+    final List<AppPermissionAssignmentOption> scopePermissions = _scopePermissions;
+    final int selectedInScope = _selectedCountInScope(scopePermissions);
+    final int scopeTotal = scopePermissions.length;
+    final bool allInScopeSelected =
+        scopeTotal > 0 && selectedInScope == scopeTotal;
+    final bool noneInScopeSelected = selectedInScope == 0;
+    final bool noneSelected = selectedCount == 0;
 
     if (totalCount == 0) {
       return const SizedBox.shrink();
@@ -214,8 +267,6 @@ class _AppPermissionAssignmentPickerState
     final Map<String, List<AppPermissionAssignmentOption>> grouped =
         _groupedPermissions();
     final List<String> groupKeys = grouped.keys.toList(growable: false)..sort();
-    final bool allSelected = selectedCount == totalCount;
-    final bool noneSelected = selectedCount == 0;
 
     return AppFormSection(
       children: <Widget>[
@@ -226,25 +277,38 @@ class _AppPermissionAssignmentPickerState
           prefixIcon: const Icon(Icons.search),
         ),
         CheckboxListTile(
-          value: allSelected
+          key: const ValueKey<String>('permission-select-all'),
+          value: allInScopeSelected
               ? true
-              : noneSelected
+              : noneInScopeSelected
               ? false
               : null,
           tristate: true,
-          enabled: canChange,
-          onChanged: canChange
+          enabled: canChange && scopeTotal > 0,
+          onChanged: canChange && scopeTotal > 0
               ? (bool? value) {
                   if (value == false) {
-                    _clearAll();
+                    _clearInScope();
                   } else {
-                    _selectAll();
+                    _selectInScope();
                   }
                 }
               : null,
-          title: Text(l10n.hrAccessSelectAllPermissionsAction),
+          title: Text(
+            isFiltering
+                ? l10n.hrPermissionAssignmentSelectAllMatchingAction
+                : l10n.hrAccessSelectAllPermissionsAction,
+          ),
           subtitle: Text(
-            l10n.hrPermissionAssignmentSelectedCount(selectedCount, totalCount),
+            isFiltering
+                ? l10n.hrPermissionAssignmentSelectedCount(
+                    selectedInScope,
+                    scopeTotal,
+                  )
+                : l10n.hrPermissionAssignmentSelectedCount(
+                    selectedCount,
+                    totalCount,
+                  ),
           ),
           dense: true,
           visualDensity: VisualDensity.compact,
@@ -252,12 +316,16 @@ class _AppPermissionAssignmentPickerState
           contentPadding: EdgeInsets.zero,
         ),
         CheckboxListTile(
-          value: noneSelected,
-          enabled: canChange && !noneSelected,
-          onChanged: canChange && !noneSelected
-              ? (_) => _clearAll()
+          value: noneInScopeSelected,
+          enabled: canChange && !noneInScopeSelected,
+          onChanged: canChange && !noneInScopeSelected
+              ? (_) => _clearInScope()
               : null,
-          title: Text(l10n.hrAccessClearPermissionsAction),
+          title: Text(
+            isFiltering
+                ? l10n.hrPermissionAssignmentClearMatchingAction
+                : l10n.hrAccessClearPermissionsAction,
+          ),
           dense: true,
           visualDensity: VisualDensity.compact,
           controlAffinity: ListTileControlAffinity.leading,
@@ -291,18 +359,9 @@ class _AppPermissionAssignmentPickerState
                   expandedGroupKeys: _expandedGroupKeys,
                   selectedPermissionIds: widget.selectedPermissionIds,
                   enabled: canChange,
-                  onExpansionChanged: (String groupKey, bool expanded) {
-                    setState(() {
-                      if (expanded) {
-                        _expandedGroupKeys.add(groupKey);
-                      } else {
-                        _expandedGroupKeys.remove(groupKey);
-                      }
-                    });
-                  },
+                  onExpansionChanged: _handleExpansionChanged,
                   onTogglePermission: _togglePermission,
-                  onSelectGroup: _selectGroup,
-                  onClearGroup: _clearGroup,
+                  onToggleGroup: _toggleGroup,
                   selectedCountInGroup: _selectedCountInGroup,
                 );
               }
@@ -325,18 +384,9 @@ class _AppPermissionAssignmentPickerState
                       expandedGroupKeys: _expandedGroupKeys,
                       selectedPermissionIds: widget.selectedPermissionIds,
                       enabled: canChange,
-                      onExpansionChanged: (String groupKey, bool expanded) {
-                        setState(() {
-                          if (expanded) {
-                            _expandedGroupKeys.add(groupKey);
-                          } else {
-                            _expandedGroupKeys.remove(groupKey);
-                          }
-                        });
-                      },
+                      onExpansionChanged: _handleExpansionChanged,
                       onTogglePermission: _togglePermission,
-                      onSelectGroup: _selectGroup,
-                      onClearGroup: _clearGroup,
+                      onToggleGroup: _toggleGroup,
                       selectedCountInGroup: _selectedCountInGroup,
                     ),
                   ),
@@ -348,18 +398,9 @@ class _AppPermissionAssignmentPickerState
                       expandedGroupKeys: _expandedGroupKeys,
                       selectedPermissionIds: widget.selectedPermissionIds,
                       enabled: canChange,
-                      onExpansionChanged: (String groupKey, bool expanded) {
-                        setState(() {
-                          if (expanded) {
-                            _expandedGroupKeys.add(groupKey);
-                          } else {
-                            _expandedGroupKeys.remove(groupKey);
-                          }
-                        });
-                      },
+                      onExpansionChanged: _handleExpansionChanged,
                       onTogglePermission: _togglePermission,
-                      onSelectGroup: _selectGroup,
-                      onClearGroup: _clearGroup,
+                      onToggleGroup: _toggleGroup,
                       selectedCountInGroup: _selectedCountInGroup,
                     ),
                   ),
@@ -381,8 +422,7 @@ class _PermissionGroupColumn extends StatelessWidget {
     required this.enabled,
     required this.onExpansionChanged,
     required this.onTogglePermission,
-    required this.onSelectGroup,
-    required this.onClearGroup,
+    required this.onToggleGroup,
     required this.selectedCountInGroup,
   });
 
@@ -394,9 +434,7 @@ class _PermissionGroupColumn extends StatelessWidget {
   final void Function(String groupKey, bool expanded) onExpansionChanged;
   final void Function(String permissionId, bool selected) onTogglePermission;
   final void Function(List<AppPermissionAssignmentOption> permissions)
-  onSelectGroup;
-  final void Function(List<AppPermissionAssignmentOption> permissions)
-  onClearGroup;
+  onToggleGroup;
   final int Function(List<AppPermissionAssignmentOption> permissions)
   selectedCountInGroup;
 
@@ -409,6 +447,7 @@ class _PermissionGroupColumn extends StatelessWidget {
       children: <Widget>[
         for (final String groupKey in groupKeys)
           _PermissionGroupSection(
+            groupKey: groupKey,
             permissions: grouped[groupKey] ?? const <AppPermissionAssignmentOption>[],
             expanded: expandedGroupKeys.contains(groupKey),
             selectedPermissionIds: selectedPermissionIds,
@@ -416,8 +455,7 @@ class _PermissionGroupColumn extends StatelessWidget {
             onExpansionChanged: (bool expanded) =>
                 onExpansionChanged(groupKey, expanded),
             onTogglePermission: onTogglePermission,
-            onSelectGroup: onSelectGroup,
-            onClearGroup: onClearGroup,
+            onToggleGroup: onToggleGroup,
             selectedCountInGroup: selectedCountInGroup,
           ),
         SizedBox(height: theme.spacing.xs),
@@ -428,17 +466,18 @@ class _PermissionGroupColumn extends StatelessWidget {
 
 class _PermissionGroupSection extends StatelessWidget {
   const _PermissionGroupSection({
+    required this.groupKey,
     required this.permissions,
     required this.expanded,
     required this.selectedPermissionIds,
     required this.enabled,
     required this.onExpansionChanged,
     required this.onTogglePermission,
-    required this.onSelectGroup,
-    required this.onClearGroup,
+    required this.onToggleGroup,
     required this.selectedCountInGroup,
   });
 
+  final String groupKey;
   final List<AppPermissionAssignmentOption> permissions;
   final bool expanded;
   final Set<String> selectedPermissionIds;
@@ -446,9 +485,7 @@ class _PermissionGroupSection extends StatelessWidget {
   final ValueChanged<bool> onExpansionChanged;
   final void Function(String permissionId, bool selected) onTogglePermission;
   final void Function(List<AppPermissionAssignmentOption> permissions)
-  onSelectGroup;
-  final void Function(List<AppPermissionAssignmentOption> permissions)
-  onClearGroup;
+  onToggleGroup;
   final int Function(List<AppPermissionAssignmentOption> permissions)
   selectedCountInGroup;
 
@@ -468,71 +505,115 @@ class _PermissionGroupSection extends StatelessWidget {
     return Card(
       margin: EdgeInsets.only(bottom: theme.spacing.sm),
       clipBehavior: Clip.antiAlias,
-      child: ExpansionTile(
-        key: ValueKey<bool>(expanded),
-        initiallyExpanded: expanded,
-        onExpansionChanged: onExpansionChanged,
-        tilePadding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.md,
-          vertical: theme.spacing.xs,
-        ),
-        childrenPadding: EdgeInsets.fromLTRB(
-          theme.spacing.sm,
-          0,
-          theme.spacing.md,
-          theme.spacing.sm,
-        ),
-        leading: Checkbox(
-          tristate: true,
-          value: allSelected
-              ? true
-              : noneSelected
-              ? false
-              : null,
-          onChanged: enabled
-              ? (bool? value) {
-                  if (value == false) {
-                    onClearGroup(permissions);
-                  } else {
-                    onSelectGroup(permissions);
-                  }
-                }
-              : null,
-        ),
-        title: Text(
-          groupLabel,
-          style: theme.textTheme.titleSmall,
-        ),
-        subtitle: Text(
-          l10n.hrPermissionAssignmentSelectedCount(
-            selectedInGroup,
-            permissions.length,
-          ),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          for (final AppPermissionAssignmentOption permission in permissions)
-            CheckboxListTile(
-              value: selectedPermissionIds.contains(permission.id),
-              onChanged: enabled
-                  ? (bool? value) =>
-                        onTogglePermission(permission.id, value ?? false)
-                  : null,
-              title: Text(permission.label),
-              subtitle: permission.code == permission.label
-                  ? null
-                  : Text(
-                      permission.code,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              theme.spacing.xs,
+              theme.spacing.xs,
+              theme.spacing.sm,
+              theme.spacing.xs,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Checkbox(
+                  key: ValueKey<String>('group-$groupKey'),
+                  tristate: true,
+                  value: allSelected
+                      ? true
+                      : noneSelected
+                      ? false
+                      : null,
+                  onChanged: enabled
+                      ? (_) => onToggleGroup(permissions)
+                      : null,
+                ),
+                Expanded(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(theme.radius.sm),
+                    onTap: () => onExpansionChanged(!expanded),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: theme.spacing.xs,
+                        vertical: theme.spacing.xs,
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                  groupLabel,
+                                  style: theme.textTheme.titleSmall,
+                                ),
+                                Text(
+                                  l10n.hrPermissionAssignmentSelectedCount(
+                                    selectedInGroup,
+                                    permissions.length,
+                                  ),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            expanded
+                                ? Icons.expand_less
+                                : Icons.expand_more,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ],
                       ),
                     ),
-              dense: true,
-              visualDensity: VisualDensity.compact,
-              controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (expanded)
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                theme.spacing.sm,
+                0,
+                theme.spacing.md,
+                theme.spacing.sm,
+              ),
+              child: Column(
+                children: <Widget>[
+                  for (final AppPermissionAssignmentOption permission in permissions)
+                    CheckboxListTile(
+                      key: ValueKey<String>('permission-${permission.id}'),
+                      value: selectedPermissionIds.contains(permission.id),
+                      onChanged: enabled
+                          ? (bool? value) => onTogglePermission(
+                                permission.id,
+                                value ?? false,
+                              )
+                          : null,
+                      title: Text(permission.label),
+                      subtitle: permission.code == permission.label
+                          ? null
+                          : Text(
+                              permission.code,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                      dense: true,
+                      visualDensity: VisualDensity.compact,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: theme.spacing.sm,
+                      ),
+                    ),
+                ],
+              ),
             ),
         ],
       ),

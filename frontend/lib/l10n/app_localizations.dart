@@ -28851,6 +28851,18 @@ abstract class AppLocalizations {
   /// **'No permissions selected.'**
   String get hrPermissionAssignmentEmptySelectedLabel;
 
+  /// Bulk action to select every permission visible in the current search filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all matching permissions'**
+  String get hrPermissionAssignmentSelectAllMatchingAction;
+
+  /// Bulk action to clear every permission visible in the current search filter.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear matching permissions'**
+  String get hrPermissionAssignmentClearMatchingAction;
+
   /// Label for catalog permission select in create dialog.
   ///
   /// In en, this message translates to:
@@ -33212,6 +33224,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create role'**
   String get accessAdminCreateRoleAction;
+
+  /// Introductory helper text at the top of the create role dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Define a role for your organization, then assign the permissions users need to perform their work.'**
+  String get accessAdminCreateRoleIntro;
+
+  /// Section title for tenant selection in the create role dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization'**
+  String get accessAdminCreateRoleScopeSectionTitle;
+
+  /// Section description for tenant selection in the create role dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the tenant this role belongs to. Permissions are loaded from that organization\'s catalog.'**
+  String get accessAdminCreateRoleScopeSectionDescription;
+
+  /// Section title for role name and description fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Role details'**
+  String get accessAdminCreateRoleDetailsSectionTitle;
+
+  /// Section description for role name and description fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a short, recognizable name. An optional description helps other administrators.'**
+  String get accessAdminCreateRoleDetailsSectionDescription;
+
+  /// Section description for the permissions picker in the create role dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by module or action, then select the capabilities this role should grant.'**
+  String get accessAdminCreateRolePermissionsSectionDescription;
+
+  /// Loading label while permission catalog is fetched.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading permissions…'**
+  String get accessAdminCreateRoleLoadingPermissions;
+
+  /// Loading label while tenant options are fetched.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading tenants…'**
+  String get accessAdminCreateRoleLoadingTenants;
 
   /// Access admin edit role action.
   ///

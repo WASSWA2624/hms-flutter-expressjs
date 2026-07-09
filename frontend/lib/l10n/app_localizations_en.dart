@@ -15418,6 +15418,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'No permissions selected.';
 
   @override
+  String get hrPermissionAssignmentSelectAllMatchingAction =>
+      'Select all matching permissions';
+
+  @override
+  String get hrPermissionAssignmentClearMatchingAction =>
+      'Clear matching permissions';
+
+  @override
   String get hrAccessPermissionCatalogSelectLabel => 'Permission';
 
   @override
@@ -17849,6 +17857,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessAdminCreateRoleAction => 'Create role';
+
+  @override
+  String get accessAdminCreateRoleIntro =>
+      'Define a role for your organization, then assign the permissions users need to perform their work.';
+
+  @override
+  String get accessAdminCreateRoleScopeSectionTitle => 'Organization';
+
+  @override
+  String get accessAdminCreateRoleScopeSectionDescription =>
+      'Select the tenant this role belongs to. Permissions are loaded from that organization\'s catalog.';
+
+  @override
+  String get accessAdminCreateRoleDetailsSectionTitle => 'Role details';
+
+  @override
+  String get accessAdminCreateRoleDetailsSectionDescription =>
+      'Use a short, recognizable name. An optional description helps other administrators.';
+
+  @override
+  String get accessAdminCreateRolePermissionsSectionDescription =>
+      'Search by module or action, then select the capabilities this role should grant.';
+
+  @override
+  String get accessAdminCreateRoleLoadingPermissions => 'Loading permissions…';
+
+  @override
+  String get accessAdminCreateRoleLoadingTenants => 'Loading tenants…';
 
   @override
   String get accessAdminEditRoleAction => 'Edit role';

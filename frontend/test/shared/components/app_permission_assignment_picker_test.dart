@@ -86,6 +86,122 @@ void main() {
       expect(selected.length, permissions.length);
     });
 
+    testWidgets('group checkbox selects and deselects a module group', (
+      tester,
+    ) async {
+      final Set<String> selected = <String>{};
+
+      await tester.pumpWidget(
+        _wrap(
+          StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return AppPermissionAssignmentPicker(
+                permissions: permissions,
+                selectedPermissionIds: selected,
+                onSelectionChanged: (Set<String> next) {
+                  setState(() {
+                    selected
+                      ..clear()
+                      ..addAll(next);
+                  });
+                },
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey<String>('group-patient')));
+      await tester.pumpAndSettle();
+
+      expect(selected, contains('perm-patient-read'));
+      expect(selected, contains('perm-patient-write'));
+      expect(selected, isNot(contains('perm-clinical-read')));
+
+      await tester.tap(find.byKey(const ValueKey<String>('group-patient')));
+      await tester.pumpAndSettle();
+
+      expect(selected, isEmpty);
+    });
+
+    testWidgets('single permission checkbox toggles independently', (
+      tester,
+    ) async {
+      final Set<String> selected = <String>{};
+      await tester.binding.setSurfaceSize(const Size(390, 900));
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        _wrap(
+          StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return AppPermissionAssignmentPicker(
+                permissions: permissions,
+                selectedPermissionIds: selected,
+                onSelectionChanged: (Set<String> next) {
+                  setState(() {
+                    selected
+                      ..clear()
+                      ..addAll(next);
+                  });
+                },
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final Finder permissionTile = find.byKey(
+        const ValueKey<String>('permission-perm-patient-read'),
+      );
+      await tester.ensureVisible(permissionTile);
+      await tester.tap(permissionTile);
+      await tester.pumpAndSettle();
+
+      expect(selected, equals(<String>{'perm-patient-read'}));
+
+      await tester.ensureVisible(permissionTile);
+      await tester.tap(permissionTile);
+      await tester.pumpAndSettle();
+
+      expect(selected, isEmpty);
+    });
+
+    testWidgets('select all matching respects the search filter', (tester) async {
+      final Set<String> selected = <String>{};
+
+      await tester.pumpWidget(
+        _wrap(
+          StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return AppPermissionAssignmentPicker(
+                permissions: permissions,
+                selectedPermissionIds: selected,
+                onSelectionChanged: (Set<String> next) {
+                  setState(() {
+                    selected
+                      ..clear()
+                      ..addAll(next);
+                  });
+                },
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'clinical');
+      await tester.pump();
+
+      await tester.tap(find.text('Select all matching permissions'));
+      await tester.pumpAndSettle();
+
+      expect(selected, equals(<String>{'perm-clinical-read'}));
+    });
+
     testWidgets('renders nothing when catalog is empty', (tester) async {
       await tester.pumpWidget(
         _wrap(
