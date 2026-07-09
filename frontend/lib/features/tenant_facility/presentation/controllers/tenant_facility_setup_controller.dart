@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -149,8 +151,6 @@ final class TenantFacilitySetupSubmissionState {
 
 final class TenantFacilitySetupSubmissionController
     extends Notifier<TenantFacilitySetupSubmissionState> {
-  static const Duration _postMutationRefreshDelay = Duration.zero;
-
   @override
   TenantFacilitySetupSubmissionState build() {
     return const TenantFacilitySetupSubmissionState();
@@ -603,25 +603,28 @@ final class TenantFacilitySetupSubmissionController
           );
         }
 
-        await Future<void>.delayed(_postMutationRefreshDelay);
-        final refreshResult = await setupController.refresh();
-        if (updateSnapshot != null) {
-          refreshResult.when(
-            success: (_) {
-              setupController.updateSnapshot(
-                (FacilitySetupSnapshot snapshot) =>
-                    updateSnapshot(snapshot, value),
-              );
-            },
-            failure: (_) {},
-          );
-        }
-
         state = state.copyWith(
           isSubmitting: false,
           clearFailure: true,
           successVersion: state.successVersion + 1,
         );
+
+        unawaited(() async {
+          final Result<FacilitySetupSnapshot> refreshResult =
+              await setupController.refresh();
+          if (updateSnapshot != null) {
+            refreshResult.when(
+              success: (_) {
+                setupController.updateSnapshot(
+                  (FacilitySetupSnapshot snapshot) =>
+                      updateSnapshot(snapshot, value),
+                );
+              },
+              failure: (_) {},
+            );
+          }
+        }());
+
         return true;
       },
       failure: (AppFailure failure) {

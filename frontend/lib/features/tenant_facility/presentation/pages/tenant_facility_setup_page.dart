@@ -1411,6 +1411,9 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   }
 
   void _notifyDialogState() {
+    if (!mounted) {
+      return;
+    }
     _registerWithDialog();
     widget.onDialogStateChanged?.call();
   }
@@ -1448,6 +1451,9 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   @override
   void didUpdateWidget(_FacilityProfileForm oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.hideSubmitButton) {
+      return;
+    }
     if (oldWidget.snapshot.facility?.id != widget.snapshot.facility?.id) {
       _nameController.text = widget.snapshot.facility?.name ?? '';
       _existingLogoUrl = widget.snapshot.facility?.logoUrl;
