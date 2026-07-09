@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +10,6 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
-import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -72,14 +72,16 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
     });
   }
 
-  Future<void> _reload({required bool resetPage}) async {
+  Future<void> _reload({required bool resetPage, bool silent = false}) async {
     if (resetPage) {
       _pageRequest = _pageRequest.first();
     }
-    setState(() {
-      _loading = true;
-      _failure = null;
-    });
+    if (!silent) {
+      setState(() {
+        _loading = true;
+        _failure = null;
+      });
+    }
 
     final TenantFacilityRepository repository = ref.read(
       tenantFacilityRepositoryProvider,
@@ -102,7 +104,9 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
         setState(() {
           _loading = false;
           _failure = failure;
-          _tenants = const <TenantProfile>[];
+          if (!silent) {
+            _tenants = const <TenantProfile>[];
+          }
         });
       },
     );
@@ -114,14 +118,16 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
   }
 
   Future<void> _openTenantForm({TenantProfile? tenant, bool forceCreate = false}) async {
-    await showTenantFacilityTenantFormDialog(
+    final bool? saved = await showTenantFacilityTenantFormDialog(
       context,
       tenant: tenant,
       forceCreate: forceCreate,
+      managementMode: true,
     );
-    if (mounted) {
-      await _reload(resetPage: forceCreate);
+    if (!mounted || saved != true) {
+      return;
     }
+    unawaited(_reload(resetPage: forceCreate, silent: true));
   }
 
   Future<void> _confirmDeleteTenant(TenantProfile tenant) async {
@@ -145,7 +151,13 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
       ),
     );
     if (confirmed == true && mounted) {
-      await _reload(resetPage: _tenants.length <= 1);
+      setState(() {
+        _tenants = _tenants
+            .where((TenantProfile entry) => entry.id != tenant.id)
+            .toList(growable: false);
+        _totalItemCount = math.max(0, _totalItemCount - 1);
+      });
+      unawaited(_reload(resetPage: _tenants.isEmpty, silent: true));
     }
   }
 
@@ -358,14 +370,16 @@ class _ManageFacilitiesDialogState
     });
   }
 
-  Future<void> _reload({required bool resetPage}) async {
+  Future<void> _reload({required bool resetPage, bool silent = false}) async {
     if (resetPage) {
       _pageRequest = _pageRequest.first();
     }
-    setState(() {
-      _loading = true;
-      _failure = null;
-    });
+    if (!silent) {
+      setState(() {
+        _loading = true;
+        _failure = null;
+      });
+    }
 
     final TenantFacilityRepository repository = ref.read(
       tenantFacilityRepositoryProvider,
@@ -390,7 +404,9 @@ class _ManageFacilitiesDialogState
         setState(() {
           _loading = false;
           _failure = failure;
-          _facilities = const <FacilityProfile>[];
+          if (!silent) {
+            _facilities = const <FacilityProfile>[];
+          }
         });
       },
     );
@@ -405,18 +421,17 @@ class _ManageFacilitiesDialogState
     FacilityProfile? facility,
     bool forceCreate = false,
   }) async {
-    await showTenantFacilityFacilityFormDialog(
+    final bool? saved = await showTenantFacilityFacilityFormDialog(
       context,
       tenantId: facility?.tenantId ?? _tenantFilterId,
       facility: facility,
       requireTenantPicker: forceCreate || facility == null,
+      managementMode: true,
     );
-    if (mounted) {
-      unawaited(
-        ref.read(tenantFacilitySetupControllerProvider.notifier).refresh(),
-      );
-      await _reload(resetPage: forceCreate);
+    if (!mounted || saved != true) {
+      return;
     }
+    unawaited(_reload(resetPage: forceCreate, silent: true));
   }
 
   Future<void> _confirmDeleteFacility(FacilityProfile facility) async {
@@ -440,10 +455,13 @@ class _ManageFacilitiesDialogState
       ),
     );
     if (confirmed == true && mounted) {
-      unawaited(
-        ref.read(tenantFacilitySetupControllerProvider.notifier).refresh(),
-      );
-      await _reload(resetPage: _facilities.length <= 1);
+      setState(() {
+        _facilities = _facilities
+            .where((FacilityProfile entry) => entry.id != facility.id)
+            .toList(growable: false);
+        _totalItemCount = math.max(0, _totalItemCount - 1);
+      });
+      unawaited(_reload(resetPage: _facilities.isEmpty, silent: true));
     }
   }
 

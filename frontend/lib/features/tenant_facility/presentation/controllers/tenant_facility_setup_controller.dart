@@ -165,6 +165,7 @@ final class TenantFacilitySetupSubmissionController
     required String name,
     String? slug,
     required bool isActive,
+    bool refreshSetup = true,
   }) {
     return _submit(
       () => _repository.saveTenant(
@@ -176,6 +177,7 @@ final class TenantFacilitySetupSubmissionController
       updateSnapshot: (FacilitySetupSnapshot snapshot, TenantProfile tenant) {
         return snapshot.copyWith(tenant: tenant);
       },
+      refreshSetup: refreshSetup,
     );
   }
 
@@ -195,6 +197,7 @@ final class TenantFacilitySetupSubmissionController
     String? addressLine1,
     String? city,
     String? country,
+    bool refreshSetup = true,
   }) {
     return _submit(
       () async {
@@ -294,6 +297,7 @@ final class TenantFacilitySetupSubmissionController
               ),
             );
           },
+      refreshSetup: refreshSetup,
     );
   }
 
@@ -575,6 +579,7 @@ final class TenantFacilitySetupSubmissionController
   Future<bool> _submit<T>(
     Future<Result<T>> Function() action, {
     _SnapshotUpdate<T>? updateSnapshot,
+    bool refreshSetup = true,
   }) async {
     if (state.isSubmitting) {
       return false;
@@ -609,21 +614,23 @@ final class TenantFacilitySetupSubmissionController
           successVersion: state.successVersion + 1,
         );
 
-        unawaited(() async {
-          final Result<FacilitySetupSnapshot> refreshResult =
-              await setupController.refresh();
-          if (updateSnapshot != null) {
-            refreshResult.when(
-              success: (_) {
-                setupController.updateSnapshot(
-                  (FacilitySetupSnapshot snapshot) =>
-                      updateSnapshot(snapshot, value),
-                );
-              },
-              failure: (_) {},
-            );
-          }
-        }());
+        if (refreshSetup) {
+          unawaited(() async {
+            final Result<FacilitySetupSnapshot> refreshResult =
+                await setupController.refresh();
+            if (updateSnapshot != null) {
+              refreshResult.when(
+                success: (_) {
+                  setupController.updateSnapshot(
+                    (FacilitySetupSnapshot snapshot) =>
+                        updateSnapshot(snapshot, value),
+                  );
+                },
+                failure: (_) {},
+              );
+            }
+          }());
+        }
 
         return true;
       },

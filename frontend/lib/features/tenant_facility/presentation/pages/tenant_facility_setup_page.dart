@@ -321,12 +321,14 @@ class _SetupProfileDialog extends ConsumerStatefulWidget {
     required this.icon,
     required this.saveLabel,
     required this.formBuilder,
+    this.managementSnapshot,
   });
 
   final String title;
   final IconData icon;
   final String saveLabel;
   final _SetupProfileFormBuilder formBuilder;
+  final FacilitySetupSnapshot? managementSnapshot;
 
   @override
   ConsumerState<_SetupProfileDialog> createState() =>
@@ -365,8 +367,10 @@ class _SetupProfileDialogState extends ConsumerState<_SetupProfileDialog> {
       return;
     }
     if (saved) {
-      _showSaved(context);
-      Navigator.of(context).pop();
+      if (widget.managementSnapshot == null) {
+        _showSaved(context);
+      }
+      Navigator.of(context).pop(true);
     }
   }
 
@@ -378,6 +382,49 @@ class _SetupProfileDialogState extends ConsumerState<_SetupProfileDialog> {
       tenantFacilitySetupSubmissionProvider,
     );
     final setup = ref.watch(tenantFacilitySetupControllerProvider);
+    final FacilitySetupSnapshot? managementSnapshot = widget.managementSnapshot;
+    final Widget content = managementSnapshot != null
+        ? widget.formBuilder(
+            context,
+            managementSnapshot,
+            accessPolicy.canManageTenant(),
+            accessPolicy.canManageFacility(),
+            accessPolicy.canEditFacilitySetupStructure(),
+            _registerSubmitHandler,
+            _handleFormStateChanged,
+          )
+        : setup.when(
+            data: (result) => result.when(
+              success: (FacilitySetupSnapshot snapshot) => widget.formBuilder(
+                context,
+                snapshot,
+                accessPolicy.canManageTenant(),
+                accessPolicy.canManageFacility(),
+                accessPolicy.canEditFacilitySetupStructure(),
+                _registerSubmitHandler,
+                _handleFormStateChanged,
+              ),
+              failure: (AppFailure failure) => AppFailureStateView(
+                failure: failure,
+                onRetry: () {
+                  ref
+                      .read(tenantFacilitySetupControllerProvider.notifier)
+                      .refresh();
+                },
+              ),
+            ),
+            error: (Object error, StackTrace stackTrace) => AppFailureStateView(
+              failure: _setupFailure(error),
+              onRetry: () {
+                ref.read(tenantFacilitySetupControllerProvider.notifier).refresh();
+              },
+            ),
+            loading: () => AppStateView(
+              variant: AppStateViewVariant.loading,
+              title: l10n.tenantFacilitySetupLoadingTitle,
+              body: l10n.tenantFacilitySetupLoadingBody,
+            ),
+          );
 
     return AppDialog(
       title: Text(widget.title),
@@ -386,38 +433,7 @@ class _SetupProfileDialogState extends ConsumerState<_SetupProfileDialog> {
       pinActionsToBottom: true,
       maxWidth: 880,
       closeEnabled: !submission.isSubmitting,
-      content: setup.when(
-        data: (result) => result.when(
-          success: (FacilitySetupSnapshot snapshot) => widget.formBuilder(
-            context,
-            snapshot,
-            accessPolicy.canManageTenant(),
-            accessPolicy.canManageFacility(),
-            accessPolicy.canEditFacilitySetupStructure(),
-            _registerSubmitHandler,
-            _handleFormStateChanged,
-          ),
-          failure: (AppFailure failure) => AppFailureStateView(
-            failure: failure,
-            onRetry: () {
-              ref
-                  .read(tenantFacilitySetupControllerProvider.notifier)
-                  .refresh();
-            },
-          ),
-        ),
-        error: (Object error, StackTrace stackTrace) => AppFailureStateView(
-          failure: _setupFailure(error),
-          onRetry: () {
-            ref.read(tenantFacilitySetupControllerProvider.notifier).refresh();
-          },
-        ),
-        loading: () => AppStateView(
-          variant: AppStateViewVariant.loading,
-          title: l10n.tenantFacilitySetupLoadingTitle,
-          body: l10n.tenantFacilitySetupLoadingBody,
-        ),
-      ),
+      content: content,
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCancelActionLabel,
@@ -440,14 +456,16 @@ class _SetupProfileDialogState extends ConsumerState<_SetupProfileDialog> {
   }
 }
 
-Future<void> _openTenantProfileModal(
+Future<bool?> _openTenantProfileModal(
   BuildContext context, {
   TenantProfile? tenant,
   bool forceCreate = false,
+  bool managementMode = false,
 }) {
   final AppLocalizations l10n = context.l10n;
+  const FacilitySetupSnapshot managementSnapshot = FacilitySetupSnapshot();
 
-  return showAppDialog<void>(
+  return showAppDialog<bool>(
     context: context,
     builder: (BuildContext dialogContext) => Consumer(
       builder: (BuildContext context, WidgetRef ref, _) {
@@ -466,6 +484,7 @@ Future<void> _openTenantProfileModal(
           title: dialogTitle,
           icon: Icons.apartment_outlined,
           saveLabel: saveLabel,
+          managementSnapshot: managementMode ? managementSnapshot : null,
           formBuilder:
               (
                 BuildContext context,
@@ -495,6 +514,7 @@ Future<void> _openTenantProfileModal(
                       ? l10n.tenantFacilityCreateTenantPermissionRequired
                       : l10n.tenantFacilityPermissionRequired,
                   hideSubmitButton: true,
+                  refreshSetupAfterSave: !managementMode,
                   registerSubmitHandler: registerSubmitHandler,
                   onDialogStateChanged: onDialogStateChanged,
                 );
@@ -505,16 +525,18 @@ Future<void> _openTenantProfileModal(
   );
 }
 
-Future<void> _openFacilityProfileModal(
+Future<bool?> _openFacilityProfileModal(
   BuildContext context, {
   String? tenantId,
   FacilityProfile? facility,
   bool requireTenantPicker = false,
+  bool managementMode = false,
 }) {
   final AppLocalizations l10n = context.l10n;
   final bool isCreate = facility == null;
+  const FacilitySetupSnapshot managementSnapshot = FacilitySetupSnapshot();
 
-  return showAppDialog<void>(
+  return showAppDialog<bool>(
     context: context,
     builder: (BuildContext dialogContext) => Consumer(
       builder: (BuildContext context, WidgetRef ref, _) {
@@ -525,6 +547,7 @@ Future<void> _openFacilityProfileModal(
               : l10n.tenantFacilityFacilitySectionTitle,
           icon: Icons.local_hospital_outlined,
           saveLabel: l10n.tenantFacilitySaveFacilityAction,
+          managementSnapshot: managementMode ? managementSnapshot : null,
           formBuilder:
               (
                 BuildContext context,
@@ -542,6 +565,7 @@ Future<void> _openFacilityProfileModal(
                 facility: facility,
                 requireTenantPicker: requireTenantPicker,
                 hideSubmitButton: true,
+                refreshSetupAfterSave: !managementMode,
                 registerSubmitHandler: registerSubmitHandler,
                 onDialogStateChanged: onDialogStateChanged,
               ),
@@ -959,6 +983,7 @@ class _TenantProfileForm extends ConsumerStatefulWidget {
     this.sectionBody,
     this.permissionDeniedMessage,
     this.hideSubmitButton = false,
+    this.refreshSetupAfterSave = true,
     this.registerSubmitHandler,
     this.onDialogStateChanged,
   });
@@ -970,6 +995,7 @@ class _TenantProfileForm extends ConsumerStatefulWidget {
   final String? sectionBody;
   final String? permissionDeniedMessage;
   final bool hideSubmitButton;
+  final bool refreshSetupAfterSave;
   final _ProfileFormSubmitRegistrar? registerSubmitHandler;
   final VoidCallback? onDialogStateChanged;
 
@@ -1173,6 +1199,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
           name: _nameController.text,
           slug: _slugController.text,
           isActive: _isActive,
+          refreshSetup: widget.refreshSetupAfterSave,
         );
   }
 
@@ -1278,6 +1305,7 @@ class _FacilityProfileForm extends ConsumerStatefulWidget {
     this.facility,
     this.requireTenantPicker = false,
     this.hideSubmitButton = false,
+    this.refreshSetupAfterSave = true,
     this.registerSubmitHandler,
     this.onDialogStateChanged,
   });
@@ -1289,6 +1317,7 @@ class _FacilityProfileForm extends ConsumerStatefulWidget {
   final FacilityProfile? facility;
   final bool requireTenantPicker;
   final bool hideSubmitButton;
+  final bool refreshSetupAfterSave;
   final _ProfileFormSubmitRegistrar? registerSubmitHandler;
   final VoidCallback? onDialogStateChanged;
 
@@ -1780,6 +1809,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
           addressLine1: _addressLineController.text,
           city: _cityController.text,
           country: _selectedCountry,
+          refreshSetup: widget.refreshSetupAfterSave,
         );
 
     if (!saved && mounted) {
@@ -3973,30 +4003,34 @@ void _showSaved(BuildContext context) {
 }
 
 /// Opens the tenant profile create/edit dialog from the home dashboard.
-Future<void> showTenantFacilityTenantFormDialog(
+Future<bool?> showTenantFacilityTenantFormDialog(
   BuildContext context, {
   TenantProfile? tenant,
   bool forceCreate = false,
+  bool managementMode = false,
 }) {
   return _openTenantProfileModal(
     context,
     tenant: tenant,
     forceCreate: forceCreate,
+    managementMode: managementMode,
   );
 }
 
 /// Opens the facility profile create/edit dialog from the home dashboard.
-Future<void> showTenantFacilityFacilityFormDialog(
+Future<bool?> showTenantFacilityFacilityFormDialog(
   BuildContext context, {
   String? tenantId,
   FacilityProfile? facility,
   bool requireTenantPicker = false,
+  bool managementMode = false,
 }) {
   return _openFacilityProfileModal(
     context,
     tenantId: tenantId,
     facility: facility,
     requireTenantPicker: requireTenantPicker,
+    managementMode: managementMode,
   );
 }
 
