@@ -9220,6 +9220,60 @@ abstract class AppLocalizations {
   /// **'Add branch entry points for facilities that operate across sites.'**
   String get tenantFacilityBranchesSectionBody;
 
+  /// Platform admin dialog title for tenant management.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage tenants'**
+  String get tenantFacilityManageTenantsTitle;
+
+  /// Platform admin dialog title for facility management.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage facilities'**
+  String get tenantFacilityManageFacilitiesTitle;
+
+  /// Empty tenant list label.
+  ///
+  /// In en, this message translates to:
+  /// **'No tenants have been added.'**
+  String get tenantFacilityNoTenants;
+
+  /// Empty facility list label.
+  ///
+  /// In en, this message translates to:
+  /// **'No facilities have been added.'**
+  String get tenantFacilityNoFacilities;
+
+  /// Add tenant button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Add tenant'**
+  String get tenantFacilityAddTenantAction;
+
+  /// Add facility button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Add facility'**
+  String get tenantFacilityAddFacilityAction;
+
+  /// Tenant picker label for facility creation.
+  ///
+  /// In en, this message translates to:
+  /// **'Select tenant'**
+  String get tenantFacilitySelectTenantLabel;
+
+  /// Filter option for all items.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get commonAllLabel;
+
+  /// Generic empty table label.
+  ///
+  /// In en, this message translates to:
+  /// **'No records'**
+  String get commonTableEmptyLabel;
+
   /// Empty branch list label.
   ///
   /// In en, this message translates to:

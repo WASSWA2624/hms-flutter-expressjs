@@ -9,7 +9,7 @@
 
 const { z } = require('zod');
 const { 
-  uuidSchema, 
+  uuidOrFriendlyIdentifierSchema, 
   listQuerySchema 
 } = require('@lib/validation/zod');
 
@@ -30,7 +30,7 @@ const facilityTypeEnum = z.enum(['HOSPITAL', 'CLINIC', 'LAB', 'PHARMACY', 'OTHER
  * Used for POST /facilities endpoint
  */
 const createFacilitySchema = z.object({
-  tenant_id: uuidSchema,
+  tenant_id: uuidOrFriendlyIdentifierSchema,
   name: z.string().trim().min(1).max(255),
   facility_type: facilityTypeEnum,
   is_active: z.boolean().optional(),
@@ -56,7 +56,7 @@ const updateFacilitySchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const facilityIdParamsSchema = z.object({
-  id: uuidSchema
+  id: uuidOrFriendlyIdentifierSchema
 });
 
 // ==================== Query Params ====================
@@ -67,7 +67,7 @@ const facilityIdParamsSchema = z.object({
  * Extends base listQuerySchema with facility-specific filters
  */
 const listFacilitiesQuerySchema = listQuerySchema.extend({
-  tenant_id: uuidSchema.optional(),
+  tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facility_type: facilityTypeEnum.optional(),
   is_active: z.enum(['true', 'false']).optional(),
   search: z.string().trim().optional()

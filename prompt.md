@@ -1,168 +1,115 @@
-# Super Admin Dashboard — Content & Data Refinement
+# Platform Admin Dashboard — Quick Actions & Management Dialogs
 
-## Objective
+## Context
 
-Refine the **platform administrator** (`SUPER_ADMIN`) home dashboard so every section surfaces **tenant, facility, and subscription intelligence** — not clinical/patient data. The super admin manages tenants, facilities, subscriptions, and platform health.
+The super-admin home dashboard layout is acceptable. The remaining work is to **wire up and synchronize** platform-administration actions so Quick Actions and the Follow-ups panel open the correct modal workflows, support full CRUD, and work end-to-end against the backend.
 
-**Constraint:** Do **not** change UI layout, component structure, spacing, or visual design. Update **labels, copy, data bindings, actions, and backend payloads only**. All displayed values must be **accurately fetched from the backend** (no hard-coded or placeholder counts).
+**Current issues (see screenshots):**
+- **Quick Actions** shows three overlapping actions (`Select tenant/facility`, `Create tenant`, `Create facility`) that route to the same setup page instead of focused create dialogs.
+- **Follow-ups** (empty state: “No follow-ups required”) duplicates Quick Action buttons instead of offering management shortcuts.
+- **Tenant Profile** and **Facility Profile** saves fail with **“Enter a valid Id.”** when saving existing records (e.g. DemoCare General Hospital) — likely a UUID vs friendly-ID mismatch on update routes, or a missing/invalid `id` on PUT.
+- **Branches** management UI exists but is empty; nested actions (add branch, etc.) must work from management dialogs.
 
-**Reference:** Existing dashboard scaffold — metric strip, quick actions, priority panel (review / alerts / quick links), trend chart, distribution donut (`home_dashboard_profiles.dart`, `dashboard_*` widgets, `backend/src/lib/dashboard/summary.js`).
+## Goal
 
----
+Refactor the **platform admin** (`AppRole.superAdmin`) dashboard so:
 
-## 1. Metric strip (top summary cards)
-
-Replace the current four visible cards with platform-scoped metrics. Show **four cards** in the existing strip (same card component, same row layout).
-
-| Card | Label | Value format | Source |
-|------|-------|--------------|--------|
-| **Tenants** | `Tenants` | `{active} / {total}` — e.g. `3 / 5` | Active tenants vs total registered tenants |
-| **Facilities** | `Facilities` | `{total}` — total facilities across all tenants | A tenant may own multiple facilities |
-| **Subscriptions** | `Subscriptions` | `{active} / {total}` | Active subscriptions vs total subscription records |
-| **Entitlements** | `Entitlements` | `{count}` | Tenants with module entitlement issues, or total entitlement gaps (match backend metric) |
-
-**Remove** the **At risk** card from the super-admin profile.
-
-**Optional secondary metric** (only if backend already exposes it; do not add a fifth card): surface **expiring / expired subscriptions** count inside the Subscriptions card subtitle or tooltip — e.g. “2 expiring soon”. Do not expand the layout.
+1. **Quick Actions** = four **create** shortcuts (modal dialogs).
+2. **Follow-ups panel empty state** = four **manage** shortcuts (list dialogs with tables, filters, and CRUD).
+3. All flows are **backend-synchronized**, **permission-gated**, and **reusable** by tenant admin / facility admin where applicable.
 
 ---
 
-## 2. Quick actions (modal dialogs)
+## Quick Actions (create shortcuts)
 
-Keep up to **four** quick-action buttons in the existing quick-actions row. Each action below must open the **relevant modal dialog** and complete the task in-place (no full-page navigation).
+Replace current super-admin quick actions with these four. Each opens a **modal dialog** (not full-page navigation). Reuse existing dialog patterns where possible (`showAppDialog`, `_SetupDetailDialog`, `showHrStaffOnboardingDialog`, etc.).
 
 | Action | Behavior |
 |--------|----------|
-| **Select tenant/facility** | Open tenant/facility context picker dialog |
-| **Create tenant** | Open create-tenant dialog |
-| **Create facility** | Open create-facility dialog (requires tenant context when applicable) |
-| **Fourth action** | Choose one additional platform task completable in a modal — e.g. **Assign subscription plan** or **Invite tenant admin** — only if a dialog already exists; otherwise omit |
+| **Create tenant** | Modal form: tenant name, optional slug, contact fields as needed. On create: account is **auto-verified** (no email verification step). Platform-admin–created tenants skip self-registration verification. |
+| **Create facility** | Modal form: facility details (name, type, phone, address, logo, active). **Require tenant selection** first (dropdown/search of existing tenants). Creating a facility is separate from creating a tenant. |
+| **Create role** | Modal to define a new role / access level (name, description, permissions). Reuse or extend HR access role dialogs (`showHrCreateRoleDialog` pattern). |
+| **Create user** | Modal to onboard a user and **assign role(s)**. Reuse or extend staff/user onboarding (`showHrStaffOnboardingDialog` pattern). Support attaching roles during creation. |
 
-**Do not** add page-navigation actions here (e.g. “Manage subscriptions”). Those belong under **Quick links**.
+**Remove** `Select tenant/facility` from Quick Actions — context selection belongs in management dialogs or the app shell, not as a primary create shortcut.
 
-Wire `create_tenant` into `quickActionIds` for `AppRole.superAdmin` if not already active.
-
----
-
-## 3. Review panel (worklist — currently shows patient admissions)
-
-**Rename / retitle** the queue section to something platform-appropriate, e.g. **Follow-up** or **Subscription renewals**.
-
-**Content:** Tenant-scoped follow-up items for the super admin — **no patient or clinical records**.
-
-Each list item should include:
-
-- Tenant name  
-- Subscription status (e.g. `Expired`, `Expiring`, `Lapsed`)  
-- Contact details: **email** and **phone** (for outreach)  
-- Expiry or lapse date  
-
-**Primary use case:** Subscriptions that have **expired** (or are expiring) and tenants that have **not renewed**, so the platform admin can contact them.
-
-**Empty state:** “No follow-ups required” (or equivalent).
-
-**View all:** Navigate to the subscriptions or tenant-management list filtered to at-risk accounts.
+Update `homeDashboardProfiles` → `AppRole.superAdmin.quickActionIds` and `homeActionLibrary` / `homeInvokeAction` handlers accordingly.
 
 ---
 
-## 4. Alerts panel
+## Follow-ups panel → Management shortcuts
 
-Show **platform- and tenant-level alerts** relevant to a super admin, for example:
+When the follow-ups queue is empty, show **management shortcuts** (not duplicate create buttons):
 
-- Subscription payment failures  
-- Entitlement / module access violations  
-- Tenant onboarding incomplete  
-- Integration or API errors (if tracked)  
-- Security or compliance items requiring review  
+| Shortcut | Opens |
+|----------|-------|
+| **Manage tenants** | Dialog with searchable/filterable **tenant table**. Row actions: view, edit, activate/deactivate, delete (where permitted). Footer: Close, primary actions as needed. Support **nested dialogs** for edit/create/detail (e.g. edit tenant profile, add branch under a tenant). |
+| **Manage facilities** | Dialog with facility table (filter by tenant, status, type). Row actions: view, edit, activate/deactivate, delete. Nested dialogs for facility profile, branches, departments, etc. |
+| **Manage roles & access** | Dialog with roles/permissions tables. CRUD for roles and permission assignment. Reuse `showHrAccessWorkspaceDialog` / access-admin patterns where possible. |
+| **Manage users** | Dialog with users table (filters: tenant, facility, role, status). CRUD + role assignment. Nested dialogs for user detail and role attachment. |
 
-**Do not** show clinical alerts (admissions, lab critical values, etc.).
+**Dialog requirements:**
+- Search bar + column filters (match existing `AppSearchBar` / `AppListTable` patterns).
+- Paginated table with footer actions (Close, Save, Add, etc.).
+- **Nested dialog support** — an action inside a management dialog opens a child dialog without losing parent context.
+- Responsive on mobile, tablet, and desktop.
 
-**Empty state:** Keep “All clear” when no alerts exist.
-
----
-
-## 5. Quick links (page navigation)
-
-Up to **four** shortcuts in the existing quick-links card. Each opens the **corresponding app screen** (route navigation, not a modal).
-
-| Link | Destination |
-|------|-------------|
-| **Subscriptions** | Subscriptions workspace |
-| **Tenant setup** | Tenant & facility setup |
-| **Settings** | Platform / system settings |
-| **Reports** | Reports workspace |
-
-Ensure all four appear for `AppRole.superAdmin` via `shortcutIds` in the super-admin dashboard profile.
+Update `homeDashboardProfiles` → `AppRole.superAdmin.emptyActionIds` (and related mapper wiring in `home_dashboard_mapper.dart`).
 
 ---
 
-## 6. Charts
+## Bug fixes (blocking)
 
-### 6a. Trend chart (currently “Platform signal trend”)
+### 1. “Enter a valid Id.” on tenant/facility save
 
-Retitle and rebind to **platform revenue / tenant growth** signals. Prefer a **bar or line chart** using the existing chart component — do not change chart dimensions or position.
+Fix save failures on **Tenant Profile** and **Facility Profile** forms:
+- Investigate `tenant_facility_setup_page.dart` → `saveTenant` / `saveFacility` and `tenant_facility_repository_impl.dart`.
+- Backend tenant/facility **param schemas** use `uuidSchema` (`backend/src/modules/tenant/schemas`, `facility/schemas`) while the app may use **friendly IDs** (e.g. `TEN0001`). Align on `uuidOrFriendlyIdentifierSchema` for route params, or ensure the frontend always sends the correct identifier format.
+- Ensure **create** uses POST without `id`; **update** uses PUT only when a valid `id` is present.
+- Map API validation errors to user-friendly field labels (not generic “Id”).
 
-Suggested series (pick what the backend can supply accurately):
+### 2. Clear stale errors
 
-- **New tenants** joined per day/week (current month)  
-- **Revenue collected** per period (platform subscription payments)  
-- Optionally: count of tenants **without an active subscription**
-
-Choose the most actionable single metric; a combined chart is acceptable if the API returns multiple series.
-
-### 6b. Distribution donut (currently “Tenant mix donut”)
-
-Keep the donut chart. Show **tenant subscription mix**, e.g.:
-
-- Paid / Trial / Expired / None  
-- Or plan-tier breakdown (Free, Standard, Enterprise)
-
-Center label: total tenant count. Legend: segment labels with percentages.
+Dismiss validation/error messages when dialogs open, close, or when the user edits fields.
 
 ---
 
-## 7. Backend requirements
+## Backend ↔ frontend synchronization
 
-Extend or adjust `super_admin` pack in `backend/src/lib/dashboard/summary.js` (and related repository/service) to return:
-
-```text
-metrics:
-  tenantsTotal, tenantsActive
-  facilitiesTotal
-  subscriptionsTotal, subscriptionsActive
-  subscriptionsExpiring, subscriptionsExpired   // for review panel & optional subtitle
-  moduleEntitlementIssues
-
-reviewQueue: [{ tenantId, tenantName, email, phone, status, expiresAt }]
-
-alerts: [{ id, title, severity, tenantName?, meta }]
-
-trend: [{ date, value }]                        // revenue or new-tenant signups
-distribution: { total, segments: [{ label, value }] }  // subscription status mix
-```
-
-- Super-admin dashboard queries use **platform scope** — no `tenant_id` required for the home view.  
-- Align metric `id` values with `HomeStatusCardTemplate` ids in `home_dashboard_profiles.dart` or update ids in both frontend profile and backend mapping consistently.  
-- Add/update tests in `dashboard-workspace` and `dashboard-widget` service tests.
+- All create/update/delete operations must call existing REST endpoints (`/tenants`, `/facilities`, `/branches`, access-admin / HR user-role APIs).
+- After successful mutations, refresh dashboard metrics (tenants, facilities, subscriptions, entitlements) and any open management dialog lists.
+- Respect `AppAccessPolicy` / `AppPermission` gates (`systemAdmin`, `tenantAdmin`, `facilityAdmin`).
 
 ---
 
-## 8. Acceptance criteria
+## Reusability & roles
 
-- [ ] Logged in as `super.admin@hosspi.com` (or equivalent `SUPER_ADMIN`), dashboard shows **no patient names, admissions, or clinical worklist items**.  
-- [ ] Metric strip shows real **tenant, facility, subscription, and entitlement** counts from the API.  
-- [ ] Quick actions open **modals** for select-context, create-tenant, and create-facility.  
-- [ ] Review panel lists **expired / non-renewed subscriptions** with tenant contact info.  
-- [ ] Alerts reflect **platform/tenant** issues only.  
-- [ ] Quick links navigate to Subscriptions, Tenant setup, Settings, and Reports.  
-- [ ] Charts display **tenant/subscription** data, not generic flat zeros when seed data exists.  
-- [ ] **No layout or styling changes** — only content, labels, bindings, and backend data.  
-- [ ] Responsive behavior unchanged on mobile, tablet, and desktop.
+- Implement dialogs and actions as **shared, reusable widgets** under `tenant_facility`, `access_admin`, and/or `shared/` — not super-admin-only.
+- Gate visibility via `HomeActionDefinition` permissions and `allowedRoles` so tenant admin and facility admin can reuse the same components where their permissions overlap.
+- Platform admin sees all four quick actions and all four management shortcuts; other roles see subsets per existing permission model.
 
 ---
 
-## Out of scope
+## Key files
 
-- Redesigning dashboard layout or adding/removing dashboard sections  
-- Tenant-scoped operational dashboards (those belong to tenant/facility admin roles)  
-- New modal implementations unless an existing dialog can be reused
+| Area | Files |
+|------|-------|
+| Dashboard config | `frontend/lib/features/home/domain/entities/home_dashboard_profiles.dart` |
+| Action handlers | `frontend/lib/features/home/presentation/widgets/home_dashboard_actions.dart` |
+| Dashboard mapping | `frontend/lib/features/home/presentation/widgets/home_dashboard_mapper.dart` |
+| Tenant/facility UI | `frontend/lib/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart` |
+| Access / roles / users | `frontend/lib/features/hr/presentation/widgets/hr_access_dialogs.dart`, `frontend/lib/features/access_admin/` |
+| Backend schemas | `backend/src/modules/tenant/schemas/`, `backend/src/modules/facility/schemas/` |
+
+---
+
+## Acceptance criteria
+
+- [ ] Super-admin Quick Actions shows exactly: **Create tenant**, **Create facility**, **Create role**, **Create user** — each opens the correct modal.
+- [ ] Empty Follow-ups panel shows: **Manage tenants**, **Manage facilities**, **Manage roles & access**, **Manage users** — each opens a filterable table dialog with CRUD.
+- [ ] Nested dialogs work (e.g. Manage tenants → edit tenant → add branch).
+- [ ] Tenant and facility profile saves succeed for both new and existing records (no “Enter a valid Id.”).
+- [ ] Branches can be added and listed from facility/tenant management flows.
+- [ ] Dashboard metric cards refresh after mutations.
+- [ ] Components are permission-gated and reusable by tenant/facility admins where applicable.
+- [ ] UI is responsive on mobile, tablet, and desktop.

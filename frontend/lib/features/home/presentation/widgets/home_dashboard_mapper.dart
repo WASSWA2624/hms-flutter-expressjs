@@ -137,7 +137,7 @@ DashboardPriorityPanelData homeDashboardPriorityData({
               .toList(growable: false)
         : const <DashboardWorklistItemData>[],
     emptyMessage: profile.emptyMessage,
-    emptyActions: homeDashboardEmptyActions(context, ref, profile, actions),
+    emptyActions: homeDashboardEmptyActions(context, ref, profile, policy),
     maxQueueItems: profile.maxQueueItems,
     alertsTitle: showAlerts ? homeAlertsTitle(profile.role) : null,
     alertItems: showAlerts
@@ -197,9 +197,9 @@ List<DashboardQuickActionData> homeDashboardEmptyActions(
   BuildContext context,
   WidgetRef ref,
   HomeDashboardProfile profile,
-  List<HomeActionDefinition> actions,
+  AppAccessPolicy policy,
 ) {
-  return homeVisibleEmptyActions(profile.emptyActionIds, actions)
+  return homeVisibleEmptyActions(profile.emptyActionIds, policy)
       .map(
         (HomeActionDefinition action) => DashboardQuickActionData(
           label: action.label,

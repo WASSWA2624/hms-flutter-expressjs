@@ -1,8 +1,27 @@
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 
 abstract interface class TenantFacilityRepository {
   Future<Result<FacilitySetupSnapshot>> loadSetup({String? facilityId});
+
+  Future<Result<AppPage<TenantProfile>>> listTenants({
+    required AppPageRequest request,
+    String? search,
+    bool? isActive,
+  });
+
+  Future<Result<AppPage<FacilityProfile>>> listFacilities({
+    required AppPageRequest request,
+    String? tenantId,
+    String? search,
+    FacilitySetupType? type,
+    bool? isActive,
+  });
+
+  Future<Result<void>> deleteTenant(String id);
+
+  Future<Result<void>> deleteFacility(String id);
 
   Future<Result<TenantProfile>> saveTenant({
     String? id,

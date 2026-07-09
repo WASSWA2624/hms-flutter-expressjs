@@ -8,8 +8,12 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_workspace_dialogs.dart';
+import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
+import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
@@ -723,6 +727,93 @@ homeActionLibrary = <String, HomeActionDefinition>{
       AppPermissions.facilityAdmin,
     ],
   ),
+  'create_role': HomeActionDefinition(
+    id: 'create_role',
+    label: 'Create role',
+    icon: Icons.add_moderator_outlined,
+    route: AppRoutes.accessAdmin,
+    allowedRoles: <AppRole>[
+      AppRole.superAdmin,
+      AppRole.tenantAdmin,
+      AppRole.facilityAdmin,
+    ],
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.systemAdmin,
+      AppPermissions.tenantAdmin,
+      AppPermissions.facilityAdmin,
+      AppPermissions.hrWrite,
+    ],
+  ),
+  'create_user': HomeActionDefinition(
+    id: 'create_user',
+    label: 'Create user',
+    icon: Icons.person_add_alt_1_outlined,
+    route: AppRoutes.accessAdmin,
+    allowedRoles: <AppRole>[
+      AppRole.superAdmin,
+      AppRole.tenantAdmin,
+      AppRole.facilityAdmin,
+    ],
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.systemAdmin,
+      AppPermissions.tenantAdmin,
+      AppPermissions.facilityAdmin,
+      AppPermissions.hrWrite,
+    ],
+  ),
+  'manage_tenants': HomeActionDefinition(
+    id: 'manage_tenants',
+    label: 'Manage tenants',
+    icon: Icons.corporate_fare_outlined,
+    route: AppRoutes.tenantFacilitySetup,
+    allowedRoles: <AppRole>[AppRole.superAdmin],
+    requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
+  ),
+  'manage_facilities': HomeActionDefinition(
+    id: 'manage_facilities',
+    label: 'Manage facilities',
+    icon: Icons.domain_outlined,
+    route: AppRoutes.tenantFacilitySetup,
+    allowedRoles: <AppRole>[AppRole.superAdmin, AppRole.tenantAdmin],
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.systemAdmin,
+      AppPermissions.tenantAdmin,
+    ],
+  ),
+  'manage_roles_access': HomeActionDefinition(
+    id: 'manage_roles_access',
+    label: 'Manage roles and access',
+    icon: Icons.admin_panel_settings_outlined,
+    route: AppRoutes.accessAdmin,
+    allowedRoles: <AppRole>[
+      AppRole.superAdmin,
+      AppRole.tenantAdmin,
+      AppRole.facilityAdmin,
+    ],
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.systemAdmin,
+      AppPermissions.tenantAdmin,
+      AppPermissions.facilityAdmin,
+      AppPermissions.hrWrite,
+    ],
+  ),
+  'manage_users': HomeActionDefinition(
+    id: 'manage_users',
+    label: 'Manage users',
+    icon: Icons.people_outline,
+    route: AppRoutes.accessAdmin,
+    allowedRoles: <AppRole>[
+      AppRole.superAdmin,
+      AppRole.tenantAdmin,
+      AppRole.facilityAdmin,
+    ],
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.systemAdmin,
+      AppPermissions.tenantAdmin,
+      AppPermissions.facilityAdmin,
+      AppPermissions.hrWrite,
+    ],
+  ),
   'manage_users_roles': HomeActionDefinition(
     id: 'manage_users_roles',
     label: 'Manage users and roles',
@@ -1126,16 +1217,17 @@ List<HomeShortcutDefinition> homeVisibleShortcuts(
 
 List<HomeActionDefinition> homeVisibleEmptyActions(
   List<String> ids,
-  List<HomeActionDefinition> visibleActions,
+  AppAccessPolicy policy,
 ) {
-  final Set<String> allowedIds = visibleActions
-      .map((HomeActionDefinition action) => action.id)
-      .toSet();
   return ids
-      .where(allowedIds.contains)
       .map((String id) => homeActionLibrary[id])
       .whereType<HomeActionDefinition>()
+      .where((HomeActionDefinition action) => action.isAllowed(policy))
       .toList(growable: false);
+}
+
+void homeRefreshDashboard(WidgetRef ref) {
+  ref.invalidate(homeControllerProvider);
 }
 
 HomeRouteTarget? homeFirstQueueTarget(List<HomeQueueItem> items) {
@@ -1200,15 +1292,70 @@ void homeInvokeAction(
     return;
   }
   if (action.id == 'select_context') {
-    unawaited(showTenantFacilityContextDialog(context));
+    homeGoToRoute(context, AppRoutes.tenantFacilitySetup);
     return;
   }
   if (action.id == 'create_tenant') {
-    unawaited(showTenantFacilityTenantFormDialog(context));
+    unawaited(
+      showTenantFacilityTenantFormDialog(context, forceCreate: true).then((_) {
+        homeRefreshDashboard(ref);
+      }),
+    );
     return;
   }
   if (action.id == 'create_facility') {
-    unawaited(showTenantFacilityFacilityFormDialog(context));
+    unawaited(
+      showTenantFacilityFacilityFormDialog(
+        context,
+        requireTenantPicker: true,
+      ).then((_) {
+        homeRefreshDashboard(ref);
+      }),
+    );
+    return;
+  }
+  if (action.id == 'create_role') {
+    unawaited(
+      showAccessAdminCreateRoleDialog(context, ref).then((_) {
+        homeRefreshDashboard(ref);
+      }),
+    );
+    return;
+  }
+  if (action.id == 'create_user') {
+    unawaited(
+      showAccessAdminCreateUserDialog(context, ref).then((_) {
+        homeRefreshDashboard(ref);
+      }),
+    );
+    return;
+  }
+  if (action.id == 'manage_tenants') {
+    unawaited(
+      showManageTenantsDialog(context, ref).then((_) {
+        homeRefreshDashboard(ref);
+      }),
+    );
+    return;
+  }
+  if (action.id == 'manage_facilities') {
+    unawaited(
+      showManageFacilitiesDialog(context, ref).then((_) {
+        homeRefreshDashboard(ref);
+      }),
+    );
+    return;
+  }
+  if (action.id == 'manage_roles_access') {
+    unawaited(showAccessAdminWorkspaceDialog(context, initialPanel: AccessAdminPanel.roles));
+    return;
+  }
+  if (action.id == 'manage_users') {
+    unawaited(showAccessAdminWorkspaceDialog(context, initialPanel: AccessAdminPanel.directory));
+    return;
+  }
+  if (action.id == 'manage_users_roles') {
+    unawaited(showAccessAdminWorkspaceDialog(context));
     return;
   }
   homeGoToRoute(context, action.route, queryParameters: action.routeQuery);

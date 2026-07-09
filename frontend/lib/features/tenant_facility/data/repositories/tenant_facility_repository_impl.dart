@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/network/network_providers.dart';
 import 'package:hosspi_hms/features/tenant_facility/data/dtos/tenant_facility_dtos.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 
 final tenantFacilityRepositoryProvider = Provider<TenantFacilityRepository>((
   ref,
@@ -44,6 +45,66 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     }
 
     return _loadSetupComposed(facilityId: facilityId);
+  }
+
+  @override
+  Future<Result<AppPage<TenantProfile>>> listTenants({
+    required AppPageRequest request,
+    String? search,
+    bool? isActive,
+  }) {
+    return _apiClient.get<AppPage<TenantProfile>>(
+      ApiEndpoints.collection(
+        HmsApiResource.tenants,
+        queryParameters: _withoutEmpty(<String, String?>{
+          'page': '${request.pageIndex + 1}',
+          'limit': '${request.pageSize}',
+          'search': search,
+          'is_active': isActive?.toString(),
+          'sort_by': 'name',
+          'order': 'asc',
+        }),
+      ),
+      decoder: (Object? data) =>
+          _decodeTenantPage(data, request: request).page,
+    );
+  }
+
+  @override
+  Future<Result<AppPage<FacilityProfile>>> listFacilities({
+    required AppPageRequest request,
+    String? tenantId,
+    String? search,
+    FacilitySetupType? type,
+    bool? isActive,
+  }) {
+    return _apiClient.get<AppPage<FacilityProfile>>(
+      ApiEndpoints.collection(
+        HmsApiResource.facilities,
+        queryParameters: _withoutEmpty(<String, String?>{
+          'page': '${request.pageIndex + 1}',
+          'limit': '${request.pageSize}',
+          'tenant_id': tenantId,
+          'search': search,
+          'facility_type': type?.apiValue,
+          'is_active': isActive?.toString(),
+          'sort_by': 'name',
+          'order': 'asc',
+        }),
+      ),
+      decoder: (Object? data) =>
+          _decodeFacilityPage(data, request: request).page,
+    );
+  }
+
+  @override
+  Future<Result<void>> deleteTenant(String id) {
+    return _deleteResource(HmsApiResource.tenants, id);
+  }
+
+  @override
+  Future<Result<void>> deleteFacility(String id) {
+    return _deleteResource(HmsApiResource.facilities, id);
   }
 
   Future<Result<FacilitySetupSnapshot>> _loadSetupFromWorkspace({
@@ -1052,4 +1113,64 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
           entry.key: entry.value!.trim(),
     };
   }
+
+  static _TenantPageDto _decodeTenantPage(
+    Object? data, {
+    required AppPageRequest request,
+  }) {
+    final JsonMap envelope = _requireMap(data);
+    final JsonMap payload = _requireMap(envelope['data'] ?? envelope);
+    final List<TenantProfile> items = decodeList<TenantProfileDto>(
+      payload['tenants'] ?? payload['items'] ?? payload,
+      TenantProfileDto.fromJson,
+    ).map((TenantProfileDto dto) => dto.toEntity()).toList(growable: false);
+    final JsonMap pagination = _requireMap(payload['pagination']);
+    final int? total = _optionalInt(pagination['total']);
+    return _TenantPageDto(
+      page: AppPage<TenantProfile>(
+        items: items,
+        request: request,
+        totalItemCount: total,
+      ),
+    );
+  }
+
+  static _FacilityPageDto _decodeFacilityPage(
+    Object? data, {
+    required AppPageRequest request,
+  }) {
+    final JsonMap envelope = _requireMap(data);
+    final JsonMap payload = _requireMap(envelope['data'] ?? envelope);
+    final List<FacilityProfile> items = decodeList<FacilityProfileDto>(
+      payload['facilities'] ?? payload['items'] ?? payload,
+      FacilityProfileDto.fromJson,
+    ).map((FacilityProfileDto dto) => dto.toEntity()).toList(growable: false);
+    final JsonMap pagination = _requireMap(payload['pagination']);
+    final int? total = _optionalInt(pagination['total']);
+    return _FacilityPageDto(
+      page: AppPage<FacilityProfile>(
+        items: items,
+        request: request,
+        totalItemCount: total,
+      ),
+    );
+  }
+
+  static int? _optionalInt(Object? value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    return int.tryParse(value.toString());
+  }
+}
+
+final class _TenantPageDto {
+  const _TenantPageDto({required this.page});
+
+  final AppPage<TenantProfile> page;
+}
+
+final class _FacilityPageDto {
+  const _FacilityPageDto({required this.page});
+
+  final AppPage<FacilityProfile> page;
 }

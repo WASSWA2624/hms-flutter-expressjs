@@ -10,7 +10,11 @@
 const tenantRepository = require('@repositories/tenant/tenant.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { resolveEntityId } = require('@lib/billing/identifiers');
 const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } = require('@config/constants');
+
+const resolveTenantId = async (identifier) =>
+  resolveEntityId({ model: 'tenant', identifier });
 
 const normalizeString = (value) => {
   const normalized = String(value ?? '').trim();
@@ -146,7 +150,8 @@ const listTenants = async (filters = {}, page = 1, limit = 20, sort_by = 'create
  * @returns {Promise<Object>} Tenant data
  */
 const getTenantById = async (id) => {
-  const tenant = await tenantRepository.findById(id);
+  const tenantId = await resolveTenantId(id);
+  const tenant = await tenantRepository.findById(tenantId);
   
   if (!tenant) {
     throw new HttpError('errors.tenant.not_found', 404);
@@ -211,21 +216,22 @@ const createTenant = async (data, context = {}) => {
  * @returns {Promise<Object>} Updated tenant
  */
 const updateTenant = async (id, data, context = {}) => {
+  const tenantId = await resolveTenantId(id);
   // Check if tenant exists and get before state
-  const beforeTenant = await tenantRepository.findById(id);
+  const beforeTenant = await tenantRepository.findById(tenantId);
   
   if (!beforeTenant) {
     throw new HttpError('errors.tenant.not_found', 404);
   }
 
   // Update tenant
-  const tenant = await tenantRepository.update(id, data);
+  const tenant = await tenantRepository.update(tenantId, data);
 
   // Create audit log
   await createAuditLog({
     action: 'TENANT_UPDATED',
     entity: 'tenant',
-    entity_id: id,
+    entity_id: tenantId,
     user_id: context.user_id,
     tenant_id: context.tenant_id,
     facility_id: context.facility_id,
@@ -261,21 +267,22 @@ const updateTenant = async (id, data, context = {}) => {
  * @returns {Promise<void>}
  */
 const deleteTenant = async (id, context = {}) => {
+  const tenantId = await resolveTenantId(id);
   // Check if tenant exists
-  const tenant = await tenantRepository.findById(id);
+  const tenant = await tenantRepository.findById(tenantId);
   
   if (!tenant) {
     throw new HttpError('errors.tenant.not_found', 404);
   }
 
   // Soft delete tenant
-  await tenantRepository.softDelete(id);
+  await tenantRepository.softDelete(tenantId);
 
   // Create audit log
   await createAuditLog({
     action: 'TENANT_DELETED',
     entity: 'tenant',
-    entity_id: id,
+    entity_id: tenantId,
     user_id: context.user_id,
     tenant_id: context.tenant_id,
     facility_id: context.facility_id,

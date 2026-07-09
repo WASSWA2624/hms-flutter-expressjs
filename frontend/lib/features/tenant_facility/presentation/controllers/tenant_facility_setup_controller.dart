@@ -156,6 +156,10 @@ final class TenantFacilitySetupSubmissionController
     return const TenantFacilitySetupSubmissionState();
   }
 
+  void clearFailure() {
+    state = state.copyWith(clearFailure: true);
+  }
+
   Future<bool> saveTenant({
     String? id,
     required String name,

@@ -68,9 +68,10 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
     ],
     quickActionIds: <String>[
-      'select_context',
       'create_tenant',
       'create_facility',
+      'create_role',
+      'create_user',
     ],
     shortcutIds: <String>[
       'subscriptions',
@@ -78,7 +79,12 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'settings',
       'reports',
     ],
-    emptyActionIds: <String>['select_context', 'create_tenant'],
+    emptyActionIds: <String>[
+      'manage_tenants',
+      'manage_facilities',
+      'manage_roles_access',
+      'manage_users',
+    ],
   ),
   AppRole.tenantAdmin: HomeDashboardProfile(
     id: 'tenant_admin',

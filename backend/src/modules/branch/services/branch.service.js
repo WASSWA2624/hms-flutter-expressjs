@@ -10,6 +10,16 @@
 const branchRepository = require('@repositories/branch/branch.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { resolveEntityId } = require('@lib/billing/identifiers');
+
+const resolveBranchId = async (identifier) =>
+  resolveEntityId({ model: 'branch', identifier });
+
+const resolveTenantId = async (identifier) =>
+  resolveEntityId({ model: 'tenant', identifier });
+
+const resolveFacilityId = async (identifier) =>
+  resolveEntityId({ model: 'facility', identifier });
 
 /**
  * List branches with pagination and filters
@@ -30,11 +40,11 @@ const listBranches = async (filters = {}, page = 1, limit = 20, sort_by = 'creat
   const repoFilters = {};
 
   if (filters.tenant_id) {
-    repoFilters.tenant_id = filters.tenant_id;
+    repoFilters.tenant_id = await resolveTenantId(filters.tenant_id);
   }
 
   if (filters.facility_id) {
-    repoFilters.facility_id = filters.facility_id;
+    repoFilters.facility_id = await resolveFacilityId(filters.facility_id);
   }
 
   if (filters.is_active !== undefined) {
@@ -84,7 +94,8 @@ const listBranches = async (filters = {}, page = 1, limit = 20, sort_by = 'creat
  * @returns {Promise<Object>} Branch data
  */
 const getBranchById = async (id) => {
-  const branch = await branchRepository.findById(id);
+  const branchId = await resolveBranchId(id);
+  const branch = await branchRepository.findById(branchId);
   
   if (!branch) {
     throw new HttpError('errors.branch.not_found', 404);
@@ -110,8 +121,15 @@ const getBranchById = async (id) => {
  * @returns {Promise<Object>} Created branch
  */
 const createBranch = async (data, context = {}) => {
+  const payload = {
+    ...data,
+    tenant_id: await resolveTenantId(data.tenant_id),
+  };
+  if (data.facility_id) {
+    payload.facility_id = await resolveFacilityId(data.facility_id);
+  }
   // Create branch
-  const branch = await branchRepository.create(data);
+  const branch = await branchRepository.create(payload);
 
   // Create audit log
   await createAuditLog({
@@ -151,21 +169,26 @@ const createBranch = async (data, context = {}) => {
  * @returns {Promise<Object>} Updated branch
  */
 const updateBranch = async (id, data, context = {}) => {
+  const branchId = await resolveBranchId(id);
+  const payload = { ...data };
+  if (data.facility_id !== undefined && data.facility_id !== null) {
+    payload.facility_id = await resolveFacilityId(data.facility_id);
+  }
   // Check if branch exists and get before state
-  const beforeBranch = await branchRepository.findById(id);
+  const beforeBranch = await branchRepository.findById(branchId);
   
   if (!beforeBranch) {
     throw new HttpError('errors.branch.not_found', 404);
   }
 
   // Update branch
-  const branch = await branchRepository.update(id, data);
+  const branch = await branchRepository.update(branchId, payload);
 
   // Create audit log
   await createAuditLog({
     action: 'BRANCH_UPDATED',
     entity: 'branch',
-    entity_id: id,
+    entity_id: branchId,
     user_id: context.user_id,
     tenant_id: context.tenant_id,
     facility_id: context.facility_id,
@@ -201,21 +224,22 @@ const updateBranch = async (id, data, context = {}) => {
  * @returns {Promise<void>}
  */
 const deleteBranch = async (id, context = {}) => {
+  const branchId = await resolveBranchId(id);
   // Check if branch exists
-  const branch = await branchRepository.findById(id);
+  const branch = await branchRepository.findById(branchId);
   
   if (!branch) {
     throw new HttpError('errors.branch.not_found', 404);
   }
 
   // Soft delete branch
-  await branchRepository.softDelete(id);
+  await branchRepository.softDelete(branchId);
 
   // Create audit log
   await createAuditLog({
     action: 'BRANCH_DELETED',
     entity: 'branch',
-    entity_id: id,
+    entity_id: branchId,
     user_id: context.user_id,
     tenant_id: context.tenant_id,
     facility_id: context.facility_id,

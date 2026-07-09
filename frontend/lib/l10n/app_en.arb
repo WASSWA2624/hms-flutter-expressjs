@@ -6343,6 +6343,42 @@
   "@tenantFacilityBranchesSectionBody": {
     "description": "Branches setup section body."
   },
+  "tenantFacilityManageTenantsTitle": "Manage tenants",
+  "@tenantFacilityManageTenantsTitle": {
+    "description": "Platform admin dialog title for tenant management."
+  },
+  "tenantFacilityManageFacilitiesTitle": "Manage facilities",
+  "@tenantFacilityManageFacilitiesTitle": {
+    "description": "Platform admin dialog title for facility management."
+  },
+  "tenantFacilityNoTenants": "No tenants have been added.",
+  "@tenantFacilityNoTenants": {
+    "description": "Empty tenant list label."
+  },
+  "tenantFacilityNoFacilities": "No facilities have been added.",
+  "@tenantFacilityNoFacilities": {
+    "description": "Empty facility list label."
+  },
+  "tenantFacilityAddTenantAction": "Add tenant",
+  "@tenantFacilityAddTenantAction": {
+    "description": "Add tenant button label."
+  },
+  "tenantFacilityAddFacilityAction": "Add facility",
+  "@tenantFacilityAddFacilityAction": {
+    "description": "Add facility button label."
+  },
+  "tenantFacilitySelectTenantLabel": "Select tenant",
+  "@tenantFacilitySelectTenantLabel": {
+    "description": "Tenant picker label for facility creation."
+  },
+  "commonAllLabel": "All",
+  "@commonAllLabel": {
+    "description": "Filter option for all items."
+  },
+  "commonTableEmptyLabel": "No records",
+  "@commonTableEmptyLabel": {
+    "description": "Generic empty table label."
+  },
   "tenantFacilityNoBranches": "No branches have been added.",
   "@tenantFacilityNoBranches": {
     "description": "Empty branch list label."

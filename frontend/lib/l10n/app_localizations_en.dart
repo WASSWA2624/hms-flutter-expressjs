@@ -4925,6 +4925,33 @@ class AppLocalizationsEn extends AppLocalizations {
       'Add branch entry points for facilities that operate across sites.';
 
   @override
+  String get tenantFacilityManageTenantsTitle => 'Manage tenants';
+
+  @override
+  String get tenantFacilityManageFacilitiesTitle => 'Manage facilities';
+
+  @override
+  String get tenantFacilityNoTenants => 'No tenants have been added.';
+
+  @override
+  String get tenantFacilityNoFacilities => 'No facilities have been added.';
+
+  @override
+  String get tenantFacilityAddTenantAction => 'Add tenant';
+
+  @override
+  String get tenantFacilityAddFacilityAction => 'Add facility';
+
+  @override
+  String get tenantFacilitySelectTenantLabel => 'Select tenant';
+
+  @override
+  String get commonAllLabel => 'All';
+
+  @override
+  String get commonTableEmptyLabel => 'No records';
+
+  @override
   String get tenantFacilityNoBranches => 'No branches have been added.';
 
   @override

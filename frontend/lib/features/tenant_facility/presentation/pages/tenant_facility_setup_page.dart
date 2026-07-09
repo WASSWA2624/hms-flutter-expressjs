@@ -11,6 +11,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_catalog_config_panel.dart';
@@ -20,6 +21,7 @@ import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
@@ -289,50 +291,78 @@ class _SetupDetailDialog extends ConsumerWidget {
   }
 }
 
-Future<void> _openTenantProfileModal(BuildContext context) {
+Future<void> _openTenantProfileModal(
+  BuildContext context, {
+  TenantProfile? tenant,
+  bool forceCreate = false,
+}) {
   final AppLocalizations l10n = context.l10n;
+  final TenantProfile? resolvedTenant = forceCreate ? null : tenant;
 
   return showAppDialog<void>(
     context: context,
-    builder: (_) => _SetupDetailDialog(
-      title: l10n.tenantFacilityTenantSectionTitle,
-      icon: Icons.apartment_outlined,
-      builder:
-          (
-            BuildContext context,
-            FacilitySetupSnapshot snapshot,
-            bool canManageTenant,
-            bool canManageFacility,
-            bool canEditHrStructure,
-          ) => _TenantProfileForm(
-            tenant: snapshot.tenant,
-            canSubmit: canManageTenant,
-            framed: false,
-          ),
+    builder: (BuildContext dialogContext) => Consumer(
+      builder: (BuildContext context, WidgetRef ref, _) {
+        ref
+            .read(tenantFacilitySetupSubmissionProvider.notifier)
+            .clearFailure();
+        return _SetupDetailDialog(
+          title: l10n.tenantFacilityTenantSectionTitle,
+          icon: Icons.apartment_outlined,
+          builder:
+              (
+                BuildContext context,
+                FacilitySetupSnapshot snapshot,
+                bool canManageTenant,
+                bool canManageFacility,
+                bool canEditHrStructure,
+              ) => _TenantProfileForm(
+                tenant: resolvedTenant ?? snapshot.tenant,
+                canSubmit: canManageTenant,
+                framed: false,
+                isCreate: forceCreate || resolvedTenant == null,
+              ),
+        );
+      },
     ),
   );
 }
 
-Future<void> _openFacilityProfileModal(BuildContext context) {
+Future<void> _openFacilityProfileModal(
+  BuildContext context, {
+  String? tenantId,
+  FacilityProfile? facility,
+  bool requireTenantPicker = false,
+}) {
   final AppLocalizations l10n = context.l10n;
 
   return showAppDialog<void>(
     context: context,
-    builder: (_) => _SetupDetailDialog(
-      title: l10n.tenantFacilityFacilitySectionTitle,
-      icon: Icons.local_hospital_outlined,
-      builder:
-          (
-            BuildContext context,
-            FacilitySetupSnapshot snapshot,
-            bool canManageTenant,
-            bool canManageFacility,
-            bool canEditHrStructure,
-          ) => _FacilityProfileForm(
-            snapshot: snapshot,
-            canSubmit: canManageFacility && snapshot.tenant != null,
-            framed: false,
-          ),
+    builder: (BuildContext dialogContext) => Consumer(
+      builder: (BuildContext context, WidgetRef ref, _) {
+        ref
+            .read(tenantFacilitySetupSubmissionProvider.notifier)
+            .clearFailure();
+        return _SetupDetailDialog(
+          title: l10n.tenantFacilityFacilitySectionTitle,
+          icon: Icons.local_hospital_outlined,
+          builder:
+              (
+                BuildContext context,
+                FacilitySetupSnapshot snapshot,
+                bool canManageTenant,
+                bool canManageFacility,
+                bool canEditHrStructure,
+              ) => _FacilityProfileForm(
+                snapshot: snapshot,
+                canSubmit: canManageFacility,
+                framed: false,
+                tenantId: tenantId,
+                facility: facility,
+                requireTenantPicker: requireTenantPicker,
+              ),
+        );
+      },
     ),
   );
 }
@@ -741,11 +771,13 @@ class _TenantProfileForm extends ConsumerStatefulWidget {
     required this.tenant,
     required this.canSubmit,
     this.framed = true,
+    this.isCreate = false,
   });
 
   final TenantProfile? tenant;
   final bool canSubmit;
   final bool framed;
+  final bool isCreate;
 
   @override
   ConsumerState<_TenantProfileForm> createState() => _TenantProfileFormState();
@@ -856,7 +888,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
     await ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveTenant(
-          id: widget.tenant?.id,
+          id: widget.isCreate ? null : widget.tenant?.id,
           name: _nameController.text,
           slug: _slugController.text,
           isActive: _isActive,
@@ -869,11 +901,17 @@ class _FacilityProfileForm extends ConsumerStatefulWidget {
     required this.snapshot,
     required this.canSubmit,
     this.framed = true,
+    this.tenantId,
+    this.facility,
+    this.requireTenantPicker = false,
   });
 
   final FacilitySetupSnapshot snapshot;
   final bool canSubmit;
   final bool framed;
+  final String? tenantId;
+  final FacilityProfile? facility;
+  final bool requireTenantPicker;
 
   @override
   ConsumerState<_FacilityProfileForm> createState() =>
@@ -895,31 +933,68 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   List<int>? _logoBytes;
   String? _logoMimeType;
   bool _logoCleared = false;
+  String? _selectedTenantId;
+  List<TenantProfile> _tenantOptions = const <TenantProfile>[];
+  bool _loadingTenants = false;
+
+  FacilityProfile? get _activeFacility => widget.facility ?? widget.snapshot.facility;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(
-      text: widget.snapshot.facility?.name,
-    );
-    _existingLogoUrl = widget.snapshot.facility?.logoUrl;
+    final FacilityProfile? facility = _activeFacility;
+    _selectedTenantId =
+        widget.tenantId ?? widget.snapshot.tenant?.id ?? facility?.tenantId;
+    _nameController = TextEditingController(text: facility?.name);
+    _existingLogoUrl = facility?.logoUrl;
     _phoneController = TextEditingController(
-      text: widget.snapshot.contactAddress.phone,
+      text: widget.facility == null ? widget.snapshot.contactAddress.phone : null,
     );
     _emailController = TextEditingController(
-      text: widget.snapshot.contactAddress.email,
+      text: widget.facility == null ? widget.snapshot.contactAddress.email : null,
     );
     _addressLineController = TextEditingController(
-      text: widget.snapshot.contactAddress.addressLine1,
+      text: widget.facility == null
+          ? widget.snapshot.contactAddress.addressLine1
+          : null,
     );
     _cityController = TextEditingController(
-      text: widget.snapshot.contactAddress.city,
+      text: widget.facility == null ? widget.snapshot.contactAddress.city : null,
     );
     _countryController = TextEditingController(
-      text: widget.snapshot.contactAddress.country,
+      text: widget.facility == null
+          ? widget.snapshot.contactAddress.country
+          : null,
     );
-    _type = widget.snapshot.facility?.type ?? FacilitySetupType.hospital;
-    _isActive = widget.snapshot.facility?.isActive ?? true;
+    _type = facility?.type ?? FacilitySetupType.hospital;
+    _isActive = facility?.isActive ?? true;
+    if (widget.requireTenantPicker) {
+      unawaited(_loadTenantOptions());
+    }
+  }
+
+  Future<void> _loadTenantOptions() async {
+    setState(() {
+      _loadingTenants = true;
+    });
+    final result = await ref
+        .read(tenantFacilityRepositoryProvider)
+        .listTenants(request: const AppPageRequest(pageIndex: 0, pageSize: 100));
+    if (!mounted) return;
+    result.when(
+      success: (AppPage<TenantProfile> page) {
+        setState(() {
+          _loadingTenants = false;
+          _tenantOptions = page.items;
+          _selectedTenantId ??= page.items.firstOrNull?.id;
+        });
+      },
+      failure: (_) {
+        setState(() {
+          _loadingTenants = false;
+        });
+      },
+    );
   }
 
   @override
@@ -991,7 +1066,36 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       key: _formKey,
       child: AppFormSection(
         children: <Widget>[
-          if (widget.snapshot.facilities.length > 1)
+          if (widget.requireTenantPicker) ...<Widget>[
+            if (_loadingTenants)
+              const Center(child: CircularProgressIndicator())
+            else
+              AppSelectField<String>.searchable(
+                value: _selectedTenantId,
+                enabled: canEdit,
+                labelText: l10n.tenantFacilitySelectTenantLabel,
+                isRequired: true,
+                menuHeight: 320,
+                options: _tenantOptions
+                    .map(
+                      (TenantProfile tenant) => AppSelectOption<String>(
+                        value: tenant.id,
+                        label: tenant.name,
+                      ),
+                    )
+                    .toList(growable: false),
+                onChanged: (String? value) {
+                  setState(() {
+                    _selectedTenantId = value;
+                  });
+                },
+                validator: (String? value) => (value ?? '').trim().isEmpty
+                    ? l10n.validationRequired
+                    : null,
+              ),
+            SizedBox(height: theme.spacing.md),
+          ],
+          if (widget.snapshot.facilities.length > 1 && widget.facility == null)
             AppSelectField<String>.searchable(
               value: widget.snapshot.facility?.id,
               enabled: !submission.isSubmitting,
@@ -1142,16 +1246,17 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       return;
     }
 
-    final TenantProfile? tenant = widget.snapshot.tenant;
-    if (tenant == null) {
+    final String? tenantId =
+        _selectedTenantId ?? widget.tenantId ?? widget.snapshot.tenant?.id;
+    if (tenantId == null) {
       return;
     }
 
     await ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveFacility(
-          id: widget.snapshot.facility?.id,
-          tenantId: tenant.id,
+          id: widget.facility?.id ?? _activeFacility?.id,
+          tenantId: tenantId,
           name: _nameController.text,
           type: _type,
           isActive: _isActive,
@@ -3210,18 +3315,31 @@ void _showSaved(BuildContext context) {
 }
 
 /// Opens the tenant profile create/edit dialog from the home dashboard.
-Future<void> showTenantFacilityTenantFormDialog(BuildContext context) {
-  return _openTenantProfileModal(context);
+Future<void> showTenantFacilityTenantFormDialog(
+  BuildContext context, {
+  TenantProfile? tenant,
+  bool forceCreate = false,
+}) {
+  return _openTenantProfileModal(
+    context,
+    tenant: tenant,
+    forceCreate: forceCreate,
+  );
 }
 
 /// Opens the facility profile create/edit dialog from the home dashboard.
-Future<void> showTenantFacilityFacilityFormDialog(BuildContext context) {
-  return _openFacilityProfileModal(context);
-}
-
-/// Opens the tenant/facility context picker dialog from the home dashboard.
-Future<void> showTenantFacilityContextDialog(BuildContext context) {
-  return _openBranchesModal(context);
+Future<void> showTenantFacilityFacilityFormDialog(
+  BuildContext context, {
+  String? tenantId,
+  FacilityProfile? facility,
+  bool requireTenantPicker = false,
+}) {
+  return _openFacilityProfileModal(
+    context,
+    tenantId: tenantId,
+    facility: facility,
+    requireTenantPicker: requireTenantPicker,
+  );
 }
 
 /// Shared department create/edit dialog for facility setup.

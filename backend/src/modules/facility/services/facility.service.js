@@ -10,7 +10,14 @@
 const facilityRepository = require('@repositories/facility/facility.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { resolveEntityId } = require('@lib/billing/identifiers');
 const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } = require('@config/constants');
+
+const resolveTenantId = async (identifier) =>
+  resolveEntityId({ model: 'tenant', identifier });
+
+const resolveFacilityId = async (identifier) =>
+  resolveEntityId({ model: 'facility', identifier });
 
 const toPositiveInt = (value, fallback, max = Number.POSITIVE_INFINITY) => {
   const parsed = Number(value);
@@ -51,7 +58,7 @@ const listFacilities = async (filters = {}, page = 1, limit = 20, sort_by = 'cre
   const repoFilters = {};
 
   if (filters.tenant_id) {
-    repoFilters.tenant_id = filters.tenant_id;
+    repoFilters.tenant_id = await resolveTenantId(filters.tenant_id);
   }
 
   if (filters.facility_type) {
@@ -105,7 +112,8 @@ const listFacilities = async (filters = {}, page = 1, limit = 20, sort_by = 'cre
  * @returns {Promise<Object>} Facility data
  */
 const getFacilityById = async (id) => {
-  const facility = await facilityRepository.findById(id);
+  const facilityId = await resolveFacilityId(id);
+  const facility = await facilityRepository.findById(facilityId);
   
   if (!facility) {
     throw new HttpError('errors.facility.not_found', 404);
@@ -131,8 +139,12 @@ const getFacilityById = async (id) => {
  * @returns {Promise<Object>} Created facility
  */
 const createFacility = async (data, context = {}) => {
+  const payload = {
+    ...data,
+    tenant_id: await resolveTenantId(data.tenant_id),
+  };
   // Create facility
-  const facility = await facilityRepository.create(data);
+  const facility = await facilityRepository.create(payload);
 
   // Create audit log
   await createAuditLog({
@@ -172,21 +184,22 @@ const createFacility = async (data, context = {}) => {
  * @returns {Promise<Object>} Updated facility
  */
 const updateFacility = async (id, data, context = {}) => {
+  const facilityId = await resolveFacilityId(id);
   // Check if facility exists and get before state
-  const beforeFacility = await facilityRepository.findById(id);
+  const beforeFacility = await facilityRepository.findById(facilityId);
   
   if (!beforeFacility) {
     throw new HttpError('errors.facility.not_found', 404);
   }
 
   // Update facility
-  const facility = await facilityRepository.update(id, data);
+  const facility = await facilityRepository.update(facilityId, data);
 
   // Create audit log
   await createAuditLog({
     action: 'FACILITY_UPDATED',
     entity: 'facility',
-    entity_id: id,
+    entity_id: facilityId,
     user_id: context.user_id,
     tenant_id: context.tenant_id,
     facility_id: context.facility_id,
@@ -222,21 +235,22 @@ const updateFacility = async (id, data, context = {}) => {
  * @returns {Promise<void>}
  */
 const deleteFacility = async (id, context = {}) => {
+  const facilityId = await resolveFacilityId(id);
   // Check if facility exists
-  const facility = await facilityRepository.findById(id);
+  const facility = await facilityRepository.findById(facilityId);
   
   if (!facility) {
     throw new HttpError('errors.facility.not_found', 404);
   }
 
   // Soft delete facility
-  await facilityRepository.softDelete(id);
+  await facilityRepository.softDelete(facilityId);
 
   // Create audit log
   await createAuditLog({
     action: 'FACILITY_DELETED',
     entity: 'facility',
-    entity_id: id,
+    entity_id: facilityId,
     user_id: context.user_id,
     tenant_id: context.tenant_id,
     facility_id: context.facility_id,
@@ -267,8 +281,10 @@ const getFacilityBranches = async (facilityId, page = 1, limit = 20, sort_by = '
     : 'created_at';
   const resolvedOrder = normalizeSortOrder(order);
 
+  const resolvedFacilityId = await resolveFacilityId(facilityId);
+
   // Check if facility exists
-  const facility = await facilityRepository.findById(facilityId);
+  const facility = await facilityRepository.findById(resolvedFacilityId);
   
   if (!facility) {
     throw new HttpError('errors.facility.not_found', 404);
@@ -283,8 +299,8 @@ const getFacilityBranches = async (facilityId, page = 1, limit = 20, sort_by = '
 
   // Fetch branches and count
   const [branches, total] = await Promise.all([
-    facilityRepository.findBranches(facilityId, skip, resolvedLimit, orderBy),
-    facilityRepository.countBranches(facilityId)
+    facilityRepository.findBranches(resolvedFacilityId, skip, resolvedLimit, orderBy),
+    facilityRepository.countBranches(resolvedFacilityId)
   ]);
 
   // Calculate pagination metadata
