@@ -23062,6 +23062,50 @@
   "@accessAdminPasswordOptionalHint": {
     "description": "Helper text for optional password field when editing a user."
   },
+  "accessAdminUserDetailProfileSectionTitle": "Account",
+  "@accessAdminUserDetailProfileSectionTitle": {
+    "description": "Section title for user account details in the user detail dialog."
+  },
+  "accessAdminUserDetailProfileSectionDescription": "Identifiers and contact information for this account.",
+  "@accessAdminUserDetailProfileSectionDescription": {
+    "description": "Section description for user account details in the user detail dialog."
+  },
+  "accessAdminUserDetailRolesSectionDescription": "Roles determine the baseline permissions granted to this user.",
+  "@accessAdminUserDetailRolesSectionDescription": {
+    "description": "Section description for assigned roles in the user detail dialog."
+  },
+  "accessAdminUserDetailPermissionsSectionDescription": "Effective permissions include role grants and any direct assignments.",
+  "@accessAdminUserDetailPermissionsSectionDescription": {
+    "description": "Section description for permissions in the user detail dialog."
+  },
+  "accessAdminUserDetailRolePermissionsLabel": "From roles",
+  "@accessAdminUserDetailRolePermissionsLabel": {
+    "description": "Label for permissions inherited from assigned roles."
+  },
+  "accessAdminUserDetailNoRolesMessage": "No roles are assigned to this user yet.",
+  "@accessAdminUserDetailNoRolesMessage": {
+    "description": "Empty state when a user has no assigned roles."
+  },
+  "accessAdminUserDetailNoPermissionsMessage": "No permissions are currently effective for this user.",
+  "@accessAdminUserDetailNoPermissionsMessage": {
+    "description": "Empty state when a user has no effective permissions."
+  },
+  "accessAdminUserDetailDemoAccountTitle": "Demo account",
+  "@accessAdminUserDetailDemoAccountTitle": {
+    "description": "Banner title for demo user accounts."
+  },
+  "accessAdminUserDetailDemoAccountMessage": "This is a demo account. Some destructive actions may be restricted.",
+  "@accessAdminUserDetailDemoAccountMessage": {
+    "description": "Banner message for demo user accounts."
+  },
+  "accessAdminUserDetailSystemAccountTitle": "Protected account",
+  "@accessAdminUserDetailSystemAccountTitle": {
+    "description": "Banner title for system-critical user accounts."
+  },
+  "accessAdminUserDetailSystemAccountMessage": "This account is system-critical and cannot be deleted.",
+  "@accessAdminUserDetailSystemAccountMessage": {
+    "description": "Banner message for system-critical user accounts."
+  },
   "accessAdminCreateRoleAction": "Create role",
   "@accessAdminCreateRoleAction": {
     "description": "Access admin create role action."

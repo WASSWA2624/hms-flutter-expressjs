@@ -33369,6 +33369,72 @@ abstract class AppLocalizations {
   /// **'Leave blank to keep the current password.'**
   String get accessAdminPasswordOptionalHint;
 
+  /// Section title for user account details in the user detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accessAdminUserDetailProfileSectionTitle;
+
+  /// Section description for user account details in the user detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Identifiers and contact information for this account.'**
+  String get accessAdminUserDetailProfileSectionDescription;
+
+  /// Section description for assigned roles in the user detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles determine the baseline permissions granted to this user.'**
+  String get accessAdminUserDetailRolesSectionDescription;
+
+  /// Section description for permissions in the user detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective permissions include role grants and any direct assignments.'**
+  String get accessAdminUserDetailPermissionsSectionDescription;
+
+  /// Label for permissions inherited from assigned roles.
+  ///
+  /// In en, this message translates to:
+  /// **'From roles'**
+  String get accessAdminUserDetailRolePermissionsLabel;
+
+  /// Empty state when a user has no assigned roles.
+  ///
+  /// In en, this message translates to:
+  /// **'No roles are assigned to this user yet.'**
+  String get accessAdminUserDetailNoRolesMessage;
+
+  /// Empty state when a user has no effective permissions.
+  ///
+  /// In en, this message translates to:
+  /// **'No permissions are currently effective for this user.'**
+  String get accessAdminUserDetailNoPermissionsMessage;
+
+  /// Banner title for demo user accounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo account'**
+  String get accessAdminUserDetailDemoAccountTitle;
+
+  /// Banner message for demo user accounts.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a demo account. Some destructive actions may be restricted.'**
+  String get accessAdminUserDetailDemoAccountMessage;
+
+  /// Banner title for system-critical user accounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Protected account'**
+  String get accessAdminUserDetailSystemAccountTitle;
+
+  /// Banner message for system-critical user accounts.
+  ///
+  /// In en, this message translates to:
+  /// **'This account is system-critical and cannot be deleted.'**
+  String get accessAdminUserDetailSystemAccountMessage;
+
   /// Access admin create role action.
   ///
   /// In en, this message translates to:

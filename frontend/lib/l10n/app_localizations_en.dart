@@ -17947,6 +17947,46 @@ class AppLocalizationsEn extends AppLocalizations {
       'Leave blank to keep the current password.';
 
   @override
+  String get accessAdminUserDetailProfileSectionTitle => 'Account';
+
+  @override
+  String get accessAdminUserDetailProfileSectionDescription =>
+      'Identifiers and contact information for this account.';
+
+  @override
+  String get accessAdminUserDetailRolesSectionDescription =>
+      'Roles determine the baseline permissions granted to this user.';
+
+  @override
+  String get accessAdminUserDetailPermissionsSectionDescription =>
+      'Effective permissions include role grants and any direct assignments.';
+
+  @override
+  String get accessAdminUserDetailRolePermissionsLabel => 'From roles';
+
+  @override
+  String get accessAdminUserDetailNoRolesMessage =>
+      'No roles are assigned to this user yet.';
+
+  @override
+  String get accessAdminUserDetailNoPermissionsMessage =>
+      'No permissions are currently effective for this user.';
+
+  @override
+  String get accessAdminUserDetailDemoAccountTitle => 'Demo account';
+
+  @override
+  String get accessAdminUserDetailDemoAccountMessage =>
+      'This is a demo account. Some destructive actions may be restricted.';
+
+  @override
+  String get accessAdminUserDetailSystemAccountTitle => 'Protected account';
+
+  @override
+  String get accessAdminUserDetailSystemAccountMessage =>
+      'This account is system-critical and cannot be deleted.';
+
+  @override
   String get accessAdminCreateRoleAction => 'Create role';
 
   @override

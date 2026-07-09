@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/app_permission_catalog_localizations.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
@@ -393,37 +394,26 @@ class _ManageUsersDialogState extends _ScopedAccessAdminListDialogState<_ManageU
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
                             AppButton.tertiary(
-                              leadingIcon: Icons.visibility_outlined,
-                              label: l10n.accessAdminViewUserAction,
-                              semanticLabel: l10n.accessAdminViewUserAction,
-                              tooltip: l10n.accessAdminViewUserAction,
-                              enabled: !loading && !mutating,
-                              onPressed: !loading && !mutating
-                                  ? () => unawaited(_openUserDetail(user))
-                                  : null,
-                            ),
-                            AppButton.tertiary(
                               leadingIcon: Icons.edit_outlined,
-                              label: l10n.accessAdminEditUserAction,
-                              semanticLabel: l10n.accessAdminEditUserAction,
-                              tooltip: l10n.accessAdminEditUserAction,
+                              label: l10n.tenantFacilityEditAction,
+                              semanticLabel: l10n.tenantFacilityEditAction,
+                              tooltip: l10n.tenantFacilityEditAction,
                               enabled: !loading && !mutating,
                               onPressed: !loading && !mutating
                                   ? () => unawaited(_openEditUserDialog(user))
                                   : null,
                             ),
-                            if (!user.isDemo && !user.isSystemCritical)
-                              AppButton.tertiary(
-                                leadingIcon: Icons.delete_outline,
-                                label: l10n.accessAdminDeleteUserAction,
-                                semanticLabel: l10n.accessAdminDeleteUserAction,
-                                tooltip: l10n.accessAdminDeleteUserAction,
-                                color: colorScheme.error,
-                                enabled: !loading && !mutating,
-                                onPressed: !loading && !mutating
-                                    ? () => unawaited(_confirmDeleteUser(user))
-                                    : null,
-                              ),
+                            AppButton.tertiary(
+                              leadingIcon: Icons.delete_outline,
+                              label: l10n.tenantFacilityDeleteAction,
+                              semanticLabel: l10n.tenantFacilityDeleteAction,
+                              tooltip: l10n.tenantFacilityDeleteAction,
+                              color: colorScheme.error,
+                              enabled: !loading && !mutating,
+                              onPressed: !loading && !mutating
+                                  ? () => unawaited(_confirmDeleteUser(user))
+                                  : null,
+                            ),
                           ],
                         );
                       },
@@ -572,9 +562,9 @@ class _ManageRolesPermissionsDialogState
                           children: <Widget>[
                             AppButton.tertiary(
                               leadingIcon: Icons.edit_outlined,
-                              label: l10n.commonSaveActionLabel,
-                              semanticLabel: l10n.commonSaveActionLabel,
-                              tooltip: l10n.commonSaveActionLabel,
+                              label: l10n.tenantFacilityEditAction,
+                              semanticLabel: l10n.tenantFacilityEditAction,
+                              tooltip: l10n.tenantFacilityEditAction,
                               enabled: !loading && !mutating,
                               onPressed: !loading && !mutating
                                   ? () => unawaited(_openEditRoleDialog(role))
@@ -667,81 +657,243 @@ class _AccessAdminUserDetailDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final AccessAdminItem item = widget.item;
     final AccessAdminUserDetail detail = widget.detail;
+    final int roleCount = item.roles.length;
+    final int effectivePermissionCount = detail.effectivePermissions.length;
 
     return AppDialog(
       title: Text(item.title),
       icon: const Icon(Icons.person_outline),
       scrollable: true,
-      maxWidth: 720,
+      pinActionsToBottom: true,
+      maxWidth: 840,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _DetailRow(label: l10n.accessAdminColumnId, value: item.effectiveDisplayId),
-          if (item.email != null)
-            _DetailRow(label: l10n.accessAdminEmailLabel, value: item.email!),
-          if (item.positionTitle != null)
-            _DetailRow(
-              label: l10n.accessAdminPositionLabel,
-              value: item.positionTitle!,
-            ),
-          if (item.status != null)
-            _DetailRow(label: l10n.accessAdminStatusLabel, value: item.status!),
-          if (item.roles.isNotEmpty) ...<Widget>[
-            SizedBox(height: Theme.of(context).spacing.md),
-            Text(
-              l10n.accessAdminAssignedRolesLabel,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            Wrap(
-              spacing: Theme.of(context).spacing.xs,
-              children: item.roles
-                  .map((AccessAdminRoleRef role) => Chip(label: Text(role.name)))
-                  .toList(growable: false),
-            ),
-          ],
-          if (detail.effectivePermissions.isNotEmpty) ...<Widget>[
-            SizedBox(height: Theme.of(context).spacing.md),
-            Text(
-              l10n.accessAdminEffectivePermissionsLabel,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            Text(
-              '${detail.effectivePermissions.length} ${l10n.accessAdminPermissionsLabel}',
-            ),
-            if (detail.directPermissions.isNotEmpty) ...<Widget>[
-              SizedBox(height: Theme.of(context).spacing.sm),
-              Text(
-                l10n.hrAccessDirectPermissionsLabel,
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
-              Wrap(
-                spacing: Theme.of(context).spacing.xs,
-                children: detail.directPermissions
-                    .map(
-                      (AccessAdminPermissionRef permission) =>
-                          Chip(label: Text(permission.name)),
-                    )
-                    .toList(growable: false),
+          _UserDetailSummaryCard(item: item),
+          SizedBox(height: theme.spacing.md),
+          AppSectionPanel(
+            title: l10n.accessAdminUserDetailProfileSectionTitle,
+            description: l10n.accessAdminUserDetailProfileSectionDescription,
+            leadingIcon: Icons.badge_outlined,
+            children: <Widget>[
+              LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final bool wide = constraints.maxWidth >= 560;
+                  final List<Widget> fields = <Widget>[
+                    _UserDetailInfoTile(
+                      icon: Icons.tag_outlined,
+                      label: l10n.accessAdminColumnId,
+                      value: item.effectiveDisplayId,
+                    ),
+                    if (item.email != null)
+                      _UserDetailInfoTile(
+                        icon: Icons.mail_outline,
+                        label: l10n.accessAdminEmailLabel,
+                        value: item.email!,
+                      ),
+                    if (item.phone != null)
+                      _UserDetailInfoTile(
+                        icon: Icons.phone_outlined,
+                        label: l10n.accessAdminPhoneLabel,
+                        value: item.phone!,
+                      ),
+                    if (item.positionTitle != null)
+                      _UserDetailInfoTile(
+                        icon: Icons.work_outline,
+                        label: l10n.accessAdminPositionLabel,
+                        value: item.positionTitle!,
+                      ),
+                    if (item.tenantId != null)
+                      _UserDetailInfoTile(
+                        icon: Icons.apartment_outlined,
+                        label: l10n.settingsWorkspaceTenantLabel,
+                        value: item.tenantId!,
+                      ),
+                    if (item.facilityId != null)
+                      _UserDetailInfoTile(
+                        icon: Icons.local_hospital_outlined,
+                        label: l10n.settingsWorkspaceFacilityLabel,
+                        value: item.facilityId!,
+                      ),
+                  ];
+
+                  if (!wide) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: fields,
+                    );
+                  }
+
+                  final List<Widget> rows = <Widget>[];
+                  for (var index = 0; index < fields.length; index += 2) {
+                    rows.add(
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Expanded(child: fields[index]),
+                          if (index + 1 < fields.length) ...<Widget>[
+                            SizedBox(width: theme.spacing.md),
+                            Expanded(child: fields[index + 1]),
+                          ],
+                        ],
+                      ),
+                    );
+                    if (index + 2 < fields.length) {
+                      rows.add(SizedBox(height: theme.spacing.sm));
+                    }
+                  }
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: rows,
+                  );
+                },
               ),
             ],
+          ),
+          SizedBox(height: theme.spacing.md),
+          AppSectionPanel(
+            title: l10n.accessAdminAssignedRolesLabel,
+            description: l10n.accessAdminUserDetailRolesSectionDescription,
+            leadingIcon: Icons.groups_outlined,
+            trailing: roleCount > 0
+                ? _UserDetailCountChip(count: roleCount)
+                : null,
+            children: <Widget>[
+              if (item.roles.isEmpty)
+                AppMessagePanel(
+                  icon: Icons.info_outline,
+                  message: l10n.accessAdminUserDetailNoRolesMessage,
+                  density: AppContentPanelDensity.compact,
+                )
+              else
+                Wrap(
+                  spacing: theme.spacing.xs,
+                  runSpacing: theme.spacing.xs,
+                  children: item.roles
+                      .map(
+                        (AccessAdminRoleRef role) => Chip(
+                          avatar: Icon(
+                            Icons.shield_outlined,
+                            size: 16,
+                            color: colorScheme.primary,
+                          ),
+                          label: Text(role.name),
+                          backgroundColor: colorScheme.primaryContainer,
+                          side: BorderSide(
+                            color: colorScheme.primary.withValues(alpha: 0.2),
+                          ),
+                        ),
+                      )
+                      .toList(growable: false),
+                ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.md),
+          AppSectionPanel(
+            title: l10n.accessAdminEffectivePermissionsLabel,
+            description: l10n.accessAdminUserDetailPermissionsSectionDescription,
+            leadingIcon: Icons.security_outlined,
+            trailing: effectivePermissionCount > 0
+                ? _UserDetailCountChip(count: effectivePermissionCount)
+                : null,
+            children: <Widget>[
+              if (effectivePermissionCount == 0)
+                AppMessagePanel(
+                  icon: Icons.info_outline,
+                  message: l10n.accessAdminUserDetailNoPermissionsMessage,
+                  density: AppContentPanelDensity.compact,
+                )
+              else ...<Widget>[
+                if (detail.rolePermissionPreview.isNotEmpty) ...<Widget>[
+                  Text(
+                    l10n.accessAdminUserDetailRolePermissionsLabel,
+                    style: theme.textTheme.labelLarge,
+                  ),
+                  SizedBox(height: theme.spacing.xs),
+                  Wrap(
+                    spacing: theme.spacing.xs,
+                    runSpacing: theme.spacing.xs,
+                    children: detail.rolePermissionPreview
+                        .map(
+                          (AccessAdminRolePermissionPreview preview) =>
+                              _UserDetailPermissionChip(
+                                label: l10n.permissionCatalogLabelForCode(
+                                  preview.name,
+                                ),
+                                source: preview.sourceRole,
+                              ),
+                        )
+                        .toList(growable: false),
+                  ),
+                  SizedBox(height: theme.spacing.sm),
+                ],
+                if (detail.directPermissions.isNotEmpty) ...<Widget>[
+                  Text(
+                    l10n.hrAccessDirectPermissionsLabel,
+                    style: theme.textTheme.labelLarge,
+                  ),
+                  SizedBox(height: theme.spacing.xs),
+                  Wrap(
+                    spacing: theme.spacing.xs,
+                    runSpacing: theme.spacing.xs,
+                    children: detail.directPermissions
+                        .map(
+                          (AccessAdminPermissionRef permission) =>
+                              _UserDetailPermissionChip(
+                                label: l10n.permissionCatalogLabelForCode(
+                                  permission.name,
+                                ),
+                                emphasized: true,
+                              ),
+                        )
+                        .toList(growable: false),
+                  ),
+                  SizedBox(height: theme.spacing.sm),
+                ],
+                if (detail.rolePermissionPreview.isEmpty &&
+                    detail.directPermissions.isEmpty)
+                  Wrap(
+                    spacing: theme.spacing.xs,
+                    runSpacing: theme.spacing.xs,
+                    children: detail.effectivePermissions
+                        .map(
+                          (String permission) => _UserDetailPermissionChip(
+                            label: l10n.permissionCatalogLabelForCode(permission),
+                          ),
+                        )
+                        .toList(growable: false),
+                  ),
+              ],
+            ],
+          ),
+          if (item.isDemo || item.isSystemCritical) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            AppFormInformationBanner(
+              title: item.isDemo
+                  ? l10n.accessAdminUserDetailDemoAccountTitle
+                  : l10n.accessAdminUserDetailSystemAccountTitle,
+              message: item.isDemo
+                  ? l10n.accessAdminUserDetailDemoAccountMessage
+                  : l10n.accessAdminUserDetailSystemAccountMessage,
+              variant: AppFormInformationVariant.warning,
+              icon: item.isDemo
+                  ? Icons.science_outlined
+                  : Icons.admin_panel_settings_outlined,
+            ),
           ],
         ],
       ),
       actions: <Widget>[
         if (widget.canWrite) ...<Widget>[
-          AppButton.secondary(
+          AppButton.primary(
             leadingIcon: Icons.edit_outlined,
             label: l10n.accessAdminEditUserAction,
             onPressed: _saving ? null : widget.onEdit,
           ),
-          if (!item.isDemo && !item.isSystemCritical)
-            AppButton.secondary(
-              leadingIcon: Icons.delete_outline,
-              label: l10n.accessAdminDeleteUserAction,
-              onPressed: _saving ? null : widget.onDelete,
-            ),
           AppButton.secondary(
             leadingIcon: item.status == 'ACTIVE'
                 ? Icons.person_off_outlined
@@ -752,6 +904,13 @@ class _AccessAdminUserDetailDialogState
             isLoading: _saving,
             onPressed: _saving ? null : _toggleStatus,
           ),
+          if (!item.isDemo && !item.isSystemCritical)
+            AppButton.secondary(
+              leadingIcon: Icons.delete_outline,
+              label: l10n.accessAdminDeleteUserAction,
+              color: colorScheme.error,
+              onPressed: _saving ? null : widget.onDelete,
+            ),
         ],
         AppButton.secondary(
           label: l10n.commonCloseActionLabel,
@@ -763,26 +922,279 @@ class _AccessAdminUserDetailDialogState
   }
 }
 
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, required this.value});
+class _UserDetailSummaryCard extends StatelessWidget {
+  const _UserDetailSummaryCard({required this.item});
 
+  final AccessAdminItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return AppContentPanel(
+      tone: AppWorkspaceStatusTone.info,
+      density: AppContentPanelDensity.compact,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          CircleAvatar(
+            radius: 28,
+            backgroundColor: colorScheme.primaryContainer,
+            foregroundColor: colorScheme.onPrimaryContainer,
+            child: Text(
+              _userInitials(item.title),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          SizedBox(width: theme.spacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  item.title,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if ((item.positionTitle ?? '').isNotEmpty) ...<Widget>[
+                  SizedBox(height: theme.spacing.xs),
+                  Text(
+                    item.positionTitle!,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                if ((item.email ?? '').isNotEmpty) ...<Widget>[
+                  SizedBox(height: theme.spacing.xs),
+                  Row(
+                    children: <Widget>[
+                      Icon(
+                        Icons.mail_outline,
+                        size: 16,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      SizedBox(width: theme.spacing.xs),
+                      Expanded(
+                        child: Text(
+                          item.email!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                SizedBox(height: theme.spacing.sm),
+                Wrap(
+                  spacing: theme.spacing.xs,
+                  runSpacing: theme.spacing.xs,
+                  children: <Widget>[
+                    if (item.status != null)
+                      _UserDetailStatusChip(status: item.status!),
+                    if (item.isDemo)
+                      Chip(
+                        avatar: Icon(
+                          Icons.science_outlined,
+                          size: 16,
+                          color: colorScheme.tertiary,
+                        ),
+                        label: Text(context.l10n.accessAdminPanelDemo),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _userInitials(String value) {
+    final List<String> parts = value
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((String part) => part.isNotEmpty)
+        .toList(growable: false);
+    if (parts.isEmpty) {
+      return '?';
+    }
+    if (parts.length == 1) {
+      return parts.first
+          .substring(0, parts.first.length < 2 ? 1 : 2)
+          .toUpperCase();
+    }
+    return '${parts.first[0]}${parts.last[0]}'.toUpperCase();
+  }
+}
+
+class _UserDetailStatusChip extends StatelessWidget {
+  const _UserDetailStatusChip({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final AppWorkspaceStatusTone tone = _statusTone(status);
+    final Color foreground = _toneColor(colorScheme, tone);
+    final IconData icon = switch (status) {
+      'ACTIVE' => Icons.check_circle_outline,
+      'INACTIVE' => Icons.pause_circle_outline,
+      'SUSPENDED' => Icons.block_outlined,
+      'PENDING' => Icons.hourglass_top_outlined,
+      _ => Icons.info_outline,
+    };
+
+    return Chip(
+      avatar: Icon(icon, size: 16, color: foreground),
+      label: Text(status),
+      backgroundColor: foreground.withValues(alpha: 0.12),
+      side: BorderSide(color: foreground.withValues(alpha: 0.24)),
+      labelStyle: theme.textTheme.labelMedium?.copyWith(
+        color: foreground,
+        fontWeight: FontWeight.w700,
+      ),
+      visualDensity: VisualDensity.compact,
+    );
+  }
+
+  AppWorkspaceStatusTone _statusTone(String value) {
+    return switch (value) {
+      'ACTIVE' => AppWorkspaceStatusTone.success,
+      'SUSPENDED' => AppWorkspaceStatusTone.error,
+      'PENDING' => AppWorkspaceStatusTone.warning,
+      _ => AppWorkspaceStatusTone.neutral,
+    };
+  }
+
+  Color _toneColor(ColorScheme colors, AppWorkspaceStatusTone tone) {
+    return switch (tone) {
+      AppWorkspaceStatusTone.success => colors.primary,
+      AppWorkspaceStatusTone.warning => colors.tertiary,
+      AppWorkspaceStatusTone.error => colors.error,
+      AppWorkspaceStatusTone.info => colors.secondary,
+      AppWorkspaceStatusTone.neutral => colors.onSurfaceVariant,
+    };
+  }
+}
+
+class _UserDetailInfoTile extends StatelessWidget {
+  const _UserDetailInfoTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
     return Padding(
-      padding: EdgeInsets.only(bottom: Theme.of(context).spacing.sm),
+      padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          SizedBox(
-            width: 160,
-            child: Text(label, style: Theme.of(context).textTheme.labelLarge),
+          Icon(icon, size: 18, color: colorScheme.primary),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  label,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                SizedBox(height: theme.spacing.xs),
+                Text(
+                  value,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
-          Expanded(child: Text(value)),
         ],
       ),
+    );
+  }
+}
+
+class _UserDetailPermissionChip extends StatelessWidget {
+  const _UserDetailPermissionChip({
+    required this.label,
+    this.source,
+    this.emphasized = false,
+  });
+
+  final String label;
+  final String? source;
+  final bool emphasized;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color background = emphasized
+        ? colorScheme.secondaryContainer
+        : colorScheme.surfaceContainerHighest;
+
+    return Tooltip(
+      message: source == null ? label : '$label · $source',
+      child: Chip(
+        avatar: Icon(
+          emphasized ? Icons.key_outlined : Icons.verified_user_outlined,
+          size: 16,
+          color: emphasized ? colorScheme.secondary : colorScheme.onSurfaceVariant,
+        ),
+        label: Text(
+          source == null ? label : '$label · $source',
+          overflow: TextOverflow.ellipsis,
+        ),
+        backgroundColor: background,
+        visualDensity: VisualDensity.compact,
+        labelStyle: theme.textTheme.labelSmall,
+      ),
+    );
+  }
+}
+
+class _UserDetailCountChip extends StatelessWidget {
+  const _UserDetailCountChip({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Chip(
+      avatar: Icon(
+        Icons.format_list_numbered_outlined,
+        size: 16,
+        color: colorScheme.primary,
+      ),
+      label: Text('$count'),
+      backgroundColor: colorScheme.primaryContainer,
+      visualDensity: VisualDensity.compact,
+      labelStyle: theme.textTheme.labelSmall,
     );
   }
 }
