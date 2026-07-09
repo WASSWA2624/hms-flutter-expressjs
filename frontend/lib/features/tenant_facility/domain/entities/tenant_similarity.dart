@@ -65,27 +65,26 @@ TenantDuplicateCheckResult checkTenantDuplicates({
 
     final String tenantName = normalizeTenantName(tenant.name);
     final String tenantSlug = slugify(tenant.slug ?? '');
+    final bool nameExact =
+        normalizedName.isNotEmpty && tenantName == normalizedName;
+    final bool slugExact =
+        normalizedSlug.isNotEmpty && tenantSlug == normalizedSlug;
 
-    if (normalizedName.isNotEmpty && tenantName == normalizedName) {
-      exactNameConflict = true;
+    if (nameExact || slugExact) {
+      if (nameExact) {
+        exactNameConflict = true;
+      }
+      if (slugExact) {
+        exactSlugConflict = true;
+      }
       matches.add(
         TenantSimilarityMatch(
           tenant: tenant,
           score: 100,
-          reasons: const <String>['name'],
-          isExact: true,
-        ),
-      );
-      continue;
-    }
-
-    if (normalizedSlug.isNotEmpty && tenantSlug == normalizedSlug) {
-      exactSlugConflict = true;
-      matches.add(
-        TenantSimilarityMatch(
-          tenant: tenant,
-          score: 100,
-          reasons: const <String>['slug'],
+          reasons: <String>[
+            if (nameExact) 'name',
+            if (slugExact) 'slug',
+          ],
           isExact: true,
         ),
       );
@@ -150,11 +149,7 @@ int _levenshteinDistance(String left, String right) {
     (int index) => index,
     growable: false,
   );
-  final List<int> current = List<int>.filled(
-    right.length + 1,
-    0,
-    growable: false,
-  );
+  final List<int> current = List<int>.filled(right.length + 1, 0);
 
   for (int i = 0; i < left.length; i++) {
     current[0] = i + 1;
