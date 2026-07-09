@@ -979,7 +979,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     });
     final result = await ref
         .read(tenantFacilityRepositoryProvider)
-        .listTenants(request: const AppPageRequest(pageIndex: 0, pageSize: 100));
+        .listTenants(request: const AppPageRequest(pageSize: 100));
     if (!mounted) return;
     result.when(
       success: (AppPage<TenantProfile> page) {

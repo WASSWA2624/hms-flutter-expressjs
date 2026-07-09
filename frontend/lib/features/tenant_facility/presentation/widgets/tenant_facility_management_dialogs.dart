@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
@@ -9,6 +10,7 @@ import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_fac
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -128,6 +130,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
             AppSearchBar(
               controller: _searchController,
               hintText: l10n.tenantFacilitySearchLabel,
+              semanticLabel: l10n.tenantFacilitySearchLabel,
             ),
             const SizedBox(height: 12),
             Expanded(
@@ -188,6 +191,17 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                         title: l10n.tenantFacilityManageTenantsTitle,
                         body: l10n.tenantFacilityNoTenants,
                       ),
+                      mobileItemBuilder: (BuildContext context, TenantProfile tenant) {
+                        return ListTile(
+                          title: Text(tenant.name),
+                          subtitle: Text(tenant.slug ?? tenant.id),
+                          trailing: Text(
+                            tenant.isActive
+                                ? l10n.commonYesLabel
+                                : l10n.commonNoLabel,
+                          ),
+                        );
+                      },
                     ),
             ),
           ],
@@ -265,7 +279,7 @@ class _ManageFacilitiesDialogState extends ConsumerState<_ManageFacilitiesDialog
       tenantFacilityRepositoryProvider,
     );
     final Result<AppPage<TenantProfile>> result = await repository.listTenants(
-      request: const AppPageRequest(pageIndex: 0, pageSize: 100),
+      request: const AppPageRequest(pageSize: 100),
     );
     if (!mounted) return;
     result.when(
@@ -382,6 +396,7 @@ class _ManageFacilitiesDialogState extends ConsumerState<_ManageFacilitiesDialog
             AppSearchBar(
               controller: _searchController,
               hintText: l10n.tenantFacilitySearchLabel,
+              semanticLabel: l10n.tenantFacilitySearchLabel,
             ),
             const SizedBox(height: 12),
             Expanded(
@@ -448,6 +463,18 @@ class _ManageFacilitiesDialogState extends ConsumerState<_ManageFacilitiesDialog
                         title: l10n.tenantFacilityManageFacilitiesTitle,
                         body: l10n.tenantFacilityNoFacilities,
                       ),
+                      mobileItemBuilder:
+                          (BuildContext context, FacilityProfile facility) {
+                        return ListTile(
+                          title: Text(facility.name),
+                          subtitle: Text(_tenantLabel(facility.tenantId)),
+                          trailing: Text(
+                            facility.isActive
+                                ? l10n.commonYesLabel
+                                : l10n.commonNoLabel,
+                          ),
+                        );
+                      },
                     ),
             ),
           ],

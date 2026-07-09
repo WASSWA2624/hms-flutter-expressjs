@@ -96,9 +96,20 @@ describe('Facility Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
+    it('accepts friendly facility ids', () => {
+      const result = facilityIdParamsSchema.safeParse({
+        id: 'FAC0001',
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.id).toBe('FAC0001');
+      }
+    });
+
     it('rejects invalid facility ids', () => {
       const result = facilityIdParamsSchema.safeParse({
-        id: 'facility-123',
+        id: 'not-a-valid-id',
       });
 
       expect(result.success).toBe(false);

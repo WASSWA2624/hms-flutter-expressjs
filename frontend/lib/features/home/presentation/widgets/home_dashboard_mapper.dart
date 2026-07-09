@@ -106,6 +106,7 @@ DashboardPriorityPanelData homeDashboardPriorityData({
   required HomeDashboard dashboard,
   required List<HomeActionDefinition> actions,
   required List<HomeShortcutDefinition> shortcuts,
+  required AppAccessPolicy policy,
   required AppLocalizations l10n,
 }) {
   final HomeDashboardProfile profile = dashboard.profile;

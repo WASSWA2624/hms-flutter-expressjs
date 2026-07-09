@@ -105,6 +105,7 @@ class _HomeDashboardContent extends ConsumerWidget {
                     dashboard: dashboard,
                     actions: actions,
                     shortcuts: shortcuts,
+                    policy: policy,
                     l10n: l10n,
                   ),
                 ),
