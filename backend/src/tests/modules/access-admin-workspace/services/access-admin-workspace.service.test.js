@@ -1,6 +1,13 @@
 jest.mock('@repositories/access-admin-workspace/access-admin-workspace.repository');
+jest.mock('@lib/authorization/permission-catalog-sync', () => ({
+  ensureTenantAccessCatalog: jest.fn().mockResolvedValue({
+    permissions: 62,
+    roles: 40,
+  }),
+}));
 
 const repository = require('@repositories/access-admin-workspace/access-admin-workspace.repository');
+const { ensureTenantAccessCatalog } = require('@lib/authorization/permission-catalog-sync');
 const service = require('../../../../modules/access-admin-workspace/services/access-admin-workspace.service');
 
 describe('access-admin-workspace service', () => {
@@ -104,7 +111,19 @@ describe('access-admin-workspace service', () => {
     expect(data.items[0].email).toBe('doctor@hosspi.com');
     expect(data.items[0].is_demo).toBe(true);
     expect(data.permissions.can_write).toBe(true);
+    expect(ensureTenantAccessCatalog).toHaveBeenCalledWith('tenant-uuid');
+    expect(data.lookups.permissions.length).toBeGreaterThan(0);
     expect(repository.findUsers).toHaveBeenCalled();
+  });
+
+  it('syncs catalog before returning reference data for scoped tenant', async () => {
+    const lookups = await service.getReferenceData(
+      { tenantId: 'tenant-uuid' },
+      { roles: ['TENANT_ADMIN'], tenant_id: 'tenant-uuid' }
+    );
+
+    expect(ensureTenantAccessCatalog).toHaveBeenCalledWith('tenant-uuid');
+    expect(lookups.permissions.length).toBeGreaterThan(0);
   });
 
   it('returns tenant context required state without scope', async () => {

@@ -3,6 +3,7 @@ const { hashPassword } = require('@lib/crypto/hashPassword');
 const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { ROLES } = require('@config/roles');
 const { ROLE_PERMISSIONS } = require('@config/permissions');
+const { ensureTenantAccessCatalog } = require('@lib/authorization/permission-catalog-sync');
 const { createAuditLog } = require('@lib/audit');
 const { provisionTrialSubscription } = require('@lib/subscriptions/tenant-onboarding');
 const { listPendingPaymentRequests } = require('@lib/subscriptions/subscription-payment-request');
@@ -439,6 +440,14 @@ const findItemsForResource = async (resource, scope, filters, skip, take) => {
   return finder({ scope, filters, skip, take });
 };
 
+const maybeSyncTenantAccessCatalog = async (scope = {}) => {
+  const tenantId = scope?.tenant_id;
+  if (!tenantId) {
+    return;
+  }
+  await ensureTenantAccessCatalog(tenantId);
+};
+
 const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
   const { panel, resource } = resolveResource(query);
   const isRegistrationQueue = resource === 'registration-follow-ups';
@@ -487,6 +496,9 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
   };
 
   const skip = (page - 1) * limit;
+  if (!isRegistrationQueue && !isPaymentRequestQueue) {
+    await maybeSyncTenantAccessCatalog(scope);
+  }
   const [summary, lookups, itemsResult] = isRegistrationQueue
     ? [
         {},
@@ -552,6 +564,7 @@ const getReferenceData = async (query = {}, user = {}) => {
     return buildLookups(lookups);
   }
 
+  await maybeSyncTenantAccessCatalog(scopeResult.scope);
   const lookups = await repository.findLookups(scopeResult.scope, includeAllTenants);
   return buildLookups(lookups);
 };

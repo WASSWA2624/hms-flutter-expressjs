@@ -22968,6 +22968,14 @@
   "@accessAdminRolePermissionsRequired": {
     "description": "Validation message when no permissions are selected for a role."
   },
+  "accessAdminPermissionCatalogUnavailableTitle": "Permission catalog unavailable",
+  "@accessAdminPermissionCatalogUnavailableTitle": {
+    "description": "Title when tenant permission catalog failed to load."
+  },
+  "accessAdminPermissionCatalogUnavailableMessage": "Permissions could not be loaded for this tenant. Contact your administrator or try again after refreshing.",
+  "@accessAdminPermissionCatalogUnavailableMessage": {
+    "description": "Message when tenant permission catalog is empty."
+  },
   "accessAdminEmailLabel": "Email",
   "@accessAdminEmailLabel": {
     "description": "Access admin email field label."

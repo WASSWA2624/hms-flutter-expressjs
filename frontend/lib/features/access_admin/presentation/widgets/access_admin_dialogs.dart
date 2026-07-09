@@ -295,6 +295,12 @@ Future<void> openAccessAdminCreateRoleDialog(
   final String? initialTenantId = state.query.tenantId ?? sessionTenantId;
   final List<AccessAdminLookupOption> tenantOptions =
       await _loadAccessAdminTenantOptions(ref, state);
+  final List<AccessAdminLookupOption> permissionLookups =
+      await _loadAccessAdminPermissionLookups(
+        ref,
+        state,
+        tenantId: initialTenantId,
+      );
   if (!context.mounted) {
     return;
   }
@@ -302,7 +308,7 @@ Future<void> openAccessAdminCreateRoleDialog(
   await showRoleMutationDialog(
     context: context,
     mode: RoleMutationMode.create,
-    permissionLookups: state.data.lookups.permissions,
+    permissionLookups: permissionLookups,
     tenantId: initialTenantId,
     facilityId: state.query.facilityId,
     tenantOptions: tenantOptions,
@@ -311,6 +317,34 @@ Future<void> openAccessAdminCreateRoleDialog(
         .read(accessAdminWorkspaceControllerProvider.notifier)
         .createRole(draft),
   );
+}
+
+Future<List<AccessAdminLookupOption>> _loadAccessAdminPermissionLookups(
+  WidgetRef ref,
+  AccessAdminWorkspaceState state, {
+  String? tenantId,
+}) async {
+  if (state.data.lookups.permissions.isNotEmpty) {
+    return state.data.lookups.permissions;
+  }
+
+  final Result<AccessAdminLookups> result = await ref
+      .read(accessAdminRepositoryProvider)
+      .getReferenceData(
+        tenantId: tenantId ?? state.query.tenantId,
+        facilityId: state.query.facilityId,
+      );
+
+  final List<AccessAdminLookupOption> permissions = result.when(
+    success: (AccessAdminLookups lookups) => lookups.permissions,
+    failure: (_) => const <AccessAdminLookupOption>[],
+  );
+
+  if (permissions.isNotEmpty) {
+    await ref.read(accessAdminWorkspaceControllerProvider.notifier).refresh();
+  }
+
+  return permissions;
 }
 
 Future<List<AccessAdminLookupOption>> _loadAccessAdminTenantOptions(

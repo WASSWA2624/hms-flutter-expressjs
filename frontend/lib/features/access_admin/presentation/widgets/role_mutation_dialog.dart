@@ -143,27 +143,36 @@ Future<bool?> showRoleMutationDialog({
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   SizedBox(height: Theme.of(context).spacing.xs),
-                  AppPermissionAssignmentPicker(
-                    permissions: permissionOptions,
-                    selectedPermissionIds: selectedPermissionIds,
-                    enabled: fieldsEnabled,
-                    onSelectionChanged: fieldsEnabled
-                        ? (Set<String> next) {
-                            setState(() {
-                              selectedPermissionIds
-                                ..clear()
-                                ..addAll(next);
-                            });
-                          }
-                        : (_) {},
-                  ),
-                  if (selectedPermissionIds.isEmpty)
-                    Text(
-                      l10n.accessAdminRolePermissionsRequired,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
+                  if (permissionOptions.isEmpty)
+                    AppFormInformationBanner(
+                      title: l10n.accessAdminPermissionCatalogUnavailableTitle,
+                      message: l10n.accessAdminPermissionCatalogUnavailableMessage,
+                      variant: AppFormInformationVariant.warning,
+                      icon: Icons.security_outlined,
+                    )
+                  else ...<Widget>[
+                    AppPermissionAssignmentPicker(
+                      permissions: permissionOptions,
+                      selectedPermissionIds: selectedPermissionIds,
+                      enabled: fieldsEnabled,
+                      onSelectionChanged: fieldsEnabled
+                          ? (Set<String> next) {
+                              setState(() {
+                                selectedPermissionIds
+                                  ..clear()
+                                  ..addAll(next);
+                              });
+                            }
+                          : (_) {},
                     ),
+                    if (selectedPermissionIds.isEmpty)
+                      Text(
+                        l10n.accessAdminRolePermissionsRequired,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                  ],
                 ],
               );
             },
@@ -174,7 +183,7 @@ Future<bool?> showRoleMutationDialog({
       if (resolvedTenantId == null || resolvedTenantId.trim().isEmpty) {
         return Future<AppFailure?>.value(AppFailure.validation());
       }
-      if (selectedPermissionIds.isEmpty) {
+      if (permissionOptions.isEmpty || selectedPermissionIds.isEmpty) {
         return Future<AppFailure?>.value(AppFailure.validation());
       }
       return onSubmit(

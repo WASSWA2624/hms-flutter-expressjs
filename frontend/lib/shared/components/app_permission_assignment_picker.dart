@@ -3,7 +3,6 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/forms/app_form_section.dart';
 
@@ -204,12 +203,19 @@ class _AppPermissionAssignmentPickerState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final Map<String, List<AppPermissionAssignmentOption>> grouped =
-        _groupedPermissions();
-    final List<String> groupKeys = grouped.keys.toList(growable: false)..sort();
     final int selectedCount = widget.selectedPermissionIds.length;
     final int totalCount = widget.permissions.length;
     final bool canChange = widget.enabled;
+
+    if (totalCount == 0) {
+      return const SizedBox.shrink();
+    }
+
+    final Map<String, List<AppPermissionAssignmentOption>> grouped =
+        _groupedPermissions();
+    final List<String> groupKeys = grouped.keys.toList(growable: false)..sort();
+    final bool allSelected = selectedCount == totalCount;
+    final bool noneSelected = selectedCount == 0;
 
     return AppFormSection(
       children: <Widget>[
@@ -219,33 +225,45 @@ class _AppPermissionAssignmentPickerState
           labelText: l10n.hrPermissionAssignmentSearchLabel,
           prefixIcon: const Icon(Icons.search),
         ),
-        Padding(
-          padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
-          child: Wrap(
-            spacing: theme.spacing.sm,
-            runSpacing: theme.spacing.xs,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              Text(
-                l10n.hrPermissionAssignmentSelectedCount(selectedCount, totalCount),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              AppButton.secondary(
-                label: l10n.hrAccessSelectAllPermissionsAction,
-                onPressed: canChange && widget.permissions.isNotEmpty
-                    ? _selectAll
-                    : null,
-              ),
-              AppButton.secondary(
-                label: l10n.hrAccessClearPermissionsAction,
-                onPressed: canChange && selectedCount > 0 ? _clearAll : null,
-              ),
-            ],
+        CheckboxListTile(
+          value: allSelected
+              ? true
+              : noneSelected
+              ? false
+              : null,
+          tristate: true,
+          enabled: canChange,
+          onChanged: canChange
+              ? (bool? value) {
+                  if (value == false) {
+                    _clearAll();
+                  } else {
+                    _selectAll();
+                  }
+                }
+              : null,
+          title: Text(l10n.hrAccessSelectAllPermissionsAction),
+          subtitle: Text(
+            l10n.hrPermissionAssignmentSelectedCount(selectedCount, totalCount),
           ),
+          dense: true,
+          visualDensity: VisualDensity.compact,
+          controlAffinity: ListTileControlAffinity.leading,
+          contentPadding: EdgeInsets.zero,
         ),
-        if (selectedCount == 0)
+        CheckboxListTile(
+          value: noneSelected,
+          enabled: canChange && !noneSelected,
+          onChanged: canChange && !noneSelected
+              ? (_) => _clearAll()
+              : null,
+          title: Text(l10n.hrAccessClearPermissionsAction),
+          dense: true,
+          visualDensity: VisualDensity.compact,
+          controlAffinity: ListTileControlAffinity.leading,
+          contentPadding: EdgeInsets.zero,
+        ),
+        if (noneSelected)
           Padding(
             padding: EdgeInsets.only(bottom: theme.spacing.sm),
             child: Text(
@@ -464,6 +482,23 @@ class _PermissionGroupSection extends StatelessWidget {
           theme.spacing.md,
           theme.spacing.sm,
         ),
+        leading: Checkbox(
+          tristate: true,
+          value: allSelected
+              ? true
+              : noneSelected
+              ? false
+              : null,
+          onChanged: enabled
+              ? (bool? value) {
+                  if (value == false) {
+                    onClearGroup(permissions);
+                  } else {
+                    onSelectGroup(permissions);
+                  }
+                }
+              : null,
+        ),
         title: Text(
           groupLabel,
           style: theme.textTheme.titleSmall,
@@ -478,26 +513,6 @@ class _PermissionGroupSection extends StatelessWidget {
           ),
         ),
         children: <Widget>[
-          Align(
-            alignment: AlignmentDirectional.centerEnd,
-            child: Wrap(
-              spacing: theme.spacing.xs,
-              children: <Widget>[
-                TextButton(
-                  onPressed: enabled && !allSelected
-                      ? () => onSelectGroup(permissions)
-                      : null,
-                  child: Text(l10n.hrPermissionAssignmentSelectGroupAction),
-                ),
-                TextButton(
-                  onPressed: enabled && !noneSelected
-                      ? () => onClearGroup(permissions)
-                      : null,
-                  child: Text(l10n.hrPermissionAssignmentClearGroupAction),
-                ),
-              ],
-            ),
-          ),
           for (final AppPermissionAssignmentOption permission in permissions)
             CheckboxListTile(
               value: selectedPermissionIds.contains(permission.id),

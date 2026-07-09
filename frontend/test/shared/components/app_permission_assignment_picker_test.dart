@@ -53,9 +53,7 @@ void main() {
       expect(find.text('Search permissions'), findsOneWidget);
       expect(find.text('Select all permissions'), findsOneWidget);
       expect(find.text('Clear permissions'), findsOneWidget);
-      expect(find.text('Patient'), findsOneWidget);
-      expect(find.text('Clinical'), findsOneWidget);
-      expect(find.byType(CheckboxListTile), findsWidgets);
+      expect(find.byType(Checkbox), findsWidgets);
     });
 
     testWidgets('select all adds every permission', (tester) async {
@@ -86,6 +84,22 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(selected.length, permissions.length);
+    });
+
+    testWidgets('renders nothing when catalog is empty', (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          AppPermissionAssignmentPicker(
+            permissions: const <AppPermissionAssignmentOption>[],
+            selectedPermissionIds: const <String>{},
+            onSelectionChanged: (_) {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Search permissions'), findsNothing);
+      expect(find.text('0 of 0 selected'), findsNothing);
     });
 
     testWidgets('filters permissions by search query', (tester) async {

@@ -2,7 +2,7 @@ const {
   DEMO_ROLE_CODES,
   DEMO_TENANTS,
 } = require('./seed-catalog');
-const { ROLE_PERMISSIONS } = require('@config/permissions');
+const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
 
 const ROLE_PERMISSION_MAP = Object.freeze(
   Object.fromEntries(
@@ -11,11 +11,7 @@ const ROLE_PERMISSION_MAP = Object.freeze(
 );
 
 const DEMO_PERMISSION_CATALOG = Object.freeze(
-  Array.from(
-    new Set(
-      Object.values(ROLE_PERMISSION_MAP).flat().filter(Boolean)
-    )
-  ).sort()
+  Array.from(new Set(Object.values(PERMISSIONS))).sort()
 );
 
 const PROFILE_GENDER_BY_ROLE = Object.freeze({

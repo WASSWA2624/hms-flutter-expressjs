@@ -17867,6 +17867,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Select at least one permission for this role.';
 
   @override
+  String get accessAdminPermissionCatalogUnavailableTitle =>
+      'Permission catalog unavailable';
+
+  @override
+  String get accessAdminPermissionCatalogUnavailableMessage =>
+      'Permissions could not be loaded for this tenant. Contact your administrator or try again after refreshing.';
+
+  @override
   String get accessAdminEmailLabel => 'Email';
 
   @override

@@ -33243,6 +33243,18 @@ abstract class AppLocalizations {
   /// **'Select at least one permission for this role.'**
   String get accessAdminRolePermissionsRequired;
 
+  /// Title when tenant permission catalog failed to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission catalog unavailable'**
+  String get accessAdminPermissionCatalogUnavailableTitle;
+
+  /// Message when tenant permission catalog is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions could not be loaded for this tenant. Contact your administrator or try again after refreshing.'**
+  String get accessAdminPermissionCatalogUnavailableMessage;
+
   /// Access admin email field label.
   ///
   /// In en, this message translates to:
