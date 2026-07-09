@@ -1,70 +1,65 @@
-# Fix: Super Admin cannot load permissions when creating a role
+# Fix: Super Admin Create Role — tenant picker and permissions blocked
 
 ## Problem
 
-On **Create Role** (`Access Admin`), the Permissions section shows:
+From the **Dashboard → Create role** quick action (also reproducible in Access Admin), the **Create Role** dialog opens but is unusable:
 
-> **Permission catalog unavailable**  
-> Permissions could not be loaded for this tenant. Contact your administrator or try again after refreshing.
+1. **Orange banner:** “Tenant context required” — “Unable to load tenants. Check your connection and try again.”
+2. **Blue banner:** “Select a tenant” — “Choose a tenant above to load the available permissions for that organization.”
+3. **No tenant dropdown** is rendered (tenant list is empty), so role name, description, and permissions remain disabled.
 
-This blocks role creation entirely — Save is disabled because no permissions can be selected.
+Role creation is blocked end-to-end.
 
-## Observed context
+## Context
 
 | Item | Value |
 |------|-------|
 | Environment | Local dev — `http://127.0.0.1:5201` |
 | User | **Platform Demo** (`super.admin@hosspi.com`) |
-| Role | **Platform Administrator** — badges: Super Admin, Administrator |
-| Entry point | Dashboard quick action **Create role** (also reproducible from Access Admin workspace) |
-| UI state | Role name / description fields render; **no tenant selector** is visible; permissions picker is replaced by the error banner |
+| Roles | Super Admin, Administrator |
+| Dashboard | Shows **3 / 3 Tenants** — data exists; Create role flow does not surface it |
 
 ## Expected behavior
 
-1. **Super Admin** users must be able to create roles and assign the full canonical permission catalog, regardless of their own session tenant.
-2. When no tenant context is selected, the dialog should **require a tenant picker** (same pattern as **Create facility** with `requireTenantPicker: true`).
-3. After a tenant is selected, permissions for that tenant should load and display in `AppPermissionAssignmentPicker`.
-4. If the tenant’s permission catalog is missing in the database, the backend should **auto-sync** it (`ensureTenantAccessCatalog`) before returning reference data.
-5. Save should succeed once name + at least one permission + tenant are provided.
+Super Admin / Platform Admin users operate **across tenants** and must be able to create roles without a pre-bound session tenant:
 
-## Likely root cause (investigate)
+1. **Tenant selection** — Show a searchable tenant picker populated with all accessible tenants (same data the dashboard already displays).
+2. **Optional facility scope** — When a role is tenant- or facility-scoped, allow selecting the target facility after tenant selection.
+3. **Permission catalog** — After tenant selection, load permissions from the database (auto-sync via `ensureTenantAccessCatalog` if missing), and render them in `AppPermissionAssignmentPicker` with search, module grouping, and bulk select.
+4. **Progressive enablement** — Enable name/description fields once a tenant is selected; enable Save when name + ≥1 permission + tenant are set.
+5. **No dead-ends** — Replace empty-state banners with actionable UI (picker, retry, or clear guidance). Do not require the Super Admin’s own session tenant.
 
-Permissions are **tenant-scoped** in the DB. The create-role flow loads lookups once via `getReferenceData(tenantId)`:
+## Likely causes (investigate)
 
-- **Frontend:** `openAccessAdminCreateRoleDialog` → `_loadAccessAdminPermissionLookups` → `role_mutation_dialog.dart` shows the error when `permissionLookups` is empty.
-- **Backend:** `access-admin-workspace.service.js` → `getReferenceData` → `resolveWorkspaceScope` → `maybeSyncTenantAccessCatalog` → `findLookups`.
-- Super Admin scope resolution (`tenant-facility-workspace.repository.js`) requires a `tenant_id`; if the session carries one implicitly, the tenant picker is skipped but that tenant may have an **empty or unsynced** permission catalog.
-- Permissions are **not reloaded** when the tenant picker value changes in `role_mutation_dialog.dart`.
+- `_loadAccessAdminTenantOptions` calls `getReferenceData()` without `tenantId`; API failure or empty `tenants` array is swallowed (`failure: (_) => []`).
+- Backend `getReferenceData` for Super Admin in `tenant_context_required` state should return tenants via `findLookups(null, includeAllTenants: true)` but may not be reached or may return an empty list.
+- Dashboard entry (`showAccessAdminCreateRoleDialog`) may bootstrap workspace state that lacks tenant lookups before opening the dialog.
+- Permissions are tenant-scoped; they must reload when the tenant picker changes (`loadPermissionsForTenant` in `role_mutation_dialog.dart`).
 
 ## Tasks
 
-1. **Reproduce** as Super Admin from Dashboard → Create role. Capture the `/access-admin-workspace/reference-data` request/response (tenantId param, permissions array length, HTTP status).
-2. **Diagnose** why `permissionLookups` is empty:
-   - Missing / failed catalog sync for the resolved tenant?
-   - Wrong tenant resolved from session vs. query?
-   - API error swallowed in `_loadAccessAdminPermissionLookups` (`failure: (_) => []`)?
-3. **Fix backend** if needed: ensure `ensureTenantAccessCatalog` runs reliably for the resolved tenant and returns the full catalog from `backend/src/config/permissions.js`.
-4. **Fix frontend UX** for Super Admin:
-   - Always show tenant picker when user is Super Admin and no explicit tenant is chosen.
-   - Reload permission lookups when tenant selection changes.
-   - Replace the generic “catalog unavailable” dead-end with a retry action or clearer message (e.g. “Select a tenant to load permissions”).
-5. **Verify** end-to-end: Super Admin can create a role with permissions for any tenant; tenant/facility admins are unaffected.
+1. **Reproduce** as Super Admin: Dashboard → Create role. Inspect `GET /access-admin-workspace/reference-data` (status, `tenants` length, `permissions` length).
+2. **Fix tenant loading** so Super Admin always receives a populated tenant list when no tenant is pre-selected.
+3. **Fix permission loading** — sync catalog for the selected tenant, reload on tenant change, surface API errors with retry instead of silent empty arrays.
+4. **Align UX** with **Create facility** (`requireTenantPicker: true` pattern in `home_dashboard_actions.dart`).
+5. **Verify** tenant/facility admins are unaffected; update/add tests for Super Admin + tenant picker + permission reload.
 
 ## Key files
 
 | Layer | Path |
 |-------|------|
-| UI dialog | `frontend/lib/features/access_admin/presentation/widgets/role_mutation_dialog.dart` |
+| Role dialog UI | `frontend/lib/features/access_admin/presentation/widgets/role_mutation_dialog.dart` |
 | Dialog orchestration | `frontend/lib/features/access_admin/presentation/widgets/access_admin_dialogs.dart` |
 | Dashboard entry | `frontend/lib/features/home/presentation/widgets/home_dashboard_actions.dart` |
+| Permission picker | `frontend/lib/shared/components/app_permission_assignment_picker.dart` |
 | Reference-data API | `backend/src/modules/access-admin-workspace/services/access-admin-workspace.service.js` |
 | Catalog sync | `backend/src/lib/authorization/permission-catalog-sync.js` |
 | Canonical permissions | `backend/src/config/permissions.js` |
-| Scope resolution | `backend/src/modules/tenant-facility-workspace/repositories/tenant-facility-workspace.repository.js` |
 
 ## Acceptance criteria
 
-- [ ] Super Admin sees a tenant selector (when no tenant is pre-selected) and a populated permission list after selection.
-- [ ] No “Permission catalog unavailable” error under normal dev data / after catalog sync.
-- [ ] Role creation saves successfully with selected permissions.
-- [ ] Existing tests updated; add coverage for Super Admin + tenant picker + permission reload if missing.
+- [ ] Super Admin sees a populated, searchable tenant picker when opening Create role from the dashboard.
+- [ ] Selecting a tenant loads and displays the full permission catalog (searchable, grouped).
+- [ ] Role saves successfully with name, tenant, and selected permissions.
+- [ ] No “Unable to load tenants” or “Select a tenant above” dead-end when tenants exist in the system.
+- [ ] Tests cover Super Admin create-role flow with tenant selection and permission reload.

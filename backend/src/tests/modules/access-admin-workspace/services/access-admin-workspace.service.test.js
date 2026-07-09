@@ -1,4 +1,11 @@
 jest.mock('@repositories/access-admin-workspace/access-admin-workspace.repository');
+jest.mock('@lib/billing/identifiers', () => ({
+  resolvePublicIdentifier: jest.fn((...values) => {
+    const match = values.find((value) => value != null && String(value).trim() !== '');
+    return match == null ? null : String(match);
+  }),
+  resolveIdentifierForFilter: jest.fn(async ({ value }) => value || null),
+}));
 jest.mock('@lib/authorization/permission-catalog-sync', () => ({
   ensureTenantAccessCatalog: jest.fn().mockResolvedValue({
     permissions: 62,
@@ -7,6 +14,7 @@ jest.mock('@lib/authorization/permission-catalog-sync', () => ({
 }));
 
 const repository = require('@repositories/access-admin-workspace/access-admin-workspace.repository');
+const { resolveIdentifierForFilter } = require('@lib/billing/identifiers');
 const { ensureTenantAccessCatalog } = require('@lib/authorization/permission-catalog-sync');
 const service = require('../../../../modules/access-admin-workspace/services/access-admin-workspace.service');
 
@@ -14,6 +22,7 @@ describe('access-admin-workspace service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     process.env.NODE_ENV = 'test';
+    resolveIdentifierForFilter.mockImplementation(async ({ value }) => value || null);
 
     repository.resolveWorkspaceScope.mockResolvedValue({
       state: 'ready',
@@ -124,6 +133,41 @@ describe('access-admin-workspace service', () => {
 
     expect(ensureTenantAccessCatalog).toHaveBeenCalledWith('tenant-uuid');
     expect(lookups.permissions.length).toBeGreaterThan(0);
+  });
+
+  it('syncs catalog for explicit tenant when super admin requests reference data', async () => {
+    repository.resolveWorkspaceScope.mockResolvedValue({
+      state: 'tenant_context_required',
+      scope: null,
+    });
+    repository.findLookups.mockResolvedValue({
+      tenants: [
+        {
+          id: 'tenant-uuid',
+          human_friendly_id: 'TEN0001',
+          name: 'DemoCare General Hospital',
+        },
+      ],
+      facilities: [],
+      roles: [],
+      permissions: [
+        {
+          id: 'perm-uuid',
+          human_friendly_id: 'PRM0001',
+          name: 'clinical:read',
+          display_name: 'Clinical Read',
+        },
+      ],
+    });
+
+    const lookups = await service.getReferenceData(
+      { tenantId: 'TEN0001' },
+      { roles: ['SUPER_ADMIN'] }
+    );
+
+    expect(ensureTenantAccessCatalog).toHaveBeenCalledWith('TEN0001');
+    expect(lookups.permissions).toHaveLength(1);
+    expect(lookups.tenants).toHaveLength(1);
   });
 
   it('returns empty permissions when tenant context is required', async () => {

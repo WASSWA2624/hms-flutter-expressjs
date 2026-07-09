@@ -1,6 +1,6 @@
 const { HttpError } = require('@lib/errors');
 const { hashPassword } = require('@lib/crypto/hashPassword');
-const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
+const { resolvePublicIdentifier, resolveIdentifierForFilter } = require('@lib/billing/identifiers');
 const { ROLES } = require('@config/roles');
 const { ROLE_PERMISSIONS } = require('@config/permissions');
 const { ensureTenantAccessCatalog } = require('@lib/authorization/permission-catalog-sync');
@@ -561,8 +561,25 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
 };
 
 const getReferenceData = async (query = {}, user = {}) => {
-  const scopeResult = await repository.resolveWorkspaceScope({ filters: query, user });
   const includeAllTenants = roleList(user).includes(ROLES.SUPER_ADMIN);
+  const requestedTenantId = text(query.tenant_id || query.tenantId);
+
+  if (requestedTenantId && includeAllTenants) {
+    const tenantId = await resolveIdentifierForFilter({
+      value: requestedTenantId,
+      model: 'tenant',
+    });
+    if (tenantId) {
+      await maybeSyncTenantAccessCatalog({ tenant_id: tenantId });
+      const lookups = await repository.findLookups(
+        { tenant_id: tenantId, facility_id: null },
+        includeAllTenants
+      );
+      return buildLookups(lookups);
+    }
+  }
+
+  const scopeResult = await repository.resolveWorkspaceScope({ filters: query, user });
 
   if (scopeResult.state === 'tenant_context_required') {
     const lookups = await repository.findLookups(null, includeAllTenants);

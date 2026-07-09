@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
@@ -12,8 +13,11 @@ import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_en
 import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/pages/access_admin_workspace_page.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/role_mutation_dialog.dart';
+import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
+import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 
 Future<void> showAccessAdminWorkspaceDialog(
   BuildContext context, {
@@ -61,30 +65,48 @@ Future<void> showAccessAdminCreateRoleDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
+  final AccessAdminWorkspaceState state = await _resolveCreateRoleWorkspaceState(
+    ref,
+  );
+  if (!context.mounted) {
+    return;
+  }
+  await openAccessAdminCreateRoleDialog(context, ref, state);
+}
+
+Future<AccessAdminWorkspaceState> _resolveCreateRoleWorkspaceState(
+  WidgetRef ref,
+) async {
   final AccessAdminWorkspaceController controller = ref.read(
     accessAdminWorkspaceControllerProvider.notifier,
   );
-  final Result<AccessAdminWorkspaceState> stateResult = await ref.read(
-    accessAdminWorkspaceControllerProvider.future,
+  final AsyncValue<Result<AccessAdminWorkspaceState>> current = ref.read(
+    accessAdminWorkspaceControllerProvider,
   );
-  final AccessAdminWorkspaceState? state = stateResult.when(
-    success: (AccessAdminWorkspaceState value) => value,
-    failure: (_) => null,
-  );
-  if (state == null) {
+
+  if (current case AsyncData<Result<AccessAdminWorkspaceState>>(:final value)) {
+    return value.when(
+      success: (AccessAdminWorkspaceState state) => state,
+      failure: (_) => _emptyCreateRoleWorkspaceState(),
+    );
+  }
+
+  if (current case AsyncError<Result<AccessAdminWorkspaceState>>()) {
     await controller.refresh();
   }
-  final Result<AccessAdminWorkspaceState> refreshed = await ref.read(
+
+  final Result<AccessAdminWorkspaceState> loaded = await ref.read(
     accessAdminWorkspaceControllerProvider.future,
   );
-  return refreshed.when(
-    success: (AccessAdminWorkspaceState value) =>
-        _showCreateRoleDialog(context, ref, value),
-    failure: (AppFailure failure) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.failureMessage(failure))),
-      );
-    },
+  return loaded.when(
+    success: (AccessAdminWorkspaceState state) => state,
+    failure: (_) => _emptyCreateRoleWorkspaceState(),
+  );
+}
+
+AccessAdminWorkspaceState _emptyCreateRoleWorkspaceState() {
+  return const AccessAdminWorkspaceState(
+    data: AccessAdminWorkspaceData(state: 'tenant_context_required'),
   );
 }
 
@@ -278,31 +300,22 @@ Future<void> _showCreateUserDialog(
   passwordController.dispose();
 }
 
-Future<void> _showCreateRoleDialog(
-  BuildContext context,
-  WidgetRef ref,
-  AccessAdminWorkspaceState state,
-) async {
-  await openAccessAdminCreateRoleDialog(context, ref, state);
-}
-
 Future<void> openAccessAdminCreateRoleDialog(
   BuildContext context,
   WidgetRef ref,
   AccessAdminWorkspaceState state,
 ) async {
-  final bool isSuperAdmin = ref.read(appAccessPolicyProvider).isElevated;
+  final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+  final bool isCrossTenantAdmin = accessPolicy.canCreateTenant();
   final String? workspaceTenantId = state.query.tenantId;
   final String? sessionTenantId =
       ref.read(sessionStateProvider).session?.user?.tenantId;
-  final String? initialTenantId = isSuperAdmin
+  final String? initialTenantId = isCrossTenantAdmin
       ? workspaceTenantId
       : (workspaceTenantId ?? sessionTenantId);
-  final bool requireTenantPicker = isSuperAdmin
+  final bool requireTenantPicker = isCrossTenantAdmin
       ? workspaceTenantId == null
       : initialTenantId == null;
-  final List<AccessAdminLookupOption> tenantOptions =
-      await _loadAccessAdminTenantOptions(ref, state);
   final List<AccessAdminLookupOption> permissionLookups =
       requireTenantPicker && initialTenantId == null
       ? const <AccessAdminLookupOption>[]
@@ -319,7 +332,14 @@ Future<void> openAccessAdminCreateRoleDialog(
     context: context,
     mode: RoleMutationMode.create,
     permissionLookups: permissionLookups,
-    loadPermissionsForTenant: requireTenantPicker
+    loadTenantOptions: requireTenantPicker
+        ? () => _loadAccessAdminTenantOptions(
+            ref,
+            state,
+            preferTenantFacilityApi: isCrossTenantAdmin,
+          )
+        : null,
+    loadPermissionsForTenant: requireTenantPicker || initialTenantId == null
         ? (String tenantId) => _loadAccessAdminPermissionLookups(
             ref,
             state,
@@ -329,7 +349,6 @@ Future<void> openAccessAdminCreateRoleDialog(
         : null,
     tenantId: initialTenantId,
     facilityId: state.query.facilityId,
-    tenantOptions: tenantOptions,
     requireTenantPicker: requireTenantPicker,
     onSubmit: (AccessAdminRoleDraft draft) => ref
         .read(accessAdminWorkspaceControllerProvider.notifier)
@@ -369,8 +388,34 @@ Future<List<AccessAdminLookupOption>> _loadAccessAdminPermissionLookups(
 
 Future<List<AccessAdminLookupOption>> _loadAccessAdminTenantOptions(
   WidgetRef ref,
-  AccessAdminWorkspaceState state,
-) async {
+  AccessAdminWorkspaceState state, {
+  bool preferTenantFacilityApi = false,
+}) async {
+  if (!preferTenantFacilityApi && state.data.lookups.tenants.isNotEmpty) {
+    return state.data.lookups.tenants;
+  }
+
+  if (preferTenantFacilityApi || state.data.lookups.tenants.isEmpty) {
+    final Result<AppPage<TenantProfile>> tenantPageResult = await ref
+        .read(tenantFacilityRepositoryProvider)
+        .listTenants(request: const AppPageRequest(pageSize: 100));
+    final List<AccessAdminLookupOption>? tenantFacilityOptions =
+        tenantPageResult.when(
+          success: (AppPage<TenantProfile> page) => page.items
+              .map(
+                (TenantProfile tenant) => AccessAdminLookupOption(
+                  id: tenant.id,
+                  label: tenant.name,
+                ),
+              )
+              .toList(growable: false),
+          failure: (_) => null,
+        );
+    if (tenantFacilityOptions != null && tenantFacilityOptions.isNotEmpty) {
+      return tenantFacilityOptions;
+    }
+  }
+
   if (state.data.lookups.tenants.isNotEmpty) {
     return state.data.lookups.tenants;
   }

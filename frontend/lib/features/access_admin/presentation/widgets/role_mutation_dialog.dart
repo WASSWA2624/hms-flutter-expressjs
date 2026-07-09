@@ -20,15 +20,18 @@ typedef RoleMutationSubmitHandler =
 typedef RolePermissionLookupsLoader =
     Future<List<AccessAdminLookupOption>> Function(String tenantId);
 
+typedef RoleTenantOptionsLoader =
+    Future<List<AccessAdminLookupOption>> Function();
+
 Future<bool?> showRoleMutationDialog({
   required BuildContext context,
   required RoleMutationMode mode,
   List<AccessAdminLookupOption> permissionLookups =
       const <AccessAdminLookupOption>[],
   RolePermissionLookupsLoader? loadPermissionsForTenant,
+  RoleTenantOptionsLoader? loadTenantOptions,
   String? tenantId,
   String? facilityId,
-  List<AccessAdminLookupOption> tenantOptions = const <AccessAdminLookupOption>[],
   bool requireTenantPicker = false,
   String? initialName,
   String? initialDescription,
@@ -48,6 +51,10 @@ Future<bool?> showRoleMutationDialog({
   String? selectedTenantId = tenantId;
   final bool showTenantPicker =
       requireTenantPicker || (mode == RoleMutationMode.create && tenantId == null);
+  List<AccessAdminLookupOption> tenantOptions = const <AccessAdminLookupOption>[];
+  bool isLoadingTenants = false;
+  bool tenantLoadAttempted = false;
+  bool scheduledInitialTenantLoad = false;
   List<AccessAdminLookupOption> currentPermissionLookups =
       List<AccessAdminLookupOption>.from(permissionLookups);
   bool isLoadingPermissions = false;
@@ -65,6 +72,26 @@ Future<bool?> showRoleMutationDialog({
           ),
         )
         .toList(growable: false);
+  }
+
+  Future<void> reloadTenantOptions(StateSetter setState) async {
+    final RoleTenantOptionsLoader? loader = loadTenantOptions;
+    if (loader == null) {
+      return;
+    }
+
+    setState(() {
+      isLoadingTenants = true;
+      tenantOptions = const <AccessAdminLookupOption>[];
+    });
+
+    final List<AccessAdminLookupOption> loaded = await loader();
+
+    setState(() {
+      isLoadingTenants = false;
+      tenantLoadAttempted = true;
+      tenantOptions = loaded;
+    });
   }
 
   Future<void> loadPermissionsForSelectedTenant(StateSetter setState) async {
@@ -122,6 +149,15 @@ Future<bool?> showRoleMutationDialog({
               final List<AppPermissionAssignmentOption> permissionOptions =
                   buildPermissionOptions();
 
+              if (loadTenantOptions != null &&
+                  showTenantPicker &&
+                  !tenantLoadAttempted &&
+                  !isLoadingTenants &&
+                  !scheduledInitialTenantLoad) {
+                scheduledInitialTenantLoad = true;
+                unawaited(reloadTenantOptions(setState));
+              }
+
               if (loadPermissionsForTenant != null &&
                   tenantSelected &&
                   !permissionLoadAttempted &&
@@ -136,12 +172,32 @@ Future<bool?> showRoleMutationDialog({
               return AppFormSection(
                 children: <Widget>[
                   if (showTenantPicker) ...<Widget>[
-                    if (tenantOptions.isEmpty)
+                    if (isLoadingTenants)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Center(child: CircularProgressIndicator()),
+                      )
+                    else if (tenantOptions.isEmpty)
                       AppFormInformationBanner(
                         title: l10n.accessAdminTenantContextRequiredTitle,
                         message: l10n.tenantFacilitySelectTenantLoadError,
                         variant: AppFormInformationVariant.warning,
                         icon: Icons.apartment_outlined,
+                        children: loadTenantOptions != null
+                            ? <Widget>[
+                                AppButton.secondary(
+                                  label: l10n.commonRetryActionLabel,
+                                  enabled: !isSubmitting,
+                                  onPressed: () {
+                                    setState(() {
+                                      tenantLoadAttempted = false;
+                                      scheduledInitialTenantLoad = false;
+                                    });
+                                    unawaited(reloadTenantOptions(setState));
+                                  },
+                                ),
+                              ]
+                            : const <Widget>[],
                       )
                     else
                       AppSelectField<String>.searchable(
@@ -203,7 +259,7 @@ Future<bool?> showRoleMutationDialog({
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   SizedBox(height: Theme.of(context).spacing.xs),
-                  if (showTenantPicker && !tenantSelected)
+                  if (showTenantPicker && !tenantSelected && !isLoadingTenants)
                     AppFormInformationBanner(
                       title: l10n.accessAdminPermissionCatalogSelectTenantTitle,
                       message: l10n.accessAdminPermissionCatalogSelectTenantMessage,
