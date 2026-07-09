@@ -14,11 +14,13 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_slug.dart';
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
+import 'package:hosspi_hms/features/tenant_facility/domain/entities/facility_similarity.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_similarity.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_catalog_config_panel.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_similarity_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_wizard.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_similarity_dialog.dart';
@@ -296,7 +298,11 @@ class _SetupDetailDialog extends ConsumerWidget {
 }
 
 typedef _ProfileFormSubmitRegistrar =
-    void Function(Future<bool> Function() submit);
+    void Function(
+      Future<bool> Function() submit, {
+      bool Function()? canSave,
+      VoidCallback? onFormStateChanged,
+    });
 
 typedef _SetupProfileFormBuilder =
     Widget Function(
@@ -306,6 +312,7 @@ typedef _SetupProfileFormBuilder =
       bool canManageFacility,
       bool canEditHrStructure,
       _ProfileFormSubmitRegistrar registerSubmitHandler,
+      VoidCallback onDialogStateChanged,
     );
 
 class _SetupProfileDialog extends ConsumerStatefulWidget {
@@ -328,9 +335,24 @@ class _SetupProfileDialog extends ConsumerStatefulWidget {
 
 class _SetupProfileDialogState extends ConsumerState<_SetupProfileDialog> {
   Future<bool> Function()? _submitHandler;
+  bool Function()? _canSaveChecker;
 
-  void _registerSubmitHandler(Future<bool> Function() submit) {
+  void _registerSubmitHandler(
+    Future<bool> Function() submit, {
+    bool Function()? canSave,
+    VoidCallback? onFormStateChanged,
+  }) {
     _submitHandler = submit;
+    _canSaveChecker = canSave;
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _handleFormStateChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Future<void> _handleSave() async {
@@ -373,6 +395,7 @@ class _SetupProfileDialogState extends ConsumerState<_SetupProfileDialog> {
             accessPolicy.canManageFacility(),
             accessPolicy.canEditFacilitySetupStructure(),
             _registerSubmitHandler,
+            _handleFormStateChanged,
           ),
           failure: (AppFailure failure) => AppFailureStateView(
             failure: failure,
@@ -408,7 +431,9 @@ class _SetupProfileDialogState extends ConsumerState<_SetupProfileDialog> {
           label: widget.saveLabel,
           leadingIcon: Icons.save_outlined,
           isLoading: submission.isSubmitting,
-          onPressed: submission.isSubmitting ? null : _handleSave,
+          onPressed: submission.isSubmitting || !(_canSaveChecker?.call() ?? true)
+              ? null
+              : _handleSave,
         ),
       ],
     );
@@ -449,6 +474,7 @@ Future<void> _openTenantProfileModal(
                 bool canManageFacility,
                 bool canEditHrStructure,
                 _ProfileFormSubmitRegistrar registerSubmitHandler,
+                VoidCallback onDialogStateChanged,
               ) {
                 final TenantProfile? formTenant = forceCreate
                     ? null
@@ -470,6 +496,7 @@ Future<void> _openTenantProfileModal(
                       : l10n.tenantFacilityPermissionRequired,
                   hideSubmitButton: true,
                   registerSubmitHandler: registerSubmitHandler,
+                  onDialogStateChanged: onDialogStateChanged,
                 );
               },
         );
@@ -485,6 +512,7 @@ Future<void> _openFacilityProfileModal(
   bool requireTenantPicker = false,
 }) {
   final AppLocalizations l10n = context.l10n;
+  final bool isCreate = facility == null;
 
   return showAppDialog<void>(
     context: context,
@@ -492,7 +520,9 @@ Future<void> _openFacilityProfileModal(
       builder: (BuildContext context, WidgetRef ref, _) {
         ref.read(tenantFacilitySetupSubmissionProvider.notifier).clearFailure();
         return _SetupProfileDialog(
-          title: l10n.tenantFacilityFacilitySectionTitle,
+          title: isCreate
+              ? l10n.tenantFacilityCreateFacilityTitle
+              : l10n.tenantFacilityFacilitySectionTitle,
           icon: Icons.local_hospital_outlined,
           saveLabel: l10n.tenantFacilitySaveFacilityAction,
           formBuilder:
@@ -503,6 +533,7 @@ Future<void> _openFacilityProfileModal(
                 bool canManageFacility,
                 bool canEditHrStructure,
                 _ProfileFormSubmitRegistrar registerSubmitHandler,
+                VoidCallback onDialogStateChanged,
               ) => _FacilityProfileForm(
                 snapshot: snapshot,
                 canSubmit: canManageFacility,
@@ -512,6 +543,7 @@ Future<void> _openFacilityProfileModal(
                 requireTenantPicker: requireTenantPicker,
                 hideSubmitButton: true,
                 registerSubmitHandler: registerSubmitHandler,
+                onDialogStateChanged: onDialogStateChanged,
               ),
         );
       },
@@ -928,6 +960,7 @@ class _TenantProfileForm extends ConsumerStatefulWidget {
     this.permissionDeniedMessage,
     this.hideSubmitButton = false,
     this.registerSubmitHandler,
+    this.onDialogStateChanged,
   });
 
   final TenantProfile? tenant;
@@ -938,6 +971,7 @@ class _TenantProfileForm extends ConsumerStatefulWidget {
   final String? permissionDeniedMessage;
   final bool hideSubmitButton;
   final _ProfileFormSubmitRegistrar? registerSubmitHandler;
+  final VoidCallback? onDialogStateChanged;
 
   @override
   ConsumerState<_TenantProfileForm> createState() => _TenantProfileFormState();
@@ -1245,6 +1279,7 @@ class _FacilityProfileForm extends ConsumerStatefulWidget {
     this.requireTenantPicker = false,
     this.hideSubmitButton = false,
     this.registerSubmitHandler,
+    this.onDialogStateChanged,
   });
 
   final FacilitySetupSnapshot snapshot;
@@ -1255,6 +1290,7 @@ class _FacilityProfileForm extends ConsumerStatefulWidget {
   final bool requireTenantPicker;
   final bool hideSubmitButton;
   final _ProfileFormSubmitRegistrar? registerSubmitHandler;
+  final VoidCallback? onDialogStateChanged;
 
   @override
   ConsumerState<_FacilityProfileForm> createState() =>
@@ -1262,13 +1298,16 @@ class _FacilityProfileForm extends ConsumerStatefulWidget {
 }
 
 class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
+  static const AppPageRequest _duplicateLookupRequest = AppPageRequest(
+    pageSize: 100,
+  );
+
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _phoneController;
   late final TextEditingController _emailController;
   late final TextEditingController _addressLineController;
   late final TextEditingController _cityController;
-  late final TextEditingController _countryController;
   late FacilitySetupType _type;
   late bool _isActive;
   String? _existingLogoUrl;
@@ -1278,11 +1317,35 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   bool _logoCleared = false;
   AppImageUploadPendingItem? _pendingLogoItem;
   String? _selectedTenantId;
+  String? _selectedCountry;
   List<TenantProfile> _tenantOptions = const <TenantProfile>[];
   bool _loadingTenants = false;
+  AppFailure? _tenantLoadFailure;
+  String? _nameErrorText;
+  List<FacilitySimilarityMatch> _similarMatches =
+      const <FacilitySimilarityMatch>[];
+  bool _similarityAccepted = false;
 
   FacilityProfile? get _activeFacility =>
       widget.facility ?? widget.snapshot.facility;
+
+  bool get _isCreate => widget.facility == null && _activeFacility == null;
+
+  String? get _resolvedTenantId {
+    if (widget.requireTenantPicker) {
+      return _selectedTenantId ?? widget.tenantId;
+    }
+
+    return _selectedTenantId ??
+        widget.tenantId ??
+        widget.snapshot.tenant?.id ??
+        _activeFacility?.tenantId;
+  }
+
+  bool get _hasSelectedTenant =>
+      (_resolvedTenantId ?? '').trim().isNotEmpty;
+
+  bool _canSave() => widget.canSubmit && _hasSelectedTenant;
 
   @override
   void initState() {
@@ -1312,24 +1375,50 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
           ? widget.snapshot.contactAddress.city
           : null,
     );
-    _countryController = TextEditingController(
-      text: widget.facility == null
-          ? widget.snapshot.contactAddress.country
-          : null,
-    );
+    _selectedCountry = widget.facility == null
+        ? widget.snapshot.contactAddress.country
+        : null;
     _type = facility?.type ?? FacilitySetupType.hospital;
     _isActive = facility?.isActive ?? true;
+    _nameController.addListener(_handleNameChanged);
     if (widget.requireTenantPicker) {
       unawaited(_loadTenantOptions());
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      widget.registerSubmitHandler?.call(_submit);
+      _registerWithDialog();
     });
+  }
+
+  void _registerWithDialog() {
+    widget.registerSubmitHandler?.call(
+      _submit,
+      canSave: _canSave,
+      onFormStateChanged: widget.onDialogStateChanged,
+    );
+  }
+
+  void _handleNameChanged() {
+    if (_nameErrorText != null ||
+        _similarMatches.isNotEmpty ||
+        _similarityAccepted) {
+      setState(() {
+        _nameErrorText = null;
+        _similarMatches = const <FacilitySimilarityMatch>[];
+        _similarityAccepted = false;
+      });
+      widget.onDialogStateChanged?.call();
+    }
+  }
+
+  void _notifyDialogState() {
+    _registerWithDialog();
+    widget.onDialogStateChanged?.call();
   }
 
   Future<void> _loadTenantOptions() async {
     setState(() {
       _loadingTenants = true;
+      _tenantLoadFailure = null;
     });
     final result = await ref
         .read(tenantFacilityRepositoryProvider)
@@ -1340,13 +1429,18 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
         setState(() {
           _loadingTenants = false;
           _tenantOptions = page.items;
-          _selectedTenantId ??= page.items.firstOrNull?.id;
+          if (widget.tenantId != null && widget.tenantId!.trim().isNotEmpty) {
+            _selectedTenantId = widget.tenantId;
+          }
         });
+        _notifyDialogState();
       },
-      failure: (_) {
+      failure: (AppFailure failure) {
         setState(() {
           _loadingTenants = false;
+          _tenantLoadFailure = failure;
         });
+        _notifyDialogState();
       },
     );
   }
@@ -1367,24 +1461,29 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       _addressLineController.text =
           widget.snapshot.contactAddress.addressLine1 ?? '';
       _cityController.text = widget.snapshot.contactAddress.city ?? '';
-      _countryController.text = widget.snapshot.contactAddress.country ?? '';
+      _selectedCountry = widget.snapshot.contactAddress.country;
       _type = widget.snapshot.facility?.type ?? FacilitySetupType.hospital;
       _isActive = widget.snapshot.facility?.isActive ?? true;
+      _notifyDialogState();
     }
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _nameController
+      ..removeListener(_handleNameChanged)
+      ..dispose();
     _phoneController.dispose();
     _emailController.dispose();
     _addressLineController.dispose();
     _cityController.dispose();
-    _countryController.dispose();
     super.dispose();
   }
 
   Future<void> _pickLogo() async {
+    if (!_hasSelectedTenant) {
+      return;
+    }
     final AppImageUploadPendingItem? picked = await pickAppImageFile(
       context.l10n,
       context: context,
@@ -1426,7 +1525,8 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
-    final bool canEdit = widget.canSubmit && !submission.isSubmitting;
+    final bool canEditBase = widget.canSubmit && !submission.isSubmitting;
+    final bool fieldsEnabled = canEditBase && _hasSelectedTenant;
 
     final Widget form = Form(
       key: _formKey,
@@ -1435,10 +1535,15 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
           if (widget.requireTenantPicker) ...<Widget>[
             if (_loadingTenants)
               const Center(child: CircularProgressIndicator())
+            else if (_tenantLoadFailure != null)
+              AppFailureStateView(
+                failure: _tenantLoadFailure!,
+                onRetry: () => unawaited(_loadTenantOptions()),
+              )
             else
               AppSelectField<String>.searchable(
                 value: _selectedTenantId,
-                enabled: canEdit,
+                enabled: canEditBase,
                 labelText: l10n.tenantFacilitySelectTenantLabel,
                 isRequired: true,
                 menuHeight: 320,
@@ -1454,11 +1559,23 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
                   setState(() {
                     _selectedTenantId = value;
                   });
+                  _notifyDialogState();
                 },
                 validator: (String? value) => (value ?? '').trim().isEmpty
                     ? l10n.validationRequired
                     : null,
               ),
+            if (_tenantOptions.isEmpty &&
+                !_loadingTenants &&
+                _tenantLoadFailure == null) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              Text(
+                l10n.tenantFacilitySelectTenantLoadError,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ],
             SizedBox(height: theme.spacing.md),
           ],
           if (widget.snapshot.facilities.length > 1 && widget.facility == null)
@@ -1484,17 +1601,20 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
                     .selectFacility(value);
               },
             ),
+          if (_similarMatches.isNotEmpty)
+            FacilitySimilarityWarningPanel(matches: _similarMatches),
           AppTextField(
             controller: _nameController,
-            enabled: canEdit,
+            enabled: fieldsEnabled,
             labelText: l10n.authFacilityNameLabel,
             isRequired: true,
             textCapitalization: TextCapitalization.words,
+            errorText: _nameErrorText,
             validator: AppValidators.requiredText(l10n.validationRequired),
           ),
           AppSelectField<FacilitySetupType>(
             value: _type,
-            enabled: canEdit,
+            enabled: fieldsEnabled,
             labelText: l10n.authFacilityTypeLabel,
             isRequired: true,
             options: <AppSelectOption<FacilitySetupType>>[
@@ -1518,7 +1638,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
             helperText: l10n.tenantFacilityLogoHelper,
             chooseLabel: l10n.tenantFacilityChooseLogoAction,
             removeLabel: l10n.tenantFacilityRemoveLogoAction,
-            enabled: canEdit,
+            enabled: fieldsEnabled,
             existingImageUrl: _logoCleared ? null : _existingLogoUrl,
             pendingItems: _pendingLogoItems,
             placeholderIcon: Icons.local_hospital_outlined,
@@ -1527,7 +1647,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
           ),
           AppPhoneField(
             controller: _phoneController,
-            enabled: canEdit,
+            enabled: fieldsEnabled,
             labelText: l10n.profilePhoneLabel,
             countryLabelText: l10n.appPhoneCountryLabel,
             countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
@@ -1540,7 +1660,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
           ),
           AppEmailField(
             controller: _emailController,
-            enabled: canEdit,
+            enabled: fieldsEnabled,
             labelText: l10n.profileEmailLabel,
             isRequired: true,
             requiredMessage: l10n.validationRequired,
@@ -1548,28 +1668,32 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
           ),
           AppTextField(
             controller: _addressLineController,
-            enabled: canEdit,
+            enabled: fieldsEnabled,
             labelText: l10n.tenantFacilityAddressLineLabel,
             textCapitalization: TextCapitalization.words,
           ),
           _TwoColumnFields(
             left: AppTextField(
               controller: _cityController,
-              enabled: canEdit,
+              enabled: fieldsEnabled,
               labelText: l10n.tenantFacilityCityLabel,
               textCapitalization: TextCapitalization.words,
             ),
-            right: AppTextField(
-              controller: _countryController,
-              enabled: canEdit,
+            right: AppCountryField(
+              value: _selectedCountry,
+              enabled: fieldsEnabled,
               labelText: l10n.tenantFacilityCountryLabel,
-              textCapitalization: TextCapitalization.words,
+              onChanged: (String? value) {
+                setState(() {
+                  _selectedCountry = value;
+                });
+              },
             ),
           ),
           AppSwitchField(
             title: l10n.tenantFacilityActiveLabel,
             value: _isActive,
-            enabled: canEdit,
+            enabled: fieldsEnabled,
             onChanged: (bool value) {
               setState(() {
                 _isActive = value;
@@ -1578,14 +1702,14 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
           ),
           if (!widget.hideSubmitButton)
             _SubmitButton(
-              enabled: widget.canSubmit,
+              enabled: widget.canSubmit && _hasSelectedTenant,
               isLoading: submission.isSubmitting,
               label: l10n.tenantFacilitySaveFacilityAction,
               onPressed: _submit,
             )
           else
             _SubmissionFeedback(
-              enabled: widget.canSubmit,
+              enabled: widget.canSubmit && _hasSelectedTenant,
               failure: submission.failure,
             ),
         ],
@@ -1594,7 +1718,9 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
 
     if (widget.framed) {
       return AppScreenSection(
-        title: l10n.tenantFacilityFacilitySectionTitle,
+        title: _isCreate
+            ? l10n.tenantFacilityCreateFacilityTitle
+            : l10n.tenantFacilityFacilitySectionTitle,
         body: l10n.tenantFacilityFacilitySectionBody,
         child: form,
       );
@@ -1620,13 +1746,17 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       return false;
     }
 
-    final String? tenantId =
-        _selectedTenantId ?? widget.tenantId ?? widget.snapshot.tenant?.id;
+    final String? tenantId = _resolvedTenantId;
     if (tenantId == null) {
       return false;
     }
 
-    return ref
+    final bool canProceed = await _guardAgainstDuplicates(tenantId);
+    if (!canProceed) {
+      return false;
+    }
+
+    final bool saved = await ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveFacility(
           id: widget.facility?.id ?? _activeFacility?.id,
@@ -1643,8 +1773,111 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
           email: _emailController.text,
           addressLine1: _addressLineController.text,
           city: _cityController.text,
-          country: _countryController.text,
+          country: _selectedCountry,
         );
+
+    if (!saved && mounted) {
+      final AppFailure? failure = ref
+          .read(tenantFacilitySetupSubmissionProvider)
+          .failure;
+      if (failure?.messageKey == 'errors.facility.duplicate_name') {
+        setState(() {
+          _nameErrorText = context.l10n.tenantFacilityFacilityNameAlreadyInUse;
+        });
+      }
+    }
+
+    return saved;
+  }
+
+  Future<bool> _guardAgainstDuplicates(String tenantId) async {
+    final AppLocalizations l10n = context.l10n;
+    final List<FacilityProfile> existing = await _loadExistingFacilities(
+      tenantId,
+    );
+    final FacilityDuplicateCheckResult result = checkFacilityDuplicates(
+      name: _nameController.text,
+      existing: existing,
+      excludeFacilityId: widget.facility?.id ?? _activeFacility?.id,
+    );
+
+    if (result.hasExactConflict) {
+      setState(() {
+        _nameErrorText = l10n.tenantFacilityFacilityNameAlreadyInUse;
+        _similarMatches = const <FacilitySimilarityMatch>[];
+      });
+      widget.onDialogStateChanged?.call();
+      return false;
+    }
+
+    final List<FacilitySimilarityMatch> similarMatches =
+        result.nonExactSimilarMatches;
+    if (similarMatches.isEmpty || _similarityAccepted) {
+      setState(() {
+        _similarMatches = const <FacilitySimilarityMatch>[];
+      });
+      return true;
+    }
+
+    if (!mounted) {
+      return false;
+    }
+
+    final bool proceed = await showFacilitySimilarityDialog(
+      context,
+      matches: similarMatches,
+    );
+    if (!mounted) {
+      return false;
+    }
+    if (!proceed) {
+      setState(() {
+        _similarMatches = similarMatches;
+      });
+      widget.onDialogStateChanged?.call();
+      return false;
+    }
+
+    setState(() {
+      _similarMatches = similarMatches;
+      _similarityAccepted = true;
+    });
+    return true;
+  }
+
+  Future<List<FacilityProfile>> _loadExistingFacilities(String tenantId) async {
+    final TenantFacilityRepository repository = ref.read(
+      tenantFacilityRepositoryProvider,
+    );
+    final String name = _nameController.text.trim();
+    final Set<String> seenIds = <String>{};
+    final List<FacilityProfile> facilities = <FacilityProfile>[];
+
+    Future<void> appendMatches(String? search) async {
+      final Result<AppPage<FacilityProfile>> result = await repository
+          .listFacilities(
+            request: _duplicateLookupRequest,
+            tenantId: tenantId,
+            search: search,
+          );
+      result.when(
+        success: (AppPage<FacilityProfile> page) {
+          for (final FacilityProfile facility in page.items) {
+            if (seenIds.add(facility.id)) {
+              facilities.add(facility);
+            }
+          }
+        },
+        failure: (_) {},
+      );
+    }
+
+    await appendMatches(name.isEmpty ? null : name);
+    if (facilities.isEmpty) {
+      await appendMatches(null);
+    }
+
+    return facilities;
   }
 }
 

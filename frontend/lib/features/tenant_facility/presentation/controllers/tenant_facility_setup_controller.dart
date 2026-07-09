@@ -149,7 +149,7 @@ final class TenantFacilitySetupSubmissionState {
 
 final class TenantFacilitySetupSubmissionController
     extends Notifier<TenantFacilitySetupSubmissionState> {
-  static const Duration _postMutationRefreshDelay = Duration(milliseconds: 300);
+  static const Duration _postMutationRefreshDelay = Duration.zero;
 
   @override
   TenantFacilitySetupSubmissionState build() {

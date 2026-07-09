@@ -1,88 +1,119 @@
-# Create Tenant Dialog — UX & Validation Hardening
+# Refine and complete the Facility Create dialog
 
-## Objective
+## Context
 
-Fix the **Create tenant** modal opened from the home dashboard quick action (`create_tenant`) and **Manage tenants → Add tenant** so it behaves as a true create flow: correct title, empty defaults, smart slug generation, field-specific errors, and duplicate/similarity awareness before save.
+The **Create Tenant** dialog is working — tenants save successfully. The **Facility Create** dialog (`showTenantFacilityFacilityFormDialog` / `_FacilityProfileForm` in `tenant_facility_setup_page.dart`) still has functional, layout, and UX gaps shown in the attached screenshots.
 
-## Problem (observed)
+## Goals
 
-| Issue | Current behavior | Expected behavior |
-| ----- | ---------------- | ----------------- |
-| Dialog title | Always **Tenant profile** | **Create tenant** in create mode; **Tenant profile** (or **Edit tenant**) in edit mode |
-| Pre-filled fields | Name/slug populated with the signed-in session tenant (e.g. *DemoCare General Hospital* / *democare-general-hospital*) | Create mode starts **empty** (Active defaults to on) |
-| Slug entry | Manual only | Auto-generate from tenant name as the user types; remain **editable**; stop auto-overwriting once the user edits slug manually |
-| Save errors | Generic messages such as **You do not have permission.** or **Field is already in use.** | Name the conflicting field (e.g. **Tenant slug is already in use.**); use a create-specific permission message when the user lacks platform create rights |
-| Duplicate awareness | None | Warn before save when the new tenant is an exact or near match to existing tenants |
+Deliver a production-ready **Create Facility** flow that is correct, responsive (mobile / tablet / desktop), and keeps frontend and backend in sync with immediate UI updates after create/edit.
 
-**Root cause (create mode):** `_openTenantProfileModal` passes `tenant: resolvedTenant ?? snapshot.tenant` even when `forceCreate: true`, so the form inherits the workspace snapshot tenant instead of `null`.
+---
 
-## Scope
+## Required changes
 
-### In scope
+### 1. Dialog title and mode
 
-1. **Create vs edit mode**
-   - Pass `tenant: null` when `forceCreate` or `isCreate` is true — never fall back to `snapshot.tenant`.
-   - Set dialog title and primary action from mode (`tenantFacilityAddTenantAction` / new l10n keys for create title & body).
-   - Keep existing footer pattern (`Cancel` + `Save tenant` / `Create tenant`).
+- When **creating** a facility, title must be **“Create facility”** (not “Facility profile”).
+- When **editing**, keep **“Facility profile”** (or equivalent edit label).
+- Update l10n keys in `app_en.arb` as needed.
 
-2. **Slug auto-fill**
-   - On name change, derive a URL-safe slug (lowercase, hyphenated, trimmed).
-   - Track whether the user manually edited the slug; only auto-update while slug is auto-managed.
-   - Reuse or add a small shared slug helper under `frontend/lib/core/utils/` if none exists.
+### 2. Tenant selector (blocking bug)
 
-3. **Field-specific validation errors**
-   - Surface backend `409` unique-constraint failures via `ValidationMessagePresenter` + `failure.fieldMessages` so users see which field conflicts (`name` vs `slug`).
-   - Map tenant field keys to localized labels in `validation_message_presenter.dart` if missing.
-   - Replace generic forbidden text for create attempts with a message such as *You do not have permission to create tenants.*
+**Current:** “Select tenant” is empty on open even when tenants exist.
 
-4. **Duplicate & similarity guard (create only)**
-   - Before POST, check entered name/slug against existing tenants (`listTenants` search or dedicated check).
-   - **Exact match** (name or slug): block save; show inline field error.
-   - **Similar match** (fuzzy name comparison, e.g. ≥ 80%): show a confirmation dialog listing similar tenants (name, slug, active status, match score/reason). Actions: **Proceed anyway** | **Cancel** (dismiss dialog, keep form data).
-   - Mirror the patient duplicate-review UX pattern (`PatientDuplicateWarningPanel`, duplicate confirmation dialogs in `patient_registry_page.dart`) — adapt for tenants, do not copy patient-specific APIs.
+**Expected:**
+- Searchable select (`AppSelectField.searchable`) populated from `listTenants`.
+- Opening the field shows all existing tenants; search filters by name.
+- Required; show validation if missing on save.
+- Load failures: show inline error + retry (do not silently leave an empty list).
 
-5. **Permissions**
-   - Create: require platform create rights (`AppPermissions.systemAdmin` / `SUPER_ADMIN`), aligned with `home_dashboard_actions.dart` `create_tenant` action.
-   - Edit existing tenant: keep `canManageTenant()` behavior.
-   - Disable save + show permission hint when create rights are missing; do not allow a silent API 403.
+**Files:** `_FacilityProfileForm._loadTenantOptions`, `_openFacilityProfileModal`.
 
-### Out of scope
+### 3. Tenant-gated form fields
 
-- Facility create/edit flows
-- Tenant deletion or subscription onboarding
-- Full tenant-facility module refactor (see `prompts/03-tenant-facility-module-prompt.md`)
+- Until a tenant is selected, disable all facility fields (name, type, logo, phone, email, address, city, country, active).
+- Save remains disabled without a tenant.
+- Tenant selection is mandatory to create a facility.
 
-## Key files
+### 4. Facility logo upload UI
 
-| Area | Path |
-| ---- | ---- |
-| Dialog & form | `frontend/lib/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart` — `_openTenantProfileModal`, `_TenantProfileForm`, `_SetupProfileDialog` |
-| Entry points | `frontend/lib/features/home/presentation/widgets/home_dashboard_actions.dart`, `tenant_facility_management_dialogs.dart` |
-| Submission | `tenant_facility_setup_controller.dart`, `tenant_facility_repository_impl.dart` |
-| Errors / i18n | `validation_message_presenter.dart`, `app_en.arb` |
-| Backend reference | `backend/src/modules/tenant/` — POST `409` duplicate slug via `errors.database.unique_field` |
-| Pattern reference | Patient duplicate flow in `frontend/lib/features/patients/` |
+**Current:** Preview tile and “Choose image” feel visually disconnected.
+
+**Expected:**
+- Unified upload control: preview + action as one cohesive block (match existing app patterns).
+- Square preview, clear empty state, consistent spacing/alignment with other form fields.
+- After pick → crop → apply, preview updates immediately.
+
+**Files:** `AppImageUploadField`, `_FacilityProfileForm._pickLogo`.
+
+### 5. Crop image dialog — layout + capabilities
+
+**Current:** “Crop image” modal overflows (~55 px bottom overflow on web).
+
+**Fix:**
+- Remove overflow at all breakpoints; crop area must flex within dialog height.
+- Support **crop and resize** (zoom/pan to frame, output square logo).
+- Responsive on mobile, tablet, and desktop.
+
+**Files:** `app_image_crop_dialog.dart`, `AppDialog` usage.
+
+### 6. Country field
+
+- Replace free-text **Country** with a **searchable country selector** (name + flag), reusing phone-field country data/patterns where possible (`AppPhoneField` country list).
+- **City** stays a plain text field.
+
+### 7. Duplicate facility prevention (per tenant)
+
+- Within one tenant, facility names must be unique (case-insensitive, trimmed).
+- Duplicates across **different** tenants are allowed.
+- On likely duplicate: warn before save (mirror tenant similarity UX in `tenant_similarity_dialog.dart`).
+- Enforce on backend; surface API errors clearly in the dialog.
+- After successful create, lists/dashboard reflect the new facility without manual refresh.
+
+### 8. Instant UI updates
+
+**Current:** Creates/updates do not always appear immediately.
+
+**Fix:**
+- Invalidate or refresh relevant providers after save (setup controller, facility lists, dashboard).
+- Remove stale-cache bottlenecks between repository → controller → UI.
+- Success: close dialog, show confirmation, updated data visible on reopen and in facility lists.
+
+### 9. Unchanged (verify only)
+
+- Facility type selector
+- Phone (`AppPhoneField`), email (required), address line, active toggle
+
+---
 
 ## Acceptance criteria
 
-- [ ] **Create tenant** quick action opens a dialog titled for creation with **empty** name/slug fields.
-- [ ] Typing a tenant name auto-fills slug; manual slug edits are preserved.
-- [ ] Saving a duplicate slug/name shows which field is in use, not a generic message.
-- [ ] Similar-tenant warning appears before create when names are near-duplicates; user can proceed or cancel.
-- [ ] Edit flow (existing tenant row / setup wizard) is unchanged except for clearer titles if touched.
-- [ ] Users without create permission see a clear disabled state, not a post-submit 403.
-- [ ] Responsive layout preserved (mobile / tablet / desktop); all strings in `app_en.arb`.
-- [ ] Tests added/updated for slug helper, create-mode form init, and duplicate-check decision logic.
+| # | Criterion |
+|---|-----------|
+| 1 | Create mode title is “Create facility”; edit mode uses profile title |
+| 2 | Tenant dropdown lists all tenants; search works; required validation works |
+| 3 | Facility fields disabled until tenant selected |
+| 4 | Logo upload looks unified; preview updates after crop |
+| 5 | Crop dialog: no overflow; crop + resize work on all screen sizes |
+| 6 | Country uses flag + searchable selector |
+| 7 | Duplicate name blocked per tenant with user-visible warning |
+| 8 | New/updated facility appears in UI immediately after save |
+| 9 | Backend validation and frontend rules stay aligned |
 
-## Quality gate
+---
 
-From `frontend/`:
+## Key files
 
-```bash
-flutter pub get
-dart format --set-exit-if-changed .
-flutter analyze
-flutter test
-```
+- `frontend/lib/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart`
+- `frontend/lib/shared/components/app_image_upload_field.dart`
+- `frontend/lib/shared/components/app_image_crop_dialog.dart`
+- `frontend/lib/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart`
+- `frontend/lib/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart`
+- `frontend/lib/l10n/app_en.arb`
 
-Add targeted backend tests only if a new similarity-check API endpoint is introduced.
+## Constraints
+
+- Reuse existing shared components (`AppSelectField.searchable`, `AppPhoneField` country data, `AppDialog`, form validators).
+- Responsive on mobile, tablet, and desktop.
+- No unrelated refactors; scope to facility create/edit flow.

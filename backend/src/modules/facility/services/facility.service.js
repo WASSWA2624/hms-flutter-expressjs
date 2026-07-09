@@ -138,11 +138,25 @@ const getFacilityById = async (id) => {
  * @param {string} [context.user_agent] - User agent
  * @returns {Promise<Object>} Created facility
  */
+const assertUniqueFacilityName = async (tenantId, name, excludeFacilityId = null) => {
+  const duplicate = await facilityRepository.findByTenantAndName(
+    tenantId,
+    name,
+    excludeFacilityId
+  );
+  if (duplicate) {
+    throw new HttpError('errors.facility.duplicate_name', 409);
+  }
+};
+
 const createFacility = async (data, context = {}) => {
   const payload = {
     ...data,
     tenant_id: await resolveTenantId(data.tenant_id),
   };
+
+  await assertUniqueFacilityName(payload.tenant_id, payload.name);
+
   // Create facility
   const facility = await facilityRepository.create(payload);
 
@@ -190,6 +204,14 @@ const updateFacility = async (id, data, context = {}) => {
   
   if (!beforeFacility) {
     throw new HttpError('errors.facility.not_found', 404);
+  }
+
+  if (data.name !== undefined) {
+    await assertUniqueFacilityName(
+      beforeFacility.tenant_id,
+      data.name,
+      facilityId
+    );
   }
 
   // Update facility

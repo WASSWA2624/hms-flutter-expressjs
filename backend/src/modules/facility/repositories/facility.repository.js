@@ -10,6 +10,13 @@
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 
+const normalizeFacilityName = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ');
+
 /**
  * Find facility by ID
  *
@@ -56,6 +63,40 @@ const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_a
       orderBy,
       include
     });
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
+ * Find an active facility in a tenant with the same normalized name.
+ *
+ * @param {string} tenantId - Tenant ID
+ * @param {string} name - Facility name
+ * @param {string} [excludeFacilityId] - Facility ID to exclude (updates)
+ * @returns {Promise<Object|null>} Matching facility or null
+ */
+const findByTenantAndName = async (tenantId, name, excludeFacilityId = null) => {
+  try {
+    const normalizedName = normalizeFacilityName(name);
+    if (!normalizedName) {
+      return null;
+    }
+
+    const facilities = await prisma.facility.findMany({
+      where: {
+        tenant_id: tenantId,
+        deleted_at: null,
+        ...(excludeFacilityId ? { NOT: { id: excludeFacilityId } } : {})
+      },
+      take: 100
+    });
+
+    return (
+      facilities.find(
+        (facility) => normalizeFacilityName(facility.name) === normalizedName
+      ) || null
+    );
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -208,10 +249,12 @@ const countBranches = async (facilityId) => {
 module.exports = {
   findById,
   findMany,
+  findByTenantAndName,
   count,
   create,
   update,
   softDelete,
   findBranches,
-  countBranches
+  countBranches,
+  normalizeFacilityName
 };

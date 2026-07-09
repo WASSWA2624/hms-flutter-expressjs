@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:crop_your_image/crop_your_image.dart';
@@ -43,10 +44,15 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final double? aspectRatio = widget.aspectRatio;
+    final double cropHeight = math.min(
+      420,
+      math.max(220, MediaQuery.sizeOf(context).height * 0.42),
+    );
 
     return AppDialog(
       title: Text(l10n.appImageCropTitle),
       icon: const Icon(Icons.crop_outlined),
+      scrollable: true,
       pinActionsToBottom: true,
       maxWidth: 760,
       closeEnabled: !_isCropping,
@@ -61,7 +67,7 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
           ),
           SizedBox(height: theme.spacing.md),
           SizedBox(
-            height: 420,
+            height: cropHeight,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(theme.radius.md),
               child: ColoredBox(

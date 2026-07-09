@@ -6300,6 +6300,47 @@
   "@tenantFacilityProceedCreateTenantAction": {
     "description": "Confirm create tenant despite similar matches."
   },
+  "tenantFacilityCreateFacilityTitle": "Create facility",
+  "@tenantFacilityCreateFacilityTitle": {
+    "description": "Facility create dialog title."
+  },
+  "tenantFacilityFacilityNameAlreadyInUse": "Facility name is already in use for this tenant.",
+  "@tenantFacilityFacilityNameAlreadyInUse": {
+    "description": "Inline error when facility name duplicates within tenant."
+  },
+  "tenantFacilitySimilarFacilityDialogTitle": "Similar facility found",
+  "@tenantFacilitySimilarFacilityDialogTitle": {
+    "description": "Dialog title when creating a facility similar to an existing one."
+  },
+  "tenantFacilitySimilarFacilityDialogBody": "The facility you are creating looks similar to existing facilities for this tenant. Review the matches below before continuing.",
+  "@tenantFacilitySimilarFacilityDialogBody": {
+    "description": "Dialog body when creating a facility similar to an existing one."
+  },
+  "tenantFacilitySimilarFacilityWarningTitle": "Potential duplicate facility",
+  "@tenantFacilitySimilarFacilityWarningTitle": {
+    "description": "Inline warning title for similar facility matches."
+  },
+  "tenantFacilitySimilarFacilityWarningBody": "Review the similar facilities below before saving.",
+  "@tenantFacilitySimilarFacilityWarningBody": {
+    "description": "Inline warning body for similar facility matches."
+  },
+  "tenantFacilitySimilarFacilityScoreLabel": "{score}% match",
+  "@tenantFacilitySimilarFacilityScoreLabel": {
+    "description": "Similarity score label for facility duplicate warning.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "tenantFacilityProceedCreateFacilityAction": "Proceed anyway",
+  "@tenantFacilityProceedCreateFacilityAction": {
+    "description": "Confirm create facility despite similar matches."
+  },
+  "tenantFacilitySelectTenantLoadError": "Unable to load tenants. Check your connection and try again.",
+  "@tenantFacilitySelectTenantLoadError": {
+    "description": "Error message when tenant picker options fail to load."
+  },
   "tenantFacilityFacilitySectionTitle": "Facility profile",
   "@tenantFacilityFacilitySectionTitle": {
     "description": "Facility profile form section title."

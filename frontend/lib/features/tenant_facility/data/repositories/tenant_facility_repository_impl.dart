@@ -1118,13 +1118,17 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     required AppPageRequest request,
   }) {
     final JsonMap envelope = _requireMap(data);
-    final JsonMap payload = _requireMap(envelope['data'] ?? envelope);
     final List<TenantProfile> items = decodeList<TenantProfileDto>(
-      payload['tenants'] ?? payload['items'] ?? payload,
+      envelope['data'],
       TenantProfileDto.fromJson,
     ).map((TenantProfileDto dto) => dto.toEntity()).toList(growable: false);
-    final JsonMap pagination = _requireMap(payload['pagination']);
-    final int? total = _optionalInt(pagination['total']);
+    final Object? paginationValue = envelope['pagination'];
+    final JsonMap? pagination = paginationValue is JsonMap
+        ? paginationValue
+        : null;
+    final int? total = pagination != null
+        ? _optionalInt(pagination['total'])
+        : null;
     return _TenantPageDto(
       page: AppPage<TenantProfile>(
         items: items,
@@ -1139,13 +1143,17 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     required AppPageRequest request,
   }) {
     final JsonMap envelope = _requireMap(data);
-    final JsonMap payload = _requireMap(envelope['data'] ?? envelope);
     final List<FacilityProfile> items = decodeList<FacilityProfileDto>(
-      payload['facilities'] ?? payload['items'] ?? payload,
+      envelope['data'],
       FacilityProfileDto.fromJson,
     ).map((FacilityProfileDto dto) => dto.toEntity()).toList(growable: false);
-    final JsonMap pagination = _requireMap(payload['pagination']);
-    final int? total = _optionalInt(pagination['total']);
+    final Object? paginationValue = envelope['pagination'];
+    final JsonMap? pagination = paginationValue is JsonMap
+        ? paginationValue
+        : null;
+    final int? total = pagination != null
+        ? _optionalInt(pagination['total'])
+        : null;
     return _FacilityPageDto(
       page: AppPage<FacilityProfile>(
         items: items,

@@ -23,7 +23,7 @@ class AppImageUploadField extends StatelessWidget {
     this.onClear,
     this.existingImageUrl,
     this.placeholderIcon = Icons.add,
-    this.previewSize = 72,
+    this.previewSize = 88,
     this.maxFiles = 1,
     super.key,
   });
@@ -49,10 +49,13 @@ class AppImageUploadField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final String? previewUrl = _hasPending ? null : existingImageUrl?.trim();
     final List<int>? previewBytes = _hasPending && pendingItems.length == 1
         ? pendingItems.first.bytes
         : null;
+    final bool hasImage =
+        _hasPending || (previewUrl != null && previewUrl.isNotEmpty);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,68 +67,89 @@ class AppImageUploadField extends StatelessWidget {
           ),
         ),
         SizedBox(height: theme.spacing.xs),
-        Text(
-          helperText,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+        DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border.all(color: colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(theme.radius.md),
+            color: colorScheme.surfaceContainerLowest,
           ),
-        ),
-        SizedBox(height: theme.spacing.sm),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            if (maxFiles == 1)
-              _ImagePreviewTile(
-                imageUrl: previewUrl,
-                pendingBytes: previewBytes,
-                placeholderIcon: placeholderIcon,
-                size: previewSize,
-              )
-            else
-              Wrap(
-                spacing: theme.spacing.sm,
-                runSpacing: theme.spacing.sm,
-                children: <Widget>[
-                  for (final AppImageUploadPendingItem item in pendingItems)
-                    _ImagePreviewTile(
-                      pendingBytes: item.bytes,
-                      placeholderIcon: placeholderIcon,
-                      size: previewSize,
-                    ),
-                  if (_canChooseMore)
-                    _ImagePreviewTile(
-                      placeholderIcon: placeholderIcon,
-                      size: previewSize,
-                    ),
-                ],
-              ),
-            SizedBox(width: theme.spacing.md),
-            Expanded(
-              child: Wrap(
-                spacing: theme.spacing.xs,
-                runSpacing: theme.spacing.xs,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: <Widget>[
-                  AppButton.secondary(
-                    label: chooseLabel,
-                    leadingIcon: Icons.image_outlined,
-                    enabled: enabled && _canChooseMore,
-                    onPressed: enabled && _canChooseMore ? onChoose : null,
+          child: Padding(
+            padding: EdgeInsets.all(theme.spacing.md),
+            child: Row(
+              children: <Widget>[
+                if (maxFiles == 1)
+                  _ImagePreviewTile(
+                    imageUrl: previewUrl,
+                    pendingBytes: previewBytes,
+                    placeholderIcon: placeholderIcon,
+                    size: previewSize,
+                    onTap: enabled && _canChooseMore ? onChoose : null,
+                  )
+                else
+                  Wrap(
+                    spacing: theme.spacing.sm,
+                    runSpacing: theme.spacing.sm,
+                    children: <Widget>[
+                      for (final AppImageUploadPendingItem item in pendingItems)
+                        _ImagePreviewTile(
+                          pendingBytes: item.bytes,
+                          placeholderIcon: placeholderIcon,
+                          size: previewSize,
+                        ),
+                      if (_canChooseMore)
+                        _ImagePreviewTile(
+                          placeholderIcon: placeholderIcon,
+                          size: previewSize,
+                          onTap: enabled ? onChoose : null,
+                        ),
+                    ],
                   ),
-                  if ((_hasPending || (previewUrl?.isNotEmpty ?? false)) &&
-                      onClear != null)
-                    AppButton.tertiary(
-                      label: removeLabel,
-                      leadingIcon: Icons.close,
-                      enabled: enabled,
-                      onPressed: enabled ? onClear : null,
-                    ),
-                  if (_singlePendingName != null)
-                    Text(_singlePendingName!, style: theme.textTheme.bodySmall),
-                ],
-              ),
+                SizedBox(width: theme.spacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        helperText,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      SizedBox(height: theme.spacing.sm),
+                      Wrap(
+                        spacing: theme.spacing.xs,
+                        runSpacing: theme.spacing.xs,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: <Widget>[
+                          AppButton.secondary(
+                            label: chooseLabel,
+                            leadingIcon: Icons.image_outlined,
+                            enabled: enabled && _canChooseMore,
+                            onPressed:
+                                enabled && _canChooseMore ? onChoose : null,
+                          ),
+                          if (hasImage && onClear != null)
+                            AppButton.tertiary(
+                              label: removeLabel,
+                              leadingIcon: Icons.close,
+                              enabled: enabled,
+                              onPressed: enabled ? onClear : null,
+                            ),
+                        ],
+                      ),
+                      if (_singlePendingName != null) ...<Widget>[
+                        SizedBox(height: theme.spacing.xs),
+                        Text(
+                          _singlePendingName!,
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ],
     );
@@ -150,12 +174,14 @@ class _ImagePreviewTile extends StatelessWidget {
     this.pendingBytes,
     required this.placeholderIcon,
     required this.size,
+    this.onTap,
   });
 
   final String? imageUrl;
   final List<int>? pendingBytes;
   final IconData placeholderIcon;
   final double size;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -180,7 +206,7 @@ class _ImagePreviewTile extends StatelessWidget {
       child = Icon(placeholderIcon, color: theme.colorScheme.onSurfaceVariant);
     }
 
-    return ClipRRect(
+    final Widget tile = ClipRRect(
       borderRadius: BorderRadius.circular(theme.radius.md),
       child: Container(
         width: size,
@@ -188,6 +214,19 @@ class _ImagePreviewTile extends StatelessWidget {
         color: theme.colorScheme.surfaceContainerHighest,
         alignment: Alignment.center,
         child: child,
+      ),
+    );
+
+    if (onTap == null) {
+      return tile;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        child: tile,
       ),
     );
   }

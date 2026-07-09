@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -424,6 +425,13 @@ class _ManageFacilitiesDialogState
                           facility: facility,
                         );
                         if (context.mounted) {
+                          unawaited(
+                            ref
+                                .read(
+                                  tenantFacilitySetupControllerProvider.notifier,
+                                )
+                                .refresh(),
+                          );
                           unawaited(_reload(resetPage: false));
                         }
                       },
@@ -503,6 +511,11 @@ class _ManageFacilitiesDialogState
                 tenantId: _tenantFilterId,
               );
               if (context.mounted) {
+                unawaited(
+                  ref
+                      .read(tenantFacilitySetupControllerProvider.notifier)
+                      .refresh(),
+                );
                 unawaited(_reload(resetPage: true));
               }
             },

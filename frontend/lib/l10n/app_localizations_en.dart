@@ -4894,6 +4894,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityProceedCreateTenantAction => 'Proceed anyway';
 
   @override
+  String get tenantFacilityCreateFacilityTitle => 'Create facility';
+
+  @override
+  String get tenantFacilityFacilityNameAlreadyInUse =>
+      'Facility name is already in use for this tenant.';
+
+  @override
+  String get tenantFacilitySimilarFacilityDialogTitle =>
+      'Similar facility found';
+
+  @override
+  String get tenantFacilitySimilarFacilityDialogBody =>
+      'The facility you are creating looks similar to existing facilities for this tenant. Review the matches below before continuing.';
+
+  @override
+  String get tenantFacilitySimilarFacilityWarningTitle =>
+      'Potential duplicate facility';
+
+  @override
+  String get tenantFacilitySimilarFacilityWarningBody =>
+      'Review the similar facilities below before saving.';
+
+  @override
+  String tenantFacilitySimilarFacilityScoreLabel(int score) {
+    return '$score% match';
+  }
+
+  @override
+  String get tenantFacilityProceedCreateFacilityAction => 'Proceed anyway';
+
+  @override
+  String get tenantFacilitySelectTenantLoadError =>
+      'Unable to load tenants. Check your connection and try again.';
+
+  @override
   String get tenantFacilityFacilitySectionTitle => 'Facility profile';
 
   @override

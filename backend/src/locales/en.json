@@ -122,6 +122,7 @@
   "errors.equipment_work_order.cannot_start_terminal_status": "Cannot start a work order in terminal status",
   "errors.equipment_work_order.not_found": "Equipment work order not found",
   "errors.facility.not_found": "Facility not found",
+  "errors.facility.duplicate_name": "A facility with this name already exists for this tenant",
   "errors.facility_catalog_offering.not_found": "Facility catalog offering not found",
   "errors.facility_lab_panel_offering.not_found": "Facility lab panel offering not found",
   "errors.facility_lab_test_offering.not_found": "Facility lab test offering not found",

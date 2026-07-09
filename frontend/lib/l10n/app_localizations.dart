@@ -9148,6 +9148,60 @@ abstract class AppLocalizations {
   /// **'Proceed anyway'**
   String get tenantFacilityProceedCreateTenantAction;
 
+  /// Facility create dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Create facility'**
+  String get tenantFacilityCreateFacilityTitle;
+
+  /// Inline error when facility name duplicates within tenant.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility name is already in use for this tenant.'**
+  String get tenantFacilityFacilityNameAlreadyInUse;
+
+  /// Dialog title when creating a facility similar to an existing one.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar facility found'**
+  String get tenantFacilitySimilarFacilityDialogTitle;
+
+  /// Dialog body when creating a facility similar to an existing one.
+  ///
+  /// In en, this message translates to:
+  /// **'The facility you are creating looks similar to existing facilities for this tenant. Review the matches below before continuing.'**
+  String get tenantFacilitySimilarFacilityDialogBody;
+
+  /// Inline warning title for similar facility matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Potential duplicate facility'**
+  String get tenantFacilitySimilarFacilityWarningTitle;
+
+  /// Inline warning body for similar facility matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the similar facilities below before saving.'**
+  String get tenantFacilitySimilarFacilityWarningBody;
+
+  /// Similarity score label for facility duplicate warning.
+  ///
+  /// In en, this message translates to:
+  /// **'{score}% match'**
+  String tenantFacilitySimilarFacilityScoreLabel(int score);
+
+  /// Confirm create facility despite similar matches.
+  ///
+  /// In en, this message translates to:
+  /// **'Proceed anyway'**
+  String get tenantFacilityProceedCreateFacilityAction;
+
+  /// Error message when tenant picker options fail to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load tenants. Check your connection and try again.'**
+  String get tenantFacilitySelectTenantLoadError;
+
   /// Facility profile form section title.
   ///
   /// In en, this message translates to:

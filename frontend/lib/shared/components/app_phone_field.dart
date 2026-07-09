@@ -771,6 +771,24 @@ class _PhoneCountryPickerDialogState extends State<_PhoneCountryPickerDialog> {
   }
 }
 
+final class AppCountryCatalogEntry {
+  const AppCountryCatalogEntry({required this.name, required this.isoCode});
+
+  final String name;
+  final IsoCode isoCode;
+}
+
+List<AppCountryCatalogEntry> get appCountryCatalogEntries {
+  return _phoneCountries
+      .map(
+        (_PhoneCountry country) => AppCountryCatalogEntry(
+          name: country.name,
+          isoCode: country.isoCode,
+        ),
+      )
+      .toList(growable: false);
+}
+
 String isoCodeToFlagEmoji(IsoCode isoCode) {
   final String code = isoCode.name.toUpperCase();
   if (code.length != 2) {
