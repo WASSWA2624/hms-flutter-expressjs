@@ -36,7 +36,7 @@ final class AccessAdminLookupsDto {
   });
 
   factory AccessAdminLookupsDto.fromResponse(Object? data) {
-    final Map<String, dynamic> json = _map(data);
+    final Map<String, dynamic> json = _payloadMap(data);
     return AccessAdminLookupsDto(
       tenants: _options(json['tenants']),
       facilities: _options(json['facilities']),
@@ -332,7 +332,7 @@ final class AccessAdminWorkspaceDto {
     Object? data,
     AccessAdminWorkspaceQuery query,
   ) {
-    final Map<String, dynamic> json = _map(data);
+    final Map<String, dynamic> json = _payloadMap(data);
     final Map<String, dynamic> filters = _map(json['filters']);
     final AccessAdminResource resource = AccessAdminResource.fromServer(
       _nullableString(filters['resource']) ?? query.resource.serverValue,
@@ -421,7 +421,7 @@ final class AccessAdminLegacyRouteResolutionDto {
   });
 
   factory AccessAdminLegacyRouteResolutionDto.fromResponse(Object? data) {
-    final Map<String, dynamic> json = _map(data);
+    final Map<String, dynamic> json = _payloadMap(data);
     return AccessAdminLegacyRouteResolutionDto(
       panel: _string(json['panel']),
       resource: _string(json['resource']),
@@ -449,7 +449,7 @@ final class AccessAdminUserDetailDto {
   const AccessAdminUserDetailDto({required this.json, required this.resource});
 
   factory AccessAdminUserDetailDto.fromResponse(Object? data) {
-    final Map<String, dynamic> json = _map(data);
+    final Map<String, dynamic> json = _payloadMap(data);
     return AccessAdminUserDetailDto(
       json: json,
       resource: AccessAdminResource.users,
@@ -499,7 +499,7 @@ final class AccessAdminDemoResetResultDto {
   });
 
   factory AccessAdminDemoResetResultDto.fromResponse(Object? data) {
-    final Map<String, dynamic> json = _map(data);
+    final Map<String, dynamic> json = _payloadMap(data);
     return AccessAdminDemoResetResultDto(
       userId: _string(json['user_id']),
       email: _string(json['email']),
@@ -527,6 +527,12 @@ Map<String, dynamic> _map(Object? value) {
   if (value is Map<String, dynamic>) return value;
   if (value is Map) return Map<String, dynamic>.from(value);
   return const <String, dynamic>{};
+}
+
+Map<String, dynamic> _payloadMap(Object? value) {
+  final Map<String, dynamic> root = _map(value);
+  final Map<String, dynamic> payload = _map(root['data']);
+  return payload.isEmpty ? root : payload;
 }
 
 String _string(Object? value, {String fallback = ''}) {
