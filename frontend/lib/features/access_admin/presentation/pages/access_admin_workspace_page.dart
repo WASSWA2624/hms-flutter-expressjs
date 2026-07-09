@@ -11,7 +11,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
-import 'package:hosspi_hms/features/access_admin/presentation/widgets/role_mutation_dialog.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -424,23 +424,7 @@ class _AccessAdminWorkspaceContentState
     BuildContext context,
     AccessAdminWorkspaceState state,
   ) async {
-    final String? tenantId =
-        state.query.tenantId ?? state.data.lookups.tenants.firstOrNull?.id;
-    if (tenantId == null) {
-      _showSnack(context, context.l10n.accessAdminTenantContextRequiredBody);
-      return;
-    }
-
-    await showRoleMutationDialog(
-      context: context,
-      mode: RoleMutationMode.create,
-      permissionLookups: state.data.lookups.permissions,
-      tenantId: tenantId,
-      facilityId: state.query.facilityId,
-      onSubmit: (AccessAdminRoleDraft draft) => ref
-          .read(accessAdminWorkspaceControllerProvider.notifier)
-          .createRole(draft),
-    );
+    await openAccessAdminCreateRoleDialog(context, ref, state);
   }
 
   void _showSnack(BuildContext context, String message) {

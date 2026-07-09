@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/pages/access_admin_workspace_page.dart';
@@ -280,14 +282,20 @@ Future<void> _showCreateRoleDialog(
   WidgetRef ref,
   AccessAdminWorkspaceState state,
 ) async {
-  final String? tenantId =
-      state.query.tenantId ?? state.data.lookups.tenants.firstOrNull?.id;
-  if (tenantId == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.l10n.accessAdminTenantContextRequiredBody),
-      ),
-    );
+  await openAccessAdminCreateRoleDialog(context, ref, state);
+}
+
+Future<void> openAccessAdminCreateRoleDialog(
+  BuildContext context,
+  WidgetRef ref,
+  AccessAdminWorkspaceState state,
+) async {
+  final String? sessionTenantId =
+      ref.read(sessionStateProvider).session?.user?.tenantId;
+  final String? initialTenantId = state.query.tenantId ?? sessionTenantId;
+  final List<AccessAdminLookupOption> tenantOptions =
+      await _loadAccessAdminTenantOptions(ref, state);
+  if (!context.mounted) {
     return;
   }
 
@@ -295,10 +303,29 @@ Future<void> _showCreateRoleDialog(
     context: context,
     mode: RoleMutationMode.create,
     permissionLookups: state.data.lookups.permissions,
-    tenantId: tenantId,
+    tenantId: initialTenantId,
     facilityId: state.query.facilityId,
+    tenantOptions: tenantOptions,
+    requireTenantPicker: initialTenantId == null,
     onSubmit: (AccessAdminRoleDraft draft) => ref
         .read(accessAdminWorkspaceControllerProvider.notifier)
         .createRole(draft),
+  );
+}
+
+Future<List<AccessAdminLookupOption>> _loadAccessAdminTenantOptions(
+  WidgetRef ref,
+  AccessAdminWorkspaceState state,
+) async {
+  if (state.data.lookups.tenants.isNotEmpty) {
+    return state.data.lookups.tenants;
+  }
+
+  final Result<AccessAdminLookups> result = await ref
+      .read(accessAdminRepositoryProvider)
+      .getReferenceData();
+  return result.when(
+    success: (AccessAdminLookups lookups) => lookups.tenants,
+    failure: (_) => const <AccessAdminLookupOption>[],
   );
 }
