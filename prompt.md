@@ -1,111 +1,77 @@
-# Standardize Role-Based Dashboard & Sidebar Access
+# Reusable Role Dashboard Component
 
 ## Objective
 
-Refactor the HOSSPI HMS home dashboard and sidebar navigation so every staff role sees a **consistent layout** with **role-scoped content**. Users must only see menu items and dashboard widgets they are entitled to — no clutter from unrelated modules.
+Extract the home dashboard into a **reusable shared component** so every role uses the same shell and only supplies role-specific data. The layout must be uniform across all users — clear visual separation between sections, consistent spacing, and identical styling for interactive elements.
 
-**Primary files:** `frontend/lib/features/home/`, `frontend/lib/app/router/app_routes.dart`, `frontend/lib/app/router/app_router.dart`, `frontend/lib/core/permissions/access_policy.dart`, `frontend/lib/features/home/domain/entities/home_dashboard_profiles.dart`
+**Move from:** `frontend/lib/features/home/presentation/widgets/home_dashboard_scaffold.dart`  
+**Move to:** `frontend/lib/shared/dashboard/` (export via `shared/dashboard/dashboard.dart`)
 
-**Standards:** Follow `frontend/.cursor/design-system.mdc`, `layouts.mdc`, `ui-workspace.mdc`. All labels via `app_en.arb`. Responsive on mobile, tablet, and desktop.
-
----
-
-## Dashboard Layout (all roles)
-
-Use one shared dashboard scaffold. **Do not** render a page title or a refresh button on the dashboard.
-
-Sections, top to bottom:
-
-| # | Section | Purpose | Constraints |
-|---|---------|---------|-------------|
-| 1 | **Summary badges** | Role-specific KPI/metric cards (e.g. waiting patients, pending labs, critical alerts) | Cap at 3–4 cards per role; hide zero-value cards |
-| 2 | **Quick actions** | Primary workflow buttons (register patient, start consultation, dispatch ambulance, etc.) | Reuse shared `QuickAction` component; identical styling across all dashboards |
-| 3 | **Critical shortcuts** | Tiles linking to urgent/pending work (critical patients, pending labs, overdue tasks) | Role-relevant only; deep-link into target workspace with pre-selection where applicable |
-| 4 | **Charts** | Trend or distribution visuals (line, pie, donut) | **Maximum 4** charts; show only when data exists; enable `showCharts` in `home_dashboard_layout.dart` |
-
-Drill-downs from dashboard widgets use **modals** or workspace deep-links — never intermediate workflow routes.
+**Standards:** `frontend/.cursor/design-system.mdc`, `components.mdc`, `layouts.mdc`. All labels via `app_en.arb`. Responsive on mobile, tablet, and desktop. Reuse `AppButton`, `AppSectionPanel`, `AppResponsiveWrap`, and existing theme tokens before adding new widgets.
 
 ---
 
-## Sidebar Menu Access
+## Dashboard Shell
 
-Filter sidebar items so each role sees **only** entitled routes. Admins see the full menu. Map requirements to existing `AppRoutes` names and enforce via `AccessRequirement` / `_canAccessShellRoute()`.
+Provide one scaffold widget (e.g. `RoleDashboardScaffold`) with **no page title** and **no refresh button**. Consumers pass data; the shell owns layout only.
 
-### Full access (all shell menu items)
+### Section order (fixed for all roles)
 
-| Role | Email |
-|------|-------|
-| Super Admin | `super.admin@hosspi.com` |
-| Tenant Admin | `tenant.admin@hosspi.com` |
-| Facility Admin | `facility.admin@hosspi.com` |
+| # | Section | Purpose | Rules |
+|---|---------|---------|-------|
+| 1 | **Summary badges** | Role-specific KPI cards (waiting patients, pending labs, etc.) | Max 3–4 cards; **always show configured cards, including zero values** (display `0`, not hidden); responsive grid |
+| 2 | **Quick actions** | Primary workflow buttons (register patient, start consultation, etc.) | Use shared `AppButton.secondary`; identical size, spacing, and wrap layout everywhere |
+| 3 | **Priority worklist** | Items requiring attention (pending patients, critical labs, overdue tasks) | Show priority/severity; cap visible rows (e.g. 3–5); deep-link into target workspace — not duplicate worklists |
+| 4 | **Charts** | Trend or distribution visuals (line, pie, donut) | **Max 4** charts; **always render the chart panel** — use empty-state placeholders when no data; responsive 1- or 2-column layout |
 
-### Scoped access
-
-| Role | Email | Allowed menu items |
-|------|-------|-------------------|
-| **Doctor** | `doctor@hosspi.com` | Dashboard, Patient registry, OPD, Emergency, Inpatient (IPD), ICU, Clinical, Operating theater, Discharge planning, Laboratory, Radiology, Pharmacy, Communications, Reports, Settings |
-| **Nurse** | `nurse@hosspi.com` | Dashboard, Patient registry, OPD, Emergency, Inpatient (IPD), Rooms & beds, ICU, Nursing, Laboratory, Communications, Reports, Settings |
-| **Lab** | `lab@hosspi.com` | Dashboard, Patient registry, Laboratory, Communications, Settings |
-| **Pharmacy** | `pharmacy@hosspi.com` | Dashboard, Patient registry, Pharmacy, Communications, Reports, Settings |
-| **Reception** | `reception@hosspi.com` | Dashboard, Patient registry, OPD, Communications, Settings |
-| **Billing** | `billing@hosspi.com` | Dashboard, Patient registry, Billing, Insurance claims, Communications, Settings |
-| **Operations** | `operations@hosspi.com` | Dashboard, Operations, Communications, Settings |
-| **HR** | `hr@hosspi.com` | Dashboard, Human resources, Communications, Tenant setup, Reports, Settings |
-| **Biomedical** | `biomed@hosspi.com` | Dashboard, Biomedical engineering, Communications, Reports, Settings |
-| **Housekeeping** | `housekeeping@hosspi.com` | Dashboard, Housekeeping, Communications, Reports, Settings |
-| **Ambulance** | `ambulance@hosspi.com` | Dashboard, Emergency, Communications, Reports, Settings |
-
-### Explicit exclusions (apply where not listed above)
-
-Doctor: Nursing, Physiotherapy, Billing, Insurance claims, Subscription plans, Operations, Housekeeping, Biomedical engineering, Mortuary, Human resources, Integrations, Tenant setup.
-
-Ambulance: Patient registry and all modules except Emergency.
+Configured sections always render. Individual badges, metrics, and panels **must remain visible at zero** — do not filter out or collapse items solely because the value is `0`. Only omit an entire section when the role has no configured items for that section type.
 
 ---
 
-## Implementation Tasks
+## Reusable building blocks
 
-1. **Unify dashboard shell** — Extract a reusable `HomeDashboardScaffold` with the four sections above; remove title bar and refresh button from dashboard content.
-2. **Standardize quick actions & shortcuts** — Ensure shared components render identically across roles; configure per role in `home_dashboard_profiles.dart`.
-3. **Enable charts** — Turn on chart section (max 4) with role-appropriate metrics from `dashboard-workspace` API; graceful empty state when no data.
-4. **Align sidebar with role matrix** — Update `AppRoutes` access requirements and/or role-permission mappings so the sidebar matches the table above. Verify with `_canAccessShellRoute()` for each test account.
-5. **Sync dashboard profiles** — Each role's `statusCards`, `quickActionIds`, `shortcutIds`, and chart config must reflect their scope.
-6. **Verify responsive layout** — Test mobile drawer, tablet rail, and desktop sidebar at all breakpoints.
+Create shared, role-agnostic widgets under `frontend/lib/shared/dashboard/`:
 
----
+| Widget | Responsibility |
+|--------|----------------|
+| `RoleDashboardScaffold` | Four-section column layout and spacing |
+| `DashboardMetricStrip` | Summary badge grid — includes zero-value metrics |
+| `DashboardQuickActions` | Styled quick-action button row/wrap |
+| `DashboardPriorityPanel` | Queue/alerts list with priority chips and “view all” — show empty state when none pending |
+| `DashboardChartsRow` | Up to 4 charts — show empty-state UI when series has no data |
 
-## Acceptance Criteria
-
-- [ ] Dashboard has no title and no refresh button
-- [ ] All roles share the same four-section layout order
-- [ ] Quick actions and shortcut tiles look identical across roles (only content differs)
-- [ ] Charts capped at 4; hidden when empty
-- [ ] Each test account sees only its allowed sidebar items
-- [ ] Doctor cannot see Nursing, Billing, HR, etc.
-- [ ] Ambulance cannot see Patient registry
-- [ ] Admins (super/tenant/facility) see the full menu
-- [ ] No analyzer warnings; existing tests pass
+Each widget accepts plain data models (counts, labels, icons, routes, chart series) — **no role logic inside shared code**. Role configuration stays in `home_dashboard_profiles.dart` and the home feature layer.
 
 ---
 
-## Test Accounts
+## Data & integration
 
-Password for all accounts: `Hosspi@2624`
+- Populate sections from `HomeDashboard` + `home_dashboard_profiles.dart` (`statusCards`, `quickActionIds`, `shortcutIds`, queue/alerts, trend/distribution).
+- Drill-downs use **modals** or workspace deep-links — never intermediate workflow routes.
+- Charts read from `dashboard-workspace` API when available; graceful fallback when empty.
 
-| Role | Email |
-|------|-------|
-| Super Admin | `super.admin@hosspi.com` |
-| Tenant Admin | `tenant.admin@hosspi.com` |
-| Facility Admin | `facility.admin@hosspi.com` |
-| Doctor | `doctor@hosspi.com` |
-| Nurse | `nurse@hosspi.com` |
-| Lab | `lab@hosspi.com` |
-| Pharmacy | `pharmacy@hosspi.com` |
-| Reception | `reception@hosspi.com` |
-| Billing | `billing@hosspi.com` |
-| Operations | `operations@hosspi.com` |
-| HR | `hr@hosspi.com` |
-| Biomedical | `biomed@hosspi.com` |
-| Housekeeping | `housekeeping@hosspi.com` |
-| Ambulance | `ambulance@hosspi.com` |
-| Patient portal | `patient.portal@hosspi.com` |
+---
+
+## Implementation tasks
+
+1. **Extract shared dashboard module** — Move scaffold and section widgets to `lib/shared/dashboard/`; export from barrel file; update `home_page.dart` imports.
+2. **Unify quick actions** — Single `DashboardQuickActions` component used by all roles.
+3. **Priority worklist** — Merge queue preview + alerts into `DashboardPriorityPanel`; show priority, cap rows, link to workspace.
+4. **Charts** — Consolidate trend/distribution into `DashboardChartsRow` (max 4); always show panel with empty-state when `!hasData`.
+5. **Wire home feature** — Map `HomeDashboard` entities into shared widget inputs; keep role profiles as the configuration source.
+6. **Responsive QA** — Verify layout at mobile, tablet, and desktop breakpoints.
+
+---
+
+## Acceptance criteria
+
+- [ ] Dashboard shell lives under `frontend/lib/shared/dashboard/`
+- [ ] All roles render the same four sections in the same order
+- [ ] Quick-action buttons look identical across roles (only labels/icons differ)
+- [ ] Priority worklist shows capped, prioritized items — not full module worklists
+- [ ] Charts capped at 4; panel always visible with empty-state when no data
+- [ ] No dashboard title or refresh button
+- [ ] **Zero-value summary badges and metrics still display** (show `0`, never omit)
+- [ ] All configured dashboard components render even when counts are zero
+- [ ] Strings localized; no analyzer warnings in touched files
+- [ ] Existing home dashboard tests updated and passing

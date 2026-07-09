@@ -95,16 +95,14 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     required HomeDashboardTrend trend,
     required HomeDashboardDistribution distribution,
   }) {
-    return showCharts && (trend.hasData || distribution.hasData);
+    return showCharts;
   }
 
   bool get queueBeforeMetrics => false;
 
   bool showActivityPanel({required bool hasQueueItems}) => false;
 
-  bool showAlertsPanel(List<HomeAlertItem> alerts) {
-    return alerts.any((HomeAlertItem alert) => alert.count > 0);
-  }
+  bool showAlertsPanel(List<HomeAlertItem> alerts) => showQueuePanel;
 
   bool showShortcutsSection({required int quickActionCount}) {
     if (suppressHomeShortcuts || shortcutIds.isEmpty || maxShortcutTiles == 0) {
@@ -119,20 +117,7 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     return layoutTier != HomeDashboardLayoutTier.workforce;
   }
 
-  bool showQueuePanelFor(List<HomeQueueItem> items) {
-    if (!showQueuePanel) {
-      return false;
-    }
-    if (items.isNotEmpty) {
-      return true;
-    }
-    return switch (layoutTier) {
-      HomeDashboardLayoutTier.platform ||
-      HomeDashboardLayoutTier.organization ||
-      HomeDashboardLayoutTier.facilityCommand => true,
-      _ => false,
-    };
-  }
+  bool showQueuePanelFor(List<HomeQueueItem> items) => showQueuePanel;
 
   bool get showQueuePanelTitle => false;
 }

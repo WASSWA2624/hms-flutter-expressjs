@@ -46,6 +46,7 @@ void main() {
       expect(profile.showActivityPanel(hasQueueItems: true), isFalse);
       expect(profile.showShortcutsSection(quickActionCount: 2), isTrue);
       expect(profile.maxShortcutTiles, 3);
+      expect(profile.showQueuePanelFor(const []), isTrue);
     });
   });
 }

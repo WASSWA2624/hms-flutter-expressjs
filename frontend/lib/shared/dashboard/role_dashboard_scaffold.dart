@@ -1,27 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
-import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
+import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
 
 /// Shared four-section dashboard shell used by every role.
 ///
-/// Order: summary badges → quick actions → critical shortcuts → charts.
-class HomeDashboardScaffold extends StatelessWidget {
-  const HomeDashboardScaffold({
-    required this.profile,
+/// Order: summary badges → quick actions → priority worklist → charts.
+class RoleDashboardScaffold extends StatelessWidget {
+  const RoleDashboardScaffold({
+    required this.layout,
     required this.spacing,
     required this.summaryBadges,
     required this.quickActions,
-    required this.criticalShortcuts,
+    required this.priorityPanel,
     required this.charts,
     super.key,
   });
 
-  final HomeDashboardProfile profile;
+  final RoleDashboardLayout layout;
   final AppSpacingTokens spacing;
   final Widget summaryBadges;
   final Widget quickActions;
-  final Widget criticalShortcuts;
+  final Widget priorityPanel;
   final Widget charts;
 
   @override
@@ -38,14 +37,16 @@ class HomeDashboardScaffold extends StatelessWidget {
       sections.add(section);
     }
 
-    if (profile.showMetricsSection) {
+    if (layout.showMetrics) {
       addSection(summaryBadges);
     }
-    if (!profile.suppressHomeQuickActions) {
+    if (layout.showQuickActions) {
       addSection(quickActions);
     }
-    addSection(criticalShortcuts);
-    if (profile.showCharts) {
+    if (layout.showPriority) {
+      addSection(priorityPanel);
+    }
+    if (layout.showCharts) {
       addSection(charts);
     }
 
