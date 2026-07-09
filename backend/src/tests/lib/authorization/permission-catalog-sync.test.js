@@ -4,6 +4,7 @@ jest.mock('@prisma/client', () => ({
     findMany: jest.fn(),
     count: jest.fn(),
     create: jest.fn(),
+    createMany: jest.fn(),
     update: jest.fn(),
   },
   role: {
@@ -109,5 +110,25 @@ describe('permission-catalog-sync', () => {
     expect(prisma.role.update).toHaveBeenCalled();
     expect(prisma.permission.create).not.toHaveBeenCalled();
     expect(prisma.role.create).not.toHaveBeenCalled();
+  });
+
+  it('creates only missing permissions for a tenant', async () => {
+    const { ensureTenantPermissionCatalog } = require('@lib/authorization/permission-catalog-sync');
+    prisma.permission.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          id: 'perm-new',
+          name: 'patient:read',
+          display_name: 'Patient — Read',
+        },
+      ]);
+    prisma.permission.createMany.mockResolvedValue({ count: 1 });
+
+    const result = await ensureTenantPermissionCatalog('tenant-uuid');
+
+    expect(prisma.permission.createMany).toHaveBeenCalled();
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe('patient:read');
   });
 });

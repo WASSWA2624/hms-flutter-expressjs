@@ -11,11 +11,19 @@ jest.mock('@lib/authorization/permission-catalog-sync', () => ({
     permissions: 62,
     roles: 40,
   }),
+  ensureTenantPermissionCatalog: jest.fn().mockResolvedValue([
+    {
+      id: 'perm-uuid',
+      human_friendly_id: 'PRM0001',
+      name: 'clinical:read',
+      display_name: 'Clinical Read',
+    },
+  ]),
 }));
 
 const repository = require('@repositories/access-admin-workspace/access-admin-workspace.repository');
 const { resolveIdentifierForFilter } = require('@lib/billing/identifiers');
-const { ensureTenantAccessCatalog } = require('@lib/authorization/permission-catalog-sync');
+const { ensureTenantAccessCatalog, ensureTenantPermissionCatalog } = require('@lib/authorization/permission-catalog-sync');
 const service = require('../../../../modules/access-admin-workspace/services/access-admin-workspace.service');
 
 describe('access-admin-workspace service', () => {
@@ -131,7 +139,7 @@ describe('access-admin-workspace service', () => {
       { roles: ['TENANT_ADMIN'], tenant_id: 'tenant-uuid' }
     );
 
-    expect(ensureTenantAccessCatalog).toHaveBeenCalledWith('tenant-uuid');
+    expect(ensureTenantPermissionCatalog).toHaveBeenCalledWith('tenant-uuid');
     expect(lookups.permissions.length).toBeGreaterThan(0);
   });
 
@@ -165,7 +173,7 @@ describe('access-admin-workspace service', () => {
       { roles: ['SUPER_ADMIN'] }
     );
 
-    expect(ensureTenantAccessCatalog).toHaveBeenCalledWith('TEN0001');
+    expect(ensureTenantPermissionCatalog).toHaveBeenCalledWith('TEN0001');
     expect(lookups.permissions).toHaveLength(1);
     expect(lookups.tenants).toHaveLength(1);
   });
@@ -196,7 +204,7 @@ describe('access-admin-workspace service', () => {
 
     const lookups = await service.getReferenceData({}, { roles: ['SUPER_ADMIN'] });
 
-    expect(ensureTenantAccessCatalog).not.toHaveBeenCalled();
+    expect(ensureTenantPermissionCatalog).not.toHaveBeenCalled();
     expect(lookups.tenants).toHaveLength(1);
     expect(lookups.permissions).toEqual([]);
   });

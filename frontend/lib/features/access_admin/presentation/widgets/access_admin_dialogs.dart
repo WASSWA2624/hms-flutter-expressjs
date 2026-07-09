@@ -65,42 +65,13 @@ Future<void> showAccessAdminCreateRoleDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
-  final AccessAdminWorkspaceState state = await _resolveCreateRoleWorkspaceState(
-    ref,
-  );
   if (!context.mounted) {
     return;
   }
-  await openAccessAdminCreateRoleDialog(context, ref, state);
-}
-
-Future<AccessAdminWorkspaceState> _resolveCreateRoleWorkspaceState(
-  WidgetRef ref,
-) async {
-  final AccessAdminWorkspaceController controller = ref.read(
-    accessAdminWorkspaceControllerProvider.notifier,
-  );
-  final AsyncValue<Result<AccessAdminWorkspaceState>> current = ref.read(
-    accessAdminWorkspaceControllerProvider,
-  );
-
-  if (current case AsyncData<Result<AccessAdminWorkspaceState>>(:final value)) {
-    return value.when(
-      success: (AccessAdminWorkspaceState state) => state,
-      failure: (_) => _emptyCreateRoleWorkspaceState(),
-    );
-  }
-
-  if (current case AsyncError<Result<AccessAdminWorkspaceState>>()) {
-    await controller.refresh();
-  }
-
-  final Result<AccessAdminWorkspaceState> loaded = await ref.read(
-    accessAdminWorkspaceControllerProvider.future,
-  );
-  return loaded.when(
-    success: (AccessAdminWorkspaceState state) => state,
-    failure: (_) => _emptyCreateRoleWorkspaceState(),
+  await openAccessAdminCreateRoleDialog(
+    context,
+    ref,
+    _emptyCreateRoleWorkspaceState(),
   );
 }
 
@@ -316,14 +287,6 @@ Future<void> openAccessAdminCreateRoleDialog(
   final bool requireTenantPicker = isCrossTenantAdmin
       ? workspaceTenantId == null
       : initialTenantId == null;
-  final List<AccessAdminLookupOption> permissionLookups =
-      requireTenantPicker && initialTenantId == null
-      ? const <AccessAdminLookupOption>[]
-      : await _loadAccessAdminPermissionLookups(
-          ref,
-          state,
-          tenantId: initialTenantId,
-        );
   if (!context.mounted) {
     return;
   }
@@ -331,7 +294,6 @@ Future<void> openAccessAdminCreateRoleDialog(
   await showRoleMutationDialog(
     context: context,
     mode: RoleMutationMode.create,
-    permissionLookups: permissionLookups,
     loadTenantOptions: requireTenantPicker
         ? () => _loadAccessAdminTenantOptions(
             ref,
@@ -339,14 +301,12 @@ Future<void> openAccessAdminCreateRoleDialog(
             preferTenantFacilityApi: isCrossTenantAdmin,
           )
         : null,
-    loadPermissionsForTenant: requireTenantPicker || initialTenantId == null
-        ? (String tenantId) => _loadAccessAdminPermissionLookups(
-            ref,
-            state,
-            tenantId: tenantId,
-            forceRefresh: true,
-          )
-        : null,
+    loadPermissionsForTenant: (String tenantId) => _loadAccessAdminPermissionLookups(
+      ref,
+      state,
+      tenantId: tenantId,
+      forceRefresh: true,
+    ),
     tenantId: initialTenantId,
     facilityId: state.query.facilityId,
     requireTenantPicker: requireTenantPicker,

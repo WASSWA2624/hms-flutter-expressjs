@@ -3,7 +3,7 @@ const { hashPassword } = require('@lib/crypto/hashPassword');
 const { resolvePublicIdentifier, resolveIdentifierForFilter } = require('@lib/billing/identifiers');
 const { ROLES } = require('@config/roles');
 const { ROLE_PERMISSIONS } = require('@config/permissions');
-const { ensureTenantAccessCatalog } = require('@lib/authorization/permission-catalog-sync');
+const { ensureTenantAccessCatalog, ensureTenantPermissionCatalog } = require('@lib/authorization/permission-catalog-sync');
 const { createAuditLog } = require('@lib/audit');
 const { provisionTrialSubscription } = require('@lib/subscriptions/tenant-onboarding');
 const { listPendingPaymentRequests } = require('@lib/subscriptions/subscription-payment-request');
@@ -560,22 +560,35 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
   };
 };
 
+const loadAssignablePermissionCatalog = async (tenantId) => {
+  if (!tenantId) {
+    return [];
+  }
+  return ensureTenantPermissionCatalog(tenantId);
+};
+
 const getReferenceData = async (query = {}, user = {}) => {
   const includeAllTenants = roleList(user).includes(ROLES.SUPER_ADMIN);
   const requestedTenantId = text(query.tenant_id || query.tenantId);
+  const canAssignPermissions = canWriteAccess(user);
 
-  if (requestedTenantId && includeAllTenants) {
+  if (requestedTenantId && canAssignPermissions) {
     const tenantId = await resolveIdentifierForFilter({
       value: requestedTenantId,
       model: 'tenant',
     });
     if (tenantId) {
-      await maybeSyncTenantAccessCatalog({ tenant_id: tenantId });
-      const lookups = await repository.findLookups(
-        { tenant_id: tenantId, facility_id: null },
-        includeAllTenants
-      );
-      return buildLookups(lookups);
+      const [permissions, lookups] = await Promise.all([
+        loadAssignablePermissionCatalog(tenantId),
+        repository.findLookups(
+          { tenant_id: tenantId, facility_id: null },
+          includeAllTenants
+        ),
+      ]);
+      return buildLookups({
+        ...lookups,
+        permissions,
+      });
     }
   }
 
@@ -589,9 +602,18 @@ const getReferenceData = async (query = {}, user = {}) => {
     };
   }
 
-  await maybeSyncTenantAccessCatalog(scopeResult.scope);
-  const lookups = await repository.findLookups(scopeResult.scope, includeAllTenants);
-  return buildLookups(lookups);
+  const scope = scopeResult.scope;
+  const [permissions, lookups] = await Promise.all([
+    canAssignPermissions ? loadAssignablePermissionCatalog(scope.tenant_id) : Promise.resolve([]),
+    repository.findLookups(scope, includeAllTenants),
+  ]);
+
+  return buildLookups({
+    ...lookups,
+    permissions: canAssignPermissions && permissions.length > 0
+      ? permissions
+      : lookups.permissions,
+  });
 };
 
 const getUserDetail = async (identifier, query = {}, user = {}) => {

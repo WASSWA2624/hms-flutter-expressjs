@@ -160,6 +160,50 @@ const countSystemRoles = async (tenantId) =>
     },
   });
 
+const ensureTenantPermissionCatalog = async (tenantId) => {
+  if (!tenantId) {
+    return [];
+  }
+
+  const existing = await prisma.permission.findMany({
+    where: {
+      tenant_id: tenantId,
+      deleted_at: null,
+      name: { in: [...CANONICAL_PERMISSION_KEYS] },
+    },
+    orderBy: { name: 'asc' },
+  });
+
+  const existingNames = new Set(existing.map((entry) => entry.name));
+  const missing = CANONICAL_PERMISSION_KEYS.filter((name) => !existingNames.has(name));
+
+  if (missing.length > 0) {
+    await prisma.permission.createMany({
+      data: missing.map((name) => {
+        const { displayName, description } = getPermissionMetadata(name);
+        return {
+          tenant_id: tenantId,
+          name,
+          display_name: displayName,
+          description,
+          human_friendly_id: friendlyId('PERM', `${tenantId}:${name}`),
+        };
+      }),
+    });
+
+    return prisma.permission.findMany({
+      where: {
+        tenant_id: tenantId,
+        deleted_at: null,
+        name: { in: [...CANONICAL_PERMISSION_KEYS] },
+      },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  return existing;
+};
+
 /**
  * Idempotently ensures tenant permission catalog and system roles exist with metadata.
  *
@@ -192,6 +236,7 @@ module.exports = {
   CANONICAL_PERMISSION_KEYS,
   SYSTEM_ROLE_CODES,
   ensureTenantAccessCatalog,
+  ensureTenantPermissionCatalog,
   syncPermissionsForTenant,
   syncSystemRolesForTenant,
 };
