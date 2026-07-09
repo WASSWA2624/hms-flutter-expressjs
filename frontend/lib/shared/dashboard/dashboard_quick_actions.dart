@@ -112,15 +112,24 @@ class _DashboardQuickActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
     return Semantics(
       button: true,
       label: action.semanticsLabel,
-      child: AppButton.primary(
-        label: action.label,
-        leadingIcon: action.icon,
-        onPressed: action.onPressed,
-        fullWidth: true,
-        semanticLabel: action.semanticsLabel,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(theme.radius.lg),
+          border: Border.all(color: dashboardSectionBorderColor(colorScheme)),
+        ),
+        child: AppButton.primary(
+          label: action.label,
+          leadingIcon: action.icon,
+          onPressed: action.onPressed,
+          fullWidth: true,
+          semanticLabel: action.semanticsLabel,
+        ),
       ),
     );
   }

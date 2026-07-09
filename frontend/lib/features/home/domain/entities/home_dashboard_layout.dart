@@ -119,5 +119,5 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
 
   bool showQueuePanelFor(List<HomeQueueItem> items) => showQueuePanel;
 
-  bool get showQueuePanelTitle => false;
+  bool get showQueuePanelTitle => true;
 }

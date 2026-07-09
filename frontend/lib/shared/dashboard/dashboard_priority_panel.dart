@@ -224,6 +224,8 @@ class _DashboardWorklistRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final double iconSize = theme.appTokens.listIconSize;
+    final double detailIndent = iconSize + theme.spacing.sm;
     final _WorklistTitleParts parts = _parseWorklistTitle(item.title);
     final String detailLine = _worklistDetailLine(
       reference: parts.reference,
@@ -235,35 +237,41 @@ class _DashboardWorklistRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Padding(
-            padding: EdgeInsets.only(top: theme.spacing.xs / 2),
-            child: Icon(
-              item.icon,
-              size: theme.appTokens.listIconSize,
-              color: colorScheme.primary,
-            ),
-          ),
-          SizedBox(width: theme.spacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(
-                  parts.headline,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                Row(
+                  children: <Widget>[
+                    Icon(
+                      item.icon,
+                      size: iconSize,
+                      color: colorScheme.primary,
+                    ),
+                    SizedBox(width: theme.spacing.sm),
+                    Expanded(
+                      child: Text(
+                        parts.headline,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 if (detailLine.isNotEmpty) ...<Widget>[
                   SizedBox(height: theme.spacing.xs / 2),
-                  Text(
-                    detailLine,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                  Padding(
+                    padding: EdgeInsets.only(left: detailIndent),
+                    child: Text(
+                      detailLine,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ],
@@ -271,8 +279,11 @@ class _DashboardWorklistRow extends StatelessWidget {
             ),
           ),
           if (item.status != null) ...<Widget>[
-            SizedBox(width: theme.spacing.sm),
-            AppWorkspaceStatusBadge(status: item.status!),
+            SizedBox(width: theme.spacing.md),
+            Padding(
+              padding: EdgeInsets.only(right: theme.spacing.xs),
+              child: AppWorkspaceStatusBadge(status: item.status!),
+            ),
           ],
         ],
       ),
@@ -363,6 +374,7 @@ class _DashboardQuietState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final Color successColor = theme.statusColors.success;
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
@@ -371,13 +383,14 @@ class _DashboardQuietState extends StatelessWidget {
           Icon(
             Icons.check_circle_outline,
             size: 24,
-            color: theme.colorScheme.onSurfaceVariant,
+            color: successColor,
           ),
           SizedBox(width: theme.spacing.sm),
           Text(
             'All clear',
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+              color: successColor,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
