@@ -545,6 +545,98 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
     };
     const mortuaryWhere = directScope(scope, { includeTenant: true, includeFacility: true });
 
+    if (packId === ROLE_PACKS.SUPER_ADMIN) {
+      const [
+        tenantsTotal,
+        tenantsActive,
+        facilitiesTotal,
+        subscriptionsTotal,
+        subscriptionsActive,
+        subscriptionsExpiring,
+        moduleEntitlementIssues,
+        tenantsWithoutSubscription,
+        trendDates,
+        subscriptionStatusCounts,
+      ] = await Promise.all([
+        prisma.tenant.count({ where: { deleted_at: null } }),
+        prisma.tenant.count({ where: { deleted_at: null, is_active: true } }),
+        prisma.facility.count({ where: { deleted_at: null } }),
+        prisma.subscription.count({ where: { deleted_at: null } }),
+        prisma.subscription.count({
+          where: { deleted_at: null, status: { in: ['ACTIVE', 'TRIAL'] } },
+        }),
+        prisma.subscription.count({
+          where: {
+            deleted_at: null,
+            OR: [
+              { status: 'PAST_DUE' },
+              {
+                status: { in: ['ACTIVE', 'TRIAL'] },
+                end_date: { lte: shiftDays(todayStart, 30) },
+              },
+            ],
+          },
+        }),
+        prisma.subscription.count({
+          where: {
+            deleted_at: null,
+            plan_fit_status: { in: ['APPROACHING_LIMIT', 'EXCEEDED'] },
+          },
+        }),
+        prisma.tenant.count({
+          where: {
+            deleted_at: null,
+            subscriptions: {
+              none: {
+                deleted_at: null,
+                status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] },
+              },
+            },
+          },
+        }),
+        selectDateSeries(
+          prisma.tenant,
+          { deleted_at: null, created_at: { gte: trendStart } },
+          'created_at'
+        ),
+        countByStatuses(
+          prisma.subscription,
+          { deleted_at: null },
+          ['ACTIVE', 'TRIAL', 'PAST_DUE', 'CANCELLED']
+        ),
+      ]);
+
+      const statusCounts = {
+        ...subscriptionStatusCounts,
+      };
+      if (tenantsWithoutSubscription > 0) {
+        statusCounts.NONE = tenantsWithoutSubscription;
+      }
+
+      return {
+        metrics: {
+          tenantsTotal,
+          tenantsActive,
+          facilitiesTotal,
+          facilitiesActive: facilitiesTotal,
+          subscriptionsTotal,
+          subscriptionsActive,
+          subscriptionsExpiring,
+          moduleEntitlementIssues,
+        },
+        trendDates,
+        statusCounts,
+        activity: {
+          tenants: await prisma.tenant.count({
+            where: { deleted_at: null, updated_at: { gte: window24h } },
+          }),
+          subscriptions: await prisma.subscription.count({
+            where: { deleted_at: null, updated_at: { gte: window24h } },
+          }),
+        },
+      };
+    }
+
     if (packId === ROLE_PACKS.PATIENT_SAFE) {
       const portalPatient = await resolvePatientPortalPatient({ scope, userId, user });
       if (!portalPatient) return patientPortalZeroSummary();

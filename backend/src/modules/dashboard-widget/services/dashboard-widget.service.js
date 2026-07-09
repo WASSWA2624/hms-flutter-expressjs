@@ -190,7 +190,12 @@ const resolveScope = async (query = {}, user = {}, effectiveRole = null) => {
     const branchId = query.branch_id || userScope.branch_id || null;
 
     if (!tenantId) {
-      throw new HttpError('errors.validation.field.required', 422, [{ field: 'tenant_id' }]);
+      return {
+        tenant_id: null,
+        facility_id: null,
+        branch_id: null,
+        platform: true,
+      };
     }
 
     let resolvedFacilityId = facilityId;

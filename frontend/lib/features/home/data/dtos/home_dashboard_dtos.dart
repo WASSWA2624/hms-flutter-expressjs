@@ -212,6 +212,8 @@ final class HomeStatusCardDto {
       id: id,
       label: _string(json['label']) ?? fallbackLabel ?? _fallbackLabel(id),
       value: _num(json['value']) ?? 0,
+      secondaryValue: _num(json['secondary_value']),
+      hint: _string(json['hint']),
       format: _string(json['format']) ?? 'number',
     );
   }
@@ -227,14 +229,18 @@ final class HomeQueueItemDto {
         _string(json['human_friendly_id']) ?? _string(json['id']) ?? '';
     final String queue = _string(json['queue']) ?? _string(json['kind']) ?? '';
     final String moduleSlug = _string(json['module_slug']) ?? '';
+    final String? title = _string(json['title']);
+    final String? subtitle = _string(json['subtitle']);
+    final String fallbackLabel = displayId.isEmpty
+        ? _friendlyToken(queue)
+        : '${_friendlyToken(queue)} $displayId';
     return HomeQueueItem(
       id: _string(json['id']) ?? displayId,
-      label: displayId.isEmpty
-          ? _friendlyToken(queue)
-          : '${_friendlyToken(queue)} $displayId',
+      label: title ?? fallbackLabel,
       moduleSlug: moduleSlug,
       status: _string(json['status']),
       severity: _string(json['severity']),
+      subtitle: subtitle,
       occurredAt: _date(json['occurred_at']),
       target: HomeRouteTargetDto(_map(json['target'])).toEntity(),
     );

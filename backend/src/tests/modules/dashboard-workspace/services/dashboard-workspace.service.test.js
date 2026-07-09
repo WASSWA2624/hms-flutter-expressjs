@@ -89,23 +89,85 @@ describe('dashboard-workspace service', () => {
     repository.safePublicId.mockImplementation((value, fallback) => value || fallback || null);
   });
 
-  it('returns tenant-context-required payloads for global admins without scope', async () => {
+  it('returns platform workspace payloads for global admins', async () => {
     repository.resolveWorkspaceScope.mockResolvedValue({
-      state: 'tenant_context_required',
+      state: 'platform_ready',
       scope: null,
     });
-    repository.findLookups.mockResolvedValue({
-      tenants: [{ id: 'tenant-uuid', human_friendly_id: 'TEN0001', name: 'Acme' }],
+    repository.findPlatformFollowUps.mockResolvedValue([
+      {
+        id: 'subscription_follow_up:SUB0001',
+        kind: 'subscription_follow_up',
+        queue: 'subscription_follow_ups',
+        module_slug: 'subscriptions',
+        human_friendly_id: 'SUB0001',
+        title: 'Acme Hospital',
+        subtitle: 'tenant.admin@hosspi.com · +256700000000',
+        status: 'PAST_DUE',
+        severity: 'high',
+        occurred_at: '2026-03-01T10:00:00.000Z',
+        target: {
+          module_slug: 'subscriptions',
+          resource: 'subscriptions',
+          public_id: 'SUB0001',
+          action: 'view',
+        },
+      },
+    ]);
+    repository.findPlatformAlerts.mockResolvedValue([
+      {
+        id: 'subscription_past_due',
+        kind: 'subscription_past_due',
+        severity: 'high',
+        count: 2,
+        target: {
+          module_slug: 'subscriptions',
+          resource: 'subscriptions',
+          public_id: null,
+          action: 'list',
+        },
+      },
+    ]);
+    buildDashboardSummary.mockResolvedValueOnce({
+      roleProfile: { id: 'super_admin', role: 'SUPER_ADMIN', pack: 'super_admin' },
+      summaryCards: [
+        { id: 'tenants_active', label: 'Tenants', value: 2, secondary_value: 3, format: 'ratio' },
+        { id: 'facilities_active', label: 'Facilities', value: 4, format: 'number' },
+        { id: 'subscriptions_health', label: 'Subscriptions', value: 2, secondary_value: 3, format: 'ratio' },
+        { id: 'module_entitlement_issues', label: 'Entitlements', value: 1, format: 'number' },
+      ],
+      trend: { title: 'New tenant signups', subtitle: '', points: [] },
+      distribution: { title: 'Subscription mix', subtitle: '', total: 3, segments: [] },
     });
 
     const result = await subject.getWorkspace({}, 1, 20, undefined, 'desc', {
       role: 'SUPER_ADMIN',
     });
 
-    expect(result.state).toBe('tenant_context_required');
-    expect(result.tenant_options).toEqual([
-      { id: 'TEN0001', label: 'Acme' },
-    ]);
+    expect(result.state).toBe('ready');
+    expect(result.context).toEqual(
+      expect.objectContaining({
+        tenant_id: null,
+        facility_id: null,
+        branch_id: null,
+      })
+    );
+    expect(result.overview.queue_preview).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: 'Acme Hospital',
+          subtitle: 'tenant.admin@hosspi.com · +256700000000',
+        }),
+      ])
+    );
+    expect(result.overview.alerts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'subscription_past_due',
+          count: 2,
+        }),
+      ])
+    );
   });
 
   it('returns ready workspace payloads without exposing raw summary structure directly', async () => {
@@ -117,26 +179,14 @@ describe('dashboard-workspace service', () => {
         branch_id: 'BR0001',
       },
     });
-    repository.findFacilityContext.mockResolvedValue({
-      id: 'facility-uuid',
-      human_friendly_id: 'FAC0001',
-      name: 'Central Hospital',
-      facility_type: 'HOSPITAL',
+    repository.findPlatformFollowUps.mockResolvedValue([]);
+    repository.findPlatformAlerts.mockResolvedValue([]);
+    buildDashboardSummary.mockResolvedValueOnce({
+      roleProfile: { id: 'super_admin', role: 'SUPER_ADMIN', pack: 'super_admin' },
+      summaryCards: [{ id: 'tenants_active', label: 'Tenants', value: 2, format: 'ratio' }],
+      trend: { title: 'New tenant signups', subtitle: '', points: [] },
+      distribution: { title: 'Subscription mix', subtitle: '', total: 0, segments: [] },
     });
-    repository.findCurrentSubscription.mockResolvedValue({
-      id: 'sub-uuid',
-      human_friendly_id: 'SUB0001',
-      plan: { name: 'Pro' },
-      module_subscriptions: [],
-    });
-    repository.findLookups.mockResolvedValue({
-      tenants: [{ id: 'tenant-uuid', human_friendly_id: 'TEN0001', name: 'Acme' }],
-      facilities: [{ id: 'facility-uuid', human_friendly_id: 'FAC0001', name: 'Central Hospital', facility_type: 'HOSPITAL' }],
-      branches: [{ id: 'branch-uuid', human_friendly_id: 'BR0001', name: 'Main Branch', facility_id: 'FAC0001' }],
-    });
-    repository.countRows.mockResolvedValue(0);
-    repository.sumRows.mockResolvedValue(0);
-    repository.findRows.mockResolvedValue([]);
 
     const result = await subject.getWorkspace(
       { panel: 'overview' },
@@ -151,9 +201,9 @@ describe('dashboard-workspace service', () => {
     expect(result.state).toBe('ready');
     expect(result.context).toEqual(
       expect.objectContaining({
-        tenant_id: 'TEN0001',
-        facility_id: 'FAC0001',
-        branch_id: 'BR0001',
+        tenant_id: null,
+        facility_id: null,
+        branch_id: null,
       })
     );
     expect(Array.isArray(result.status_strip)).toBe(true);
@@ -347,7 +397,7 @@ describe('dashboard-workspace service', () => {
       20,
       'occurred_at',
       'desc',
-      { role: 'SUPER_ADMIN' }
+      { role: 'TENANT_ADMIN' }
     );
 
     expect(result.queue.items).toEqual([]);
@@ -408,6 +458,12 @@ describe('dashboard-workspace service', () => {
       }
       return [];
     });
+    buildDashboardSummary.mockResolvedValueOnce({
+      roleProfile: { id: 'tenant_admin', role: 'TENANT_ADMIN', pack: 'tenant_admin' },
+      summaryCards: [],
+      trend: { title: '', subtitle: '', points: [] },
+      distribution: { title: '', subtitle: '', total: 0, segments: [] },
+    });
 
     const result = await subject.getWorkspace(
       { panel: 'queue', queue: 'maintenance_requests' },
@@ -415,7 +471,7 @@ describe('dashboard-workspace service', () => {
       20,
       'updated_at',
       'desc',
-      { role: 'SUPER_ADMIN' }
+      { role: 'TENANT_ADMIN' }
     );
 
     expect(repository.findRows).toHaveBeenCalledWith(
@@ -458,6 +514,12 @@ describe('dashboard-workspace service', () => {
     repository.countRows.mockResolvedValue(0);
     repository.sumRows.mockResolvedValue(0);
     repository.findRows.mockResolvedValue([]);
+    buildDashboardSummary.mockResolvedValueOnce({
+      roleProfile: { id: 'tenant_admin', role: 'TENANT_ADMIN', pack: 'tenant_admin' },
+      summaryCards: [],
+      trend: { title: '', subtitle: '', points: [] },
+      distribution: { title: '', subtitle: '', total: 0, segments: [] },
+    });
 
     await subject.getWorkspace(
       { panel: 'queue', queue: 'billing_follow_up', search: 'inv0001' },
@@ -465,7 +527,7 @@ describe('dashboard-workspace service', () => {
       20,
       'occurred_at',
       'desc',
-      { role: 'SUPER_ADMIN' }
+      { role: 'TENANT_ADMIN' }
     );
 
     expect(repository.findRows).toHaveBeenCalledWith(

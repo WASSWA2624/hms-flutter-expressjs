@@ -126,7 +126,7 @@ DashboardPriorityPanelData homeDashboardPriorityData({
                 (HomeQueueItem item) => DashboardWorklistItemData(
                   icon: homeModuleIcon(item.moduleSlug),
                   title: item.label,
-                  subtitle: homeTimeLabel(item.occurredAt),
+                  subtitle: homeQueueItemSubtitle(item),
                   status: AppWorkspaceStatus(
                     label: homeStatusLabel(item.status),
                     tone: homeSeverityTone(item.severity ?? item.status),

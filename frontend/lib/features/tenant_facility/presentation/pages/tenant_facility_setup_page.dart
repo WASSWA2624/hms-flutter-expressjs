@@ -3209,6 +3209,21 @@ void _showSaved(BuildContext context) {
     );
 }
 
+/// Opens the tenant profile create/edit dialog from the home dashboard.
+Future<void> showTenantFacilityTenantFormDialog(BuildContext context) {
+  return _openTenantProfileModal(context);
+}
+
+/// Opens the facility profile create/edit dialog from the home dashboard.
+Future<void> showTenantFacilityFacilityFormDialog(BuildContext context) {
+  return _openFacilityProfileModal(context);
+}
+
+/// Opens the tenant/facility context picker dialog from the home dashboard.
+Future<void> showTenantFacilityContextDialog(BuildContext context) {
+  return _openBranchesModal(context);
+}
+
 /// Shared department create/edit dialog for facility setup.
 Future<void> showTenantFacilityDepartmentFormDialog(
   BuildContext context,

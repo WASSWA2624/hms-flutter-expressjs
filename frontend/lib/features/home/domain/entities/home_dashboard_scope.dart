@@ -26,6 +26,8 @@ List<HomeStatusCard> scopeHomeStatusCards({
           id: template.id,
           label: template.label,
           value: fromApi?.value ?? 0,
+          secondaryValue: fromApi?.secondaryValue,
+          hint: fromApi?.hint,
           format: template.format,
         );
       })

@@ -828,7 +828,7 @@ const activeQueueDefinitions = Object.freeze({
 
 const ROLE_QUEUE_IDS = Object.freeze({
   [ROLE_PACKS.ADMIN]: ['appointments', 'admissions', 'billing_follow_up', 'maintenance_requests', 'housekeeping_tasks', 'staff_leaves'],
-  [ROLE_PACKS.SUPER_ADMIN]: ['billing_follow_up', 'maintenance_requests', 'equipment_work_orders', 'staff_leaves'],
+  [ROLE_PACKS.SUPER_ADMIN]: [],
   [ROLE_PACKS.TENANT_ADMIN]: ['admissions', 'billing_follow_up', 'maintenance_requests', 'staff_leaves'],
   [ROLE_PACKS.FACILITY_ADMIN]: ['appointments', 'admissions', 'billing_follow_up', 'maintenance_requests', 'housekeeping_tasks', 'staff_leaves'],
   [ROLE_PACKS.DOCTOR]: ['appointments', 'admissions', 'lab_results', 'radiology_results'],
@@ -1729,6 +1729,8 @@ const buildStatusStrip = (dashboardSummary = {}) =>
     id: item.id,
     label: item.label,
     value: item.value,
+    secondary_value: item.secondary_value ?? null,
+    hint: item.hint ?? null,
     format: item.format || 'number',
     required_permissions: item.required_permissions || [],
     required_modules: item.required_modules || [],
@@ -1736,6 +1738,87 @@ const buildStatusStrip = (dashboardSummary = {}) =>
     scope: item.scope || null,
     route_target: item.route_target || null,
   }));
+
+const buildSuperAdminPlatformWorkspace = async ({
+  filters = {},
+  page = 1,
+  limit = DEFAULT_LIMIT,
+  user = {},
+  effectiveRole,
+  effectiveProfileId,
+  effectivePackId,
+}) => {
+  const baseSummary = await buildDashboardSummary({
+    query: { days: 7, platform: true },
+    user,
+    repository: dashboardWidgetRepository,
+  });
+  const quickActionResolution = resolveHomeQuickActions(user, effectivePackId, 8);
+  const [followUps, platformAlerts] = await Promise.all([
+    dashboardWorkspaceRepository.findPlatformFollowUps({ limit: 5 }),
+    dashboardWorkspaceRepository.findPlatformAlerts({ limit: 3 }),
+  ]);
+  const statusStrip = buildStatusStrip(baseSummary);
+
+  return {
+    state: 'ready',
+    generated_at: new Date().toISOString(),
+    role_profile: baseSummary.roleProfile,
+    context: {
+      role: baseSummary.roleProfile,
+      tenant_id: null,
+      facility_id: null,
+      facility_name: null,
+      facility_type: null,
+      branch_id: null,
+    },
+    panel_summaries: [
+      { id: 'follow_up', count: followUps.length },
+      { id: 'alerts', count: platformAlerts.length },
+    ],
+    status_strip: statusStrip,
+    summary_cards: statusStrip,
+    trend: baseSummary.trend,
+    distribution: baseSummary.distribution,
+    quick_actions: quickActionResolution.quickActions,
+    quick_action_ids: quickActionResolution.quickActions.map((action) => action.id),
+    hidden_reason_map: quickActionResolution.hiddenReasonMap,
+    overview: {
+      hero: {
+        role_profile_id: effectiveProfileId,
+        role: effectiveRole,
+        facility_name: null,
+        facility_type: null,
+      },
+      checklist: { completed_count: 0, total_count: 0, items: [] },
+      trend: baseSummary.trend,
+      distribution: baseSummary.distribution,
+      alerts: platformAlerts,
+      queue_preview: followUps,
+      value_proof: [],
+      insights_preview: platformAlerts,
+      module_recommendations: [],
+      plan_usage: { state: 'unavailable', metrics: [] },
+      activity_preview: [],
+      help_cards: [],
+    },
+    queue: {
+      items: followUps,
+      pagination: buildPagination(page, Number(limit || DEFAULT_LIMIT), followUps.length),
+    },
+    activity: {
+      items: [],
+      pagination: buildPagination(page, Number(limit || DEFAULT_LIMIT), 0),
+    },
+    insights: {
+      signals: platformAlerts,
+      module_recommendations: [],
+      plan_usage: { state: 'unavailable', metrics: [] },
+      help_cards: [],
+    },
+    getting_started: { completed_count: 0, total_count: 0, items: [] },
+  };
+};
 
 const getWorkspace = async (
   filters = {},
@@ -1754,6 +1837,18 @@ const getWorkspace = async (
   const effectiveProfileId = resolveProfileId(effectiveRole);
   const effectivePackId = resolvePackId(effectiveProfileId);
   const tenantContextQuickActions = resolveHomeQuickActions(user, effectivePackId, 8);
+
+  if (effectiveRole === ROLES.SUPER_ADMIN) {
+    return buildSuperAdminPlatformWorkspace({
+      filters,
+      page,
+      limit,
+      user,
+      effectiveRole,
+      effectiveProfileId,
+      effectivePackId,
+    });
+  }
 
   if (scopeResult.state === 'tenant_context_required') {
     const lookups = await dashboardWorkspaceRepository.findLookups({ scope: null, includeTenants: true });

@@ -471,13 +471,38 @@ describe('Dashboard Widget Service', () => {
       }
     });
 
-    it('enforces SUPER_ADMIN tenant context and returns 422 when missing', async () => {
-      await expect(
-        dashboardWidgetService.getDashboardSummary(
-          { days: 7 },
-          { id: 'user-1', roles: ['SUPER_ADMIN'] }
-        )
-      ).rejects.toMatchObject({ statusCode: 422 });
+    it('allows SUPER_ADMIN platform scope when tenant context is missing', async () => {
+      dashboardWidgetRepository.getDashboardSummaryByPack.mockResolvedValue({
+        metrics: {
+          tenantsActive: 2,
+          tenantsTotal: 3,
+          facilitiesTotal: 4,
+          subscriptionsActive: 2,
+          subscriptionsTotal: 3,
+          moduleEntitlementIssues: 1,
+        },
+        trendDates: [],
+        statusCounts: { ACTIVE: 2, TRIAL: 1 },
+        activity: { tenants: 1, subscriptions: 1 },
+      });
+
+      const result = await dashboardWidgetService.getDashboardSummary(
+        { days: 7 },
+        { id: 'user-1', roles: ['SUPER_ADMIN'] }
+      );
+
+      expect(dashboardWidgetRepository.getDashboardSummaryByPack).toHaveBeenCalledWith(
+        expect.objectContaining({
+          packId: 'super_admin',
+          scope: expect.objectContaining({ platform: true }),
+        })
+      );
+      expect(result.summaryCards).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: 'tenants_active', format: 'ratio' }),
+          expect.objectContaining({ id: 'subscriptions_health', format: 'ratio' }),
+        ])
+      );
     });
 
     it('uses user scope for non-super-admin roles', async () => {

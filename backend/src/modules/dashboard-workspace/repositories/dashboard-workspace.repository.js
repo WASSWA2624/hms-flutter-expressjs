@@ -20,7 +20,7 @@ const resolveWorkspaceScope = async ({ filters = {}, user = {}, effectiveRole = 
       });
 
       if (!tenantId) {
-        return { state: 'tenant_context_required', scope: null };
+        return { state: 'platform_ready', scope: null };
       }
 
       const facilityId = await resolveIdentifierForFilter({
@@ -241,11 +241,240 @@ const findRows = async ({ model, where = {}, select = undefined, orderBy = undef
   }
 };
 
+const normalizeContact = (value) => {
+  const normalized = String(value || '').trim();
+  return normalized || null;
+};
+
+const buildFollowUpSubtitle = (email, phone) => {
+  const parts = [email, phone].filter(Boolean);
+  return parts.join(' · ');
+};
+
+const findPlatformFollowUps = async ({ limit = 5 } = {}) => {
+  try {
+    const now = new Date();
+    const expiringWindow = new Date(now);
+    expiringWindow.setDate(expiringWindow.getDate() + 30);
+
+    const subscriptions = await prisma.subscription.findMany({
+      where: {
+        deleted_at: null,
+        OR: [
+          { status: { in: ['PAST_DUE', 'CANCELLED'] } },
+          {
+            status: { in: ['ACTIVE', 'TRIAL'] },
+            end_date: { lte: expiringWindow },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        human_friendly_id: true,
+        status: true,
+        end_date: true,
+        tenant: {
+          select: {
+            id: true,
+            human_friendly_id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: [{ end_date: 'asc' }, { updated_at: 'desc' }],
+      take: Math.max(1, Number(limit || 5)),
+    });
+
+    const tenantIds = Array.from(
+      new Set(subscriptions.map((entry) => entry.tenant?.id).filter(Boolean))
+    );
+
+    const adminContacts = tenantIds.length
+      ? await prisma.user_role.findMany({
+          where: {
+            deleted_at: null,
+            tenant_id: { in: tenantIds },
+            role: {
+              deleted_at: null,
+              name: 'TENANT_ADMIN',
+            },
+          },
+          select: {
+            tenant_id: true,
+            user: {
+              select: {
+                email: true,
+                phone: true,
+              },
+            },
+          },
+          orderBy: { created_at: 'asc' },
+        })
+      : [];
+
+    const contactByTenantId = new Map();
+    for (const entry of adminContacts) {
+      if (!entry.tenant_id || contactByTenantId.has(entry.tenant_id)) continue;
+      contactByTenantId.set(entry.tenant_id, {
+        email: normalizeContact(entry.user?.email),
+        phone: normalizeContact(entry.user?.phone),
+      });
+    }
+
+    return subscriptions
+      .map((subscription) => {
+        const tenant = subscription.tenant || {};
+        const publicId = safePublicId(subscription.human_friendly_id, subscription.id);
+        const tenantPublicId = safePublicId(tenant.human_friendly_id, tenant.id);
+        if (!publicId || !tenantPublicId) return null;
+
+        const contact = contactByTenantId.get(tenant.id) || {};
+        const email = contact.email;
+        const phone = contact.phone;
+        const status = String(subscription.status || '').toUpperCase();
+        const severity = ['PAST_DUE', 'CANCELLED'].includes(status) ? 'high' : 'medium';
+
+        return {
+          id: `subscription_follow_up:${publicId}`,
+          kind: 'subscription_follow_up',
+          queue: 'subscription_follow_ups',
+          module_slug: 'subscriptions',
+          human_friendly_id: publicId,
+          title: tenant.name || tenantPublicId,
+          subtitle: buildFollowUpSubtitle(email, phone),
+          status,
+          severity,
+          occurred_at: subscription.end_date || null,
+          target: {
+            module_slug: 'subscriptions',
+            resource: 'subscriptions',
+            public_id: publicId,
+            action: 'view',
+          },
+          meta: {
+            tenant_id: tenantPublicId,
+            tenant_name: tenant.name || null,
+            email,
+            phone,
+            expires_at: subscription.end_date || null,
+          },
+        };
+      })
+      .filter(Boolean);
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+const findPlatformAlerts = async ({ limit = 3 } = {}) => {
+  try {
+    const now = new Date();
+    const expiringWindow = new Date(now);
+    expiringWindow.setDate(expiringWindow.getDate() + 30);
+
+    const [
+      pastDueSubscriptions,
+      entitlementIssues,
+      tenantsWithoutSubscription,
+      integrationErrors,
+    ] = await Promise.all([
+      prisma.subscription.count({
+        where: { deleted_at: null, status: 'PAST_DUE' },
+      }),
+      prisma.subscription.count({
+        where: {
+          deleted_at: null,
+          plan_fit_status: { in: ['APPROACHING_LIMIT', 'EXCEEDED'] },
+        },
+      }),
+      prisma.tenant.count({
+        where: {
+          deleted_at: null,
+          subscriptions: {
+            none: {
+              deleted_at: null,
+              status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] },
+            },
+          },
+        },
+      }),
+      prisma.integration.count({
+        where: {
+          deleted_at: null,
+          status: { in: ['ERROR', 'INACTIVE'] },
+        },
+      }),
+    ]);
+
+    const alerts = [
+      {
+        id: 'subscription_past_due',
+        kind: 'subscription_past_due',
+        severity: pastDueSubscriptions > 0 ? 'high' : 'info',
+        count: pastDueSubscriptions,
+        target: {
+          module_slug: 'subscriptions',
+          resource: 'subscriptions',
+          public_id: null,
+          action: 'list',
+          query: { queue: 'PAST_DUE' },
+        },
+      },
+      {
+        id: 'entitlement_issues',
+        kind: 'entitlement_issues',
+        severity: entitlementIssues > 0 ? 'warning' : 'info',
+        count: entitlementIssues,
+        target: {
+          module_slug: 'subscriptions',
+          resource: 'modules',
+          public_id: null,
+          action: 'list',
+        },
+      },
+      {
+        id: 'tenants_without_subscription',
+        kind: 'tenants_without_subscription',
+        severity: tenantsWithoutSubscription > 0 ? 'warning' : 'info',
+        count: tenantsWithoutSubscription,
+        target: {
+          module_slug: 'settings',
+          resource: 'tenants',
+          public_id: null,
+          action: 'list',
+        },
+      },
+      {
+        id: 'integration_errors',
+        kind: 'integration_errors',
+        severity: integrationErrors > 0 ? 'high' : 'info',
+        count: integrationErrors,
+        target: {
+          module_slug: 'settings',
+          resource: 'integrations',
+          public_id: null,
+          action: 'list',
+        },
+      },
+    ];
+
+    return alerts
+      .filter((entry) => Number(entry.count || 0) > 0)
+      .slice(0, Math.max(1, Number(limit || 3)));
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 module.exports = {
   countRows,
   findCurrentSubscription,
   findFacilityContext,
   findLookups,
+  findPlatformAlerts,
+  findPlatformFollowUps,
   findRows,
   resolveWorkspaceScope,
   safePublicId,

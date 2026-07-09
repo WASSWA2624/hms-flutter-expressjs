@@ -91,6 +91,8 @@ const DASHBOARD_ALLOWLIST = Object.freeze({
     'id',
     'label',
     'value',
+    'secondary_value',
+    'hint',
     'format',
     'required_permissions',
     'required_modules',
@@ -228,7 +230,12 @@ const resolveScope = async (query = {}, user = {}, effectiveRole = null, reposit
     const branchId = query.branch_id || userScope.branch_id || null;
 
     if (!tenantId) {
-      throw new HttpError('errors.validation.field.required', 422, [{ field: 'tenant_id' }]);
+      return {
+        tenant_id: null,
+        facility_id: null,
+        branch_id: null,
+        platform: true,
+      };
     }
 
     let resolvedFacilityId = facilityId;
@@ -544,12 +551,34 @@ const withSummaryMetadata = (packId, cards = []) => {
 const rawMetricsToRoleSummary = (packId, metrics = {}) => {
   if (packId === ROLE_PACKS.SUPER_ADMIN) {
     return [
-      { id: 'tenants_active', label: 'Tenants active', value: metrics.tenantsActive || 0 },
-      { id: 'facilities_active', label: 'Facilities active', value: metrics.facilitiesActive || metrics.totalBeds || 0 },
-      { id: 'subscriptions_at_risk', label: 'Subscriptions at risk', value: metrics.subscriptionsAtRisk || 0 },
-      { id: 'module_entitlement_issues', label: 'Module entitlement issues', value: metrics.moduleEntitlementIssues || 0 },
-      { id: 'security_reviews_due', label: 'Security reviews due', value: metrics.securityReviewsDue || 0 },
-      { id: 'integration_errors', label: 'Integration/API errors', value: metrics.integrationErrors || 0 },
+      {
+        id: 'tenants_active',
+        label: 'Tenants',
+        value: metrics.tenantsActive || 0,
+        secondary_value: metrics.tenantsTotal || 0,
+        format: 'ratio',
+      },
+      {
+        id: 'facilities_active',
+        label: 'Facilities',
+        value: metrics.facilitiesTotal || metrics.facilitiesActive || 0,
+      },
+      {
+        id: 'subscriptions_health',
+        label: 'Subscriptions',
+        value: metrics.subscriptionsActive || 0,
+        secondary_value: metrics.subscriptionsTotal || 0,
+        format: 'ratio',
+        hint:
+          Number(metrics.subscriptionsExpiring || 0) > 0
+            ? `${metrics.subscriptionsExpiring} expiring soon`
+            : null,
+      },
+      {
+        id: 'module_entitlement_issues',
+        label: 'Entitlements',
+        value: metrics.moduleEntitlementIssues || 0,
+      },
     ];
   }
 
@@ -959,16 +988,18 @@ const buildDashboardSummary = async ({ query = {}, user = {}, repository }) => {
       });
     }
 
+    const isPlatformAdmin = packId === ROLE_PACKS.SUPER_ADMIN;
+
     const sanitized = sanitizeSummaryPayload({
       summaryCards,
       trend: {
-        title: `${days}-day trend`,
-        subtitle: 'Aggregate trend points',
+        title: isPlatformAdmin ? 'New tenant signups' : `${days}-day trend`,
+        subtitle: isPlatformAdmin ? 'Tenants registered per day' : 'Aggregate trend points',
         points: trendPoints,
       },
       distribution: {
-        title: 'Status distribution',
-        subtitle: 'Aggregate status mix',
+        title: isPlatformAdmin ? 'Subscription mix' : 'Status distribution',
+        subtitle: isPlatformAdmin ? 'Tenants by subscription status' : 'Aggregate status mix',
         total: distribution.total,
         segments: distribution.segments,
       },

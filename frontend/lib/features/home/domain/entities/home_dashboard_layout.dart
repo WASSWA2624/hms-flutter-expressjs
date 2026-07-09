@@ -77,7 +77,7 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
 
   int get maxShortcutTiles => switch (layoutTier) {
     HomeDashboardLayoutTier.platform ||
-    HomeDashboardLayoutTier.organization => 3,
+    HomeDashboardLayoutTier.organization => 4,
     HomeDashboardLayoutTier.facilityCommand => 2,
     _ => 3,
   };

@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_workspace_dialogs.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
@@ -1198,12 +1199,35 @@ void homeInvokeAction(
     unawaited(showHrStaffOnboardingDialog(context, ref));
     return;
   }
+  if (action.id == 'select_context') {
+    unawaited(showTenantFacilityContextDialog(context));
+    return;
+  }
+  if (action.id == 'create_tenant') {
+    unawaited(showTenantFacilityTenantFormDialog(context));
+    return;
+  }
+  if (action.id == 'create_facility') {
+    unawaited(showTenantFacilityFacilityFormDialog(context));
+    return;
+  }
   homeGoToRoute(context, action.route, queryParameters: action.routeQuery);
+}
+
+String homeQueueItemSubtitle(HomeQueueItem item) {
+  if (item.subtitle != null && item.subtitle!.trim().isNotEmpty) {
+    final String timeLabel = homeTimeLabel(item.occurredAt);
+    if (timeLabel.isEmpty) {
+      return item.subtitle!.trim();
+    }
+    return '${item.subtitle!.trim()} · $timeLabel';
+  }
+  return homeTimeLabel(item.occurredAt);
 }
 
 String homeTrendTitle(AppRole role, String fallback) {
   final String title = switch (role) {
-    AppRole.superAdmin => 'Platform signal trend',
+    AppRole.superAdmin => 'New tenant signups',
     AppRole.tenantAdmin => 'Facilities performance trend',
     AppRole.facilityAdmin => 'OPD flow by hour',
     AppRole.doctor => 'Consultation trend',
@@ -1229,7 +1253,7 @@ String homeTrendTitle(AppRole role, String fallback) {
 
 String homeDistributionTitle(AppRole role, String fallback) {
   final String title = switch (role) {
-    AppRole.superAdmin => 'Tenant mix donut',
+    AppRole.superAdmin => 'Subscription mix',
     AppRole.tenantAdmin => 'Module adoption donut',
     AppRole.facilityAdmin => 'Bed readiness donut',
     AppRole.doctor => 'Patient acuity mix',
@@ -1253,7 +1277,7 @@ String homeDistributionTitle(AppRole role, String fallback) {
 
 String homeQueueTitle(AppRole role) {
   return switch (role) {
-    AppRole.superAdmin => 'Review',
+    AppRole.superAdmin => 'Follow-up',
     AppRole.tenantAdmin => 'Actions',
     AppRole.facilityAdmin => 'Operations',
     AppRole.doctor => 'Worklist',
@@ -1292,6 +1316,10 @@ Color homeToneColor(ThemeData theme, AppWorkspaceStatusTone tone) {
 }
 
 String homeFormatMetricValue(HomeStatusCard card) {
+  if (card.format == 'ratio') {
+    final num total = card.secondaryValue ?? card.value;
+    return '${NumberFormat.compact().format(card.value)} / ${NumberFormat.compact().format(total)}';
+  }
   if (card.format == 'currency') {
     return NumberFormat.compactCurrency(symbol: 'UGX ').format(card.value);
   }

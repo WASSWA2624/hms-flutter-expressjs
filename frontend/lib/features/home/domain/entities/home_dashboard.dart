@@ -250,12 +250,16 @@ final class HomeStatusCard {
     required this.id,
     required this.label,
     required this.value,
+    this.secondaryValue,
+    this.hint,
     this.format = 'number',
   });
 
   final String id;
   final String label;
   final num value;
+  final num? secondaryValue;
+  final String? hint;
   final String format;
 
   int get numericValue => value.round();
@@ -344,6 +348,7 @@ final class HomeQueueItem {
     required this.moduleSlug,
     required this.status,
     required this.severity,
+    this.subtitle,
     this.occurredAt,
     this.target,
   });
@@ -353,6 +358,7 @@ final class HomeQueueItem {
   final String moduleSlug;
   final String? status;
   final String? severity;
+  final String? subtitle;
   final DateTime? occurredAt;
   final HomeRouteTarget? target;
 }
