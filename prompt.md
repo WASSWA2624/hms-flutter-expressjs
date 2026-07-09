@@ -1,77 +1,91 @@
-# Reusable Role Dashboard Component
+# Dashboard UI polish (shared components)
 
-## Objective
+Refine the HOSSPI home dashboard so it looks clean, consistent, and professional across **all roles and screen sizes** (mobile, tablet, desktop). Only **content** may differ per role; **layout and styling** must be identical and driven by shared components.
 
-Extract the home dashboard into a **reusable shared component** so every role uses the same shell and only supplies role-specific data. The layout must be uniform across all users — clear visual separation between sections, consistent spacing, and identical styling for interactive elements.
-
-**Move from:** `frontend/lib/features/home/presentation/widgets/home_dashboard_scaffold.dart`  
-**Move to:** `frontend/lib/shared/dashboard/` (export via `shared/dashboard/dashboard.dart`)
-
-**Standards:** `frontend/.cursor/design-system.mdc`, `components.mdc`, `layouts.mdc`. All labels via `app_en.arb`. Responsive on mobile, tablet, and desktop. Reuse `AppButton`, `AppSectionPanel`, `AppResponsiveWrap`, and existing theme tokens before adding new widgets.
+**Scope:** `frontend/lib/shared/dashboard/` only. Role-specific data stays in feature mappers (`home_dashboard_mapper.dart`, `home_dashboard_layout.dart`).
 
 ---
 
-## Dashboard Shell
+## Goals
 
-Provide one scaffold widget (e.g. `RoleDashboardScaffold`) with **no page title** and **no refresh button**. Consumers pass data; the shell owns layout only.
-
-### Section order (fixed for all roles)
-
-| # | Section | Purpose | Rules |
-|---|---------|---------|-------|
-| 1 | **Summary badges** | Role-specific KPI cards (waiting patients, pending labs, etc.) | Max 3–4 cards; **always show configured cards, including zero values** (display `0`, not hidden); responsive grid |
-| 2 | **Quick actions** | Primary workflow buttons (register patient, start consultation, etc.) | Use shared `AppButton.secondary`; identical size, spacing, and wrap layout everywhere |
-| 3 | **Priority worklist** | Items requiring attention (pending patients, critical labs, overdue tasks) | Show priority/severity; cap visible rows (e.g. 3–5); deep-link into target workspace — not duplicate worklists |
-| 4 | **Charts** | Trend or distribution visuals (line, pie, donut) | **Max 4** charts; **always render the chart panel** — use empty-state placeholders when no data; responsive 1- or 2-column layout |
-
-Configured sections always render. Individual badges, metrics, and panels **must remain visible at zero** — do not filter out or collapse items solely because the value is `0`. Only omit an entire section when the role has no configured items for that section type.
+1. **Visual uniformity** — Every role dashboard should feel like the same product; only metrics, actions, queue items, and charts change.
+2. **Simplicity** — Minimal chrome, clear hierarchy, no cramped or misaligned rows.
+3. **Responsive stability** — Card counts of 2, 3, or 4 must produce equally balanced grids (no odd sizing when counts differ).
 
 ---
 
-## Reusable building blocks
+## Required changes
 
-Create shared, role-agnostic widgets under `frontend/lib/shared/dashboard/`:
+### 1. Summary metric cards (`dashboard_metric_strip.dart`)
 
-| Widget | Responsibility |
-|--------|----------------|
-| `RoleDashboardScaffold` | Four-section column layout and spacing |
-| `DashboardMetricStrip` | Summary badge grid — includes zero-value metrics |
-| `DashboardQuickActions` | Styled quick-action button row/wrap |
-| `DashboardPriorityPanel` | Queue/alerts list with priority chips and “view all” — show empty state when none pending |
-| `DashboardChartsRow` | Up to 4 charts — show empty-state UI when series has no data |
+**Current:** Icon left; label above value in a column.
 
-Each widget accepts plain data models (counts, labels, icons, routes, chart series) — **no role logic inside shared code**. Role configuration stays in `home_dashboard_profiles.dart` and the home feature layer.
+**Target layout (single row):**
+
+```
+[icon]  [value]  [label]                    [chevron if tappable]
+```
+
+- Icon in accent container on the left.
+- **Value** (quantity) immediately after the icon — prominent, accent color.
+- **Label** on the same row after the value — smaller, muted.
+- Chevron stays trailing when the card is actionable.
+
+**Grid behavior:**
+
+- Honor `maxCards` / role `effectiveMaxStatusCards` (2–4 cards).
+- At desktop widths, distribute cards evenly across the row regardless of count (2, 3, or 4) so card widths stay consistent within a tier.
+- Avoid layouts where 2 or 3 cards look stretched or mis-sized compared to 4-card dashboards.
+- Preserve compact mode for smaller breakpoints.
+
+### 2. Quick actions (`dashboard_quick_actions.dart`)
+
+**Current:** Plain `Wrap` of `AppButton.secondary` — visually weak and uneven.
+
+**Target:**
+
+- Polished horizontal action strip: equal-height chips or outlined action tiles with icon + label.
+- Consistent padding, spacing, and alignment; actions should not wrap awkwardly on desktop.
+- On narrow screens, wrap gracefully (2-per-row or stacked) without clipping labels.
+- Reuse theme tokens (`spacing`, `radius`, `colorScheme`); match the metric card visual language.
+
+### 3. Worklist / recent-activity rows (`dashboard_priority_panel.dart` → `_DashboardWorklistRow`)
+
+**Current:** Title on one line; date/subtitle drops to a second line, making rows tall and uneven.
+
+**Target (single row):**
+
+```
+[icon]  [title · date]                              [status badge]
+```
+
+- Keep title and subtitle (e.g. `ADM-FFB3ED423B · Jul 7, 15:23`) on **one line** with ellipsis overflow.
+- Status badge stays trailing, vertically centered with the row.
+- Row height should be uniform across Admissions, Lab Results, etc.
+
+### 4. No changes needed
+
+- Alerts panel (empty quiet state with checkmark).
+- Shortcut tiles (Subscriptions, Reports).
+- Charts row (`dashboard_charts_row.dart`).
 
 ---
 
-## Data & integration
+## Constraints
 
-- Populate sections from `HomeDashboard` + `home_dashboard_profiles.dart` (`statusCards`, `quickActionIds`, `shortcutIds`, queue/alerts, trend/distribution).
-- Drill-downs use **modals** or workspace deep-links — never intermediate workflow routes.
-- Charts read from `dashboard-workspace` API when available; graceful fallback when empty.
-
----
-
-## Implementation tasks
-
-1. **Extract shared dashboard module** — Move scaffold and section widgets to `lib/shared/dashboard/`; export from barrel file; update `home_page.dart` imports.
-2. **Unify quick actions** — Single `DashboardQuickActions` component used by all roles.
-3. **Priority worklist** — Merge queue preview + alerts into `DashboardPriorityPanel`; show priority, cap rows, link to workspace.
-4. **Charts** — Consolidate trend/distribution into `DashboardChartsRow` (max 4); always show panel with empty-state when `!hasData`.
-5. **Wire home feature** — Map `HomeDashboard` entities into shared widget inputs; keep role profiles as the configuration source.
-6. **Responsive QA** — Verify layout at mobile, tablet, and desktop breakpoints.
+- Do **not** duplicate dashboard UI per role — fix at the shared component level.
+- Use existing models (`DashboardMetricCardData`, `DashboardQuickActionData`, `DashboardWorklistItemData`) and `RoleDashboardScaffold` section order.
+- Follow project theme extensions and breakpoints (`AppBreakpoints`).
+- Keep semantics labels intact for accessibility.
+- Run existing dashboard tests; add/adjust tests only if layout logic changes materially.
 
 ---
 
 ## Acceptance criteria
 
-- [ ] Dashboard shell lives under `frontend/lib/shared/dashboard/`
-- [ ] All roles render the same four sections in the same order
-- [ ] Quick-action buttons look identical across roles (only labels/icons differ)
-- [ ] Priority worklist shows capped, prioritized items — not full module worklists
-- [ ] Charts capped at 4; panel always visible with empty-state when no data
-- [ ] No dashboard title or refresh button
-- [ ] **Zero-value summary badges and metrics still display** (show `0`, never omit)
-- [ ] All configured dashboard components render even when counts are zero
-- [ ] Strings localized; no analyzer warnings in touched files
-- [ ] Existing home dashboard tests updated and passing
+- [ ] Metric cards show icon → value → label on one row at all breakpoints.
+- [ ] 2-, 3-, and 4-card dashboards produce balanced, same-width cards on desktop.
+- [ ] Quick actions look styled and aligned, not like raw text buttons.
+- [ ] Worklist rows keep title + date on one line; no subtitle line-break.
+- [ ] Super Admin, clinical, and department dashboards share the same visual shell; only data differs.
+- [ ] Layout remains usable on mobile (320px+), tablet, and desktop.

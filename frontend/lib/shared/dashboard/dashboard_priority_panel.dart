@@ -185,33 +185,43 @@ class _DashboardWorklistRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final Widget row = Padding(
       padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Icon(
             item.icon,
             size: theme.appTokens.listIconSize,
-            color: theme.colorScheme.primary,
+            color: colorScheme.primary,
           ),
           SizedBox(width: theme.spacing.sm),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(item.title, style: theme.textTheme.titleSmall),
-                if (item.subtitle.isNotEmpty) ...<Widget>[
-                  SizedBox(height: theme.spacing.xs),
-                  Text(
-                    item.subtitle,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
+            child: item.subtitle.isEmpty
+                ? Text(
+                    item.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleSmall,
+                  )
+                : Text.rich(
+                    TextSpan(
+                      children: <InlineSpan>[
+                        TextSpan(
+                          text: item.title,
+                          style: theme.textTheme.titleSmall,
+                        ),
+                        TextSpan(
+                          text: ' · ${item.subtitle}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
-              ],
-            ),
           ),
           if (item.status != null) ...<Widget>[
             SizedBox(width: theme.spacing.sm),

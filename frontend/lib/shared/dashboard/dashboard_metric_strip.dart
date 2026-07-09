@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/shared/dashboard/dashboard_layout.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
 
 class DashboardMetricStrip extends StatelessWidget {
@@ -31,13 +32,10 @@ class DashboardMetricStrip extends StatelessWidget {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double gap = theme.spacing.sm;
-        final int columns = constraints.maxWidth >= 1180
-            ? math.min(visibleCards.length, maxCards)
-            : constraints.maxWidth >= 760
-            ? 4
-            : constraints.maxWidth >= 340
-            ? 2
-            : 1;
+        final int columns = dashboardMetricColumnCount(
+          constraints.maxWidth,
+          visibleCards.length,
+        );
         final double width =
             (constraints.maxWidth - (gap * (columns - 1))) / columns;
 
@@ -72,14 +70,15 @@ class _DashboardMetricCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final bool isActionable = card.onTap != null;
+    final double iconSize = compact ? 32 : 38;
 
     final Widget cardBody = Padding(
       padding: EdgeInsets.all(compact ? theme.spacing.sm : theme.spacing.md),
       child: Row(
         children: <Widget>[
           Container(
-            width: compact ? 32 : 38,
-            height: compact ? 32 : 38,
+            width: iconSize,
+            height: iconSize,
             decoration: BoxDecoration(
               color: card.accent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(theme.radius.md),
@@ -87,34 +86,28 @@ class _DashboardMetricCard extends StatelessWidget {
             child: Icon(card.icon, color: card.accent, size: 20),
           ),
           SizedBox(width: theme.spacing.sm),
+          Text(
+            card.value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: (compact
+                    ? theme.textTheme.titleLarge
+                    : theme.textTheme.headlineSmall)
+                ?.copyWith(
+              color: card.accent,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          SizedBox(width: theme.spacing.xs),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Text(
-                  card.label,
-                  maxLines: compact ? 1 : 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                SizedBox(height: theme.spacing.xs),
-                Text(
-                  card.value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: (compact
-                          ? theme.textTheme.titleLarge
-                          : theme.textTheme.headlineSmall)
-                      ?.copyWith(
-                    color: card.accent,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
+            child: Text(
+              card.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           if (isActionable) ...<Widget>[
