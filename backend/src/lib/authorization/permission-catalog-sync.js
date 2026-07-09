@@ -7,6 +7,10 @@
 const crypto = require('crypto');
 const prisma = require('@prisma/client');
 const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
+const {
+  getPermissionMetadata,
+  getRoleMetadata,
+} = require('@config/permission-catalog-metadata');
 
 const CANONICAL_PERMISSION_KEYS = Object.freeze(
   Array.from(new Set(Object.values(PERMISSIONS))).sort()
@@ -27,16 +31,25 @@ const findPermissionByName = async (tenantId, name) =>
   });
 
 const upsertPermission = async (tenantId, name) => {
+  const { displayName, description } = getPermissionMetadata(name);
   const existing = await findPermissionByName(tenantId, name);
+
   if (existing) {
-    return existing;
+    return prisma.permission.update({
+      where: { id: existing.id },
+      data: {
+        display_name: displayName,
+        description,
+      },
+    });
   }
 
   return prisma.permission.create({
     data: {
       tenant_id: tenantId,
       name,
-      description: `${name} permission`,
+      display_name: displayName,
+      description,
       human_friendly_id: friendlyId('PERM', `${tenantId}:${name}`),
     },
   });
@@ -55,10 +68,9 @@ const loadPermissionMap = async (tenantId) => {
 };
 
 const syncPermissionsForTenant = async (tenantId, names = CANONICAL_PERMISSION_KEYS) => {
-  const permissionMap = await loadPermissionMap(tenantId);
-  const missing = names.filter((name) => !permissionMap.has(name));
+  const permissionMap = new Map();
 
-  for (const name of missing) {
+  for (const name of names) {
     const permission = await upsertPermission(tenantId, name);
     permissionMap.set(name, permission);
   }
@@ -98,14 +110,25 @@ const upsertRolePermissionLink = async (roleId, permissionId) => {
 };
 
 const syncSystemRole = async (tenantId, roleName, permissionMap) => {
+  const { displayName, description } = getRoleMetadata(roleName);
   let role = await findRoleByName(tenantId, roleName);
+
   if (!role) {
     role = await prisma.role.create({
       data: {
         tenant_id: tenantId,
         name: roleName,
-        description: `${roleName} system role`,
+        display_name: displayName,
+        description,
         human_friendly_id: friendlyId('ROLE', `${tenantId}:${roleName}`),
+      },
+    });
+  } else {
+    role = await prisma.role.update({
+      where: { id: role.id },
+      data: {
+        display_name: displayName,
+        description,
       },
     });
   }
@@ -138,7 +161,7 @@ const countSystemRoles = async (tenantId) =>
   });
 
 /**
- * Idempotently ensures tenant permission catalog and system roles exist.
+ * Idempotently ensures tenant permission catalog and system roles exist with metadata.
  *
  * @param {string} tenantId
  * @returns {Promise<{ permissions: number, roles: number }|null>}
@@ -148,43 +171,8 @@ const ensureTenantAccessCatalog = async (tenantId) => {
     return null;
   }
 
-  const [existingPermissions, existingSystemRoles] = await Promise.all([
-    prisma.permission.count({
-      where: {
-        tenant_id: tenantId,
-        deleted_at: null,
-        name: { in: [...CANONICAL_PERMISSION_KEYS] },
-      },
-    }),
-    countSystemRoles(tenantId),
-  ]);
-
-  const needsPermissionSync = existingPermissions < CANONICAL_PERMISSION_KEYS.length;
-  const needsRoleSync = existingSystemRoles < SYSTEM_ROLE_CODES.length;
-
-  if (!needsPermissionSync && !needsRoleSync) {
-    return {
-      permissions: existingPermissions,
-      roles: existingSystemRoles,
-    };
-  }
-
-  const permissionMap = needsPermissionSync
-    ? await syncPermissionsForTenant(tenantId)
-    : await loadPermissionMap(tenantId);
-
-  if (needsRoleSync) {
-    const missingRoles = [];
-    for (const roleName of SYSTEM_ROLE_CODES) {
-      const role = await findRoleByName(tenantId, roleName);
-      if (!role) {
-        missingRoles.push(roleName);
-      }
-    }
-    if (missingRoles.length > 0) {
-      await syncSystemRolesForTenant(tenantId, permissionMap, missingRoles);
-    }
-  }
+  const permissionMap = await syncPermissionsForTenant(tenantId);
+  await syncSystemRolesForTenant(tenantId, permissionMap);
 
   const [permissions, roles] = await Promise.all([
     prisma.permission.count({

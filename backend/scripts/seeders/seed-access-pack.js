@@ -3,6 +3,10 @@ const {
   DEMO_TENANTS,
 } = require('./seed-catalog');
 const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
+const {
+  getPermissionMetadata,
+  getRoleMetadata,
+} = require('@config/permission-catalog-metadata');
 
 const ROLE_PERMISSION_MAP = Object.freeze(
   Object.fromEntries(
@@ -67,13 +71,15 @@ const seedAccessPack = async (ctx, orgPack) => {
     const anchorFacility = orgPack.facilities[`${scenario.key}:${scenario.facilities[0].key}`];
 
     for (const permissionName of DEMO_PERMISSION_CATALOG) {
+      const permissionMeta = getPermissionMetadata(permissionName);
       const permission = await ctx.upsert(
         'permission',
         `${scenario.key}:permission:${permissionName}`,
         {
           tenant_id: tenant.id,
           name: permissionName,
-          description: `${permissionName} permission`,
+          display_name: permissionMeta.displayName,
+          description: permissionMeta.description,
         },
         {
           tenantCode: scenario.tenant_code,
@@ -85,6 +91,7 @@ const seedAccessPack = async (ctx, orgPack) => {
     }
 
     for (const roleName of DEMO_ROLE_CODES) {
+      const roleMeta = getRoleMetadata(roleName);
       const role = await ctx.upsert(
         'role',
         `${scenario.key}:role:${roleName}`,
@@ -92,7 +99,8 @@ const seedAccessPack = async (ctx, orgPack) => {
           tenant_id: tenant.id,
           facility_id: roleName === 'FACILITY_ADMIN' ? anchorFacility?.id || null : null,
           name: roleName,
-          description: `${roleName} demo role`,
+          display_name: roleMeta.displayName,
+          description: roleMeta.description,
         },
         {
           tenantCode: scenario.tenant_code,

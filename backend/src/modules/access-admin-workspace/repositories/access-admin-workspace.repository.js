@@ -470,6 +470,7 @@ const findLookups = async (scope = {}, includeAllTenants = false) => {
           id: true,
           human_friendly_id: true,
           name: true,
+          display_name: true,
           facility_id: true,
         },
       }),
@@ -481,6 +482,8 @@ const findLookups = async (scope = {}, includeAllTenants = false) => {
           id: true,
           human_friendly_id: true,
           name: true,
+          display_name: true,
+          description: true,
         },
       }),
     ]);
