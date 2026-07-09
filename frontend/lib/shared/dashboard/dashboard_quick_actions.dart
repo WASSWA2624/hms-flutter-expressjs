@@ -2,13 +2,20 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_layout.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
+import 'package:hosspi_hms/shared/dashboard/dashboard_section_header.dart';
 
 class DashboardQuickActions extends StatelessWidget {
-  const DashboardQuickActions({required this.actions, super.key});
+  const DashboardQuickActions({
+    required this.actions,
+    required this.title,
+    super.key,
+  });
 
   final List<DashboardQuickActionData> actions;
+  final String title;
 
   @override
   Widget build(BuildContext context) {
@@ -18,29 +25,54 @@ class DashboardQuickActions extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final double gap = theme.spacing.sm;
-        final int columns = dashboardQuickActionColumnCount(
-          constraints.maxWidth,
-          actions.length,
-        );
-        final double tileWidth = columns <= 1
-            ? constraints.maxWidth
-            : (constraints.maxWidth - (gap * (columns - 1))) / columns;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        DashboardSectionHeader(
+          title: title,
+          leadingIcon: Icons.play_arrow_rounded,
+        ),
+        SizedBox(height: theme.spacing.sm),
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final double gap = theme.spacing.sm;
+            final int columns = dashboardQuickActionColumnCount(
+              constraints.maxWidth,
+              actions.length,
+            );
+            final double tileWidth = columns <= 1
+                ? constraints.maxWidth
+                : (constraints.maxWidth - (gap * (columns - 1))) / columns;
+            final bool singleRow = columns == actions.length;
+            final List<Widget> actionTiles = <Widget>[
+              for (final DashboardQuickActionData action in actions)
+                SizedBox(
+                  width: singleRow ? null : math.max(0, tileWidth),
+                  child: _DashboardQuickActionTile(action: action),
+                ),
+            ];
 
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: <Widget>[
-            for (final DashboardQuickActionData action in actions)
-              SizedBox(
-                width: math.max(0, tileWidth),
-                child: _DashboardQuickActionTile(action: action),
-              ),
-          ],
-        );
-      },
+            if (singleRow) {
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  for (int index = 0; index < actionTiles.length; index += 1)
+                    ...<Widget>[
+                      if (index > 0) SizedBox(width: gap),
+                      Expanded(child: actionTiles[index]),
+                    ],
+                ],
+              );
+            }
+
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: actionTiles,
+            );
+          },
+        ),
+      ],
     );
   }
 }
@@ -52,69 +84,15 @@ class _DashboardQuickActionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final Color accent = colorScheme.primary;
-
     return Semantics(
       button: true,
       label: action.semanticsLabel,
-      child: Material(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(theme.radius.lg),
-        child: InkWell(
-          onTap: action.onPressed,
-          borderRadius: BorderRadius.circular(theme.radius.lg),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: BorderRadius.circular(theme.radius.lg),
-              border: Border.all(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.8),
-              ),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: colorScheme.shadow.withValues(alpha: 0.03),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: theme.spacing.md,
-                vertical: theme.spacing.sm,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: accent.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(theme.radius.md),
-                    ),
-                    child: Icon(action.icon, color: accent, size: 18),
-                  ),
-                  SizedBox(width: theme.spacing.sm),
-                  Flexible(
-                    child: Text(
-                      action.label,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.start,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+      child: AppButton.primary(
+        label: action.label,
+        leadingIcon: action.icon,
+        onPressed: action.onPressed,
+        fullWidth: true,
+        semanticLabel: action.semanticsLabel,
       ),
     );
   }

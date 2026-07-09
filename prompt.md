@@ -1,91 +1,97 @@
-# Dashboard UI polish (shared components)
+# HOSSPI Dashboard — Visual Refinement Brief
 
-Refine the HOSSPI home dashboard so it looks clean, consistent, and professional across **all roles and screen sizes** (mobile, tablet, desktop). Only **content** may differ per role; **layout and styling** must be identical and driven by shared components.
+## Goal
 
-**Scope:** `frontend/lib/shared/dashboard/` only. Role-specific data stays in feature mappers (`home_dashboard_mapper.dart`, `home_dashboard_layout.dart`).
+Redesign the role-based dashboard so it feels **simple, uniform, and clear** at a glance: what is happening now, what needs attention, and what to do next. The dashboard should invite further navigation — not overwhelm with dense lists and visually similar blocks.
 
----
+## Scope
 
-## Goals
+Shared dashboard shell used by all roles via `RoleDashboardScaffold`:
 
-1. **Visual uniformity** — Every role dashboard should feel like the same product; only metrics, actions, queue items, and charts change.
-2. **Simplicity** — Minimal chrome, clear hierarchy, no cramped or misaligned rows.
-3. **Responsive stability** — Card counts of 2, 3, or 4 must produce equally balanced grids (no odd sizing when counts differ).
+`summary badges → quick actions → priority worklist → charts`
 
----
+**Primary files:** `frontend/lib/shared/dashboard/` — especially `role_dashboard_scaffold.dart`, `dashboard_metric_strip.dart`, `dashboard_quick_actions.dart`, `dashboard_priority_panel.dart`, `dashboard_charts_row.dart`, `dashboard_layout.dart`.
 
-## Required changes
-
-### 1. Summary metric cards (`dashboard_metric_strip.dart`)
-
-**Current:** Icon left; label above value in a column.
-
-**Target layout (single row):**
-
-```
-[icon]  [value]  [label]                    [chevron if tappable]
-```
-
-- Icon in accent container on the left.
-- **Value** (quantity) immediately after the icon — prominent, accent color.
-- **Label** on the same row after the value — smaller, muted.
-- Chevron stays trailing when the card is actionable.
-
-**Grid behavior:**
-
-- Honor `maxCards` / role `effectiveMaxStatusCards` (2–4 cards).
-- At desktop widths, distribute cards evenly across the row regardless of count (2, 3, or 4) so card widths stay consistent within a tier.
-- Avoid layouts where 2 or 3 cards look stretched or mis-sized compared to 4-card dashboards.
-- Preserve compact mode for smaller breakpoints.
-
-### 2. Quick actions (`dashboard_quick_actions.dart`)
-
-**Current:** Plain `Wrap` of `AppButton.secondary` — visually weak and uneven.
-
-**Target:**
-
-- Polished horizontal action strip: equal-height chips or outlined action tiles with icon + label.
-- Consistent padding, spacing, and alignment; actions should not wrap awkwardly on desktop.
-- On narrow screens, wrap gracefully (2-per-row or stacked) without clipping labels.
-- Reuse theme tokens (`spacing`, `radius`, `colorScheme`); match the metric card visual language.
-
-### 3. Worklist / recent-activity rows (`dashboard_priority_panel.dart` → `_DashboardWorklistRow`)
-
-**Current:** Title on one line; date/subtitle drops to a second line, making rows tall and uneven.
-
-**Target (single row):**
-
-```
-[icon]  [title · date]                              [status badge]
-```
-
-- Keep title and subtitle (e.g. `ADM-FFB3ED423B · Jul 7, 15:23`) on **one line** with ellipsis overflow.
-- Status badge stays trailing, vertically centered with the row.
-- Row height should be uniform across Admissions, Lab Results, etc.
-
-### 4. No changes needed
-
-- Alerts panel (empty quiet state with checkmark).
-- Shortcut tiles (Subscriptions, Reports).
-- Charts row (`dashboard_charts_row.dart`).
+**Data wiring stays unchanged** — refine layout, hierarchy, spacing, and presentation only (`home_dashboard_mapper.dart` and role configs should not need structural changes).
 
 ---
 
-## Constraints
+## Problems (from current UI)
 
-- Do **not** duplicate dashboard UI per role — fix at the shared component level.
-- Use existing models (`DashboardMetricCardData`, `DashboardQuickActionData`, `DashboardWorklistItemData`) and `RoleDashboardScaffold` section order.
-- Follow project theme extensions and breakpoints (`AppBreakpoints`).
-- Keep semantics labels intact for accessibility.
-- Run existing dashboard tests; add/adjust tests only if layout logic changes materially.
+1. **Summary cards and quick actions look too alike** — both use similar bordered cards with icon + label, so the top of the page reads as one undifferentiated strip.
+2. **Sections lack clear partitioning** — worklist, alerts, shortcuts, and charts blend together; only some panels have titles.
+3. **Dashboard feels congested** — tight vertical rhythm, long single-line rows (e.g. `Admissions ADM-FFB3ED423B · Jul 7, 15:23`), and too much visible at once.
+4. **Summary row behavior on desktop** — on large screens, all metric cards must share **one full-width row** with equal widths (2, 3, or 4 cards), not wrap or stack.
 
 ---
 
-## Acceptance criteria
+## Design Requirements
 
-- [ ] Metric cards show icon → value → label on one row at all breakpoints.
-- [ ] 2-, 3-, and 4-card dashboards produce balanced, same-width cards on desktop.
-- [ ] Quick actions look styled and aligned, not like raw text buttons.
-- [ ] Worklist rows keep title + date on one line; no subtitle line-break.
-- [ ] Super Admin, clinical, and department dashboards share the same visual shell; only data differs.
-- [ ] Layout remains usable on mobile (320px+), tablet, and desktop.
+### 1. Summary metric strip (top — no section title)
+
+- **Desktop (≥1180px):** all visible cards (2–4) on a **single row**, equal width, spanning full content width.
+- **Tablet (760–1179px):** up to 2 per row.
+- **Mobile:** 1–2 per row as space allows.
+- Cards remain **read-only glance metrics** (value + short label + accent icon).
+- Visually distinct from actions below: lighter surface, compact height, no button-like affordance unless `onTap` is set.
+
+### 2. Quick actions (first titled section)
+
+- Add a **short section title** (e.g. *Next steps*, *Actions*, or role-specific label from data).
+- Visually **separate from metrics**: more vertical spacing above, and a clearly different treatment — e.g. filled/primary-tinted buttons or prominent CTA tiles, not metric-card clones.
+- Desktop: all actions on one row with equal width (same column logic as metrics).
+- Examples from screenshots:
+  - Clinical: *Start consultation*, *Continue consultation*
+  - Platform admin: *Select tenant/facility*, *Create tenant*, *Create facility*
+
+### 3. Priority / work area (titled subsections)
+
+Each subsection gets a **short, scannable title**:
+
+| Subsection | Example title | Content |
+|---|---|---|
+| Work queue | *Recent activity*, *Your queue* | Top 3 items max; *View all* link |
+| Alerts | *Critical alerts* | Top 3 items or quiet empty state |
+| Shortcuts | *Quick links* | Emergency, Laboratory, Subscriptions, Reports, etc. |
+
+**Worklist rows** — simplify presentation:
+
+- Lead with **human-readable type** (Admissions, Lab results) — de-emphasize or truncate long IDs.
+- Secondary line or muted suffix for timestamp, not one overcrowded line.
+- Status badge remains right-aligned; reduce row density (more padding, fewer competing text weights).
+
+**Empty states** (e.g. platform admin *Choose a tenant to view operational dashboards*) — centered, calm, with a single clear CTA; not buried in a generic panel.
+
+### 4. Charts (titled subsection)
+
+- Keep existing chart panels; ensure consistent section title styling with priority subsections.
+- Desktop: side-by-side where `twoColumns` is enabled; mobile: stacked.
+- Preserve empty-state messaging for zero data.
+
+### 5. Spacing, rhythm, and hierarchy
+
+- Increase **vertical gap between major sections** (metrics → actions → priority → charts).
+- Use a consistent **section header pattern** (title + optional icon) for everything except the metric strip.
+- Limit visible items per list (3 queue, 3 alerts) — detail lives behind *View all*.
+- Reuse `AppSpacingTokens`, `AppBreakpoints`, and `AppSectionPanel` / theme tokens — no one-off colors or magic numbers.
+
+---
+
+## Acceptance Criteria
+
+- [ ] On desktop, 2–4 summary cards always render on **one equal-width row**.
+- [ ] Summary cards and quick actions are **immediately distinguishable** in style and spacing.
+- [ ] Every section below the metric strip has a **visible short title**.
+- [ ] Worklist rows are **less dense** and easier to scan than the current single-line format.
+- [ ] Dashboard feels **airier** — no section visually merges with the next.
+- [ ] Responsive behavior holds on mobile, tablet, and desktop.
+- [ ] Existing widget tests in `frontend/test/shared/dashboard/` pass; add/update layout tests for column counts and section structure as needed.
+- [ ] No regressions across role variants (clinical, platform admin, and other roles using `RoleDashboardScaffold`).
+
+---
+
+## Non-Goals
+
+- Changing dashboard data sources, API contracts, or navigation targets.
+- Adding new dashboard sections or role-specific business logic.
+- Redesigning the app shell (sidebar, header, notifications).

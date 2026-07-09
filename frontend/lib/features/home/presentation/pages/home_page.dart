@@ -91,6 +91,7 @@ class _HomeDashboardContent extends ConsumerWidget {
                   compact: profile.compactMetrics,
                 ),
                 quickActions: DashboardQuickActions(
+                  title: l10n.homeDashboardNextStepsTitle,
                   actions: homeDashboardQuickActions(
                     context: context,
                     ref: ref,

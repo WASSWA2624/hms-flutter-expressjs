@@ -22,10 +22,16 @@ void main() {
 
   group('dashboardQuickActionColumnCount', () {
     test('desktop lays out all actions in one row', () {
-      expect(dashboardQuickActionColumnCount(900, 3), 3);
+      expect(dashboardQuickActionColumnCount(1200, 3), 3);
+      expect(dashboardQuickActionColumnCount(1200, 2), 2);
     });
 
-    test('narrow screens cap at two columns', () {
+    test('tablet caps at two columns', () {
+      expect(dashboardQuickActionColumnCount(900, 3), 2);
+      expect(dashboardQuickActionColumnCount(900, 2), 2);
+    });
+
+    test('narrow screens cap at two columns then one', () {
       expect(dashboardQuickActionColumnCount(400, 3), 2);
       expect(dashboardQuickActionColumnCount(320, 3), 1);
     });

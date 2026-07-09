@@ -5496,6 +5496,14 @@
   "@homeViewAllAction": {
     "description": "Action to open the full queue from a home dashboard panel."
   },
+  "homeDashboardNextStepsTitle": "Next steps",
+  "@homeDashboardNextStepsTitle": {
+    "description": "Section title for home dashboard quick-action buttons."
+  },
+  "homeDashboardQuickLinksTitle": "Quick links",
+  "@homeDashboardQuickLinksTitle": {
+    "description": "Section title for home dashboard shortcut tiles."
+  },
   "homeTrendLast7Days": "Last 7 days",
   "@homeTrendLast7Days": {
     "description": "Subtitle for HR staffing trend chart on the home dashboard."

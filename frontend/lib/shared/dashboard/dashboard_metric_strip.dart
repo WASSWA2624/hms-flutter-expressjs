@@ -20,7 +20,6 @@ class DashboardMetricStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     final List<DashboardMetricCardData> visibleCards = cards
         .take(maxCards)
         .toList(growable: false);
@@ -31,6 +30,7 @@ class DashboardMetricStrip extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
+        final ThemeData theme = Theme.of(context);
         final double gap = theme.spacing.sm;
         final int columns = dashboardMetricColumnCount(
           constraints.maxWidth,
@@ -38,21 +38,35 @@ class DashboardMetricStrip extends StatelessWidget {
         );
         final double width =
             (constraints.maxWidth - (gap * (columns - 1))) / columns;
+        final bool singleRow = columns == visibleCards.length;
+        final List<Widget> cardWidgets = <Widget>[
+          for (final DashboardMetricCardData card in visibleCards)
+            SizedBox(
+              width: singleRow ? null : math.max(0, width),
+              child: _DashboardMetricCard(
+                card: card,
+                compact:
+                    compact || constraints.maxWidth < AppBreakpoints.md,
+              ),
+            ),
+        ];
+
+        if (singleRow) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              for (int index = 0; index < cardWidgets.length; index += 1) ...<Widget>[
+                if (index > 0) SizedBox(width: gap),
+                Expanded(child: cardWidgets[index]),
+              ],
+            ],
+          );
+        }
 
         return Wrap(
           spacing: gap,
           runSpacing: gap,
-          children: <Widget>[
-            for (final DashboardMetricCardData card in visibleCards)
-              SizedBox(
-                width: math.max(0, width),
-                child: _DashboardMetricCard(
-                  card: card,
-                  compact:
-                      compact || constraints.maxWidth < AppBreakpoints.md,
-                ),
-              ),
-          ],
+          children: cardWidgets,
         );
       },
     );
@@ -70,51 +84,60 @@ class _DashboardMetricCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final bool isActionable = card.onTap != null;
-    final double iconSize = compact ? 32 : 38;
+    final double iconSize = compact ? 28 : 32;
 
     final Widget cardBody = Padding(
-      padding: EdgeInsets.all(compact ? theme.spacing.sm : theme.spacing.md),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? theme.spacing.sm : theme.spacing.md,
+        vertical: compact ? theme.spacing.sm : theme.spacing.sm + 2,
+      ),
       child: Row(
         children: <Widget>[
           Container(
             width: iconSize,
             height: iconSize,
             decoration: BoxDecoration(
-              color: card.accent.withValues(alpha: 0.12),
+              color: card.accent.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(theme.radius.md),
             ),
-            child: Icon(card.icon, color: card.accent, size: 20),
+            child: Icon(card.icon, color: card.accent, size: 18),
           ),
           SizedBox(width: theme.spacing.sm),
-          Text(
-            card.value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: (compact
-                    ? theme.textTheme.titleLarge
-                    : theme.textTheme.headlineSmall)
-                ?.copyWith(
-              color: card.accent,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          SizedBox(width: theme.spacing.xs),
           Expanded(
-            child: Text(
-              card.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  card.value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: (compact
+                          ? theme.textTheme.titleLarge
+                          : theme.textTheme.headlineSmall)
+                      ?.copyWith(
+                    color: card.accent,
+                    fontWeight: FontWeight.w800,
+                    height: 1.1,
+                  ),
+                ),
+                Text(
+                  card.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
           if (isActionable) ...<Widget>[
             SizedBox(width: theme.spacing.xs),
             Icon(
               Icons.chevron_right,
-              size: 18,
+              size: 16,
               color: colorScheme.onSurfaceVariant,
             ),
           ],
@@ -127,7 +150,7 @@ class _DashboardMetricCard extends StatelessWidget {
       label: card.semanticsLabel,
       child: isActionable
           ? Material(
-              color: colorScheme.surface,
+              color: colorScheme.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(theme.radius.lg),
               child: InkWell(
                 onTap: card.onTap,
@@ -148,17 +171,10 @@ class _DashboardMetricCard extends StatelessWidget {
 
 BoxDecoration _metricCardDecoration(ThemeData theme, ColorScheme colorScheme) {
   return BoxDecoration(
-    color: colorScheme.surface,
+    color: colorScheme.surfaceContainerLowest,
     borderRadius: BorderRadius.circular(theme.radius.lg),
     border: Border.all(
-      color: colorScheme.outlineVariant.withValues(alpha: 0.8),
+      color: colorScheme.outlineVariant.withValues(alpha: 0.55),
     ),
-    boxShadow: <BoxShadow>[
-      BoxShadow(
-        color: colorScheme.shadow.withValues(alpha: 0.04),
-        blurRadius: 18,
-        offset: const Offset(0, 8),
-      ),
-    ],
   );
 }

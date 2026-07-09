@@ -8020,6 +8020,18 @@ abstract class AppLocalizations {
   /// **'View all'**
   String get homeViewAllAction;
 
+  /// Section title for home dashboard quick-action buttons.
+  ///
+  /// In en, this message translates to:
+  /// **'Next steps'**
+  String get homeDashboardNextStepsTitle;
+
+  /// Section title for home dashboard shortcut tiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick links'**
+  String get homeDashboardQuickLinksTitle;
+
   /// Subtitle for HR staffing trend chart on the home dashboard.
   ///
   /// In en, this message translates to:

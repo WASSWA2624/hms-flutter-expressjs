@@ -18,8 +18,11 @@ int dashboardMetricColumnCount(double maxWidth, int cardCount) {
 
 int dashboardQuickActionColumnCount(double maxWidth, int actionCount) {
   final int count = math.max(1, actionCount);
-  if (maxWidth >= 760) {
+  if (maxWidth >= 1180) {
     return count;
+  }
+  if (maxWidth >= 760) {
+    return math.min(count, 2);
   }
   if (maxWidth >= 340) {
     return math.min(count, 2);

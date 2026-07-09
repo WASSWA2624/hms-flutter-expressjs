@@ -4192,6 +4192,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeViewAllAction => 'View all';
 
   @override
+  String get homeDashboardNextStepsTitle => 'Next steps';
+
+  @override
+  String get homeDashboardQuickLinksTitle => 'Quick links';
+
+  @override
   String get homeTrendLast7Days => 'Last 7 days';
 
   @override

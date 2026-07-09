@@ -154,6 +154,7 @@ final class DashboardPriorityPanelData {
     this.showQueue = true,
     this.showAlerts = true,
     this.showShortcuts = false,
+    this.shortcutsTitle = 'Quick links',
     this.viewAllLabel = 'View all',
     this.onViewAll,
   });
@@ -170,6 +171,7 @@ final class DashboardPriorityPanelData {
   final bool showQueue;
   final bool showAlerts;
   final bool showShortcuts;
+  final String shortcutsTitle;
   final String viewAllLabel;
   final VoidCallback? onViewAll;
 }

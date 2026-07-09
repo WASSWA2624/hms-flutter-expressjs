@@ -58,6 +58,7 @@ class _DashboardTrendPanel extends StatelessWidget {
     return AppSectionPanel(
       title: chart.title,
       leadingIcon: Icons.show_chart_outlined,
+      density: AppContentPanelDensity.spacious,
       children: <Widget>[
         if (chart.points.isEmpty)
           _DashboardChartEmptyState(message: chart.emptyMessage)
@@ -140,6 +141,7 @@ class _DashboardDistributionPanel extends StatelessWidget {
     return AppSectionPanel(
       title: chart.title,
       leadingIcon: Icons.donut_large_outlined,
+      density: AppContentPanelDensity.spacious,
       children: <Widget>[
         if (!hasData)
           _DashboardChartEmptyState(message: chart.emptyMessage)

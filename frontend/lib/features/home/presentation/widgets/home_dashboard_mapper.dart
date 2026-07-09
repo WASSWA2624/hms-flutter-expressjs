@@ -170,6 +170,7 @@ DashboardPriorityPanelData homeDashboardPriorityData({
               .toList(growable: false)
         : const <DashboardShortcutData>[],
     maxShortcuts: profile.maxShortcutTiles,
+    shortcutsTitle: l10n.homeDashboardQuickLinksTitle,
     showQueue: showQueue,
     showAlerts: showAlerts,
     showShortcuts: showShortcuts,
