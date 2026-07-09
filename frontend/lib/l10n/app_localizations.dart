@@ -8050,6 +8050,42 @@ abstract class AppLocalizations {
   /// **'Quick links'**
   String get homeDashboardQuickLinksTitle;
 
+  /// Section title for super-admin platform management shortcuts on the home dashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform management'**
+  String get homePlatformManagementTitle;
+
+  /// Description shown under platform management shortcuts on the super-admin home dashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage tenants, facilities, roles, and users.'**
+  String get homePlatformManagementDescription;
+
+  /// Title for the focused user management dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage users'**
+  String get homeManageUsersTitle;
+
+  /// Title for the focused roles and permissions management dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage roles and permissions'**
+  String get homeManageRolesPermissionsTitle;
+
+  /// Confirmation body when deleting a tenant from management dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete tenant \"{name}\"? This cannot be undone.'**
+  String tenantFacilityDeleteTenantConfirmationBody(String name);
+
+  /// Confirmation body when deleting a facility from management dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete facility \"{name}\"? This cannot be undone.'**
+  String tenantFacilityDeleteFacilityConfirmationBody(String name);
+
   /// Subtitle for HR staffing trend chart on the home dashboard.
   ///
   /// In en, this message translates to:

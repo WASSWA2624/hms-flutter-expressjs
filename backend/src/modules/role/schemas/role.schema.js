@@ -9,7 +9,8 @@
 
 const { z } = require('zod');
 const { 
-  uuidSchema, 
+  uuidSchema,
+  uuidOrFriendlyIdentifierSchema,
   listQuerySchema
 } = require('@lib/validation/zod');
 
@@ -20,8 +21,8 @@ const {
  * Used for POST /roles endpoint
  */
 const createRoleSchema = z.object({
-  tenant_id: uuidSchema,
-  facility_id: uuidSchema.optional().nullable(),
+  tenant_id: uuidOrFriendlyIdentifierSchema,
+  facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(120),
   description: z.string().trim().min(1).max(255).optional().nullable()
 });

@@ -154,6 +154,14 @@ class _AccessAdminWorkspaceDialogShellState
   }
 }
 
+Future<void> showAccessAdminUserFormDialog(
+  BuildContext context,
+  WidgetRef ref,
+  AccessAdminWorkspaceState state,
+) {
+  return _showCreateUserDialog(context, ref, state);
+}
+
 Future<void> _showCreateUserDialog(
   BuildContext context,
   WidgetRef ref,
@@ -238,19 +246,18 @@ Future<void> _showCreateUserDialog(
               );
               return;
             }
-            final AppFailure? failure = await ref
-                .read(accessAdminWorkspaceControllerProvider.notifier)
-                .createUser(
-                  AccessAdminUserDraft(
-                    tenantId: tenantId,
-                    facilityId: state.query.facilityId,
-                    email: emailController.text.trim(),
-                    phone: phoneController.text.trim(),
-                    positionTitle: titleController.text.trim(),
-                    password: passwordController.text,
-                    status: status,
-                  ),
-                );
+            final AppFailure? failure = await _submitAccessAdminUserCreate(
+              ref,
+              AccessAdminUserDraft(
+                tenantId: tenantId,
+                facilityId: state.query.facilityId,
+                email: emailController.text.trim(),
+                phone: phoneController.text.trim(),
+                positionTitle: titleController.text.trim(),
+                password: passwordController.text,
+                status: status,
+              ),
+            );
             if (!dialogContext.mounted) return;
             if (failure == null) {
               Navigator.of(dialogContext).pop();
@@ -310,13 +317,94 @@ Future<void> openAccessAdminCreateRoleDialog(
     tenantId: initialTenantId,
     facilityId: state.query.facilityId,
     requireTenantPicker: requireTenantPicker,
-    onSubmit: (AccessAdminRoleDraft draft) => ref
-        .read(accessAdminWorkspaceControllerProvider.notifier)
-        .createRole(draft),
+    onSubmit: (AccessAdminRoleDraft draft) => _submitAccessAdminRoleCreate(
+      ref,
+      draft,
+    ),
   );
 }
 
-Future<List<AccessAdminLookupOption>> _loadAccessAdminPermissionLookups(
+Future<void> openAccessAdminEditRoleDialog(
+  BuildContext context,
+  WidgetRef ref,
+  AccessAdminWorkspaceState state,
+  AccessAdminItem role,
+) async {
+  if (!context.mounted) {
+    return;
+  }
+
+  final String? tenantId =
+      state.query.tenantId ??
+      ref.read(sessionStateProvider).session?.user?.tenantId;
+
+  await showRoleMutationDialog(
+    context: context,
+    mode: RoleMutationMode.edit,
+    initialName: role.title,
+    initialDescription: role.subtitle,
+    initialPermissionIds: role.permissions
+        .map((AccessAdminPermissionRef permission) => permission.id)
+        .toSet(),
+    tenantId: tenantId,
+    facilityId: state.query.facilityId,
+    loadPermissionsForTenant: tenantId == null
+        ? null
+        : (String resolvedTenantId) => _loadAccessAdminPermissionLookups(
+            ref,
+            state,
+            tenantId: resolvedTenantId,
+            forceRefresh: true,
+          ),
+    onSubmit: (AccessAdminRoleDraft draft) => _submitAccessAdminRoleUpdate(
+      ref,
+      role.id,
+      draft,
+    ),
+  );
+}
+
+Future<AppFailure?> _submitAccessAdminUserCreate(
+  WidgetRef ref,
+  AccessAdminUserDraft draft,
+) async {
+  final Result<void> result = await ref
+      .read(accessAdminRepositoryProvider)
+      .createUser(draft);
+  return result.when(
+    success: (_) => null,
+    failure: (AppFailure failure) => failure,
+  );
+}
+
+Future<AppFailure?> _submitAccessAdminRoleCreate(
+  WidgetRef ref,
+  AccessAdminRoleDraft draft,
+) async {
+  final Result<void> result = await ref
+      .read(accessAdminRepositoryProvider)
+      .createRole(draft);
+  return result.when(
+    success: (_) => null,
+    failure: (AppFailure failure) => failure,
+  );
+}
+
+Future<AppFailure?> _submitAccessAdminRoleUpdate(
+  WidgetRef ref,
+  String roleId,
+  AccessAdminRoleDraft draft,
+) async {
+  final Result<void> result = await ref
+      .read(accessAdminRepositoryProvider)
+      .updateRole(roleId, draft);
+  return result.when(
+    success: (_) => null,
+    failure: (AppFailure failure) => failure,
+  );
+}
+
+Future<Result<List<AccessAdminLookupOption>>> _loadAccessAdminPermissionLookups(
   WidgetRef ref,
   AccessAdminWorkspaceState state, {
   String? tenantId,
@@ -324,13 +412,17 @@ Future<List<AccessAdminLookupOption>> _loadAccessAdminPermissionLookups(
 }) async {
   final String? resolvedTenantId = tenantId ?? state.query.tenantId;
   if ((resolvedTenantId ?? '').isEmpty) {
-    return const <AccessAdminLookupOption>[];
+    return const Result<List<AccessAdminLookupOption>>.success(
+      <AccessAdminLookupOption>[],
+    );
   }
 
   if (!forceRefresh &&
       resolvedTenantId == state.query.tenantId &&
       state.data.lookups.permissions.isNotEmpty) {
-    return state.data.lookups.permissions;
+    return Result<List<AccessAdminLookupOption>>.success(
+      state.data.lookups.permissions,
+    );
   }
 
   final Result<AccessAdminLookups> result = await ref
@@ -341,8 +433,10 @@ Future<List<AccessAdminLookupOption>> _loadAccessAdminPermissionLookups(
       );
 
   return result.when(
-    success: (AccessAdminLookups lookups) => lookups.permissions,
-    failure: (_) => const <AccessAdminLookupOption>[],
+    success: (AccessAdminLookups lookups) =>
+        Result<List<AccessAdminLookupOption>>.success(lookups.permissions),
+    failure: (AppFailure failure) =>
+        Result<List<AccessAdminLookupOption>>.failure(failure),
   );
 }
 

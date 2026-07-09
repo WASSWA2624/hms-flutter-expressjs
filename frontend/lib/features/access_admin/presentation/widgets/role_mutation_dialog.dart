@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/app_permission_catalog_localizations.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -19,7 +20,7 @@ typedef RoleMutationSubmitHandler =
     Future<AppFailure?> Function(AccessAdminRoleDraft draft);
 
 typedef RolePermissionLookupsLoader =
-    Future<List<AccessAdminLookupOption>> Function(String tenantId);
+    Future<Result<List<AccessAdminLookupOption>>> Function(String tenantId);
 
 typedef RoleTenantOptionsLoader =
     Future<List<AccessAdminLookupOption>> Function();
@@ -61,6 +62,7 @@ Future<bool?> showRoleMutationDialog({
   bool isLoadingPermissions = false;
   bool permissionLoadAttempted = permissionLookups.isNotEmpty;
   bool scheduledInitialPermissionLoad = false;
+  AppFailure? permissionLoadFailure;
 
   List<AppPermissionAssignmentOption> buildPermissionOptions() {
     return currentPermissionLookups
@@ -106,15 +108,25 @@ Future<bool?> showRoleMutationDialog({
       isLoadingPermissions = true;
       currentPermissionLookups = <AccessAdminLookupOption>[];
       selectedPermissionIds.clear();
+      permissionLoadFailure = null;
     });
 
-    final List<AccessAdminLookupOption> loaded =
+    final Result<List<AccessAdminLookupOption>> loaded =
         await loader(resolvedTenantId!);
 
     setState(() {
       isLoadingPermissions = false;
       permissionLoadAttempted = true;
-      currentPermissionLookups = loaded;
+      loaded.when(
+        success: (List<AccessAdminLookupOption> permissions) {
+          currentPermissionLookups = permissions;
+          permissionLoadFailure = null;
+        },
+        failure: (AppFailure failure) {
+          currentPermissionLookups = <AccessAdminLookupOption>[];
+          permissionLoadFailure = failure;
+        },
+      );
     });
   }
 
@@ -310,6 +322,30 @@ Future<bool?> showRoleMutationDialog({
                         _RoleMutationLoadingIndicator(
                           label: l10n.accessAdminCreateRoleLoadingPermissions,
                         )
+                      else if (permissionOptions.isEmpty && permissionLoadFailure != null)
+                        AppFormInformationBanner.failure(
+                          context: context,
+                          failure: permissionLoadFailure!,
+                          children: loadPermissionsForTenant != null &&
+                                  tenantSelected
+                              ? <Widget>[
+                                  AppButton.secondary(
+                                    label: l10n.commonRetryActionLabel,
+                                    enabled: !isSubmitting,
+                                    onPressed: () {
+                                      setState(() {
+                                        permissionLoadAttempted = false;
+                                        scheduledInitialPermissionLoad = false;
+                                        permissionLoadFailure = null;
+                                      });
+                                      unawaited(
+                                        loadPermissionsForSelectedTenant(setState),
+                                      );
+                                    },
+                                  ),
+                                ]
+                              : const <Widget>[],
+                        )
                       else if (permissionOptions.isEmpty)
                         AppFormInformationBanner(
                           title: l10n.accessAdminPermissionCatalogUnavailableTitle,
@@ -323,9 +359,15 @@ Future<bool?> showRoleMutationDialog({
                                   AppButton.secondary(
                                     label: l10n.commonRetryActionLabel,
                                     enabled: !isSubmitting,
-                                    onPressed: () => unawaited(
-                                      loadPermissionsForSelectedTenant(setState),
-                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        permissionLoadAttempted = false;
+                                        scheduledInitialPermissionLoad = false;
+                                      });
+                                      unawaited(
+                                        loadPermissionsForSelectedTenant(setState),
+                                      );
+                                    },
                                   ),
                                 ]
                               : const <Widget>[],

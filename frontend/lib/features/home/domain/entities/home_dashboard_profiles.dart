@@ -48,7 +48,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.superAdmin,
     roleLabel: 'Platform administrator',
     homeTitle: 'Platform',
-    emptyMessage: 'No follow-ups required.',
+    emptyMessage: '',
     maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(

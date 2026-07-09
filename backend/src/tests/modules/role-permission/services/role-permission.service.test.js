@@ -8,6 +8,9 @@
 const { HttpError } = require('@lib/errors');
 
 jest.mock('@repositories/role-permission/role-permission.repository');
+jest.mock('@lib/billing/identifiers', () => ({
+  resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
+}));
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn().mockResolvedValue({})
 }));
@@ -60,12 +63,20 @@ describe('Role-Permission Service', () => {
 
   describe('createRolePermission', () => {
     it('should create role-permission and audit log', async () => {
-      const mock = { id: 'rp-123', role_id: 'role-123' };
+      const mock = { id: 'rp-123', role_id: 'role-uuid', permission_id: 'perm-uuid' };
       rolePermissionRepository.create.mockResolvedValue(mock);
 
-      const result = await createRolePermission({ role_id: 'role-123' }, 'user-123', '127.0.0.1');
+      const result = await createRolePermission(
+        { role_id: 'ROL0001', permission_id: 'PRM0001' },
+        'user-123',
+        '127.0.0.1'
+      );
 
       expect(result).toEqual(mock);
+      expect(rolePermissionRepository.create).toHaveBeenCalledWith({
+        role_id: 'ROL0001',
+        permission_id: 'PRM0001',
+      });
       expect(createAuditLog).toHaveBeenCalled();
     });
   });

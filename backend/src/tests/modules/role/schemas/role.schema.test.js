@@ -34,6 +34,15 @@ describe('Role Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should validate friendly tenant identifiers', () => {
+      const validData = {
+        tenant_id: 'TEN0001',
+        name: 'Basic Role'
+      };
+      const result = createRoleSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
     it('should validate with null optional fields', () => {
       const validData = {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',

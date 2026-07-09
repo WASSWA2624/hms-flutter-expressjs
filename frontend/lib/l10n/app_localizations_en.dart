@@ -4208,6 +4208,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeDashboardQuickLinksTitle => 'Quick links';
 
   @override
+  String get homePlatformManagementTitle => 'Platform management';
+
+  @override
+  String get homePlatformManagementDescription =>
+      'Manage tenants, facilities, roles, and users.';
+
+  @override
+  String get homeManageUsersTitle => 'Manage users';
+
+  @override
+  String get homeManageRolesPermissionsTitle => 'Manage roles and permissions';
+
+  @override
+  String tenantFacilityDeleteTenantConfirmationBody(String name) {
+    return 'Delete tenant \"$name\"? This cannot be undone.';
+  }
+
+  @override
+  String tenantFacilityDeleteFacilityConfirmationBody(String name) {
+    return 'Delete facility \"$name\"? This cannot be undone.';
+  }
+
+  @override
   String get homeTrendLast7Days => 'Last 7 days';
 
   @override

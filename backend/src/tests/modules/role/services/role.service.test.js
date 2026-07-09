@@ -9,6 +9,9 @@ const { HttpError } = require('@lib/errors');
 
 // Mock repository
 jest.mock('@repositories/role/role.repository');
+jest.mock('@lib/billing/identifiers', () => ({
+  resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
+}));
 // Mock audit log
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn().mockResolvedValue({})

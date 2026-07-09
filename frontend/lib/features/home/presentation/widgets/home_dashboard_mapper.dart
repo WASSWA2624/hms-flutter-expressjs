@@ -137,7 +137,12 @@ DashboardPriorityPanelData homeDashboardPriorityData({
               )
               .toList(growable: false)
         : const <DashboardWorklistItemData>[],
-    emptyMessage: profile.emptyMessage,
+    emptySectionTitle: profile.id == 'super_admin'
+        ? l10n.homePlatformManagementTitle
+        : null,
+    emptyMessage: profile.id == 'super_admin'
+        ? l10n.homePlatformManagementDescription
+        : profile.emptyMessage,
     emptyActions: homeDashboardEmptyActions(context, ref, profile, policy),
     maxQueueItems: profile.maxQueueItems,
     alertsTitle: showAlerts ? homeAlertsTitle(profile.role) : null,

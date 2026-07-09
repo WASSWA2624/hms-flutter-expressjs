@@ -13,6 +13,7 @@ import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/ten
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -112,6 +113,42 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
     await _reload(resetPage: false);
   }
 
+  Future<void> _openTenantForm({TenantProfile? tenant, bool forceCreate = false}) async {
+    await showTenantFacilityTenantFormDialog(
+      context,
+      tenant: tenant,
+      forceCreate: forceCreate,
+    );
+    if (mounted) {
+      await _reload(resetPage: forceCreate);
+    }
+  }
+
+  Future<void> _confirmDeleteTenant(TenantProfile tenant) async {
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.tenantFacilityDeleteConfirmationTitle,
+        body: l10n.tenantFacilityDeleteTenantConfirmationBody(tenant.name),
+        submitLabel: l10n.tenantFacilityDeleteConfirmAction,
+        icon: const Icon(Icons.delete_outline),
+        onConfirm: () async {
+          final Result<void> result = await ref
+              .read(tenantFacilityRepositoryProvider)
+              .deleteTenant(tenant.id);
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await _reload(resetPage: _tenants.length <= 1);
+    }
+  }
+
   bool get _canCreate => ref.read(appAccessPolicyProvider).canCreateTenant();
 
   @override
@@ -149,15 +186,10 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                       isLoading: _loading,
                       itemKeyBuilder: (TenantProfile item) =>
                           ValueKey<String>(item.id),
-                      onRowSelected: (TenantProfile tenant) async {
-                        await showTenantFacilityTenantFormDialog(
-                          context,
-                          tenant: tenant,
-                        );
-                        if (context.mounted) {
-                          unawaited(_reload(resetPage: false));
-                        }
-                      },
+                      onRowSelected: _canCreate
+                          ? (TenantProfile tenant) =>
+                                unawaited(_openTenantForm(tenant: tenant))
+                          : null,
                       previousPageLabel: l10n.hrPreviousPageLabel,
                       nextPageLabel: l10n.hrNextPageLabel,
                       pageLabelBuilder: (AppPage<TenantProfile> page) {
@@ -188,6 +220,23 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                                 : l10n.commonNoLabel,
                           ),
                         ),
+                        if (_canCreate)
+                          AppListTableColumn<TenantProfile>(
+                            label: '',
+                            alwaysVisible: true,
+                            cellBuilder:
+                                (BuildContext context, TenantProfile tenant) {
+                              return _ManagementRowActions(
+                                enabled: !_loading,
+                                editLabel: l10n.tenantFacilitySaveTenantAction,
+                                deleteLabel: l10n.tenantFacilityDeleteAction,
+                                onEdit: () =>
+                                    unawaited(_openTenantForm(tenant: tenant)),
+                                onDelete: () =>
+                                    unawaited(_confirmDeleteTenant(tenant)),
+                              );
+                            },
+                          ),
                       ],
                       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
                         title: l10n.tenantFacilityManageTenantsTitle,
@@ -198,11 +247,29 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                             return ListTile(
                               title: Text(tenant.name),
                               subtitle: Text(tenant.slug ?? tenant.id),
-                              trailing: Text(
-                                tenant.isActive
-                                    ? l10n.commonYesLabel
-                                    : l10n.commonNoLabel,
-                              ),
+                              trailing: _canCreate
+                                  ? _ManagementRowActions(
+                                      enabled: !_loading,
+                                      editLabel:
+                                          l10n.tenantFacilitySaveTenantAction,
+                                      deleteLabel:
+                                          l10n.tenantFacilityDeleteAction,
+                                      onEdit: () => unawaited(
+                                        _openTenantForm(tenant: tenant),
+                                      ),
+                                      onDelete: () => unawaited(
+                                        _confirmDeleteTenant(tenant),
+                                      ),
+                                    )
+                                  : Text(
+                                      tenant.isActive
+                                          ? l10n.commonYesLabel
+                                          : l10n.commonNoLabel,
+                                    ),
+                              onTap: _canCreate
+                                  ? () =>
+                                        unawaited(_openTenantForm(tenant: tenant))
+                                  : null,
                             );
                           },
                     ),
@@ -211,29 +278,17 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
         ),
       ),
       actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.commonRefreshActionLabel,
-          leadingIcon: Icons.refresh,
-          onPressed: _loading
-              ? null
-              : () => unawaited(_reload(resetPage: false)),
-        ),
         if (_canCreate)
           AppButton.primary(
             label: l10n.tenantFacilityAddTenantAction,
             leadingIcon: Icons.add_business_outlined,
-            onPressed: () async {
-              await showTenantFacilityTenantFormDialog(
-                context,
-                forceCreate: true,
-              );
-              if (context.mounted) {
-                unawaited(_reload(resetPage: true));
-              }
-            },
+            onPressed: _loading
+                ? null
+                : () => unawaited(_openTenantForm(forceCreate: true)),
           ),
         AppButton.secondary(
           label: l10n.commonCloseActionLabel,
+          leadingIcon: Icons.close,
           onPressed: () => Navigator.of(context).pop(),
         ),
       ],
@@ -346,6 +401,52 @@ class _ManageFacilitiesDialogState
     await _reload(resetPage: false);
   }
 
+  Future<void> _openFacilityForm({
+    FacilityProfile? facility,
+    bool forceCreate = false,
+  }) async {
+    await showTenantFacilityFacilityFormDialog(
+      context,
+      tenantId: facility?.tenantId ?? _tenantFilterId,
+      facility: facility,
+      requireTenantPicker: forceCreate || facility == null,
+    );
+    if (mounted) {
+      unawaited(
+        ref.read(tenantFacilitySetupControllerProvider.notifier).refresh(),
+      );
+      await _reload(resetPage: forceCreate);
+    }
+  }
+
+  Future<void> _confirmDeleteFacility(FacilityProfile facility) async {
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.tenantFacilityDeleteConfirmationTitle,
+        body: l10n.tenantFacilityDeleteFacilityConfirmationBody(facility.name),
+        submitLabel: l10n.tenantFacilityDeleteConfirmAction,
+        icon: const Icon(Icons.delete_outline),
+        onConfirm: () async {
+          final Result<void> result = await ref
+              .read(tenantFacilityRepositoryProvider)
+              .deleteFacility(facility.id);
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
+    );
+    if (confirmed == true && mounted) {
+      unawaited(
+        ref.read(tenantFacilitySetupControllerProvider.notifier).refresh(),
+      );
+      await _reload(resetPage: _facilities.length <= 1);
+    }
+  }
+
   bool get _canManage => ref.read(appAccessPolicyProvider).canManageFacility();
 
   String _tenantLabel(String tenantId) {
@@ -418,23 +519,11 @@ class _ManageFacilitiesDialogState
                       isLoading: _loading,
                       itemKeyBuilder: (FacilityProfile item) =>
                           ValueKey<String>(item.id),
-                      onRowSelected: (FacilityProfile facility) async {
-                        await showTenantFacilityFacilityFormDialog(
-                          context,
-                          tenantId: facility.tenantId,
-                          facility: facility,
-                        );
-                        if (context.mounted) {
-                          unawaited(
-                            ref
-                                .read(
-                                  tenantFacilitySetupControllerProvider.notifier,
-                                )
-                                .refresh(),
-                          );
-                          unawaited(_reload(resetPage: false));
-                        }
-                      },
+                      onRowSelected: _canManage
+                          ? (FacilityProfile facility) => unawaited(
+                              _openFacilityForm(facility: facility),
+                            )
+                          : null,
                       previousPageLabel: l10n.hrPreviousPageLabel,
                       nextPageLabel: l10n.hrNextPageLabel,
                       pageLabelBuilder: (AppPage<FacilityProfile> page) {
@@ -470,6 +559,28 @@ class _ManageFacilitiesDialogState
                                 : l10n.commonNoLabel,
                           ),
                         ),
+                        if (_canManage)
+                          AppListTableColumn<FacilityProfile>(
+                            label: '',
+                            alwaysVisible: true,
+                            cellBuilder:
+                                (
+                                  BuildContext context,
+                                  FacilityProfile facility,
+                                ) {
+                              return _ManagementRowActions(
+                                enabled: !_loading,
+                                editLabel: l10n.commonSaveActionLabel,
+                                deleteLabel: l10n.tenantFacilityDeleteAction,
+                                onEdit: () => unawaited(
+                                  _openFacilityForm(facility: facility),
+                                ),
+                                onDelete: () => unawaited(
+                                  _confirmDeleteFacility(facility),
+                                ),
+                              );
+                            },
+                          ),
                       ],
                       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
                         title: l10n.tenantFacilityManageFacilitiesTitle,
@@ -480,11 +591,29 @@ class _ManageFacilitiesDialogState
                             return ListTile(
                               title: Text(facility.name),
                               subtitle: Text(_tenantLabel(facility.tenantId)),
-                              trailing: Text(
-                                facility.isActive
-                                    ? l10n.commonYesLabel
-                                    : l10n.commonNoLabel,
-                              ),
+                              trailing: _canManage
+                                  ? _ManagementRowActions(
+                                      enabled: !_loading,
+                                      editLabel: l10n.commonSaveActionLabel,
+                                      deleteLabel:
+                                          l10n.tenantFacilityDeleteAction,
+                                      onEdit: () => unawaited(
+                                        _openFacilityForm(facility: facility),
+                                      ),
+                                      onDelete: () => unawaited(
+                                        _confirmDeleteFacility(facility),
+                                      ),
+                                    )
+                                  : Text(
+                                      facility.isActive
+                                          ? l10n.commonYesLabel
+                                          : l10n.commonNoLabel,
+                                    ),
+                              onTap: _canManage
+                                  ? () => unawaited(
+                                      _openFacilityForm(facility: facility),
+                                    )
+                                  : null,
                             );
                           },
                     ),
@@ -493,36 +622,62 @@ class _ManageFacilitiesDialogState
         ),
       ),
       actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.commonRefreshActionLabel,
-          leadingIcon: Icons.refresh,
-          onPressed: _loading
-              ? null
-              : () => unawaited(_reload(resetPage: false)),
-        ),
         if (_canManage)
           AppButton.primary(
             label: l10n.tenantFacilityAddFacilityAction,
             leadingIcon: Icons.add_business_outlined,
-            onPressed: () async {
-              await showTenantFacilityFacilityFormDialog(
-                context,
-                requireTenantPicker: true,
-                tenantId: _tenantFilterId,
-              );
-              if (context.mounted) {
-                unawaited(
-                  ref
-                      .read(tenantFacilitySetupControllerProvider.notifier)
-                      .refresh(),
-                );
-                unawaited(_reload(resetPage: true));
-              }
-            },
+            onPressed: _loading
+                ? null
+                : () => unawaited(_openFacilityForm(forceCreate: true)),
           ),
         AppButton.secondary(
           label: l10n.commonCloseActionLabel,
+          leadingIcon: Icons.close,
           onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
+    );
+  }
+}
+
+class _ManagementRowActions extends StatelessWidget {
+  const _ManagementRowActions({
+    required this.enabled,
+    required this.editLabel,
+    required this.deleteLabel,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final bool enabled;
+  final String editLabel;
+  final String deleteLabel;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        AppButton.tertiary(
+          leadingIcon: Icons.edit_outlined,
+          label: editLabel,
+          semanticLabel: editLabel,
+          tooltip: editLabel,
+          enabled: enabled,
+          onPressed: enabled ? onEdit : null,
+        ),
+        AppButton.tertiary(
+          leadingIcon: Icons.delete_outline,
+          label: deleteLabel,
+          semanticLabel: deleteLabel,
+          tooltip: deleteLabel,
+          color: colorScheme.error,
+          enabled: enabled,
+          onPressed: enabled ? onDelete : null,
         ),
       ],
     );

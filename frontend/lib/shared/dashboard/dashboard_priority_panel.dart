@@ -36,6 +36,7 @@ class DashboardPriorityPanel extends StatelessWidget {
             ? _DashboardQueuePanel(
                 title: data.queueTitle,
                 items: data.queueItems,
+                emptySectionTitle: data.emptySectionTitle,
                 emptyMessage: data.emptyMessage,
                 emptyActions: data.emptyActions,
                 maxItems: data.maxQueueItems,
@@ -96,6 +97,7 @@ class DashboardPriorityPanel extends StatelessWidget {
 class _DashboardQueuePanel extends StatelessWidget {
   const _DashboardQueuePanel({
     this.title,
+    this.emptySectionTitle,
     required this.items,
     required this.emptyMessage,
     required this.emptyActions,
@@ -105,6 +107,7 @@ class _DashboardQueuePanel extends StatelessWidget {
   });
 
   final String? title;
+  final String? emptySectionTitle;
   final List<DashboardWorklistItemData> items;
   final String emptyMessage;
   final List<DashboardQuickActionData> emptyActions;
@@ -117,9 +120,16 @@ class _DashboardQueuePanel extends StatelessWidget {
     final bool isEmpty = items.isEmpty;
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
+    final String? panelTitle = isEmpty
+        ? (emptySectionTitle ?? title)
+        : title;
+    final String? panelDescription = isEmpty && emptyMessage.isNotEmpty
+        ? emptyMessage
+        : null;
+
     return AppSectionPanel(
-      title: isEmpty ? null : title,
-      description: isEmpty ? emptyMessage : null,
+      title: panelTitle,
+      description: isEmpty ? panelDescription : null,
       leadingIcon: Icons.format_list_bulleted,
       density: AppContentPanelDensity.spacious,
       backgroundColor: dashboardSectionBackgroundColor(colorScheme),

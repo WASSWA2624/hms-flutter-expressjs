@@ -10,6 +10,30 @@
 const roleRepository = require('@repositories/role/role.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { resolveIdentifierForPayload } = require('@lib/billing/identifiers');
+
+const normalizeCreateRolePayload = async (data = {}) => {
+  const payload = { ...data };
+
+  payload.tenant_id = await resolveIdentifierForPayload({
+    value: data.tenant_id,
+    model: 'tenant',
+    field: 'tenant_id',
+  });
+
+  if (data.facility_id != null && String(data.facility_id).trim() !== '') {
+    payload.facility_id = await resolveIdentifierForPayload({
+      value: data.facility_id,
+      model: 'facility',
+      field: 'facility_id',
+      nullable: true,
+    });
+  } else if (data.facility_id === null) {
+    payload.facility_id = null;
+  }
+
+  return payload;
+};
 
 /**
  * List roles with pagination and filtering
@@ -99,7 +123,8 @@ const getRoleById = async (id, userId, ipAddress) => {
  */
 const createRole = async (data, userId, ipAddress) => {
   try {
-    const role = await roleRepository.create(data);
+    const payload = await normalizeCreateRolePayload(data);
+    const role = await roleRepository.create(payload);
 
     // Create audit log (non-blocking)
     createAuditLog({

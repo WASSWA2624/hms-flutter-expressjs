@@ -10,6 +10,42 @@
 const rolePermissionRepository = require('@repositories/role-permission/role-permission.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { resolveIdentifierForPayload } = require('@lib/billing/identifiers');
+
+const normalizeCreateRolePermissionPayload = async (data = {}) => ({
+  role_id: await resolveIdentifierForPayload({
+    value: data.role_id,
+    model: 'role',
+    field: 'role_id',
+  }),
+  permission_id: await resolveIdentifierForPayload({
+    value: data.permission_id,
+    model: 'permission',
+    field: 'permission_id',
+  }),
+});
+
+const normalizeUpdateRolePermissionPayload = async (data = {}) => {
+  const payload = { ...data };
+
+  if (data.role_id !== undefined) {
+    payload.role_id = await resolveIdentifierForPayload({
+      value: data.role_id,
+      model: 'role',
+      field: 'role_id',
+    });
+  }
+
+  if (data.permission_id !== undefined) {
+    payload.permission_id = await resolveIdentifierForPayload({
+      value: data.permission_id,
+      model: 'permission',
+      field: 'permission_id',
+    });
+  }
+
+  return payload;
+};
 
 /**
  * List role-permissions with pagination and filtering
@@ -90,7 +126,8 @@ const getRolePermissionById = async (id, userId, ipAddress) => {
  */
 const createRolePermission = async (data, userId, ipAddress) => {
   try {
-    const rolePermission = await rolePermissionRepository.create(data);
+    const payload = await normalizeCreateRolePermissionPayload(data);
+    const rolePermission = await rolePermissionRepository.create(payload);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -128,7 +165,10 @@ const updateRolePermission = async (id, data, userId, ipAddress) => {
       throw new HttpError('errors.role_permission.not_found', 404);
     }
 
-    const rolePermission = await rolePermissionRepository.update(id, data);
+    const rolePermission = await rolePermissionRepository.update(
+      id,
+      await normalizeUpdateRolePermissionPayload(data),
+    );
 
     // Create audit log (non-blocking)
     createAuditLog({

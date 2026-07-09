@@ -37,6 +37,15 @@ describe('Role-Permission Schema Validation', () => {
       const result = createRolePermissionSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
     });
+
+    it('should validate friendly permission identifiers', () => {
+      const validData = {
+        role_id: '123e4567-e89b-12d3-a456-426614174000',
+        permission_id: 'PRM0001'
+      };
+      const result = createRolePermissionSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
   });
 
   describe('updateRolePermissionSchema', () => {

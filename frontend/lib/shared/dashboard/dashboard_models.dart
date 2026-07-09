@@ -140,6 +140,7 @@ final class DashboardPriorityPanelData {
   const DashboardPriorityPanelData({
     this.queueTitle,
     this.queueItems = const <DashboardWorklistItemData>[],
+    this.emptySectionTitle,
     this.emptyMessage = '',
     this.emptyActions = const <DashboardQuickActionData>[],
     this.maxQueueItems = 3,
@@ -157,6 +158,7 @@ final class DashboardPriorityPanelData {
 
   final String? queueTitle;
   final List<DashboardWorklistItemData> queueItems;
+  final String? emptySectionTitle;
   final String emptyMessage;
   final List<DashboardQuickActionData> emptyActions;
   final int maxQueueItems;

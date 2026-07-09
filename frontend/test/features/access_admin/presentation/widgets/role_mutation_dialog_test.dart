@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/role_mutation_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -35,7 +36,9 @@ void main() {
                       ];
                     },
                     loadPermissionsForTenant: (_) async =>
-                        const <AccessAdminLookupOption>[],
+                        const Result<List<AccessAdminLookupOption>>.success(
+                          <AccessAdminLookupOption>[],
+                        ),
                     onSubmit: (_) async => null,
                   ),
                 );

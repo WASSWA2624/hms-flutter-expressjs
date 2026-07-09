@@ -9,7 +9,8 @@
 
 const { z } = require('zod');
 const { 
-  uuidSchema, 
+  uuidSchema,
+  uuidOrFriendlyIdentifierSchema,
   listQuerySchema
 } = require('@lib/validation/zod');
 
@@ -20,8 +21,8 @@ const {
  * Used for POST /role-permissions endpoint
  */
 const createRolePermissionSchema = z.object({
-  role_id: uuidSchema,
-  permission_id: uuidSchema
+  role_id: uuidOrFriendlyIdentifierSchema,
+  permission_id: uuidOrFriendlyIdentifierSchema
 });
 
 /**
@@ -30,8 +31,8 @@ const createRolePermissionSchema = z.object({
  * All fields optional for partial updates
  */
 const updateRolePermissionSchema = z.object({
-  role_id: uuidSchema.optional(),
-  permission_id: uuidSchema.optional()
+  role_id: uuidOrFriendlyIdentifierSchema.optional(),
+  permission_id: uuidOrFriendlyIdentifierSchema.optional()
 });
 
 // ==================== URL Params ====================
@@ -52,8 +53,8 @@ const rolePermissionIdParamsSchema = z.object({
  * Extends base listQuerySchema with role-permission-specific filters
  */
 const listRolePermissionsQuerySchema = listQuerySchema.extend({
-  role_id: uuidSchema.optional(),
-  permission_id: uuidSchema.optional()
+  role_id: uuidOrFriendlyIdentifierSchema.optional(),
+  permission_id: uuidOrFriendlyIdentifierSchema.optional()
 });
 
 module.exports = {
