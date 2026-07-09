@@ -550,6 +550,7 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         tenantsTotal,
         tenantsActive,
         facilitiesTotal,
+        facilitiesActive,
         subscriptionsTotal,
         subscriptionsActive,
         subscriptionsExpiring,
@@ -561,6 +562,7 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         prisma.tenant.count({ where: { deleted_at: null } }),
         prisma.tenant.count({ where: { deleted_at: null, is_active: true } }),
         prisma.facility.count({ where: { deleted_at: null } }),
+        prisma.facility.count({ where: { deleted_at: null, is_active: true } }),
         prisma.subscription.count({ where: { deleted_at: null } }),
         prisma.subscription.count({
           where: { deleted_at: null, status: { in: ['ACTIVE', 'TRIAL'] } },
@@ -617,8 +619,10 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
         metrics: {
           tenantsTotal,
           tenantsActive,
+          tenantsWithoutSubscription,
+          tenantsWithSubscription: Math.max(0, tenantsTotal - tenantsWithoutSubscription),
           facilitiesTotal,
-          facilitiesActive: facilitiesTotal,
+          facilitiesActive,
           subscriptionsTotal,
           subscriptionsActive,
           subscriptionsExpiring,

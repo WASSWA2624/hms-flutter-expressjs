@@ -550,29 +550,40 @@ const withSummaryMetadata = (packId, cards = []) => {
 
 const rawMetricsToRoleSummary = (packId, metrics = {}) => {
   if (packId === ROLE_PACKS.SUPER_ADMIN) {
+    const tenantsTotal = Number(metrics.tenantsTotal || 0);
+    const tenantsWithoutSubscription = Number(metrics.tenantsWithoutSubscription || 0);
+    const tenantsWithSubscription = Number.isFinite(Number(metrics.tenantsWithSubscription))
+      ? Number(metrics.tenantsWithSubscription)
+      : Math.max(0, tenantsTotal - tenantsWithoutSubscription);
+    const subscriptionsExpiring = Number(metrics.subscriptionsExpiring || 0);
+
     return [
       {
         id: 'tenants_active',
         label: 'Tenants',
         value: metrics.tenantsActive || 0,
-        secondary_value: metrics.tenantsTotal || 0,
+        secondary_value: tenantsTotal,
         format: 'ratio',
       },
       {
         id: 'facilities_active',
         label: 'Facilities',
-        value: metrics.facilitiesTotal || metrics.facilitiesActive || 0,
+        value: metrics.facilitiesActive ?? metrics.facilitiesTotal ?? 0,
+        secondary_value: metrics.facilitiesTotal ?? metrics.facilitiesActive ?? 0,
+        format: 'ratio',
       },
       {
         id: 'subscriptions_health',
         label: 'Subscriptions',
-        value: metrics.subscriptionsActive || 0,
-        secondary_value: metrics.subscriptionsTotal || 0,
+        value: tenantsWithSubscription,
+        secondary_value: tenantsTotal,
         format: 'ratio',
         hint:
-          Number(metrics.subscriptionsExpiring || 0) > 0
-            ? `${metrics.subscriptionsExpiring} expiring soon`
-            : null,
+          tenantsWithoutSubscription > 0
+            ? `${tenantsWithoutSubscription} tenant${tenantsWithoutSubscription === 1 ? '' : 's'} without subscription`
+            : subscriptionsExpiring > 0
+              ? `${subscriptionsExpiring} expiring soon`
+              : null,
       },
       {
         id: 'module_entitlement_issues',

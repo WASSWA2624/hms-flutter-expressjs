@@ -33,3 +33,39 @@ describe('dashboard summary role resolution', () => {
     ).toBe(ROLES.THEATRE_MANAGER);
   });
 });
+
+const { ROLE_PACKS, metricsToRoleSummary } = require('@lib/dashboard/summary');
+
+describe('super admin dashboard summary cards', () => {
+  it('maps subscription health to tenant coverage instead of subscription record counts', () => {
+    const cards = metricsToRoleSummary(ROLE_PACKS.SUPER_ADMIN, {
+      tenantsTotal: 3,
+      tenantsActive: 3,
+      tenantsWithoutSubscription: 2,
+      tenantsWithSubscription: 1,
+      facilitiesTotal: 1,
+      facilitiesActive: 1,
+      subscriptionsTotal: 1,
+      subscriptionsActive: 1,
+      moduleEntitlementIssues: 0,
+    });
+
+    expect(cards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'subscriptions_health',
+          value: 1,
+          secondary_value: 3,
+          format: 'ratio',
+          hint: '2 tenants without subscription',
+        }),
+        expect.objectContaining({
+          id: 'facilities_active',
+          value: 1,
+          secondary_value: 1,
+          format: 'ratio',
+        }),
+      ])
+    );
+  });
+});
