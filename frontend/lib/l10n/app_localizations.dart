@@ -28827,29 +28827,41 @@ abstract class AppLocalizations {
   /// **'Search staff, roles, or permissions'**
   String get hrAccessSearchHint;
 
-  /// Label for permission picker searchable select.
+  /// Search field label in grouped permission picker.
   ///
   /// In en, this message translates to:
-  /// **'Add permission'**
-  String get hrPermissionAssignmentAddPermissionLabel;
+  /// **'Search permissions'**
+  String get hrPermissionAssignmentSearchLabel;
+
+  /// Selected permission count summary in picker.
+  ///
+  /// In en, this message translates to:
+  /// **'{selected} of {total} selected'**
+  String hrPermissionAssignmentSelectedCount(int selected, int total);
+
+  /// Select all permissions in a module group.
+  ///
+  /// In en, this message translates to:
+  /// **'Select group'**
+  String get hrPermissionAssignmentSelectGroupAction;
+
+  /// Clear all permissions in a module group.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear group'**
+  String get hrPermissionAssignmentClearGroupAction;
+
+  /// Empty state when permission search has no matches.
+  ///
+  /// In en, this message translates to:
+  /// **'No permissions match your search.'**
+  String get hrPermissionAssignmentNoSearchResultsLabel;
 
   /// Empty state when no permissions are selected in picker.
   ///
   /// In en, this message translates to:
   /// **'No permissions selected.'**
   String get hrPermissionAssignmentEmptySelectedLabel;
-
-  /// Remove a selected permission from picker.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove permission'**
-  String get hrPermissionAssignmentRemovePermissionAction;
-
-  /// Section label for module-grouped permission list.
-  ///
-  /// In en, this message translates to:
-  /// **'Available by module'**
-  String get hrPermissionAssignmentAvailableByModuleLabel;
 
   /// Label for catalog permission select in create dialog.
   ///

@@ -1,119 +1,100 @@
-# Refine and complete the Facility Create dialog
+# Fix Role & Permission Catalog — Load, Seed, and Assign
 
 ## Context
 
-The **Create Tenant** dialog is working — tenants save successfully. The **Facility Create** dialog (`showTenantFacilityFacilityFormDialog` / `_FacilityProfileForm` in `tenant_facility_setup_page.dart`) still has functional, layout, and UX gaps shown in the attached screenshots.
+The **Create Role** dialog (`showRoleMutationDialog`) shows **0 of 0 permissions** (see screenshot). Bulk actions and grouped checkboxes render, but the catalog is empty, so role creation always fails validation: *"Select at least one permission for this role."*
 
-## Goals
+**Current data flow**
+- UI: `AppPermissionAssignmentPicker` ← `permissionLookups` from Access Admin workspace state
+- API: `access-admin-workspace` → `findLookups()` → `prisma.permission.findMany({ where: { tenant_id } })`
+- **Canonical source of truth (code):** `backend/src/config/permissions.js`
+  - `PERMISSIONS` — stable keys (`patient:read`, `clinical:write`, `hr:read`, …)
+  - `ROLE_PERMISSIONS` — system role templates (Doctor, Nurse, Lab Tech, HR, etc.)
 
-Deliver a production-ready **Create Facility** flow that is correct, responsive (mobile / tablet / desktop), and keeps frontend and backend in sync with immediate UI updates after create/edit.
+**Gap:** The UI depends on **tenant-scoped DB rows** in `permission` / `role`, but those rows are not guaranteed to exist. Seeding (`seed-access-pack.js`) only inserts permissions referenced by demo roles — not the full catalog — and may not have run for the active tenant.
 
 ---
 
-## Required changes
+## Goal
 
-### 1. Dialog title and mode
+Make the Create/Edit Role flow fully functional by ensuring the **full permission catalog** and **system roles** are available in the database (synced from `permissions.js`), while supporting **custom tenant roles** with flexible permission assignment.
 
-- When **creating** a facility, title must be **“Create facility”** (not “Facility profile”).
-- When **editing**, keep **“Facility profile”** (or equivalent edit label).
-- Update l10n keys in `app_en.arb` as needed.
+---
 
-### 2. Tenant selector (blocking bug)
+## Requirements
 
-**Current:** “Select tenant” is empty on open even when tenants exist.
+### 1. Backend — sync catalog from `permissions.js`
 
-**Expected:**
-- Searchable select (`AppSelectField.searchable`) populated from `listTenants`.
-- Opening the field shows all existing tenants; search filters by name.
-- Required; show validation if missing on save.
-- Load failures: show inline error + retry (do not silently leave an empty list).
+- Add a **permission sync** step (seeder, startup hook, or admin endpoint) that upserts every value in `PERMISSIONS` into the `permission` table for each tenant.
+  - Use `name` = permission key (e.g. `patient:read`).
+  - Idempotent: safe to re-run; no duplicates per `(tenant_id, name)`.
+- Seed **system roles** from `ROLE_PERMISSIONS` / `ROLES` (Doctor, Nurse, Lab Tech, Tenant Admin, etc.) with their default `role_permission` mappings.
+  - Mark or distinguish system roles from custom roles if the schema supports it; otherwise document naming convention (e.g. uppercase codes).
+- Ensure `findLookups()` returns the synced permissions for the resolved tenant scope.
+- Add/update tests in `access-admin-workspace.service.test.js` verifying non-empty permission lookups after sync.
 
-**Files:** `_FacilityProfileForm._loadTenantOptions`, `_openFacilityProfileModal`.
+### 2. Backend — custom roles (dynamic)
 
-### 3. Tenant-gated form fields
+- Keep roles in the `role` table (tenant-scoped) — **do not hardcode custom roles in code**.
+- Create/update role endpoints must persist `name`, `description`, and `permission_ids` via `role_permission`.
+- Authorization continues to use permission **keys** from `permissions.js`; DB stores tenant instances mapped to those keys.
 
-- Until a tenant is selected, disable all facility fields (name, type, logo, phone, email, address, city, country, active).
-- Save remains disabled without a tenant.
-- Tenant selection is mandatory to create a facility.
+### 3. Frontend — resilient permission loading
 
-### 4. Facility logo upload UI
+- In `access_admin_dialogs.dart` / `role_mutation_dialog.dart`, ensure `permissionLookups` is populated before opening Create Role (refresh lookups if empty).
+- If lookups are still empty after refresh, show a **clear error banner** (e.g. *"Permission catalog not available for this tenant. Contact your administrator."*) instead of stacked empty states.
+- Deduplicate status copy when catalog is empty — hide *"No permissions selected"* / *"No permissions match your search"* when `total == 0`.
 
-**Current:** Preview tile and “Choose image” feel visually disconnected.
+### 4. Frontend — picker UX polish (`AppPermissionAssignmentPicker`)
 
-**Expected:**
-- Unified upload control: preview + action as one cohesive block (match existing app patterns).
-- Square preview, clear empty state, consistent spacing/alignment with other form fields.
-- After pick → crop → apply, preview updates immediately.
+- Keep grouped **checkbox** selection by module prefix (`patient`, `clinical`, `hr`, …).
+- Replace text-link bulk actions with consistent controls:
+  - **Global:** master checkbox or toggle for *Select all* / *Clear all* (in addition to or replacing secondary buttons).
+  - **Per group:** tri-state group header checkbox (none · partial · all) with select/clear group behavior.
+- Show meaningful summary: `{selected} of {total} selected` only when `total > 0`.
+- Pre-check permissions in **edit** mode from existing `role_permission` data.
+- Responsive layout: scrollable groups, touch-friendly on mobile, two-column groups on tablet/desktop.
 
-**Files:** `AppImageUploadField`, `_FacilityProfileForm._pickLogo`.
+### 5. Dialog polish
 
-### 5. Crop image dialog — layout + capabilities
+- Cancel button retains icon (`Icons.close_outlined`); Save retains save icon.
+- `showRoleMutationDialog` remains the single reusable entry point for role create/edit across Access Admin (and HR where applicable).
 
-**Current:** “Crop image” modal overflows (~55 px bottom overflow on web).
+---
 
-**Fix:**
-- Remove overflow at all breakpoints; crop area must flex within dialog height.
-- Support **crop and resize** (zoom/pan to frame, output square logo).
-- Responsive on mobile, tablet, and desktop.
+## Data reference (`permissions.js`)
 
-**Files:** `app_image_crop_dialog.dart`, `AppDialog` usage.
+| Export | Purpose |
+|--------|---------|
+| `PERMISSIONS` | Full catalog (~60 keys across modules: profile, patient, clinical, lab, hr, mortuary, tenant/facility/system admin, …) |
+| `ROLE_PERMISSIONS` | Default permission sets per system role |
+| `ROLE_PERMISSION_TEMPLATES` | Alias roles inheriting from base roles |
 
-### 6. Country field
-
-- Replace free-text **Country** with a **searchable country selector** (name + flag), reusing phone-field country data/patterns where possible (`AppPhoneField` country list).
-- **City** stays a plain text field.
-
-### 7. Duplicate facility prevention (per tenant)
-
-- Within one tenant, facility names must be unique (case-insensitive, trimmed).
-- Duplicates across **different** tenants are allowed.
-- On likely duplicate: warn before save (mirror tenant similarity UX in `tenant_similarity_dialog.dart`).
-- Enforce on backend; surface API errors clearly in the dialog.
-- After successful create, lists/dashboard reflect the new facility without manual refresh.
-
-### 8. Instant UI updates
-
-**Current:** Creates/updates do not always appear immediately.
-
-**Fix:**
-- Invalidate or refresh relevant providers after save (setup controller, facility lists, dashboard).
-- Remove stale-cache bottlenecks between repository → controller → UI.
-- Success: close dialog, show confirmation, updated data visible on reopen and in facility lists.
-
-### 9. Unchanged (verify only)
-
-- Facility type selector
-- Phone (`AppPhoneField`), email (required), address line, active toggle
+All new permissions must be added to `permissions.js` first, then synced to DB.
 
 ---
 
 ## Acceptance criteria
 
-| # | Criterion |
-|---|-----------|
-| 1 | Create mode title is “Create facility”; edit mode uses profile title |
-| 2 | Tenant dropdown lists all tenants; search works; required validation works |
-| 3 | Facility fields disabled until tenant selected |
-| 4 | Logo upload looks unified; preview updates after crop |
-| 5 | Crop dialog: no overflow; crop + resize work on all screen sizes |
-| 6 | Country uses flag + searchable selector |
-| 7 | Duplicate name blocked per tenant with user-visible warning |
-| 8 | New/updated facility appears in UI immediately after save |
-| 9 | Backend validation and frontend rules stay aligned |
+- [ ] Create Role shows the full permission catalog (non-zero total) for a seeded tenant.
+- [ ] User can select permissions via grouped checkboxes; global and per-group select/clear work.
+- [ ] System roles (Doctor, Nurse, Lab Tech, etc.) exist in DB with correct default permissions.
+- [ ] User can create a **custom role** with any combination of permissions; role is persisted and reusable.
+- [ ] Edit role pre-selects assigned permissions.
+- [ ] Empty catalog shows one actionable error state, not misleading "0 of 0" + search miss messages.
+- [ ] No regressions in Access Admin role create/edit or authorization checks.
 
 ---
 
-## Key files
+## Implementation notes
 
-- `frontend/lib/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart`
-- `frontend/lib/shared/components/app_image_upload_field.dart`
-- `frontend/lib/shared/components/app_image_crop_dialog.dart`
-- `frontend/lib/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart`
-- `frontend/lib/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart`
-- `frontend/lib/l10n/app_en.arb`
+- Run permission sync via existing seeder pipeline (`seed-access-pack.js`) or dedicated script; re-run for dev tenants after deploy.
+- No Prisma schema change expected unless adding `is_system` flag to `role` — only add migration if needed.
+- Frontend labels: continue using `permissionCatalogLabelForCode()` for display names.
 
-## Constraints
+---
 
-- Reuse existing shared components (`AppSelectField.searchable`, `AppPhoneField` country data, `AppDialog`, form validators).
-- Responsive on mobile, tablet, and desktop.
-- No unrelated refactors; scope to facility create/edit flow.
+## Out of scope
+
+- Renaming permission keys or changing ABAC middleware logic.
+- Redesigning unrelated Access Admin panels.

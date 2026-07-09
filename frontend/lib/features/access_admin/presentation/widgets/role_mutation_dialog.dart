@@ -70,7 +70,8 @@ Future<bool?> showRoleMutationDialog({
     submitLabel: l10n.commonSaveActionLabel,
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
-    maxWidth: 720,
+    cancelIcon: Icons.close_outlined,
+    maxWidth: 840,
     buildFields:
         (
           BuildContext context,
@@ -145,6 +146,7 @@ Future<bool?> showRoleMutationDialog({
                   AppPermissionAssignmentPicker(
                     permissions: permissionOptions,
                     selectedPermissionIds: selectedPermissionIds,
+                    enabled: fieldsEnabled,
                     onSelectionChanged: fieldsEnabled
                         ? (Set<String> next) {
                             setState(() {

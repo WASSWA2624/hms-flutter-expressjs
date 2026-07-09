@@ -40,6 +40,7 @@ Future<bool?> showAppWorkspaceMutationDialog({
   required String cancelLabel,
   required String submitLabel,
   IconData? submitIcon,
+  IconData? cancelIcon,
   List<AppWorkspaceMutationAction> extraActions =
       const <AppWorkspaceMutationAction>[],
   Widget? icon,
@@ -63,6 +64,7 @@ Future<bool?> showAppWorkspaceMutationDialog({
       cancelLabel: cancelLabel,
       submitLabel: submitLabel,
       submitIcon: submitIcon,
+      cancelIcon: cancelIcon,
       extraActions: extraActions,
       showCancelButton: showCancelButton,
     ),
@@ -78,6 +80,7 @@ class _AppWorkspaceMutationDialog extends StatefulWidget {
     required this.submitLabel,
     this.icon,
     this.submitIcon,
+    this.cancelIcon,
     this.extraActions = const <AppWorkspaceMutationAction>[],
     this.maxWidth = 600,
     this.initialMaximized = true,
@@ -101,6 +104,7 @@ class _AppWorkspaceMutationDialog extends StatefulWidget {
   final String cancelLabel;
   final String submitLabel;
   final IconData? submitIcon;
+  final IconData? cancelIcon;
   final List<AppWorkspaceMutationAction> extraActions;
   final bool showCancelButton;
 
@@ -146,6 +150,7 @@ class _AppWorkspaceMutationDialogState
       if (widget.showCancelButton)
         AppButton.tertiary(
           label: widget.cancelLabel,
+          leadingIcon: widget.cancelIcon,
           enabled: !_isSubmitting,
           onPressed: _isSubmitting
               ? null

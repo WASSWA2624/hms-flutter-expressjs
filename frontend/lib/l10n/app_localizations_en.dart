@@ -15402,19 +15402,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrAccessSearchHint => 'Search staff, roles, or permissions';
 
   @override
-  String get hrPermissionAssignmentAddPermissionLabel => 'Add permission';
+  String get hrPermissionAssignmentSearchLabel => 'Search permissions';
+
+  @override
+  String hrPermissionAssignmentSelectedCount(int selected, int total) {
+    return '$selected of $total selected';
+  }
+
+  @override
+  String get hrPermissionAssignmentSelectGroupAction => 'Select group';
+
+  @override
+  String get hrPermissionAssignmentClearGroupAction => 'Clear group';
+
+  @override
+  String get hrPermissionAssignmentNoSearchResultsLabel =>
+      'No permissions match your search.';
 
   @override
   String get hrPermissionAssignmentEmptySelectedLabel =>
       'No permissions selected.';
-
-  @override
-  String get hrPermissionAssignmentRemovePermissionAction =>
-      'Remove permission';
-
-  @override
-  String get hrPermissionAssignmentAvailableByModuleLabel =>
-      'Available by module';
 
   @override
   String get hrAccessPermissionCatalogSelectLabel => 'Permission';

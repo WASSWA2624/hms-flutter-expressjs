@@ -21,6 +21,8 @@ void main() {
                 title: const Text('Short form'),
                 submitLabel: 'Save',
                 cancelLabel: 'Cancel',
+                submitIcon: Icons.save_outlined,
+                cancelIcon: Icons.close_outlined,
                 buildFields:
                     (
                       BuildContext context,

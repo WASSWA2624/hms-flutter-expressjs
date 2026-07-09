@@ -19979,21 +19979,33 @@
   "@hrAccessSearchHint": {
     "description": "Search hint in HR access workspace tables."
   },
-  "hrPermissionAssignmentAddPermissionLabel": "Add permission",
-  "@hrPermissionAssignmentAddPermissionLabel": {
-    "description": "Label for permission picker searchable select."
+  "hrPermissionAssignmentSearchLabel": "Search permissions",
+  "@hrPermissionAssignmentSearchLabel": {
+    "description": "Search field label in grouped permission picker."
+  },
+  "hrPermissionAssignmentSelectedCount": "{selected} of {total} selected",
+  "@hrPermissionAssignmentSelectedCount": {
+    "description": "Selected permission count summary in picker.",
+    "placeholders": {
+      "selected": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "hrPermissionAssignmentSelectGroupAction": "Select group",
+  "@hrPermissionAssignmentSelectGroupAction": {
+    "description": "Select all permissions in a module group."
+  },
+  "hrPermissionAssignmentClearGroupAction": "Clear group",
+  "@hrPermissionAssignmentClearGroupAction": {
+    "description": "Clear all permissions in a module group."
+  },
+  "hrPermissionAssignmentNoSearchResultsLabel": "No permissions match your search.",
+  "@hrPermissionAssignmentNoSearchResultsLabel": {
+    "description": "Empty state when permission search has no matches."
   },
   "hrPermissionAssignmentEmptySelectedLabel": "No permissions selected.",
   "@hrPermissionAssignmentEmptySelectedLabel": {
     "description": "Empty state when no permissions are selected in picker."
-  },
-  "hrPermissionAssignmentRemovePermissionAction": "Remove permission",
-  "@hrPermissionAssignmentRemovePermissionAction": {
-    "description": "Remove a selected permission from picker."
-  },
-  "hrPermissionAssignmentAvailableByModuleLabel": "Available by module",
-  "@hrPermissionAssignmentAvailableByModuleLabel": {
-    "description": "Section label for module-grouped permission list."
   },
   "hrAccessPermissionCatalogSelectLabel": "Permission",
   "@hrAccessPermissionCatalogSelectLabel": {
