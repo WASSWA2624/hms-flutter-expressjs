@@ -3,9 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_layout.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
-import 'package:hosspi_hms/shared/dashboard/dashboard_section_header.dart';
 
 class DashboardQuickActions extends StatelessWidget {
   const DashboardQuickActions({
@@ -19,20 +19,19 @@ class DashboardQuickActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
     if (actions.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return AppSectionPanel(
+      title: title,
+      leadingIcon: Icons.play_arrow_rounded,
+      density: AppContentPanelDensity.spacious,
+      backgroundColor: dashboardSectionBackgroundColor(colorScheme),
+      borderColor: dashboardSectionBorderColor(colorScheme),
       children: <Widget>[
-        DashboardSectionHeader(
-          title: title,
-          leadingIcon: Icons.play_arrow_rounded,
-        ),
-        SizedBox(height: theme.spacing.sm),
         DashboardActionButtonRow(actions: actions),
       ],
     );

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
+import 'package:hosspi_hms/shared/dashboard/dashboard_layout.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_quick_actions.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
@@ -114,12 +115,15 @@ class _DashboardQueuePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isEmpty = items.isEmpty;
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
     return AppSectionPanel(
       title: isEmpty ? null : title,
       description: isEmpty ? emptyMessage : null,
       leadingIcon: Icons.format_list_bulleted,
       density: AppContentPanelDensity.spacious,
+      backgroundColor: dashboardSectionBackgroundColor(colorScheme),
+      borderColor: dashboardSectionBorderColor(colorScheme),
       trailing: isEmpty || onViewAll == null
           ? null
           : AppButton.tertiary(

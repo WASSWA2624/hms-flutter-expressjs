@@ -60,6 +60,8 @@ class AppSectionPanel extends StatelessWidget {
     this.density = AppContentPanelDensity.regular,
     this.spacing,
     this.crossAxisAlignment = CrossAxisAlignment.start,
+    this.backgroundColor,
+    this.borderColor,
     super.key,
   });
 
@@ -72,6 +74,8 @@ class AppSectionPanel extends StatelessWidget {
   final AppContentPanelDensity density;
   final double? spacing;
   final CrossAxisAlignment crossAxisAlignment;
+  final Color? backgroundColor;
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +88,8 @@ class AppSectionPanel extends StatelessWidget {
     return AppContentPanel(
       tone: tone,
       density: density,
+      backgroundColor: backgroundColor,
+      borderColor: borderColor,
       child: Column(
         crossAxisAlignment: crossAxisAlignment,
         mainAxisSize: MainAxisSize.min,
