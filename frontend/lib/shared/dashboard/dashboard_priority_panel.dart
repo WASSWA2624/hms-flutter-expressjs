@@ -225,53 +225,51 @@ class _DashboardWorklistRow extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final double iconSize = theme.appTokens.listIconSize;
-    final double detailIndent = iconSize + theme.spacing.sm;
     final _WorklistTitleParts parts = _parseWorklistTitle(item.title);
     final String detailLine = _worklistDetailLine(
       reference: parts.reference,
       subtitle: item.subtitle,
     );
+    final TextStyle? headlineStyle = theme.textTheme.titleSmall?.copyWith(
+      fontWeight: FontWeight.w700,
+    );
+    final TextStyle? detailStyle = theme.textTheme.bodySmall?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+    );
 
     final Widget row = Padding(
-      padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.sm,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          Icon(
+            item.icon,
+            size: iconSize,
+            color: colorScheme.primary,
+          ),
+          SizedBox(width: theme.spacing.sm),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    Icon(
-                      item.icon,
-                      size: iconSize,
-                      color: colorScheme.primary,
-                    ),
-                    SizedBox(width: theme.spacing.sm),
-                    Expanded(
-                      child: Text(
-                        parts.headline,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
+                Flexible(
+                  child: Text(
+                    parts.headline,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: headlineStyle,
+                  ),
                 ),
                 if (detailLine.isNotEmpty) ...<Widget>[
-                  SizedBox(height: theme.spacing.xs / 2),
-                  Padding(
-                    padding: EdgeInsets.only(left: detailIndent),
+                  SizedBox(width: theme.spacing.xs),
+                  Flexible(
                     child: Text(
                       detailLine,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                      style: detailStyle,
                     ),
                   ),
                 ],

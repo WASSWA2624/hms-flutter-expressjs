@@ -1,101 +1,76 @@
-# Dashboard worklist & action polish
+# Dashboard admissions row & metric label polish
 
-Polish the shared role dashboard template for worklist rows, quick-action buttons, queue panel headers, and the alerts empty state. **Do not change chart widgets, metric strip layout, or data/routing logic.**
+Two targeted refinements to the shared role dashboard. **Everything else is correct — do not change it.**
 
-**Primary files:** `frontend/lib/shared/dashboard/dashboard_quick_actions.dart`, `frontend/lib/shared/dashboard/dashboard_priority_panel.dart`, `frontend/lib/shared/components/app_button.dart`, `frontend/lib/features/home/domain/entities/home_dashboard_layout.dart`, `frontend/lib/features/home/presentation/widgets/home_dashboard_mapper.dart`.
-
----
-
-## Context (current state — keep as-is)
-
-- Metric strip, quick-actions panel container, section backgrounds/borders, and charts are correct.
-- Quick actions: horizontal button row inside a bordered `AppSectionPanel`.
-- Queue panel uses `AppSectionPanel` with list icon + “View all” when populated.
+**Primary files:** `frontend/lib/shared/dashboard/dashboard_priority_panel.dart`, `frontend/lib/shared/dashboard/dashboard_metric_strip.dart`.
 
 ---
 
-## 1. Quick action buttons — add faint border
+## Context (keep as-is)
 
-**Issue:** Primary action buttons (e.g. *Receive sample*, *Enter lab result*) have no visible edge; button boundaries are unclear.
-
-**Required:**
-
-- Add a **subtle border** to each quick-action button (not a fill/background change).
-- Use theme tokens: `outlineVariant` at ~0.7 alpha, matching shortcut tiles and dashboard section borders.
-- Preserve current label, icon, padding, responsive row layout, and semantics.
-- Apply via `AppButton` or `_DashboardQuickActionTile` — whichever keeps styling consistent app-wide.
+- Metric strip layout (`[icon] [value] [label]` single row on desktop/tablet).
+- Quick actions panel, button borders, section backgrounds.
+- Queue panel header (icon + title, e.g. *Actions*).
+- Alerts *All clear* green styling, status badge inset, charts, and quick links.
 
 ---
 
-## 2. Queue / worklist panel — show section title
+## 1. Worklist row — single-line headline + reference
 
-**Issue:** The worklist panel (e.g. lab results list) shows only a list icon in the header — no title text — unlike **Quick actions** and **Alerts**, which display icon + title.
+**Current issue:** Admissions rows split content across two lines — *Admissions* on line 1, `ADM-FFB3ED423B · Jul 7, 15:23` indented on line 2.
 
-**Required:**
-
-- Show a **visible section title** beside the header icon when the queue panel has items (e.g. *Lab queue* for lab tech via `homeQueueTitle(role)`).
-- Enable or fix `showQueuePanelTitle` in `HomeDashboardProfile` / mapper so `queueTitle` is passed to `_DashboardQueuePanel` when the panel is populated.
-- Keep empty-state behavior: message inline with icon when the queue is empty.
-- “View all” trailing action unchanged.
-
----
-
-## 3. Worklist row layout — icon + title, details on next line
-
-**Issue:** Rows such as *Lab Results* / `LBR-… · Jul 7, 15:23* / *Abnormal* need clearer hierarchy.
-
-**Required layout per row:**
+**Required layout (one line after the icon):**
 
 ```
-[icon]  Lab Results
-        LBR-4ECC7E0442 · Jul 7, 15:23          [Abnormal]
+[icon]  Admissions  ADM-FFB3ED423B · Jul 7, 15:23          [Admitted]
 ```
 
-- **Line 1:** Item icon + headline title (e.g. *Lab Results*) on the same row.
-- **Line 2:** Reference and timestamp on the next line, **indented to align with the headline text** (not under the icon). Prefix with a colon if needed: `LBR-… · Jul 7, 15:23`.
-- **Preserve** existing font sizes, weights, and colors for headline (`titleSmall` bold) and detail (`bodySmall`, `onSurfaceVariant`).
-- Update `_DashboardWorklistRow` and `_parseWorklistTitle` / `_worklistDetailLine` in `dashboard_priority_panel.dart`; reuse for both queue items and alert items.
+- **Headline** (e.g. *Admissions*, *Lab Results*): keep `titleSmall`, bold — same as today.
+- **Reference + timestamp** (`ADM-… · Jul 7, 15:23`): keep `bodySmall`, `onSurfaceVariant` — same font size/color as the current detail line.
+- Place headline and reference/timestamp on the **same horizontal row**, separated by a small gap (e.g. `theme.spacing.xs`).
+- Remove the second-line indent layout from `_DashboardWorklistRow`; apply to all worklist rows (queue + alerts).
+- Truncate with ellipsis if the row overflows; status badge stays trailing with existing inset.
+
+Update `_DashboardWorklistRow`, `_parseWorklistTitle`, and `_worklistDetailLine` as needed.
 
 ---
 
-## 4. Status badge — inset from panel edge
+## 2. Worklist row — increase horizontal padding
 
-**Issue:** Status labels (e.g. *Abnormal*) sit flush against the panel border with insufficient padding.
+**Current issue:** Row content sits too close to the panel left/right edges, especially on hover.
 
 **Required:**
 
-- Add horizontal spacing so the trailing status badge (`AppWorkspaceStatusBadge`) does not touch the panel border.
-- Ensure the badge row has comfortable inset on the right (and between badge and detail text).
-- Do not change badge colors or typography — only spacing/inset.
+- Add comfortable **horizontal inset** to each worklist row so text and badges do not feel flush with the panel border.
+- Use theme spacing tokens (e.g. `theme.spacing.sm` or `md` on left and right of row content).
+- Preserve vertical spacing and tap targets; do not reduce the status-badge right inset added previously.
 
 ---
 
-## 5. Alerts empty state — green “All clear”
+## 3. Summary metric cards — slightly larger labels
 
-**Issue:** When there are no alerts, *All clear* uses neutral gray styling; it should read as a positive/success state.
+**Current issue:** Metric labels (*Facilities*, *Users*, *Adoption*, *Patient flow*) use `labelSmall`, which is hard to read for users with sight difficulties.
 
 **Required:**
 
-- Update `_DashboardQuietState` to use **success/green** styling when the alerts list is empty.
-- Use theme status colors (`statusColors.success` / `AppWorkspaceStatusTone.success`) for icon and text — consistent with other success indicators in the app.
-- Keep copy as *All clear*; no layout changes to the alerts panel header.
+- Increase label text size **one step** — e.g. from `labelSmall` to `labelMedium` or `bodySmall`.
+- Labels must remain **visibly smaller than** the metric value (`headlineSmall` / `titleLarge`).
+- Keep label color (`onSurfaceVariant`), weight, and single-line truncation.
+- Apply in `_DashboardMetricCard` only; do not change value styling or card layout.
 
 ---
 
 ## Out of scope
 
-- Charts row (sample throughput trend, test mix donut).
-- Metric strip and quick-actions section panel wrappers.
-- Quick links section.
-- l10n string changes (unless a title key is missing for a role).
+- Quick actions, alerts panel, charts row, quick links.
+- Data sources, routing, l10n, or role profile logic.
+- Queue panel title, empty states, or section panel wrappers.
 
 ---
 
 ## Acceptance criteria
 
-- [ ] Quick-action buttons have a faint visible border; no unintended background change.
-- [ ] Populated queue panel shows icon + section title (e.g. *Lab queue*) like Alerts and Quick actions.
-- [ ] Worklist rows: icon + title on line 1; reference/timestamp indented on line 2; fonts/colors unchanged.
-- [ ] Status badge has adequate padding and does not touch the panel edge.
-- [ ] Alerts empty state shows green success styling for *All clear*.
+- [ ] Worklist rows show icon + headline + reference/timestamp on one line; detail text keeps `bodySmall` styling.
+- [ ] Worklist rows have increased left/right padding inside the panel.
+- [ ] Metric labels are slightly larger but still smaller than metric values.
 - [ ] `flutter analyze` clean; existing dashboard tests pass.

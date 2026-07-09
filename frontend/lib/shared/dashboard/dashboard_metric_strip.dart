@@ -113,7 +113,8 @@ class _DashboardMetricCard extends StatelessWidget {
               card.label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(
+              style: (theme.textTheme.labelMedium ?? theme.textTheme.bodySmall)
+                  ?.copyWith(
                 color: colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
               ),
