@@ -5,6 +5,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/forms/app_form_section.dart';
+import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
 
 @immutable
 final class AppPermissionAssignmentOption {
@@ -268,6 +269,63 @@ class _AppPermissionAssignmentPickerState
         _groupedPermissions();
     final List<String> groupKeys = grouped.keys.toList(growable: false)..sort();
 
+    final Widget selectAllTile = CheckboxListTile(
+      key: const ValueKey<String>('permission-select-all'),
+      value: allInScopeSelected
+          ? true
+          : noneInScopeSelected
+          ? false
+          : null,
+      tristate: true,
+      enabled: canChange && scopeTotal > 0,
+      onChanged: canChange && scopeTotal > 0
+          ? (bool? value) {
+              if (value == false) {
+                _clearInScope();
+              } else {
+                _selectInScope();
+              }
+            }
+          : null,
+      title: Text(
+        isFiltering
+            ? l10n.hrPermissionAssignmentSelectAllMatchingAction
+            : l10n.hrAccessSelectAllPermissionsAction,
+      ),
+      subtitle: Text(
+        isFiltering
+            ? l10n.hrPermissionAssignmentSelectedCount(
+                selectedInScope,
+                scopeTotal,
+              )
+            : l10n.hrPermissionAssignmentSelectedCount(
+                selectedCount,
+                totalCount,
+              ),
+      ),
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      controlAffinity: ListTileControlAffinity.leading,
+      contentPadding: EdgeInsets.zero,
+    );
+
+    final Widget clearAllTile = CheckboxListTile(
+      value: noneInScopeSelected,
+      enabled: canChange && !noneInScopeSelected,
+      onChanged: canChange && !noneInScopeSelected
+          ? (_) => _clearInScope()
+          : null,
+      title: Text(
+        isFiltering
+            ? l10n.hrPermissionAssignmentClearMatchingAction
+            : l10n.hrAccessClearPermissionsAction,
+      ),
+      dense: true,
+      visualDensity: VisualDensity.compact,
+      controlAffinity: ListTileControlAffinity.leading,
+      contentPadding: EdgeInsets.zero,
+    );
+
     return AppFormSection(
       children: <Widget>[
         AppTextField(
@@ -276,60 +334,11 @@ class _AppPermissionAssignmentPickerState
           labelText: l10n.hrPermissionAssignmentSearchLabel,
           prefixIcon: const Icon(Icons.search),
         ),
-        CheckboxListTile(
-          key: const ValueKey<String>('permission-select-all'),
-          value: allInScopeSelected
-              ? true
-              : noneInScopeSelected
-              ? false
-              : null,
-          tristate: true,
-          enabled: canChange && scopeTotal > 0,
-          onChanged: canChange && scopeTotal > 0
-              ? (bool? value) {
-                  if (value == false) {
-                    _clearInScope();
-                  } else {
-                    _selectInScope();
-                  }
-                }
-              : null,
-          title: Text(
-            isFiltering
-                ? l10n.hrPermissionAssignmentSelectAllMatchingAction
-                : l10n.hrAccessSelectAllPermissionsAction,
-          ),
-          subtitle: Text(
-            isFiltering
-                ? l10n.hrPermissionAssignmentSelectedCount(
-                    selectedInScope,
-                    scopeTotal,
-                  )
-                : l10n.hrPermissionAssignmentSelectedCount(
-                    selectedCount,
-                    totalCount,
-                  ),
-          ),
-          dense: true,
-          visualDensity: VisualDensity.compact,
-          controlAffinity: ListTileControlAffinity.leading,
-          contentPadding: EdgeInsets.zero,
-        ),
-        CheckboxListTile(
-          value: noneInScopeSelected,
-          enabled: canChange && !noneInScopeSelected,
-          onChanged: canChange && !noneInScopeSelected
-              ? (_) => _clearInScope()
-              : null,
-          title: Text(
-            isFiltering
-                ? l10n.hrPermissionAssignmentClearMatchingAction
-                : l10n.hrAccessClearPermissionsAction,
-          ),
-          dense: true,
-          visualDensity: VisualDensity.compact,
-          controlAffinity: ListTileControlAffinity.leading,
-          contentPadding: EdgeInsets.zero,
+        AppResponsiveFieldRow.two(
+          breakpoint: AppBreakpoints.md,
+          gap: AppResponsiveFieldRowGap.standard,
+          left: selectAllTile,
+          right: clearAllTile,
         ),
         if (noneSelected)
           Padding(

@@ -279,7 +279,6 @@ Future<bool?> showRoleMutationDialog({
                           controller: descriptionController,
                           enabled: fieldsEnabled,
                           labelText: l10n.accessAdminRoleDescriptionLabel,
-                          maxLines: 2,
                         ),
                       ),
                     ],
