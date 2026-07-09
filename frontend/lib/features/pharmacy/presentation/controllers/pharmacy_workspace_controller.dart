@@ -1160,7 +1160,8 @@ final class PharmacyWorkspaceController
       polling: _adaptivePolling,
       intervalWhenDisconnected: _syncInterval,
       disconnectProfile: WorkspaceRefreshProfile.pharmacy,
-      syncOnDisconnect: (WorkspaceRefreshPlan plan) => _syncVisibleData(plan: plan),
+      syncOnDisconnect: (WorkspaceRefreshPlan plan) =>
+          _syncVisibleData(plan: plan),
     );
   }
 

@@ -504,7 +504,8 @@ final class TheaterWorkspaceController
       polling: _adaptivePolling,
       intervalWhenDisconnected: _syncInterval,
       disconnectProfile: WorkspaceRefreshProfile.admissions,
-      syncOnDisconnect: (WorkspaceRefreshPlan plan) => _syncVisibleData(plan: plan),
+      syncOnDisconnect: (WorkspaceRefreshPlan plan) =>
+          _syncVisibleData(plan: plan),
     );
   }
 
@@ -540,7 +541,9 @@ final class TheaterWorkspaceController
 
     try {
       if (refreshCases) {
-        final AppFailure? failure = await _refreshCases(showLoading: showLoading);
+        final AppFailure? failure = await _refreshCases(
+          showLoading: showLoading,
+        );
         if (failure != null) {
           return failure;
         }

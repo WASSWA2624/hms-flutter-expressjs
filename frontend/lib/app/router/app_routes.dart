@@ -70,13 +70,20 @@ final class AppRouteData {
 }
 
 abstract final class AppRoutes {
-  static const List<AppRole> patientRegistryRoles = <AppRole>[
+  static const List<AppRole> adminShellRoles = <AppRole>[
+    AppRole.superAdmin,
     AppRole.tenantAdmin,
     AppRole.facilityAdmin,
+  ];
+
+  static const List<AppRole> patientRegistryRoles = <AppRole>[
+    ...adminShellRoles,
     AppRole.doctor,
     AppRole.nurse,
+    AppRole.labTech,
     AppRole.receptionist,
     AppRole.pharmacist,
+    AppRole.billing,
     AppRole.wardManager,
     AppRole.icuManager,
     AppRole.theatreManager,
@@ -84,35 +91,156 @@ abstract final class AppRoutes {
     AppRole.mortuaryManager,
   ];
   static const List<AppRole> patientFlowWorkspaceRoles = <AppRole>[
-    AppRole.tenantAdmin,
-    AppRole.facilityAdmin,
+    ...adminShellRoles,
     AppRole.doctor,
     AppRole.nurse,
     AppRole.receptionist,
-    AppRole.billing,
-    AppRole.operations,
-    AppRole.ambulanceOperator,
     AppRole.wardManager,
     AppRole.icuManager,
     AppRole.theatreManager,
   ];
   static const List<AppRole> inpatientFlowWorkspaceRoles = <AppRole>[
-    AppRole.tenantAdmin,
-    AppRole.facilityAdmin,
+    ...adminShellRoles,
     AppRole.doctor,
     AppRole.nurse,
-    AppRole.billing,
-    AppRole.operations,
     AppRole.wardManager,
     AppRole.icuManager,
   ];
   static const List<AppRole> nursingWorkspaceRoles = <AppRole>[
-    AppRole.tenantAdmin,
-    AppRole.facilityAdmin,
-    AppRole.doctor,
+    ...adminShellRoles,
     AppRole.nurse,
     AppRole.wardManager,
     AppRole.icuManager,
+  ];
+  static const List<AppRole> emergencyWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.doctor,
+    AppRole.nurse,
+    AppRole.ambulanceOperator,
+  ];
+  static const List<AppRole> roomsBedsWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.nurse,
+    AppRole.wardManager,
+    AppRole.icuManager,
+    AppRole.housekeepingManager,
+  ];
+  static const List<AppRole> icuWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.doctor,
+    AppRole.nurse,
+    AppRole.icuManager,
+  ];
+  static const List<AppRole> clinicalWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.doctor,
+    AppRole.theatreManager,
+  ];
+  static const List<AppRole> theaterWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.doctor,
+    AppRole.theatreManager,
+  ];
+  static const List<AppRole> dischargeWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.doctor,
+    AppRole.nurse,
+    AppRole.wardManager,
+  ];
+  static const List<AppRole> labWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.doctor,
+    AppRole.nurse,
+    AppRole.labTech,
+  ];
+  static const List<AppRole> radiologyWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.doctor,
+    AppRole.radiologyTech,
+  ];
+  static const List<AppRole> pharmacyWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.doctor,
+    AppRole.pharmacist,
+  ];
+  static const List<AppRole> billingWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.billing,
+  ];
+  static const List<AppRole> operationsWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.operations,
+    AppRole.housekeepingManager,
+  ];
+  static const List<AppRole> housekeepingWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.houseKeeper,
+    AppRole.housekeepingManager,
+  ];
+  static const List<AppRole> biomedicalWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.biomed,
+    AppRole.biomedManager,
+  ];
+  static const List<AppRole> hrWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.hr,
+    AppRole.unitManager,
+    AppRole.wardManager,
+    AppRole.icuManager,
+    AppRole.theatreManager,
+    AppRole.housekeepingManager,
+    AppRole.biomedManager,
+  ];
+  static const List<AppRole> communicationsWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.doctor,
+    AppRole.nurse,
+    AppRole.labTech,
+    AppRole.radiologyTech,
+    AppRole.pharmacist,
+    AppRole.receptionist,
+    AppRole.billing,
+    AppRole.operations,
+    AppRole.hr,
+    AppRole.biomed,
+    AppRole.houseKeeper,
+    AppRole.ambulanceOperator,
+    AppRole.wardManager,
+    AppRole.icuManager,
+    AppRole.theatreManager,
+    AppRole.housekeepingManager,
+    AppRole.biomedManager,
+    AppRole.mortuaryStaff,
+    AppRole.mortuaryManager,
+  ];
+  static const List<AppRole> reportsWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.doctor,
+    AppRole.nurse,
+    AppRole.pharmacist,
+    AppRole.billing,
+    AppRole.hr,
+    AppRole.biomed,
+    AppRole.houseKeeper,
+    AppRole.ambulanceOperator,
+    AppRole.wardManager,
+    AppRole.icuManager,
+    AppRole.theatreManager,
+    AppRole.housekeepingManager,
+    AppRole.biomedManager,
+    AppRole.mortuaryStaff,
+    AppRole.mortuaryManager,
+    AppRole.unitManager,
+  ];
+  static const List<AppRole> mortuaryWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.mortuaryStaff,
+    AppRole.mortuaryManager,
+  ];
+  static const List<AppRole> tenantSetupWorkspaceRoles = <AppRole>[
+    ...adminShellRoles,
+    AppRole.hr,
   ];
 
   static const AppRouteData home = AppRouteData(
@@ -140,6 +268,7 @@ abstract final class AppRoutes {
       AppPermissions.billingRead,
       AppPermissions.billingWrite,
     ],
+    requiredAnyRoles: billingWorkspaceRoles,
   );
   static const AppRouteData claims = AppRouteData(
     name: 'claims',
@@ -150,6 +279,7 @@ abstract final class AppRoutes {
       AppPermissions.billingWrite,
       AppPermissions.financialApprove,
     ],
+    requiredAnyRoles: billingWorkspaceRoles,
     requiredActiveModules: <String>['billing-insurance'],
   );
   static const AppRouteData subscriptions = AppRouteData(
@@ -162,6 +292,7 @@ abstract final class AppRoutes {
       AppPermissions.tenantAdmin,
       AppPermissions.systemAdmin,
     ],
+    requiredAnyRoles: adminShellRoles,
   );
   static const AppRouteData opd = AppRouteData(
     name: 'opd',
@@ -186,6 +317,7 @@ abstract final class AppRoutes {
       AppPermissions.emergencyWrite,
       AppPermissions.operationsRead,
     ],
+    requiredAnyRoles: emergencyWorkspaceRoles,
     requiresTenantContext: true,
   );
   static const AppRouteData ipd = AppRouteData(
@@ -211,6 +343,7 @@ abstract final class AppRoutes {
       AppPermissions.facilityAdmin,
       AppPermissions.systemAdmin,
     ],
+    requiredAnyRoles: roomsBedsWorkspaceRoles,
     requiredActiveModules: <String>['inpatient-bed-management'],
   );
   static const AppRouteData icu = AppRouteData(
@@ -222,6 +355,7 @@ abstract final class AppRoutes {
       AppPermissions.emergencyRead,
       AppPermissions.operationsRead,
     ],
+    requiredAnyRoles: icuWorkspaceRoles,
     requiredActiveModules: <String>['icu-critical-care'],
   );
   static const AppRouteData nursing = AppRouteData(
@@ -245,6 +379,7 @@ abstract final class AppRoutes {
       AppPermissions.clinicalRead,
       AppPermissions.clinicalWrite,
     ],
+    requiredAnyRoles: clinicalWorkspaceRoles,
     requiredActiveModules: <String>['encounters-vitals'],
   );
   static const AppRouteData physiotherapy = AppRouteData(
@@ -257,6 +392,7 @@ abstract final class AppRoutes {
       AppPermissions.patientRead,
       AppPermissions.billingRead,
     ],
+    requiredAnyRoles: adminShellRoles,
     requiredActiveModules: <String>['physiotherapy'],
   );
   static const AppRouteData lab = AppRouteData(
@@ -268,6 +404,7 @@ abstract final class AppRoutes {
       AppPermissions.clinicalRead,
       AppPermissions.clinicalWrite,
     ],
+    requiredAnyRoles: labWorkspaceRoles,
     requiredActiveModules: <String>['lab-workflows'],
   );
   static const AppRouteData radiology = AppRouteData(
@@ -281,6 +418,7 @@ abstract final class AppRoutes {
       AppPermissions.clinicalWrite,
       AppPermissions.billingRead,
     ],
+    requiredAnyRoles: radiologyWorkspaceRoles,
     requiredActiveModules: <String>['radiology-workflows'],
   );
   static const AppRouteData pharmacy = AppRouteData(
@@ -291,6 +429,7 @@ abstract final class AppRoutes {
       AppPermissions.pharmacyRead,
       AppPermissions.operationsRead,
     ],
+    requiredAnyRoles: pharmacyWorkspaceRoles,
     requiredActiveModules: <String>['pharmacy-dispensing'],
   );
   static const AppRouteData operations = AppRouteData(
@@ -301,6 +440,7 @@ abstract final class AppRoutes {
       AppPermissions.operationsRead,
       AppPermissions.operationsWrite,
     ],
+    requiredAnyRoles: operationsWorkspaceRoles,
     requiredActiveModules: <String>['facilities-maintenance'],
     requiresFacilityContext: true,
   );
@@ -312,6 +452,7 @@ abstract final class AppRoutes {
       AppPermissions.operationsRead,
       AppPermissions.operationsWrite,
     ],
+    requiredAnyRoles: housekeepingWorkspaceRoles,
     requiredActiveModules: <String>['facilities-maintenance'],
     requiresFacilityContext: true,
   );
@@ -329,6 +470,7 @@ abstract final class AppRoutes {
       AppPermissions.rosterApprove,
       AppPermissions.rosterPublish,
     ],
+    requiredAnyRoles: hrWorkspaceRoles,
     requiredActiveModules: <String>['hr-rosters'],
     requiresTenantContext: true,
   );
@@ -342,6 +484,7 @@ abstract final class AppRoutes {
       AppPermissions.operationsRead,
       AppPermissions.operationsWrite,
     ],
+    requiredAnyRoles: biomedicalWorkspaceRoles,
     requiredActiveModules: <String>['biomedical-engineering-suite'],
   );
   static const AppRouteData communications = AppRouteData(
@@ -352,6 +495,7 @@ abstract final class AppRoutes {
       AppPermissions.communicationsRead,
       AppPermissions.communicationsWrite,
     ],
+    requiredAnyRoles: communicationsWorkspaceRoles,
     requiredActiveModules: <String>['notifications-communications'],
   );
   static const AppRouteData integrations = AppRouteData(
@@ -365,6 +509,7 @@ abstract final class AppRoutes {
       AppPermissions.facilityAdmin,
       AppPermissions.systemAdmin,
     ],
+    requiredAnyRoles: adminShellRoles,
     requiredActiveModules: <String>['integrations-core'],
   );
   static const AppRouteData discharge = AppRouteData(
@@ -378,6 +523,7 @@ abstract final class AppRoutes {
       AppPermissions.billingRead,
       AppPermissions.operationsRead,
     ],
+    requiredAnyRoles: dischargeWorkspaceRoles,
     requiredActiveModules: <String>['inpatient-bed-management'],
   );
   static const AppRouteData theater = AppRouteData(
@@ -390,6 +536,7 @@ abstract final class AppRoutes {
       AppPermissions.billingRead,
       AppPermissions.operationsRead,
     ],
+    requiredAnyRoles: theaterWorkspaceRoles,
     requiredActiveModules: <String>['theatre-anesthesia'],
   );
   static const AppRouteData reports = AppRouteData(
@@ -405,6 +552,7 @@ abstract final class AppRoutes {
       AppPermissions.facilityAdmin,
       AppPermissions.systemAdmin,
     ],
+    requiredAnyRoles: reportsWorkspaceRoles,
     requiredActiveModules: <String>['reporting-analytics'],
   );
   static const AppRouteData mortuary = AppRouteData(
@@ -418,6 +566,7 @@ abstract final class AppRoutes {
       AppPermissions.mortuaryRelease,
       AppPermissions.mortuaryAudit,
     ],
+    requiredAnyRoles: mortuaryWorkspaceRoles,
     requiresFacilityContext: true,
   );
   static const AppRouteData tenantFacilitySetup = AppRouteData(
@@ -431,12 +580,7 @@ abstract final class AppRoutes {
       AppPermissions.hrRead,
       AppPermissions.hrWrite,
     ],
-    requiredAnyRoles: <AppRole>[
-      AppRole.superAdmin,
-      AppRole.tenantAdmin,
-      AppRole.facilityAdmin,
-      AppRole.hr,
-    ],
+    requiredAnyRoles: tenantSetupWorkspaceRoles,
     requiresFacilityContext: true,
   );
   static const AppRouteData accessAdmin = AppRouteData(

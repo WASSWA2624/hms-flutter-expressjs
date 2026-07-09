@@ -21,7 +21,8 @@ abstract final class OpdRealtimeDeltaApplier {
 
     final Map<String, Object?>? entity = delta.entity;
     if (entity != null) {
-      if (delta.resourceType == 'visit_queue' || entity.containsKey('queued_at')) {
+      if (delta.resourceType == 'visit_queue' ||
+          entity.containsKey('queued_at')) {
         return _applyQueueEntity(state, entity);
       }
       if (entity.containsKey('scheduled_start')) {
@@ -56,7 +57,8 @@ abstract final class OpdRealtimeDeltaApplier {
     }
 
     final bool clearsSelection =
-        state.selectedFlow != null && _flowMatchesId(state.selectedFlow!.summary, id);
+        state.selectedFlow != null &&
+        _flowMatchesId(state.selectedFlow!.summary, id);
     return state.copyWith(
       flows: _removeFlowById(state.flows, id),
       triageQueue: _removeFlowById(state.triageQueue, id),
@@ -147,9 +149,7 @@ abstract final class OpdRealtimeDeltaApplier {
       flows: _upsertFlow(state.flows, flow),
       triageQueue: _upsertOrRemoveTriageFlow(state.triageQueue, flow),
       selectedFlow: matchesSelected
-          ? (flow.isTerminal
-                ? null
-                : _detailWithSummary(selected, flow))
+          ? (flow.isTerminal ? null : _detailWithSummary(selected, flow))
           : state.selectedFlow,
       clearSelectedFlow: matchesSelected && flow.isTerminal,
     );

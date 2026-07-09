@@ -136,7 +136,8 @@ final class ClaimsWorkspaceController
       return null;
     } finally {
       _isSyncing = false;
-      if (_pendingRefresh.refreshPending && !(_currentState?.isSaving ?? false)) {
+      if (_pendingRefresh.refreshPending &&
+          !(_currentState?.isSaving ?? false)) {
         final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
         if (!pendingPlan.isEmpty) {
           unawaited(_syncVisibleData(plan: pendingPlan));

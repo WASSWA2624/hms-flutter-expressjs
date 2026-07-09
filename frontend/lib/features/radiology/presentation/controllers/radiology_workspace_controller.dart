@@ -943,7 +943,8 @@ final class RadiologyWorkspaceController
       polling: _adaptivePolling,
       intervalWhenDisconnected: _syncInterval,
       disconnectProfile: WorkspaceRefreshProfile.radiology,
-      syncOnDisconnect: (WorkspaceRefreshPlan plan) => _syncVisibleData(plan: plan),
+      syncOnDisconnect: (WorkspaceRefreshPlan plan) =>
+          _syncVisibleData(plan: plan),
     );
   }
 

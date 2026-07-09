@@ -65,7 +65,9 @@ class _BillingLedgerDialogState extends ConsumerState<_BillingLedgerDialog> {
       AsyncValue<RealtimeMessage>? previous,
       AsyncValue<RealtimeMessage> next,
     ) {
-      if (next case AsyncData<RealtimeMessage>(value: final RealtimeMessage m)) {
+      if (next case AsyncData<RealtimeMessage>(
+        value: final RealtimeMessage m,
+      )) {
         if (RealtimeEventGroups.billing.contains(m.event) && mounted) {
           setState(() {
             _ledgerFuture = _loadLedger();

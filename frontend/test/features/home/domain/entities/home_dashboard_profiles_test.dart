@@ -91,7 +91,7 @@ void main() {
       final profile = homeProfileForRole(AppRole.hr);
 
       expect(profile.quickActionIds, isEmpty);
-      expect(profile.shortcutIds, isEmpty);
+      expect(profile.shortcutIds, containsAll(<String>['hr', 'reports']));
       expect(profile.emptyActionIds, isEmpty);
       expect(profile.maxStatusCards, 6);
       expect(
@@ -99,7 +99,7 @@ void main() {
         contains(HomeToolbarActionId.openHrWorkspace),
       );
       expect(profile.suppressHomeQuickActions, isTrue);
-      expect(profile.suppressHomeShortcuts, isTrue);
+      expect(profile.suppressHomeShortcuts, isFalse);
       expect(profile.metricActionTargets, contains('active_staff'));
       expect(
         profile.metricActionTargets['pending_leaves']?.hrQueue,
@@ -120,12 +120,15 @@ void main() {
       final profile = homeProfileForRole(AppRole.doctor);
 
       expect(profile.quickActionIds, isNotEmpty);
-      expect(profile.shortcutIds, isEmpty);
+      expect(profile.shortcutIds, contains('clinical'));
     });
 
     test('manager overlay roles do not override primary dashboard role', () {
       expect(
-        homeProfileForRoles(<AppRole>[AppRole.doctor, AppRole.theatreManager]).role,
+        homeProfileForRoles(<AppRole>[
+          AppRole.doctor,
+          AppRole.theatreManager,
+        ]).role,
         AppRole.doctor,
       );
       expect(
@@ -137,7 +140,10 @@ void main() {
         AppRole.nurse,
       );
       expect(
-        homeProfileForRoles(<AppRole>[AppRole.biomed, AppRole.biomedManager]).role,
+        homeProfileForRoles(<AppRole>[
+          AppRole.biomed,
+          AppRole.biomedManager,
+        ]).role,
         AppRole.biomed,
       );
       expect(
@@ -148,7 +154,10 @@ void main() {
         AppRole.houseKeeper,
       );
       expect(
-        homeProfileForRoles(<AppRole>[AppRole.tenantAdmin, AppRole.unitManager]).role,
+        homeProfileForRoles(<AppRole>[
+          AppRole.tenantAdmin,
+          AppRole.unitManager,
+        ]).role,
         AppRole.tenantAdmin,
       );
     });

@@ -257,10 +257,8 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
     // Responsive tab body height: fills available space on large screens while
     // staying compact enough to avoid overflow on mobile/tablet. The enclosing
     // dialog is scrollable, so this height is a target rather than a hard limit.
-    final double tabBodyHeight = (MediaQuery.sizeOf(context).height * 0.6).clamp(
-      260.0,
-      460.0,
-    );
+    final double tabBodyHeight = (MediaQuery.sizeOf(context).height * 0.6)
+        .clamp(260.0, 460.0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -27,9 +27,11 @@ abstract final class RealtimeDeltaDecoder {
     final String? encounterId =
         _string(payload['encounter_id']) ??
         _string(payload['encounter_public_id']) ??
-        _string(listEntry?['encounter'] is Map
-            ? (_map(listEntry!['encounter'])?['id'])
-            : null);
+        _string(
+          listEntry?['encounter'] is Map
+              ? (_map(listEntry!['encounter'])?['id'])
+              : null,
+        );
 
     if (entity != null || listEntry != null) {
       return RealtimeDelta(
@@ -109,21 +111,20 @@ abstract final class RealtimeDeltaDecoder {
     );
     final Object? nested = outer['payload'];
     if (nested is Map<String, Object?>) {
-      return <String, Object?>{
-        ...outer,
-        ...nested,
-      };
+      return <String, Object?>{...outer, ...nested};
     }
     if (nested is Map<Object?, Object?>) {
       return <String, Object?>{
         ...outer,
         ...Map<String, Object?>.fromEntries(
-          nested.entries.where((entry) => entry.key != null).map(
-            (entry) => MapEntry<String, Object?>(
-              entry.key.toString(),
-              entry.value,
-            ),
-          ),
+          nested.entries
+              .where((entry) => entry.key != null)
+              .map(
+                (entry) => MapEntry<String, Object?>(
+                  entry.key.toString(),
+                  entry.value,
+                ),
+              ),
         ),
       };
     }
@@ -235,10 +236,8 @@ abstract final class RealtimeDeltaDecoder {
         value.entries
             .where((MapEntry<Object?, Object?> entry) => entry.key != null)
             .map(
-              (MapEntry<Object?, Object?> entry) => MapEntry<String, Object?>(
-                entry.key.toString(),
-                entry.value,
-              ),
+              (MapEntry<Object?, Object?> entry) =>
+                  MapEntry<String, Object?>(entry.key.toString(), entry.value),
             ),
       );
     }

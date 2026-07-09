@@ -67,8 +67,8 @@ class AuthShellLayout extends StatelessWidget {
                             ),
                             SizedBox(
                               height: switch (breakpoint) {
-                                AppBreakpoint.xs || AppBreakpoint.sm =>
-                                  theme.spacing.lg,
+                                AppBreakpoint.xs ||
+                                AppBreakpoint.sm => theme.spacing.lg,
                                 _ => theme.spacing.xl,
                               },
                             ),

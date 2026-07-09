@@ -74,12 +74,13 @@ final class OpdWorkspaceController
     }
 
     final OpdWorkspaceState? current = _currentState;
-    final WorkspaceSyncOutcome outcome = resolveWorkspaceRealtime<OpdWorkspaceState>(
-      message: message,
-      profile: WorkspaceRefreshProfile.clinicalFlow,
-      currentState: current,
-      applyDelta: OpdRealtimeDeltaApplier.apply,
-    );
+    final WorkspaceSyncOutcome outcome =
+        resolveWorkspaceRealtime<OpdWorkspaceState>(
+          message: message,
+          profile: WorkspaceRefreshProfile.clinicalFlow,
+          currentState: current,
+          applyDelta: OpdRealtimeDeltaApplier.apply,
+        );
 
     if (outcome is WorkspaceSyncIgnored) {
       return;
@@ -571,18 +572,14 @@ final class OpdWorkspaceController
     OpdFlowSummary flow,
     Map<String, Object?> payload,
   ) {
-    return _mutateFlow(
-      () => _repository.payConsultation(flow.apiId, payload),
-    );
+    return _mutateFlow(() => _repository.payConsultation(flow.apiId, payload));
   }
 
   Future<AppFailure?> recordVitals(
     OpdFlowSummary flow,
     Map<String, Object?> payload,
   ) {
-    return _mutateFlow(
-      () => _repository.recordVitals(flow.apiId, payload),
-    );
+    return _mutateFlow(() => _repository.recordVitals(flow.apiId, payload));
   }
 
   Future<AppFailure?> updateVitals(
@@ -614,9 +611,7 @@ final class OpdWorkspaceController
     OpdFlowSummary flow,
     Map<String, Object?> payload,
   ) {
-    return _mutateFlow(
-      () => _repository.doctorReview(flow.apiId, payload),
-    );
+    return _mutateFlow(() => _repository.doctorReview(flow.apiId, payload));
   }
 
   Future<AppFailure?> updateLabOrder({
@@ -735,13 +730,14 @@ final class OpdWorkspaceController
     const OpdFlowQuery flowQuery = OpdFlowQuery();
     const OpdTriageQueueQuery triageQueueQuery = OpdTriageQueueQuery();
 
-    final List<Object?> bootstrapResults = await Future.wait<Object?>(<Future<Object?>>[
-      _repository.listAppointments(appointmentQuery),
-      _repository.listVisitQueues(queueQuery),
-      _repository.listOpdFlows(flowQuery),
-      _repository.getOpdSummaryCounts(),
-      _repository.listTriageQueue(triageQueueQuery),
-    ]);
+    final List<Object?> bootstrapResults =
+        await Future.wait<Object?>(<Future<Object?>>[
+          _repository.listAppointments(appointmentQuery),
+          _repository.listVisitQueues(queueQuery),
+          _repository.listOpdFlows(flowQuery),
+          _repository.getOpdSummaryCounts(),
+          _repository.listTriageQueue(triageQueueQuery),
+        ]);
 
     final Result<AppPage<OpdAppointment>> appointmentsResult =
         bootstrapResults[0]! as Result<AppPage<OpdAppointment>>;
@@ -804,10 +800,9 @@ final class OpdWorkspaceController
       return Result<OpdWorkspaceState>.failure(firstFailure);
     }
 
-    final List<Object?> referenceResults = await Future.wait<Object?>(<Future<Object?>>[
-      _clinicalAlertThresholds(),
-      _providerSchedules(),
-    ]);
+    final List<Object?> referenceResults = await Future.wait<Object?>(
+      <Future<Object?>>[_clinicalAlertThresholds(), _providerSchedules()],
+    );
     final List<OpdClinicalAlertThreshold> thresholds =
         referenceResults[0]! as List<OpdClinicalAlertThreshold>;
     final List<OpdProviderSchedule> schedules =
@@ -836,8 +831,7 @@ final class OpdWorkspaceController
   void _startAdaptivePolling() {
     _adaptivePolling.start(
       intervalWhenDisconnected: _syncInterval,
-      isRealtimeConnected: () =>
-          ref.read(realtimeServiceProvider).isConnected,
+      isRealtimeConnected: () => ref.read(realtimeServiceProvider).isConnected,
       onTick: () => unawaited(
         _syncVisibleData(
           plan: WorkspaceDisconnectPollPlan.forProfile(
@@ -874,7 +868,8 @@ final class OpdWorkspaceController
           isRefreshingQueue: plan.queue,
           isRefreshingFlows: plan.flows,
           isRefreshingTriageQueue: plan.triage,
-          isRefreshingDetail: plan.selectedDetail && current.selectedFlow != null,
+          isRefreshingDetail:
+              plan.selectedDetail && current.selectedFlow != null,
           clearLastFailure: true,
         ),
       );

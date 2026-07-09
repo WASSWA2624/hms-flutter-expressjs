@@ -307,7 +307,8 @@ final class MortuaryWorkspaceController
       polling: _adaptivePolling,
       intervalWhenDisconnected: _syncInterval,
       disconnectProfile: WorkspaceRefreshProfile.admissions,
-      syncOnDisconnect: (WorkspaceRefreshPlan plan) => _syncVisibleData(plan: plan),
+      syncOnDisconnect: (WorkspaceRefreshPlan plan) =>
+          _syncVisibleData(plan: plan),
     );
   }
 

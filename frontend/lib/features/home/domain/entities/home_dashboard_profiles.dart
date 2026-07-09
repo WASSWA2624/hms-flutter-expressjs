@@ -51,28 +51,20 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     emptyMessage: 'Choose a tenant to view operational dashboards.',
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'tenants_active', label: 'Tenants'),
-      HomeStatusCardTemplate(
-        id: 'facilities_active',
-        label: 'Facilities',
-      ),
-      HomeStatusCardTemplate(
-        id: 'subscriptions_at_risk',
-        label: 'At risk',
-      ),
+      HomeStatusCardTemplate(id: 'facilities_active', label: 'Facilities'),
+      HomeStatusCardTemplate(id: 'subscriptions_at_risk', label: 'At risk'),
       HomeStatusCardTemplate(
         id: 'module_entitlement_issues',
         label: 'Entitlements',
       ),
-      HomeStatusCardTemplate(
-        id: 'security_reviews_due',
-        label: 'Security',
-      ),
-      HomeStatusCardTemplate(
-        id: 'integration_errors',
-        label: 'Integrations',
-      ),
+      HomeStatusCardTemplate(id: 'security_reviews_due', label: 'Security'),
+      HomeStatusCardTemplate(id: 'integration_errors', label: 'Integrations'),
     ],
-    quickActionIds: <String>['select_context', 'create_tenant', 'create_facility'],
+    quickActionIds: <String>[
+      'select_context',
+      'create_tenant',
+      'create_facility',
+    ],
     shortcutIds: <String>['tenant_facility_setup', 'subscriptions', 'reports'],
     emptyActionIds: <String>['select_context', 'manage_subscription'],
   ),
@@ -83,10 +75,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     homeTitle: 'Organization',
     emptyMessage: 'Start by setting up patients, staff, services, and billing.',
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(
-        id: 'facilities_active',
-        label: 'Facilities',
-      ),
+      HomeStatusCardTemplate(id: 'facilities_active', label: 'Facilities'),
       HomeStatusCardTemplate(id: 'active_users', label: 'Users'),
       HomeStatusCardTemplate(
         id: 'module_adoption',
@@ -102,16 +91,14 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         label: 'Revenue',
         format: 'currency',
       ),
-      HomeStatusCardTemplate(
-        id: 'staffing_exceptions',
-        label: 'Staffing',
-      ),
-      HomeStatusCardTemplate(
-        id: 'subscription_health',
-        label: 'Subscription',
-      ),
+      HomeStatusCardTemplate(id: 'staffing_exceptions', label: 'Staffing'),
+      HomeStatusCardTemplate(id: 'subscription_health', label: 'Subscription'),
     ],
-    quickActionIds: <String>['create_facility', 'manage_users_roles', 'manage_subscription'],
+    quickActionIds: <String>[
+      'create_facility',
+      'manage_users_roles',
+      'manage_subscription',
+    ],
     shortcutIds: <String>['tenant_facility_setup', 'settings', 'subscriptions'],
     emptyActionIds: <String>[
       'create_facility',
@@ -127,33 +114,22 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     emptyMessage:
         'Facility setup is ready for daily work once patients, services, beds, and staff are configured.',
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(
-        id: 'patient_flow_today',
-        label: 'Flow today',
-      ),
-      HomeStatusCardTemplate(
-        id: 'appointments_today',
-        label: 'Appointments',
-      ),
-      HomeStatusCardTemplate(
-        id: 'active_admissions',
-        label: 'Admissions',
-      ),
+      HomeStatusCardTemplate(id: 'patient_flow_today', label: 'Flow today'),
+      HomeStatusCardTemplate(id: 'appointments_today', label: 'Appointments'),
+      HomeStatusCardTemplate(id: 'active_admissions', label: 'Admissions'),
       HomeStatusCardTemplate(id: 'bed_occupancy', label: 'Occupied'),
-      HomeStatusCardTemplate(
-        id: 'billing_exceptions',
-        label: 'Billing',
-      ),
-      HomeStatusCardTemplate(
-        id: 'operational_blockers',
-        label: 'Blockers',
-      ),
+      HomeStatusCardTemplate(id: 'billing_exceptions', label: 'Billing'),
+      HomeStatusCardTemplate(id: 'operational_blockers', label: 'Blockers'),
       HomeStatusCardTemplate(
         id: 'opd_notifications_attention',
         label: 'OPD alerts',
       ),
     ],
-    quickActionIds: <String>['register_patient', 'book_appointment', 'check_in_patient'],
+    quickActionIds: <String>[
+      'register_patient',
+      'book_appointment',
+      'check_in_patient',
+    ],
     shortcutIds: <String>['opd', 'patients'],
     emptyActionIds: <String>['register_patient', 'book_appointment'],
   ),
@@ -166,23 +142,17 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     maxStatusCards: 3,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'assigned', label: 'Assigned'),
-      HomeStatusCardTemplate(
-        id: 'in_progress',
-        label: 'In progress',
-      ),
+      HomeStatusCardTemplate(id: 'in_progress', label: 'In progress'),
       HomeStatusCardTemplate(id: 'completed', label: 'Completed'),
       HomeStatusCardTemplate(id: 'admissions', label: 'Admissions'),
-      HomeStatusCardTemplate(
-        id: 'critical_labs',
-        label: 'Critical labs',
-      ),
+      HomeStatusCardTemplate(id: 'critical_labs', label: 'Critical labs'),
       HomeStatusCardTemplate(
         id: 'opd_notifications_attention',
         label: 'OPD alerts',
       ),
     ],
     quickActionIds: <String>['start_consultation', 'continue_consultation'],
-    shortcutIds: <String>[],
+    shortcutIds: <String>['clinical', 'emergency', 'lab'],
     emptyActionIds: <String>['start_consultation', 'order_lab'],
   ),
   AppRole.nurse: HomeDashboardProfile(
@@ -194,26 +164,17 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     maxStatusCards: 3,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'inpatient_flow', label: 'Inpatients'),
-      HomeStatusCardTemplate(
-        id: 'med_admin_today',
-        label: 'Med admin',
-      ),
+      HomeStatusCardTemplate(id: 'med_admin_today', label: 'Med admin'),
       HomeStatusCardTemplate(id: 'transfer_queue', label: 'Transfers'),
-      HomeStatusCardTemplate(
-        id: 'critical_labs',
-        label: 'Critical labs',
-      ),
-      HomeStatusCardTemplate(
-        id: 'discharge_pressure',
-        label: 'Discharge',
-      ),
+      HomeStatusCardTemplate(id: 'critical_labs', label: 'Critical labs'),
+      HomeStatusCardTemplate(id: 'discharge_pressure', label: 'Discharge'),
       HomeStatusCardTemplate(
         id: 'opd_notifications_attention',
         label: 'OPD alerts',
       ),
     ],
     quickActionIds: <String>['record_vitals', 'mark_med_administered'],
-    shortcutIds: <String>[],
+    shortcutIds: <String>['nursing', 'ipd', 'lab'],
     emptyActionIds: <String>['record_vitals', 'create_handover'],
   ),
   AppRole.labTech: HomeDashboardProfile(
@@ -231,7 +192,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       HomeStatusCardTemplate(id: 'completed_orders', label: 'Completed'),
     ],
     quickActionIds: <String>['receive_sample', 'enter_lab_result'],
-    shortcutIds: <String>[],
+    shortcutIds: <String>['lab'],
     emptyActionIds: <String>['receive_sample', 'enter_lab_result'],
   ),
   AppRole.radiologyTech: HomeDashboardProfile(
@@ -268,23 +229,14 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     emptyMessage: 'No medication orders are waiting.',
     maxStatusCards: 3,
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(
-        id: 'orders_today',
-        label: 'Orders',
-      ),
-      HomeStatusCardTemplate(
-        id: 'pending_dispense',
-        label: 'Pending',
-      ),
+      HomeStatusCardTemplate(id: 'orders_today', label: 'Orders'),
+      HomeStatusCardTemplate(id: 'pending_dispense', label: 'Pending'),
       HomeStatusCardTemplate(id: 'dispensed_today', label: 'Dispensed'),
       HomeStatusCardTemplate(id: 'low_stock', label: 'Low stock'),
-      HomeStatusCardTemplate(
-        id: 'critical_stock',
-        label: 'Critical stock',
-      ),
+      HomeStatusCardTemplate(id: 'critical_stock', label: 'Critical stock'),
     ],
     quickActionIds: <String>['dispense_medication', 'record_pharmacy_sale'],
-    shortcutIds: <String>[],
+    shortcutIds: <String>['pharmacy'],
     emptyActionIds: <String>['dispense_medication'],
   ),
   AppRole.receptionist: HomeDashboardProfile(
@@ -295,27 +247,18 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     emptyMessage: 'No front-desk queue items right now.',
     maxStatusCards: 3,
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(
-        id: 'registrations_today',
-        label: 'Registrations',
-      ),
+      HomeStatusCardTemplate(id: 'registrations_today', label: 'Registrations'),
       HomeStatusCardTemplate(id: 'desk_queue', label: 'Desk queue'),
       HomeStatusCardTemplate(id: 'no_show_pressure', label: 'No-shows'),
-      HomeStatusCardTemplate(
-        id: 'front_billing_queue',
-        label: 'Billing queue',
-      ),
-      HomeStatusCardTemplate(
-        id: 'appointments_today',
-        label: 'Appointments',
-      ),
+      HomeStatusCardTemplate(id: 'front_billing_queue', label: 'Billing queue'),
+      HomeStatusCardTemplate(id: 'appointments_today', label: 'Appointments'),
       HomeStatusCardTemplate(
         id: 'opd_notifications_attention',
         label: 'OPD alerts',
       ),
     ],
     quickActionIds: <String>['register_patient', 'book_appointment'],
-    shortcutIds: <String>[],
+    shortcutIds: <String>['opd', 'patients'],
     emptyActionIds: <String>['register_patient', 'book_appointment'],
   ),
   AppRole.billing: HomeDashboardProfile(
@@ -326,10 +269,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     emptyMessage: 'No billing items need action right now.',
     maxStatusCards: 3,
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(
-        id: 'invoices_today',
-        label: 'Invoices',
-      ),
+      HomeStatusCardTemplate(id: 'invoices_today', label: 'Invoices'),
       HomeStatusCardTemplate(id: 'overdue_invoices', label: 'Overdue'),
       HomeStatusCardTemplate(id: 'open_balances', label: 'Balances'),
       HomeStatusCardTemplate(
@@ -344,7 +284,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
     ],
     quickActionIds: <String>['create_invoice', 'receive_payment'],
-    shortcutIds: <String>[],
+    shortcutIds: <String>['billing', 'claims'],
     emptyActionIds: <String>['create_invoice', 'receive_payment'],
   ),
   AppRole.operations: HomeDashboardProfile(
@@ -356,26 +296,21 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'occupied_beds', label: 'Occupied'),
       HomeStatusCardTemplate(id: 'total_beds', label: 'Total beds'),
-      HomeStatusCardTemplate(
-        id: 'maintenance_open',
-        label: 'Maintenance',
-      ),
-      HomeStatusCardTemplate(
-        id: 'low_stock_pressure',
-        label: 'Low stock',
-      ),
-      HomeStatusCardTemplate(
-        id: 'housekeeping_backlog',
-        label: 'Housekeeping',
-      ),
+      HomeStatusCardTemplate(id: 'maintenance_open', label: 'Maintenance'),
+      HomeStatusCardTemplate(id: 'low_stock_pressure', label: 'Low stock'),
+      HomeStatusCardTemplate(id: 'housekeeping_backlog', label: 'Housekeeping'),
       HomeStatusCardTemplate(
         id: 'facility_readiness',
         label: 'Readiness',
         format: 'percent',
       ),
     ],
-    quickActionIds: <String>['create_maintenance_request', 'assign_maintenance', 'update_bed_readiness'],
-    shortcutIds: <String>['operations', 'housekeeping'],
+    quickActionIds: <String>[
+      'create_maintenance_request',
+      'assign_maintenance',
+      'update_bed_readiness',
+    ],
+    shortcutIds: <String>['operations'],
     emptyActionIds: <String>['create_maintenance_request'],
   ),
   AppRole.hr: HomeDashboardProfile(
@@ -385,31 +320,18 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     homeTitle: 'Workforce',
     emptyMessage: 'No HR tasks are pending.',
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(
-        id: 'active_staff',
-        label: 'Staff',
-      ),
+      HomeStatusCardTemplate(id: 'active_staff', label: 'Staff'),
       HomeStatusCardTemplate(id: 'shifts_today', label: 'Shifts'),
-      HomeStatusCardTemplate(
-        id: 'pending_leaves',
-        label: 'Leave',
-      ),
+      HomeStatusCardTemplate(id: 'pending_leaves', label: 'Leave'),
       HomeStatusCardTemplate(id: 'on_leave_today', label: 'On leave'),
-      HomeStatusCardTemplate(
-        id: 'unassigned_shifts',
-        label: 'Unassigned',
-      ),
+      HomeStatusCardTemplate(id: 'unassigned_shifts', label: 'Unassigned'),
       HomeStatusCardTemplate(id: 'attended_today', label: 'Attended'),
-      HomeStatusCardTemplate(
-        id: 'missed_shifts_today',
-        label: 'Missed',
-      ),
+      HomeStatusCardTemplate(id: 'missed_shifts_today', label: 'Missed'),
       HomeStatusCardTemplate(id: 'payroll_pending', label: 'Payroll'),
     ],
     quickActionIds: <String>[],
-    shortcutIds: <String>[],
+    shortcutIds: <String>['hr', 'tenant_facility_setup', 'reports'],
     suppressHomeQuickActions: true,
-    suppressHomeShortcuts: true,
     toolbarActionIds: <HomeToolbarActionId>[
       HomeToolbarActionId.openHrWorkspace,
     ],
@@ -455,18 +377,9 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'open_work_orders', label: 'Work orders'),
       HomeStatusCardTemplate(id: 'open_incidents', label: 'Incidents'),
-      HomeStatusCardTemplate(
-        id: 'active_downtime',
-        label: 'Downtime',
-      ),
-      HomeStatusCardTemplate(
-        id: 'critical_service_risk',
-        label: 'Risk',
-      ),
-      HomeStatusCardTemplate(
-        id: 'high_priority',
-        label: 'Priority',
-      ),
+      HomeStatusCardTemplate(id: 'active_downtime', label: 'Downtime'),
+      HomeStatusCardTemplate(id: 'critical_service_risk', label: 'Risk'),
+      HomeStatusCardTemplate(id: 'high_priority', label: 'Priority'),
       HomeStatusCardTemplate(
         id: 'assets_operational',
         label: 'Operational',
@@ -474,7 +387,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
     ],
     quickActionIds: <String>['acknowledge_work_order', 'update_work_order'],
-    shortcutIds: <String>[],
+    shortcutIds: <String>['biomedical', 'reports'],
     emptyActionIds: <String>['report_equipment_issue'],
   ),
   AppRole.houseKeeper: HomeDashboardProfile(
@@ -486,19 +399,13 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     maxStatusCards: 3,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'pending_tasks', label: 'Pending'),
-      HomeStatusCardTemplate(
-        id: 'in_progress_tasks',
-        label: 'In progress',
-      ),
+      HomeStatusCardTemplate(id: 'in_progress_tasks', label: 'In progress'),
       HomeStatusCardTemplate(id: 'overdue_tasks', label: 'Overdue'),
-      HomeStatusCardTemplate(
-        id: 'completed_today',
-        label: 'Done today',
-      ),
+      HomeStatusCardTemplate(id: 'completed_today', label: 'Done today'),
       HomeStatusCardTemplate(id: 'throughput', label: 'Throughput'),
     ],
     quickActionIds: <String>['start_cleaning_task', 'complete_cleaning_task'],
-    shortcutIds: <String>[],
+    shortcutIds: <String>['housekeeping', 'reports'],
     emptyActionIds: <String>['start_cleaning_task'],
   ),
   AppRole.ambulanceOperator: HomeDashboardProfile(
@@ -511,15 +418,12 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'dispatches_today', label: 'Dispatches'),
       HomeStatusCardTemplate(id: 'active_trips', label: 'Active trips'),
-      HomeStatusCardTemplate(
-        id: 'critical_cases',
-        label: 'Emergencies',
-      ),
+      HomeStatusCardTemplate(id: 'critical_cases', label: 'Emergencies'),
       HomeStatusCardTemplate(id: 'fleet_available', label: 'Available'),
       HomeStatusCardTemplate(id: 'fleet_out', label: 'Out of service'),
     ],
     quickActionIds: <String>['dispatch_ambulance', 'update_trip_status'],
-    shortcutIds: <String>[],
+    shortcutIds: <String>['emergency', 'reports'],
     emptyActionIds: <String>['dispatch_ambulance'],
   ),
   AppRole.unitManager: HomeDashboardProfile(
@@ -842,10 +746,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
       HomeStatusCardTemplate(id: 'my_open_bills', label: 'Bills'),
       HomeStatusCardTemplate(id: 'my_prescriptions', label: 'Rx'),
-      HomeStatusCardTemplate(
-        id: 'my_released_results',
-        label: 'Results',
-      ),
+      HomeStatusCardTemplate(id: 'my_released_results', label: 'Results'),
       HomeStatusCardTemplate(id: 'my_messages', label: 'Messages'),
       HomeStatusCardTemplate(
         id: 'my_profile_status',
@@ -884,7 +785,9 @@ HomeDashboardProfile homeProfileForRoles(Iterable<AppRole> roles) {
   }
 
   final List<AppRole> operationalRoles = normalizedRoles
-      .where((AppRole role) => !_homeDashboardManagerOverlayRoles.contains(role))
+      .where(
+        (AppRole role) => !_homeDashboardManagerOverlayRoles.contains(role),
+      )
       .toList(growable: false);
   final List<AppRole> candidates = operationalRoles.isNotEmpty
       ? operationalRoles

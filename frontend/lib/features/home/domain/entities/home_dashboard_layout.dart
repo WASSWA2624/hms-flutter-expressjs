@@ -20,15 +20,14 @@ HomeDashboardLayoutTier homeLayoutTierForRole(AppRole role) {
   return switch (role) {
     AppRole.superAdmin => HomeDashboardLayoutTier.platform,
     AppRole.tenantAdmin => HomeDashboardLayoutTier.organization,
-    AppRole.facilityAdmin || AppRole.operations =>
-      HomeDashboardLayoutTier.facilityCommand,
+    AppRole.facilityAdmin ||
+    AppRole.operations => HomeDashboardLayoutTier.facilityCommand,
     AppRole.doctor ||
     AppRole.nurse ||
     AppRole.wardManager ||
     AppRole.icuManager ||
     AppRole.unitManager ||
-    AppRole.theatreManager =>
-      HomeDashboardLayoutTier.clinicalQueue,
+    AppRole.theatreManager => HomeDashboardLayoutTier.clinicalQueue,
     AppRole.labTech ||
     AppRole.radiologyTech ||
     AppRole.pharmacist ||
@@ -36,13 +35,11 @@ HomeDashboardLayoutTier homeLayoutTierForRole(AppRole role) {
     AppRole.billing ||
     AppRole.biomed ||
     AppRole.biomedManager ||
-    AppRole.ambulanceOperator =>
-      HomeDashboardLayoutTier.departmentQueue,
+    AppRole.ambulanceOperator => HomeDashboardLayoutTier.departmentQueue,
     AppRole.houseKeeper ||
     AppRole.housekeepingManager ||
     AppRole.mortuaryStaff ||
-    AppRole.mortuaryManager =>
-      HomeDashboardLayoutTier.taskFirst,
+    AppRole.mortuaryManager => HomeDashboardLayoutTier.taskFirst,
     AppRole.hr => HomeDashboardLayoutTier.workforce,
     AppRole.patient => HomeDashboardLayoutTier.patient,
     _ => HomeDashboardLayoutTier.general,
@@ -56,9 +53,8 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     final int tierCap = switch (layoutTier) {
       HomeDashboardLayoutTier.platform ||
       HomeDashboardLayoutTier.organization ||
-      HomeDashboardLayoutTier.facilityCommand =>
-        4,
-      HomeDashboardLayoutTier.workforce => 6,
+      HomeDashboardLayoutTier.facilityCommand ||
+      HomeDashboardLayoutTier.workforce => 4,
       _ => 3,
     };
     return math.min(maxStatusCards, tierCap);
@@ -72,8 +68,7 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
       HomeDashboardLayoutTier.workforce => 0,
       HomeDashboardLayoutTier.platform ||
       HomeDashboardLayoutTier.organization ||
-      HomeDashboardLayoutTier.facilityCommand =>
-        3,
+      HomeDashboardLayoutTier.facilityCommand => 3,
       _ => 2,
     };
   }
@@ -82,10 +77,9 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
 
   int get maxShortcutTiles => switch (layoutTier) {
     HomeDashboardLayoutTier.platform ||
-    HomeDashboardLayoutTier.organization =>
-      3,
+    HomeDashboardLayoutTier.organization => 3,
     HomeDashboardLayoutTier.facilityCommand => 2,
-    _ => 0,
+    _ => 3,
   };
 
   bool get compactMetrics {
@@ -95,9 +89,7 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
         layoutTier != HomeDashboardLayoutTier.facilityCommand;
   }
 
-  bool get showCharts {
-    return false;
-  }
+  bool get showCharts => true;
 
   bool showChartsWhenData({
     required HomeDashboardTrend trend,
@@ -106,15 +98,7 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     return showCharts && (trend.hasData || distribution.hasData);
   }
 
-  bool get queueBeforeMetrics {
-    return switch (layoutTier) {
-      HomeDashboardLayoutTier.clinicalQueue ||
-      HomeDashboardLayoutTier.departmentQueue ||
-      HomeDashboardLayoutTier.taskFirst =>
-        true,
-      _ => false,
-    };
-  }
+  bool get queueBeforeMetrics => false;
 
   bool showActivityPanel({required bool hasQueueItems}) => false;
 
@@ -126,13 +110,7 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     if (suppressHomeShortcuts || shortcutIds.isEmpty || maxShortcutTiles == 0) {
       return false;
     }
-    return switch (layoutTier) {
-      HomeDashboardLayoutTier.platform ||
-      HomeDashboardLayoutTier.organization ||
-      HomeDashboardLayoutTier.facilityCommand =>
-        true,
-      _ => false,
-    };
+    return true;
   }
 
   bool get showMetricsSection => true;
@@ -151,8 +129,7 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     return switch (layoutTier) {
       HomeDashboardLayoutTier.platform ||
       HomeDashboardLayoutTier.organization ||
-      HomeDashboardLayoutTier.facilityCommand =>
-        true,
+      HomeDashboardLayoutTier.facilityCommand => true,
       _ => false,
     };
   }

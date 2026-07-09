@@ -60,10 +60,10 @@ final class WorkspaceRefreshPlan {
 
   static const WorkspaceRefreshPlan admissionManualRefresh =
       WorkspaceRefreshPlan(
-    primaryList: true,
-    selectedDetail: true,
-    referenceData: true,
-  );
+        primaryList: true,
+        selectedDetail: true,
+        referenceData: true,
+      );
 
   bool get isEmpty =>
       !appointments &&

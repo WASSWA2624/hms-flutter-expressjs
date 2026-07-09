@@ -24,14 +24,14 @@ PharmacyWorkspaceState _stateWithRooms() {
         name: 'Main store',
         code: 'MAIN',
         shelves: <PharmacyStorageShelf>[
-          PharmacyStorageShelf(id: 'shelf-1', shelfCode: 'A1', label: 'Aisle A'),
+          PharmacyStorageShelf(
+            id: 'shelf-1',
+            shelfCode: 'A1',
+            label: 'Aisle A',
+          ),
         ],
       ),
-      PharmacyStorageRoom(
-        id: 'room-2',
-        name: 'Cold room',
-        code: 'COLD',
-      ),
+      PharmacyStorageRoom(id: 'room-2', name: 'Cold room', code: 'COLD'),
     ],
   );
   return const PharmacyWorkspaceState(

@@ -10,7 +10,10 @@ export 'package:hosspi_hms/core/workspace/workspace_disconnect_poll_plan.dart'
 export 'package:hosspi_hms/core/workspace/workspace_sync_engine.dart'
     show WorkspaceSyncEngine;
 export 'package:hosspi_hms/core/workspace/workspace_sync_outcome.dart'
-    show WorkspaceSyncIgnored, WorkspaceSyncNeedsHttp, WorkspaceSyncOutcome,
+    show
+        WorkspaceSyncIgnored,
+        WorkspaceSyncNeedsHttp,
+        WorkspaceSyncOutcome,
         WorkspaceSyncPatched;
 
 typedef WorkspaceRealtimeDeltaApplier<T> =

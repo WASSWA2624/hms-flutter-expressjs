@@ -14,8 +14,8 @@ import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_context_panel.dart';
+import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_scaffold.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_metric_routes.dart';
-import 'package:hosspi_hms/features/home/presentation/widgets/home_toolbar_actions.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_workspace_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -43,28 +43,17 @@ class HomePage extends ConsumerWidget {
         ref.invalidate(homeControllerProvider(request));
       },
       dataBuilder: (context, snapshot) {
-        return _HomeDashboardContent(
-          dashboard: snapshot,
-          request: request,
-          onRefresh: () {
-            ref.invalidate(homeControllerProvider(request));
-          },
-        );
+        return _HomeDashboardContent(dashboard: snapshot, request: request);
       },
     );
   }
 }
 
 class _HomeDashboardContent extends ConsumerWidget {
-  const _HomeDashboardContent({
-    required this.dashboard,
-    required this.request,
-    required this.onRefresh,
-  });
+  const _HomeDashboardContent({required this.dashboard, required this.request});
 
   final HomeDashboard dashboard;
   final HomeDashboardRequest request;
-  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -91,42 +80,30 @@ class _HomeDashboardContent extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            AppWorkspaceHeader(
-              title: dashboard.profile.homeTitle,
-              leading: AppWorkspaceTitleIcon(
-                icon: _profileIcon(dashboard.profile.role),
-                semanticLabel: dashboard.profile.homeTitle,
-              ),
-              toolbar: appWorkspaceToolbarWithLabels(
-                context.l10n,
-                secondary: buildHomeToolbarSecondary(
-                  l10n: context.l10n,
-                  profile: dashboard.profile,
-                  policy: policy,
-                  context: context,
-                ),
-                onRefresh: () async {
-                  onRefresh();
-                },
-                showFaultReport: false,
-                showHousekeepingRequest: false,
-              ),
-            ),
             if (dashboard.isTenantContextRequired) ...<Widget>[
-              SizedBox(height: spacing.lg),
               HomeTenantContextPanel(
                 tenantOptions: dashboard.tenantOptions,
                 request: request,
               ),
             ] else ...<Widget>[
-              SizedBox(height: spacing.lg),
-              ..._buildRoleDashboardSections(
-                dashboard: dashboard,
+              HomeDashboardScaffold(
                 profile: profile,
-                policy: policy,
-                actions: actions,
-                shortcuts: shortcuts,
                 spacing: spacing,
+                summaryBadges: _HomeStatusStrip(
+                  cards: dashboard.statusCards,
+                  profile: profile,
+                  policy: policy,
+                ),
+                quickActions:
+                    profile.suppressHomeQuickActions || actions.isEmpty
+                    ? const SizedBox.shrink()
+                    : _HomeQuickActions(actions: actions),
+                criticalShortcuts: _HomeCriticalShortcuts(
+                  dashboard: dashboard,
+                  actions: actions,
+                  shortcuts: shortcuts,
+                ),
+                charts: _HomeChartsSection(dashboard: dashboard),
               ),
             ],
           ],
@@ -136,56 +113,57 @@ class _HomeDashboardContent extends ConsumerWidget {
   }
 }
 
-List<Widget> _buildRoleDashboardSections({
-  required HomeDashboard dashboard,
-  required HomeDashboardProfile profile,
-  required AppAccessPolicy policy,
-  required List<_HomeActionDefinition> actions,
-  required List<_HomeShortcutDefinition> shortcuts,
-  required AppSpacingTokens spacing,
-}) {
-  final Widget statusStrip = profile.showMetricsSection
-      ? _HomeStatusStrip(
-          cards: dashboard.statusCards,
-          profile: profile,
-          policy: policy,
-        )
-      : const SizedBox.shrink();
-  final Widget quickActions = profile.suppressHomeQuickActions || actions.isEmpty
-      ? const SizedBox.shrink()
-      : _HomeQuickActions(actions: actions);
-  final Widget workGrid = _HomeMainGrid(
-    dashboard: dashboard,
-    actions: actions,
-    shortcuts: shortcuts,
-  );
+class _HomeChartsSection extends StatelessWidget {
+  const _HomeChartsSection({required this.dashboard});
 
-  if (profile.queueBeforeMetrics) {
-    return <Widget>[
-      workGrid,
-      if (profile.showMetricsSection && dashboard.statusCards.isNotEmpty) ...<Widget>[
-        SizedBox(height: spacing.md),
-        statusStrip,
-      ],
-      if (!profile.suppressHomeQuickActions && actions.isNotEmpty) ...<Widget>[
-        SizedBox(height: spacing.md),
-        quickActions,
-      ],
-    ];
+  final HomeDashboard dashboard;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final HomeDashboardProfile profile = dashboard.profile;
+    final bool showCharts = profile.showChartsWhenData(
+      trend: dashboard.trend,
+      distribution: dashboard.distribution,
+    );
+
+    if (!showCharts) {
+      return const SizedBox.shrink();
+    }
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        return _HomeChartsRow(
+          role: profile.role,
+          trend: dashboard.trend,
+          distribution: dashboard.distribution,
+          twoColumns: constraints.maxWidth >= 980,
+          gap: theme.spacing.md,
+        );
+      },
+    );
   }
+}
 
-  return <Widget>[
-    if (profile.showMetricsSection && dashboard.statusCards.isNotEmpty) statusStrip,
-    if (!profile.suppressHomeQuickActions && actions.isNotEmpty) ...<Widget>[
-      if (profile.showMetricsSection && dashboard.statusCards.isNotEmpty)
-        SizedBox(height: spacing.md),
-      quickActions,
-    ],
-    if (profile.showMetricsSection && dashboard.statusCards.isNotEmpty ||
-        (!profile.suppressHomeQuickActions && actions.isNotEmpty))
-      SizedBox(height: spacing.md),
-    workGrid,
-  ];
+class _HomeCriticalShortcuts extends StatelessWidget {
+  const _HomeCriticalShortcuts({
+    required this.dashboard,
+    required this.actions,
+    required this.shortcuts,
+  });
+
+  final HomeDashboard dashboard;
+  final List<_HomeActionDefinition> actions;
+  final List<_HomeShortcutDefinition> shortcuts;
+
+  @override
+  Widget build(BuildContext context) {
+    return _HomeMainGrid(
+      dashboard: dashboard,
+      actions: actions,
+      shortcuts: shortcuts,
+    );
+  }
 }
 
 class _HomeStatusStrip extends StatelessWidget {
@@ -203,6 +181,7 @@ class _HomeStatusStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final List<HomeStatusCard> visibleCards = cards
+        .where((HomeStatusCard card) => card.value != 0)
         .take(profile.effectiveMaxStatusCards)
         .toList(growable: false);
 
@@ -234,7 +213,8 @@ class _HomeStatusStrip extends StatelessWidget {
                   card: card,
                   profile: profile,
                   policy: policy,
-                  compact: profile.compactMetrics ||
+                  compact:
+                      profile.compactMetrics ||
                       constraints.maxWidth < AppBreakpoints.md,
                 ),
               ),
@@ -315,13 +295,14 @@ class _HomeMetricCard extends ConsumerWidget {
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: (compact
-                          ? theme.textTheme.titleLarge
-                          : theme.textTheme.headlineSmall)
-                      ?.copyWith(
-                    color: accent,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style:
+                      (compact
+                              ? theme.textTheme.titleLarge
+                              : theme.textTheme.headlineSmall)
+                          ?.copyWith(
+                            color: accent,
+                            fontWeight: FontWeight.w800,
+                          ),
                 ),
               ],
             ),
@@ -439,10 +420,6 @@ class _HomeMainGrid extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final HomeDashboardProfile profile = dashboard.profile;
     final double gap = theme.spacing.md;
-    final bool showCharts = profile.showChartsWhenData(
-      trend: dashboard.trend,
-      distribution: dashboard.distribution,
-    );
     final bool showQueue = profile.showQueuePanelFor(dashboard.queuePreview);
     final bool showAlerts = profile.showAlertsPanel(dashboard.alerts);
     final bool showShortcuts = profile.showShortcutsSection(
@@ -453,15 +430,6 @@ class _HomeMainGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool wide = constraints.maxWidth >= 980;
-        final Widget charts = showCharts
-            ? _HomeChartsRow(
-                role: profile.role,
-                trend: dashboard.trend,
-                distribution: dashboard.distribution,
-                twoColumns: wide,
-                gap: gap,
-              )
-            : const SizedBox.shrink();
         final Widget primary = showQueue
             ? _PrimaryQueuePanel(
                 title: profile.showQueuePanelTitle
@@ -477,15 +445,13 @@ class _HomeMainGrid extends StatelessWidget {
               )
             : const SizedBox.shrink();
         final Widget alerts = showAlerts
-            ? _AlertsPanel(
-                role: profile.role,
-                alerts: dashboard.alerts,
-              )
+            ? _AlertsPanel(role: profile.role, alerts: dashboard.alerts)
             : const SizedBox.shrink();
-        final bool hasQueueContent = showQueue && dashboard.queuePreview.isNotEmpty;
+        final bool hasQueueContent =
+            showQueue && dashboard.queuePreview.isNotEmpty;
         final bool hasWorkContent = hasQueueContent || showAlerts;
 
-        if (!hasWorkContent && !showCharts && !showShortcuts) {
+        if (!hasWorkContent && !showShortcuts) {
           return const SizedBox.shrink();
         }
 
@@ -513,10 +479,8 @@ class _HomeMainGrid extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             if (hasWorkContent) work,
-            if (showCharts && hasWorkContent) SizedBox(height: gap),
-            if (showCharts) charts,
             if (showShortcuts) ...<Widget>[
-              SizedBox(height: gap),
+              if (hasWorkContent) SizedBox(height: gap),
               _ShortcutsSection(
                 shortcuts: shortcuts,
                 maxTiles: profile.maxShortcutTiles,
@@ -609,10 +573,7 @@ class _PrimaryQueuePanel extends StatelessWidget {
 }
 
 class _AlertsPanel extends StatelessWidget {
-  const _AlertsPanel({
-    required this.role,
-    required this.alerts,
-  });
+  const _AlertsPanel({required this.role, required this.alerts});
 
   final AppRole role;
   final List<HomeAlertItem> alerts;
@@ -631,7 +592,8 @@ class _AlertsPanel extends StatelessWidget {
       title: _alertsTitle(role),
       leadingIcon: Icons.warning_amber_outlined,
       children: <Widget>[
-        for (final HomeAlertItem alert in visibleAlerts) _AlertRow(alert: alert),
+        for (final HomeAlertItem alert in visibleAlerts)
+          _AlertRow(alert: alert),
       ],
     );
   }
@@ -2544,8 +2506,7 @@ String _queueTitle(AppRole role) {
     AppRole.operations => 'Ops queue',
     AppRole.hr => 'Workforce',
     AppRole.biomed || AppRole.biomedManager => 'Service',
-    AppRole.houseKeeper ||
-    AppRole.housekeepingManager => 'Cleaning',
+    AppRole.houseKeeper || AppRole.housekeepingManager => 'Cleaning',
     AppRole.ambulanceOperator => 'Dispatch',
     AppRole.patient => 'Updates',
     _ => 'Queue',
@@ -2764,34 +2725,5 @@ IconData _moduleIcon(String moduleSlug) {
     'communications' => Icons.forum_outlined,
     'profile' => Icons.account_circle_outlined,
     _ => Icons.insights_outlined,
-  };
-}
-
-IconData _profileIcon(AppRole role) {
-  return switch (role) {
-    AppRole.superAdmin ||
-    AppRole.tenantAdmin ||
-    AppRole.facilityAdmin => Icons.admin_panel_settings_outlined,
-    AppRole.doctor => Icons.medical_services_outlined,
-    AppRole.nurse ||
-    AppRole.wardManager ||
-    AppRole.icuManager => Icons.health_and_safety_outlined,
-    AppRole.labTech => Icons.biotech_outlined,
-    AppRole.radiologyTech => Icons.camera_outdoor_outlined,
-    AppRole.pharmacist => Icons.local_pharmacy_outlined,
-    AppRole.receptionist => Icons.support_agent_outlined,
-    AppRole.billing => Icons.receipt_long_outlined,
-    AppRole.operations => Icons.handyman_outlined,
-    AppRole.hr || AppRole.unitManager => Icons.badge_outlined,
-    AppRole.biomed ||
-    AppRole.biomedManager => Icons.precision_manufacturing_outlined,
-    AppRole.houseKeeper ||
-    AppRole.housekeepingManager => Icons.cleaning_services_outlined,
-    AppRole.ambulanceOperator => Icons.emergency_share_outlined,
-    AppRole.theatreManager => Icons.fact_check_outlined,
-    AppRole.mortuaryStaff ||
-    AppRole.mortuaryManager => Icons.inventory_2_outlined,
-    AppRole.patient => Icons.account_circle_outlined,
-    AppRole.other => Icons.home_outlined,
   };
 }

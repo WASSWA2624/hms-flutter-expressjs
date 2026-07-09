@@ -211,9 +211,7 @@ abstract final class AppTheme {
           fontWeight: FontWeight.w400,
         ),
       ),
-      navigationBarTheme: NavigationBarThemeData(
-        indicatorShape: controlShape,
-      ),
+      navigationBarTheme: NavigationBarThemeData(indicatorShape: controlShape),
       navigationRailTheme: NavigationRailThemeData(
         indicatorShape: controlShape,
       ),

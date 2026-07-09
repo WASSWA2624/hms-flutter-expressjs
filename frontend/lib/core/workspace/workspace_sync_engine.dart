@@ -45,9 +45,6 @@ abstract final class WorkspaceSyncEngine {
       message,
       httpPlan,
     );
-    return WorkspaceSyncPatched<T>(
-      state: patched,
-      residualPlan: residualPlan,
-    );
+    return WorkspaceSyncPatched<T>(state: patched, residualPlan: residualPlan);
   }
 }

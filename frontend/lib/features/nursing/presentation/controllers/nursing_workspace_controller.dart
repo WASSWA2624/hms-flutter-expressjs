@@ -51,11 +51,11 @@ final class NursingWorkspaceController
 
   static const WorkspaceRefreshPlan _manualRefreshWithContext =
       WorkspaceRefreshPlan(
-    primaryList: true,
-    selectedDetail: true,
-    referenceData: true,
-    context: true,
-  );
+        primaryList: true,
+        selectedDetail: true,
+        referenceData: true,
+        context: true,
+      );
 
   @override
   Future<Result<NursingWorkspaceState>> build() async {
@@ -96,10 +96,7 @@ final class NursingWorkspaceController
   }
 
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(
-      showLoading: true,
-      plan: _manualRefreshWithContext,
-    );
+    return _syncVisibleData(showLoading: true, plan: _manualRefreshWithContext);
   }
 
   Future<AppFailure?> applySearch(String value) {
@@ -809,10 +806,8 @@ final class NursingWorkspaceController
       <String, Object?>{'accepted_notes': notes},
     );
     return result.when(
-      success: (_) => _syncVisibleData(
-        showLoading: true,
-        plan: _manualRefreshWithContext,
-      ),
+      success: (_) =>
+          _syncVisibleData(showLoading: true, plan: _manualRefreshWithContext),
       failure: (AppFailure failure) {
         final NursingWorkspaceState? latest = _currentState;
         if (latest != null) {
@@ -876,7 +871,8 @@ final class NursingWorkspaceController
       polling: _adaptivePolling,
       intervalWhenDisconnected: _syncInterval,
       disconnectProfile: WorkspaceRefreshProfile.admissions,
-      syncOnDisconnect: (WorkspaceRefreshPlan plan) => _syncVisibleData(plan: plan),
+      syncOnDisconnect: (WorkspaceRefreshPlan plan) =>
+          _syncVisibleData(plan: plan),
     );
   }
 
@@ -931,12 +927,7 @@ final class NursingWorkspaceController
       } else if (refreshContext) {
         final NursingWorkspaceState? latest = _currentState;
         if (latest != null) {
-          _emit(
-            latest.copyWith(
-              pendingHandovers: handovers,
-              rosters: rosters,
-            ),
-          );
+          _emit(latest.copyWith(pendingHandovers: handovers, rosters: rosters));
         }
       }
 
@@ -1152,9 +1143,7 @@ final class NursingWorkspaceController
           );
         }
         unawaited(
-          _syncVisibleData(
-            plan: const WorkspaceRefreshPlan(context: true),
-          ),
+          _syncVisibleData(plan: const WorkspaceRefreshPlan(context: true)),
         );
         return null;
       },

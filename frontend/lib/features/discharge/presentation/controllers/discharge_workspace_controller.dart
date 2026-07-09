@@ -200,7 +200,8 @@ final class DischargeWorkspaceController
         }
       }
       if (plan.selectedDetail) {
-        final DischargeAdmissionDetail? selected = _currentState?.selectedDetail;
+        final DischargeAdmissionDetail? selected =
+            _currentState?.selectedDetail;
         if (selected != null) {
           await selectAdmission(selected.summary);
         }
@@ -208,7 +209,8 @@ final class DischargeWorkspaceController
       return null;
     } finally {
       _isSyncing = false;
-      if (_pendingRefresh.refreshPending && !(_currentState?.isSaving ?? false)) {
+      if (_pendingRefresh.refreshPending &&
+          !(_currentState?.isSaving ?? false)) {
         final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
         if (!pendingPlan.isEmpty) {
           unawaited(_syncVisibleData(plan: pendingPlan));

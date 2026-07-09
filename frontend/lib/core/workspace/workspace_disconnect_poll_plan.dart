@@ -5,13 +5,10 @@ import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 abstract final class WorkspaceDisconnectPollPlan {
   static WorkspaceRefreshPlan forProfile(WorkspaceRefreshProfile profile) {
     return switch (profile) {
-      WorkspaceRefreshProfile.clinicalFlow => WorkspaceRefreshPlan.flowWorkspace
-          .merge(
-            const WorkspaceRefreshPlan(
-              appointments: true,
-              queue: true,
-            ),
-          ),
+      WorkspaceRefreshProfile.clinicalFlow =>
+        WorkspaceRefreshPlan.flowWorkspace.merge(
+          const WorkspaceRefreshPlan(appointments: true, queue: true),
+        ),
       WorkspaceRefreshProfile.admissions =>
         WorkspaceRefreshPlan.admissionWorkspace,
       WorkspaceRefreshProfile.patientRegistry => const WorkspaceRefreshPlan(

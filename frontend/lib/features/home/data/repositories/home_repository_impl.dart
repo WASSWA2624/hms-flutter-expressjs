@@ -181,11 +181,11 @@ final class HomeRepositoryImpl implements HomeRepository {
       trend: HomeDashboardTrend.empty,
       distribution: HomeDashboardDistribution.empty,
       quickActionIds: profile.suppressHomeQuickActions
-        ? const <String>[]
-        : profile.quickActionIds,
+          ? const <String>[]
+          : profile.quickActionIds,
       shortcutIds: profile.suppressHomeShortcuts
-        ? const <String>[]
-        : profile.shortcutIds,
+          ? const <String>[]
+          : profile.shortcutIds,
       queuePreview: const <HomeQueueItem>[],
       alerts: const <HomeAlertItem>[],
       activity: const <HomeActivityItem>[],

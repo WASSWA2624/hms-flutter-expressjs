@@ -50,10 +50,7 @@ final class PhysiotherapyWorkspaceController
   }
 
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(
-      showLoading: true,
-      plan: WorkspaceRefreshPlan.full,
-    );
+    return _syncVisibleData(showLoading: true, plan: WorkspaceRefreshPlan.full);
   }
 
   Future<AppFailure?> applySearch(String value, {bool showLoading = true}) {
@@ -491,7 +488,8 @@ final class PhysiotherapyWorkspaceController
       polling: _adaptivePolling,
       intervalWhenDisconnected: _syncInterval,
       disconnectProfile: WorkspaceRefreshProfile.clinicalFlow,
-      syncOnDisconnect: (WorkspaceRefreshPlan plan) => _syncVisibleData(plan: plan),
+      syncOnDisconnect: (WorkspaceRefreshPlan plan) =>
+          _syncVisibleData(plan: plan),
     );
   }
 

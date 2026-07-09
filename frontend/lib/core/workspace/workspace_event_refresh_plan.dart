@@ -113,16 +113,10 @@ abstract final class WorkspaceEventRefreshPlan {
         RealtimeEventGroups.billing.contains(event) ||
         RealtimeEventGroups.emergency.contains(event) ||
         RealtimeEventGroups.criticalAlerts.contains(event)) {
-      return const WorkspaceRefreshPlan(
-        primaryList: true,
-        summaryCounts: true,
-      );
+      return const WorkspaceRefreshPlan(primaryList: true, summaryCounts: true);
     }
     if (RealtimeCrudEvents.matches(event)) {
-      return const WorkspaceRefreshPlan(
-        primaryList: true,
-        summaryCounts: true,
-      );
+      return const WorkspaceRefreshPlan(primaryList: true, summaryCounts: true);
     }
     return WorkspaceRefreshPlan.none;
   }

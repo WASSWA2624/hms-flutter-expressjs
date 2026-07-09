@@ -11,11 +11,7 @@ void main() {
       final List<HomeStatusCard> scoped = scopeHomeStatusCards(
         profile: profile,
         apiCards: const <HomeStatusCard>[
-          HomeStatusCard(
-            id: 'assigned',
-            label: 'Wrong label',
-            value: 4,
-          ),
+          HomeStatusCard(id: 'assigned', label: 'Wrong label', value: 4),
           HomeStatusCard(
             id: 'procedures_today',
             label: 'Theatre only',
@@ -25,15 +21,15 @@ void main() {
       );
 
       expect(scoped.map((card) => card.id), contains('assigned'));
-      expect(scoped.map((card) => card.id), isNot(contains('procedures_today')));
+      expect(
+        scoped.map((card) => card.id),
+        isNot(contains('procedures_today')),
+      );
       expect(
         scoped.firstWhere((card) => card.id == 'assigned').label,
         'Assigned',
       );
-      expect(
-        scoped.firstWhere((card) => card.id == 'assigned').value,
-        4,
-      );
+      expect(scoped.firstWhere((card) => card.id == 'assigned').value, 4);
     });
 
     test('merge uses session profile over API profile', () {

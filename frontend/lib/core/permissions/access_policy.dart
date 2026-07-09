@@ -423,6 +423,10 @@ final class AppAccessPolicy {
         AppPermissions.patientWrite,
         AppPermissions.breakGlassRequest,
         AppPermissions.lastOfficeRead,
+        AppPermissions.labRead,
+        AppPermissions.radiologyRead,
+        AppPermissions.pharmacyRead,
+        AppPermissions.reportsRead,
       ],
       AppRole.nurse => const <AppPermission>[
         AppPermissions.clinicalRead,
@@ -437,6 +441,8 @@ final class AppAccessPolicy {
         AppPermissions.breakGlassRequest,
         AppPermissions.lastOfficeRead,
         AppPermissions.lastOfficeWrite,
+        AppPermissions.labRead,
+        AppPermissions.reportsRead,
       ],
       AppRole.labTech => const <AppPermission>[
         AppPermissions.labRead,
@@ -444,6 +450,7 @@ final class AppAccessPolicy {
         AppPermissions.communicationsRead,
         AppPermissions.communicationsWrite,
         AppPermissions.profileRead,
+        AppPermissions.patientRead,
       ],
       AppRole.radiologyTech => const <AppPermission>[
         AppPermissions.radiologyRead,
@@ -482,6 +489,7 @@ final class AppAccessPolicy {
         AppPermissions.communicationsWrite,
         AppPermissions.reportsRead,
         AppPermissions.profileRead,
+        AppPermissions.patientRead,
       ],
       AppRole.operations => const <AppPermission>[
         AppPermissions.operationsRead,
@@ -597,13 +605,14 @@ final class AppAccessPolicy {
         AppPermissions.evidenceExport,
         AppPermissions.communicationsRead,
         AppPermissions.communicationsWrite,
+        AppPermissions.reportsRead,
         AppPermissions.profileRead,
       ],
       AppRole.houseKeeper => const <AppPermission>[
         AppPermissions.operationsRead,
         AppPermissions.communicationsRead,
+        AppPermissions.reportsRead,
         AppPermissions.profileRead,
-        AppPermissions.patientRead,
       ],
       AppRole.ambulanceOperator => const <AppPermission>[
         AppPermissions.profileRead,
@@ -611,6 +620,7 @@ final class AppAccessPolicy {
         AppPermissions.communicationsWrite,
         AppPermissions.emergencyRead,
         AppPermissions.emergencyWrite,
+        AppPermissions.reportsRead,
       ],
       AppRole.mortuaryStaff => const <AppPermission>[
         AppPermissions.profileRead,

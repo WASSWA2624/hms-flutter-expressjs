@@ -7,9 +7,10 @@ import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 void main() {
   group('WorkspaceEventRefreshPlan', () {
     test('maps appointment events to appointment slices only', () {
-      final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forClinicalFlow(
-        RealtimeEvents.appointmentCreated,
-      );
+      final WorkspaceRefreshPlan plan =
+          WorkspaceEventRefreshPlan.forClinicalFlow(
+            RealtimeEvents.appointmentCreated,
+          );
 
       expect(plan.appointments, isTrue);
       expect(plan.flows, isFalse);

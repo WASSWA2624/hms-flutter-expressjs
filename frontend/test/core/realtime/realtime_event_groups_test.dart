@@ -62,29 +62,26 @@ void main() {
       },
     );
 
-    test(
-      'billing workspace also refreshes on clinical/OPD charge events',
-      () {
-        // Invoices/payments are frequently created by these workflows, so the
-        // billing workspace must react to them, not only to billing events.
-        expect(
-          RealtimeEventGroups.billingWorkspace,
-          contains(RealtimeEvents.opdFlowUpdated),
-        );
-        expect(
-          RealtimeEventGroups.billingWorkspace,
-          contains(RealtimeEvents.labWorkflowUpdated),
-        );
-        expect(
-          RealtimeEventGroups.billingWorkspace,
-          contains(RealtimeEvents.radiologyWorkflowUpdated),
-        );
-        expect(
-          RealtimeEventGroups.billingWorkspace,
-          contains(RealtimeEvents.pharmacyOrderUpdated),
-        );
-      },
-    );
+    test('billing workspace also refreshes on clinical/OPD charge events', () {
+      // Invoices/payments are frequently created by these workflows, so the
+      // billing workspace must react to them, not only to billing events.
+      expect(
+        RealtimeEventGroups.billingWorkspace,
+        contains(RealtimeEvents.opdFlowUpdated),
+      );
+      expect(
+        RealtimeEventGroups.billingWorkspace,
+        contains(RealtimeEvents.labWorkflowUpdated),
+      );
+      expect(
+        RealtimeEventGroups.billingWorkspace,
+        contains(RealtimeEvents.radiologyWorkflowUpdated),
+      );
+      expect(
+        RealtimeEventGroups.billingWorkspace,
+        contains(RealtimeEvents.pharmacyOrderUpdated),
+      );
+    });
 
     test('every billing-consuming workspace reacts to billing events', () {
       // A payment/refund/adjustment recorded anywhere must update these

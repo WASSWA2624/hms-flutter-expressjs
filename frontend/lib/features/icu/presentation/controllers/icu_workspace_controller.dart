@@ -552,7 +552,8 @@ final class IcuWorkspaceController
       polling: _adaptivePolling,
       intervalWhenDisconnected: _syncInterval,
       disconnectProfile: WorkspaceRefreshProfile.admissions,
-      syncOnDisconnect: (WorkspaceRefreshPlan plan) => _syncVisibleData(plan: plan),
+      syncOnDisconnect: (WorkspaceRefreshPlan plan) =>
+          _syncVisibleData(plan: plan),
     );
   }
 
@@ -591,7 +592,9 @@ final class IcuWorkspaceController
 
     try {
       if (refreshBoard) {
-        final AppFailure? failure = await _refreshBoard(showLoading: showLoading);
+        final AppFailure? failure = await _refreshBoard(
+          showLoading: showLoading,
+        );
         if (failure != null) {
           return failure;
         }

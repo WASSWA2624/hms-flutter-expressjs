@@ -15,8 +15,13 @@ export 'package:hosspi_hms/core/workspace/workspace_disconnect_poll_plan.dart'
 export 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart'
     show WorkspaceRefreshPlan;
 export 'package:hosspi_hms/core/workspace/workspace_realtime_sync.dart'
-    show WorkspaceSyncEngine, WorkspaceSyncIgnored, WorkspaceSyncNeedsHttp,
-        WorkspaceSyncOutcome, WorkspaceSyncPatched, mergeWorkspaceRefreshPlan,
+    show
+        WorkspaceSyncEngine,
+        WorkspaceSyncIgnored,
+        WorkspaceSyncNeedsHttp,
+        WorkspaceSyncOutcome,
+        WorkspaceSyncPatched,
+        mergeWorkspaceRefreshPlan,
         resolveWorkspaceRealtime;
 
 /// Wires adaptive polling that runs only while WebSocket transport is down.
@@ -61,7 +66,9 @@ final class WorkspacePendingRefresh {
     pendingPlan = merge(plan);
   }
 
-  WorkspaceRefreshPlan takePending({WorkspaceRefreshPlan fallback = WorkspaceRefreshPlan.full}) {
+  WorkspaceRefreshPlan takePending({
+    WorkspaceRefreshPlan fallback = WorkspaceRefreshPlan.full,
+  }) {
     refreshPending = false;
     final WorkspaceRefreshPlan plan = pendingPlan ?? fallback;
     pendingPlan = null;

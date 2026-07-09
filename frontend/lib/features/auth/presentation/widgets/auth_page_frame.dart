@@ -25,12 +25,10 @@ class AuthPageFrame extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
 
-    final EdgeInsets panelPadding = EdgeInsets.all(
-      switch (breakpoint) {
-        AppBreakpoint.xs || AppBreakpoint.sm => theme.spacing.lg,
-        _ => theme.spacing.xl,
-      },
-    );
+    final EdgeInsets panelPadding = EdgeInsets.all(switch (breakpoint) {
+      AppBreakpoint.xs || AppBreakpoint.sm => theme.spacing.lg,
+      _ => theme.spacing.xl,
+    });
 
     Widget content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,

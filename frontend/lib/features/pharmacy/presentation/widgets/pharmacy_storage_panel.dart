@@ -110,7 +110,8 @@ class PharmacyStoragePanel extends ConsumerWidget {
                           semanticLabel: l10n.pharmacyDeleteStorageRoomAction,
                           color: theme.colorScheme.error,
                           enabled: isAllowed,
-                          onPressed: () => _confirmDeleteRoom(context, ref, room),
+                          onPressed: () =>
+                              _confirmDeleteRoom(context, ref, room),
                         ),
                       ],
                     ),

@@ -23,30 +23,23 @@ void main() {
     ) async {
       await _pumpEnableDialog(tester);
 
-      expect(
-        find.widgetWithIcon(AppButton, Icons.close),
-        findsWidgets,
-      );
+      expect(find.widgetWithIcon(AppButton, Icons.close), findsWidgets);
     });
 
-    testWidgets(
-      'enable price dialog exposes cancel and enable action icons',
-      (WidgetTester tester) async {
-        await _pumpEnableDialog(tester);
+    testWidgets('enable price dialog exposes cancel and enable action icons', (
+      WidgetTester tester,
+    ) async {
+      await _pumpEnableDialog(tester);
 
-        await tester.tap(find.text('Complete blood count').first);
-        await tester.pumpAndSettle();
+      await tester.tap(find.text('Complete blood count').first);
+      await tester.pumpAndSettle();
 
-        expect(
-          find.widgetWithIcon(AppButton, Icons.check_circle_outline),
-          findsOneWidget,
-        );
-        expect(
-          find.widgetWithIcon(AppButton, Icons.close),
-          findsWidgets,
-        );
-      },
-    );
+      expect(
+        find.widgetWithIcon(AppButton, Icons.check_circle_outline),
+        findsOneWidget,
+      );
+      expect(find.widgetWithIcon(AppButton, Icons.close), findsWidgets);
+    });
   });
 }
 
