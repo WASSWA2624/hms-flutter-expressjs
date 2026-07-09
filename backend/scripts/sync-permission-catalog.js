@@ -1,21 +1,11 @@
-require('module-alias/register');
+/**
+ * Sync canonical permission catalog and system roles for all tenants.
+ *
+ * Usage:
+ *   node scripts/sync-permission-catalog.js
+ */
 
-const path = require('path');
-const BACKEND_ROOT = path.join(__dirname, '..');
-
-try {
-  const moduleAlias = require('module-alias');
-  moduleAlias.addAliases({
-    '@lib': path.join(BACKEND_ROOT, 'src', 'lib'),
-    '@config': path.join(BACKEND_ROOT, 'src', 'config'),
-    '@prisma/client': path.join(BACKEND_ROOT, 'src', 'prisma', 'client.js'),
-  });
-} catch (error) {
-  console.error('Failed to register sync script aliases:', error);
-  process.exit(1);
-}
-
-const prisma = require('@prisma/client');
+const { prisma } = require('./seeders/seed-runtime');
 const { ensureTenantAccessCatalog } = require('@lib/authorization/permission-catalog-sync');
 
 const main = async () => {

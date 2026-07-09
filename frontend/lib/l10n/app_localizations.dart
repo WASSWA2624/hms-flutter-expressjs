@@ -28839,18 +28839,6 @@ abstract class AppLocalizations {
   /// **'{selected} of {total} selected'**
   String hrPermissionAssignmentSelectedCount(int selected, int total);
 
-  /// Select all permissions in a module group.
-  ///
-  /// In en, this message translates to:
-  /// **'Select group'**
-  String get hrPermissionAssignmentSelectGroupAction;
-
-  /// Clear all permissions in a module group.
-  ///
-  /// In en, this message translates to:
-  /// **'Clear group'**
-  String get hrPermissionAssignmentClearGroupAction;
-
   /// Empty state when permission search has no matches.
   ///
   /// In en, this message translates to:

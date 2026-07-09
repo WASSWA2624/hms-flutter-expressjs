@@ -19991,14 +19991,6 @@
       "total": {"type": "int"}
     }
   },
-  "hrPermissionAssignmentSelectGroupAction": "Select group",
-  "@hrPermissionAssignmentSelectGroupAction": {
-    "description": "Select all permissions in a module group."
-  },
-  "hrPermissionAssignmentClearGroupAction": "Clear group",
-  "@hrPermissionAssignmentClearGroupAction": {
-    "description": "Clear all permissions in a module group."
-  },
   "hrPermissionAssignmentNoSearchResultsLabel": "No permissions match your search.",
   "@hrPermissionAssignmentNoSearchResultsLabel": {
     "description": "Empty state when permission search has no matches."

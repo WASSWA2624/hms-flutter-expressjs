@@ -15410,12 +15410,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get hrPermissionAssignmentSelectGroupAction => 'Select group';
-
-  @override
-  String get hrPermissionAssignmentClearGroupAction => 'Clear group';
-
-  @override
   String get hrPermissionAssignmentNoSearchResultsLabel =>
       'No permissions match your search.';
 
