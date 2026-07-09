@@ -4866,7 +4866,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityActiveLabel => 'Active';
 
   @override
-  String get tenantFacilitySaveTenantAction => 'Save tenant';
+  String get tenantFacilitySaveTenantAction => 'Edit tenant';
 
   @override
   String get tenantFacilityCreateTenantTitle => 'Create tenant';
@@ -4989,6 +4989,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilitySaveFacilityAction => 'Save facility';
+
+  @override
+  String get tenantFacilityEditFacilityAction => 'Edit facility';
 
   @override
   String get tenantFacilityFacilitySelectLabel => 'Facility';

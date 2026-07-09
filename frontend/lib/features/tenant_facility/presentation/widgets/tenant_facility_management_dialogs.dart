@@ -570,7 +570,7 @@ class _ManageFacilitiesDialogState
                                 ) {
                               return _ManagementRowActions(
                                 enabled: !_loading,
-                                editLabel: l10n.commonSaveActionLabel,
+                                editLabel: l10n.tenantFacilityEditFacilityAction,
                                 deleteLabel: l10n.tenantFacilityDeleteAction,
                                 onEdit: () => unawaited(
                                   _openFacilityForm(facility: facility),
@@ -594,7 +594,7 @@ class _ManageFacilitiesDialogState
                               trailing: _canManage
                                   ? _ManagementRowActions(
                                       enabled: !_loading,
-                                      editLabel: l10n.commonSaveActionLabel,
+                                      editLabel: l10n.tenantFacilityEditFacilityAction,
                                       deleteLabel:
                                           l10n.tenantFacilityDeleteAction,
                                       onEdit: () => unawaited(

@@ -9100,10 +9100,10 @@ abstract class AppLocalizations {
   /// **'Active'**
   String get tenantFacilityActiveLabel;
 
-  /// Save tenant button label.
+  /// Edit tenant row action label in the manage tenants table.
   ///
   /// In en, this message translates to:
-  /// **'Save tenant'**
+  /// **'Edit tenant'**
   String get tenantFacilitySaveTenantAction;
 
   /// Create tenant dialog title.
@@ -9309,6 +9309,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save facility'**
   String get tenantFacilitySaveFacilityAction;
+
+  /// Edit facility row action label in the manage facilities table.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit facility'**
+  String get tenantFacilityEditFacilityAction;
 
   /// Searchable facility selector label.
   ///

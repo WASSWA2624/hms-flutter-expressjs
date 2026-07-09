@@ -6273,9 +6273,9 @@
   "@tenantFacilityActiveLabel": {
     "description": "Active status switch label."
   },
-  "tenantFacilitySaveTenantAction": "Save tenant",
+  "tenantFacilitySaveTenantAction": "Edit tenant",
   "@tenantFacilitySaveTenantAction": {
-    "description": "Save tenant button label."
+    "description": "Edit tenant row action label in the manage tenants table."
   },
   "tenantFacilityCreateTenantTitle": "Create tenant",
   "@tenantFacilityCreateTenantTitle": {
@@ -6422,6 +6422,10 @@
   "tenantFacilitySaveFacilityAction": "Save facility",
   "@tenantFacilitySaveFacilityAction": {
     "description": "Save facility button label."
+  },
+  "tenantFacilityEditFacilityAction": "Edit facility",
+  "@tenantFacilityEditFacilityAction": {
+    "description": "Edit facility row action label in the manage facilities table."
   },
   "tenantFacilityFacilitySelectLabel": "Facility",
   "@tenantFacilityFacilitySelectLabel": {
