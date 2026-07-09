@@ -22968,6 +22968,14 @@
   "@accessAdminPermissionCatalogUnavailableMessage": {
     "description": "Message when tenant permission catalog is empty."
   },
+  "accessAdminPermissionCatalogSelectTenantTitle": "Select a tenant",
+  "@accessAdminPermissionCatalogSelectTenantTitle": {
+    "description": "Title when role permissions require tenant selection first."
+  },
+  "accessAdminPermissionCatalogSelectTenantMessage": "Choose a tenant above to load the available permissions for that organization.",
+  "@accessAdminPermissionCatalogSelectTenantMessage": {
+    "description": "Message when role permissions require tenant selection first."
+  },
   "accessAdminEmailLabel": "Email",
   "@accessAdminEmailLabel": {
     "description": "Access admin email field label."

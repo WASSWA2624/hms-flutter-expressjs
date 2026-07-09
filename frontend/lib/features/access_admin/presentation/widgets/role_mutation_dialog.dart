@@ -17,10 +17,15 @@ enum RoleMutationMode { create, edit }
 typedef RoleMutationSubmitHandler =
     Future<AppFailure?> Function(AccessAdminRoleDraft draft);
 
+typedef RolePermissionLookupsLoader =
+    Future<List<AccessAdminLookupOption>> Function(String tenantId);
+
 Future<bool?> showRoleMutationDialog({
   required BuildContext context,
   required RoleMutationMode mode,
-  required List<AccessAdminLookupOption> permissionLookups,
+  List<AccessAdminLookupOption> permissionLookups =
+      const <AccessAdminLookupOption>[],
+  RolePermissionLookupsLoader? loadPermissionsForTenant,
   String? tenantId,
   String? facilityId,
   List<AccessAdminLookupOption> tenantOptions = const <AccessAdminLookupOption>[],
@@ -43,17 +48,47 @@ Future<bool?> showRoleMutationDialog({
   String? selectedTenantId = tenantId;
   final bool showTenantPicker =
       requireTenantPicker || (mode == RoleMutationMode.create && tenantId == null);
-  final List<AppPermissionAssignmentOption> permissionOptions =
-      permissionLookups
-          .map(
-            (AccessAdminLookupOption option) => AppPermissionAssignmentOption(
-              id: option.id,
-              code: option.label,
-              label: l10n.permissionCatalogLabelForCode(option.label),
-              description: option.label,
-            ),
-          )
-          .toList(growable: false);
+  List<AccessAdminLookupOption> currentPermissionLookups =
+      List<AccessAdminLookupOption>.from(permissionLookups);
+  bool isLoadingPermissions = false;
+  bool permissionLoadAttempted = permissionLookups.isNotEmpty;
+  bool scheduledInitialPermissionLoad = false;
+
+  List<AppPermissionAssignmentOption> buildPermissionOptions() {
+    return currentPermissionLookups
+        .map(
+          (AccessAdminLookupOption option) => AppPermissionAssignmentOption(
+            id: option.id,
+            code: option.label,
+            label: l10n.permissionCatalogLabelForCode(option.label),
+            description: option.label,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  Future<void> loadPermissionsForSelectedTenant(StateSetter setState) async {
+    final String? resolvedTenantId = selectedTenantId;
+    final RolePermissionLookupsLoader? loader = loadPermissionsForTenant;
+    if (loader == null || (resolvedTenantId ?? '').isEmpty) {
+      return;
+    }
+
+    setState(() {
+      isLoadingPermissions = true;
+      currentPermissionLookups = <AccessAdminLookupOption>[];
+      selectedPermissionIds.clear();
+    });
+
+    final List<AccessAdminLookupOption> loaded =
+        await loader(resolvedTenantId!);
+
+    setState(() {
+      isLoadingPermissions = false;
+      permissionLoadAttempted = true;
+      currentPermissionLookups = loaded;
+    });
+  }
 
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
@@ -81,9 +116,22 @@ Future<bool?> showRoleMutationDialog({
         ]) {
           return StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
+              final bool tenantSelected = (selectedTenantId ?? '').isNotEmpty;
               final bool fieldsEnabled =
-                  !isSubmitting &&
-                  (!showTenantPicker || (selectedTenantId ?? '').isNotEmpty);
+                  !isSubmitting && (!showTenantPicker || tenantSelected);
+              final List<AppPermissionAssignmentOption> permissionOptions =
+                  buildPermissionOptions();
+
+              if (loadPermissionsForTenant != null &&
+                  tenantSelected &&
+                  !permissionLoadAttempted &&
+                  !isLoadingPermissions &&
+                  !scheduledInitialPermissionLoad) {
+                scheduledInitialPermissionLoad = true;
+                unawaited(
+                  loadPermissionsForSelectedTenant(setState),
+                );
+              }
 
               return AppFormSection(
                 children: <Widget>[
@@ -114,7 +162,19 @@ Future<bool?> showRoleMutationDialog({
                         onChanged: (String? value) {
                           setState(() {
                             selectedTenantId = value;
+                            permissionLoadAttempted = false;
+                            scheduledInitialPermissionLoad = false;
                           });
+                          if ((value ?? '').isEmpty) {
+                            setState(() {
+                              currentPermissionLookups =
+                                  <AccessAdminLookupOption>[];
+                            });
+                            return;
+                          }
+                          unawaited(
+                            loadPermissionsForSelectedTenant(setState),
+                          );
                         },
                         validator: (String? value) =>
                             (value ?? '').trim().isEmpty
@@ -143,12 +203,34 @@ Future<bool?> showRoleMutationDialog({
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   SizedBox(height: Theme.of(context).spacing.xs),
-                  if (permissionOptions.isEmpty)
+                  if (showTenantPicker && !tenantSelected)
+                    AppFormInformationBanner(
+                      title: l10n.accessAdminPermissionCatalogSelectTenantTitle,
+                      message: l10n.accessAdminPermissionCatalogSelectTenantMessage,
+                      icon: Icons.apartment_outlined,
+                    )
+                  else if (isLoadingPermissions)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (permissionOptions.isEmpty)
                     AppFormInformationBanner(
                       title: l10n.accessAdminPermissionCatalogUnavailableTitle,
                       message: l10n.accessAdminPermissionCatalogUnavailableMessage,
                       variant: AppFormInformationVariant.warning,
                       icon: Icons.security_outlined,
+                      children: loadPermissionsForTenant != null && tenantSelected
+                          ? <Widget>[
+                              AppButton.secondary(
+                                label: l10n.commonRetryActionLabel,
+                                enabled: !isSubmitting,
+                                onPressed: () => unawaited(
+                                  loadPermissionsForSelectedTenant(setState),
+                                ),
+                              ),
+                            ]
+                          : const <Widget>[],
                     )
                   else ...<Widget>[
                     AppPermissionAssignmentPicker(
@@ -183,7 +265,7 @@ Future<bool?> showRoleMutationDialog({
       if (resolvedTenantId == null || resolvedTenantId.trim().isEmpty) {
         return Future<AppFailure?>.value(AppFailure.validation());
       }
-      if (permissionOptions.isEmpty || selectedPermissionIds.isEmpty) {
+      if (currentPermissionLookups.isEmpty || selectedPermissionIds.isEmpty) {
         return Future<AppFailure?>.value(AppFailure.validation());
       }
       return onSubmit(

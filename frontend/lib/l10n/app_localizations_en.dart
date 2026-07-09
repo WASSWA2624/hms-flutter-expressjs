@@ -17869,6 +17869,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Permissions could not be loaded for this tenant. Contact your administrator or try again after refreshing.';
 
   @override
+  String get accessAdminPermissionCatalogSelectTenantTitle => 'Select a tenant';
+
+  @override
+  String get accessAdminPermissionCatalogSelectTenantMessage =>
+      'Choose a tenant above to load the available permissions for that organization.';
+
+  @override
   String get accessAdminEmailLabel => 'Email';
 
   @override

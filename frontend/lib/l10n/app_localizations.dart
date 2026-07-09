@@ -33243,6 +33243,18 @@ abstract class AppLocalizations {
   /// **'Permissions could not be loaded for this tenant. Contact your administrator or try again after refreshing.'**
   String get accessAdminPermissionCatalogUnavailableMessage;
 
+  /// Title when role permissions require tenant selection first.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a tenant'**
+  String get accessAdminPermissionCatalogSelectTenantTitle;
+
+  /// Message when role permissions require tenant selection first.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a tenant above to load the available permissions for that organization.'**
+  String get accessAdminPermissionCatalogSelectTenantMessage;
+
   /// Access admin email field label.
   ///
   /// In en, this message translates to:
@@ -34309,7 +34321,4 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
-    'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.',
-  );
-}
+    'on GitHub with

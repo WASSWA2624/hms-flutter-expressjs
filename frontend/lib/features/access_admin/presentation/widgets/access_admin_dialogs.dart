@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
@@ -290,17 +291,26 @@ Future<void> openAccessAdminCreateRoleDialog(
   WidgetRef ref,
   AccessAdminWorkspaceState state,
 ) async {
+  final bool isSuperAdmin = ref.read(appAccessPolicyProvider).isElevated;
+  final String? workspaceTenantId = state.query.tenantId;
   final String? sessionTenantId =
       ref.read(sessionStateProvider).session?.user?.tenantId;
-  final String? initialTenantId = state.query.tenantId ?? sessionTenantId;
+  final String? initialTenantId = isSuperAdmin
+      ? workspaceTenantId
+      : (workspaceTenantId ?? sessionTenantId);
+  final bool requireTenantPicker = isSuperAdmin
+      ? workspaceTenantId == null
+      : initialTenantId == null;
   final List<AccessAdminLookupOption> tenantOptions =
       await _loadAccessAdminTenantOptions(ref, state);
   final List<AccessAdminLookupOption> permissionLookups =
-      await _loadAccessAdminPermissionLookups(
-        ref,
-        state,
-        tenantId: initialTenantId,
-      );
+      requireTenantPicker && initialTenantId == null
+      ? const <AccessAdminLookupOption>[]
+      : await _loadAccessAdminPermissionLookups(
+          ref,
+          state,
+          tenantId: initialTenantId,
+        );
   if (!context.mounted) {
     return;
   }
@@ -309,10 +319,18 @@ Future<void> openAccessAdminCreateRoleDialog(
     context: context,
     mode: RoleMutationMode.create,
     permissionLookups: permissionLookups,
+    loadPermissionsForTenant: requireTenantPicker
+        ? (String tenantId) => _loadAccessAdminPermissionLookups(
+            ref,
+            state,
+            tenantId: tenantId,
+            forceRefresh: true,
+          )
+        : null,
     tenantId: initialTenantId,
     facilityId: state.query.facilityId,
     tenantOptions: tenantOptions,
-    requireTenantPicker: initialTenantId == null,
+    requireTenantPicker: requireTenantPicker,
     onSubmit: (AccessAdminRoleDraft draft) => ref
         .read(accessAdminWorkspaceControllerProvider.notifier)
         .createRole(draft),
@@ -323,28 +341,30 @@ Future<List<AccessAdminLookupOption>> _loadAccessAdminPermissionLookups(
   WidgetRef ref,
   AccessAdminWorkspaceState state, {
   String? tenantId,
+  bool forceRefresh = false,
 }) async {
-  if (state.data.lookups.permissions.isNotEmpty) {
+  final String? resolvedTenantId = tenantId ?? state.query.tenantId;
+  if ((resolvedTenantId ?? '').isEmpty) {
+    return const <AccessAdminLookupOption>[];
+  }
+
+  if (!forceRefresh &&
+      resolvedTenantId == state.query.tenantId &&
+      state.data.lookups.permissions.isNotEmpty) {
     return state.data.lookups.permissions;
   }
 
   final Result<AccessAdminLookups> result = await ref
       .read(accessAdminRepositoryProvider)
       .getReferenceData(
-        tenantId: tenantId ?? state.query.tenantId,
+        tenantId: resolvedTenantId,
         facilityId: state.query.facilityId,
       );
 
-  final List<AccessAdminLookupOption> permissions = result.when(
+  return result.when(
     success: (AccessAdminLookups lookups) => lookups.permissions,
     failure: (_) => const <AccessAdminLookupOption>[],
   );
-
-  if (permissions.isNotEmpty) {
-    await ref.read(accessAdminWorkspaceControllerProvider.notifier).refresh();
-  }
-
-  return permissions;
 }
 
 Future<List<AccessAdminLookupOption>> _loadAccessAdminTenantOptions(

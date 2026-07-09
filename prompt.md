@@ -1,100 +1,70 @@
-# Fix Role & Permission Catalog — Load, Seed, and Assign
+# Fix: Super Admin cannot load permissions when creating a role
 
-## Context
+## Problem
 
-The **Create Role** dialog (`showRoleMutationDialog`) shows **0 of 0 permissions** (see screenshot). Bulk actions and grouped checkboxes render, but the catalog is empty, so role creation always fails validation: *"Select at least one permission for this role."*
+On **Create Role** (`Access Admin`), the Permissions section shows:
 
-**Current data flow**
-- UI: `AppPermissionAssignmentPicker` ← `permissionLookups` from Access Admin workspace state
-- API: `access-admin-workspace` → `findLookups()` → `prisma.permission.findMany({ where: { tenant_id } })`
-- **Canonical source of truth (code):** `backend/src/config/permissions.js`
-  - `PERMISSIONS` — stable keys (`patient:read`, `clinical:write`, `hr:read`, …)
-  - `ROLE_PERMISSIONS` — system role templates (Doctor, Nurse, Lab Tech, HR, etc.)
+> **Permission catalog unavailable**  
+> Permissions could not be loaded for this tenant. Contact your administrator or try again after refreshing.
 
-**Gap:** The UI depends on **tenant-scoped DB rows** in `permission` / `role`, but those rows are not guaranteed to exist. Seeding (`seed-access-pack.js`) only inserts permissions referenced by demo roles — not the full catalog — and may not have run for the active tenant.
+This blocks role creation entirely — Save is disabled because no permissions can be selected.
 
----
+## Observed context
 
-## Goal
+| Item | Value |
+|------|-------|
+| Environment | Local dev — `http://127.0.0.1:5201` |
+| User | **Platform Demo** (`super.admin@hosspi.com`) |
+| Role | **Platform Administrator** — badges: Super Admin, Administrator |
+| Entry point | Dashboard quick action **Create role** (also reproducible from Access Admin workspace) |
+| UI state | Role name / description fields render; **no tenant selector** is visible; permissions picker is replaced by the error banner |
 
-Make the Create/Edit Role flow fully functional by ensuring the **full permission catalog** and **system roles** are available in the database (synced from `permissions.js`), while supporting **custom tenant roles** with flexible permission assignment.
+## Expected behavior
 
----
+1. **Super Admin** users must be able to create roles and assign the full canonical permission catalog, regardless of their own session tenant.
+2. When no tenant context is selected, the dialog should **require a tenant picker** (same pattern as **Create facility** with `requireTenantPicker: true`).
+3. After a tenant is selected, permissions for that tenant should load and display in `AppPermissionAssignmentPicker`.
+4. If the tenant’s permission catalog is missing in the database, the backend should **auto-sync** it (`ensureTenantAccessCatalog`) before returning reference data.
+5. Save should succeed once name + at least one permission + tenant are provided.
 
-## Requirements
+## Likely root cause (investigate)
 
-### 1. Backend — sync catalog from `permissions.js`
+Permissions are **tenant-scoped** in the DB. The create-role flow loads lookups once via `getReferenceData(tenantId)`:
 
-- Add a **permission sync** step (seeder, startup hook, or admin endpoint) that upserts every value in `PERMISSIONS` into the `permission` table for each tenant.
-  - Use `name` = permission key (e.g. `patient:read`).
-  - Idempotent: safe to re-run; no duplicates per `(tenant_id, name)`.
-- Seed **system roles** from `ROLE_PERMISSIONS` / `ROLES` (Doctor, Nurse, Lab Tech, Tenant Admin, etc.) with their default `role_permission` mappings.
-  - Mark or distinguish system roles from custom roles if the schema supports it; otherwise document naming convention (e.g. uppercase codes).
-- Ensure `findLookups()` returns the synced permissions for the resolved tenant scope.
-- Add/update tests in `access-admin-workspace.service.test.js` verifying non-empty permission lookups after sync.
+- **Frontend:** `openAccessAdminCreateRoleDialog` → `_loadAccessAdminPermissionLookups` → `role_mutation_dialog.dart` shows the error when `permissionLookups` is empty.
+- **Backend:** `access-admin-workspace.service.js` → `getReferenceData` → `resolveWorkspaceScope` → `maybeSyncTenantAccessCatalog` → `findLookups`.
+- Super Admin scope resolution (`tenant-facility-workspace.repository.js`) requires a `tenant_id`; if the session carries one implicitly, the tenant picker is skipped but that tenant may have an **empty or unsynced** permission catalog.
+- Permissions are **not reloaded** when the tenant picker value changes in `role_mutation_dialog.dart`.
 
-### 2. Backend — custom roles (dynamic)
+## Tasks
 
-- Keep roles in the `role` table (tenant-scoped) — **do not hardcode custom roles in code**.
-- Create/update role endpoints must persist `name`, `description`, and `permission_ids` via `role_permission`.
-- Authorization continues to use permission **keys** from `permissions.js`; DB stores tenant instances mapped to those keys.
+1. **Reproduce** as Super Admin from Dashboard → Create role. Capture the `/access-admin-workspace/reference-data` request/response (tenantId param, permissions array length, HTTP status).
+2. **Diagnose** why `permissionLookups` is empty:
+   - Missing / failed catalog sync for the resolved tenant?
+   - Wrong tenant resolved from session vs. query?
+   - API error swallowed in `_loadAccessAdminPermissionLookups` (`failure: (_) => []`)?
+3. **Fix backend** if needed: ensure `ensureTenantAccessCatalog` runs reliably for the resolved tenant and returns the full catalog from `backend/src/config/permissions.js`.
+4. **Fix frontend UX** for Super Admin:
+   - Always show tenant picker when user is Super Admin and no explicit tenant is chosen.
+   - Reload permission lookups when tenant selection changes.
+   - Replace the generic “catalog unavailable” dead-end with a retry action or clearer message (e.g. “Select a tenant to load permissions”).
+5. **Verify** end-to-end: Super Admin can create a role with permissions for any tenant; tenant/facility admins are unaffected.
 
-### 3. Frontend — resilient permission loading
+## Key files
 
-- In `access_admin_dialogs.dart` / `role_mutation_dialog.dart`, ensure `permissionLookups` is populated before opening Create Role (refresh lookups if empty).
-- If lookups are still empty after refresh, show a **clear error banner** (e.g. *"Permission catalog not available for this tenant. Contact your administrator."*) instead of stacked empty states.
-- Deduplicate status copy when catalog is empty — hide *"No permissions selected"* / *"No permissions match your search"* when `total == 0`.
-
-### 4. Frontend — picker UX polish (`AppPermissionAssignmentPicker`)
-
-- Keep grouped **checkbox** selection by module prefix (`patient`, `clinical`, `hr`, …).
-- Replace text-link bulk actions with consistent controls:
-  - **Global:** master checkbox or toggle for *Select all* / *Clear all* (in addition to or replacing secondary buttons).
-  - **Per group:** tri-state group header checkbox (none · partial · all) with select/clear group behavior.
-- Show meaningful summary: `{selected} of {total} selected` only when `total > 0`.
-- Pre-check permissions in **edit** mode from existing `role_permission` data.
-- Responsive layout: scrollable groups, touch-friendly on mobile, two-column groups on tablet/desktop.
-
-### 5. Dialog polish
-
-- Cancel button retains icon (`Icons.close_outlined`); Save retains save icon.
-- `showRoleMutationDialog` remains the single reusable entry point for role create/edit across Access Admin (and HR where applicable).
-
----
-
-## Data reference (`permissions.js`)
-
-| Export | Purpose |
-|--------|---------|
-| `PERMISSIONS` | Full catalog (~60 keys across modules: profile, patient, clinical, lab, hr, mortuary, tenant/facility/system admin, …) |
-| `ROLE_PERMISSIONS` | Default permission sets per system role |
-| `ROLE_PERMISSION_TEMPLATES` | Alias roles inheriting from base roles |
-
-All new permissions must be added to `permissions.js` first, then synced to DB.
-
----
+| Layer | Path |
+|-------|------|
+| UI dialog | `frontend/lib/features/access_admin/presentation/widgets/role_mutation_dialog.dart` |
+| Dialog orchestration | `frontend/lib/features/access_admin/presentation/widgets/access_admin_dialogs.dart` |
+| Dashboard entry | `frontend/lib/features/home/presentation/widgets/home_dashboard_actions.dart` |
+| Reference-data API | `backend/src/modules/access-admin-workspace/services/access-admin-workspace.service.js` |
+| Catalog sync | `backend/src/lib/authorization/permission-catalog-sync.js` |
+| Canonical permissions | `backend/src/config/permissions.js` |
+| Scope resolution | `backend/src/modules/tenant-facility-workspace/repositories/tenant-facility-workspace.repository.js` |
 
 ## Acceptance criteria
 
-- [ ] Create Role shows the full permission catalog (non-zero total) for a seeded tenant.
-- [ ] User can select permissions via grouped checkboxes; global and per-group select/clear work.
-- [ ] System roles (Doctor, Nurse, Lab Tech, etc.) exist in DB with correct default permissions.
-- [ ] User can create a **custom role** with any combination of permissions; role is persisted and reusable.
-- [ ] Edit role pre-selects assigned permissions.
-- [ ] Empty catalog shows one actionable error state, not misleading "0 of 0" + search miss messages.
-- [ ] No regressions in Access Admin role create/edit or authorization checks.
-
----
-
-## Implementation notes
-
-- Run permission sync via existing seeder pipeline (`seed-access-pack.js`) or dedicated script; re-run for dev tenants after deploy.
-- No Prisma schema change expected unless adding `is_system` flag to `role` — only add migration if needed.
-- Frontend labels: continue using `permissionCatalogLabelForCode()` for display names.
-
----
-
-## Out of scope
-
-- Renaming permission keys or changing ABAC middleware logic.
-- Redesigning unrelated Access Admin panels.
+- [ ] Super Admin sees a tenant selector (when no tenant is pre-selected) and a populated permission list after selection.
+- [ ] No “Permission catalog unavailable” error under normal dev data / after catalog sync.
+- [ ] Role creation saves successfully with selected permissions.
+- [ ] Existing tests updated; add coverage for Super Admin + tenant picker + permission reload if missing.

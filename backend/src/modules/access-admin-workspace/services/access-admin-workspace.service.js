@@ -561,7 +561,10 @@ const getReferenceData = async (query = {}, user = {}) => {
 
   if (scopeResult.state === 'tenant_context_required') {
     const lookups = await repository.findLookups(null, includeAllTenants);
-    return buildLookups(lookups);
+    return {
+      ...buildLookups(lookups),
+      permissions: [],
+    };
   }
 
   await maybeSyncTenantAccessCatalog(scopeResult.scope);

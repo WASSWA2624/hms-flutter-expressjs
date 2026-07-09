@@ -126,6 +126,37 @@ describe('access-admin-workspace service', () => {
     expect(lookups.permissions.length).toBeGreaterThan(0);
   });
 
+  it('returns empty permissions when tenant context is required', async () => {
+    repository.resolveWorkspaceScope.mockResolvedValue({
+      state: 'tenant_context_required',
+      scope: null,
+    });
+    repository.findLookups.mockResolvedValue({
+      tenants: [
+        {
+          id: 'tenant-uuid',
+          human_friendly_id: 'TEN0001',
+          name: 'DemoCare General Hospital',
+        },
+      ],
+      facilities: [],
+      roles: [],
+      permissions: [
+        {
+          id: 'perm-uuid',
+          human_friendly_id: 'PRM0001',
+          name: 'clinical:read',
+        },
+      ],
+    });
+
+    const lookups = await service.getReferenceData({}, { roles: ['SUPER_ADMIN'] });
+
+    expect(ensureTenantAccessCatalog).not.toHaveBeenCalled();
+    expect(lookups.tenants).toHaveLength(1);
+    expect(lookups.permissions).toEqual([]);
+  });
+
   it('returns tenant context required state without scope', async () => {
     repository.resolveWorkspaceScope.mockResolvedValue({
       state: 'tenant_context_required',
