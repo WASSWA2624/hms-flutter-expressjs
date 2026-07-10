@@ -1690,6 +1690,10 @@
   "@subscriptionUpgradeStepContactTitle": {
     "description": "Upgrade wizard step title for platform billing contacts."
   },
+  "subscriptionUpgradeBillingCycleHint": "Billing cycle",
+  "@subscriptionUpgradeBillingCycleHint": {
+    "description": "Title above the monthly/annual toggle on the upgrade plan step."
+  },
   "subscriptionUpgradeBillingMonthlyLabel": "Monthly",
   "@subscriptionUpgradeBillingMonthlyLabel": {
     "description": "Monthly billing cycle toggle label on upgrade plan step."

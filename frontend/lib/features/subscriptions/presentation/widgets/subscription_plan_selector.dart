@@ -3,6 +3,8 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/currency/fx_currency_utils.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
+import 'package:hosspi_hms/shared/components/app_content_panel.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_board_toggle.dart';
 
 class SubscriptionPlanSelector extends StatelessWidget {
@@ -17,7 +19,7 @@ class SubscriptionPlanSelector extends StatelessWidget {
     required this.planLabelBuilder,
     required this.onBillingCycleChanged,
     required this.onSelected,
-    this.labelText,
+    this.billingCycleHint,
     super.key,
   });
 
@@ -31,7 +33,7 @@ class SubscriptionPlanSelector extends StatelessWidget {
   final String Function(SubscriptionUpgradePlanOption plan) planLabelBuilder;
   final ValueChanged<SubscriptionUpgradeBillingCycle> onBillingCycleChanged;
   final ValueChanged<String> onSelected;
-  final String? labelText;
+  final String? billingCycleHint;
 
   @override
   Widget build(BuildContext context) {
@@ -41,41 +43,45 @@ class SubscriptionPlanSelector extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final List<SubscriptionUpgradePlanOption> ordered = _sortedPlans();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        if (labelText != null && labelText!.trim().isNotEmpty) ...<Widget>[
-          Text(
-            labelText!,
-            style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w600,
+        AppSectionPanel(
+          title: billingCycleHint,
+          leadingIcon: Icons.payments_outlined,
+          tone: AppWorkspaceStatusTone.info,
+          density: AppContentPanelDensity.compact,
+          children: <Widget>[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: AppWorkspaceBoardToggle<SubscriptionUpgradeBillingCycle>(
+                value: billingCycle,
+                segments: <ButtonSegment<SubscriptionUpgradeBillingCycle>>[
+                  ButtonSegment<SubscriptionUpgradeBillingCycle>(
+                    value: SubscriptionUpgradeBillingCycle.monthly,
+                    label: Text(monthlyLabel),
+                    icon: const Icon(
+                      Icons.calendar_view_month_outlined,
+                      size: 18,
+                    ),
+                  ),
+                  ButtonSegment<SubscriptionUpgradeBillingCycle>(
+                    value: SubscriptionUpgradeBillingCycle.annual,
+                    label: Text(annualLabel),
+                    icon: const Icon(Icons.calendar_today_outlined, size: 18),
+                  ),
+                ],
+                onChanged: onBillingCycleChanged,
+              ),
             ),
-          ),
-          SizedBox(height: theme.spacing.sm),
-        ],
-        Align(
-          alignment: Alignment.centerLeft,
-          child: AppWorkspaceBoardToggle<SubscriptionUpgradeBillingCycle>(
-            value: billingCycle,
-            segments: <ButtonSegment<SubscriptionUpgradeBillingCycle>>[
-              ButtonSegment<SubscriptionUpgradeBillingCycle>(
-                value: SubscriptionUpgradeBillingCycle.monthly,
-                label: Text(monthlyLabel),
-                icon: const Icon(Icons.calendar_view_month_outlined, size: 18),
-              ),
-              ButtonSegment<SubscriptionUpgradeBillingCycle>(
-                value: SubscriptionUpgradeBillingCycle.annual,
-                label: Text(annualLabel),
-                icon: const Icon(Icons.calendar_today_outlined, size: 18),
-              ),
-            ],
-            onChanged: onBillingCycleChanged,
-          ),
+          ],
         ),
         SizedBox(height: theme.spacing.md),
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            final int columns = _columnCount(constraints.maxWidth);
+            final int columns = _columnCount(constraints.maxWidth, ordered.length);
             final double gap = theme.spacing.sm;
             final double tileWidth =
                 (constraints.maxWidth - (gap * (columns - 1))) / columns;
@@ -84,12 +90,16 @@ class SubscriptionPlanSelector extends StatelessWidget {
               spacing: gap,
               runSpacing: gap,
               children: <Widget>[
-                for (final SubscriptionUpgradePlanOption plan in plans)
+                for (final SubscriptionUpgradePlanOption plan in ordered)
                   SizedBox(
                     width: tileWidth,
                     child: _PlanColumnTile(
                       label: planLabelBuilder(plan),
                       priceLabel: _priceLabel(context, plan),
+                      cycleLabel: billingCycle ==
+                              SubscriptionUpgradeBillingCycle.monthly
+                          ? monthlyLabel
+                          : annualLabel,
                       selected: selectedPlanId == plan.id,
                       isCurrentPlan: plan.id == currentPlanId,
                       currentPlanLabel: currentPlanLabel,
@@ -104,9 +114,33 @@ class SubscriptionPlanSelector extends StatelessWidget {
     );
   }
 
-  int _columnCount(double width) {
+  List<SubscriptionUpgradePlanOption> _sortedPlans() {
+    final List<SubscriptionUpgradePlanOption> ordered =
+        List<SubscriptionUpgradePlanOption>.of(plans);
+    ordered.sort((SubscriptionUpgradePlanOption a, SubscriptionUpgradePlanOption b) {
+      final double? left = a.priceFor(billingCycle);
+      final double? right = b.priceFor(billingCycle);
+      if (left == null && right == null) {
+        return a.label.compareTo(b.label);
+      }
+      if (left == null) {
+        return 1;
+      }
+      if (right == null) {
+        return -1;
+      }
+      final int byPrice = left.compareTo(right);
+      if (byPrice != 0) {
+        return byPrice;
+      }
+      return a.label.compareTo(b.label);
+    });
+    return ordered;
+  }
+
+  int _columnCount(double width, int planCount) {
     if (width >= 720) {
-      return plans.length.clamp(1, 4);
+      return planCount.clamp(1, 4);
     }
     if (width >= 520) {
       return 2;
@@ -132,6 +166,7 @@ class _PlanColumnTile extends StatelessWidget {
   const _PlanColumnTile({
     required this.label,
     required this.priceLabel,
+    required this.cycleLabel,
     required this.selected,
     required this.isCurrentPlan,
     required this.currentPlanLabel,
@@ -140,6 +175,7 @@ class _PlanColumnTile extends StatelessWidget {
 
   final String label;
   final String priceLabel;
+  final String cycleLabel;
   final bool selected;
   final bool isCurrentPlan;
   final String currentPlanLabel;
@@ -149,65 +185,88 @@ class _PlanColumnTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final BorderRadius radius = BorderRadius.circular(theme.radius.md);
+    final BorderRadius radius = BorderRadius.circular(theme.radius.lg);
 
     return Material(
+      elevation: selected ? 1.5 : 0,
+      shadowColor: colorScheme.primary.withValues(alpha: 0.18),
       color: selected
-          ? colorScheme.primaryContainer.withValues(alpha: 0.55)
+          ? colorScheme.primaryContainer.withValues(alpha: 0.42)
           : colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: radius,
         side: BorderSide(
           color: selected ? colorScheme.primary : colorScheme.outlineVariant,
-          width: selected ? 1.5 : 1,
+          width: selected ? 1.75 : 1,
         ),
       ),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         borderRadius: radius,
         child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: theme.spacing.md,
-            vertical: theme.spacing.md,
-          ),
+          padding: EdgeInsets.all(theme.spacing.md),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Expanded(
                     child: Text(
                       label,
                       style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w800,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (selected)
-                    Icon(
-                      Icons.check_circle,
-                      size: 18,
+                  AnimatedOpacity(
+                    opacity: selected ? 1 : 0,
+                    duration: const Duration(milliseconds: 160),
+                    child: Icon(
+                      Icons.check_circle_rounded,
+                      size: 20,
                       color: colorScheme.primary,
                     ),
+                  ),
                 ],
               ),
-              SizedBox(height: theme.spacing.sm),
+              SizedBox(height: theme.spacing.md),
               Text(
                 priceLabel,
                 style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                   color: colorScheme.primary,
+                  height: 1.1,
+                ),
+              ),
+              SizedBox(height: theme.spacing.xs),
+              Text(
+                cycleLabel,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               if (isCurrentPlan) ...<Widget>[
-                SizedBox(height: theme.spacing.xs),
-                Text(
-                  currentPlanLabel,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
+                SizedBox(height: theme.spacing.sm),
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: theme.spacing.sm,
+                    vertical: theme.spacing.xs,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(theme.radius.full),
+                  ),
+                  child: Text(
+                    currentPlanLabel,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSecondaryContainer,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],

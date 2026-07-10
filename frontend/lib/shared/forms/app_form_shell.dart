@@ -58,6 +58,46 @@ List<Widget> buildAppDialogFormActions({
   ];
 }
 
+/// Emphasized Cancel / optional Back / primary Next-or-Submit footer for wizards.
+List<Widget> buildAppDialogWizardActions({
+  required String cancelLabel,
+  required String primaryLabel,
+  required VoidCallback? onPrimary,
+  VoidCallback? onCancel,
+  String? backLabel,
+  VoidCallback? onBack,
+  IconData cancelIcon = Icons.close,
+  IconData backIcon = Icons.arrow_back,
+  IconData primaryIcon = Icons.arrow_forward,
+  bool isSubmitting = false,
+  bool showBack = false,
+}) {
+  return <Widget>[
+    OutlinedButton.icon(
+      onPressed: isSubmitting ? null : onCancel,
+      icon: Icon(cancelIcon, size: 18),
+      label: Text(cancelLabel),
+    ),
+    if (showBack && backLabel != null)
+      OutlinedButton.icon(
+        onPressed: isSubmitting ? null : onBack,
+        icon: Icon(backIcon, size: 18),
+        label: Text(backLabel),
+      ),
+    FilledButton.icon(
+      onPressed: isSubmitting ? null : onPrimary,
+      icon: isSubmitting
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Icon(primaryIcon, size: 18),
+      label: Text(primaryLabel),
+    ),
+  ];
+}
+
 class AppFormShell extends StatelessWidget {
   const AppFormShell({
     required this.formKey,

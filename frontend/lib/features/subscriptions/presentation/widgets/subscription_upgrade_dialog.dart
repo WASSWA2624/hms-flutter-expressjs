@@ -19,6 +19,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 enum _UpgradeStep { plan, paymentMethod, paymentDetails, proof, contact }
 
@@ -500,13 +501,13 @@ class _SubscriptionUpgradeDialogState
           width: 420,
           child: Center(child: CircularProgressIndicator()),
         ),
-        actions: <Widget>[
-          AppButton.secondary(
-            label: l10n.commonCancelActionLabel,
-            leadingIcon: Icons.close,
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
-        ],
+        actions: buildAppDialogWizardActions(
+          cancelLabel: l10n.commonCancelActionLabel,
+          primaryLabel: l10n.commonCloseActionLabel,
+          onCancel: () => Navigator.of(context).maybePop(),
+          onPrimary: () => Navigator.of(context).maybePop(),
+          primaryIcon: Icons.close,
+        ),
       );
     }
 
@@ -524,19 +525,21 @@ class _SubscriptionUpgradeDialogState
       icon: Icon(
         isRenewal ? Icons.autorenew : Icons.workspace_premium_outlined,
       ),
-      maxWidth: 760,
+      maxWidth: 800,
       scrollable: true,
       content: AppFormShell(
         formKey: _formKey,
         autovalidateMode: _autovalidateMode,
         formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
-          _StepIndicator(
-            steps: steps,
-            current: _step,
-            titleBuilder: (step) => _stepTitle(l10n, step),
+          AppWizardStepper(
+            steps: <AppWizardStepItem>[
+              for (final _UpgradeStep step in steps)
+                AppWizardStepItem(id: step, label: _stepTitle(l10n, step)),
+            ],
+            currentIndex: _stepIndex,
           ),
-          SizedBox(height: theme.spacing.md),
+          SizedBox(height: theme.spacing.lg),
           for (final _UpgradeStep step in steps)
             Visibility(
               visible: step == _step,
@@ -553,7 +556,23 @@ class _SubscriptionUpgradeDialogState
             ),
         ],
       ),
-      actions: _buildActions(l10n, isRenewal),
+      actions: buildAppDialogWizardActions(
+        cancelLabel: l10n.commonCancelActionLabel,
+        backLabel: l10n.commonBackActionLabel,
+        primaryLabel: _isLastStep
+            ? (isRenewal
+                  ? l10n.subscriptionRenewSubmitAction
+                  : l10n.subscriptionUpgradeSubmitAction)
+            : l10n.commonNextActionLabel,
+        showBack: !_isFirstStep,
+        isSubmitting: _isSubmitting,
+        primaryIcon: _isLastStep
+            ? Icons.payments_outlined
+            : Icons.arrow_forward,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onBack: _goBack,
+        onPrimary: _isLastStep ? _submit : _goNext,
+      ),
     );
   }
 
@@ -574,6 +593,7 @@ class _SubscriptionUpgradeDialogState
         monthlyLabel: l10n.subscriptionUpgradeBillingMonthlyLabel,
         annualLabel: l10n.subscriptionUpgradeBillingAnnualLabel,
         currentPlanLabel: l10n.subscriptionUpgradeCurrentPlanBadge,
+        billingCycleHint: l10n.subscriptionUpgradeBillingCycleHint,
         planLabelBuilder: (SubscriptionUpgradePlanOption plan) =>
             _planLabel(l10n, plan),
         onBillingCycleChanged: (SubscriptionUpgradeBillingCycle cycle) {
@@ -581,16 +601,10 @@ class _SubscriptionUpgradeDialogState
         },
         onSelected: (String planId) => unawaited(_onPlanChanged(planId)),
       ),
-      _UpgradeStep.paymentMethod => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      _UpgradeStep.paymentMethod => AppSectionPanel(
+        title: l10n.subscriptionUpgradePaymentMethodSectionTitle,
+        leadingIcon: Icons.account_balance_wallet_outlined,
         children: <Widget>[
-          Text(
-            l10n.subscriptionUpgradePaymentMethodSectionTitle,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          SizedBox(height: theme.spacing.sm),
           SubscriptionPaymentMethodSelector(
             selected: _paymentMethod,
             onSelected: (SubscriptionPaymentMethodId method) {
@@ -613,28 +627,31 @@ class _SubscriptionUpgradeDialogState
       _UpgradeStep.proof => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text(
-            l10n.subscriptionUpgradeProofStepBody,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          SizedBox(height: theme.spacing.md),
-          _ProofOfPaymentSection(
-            fileName: _proofFileName,
-            proofBytes: _proofBytes,
-            proofMimeType: _proofMimeType,
-            isSubmitting: _isSubmitting,
-            attachLabel: l10n.subscriptionUpgradeAttachProofAction,
-            removeLabel: l10n.subscriptionUpgradeRemoveProofAction,
-            proofLabel: l10n.subscriptionUpgradeProofLabel,
-            onAttach: _pickProof,
-            onRemove: () => setState(() {
+          AppFileUploadPanel(
+            title: l10n.subscriptionUpgradeProofLabel,
+            emptyDescription: l10n.subscriptionUpgradeProofStepBody,
+            chooseLabel: l10n.subscriptionUpgradeAttachProofAction,
+            clearLabel: l10n.subscriptionUpgradeRemoveProofAction,
+            fileNames: _proofFileName == null
+                ? const <String>[]
+                : <String>[_proofFileName!],
+            onChoose: _pickProof,
+            onClear: () => setState(() {
               _proofFileName = null;
               _proofBytes = null;
               _proofMimeType = null;
             }),
+            enabled: !_isSubmitting,
+            tone: AppWorkspaceStatusTone.info,
           ),
+          if (_proofFileName != null && _proofBytes != null) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            _ProofPreview(
+              fileName: _proofFileName!,
+              proofBytes: _proofBytes!,
+              proofMimeType: _proofMimeType,
+            ),
+          ],
           SizedBox(height: theme.spacing.md),
           AppTextField(
             controller: _notesController,
@@ -655,9 +672,10 @@ class _SubscriptionUpgradeDialogState
               phoneLabel: l10n.subscriptionUpgradeAdminContactPhoneLabel,
             )
           else
-            Text(
-              l10n.subscriptionUpgradeAdminContactBody,
-              style: theme.textTheme.bodyMedium,
+            AppMessagePanel(
+              title: l10n.subscriptionUpgradeAdminContactTitle,
+              message: l10n.subscriptionUpgradeAdminContactBody,
+              icon: Icons.support_agent_outlined,
             ),
           if (!_requiresProof &&
               _paymentMethod != SubscriptionPaymentMethodId.other) ...<Widget>[
@@ -699,118 +717,66 @@ class _SubscriptionUpgradeDialogState
       decimalDigits: amountDigits,
     );
 
+    final List<Widget> methodFields = _paymentDetailFields(
+      l10n,
+      theme,
+      contextData,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        if (_paymentMethod != SubscriptionPaymentMethodId.cash &&
-            _paymentMethod != SubscriptionPaymentMethodId.other) ...<Widget>[
-          Text(
-            l10n.subscriptionUpgradePaymentDetailsTitle,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          SizedBox(height: theme.spacing.sm),
-          ..._paymentDetailFields(l10n, theme, contextData),
+        if (methodFields.isNotEmpty) ...<Widget>[
+          ..._spacedFields(theme, methodFields),
           SizedBox(height: theme.spacing.md),
         ],
-        AppEmailField(
-          controller: _invoiceEmailController,
-          labelText: l10n.subscriptionUpgradeInvoiceEmailLabel,
-          helperText: l10n.subscriptionUpgradeInvoiceEmailHelper,
-          invalidEmailMessage: l10n.authEmailInvalidMessage,
-          requiredMessage: l10n.validationRequired,
-          isRequired: true,
-          textInputAction: TextInputAction.next,
-        ),
-        SizedBox(height: theme.spacing.md),
-        if (isMobileMoney) ...<Widget>[
-          AppTextField(
-            controller: _phoneController,
-            labelText: l10n.subscriptionMobileMoneyPhoneLabel,
-            keyboardType: TextInputType.phone,
-            isRequired: true,
-          ),
-          SizedBox(height: theme.spacing.sm),
-        ],
-        amountField,
-        if (_fxWarning != null) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
-          Text(
-            _fxWarning!,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.tertiary,
+        AppSectionPanel(
+          leadingIcon: Icons.receipt_long_outlined,
+          tone: AppWorkspaceStatusTone.info,
+          density: AppContentPanelDensity.compact,
+          children: <Widget>[
+            AppEmailField(
+              controller: _invoiceEmailController,
+              labelText: l10n.subscriptionUpgradeInvoiceEmailLabel,
+              helperText: l10n.subscriptionUpgradeInvoiceEmailHelper,
+              invalidEmailMessage: l10n.authEmailInvalidMessage,
+              requiredMessage: l10n.validationRequired,
+              isRequired: true,
+              textInputAction: TextInputAction.next,
             ),
-          ),
-        ],
-        if (_showReferenceField) ...<Widget>[
-          SizedBox(height: theme.spacing.sm),
-          AppTextField(
-            controller: _referenceController,
-            labelText: l10n.subscriptionUpgradeReferenceLabel,
-            hintText: l10n.subscriptionPaymentReferenceHint,
-            isRequired: true,
-          ),
-        ],
-        if (_paymentMethod == SubscriptionPaymentMethodId.other) ...<Widget>[
-          SizedBox(height: theme.spacing.sm),
-          AppTextField(
-            controller: _notesController,
-            labelText: l10n.subscriptionUpgradeNotesLabel,
-            maxLines: 3,
-            isRequired: true,
-          ),
-        ],
+            if (isMobileMoney)
+              AppTextField(
+                controller: _phoneController,
+                labelText: l10n.subscriptionMobileMoneyPhoneLabel,
+                keyboardType: TextInputType.phone,
+                isRequired: true,
+              ),
+            amountField,
+            if (_fxWarning != null)
+              Text(
+                _fxWarning!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.tertiary,
+                ),
+              ),
+            if (_showReferenceField)
+              AppTextField(
+                controller: _referenceController,
+                labelText: l10n.subscriptionUpgradeReferenceLabel,
+                hintText: l10n.subscriptionPaymentReferenceHint,
+                isRequired: true,
+              ),
+            if (_paymentMethod == SubscriptionPaymentMethodId.other)
+              AppTextField(
+                controller: _notesController,
+                labelText: l10n.subscriptionUpgradeNotesLabel,
+                maxLines: 3,
+                isRequired: true,
+              ),
+          ],
+        ),
       ],
     );
-  }
-
-  List<Widget> _buildActions(AppLocalizations l10n, bool isRenewal) {
-    final List<Widget> actions = <Widget>[
-      AppButton.secondary(
-        label: l10n.commonCancelActionLabel,
-        leadingIcon: Icons.close,
-        enabled: !_isSubmitting,
-        onPressed: _isSubmitting
-            ? null
-            : () => Navigator.of(context).maybePop(),
-      ),
-    ];
-
-    if (!_isFirstStep) {
-      actions.add(
-        AppButton.tertiary(
-          label: l10n.commonBackActionLabel,
-          leadingIcon: Icons.arrow_back,
-          enabled: !_isSubmitting,
-          onPressed: _isSubmitting ? null : _goBack,
-        ),
-      );
-    }
-
-    if (_isLastStep) {
-      actions.add(
-        AppButton.primary(
-          label: isRenewal
-              ? l10n.subscriptionRenewSubmitAction
-              : l10n.subscriptionUpgradeSubmitAction,
-          leadingIcon: Icons.payments_outlined,
-          isLoading: _isSubmitting,
-          onPressed: _isSubmitting ? null : _submit,
-        ),
-      );
-    } else {
-      actions.add(
-        AppButton.primary(
-          label: l10n.commonNextActionLabel,
-          leadingIcon: Icons.arrow_forward,
-          enabled: !_isSubmitting,
-          onPressed: _isSubmitting ? null : _goNext,
-        ),
-      );
-    }
-
-    return actions;
   }
 
   List<Widget> _paymentDetailFields(
@@ -846,20 +812,22 @@ class _SubscriptionUpgradeDialogState
       ],
       SubscriptionPaymentMethodId.creditCard ||
       SubscriptionPaymentMethodId.debitCard => <Widget>[
-        AppTextField(
-          controller: _cardHolderController,
-          labelText: l10n.subscriptionCardHolderNameLabel,
-          isRequired: true,
-        ),
-        AppTextField(
-          controller: _cardLastFourController,
-          labelText: l10n.subscriptionCardLastFourLabel,
-          keyboardType: TextInputType.number,
-          isRequired: true,
-          inputFormatters: <TextInputFormatter>[
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(4),
-          ],
+        AppResponsiveFieldRow.two(
+          left: AppTextField(
+            controller: _cardHolderController,
+            labelText: l10n.subscriptionCardHolderNameLabel,
+            isRequired: true,
+          ),
+          right: AppTextField(
+            controller: _cardLastFourController,
+            labelText: l10n.subscriptionCardLastFourLabel,
+            keyboardType: TextInputType.number,
+            isRequired: true,
+            inputFormatters: <TextInputFormatter>[
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(4),
+            ],
+          ),
         ),
       ],
       SubscriptionPaymentMethodId.cash => const <Widget>[],
@@ -888,120 +856,6 @@ class _SubscriptionUpgradeDialogState
   }
 }
 
-class _StepIndicator extends StatelessWidget {
-  const _StepIndicator({
-    required this.steps,
-    required this.current,
-    required this.titleBuilder,
-  });
-
-  final List<_UpgradeStep> steps;
-  final _UpgradeStep current;
-  final String Function(_UpgradeStep step) titleBuilder;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final int currentIndex = steps.indexOf(current);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final bool compact = constraints.maxWidth < 560;
-            return Wrap(
-              spacing: theme.spacing.xs,
-              runSpacing: theme.spacing.xs,
-              children: <Widget>[
-                for (int index = 0; index < steps.length; index += 1)
-                  _StepChip(
-                    index: index + 1,
-                    label: compact ? null : titleBuilder(steps[index]),
-                    active: index == currentIndex,
-                    completed: index < currentIndex,
-                  ),
-              ],
-            );
-          },
-        ),
-        SizedBox(height: theme.spacing.sm),
-        Text(
-          titleBuilder(current),
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: colorScheme.onSurface,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _StepChip extends StatelessWidget {
-  const _StepChip({
-    required this.index,
-    required this.label,
-    required this.active,
-    required this.completed,
-  });
-
-  final int index;
-  final String? label;
-  final bool active;
-  final bool completed;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final Color background = active
-        ? colorScheme.primary
-        : completed
-        ? colorScheme.primaryContainer
-        : colorScheme.surfaceContainerHighest;
-    final Color foreground = active
-        ? colorScheme.onPrimary
-        : completed
-        ? colorScheme.onPrimaryContainer
-        : colorScheme.onSurfaceVariant;
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(theme.radius.full),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            '$index',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: foreground,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          if (label != null) ...<Widget>[
-            SizedBox(width: theme.spacing.xs),
-            Text(
-              label!,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: foreground,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
 class _BankTransferDetailsSection extends StatelessWidget {
   const _BankTransferDetailsSection({
     required this.details,
@@ -1025,46 +879,28 @@ class _BankTransferDetailsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(theme.spacing.sm),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(theme.radius.md),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            title,
-            style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+    return AppSectionPanel(
+      title: title,
+      leadingIcon: Icons.account_balance_outlined,
+      tone: AppWorkspaceStatusTone.info,
+      density: AppContentPanelDensity.compact,
+      children: <Widget>[
+        if (details.accountName != null)
+          _BankDetailRow(label: accountNameLabel, value: details.accountName!),
+        if (details.bankName != null)
+          _BankDetailRow(label: bankNameLabel, value: details.bankName!),
+        if (details.branch != null)
+          _BankDetailRow(label: branchLabel, value: details.branch!),
+        if (details.accountNumber != null)
+          _BankDetailRow(
+            label: accountNumberLabel,
+            value: details.accountNumber!,
           ),
-          if (details.accountName != null)
-            _BankDetailRow(
-              label: accountNameLabel,
-              value: details.accountName!,
-            ),
-          if (details.bankName != null)
-            _BankDetailRow(label: bankNameLabel, value: details.bankName!),
-          if (details.branch != null)
-            _BankDetailRow(label: branchLabel, value: details.branch!),
-          if (details.accountNumber != null)
-            _BankDetailRow(
-              label: accountNumberLabel,
-              value: details.accountNumber!,
-            ),
-          if (details.swiftCode != null)
-            _BankDetailRow(label: swiftLabel, value: details.swiftCode!),
-          if (details.iban != null)
-            _BankDetailRow(label: ibanLabel, value: details.iban!),
-        ],
-      ),
+        if (details.swiftCode != null)
+          _BankDetailRow(label: swiftLabel, value: details.swiftCode!),
+        if (details.iban != null)
+          _BankDetailRow(label: ibanLabel, value: details.iban!),
+      ],
     );
   }
 }
@@ -1079,62 +915,46 @@ class _BankDetailRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    return Padding(
-      padding: EdgeInsets.only(top: theme.spacing.xs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          SizedBox(
-            width: 132,
-            child: Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        SizedBox(
+          width: 132,
+          child: Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w600,
             ),
           ),
-          Expanded(
-            child: SelectableText(value, style: theme.textTheme.bodySmall),
-          ),
-        ],
-      ),
+        ),
+        Expanded(
+          child: SelectableText(value, style: theme.textTheme.bodySmall),
+        ),
+      ],
     );
   }
 }
 
-class _ProofOfPaymentSection extends StatelessWidget {
-  const _ProofOfPaymentSection({
+class _ProofPreview extends StatelessWidget {
+  const _ProofPreview({
     required this.fileName,
     required this.proofBytes,
     required this.proofMimeType,
-    required this.isSubmitting,
-    required this.attachLabel,
-    required this.removeLabel,
-    required this.proofLabel,
-    required this.onAttach,
-    required this.onRemove,
   });
 
-  final String? fileName;
-  final List<int>? proofBytes;
+  final String fileName;
+  final List<int> proofBytes;
   final String? proofMimeType;
-  final bool isSubmitting;
-  final String attachLabel;
-  final String removeLabel;
-  final String proofLabel;
-  final VoidCallback onAttach;
-  final VoidCallback onRemove;
 
   bool get _isImage {
     final String? mime = proofMimeType?.toLowerCase();
     if (mime != null && mime.startsWith('image/')) {
       return true;
     }
-    final String? name = fileName?.toLowerCase();
-    return name != null &&
-        (name.endsWith('.jpg') ||
-            name.endsWith('.jpeg') ||
-            name.endsWith('.png'));
+    final String name = fileName.toLowerCase();
+    return name.endsWith('.jpg') ||
+        name.endsWith('.jpeg') ||
+        name.endsWith('.png');
   }
 
   bool get _isPdf {
@@ -1142,7 +962,7 @@ class _ProofOfPaymentSection extends StatelessWidget {
     if (mime == 'application/pdf') {
       return true;
     }
-    return fileName?.toLowerCase().endsWith('.pdf') ?? false;
+    return fileName.toLowerCase().endsWith('.pdf');
   }
 
   @override
@@ -1150,74 +970,50 @@ class _ProofOfPaymentSection extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          proofLabel,
-          style: theme.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        SizedBox(height: theme.spacing.xs),
-        Wrap(
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.xs,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: <Widget>[
-            AppButton.secondary(
-              label: attachLabel,
-              leadingIcon: Icons.attach_file_outlined,
-              onPressed: isSubmitting ? null : onAttach,
+    return AppContentPanel(
+      density: AppContentPanelDensity.compact,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (_isImage)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(theme.radius.sm),
+              child: Image.memory(
+                Uint8List.fromList(proofBytes),
+                width: 96,
+                height: 96,
+                fit: BoxFit.cover,
+              ),
+            )
+          else
+            Container(
+              width: 96,
+              height: 96,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(theme.radius.sm),
+                border: Border.all(color: colorScheme.outlineVariant),
+              ),
+              child: Icon(
+                _isPdf
+                    ? Icons.picture_as_pdf_outlined
+                    : Icons.insert_drive_file_outlined,
+                size: 36,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
-            if (fileName != null)
-              AppButton.tertiary(
-                label: removeLabel,
-                onPressed: isSubmitting ? null : onRemove,
+          SizedBox(width: theme.spacing.md),
+          Expanded(
+            child: Text(
+              fileName,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
               ),
-          ],
-        ),
-        if (fileName != null && proofBytes != null) ...<Widget>[
-          SizedBox(height: theme.spacing.sm),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              if (_isImage)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(theme.radius.sm),
-                  child: Image.memory(
-                    Uint8List.fromList(proofBytes!),
-                    width: 96,
-                    height: 96,
-                    fit: BoxFit.cover,
-                  ),
-                )
-              else
-                Container(
-                  width: 96,
-                  height: 96,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(theme.radius.sm),
-                    border: Border.all(color: colorScheme.outlineVariant),
-                  ),
-                  child: Icon(
-                    _isPdf
-                        ? Icons.picture_as_pdf_outlined
-                        : Icons.insert_drive_file_outlined,
-                    size: 36,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              SizedBox(width: theme.spacing.sm),
-              Expanded(
-                child: Text(fileName!, style: theme.textTheme.bodySmall),
-              ),
-            ],
+            ),
           ),
         ],
-      ],
+      ),
     );
   }
 }
@@ -1242,58 +1038,75 @@ class _AdminContactSection extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(theme.spacing.sm),
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(theme.radius.md),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            title,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
+    return AppSectionPanel(
+      title: title,
+      description: body,
+      leadingIcon: Icons.support_agent_outlined,
+      tone: AppWorkspaceStatusTone.info,
+      children: <Widget>[
+        if (adminContact.email != null)
+          _ContactDetail(
+            label: emailLabel,
+            value: adminContact.email!,
+            icon: Icons.mail_outline,
+            color: colorScheme.primary,
           ),
-          SizedBox(height: theme.spacing.xs),
-          Text(body, style: theme.textTheme.bodySmall),
-          if (adminContact.email != null) ...<Widget>[
-            SizedBox(height: theme.spacing.sm),
-            Text(
-              emailLabel,
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+        if (adminContact.phone != null)
+          _ContactDetail(
+            label: phoneLabel,
+            value: adminContact.phone!,
+            icon: Icons.phone_outlined,
+            color: colorScheme.primary,
+          ),
+      ],
+    );
+  }
+}
+
+class _ContactDetail extends StatelessWidget {
+  const _ContactDetail({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Icon(icon, size: 20, color: color),
+        SizedBox(width: theme.spacing.sm),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            SelectableText(
-              adminContact.email!,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: colorScheme.primary,
+              SizedBox(height: theme.spacing.xs),
+              SelectableText(
+                value,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
               ),
-            ),
-          ],
-          if (adminContact.phone != null) ...<Widget>[
-            SizedBox(height: theme.spacing.sm),
-            Text(
-              phoneLabel,
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            SelectableText(
-              adminContact.phone!,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                color: colorScheme.primary,
-              ),
-            ),
-          ],
-        ],
-      ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

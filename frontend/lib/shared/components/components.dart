@@ -49,4 +49,6 @@ export 'app_time_value.dart';
 export 'app_triage_components.dart';
 export 'app_user_access_panel.dart';
 export 'app_vitals_form.dart';
+export 'app_choice_tile.dart';
+export 'app_wizard_stepper.dart';
 export 'opd_encounter_dialog.dart';

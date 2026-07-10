@@ -2536,6 +2536,12 @@ abstract class AppLocalizations {
   /// **'Billing contact'**
   String get subscriptionUpgradeStepContactTitle;
 
+  /// Title above the monthly/annual toggle on the upgrade plan step.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing cycle'**
+  String get subscriptionUpgradeBillingCycleHint;
+
   /// Monthly billing cycle toggle label on upgrade plan step.
   ///
   /// In en, this message translates to:

@@ -1297,6 +1297,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionUpgradeStepContactTitle => 'Billing contact';
 
   @override
+  String get subscriptionUpgradeBillingCycleHint => 'Billing cycle';
+
+  @override
   String get subscriptionUpgradeBillingMonthlyLabel => 'Monthly';
 
   @override
