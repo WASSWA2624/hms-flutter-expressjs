@@ -42,6 +42,17 @@ abstract final class WorkspaceDisconnectPollPlan {
         selectedDetail: true,
       ),
       WorkspaceRefreshProfile.hr => WorkspaceRefreshPlan.full,
+      WorkspaceRefreshProfile.accessAdmin => const WorkspaceRefreshPlan(
+        primaryList: true,
+        summaryCounts: true,
+        selectedDetail: true,
+      ),
+      WorkspaceRefreshProfile.subscriptions => const WorkspaceRefreshPlan(
+        primaryList: true,
+        summaryCounts: true,
+        selectedDetail: true,
+        context: true,
+      ),
       WorkspaceRefreshProfile.fullOnMatch => WorkspaceRefreshPlan.full,
     };
   }

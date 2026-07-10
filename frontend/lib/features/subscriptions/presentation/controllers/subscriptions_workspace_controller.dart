@@ -6,11 +6,14 @@ import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/subscriptions/data/repositories/subscriptions_repository_impl.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/repositories/subscriptions_repository.dart';
+import 'package:hosspi_hms/features/subscriptions/presentation/controllers/subscriptions_realtime_delta_applier.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 final subscriptionsWorkspaceControllerProvider =
@@ -21,6 +24,8 @@ final subscriptionsWorkspaceControllerProvider =
 
 final class SubscriptionsWorkspaceController
     extends AsyncNotifier<Result<SubscriptionsWorkspaceState>> {
+  final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
+
   SubscriptionsRepository get _repository {
     return ref.read(subscriptionsRepositoryProvider);
   }
@@ -32,14 +37,30 @@ final class SubscriptionsWorkspaceController
       events: RealtimeEventGroups.subscriptions,
       includeCrudMutations: true,
       shouldDefer: () => _currentState?.isSaving ?? false,
-      onRefresh: (RealtimeMessage message) async {
-        if (message.event == RealtimeEvents.moduleEntitlementUpdated) {
-          await _refreshSession();
-        }
-        await refresh();
-      },
+      onRefresh: _syncFromRealtime,
     );
     return runWorkspaceInitialLoad(ref, _loadInitialState);
+  }
+
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
+    if (message.event == RealtimeEvents.moduleEntitlementUpdated) {
+      await _refreshSession();
+    }
+
+    await handleWorkspaceListRealtimeSync<SubscriptionsWorkspaceState>(
+      message: message,
+      profile: WorkspaceRefreshProfile.subscriptions,
+      currentState: _currentState,
+      isDeferred: _currentState?.isSaving ?? false,
+      pendingRefresh: _pendingRefresh,
+      applyDelta: SubscriptionsRealtimeDeltaApplier.apply,
+      emit: _emit,
+      syncHttp: ({required WorkspaceRefreshPlan plan}) async {
+        await _refreshWorkspace(
+          preferredSelectedId: _currentState?.selectedItem?.id,
+        );
+      },
+    );
   }
 
   Future<AppFailure?> applyRouteQuery(SubscriptionsWorkspaceQuery query) async {
@@ -408,13 +429,27 @@ final class SubscriptionsWorkspaceController
         if (refreshSession) {
           await _refreshSession();
         }
-        return _refreshWorkspace(preferredSelectedId: current.selectedItem?.id);
+        final AppFailure? failure =
+            await _refreshWorkspace(preferredSelectedId: current.selectedItem?.id);
+        await _flushPendingRefresh();
+        return failure;
       },
       failure: (AppFailure failure) async {
         _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
         return failure;
       },
     );
+  }
+
+  Future<void> _flushPendingRefresh() async {
+    if (!_pendingRefresh.refreshPending) {
+      return;
+    }
+    final WorkspaceRefreshPlan plan = _pendingRefresh.takePending();
+    if (plan.isEmpty) {
+      return;
+    }
+    await _refreshWorkspace(preferredSelectedId: _currentState?.selectedItem?.id);
   }
 
   Future<AppFailure?> _refreshWorkspace({String? preferredSelectedId}) async {

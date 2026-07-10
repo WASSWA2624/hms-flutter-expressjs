@@ -74,6 +74,17 @@ abstract final class RealtimeDeltaDecoder {
       }
     }
 
+    if (action == RealtimeSyncAction.remove) {
+      final String? resourceId = _resolveResourceId(payload);
+      if (resourceId != null) {
+        return RealtimeDelta(
+          action: action,
+          resourceId: resourceId,
+          resourceType: _string(payload['resource_type']),
+        );
+      }
+    }
+
     return null;
   }
 
@@ -217,6 +228,14 @@ abstract final class RealtimeDeltaDecoder {
       built['human_friendly_id'] = built['queue_public_id'];
     }
     return built.length > 1 ? built : null;
+  }
+
+  static String? _resolveResourceId(Map<String, Object?> payload) {
+    return _string(payload['resource_id']) ??
+        _string(payload['id']) ??
+        _string(payload['user_id']) ??
+        _string(payload['role_id']) ??
+        _string(payload['subscription_id']);
   }
 
   static String? _string(Object? value) {

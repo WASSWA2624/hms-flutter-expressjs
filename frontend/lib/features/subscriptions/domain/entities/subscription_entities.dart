@@ -668,6 +668,28 @@ final class SubscriptionsWorkspaceData {
   final AppPage<SubscriptionItem> items;
   final SubscriptionsOverview overview;
   final List<SubscriptionTimelineItem> timeline;
+
+  SubscriptionsWorkspaceData copyWith({
+    SubscriptionsWorkspaceQuery? query,
+    List<SubscriptionSummaryMetric>? summary,
+    List<SubscriptionQueueSummary>? queueSummaries,
+    List<SubscriptionPanelSummary>? panelSummaries,
+    SubscriptionLookups? lookups,
+    AppPage<SubscriptionItem>? items,
+    SubscriptionsOverview? overview,
+    List<SubscriptionTimelineItem>? timeline,
+  }) {
+    return SubscriptionsWorkspaceData(
+      query: query ?? this.query,
+      summary: summary ?? this.summary,
+      queueSummaries: queueSummaries ?? this.queueSummaries,
+      panelSummaries: panelSummaries ?? this.panelSummaries,
+      lookups: lookups ?? this.lookups,
+      items: items ?? this.items,
+      overview: overview ?? this.overview,
+      timeline: timeline ?? this.timeline,
+    );
+  }
 }
 
 @immutable

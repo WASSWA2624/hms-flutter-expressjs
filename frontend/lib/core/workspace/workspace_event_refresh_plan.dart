@@ -28,6 +28,8 @@ abstract final class WorkspaceEventRefreshPlan {
       WorkspaceRefreshProfile.biomedical => forBiomedical(event),
       WorkspaceRefreshProfile.operations => forOperations(event),
       WorkspaceRefreshProfile.hr => forHr(event),
+      WorkspaceRefreshProfile.accessAdmin => forAccessAdmin(event),
+      WorkspaceRefreshProfile.subscriptions => forSubscriptions(event),
       WorkspaceRefreshProfile.fullOnMatch => forFullOnMatch(event),
     };
   }
@@ -211,6 +213,39 @@ abstract final class WorkspaceEventRefreshPlan {
     return WorkspaceRefreshPlan.none;
   }
 
+  static WorkspaceRefreshPlan forAccessAdmin(String event) {
+    if (RealtimeEventGroups.platformAdmin.contains(event) ||
+        RealtimeCrudEvents.matches(event)) {
+      return const WorkspaceRefreshPlan(
+        primaryList: true,
+        summaryCounts: true,
+        selectedDetail: true,
+      );
+    }
+    if (event == RealtimeEvents.moduleEntitlementUpdated) {
+      return const WorkspaceRefreshPlan(
+        primaryList: true,
+        summaryCounts: true,
+        context: true,
+      );
+    }
+    return WorkspaceRefreshPlan.none;
+  }
+
+  static WorkspaceRefreshPlan forSubscriptions(String event) {
+    if (RealtimeEventGroups.subscriptions.contains(event) ||
+        event == RealtimeEvents.moduleEntitlementUpdated ||
+        RealtimeCrudEvents.matches(event)) {
+      return const WorkspaceRefreshPlan(
+        primaryList: true,
+        summaryCounts: true,
+        selectedDetail: true,
+        context: true,
+      );
+    }
+    return WorkspaceRefreshPlan.none;
+  }
+
   static WorkspaceRefreshPlan forFullOnMatch(String event) {
     if (RealtimeCrudEvents.matches(event)) {
       return WorkspaceRefreshPlan.full;
@@ -230,5 +265,7 @@ enum WorkspaceRefreshProfile {
   biomedical,
   operations,
   hr,
+  accessAdmin,
+  subscriptions,
   fullOnMatch,
 }

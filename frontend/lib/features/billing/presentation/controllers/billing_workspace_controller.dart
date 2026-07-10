@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/billing/data/repositories/billing_repository_impl.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
@@ -23,7 +24,7 @@ final class BillingWorkspaceController
   BillingRepository get _repository => ref.read(billingRepositoryProvider);
 
   bool _isSyncing = false;
-  bool _refreshPending = false;
+  final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
 
   @override
   Future<Result<BillingWorkspaceState>> build() async {
@@ -67,18 +68,15 @@ final class BillingWorkspaceController
   }
 
   Future<void> _syncFromRealtime(RealtimeMessage message) async {
-    final WorkspaceRefreshPlan plan = WorkspaceEventRefreshPlan.forMessage(
-      message,
+    await handleWorkspaceListRealtimeSync<BillingWorkspaceState>(
+      message: message,
       profile: WorkspaceRefreshProfile.fullOnMatch,
+      currentState: _currentState,
+      isDeferred: _isSyncing || (_currentState?.isSaving ?? false),
+      pendingRefresh: _pendingRefresh,
+      emit: _emit,
+      syncHttp: ({required WorkspaceRefreshPlan plan}) => refresh(),
     );
-    if (plan.isEmpty) {
-      return;
-    }
-    if (_isSyncing || (_currentState?.isSaving ?? false)) {
-      _refreshPending = true;
-      return;
-    }
-    await refresh();
   }
 
   Future<AppFailure?> refresh() async {
@@ -88,7 +86,7 @@ final class BillingWorkspaceController
       return null;
     }
     if (_isSyncing || current.isSaving) {
-      _refreshPending = true;
+      _pendingRefresh.refreshPending = true;
       return null;
     }
     _emit(current.copyWith(isRefreshing: true, clearLastFailure: true));
@@ -411,7 +409,7 @@ final class BillingWorkspaceController
       return null;
     }
     if (_isSyncing || current.isSaving) {
-      _refreshPending = true;
+      _pendingRefresh.refreshPending = true;
       return null;
     }
 
@@ -471,10 +469,12 @@ final class BillingWorkspaceController
   Future<AppFailure?> _flushPendingRefresh({
     String? preferredSelectedId,
   }) async {
-    if (!_refreshPending || _isSyncing || (_currentState?.isSaving ?? false)) {
+    if (!_pendingRefresh.refreshPending ||
+        _isSyncing ||
+        (_currentState?.isSaving ?? false)) {
       return null;
     }
-    _refreshPending = false;
+    _pendingRefresh.refreshPending = false;
     return _refreshWorkspace(preferredSelectedId: preferredSelectedId);
   }
 

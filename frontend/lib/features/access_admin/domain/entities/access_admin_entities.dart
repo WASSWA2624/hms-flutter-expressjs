@@ -265,6 +265,30 @@ final class AccessAdminWorkspaceData {
   final AppPage<AccessAdminItem> page;
   final AccessAdminWorkspacePermissions permissions;
   final AccessAdminWorkspaceQuery query;
+
+  AccessAdminWorkspaceData copyWith({
+    String? state,
+    DateTime? generatedAt,
+    AccessAdminOverview? overview,
+    List<AccessAdminPanelSummary>? panelSummaries,
+    AccessAdminLookups? lookups,
+    List<AccessAdminItem>? items,
+    AppPage<AccessAdminItem>? page,
+    AccessAdminWorkspacePermissions? permissions,
+    AccessAdminWorkspaceQuery? query,
+  }) {
+    return AccessAdminWorkspaceData(
+      state: state ?? this.state,
+      generatedAt: generatedAt ?? this.generatedAt,
+      overview: overview ?? this.overview,
+      panelSummaries: panelSummaries ?? this.panelSummaries,
+      lookups: lookups ?? this.lookups,
+      items: items ?? this.items,
+      page: page ?? this.page,
+      permissions: permissions ?? this.permissions,
+      query: query ?? this.query,
+    );
+  }
 }
 
 @immutable

@@ -8,10 +8,15 @@ import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/workspace/realtime_delta.dart';
+import 'package:hosspi_hms/core/workspace/realtime_sync_action.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_realtime_delta_applier.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
@@ -23,6 +28,8 @@ final accessAdminWorkspaceControllerProvider =
 
 final class AccessAdminWorkspaceController
     extends AsyncNotifier<Result<AccessAdminWorkspaceState>> {
+  final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
+
   AccessAdminRepository get _repository =>
       ref.read(accessAdminRepositoryProvider);
 
@@ -33,14 +40,30 @@ final class AccessAdminWorkspaceController
       events: RealtimeEventGroups.accessAdmin,
       includeCrudMutations: true,
       shouldDefer: () => _currentState?.isSaving ?? false,
-      onRefresh: (RealtimeMessage message) async {
-        if (message.event == RealtimeEvents.moduleEntitlementUpdated) {
-          await _refreshSession();
-        }
-        await refresh();
-      },
+      onRefresh: _syncFromRealtime,
     );
     return runWorkspaceInitialLoad(ref, _loadInitialState);
+  }
+
+  Future<void> _syncFromRealtime(RealtimeMessage message) async {
+    if (message.event == RealtimeEvents.moduleEntitlementUpdated) {
+      await _refreshSession();
+    }
+
+    await handleWorkspaceListRealtimeSync<AccessAdminWorkspaceState>(
+      message: message,
+      profile: WorkspaceRefreshProfile.accessAdmin,
+      currentState: _currentState,
+      isDeferred: _currentState?.isSaving ?? false,
+      pendingRefresh: _pendingRefresh,
+      applyDelta: AccessAdminRealtimeDeltaApplier.apply,
+      emit: _emit,
+      syncHttp: ({required WorkspaceRefreshPlan plan}) async {
+        await _refreshWorkspace(
+          preferredSelectedId: _currentState?.selectedItem?.id,
+        );
+      },
+    );
   }
 
   Future<AppFailure?> applyRouteQuery(AccessAdminWorkspaceQuery query) async {
@@ -185,13 +208,10 @@ final class AccessAdminWorkspaceController
   }
 
   Future<AppFailure?> createUser(AccessAdminUserDraft draft) {
-    return _submitAction(() async {
-      final Result<String> result = await _repository.createUser(draft);
-      return result.when(
-        success: (_) => const Result<void>.success(null),
-        failure: (AppFailure failure) => Result<void>.failure(failure),
-      );
-    });
+    return _mutateWithLocalUpsert(
+      () => _repository.createUser(draft),
+      onSuccess: (String id) => _upsertCreatedUser(id, draft),
+    );
   }
 
   Future<AppFailure?> createRole(AccessAdminRoleDraft draft) {
@@ -222,7 +242,10 @@ final class AccessAdminWorkspaceController
     if (item.isSystemCritical) {
       return Future<AppFailure?>.value(AppFailure.validation());
     }
-    return _submitAction(() => _repository.deleteRole(item.effectiveDisplayId));
+    return _submitAction(
+      () => _repository.deleteRole(item.effectiveDisplayId),
+      removeItemId: item.id,
+    );
   }
 
   Future<AppFailure?> resetDemoPassword(AccessAdminItem item) {
@@ -352,6 +375,7 @@ final class AccessAdminWorkspaceController
   Future<AppFailure?> _submitAction(
     Future<Result<void>> Function() action, {
     bool refreshSession = false,
+    String? removeItemId,
   }) async {
     final AccessAdminWorkspaceState? current = _currentState;
     if (current != null) {
@@ -361,10 +385,21 @@ final class AccessAdminWorkspaceController
     final Result<void> result = await action();
     return result.when(
       success: (_) async {
+        if (removeItemId != null) {
+          _removeLocalItem(removeItemId);
+        } else {
+          await _refreshWorkspace(
+            preferredSelectedId: current?.selectedItem?.id,
+          );
+        }
         if (refreshSession) {
           await _refreshSession();
         }
-        await _refreshWorkspace(preferredSelectedId: current?.selectedItem?.id);
+        final AccessAdminWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, isRefreshing: false));
+        }
+        await _flushPendingRefresh();
         return null;
       },
       failure: (AppFailure failure) {
@@ -375,6 +410,97 @@ final class AccessAdminWorkspaceController
         return failure;
       },
     );
+  }
+
+  Future<AppFailure?> _mutateWithLocalUpsert<T>(
+    Future<Result<T>> Function() action, {
+    required void Function(T value) onSuccess,
+  }) async {
+    final AccessAdminWorkspaceState? current = _currentState;
+    if (current != null) {
+      _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    }
+
+    final Result<T> result = await action();
+    return result.when(
+      success: (T value) async {
+        onSuccess(value);
+        final AccessAdminWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, isRefreshing: false));
+        }
+        await _flushPendingRefresh();
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final AccessAdminWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+        }
+        return failure;
+      },
+    );
+  }
+
+  void _upsertCreatedUser(String id, AccessAdminUserDraft draft) {
+    final AccessAdminWorkspaceState? current = _currentState;
+    if (current == null || current.query.resource != AccessAdminResource.users) {
+      return;
+    }
+
+    final AccessAdminWorkspaceState? patched =
+        AccessAdminRealtimeDeltaApplier.apply(
+          current,
+          RealtimeDelta(
+            action: RealtimeSyncAction.upsert,
+            entity: <String, Object?>{
+              'id': id,
+              'display_id': id,
+              'email': draft.email,
+              'position_title': draft.positionTitle,
+              'status': draft.status,
+              'tenant_id': draft.tenantId,
+              'facility_id': draft.facilityId,
+            },
+            resourceId: id,
+            resourceType: 'user',
+          ),
+        );
+    if (patched != null) {
+      _emit(patched);
+    }
+  }
+
+  void _removeLocalItem(String id) {
+    final AccessAdminWorkspaceState? current = _currentState;
+    if (current == null) {
+      return;
+    }
+    final AccessAdminWorkspaceState? patched =
+        AccessAdminRealtimeDeltaApplier.apply(
+          current,
+          RealtimeDelta(
+            action: RealtimeSyncAction.remove,
+            resourceId: id,
+            resourceType: current.query.resource.serverValue == 'roles'
+                ? 'role'
+                : 'user',
+          ),
+        );
+    if (patched != null) {
+      _emit(patched);
+    }
+  }
+
+  Future<void> _flushPendingRefresh() async {
+    if (!_pendingRefresh.refreshPending) {
+      return;
+    }
+    final WorkspaceRefreshPlan plan = _pendingRefresh.takePending();
+    if (plan.isEmpty) {
+      return;
+    }
+    await _refreshWorkspace(preferredSelectedId: _currentState?.selectedItem?.id);
   }
 
   void _emitSaving({bool clearSelectedItem = false}) {

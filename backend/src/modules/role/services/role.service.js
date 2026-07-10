@@ -15,17 +15,41 @@ const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
 const { PLATFORM_ADMIN_EVENTS } = require('@lib/websocket/events');
 const { ROLES } = require('@config/roles');
 const { publishPlatformRealtimeEvent } = require('@lib/realtime/platform-realtime');
+const {
+  buildRealtimeEntityEnvelope,
+  REALTIME_SYNC_ACTIONS
+} = require('@lib/realtime/entity-envelope');
+const { serializeAccessAdminRoleEntity } = require('@lib/realtime/access-admin-realtime');
 
 const ROLE_REALTIME_RECIPIENT_ROLES = Object.freeze([ROLES.TENANT_ADMIN]);
 
+const resolveRoleRealtimeAction = (event) => {
+  if (String(event || '').includes('deleted')) {
+    return REALTIME_SYNC_ACTIONS.REMOVE;
+  }
+  return REALTIME_SYNC_ACTIONS.UPSERT;
+};
+
 const publishRoleRealtimeEvent = async (event, role, actorUserId) => {
+  const action = resolveRoleRealtimeAction(event);
+  const entity =
+    action === REALTIME_SYNC_ACTIONS.REMOVE
+      ? {
+          id: role?.human_friendly_id || role?.id || null
+        }
+      : serializeAccessAdminRoleEntity(role);
+  const envelope = buildRealtimeEntityEnvelope(action, entity, {
+    resource_type: 'role'
+  });
+
   await Promise.all([
     publishCrudRealtimeEvent({
       event,
       resource: role,
       resource_type: 'role',
       actor_user_id: actorUserId,
-      recipient_roles: ROLE_REALTIME_RECIPIENT_ROLES
+      recipient_roles: ROLE_REALTIME_RECIPIENT_ROLES,
+      payload: envelope
     }),
     publishPlatformRealtimeEvent({
       event,
@@ -35,6 +59,7 @@ const publishRoleRealtimeEvent = async (event, role, actorUserId) => {
       tenant_id: role?.tenant_id || null,
       facility_id: role?.facility_id || null,
       payload: {
+        ...envelope,
         name: role?.name || null
       }
     })

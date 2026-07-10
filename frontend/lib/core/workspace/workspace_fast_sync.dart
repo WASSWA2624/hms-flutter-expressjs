@@ -8,8 +8,10 @@ import 'package:hosspi_hms/core/workspace/workspace_disconnect_poll_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 
-export 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart'
-    show WorkspaceAdaptivePolling;
+export 'package:hosspi_hms/core/workspace/primary_list_page_sync.dart'
+    show PrimaryListPageSync;
+export 'package:hosspi_hms/core/workspace/workspace_list_realtime_sync.dart'
+    show handleWorkspaceListRealtimeSync;
 export 'package:hosspi_hms/core/workspace/workspace_disconnect_poll_plan.dart'
     show WorkspaceDisconnectPollPlan;
 export 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart'

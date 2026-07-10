@@ -11,6 +11,10 @@ const { HttpError } = require('@lib/errors');
 const { publishCrudRealtimeEvent, SUBSCRIPTION_EVENTS } = require('@lib/websocket');
 const { ROLES } = require('@config/roles');
 const {
+  buildRealtimeEntityEnvelope,
+  REALTIME_SYNC_ACTIONS
+} = require('@lib/realtime/entity-envelope');
+const {
   createSubscriptionPublicId,
   PUBLIC_ID_PREFIXES,
 } = require('@lib/subscriptions/constants');
@@ -54,6 +58,19 @@ const SUBSCRIPTION_REALTIME_RECIPIENT_ROLES = Object.freeze([
 ]);
 
 const publishSubscriptionRealtimeEvent = async (event, subscription, actorUserId, payload = {}) => {
+  const action = String(event || '').includes('deleted')
+    ? REALTIME_SYNC_ACTIONS.REMOVE
+    : REALTIME_SYNC_ACTIONS.UPSERT;
+  const entity =
+    action === REALTIME_SYNC_ACTIONS.REMOVE
+      ? {
+          id: subscription?.human_friendly_id || subscription?.id || null
+        }
+      : serializeSubscription(subscription);
+  const envelope = buildRealtimeEntityEnvelope(action, entity, {
+    resource_type: 'subscription'
+  });
+
   await publishCrudRealtimeEvent({
     event,
     resource: subscription,
@@ -61,6 +78,7 @@ const publishSubscriptionRealtimeEvent = async (event, subscription, actorUserId
     actor_user_id: actorUserId,
     recipient_roles: SUBSCRIPTION_REALTIME_RECIPIENT_ROLES,
     payload: {
+      ...envelope,
       status: subscription?.status || null,
       plan_id: subscription?.plan_id || null,
       ...payload

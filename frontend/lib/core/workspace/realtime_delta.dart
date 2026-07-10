@@ -20,9 +20,17 @@ final class RealtimeDelta {
   final Map<String, Object?>? partialFlowSummary;
   final String? encounterId;
 
-  bool get canApplyLocally => action == RealtimeSyncAction.invalidate
-      ? false
-      : entity != null ||
-            listEntry != null ||
-            (partialFlowSummary != null && encounterId != null);
+  bool get canApplyLocally {
+    if (action == RealtimeSyncAction.invalidate) {
+      return false;
+    }
+    if (entity != null ||
+        listEntry != null ||
+        (partialFlowSummary != null && encounterId != null)) {
+      return true;
+    }
+    return action == RealtimeSyncAction.remove &&
+        resourceId != null &&
+        resourceId!.isNotEmpty;
+  }
 }
