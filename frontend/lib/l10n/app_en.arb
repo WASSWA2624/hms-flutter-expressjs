@@ -23358,6 +23358,10 @@
   "@accessAdminAllFacilitiesFilterLabel": {
     "description": "Manage users filter choice to show users across every facility in the tenant."
   },
+  "accessAdminAllTenantsFilterLabel": "All tenants",
+  "@accessAdminAllTenantsFilterLabel": {
+    "description": "Manage users filter choice to show users across every tenant (super admin)."
+  },
   "accessAdminAllRolesFilterLabel": "All roles",
   "@accessAdminAllRolesFilterLabel": {
     "description": "Manage users filter choice to show users regardless of assigned role."

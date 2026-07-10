@@ -62,7 +62,7 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         'panel': query.panel.serverValue,
         'resource': query.resource.serverValue,
         'search': query.search,
-        'tenantId': query.tenantId,
+        'tenantId': query.allTenants ? null : query.tenantId,
         'facilityId': query.allFacilities ? null : query.facilityId,
         'id': query.recordId,
         'status': query.status,
@@ -71,6 +71,7 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         'roleId': query.roleId,
         'include_deleted': query.includeDeleted ? 'true' : null,
         'lean': query.lean ? 'true' : null,
+        'allTenants': query.allTenants ? 'true' : null,
         'allFacilities': query.allFacilities ? 'true' : null,
       }),
       decoder: (Object? data) {

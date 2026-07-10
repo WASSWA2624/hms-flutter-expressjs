@@ -27,6 +27,10 @@ const workspaceQuerySchema = z.object({
   allFacilities: z.enum(['true', 'false', '1', '0']).optional(),
   facility_scope: z.enum(['all', 'facility']).optional(),
   facilityScope: z.enum(['all', 'facility']).optional(),
+  all_tenants: z.enum(['true', 'false', '1', '0']).optional(),
+  allTenants: z.enum(['true', 'false', '1', '0']).optional(),
+  tenant_scope: z.enum(['all', 'tenant']).optional(),
+  tenantScope: z.enum(['all', 'tenant']).optional(),
 });
 
 const referenceDataQuerySchema = z.object({

@@ -59,18 +59,43 @@ const isAllFacilitiesRequested = (filters = {}) => {
   );
 };
 
+const isAllTenantsRequested = (filters = {}) => {
+  const tenantScope = String(filters.tenant_scope || filters.tenantScope || '')
+    .trim()
+    .toLowerCase();
+  return (
+    filters.all_tenants === true ||
+    filters.all_tenants === 'true' ||
+    filters.allTenants === true ||
+    filters.allTenants === 'true' ||
+    tenantScope === 'all'
+  );
+};
+
 const resolveWorkspaceScope = async ({ filters = {}, user = {} }) => {
   try {
     const requestedTenantId = filters.tenant_id || filters.tenantId;
     const requestedFacilityId = filters.facility_id || filters.facilityId;
     const allFacilities = isAllFacilitiesRequested(filters);
+    const allTenants = isAllTenantsRequested(filters);
 
     const userTenantId = user.tenant_id || user.tenantId || null;
     const userFacilityId = user.facility_id || user.facilityId || null;
 
     if (isSuperAdmin(user)) {
+      // Cross-tenant directory: no tenant filter means every tenant the actor can see.
+      if (allTenants && !requestedTenantId) {
+        return {
+          state: 'ready',
+          scope: {
+            tenant_id: null,
+            facility_id: null,
+          },
+        };
+      }
+
       const tenantId = await resolveIdentifierForFilter({
-        value: requestedTenantId || userTenantId,
+        value: requestedTenantId || (!allTenants ? userTenantId : null),
         model: 'tenant',
       });
 
@@ -145,7 +170,7 @@ const findTenants = async (scope = null, includeAllTenants = false) => {
       return prisma.tenant.findMany({
         where: { deleted_at: null },
         orderBy: { name: 'asc' },
-        take: 25,
+        take: SETUP_LIST_LIMIT,
       });
     }
 

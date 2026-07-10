@@ -18148,6 +18148,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminAllFacilitiesFilterLabel => 'All facilities';
 
   @override
+  String get accessAdminAllTenantsFilterLabel => 'All tenants';
+
+  @override
   String get accessAdminAllRolesFilterLabel => 'All roles';
 
   @override

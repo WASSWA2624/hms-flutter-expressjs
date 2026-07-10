@@ -33723,6 +33723,12 @@ abstract class AppLocalizations {
   /// **'All facilities'**
   String get accessAdminAllFacilitiesFilterLabel;
 
+  /// Manage users filter choice to show users across every tenant (super admin).
+  ///
+  /// In en, this message translates to:
+  /// **'All tenants'**
+  String get accessAdminAllTenantsFilterLabel;
+
   /// Manage users filter choice to show users regardless of assigned role.
   ///
   /// In en, this message translates to:

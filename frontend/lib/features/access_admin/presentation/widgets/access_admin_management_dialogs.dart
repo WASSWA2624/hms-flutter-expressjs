@@ -257,7 +257,11 @@ class _ManageUsersDialogState
   String? facilityFilter;
   String? roleFilter;
   String? statusFilter;
-  /// When true and the actor may view tenant-wide users, omit facility scope.
+
+  /// Defaults to the widest list the actor is allowed to see.
+  /// Super admin: all tenants + facilities. Tenant admin: all facilities.
+  /// Facility-scoped actors keep their facility from session scope.
+  bool allTenants = true;
   bool allFacilities = true;
 
   static const String _tenantFilterKey = 'tenant';
@@ -265,18 +269,9 @@ class _ManageUsersDialogState
   static const String _roleFilterKey = 'role';
   static const String _statusFilterKey = 'status';
 
-  @override
-  AccessAdminWorkspaceQuery get listQuery {
-    final bool tenantWide = _canFilterAcrossFacilities && allFacilities;
-    return AccessAdminWorkspaceQuery(
-      includeDeleted: true,
-      lean: true,
-      tenantId: tenantFilter,
-      facilityId: tenantWide ? null : facilityFilter,
-      allFacilities: tenantWide,
-      roleId: roleFilter,
-      status: statusFilter,
-    );
+  bool get _canPickTenant {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    return policy.canCreateTenant();
   }
 
   bool get _canFilterAcrossFacilities {
@@ -284,17 +279,39 @@ class _ManageUsersDialogState
     return policy.canCreateTenant() || policy.canCreateTenantWideRole();
   }
 
+  @override
+  AccessAdminWorkspaceQuery get listQuery {
+    final bool crossTenant = _canPickTenant && allTenants && tenantFilter == null;
+    final bool tenantWide =
+        _canFilterAcrossFacilities && allFacilities && facilityFilter == null;
+    return AccessAdminWorkspaceQuery(
+      includeDeleted: true,
+      lean: true,
+      tenantId: crossTenant ? null : tenantFilter,
+      facilityId: tenantWide ? null : facilityFilter,
+      allTenants: crossTenant,
+      allFacilities: tenantWide || crossTenant,
+      roleId: roleFilter,
+      status: statusFilter,
+    );
+  }
+
   Future<void> _applyUserFilters(AppSearchBarFilterValue value) async {
     final String? nextTenant = value.option(_tenantFilterKey);
     final String? nextFacilityRaw = value.option(_facilityFilterKey);
     final String? nextRole = value.option(_roleFilterKey);
     final String? nextStatus = value.option(_statusFilterKey);
-    final bool nextAllFacilities =
-        _canFilterAcrossFacilities && nextFacilityRaw == null;
-    final String? nextFacility = nextAllFacilities ? null : nextFacilityRaw;
+
+    final bool nextAllTenants = _canPickTenant && nextTenant == null;
+    final bool nextAllFacilities = nextAllTenants
+        ? true
+        : (_canFilterAcrossFacilities && nextFacilityRaw == null);
+    final String? nextFacility =
+        nextAllFacilities || nextAllTenants ? null : nextFacilityRaw;
 
     if (tenantFilter == nextTenant &&
         facilityFilter == nextFacility &&
+        allTenants == nextAllTenants &&
         allFacilities == nextAllFacilities &&
         roleFilter == nextRole &&
         statusFilter == nextStatus) {
@@ -304,6 +321,7 @@ class _ManageUsersDialogState
     setState(() {
       tenantFilter = nextTenant;
       facilityFilter = nextFacility;
+      allTenants = nextAllTenants;
       allFacilities = nextAllFacilities;
       roleFilter = nextRole;
       statusFilter = nextStatus;
@@ -323,14 +341,19 @@ class _ManageUsersDialogState
     );
     if (saved == true && mounted) {
       mutated = true;
-      // Keep tenant-wide visibility so the new user is not hidden by a
-      // leftover facility filter from the create form context.
-      if (_canFilterAcrossFacilities && !allFacilities) {
-        setState(() {
+      // Restore widest allowed defaults so the new user is not hidden.
+      setState(() {
+        if (_canPickTenant) {
+          allTenants = true;
+          tenantFilter = null;
+        }
+        if (_canFilterAcrossFacilities) {
           allFacilities = true;
           facilityFilter = null;
-        });
-      }
+        }
+        roleFilter = null;
+        statusFilter = null;
+      });
       await reload(resetPage: true, silent: true);
     }
   }
@@ -543,16 +566,18 @@ class _ManageUsersDialogState
         workspaceData?.lookups ?? const AccessAdminLookups();
     final bool canPickTenant = ref.watch(appAccessPolicyProvider).canCreateTenant();
     final bool canFilterFacilities = _canFilterAcrossFacilities;
+    final bool showFacilityFilter =
+        canFilterFacilities && (!canPickTenant || tenantFilter != null);
     final List<String> statusOptions = lookups.userStatuses.isNotEmpty
         ? lookups.userStatuses
         : const <String>['ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING'];
 
     final List<AppSearchBarFilterGroup> filterGroups = <AppSearchBarFilterGroup>[
-      if (canPickTenant && lookups.tenants.isNotEmpty)
+      if (canPickTenant)
         AppSearchBarFilterGroup(
           key: _tenantFilterKey,
           label: l10n.settingsWorkspaceTenantLabel,
-          allLabel: l10n.accessAdminRoleScopeFilterAll,
+          allLabel: l10n.accessAdminAllTenantsFilterLabel,
           choices: lookups.tenants
               .map(
                 (AccessAdminLookupOption tenant) => AppSearchBarFilterChoice(
@@ -563,7 +588,7 @@ class _ManageUsersDialogState
               )
               .toList(growable: false),
         ),
-      if (canFilterFacilities)
+      if (showFacilityFilter)
         AppSearchBarFilterGroup(
           key: _facilityFilterKey,
           label: l10n.settingsWorkspaceFacilityLabel,
@@ -610,7 +635,7 @@ class _ManageUsersDialogState
 
     final Map<String, String> filterOptions = <String, String>{
       if (tenantFilter != null) _tenantFilterKey: tenantFilter!,
-      if (canFilterFacilities && !allFacilities && facilityFilter != null)
+      if (showFacilityFilter && !allFacilities && facilityFilter != null)
         _facilityFilterKey: facilityFilter!,
       if (roleFilter != null) _roleFilterKey: roleFilter!,
       if (statusFilter != null) _statusFilterKey: statusFilter!,
@@ -618,7 +643,7 @@ class _ManageUsersDialogState
 
     final bool hasActiveFilters =
         tenantFilter != null ||
-        (!allFacilities && facilityFilter != null) ||
+        (showFacilityFilter && !allFacilities && facilityFilter != null) ||
         roleFilter != null ||
         statusFilter != null;
 
