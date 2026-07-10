@@ -63,6 +63,63 @@ const TENANT_ADMIN_RELATION_INCLUDE = Object.freeze({
   },
 });
 
+const TENANT_SLUG_MAX_LENGTH = 191;
+const RELEASED_SLUG_SUFFIX = '__deleted__';
+
+const buildReleasedSlug = (slug, id) => {
+  const base = String(slug || '').trim();
+  if (!base) {
+    return null;
+  }
+
+  const suffix = String(id).replace(/-/g, '').slice(0, 8);
+  const released = `${base}${RELEASED_SLUG_SUFFIX}${suffix}`;
+  return released.length > TENANT_SLUG_MAX_LENGTH
+    ? released.slice(0, TENANT_SLUG_MAX_LENGTH)
+    : released;
+};
+
+/**
+ * Free a slug held by soft-deleted tenants so it can be reused.
+ *
+ * @param {string} slug - Desired tenant slug
+ * @param {string} [excludeId] - Active tenant ID to exclude
+ * @returns {Promise<void>}
+ */
+const releaseSlugFromSoftDeletedTenants = async (slug, excludeId = null) => {
+  try {
+    const normalizedSlug = String(slug || '').trim();
+    if (!normalizedSlug) {
+      return;
+    }
+
+    const conflicts = await prisma.tenant.findMany({
+      where: {
+        slug: normalizedSlug,
+        deleted_at: { not: null },
+        ...(excludeId ? { id: { not: excludeId } } : {})
+      },
+      select: {
+        id: true,
+        slug: true
+      }
+    });
+
+    await Promise.all(
+      conflicts.map((tenant) =>
+        prisma.tenant.update({
+          where: { id: tenant.id },
+          data: {
+            slug: buildReleasedSlug(tenant.slug, tenant.id)
+          }
+        })
+      )
+    );
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 /**
  * Find tenant by ID
  *
@@ -187,10 +244,26 @@ const update = async (id, data) => {
  */
 const softDelete = async (id) => {
   try {
+    const existing = await prisma.tenant.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        slug: true,
+        deleted_at: true
+      }
+    });
+
+    if (!existing || existing.deleted_at) {
+      throw Object.assign(new Error('Record not found'), { code: 'P2025' });
+    }
+
+    const releasedSlug = buildReleasedSlug(existing.slug, id);
+
     return await prisma.tenant.update({
       where: { id },
       data: {
-        deleted_at: new Date()
+        deleted_at: new Date(),
+        ...(releasedSlug ? { slug: releasedSlug } : {})
       }
     });
   } catch (error) {
@@ -207,5 +280,6 @@ module.exports = {
   count,
   create,
   update,
-  softDelete
+  softDelete,
+  releaseSlugFromSoftDeletedTenants
 };

@@ -11,6 +11,7 @@ const { HttpError } = require('@lib/errors');
 jest.mock('@prisma/client', () => ({
   tenant: {
     findFirst: jest.fn(),
+    findUnique: jest.fn(),
     findMany: jest.fn(),
     count: jest.fn(),
     create: jest.fn(),
@@ -24,7 +25,8 @@ const {
   count,
   create,
   update,
-  softDelete
+  softDelete,
+  releaseSlugFromSoftDeletedTenants
 } = require('@repositories/tenant/tenant.repository');
 
 const prisma = require('@prisma/client');
@@ -328,46 +330,113 @@ describe('Tenant Repository', () => {
   });
 
   describe('softDelete', () => {
-    it('should soft delete a tenant', async () => {
+    it('should soft delete a tenant and release its slug', async () => {
       const mockDeletedTenant = {
         id: 'tenant-123',
         name: 'Test Hospital',
-        slug: 'test-hospital',
+        slug: 'test-hospital__deleted__tenant12',
         is_active: true,
         created_at: new Date('2026-01-19'),
         updated_at: new Date(),
         deleted_at: new Date(),
         version: 1
       };
+      prisma.tenant.findUnique.mockResolvedValue({
+        id: 'tenant-123',
+        slug: 'test-hospital',
+        deleted_at: null
+      });
       prisma.tenant.update.mockResolvedValue(mockDeletedTenant);
 
       const result = await softDelete('tenant-123');
 
       expect(result).toEqual(mockDeletedTenant);
+      expect(prisma.tenant.findUnique).toHaveBeenCalledWith({
+        where: { id: 'tenant-123' },
+        select: {
+          id: true,
+          slug: true,
+          deleted_at: true
+        }
+      });
       expect(prisma.tenant.update).toHaveBeenCalledWith({
         where: { id: 'tenant-123' },
         data: {
-          deleted_at: expect.any(Date)
+          deleted_at: expect.any(Date),
+          slug: 'test-hospital__deleted__tenant12'
         }
       });
     });
 
-    it('should throw HttpError when tenant not found', async () => {
-      const error = new Error('Record not found');
-      error.code = 'P2025';
-      prisma.tenant.update.mockRejectedValue(error);
+    it('should throw HttpError when tenant is already deleted', async () => {
+      prisma.tenant.findUnique.mockResolvedValue({
+        id: 'tenant-123',
+        slug: 'test-hospital',
+        deleted_at: new Date()
+      });
 
       await expect(softDelete('tenant-123'))
         .rejects
         .toThrow(HttpError);
+
+      expect(prisma.tenant.update).not.toHaveBeenCalled();
+    });
+
+    it('should throw HttpError when tenant not found', async () => {
+      prisma.tenant.findUnique.mockResolvedValue(null);
+
+      await expect(softDelete('tenant-123'))
+        .rejects
+        .toThrow(HttpError);
+
+      expect(prisma.tenant.update).not.toHaveBeenCalled();
     });
 
     it('should throw HttpError on other database errors', async () => {
+      prisma.tenant.findUnique.mockResolvedValue({
+        id: 'tenant-123',
+        slug: 'test-hospital',
+        deleted_at: null
+      });
       prisma.tenant.update.mockRejectedValue(new Error('DB error'));
 
       await expect(softDelete('tenant-123'))
         .rejects
         .toThrow(HttpError);
+    });
+  });
+
+  describe('releaseSlugFromSoftDeletedTenants', () => {
+    it('should rename slugs on soft-deleted tenants that conflict', async () => {
+      prisma.tenant.findMany.mockResolvedValue([
+        { id: 'tenant-deleted', slug: 'testing' }
+      ]);
+      prisma.tenant.update.mockResolvedValue({});
+
+      await releaseSlugFromSoftDeletedTenants('testing');
+
+      expect(prisma.tenant.findMany).toHaveBeenCalledWith({
+        where: {
+          slug: 'testing',
+          deleted_at: { not: null }
+        },
+        select: {
+          id: true,
+          slug: true
+        }
+      });
+      expect(prisma.tenant.update).toHaveBeenCalledWith({
+        where: { id: 'tenant-deleted' },
+        data: {
+          slug: 'testing__deleted__tenantde'
+        }
+      });
+    });
+
+    it('should ignore empty slugs', async () => {
+      await releaseSlugFromSoftDeletedTenants('   ');
+
+      expect(prisma.tenant.findMany).not.toHaveBeenCalled();
     });
   });
 });

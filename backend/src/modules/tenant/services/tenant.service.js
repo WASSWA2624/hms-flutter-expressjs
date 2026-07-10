@@ -201,6 +201,10 @@ const getTenantById = async (id) => {
  * @returns {Promise<Object>} Created tenant
  */
 const createTenant = async (data, context = {}) => {
+  if (data?.slug) {
+    await tenantRepository.releaseSlugFromSoftDeletedTenants(data.slug);
+  }
+
   // Create tenant
   const tenant = await tenantRepository.create(data);
 
@@ -254,6 +258,10 @@ const updateTenant = async (id, data, context = {}) => {
   
   if (!beforeTenant) {
     throw new HttpError('errors.tenant.not_found', 404);
+  }
+
+  if (data?.slug) {
+    await tenantRepository.releaseSlugFromSoftDeletedTenants(data.slug, tenantId);
   }
 
   // Update tenant

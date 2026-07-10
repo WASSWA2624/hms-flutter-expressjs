@@ -327,11 +327,13 @@ describe('Tenant Service', () => {
       };
 
       tenantRepository.create.mockResolvedValue(mockCreatedTenant);
+      tenantRepository.releaseSlugFromSoftDeletedTenants.mockResolvedValue(undefined);
       createAuditLog.mockResolvedValue(undefined);
 
       const result = await createTenant(tenantData, context);
 
       expect(result).toEqual(mockCreatedTenant);
+      expect(tenantRepository.releaseSlugFromSoftDeletedTenants).toHaveBeenCalledWith('new-hospital');
       expect(tenantRepository.create).toHaveBeenCalledWith(tenantData);
       expect(createAuditLog).toHaveBeenCalledWith({
         action: 'TENANT_CREATED',
