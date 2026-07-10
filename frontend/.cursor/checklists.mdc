@@ -28,6 +28,12 @@ Purpose: release gates only. Detailed standards live in owner files in [`index.m
 - [ ] UI feedback states per [`ui-feedback.mdc`](./ui-feedback.mdc)
 - [ ] Forms/tables per [`ui-patterns.mdc`](./ui-patterns.mdc)
 - [ ] No raw UUIDs, enum codes, or magic color/spacing constants in presentation UI
+- [ ] Shared-data mutations follow [`instant_ui_sync.mdc`](./instant_ui_sync.mdc):
+      immediate success patch, scoped backend event, correct `RealtimeEventGroups`,
+      targeted reconciliation, and authenticated reconnect refresh
+- [ ] Cancel/failure does not patch, invalidate, or refresh shared UI state
+- [ ] New realtime behavior has delta/event-group, controller, reconnect, and backend
+      event-emission coverage where applicable
 - [ ] Tests for controller and critical UI
 
 ## See also

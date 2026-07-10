@@ -28,6 +28,11 @@ When rules disagree, apply this order:
 6. Other stack-specific rule files named in the stack index
 7. `dev-plan/` steps (chronology only — not a duplicate standards source)
 
+For UI mutation and reconciliation behavior specifically,
+[`frontend/.cursor/instant_ui_sync.mdc`](../frontend/.cursor/instant_ui_sync.mdc)
+and [`frontend/.cursor/realtime_sync.mdc`](../frontend/.cursor/realtime_sync.mdc)
+specialize the transport contract in `api-contract.mdc`.
+
 ## Stack indexes
 
 | Stack | Index | Scope |
@@ -56,6 +61,10 @@ Full patient-journey index: [app-write-up § Patient Flow Documents](./app-write
 ## Module implementation prompts
 
 Numbered implementation prompts live in [`prompts/`](../prompts/) at the repo root (`01`–`33`) in **recommended implementation order** (foundation → patient registry → outpatient → diagnostics → inpatient → operations → platform closeout). Use them with the flow files and `app-write-up.mdc`.
+Shared standards are owned by
+[`prompts/00-global-implementation-standards.md`](../prompts/00-global-implementation-standards.md);
+numbered prompts add module-specific requirements. Any repeated standards summary
+inside an older numbered prompt is non-authoritative and cannot override that companion.
 
 | # | Module | # | Module | # | Module |
 |---|--------|---|--------|---|--------|

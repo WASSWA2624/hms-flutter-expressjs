@@ -1,5 +1,11 @@
 # Instant UI Sync After Mutations — Performance Prompt
 
+> Historical implementation task, not a durable rules source. Current policy is
+> [`frontend/.cursor/instant_ui_sync.mdc`](frontend/.cursor/instant_ui_sync.mdc)
+> with transport details in
+> [`frontend/.cursor/realtime_sync.mdc`](frontend/.cursor/realtime_sync.mdc).
+> The investigation notes below may describe code that has since changed.
+
 ## Objective
 
 Eliminate perceptible delay between frontend mutations (create/edit/delete via dialogs and quick actions) and the UI reflecting the new state. The dashboard and all workspaces must feel **instant**: summary cards, alerts, badges, queues, and lists update as soon as a mutation succeeds — not tens of seconds later.
@@ -24,7 +30,10 @@ Eliminate perceptible delay between frontend mutations (create/edit/delete via d
 - **Alerts → Tenants Without Subscription** stays at `2`, then updates to `3`
 - Other platform metrics (Facilities, Subscriptions, Entitlements) likely suffer the same lag after their respective quick actions
 
-**Expected:** Metric cards, alerts, nav badges, and related lists update **immediately** (≤ 1 s perceived) after a successful save, without requiring navigation away or a manual refresh.
+**Expected:** Metric cards, alerts, nav badges, and related lists update
+**immediately from local/provider state** after a successful save, without requiring
+navigation away or a manual refresh. Peer sessions converge through realtime
+delivery and targeted reconciliation without a fixed network-latency guarantee.
 
 ---
 
@@ -46,8 +55,8 @@ Search the codebase for bottlenecks and gaps. Known areas to inspect:
 | Area | Location | Suspected gap |
 | ---- | -------- | ------------- |
 | Post-mutation refresh | `frontend/lib/features/home/presentation/widgets/home_dashboard_actions.dart` — `homeRefreshDashboard`, `homeInvokeAction` | `ref.invalidate(homeControllerProvider)` runs on dialog close (`.then((_)`) regardless of success; full HTTP round-trip only |
-| Dashboard realtime | `frontend/lib/features/home/presentation/controllers/home_controller.dart` | `_homeDashboardRealtimeEvents` has no tenant/platform/admin events |
-| Realtime event catalog | `frontend/lib/core/realtime/realtime_events.dart`, `realtime_event_groups.dart` | No `tenant.created` / `tenant.updated` / platform-admin events |
+| Dashboard realtime | `frontend/lib/features/home/presentation/controllers/home_controller.dart` | Verify the current `RealtimeEventGroups.platformAdmin` subscription and reconciliation path |
+| Realtime event catalog | `frontend/lib/core/realtime/realtime_events.dart`, `realtime_event_groups.dart` | Verify new platform events are mirrored and included in `platformAdmin`; do not assume they are absent |
 | Backend fan-out | `backend/src/modules/tenant/`, `dashboard-workspace`, `dashboard-widget` | Tenant CRUD may not publish websocket events after mutation |
 | Reference pattern (good) | `frontend/lib/core/workspace/workspace_sync_engine.dart`, `opd_realtime_delta_applier.dart` | OPD applies local deltas before HTTP fallback — dashboard lacks equivalent |
 | Stale-while-revalidate | `frontend/lib/features/home/presentation/pages/home_page.dart` — `keepPreviousDataDuringRefresh: true` | May mask refresh in progress but can show stale counts until slow fetch completes |
@@ -79,7 +88,8 @@ For mutations that affect shared views:
 
 When a full reload is unavoidable:
 
-- Ensure `homeRefreshDashboard` / controller `invalidate` triggers an immediate fetch with no artificial debounce beyond existing 200 ms coalescing
+- Reuse shared in-flight event coalescing; add debounce only when profiling proves
+  that its reduced work justifies the added staleness
 - Profile and remove slow queries, redundant serial fetches, or blocking work in the mutation → refresh path
 - Return mutation responses with enough summary deltas for the frontend to patch without a second heavy `GET /dashboard-workspace/workspace` when possible
 
@@ -96,7 +106,7 @@ Reuse established infrastructure — do not invent parallel sync mechanisms:
 
 ## Acceptance criteria
 
-- [ ] Create tenant from dashboard Quick Actions → **Tenants** card and **Tenants Without Subscription** alert update within **1 second** of save success
+- [ ] Create tenant from dashboard Quick Actions → **Tenants** card and **Tenants Without Subscription** alert update in the same frame or next provider rebuild after save success
 - [ ] Same instant behavior for **Create facility**, **Create role**, and other platform quick actions on the Super Admin dashboard
 - [ ] Cancelling a dialog does **not** trigger a dashboard reload
 - [ ] A second browser/session sees the update via realtime within normal websocket latency
@@ -111,7 +121,7 @@ Reuse established infrastructure — do not invent parallel sync mechanisms:
 | ----- | ------- |
 | Frontend | `flutter pub get`, `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test` |
 | Backend | Targeted `npm test` for touched modules (`tenant`, `dashboard-workspace`, `dashboard-widget`, realtime) |
-| Manual | Reproduce the screenshot scenario on `127.0.0.1:5201` before and after — confirm sub-second update |
+| Manual | Reproduce the screenshot scenario on `127.0.0.1:5201` before and after — confirm immediate local update and normal peer-session convergence |
 
 ---
 

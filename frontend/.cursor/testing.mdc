@@ -15,6 +15,10 @@ Defines the minimum testing structure for the reusable app foundation.
 - Keep tests close to source structure where practical.
 - Test controllers, value objects, mappers, validators, and shared components.
 - Test responsive behavior for important shared layouts and page shells.
+- For UI sync changes, test local success patching, cancel/failure behavior, typed
+  realtime delta or targeted refresh, event-group membership, and reconnect refresh.
+- Cross-stack shared mutations require backend event-emission coverage and a
+  simulated peer-client reconciliation test.
 - Tests must not depend on real production services.
 - Tests must not require secrets.
 
@@ -34,7 +38,8 @@ Defines the minimum testing structure for the reusable app foundation.
 - Responsive layout utilities have tests.
 
 ## Related rules
-- [`ci_cd_quality_gates.md`](./ci_cd_quality_gates.mdc)
-- [`state_management.md`](./state_management.mdc)
+- [`ci_cd_quality_gates.mdc`](./ci_cd_quality_gates.mdc)
+- [`state_management.mdc`](./state_management.mdc)
+- [`instant_ui_sync.mdc`](./instant_ui_sync.mdc)
 - [`components.mdc`](./components.mdc)
 - [`layouts.mdc`](./layouts.mdc)

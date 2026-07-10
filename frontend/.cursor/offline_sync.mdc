@@ -16,7 +16,9 @@ Purpose: client-side offline behavior per [`.cursor/api-contract.mdc`](../../.cu
 - Do not silently discard offline changes.
 - Conflict handling explicit; surface `409` with version metadata.
 - Repositories expose consistent local + remote views.
-- After HTTP writes succeed, expect matching domain events from the backend; controllers refresh from HTTP, not from raw websocket payloads.
+- After HTTP writes succeed, expect matching domain events from the backend.
+  Controllers reconcile through `WorkspaceSyncEngine`: apply safe typed deltas or
+  perform the smallest HTTP refresh; widgets never consume raw websocket payloads.
 
 ## Online-only (never queue)
 

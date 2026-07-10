@@ -26,7 +26,8 @@ HTTP write -> service validates + persists -> audit log -> publish domain event 
 `createAuditLog` invokes `@lib/realtime/audit-realtime.js` for `CREATE`, `UPDATE`, and `DELETE` audit actions. Any service that already calls `createAuditLog` on mutations participates in realtime sync without extra wiring.
 
 - Default event shape: `{entity}.{created|updated|deleted|canceled|rescheduled|activated|deactivated}`
-- Opt out per call: `realtime: false` in audit data
+- Opt out per call: `realtime: false` in audit data only when the mutation cannot
+  affect any shared UI; document the reason at the call site
 - Override event: `realtime_event: 'custom.event'`
 - Override payload: `realtime_payload: { ... }`
 - Skip list for bespoke publishers: `@lib/realtime/config.js` (`REALTIME_SKIP_ENTITIES`)
@@ -44,6 +45,9 @@ Rules:
 - Name events `{domain}.{action}` (e.g. `patient.updated`, `facility.layout_updated`).
 - Include `resource_type`, `resource_id`, `tenant_id`, `facility_id`, `actor_user_id`, and `occurred_at` in the envelope.
 - Use `publishCrudRealtimeEvent` for standard create/update/delete broadcasts when a module does not need a bespoke payload shape.
+- Add tests proving user-visible mutations emit the expected scoped event after
+  persistence; bespoke publishers must also prove audit emission is skipped to
+  prevent duplicate events.
 
 ## Connection rules
 

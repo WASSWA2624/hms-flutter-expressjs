@@ -14,7 +14,8 @@ Defines how app state, feature state, and dependencies are created, read, tested
 - Keep providers close to the layer they own.
 - Use generated providers where it improves safety and consistency.
 - Controllers own presentation state and user actions.
-- Controllers patch provider state **optimistically on mutation success** before waiting for full refetches or websocket events.
+- Mutation and realtime reconciliation behavior is owned by
+  [`instant_ui_sync.mdc`](./instant_ui_sync.mdc); do not restate or override it here.
 - Repositories own data coordination, not UI state.
 - Providers must be override-friendly for tests.
 - Do not perform heavy initialization inside widget `build` methods.
@@ -32,7 +33,8 @@ Defines how app state, feature state, and dependencies are created, read, tested
 - Features can be tested with provider overrides.
 - UI does not instantiate repositories, API clients, or databases directly.
 - Loading, empty, error, and success states are handled consistently.
-- Successful mutations update visible UI through Riverpod within ≤ 1 s perceived latency.
+- Successful mutations update visible UI through Riverpod without waiting for an
+  avoidable full refetch.
 
 ## Related rules
 - [`instant_ui_sync.mdc`](./instant_ui_sync.mdc)

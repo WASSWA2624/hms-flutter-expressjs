@@ -9,9 +9,11 @@ Purpose: define Flutter technical standards for HOSSPI HMS (`frontend/`).
 
 1. Security, privacy, and safety rules
 2. [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc) for HTTP and cross-stack behavior
-3. This index and the owner file named below
-4. Other frontend rule files
-5. [`dev-plan/`](../dev-plan/) steps (chronology only)
+3. [`instant_ui_sync.mdc`](./instant_ui_sync.mdc) then
+   [`realtime_sync.mdc`](./realtime_sync.mdc) for UI mutation and reconciliation behavior
+4. This index and the owner file named below
+5. Other frontend rule files
+6. [`dev-plan/`](../dev-plan/) steps (chronology only)
 
 ## Always-applied core rules
 
@@ -101,12 +103,3 @@ Purpose: define Flutter technical standards for HOSSPI HMS (`frontend/`).
 | [`reference/app-structure-example.mdc`](./reference/app-structure-example.mdc) | Root `App` widget shape |
 | [`reference/repository-pattern-example.mdc`](./reference/repository-pattern-example.mdc) | Repository boundary example |
 | [`reference/validation-snapshot-2026-05-14.mdc`](./reference/validation-snapshot-2026-05-14.mdc) | Historical validation run |
-
-## Deprecated / merged files
-
-Do not add rules to deleted files. Use owners above:
-
-- `design-system.mdc` → `design-system.mdc`
-- `components.mdc` → `components.mdc`
-- `layouts.mdc` → `layouts.mdc`
-- `ui-patterns.mdc`, `ui-patterns.mdc`, `ui-patterns.mdc` → `ui-patterns.mdc`

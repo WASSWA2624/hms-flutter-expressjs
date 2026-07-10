@@ -2,54 +2,52 @@
 description: Instant UI updates via Riverpod as single source of truth with optimistic mutations
 alwaysApply: true
 ---
-# Instant UI Sync
+# Instant UI and Backend Sync
 
-Purpose: eliminate perceptible delay between user mutations and visible UI changes across all workspaces.
+Purpose: every UI change involving shared backend data must update the acting
+user immediately and converge across authorized sessions through the standard
+realtime pipeline.
 
-## Single source of truth
+## Mandatory end-to-end flow
 
-- **UI reads only from Riverpod state** — widgets `watch`/`select` controllers and providers; never hold authoritative copies of server data in local widget state, `setState`, or side channels.
-- **Controllers own mutation flow** — presentation logic calls repositories over HTTP, then updates Riverpod state; widgets never call APIs or patch lists directly.
-- **WebSockets synchronize Riverpod** — realtime handlers update controller/provider state; they must not navigate, show snackbars, or rebuild widgets outside the provider graph.
+1. Widgets read authoritative UI data only from Riverpod and delegate actions to
+   controllers; widgets never call APIs or maintain competing server-data copies.
+2. Controllers write through repositories over HTTP. WebSockets are server-to-client
+   synchronization, never a mutation transport.
+3. On successful persistence (`saved == true`), patch every affected Riverpod slice
+   immediately from the response or a typed local delta: rows, details, summaries,
+   cards, alerts, and navigation badges. Cancel or failure must not patch or refresh.
+4. After commit and audit, the backend publishes a scoped domain event for every
+   user-visible shared mutation. Opting out requires an explicit documented reason.
+5. Controllers subscribe with the relevant `RealtimeEventGroups` and
+   `listenForRealtimeRefresh`, including audit CRUD events where applicable.
+6. Reconcile through `WorkspaceSyncEngine`: apply a safe typed `RealtimeDelta`, or
+   run the smallest `WorkspaceRefreshPlan` HTTP fetch. HTTP persistence resolves
+   conflicts; websocket payloads are reconciliation hints.
+7. Defer reconciliation while saving, refresh after authenticated reconnect, and
+   use `WorkspaceDisconnectPollPlan` only while disconnected.
 
-## Mutation flow (mandatory)
+## Responsiveness and efficiency
 
-1. User action → controller/repository HTTP mutation.
-2. **On success** → patch affected Riverpod state **immediately** (optimistic or from mutation response) before any full refetch.
-3. Backend persists and publishes domain events.
-4. WebSocket events reconcile Riverpod state (targeted patch or smallest necessary refresh).
-5. Full workspace invalidation is a last resort — prefer patching the affected slice (counts, list item, badge, alert).
+- A successful local mutation must be visible in the same frame or next provider
+  rebuild whenever the response or a deterministic delta is available; never block
+  that visible update on a full workspace `GET`.
+- Cross-session propagation is best-effort over WebSocket plus targeted HTTP
+  reconciliation. Do not promise fixed network latency, ordering, or delivery.
+- Prefer the smallest state patch. Blanket `ref.invalidate` or full workspace reload
+  is a last resort when no correct targeted patch or refresh plan exists.
+- Reuse shared burst coalescing. Add an explicit debounce only when measurement
+  proves it reduces redundant work without creating perceptible staleness.
+- Never navigate, show feedback, call `setState`, or mutate widgets from realtime
+  handlers.
 
-## Mandatory rules
+## Required verification for sync changes
 
-- Perceived UI update after a successful mutation must be **≤ 1 second**; aim for instant (same frame when possible).
-- Apply optimistic or response-driven patches **only on mutation success** (`saved == true`); cancel/dismiss must not trigger refresh.
-- Do not wait for a slow full `GET` when the mutation response (or a local delta) already carries enough data to update the UI.
-- Avoid blanket `ref.invalidate` when a targeted state patch suffices.
-- Reuse `WorkspaceSyncEngine`, `RealtimeDelta`, and `listenForRealtimeRefresh` — do not invent parallel sync paths.
-- Multi-user consistency: backend must emit websocket events for shared views; controllers subscribe via `RealtimeEventGroups`.
-
-## Anti-patterns (reject in review)
-
-```dart
-// ❌ Widget calls API and updates local state
-onPressed: () async {
-  final result = await api.createTenant(...);
-  setState(() => _tenants.add(result));
-}
-
-// ❌ WebSocket handler navigates or shows UI directly
-onMessage: (msg) => ScaffoldMessenger.of(context).showSnackBar(...);
-
-// ❌ Invalidate entire workspace after every dialog close
-dialog.then((_) => ref.invalidate(homeControllerProvider));
-
-// ✅ Controller patches Riverpod on success; UI watches provider
-final saved = await ref.read(tenantControllerProvider.notifier).createTenant(...);
-if (saved) {
-  ref.read(homeControllerProvider.notifier).applyTenantCreatedDelta(...);
-}
-```
+- Unit-test optimistic/response delta appliers and new event-group membership.
+- Controller-test success patching, cancel/failure behavior, and save-time deferral.
+- Test event reconciliation and authenticated reconnect refresh.
+- For cross-stack mutations, test backend event emission and a simulated second
+  client updating without manual reload.
 
 ## See also
 

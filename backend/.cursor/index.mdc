@@ -22,16 +22,16 @@ Backend-wide invariants:
 - Circular dependencies are forbidden.
 
 Owner map:
-- `architecture.md`: runtime, layering, dependency direction
-- `project-structure.md`: folder ownership and script categories
-- `coding-standards.md`: naming, comments, reuse, code style
-- `import-aliases.md`: aliases and import boundaries
-- `module-creation.md`: required module build sequence
-- `api.md`: route shape and middleware order
-- `api-versioning.md`: version lifecycle
-- `response-format.md`: success and error envelopes
-- `validation.md`: request validation rules
-- `auth-security.md`: authn, authz, roles, ABAC, entitlements, break-glass
-- `cors.md`, `rate-limiting.md`, `health-checks.md`, `error-logging.md`, `constants-env.md`: runtime safety and operations
-- `prisma.md`, `storage.md`, `websockets.md`, `performance.md`, `offline-support.md`, `internationalization.md`: platform behavior
-- `compliance.md`, `documentation.md`, `testing.md`: governance and quality gates
+- `architecture.mdc`: runtime, layering, dependency direction
+- `project-structure.mdc`: folder ownership and script categories
+- `coding-standards.mdc`: naming, comments, reuse, code style
+- `import-aliases.mdc`: aliases and import boundaries
+- `module-creation.mdc`: required module build sequence
+- `api.mdc`: route shape and middleware order
+- `api-versioning.mdc`: version lifecycle
+- `response-format.mdc`: success and error envelopes
+- `validation.mdc`: request validation rules
+- `auth-security.mdc`: authn, authz, roles, ABAC, entitlements, break-glass
+- `cors.mdc`, `rate-limiting.mdc`, `health-checks.mdc`, `error-logging.mdc`, `constants-env.mdc`: runtime safety and operations
+- `prisma.mdc`, `storage.mdc`, `websockets.mdc`, `performance.mdc`, `offline-support.mdc`, `internationalization.mdc`: platform behavior
+- `compliance.mdc`, `documentation.mdc`, `testing.mdc`: governance and quality gates

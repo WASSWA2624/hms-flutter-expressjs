@@ -24,7 +24,8 @@ Product modules and boundaries: [`.cursor/app-write-up.mdc`](../../.cursor/app-w
 ## Architecture invariants
 
 - One architecture, one routing system (`go_router`), one state system (Riverpod), one design system, one shared component strategy.
-- Riverpod is the single source of truth for UI data; mutations update provider state optimistically; WebSockets reconcile state — see [`instant_ui_sync.mdc`](./instant_ui_sync.mdc).
+- UI mutation and reconciliation behavior is owned by
+  [`instant_ui_sync.mdc`](./instant_ui_sync.mdc); this scope file must not override it.
 - Layer boundaries are defined in [`architecture.mdc`](./architecture.mdc); do not repeat them in feature code comments.
 
 ## Minimum runnable contract
