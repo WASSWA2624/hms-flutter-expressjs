@@ -615,14 +615,22 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
   };
 
   const skip = (page - 1) * limit;
-  if (!isRegistrationQueue && !isPaymentRequestQueue) {
-    await maybeSyncTenantAccessCatalog(scope);
-  }
-
   const lean =
     query.lean === true ||
     query.lean === 'true' ||
     query.lean === '1';
+  const skipLookups =
+    lean &&
+    (query.skip_lookups === true ||
+      query.skip_lookups === 'true' ||
+      query.skipLookups === true ||
+      query.skipLookups === 'true' ||
+      query.skipLookups === '1');
+
+  // Catalog sync is expensive; lean management lists do not need it on every page.
+  if (!isRegistrationQueue && !isPaymentRequestQueue && !lean) {
+    await maybeSyncTenantAccessCatalog(scope);
+  }
 
   const [summary, lookups, itemsResult] = isRegistrationQueue
     ? [
@@ -632,18 +640,23 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
       ]
     : await Promise.all([
         lean ? Promise.resolve({}) : repository.findSummary(scope),
-        // Lean lists still need filter lookups (tenants/facilities/roles), but
-        // skip the heavy permission catalog and nested role→permission rows.
-        lean
-          ? repository.findLookups(scope, includeAllTenants, {
-              includeTenantWide: includeTenantWideRoles,
-              includePermissions: false,
-              includeRolePermissions: false,
+        skipLookups
+          ? Promise.resolve({
+              tenants: [],
+              facilities: [],
+              roles: [],
+              permissions: [],
             })
-          : repository.findLookups(scope, includeAllTenants, {
-              includeTenantWide: includeTenantWideRoles,
-              includeRolePermissions: false,
-            }),
+          : lean
+            ? repository.findLookups(scope, includeAllTenants, {
+                includeTenantWide: includeTenantWideRoles,
+                includePermissions: false,
+                includeRolePermissions: false,
+              })
+            : repository.findLookups(scope, includeAllTenants, {
+                includeTenantWide: includeTenantWideRoles,
+                includeRolePermissions: false,
+              }),
         findItemsForResource(
           resource,
           scope,
@@ -835,12 +848,61 @@ const getReferenceData = async (query = {}, user = {}) => {
 };
 
 const getUserDetail = async (identifier, query = {}, user = {}) => {
-  const scopeResult = await repository.resolveWorkspaceScope({ filters: query, user });
-  if (scopeResult.state === 'tenant_context_required') {
-    throw new HttpError('errors.auth.scope_mismatch', 403);
+  // Detail lookup must not be trapped by the list's session facility/tenant
+  // defaults. Super admins can open any user; tenant admins any user in their
+  // tenant; facility-scoped actors stay within their facility.
+  let lookupScope = { tenant_id: null, facility_id: null };
+
+  if (!isSuperAdmin(user)) {
+    const scopeResult = await repository.resolveWorkspaceScope({
+      filters: {
+        ...query,
+        allFacilities:
+          roleList(user).includes(ROLES.TENANT_ADMIN) ||
+          query.allFacilities === true ||
+          query.allFacilities === 'true' ||
+          query.all_facilities === true ||
+          query.all_facilities === 'true'
+            ? 'true'
+            : query.allFacilities || query.all_facilities,
+      },
+      user,
+    });
+    if (scopeResult.state === 'tenant_context_required') {
+      throw new HttpError('errors.auth.scope_mismatch', 403);
+    }
+    lookupScope = {
+      tenant_id: scopeResult.scope.tenant_id,
+      facility_id: roleList(user).includes(ROLES.TENANT_ADMIN)
+        ? null
+        : scopeResult.scope.facility_id,
+    };
   }
 
-  const record = await repository.findUserByIdentifier(identifier, scopeResult.scope);
+  // Prefer an explicit tenant hint from the client (row's tenant) when resolving
+  // friendly IDs that are only unique per tenant.
+  const requestedTenantId = text(query.tenant_id || query.tenantId);
+  if (requestedTenantId && !lookupScope.tenant_id) {
+    const tenantId = await resolveIdentifierForFilter({
+      value: requestedTenantId,
+      model: 'tenant',
+    });
+    if (tenantId) {
+      lookupScope = { ...lookupScope, tenant_id: tenantId };
+    }
+  }
+
+  let record = await repository.findUserByIdentifier(identifier, lookupScope);
+
+  // Friendly IDs are tenant-scoped; if the first pass used a tenant hint and
+  // missed (e.g. UUID path), retry without tenant for elevated actors.
+  if (!record && isSuperAdmin(user) && lookupScope.tenant_id) {
+    record = await repository.findUserByIdentifier(identifier, {
+      tenant_id: null,
+      facility_id: null,
+    });
+  }
+
   if (!record) {
     throw new HttpError('errors.not_found', 404);
   }

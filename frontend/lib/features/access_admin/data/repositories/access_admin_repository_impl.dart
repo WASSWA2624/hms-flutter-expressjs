@@ -71,6 +71,7 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         'roleId': query.roleId,
         'include_deleted': query.includeDeleted ? 'true' : null,
         'lean': query.lean ? 'true' : null,
+        'skipLookups': query.skipLookups ? 'true' : null,
         'allTenants': query.allTenants ? 'true' : null,
         'allFacilities': query.allFacilities ? 'true' : null,
       }),

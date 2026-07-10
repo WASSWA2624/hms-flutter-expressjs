@@ -92,12 +92,17 @@ abstract class _ScopedAccessAdminListDialogState<
 
   void _onSearchChanged() {
     searchDebounce?.cancel();
-    searchDebounce = Timer(const Duration(milliseconds: 300), () {
-      unawaited(reload(resetPage: true));
+    searchDebounce = Timer(const Duration(milliseconds: 450), () {
+      // Keep existing rows visible while search refreshes.
+      unawaited(reload(resetPage: true, silent: items.isNotEmpty));
     });
   }
 
-  Future<void> reload({required bool resetPage, bool silent = false}) async {
+  Future<void> reload({
+    required bool resetPage,
+    bool silent = false,
+    bool refreshLookups = false,
+  }) async {
     if (resetPage) {
       pageRequest = pageRequest.first();
     }
@@ -108,20 +113,36 @@ abstract class _ScopedAccessAdminListDialogState<
       });
     }
 
+    final bool canSkipLookups =
+        !refreshLookups &&
+        workspaceData != null &&
+        (workspaceData!.lookups.tenants.isNotEmpty ||
+            workspaceData!.lookups.facilities.isNotEmpty ||
+            workspaceData!.lookups.roles.isNotEmpty ||
+            workspaceData!.lookups.userStatuses.isNotEmpty);
+
     final Result<AccessAdminWorkspaceData> result = await repository
         .getWorkspace(
           listQuery.copyWith(
             search: searchController.text.trim(),
             pageRequest: pageRequest,
+            skipLookups: canSkipLookups,
           ),
         );
 
     if (!mounted) return;
     result.when(
       success: (AccessAdminWorkspaceData data) {
+        final AccessAdminLookups preservedLookups =
+            canSkipLookups &&
+                data.lookups.tenants.isEmpty &&
+                data.lookups.facilities.isEmpty &&
+                data.lookups.roles.isEmpty
+            ? workspaceData!.lookups
+            : data.lookups;
         setState(() {
           loading = false;
-          workspaceData = data;
+          workspaceData = data.copyWith(lookups: preservedLookups);
           items = data.page.items;
           totalItemCount = data.page.totalItemCount ?? data.page.items.length;
         });
@@ -140,7 +161,7 @@ abstract class _ScopedAccessAdminListDialogState<
 
   Future<void> onPageChanged(AppPageRequest request) async {
     pageRequest = request;
-    await reload(resetPage: false);
+    await reload(resetPage: false, silent: items.isNotEmpty);
   }
 
   AccessAdminWorkspaceState? buildWorkspaceState() {
@@ -176,7 +197,7 @@ abstract class _ScopedAccessAdminListDialogState<
 
     return AppListTable<AccessAdminItem>(
       page: currentPage,
-      isLoading: loading || mutating,
+      isLoading: loading,
       onRowSelected: onRowSelected,
       onPageChanged: onPageChanged,
       previousPageLabel: l10n.hrPreviousPageLabel,
@@ -318,6 +339,9 @@ class _ManageUsersDialogState
       return;
     }
 
+    final bool tenantScopeChanged =
+        tenantFilter != nextTenant || allTenants != nextAllTenants;
+
     setState(() {
       tenantFilter = nextTenant;
       facilityFilter = nextFacility;
@@ -326,7 +350,11 @@ class _ManageUsersDialogState
       roleFilter = nextRole;
       statusFilter = nextStatus;
     });
-    await reload(resetPage: true);
+    await reload(
+      resetPage: true,
+      silent: items.isNotEmpty,
+      refreshLookups: tenantScopeChanged,
+    );
   }
 
   Future<void> _openCreateUserDialog() async {
@@ -369,15 +397,12 @@ class _ManageUsersDialogState
 
     AccessAdminUserDetail? resolvedDetail = detail;
     if (resolvedDetail == null) {
-      setState(() => mutating = true);
       final Result<AccessAdminUserDetail> detailResult = await repository
           .getUserDetail(
-            item.id,
-            tenantId: workspaceData?.query.tenantId,
-            facilityId: workspaceData?.query.facilityId,
+            item.mutationId,
+            tenantId: item.tenantId ?? workspaceData?.query.tenantId,
           );
       if (!mounted) return;
-      setState(() => mutating = false);
       resolvedDetail = detailResult.when(
         success: (AccessAdminUserDetail value) => value,
         failure: (_) => null,
@@ -387,7 +412,7 @@ class _ManageUsersDialogState
           SnackBar(
             content: Text(
               detailResult.when(
-                success: (_) => '',
+                success: (_) => context.l10n.accessAdminEmptyTitle,
                 failure: (AppFailure loadFailure) =>
                     context.l10n.failureMessage(loadFailure),
               ),
@@ -490,15 +515,13 @@ class _ManageUsersDialogState
   }
 
   Future<void> _openUserDetail(AccessAdminItem item) async {
-    setState(() => mutating = true);
+    // Do not flip the table into a global busy state — keep rows interactive.
     final Result<AccessAdminUserDetail> detailResult = await repository
         .getUserDetail(
-          item.id,
-          tenantId: workspaceData?.query.tenantId,
-          facilityId: workspaceData?.query.facilityId,
+          item.mutationId,
+          tenantId: item.tenantId ?? workspaceData?.query.tenantId,
         );
     if (!mounted) return;
-    setState(() => mutating = false);
 
     final AccessAdminUserDetail? detail = detailResult.when(
       success: (AccessAdminUserDetail value) => value,
@@ -509,7 +532,7 @@ class _ManageUsersDialogState
         SnackBar(
           content: Text(
             detailResult.when(
-              success: (_) => '',
+              success: (_) => context.l10n.accessAdminEmptyTitle,
               failure: (AppFailure loadFailure) =>
                   context.l10n.failureMessage(loadFailure),
             ),
@@ -520,6 +543,7 @@ class _ManageUsersDialogState
     }
 
     if (!mounted) return;
+    var detailDidMutate = false;
     await showAppDialog<void>(
       context: context,
       builder: (BuildContext dialogContext) => _AccessAdminUserDetailDialog(
@@ -528,11 +552,11 @@ class _ManageUsersDialogState
         canWrite: canWrite,
         repository: repository,
         lookups: workspaceData?.lookups ?? const AccessAdminLookups(),
-        tenantId: detail.item.tenantId ?? workspaceData?.query.tenantId,
-        facilityId: detail.item.facilityId ?? workspaceData?.query.facilityId,
+        tenantId: detail.item.tenantId ?? item.tenantId,
+        facilityId: detail.item.facilityId ?? item.facilityId,
         onStatusChanged: (String status) async {
           final Result<void> result = await repository.setUserStatus(
-            item.id,
+            item.mutationId,
             status,
           );
           return result.when(
@@ -550,10 +574,11 @@ class _ManageUsersDialogState
         },
         onMutated: () {
           mutated = true;
+          detailDidMutate = true;
         },
       ),
     );
-    if (mounted) {
+    if (mounted && detailDidMutate) {
       unawaited(reload(resetPage: false, silent: true));
     }
   }
@@ -833,7 +858,7 @@ class _ManageRolesPermissionsDialogState
     setState(() {
       roleScopeFilter = scope;
     });
-    await reload(resetPage: true);
+    await reload(resetPage: true, silent: items.isNotEmpty);
   }
 
   Future<void> _openCreateRoleDialog() async {
@@ -1428,9 +1453,8 @@ class _AccessAdminUserDetailDialogState
   Future<void> _reloadDetail() async {
     final Result<AccessAdminUserDetail> result = await widget.repository
         .getUserDetail(
-          _item.id,
-          tenantId: widget.tenantId,
-          facilityId: widget.facilityId,
+          _item.mutationId,
+          tenantId: _item.tenantId ?? widget.tenantId,
         );
     if (!mounted) return;
     result.when(

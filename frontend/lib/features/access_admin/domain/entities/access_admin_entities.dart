@@ -71,6 +71,7 @@ final class AccessAdminWorkspaceQuery {
     this.allTenants = false,
     this.allFacilities = false,
     this.lean = false,
+    this.skipLookups = false,
     this.pageRequest = const AppPageRequest(pageSize: 12),
   });
 
@@ -99,6 +100,10 @@ final class AccessAdminWorkspaceQuery {
           params['allFacilities'] == 'true' ||
           (params['facilityScope'] ?? params['facility_scope']) == 'all',
       lean: params['lean'] == 'true' || params['lean'] == '1',
+      skipLookups:
+          params['skip_lookups'] == 'true' ||
+          params['skipLookups'] == 'true' ||
+          params['skipLookups'] == '1',
     );
   }
 
@@ -116,6 +121,7 @@ final class AccessAdminWorkspaceQuery {
   final bool allTenants;
   final bool allFacilities;
   final bool lean;
+  final bool skipLookups;
   final AppPageRequest pageRequest;
 
   bool get hasRouteTargeting {
@@ -141,6 +147,7 @@ final class AccessAdminWorkspaceQuery {
     bool? allTenants,
     bool? allFacilities,
     bool? lean,
+    bool? skipLookups,
     AppPageRequest? pageRequest,
   }) {
     return AccessAdminWorkspaceQuery(
@@ -166,6 +173,7 @@ final class AccessAdminWorkspaceQuery {
       allTenants: allTenants ?? this.allTenants,
       allFacilities: allFacilities ?? this.allFacilities,
       lean: lean ?? this.lean,
+      skipLookups: skipLookups ?? this.skipLookups,
       pageRequest: pageRequest ?? this.pageRequest,
     );
   }

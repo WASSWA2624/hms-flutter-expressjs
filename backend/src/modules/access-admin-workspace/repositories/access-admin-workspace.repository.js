@@ -7,6 +7,33 @@ const tenantFacilityRepository = require('@repositories/tenant-facility-workspac
 
 const DEMO_EMAIL_SUFFIX = '@hosspi.com';
 
+/** Seeded demo accounts only — not every address on the demo domain. */
+const DEMO_USER_EMAILS = new Set([
+  'super.admin@hosspi.com',
+  'tenant.admin@hosspi.com',
+  'facility.admin@hosspi.com',
+  'doctor@hosspi.com',
+  'nurse@hosspi.com',
+  'lab@hosspi.com',
+  'radiology@hosspi.com',
+  'pharmacy@hosspi.com',
+  'reception@hosspi.com',
+  'billing@hosspi.com',
+  'operations@hosspi.com',
+  'hr@hosspi.com',
+  'biomed@hosspi.com',
+  'housekeeping@hosspi.com',
+  'mortuary.staff@hosspi.com',
+  'mortuary.manager@hosspi.com',
+  'ambulance@hosspi.com',
+  'patient.portal@hosspi.com',
+]);
+
+const isDemoUser = (user = {}) => {
+  const email = String(user.email || '').trim().toLowerCase();
+  return DEMO_USER_EMAILS.has(email);
+};
+
 const mapError = (error) => {
   if (error instanceof HttpError) throw error;
   throw new HttpError('errors.database.unexpected', 500, [{ originalError: error?.message }]);
@@ -121,7 +148,7 @@ const countDemoUsers = async (scope = {}) => {
     return prisma.user.count({
       where: {
         ...scopedWhere(scope, { includeFacility: true }),
-        email: { endsWith: DEMO_EMAIL_SUFFIX },
+        email: { in: [...DEMO_USER_EMAILS] },
       },
     });
   } catch (error) {
@@ -178,7 +205,7 @@ const findUsers = async ({ scope = {}, filters = {}, skip = 0, take = 20, orderB
       ...scopedWhere(scope, { includeFacility: true, includeDeleted }),
       ...(filters.status ? { status: filters.status } : {}),
       ...(filters.is_demo
-        ? { email: { endsWith: DEMO_EMAIL_SUFFIX } }
+        ? { email: { in: [...DEMO_USER_EMAILS] } }
         : {}),
     };
 
@@ -549,15 +576,43 @@ const findUserByIdentifier = async (identifier, scope = {}) => {
     return prisma.user.findFirst({
       where: { id: userId, deleted_at: null },
       include: {
-        profile: { where: { deleted_at: null } },
+        profile: {
+          where: { deleted_at: null },
+          select: {
+            id: true,
+            human_friendly_id: true,
+            first_name: true,
+            last_name: true,
+          },
+        },
+        facility: {
+          select: {
+            id: true,
+            human_friendly_id: true,
+            name: true,
+          },
+        },
         roles: {
           where: { deleted_at: null },
-          include: {
+          select: {
+            id: true,
+            human_friendly_id: true,
             role: {
-              include: {
+              select: {
+                id: true,
+                human_friendly_id: true,
+                name: true,
                 permissions: {
                   where: { deleted_at: null },
-                  include: { permission: true },
+                  select: {
+                    permission: {
+                      select: {
+                        id: true,
+                        human_friendly_id: true,
+                        name: true,
+                      },
+                    },
+                  },
                 },
               },
             },
@@ -565,9 +620,23 @@ const findUserByIdentifier = async (identifier, scope = {}) => {
         },
         permissions: {
           where: { deleted_at: null },
-          include: { permission: true },
+          select: {
+            permission: {
+              select: {
+                id: true,
+                human_friendly_id: true,
+                name: true,
+              },
+            },
+          },
         },
-        staff_profile: { where: { deleted_at: null } },
+        staff_profile: {
+          where: { deleted_at: null },
+          select: {
+            id: true,
+            human_friendly_id: true,
+          },
+        },
       },
     });
   } catch (error) {
@@ -673,13 +742,9 @@ const resetDemoUserPassword = async (userId, passwordHash) => {
   }
 };
 
-const isDemoUser = (user = {}) => {
-  const email = String(user.email || '').trim().toLowerCase();
-  return email.endsWith(DEMO_EMAIL_SUFFIX);
-};
-
 module.exports = {
   DEMO_EMAIL_SUFFIX,
+  DEMO_USER_EMAILS,
   countDemoUsers,
   countPermissions,
   countRoles,

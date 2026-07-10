@@ -111,7 +111,7 @@ describe('access-admin-workspace service', () => {
       subscription: null,
     });
     repository.isDemoUser.mockImplementation((user) =>
-      String(user.email || '').endsWith('@hosspi.com')
+      String(user.email || '').trim().toLowerCase() === 'doctor@hosspi.com'
     );
   });
 
