@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/core/utils/app_slug.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
@@ -5,24 +7,23 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 
 const String tenantFacilityNoneSelection = '__none__';
 
-/// Builds a short, OS-safe facility logo basename (≤ 64 chars incl. extension).
+/// Builds a short, OS-safe facility logo basename (≤ 32 chars incl. extension).
 ///
-/// Example: `fairbanks-main-facility-logo.png`
+/// Example: `logo-4869585d.png`
 String buildFacilityLogoFileName(String facilityName, {String extension = 'png'}) {
-  const int maxBasename = 64;
-  const String logoSuffix = '-logo';
+  const int maxBasename = 32;
   final String normalizedExt = extension.startsWith('.')
       ? extension.toLowerCase()
       : '.${extension.toLowerCase()}';
-  final String slug = slugify(facilityName);
-  final String stemBase = (slug.isEmpty ? 'facility' : slug)
-      .replaceFirst(RegExp(r'-logo$'), '');
-  final int maxSlug = maxBasename - normalizedExt.length - logoSuffix.length;
-  final String clippedSlug = stemBase.length <= maxSlug
-      ? stemBase
-      : stemBase.substring(0, maxSlug).replaceAll(RegExp(r'-$'), '');
-  final String safeSlug = clippedSlug.isEmpty ? 'facility' : clippedSlug;
-  return '$safeSlug$logoSuffix$normalizedExt';
+  final String slug = slugify(facilityName).replaceAll(RegExp(r'[^a-z0-9]'), '');
+  final String suffix = (slug.isEmpty ? 'facility' : slug)
+      .substring(0, math.min(8, (slug.isEmpty ? 'facility' : slug).length));
+  final String candidate = 'logo-$suffix$normalizedExt';
+  if (candidate.length <= maxBasename) {
+    return candidate;
+  }
+  final int maxStem = maxBasename - normalizedExt.length;
+  return '${candidate.substring(0, maxStem)}$normalizedExt';
 }
 String? tenantFacilityOptionalSelection(String? value) {
   if (value == null || value == tenantFacilityNoneSelection) {

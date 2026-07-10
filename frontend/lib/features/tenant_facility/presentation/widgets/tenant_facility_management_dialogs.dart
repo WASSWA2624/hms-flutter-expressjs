@@ -4,11 +4,13 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/config/app_config_provider.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
+import 'package:hosspi_hms/core/utils/app_media_url.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
@@ -2486,16 +2488,19 @@ class _FacilityDetailsSummary extends StatelessWidget {
   }
 }
 
-class _FacilityLogoAvatar extends StatelessWidget {
+class _FacilityLogoAvatar extends ConsumerWidget {
   const _FacilityLogoAvatar({this.logoUrl});
 
   final String? logoUrl;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final String? url = logoUrl?.trim();
+    final String? url = resolveAppMediaUrl(
+      logoUrl,
+      ref.watch(appConfigProvider).apiBaseUrl,
+    );
     final bool hasLogo = url != null && url.isNotEmpty;
 
     return Semantics(
@@ -2511,21 +2516,25 @@ class _FacilityLogoAvatar extends StatelessWidget {
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12),
           child: SizedBox(
-            width: 72,
-            height: 72,
+            width: 88,
+            height: 88,
             child: hasLogo
-                ? Image.network(
-                    url,
-                    fit: BoxFit.cover,
-                    errorBuilder:
-                        (
-                          BuildContext context,
-                          Object error,
-                          StackTrace? stackTrace,
-                        ) => Icon(
-                          Icons.domain_outlined,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                ? Padding(
+                    padding: const EdgeInsets.all(6),
+                    child: Image.network(
+                      url,
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.high,
+                      errorBuilder:
+                          (
+                            BuildContext context,
+                            Object error,
+                            StackTrace? stackTrace,
+                          ) => Icon(
+                            Icons.domain_outlined,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                    ),
                   )
                 : Icon(
                     Icons.domain_outlined,

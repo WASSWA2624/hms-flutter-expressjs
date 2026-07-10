@@ -20,10 +20,12 @@
  */
 
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { corsOptions } = require('@config/cors');
 const { TRUST_PROXY } = require('@config/env');
+const { LOCAL_STORAGE_DIR } = require('@config/constants');
 const securityHeaders = require('@middlewares/security.middleware');
 const sessionMiddleware = require('@middlewares/session.middleware');
 const csrfMiddleware = require('@middlewares/csrf.middleware');
@@ -64,6 +66,16 @@ const createApp = () => {
 
     // 2. CORS middleware (handles preflight requests)
     app.use(cors(corsOptions));
+
+    // 2.5. Public local uploads (facility logos, etc.)
+    app.use(
+      '/uploads',
+      express.static(path.resolve(process.cwd(), LOCAL_STORAGE_DIR), {
+        fallthrough: true,
+        index: false,
+        maxAge: '1h',
+      })
+    );
     
     // 3. Cookie parser middleware
     app.use(cookieParser());

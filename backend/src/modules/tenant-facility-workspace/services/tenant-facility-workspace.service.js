@@ -5,6 +5,10 @@ const { HttpError } = require('@lib/errors');
 const { createStorageService, sanitizeFilename } = require('@lib/storage');
 const {
   resolveFacilityLogoUploadKey,
+  buildFacilityLogoPublicPath,
+  deleteFacilityLogoFromStorage,
+  buildStableFacilityLogoKey,
+  MAX_FACILITY_LOGO_BASENAME,
 } = require('@lib/storage/facility-logo-storage');
 const { resolveIdentifierForFilter } = require('@lib/billing/identifiers');
 const { ROLES } = require('@config/roles');
@@ -483,33 +487,22 @@ const normalizeUploadedLogo = (file = {}) => ({
   buffer: file?.buffer,
 });
 
-const MAX_FACILITY_LOGO_BASENAME = 64;
-
-const slugifyFacilityName = (value) =>
-  String(value || '')
+/** @deprecated Prefer buildStableFacilityLogoKey — kept for tests/compat. */
+const buildFacilityLogoBasename = (facilityName, originalName) => {
+  const extension = path.extname(originalName || '').toLowerCase() || '.png';
+  const safeExt = /^\.(png|jpe?g|webp)$/.test(extension) ? extension : '.png';
+  const slug = String(facilityName || '')
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-/** Short OS-safe logo basename: `{slug}-logo.ext` (≤ 64 chars). */
-const buildFacilityLogoBasename = (facilityName, originalName) => {
-  const extension = path.extname(originalName || '').toLowerCase() || '.png';
-  const safeExt = /^\.(png|jpe?g|webp)$/.test(extension) ? extension : '.png';
-  const slug = slugifyFacilityName(facilityName) || 'facility';
+    .replace(/^-+|-+$/g, '') || 'facility';
   const logoSuffix = '-logo';
   const maxStem = MAX_FACILITY_LOGO_BASENAME - safeExt.length;
   const maxSlug = Math.max(1, maxStem - logoSuffix.length);
   const clippedSlug =
     slug.length <= maxSlug ? slug : slug.slice(0, maxSlug).replace(/-$/, '');
-  const stem = `${clippedSlug || 'facility'}${logoSuffix}`;
-  return sanitizeFilename(`${stem}${safeExt}`);
-};
-
-const buildFacilityLogoPath = (tenantId, facilityId, originalName, facilityName) => {
-  const safeName = buildFacilityLogoBasename(facilityName, originalName);
-  return `facilities/${tenantId}/${facilityId}/branding/${safeName}`;
+  return sanitizeFilename(`${clippedSlug || 'facility'}${logoSuffix}${safeExt}`);
 };
 
 const uploadFacilityLogo = async (facilityIdentifier, file = {}, user = {}) => {
@@ -551,25 +544,16 @@ const uploadFacilityLogo = async (facilityIdentifier, file = {}, user = {}) => {
     typeof extensionJson.logo_url === 'string' ? extensionJson.logo_url : null;
 
   const storage = createStorageService();
-  const fallbackKey = buildFacilityLogoPath(
-    facility.tenant_id,
-    facility.id,
-    normalizedFile.originalname,
-    facility.name
-  );
-  // Replace in place when a logo already exists for this facility.
-  const storageKey = resolveFacilityLogoUploadKey({
+  const { storageKey, previousKey } = resolveFacilityLogoUploadKey({
     facilityId: facility.id,
     existingLogoUrl,
-    fallbackKey,
   });
   const uploaded = await storage.upload(normalizedFile.buffer, storageKey, {
     mimeType: normalizedFile.mimetype,
   });
   const storedPath = uploaded?.path || storageKey;
-  // Keep the same storage filename; bust caches so clients show the new bytes.
-  const baseLogoUrl = await storage.getUrl(storedPath);
-  const logoUrl = `${baseLogoUrl}${baseLogoUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
+  // Persist a client-loadable relative URL under /uploads.
+  const logoUrl = buildFacilityLogoPublicPath(storedPath, { cacheBust: true });
 
   await facilityRepository.update(facility.id, {
     extension_json: {
@@ -577,6 +561,10 @@ const uploadFacilityLogo = async (facilityIdentifier, file = {}, user = {}) => {
       logo_url: logoUrl,
     },
   });
+
+  if (previousKey) {
+    await deleteFacilityLogoFromStorage(storage, previousKey);
+  }
 
   return {
     logo_url: logoUrl,
@@ -586,6 +574,7 @@ const uploadFacilityLogo = async (facilityIdentifier, file = {}, user = {}) => {
 
 module.exports = {
   buildFacilityLogoBasename,
+  buildStableFacilityLogoKey,
   getSetup,
   uploadFacilityLogo,
 };

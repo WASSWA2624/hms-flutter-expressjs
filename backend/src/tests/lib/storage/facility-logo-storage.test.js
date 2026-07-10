@@ -2,61 +2,72 @@ const {
   extractStorageKeyFromLogoUrl,
   resolveFacilityLogoUploadKey,
   deleteFacilityLogoFromStorage,
+  buildStableFacilityLogoKey,
+  buildFacilityLogoPublicPath,
+  MAX_FACILITY_LOGO_BASENAME,
 } = require('@lib/storage/facility-logo-storage');
 
 describe('facility-logo-storage', () => {
+  describe('buildStableFacilityLogoKey', () => {
+    it('builds a short stable key within 32 characters', () => {
+      const key = buildStableFacilityLogoKey(
+        'fbb67a68-8fea-4eed-a072-4869585d8466'
+      );
+      expect(key).toBe('logo-585d8466.png');
+      expect(key.length).toBeLessThanOrEqual(MAX_FACILITY_LOGO_BASENAME);
+    });
+  });
+
   describe('extractStorageKeyFromLogoUrl', () => {
     it('returns sanitized relative keys', () => {
-      expect(
-        extractStorageKeyFromLogoUrl(
-          'facilities_tenant_facility_branding_main-campus-logo.png'
-        )
-      ).toBe('facilities_tenant_facility_branding_main-campus-logo.png');
+      expect(extractStorageKeyFromLogoUrl('logo-4869585d.png')).toBe(
+        'logo-4869585d.png'
+      );
     });
 
     it('strips query strings and uploads prefix', () => {
       expect(
-        extractStorageKeyFromLogoUrl(
-          '/uploads/facilities_tenant_facility_branding_logo.png?v=123'
-        )
-      ).toBe('facilities_tenant_facility_branding_logo.png');
+        extractStorageKeyFromLogoUrl('/uploads/logo-4869585d.png?v=123')
+      ).toBe('logo-4869585d.png');
     });
 
     it('extracts the filename from absolute URLs', () => {
       expect(
         extractStorageKeyFromLogoUrl(
-          'https://cdn.example.com/files/facilities_tenant_facility_branding_logo.png?v=9'
+          'https://cdn.example.com/uploads/logo-4869585d.png?v=9'
         )
-      ).toBe('facilities_tenant_facility_branding_logo.png');
+      ).toBe('logo-4869585d.png');
     });
   });
 
   describe('resolveFacilityLogoUploadKey', () => {
-    it('reuses the existing facility logo key on replace', () => {
-      const key = resolveFacilityLogoUploadKey({
-        facilityId: 'facility-uuid',
-        existingLogoUrl:
-          'facilities_tenant_facility-uuid_branding_old-name-logo.png?v=1',
-        fallbackKey:
-          'facilities/tenant/facility-uuid/branding/new-name-logo.png',
+    it('always targets the stable short key', () => {
+      const result = resolveFacilityLogoUploadKey({
+        facilityId: 'fbb67a68-8fea-4eed-a072-4869585d8466',
+        existingLogoUrl: null,
       });
-
-      expect(key).toBe(
-        'facilities_tenant_facility-uuid_branding_old-name-logo.png'
-      );
+      expect(result.storageKey).toBe('logo-585d8466.png');
+      expect(result.previousKey).toBeNull();
     });
 
-    it('falls back to the canonical key when no existing logo', () => {
-      const key = resolveFacilityLogoUploadKey({
-        facilityId: 'facility-uuid',
-        existingLogoUrl: null,
-        fallbackKey:
-          'facilities/tenant/facility-uuid/branding/main-campus-logo.png',
+    it('returns previousKey when migrating from a long legacy name', () => {
+      const result = resolveFacilityLogoUploadKey({
+        facilityId: 'fbb67a68-8fea-4eed-a072-4869585d8466',
+        existingLogoUrl:
+          'facilities_tenant_fbb67a68-8fea-4eed-a072-4869585d8466_branding_logo.png?v=1',
       });
-
-      expect(key).toBe(
-        'facilities_tenant_facility-uuid_branding_main-campus-logo.png'
+      expect(result.storageKey).toBe('logo-585d8466.png');
+      expect(result.previousKey).toBe(
+        'facilities_tenant_fbb67a68-8fea-4eed-a072-4869585d8466_branding_logo.png'
       );
+    });
+  });
+
+  describe('buildFacilityLogoPublicPath', () => {
+    it('builds an /uploads public path with cache busting', () => {
+      expect(
+        buildFacilityLogoPublicPath('logo-4869585d.png', { cacheBust: 99 })
+      ).toBe('/uploads/logo-4869585d.png?v=99');
     });
   });
 
@@ -68,13 +79,11 @@ describe('facility-logo-storage', () => {
 
       const deleted = await deleteFacilityLogoFromStorage(
         storage,
-        'facilities_tenant_facility_branding_logo.png?v=2'
+        '/uploads/logo-4869585d.png?v=2'
       );
 
       expect(deleted).toBe(true);
-      expect(storage.delete).toHaveBeenCalledWith(
-        'facilities_tenant_facility_branding_logo.png'
-      );
+      expect(storage.delete).toHaveBeenCalledWith('logo-4869585d.png');
     });
 
     it('returns false when delete fails', async () => {
@@ -83,7 +92,7 @@ describe('facility-logo-storage', () => {
       };
 
       await expect(
-        deleteFacilityLogoFromStorage(storage, 'facilities_x_logo.png')
+        deleteFacilityLogoFromStorage(storage, 'logo-4869585d.png')
       ).resolves.toBe(false);
     });
   });

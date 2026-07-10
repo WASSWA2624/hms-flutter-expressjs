@@ -94,7 +94,8 @@ class LocalStorageService extends StorageService {
       throw new Error(`File not found: ${filePath}`);
     }
 
-    return sanitizedPath;
+    // Public path served by express.static at /uploads
+    return `/uploads/${sanitizedPath}`;
   }
 
   async exists(filePath) {

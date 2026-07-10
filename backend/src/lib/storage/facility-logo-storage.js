@@ -1,11 +1,28 @@
 /**
  * Facility logo storage key helpers.
  *
- * Local/S3 storage sanitizes path separators to underscores, so keys look like:
- * `facilities_{tenantId}_{facilityId}_branding_{slug}-logo.png`
+ * Leaf filenames stay short (≤ 32 chars). Local storage flattens path
+ * separators, so the stable key is the entire storage object name.
  */
 
 const { sanitizeFilename } = require('@lib/storage/storage-service');
+
+const MAX_FACILITY_LOGO_BASENAME = 32;
+
+/**
+ * Stable short logo key for a facility: `logo-{id8}.png` (≤ 32 chars).
+ *
+ * @param {string} facilityId
+ * @returns {string}
+ */
+const buildStableFacilityLogoKey = (facilityId) => {
+  const compact = String(facilityId || '')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toLowerCase();
+  const suffix = (compact.slice(-8) || 'facility').slice(0, 8);
+  const key = `logo-${suffix}.png`;
+  return sanitizeFilename(key).slice(0, MAX_FACILITY_LOGO_BASENAME);
+};
 
 /**
  * Extract a storage key from a stored logo_url (relative path or absolute URL).
@@ -42,7 +59,6 @@ const extractStorageKeyFromLogoUrl = (logoUrl) => {
     return null;
   }
 
-  // Prefer the final path segment when a nested URL path is provided.
   const slashIndex = Math.max(value.lastIndexOf('/'), value.lastIndexOf('\\'));
   if (slashIndex >= 0) {
     value = value.slice(slashIndex + 1);
@@ -56,42 +72,63 @@ const extractStorageKeyFromLogoUrl = (logoUrl) => {
 };
 
 /**
- * Resolve the storage key for a facility logo upload.
- * Reuses the existing key when replacing so the filename stays stable.
+ * Resolve upload key + optional previous key to delete after overwrite migration.
+ *
+ * Always targets the stable short key for the facility. If an older long key
+ * exists, it is returned as `previousKey` so callers can delete it after upload.
  *
  * @param {Object} params
  * @param {string} params.facilityId
  * @param {string|null|undefined} params.existingLogoUrl
- * @param {string} params.fallbackKey - Canonical key/path before sanitization
+ * @returns {{ storageKey: string, previousKey: string|null }}
+ */
+const resolveFacilityLogoUploadKey = ({ facilityId, existingLogoUrl }) => {
+  const storageKey = buildStableFacilityLogoKey(facilityId);
+  const existingKey = extractStorageKeyFromLogoUrl(existingLogoUrl);
+  const previousKey =
+    existingKey && existingKey !== storageKey ? existingKey : null;
+  return { storageKey, previousKey };
+};
+
+/**
+ * Build a browser-loadable logo URL path for a storage key.
+ * Relative form: `/uploads/{key}` (optionally with cache-buster query).
+ *
+ * @param {string} storageKey
+ * @param {{ cacheBust?: boolean|number|string }} [options]
  * @returns {string}
  */
-const resolveFacilityLogoUploadKey = ({
-  facilityId,
-  existingLogoUrl,
-  fallbackKey,
-}) => {
-  const existingKey = extractStorageKeyFromLogoUrl(existingLogoUrl);
-  const facilityToken = sanitizeFilename(String(facilityId || ''));
-  if (
-    existingKey &&
-    facilityToken &&
-    existingKey.includes(facilityToken)
-  ) {
-    return existingKey;
+const buildFacilityLogoPublicPath = (storageKey, options = {}) => {
+  const key = sanitizeFilename(storageKey);
+  const base = `/uploads/${key}`;
+  if (options.cacheBust === false) {
+    return base;
   }
-
-  return sanitizeFilename(fallbackKey);
+  const version =
+    options.cacheBust === true || options.cacheBust == null
+      ? Date.now()
+      : options.cacheBust;
+  return `${base}?v=${version}`;
 };
 
 /**
  * Best-effort delete of a facility logo from storage.
  *
- * @param {import('@lib/storage/storage-service').StorageService} storage
- * @param {string|null|undefined} logoUrl
+ * @param {{ delete: (key: string) => Promise<boolean> }} storage
+ * @param {string|null|undefined} logoUrlOrKey
  * @returns {Promise<boolean>}
  */
-const deleteFacilityLogoFromStorage = async (storage, logoUrl) => {
-  const key = extractStorageKeyFromLogoUrl(logoUrl);
+const deleteFacilityLogoFromStorage = async (storage, logoUrlOrKey) => {
+  const key = extractStorageKeyFromLogoUrl(logoUrlOrKey) ||
+    (typeof logoUrlOrKey === 'string' && !logoUrlOrKey.includes('/')
+      ? (() => {
+          try {
+            return sanitizeFilename(logoUrlOrKey.trim());
+          } catch {
+            return null;
+          }
+        })()
+      : null);
   if (!key || !storage || typeof storage.delete !== 'function') {
     return false;
   }
@@ -104,7 +141,10 @@ const deleteFacilityLogoFromStorage = async (storage, logoUrl) => {
 };
 
 module.exports = {
+  MAX_FACILITY_LOGO_BASENAME,
+  buildStableFacilityLogoKey,
   extractStorageKeyFromLogoUrl,
   resolveFacilityLogoUploadKey,
+  buildFacilityLogoPublicPath,
   deleteFacilityLogoFromStorage,
 };

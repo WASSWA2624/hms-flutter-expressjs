@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/platform/app_print.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/utils/app_media_url.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -133,7 +134,11 @@ final printFormTemplateContextProvider = Provider<PrintFormTemplateContext>((
 
   return PrintFormTemplateContext(
     appBranding: _appBranding(config),
-    facilityBranding: _facilityBranding(setup: setup, session: session),
+    facilityBranding: _facilityBranding(
+      setup: setup,
+      session: session,
+      apiBaseUrl: config.apiBaseUrl,
+    ),
   );
 });
 
@@ -159,7 +164,11 @@ final printFormTemplateContextReadyProvider =
 
       return PrintFormTemplateContext(
         appBranding: _appBranding(config),
-        facilityBranding: _facilityBranding(setup: setup, session: session),
+        facilityBranding: _facilityBranding(
+          setup: setup,
+          session: session,
+          apiBaseUrl: config.apiBaseUrl,
+        ),
       );
     });
 
@@ -187,6 +196,7 @@ PrintFormBranding _appBranding(AppConfig config) {
 PrintFormBranding? _facilityBranding({
   required FacilitySetupSnapshot? setup,
   required AuthSession? session,
+  required Uri apiBaseUrl,
 }) {
   final FacilityProfile? facility = setup?.facility;
   final AuthUserProfile? user = session?.user;
@@ -212,7 +222,7 @@ PrintFormBranding? _facilityBranding({
   return PrintFormBranding(
     name: facilityName,
     kind: PrintFormBrandingKind.facility,
-    logoUrl: facility?.logoUrl,
+    logoUrl: resolveAppMediaUrl(facility?.logoUrl, apiBaseUrl),
     contacts: <String>[
       if (_hasText(contactAddress.phone)) 'Phone: ${contactAddress.phone}',
       if (_hasText(contactAddress.email)) 'Email: ${contactAddress.email}',

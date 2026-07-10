@@ -7,12 +7,14 @@ import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/config/app_config_provider.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/core/utils/app_media_url.dart';
 import 'package:hosspi_hms/core/utils/app_slug.dart';
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/facility_similarity.dart';
@@ -3223,8 +3225,14 @@ class _FacilityConfirmLogoPreview extends StatelessWidget {
                 Icon(Icons.broken_image_outlined, color: colorScheme.error),
       );
     } else if (hasUrl && !cleared) {
+      final String? resolvedUrl = resolveAppMediaUrl(
+        url,
+        ProviderScope.containerOf(context, listen: false)
+            .read(appConfigProvider)
+            .apiBaseUrl,
+      );
       image = Image.network(
-        url!.trim(),
+        resolvedUrl ?? url!.trim(),
         fit: BoxFit.contain,
         filterQuality: FilterQuality.high,
         errorBuilder:

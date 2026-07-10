@@ -206,16 +206,16 @@ describe('tenant-facility-workspace service', () => {
       expect(service.buildFacilityLogoBasename('Main Campus', 'photo.JPG')).toBe(
         'main-campus-logo.jpg'
       );
-      expect(service.buildFacilityLogoBasename('Fairbanks Main Facility', 'x.png')).toBe(
-        'fairbanks-main-facility-logo.png'
-      );
+      expect(
+        service.buildStableFacilityLogoKey('fbb67a68-8fea-4eed-a072-4869585d8466')
+      ).toBe('logo-585d8466.png');
     });
 
-    it('clips basename to 64 characters including extension', () => {
+    it('clips basename to 32 characters including extension', () => {
       const longName =
         'Very Long Hospital And Medical Center Name That Should Be Clipped For Filesystem Safety';
       const basename = service.buildFacilityLogoBasename(longName, 'logo.webp');
-      expect(basename.length).toBeLessThanOrEqual(64);
+      expect(basename.length).toBeLessThanOrEqual(32);
       expect(basename.endsWith('.webp')).toBe(true);
       expect(basename).toContain('-logo');
     });

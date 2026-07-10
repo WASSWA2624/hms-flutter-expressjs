@@ -2,7 +2,10 @@ import 'dart:typed_data';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/config/app_config_provider.dart';
+import 'package:hosspi_hms/core/utils/app_media_url.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
@@ -65,6 +68,14 @@ class AppImageUploadField extends StatelessWidget {
     return urls;
   }
 
+  String? _mediaUrl(BuildContext context, String? raw) {
+    final Uri apiBaseUrl = ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(appConfigProvider).apiBaseUrl;
+    return resolveAppMediaUrl(raw, apiBaseUrl);
+  }
+
   int get _filledCount => pendingItems.length + _resolvedExistingUrls.length;
 
   bool get _canChooseMore => _filledCount < maxFiles;
@@ -108,7 +119,7 @@ class AppImageUploadField extends StatelessWidget {
                         )
                       : hasUrl
                       ? Image.network(
-                          imageUrl.trim(),
+                          _mediaUrl(dialogContext, imageUrl) ?? imageUrl.trim(),
                           fit: BoxFit.contain,
                           filterQuality: FilterQuality.high,
                           errorBuilder: (_, _, _) => Icon(
@@ -198,13 +209,13 @@ class AppImageUploadField extends StatelessWidget {
                   children: <Widget>[
                     for (int i = 0; i < existingUrls.length; i++)
                       _ImagePreviewTile(
-                        imageUrl: existingUrls[i],
+                        imageUrl: _mediaUrl(context, existingUrls[i]),
                         placeholderIcon: placeholderIcon,
                         size: previewSize,
                         removeTooltip: removeLabel,
                         onTap: () => _previewImage(
                           context,
-                          imageUrl: existingUrls[i],
+                          imageUrl: _mediaUrl(context, existingUrls[i]),
                         ),
                         onRemove: enabled
                             ? () => _removeExisting(i)
