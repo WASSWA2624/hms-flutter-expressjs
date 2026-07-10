@@ -12,6 +12,7 @@ Authentication:
 
 Authorization:
 - Authority order: **Plan (module entitlements) → Role → Rights (permissions) → ABAC scope**
+- Plan is the hard gate for which modules can be accessed; role and permissions never unlock a module the plan does not include
 - Plan decides which modules a tenant may use; role decides who may operate in those modules; permissions decide fine-grained actions
 - `user_role` is the role-assignment source of truth
 - one user may hold multiple active roles simultaneously

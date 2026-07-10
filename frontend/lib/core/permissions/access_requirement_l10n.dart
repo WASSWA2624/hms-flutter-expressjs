@@ -13,7 +13,7 @@ String accessRequirementDenialMessage(
   }
 
   // Authority order: Plan (modules) → Role → Rights → scope.
-  for (final String moduleCode in requirement.activeModules) {
+  for (final String moduleCode in requirement.effectiveModules) {
     if (!policy.hasActiveModule(moduleCode)) {
       return l10n.accessDeniedModuleRequired(
         accessRequirementModuleLabel(l10n, moduleCode),
@@ -54,9 +54,9 @@ String accessRequirementDenialMessage(
 String accessRequirementModuleLabel(AppLocalizations l10n, String moduleCode) {
   return switch (moduleCode.trim().toLowerCase()) {
     'inpatient-bed-management' => l10n.accessDeniedModuleInpatientLabel,
-    'lab' => l10n.accessDeniedModuleLabLabel,
-    'radiology' => l10n.accessDeniedModuleRadiologyLabel,
-    'theater' => l10n.accessDeniedModuleTheaterLabel,
+    'lab' || 'lab-workflows' => l10n.accessDeniedModuleLabLabel,
+    'radiology' || 'radiology-workflows' => l10n.accessDeniedModuleRadiologyLabel,
+    'theater' || 'theatre-anesthesia' => l10n.accessDeniedModuleTheaterLabel,
     'physiotherapy' => l10n.accessDeniedModulePhysiotherapyLabel,
     _ => AppDisplay.apiLabel(moduleCode),
   };

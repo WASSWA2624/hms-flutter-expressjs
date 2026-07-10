@@ -176,7 +176,7 @@ const DEMO_CORE_MODULE_CATALOG = Object.freeze([
   { code: 'icu_critical_care', slug: 'icu-critical-care', name: 'ICU and Critical Care', module_group: 6, minimum_plan_tier_code: 'PRO' },
   { code: 'theatre_anesthesia', slug: 'theatre-anesthesia', name: 'Theatre and Anesthesia', module_group: 7, minimum_plan_tier_code: 'PRO' },
   { code: 'physiotherapy', slug: 'physiotherapy', name: 'Physiotherapy and Rehabilitation', module_group: 7, minimum_plan_tier_code: 'PRO' },
-  { code: 'lab_workflows', slug: 'lab-workflows', name: 'Lab Workflows', module_group: 8, minimum_plan_tier_code: 'PRO' },
+  { code: 'lab_workflows', slug: 'lab-workflows', name: 'Lab Workflows', module_group: 8, minimum_plan_tier_code: 'FREE' },
   { code: 'radiology_workflows', slug: 'radiology-workflows', name: 'Radiology Workflows', module_group: 9, minimum_plan_tier_code: 'PRO' },
   { code: 'pharmacy_dispensing', slug: 'pharmacy-dispensing', name: 'Pharmacy Dispensing', module_group: 10, minimum_plan_tier_code: 'PRO' },
   { code: 'mortuary_operations', slug: 'mortuary', name: 'Mortuary', module_group: 12, minimum_plan_tier_code: 'BASIC' },

@@ -286,8 +286,12 @@ const mapPanelSummaries = (summary = {}) => [
   { id: 'governance', count: numberValue(summary.expiring_licenses), default_resource: 'licenses' },
 ];
 
-const serializeItems = (resource, items = []) => {
-  if (resource === 'subscription-plans') return items.map(serializeSubscriptionPlan);
+const serializeItems = (resource, items = [], { modules = [] } = {}) => {
+  if (resource === 'subscription-plans') {
+    return items.map((item) =>
+      serializeSubscriptionPlan(item, { catalogModules: modules })
+    );
+  }
   if (resource === 'modules') return items.map(serializeModule);
   if (resource === 'subscriptions') return items.map(serializeSubscription);
   if (resource === 'module-subscriptions') return items.map(serializeModuleSubscription);
@@ -677,7 +681,9 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, sortBy, order = 'd
       to: text(query.to) || null,
     },
     lookups: buildLookups(lookups),
-    items: serializeItems(resource, itemsResult.items),
+    items: serializeItems(resource, itemsResult.items, {
+      modules: lookups.modules || [],
+    }),
     pagination: buildPagination(page, limit, numberValue(itemsResult.total)),
     spotlight: queueSummaries.filter((entry) => entry.count > 0).sort((left, right) => right.count - left.count).slice(0, 5),
     timeline: mapTimeline(timeline),
@@ -730,8 +736,13 @@ const getPlanDetail = async (planId, user = {}) => {
     throw new HttpError('errors.subscription_plan.not_found', 404);
   }
 
+  const scope = await resolveTenantScope({}, user);
+  const lookups = await repository.findLookups(scope);
+
   return {
-    plan: serializeSubscriptionPlan(detail.plan),
+    plan: serializeSubscriptionPlan(detail.plan, {
+      catalogModules: lookups.modules || [],
+    }),
     stats: detail.stats,
     active_accounts: detail.active_accounts,
     pending_accounts: detail.pending_accounts,

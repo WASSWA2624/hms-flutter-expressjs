@@ -107,6 +107,56 @@ const seedSubscriptionsPack = async (ctx, orgPack) => {
     result.modules[moduleDefinition.code] = module;
   }
 
+  // Persist predefined included modules per plan (core modules by tier).
+  for (const planDefinition of DEMO_PLAN_CATALOG) {
+    const included = allModuleDefinitions
+      .filter(
+        (entry) =>
+          !entry.is_add_on &&
+          isEligibleForTier(
+            planDefinition.tier_code,
+            entry.minimum_plan_tier_code
+          )
+      )
+      .map((entry) => {
+        const moduleRecord = result.modules[entry.code];
+        return moduleRecord?.human_friendly_id || moduleRecord?.id || null;
+      })
+      .filter(Boolean);
+
+    const plan = await ctx.upsert(
+      'subscription_plan',
+      `plan:${planDefinition.code}`,
+      {
+        tenant_id: null,
+        code: planDefinition.code,
+        name: planDefinition.name,
+        tier_code: planDefinition.tier_code,
+        price: planDefinition.price,
+        billing_cycle: planDefinition.billing_cycle,
+        max_users: planDefinition.max_users,
+        max_facilities: planDefinition.max_facilities,
+        max_storage_mb: planDefinition.max_storage_mb,
+        max_modules: planDefinition.max_modules,
+        plan_fit_warning_percent: 80,
+        limit_policy_json: buildPlanPolicies(planDefinition),
+        add_on_eligibility_json: buildEligibilityMap(),
+        extension_json: {
+          ...(planDefinition.extension_json || {}),
+          allowed_modules: {
+            included,
+          },
+        },
+      },
+      {
+        tenantCode: 'GLOBAL',
+        scenarioKey: 'CATALOG',
+        publicIdPrefix: 'SPLAN',
+      }
+    );
+    result.plans[planDefinition.code] = plan;
+  }
+
   const scenario = DEMO_TENANT;
   const tenant = orgPack.tenants[scenario.key];
   const plan = result.plans[scenario.primary_plan_code];

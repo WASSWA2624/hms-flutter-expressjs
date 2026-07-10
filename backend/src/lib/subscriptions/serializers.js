@@ -135,12 +135,25 @@ const resolveIncludedModuleIds = (record) => {
   return ids;
 };
 
-const serializeSubscriptionPlan = (record) => {
+const serializeSubscriptionPlan = (record, { catalogModules = null } = {}) => {
   if (!record) return null;
 
   const prices = resolvePlanPrices(record);
   const description = resolvePlanDescription(record);
-  const includedModuleIds = resolveIncludedModuleIds(record);
+  let includedModuleIds = resolveIncludedModuleIds(record);
+  if (
+    includedModuleIds.length === 0 &&
+    Array.isArray(catalogModules) &&
+    catalogModules.length > 0
+  ) {
+    const {
+      resolveDefaultIncludedModuleIds,
+    } = require('@lib/subscriptions/plan-default-modules');
+    includedModuleIds = resolveDefaultIncludedModuleIds(
+      record.tier_code,
+      catalogModules
+    );
+  }
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),

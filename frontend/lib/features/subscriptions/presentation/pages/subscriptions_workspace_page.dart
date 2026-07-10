@@ -1115,8 +1115,13 @@ class _PlanDetailContent extends ConsumerWidget {
     final bool isFree = SubscriptionPlanTheme.isFreeTier(item.tierCode);
     final SubscriptionPlanDetail? detail = state.planDetail;
     final List<SubscriptionLookupItem> modules = state.lookups.modules;
+    final List<String> includedModuleIds = _resolveInitialIncludedModuleIds(
+      storedIds: item.includedModuleIds,
+      tierCode: item.tierCode,
+      modules: modules,
+    ).toList(growable: false);
     final List<String> includedLabels = _includedModuleLabels(
-      item.includedModuleIds,
+      includedModuleIds,
       modules,
     );
     final String? description = _sanitizedPlanDescription(item.description);
@@ -1517,6 +1522,72 @@ List<String> _includedModuleLabels(
     labels.add(labelsById[id] ?? id);
   }
   return labels;
+}
+
+const Map<String, int> _planTierRank = <String, int>{
+  'FREE': 0,
+  'BASIC': 1,
+  'PRO': 2,
+  'ADVANCED': 3,
+  'CUSTOM': 4,
+};
+
+int _tierRank(String? tierCode) {
+  final String normalized = (tierCode ?? '').trim().toUpperCase();
+  return _planTierRank[normalized] ?? -1;
+}
+
+bool _moduleIsAddOn(SubscriptionLookupItem module) {
+  final Object? value = module.meta['is_add_on'];
+  return value == true || value == 'true' || value == 1;
+}
+
+String? _moduleMinimumTier(SubscriptionLookupItem module) {
+  final Object? value = module.meta['minimum_plan_tier_code'];
+  if (value == null) {
+    return null;
+  }
+  final String normalized = value.toString().trim().toUpperCase();
+  return normalized.isEmpty ? null : normalized;
+}
+
+/// Core modules whose minimum tier is at or below [tierCode].
+List<String> _defaultIncludedModuleIdsForTier(
+  String? tierCode,
+  List<SubscriptionLookupItem> modules,
+) {
+  if (tierCode == null || tierCode.trim().isEmpty || modules.isEmpty) {
+    return const <String>[];
+  }
+  final int planRank = _tierRank(tierCode);
+  if (planRank < 0) {
+    return const <String>[];
+  }
+
+  return modules
+      .where((SubscriptionLookupItem module) {
+        if (_moduleIsAddOn(module)) {
+          return false;
+        }
+        final String? minimum = _moduleMinimumTier(module);
+        if (minimum == null) {
+          return true;
+        }
+        return planRank >= _tierRank(minimum);
+      })
+      .map((SubscriptionLookupItem module) => module.id)
+      .toList(growable: false);
+}
+
+Set<String> _resolveInitialIncludedModuleIds({
+  required List<String> storedIds,
+  required String? tierCode,
+  required List<SubscriptionLookupItem> modules,
+}) {
+  if (storedIds.isNotEmpty) {
+    return Set<String>.of(storedIds);
+  }
+  return Set<String>.of(_defaultIncludedModuleIdsForTier(tierCode, modules));
 }
 
 class _DetailHeader extends StatelessWidget {
@@ -2015,8 +2086,10 @@ class _PlanFormState extends State<_PlanForm> {
     );
     _tierCode = initial?.tierCode;
     _billingCycle = initial?.billingCycle ?? _BillingCycles.monthly;
-    _includedModuleIds = Set<String>.of(
-      initial?.includedModuleIds ?? const <String>[],
+    _includedModuleIds = _resolveInitialIncludedModuleIds(
+      storedIds: initial?.includedModuleIds ?? const <String>[],
+      tierCode: _tierCode,
+      modules: widget.modules,
     );
     if (_isFreeTier) {
       _monthlyPriceController.text = '0';
@@ -2045,6 +2118,9 @@ class _PlanFormState extends State<_PlanForm> {
         _monthlyPriceController.text = '0';
         _annualPriceController.text = '0';
       }
+      _includedModuleIds
+        ..clear()
+        ..addAll(_defaultIncludedModuleIdsForTier(value, widget.modules));
     });
   }
 
@@ -3327,7 +3403,11 @@ Future<void> _showPlanModulesDialog(
     context: context,
     builder: (_) => _PlanModulesForm(
       modules: state?.lookups.modules ?? const <SubscriptionLookupItem>[],
-      initialSelectedIds: plan.includedModuleIds,
+      initialSelectedIds: _resolveInitialIncludedModuleIds(
+        storedIds: plan.includedModuleIds,
+        tierCode: plan.tierCode,
+        modules: state?.lookups.modules ?? const <SubscriptionLookupItem>[],
+      ).toList(growable: false),
     ),
   );
   if (selectedIds == null || !context.mounted) {

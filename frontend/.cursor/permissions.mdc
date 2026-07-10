@@ -19,7 +19,9 @@ Purpose: frontend RBAC, ABAC, entitlements, and platform permissions — aligned
 ## Frontend rules
 
 - Authority order for every surface: **Plan (module entitlements) → Role → Rights (permissions) → tenant/facility scope**.
-- Plan decides which modules are visible; role decides who may operate in those modules; permissions decide fine-grained actions.
+- Plan is the hard gate for which modules can be accessed; role and permissions never unlock a module the plan does not include.
+- `AppAccessPolicy.grants` denies module-scoped permissions when the mapped plan module is not entitled.
+- Role decides who may operate inside entitled modules; permissions decide fine-grained actions.
 - Separate platform permissions from app authorization.
 - Hide UI actions the user cannot access; never rely on hidden UI alone for security.
 - Protect restricted routes through guards ([`navigation.mdc`](./navigation.mdc)).

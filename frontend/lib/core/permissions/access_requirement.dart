@@ -1,5 +1,6 @@
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_module_map.dart';
 
 final class AccessRequirement {
   const AccessRequirement({
@@ -27,9 +28,27 @@ final class AccessRequirement {
         !requiresFacilityContext;
   }
 
+  /// Plan modules required up front: explicit [activeModules] plus domains from
+  /// [allPermissions]. [anyPermissions] are plan-checked per permission in
+  /// [AppAccessPolicy.grants] so one entitled right can satisfy an any-of set.
+  List<String> get effectiveModules {
+    final Set<String> modules = <String>{
+      for (final String code in activeModules)
+        if (code.trim().isNotEmpty) code.trim(),
+    };
+    for (final AppPermission permission in allPermissions) {
+      final String? module = PermissionModuleMap.moduleForPermission(permission);
+      if (module != null) {
+        modules.add(module);
+      }
+    }
+    return modules.toList(growable: false);
+  }
+
   bool isAllowed(AppAccessPolicy policy) {
     // Authority order: Plan (modules) → Role → Rights (permissions) → scope.
-    if (!policy.hasAllActiveModules(activeModules)) {
+    // Plan is the hard gate for module access; role/rights only apply afterward.
+    if (!policy.hasAllActiveModules(effectiveModules)) {
       return false;
     }
 

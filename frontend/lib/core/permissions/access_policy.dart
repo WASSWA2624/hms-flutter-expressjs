@@ -1,4 +1,5 @@
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_module_map.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 
 enum AppRole {
@@ -242,7 +243,20 @@ final class AppAccessPolicy {
   }
 
   bool grants(AppPermission permission) {
-    return isElevated || permissions.contains(permission);
+    if (isElevated) {
+      return true;
+    }
+    if (!permissions.contains(permission)) {
+      return false;
+    }
+    // Plan is the hard gate: module-scoped rights require an entitled module.
+    final String? moduleCode = PermissionModuleMap.moduleForPermission(
+      permission,
+    );
+    if (moduleCode == null) {
+      return true;
+    }
+    return hasActiveModule(moduleCode);
   }
 
   bool grantsAll(Iterable<AppPermission> requiredPermissions) {
@@ -315,10 +329,34 @@ final class AppAccessPolicy {
       return !hasTenantContext;
     }
 
-    final normalizedCode = AppModuleEntitlement.normalizeModuleCode(moduleCode);
-    final resolvedCode = AppModuleEntitlement.resolveModuleCode(moduleCode);
-    return moduleEntitlements[normalizedCode]?.isAvailable == true ||
-        moduleEntitlements[resolvedCode]?.isAvailable == true;
+    final String normalizedCode = AppModuleEntitlement.normalizeModuleCode(
+      moduleCode,
+    );
+    final String resolvedCode = AppModuleEntitlement.resolveModuleCode(
+      moduleCode,
+    );
+    if (moduleEntitlements[normalizedCode]?.isAvailable == true ||
+        moduleEntitlements[resolvedCode]?.isAvailable == true) {
+      return true;
+    }
+
+    // Match aliases (e.g. clinical-care ↔ encounters-vitals).
+    for (final MapEntry<String, AppModuleEntitlement> entry
+        in moduleEntitlements.entries) {
+      if (!entry.value.isAvailable) {
+        continue;
+      }
+      final String entitlementResolved = AppModuleEntitlement.resolveModuleCode(
+        entry.key,
+      );
+      if (entitlementResolved == resolvedCode ||
+          entitlementResolved == normalizedCode ||
+          entry.key == resolvedCode ||
+          entry.key == normalizedCode) {
+        return true;
+      }
+    }
+    return false;
   }
 
   bool hasAllActiveModules(Iterable<String> moduleCodes) {

@@ -150,6 +150,34 @@ void main() {
     );
 
     test(
+      'plan entitlements gate module-scoped role permissions',
+      () {
+        final session = AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['DOCTOR'],
+          ),
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'patient-registry',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+        final policy = AppAccessPolicy.fromSession(session);
+
+        expect(policy.hasRole(AppRole.doctor), isTrue);
+        expect(policy.grants(AppPermissions.patientRead), isTrue);
+        expect(policy.grants(AppPermissions.labRead), isFalse);
+        expect(policy.grants(AppPermissions.clinicalRead), isFalse);
+        expect(AppRoutes.lab.accessRequirement.isAllowed(policy), isFalse);
+        expect(AppRoutes.patients.accessRequirement.isAllowed(policy), isTrue);
+      },
+    );
+
+    test(
       'denies access when plan modules are missing before role or rights',
       () {
         final session = AuthSession(
@@ -192,6 +220,18 @@ void main() {
           moduleEntitlements: const <AppModuleEntitlement>[
             AppModuleEntitlement(
               code: 'lab-workflows',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'patient-registry',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'scheduling-queue',
               licenseStatus: 'ACTIVE',
             ),
           ],

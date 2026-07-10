@@ -49,6 +49,12 @@ void main() {
           facilityId: 'facility-1',
           roles: <String>['RECEPTIONIST'],
         ),
+        moduleEntitlements: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'reporting-analytics',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
       ),
     );
     const AccessRequirement requirement = AccessRequirement(
@@ -58,6 +64,33 @@ void main() {
     expect(
       accessRequirementDenialMessage(l10n, requirement, policy),
       l10n.accessDeniedPermissionRequired,
+    );
+  });
+
+  test('accessRequirementDenialMessage prefers plan module over permission', () {
+    final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+      AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(
+          tenantId: 'tenant-1',
+          facilityId: 'facility-1',
+          roles: <String>['DOCTOR'],
+        ),
+        moduleEntitlements: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'patient-registry',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      ),
+    );
+    const AccessRequirement requirement = AccessRequirement(
+      allPermissions: <AppPermission>[AppPermissions.labRead],
+    );
+
+    expect(
+      accessRequirementDenialMessage(l10n, requirement, policy),
+      l10n.accessDeniedModuleRequired(l10n.accessDeniedModuleLabLabel),
     );
   });
 }
