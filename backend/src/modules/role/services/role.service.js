@@ -323,7 +323,8 @@ const deleteRole = async (id, userId, ipAddress) => {
       throw new HttpError('errors.role.not_found', 404);
     }
 
-    await roleRepository.softDelete(resolvedRoleId);
+    const { role, detached_user_assignments: detachedUserAssignments } =
+      await roleRepository.softDelete(resolvedRoleId);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -331,7 +332,11 @@ const deleteRole = async (id, userId, ipAddress) => {
       action: 'DELETE',
       entity: 'role',
       entity_id: resolvedRoleId,
-      diff: { before },
+      diff: {
+        before,
+        after: role,
+        detached_user_assignments: detachedUserAssignments,
+      },
       ip_address: ipAddress
     }).catch(() => {});
 

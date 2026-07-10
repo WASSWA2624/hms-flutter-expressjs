@@ -219,19 +219,32 @@ const update = async (id, data) => {
 };
 
 /**
- * Soft delete role
- * Per prisma.mdc: Only soft deletes allowed
+ * Soft delete role and detach related assignments.
+ * Soft-deletes active user_role and role_permission rows for the role.
  *
  * @param {string} id - Role ID
- * @returns {Promise<Object>} Deleted role
+ * @returns {Promise<{ role: Object, detached_user_assignments: number }>}
  */
 const softDelete = async (id) => {
   try {
-    return await prisma.role.update({
-      where: { id },
-      data: {
-        deleted_at: new Date()
-      }
+    const now = new Date();
+    return await prisma.$transaction(async (tx) => {
+      const detachedAssignments = await tx.user_role.updateMany({
+        where: { role_id: id, deleted_at: null },
+        data: { deleted_at: now },
+      });
+      await tx.role_permission.updateMany({
+        where: { role_id: id, deleted_at: null },
+        data: { deleted_at: now },
+      });
+      const role = await tx.role.update({
+        where: { id },
+        data: { deleted_at: now },
+      });
+      return {
+        role,
+        detached_user_assignments: detachedAssignments.count || 0,
+      };
     });
   } catch (error) {
     if (error.code === 'P2025') {

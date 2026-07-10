@@ -34245,6 +34245,18 @@ abstract class AppLocalizations {
   /// **'Delete role'**
   String get accessAdminDeleteRoleAction;
 
+  /// Confirmation body when deleting a role with no user assignments.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete role \"{name}\"? Related permissions on this role will also be removed.'**
+  String accessAdminDeleteRoleBody(String name);
+
+  /// Confirmation body when deleting a role that is assigned to users.
+  ///
+  /// In en, this message translates to:
+  /// **'Role \"{name}\" is assigned to {userCount, plural, =1{1 user} other{{userCount} users}}. Deleting it will remove the role from {userCount, plural, =1{that user} other{those users}} and clear its permissions.'**
+  String accessAdminDeleteRoleAssignedBody(String name, int userCount);
+
   /// Access admin tenant context required title.
   ///
   /// In en, this message translates to:

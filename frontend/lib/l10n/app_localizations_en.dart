@@ -18460,6 +18460,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminDeleteRoleAction => 'Delete role';
 
   @override
+  String accessAdminDeleteRoleBody(String name) {
+    return 'Delete role \"$name\"? Related permissions on this role will also be removed.';
+  }
+
+  @override
+  String accessAdminDeleteRoleAssignedBody(String name, int userCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      userCount,
+      locale: localeName,
+      other: '$userCount users',
+      one: '1 user',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      userCount,
+      locale: localeName,
+      other: 'those users',
+      one: 'that user',
+    );
+    return 'Role \"$name\" is assigned to $_temp0. Deleting it will remove the role from $_temp1 and clear its permissions.';
+  }
+
+  @override
   String get accessAdminTenantContextRequiredTitle => 'Tenant context required';
 
   @override

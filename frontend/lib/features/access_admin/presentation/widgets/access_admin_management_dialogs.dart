@@ -713,11 +713,14 @@ class _ManageRolesPermissionsDialogState
       return;
     }
     final AppLocalizations l10n = context.l10n;
+    final String body = role.userCount > 0
+        ? l10n.accessAdminDeleteRoleAssignedBody(role.title, role.userCount)
+        : l10n.accessAdminDeleteRoleBody(role.title);
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) => AppConfirmActionDialog(
         title: l10n.accessAdminDeleteRoleAction,
-        body: l10n.tenantFacilityDeleteConfirmationBody,
+        body: body,
         submitLabel: l10n.tenantFacilityDeleteConfirmAction,
         destructive: true,
         icon: const Icon(Icons.delete_outline),

@@ -17,6 +17,7 @@ import 'package:hosspi_hms/features/access_admin/presentation/controllers/access
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -354,7 +355,7 @@ class _AccessAdminWorkspaceContentState
                     color: Theme.of(context).colorScheme.error,
                     onPressed: () {
                       Navigator.of(dialogContext).pop();
-                      unawaited(controller.deleteRole(selected));
+                      unawaited(_confirmDeleteRole(context, selected));
                     },
                   ),
               ],
@@ -364,6 +365,37 @@ class _AccessAdminWorkspaceContentState
               ),
             ],
           );
+        },
+      ),
+    );
+  }
+
+  Future<void> _confirmDeleteRole(
+    BuildContext context,
+    AccessAdminItem role,
+  ) async {
+    if (role.isSystemCritical) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final AccessAdminWorkspaceController controller = ref.read(
+      accessAdminWorkspaceControllerProvider.notifier,
+    );
+    final String body = role.userCount > 0
+        ? l10n.accessAdminDeleteRoleAssignedBody(role.title, role.userCount)
+        : l10n.accessAdminDeleteRoleBody(role.title);
+
+    await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.accessAdminDeleteRoleAction,
+        body: body,
+        submitLabel: l10n.tenantFacilityDeleteConfirmAction,
+        destructive: true,
+        icon: const Icon(Icons.delete_outline),
+        onConfirm: () async {
+          final AppFailure? failure = await controller.deleteRole(role);
+          return failure;
         },
       ),
     );

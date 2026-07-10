@@ -15,7 +15,24 @@ jest.mock('@prisma/client', () => ({
     count: jest.fn(),
     create: jest.fn(),
     update: jest.fn()
-  }
+  },
+  user_role: {
+    updateMany: jest.fn(),
+  },
+  role_permission: {
+    updateMany: jest.fn(),
+  },
+  $transaction: jest.fn(async (callback) => callback({
+    role: {
+      update: (...args) => require('@prisma/client').role.update(...args),
+    },
+    user_role: {
+      updateMany: (...args) => require('@prisma/client').user_role.updateMany(...args),
+    },
+    role_permission: {
+      updateMany: (...args) => require('@prisma/client').role_permission.updateMany(...args),
+    },
+  })),
 }));
 
 const {
@@ -193,13 +210,26 @@ describe('Role Repository', () => {
   });
 
   describe('softDelete', () => {
-    it('should soft delete role', async () => {
+    it('should soft delete role and detach related assignments', async () => {
       const mockRole = { id: 'role-123', deleted_at: new Date() };
+      prisma.user_role.updateMany.mockResolvedValue({ count: 2 });
+      prisma.role_permission.updateMany.mockResolvedValue({ count: 5 });
       prisma.role.update.mockResolvedValue(mockRole);
 
       const result = await softDelete('role-123');
 
-      expect(result).toEqual(mockRole);
+      expect(result).toEqual({
+        role: mockRole,
+        detached_user_assignments: 2,
+      });
+      expect(prisma.user_role.updateMany).toHaveBeenCalledWith({
+        where: { role_id: 'role-123', deleted_at: null },
+        data: { deleted_at: expect.any(Date) },
+      });
+      expect(prisma.role_permission.updateMany).toHaveBeenCalledWith({
+        where: { role_id: 'role-123', deleted_at: null },
+        data: { deleted_at: expect.any(Date) },
+      });
       expect(prisma.role.update).toHaveBeenCalledWith({
         where: { id: 'role-123' },
         data: { deleted_at: expect.any(Date) }
@@ -209,6 +239,8 @@ describe('Role Repository', () => {
     it('should throw HttpError when role not found', async () => {
       const error = new Error('Record not found');
       error.code = 'P2025';
+      prisma.user_role.updateMany.mockResolvedValue({ count: 0 });
+      prisma.role_permission.updateMany.mockResolvedValue({ count: 0 });
       prisma.role.update.mockRejectedValue(error);
 
       await expect(softDelete('role-123')).rejects.toThrow(HttpError);

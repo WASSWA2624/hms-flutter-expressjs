@@ -23716,6 +23716,21 @@
   "@accessAdminDeleteRoleAction": {
     "description": "Access admin delete role action."
   },
+  "accessAdminDeleteRoleBody": "Delete role \"{name}\"? Related permissions on this role will also be removed.",
+  "@accessAdminDeleteRoleBody": {
+    "description": "Confirmation body when deleting a role with no user assignments.",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "accessAdminDeleteRoleAssignedBody": "Role \"{name}\" is assigned to {userCount, plural, =1{1 user} other{{userCount} users}}. Deleting it will remove the role from {userCount, plural, =1{that user} other{those users}} and clear its permissions.",
+  "@accessAdminDeleteRoleAssignedBody": {
+    "description": "Confirmation body when deleting a role that is assigned to users.",
+    "placeholders": {
+      "name": { "type": "String" },
+      "userCount": { "type": "int" }
+    }
+  },
   "accessAdminTenantContextRequiredTitle": "Tenant context required",
   "@accessAdminTenantContextRequiredTitle": {
     "description": "Access admin tenant context required title."

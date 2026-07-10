@@ -217,10 +217,14 @@ describe('Role Service', () => {
   });
 
   describe('deleteRole', () => {
-    it('should soft delete role and audit log', async () => {
+    it('should soft delete role, detach assignments, and audit log', async () => {
       const before = { id: 'role-123', name: 'Admin' };
+      const deleted = { id: 'role-123', name: 'Admin', deleted_at: new Date() };
       roleRepository.findById.mockResolvedValue(before);
-      roleRepository.softDelete.mockResolvedValue({});
+      roleRepository.softDelete.mockResolvedValue({
+        role: deleted,
+        detached_user_assignments: 3,
+      });
 
       await deleteRole('role-123', 'user-123', '127.0.0.1');
 
@@ -230,7 +234,11 @@ describe('Role Service', () => {
         action: 'DELETE',
         entity: 'role',
         entity_id: 'role-123',
-        diff: { before },
+        diff: {
+          before,
+          after: deleted,
+          detached_user_assignments: 3,
+        },
         ip_address: '127.0.0.1'
       });
     });
