@@ -33699,6 +33699,30 @@ abstract class AppLocalizations {
   /// **'Facility'**
   String get accessAdminRoleScopeFilterFacility;
 
+  /// Action label for opening filters on access admin management tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get accessAdminFiltersAction;
+
+  /// Title for the advanced filters sheet on the manage roles table.
+  ///
+  /// In en, this message translates to:
+  /// **'Role filters'**
+  String get accessAdminFiltersTitle;
+
+  /// Title for the advanced filters sheet on the manage users table.
+  ///
+  /// In en, this message translates to:
+  /// **'User filters'**
+  String get accessAdminUsersFiltersTitle;
+
+  /// Actions column header on access admin management tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get accessAdminColumnActions;
+
   /// Access admin table status column.
   ///
   /// In en, this message translates to:
