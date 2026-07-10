@@ -53,7 +53,7 @@ void main() {
       return route.accessRequirement.isAllowed(policy);
     }
 
-    test('doctor sees clinical modules but not nursing or billing', () {
+    test('doctor access follows clinical permission pack', () {
       final policy = policyForRole('DOCTOR');
 
       expect(canAccess(AppRoutes.home, policy), isTrue);
@@ -63,54 +63,58 @@ void main() {
       expect(canAccess(AppRoutes.lab, policy), isTrue);
       expect(canAccess(AppRoutes.pharmacy, policy), isTrue);
       expect(canAccess(AppRoutes.reports, policy), isTrue);
-      expect(canAccess(AppRoutes.nursing, policy), isFalse);
+      // Nursing/physiotherapy share clinical/patient permission codes.
+      expect(canAccess(AppRoutes.nursing, policy), isTrue);
+      expect(canAccess(AppRoutes.physiotherapy, policy), isTrue);
       expect(canAccess(AppRoutes.billing, policy), isFalse);
       expect(canAccess(AppRoutes.hr, policy), isFalse);
-      expect(canAccess(AppRoutes.physiotherapy, policy), isFalse);
     });
 
-    test('nurse sees nursing and lab but not clinical workspace', () {
+    test('nurse access follows nursing permission pack', () {
       final policy = policyForRole('NURSE');
 
       expect(canAccess(AppRoutes.nursing, policy), isTrue);
       expect(canAccess(AppRoutes.lab, policy), isTrue);
       expect(canAccess(AppRoutes.reports, policy), isTrue);
-      expect(canAccess(AppRoutes.clinical, policy), isFalse);
+      expect(canAccess(AppRoutes.clinical, policy), isTrue);
       expect(canAccess(AppRoutes.billing, policy), isFalse);
     });
 
-    test('ambulance sees emergency only without patient registry', () {
+    test('ambulance access follows emergency permission pack', () {
       final policy = policyForRole('AMBULANCE_OPERATOR');
 
       expect(canAccess(AppRoutes.emergency, policy), isTrue);
       expect(canAccess(AppRoutes.reports, policy), isTrue);
       expect(canAccess(AppRoutes.patients, policy), isFalse);
-      expect(canAccess(AppRoutes.opd, policy), isFalse);
+      // OPD accepts emergency:read among its any-permissions.
+      expect(canAccess(AppRoutes.opd, policy), isTrue);
     });
 
-    test('lab sees patient registry and laboratory only', () {
+    test('lab access follows lab permission pack', () {
       final policy = policyForRole('LAB_TECH');
 
       expect(canAccess(AppRoutes.patients, policy), isTrue);
       expect(canAccess(AppRoutes.lab, policy), isTrue);
-      expect(canAccess(AppRoutes.opd, policy), isFalse);
+      // OPD accepts patient:read among its any-permissions.
+      expect(canAccess(AppRoutes.opd, policy), isTrue);
       expect(canAccess(AppRoutes.reports, policy), isFalse);
     });
 
-    test('billing sees billing and claims with patient registry', () {
+    test('billing access follows billing permission pack', () {
       final policy = policyForRole('BILLING');
 
       expect(canAccess(AppRoutes.patients, policy), isTrue);
       expect(canAccess(AppRoutes.billing, policy), isTrue);
       expect(canAccess(AppRoutes.claims, policy), isTrue);
-      expect(canAccess(AppRoutes.opd, policy), isFalse);
+      // OPD accepts billing:read / patient:read among its any-permissions.
+      expect(canAccess(AppRoutes.opd, policy), isTrue);
     });
 
-    test('operations sees operations without reports', () {
+    test('operations access follows operations permission pack', () {
       final policy = policyForRole('OPERATIONS');
 
       expect(canAccess(AppRoutes.operations, policy), isTrue);
-      expect(canAccess(AppRoutes.reports, policy), isFalse);
+      expect(canAccess(AppRoutes.reports, policy), isTrue);
       expect(canAccess(AppRoutes.patients, policy), isFalse);
     });
 

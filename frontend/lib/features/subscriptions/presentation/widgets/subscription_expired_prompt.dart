@@ -83,7 +83,6 @@ class _SubscriptionExpiredPromptHostState
     setState(() => _dialogOpen = true);
     final bool? renewNow = await showAppDialog<bool>(
       context: context,
-      barrierDismissible: true,
       builder: (BuildContext dialogContext) {
         return AppDialog(
           title: Text(l10n.subscriptionExpiredPromptTitle),
