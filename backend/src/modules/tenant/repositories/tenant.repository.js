@@ -407,7 +407,7 @@ const permanentDelete = async (id) => {
     });
 
     if (!existing) {
-      throw new HttpError('errors.tenant.not_found', 404);
+      return;
     }
     if (!existing.deleted_at) {
       throw new HttpError('errors.tenant.permanent_delete_requires_soft_delete', 400);

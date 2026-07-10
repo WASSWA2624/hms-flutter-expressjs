@@ -60,6 +60,27 @@ final class TenantProfile {
 
   String get mutationId =>
       resourceUuid != null && resourceUuid!.isNotEmpty ? resourceUuid! : id;
+
+  TenantProfile copyWith({
+    String? id,
+    String? name,
+    String? slug,
+    bool? isActive,
+    String? resourceUuid,
+    String? displayId,
+    DateTime? deletedAt,
+    bool clearDeletedAt = false,
+  }) {
+    return TenantProfile(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      slug: slug ?? this.slug,
+      isActive: isActive ?? this.isActive,
+      resourceUuid: resourceUuid ?? this.resourceUuid,
+      displayId: displayId ?? this.displayId,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
+    );
+  }
 }
 
 final class FacilityProfile {

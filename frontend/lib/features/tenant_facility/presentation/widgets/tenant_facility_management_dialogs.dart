@@ -311,14 +311,14 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
 
     if (confirmed == true) {
       _mutated = true;
+      _markTenantSoftDeletedLocally(tenant);
       _syncPlatformDashboard(
         ref,
         patch: HomeDashboardOptimisticPatch.tenantDeleted(
-          isActive: tenant.isActive,
+          isActive: tenant.isActive && !tenant.isDeleted,
         ),
       );
-      ref.invalidate(homeControllerProvider(HomeDashboardRequest.empty));
-      await _reload(resetPage: false, silent: true);
+      unawaited(_reload(resetPage: false, silent: true));
     }
   }
 
@@ -349,14 +349,14 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
     }
 
     _mutated = true;
+    _markTenantRestoredLocally(tenant);
     _syncPlatformDashboard(
       ref,
       patch: HomeDashboardOptimisticPatch.tenantRestored(
         isActive: tenant.isActive,
       ),
     );
-    ref.invalidate(homeControllerProvider(HomeDashboardRequest.empty));
-    await _reload(resetPage: false, silent: true);
+    unawaited(_reload(resetPage: false, silent: true));
   }
 
   Future<void> _confirmPermanentDeleteTenant(TenantProfile tenant) async {
@@ -397,7 +397,14 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
               .permanentDeleteTenant(tenant.mutationId);
           return result.when(
             success: (_) => null,
-            failure: (AppFailure failure) => failure,
+            failure: (AppFailure failure) {
+              // Already purged — treat as success so the dialog closes and
+              // the list can drop the stale row immediately.
+              if (failure.category == AppFailureCategory.notFound) {
+                return null;
+              }
+              return failure;
+            },
           );
         },
       ),
@@ -408,11 +415,133 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
     }
 
     _mutated = true;
-    ref.invalidate(homeControllerProvider(HomeDashboardRequest.empty));
-    await _reload(resetPage: false, silent: true);
+    _removeTenantLocally(tenant);
+    _syncPlatformDashboard(ref);
+    unawaited(_reload(resetPage: false, silent: true));
   }
 
-  void _applyTenantRealtimeMessage(RealtimeMessage? message) {}
+  bool _matchesTenant(TenantProfile entry, TenantProfile target) {
+    return entry.id == target.id ||
+        entry.mutationId == target.mutationId ||
+        (target.slug != null &&
+            target.slug!.isNotEmpty &&
+            entry.slug == target.slug);
+  }
+
+  bool _matchesTenantId(TenantProfile entry, String tenantId) {
+    return entry.id == tenantId ||
+        entry.mutationId == tenantId ||
+        entry.slug == tenantId;
+  }
+
+  void _markTenantSoftDeletedLocally(TenantProfile tenant) {
+    final int index = _tenants.indexWhere(
+      (TenantProfile entry) => _matchesTenant(entry, tenant),
+    );
+    if (index < 0) {
+      return;
+    }
+    final List<TenantProfile> next = List<TenantProfile>.of(_tenants);
+    next[index] = tenant.copyWith(deletedAt: DateTime.now().toUtc());
+    setState(() {
+      _tenants = next;
+    });
+    _reconcileDashboardFromLocalList();
+  }
+
+  void _markTenantRestoredLocally(TenantProfile tenant) {
+    final int index = _tenants.indexWhere(
+      (TenantProfile entry) => _matchesTenant(entry, tenant),
+    );
+    if (index < 0) {
+      return;
+    }
+    final List<TenantProfile> next = List<TenantProfile>.of(_tenants);
+    next[index] = tenant.copyWith(clearDeletedAt: true);
+    setState(() {
+      _tenants = next;
+    });
+    _reconcileDashboardFromLocalList();
+  }
+
+  void _removeTenantLocally(TenantProfile tenant) {
+    final List<TenantProfile> next = _tenants
+        .where((TenantProfile entry) => !_matchesTenant(entry, tenant))
+        .toList(growable: false);
+    if (next.length == _tenants.length) {
+      return;
+    }
+    setState(() {
+      _tenants = next;
+      _totalItemCount = math.max(0, _totalItemCount - 1);
+    });
+    _reconcileDashboardFromLocalList();
+  }
+
+  void _removeTenantByIdLocally(String tenantId) {
+    final int before = _tenants.length;
+    final List<TenantProfile> next = _tenants
+        .where((TenantProfile entry) => !_matchesTenantId(entry, tenantId))
+        .toList(growable: false);
+    if (next.length == before) {
+      return;
+    }
+    setState(() {
+      _tenants = next;
+      _totalItemCount = math.max(0, _totalItemCount - (before - next.length));
+    });
+    _reconcileDashboardFromLocalList();
+  }
+
+  void _reconcileDashboardFromLocalList() {
+    homeClearDashboardOptimisticPatch(ref, HomeDashboardRequest.empty);
+    homeReconcileTenantsMetricFromList(
+      ref,
+      _countDashboardActiveTenants(_tenants),
+      totalCount: _countDashboardTotalTenants(_tenants),
+    );
+    ref.invalidate(homeControllerProvider(HomeDashboardRequest.empty));
+  }
+
+  void _applyTenantRealtimeMessage(RealtimeMessage? message) {
+    if (message == null) {
+      return;
+    }
+
+    final String? tenantId = _managementResourceIdFromMessage(
+      message,
+      keys: const <String>['resource_id', 'tenant_id', 'id'],
+    );
+
+    switch (message.event) {
+      case RealtimeEvents.tenantDeleted:
+        if (tenantId == null) {
+          return;
+        }
+        final int index = _tenants.indexWhere(
+          (TenantProfile entry) => _matchesTenantId(entry, tenantId),
+        );
+        if (index < 0) {
+          return;
+        }
+        final List<TenantProfile> next = List<TenantProfile>.of(_tenants);
+        next[index] = next[index].copyWith(deletedAt: DateTime.now().toUtc());
+        setState(() {
+          _tenants = next;
+        });
+        _reconcileDashboardFromLocalList();
+        return;
+      case RealtimeEvents.tenantPermanentlyDeleted:
+        if (tenantId != null) {
+          _removeTenantByIdLocally(tenantId);
+        }
+        return;
+      case RealtimeEvents.tenantRestored:
+      case RealtimeEvents.tenantCreated:
+      case RealtimeEvents.tenantUpdated:
+        return;
+    }
+  }
 
   int _countDashboardActiveTenants(List<TenantProfile> tenants) {
     return tenants

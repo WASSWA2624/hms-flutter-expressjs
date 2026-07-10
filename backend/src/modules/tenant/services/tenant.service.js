@@ -522,7 +522,8 @@ const permanentDeleteTenant = async (id, context = {}) => {
   const tenant = await tenantRepository.findById(tenantId, { includeDeleted: true });
 
   if (!tenant) {
-    throw new HttpError('errors.tenant.not_found', 404);
+    // Idempotent: already purged from the database.
+    return;
   }
   if (!tenant.deleted_at) {
     throw new HttpError('errors.tenant.permanent_delete_requires_soft_delete', 400);

@@ -731,5 +731,13 @@ describe('Tenant Service', () => {
         .rejects
         .toThrow(HttpError);
     });
+
+    it('should no-op when tenant is already permanently deleted', async () => {
+      tenantRepository.findById.mockResolvedValue(null);
+
+      await expect(permanentDeleteTenant('tenant-123')).resolves.toBeUndefined();
+
+      expect(tenantRepository.permanentDelete).not.toHaveBeenCalled();
+    });
   });
 });
