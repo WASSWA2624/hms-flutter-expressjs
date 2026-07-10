@@ -2506,6 +2506,78 @@ abstract class AppLocalizations {
   /// **'You are renewing your {plan} plan.'**
   String subscriptionRenewIntentBanner(String plan);
 
+  /// Upgrade wizard step title for plan selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose plan'**
+  String get subscriptionUpgradeStepPlanTitle;
+
+  /// Upgrade wizard step title for payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment method'**
+  String get subscriptionUpgradeStepPaymentMethodTitle;
+
+  /// Upgrade wizard step title for payment and invoice details.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment details'**
+  String get subscriptionUpgradeStepPaymentDetailsTitle;
+
+  /// Upgrade wizard step title for proof upload.
+  ///
+  /// In en, this message translates to:
+  /// **'Proof of payment'**
+  String get subscriptionUpgradeStepProofTitle;
+
+  /// Upgrade wizard step title for platform billing contacts.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing contact'**
+  String get subscriptionUpgradeStepContactTitle;
+
+  /// Monthly billing cycle toggle label on upgrade plan step.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get subscriptionUpgradeBillingMonthlyLabel;
+
+  /// Annual billing cycle toggle label on upgrade plan step.
+  ///
+  /// In en, this message translates to:
+  /// **'Annual'**
+  String get subscriptionUpgradeBillingAnnualLabel;
+
+  /// Badge shown on the tenant's current plan tile.
+  ///
+  /// In en, this message translates to:
+  /// **'Current plan'**
+  String get subscriptionUpgradeCurrentPlanBadge;
+
+  /// Email field label for subscription invoice delivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Invoice email'**
+  String get subscriptionUpgradeInvoiceEmailLabel;
+
+  /// Helper text for the invoice email field.
+  ///
+  /// In en, this message translates to:
+  /// **'We will send the invoice to this email address.'**
+  String get subscriptionUpgradeInvoiceEmailHelper;
+
+  /// Guidance text on the proof-of-payment upgrade step.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach a screenshot or file that confirms your payment.'**
+  String get subscriptionUpgradeProofStepBody;
+
+  /// Shared back/previous step action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get commonBackActionLabel;
+
   /// Label for the plan selector in the subscription upgrade dialog.
   ///
   /// In en, this message translates to:

@@ -1670,6 +1670,54 @@
       }
     }
   },
+  "subscriptionUpgradeStepPlanTitle": "Choose plan",
+  "@subscriptionUpgradeStepPlanTitle": {
+    "description": "Upgrade wizard step title for plan selection."
+  },
+  "subscriptionUpgradeStepPaymentMethodTitle": "Payment method",
+  "@subscriptionUpgradeStepPaymentMethodTitle": {
+    "description": "Upgrade wizard step title for payment method."
+  },
+  "subscriptionUpgradeStepPaymentDetailsTitle": "Payment details",
+  "@subscriptionUpgradeStepPaymentDetailsTitle": {
+    "description": "Upgrade wizard step title for payment and invoice details."
+  },
+  "subscriptionUpgradeStepProofTitle": "Proof of payment",
+  "@subscriptionUpgradeStepProofTitle": {
+    "description": "Upgrade wizard step title for proof upload."
+  },
+  "subscriptionUpgradeStepContactTitle": "Billing contact",
+  "@subscriptionUpgradeStepContactTitle": {
+    "description": "Upgrade wizard step title for platform billing contacts."
+  },
+  "subscriptionUpgradeBillingMonthlyLabel": "Monthly",
+  "@subscriptionUpgradeBillingMonthlyLabel": {
+    "description": "Monthly billing cycle toggle label on upgrade plan step."
+  },
+  "subscriptionUpgradeBillingAnnualLabel": "Annual",
+  "@subscriptionUpgradeBillingAnnualLabel": {
+    "description": "Annual billing cycle toggle label on upgrade plan step."
+  },
+  "subscriptionUpgradeCurrentPlanBadge": "Current plan",
+  "@subscriptionUpgradeCurrentPlanBadge": {
+    "description": "Badge shown on the tenant's current plan tile."
+  },
+  "subscriptionUpgradeInvoiceEmailLabel": "Invoice email",
+  "@subscriptionUpgradeInvoiceEmailLabel": {
+    "description": "Email field label for subscription invoice delivery."
+  },
+  "subscriptionUpgradeInvoiceEmailHelper": "We will send the invoice to this email address.",
+  "@subscriptionUpgradeInvoiceEmailHelper": {
+    "description": "Helper text for the invoice email field."
+  },
+  "subscriptionUpgradeProofStepBody": "Attach a screenshot or file that confirms your payment.",
+  "@subscriptionUpgradeProofStepBody": {
+    "description": "Guidance text on the proof-of-payment upgrade step."
+  },
+  "commonBackActionLabel": "Back",
+  "@commonBackActionLabel": {
+    "description": "Shared back/previous step action label."
+  },
   "subscriptionUpgradePlanLabel": "Plan",
   "@subscriptionUpgradePlanLabel": {
     "description": "Label for the plan selector in the subscription upgrade dialog."

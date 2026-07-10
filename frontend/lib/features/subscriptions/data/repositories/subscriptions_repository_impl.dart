@@ -327,6 +327,8 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
       'payment_method': draft.paymentMethod,
       if (draft.amount != null) 'amount': draft.amount,
       if (draft.currency != null) 'currency': draft.currency,
+      if (draft.billingCycle != null) 'billing_cycle': draft.billingCycle,
+      if (draft.invoiceEmail != null) 'invoice_email': draft.invoiceEmail,
       if (draft.reference != null) 'reference': draft.reference,
       if (draft.notes != null) 'notes': draft.notes,
       if (draft.paymentProvider != null)

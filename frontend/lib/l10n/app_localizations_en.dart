@@ -1282,6 +1282,44 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get subscriptionUpgradeStepPlanTitle => 'Choose plan';
+
+  @override
+  String get subscriptionUpgradeStepPaymentMethodTitle => 'Payment method';
+
+  @override
+  String get subscriptionUpgradeStepPaymentDetailsTitle => 'Payment details';
+
+  @override
+  String get subscriptionUpgradeStepProofTitle => 'Proof of payment';
+
+  @override
+  String get subscriptionUpgradeStepContactTitle => 'Billing contact';
+
+  @override
+  String get subscriptionUpgradeBillingMonthlyLabel => 'Monthly';
+
+  @override
+  String get subscriptionUpgradeBillingAnnualLabel => 'Annual';
+
+  @override
+  String get subscriptionUpgradeCurrentPlanBadge => 'Current plan';
+
+  @override
+  String get subscriptionUpgradeInvoiceEmailLabel => 'Invoice email';
+
+  @override
+  String get subscriptionUpgradeInvoiceEmailHelper =>
+      'We will send the invoice to this email address.';
+
+  @override
+  String get subscriptionUpgradeProofStepBody =>
+      'Attach a screenshot or file that confirms your payment.';
+
+  @override
+  String get commonBackActionLabel => 'Back';
+
+  @override
   String get subscriptionUpgradePlanLabel => 'Plan';
 
   @override

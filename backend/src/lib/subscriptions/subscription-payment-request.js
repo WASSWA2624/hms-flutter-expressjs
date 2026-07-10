@@ -232,6 +232,8 @@ const submitPaymentRequest = async (payload = {}, files = [], user = {}, ip = nu
     plan_label: targetPlan?.name || subscription.plan?.name || null,
     amount: text(payload.amount) || null,
     currency: text(payload.currency) || null,
+    billing_cycle: text(payload.billing_cycle).toUpperCase() || null,
+    invoice_email: text(payload.invoice_email) || null,
     reference: text(payload.reference) || null,
     notes: text(payload.notes) || null,
     payment_provider: text(payload.payment_provider) || null,

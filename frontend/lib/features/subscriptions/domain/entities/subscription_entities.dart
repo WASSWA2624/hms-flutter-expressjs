@@ -1019,6 +1019,8 @@ final class SubscriptionActionDraft {
   final String? paymentMethod;
 }
 
+enum SubscriptionUpgradeBillingCycle { monthly, annual }
+
 @immutable
 final class SubscriptionUpgradePlanOption {
   const SubscriptionUpgradePlanOption({
@@ -1027,6 +1029,8 @@ final class SubscriptionUpgradePlanOption {
     this.tierCode,
     this.billingCycle,
     this.price,
+    this.monthlyPrice,
+    this.annualPrice,
   });
 
   final String id;
@@ -1034,6 +1038,43 @@ final class SubscriptionUpgradePlanOption {
   final String? tierCode;
   final String? billingCycle;
   final double? price;
+  final double? monthlyPrice;
+  final double? annualPrice;
+
+  double? priceFor(SubscriptionUpgradeBillingCycle cycle) {
+    return switch (cycle) {
+      SubscriptionUpgradeBillingCycle.monthly => resolvedMonthlyPrice,
+      SubscriptionUpgradeBillingCycle.annual => resolvedAnnualPrice,
+    };
+  }
+
+  double? get resolvedMonthlyPrice {
+    if (monthlyPrice != null) {
+      return monthlyPrice;
+    }
+    if (price == null) {
+      return null;
+    }
+    final String cycle = (billingCycle ?? '').trim().toUpperCase();
+    if (cycle.contains('YEAR') || cycle == 'ANNUAL') {
+      return double.parse((price! / 12).toStringAsFixed(2));
+    }
+    return price;
+  }
+
+  double? get resolvedAnnualPrice {
+    if (annualPrice != null) {
+      return annualPrice;
+    }
+    if (price == null) {
+      return null;
+    }
+    final String cycle = (billingCycle ?? '').trim().toUpperCase();
+    if (cycle.contains('YEAR') || cycle == 'ANNUAL') {
+      return price;
+    }
+    return double.parse((price! * 12).toStringAsFixed(2));
+  }
 }
 
 @immutable
@@ -1070,6 +1111,8 @@ final class SubscriptionPaymentRequestDraft {
     required this.paymentMethod,
     this.amount,
     this.currency,
+    this.billingCycle,
+    this.invoiceEmail,
     this.reference,
     this.notes,
     this.paymentProvider,
@@ -1086,6 +1129,8 @@ final class SubscriptionPaymentRequestDraft {
   final String paymentMethod;
   final String? amount;
   final String? currency;
+  final String? billingCycle;
+  final String? invoiceEmail;
   final String? reference;
   final String? notes;
   final String? paymentProvider;

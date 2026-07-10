@@ -693,6 +693,12 @@ final class SubscriptionUpgradeContextDto {
               tierCode: _string(plan['tier_code']),
               billingCycle: _string(plan['billing_cycle']),
               price: _double(plan['price']),
+              monthlyPrice:
+                  _double(plan['monthly_price']) ??
+                  _extensionMonthlyPrice(plan['extension_json'])?.toDouble(),
+              annualPrice:
+                  _double(plan['annual_price']) ??
+                  _extensionAnnualPrice(plan['extension_json'])?.toDouble(),
             );
           })
           .whereType<SubscriptionUpgradePlanOption>()
