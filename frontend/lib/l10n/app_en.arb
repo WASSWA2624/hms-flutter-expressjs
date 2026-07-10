@@ -6338,6 +6338,34 @@
   "@tenantFacilityCreateFacilityTitle": {
     "description": "Facility create dialog title."
   },
+  "tenantFacilityEditFacilityTitle": "Edit facility",
+  "@tenantFacilityEditFacilityTitle": {
+    "description": "Edit facility dialog title when updating an existing facility."
+  },
+  "tenantFacilityConfirmFacilityUpdateTitle": "Confirm facility changes",
+  "@tenantFacilityConfirmFacilityUpdateTitle": {
+    "description": "Title for the before/after confirmation dialog when saving facility edits."
+  },
+  "tenantFacilityConfirmFacilityUpdateBody": "Review the changes below, then confirm to update this facility.",
+  "@tenantFacilityConfirmFacilityUpdateBody": {
+    "description": "Body text for the facility edit confirmation dialog."
+  },
+  "tenantFacilityConfirmFacilityUpdateAction": "Update facility",
+  "@tenantFacilityConfirmFacilityUpdateAction": {
+    "description": "Confirm action label on the facility edit confirmation dialog."
+  },
+  "tenantFacilityFieldPreviousLabel": "Previous",
+  "@tenantFacilityFieldPreviousLabel": {
+    "description": "Label for previous value column in facility edit confirmation."
+  },
+  "tenantFacilityFieldNewLabel": "New",
+  "@tenantFacilityFieldNewLabel": {
+    "description": "Label for new value column in facility edit confirmation."
+  },
+  "tenantFacilityNoFacilityChangesMessage": "No changes to save.",
+  "@tenantFacilityNoFacilityChangesMessage": {
+    "description": "Shown when the edit facility form is saved with no field changes."
+  },
   "tenantFacilityFacilityNameAlreadyInUse": "Facility name is already in use for this tenant.",
   "@tenantFacilityFacilityNameAlreadyInUse": {
     "description": "Inline error when facility name duplicates within tenant."

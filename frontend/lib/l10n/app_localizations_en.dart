@@ -4920,6 +4920,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityCreateFacilityTitle => 'Create facility';
 
   @override
+  String get tenantFacilityEditFacilityTitle => 'Edit facility';
+
+  @override
+  String get tenantFacilityConfirmFacilityUpdateTitle =>
+      'Confirm facility changes';
+
+  @override
+  String get tenantFacilityConfirmFacilityUpdateBody =>
+      'Review the changes below, then confirm to update this facility.';
+
+  @override
+  String get tenantFacilityConfirmFacilityUpdateAction => 'Update facility';
+
+  @override
+  String get tenantFacilityFieldPreviousLabel => 'Previous';
+
+  @override
+  String get tenantFacilityFieldNewLabel => 'New';
+
+  @override
+  String get tenantFacilityNoFacilityChangesMessage => 'No changes to save.';
+
+  @override
   String get tenantFacilityFacilityNameAlreadyInUse =>
       'Facility name is already in use for this tenant.';
 

@@ -9190,6 +9190,48 @@ abstract class AppLocalizations {
   /// **'Create facility'**
   String get tenantFacilityCreateFacilityTitle;
 
+  /// Edit facility dialog title when updating an existing facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit facility'**
+  String get tenantFacilityEditFacilityTitle;
+
+  /// Title for the before/after confirmation dialog when saving facility edits.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm facility changes'**
+  String get tenantFacilityConfirmFacilityUpdateTitle;
+
+  /// Body text for the facility edit confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the changes below, then confirm to update this facility.'**
+  String get tenantFacilityConfirmFacilityUpdateBody;
+
+  /// Confirm action label on the facility edit confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Update facility'**
+  String get tenantFacilityConfirmFacilityUpdateAction;
+
+  /// Label for previous value column in facility edit confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get tenantFacilityFieldPreviousLabel;
+
+  /// Label for new value column in facility edit confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get tenantFacilityFieldNewLabel;
+
+  /// Shown when the edit facility form is saved with no field changes.
+  ///
+  /// In en, this message translates to:
+  /// **'No changes to save.'**
+  String get tenantFacilityNoFacilityChangesMessage;
+
   /// Inline error when facility name duplicates within tenant.
   ///
   /// In en, this message translates to:

@@ -547,9 +547,13 @@ Future<bool?> _openFacilityProfileModal(
         return _SetupProfileDialog(
           title: isCreate
               ? l10n.tenantFacilityCreateFacilityTitle
-              : l10n.tenantFacilityFacilitySectionTitle,
-          icon: Icons.local_hospital_outlined,
-          saveLabel: l10n.tenantFacilitySaveFacilityAction,
+              : l10n.tenantFacilityEditFacilityTitle,
+          icon: isCreate
+              ? Icons.add_business_outlined
+              : Icons.edit_outlined,
+          saveLabel: isCreate
+              ? l10n.tenantFacilitySaveFacilityAction
+              : l10n.tenantFacilityEditFacilityAction,
           managementSnapshot: managementMode ? managementSnapshot : null,
           formBuilder:
               (
@@ -1352,11 +1356,22 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   String? _selectedCountry;
   List<TenantProfile> _tenantOptions = const <TenantProfile>[];
   bool _loadingTenants = false;
+  bool _loadingContact = false;
   AppFailure? _tenantLoadFailure;
   String? _nameErrorText;
   List<FacilitySimilarityMatch> _similarMatches =
       const <FacilitySimilarityMatch>[];
   bool _similarityAccepted = false;
+
+  String _baselineName = '';
+  FacilitySetupType _baselineType = FacilitySetupType.hospital;
+  bool _baselineIsActive = true;
+  String? _baselinePhone;
+  String? _baselineEmail;
+  String? _baselineAddressLine1;
+  String? _baselineCity;
+  String? _baselineCountry;
+  String? _baselineLogoUrl;
 
   FacilityProfile? get _activeFacility =>
       widget.facility ?? widget.snapshot.facility;
@@ -1382,42 +1397,133 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   void initState() {
     super.initState();
     final FacilityProfile? facility = _activeFacility;
+    final FacilityContactAddress contact = widget.snapshot.contactAddress;
     _selectedTenantId =
         widget.tenantId ?? widget.snapshot.tenant?.id ?? facility?.tenantId;
     _nameController = TextEditingController(text: facility?.name);
     _existingLogoUrl = facility?.logoUrl;
-    _phoneController = TextEditingController(
-      text: widget.facility == null
-          ? widget.snapshot.contactAddress.phone
-          : null,
-    );
-    _emailController = TextEditingController(
-      text: widget.facility == null
-          ? widget.snapshot.contactAddress.email
-          : null,
-    );
-    _addressLineController = TextEditingController(
-      text: widget.facility == null
-          ? widget.snapshot.contactAddress.addressLine1
-          : null,
-    );
-    _cityController = TextEditingController(
-      text: widget.facility == null
-          ? widget.snapshot.contactAddress.city
-          : null,
-    );
-    _selectedCountry = widget.facility == null
-        ? widget.snapshot.contactAddress.country
-        : null;
+    _phoneController = TextEditingController(text: contact.phone);
+    _emailController = TextEditingController(text: contact.email);
+    _addressLineController = TextEditingController(text: contact.addressLine1);
+    _cityController = TextEditingController(text: contact.city);
+    _selectedCountry = contact.country;
     _type = facility?.type ?? FacilitySetupType.hospital;
     _isActive = facility?.isActive ?? true;
+    _captureBaseline();
     _nameController.addListener(_handleNameChanged);
     if (widget.requireTenantPicker) {
       unawaited(_loadTenantOptions());
     }
+    if (!_isCreate) {
+      unawaited(_hydrateEditContact());
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _registerWithDialog();
     });
+  }
+
+  void _captureBaseline() {
+    _baselineName = _nameController.text.trim();
+    _baselineType = _type;
+    _baselineIsActive = _isActive;
+    _baselinePhone = _normalizedOptional(_phoneController.text);
+    _baselineEmail = _normalizedOptional(_emailController.text);
+    _baselineAddressLine1 = _normalizedOptional(_addressLineController.text);
+    _baselineCity = _normalizedOptional(_cityController.text);
+    _baselineCountry = _normalizedOptional(_selectedCountry);
+    _baselineLogoUrl = _logoCleared
+        ? null
+        : _normalizedOptional(_existingLogoUrl);
+  }
+
+  static String? _normalizedOptional(String? value) {
+    final String? normalized = value?.trim();
+    return normalized == null || normalized.isEmpty ? null : normalized;
+  }
+
+  String _coalescePreserved(String current, String? baseline) {
+    final String? normalized = _normalizedOptional(current);
+    if (normalized != null) {
+      return normalized;
+    }
+    return baseline ?? '';
+  }
+
+  String? _coalesceOptionalPreserved(String? current, String? baseline) {
+    final String? normalized = _normalizedOptional(current);
+    return normalized ?? baseline;
+  }
+
+  Future<void> _hydrateEditContact() async {
+    final FacilityProfile? facility = _activeFacility;
+    if (facility == null) {
+      return;
+    }
+    final FacilityProfile editingFacility = facility;
+
+    final FacilityContactAddress existing = widget.snapshot.contactAddress;
+    final bool contactMissing =
+        _normalizedOptional(existing.phone) == null &&
+        _normalizedOptional(existing.email) == null &&
+        _normalizedOptional(existing.addressLine1) == null &&
+        _normalizedOptional(existing.city) == null &&
+        _normalizedOptional(existing.country) == null;
+    final bool logoMissing = _normalizedOptional(_existingLogoUrl) == null;
+
+    if (!contactMissing && !logoMissing) {
+      _captureBaseline();
+      return;
+    }
+
+    setState(() {
+      _loadingContact = true;
+    });
+
+    final Result<FacilitySetupSnapshot> result = await ref
+        .read(tenantFacilityRepositoryProvider)
+        .loadSetup(
+          facilityId: editingFacility.mutationId,
+          tenantId: editingFacility.tenantId,
+        );
+
+    if (!mounted) {
+      return;
+    }
+
+    result.when(
+      success: (FacilitySetupSnapshot snapshot) {
+        final FacilityContactAddress contact = snapshot.contactAddress;
+        final FacilityProfile loadedFacility =
+            snapshot.facility ?? editingFacility;
+        setState(() {
+          _loadingContact = false;
+          if (_normalizedOptional(_nameController.text) == null &&
+              loadedFacility.name.trim().isNotEmpty) {
+            _nameController.text = loadedFacility.name;
+          }
+          _type = loadedFacility.type;
+          _isActive = loadedFacility.isActive;
+          if (logoMissing) {
+            _existingLogoUrl = loadedFacility.logoUrl;
+          }
+          if (contactMissing) {
+            _phoneController.text = contact.phone ?? '';
+            _emailController.text = contact.email ?? '';
+            _addressLineController.text = contact.addressLine1 ?? '';
+            _cityController.text = contact.city ?? '';
+            _selectedCountry = contact.country;
+          }
+          _captureBaseline();
+        });
+        _notifyDialogState();
+      },
+      failure: (_) {
+        setState(() {
+          _loadingContact = false;
+        });
+        _captureBaseline();
+      },
+    );
   }
 
   void _registerWithDialog() {
@@ -1501,6 +1607,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       _selectedCountry = widget.snapshot.contactAddress.country;
       _type = widget.snapshot.facility?.type ?? FacilitySetupType.hospital;
       _isActive = widget.snapshot.facility?.isActive ?? true;
+      _captureBaseline();
       _notifyDialogState();
     }
   }
@@ -1563,12 +1670,19 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     final ThemeData theme = Theme.of(context);
     final submission = ref.watch(tenantFacilitySetupSubmissionProvider);
     final bool canEditBase = widget.canSubmit && !submission.isSubmitting;
-    final bool fieldsEnabled = canEditBase && _hasSelectedTenant;
+    final bool fieldsEnabled =
+        canEditBase && _hasSelectedTenant && !_loadingContact;
+    final bool requireFields = _isCreate;
 
     final Widget form = Form(
       key: _formKey,
       child: AppFormSection(
         children: <Widget>[
+          if (_loadingContact)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: LinearProgressIndicator(),
+            ),
           if (widget.requireTenantPicker) ...<Widget>[
             if (_loadingTenants)
               const Center(child: CircularProgressIndicator())
@@ -1644,16 +1758,18 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
             controller: _nameController,
             enabled: fieldsEnabled,
             labelText: l10n.authFacilityNameLabel,
-            isRequired: true,
+            isRequired: requireFields,
             textCapitalization: TextCapitalization.words,
             errorText: _nameErrorText,
-            validator: AppValidators.requiredText(l10n.validationRequired),
+            validator: requireFields
+                ? AppValidators.requiredText(l10n.validationRequired)
+                : null,
           ),
           AppSelectField<FacilitySetupType>(
             value: _type,
             enabled: fieldsEnabled,
             labelText: l10n.authFacilityTypeLabel,
-            isRequired: true,
+            isRequired: requireFields,
             options: <AppSelectOption<FacilitySetupType>>[
               for (final type in FacilitySetupType.values)
                 AppSelectOption<FacilitySetupType>(
@@ -1693,13 +1809,13 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
             numberHintText: l10n.appPhoneNumberHint,
             invalidPhoneMessage: l10n.appPhoneInvalidMessage,
             requiredMessage: l10n.validationRequired,
-            isRequired: true,
+            isRequired: requireFields,
           ),
           AppEmailField(
             controller: _emailController,
             enabled: fieldsEnabled,
             labelText: l10n.profileEmailLabel,
-            isRequired: true,
+            isRequired: requireFields,
             requiredMessage: l10n.validationRequired,
             invalidEmailMessage: l10n.authEmailInvalidMessage,
           ),
@@ -1741,7 +1857,9 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
             _SubmitButton(
               enabled: widget.canSubmit && _hasSelectedTenant,
               isLoading: submission.isSubmitting,
-              label: l10n.tenantFacilitySaveFacilityAction,
+              label: _isCreate
+                  ? l10n.tenantFacilitySaveFacilityAction
+                  : l10n.tenantFacilityEditFacilityAction,
               onPressed: _submit,
             )
           else
@@ -1757,7 +1875,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       return AppScreenSection(
         title: _isCreate
             ? l10n.tenantFacilityCreateFacilityTitle
-            : l10n.tenantFacilityFacilitySectionTitle,
+            : l10n.tenantFacilityEditFacilityTitle,
         body: l10n.tenantFacilityFacilitySectionBody,
         child: form,
       );
@@ -1788,7 +1906,75 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       return false;
     }
 
-    final bool canProceed = await _guardAgainstDuplicates(tenantId);
+    final String resolvedName = _isCreate
+        ? _nameController.text.trim()
+        : _coalescePreserved(_nameController.text, _baselineName);
+    if (resolvedName.isEmpty) {
+      setState(() {
+        _nameErrorText = context.l10n.validationRequired;
+      });
+      return false;
+    }
+
+    final String? resolvedPhone = _isCreate
+        ? _normalizedOptional(_phoneController.text)
+        : _coalesceOptionalPreserved(_phoneController.text, _baselinePhone);
+    final String? resolvedEmail = _isCreate
+        ? _normalizedOptional(_emailController.text)
+        : _coalesceOptionalPreserved(_emailController.text, _baselineEmail);
+    final String? resolvedAddress = _isCreate
+        ? _normalizedOptional(_addressLineController.text)
+        : _coalesceOptionalPreserved(
+            _addressLineController.text,
+            _baselineAddressLine1,
+          );
+    final String? resolvedCity = _isCreate
+        ? _normalizedOptional(_cityController.text)
+        : _coalesceOptionalPreserved(_cityController.text, _baselineCity);
+    final String? resolvedCountry = _isCreate
+        ? _normalizedOptional(_selectedCountry)
+        : _coalesceOptionalPreserved(_selectedCountry, _baselineCountry);
+    final String? resolvedLogoUrl = _logoCleared
+        ? null
+        : (_normalizedOptional(_existingLogoUrl) ?? _baselineLogoUrl);
+
+    if (!_isCreate) {
+      final List<_FacilityFieldChange> changes = _buildFacilityChanges(
+        name: resolvedName,
+        type: _type,
+        isActive: _isActive,
+        phone: resolvedPhone,
+        email: resolvedEmail,
+        addressLine1: resolvedAddress,
+        city: resolvedCity,
+        country: resolvedCountry,
+        logoChanged: _logoCleared || _logoBytes != null,
+        logoCleared: _logoCleared,
+        logoReplaced: _logoBytes != null,
+      );
+      if (changes.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              SnackBar(
+                content: Text(context.l10n.tenantFacilityNoFacilityChangesMessage),
+              ),
+            );
+        }
+        return false;
+      }
+
+      final bool confirmed = await _confirmFacilityChanges(changes);
+      if (!confirmed) {
+        return false;
+      }
+    }
+
+    final bool canProceed = await _guardAgainstDuplicates(
+      tenantId,
+      name: resolvedName,
+    );
     if (!canProceed) {
       return false;
     }
@@ -1798,19 +1984,19 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
         .saveFacility(
           id: widget.facility?.id ?? _activeFacility?.id,
           tenantId: tenantId,
-          name: _nameController.text,
+          name: resolvedName,
           type: _type,
           isActive: _isActive,
-          logoUrl: _logoCleared ? null : _existingLogoUrl,
+          logoUrl: resolvedLogoUrl,
           removeLogo: _logoCleared,
           logoBytes: _logoBytes,
           logoFileName: _logoFileName,
           logoMimeType: _logoMimeType,
-          phone: _phoneController.text,
-          email: _emailController.text,
-          addressLine1: _addressLineController.text,
-          city: _cityController.text,
-          country: _selectedCountry,
+          phone: resolvedPhone,
+          email: resolvedEmail,
+          addressLine1: resolvedAddress,
+          city: resolvedCity,
+          country: resolvedCountry,
           refreshSetup: widget.refreshSetupAfterSave,
         );
 
@@ -1828,13 +2014,173 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     return saved;
   }
 
-  Future<bool> _guardAgainstDuplicates(String tenantId) async {
+  List<_FacilityFieldChange> _buildFacilityChanges({
+    required String name,
+    required FacilitySetupType type,
+    required bool isActive,
+    required String? phone,
+    required String? email,
+    required String? addressLine1,
+    required String? city,
+    required String? country,
+    required bool logoChanged,
+    required bool logoCleared,
+    required bool logoReplaced,
+  }) {
+    final AppLocalizations l10n = context.l10n;
+    final List<_FacilityFieldChange> changes = <_FacilityFieldChange>[];
+
+    void addChange(String label, String? previous, String? next) {
+      final String previousValue = (previous ?? '').trim();
+      final String nextValue = (next ?? '').trim();
+      if (previousValue == nextValue) {
+        return;
+      }
+      changes.add(
+        _FacilityFieldChange(
+          label: label,
+          previousValue: previousValue.isEmpty ? '—' : previousValue,
+          nextValue: nextValue.isEmpty ? '—' : nextValue,
+        ),
+      );
+    }
+
+    addChange(l10n.authFacilityNameLabel, _baselineName, name);
+    addChange(
+      l10n.authFacilityTypeLabel,
+      tenantFacilityFacilityTypeLabel(l10n, _baselineType),
+      tenantFacilityFacilityTypeLabel(l10n, type),
+    );
+    addChange(
+      l10n.tenantFacilityActiveLabel,
+      _baselineIsActive
+          ? l10n.tenantFacilityStatusActive
+          : l10n.tenantFacilityStatusInactive,
+      isActive
+          ? l10n.tenantFacilityStatusActive
+          : l10n.tenantFacilityStatusInactive,
+    );
+    addChange(l10n.profilePhoneLabel, _baselinePhone, phone);
+    addChange(l10n.profileEmailLabel, _baselineEmail, email);
+    addChange(
+      l10n.tenantFacilityAddressLineLabel,
+      _baselineAddressLine1,
+      addressLine1,
+    );
+    addChange(l10n.tenantFacilityCityLabel, _baselineCity, city);
+    addChange(l10n.tenantFacilityCountryLabel, _baselineCountry, country);
+    if (logoChanged) {
+      final String previous = (_baselineLogoUrl ?? '').trim().isEmpty
+          ? '—'
+          : l10n.tenantFacilityLogoLabel;
+      final String next = logoCleared
+          ? '—'
+          : logoReplaced
+          ? l10n.tenantFacilityChooseLogoAction
+          : l10n.tenantFacilityLogoLabel;
+      if (previous != next || logoCleared || logoReplaced) {
+        changes.add(
+          _FacilityFieldChange(
+            label: l10n.tenantFacilityLogoLabel,
+            previousValue: previous,
+            nextValue: next,
+          ),
+        );
+      }
+    }
+
+    return changes;
+  }
+
+  Future<bool> _confirmFacilityChanges(
+    List<_FacilityFieldChange> changes,
+  ) async {
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        final ThemeData theme = Theme.of(dialogContext);
+        return AppDialog(
+          title: Text(l10n.tenantFacilityConfirmFacilityUpdateTitle),
+          icon: const Icon(Icons.rule_outlined),
+          scrollable: true,
+          maxWidth: 640,
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Text(
+                l10n.tenantFacilityConfirmFacilityUpdateBody,
+                style: theme.textTheme.bodyMedium,
+              ),
+              SizedBox(height: theme.spacing.md),
+              for (final _FacilityFieldChange change in changes) ...<Widget>[
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(theme.spacing.sm),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          change.label,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        SizedBox(height: theme.spacing.xs),
+                        Text(
+                          '${l10n.tenantFacilityFieldPreviousLabel}: ${change.previousValue}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        Text(
+                          '${l10n.tenantFacilityFieldNewLabel}: ${change.nextValue}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: theme.spacing.sm),
+              ],
+            ],
+          ),
+          actions: <Widget>[
+            AppButton.tertiary(
+              label: l10n.commonCancelActionLabel,
+              leadingIcon: Icons.close,
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+            ),
+            AppButton.primary(
+              label: l10n.tenantFacilityConfirmFacilityUpdateAction,
+              leadingIcon: Icons.check,
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+            ),
+          ],
+        );
+      },
+    );
+    return confirmed == true;
+  }
+
+  Future<bool> _guardAgainstDuplicates(
+    String tenantId, {
+    required String name,
+  }) async {
     final AppLocalizations l10n = context.l10n;
     final List<FacilityProfile> existing = await _loadExistingFacilities(
       tenantId,
     );
     final FacilityDuplicateCheckResult result = checkFacilityDuplicates(
-      name: _nameController.text,
+      name: name,
       existing: existing,
       excludeFacilityId: widget.facility?.id ?? _activeFacility?.id,
     );
@@ -2595,6 +2941,18 @@ class _EntityRow extends StatelessWidget {
       ),
     );
   }
+}
+
+final class _FacilityFieldChange {
+  const _FacilityFieldChange({
+    required this.label,
+    required this.previousValue,
+    required this.nextValue,
+  });
+
+  final String label;
+  final String previousValue;
+  final String nextValue;
 }
 
 class _BranchFormDialog extends ConsumerStatefulWidget {
