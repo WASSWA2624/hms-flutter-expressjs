@@ -4940,6 +4940,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityFieldNewLabel => 'New';
 
   @override
+  String get tenantFacilityLogoRemovedLabel => 'Logo removed';
+
+  @override
+  String get tenantFacilityLogoAddedLabel => 'New logo';
+
+  @override
   String get tenantFacilityNoFacilityChangesMessage => 'No changes to save.';
 
   @override

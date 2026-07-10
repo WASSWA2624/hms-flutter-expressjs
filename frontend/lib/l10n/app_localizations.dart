@@ -9226,6 +9226,18 @@ abstract class AppLocalizations {
   /// **'New'**
   String get tenantFacilityFieldNewLabel;
 
+  /// Shown in facility edit confirmation when the logo will be cleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Logo removed'**
+  String get tenantFacilityLogoRemovedLabel;
+
+  /// Shown in facility edit confirmation when a new logo image is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'New logo'**
+  String get tenantFacilityLogoAddedLabel;
+
   /// Shown when the edit facility form is saved with no field changes.
   ///
   /// In en, this message translates to:

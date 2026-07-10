@@ -6362,6 +6362,14 @@
   "@tenantFacilityFieldNewLabel": {
     "description": "Label for new value column in facility edit confirmation."
   },
+  "tenantFacilityLogoRemovedLabel": "Logo removed",
+  "@tenantFacilityLogoRemovedLabel": {
+    "description": "Shown in facility edit confirmation when the logo will be cleared."
+  },
+  "tenantFacilityLogoAddedLabel": "New logo",
+  "@tenantFacilityLogoAddedLabel": {
+    "description": "Shown in facility edit confirmation when a new logo image is selected."
+  },
   "tenantFacilityNoFacilityChangesMessage": "No changes to save.",
   "@tenantFacilityNoFacilityChangesMessage": {
     "description": "Shown when the edit facility form is saved with no field changes."

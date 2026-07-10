@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -2070,23 +2071,23 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     addChange(l10n.tenantFacilityCityLabel, _baselineCity, city);
     addChange(l10n.tenantFacilityCountryLabel, _baselineCountry, country);
     if (logoChanged) {
-      final String previous = (_baselineLogoUrl ?? '').trim().isEmpty
-          ? '—'
-          : l10n.tenantFacilityLogoLabel;
-      final String next = logoCleared
-          ? '—'
-          : logoReplaced
-          ? l10n.tenantFacilityChooseLogoAction
-          : l10n.tenantFacilityLogoLabel;
-      if (previous != next || logoCleared || logoReplaced) {
-        changes.add(
-          _FacilityFieldChange(
-            label: l10n.tenantFacilityLogoLabel,
-            previousValue: previous,
-            nextValue: next,
-          ),
-        );
-      }
+      final String? previousUrl = _normalizedOptional(_baselineLogoUrl);
+      final List<int>? nextBytes = logoReplaced ? _logoBytes : null;
+      changes.add(
+        _FacilityFieldChange(
+          label: l10n.tenantFacilityLogoLabel,
+          previousValue: previousUrl == null
+              ? l10n.tenantFacilityFacilityDetailsNoLogo
+              : l10n.tenantFacilityLogoLabel,
+          nextValue: logoCleared
+              ? l10n.tenantFacilityLogoRemovedLabel
+              : l10n.tenantFacilityLogoAddedLabel,
+          isLogo: true,
+          previousLogoUrl: previousUrl,
+          nextLogoBytes: nextBytes,
+          logoCleared: logoCleared,
+        ),
+      );
     }
 
     return changes;
@@ -2100,55 +2101,73 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       context: context,
       builder: (BuildContext dialogContext) {
         final ThemeData theme = Theme.of(dialogContext);
+        final ColorScheme colorScheme = theme.colorScheme;
         return AppDialog(
           title: Text(l10n.tenantFacilityConfirmFacilityUpdateTitle),
-          icon: const Icon(Icons.rule_outlined),
+          icon: const Icon(Icons.compare_arrows_outlined),
           scrollable: true,
-          maxWidth: 640,
+          maxWidth: 720,
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Text(
-                l10n.tenantFacilityConfirmFacilityUpdateBody,
-                style: theme.textTheme.bodyMedium,
-              ),
-              SizedBox(height: theme.spacing.md),
-              for (final _FacilityFieldChange change in changes) ...<Widget>[
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: theme.colorScheme.outlineVariant,
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.all(theme.spacing.sm),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          change.label,
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        SizedBox(height: theme.spacing.xs),
-                        Text(
-                          '${l10n.tenantFacilityFieldPreviousLabel}: ${change.previousValue}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        Text(
-                          '${l10n.tenantFacilityFieldNewLabel}: ${change.nextValue}',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: colorScheme.primary.withValues(alpha: 0.18),
                   ),
                 ),
+                child: Padding(
+                  padding: EdgeInsets.all(theme.spacing.md),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Icon(
+                        Icons.info_outline,
+                        color: colorScheme.primary,
+                        size: 22,
+                      ),
+                      SizedBox(width: theme.spacing.sm),
+                      Expanded(
+                        child: Text(
+                          l10n.tenantFacilityConfirmFacilityUpdateBody,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: theme.spacing.md),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(
+                      l10n.tenantFacilityFieldPreviousLabel,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 40),
+                  Expanded(
+                    child: Text(
+                      l10n.tenantFacilityFieldNewLabel,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: theme.spacing.sm),
+              for (final _FacilityFieldChange change in changes) ...<Widget>[
+                _FacilityChangeDiffCard(change: change),
                 SizedBox(height: theme.spacing.sm),
               ],
             ],
@@ -2948,11 +2967,297 @@ final class _FacilityFieldChange {
     required this.label,
     required this.previousValue,
     required this.nextValue,
+    this.isLogo = false,
+    this.previousLogoUrl,
+    this.nextLogoBytes,
+    this.logoCleared = false,
   });
 
   final String label;
   final String previousValue;
   final String nextValue;
+  final bool isLogo;
+  final String? previousLogoUrl;
+  final List<int>? nextLogoBytes;
+  final bool logoCleared;
+}
+
+class _FacilityChangeDiffCard extends StatelessWidget {
+  const _FacilityChangeDiffCard({required this.change});
+
+  final _FacilityFieldChange change;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text(
+              change.label,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: theme.spacing.sm),
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final bool stacked = constraints.maxWidth < 420;
+                final Widget previousPane = _FacilityChangeValuePane(
+                  tone: _FacilityChangePaneTone.previous,
+                  caption: l10n.tenantFacilityFieldPreviousLabel,
+                  textValue: change.previousValue,
+                  isLogo: change.isLogo,
+                  logoUrl: change.previousLogoUrl,
+                  emptyLogoLabel: l10n.tenantFacilityFacilityDetailsNoLogo,
+                );
+                final Widget nextPane = _FacilityChangeValuePane(
+                  tone: _FacilityChangePaneTone.next,
+                  caption: l10n.tenantFacilityFieldNewLabel,
+                  textValue: change.nextValue,
+                  isLogo: change.isLogo,
+                  logoBytes: change.nextLogoBytes,
+                  logoCleared: change.logoCleared,
+                  emptyLogoLabel: change.logoCleared
+                      ? l10n.tenantFacilityLogoRemovedLabel
+                      : l10n.tenantFacilityFacilityDetailsNoLogo,
+                );
+                final Widget arrow = Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: stacked ? 0 : theme.spacing.sm,
+                    vertical: stacked ? theme.spacing.sm : 0,
+                  ),
+                  child: Icon(
+                    stacked
+                        ? Icons.arrow_downward_rounded
+                        : Icons.arrow_forward_rounded,
+                    color: colorScheme.primary,
+                    size: 22,
+                  ),
+                );
+
+                if (stacked) {
+                  return Column(
+                    children: <Widget>[
+                      previousPane,
+                      arrow,
+                      nextPane,
+                    ],
+                  );
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(child: previousPane),
+                    arrow,
+                    Expanded(child: nextPane),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+enum _FacilityChangePaneTone { previous, next }
+
+class _FacilityChangeValuePane extends StatelessWidget {
+  const _FacilityChangeValuePane({
+    required this.tone,
+    required this.caption,
+    required this.textValue,
+    required this.isLogo,
+    required this.emptyLogoLabel,
+    this.logoUrl,
+    this.logoBytes,
+    this.logoCleared = false,
+  });
+
+  final _FacilityChangePaneTone tone;
+  final String caption;
+  final String textValue;
+  final bool isLogo;
+  final String emptyLogoLabel;
+  final String? logoUrl;
+  final List<int>? logoBytes;
+  final bool logoCleared;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final bool isPrevious = tone == _FacilityChangePaneTone.previous;
+    final Color background = isPrevious
+        ? colorScheme.errorContainer.withValues(alpha: 0.28)
+        : colorScheme.primaryContainer.withValues(alpha: 0.45);
+    final Color border = isPrevious
+        ? colorScheme.error.withValues(alpha: 0.22)
+        : colorScheme.primary.withValues(alpha: 0.28);
+    final Color captionColor = isPrevious
+        ? colorScheme.onErrorContainer
+        : colorScheme.primary;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              caption,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: captionColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: theme.spacing.sm),
+            if (isLogo)
+              _FacilityConfirmLogoPreview(
+                url: logoUrl,
+                bytes: logoBytes,
+                cleared: logoCleared,
+                emptyLabel: emptyLogoLabel,
+                emphasizeRemoval: isPrevious || logoCleared,
+              )
+            else
+              Text(
+                textValue,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  decoration: isPrevious ? TextDecoration.lineThrough : null,
+                  color: isPrevious
+                      ? colorScheme.onSurfaceVariant
+                      : colorScheme.onSurface,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FacilityConfirmLogoPreview extends StatelessWidget {
+  const _FacilityConfirmLogoPreview({
+    required this.emptyLabel,
+    required this.emphasizeRemoval,
+    this.url,
+    this.bytes,
+    this.cleared = false,
+  });
+
+  final String? url;
+  final List<int>? bytes;
+  final bool cleared;
+  final String emptyLabel;
+  final bool emphasizeRemoval;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final bool hasBytes = bytes != null && bytes!.isNotEmpty;
+    final bool hasUrl = (url ?? '').trim().isNotEmpty;
+    final Widget image;
+
+    if (hasBytes) {
+      image = Image.memory(
+        Uint8List.fromList(bytes!),
+        fit: BoxFit.cover,
+        errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) =>
+            Icon(Icons.broken_image_outlined, color: colorScheme.error),
+      );
+    } else if (hasUrl && !cleared) {
+      image = Image.network(
+        url!.trim(),
+        fit: BoxFit.cover,
+        errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) =>
+            Icon(Icons.broken_image_outlined, color: colorScheme.error),
+      );
+    } else {
+      image = Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(
+            cleared ? Icons.hide_image_outlined : Icons.domain_outlined,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 4),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: Text(
+              emptyLabel,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: colorScheme.outlineVariant),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: SizedBox(
+              width: 96,
+              height: 96,
+              child: Stack(
+                fit: StackFit.expand,
+                children: <Widget>[
+                  image,
+                  if (emphasizeRemoval && (hasUrl || cleared) && !hasBytes)
+                    ColoredBox(
+                      color: colorScheme.error.withValues(alpha: 0.12),
+                      child: const SizedBox.expand(),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        if (hasBytes) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            context.l10n.tenantFacilityLogoAddedLabel,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
 }
 
 class _BranchFormDialog extends ConsumerStatefulWidget {
