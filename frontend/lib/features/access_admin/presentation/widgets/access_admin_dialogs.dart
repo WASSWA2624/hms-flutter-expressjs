@@ -320,61 +320,47 @@ Future<bool?> openAccessAdminEditRoleDialog(
     accessAdminRepositoryProvider,
   );
 
-  Set<String> initialPermissionIds = role.permissions
-      .map((AccessAdminPermissionRef permission) => permission.id)
-      .toSet();
-  // List payloads are lean (count only). Always load assignments for edit.
-  if (initialPermissionIds.isEmpty) {
-    final Result<List<AccessAdminRolePermissionAssignment>>
-    permissionsResult = await repository.listRolePermissions(role.id);
-    initialPermissionIds = permissionsResult.when(
-      success: (List<AccessAdminRolePermissionAssignment> assignments) =>
-          assignments
-              .map(
-                (AccessAdminRolePermissionAssignment assignment) =>
-                    assignment.permissionId,
-              )
-              .whereType<String>()
-              .where((String id) => id.trim().isNotEmpty)
-              .toSet(),
-      failure: (_) => initialPermissionIds,
-    );
-  }
+  final Future<Result<List<AccessAdminRolePermissionAssignment>>>
+  assignmentsFuture = repository.listRolePermissions(role.id);
+  final Future<AccessAdminLookups?> lookupsFuture = (tenantId ?? '').isEmpty
+      ? Future<AccessAdminLookups?>.value()
+      : _prefetchRoleDialogLookups(
+          ref,
+          tenantId: tenantId!,
+          facilityId: facilityId,
+          includeFacilities: true,
+        );
 
-  final AccessAdminLookups? prefetched;
-  if ((tenantId ?? '').isEmpty) {
-    prefetched = null;
-  } else if (state.data.lookups.permissions.isNotEmpty) {
-    unawaited(
-      _prefetchRoleDialogLookups(
-        ref,
-        tenantId: tenantId!,
-        facilityId: facilityId,
-        includeFacilities: true,
-      ),
-    );
-    prefetched = null;
-  } else {
-    prefetched = await _prefetchRoleDialogLookups(
-      ref,
-      tenantId: tenantId!,
-      facilityId: facilityId,
-      includeFacilities: true,
-    );
-  }
+  final Result<List<AccessAdminRolePermissionAssignment>> assignmentsResult =
+      await assignmentsFuture;
+  final AccessAdminLookups? prefetched = await lookupsFuture;
 
   if (!context.mounted) {
     return null;
   }
 
+  final List<AccessAdminLookupOption> permissionLookups =
+      prefetched?.permissions ??
+      (state.data.lookups.permissions.isNotEmpty
+          ? state.data.lookups.permissions
+          : const <AccessAdminLookupOption>[]);
+
+  final List<AccessAdminRolePermissionAssignment> assignments =
+      assignmentsResult.when(
+        success: (List<AccessAdminRolePermissionAssignment> value) => value,
+        failure: (_) => const <AccessAdminRolePermissionAssignment>[],
+      );
+
+  final Set<String> initialPermissionIds = _resolveAttachedPermissionIds(
+    assignments: assignments,
+    embeddedPermissions: role.permissions,
+    permissionLookups: permissionLookups,
+  );
+
   return showRoleMutationDialog(
     context: context,
     mode: RoleMutationMode.edit,
-    permissionLookups:
-        prefetched?.permissions ??
-        (state.data.lookups.permissions.isNotEmpty
-            ? state.data.lookups.permissions
-            : const <AccessAdminLookupOption>[]),
+    permissionLookups: permissionLookups,
     initialFacilityOptions:
         prefetched?.facilities ?? state.data.lookups.facilities,
     initialName: role.title,
@@ -400,6 +386,66 @@ Future<bool?> openAccessAdminEditRoleDialog(
     onSubmit: (AccessAdminRoleDraft draft) =>
         _submitAccessAdminRoleUpdate(ref, role.id, draft),
   );
+}
+
+/// Maps role permission assignments onto catalog lookup option ids.
+Set<String> _resolveAttachedPermissionIds({
+  required List<AccessAdminRolePermissionAssignment> assignments,
+  required List<AccessAdminPermissionRef> embeddedPermissions,
+  required List<AccessAdminLookupOption> permissionLookups,
+}) {
+  final Map<String, String> idByLookupId = <String, String>{
+    for (final AccessAdminLookupOption option in permissionLookups)
+      option.id: option.id,
+  };
+  final Map<String, String> idByName = <String, String>{
+    for (final AccessAdminLookupOption option in permissionLookups)
+      option.label: option.id,
+  };
+  final Set<String> resolved = <String>{};
+
+  String? resolveOne({String? id, String? name}) {
+    if (id != null && idByLookupId.containsKey(id)) {
+      return idByLookupId[id];
+    }
+    if (name != null && idByName.containsKey(name)) {
+      return idByName[name];
+    }
+    if (id != null && idByName.containsKey(id)) {
+      return idByName[id];
+    }
+    return null;
+  }
+
+  void addCandidate({String? id, String? name}) {
+    final String? matched = resolveOne(id: id, name: name);
+    if (matched != null) {
+      resolved.add(matched);
+      return;
+    }
+    // Prefer permission code/name so a later catalog load can remap by label.
+    if (name != null && name.trim().isNotEmpty) {
+      resolved.add(name.trim());
+    }
+    if (id != null && id.trim().isNotEmpty) {
+      resolved.add(id.trim());
+    }
+  }
+
+  for (final AccessAdminRolePermissionAssignment assignment in assignments) {
+    addCandidate(
+      id: assignment.permissionId,
+      name: assignment.permissionName,
+    );
+  }
+
+  if (resolved.isEmpty) {
+    for (final AccessAdminPermissionRef permission in embeddedPermissions) {
+      addCandidate(id: permission.id, name: permission.name);
+    }
+  }
+
+  return resolved;
 }
 
 Future<AppFailure?> _submitAccessAdminUserCreate(

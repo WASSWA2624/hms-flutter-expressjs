@@ -145,6 +145,7 @@ const serializeUser = (record) => {
     status: record.status,
     tenant_id: safePublicId(record.tenant_id),
     facility_id: safePublicId(record.facility_id),
+    facility_name: record.facility?.name || null,
     profile_name: profile
       ? [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || null
       : null,
@@ -389,6 +390,9 @@ const buildLookups = (records = {}, user = null) => {
       display_name: entry.display_name || entry.name,
       facility_id: safePublicId(entry.facility_id),
       scope: entry.facility_id ? 'facility' : 'tenant',
+      permission_count:
+        entry._count?.permissions ??
+        (Array.isArray(entry.permissions) ? entry.permissions.length : 0),
     })),
     permissions: permissions.map((entry) => ({
       id: safePublicId(entry.human_friendly_id, entry.id),
@@ -628,17 +632,16 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
       ]
     : await Promise.all([
         lean ? Promise.resolve({}) : repository.findSummary(scope),
+        // Lean lists still need filter lookups (tenants/facilities/roles), but
+        // skip the heavy permission catalog and nested role→permission rows.
         lean
-          ? Promise.resolve({
-              tenants: [],
-              facilities: [],
-              roles: [],
-              permissions: [],
+          ? repository.findLookups(scope, includeAllTenants, {
+              includeTenantWide: includeTenantWideRoles,
+              includePermissions: false,
+              includeRolePermissions: false,
             })
           : repository.findLookups(scope, includeAllTenants, {
               includeTenantWide: includeTenantWideRoles,
-              // Nested role→permission rows are expensive; ceiling checks fall
-              // back to ROLE_PERMISSIONS for system roles.
               includeRolePermissions: false,
             }),
         findItemsForResource(
@@ -733,9 +736,7 @@ const buildLookupIncludeOptions = (includeSet) => {
     includeRoles: includeSet.has('roles') || includeSet.has('all'),
     includePermissions: includeSet.has('permissions') || includeSet.has('all'),
     includeRolePermissions:
-      includeSet.has('role_permissions') ||
-      includeSet.has('roles') ||
-      includeSet.has('all'),
+      includeSet.has('role_permissions') || includeSet.has('all'),
   };
 };
 

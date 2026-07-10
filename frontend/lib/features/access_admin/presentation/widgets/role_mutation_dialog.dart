@@ -215,7 +215,10 @@ Future<bool?> showRoleMutationDialog({
               final String? byLabel = idByLabel[selected];
               if (byLabel != null) {
                 remapped.add(byLabel);
+                continue;
               }
+              // Keep unresolved ids so a later catalog refresh can still match.
+              remapped.add(selected);
             }
             selectedPermissionIds
               ..clear()

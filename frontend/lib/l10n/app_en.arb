@@ -23354,6 +23354,26 @@
   "@accessAdminUsersFiltersTitle": {
     "description": "Title for the advanced filters sheet on the manage users table."
   },
+  "accessAdminAllFacilitiesFilterLabel": "All facilities",
+  "@accessAdminAllFacilitiesFilterLabel": {
+    "description": "Manage users filter choice to show users across every facility in the tenant."
+  },
+  "accessAdminAllRolesFilterLabel": "All roles",
+  "@accessAdminAllRolesFilterLabel": {
+    "description": "Manage users filter choice to show users regardless of assigned role."
+  },
+  "accessAdminFilterRoleLabel": "Role",
+  "@accessAdminFilterRoleLabel": {
+    "description": "Manage users advanced filter group label for role."
+  },
+  "accessAdminColumnFacility": "Facility",
+  "@accessAdminColumnFacility": {
+    "description": "Facility column header on the manage users table."
+  },
+  "accessAdminColumnRoles": "Roles",
+  "@accessAdminColumnRoles": {
+    "description": "Roles column header on the manage users table."
+  },
   "accessAdminColumnActions": "Actions",
   "@accessAdminColumnActions": {
     "description": "Actions column header on access admin management tables."

@@ -68,6 +68,7 @@ final class AccessAdminWorkspaceQuery {
     this.userId,
     this.roleId,
     this.includeDeleted = false,
+    this.allFacilities = false,
     this.lean = false,
     this.pageRequest = const AppPageRequest(pageSize: 12),
   });
@@ -88,6 +89,10 @@ final class AccessAdminWorkspaceQuery {
       includeDeleted:
           params['include_deleted'] == 'true' ||
           params['includeDeleted'] == 'true',
+      allFacilities:
+          params['all_facilities'] == 'true' ||
+          params['allFacilities'] == 'true' ||
+          (params['facilityScope'] ?? params['facility_scope']) == 'all',
       lean: params['lean'] == 'true' || params['lean'] == '1',
     );
   }
@@ -103,6 +108,7 @@ final class AccessAdminWorkspaceQuery {
   final String? userId;
   final String? roleId;
   final bool includeDeleted;
+  final bool allFacilities;
   final bool lean;
   final AppPageRequest pageRequest;
 
@@ -126,6 +132,7 @@ final class AccessAdminWorkspaceQuery {
     Object? userId = _unset,
     Object? roleId = _unset,
     bool? includeDeleted,
+    bool? allFacilities,
     bool? lean,
     AppPageRequest? pageRequest,
   }) {
@@ -149,6 +156,7 @@ final class AccessAdminWorkspaceQuery {
       userId: identical(userId, _unset) ? this.userId : userId as String?,
       roleId: identical(roleId, _unset) ? this.roleId : roleId as String?,
       includeDeleted: includeDeleted ?? this.includeDeleted,
+      allFacilities: allFacilities ?? this.allFacilities,
       lean: lean ?? this.lean,
       pageRequest: pageRequest ?? this.pageRequest,
     );
@@ -183,11 +191,13 @@ final class AccessAdminLookupOption {
     required this.id,
     required this.label,
     this.meta,
+    this.permissionCount = 0,
   });
 
   final String id;
   final String label;
   final String? meta;
+  final int permissionCount;
 }
 
 @immutable

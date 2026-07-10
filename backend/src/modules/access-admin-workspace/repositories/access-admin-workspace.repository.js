@@ -181,9 +181,57 @@ const findUsers = async ({ scope = {}, filters = {}, skip = 0, take = 20, orderB
         ? { email: { endsWith: DEMO_EMAIL_SUFFIX } }
         : {}),
     };
-    const searchFilter = buildSearchFilter(filters.search);
-    if (searchFilter) {
-      where.OR = searchFilter.OR.filter((entry) => !entry.name && !entry.description);
+
+    if (filters.role_id) {
+      const roleId = await resolveIdentifierForFilter({
+        value: filters.role_id,
+        model: 'role',
+      });
+      if (roleId) {
+        where.roles = {
+          some: {
+            deleted_at: null,
+            role_id: roleId,
+          },
+        };
+      }
+    }
+
+    const searchTerm = String(filters.search || '').trim();
+    if (searchTerm) {
+      const searchFilter = buildSearchFilter(searchTerm);
+      const userFieldOr = (searchFilter?.OR || []).filter(
+        (entry) => !entry.name && !entry.description
+      );
+      where.AND = [
+        ...(Array.isArray(where.AND) ? where.AND : []),
+        {
+          OR: [
+            ...userFieldOr,
+            {
+              profile: {
+                is: {
+                  deleted_at: null,
+                  OR: [
+                    { first_name: { contains: searchTerm } },
+                    { last_name: { contains: searchTerm } },
+                  ],
+                },
+              },
+            },
+            {
+              roles: {
+                some: {
+                  deleted_at: null,
+                  role: {
+                    name: { contains: searchTerm },
+                  },
+                },
+              },
+            },
+          ],
+        },
+      ];
     }
 
     const resolvedOrderBy = includeDeleted
@@ -223,6 +271,13 @@ const findUsers = async ({ scope = {}, filters = {}, skip = 0, take = 20, orderB
             select: {
               id: true,
               human_friendly_id: true,
+            },
+          },
+          facility: {
+            select: {
+              id: true,
+              human_friendly_id: true,
+              name: true,
             },
           },
         },
@@ -554,6 +609,11 @@ const findLookups = async (
               name: true,
               display_name: true,
               facility_id: true,
+              _count: {
+                select: {
+                  permissions: { where: { deleted_at: null } },
+                },
+              },
               ...(includeRolePermissions
                 ? {
                     permissions: {

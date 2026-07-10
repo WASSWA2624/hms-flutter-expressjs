@@ -6,6 +6,7 @@ final class AccessAdminLookupOptionDto {
     required this.id,
     required this.label,
     this.meta,
+    this.permissionCount = 0,
   });
 
   factory AccessAdminLookupOptionDto.fromJson(Map<String, dynamic> json) {
@@ -13,15 +14,22 @@ final class AccessAdminLookupOptionDto {
       id: _string(json['id']),
       label: _string(json['label']),
       meta: _nullableString(json['facility_type'] ?? json['meta']),
+      permissionCount: _int(json['permission_count']),
     );
   }
 
   final String id;
   final String label;
   final String? meta;
+  final int permissionCount;
 
   AccessAdminLookupOption toEntity() {
-    return AccessAdminLookupOption(id: id, label: label, meta: meta);
+    return AccessAdminLookupOption(
+      id: id,
+      label: label,
+      meta: meta,
+      permissionCount: permissionCount,
+    );
   }
 }
 

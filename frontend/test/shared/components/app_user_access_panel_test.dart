@@ -41,6 +41,7 @@ void main() {
         find.textContaining('cannot be removed individually'),
         findsOneWidget,
       );
+      expect(find.text('Remove role'), findsOneWidget);
       expect(find.byIcon(Icons.remove_circle_outline), findsOneWidget);
       expect(find.byType(InputChip), findsNothing);
     });
@@ -66,8 +67,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(InputChip), findsOneWidget);
-      await tester.tap(find.byIcon(Icons.close));
+      expect(find.text('Remove permission'), findsOneWidget);
+      expect(find.byIcon(Icons.remove_circle_outline), findsOneWidget);
+      expect(find.byType(InputChip), findsNothing);
+      await tester.tap(find.text('Remove permission'));
       await tester.pumpAndSettle();
       expect(removedId, 'perm-1');
     });

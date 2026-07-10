@@ -33717,6 +33717,36 @@ abstract class AppLocalizations {
   /// **'User filters'**
   String get accessAdminUsersFiltersTitle;
 
+  /// Manage users filter choice to show users across every facility in the tenant.
+  ///
+  /// In en, this message translates to:
+  /// **'All facilities'**
+  String get accessAdminAllFacilitiesFilterLabel;
+
+  /// Manage users filter choice to show users regardless of assigned role.
+  ///
+  /// In en, this message translates to:
+  /// **'All roles'**
+  String get accessAdminAllRolesFilterLabel;
+
+  /// Manage users advanced filter group label for role.
+  ///
+  /// In en, this message translates to:
+  /// **'Role'**
+  String get accessAdminFilterRoleLabel;
+
+  /// Facility column header on the manage users table.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get accessAdminColumnFacility;
+
+  /// Roles column header on the manage users table.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles'**
+  String get accessAdminColumnRoles;
+
   /// Actions column header on access admin management tables.
   ///
   /// In en, this message translates to:

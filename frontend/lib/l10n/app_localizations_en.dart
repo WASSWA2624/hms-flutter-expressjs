@@ -18145,6 +18145,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminUsersFiltersTitle => 'User filters';
 
   @override
+  String get accessAdminAllFacilitiesFilterLabel => 'All facilities';
+
+  @override
+  String get accessAdminAllRolesFilterLabel => 'All roles';
+
+  @override
+  String get accessAdminFilterRoleLabel => 'Role';
+
+  @override
+  String get accessAdminColumnFacility => 'Facility';
+
+  @override
+  String get accessAdminColumnRoles => 'Roles';
+
+  @override
   String get accessAdminColumnActions => 'Actions';
 
   @override

@@ -133,22 +133,18 @@ class AppUserAccessPanel extends StatelessWidget {
                 ),
               )
             else
-              Wrap(
-                spacing: theme.spacing.xs,
-                runSpacing: theme.spacing.xs,
-                children: directPermissions
-                    .map(
-                      (AppUserAccessDirectPermission permission) =>
-                          _DirectPermissionChip(
-                            permission: permission,
-                            canWrite: canWrite,
-                            isBusy: isBusy,
-                            onRemove: onRemoveDirectPermission == null
-                                ? null
-                                : () => onRemoveDirectPermission!(permission),
-                          ),
-                    )
-                    .toList(growable: false),
+              ...directPermissions.map(
+                (AppUserAccessDirectPermission permission) => Padding(
+                  padding: EdgeInsets.only(bottom: theme.spacing.xs),
+                  child: _DirectPermissionRow(
+                    permission: permission,
+                    canWrite: canWrite,
+                    isBusy: isBusy,
+                    onRemove: onRemoveDirectPermission == null
+                        ? null
+                        : () => onRemoveDirectPermission!(permission),
+                  ),
+                ),
               ),
           ],
         ),
@@ -233,7 +229,20 @@ class _RoleGroupCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Icon(Icons.shield_outlined, color: colorScheme.primary, size: 20),
+              Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(theme.radius.sm),
+                ),
+                child: Icon(
+                  Icons.shield_outlined,
+                  color: colorScheme.onPrimaryContainer,
+                  size: 20,
+                ),
+              ),
               SizedBox(width: theme.spacing.sm),
               Expanded(
                 child: Column(
@@ -258,13 +267,12 @@ class _RoleGroupCard extends StatelessWidget {
                 ),
               ),
               if (canWrite && group.canRemove && onRemove != null)
-                IconButton(
+                AppButton.tertiary(
+                  leadingIcon: Icons.remove_circle_outline,
+                  label: l10n.accessAdminUserAccessRemoveRoleAction,
+                  color: colorScheme.error,
                   tooltip: l10n.accessAdminUserAccessRemoveRoleAction,
                   onPressed: isBusy ? null : onRemove,
-                  icon: Icon(
-                    Icons.remove_circle_outline,
-                    color: colorScheme.error,
-                  ),
                 ),
             ],
           ),
@@ -306,8 +314,8 @@ class _RoleGroupCard extends StatelessWidget {
   }
 }
 
-class _DirectPermissionChip extends StatelessWidget {
-  const _DirectPermissionChip({
+class _DirectPermissionRow extends StatelessWidget {
+  const _DirectPermissionRow({
     required this.permission,
     required this.canWrite,
     required this.isBusy,
@@ -326,37 +334,47 @@ class _DirectPermissionChip extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final String label = l10n.permissionCatalogLabelForCode(permission.name);
 
-    if (canWrite && onRemove != null) {
-      return InputChip(
-        avatar: Icon(
-          Icons.key_outlined,
-          size: 16,
-          color: colorScheme.secondary,
-        ),
-        label: Text(label, overflow: TextOverflow.ellipsis),
-        backgroundColor: colorScheme.secondaryContainer,
-        visualDensity: VisualDensity.compact,
-        labelStyle: theme.textTheme.labelSmall,
-        deleteIcon: Icon(
-          Icons.close,
-          size: 16,
-          color: colorScheme.error,
-        ),
-        onDeleted: isBusy ? null : onRemove,
-        tooltip: l10n.accessAdminUserAccessRemoveDirectPermissionAction,
-      );
-    }
-
-    return Chip(
-      avatar: Icon(
-        Icons.key_outlined,
-        size: 16,
-        color: colorScheme.secondary,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
-      label: Text(label, overflow: TextOverflow.ellipsis),
-      backgroundColor: colorScheme.secondaryContainer,
-      visualDensity: VisualDensity.compact,
-      labelStyle: theme.textTheme.labelSmall,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs,
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(Icons.key_outlined, size: 18, color: colorScheme.secondary),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(label, style: theme.textTheme.labelLarge),
+                  if (label != permission.name)
+                    Text(
+                      permission.name,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (canWrite && onRemove != null)
+              AppButton.tertiary(
+                leadingIcon: Icons.remove_circle_outline,
+                label: l10n.accessAdminUserAccessRemoveDirectPermissionAction,
+                color: colorScheme.error,
+                tooltip: l10n.accessAdminUserAccessRemoveDirectPermissionAction,
+                onPressed: isBusy ? null : onRemove,
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -23,6 +23,10 @@ const workspaceQuerySchema = z.object({
   include_deleted: z.enum(['true', 'false']).optional(),
   includeDeleted: z.enum(['true', 'false']).optional(),
   lean: z.enum(['true', 'false', '1', '0']).optional(),
+  all_facilities: z.enum(['true', 'false', '1', '0']).optional(),
+  allFacilities: z.enum(['true', 'false', '1', '0']).optional(),
+  facility_scope: z.enum(['all', 'facility']).optional(),
+  facilityScope: z.enum(['all', 'facility']).optional(),
 });
 
 const referenceDataQuerySchema = z.object({

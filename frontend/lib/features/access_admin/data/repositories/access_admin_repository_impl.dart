@@ -63,7 +63,7 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         'resource': query.resource.serverValue,
         'search': query.search,
         'tenantId': query.tenantId,
-        'facilityId': query.facilityId,
+        'facilityId': query.allFacilities ? null : query.facilityId,
         'id': query.recordId,
         'status': query.status,
         'roleScope': query.roleScope,
@@ -71,6 +71,7 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         'roleId': query.roleId,
         'include_deleted': query.includeDeleted ? 'true' : null,
         'lean': query.lean ? 'true' : null,
+        'allFacilities': query.allFacilities ? 'true' : null,
       }),
       decoder: (Object? data) {
         return AccessAdminWorkspaceDto.fromResponse(data, query).toEntity();
@@ -352,27 +353,17 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         'limit': pageSize,
       },
       decoder: (Object? data) {
-        final Map<String, Object?> response = data is Map<String, Object?>
-            ? data
-            : <String, Object?>{};
-        final List<Object?> rows = response['data'] is List<Object?>
-            ? response['data']! as List<Object?>
-            : const <Object?>[];
+        final Map<String, dynamic> response = _asStringKeyedMap(data);
+        final List<dynamic> rows = response['data'] is List<dynamic>
+            ? response['data']! as List<dynamic>
+            : const <dynamic>[];
         return rows
-            .whereType<Map<Object?, Object?>>()
-            .map((Map<Object?, Object?> entry) {
-              final Map<String, Object?> row = entry.map(
-                (Object? key, Object? value) =>
-                    MapEntry<String, Object?>(key.toString(), value),
+            .map(_asStringKeyedMap)
+            .where((Map<String, dynamic> row) => row.isNotEmpty)
+            .map((Map<String, dynamic> row) {
+              final Map<String, dynamic> permission = _asStringKeyedMap(
+                row['permission'],
               );
-              final Object? permissionRaw = row['permission'];
-              final Map<String, Object?> permission =
-                  permissionRaw is Map<Object?, Object?>
-                  ? permissionRaw.map(
-                      (Object? key, Object? value) =>
-                          MapEntry<String, Object?>(key.toString(), value),
-                    )
-                  : <String, Object?>{};
               final String assignmentId =
                   _string(row['human_friendly_id']) ??
                   _string(row['display_id']) ??
@@ -584,29 +575,34 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         .toSet();
 
     AppFailure? lastFailure;
+    final List<Future<Result<void>>> mutations = <Future<Result<void>>>[];
+
     for (final AccessAdminUserRoleAssignment assignment in currentRoles) {
       final String? roleId = assignment.roleId;
       if (roleId == null || desiredRoleIds.contains(roleId)) {
         continue;
       }
-      final Result<void> result = await revokeUserRole(assignment.id);
-      if (result case ResultFailure<void>(:final failure)) {
-        lastFailure ??= failure;
-      }
+      mutations.add(revokeUserRole(assignment.id));
     }
 
     for (final String roleId in desiredRoleIds) {
       if (currentRoleIds.contains(roleId)) {
         continue;
       }
-      final Result<void> result = await assignUserRole(
-        AccessAdminUserRoleDraft(
-          userId: userId,
-          roleId: roleId,
-          tenantId: tenantId,
-          facilityId: facilityId,
+      mutations.add(
+        assignUserRole(
+          AccessAdminUserRoleDraft(
+            userId: userId,
+            roleId: roleId,
+            tenantId: tenantId,
+            facilityId: facilityId,
+          ),
         ),
       );
+    }
+
+    final List<Result<void>> results = await Future.wait(mutations);
+    for (final Result<void> result in results) {
       if (result case ResultFailure<void>(:final failure)) {
         lastFailure ??= failure;
       }
@@ -627,6 +623,19 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
   }
 
   String? _string(Object? value) => _nullableString(value);
+
+  Map<String, dynamic> _asStringKeyedMap(Object? value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    if (value is Map) {
+      return value.map(
+        (Object? key, Object? entry) =>
+            MapEntry<String, dynamic>(key.toString(), entry),
+      );
+    }
+    return <String, dynamic>{};
+  }
 
   @override
   Future<Result<void>> assignRolePermission(

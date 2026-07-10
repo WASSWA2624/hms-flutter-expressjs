@@ -34,10 +34,36 @@ const tenantScopedWhere = (scope = {}, options = {}) => {
   return where;
 };
 
+const roleNames = (user = {}) => {
+  const roles = Array.isArray(user.roles) ? user.roles : [user.role];
+  return roles
+    .map((entry) => String(entry || '').trim().toUpperCase())
+    .filter(Boolean);
+};
+
+const canViewAllFacilitiesInTenant = (user = {}) => {
+  const roles = new Set(roleNames(user));
+  return roles.has(ROLES.SUPER_ADMIN) || roles.has(ROLES.TENANT_ADMIN);
+};
+
+const isAllFacilitiesRequested = (filters = {}) => {
+  const facilityScope = String(filters.facility_scope || filters.facilityScope || '')
+    .trim()
+    .toLowerCase();
+  return (
+    filters.all_facilities === true ||
+    filters.all_facilities === 'true' ||
+    filters.allFacilities === true ||
+    filters.allFacilities === 'true' ||
+    facilityScope === 'all'
+  );
+};
+
 const resolveWorkspaceScope = async ({ filters = {}, user = {} }) => {
   try {
     const requestedTenantId = filters.tenant_id || filters.tenantId;
     const requestedFacilityId = filters.facility_id || filters.facilityId;
+    const allFacilities = isAllFacilitiesRequested(filters);
 
     const userTenantId = user.tenant_id || user.tenantId || null;
     const userFacilityId = user.facility_id || user.facilityId || null;
@@ -52,14 +78,18 @@ const resolveWorkspaceScope = async ({ filters = {}, user = {} }) => {
         return { state: 'tenant_context_required', scope: null };
       }
 
-      const facilityId = await resolveIdentifierForFilter({
-        value: requestedFacilityId || userFacilityId,
-        model: 'facility',
-        where: { tenant_id: tenantId },
-      });
-
-      if (facilityId === null) {
-        throw new HttpError('errors.validation.invalid', 400, [{ field: 'facility_id' }]);
+      // Super admins default to tenant-wide lists unless a facility is explicit.
+      // Do not fall back to the session facility — that hid newly created users.
+      let facilityId = null;
+      if (!allFacilities && requestedFacilityId) {
+        facilityId = await resolveIdentifierForFilter({
+          value: requestedFacilityId,
+          model: 'facility',
+          where: { tenant_id: tenantId },
+        });
+        if (facilityId === null) {
+          throw new HttpError('errors.validation.invalid', 400, [{ field: 'facility_id' }]);
+        }
       }
 
       return {
@@ -75,21 +105,26 @@ const resolveWorkspaceScope = async ({ filters = {}, user = {} }) => {
       throw new HttpError('errors.auth.scope_mismatch', 403);
     }
 
-    const facilityId = await resolveIdentifierForFilter({
-      value: requestedFacilityId || userFacilityId,
-      model: 'facility',
-      where: { tenant_id: userTenantId },
-    });
+    let facilityId = null;
+    if (allFacilities && canViewAllFacilitiesInTenant(user)) {
+      facilityId = null;
+    } else {
+      facilityId = await resolveIdentifierForFilter({
+        value: requestedFacilityId || userFacilityId,
+        model: 'facility',
+        where: { tenant_id: userTenantId },
+      });
 
-    if (facilityId === null) {
-      throw new HttpError('errors.validation.invalid', 400, [{ field: 'facility_id' }]);
+      if (facilityId === null) {
+        throw new HttpError('errors.validation.invalid', 400, [{ field: 'facility_id' }]);
+      }
     }
 
     return {
       state: 'ready',
       scope: {
         tenant_id: userTenantId,
-        facility_id: facilityId || userFacilityId || null,
+        facility_id: facilityId || null,
       },
     };
   } catch (error) {

@@ -216,9 +216,27 @@ Future<bool?> showUserMutationDialog({
             id: option.id,
             label: option.label,
             description: option.meta,
+            permissionCount: option.permissionCount,
           ),
         )
         .toList(growable: false);
+  }
+
+  Future<Set<String>> loadRolePermissions(String roleId) async {
+    final Result<List<AccessAdminRolePermissionAssignment>> result =
+        await repository.listRolePermissions(roleId);
+    return result.when(
+      success: (List<AccessAdminRolePermissionAssignment> assignments) {
+        return assignments
+            .map(
+              (AccessAdminRolePermissionAssignment assignment) =>
+                  (assignment.permissionName ?? '').trim(),
+            )
+            .where((String name) => name.isNotEmpty)
+            .toSet();
+      },
+      failure: (_) => <String>{},
+    );
   }
 
   List<AppPermissionAssignmentOption> buildPermissionOptions() {
@@ -601,6 +619,7 @@ Future<bool?> showUserMutationDialog({
                             child: AppRoleAssignmentPicker(
                               roles: roleOptions,
                               selectedRoleIds: selectedRoleIds,
+                              loadRolePermissions: loadRolePermissions,
                               onSelectionChanged: (Set<String> next) {
                                 setState(() {
                                   selectedRoleIds

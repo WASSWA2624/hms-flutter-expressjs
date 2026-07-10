@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission_catalog_localizations.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
@@ -252,9 +253,63 @@ class _ManageUsersDialog extends ConsumerStatefulWidget {
 
 class _ManageUsersDialogState
     extends _ScopedAccessAdminListDialogState<_ManageUsersDialog> {
+  String? tenantFilter;
+  String? facilityFilter;
+  String? roleFilter;
+  String? statusFilter;
+  /// When true and the actor may view tenant-wide users, omit facility scope.
+  bool allFacilities = true;
+
+  static const String _tenantFilterKey = 'tenant';
+  static const String _facilityFilterKey = 'facility';
+  static const String _roleFilterKey = 'role';
+  static const String _statusFilterKey = 'status';
+
   @override
-  AccessAdminWorkspaceQuery get listQuery =>
-      const AccessAdminWorkspaceQuery(includeDeleted: true, lean: true);
+  AccessAdminWorkspaceQuery get listQuery {
+    final bool tenantWide = _canFilterAcrossFacilities && allFacilities;
+    return AccessAdminWorkspaceQuery(
+      includeDeleted: true,
+      lean: true,
+      tenantId: tenantFilter,
+      facilityId: tenantWide ? null : facilityFilter,
+      allFacilities: tenantWide,
+      roleId: roleFilter,
+      status: statusFilter,
+    );
+  }
+
+  bool get _canFilterAcrossFacilities {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    return policy.canCreateTenant() || policy.canCreateTenantWideRole();
+  }
+
+  Future<void> _applyUserFilters(AppSearchBarFilterValue value) async {
+    final String? nextTenant = value.option(_tenantFilterKey);
+    final String? nextFacilityRaw = value.option(_facilityFilterKey);
+    final String? nextRole = value.option(_roleFilterKey);
+    final String? nextStatus = value.option(_statusFilterKey);
+    final bool nextAllFacilities =
+        _canFilterAcrossFacilities && nextFacilityRaw == null;
+    final String? nextFacility = nextAllFacilities ? null : nextFacilityRaw;
+
+    if (tenantFilter == nextTenant &&
+        facilityFilter == nextFacility &&
+        allFacilities == nextAllFacilities &&
+        roleFilter == nextRole &&
+        statusFilter == nextStatus) {
+      return;
+    }
+
+    setState(() {
+      tenantFilter = nextTenant;
+      facilityFilter = nextFacility;
+      allFacilities = nextAllFacilities;
+      roleFilter = nextRole;
+      statusFilter = nextStatus;
+    });
+    await reload(resetPage: true);
+  }
 
   Future<void> _openCreateUserDialog() async {
     final AccessAdminWorkspaceState? state = buildWorkspaceState();
@@ -268,7 +323,15 @@ class _ManageUsersDialogState
     );
     if (saved == true && mounted) {
       mutated = true;
-      unawaited(reload(resetPage: true, silent: true));
+      // Keep tenant-wide visibility so the new user is not hidden by a
+      // leftover facility filter from the create form context.
+      if (_canFilterAcrossFacilities && !allFacilities) {
+        setState(() {
+          allFacilities = true;
+          facilityFilter = null;
+        });
+      }
+      await reload(resetPage: true, silent: true);
     }
   }
 
@@ -476,6 +539,88 @@ class _ManageUsersDialogState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final AccessAdminLookups lookups =
+        workspaceData?.lookups ?? const AccessAdminLookups();
+    final bool canPickTenant = ref.watch(appAccessPolicyProvider).canCreateTenant();
+    final bool canFilterFacilities = _canFilterAcrossFacilities;
+    final List<String> statusOptions = lookups.userStatuses.isNotEmpty
+        ? lookups.userStatuses
+        : const <String>['ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING'];
+
+    final List<AppSearchBarFilterGroup> filterGroups = <AppSearchBarFilterGroup>[
+      if (canPickTenant && lookups.tenants.isNotEmpty)
+        AppSearchBarFilterGroup(
+          key: _tenantFilterKey,
+          label: l10n.settingsWorkspaceTenantLabel,
+          allLabel: l10n.accessAdminRoleScopeFilterAll,
+          choices: lookups.tenants
+              .map(
+                (AccessAdminLookupOption tenant) => AppSearchBarFilterChoice(
+                  value: tenant.id,
+                  label: tenant.label,
+                  icon: Icons.apartment_outlined,
+                ),
+              )
+              .toList(growable: false),
+        ),
+      if (canFilterFacilities)
+        AppSearchBarFilterGroup(
+          key: _facilityFilterKey,
+          label: l10n.settingsWorkspaceFacilityLabel,
+          allLabel: l10n.accessAdminAllFacilitiesFilterLabel,
+          choices: lookups.facilities
+              .map(
+                (AccessAdminLookupOption facility) => AppSearchBarFilterChoice(
+                  value: facility.id,
+                  label: facility.label,
+                  icon: Icons.local_hospital_outlined,
+                ),
+              )
+              .toList(growable: false),
+        ),
+      AppSearchBarFilterGroup(
+        key: _roleFilterKey,
+        label: l10n.accessAdminFilterRoleLabel,
+        allLabel: l10n.accessAdminAllRolesFilterLabel,
+        choices: lookups.roles
+            .map(
+              (AccessAdminLookupOption role) => AppSearchBarFilterChoice(
+                value: role.id,
+                label: role.label,
+                icon: Icons.badge_outlined,
+              ),
+            )
+            .toList(growable: false),
+      ),
+      AppSearchBarFilterGroup(
+        key: _statusFilterKey,
+        label: l10n.accessAdminStatusLabel,
+        allLabel: l10n.accessAdminAllStatusesLabel,
+        choices: statusOptions
+            .map(
+              (String status) => AppSearchBarFilterChoice(
+                value: status,
+                label: status,
+                icon: Icons.flag_outlined,
+              ),
+            )
+            .toList(growable: false),
+      ),
+    ];
+
+    final Map<String, String> filterOptions = <String, String>{
+      if (tenantFilter != null) _tenantFilterKey: tenantFilter!,
+      if (canFilterFacilities && !allFacilities && facilityFilter != null)
+        _facilityFilterKey: facilityFilter!,
+      if (roleFilter != null) _roleFilterKey: roleFilter!,
+      if (statusFilter != null) _statusFilterKey: statusFilter!,
+    };
+
+    final bool hasActiveFilters =
+        tenantFilter != null ||
+        (!allFacilities && facilityFilter != null) ||
+        roleFilter != null ||
+        statusFilter != null;
 
     return AppDialog(
       title: Text(l10n.homeManageUsersTitle),
@@ -485,12 +630,21 @@ class _ManageUsersDialogState
       content: SizedBox.expand(
         child: buildTable(
           l10n: l10n,
-          columnVisibilityStorageKey: 'access_admin_manage_users_v2',
+          columnVisibilityStorageKey: 'access_admin_manage_users_v3',
           onRowSelected: (AccessAdminItem item) =>
               unawaited(_openUserDetail(item)),
           search: buildTableSearch(
             l10n: l10n,
+            showAdvancedFilterButton: true,
             advancedFilterTitle: l10n.accessAdminUsersFiltersTitle,
+            filterGroups: filterGroups,
+            filterValue: filterOptions.isEmpty
+                ? AppSearchBarFilterValue.empty
+                : AppSearchBarFilterValue(options: filterOptions),
+            hasActiveFilters: hasActiveFilters,
+            onFilterChanged: (AppSearchBarFilterValue value) {
+              unawaited(_applyUserFilters(value));
+            },
           ),
           columns: <AppListTableColumn<AccessAdminItem>>[
             AppListTableColumn<AccessAdminItem>(
@@ -503,6 +657,31 @@ class _ManageUsersDialogState
               id: 'name',
               label: l10n.accessAdminColumnName,
               cellBuilder: (_, AccessAdminItem item) => Text(item.title),
+            ),
+            AppListTableColumn<AccessAdminItem>(
+              id: 'facility',
+              label: l10n.accessAdminColumnFacility,
+              cellBuilder: (_, AccessAdminItem item) => Text(
+                item.facilityName?.trim().isNotEmpty == true
+                    ? item.facilityName!
+                    : (item.facilityId ?? '—'),
+              ),
+            ),
+            AppListTableColumn<AccessAdminItem>(
+              id: 'roles',
+              label: l10n.accessAdminColumnRoles,
+              cellBuilder: (_, AccessAdminItem item) {
+                if (item.roles.isEmpty) {
+                  return const Text('—');
+                }
+                return Text(
+                  item.roles
+                      .map((AccessAdminRoleRef role) => role.name)
+                      .join(', '),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                );
+              },
             ),
             AppListTableColumn<AccessAdminItem>(
               id: 'status',
@@ -1055,17 +1234,17 @@ class _RoleDetailSummaryCard extends StatelessWidget {
               spacing: theme.spacing.md,
               runSpacing: theme.spacing.sm,
               children: <Widget>[
-                _RoleDetailMetaChip(
+                _AccessAdminDetailMetaChip(
                   icon: Icons.tag_outlined,
                   label: l10n.accessAdminColumnId,
                   value: role.effectiveDisplayId,
                 ),
-                _RoleDetailMetaChip(
+                _AccessAdminDetailMetaChip(
                   icon: Icons.lock_outline,
                   label: l10n.accessAdminRolePermissionsLabel,
                   value: l10n.hrAccessPermissionCountLabel(permissionCount),
                 ),
-                _RoleDetailMetaChip(
+                _AccessAdminDetailMetaChip(
                   icon: Icons.group_outlined,
                   label: l10n.accessAdminRoleDetailUsersLabel,
                   value: '${role.userCount}',
@@ -1079,8 +1258,8 @@ class _RoleDetailSummaryCard extends StatelessWidget {
   }
 }
 
-class _RoleDetailMetaChip extends StatelessWidget {
-  const _RoleDetailMetaChip({
+class _AccessAdminDetailMetaChip extends StatelessWidget {
+  const _AccessAdminDetailMetaChip({
     required this.icon,
     required this.label,
     required this.value,
@@ -1468,9 +1647,10 @@ class _AccessAdminUserDetailDialogState
       lookups = resolved;
     }
 
-    final Set<String> selectedIds = _detail.directPermissions
-        .map((AccessAdminPermissionRef permission) => permission.mutationId)
-        .toSet();
+    final Set<String> selectedIds = _resolveDirectPermissionOptionIds(
+      directs: _detail.directPermissions,
+      permissionLookups: lookups.permissions,
+    );
     final List<AppPermissionAssignmentOption> options = lookups.permissions
         .map(
           (AccessAdminLookupOption permission) => AppPermissionAssignmentOption(
@@ -1599,11 +1779,11 @@ class _AccessAdminUserDetailDialogState
     final AccessAdminItem item = _item;
 
     return AppDialog(
-      title: Text(item.title),
+      title: Text(l10n.accessAdminCreateUserDetailsSectionTitle),
       icon: const Icon(Icons.person_outline),
       scrollable: true,
       pinActionsToBottom: true,
-      maxWidth: 840,
+      maxWidth: 920,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -1753,6 +1933,49 @@ class _AccessAdminUserDetailDialogState
   }
 }
 
+/// Maps existing direct permissions onto catalog lookup option ids for the picker.
+Set<String> _resolveDirectPermissionOptionIds({
+  required List<AccessAdminPermissionRef> directs,
+  required List<AccessAdminLookupOption> permissionLookups,
+}) {
+  final Map<String, String> idByLookupId = <String, String>{
+    for (final AccessAdminLookupOption option in permissionLookups)
+      option.id: option.id,
+  };
+  final Map<String, String> idByName = <String, String>{
+    for (final AccessAdminLookupOption option in permissionLookups)
+      option.label: option.id,
+  };
+  final Set<String> resolved = <String>{};
+
+  for (final AccessAdminPermissionRef permission in directs) {
+    final List<String> candidates = <String>[
+      permission.mutationId,
+      permission.id,
+      permission.name,
+      if (permission.resourceUuid != null) permission.resourceUuid!,
+    ];
+    String? matched;
+    for (final String candidate in candidates) {
+      final String trimmed = candidate.trim();
+      if (trimmed.isEmpty) {
+        continue;
+      }
+      matched = idByLookupId[trimmed] ?? idByName[trimmed];
+      if (matched != null) {
+        break;
+      }
+    }
+    if (matched != null) {
+      resolved.add(matched);
+    } else if (permission.mutationId.trim().isNotEmpty) {
+      resolved.add(permission.mutationId.trim());
+    }
+  }
+
+  return resolved;
+}
+
 class _UserDetailSummaryCard extends StatelessWidget {
   const _UserDetailSummaryCard({required this.item});
 
@@ -1760,90 +1983,107 @@ class _UserDetailSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
-    return AppContentPanel(
-      tone: AppWorkspaceStatusTone.info,
-      density: AppContentPanelDensity.compact,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: colorScheme.primaryContainer,
-            foregroundColor: colorScheme.onPrimaryContainer,
-            child: Text(
-              _userInitials(item.title),
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: colorScheme.primaryContainer,
+              foregroundColor: colorScheme.onPrimaryContainer,
+              child: Text(
+                _userInitials(item.title),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
-          ),
-          SizedBox(width: theme.spacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  item.title,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if ((item.positionTitle ?? '').isNotEmpty) ...<Widget>[
-                  SizedBox(height: theme.spacing.xs),
+            SizedBox(width: theme.spacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
                   Text(
-                    item.positionTitle!,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                    item.title,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                ],
-                if ((item.email ?? '').isNotEmpty) ...<Widget>[
-                  SizedBox(height: theme.spacing.xs),
-                  Row(
-                    children: <Widget>[
-                      Icon(
-                        Icons.mail_outline,
-                        size: 16,
+                  if ((item.positionTitle ?? '').isNotEmpty) ...<Widget>[
+                    SizedBox(height: theme.spacing.xs),
+                    Text(
+                      item.positionTitle!,
+                      style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
-                      SizedBox(width: theme.spacing.xs),
-                      Expanded(
-                        child: Text(
-                          item.email!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                  if ((item.email ?? '').isNotEmpty) ...<Widget>[
+                    SizedBox(height: theme.spacing.xs),
+                    Row(
+                      children: <Widget>[
+                        Icon(
+                          Icons.mail_outline,
+                          size: 16,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        SizedBox(width: theme.spacing.xs),
+                        Expanded(
+                          child: Text(
+                            item.email!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
                           ),
                         ),
+                      ],
+                    ),
+                  ],
+                  SizedBox(height: theme.spacing.sm),
+                  Wrap(
+                    spacing: theme.spacing.sm,
+                    runSpacing: theme.spacing.xs,
+                    children: <Widget>[
+                      _AccessAdminDetailMetaChip(
+                        icon: Icons.tag_outlined,
+                        label: l10n.accessAdminColumnId,
+                        value: item.effectiveDisplayId,
+                      ),
+                      if (item.status != null)
+                        _UserDetailStatusChip(status: item.status!),
+                      if (item.isDemo)
+                        Chip(
+                          avatar: Icon(
+                            Icons.science_outlined,
+                            size: 16,
+                            color: colorScheme.tertiary,
+                          ),
+                          label: Text(l10n.accessAdminPanelDemo),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      _AccessAdminDetailMetaChip(
+                        icon: Icons.groups_outlined,
+                        label: l10n.accessAdminAssignedRolesLabel,
+                        value: '${item.roleCount}',
                       ),
                     ],
                   ),
                 ],
-                SizedBox(height: theme.spacing.sm),
-                Wrap(
-                  spacing: theme.spacing.xs,
-                  runSpacing: theme.spacing.xs,
-                  children: <Widget>[
-                    if (item.status != null)
-                      _UserDetailStatusChip(status: item.status!),
-                    if (item.isDemo)
-                      Chip(
-                        avatar: Icon(
-                          Icons.science_outlined,
-                          size: 16,
-                          color: colorScheme.tertiary,
-                        ),
-                        label: Text(context.l10n.accessAdminPanelDemo),
-                        visualDensity: VisualDensity.compact,
-                      ),
-                  ],
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
