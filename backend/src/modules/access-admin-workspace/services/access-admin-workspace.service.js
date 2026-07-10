@@ -144,6 +144,8 @@ const serializeUser = (record) => {
     roles,
     role_count: roles.length,
     is_demo: repository.isDemoUser(record),
+    is_active: !record.deleted_at && String(record.status || '').toUpperCase() === 'ACTIVE',
+    deleted_at: record.deleted_at || null,
     updated_at: record.updated_at,
   };
 };
@@ -504,6 +506,11 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
     status: text(query.status).toUpperCase() || null,
     user_id: text(query.userId || query.user_id) || null,
     role_id: text(query.roleId || query.role_id) || null,
+    include_deleted:
+      query.include_deleted === true ||
+      query.include_deleted === 'true' ||
+      query.includeDeleted === true ||
+      query.includeDeleted === 'true',
   };
 
   const skip = (page - 1) * limit;

@@ -66,6 +66,7 @@ final class AccessAdminWorkspaceQuery {
     this.status,
     this.userId,
     this.roleId,
+    this.includeDeleted = false,
     this.pageRequest = const AppPageRequest(pageSize: 12),
   });
 
@@ -81,6 +82,9 @@ final class AccessAdminWorkspaceQuery {
       status: _nonEmpty(params['status']),
       userId: _nonEmpty(params['userId'] ?? params['user_id']),
       roleId: _nonEmpty(params['roleId'] ?? params['role_id']),
+      includeDeleted:
+          params['include_deleted'] == 'true' ||
+          params['includeDeleted'] == 'true',
     );
   }
 
@@ -93,6 +97,7 @@ final class AccessAdminWorkspaceQuery {
   final String? status;
   final String? userId;
   final String? roleId;
+  final bool includeDeleted;
   final AppPageRequest pageRequest;
 
   bool get hasRouteTargeting {
@@ -113,6 +118,7 @@ final class AccessAdminWorkspaceQuery {
     Object? status = _unset,
     Object? userId = _unset,
     Object? roleId = _unset,
+    bool? includeDeleted,
     AppPageRequest? pageRequest,
   }) {
     return AccessAdminWorkspaceQuery(
@@ -131,6 +137,7 @@ final class AccessAdminWorkspaceQuery {
       status: identical(status, _unset) ? this.status : status as String?,
       userId: identical(userId, _unset) ? this.userId : userId as String?,
       roleId: identical(roleId, _unset) ? this.roleId : roleId as String?,
+      includeDeleted: includeDeleted ?? this.includeDeleted,
       pageRequest: pageRequest ?? this.pageRequest,
     );
   }
@@ -342,6 +349,7 @@ final class AccessAdminItem {
     this.entitlementDenied = false,
     this.entitlementDenialReason,
     this.updatedAt,
+    this.deletedAt,
   });
 
   final String id;
@@ -376,11 +384,88 @@ final class AccessAdminItem {
   final bool entitlementDenied;
   final String? entitlementDenialReason;
   final DateTime? updatedAt;
+  final DateTime? deletedAt;
+
+  bool get isDeleted => deletedAt != null;
 
   String get effectiveDisplayId => displayId.isNotEmpty ? displayId : id;
 
   String get mutationId =>
       resourceUuid != null && resourceUuid!.isNotEmpty ? resourceUuid! : id;
+
+  AccessAdminItem copyWith({
+    String? id,
+    AccessAdminResource? resource,
+    String? displayId,
+    String? title,
+    String? resourceUuid,
+    String? subtitle,
+    String? status,
+    String? tenantId,
+    String? facilityId,
+    String? email,
+    String? phone,
+    String? positionTitle,
+    String? profileName,
+    String? staffProfileId,
+    List<AccessAdminRoleRef>? roles,
+    int? roleCount,
+    int? permissionCount,
+    List<AccessAdminPermissionRef>? permissions,
+    int? userCount,
+    String? moduleSlug,
+    String? moduleGroup,
+    String? planLabel,
+    bool? isActive,
+    bool? isDemo,
+    bool? isClinicalFlowRole,
+    bool? isSystemCritical,
+    String? userLabel,
+    String? roleName,
+    String? permissionName,
+    bool? entitlementDenied,
+    String? entitlementDenialReason,
+    DateTime? updatedAt,
+    DateTime? deletedAt,
+    bool clearDeletedAt = false,
+  }) {
+    return AccessAdminItem(
+      id: id ?? this.id,
+      resource: resource ?? this.resource,
+      displayId: displayId ?? this.displayId,
+      title: title ?? this.title,
+      resourceUuid: resourceUuid ?? this.resourceUuid,
+      subtitle: subtitle ?? this.subtitle,
+      status: status ?? this.status,
+      tenantId: tenantId ?? this.tenantId,
+      facilityId: facilityId ?? this.facilityId,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      positionTitle: positionTitle ?? this.positionTitle,
+      profileName: profileName ?? this.profileName,
+      staffProfileId: staffProfileId ?? this.staffProfileId,
+      roles: roles ?? this.roles,
+      roleCount: roleCount ?? this.roleCount,
+      permissionCount: permissionCount ?? this.permissionCount,
+      permissions: permissions ?? this.permissions,
+      userCount: userCount ?? this.userCount,
+      moduleSlug: moduleSlug ?? this.moduleSlug,
+      moduleGroup: moduleGroup ?? this.moduleGroup,
+      planLabel: planLabel ?? this.planLabel,
+      isActive: isActive ?? this.isActive,
+      isDemo: isDemo ?? this.isDemo,
+      isClinicalFlowRole: isClinicalFlowRole ?? this.isClinicalFlowRole,
+      isSystemCritical: isSystemCritical ?? this.isSystemCritical,
+      userLabel: userLabel ?? this.userLabel,
+      roleName: roleName ?? this.roleName,
+      permissionName: permissionName ?? this.permissionName,
+      entitlementDenied: entitlementDenied ?? this.entitlementDenied,
+      entitlementDenialReason:
+          entitlementDenialReason ?? this.entitlementDenialReason,
+      updatedAt: updatedAt ?? this.updatedAt,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
+    );
+  }
 }
 
 @immutable

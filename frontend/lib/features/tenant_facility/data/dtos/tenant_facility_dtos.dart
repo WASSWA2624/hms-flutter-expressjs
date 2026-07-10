@@ -108,6 +108,7 @@ final class BranchProfileDto {
     required this.name,
     this.facilityId,
     required this.isActive,
+    this.deletedAt,
   });
 
   factory BranchProfileDto.fromJson(JsonMap json) {
@@ -117,6 +118,7 @@ final class BranchProfileDto {
       name: _requiredString(json, 'name'),
       facilityId: _optionalString(json, 'facility_id'),
       isActive: _optionalBool(json, 'is_active') ?? true,
+      deletedAt: _optionalDateTime(json, 'deleted_at'),
     );
   }
 
@@ -125,6 +127,7 @@ final class BranchProfileDto {
   final String name;
   final String? facilityId;
   final bool isActive;
+  final DateTime? deletedAt;
 
   BranchProfile toEntity() {
     return BranchProfile(
@@ -133,6 +136,7 @@ final class BranchProfileDto {
       name: name,
       facilityId: facilityId,
       isActive: isActive,
+      deletedAt: deletedAt,
     );
   }
 }
@@ -147,6 +151,7 @@ final class DepartmentProfileDto {
     this.facilityId,
     this.branchId,
     required this.isActive,
+    this.deletedAt,
   });
 
   factory DepartmentProfileDto.fromJson(JsonMap json) {
@@ -161,6 +166,7 @@ final class DepartmentProfileDto {
       facilityId: _optionalString(json, 'facility_id'),
       branchId: _optionalString(json, 'branch_id'),
       isActive: _optionalBool(json, 'is_active') ?? true,
+      deletedAt: _optionalDateTime(json, 'deleted_at'),
     );
   }
 
@@ -172,6 +178,7 @@ final class DepartmentProfileDto {
   final String? facilityId;
   final String? branchId;
   final bool isActive;
+  final DateTime? deletedAt;
 
   DepartmentProfile toEntity() {
     return DepartmentProfile(
@@ -183,6 +190,7 @@ final class DepartmentProfileDto {
       facilityId: facilityId,
       branchId: branchId,
       isActive: isActive,
+      deletedAt: deletedAt,
     );
   }
 }
@@ -195,6 +203,7 @@ final class UnitProfileDto {
     this.facilityId,
     this.departmentId,
     required this.isActive,
+    this.deletedAt,
   });
 
   factory UnitProfileDto.fromJson(JsonMap json) {
@@ -205,6 +214,7 @@ final class UnitProfileDto {
       facilityId: _optionalString(json, 'facility_id'),
       departmentId: _optionalString(json, 'department_id'),
       isActive: _optionalBool(json, 'is_active') ?? true,
+      deletedAt: _optionalDateTime(json, 'deleted_at'),
     );
   }
 
@@ -214,6 +224,7 @@ final class UnitProfileDto {
   final String? facilityId;
   final String? departmentId;
   final bool isActive;
+  final DateTime? deletedAt;
 
   UnitProfile toEntity() {
     return UnitProfile(
@@ -223,6 +234,7 @@ final class UnitProfileDto {
       facilityId: facilityId,
       departmentId: departmentId,
       isActive: isActive,
+      deletedAt: deletedAt,
     );
   }
 }
@@ -236,6 +248,7 @@ final class WardProfileDto {
     required this.type,
     this.departmentId,
     required this.isActive,
+    this.deletedAt,
   });
 
   factory WardProfileDto.fromJson(JsonMap json) {
@@ -247,6 +260,7 @@ final class WardProfileDto {
       type: WardSetupTypeX.fromApiValue(_optionalString(json, 'ward_type')),
       departmentId: _optionalString(json, 'department_id'),
       isActive: _optionalBool(json, 'is_active') ?? true,
+      deletedAt: _optionalDateTime(json, 'deleted_at'),
     );
   }
 
@@ -257,6 +271,7 @@ final class WardProfileDto {
   final WardSetupType type;
   final String? departmentId;
   final bool isActive;
+  final DateTime? deletedAt;
 
   WardProfile toEntity() {
     return WardProfile(
@@ -267,6 +282,7 @@ final class WardProfileDto {
       type: type,
       departmentId: departmentId,
       isActive: isActive,
+      deletedAt: deletedAt,
     );
   }
 }
@@ -279,6 +295,7 @@ final class RoomProfileDto {
     required this.name,
     this.wardId,
     this.floor,
+    this.deletedAt,
   });
 
   factory RoomProfileDto.fromJson(JsonMap json) {
@@ -289,6 +306,7 @@ final class RoomProfileDto {
       name: _requiredString(json, 'name'),
       wardId: _optionalString(json, 'ward_id'),
       floor: _optionalString(json, 'floor'),
+      deletedAt: _optionalDateTime(json, 'deleted_at'),
     );
   }
 
@@ -298,6 +316,7 @@ final class RoomProfileDto {
   final String name;
   final String? wardId;
   final String? floor;
+  final DateTime? deletedAt;
 
   RoomProfile toEntity() {
     return RoomProfile(
@@ -307,6 +326,7 @@ final class RoomProfileDto {
       name: name,
       wardId: wardId,
       floor: floor,
+      deletedAt: deletedAt,
     );
   }
 }
@@ -320,6 +340,7 @@ final class BedProfileDto {
     required this.label,
     required this.status,
     this.roomId,
+    this.deletedAt,
   });
 
   factory BedProfileDto.fromJson(JsonMap json) {
@@ -331,6 +352,7 @@ final class BedProfileDto {
       label: _requiredString(json, 'label'),
       status: BedSetupStatusX.fromApiValue(_optionalString(json, 'status')),
       roomId: _optionalString(json, 'room_id'),
+      deletedAt: _optionalDateTime(json, 'deleted_at'),
     );
   }
 
@@ -341,6 +363,7 @@ final class BedProfileDto {
   final String label;
   final BedSetupStatus status;
   final String? roomId;
+  final DateTime? deletedAt;
 
   BedProfile toEntity() {
     return BedProfile(
@@ -351,6 +374,7 @@ final class BedProfileDto {
       label: label,
       status: status,
       roomId: roomId,
+      deletedAt: deletedAt,
     );
   }
 }

@@ -25,7 +25,7 @@ const toPositiveInt = (value, fallback) => {
  * @returns {Promise<void>}
  */
 const listBranches = asyncHandler(async (req, res) => {
-  const { page, limit, sort_by, order, tenant_id, facility_id, is_active, search } = req.query;
+  const { page, limit, sort_by, order, tenant_id, facility_id, is_active, search, include_deleted } = req.query;
   const normalizedPage = toPositiveInt(page, DEFAULT_PAGE);
   const normalizedLimit = toPositiveInt(limit, DEFAULT_PAGE_LIMIT);
 
@@ -34,6 +34,7 @@ const listBranches = asyncHandler(async (req, res) => {
   if (facility_id) filters.facility_id = facility_id;
   if (is_active) filters.is_active = is_active;
   if (search) filters.search = search;
+  if (include_deleted) filters.include_deleted = include_deleted;
 
   const result = await branchService.listBranches(
     filters,
@@ -139,10 +140,29 @@ const deleteBranch = asyncHandler(async (req, res) => {
   return sendNoContent(res);
 });
 
+/**
+ * Restore branch
+ */
+const restoreBranch = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const context = {
+    user_id: req.user?.id,
+    tenant_id: req.user?.tenant_id,
+    facility_id: req.user?.facility_id,
+    ip_address: req.ip,
+    user_agent: req.get('user-agent'),
+  };
+
+  const branch = await branchService.restoreBranch(id, context);
+
+  return sendSuccess(res, 200, 'messages.branch.restore.success', branch);
+});
+
 module.exports = {
   listBranches,
   getBranchById,
   createBranch,
   updateBranch,
-  deleteBranch
+  deleteBranch,
+  restoreBranch,
 };

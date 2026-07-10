@@ -5184,6 +5184,50 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get tenantFacilityRestoreStructureAction => 'Restore';
+
+  @override
+  String get tenantFacilityRestoreStructureTitle => 'Restore record';
+
+  @override
+  String tenantFacilityRestoreStructureBody(String name) {
+    return 'Restore \"$name\"?';
+  }
+
+  @override
+  String get tenantFacilityStructureDeletedStatus => 'Deleted';
+
+  @override
+  String get tenantFacilityStructureActiveStatus => 'Active';
+
+  @override
+  String get tenantFacilitySoftDeleteStructureTitle => 'Delete record';
+
+  @override
+  String tenantFacilitySoftDeleteStructureBody(String name) {
+    return 'Soft-delete \"$name\"? Related child records will also be marked deleted and hidden from operational pickers. They will remain visible here for restore.';
+  }
+
+  @override
+  String get tenantFacilitySoftDeleteUserTitle => 'Delete user';
+
+  @override
+  String tenantFacilitySoftDeleteUserBody(String name) {
+    return 'Soft-delete user \"$name\"? The user will be marked deleted and hidden from operational pickers, but remain visible here for restore.';
+  }
+
+  @override
+  String get tenantFacilityRestoreUserTitle => 'Restore user';
+
+  @override
+  String tenantFacilityRestoreUserBody(String name) {
+    return 'Restore user \"$name\"?';
+  }
+
+  @override
+  String get accessAdminRestoreUserAction => 'Restore user';
+
+  @override
   String get tenantFacilityPermanentDeleteFacilityConfirmationTitle =>
       'Permanent delete facility — irreversible';
 

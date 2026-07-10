@@ -15,6 +15,10 @@ const {
   resolveIdentifierForPayload,
   resolveEntityId,
 } = require('@lib/billing/identifiers');
+const {
+  resolveModelIdByIdentifier,
+  resolveModelRecordByIdentifier,
+} = require('@lib/identifiers/resolve-entity-id');
 const { publishCrudRealtimeEvent, FACILITY_LAYOUT_EVENTS } = require('@lib/websocket');
 const { ROLES } = require('@config/roles');
 
@@ -53,6 +57,26 @@ const emptyListResult = (page, limit) => ({
     hasPreviousPage: page > 1,
   },
 });
+
+const resolveWardId = async (identifier, { includeDeleted = false } = {}) => {
+  const normalized = String(identifier ?? '').trim();
+  if (!normalized) return normalized;
+
+  if (includeDeleted) {
+    const resolved = await resolveModelIdByIdentifier({
+      model: 'ward',
+      identifier: normalized,
+      includeDeleted: true,
+    });
+    return resolved || normalized;
+  }
+
+  return resolveEntityId({
+    model: 'ward',
+    identifier: normalized,
+    where: { deleted_at: null },
+  });
+};
 
 const resolveWardFilterId = async (filters, field, model) => {
   if (!filters?.[field]) return undefined;
@@ -130,6 +154,8 @@ const normalizeUpdatePayload = async (data = {}) => {
  * @returns {Promise<Object>} Paginated wards
  */
 const listWards = async (filters = {}, page = 1, limit = 20, sort_by = 'created_at', order = 'desc') => {
+  const includeDeleted =
+    filters.include_deleted === true || filters.include_deleted === 'true';
   const repoFilters = {};
 
   const tenantId = await resolveWardFilterId(filters, 'tenant_id', 'tenant');
@@ -161,13 +187,15 @@ const listWards = async (filters = {}, page = 1, limit = 20, sort_by = 'created_
   const skip = (page - 1) * limit;
 
   // Build sort order
-  const orderBy = {};
-  orderBy[sort_by] = order;
+  const orderBy = includeDeleted
+    ? [{ deleted_at: 'asc' }, { [sort_by]: order }]
+    : { [sort_by]: order };
+  const listOptions = { includeDeleted };
 
   // Fetch wards and count
   const [wards, total] = await Promise.all([
-    wardRepository.findMany(repoFilters, skip, limit, orderBy),
-    wardRepository.count(repoFilters)
+    wardRepository.findMany(repoFilters, skip, limit, orderBy, listOptions),
+    wardRepository.count(repoFilters, listOptions)
   ]);
 
   // Calculate pagination metadata
@@ -195,11 +223,7 @@ const listWards = async (filters = {}, page = 1, limit = 20, sort_by = 'created_
  * @returns {Promise<Object>} Ward data
  */
 const getWardById = async (id) => {
-  const resolvedId = await resolveEntityId({
-    model: 'ward',
-    identifier: id,
-    where: { deleted_at: null },
-  });
+  const resolvedId = await resolveWardId(id);
   const ward = await wardRepository.findById(resolvedId);
   
   if (!ward) {
@@ -216,11 +240,7 @@ const getWardById = async (id) => {
  * @returns {Promise<Object>} Ward with beds
  */
 const getWardBeds = async (wardId) => {
-  const resolvedId = await resolveEntityId({
-    model: 'ward',
-    identifier: wardId,
-    where: { deleted_at: null },
-  });
+  const resolvedId = await resolveWardId(wardId);
   const ward = await wardRepository.findById(resolvedId);
   
   if (!ward) {
@@ -300,11 +320,7 @@ const createWard = async (data, context = {}) => {
  * @returns {Promise<Object>} Updated ward
  */
 const updateWard = async (id, data, context = {}) => {
-  const resolvedId = await resolveEntityId({
-    model: 'ward',
-    identifier: id,
-    where: { deleted_at: null },
-  });
+  const resolvedId = await resolveWardId(id);
   const beforeWard = await wardRepository.findById(resolvedId);
 
   if (!beforeWard) {
@@ -364,14 +380,23 @@ const updateWard = async (id, data, context = {}) => {
  * @returns {Promise<void>}
  */
 const deleteWard = async (id, context = {}) => {
-  const resolvedId = await resolveEntityId({
-    model: 'ward',
-    identifier: id,
-    where: { deleted_at: null },
-  });
+  const normalizedId = String(id ?? '').trim();
+  const resolvedId = await resolveWardId(normalizedId);
   const ward = await wardRepository.findById(resolvedId);
 
   if (!ward) {
+    const lookupIds = [...new Set([resolvedId, normalizedId].filter(Boolean))];
+    for (const candidate of lookupIds) {
+      const deletedWard = await resolveModelRecordByIdentifier({
+        model: 'ward',
+        identifier: candidate,
+        includeDeleted: true,
+        select: { id: true, deleted_at: true },
+      });
+      if (deletedWard?.deleted_at) {
+        return;
+      }
+    }
     throw new HttpError('errors.ward.not_found', 404);
   }
 
@@ -402,11 +427,46 @@ const deleteWard = async (id, context = {}) => {
   });
 };
 
+/**
+ * Restore soft-deleted ward
+ */
+const restoreWard = async (id, context = {}) => {
+  const wardId = await resolveWardId(id, { includeDeleted: true });
+  const ward = await wardRepository.restore(wardId);
+
+  await createAuditLog({
+    action: 'WARD_RESTORED',
+    entity: 'ward',
+    entity_id: wardId,
+    user_id: context.user_id,
+    tenant_id: context.tenant_id,
+    facility_id: context.facility_id,
+    ip_address: context.ip_address,
+    user_agent: context.user_agent,
+    details: {
+      tenant_id: ward.tenant_id,
+      facility_id: ward.facility_id,
+      department_id: ward.department_id,
+      name: ward.name,
+      ward_type: ward.ward_type,
+    },
+  });
+
+  await publishFacilityLayoutRealtimeEvent(ward, 'ward', context.user_id, {
+    operation: 'restored',
+    name: ward.name,
+    ward_type: ward.ward_type,
+  });
+
+  return ward;
+};
+
 module.exports = {
   listWards,
   getWardById,
   getWardBeds,
   createWard,
   updateWard,
-  deleteWard
+  deleteWard,
+  restoreWard,
 };

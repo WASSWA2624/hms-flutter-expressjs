@@ -18,6 +18,8 @@ const workspaceQuerySchema = z.object({
   recordId: uuidOrFriendlyIdentifierSchema.optional(),
   page: z.coerce.number().int().min(1).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
+  include_deleted: z.enum(['true', 'false']).optional(),
+  includeDeleted: z.enum(['true', 'false']).optional(),
 });
 
 const referenceDataQuerySchema = z.object({

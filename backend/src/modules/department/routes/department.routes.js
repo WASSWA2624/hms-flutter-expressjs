@@ -64,6 +64,14 @@ router.get(
   departmentController.listDepartments
 );
 
+router.post(
+  '/:id/restore',
+  validateRequest({ params: departmentIdParamsSchema }),
+  authenticate(),
+  authorize(SETUP_ADMIN_SCOPES, 'permission'),
+  departmentController.restoreDepartment
+);
+
 /**
  * @description Get department by ID
  * @method GET

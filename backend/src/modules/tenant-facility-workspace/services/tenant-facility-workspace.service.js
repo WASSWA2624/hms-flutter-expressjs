@@ -167,6 +167,7 @@ const serializeBranch = (record, context = null) => ({
     : safePublicId(record.facility_id),
   name: record.name,
   is_active: Boolean(record.is_active),
+  deleted_at: record.deleted_at || null,
 });
 
 const serializeDepartment = (record, context = null) => ({
@@ -184,6 +185,7 @@ const serializeDepartment = (record, context = null) => ({
   short_name: record.short_name || null,
   department_type: record.department_type,
   is_active: Boolean(record.is_active),
+  deleted_at: record.deleted_at || null,
 });
 
 const serializeUnit = (record, context = null) => ({
@@ -199,6 +201,7 @@ const serializeUnit = (record, context = null) => ({
     : safePublicId(record.department_id),
   name: record.name,
   is_active: Boolean(record.is_active),
+  deleted_at: record.deleted_at || null,
 });
 
 const serializeWard = (record, context = null) => ({
@@ -215,6 +218,7 @@ const serializeWard = (record, context = null) => ({
   name: record.name,
   ward_type: record.ward_type,
   is_active: Boolean(record.is_active),
+  deleted_at: record.deleted_at || null,
 });
 
 const serializeRoom = (record, context = null) => ({
@@ -228,6 +232,7 @@ const serializeRoom = (record, context = null) => ({
   ward_id: context ? resolveFk(record.ward_id, context) : safePublicId(record.ward_id),
   name: record.name,
   floor: record.floor || null,
+  deleted_at: record.deleted_at || null,
 });
 
 const serializeBed = (record, context = null) => ({
@@ -242,6 +247,7 @@ const serializeBed = (record, context = null) => ({
   room_id: context ? resolveFk(record.room_id, context) : safePublicId(record.room_id),
   label: record.label,
   status: record.status,
+  deleted_at: record.deleted_at || null,
 });
 
 const buildContactAddress = (contacts = [], addresses = []) => {
@@ -403,7 +409,10 @@ const getSetup = async (filters = {}, user = {}) => {
   const [tenants, facilities, facilityRecords, subscriptionSummary] = await Promise.all([
     repository.findTenants(scope, includeAllTenants),
     repository.findFacilities(scope.tenant_id),
-    repository.findFacilityRecords(scope),
+    repository.findFacilityRecords(scope, {
+      includeDeleted:
+        filters.include_deleted === true || filters.include_deleted === 'true',
+    }),
     canViewSubscriptions(user)
       ? repository.findSubscriptionSummary(scope.tenant_id)
       : Promise.resolve(null),

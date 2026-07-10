@@ -19,13 +19,14 @@ const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
  * @returns {Promise<void>}
  */
 const listRooms = asyncHandler(async (req, res) => {
-  const { page, limit, sort_by, order, tenant_id, facility_id, ward_id, search } = req.query;
+  const { page, limit, sort_by, order, tenant_id, facility_id, ward_id, search, include_deleted } = req.query;
 
   const filters = {};
   if (tenant_id) filters.tenant_id = tenant_id;
   if (facility_id) filters.facility_id = facility_id;
   if (ward_id) filters.ward_id = ward_id;
   if (search) filters.search = search;
+  if (include_deleted) filters.include_deleted = include_deleted;
 
   const result = await roomService.listRooms(
     filters,
@@ -131,10 +132,30 @@ const deleteRoom = asyncHandler(async (req, res) => {
   return sendNoContent(res);
 });
 
+
+/**
+ * Restore room
+ */
+const restoreRoom = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const context = {
+    user_id: req.user?.id,
+    tenant_id: req.user?.tenant_id,
+    facility_id: req.user?.facility_id,
+    ip_address: req.ip,
+    user_agent: req.get('user-agent')
+  };
+
+  const entity = await roomService.restoreRoom(id, context);
+
+  return sendSuccess(res, 200, 'messages.room.restore.success', entity);
+});
+
 module.exports = {
   listRooms,
   getRoomById,
   createRoom,
   updateRoom,
-  deleteRoom
+  deleteRoom,
+  restoreRoom,
 };

@@ -145,6 +145,7 @@ final class BranchProfile {
     required this.name,
     this.facilityId,
     this.isActive = true,
+    this.deletedAt,
   });
 
   final String id;
@@ -152,6 +153,28 @@ final class BranchProfile {
   final String name;
   final String? facilityId;
   final bool isActive;
+  final DateTime? deletedAt;
+
+  bool get isDeleted => deletedAt != null;
+
+  BranchProfile copyWith({
+    String? id,
+    String? tenantId,
+    String? name,
+    String? facilityId,
+    bool? isActive,
+    DateTime? deletedAt,
+    bool clearDeletedAt = false,
+  }) {
+    return BranchProfile(
+      id: id ?? this.id,
+      tenantId: tenantId ?? this.tenantId,
+      name: name ?? this.name,
+      facilityId: facilityId ?? this.facilityId,
+      isActive: isActive ?? this.isActive,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
+    );
+  }
 }
 
 final class DepartmentProfile {
@@ -164,6 +187,7 @@ final class DepartmentProfile {
     this.facilityId,
     this.branchId,
     this.isActive = true,
+    this.deletedAt,
   });
 
   final String id;
@@ -174,6 +198,34 @@ final class DepartmentProfile {
   final String? facilityId;
   final String? branchId;
   final bool isActive;
+  final DateTime? deletedAt;
+
+  bool get isDeleted => deletedAt != null;
+
+  DepartmentProfile copyWith({
+    String? id,
+    String? tenantId,
+    String? name,
+    DepartmentSetupType? type,
+    String? shortName,
+    String? facilityId,
+    String? branchId,
+    bool? isActive,
+    DateTime? deletedAt,
+    bool clearDeletedAt = false,
+  }) {
+    return DepartmentProfile(
+      id: id ?? this.id,
+      tenantId: tenantId ?? this.tenantId,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      shortName: shortName ?? this.shortName,
+      facilityId: facilityId ?? this.facilityId,
+      branchId: branchId ?? this.branchId,
+      isActive: isActive ?? this.isActive,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
+    );
+  }
 }
 
 final class UnitProfile {
@@ -184,6 +236,7 @@ final class UnitProfile {
     this.facilityId,
     this.departmentId,
     this.isActive = true,
+    this.deletedAt,
   });
 
   final String id;
@@ -192,6 +245,30 @@ final class UnitProfile {
   final String? facilityId;
   final String? departmentId;
   final bool isActive;
+  final DateTime? deletedAt;
+
+  bool get isDeleted => deletedAt != null;
+
+  UnitProfile copyWith({
+    String? id,
+    String? tenantId,
+    String? name,
+    String? facilityId,
+    String? departmentId,
+    bool? isActive,
+    DateTime? deletedAt,
+    bool clearDeletedAt = false,
+  }) {
+    return UnitProfile(
+      id: id ?? this.id,
+      tenantId: tenantId ?? this.tenantId,
+      name: name ?? this.name,
+      facilityId: facilityId ?? this.facilityId,
+      departmentId: departmentId ?? this.departmentId,
+      isActive: isActive ?? this.isActive,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
+    );
+  }
 }
 
 final class WardProfile {
@@ -203,6 +280,7 @@ final class WardProfile {
     required this.type,
     this.departmentId,
     this.isActive = true,
+    this.deletedAt,
   });
 
   final String id;
@@ -212,6 +290,32 @@ final class WardProfile {
   final WardSetupType type;
   final String? departmentId;
   final bool isActive;
+  final DateTime? deletedAt;
+
+  bool get isDeleted => deletedAt != null;
+
+  WardProfile copyWith({
+    String? id,
+    String? tenantId,
+    String? facilityId,
+    String? name,
+    WardSetupType? type,
+    String? departmentId,
+    bool? isActive,
+    DateTime? deletedAt,
+    bool clearDeletedAt = false,
+  }) {
+    return WardProfile(
+      id: id ?? this.id,
+      tenantId: tenantId ?? this.tenantId,
+      facilityId: facilityId ?? this.facilityId,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      departmentId: departmentId ?? this.departmentId,
+      isActive: isActive ?? this.isActive,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
+    );
+  }
 }
 
 final class RoomProfile {
@@ -222,6 +326,7 @@ final class RoomProfile {
     required this.name,
     this.wardId,
     this.floor,
+    this.deletedAt,
   });
 
   final String id;
@@ -230,6 +335,30 @@ final class RoomProfile {
   final String name;
   final String? wardId;
   final String? floor;
+  final DateTime? deletedAt;
+
+  bool get isDeleted => deletedAt != null;
+
+  RoomProfile copyWith({
+    String? id,
+    String? tenantId,
+    String? facilityId,
+    String? name,
+    String? wardId,
+    String? floor,
+    DateTime? deletedAt,
+    bool clearDeletedAt = false,
+  }) {
+    return RoomProfile(
+      id: id ?? this.id,
+      tenantId: tenantId ?? this.tenantId,
+      facilityId: facilityId ?? this.facilityId,
+      name: name ?? this.name,
+      wardId: wardId ?? this.wardId,
+      floor: floor ?? this.floor,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
+    );
+  }
 }
 
 final class BedProfile {
@@ -241,6 +370,7 @@ final class BedProfile {
     required this.label,
     required this.status,
     this.roomId,
+    this.deletedAt,
   });
 
   final String id;
@@ -250,6 +380,32 @@ final class BedProfile {
   final String label;
   final BedSetupStatus status;
   final String? roomId;
+  final DateTime? deletedAt;
+
+  bool get isDeleted => deletedAt != null;
+
+  BedProfile copyWith({
+    String? id,
+    String? tenantId,
+    String? facilityId,
+    String? wardId,
+    String? label,
+    BedSetupStatus? status,
+    String? roomId,
+    DateTime? deletedAt,
+    bool clearDeletedAt = false,
+  }) {
+    return BedProfile(
+      id: id ?? this.id,
+      tenantId: tenantId ?? this.tenantId,
+      facilityId: facilityId ?? this.facilityId,
+      wardId: wardId ?? this.wardId,
+      label: label ?? this.label,
+      status: status ?? this.status,
+      roomId: roomId ?? this.roomId,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
+    );
+  }
 }
 
 final class FacilityContactAddress {

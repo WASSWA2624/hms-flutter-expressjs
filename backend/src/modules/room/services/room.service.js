@@ -11,6 +11,10 @@ const roomRepository = require('@repositories/room/room.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { resolveIdentifierForFilter } = require('@lib/identifiers/service-identifier-resolution');
+const {
+  resolveModelIdByIdentifier,
+  resolveModelRecordByIdentifier,
+} = require('@lib/identifiers/resolve-entity-id');
 const { publishCrudRealtimeEvent, FACILITY_LAYOUT_EVENTS } = require('@lib/websocket');
 const { ROLES } = require('@config/roles');
 
@@ -76,7 +80,29 @@ const resolveRoomFilterId = async (filters, field, model) => {
   });
 };
 
+const resolveRoomId = async (identifier, { includeDeleted = false } = {}) => {
+  const normalized = String(identifier ?? '').trim();
+  if (!normalized) return normalized;
+
+  if (includeDeleted) {
+    const resolved = await resolveModelIdByIdentifier({
+      model: 'room',
+      identifier: normalized,
+      includeDeleted: true,
+    });
+    return resolved || normalized;
+  }
+
+  return resolveIdentifierForFilter({
+    value: normalized,
+    model: 'room',
+    where: { deleted_at: null },
+  }) || normalized;
+};
+
 const listRooms = async (filters = {}, page = 1, limit = 20, sort_by = 'created_at', order = 'desc') => {
+  const includeDeleted =
+    filters.include_deleted === true || filters.include_deleted === 'true';
   const repoFilters = {};
 
   const tenantId = await resolveRoomFilterId(filters, 'tenant_id', 'tenant');
@@ -99,12 +125,14 @@ const listRooms = async (filters = {}, page = 1, limit = 20, sort_by = 'created_
   }
 
   const skip = (page - 1) * limit;
-  const orderBy = {};
-  orderBy[sort_by] = order;
+  const orderBy = includeDeleted
+    ? [{ deleted_at: 'asc' }, { [sort_by]: order }]
+    : { [sort_by]: order };
+  const listOptions = { includeDeleted };
 
   const [rooms, total] = await Promise.all([
-    roomRepository.findMany(repoFilters, skip, limit, orderBy),
-    roomRepository.count(repoFilters),
+    roomRepository.findMany(repoFilters, skip, limit, orderBy, listOptions),
+    roomRepository.count(repoFilters, listOptions),
   ]);
 
   return buildRoomListResult(rooms, page, limit, total);
@@ -117,7 +145,8 @@ const listRooms = async (filters = {}, page = 1, limit = 20, sort_by = 'created_
  * @returns {Promise<Object>} Room data
  */
 const getRoomById = async (id) => {
-  const room = await roomRepository.findById(id);
+  const roomId = await resolveRoomId(id);
+  const room = await roomRepository.findById(roomId);
   
   if (!room) {
     throw new HttpError('errors.room.not_found', 404);
@@ -193,21 +222,21 @@ const createRoom = async (data, context = {}) => {
  * @returns {Promise<Object>} Updated room
  */
 const updateRoom = async (id, data, context = {}) => {
-  // Check if room exists and get before state
-  const beforeRoom = await roomRepository.findById(id);
+  const roomId = await resolveRoomId(id);
+  const beforeRoom = await roomRepository.findById(roomId);
   
   if (!beforeRoom) {
     throw new HttpError('errors.room.not_found', 404);
   }
 
   // Update room
-  const room = await roomRepository.update(id, data);
+  const room = await roomRepository.update(roomId, data);
 
   // Create audit log
   await createAuditLog({
     action: 'ROOM_UPDATED',
     entity: 'room',
-    entity_id: id,
+    entity_id: roomId,
     user_id: context.user_id,
     tenant_id: context.tenant_id,
     facility_id: context.facility_id,
@@ -251,21 +280,32 @@ const updateRoom = async (id, data, context = {}) => {
  * @returns {Promise<void>}
  */
 const deleteRoom = async (id, context = {}) => {
-  // Check if room exists
-  const room = await roomRepository.findById(id);
+  const normalizedId = String(id ?? '').trim();
+  const roomId = await resolveRoomId(normalizedId);
+  const room = await roomRepository.findById(roomId);
   
   if (!room) {
+    const lookupIds = [...new Set([roomId, normalizedId].filter(Boolean))];
+    for (const candidate of lookupIds) {
+      const deletedRoom = await resolveModelRecordByIdentifier({
+        model: 'room',
+        identifier: candidate,
+        includeDeleted: true,
+        select: { id: true, deleted_at: true },
+      });
+      if (deletedRoom?.deleted_at) {
+        return;
+      }
+    }
     throw new HttpError('errors.room.not_found', 404);
   }
 
-  // Soft delete room
-  await roomRepository.softDelete(id);
+  await roomRepository.softDelete(roomId);
 
-  // Create audit log
   await createAuditLog({
     action: 'ROOM_DELETED',
     entity: 'room',
-    entity_id: id,
+    entity_id: roomId,
     user_id: context.user_id,
     tenant_id: context.tenant_id,
     facility_id: context.facility_id,
@@ -286,10 +326,44 @@ const deleteRoom = async (id, context = {}) => {
   });
 };
 
+/**
+ * Restore soft-deleted room
+ */
+const restoreRoom = async (id, context = {}) => {
+  const roomId = await resolveRoomId(id, { includeDeleted: true });
+  const room = await roomRepository.restore(roomId);
+
+  await createAuditLog({
+    action: 'ROOM_RESTORED',
+    entity: 'room',
+    entity_id: roomId,
+    user_id: context.user_id,
+    tenant_id: context.tenant_id,
+    facility_id: context.facility_id,
+    ip_address: context.ip_address,
+    user_agent: context.user_agent,
+    details: {
+      tenant_id: room.tenant_id,
+      facility_id: room.facility_id,
+      ward_id: room.ward_id,
+      name: room.name,
+    },
+  });
+
+  await publishFacilityLayoutRealtimeEvent(room, 'room', context.user_id, {
+    operation: 'restored',
+    name: room.name,
+    ward_id: room.ward_id,
+  });
+
+  return room;
+};
+
 module.exports = {
   listRooms,
   getRoomById,
   createRoom,
   updateRoom,
-  deleteRoom
+  deleteRoom,
+  restoreRoom,
 };

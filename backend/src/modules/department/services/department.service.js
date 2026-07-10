@@ -10,25 +10,60 @@
 const departmentRepository = require('@repositories/department/department.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { resolveEntityId } = require('@lib/billing/identifiers');
+const {
+  resolveModelIdByIdentifier,
+  resolveModelRecordByIdentifier,
+} = require('@lib/identifiers/resolve-entity-id');
+const { publishCrudRealtimeEvent, FACILITY_LAYOUT_EVENTS } = require('@lib/websocket');
+const { ROLES } = require('@config/roles');
+
+const FACILITY_LAYOUT_RECIPIENT_ROLES = Object.freeze([
+  ROLES.FACILITY_ADMIN,
+  ROLES.TENANT_ADMIN,
+  ROLES.NURSE,
+]);
+
+const publishFacilityLayoutRealtimeEvent = async (resource, resourceType, actorUserId, payload = {}) => {
+  await publishCrudRealtimeEvent({
+    event: FACILITY_LAYOUT_EVENTS.FACILITY_LAYOUT_UPDATED,
+    resource,
+    resource_type: resourceType,
+    actor_user_id: actorUserId,
+    recipient_roles: FACILITY_LAYOUT_RECIPIENT_ROLES,
+    affected: {
+      department_id: resource?.id || null,
+      branch_id: resource?.branch_id || null,
+    },
+    payload: {
+      layout_entity: resourceType,
+      ...payload,
+    },
+  });
+};
+
+const resolveDepartmentId = async (identifier, { includeDeleted = false } = {}) => {
+  const normalized = String(identifier ?? '').trim();
+  if (!normalized) return normalized;
+
+  if (includeDeleted) {
+    const resolved = await resolveModelIdByIdentifier({
+      model: 'department',
+      identifier: normalized,
+      includeDeleted: true,
+    });
+    return resolved || normalized;
+  }
+
+  return resolveEntityId({ model: 'department', identifier: normalized });
+};
 
 /**
  * List departments with pagination and filters
- *
- * @param {Object} filters - Filter criteria
- * @param {string} [filters.tenant_id] - Filter by tenant ID
- * @param {string} [filters.facility_id] - Filter by facility ID
- * @param {string} [filters.branch_id] - Filter by branch ID
- * @param {string} [filters.department_type] - Filter by department type
- * @param {boolean} [filters.is_active] - Filter by active status
- * @param {string} [filters.search] - Search by name
- * @param {number} page - Page number
- * @param {number} limit - Items per page
- * @param {string} [sort_by] - Field to sort by
- * @param {string} [order] - Sort order (asc/desc)
- * @returns {Promise<Object>} Paginated departments
  */
 const listDepartments = async (filters = {}, page = 1, limit = 20, sort_by = 'created_at', order = 'desc') => {
-  // Build repository filters
+  const includeDeleted =
+    filters.include_deleted === true || filters.include_deleted === 'true';
   const repoFilters = {};
 
   if (filters.tenant_id) {
@@ -51,25 +86,21 @@ const listDepartments = async (filters = {}, page = 1, limit = 20, sort_by = 'cr
     repoFilters.is_active = filters.is_active === true || filters.is_active === 'true';
   }
 
-  // Handle search filter
   if (filters.search) {
     repoFilters.name = { contains: filters.search, mode: 'insensitive' };
   }
 
-  // Calculate pagination
   const skip = (page - 1) * limit;
+  const orderBy = includeDeleted
+    ? [{ deleted_at: 'asc' }, { [sort_by]: order }]
+    : { [sort_by]: order };
+  const listOptions = { includeDeleted };
 
-  // Build sort order
-  const orderBy = {};
-  orderBy[sort_by] = order;
-
-  // Fetch departments and count
   const [departments, total] = await Promise.all([
-    departmentRepository.findMany(repoFilters, skip, limit, orderBy),
-    departmentRepository.count(repoFilters)
+    departmentRepository.findMany(repoFilters, skip, limit, orderBy, listOptions),
+    departmentRepository.count(repoFilters, listOptions),
   ]);
 
-  // Calculate pagination metadata
   const totalPages = Math.ceil(total / limit);
   const hasNextPage = page < totalPages;
   const hasPreviousPage = page > 1;
@@ -82,20 +113,18 @@ const listDepartments = async (filters = {}, page = 1, limit = 20, sort_by = 'cr
       total,
       totalPages,
       hasNextPage,
-      hasPreviousPage
-    }
+      hasPreviousPage,
+    },
   };
 };
 
 /**
  * Get department by ID
- *
- * @param {string} id - Department ID
- * @returns {Promise<Object>} Department data
  */
 const getDepartmentById = async (id) => {
-  const department = await departmentRepository.findById(id);
-  
+  const departmentId = await resolveDepartmentId(id);
+  const department = await departmentRepository.findById(departmentId);
+
   if (!department) {
     throw new HttpError('errors.department.not_found', 404);
   }
@@ -105,28 +134,10 @@ const getDepartmentById = async (id) => {
 
 /**
  * Create new department
- *
- * @param {Object} data - Department data
- * @param {string} data.tenant_id - Tenant ID
- * @param {string} [data.facility_id] - Facility ID
- * @param {string} [data.branch_id] - Branch ID
- * @param {string} data.name - Department name
- * @param {string} [data.short_name] - Department short name
- * @param {string} data.department_type - Department type
- * @param {boolean} [data.is_active] - Active status
- * @param {Object} context - Request context for audit
- * @param {string} [context.user_id] - User ID performing the action
- * @param {string} [context.tenant_id] - Tenant ID
- * @param {string} [context.facility_id] - Facility ID
- * @param {string} [context.ip_address] - IP address
- * @param {string} [context.user_agent] - User agent
- * @returns {Promise<Object>} Created department
  */
 const createDepartment = async (data, context = {}) => {
-  // Create department
   const department = await departmentRepository.create(data);
 
-  // Create audit log
   await createAuditLog({
     action: 'DEPARTMENT_CREATED',
     entity: 'department',
@@ -143,8 +154,13 @@ const createDepartment = async (data, context = {}) => {
       name: department.name,
       short_name: department.short_name,
       department_type: department.department_type,
-      is_active: department.is_active
-    }
+      is_active: department.is_active,
+    },
+  });
+
+  await publishFacilityLayoutRealtimeEvent(department, 'department', context.user_id, {
+    operation: 'created',
+    name: department.name,
   });
 
   return department;
@@ -152,39 +168,21 @@ const createDepartment = async (data, context = {}) => {
 
 /**
  * Update department
- *
- * @param {string} id - Department ID
- * @param {Object} data - Update data
- * @param {string} [data.facility_id] - Facility ID
- * @param {string} [data.branch_id] - Branch ID
- * @param {string} [data.name] - Department name
- * @param {string} [data.short_name] - Department short name
- * @param {string} [data.department_type] - Department type
- * @param {boolean} [data.is_active] - Active status
- * @param {Object} context - Request context for audit
- * @param {string} [context.user_id] - User ID performing the action
- * @param {string} [context.tenant_id] - Tenant ID
- * @param {string} [context.facility_id] - Facility ID
- * @param {string} [context.ip_address] - IP address
- * @param {string} [context.user_agent] - User agent
- * @returns {Promise<Object>} Updated department
  */
 const updateDepartment = async (id, data, context = {}) => {
-  // Check if department exists and get before state
-  const beforeDepartment = await departmentRepository.findById(id);
-  
+  const departmentId = await resolveDepartmentId(id);
+  const beforeDepartment = await departmentRepository.findById(departmentId);
+
   if (!beforeDepartment) {
     throw new HttpError('errors.department.not_found', 404);
   }
 
-  // Update department
-  const department = await departmentRepository.update(id, data);
+  const department = await departmentRepository.update(departmentId, data);
 
-  // Create audit log
   await createAuditLog({
     action: 'DEPARTMENT_UPDATED',
     entity: 'department',
-    entity_id: id,
+    entity_id: departmentId,
     user_id: context.user_id,
     tenant_id: context.tenant_id,
     facility_id: context.facility_id,
@@ -197,7 +195,7 @@ const updateDepartment = async (id, data, context = {}) => {
         name: beforeDepartment.name,
         short_name: beforeDepartment.short_name,
         department_type: beforeDepartment.department_type,
-        is_active: beforeDepartment.is_active
+        is_active: beforeDepartment.is_active,
       },
       after: {
         facility_id: department.facility_id,
@@ -205,42 +203,49 @@ const updateDepartment = async (id, data, context = {}) => {
         name: department.name,
         short_name: department.short_name,
         department_type: department.department_type,
-        is_active: department.is_active
-      }
-    }
+        is_active: department.is_active,
+      },
+    },
+  });
+
+  await publishFacilityLayoutRealtimeEvent(department, 'department', context.user_id, {
+    operation: 'updated',
+    name: department.name,
   });
 
   return department;
 };
 
 /**
- * Delete department (soft delete)
- *
- * @param {string} id - Department ID
- * @param {Object} context - Request context for audit
- * @param {string} [context.user_id] - User ID performing the action
- * @param {string} [context.tenant_id] - Tenant ID
- * @param {string} [context.facility_id] - Facility ID
- * @param {string} [context.ip_address] - IP address
- * @param {string} [context.user_agent] - User agent
- * @returns {Promise<void>}
+ * Delete department (soft delete, cascade)
  */
 const deleteDepartment = async (id, context = {}) => {
-  // Check if department exists
-  const department = await departmentRepository.findById(id);
-  
+  const normalizedId = String(id ?? '').trim();
+  const departmentId = await resolveDepartmentId(normalizedId);
+  const department = await departmentRepository.findById(departmentId);
+
   if (!department) {
+    const lookupIds = [...new Set([departmentId, normalizedId].filter(Boolean))];
+    for (const candidate of lookupIds) {
+      const deletedDepartment = await resolveModelRecordByIdentifier({
+        model: 'department',
+        identifier: candidate,
+        includeDeleted: true,
+        select: { id: true, deleted_at: true },
+      });
+      if (deletedDepartment?.deleted_at) {
+        return;
+      }
+    }
     throw new HttpError('errors.department.not_found', 404);
   }
 
-  // Soft delete department
-  await departmentRepository.softDelete(id);
+  await departmentRepository.softDelete(departmentId);
 
-  // Create audit log
   await createAuditLog({
     action: 'DEPARTMENT_DELETED',
     entity: 'department',
-    entity_id: id,
+    entity_id: departmentId,
     user_id: context.user_id,
     tenant_id: context.tenant_id,
     facility_id: context.facility_id,
@@ -252,33 +257,63 @@ const deleteDepartment = async (id, context = {}) => {
       branch_id: department.branch_id,
       name: department.name,
       short_name: department.short_name,
-      department_type: department.department_type
-    }
+      department_type: department.department_type,
+    },
+  });
+
+  await publishFacilityLayoutRealtimeEvent(department, 'department', context.user_id, {
+    operation: 'deleted',
+    name: department.name,
   });
 };
 
 /**
+ * Restore soft-deleted department
+ */
+const restoreDepartment = async (id, context = {}) => {
+  const departmentId = await resolveDepartmentId(id, { includeDeleted: true });
+  const department = await departmentRepository.restore(departmentId);
+
+  await createAuditLog({
+    action: 'DEPARTMENT_RESTORED',
+    entity: 'department',
+    entity_id: departmentId,
+    user_id: context.user_id,
+    tenant_id: context.tenant_id,
+    facility_id: context.facility_id,
+    ip_address: context.ip_address,
+    user_agent: context.user_agent,
+    details: {
+      tenant_id: department.tenant_id,
+      facility_id: department.facility_id,
+      branch_id: department.branch_id,
+      name: department.name,
+    },
+  });
+
+  await publishFacilityLayoutRealtimeEvent(department, 'department', context.user_id, {
+    operation: 'restored',
+    name: department.name,
+  });
+
+  return department;
+};
+
+/**
  * Get department units (nested resource)
- *
- * @param {string} departmentId - Department ID
- * @param {number} page - Page number
- * @param {number} limit - Items per page
- * @returns {Promise<Object>} Paginated units
  */
 const getDepartmentUnits = async (departmentId, page = 1, limit = 20) => {
-  // Check if department exists
-  const department = await departmentRepository.findById(departmentId);
-  
+  const resolvedId = await resolveDepartmentId(departmentId);
+  const department = await departmentRepository.findById(resolvedId);
+
   if (!department) {
     throw new HttpError('errors.department.not_found', 404);
   }
 
-  // Import unit service to get units for this department
   const unitService = require('@services/unit/unit.service');
-  
-  // Get units filtered by department_id
+
   return await unitService.listUnits(
-    { department_id: departmentId },
+    { department_id: resolvedId },
     page,
     limit
   );
@@ -290,5 +325,6 @@ module.exports = {
   createDepartment,
   updateDepartment,
   deleteDepartment,
-  getDepartmentUnits
+  restoreDepartment,
+  getDepartmentUnits,
 };

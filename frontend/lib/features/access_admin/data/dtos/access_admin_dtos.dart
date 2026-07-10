@@ -241,6 +241,7 @@ final class AccessAdminItemDto {
         json['entitlement_denial_reason'],
       ),
       updatedAt: _dateTime(json['updated_at']),
+      deletedAt: _dateTime(json['deleted_at']),
     );
   }
 
@@ -384,6 +385,10 @@ final class AccessAdminWorkspaceDto {
         recordId: _nullableString(filters['record_id']) ?? query.recordId,
         userId: _nullableString(filters['user_id']) ?? query.userId,
         roleId: _nullableString(filters['role_id']) ?? query.roleId,
+        includeDeleted:
+            filters['include_deleted'] == true ||
+            filters['include_deleted'] == 'true' ||
+            query.includeDeleted,
       ),
     );
   }

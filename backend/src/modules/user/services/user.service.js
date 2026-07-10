@@ -22,9 +22,23 @@ const {
 } = require('@lib/realtime/entity-envelope');
 const { serializeAccessAdminUserEntity } = require('@lib/realtime/access-admin-realtime');
 const { resolveEntityId } = require('@lib/billing/identifiers');
+const { resolveModelIdByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 
-const resolveUserId = async (identifier) =>
-  resolveEntityId({ model: 'user', identifier });
+const resolveUserId = async (identifier, { includeDeleted = false } = {}) => {
+  const normalized = String(identifier ?? '').trim();
+  if (!normalized) return normalized;
+
+  if (includeDeleted) {
+    const resolved = await resolveModelIdByIdentifier({
+      model: 'user',
+      identifier: normalized,
+      includeDeleted: true,
+    });
+    return resolved || normalized;
+  }
+
+  return resolveEntityId({ model: 'user', identifier: normalized });
+};
 
 const USER_REALTIME_RECIPIENT_ROLES = Object.freeze([
   ROLES.FACILITY_ADMIN,
@@ -253,8 +267,12 @@ const normalizeUserPayload = async (data, isUpdate = false) => {
  */
 const listUsers = async (filters, page, limit, sortBy, order, userId, ipAddress) => {
   try {
+    const includeDeleted =
+      filters.include_deleted === true || filters.include_deleted === 'true';
     const skip = (page - 1) * limit;
-    const orderBy = sortBy ? { [sortBy]: order } : { created_at: 'desc' };
+    const orderBy = includeDeleted
+      ? [{ deleted_at: 'asc' }, { [sortBy || 'created_at']: order || 'desc' }]
+      : (sortBy ? { [sortBy]: order } : { created_at: 'desc' });
 
     // Build filter object
     const whereClause = {};
@@ -288,9 +306,11 @@ const listUsers = async (filters, page, limit, sortBy, order, userId, ipAddress)
       ];
     }
 
+    const listOptions = { includeDeleted };
+
     const [users, total] = await Promise.all([
-      userRepository.findMany(whereClause, skip, limit, orderBy, USER_LIST_INCLUDE),
-      userRepository.count(whereClause)
+      userRepository.findMany(whereClause, skip, limit, orderBy, USER_LIST_INCLUDE, listOptions),
+      userRepository.count(whereClause, listOptions)
     ]);
 
     return {
@@ -470,10 +490,41 @@ const deleteUser = async (id, userId, ipAddress) => {
   }
 };
 
+/**
+ * Restore soft-deleted user
+ */
+const restoreUser = async (id, userId, ipAddress) => {
+  try {
+    const resolvedUserId = await resolveUserId(id, { includeDeleted: true });
+    const user = await userRepository.restore(resolvedUserId);
+
+    createAuditLog({
+      user_id: userId,
+      action: 'USER_RESTORED',
+      entity: 'user',
+      entity_id: resolvedUserId,
+      diff: { after: user },
+      ip_address: ipAddress,
+    }).catch(() => {});
+
+    await publishUserRealtimeEvent(
+      PLATFORM_ADMIN_EVENTS.USER_RESTORED,
+      user,
+      userId
+    );
+
+    return user;
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 module.exports = {
   listUsers,
   getUserById,
   createUser,
   updateUser,
-  deleteUser
+  deleteUser,
+  restoreUser,
 };

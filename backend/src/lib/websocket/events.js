@@ -248,6 +248,7 @@ const PLATFORM_ADMIN_EVENTS = {
   USER_CREATED: 'user.created',
   USER_UPDATED: 'user.updated',
   USER_DELETED: 'user.deleted',
+  USER_RESTORED: 'user.restored',
   PLATFORM_DASHBOARD_INVALIDATE: 'platform.dashboard.invalidate'
 };
 

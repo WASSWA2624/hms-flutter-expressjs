@@ -180,19 +180,29 @@ const syncUserPermissions = async (tx, userId, permissionIds = []) => {
   }
 };
 
+const buildWhereClause = (filters = {}, { includeDeleted = false } = {}) => {
+  const where = { ...filters };
+  if (!includeDeleted) {
+    where.deleted_at = null;
+  }
+  return where;
+};
+
 /**
  * Find user by ID
  *
  * @param {string} id - User ID
  * @param {Object} include - Relations to include
+ * @param {Object} [options]
+ * @param {boolean} [options.includeDeleted]
  * @returns {Promise<Object|null>} User object or null
  */
-const findById = async (id, include = {}) => {
+const findById = async (id, include = {}, { includeDeleted = false } = {}) => {
   try {
     return await prisma.user.findFirst({
       where: {
         id,
-        deleted_at: null
+        ...(includeDeleted ? {} : { deleted_at: null }),
       },
       include
     });
@@ -209,18 +219,21 @@ const findById = async (id, include = {}) => {
  * @param {number} take - Number of records to take
  * @param {Object} orderBy - Sort order
  * @param {Object} include - Relations to include
+ * @param {Object} [options]
+ * @param {boolean} [options.includeDeleted]
  * @returns {Promise<Array>} Array of users
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}) => {
+const findMany = async (
+  filters = {},
+  skip = 0,
+  take = 20,
+  orderBy = { created_at: 'desc' },
+  include = {},
+  { includeDeleted = false } = {}
+) => {
   try {
-    // Build where clause
-    const where = {
-      deleted_at: null,
-      ...filters
-    };
-
     return await prisma.user.findMany({
-      where,
+      where: buildWhereClause(filters, { includeDeleted }),
       skip,
       take,
       orderBy,
@@ -235,16 +248,15 @@ const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_a
  * Count users with filters
  *
  * @param {Object} filters - Filter criteria
+ * @param {Object} [options]
+ * @param {boolean} [options.includeDeleted]
  * @returns {Promise<number>} Count of users
  */
-const count = async (filters = {}) => {
+const count = async (filters = {}, { includeDeleted = false } = {}) => {
   try {
-    const where = {
-      deleted_at: null,
-      ...filters
-    };
-
-    return await prisma.user.count({ where });
+    return await prisma.user.count({
+      where: buildWhereClause(filters, { includeDeleted }),
+    });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -408,6 +420,72 @@ const softDelete = async (id) => {
   }
 };
 
+/**
+ * Restore a soft-deleted user and user_permissions soft-deleted with the same timestamp.
+ *
+ * @param {string} id - User ID
+ * @returns {Promise<Object>} Restored user
+ */
+const restore = async (id) => {
+  try {
+    const existing = await prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        tenant_id: true,
+        facility_id: true,
+        deleted_at: true,
+      },
+    });
+
+    if (!existing || !existing.deleted_at) {
+      throw Object.assign(new Error('Record not found'), { code: 'P2025' });
+    }
+
+    const tenant = await prisma.tenant.findFirst({
+      where: { id: existing.tenant_id, deleted_at: null },
+      select: { id: true },
+    });
+    if (!tenant) {
+      throw new HttpError('errors.user.restore_requires_active_tenant', 409);
+    }
+
+    if (existing.facility_id) {
+      const facility = await prisma.facility.findFirst({
+        where: { id: existing.facility_id, deleted_at: null },
+        select: { id: true },
+      });
+      if (!facility) {
+        throw new HttpError('errors.user.restore_requires_active_facility', 409);
+      }
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      await tx.user_permission.updateMany({
+        where: {
+          user_id: id,
+          deleted_at: existing.deleted_at,
+        },
+        data: {
+          deleted_at: null,
+        },
+      });
+
+      return await tx.user.update({
+        where: { id },
+        data: { deleted_at: null },
+        include: resolveInclude(),
+      });
+    });
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    if (error.code === 'P2025') {
+      throw new HttpError('errors.user.not_found', 404);
+    }
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 module.exports = {
   findById,
   findMany,
@@ -415,6 +493,7 @@ module.exports = {
   create,
   update,
   softDelete,
+  restore,
   findActiveByTenantEmail,
   findActiveByTenantPhone,
 };

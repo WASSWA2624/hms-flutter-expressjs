@@ -97,7 +97,8 @@ const listBedsQuerySchema = listQuerySchema.extend({
     )
     .optional(),
   include_occupancy: z.enum(['true', 'false']).optional(),
-  search: z.string().trim().optional()
+  search: z.string().trim().optional(),
+  include_deleted: z.enum(['true', 'false']).optional()
 });
 
 module.exports = {

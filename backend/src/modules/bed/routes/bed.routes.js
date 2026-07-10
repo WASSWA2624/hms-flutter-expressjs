@@ -62,6 +62,14 @@ router.get(
   bedController.listBeds
 );
 
+router.post(
+  '/:id/restore',
+  validateRequest({ params: bedIdParamsSchema }),
+  authenticate(),
+  authorize(BED_MANAGEMENT_ADMIN_SCOPES, 'permission'),
+  bedController.restoreBed
+);
+
 /**
  * @description Get bed by ID
  * @method GET

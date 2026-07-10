@@ -42,6 +42,7 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         'status': query.status,
         'userId': query.userId,
         'roleId': query.roleId,
+        'include_deleted': query.includeDeleted ? 'true' : null,
       }),
       decoder: (Object? data) {
         return AccessAdminWorkspaceDto.fromResponse(data, query).toEntity();
@@ -164,6 +165,18 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
   Future<Result<void>> deleteUser(String userId) {
     return _apiClient.delete<void>(
       ApiEndpoints.byId(HmsApiResource.users, userId),
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<void>> restoreUser(String userId) {
+    return _apiClient.post<void>(
+      ApiEndpoints.nested(
+        HmsApiResource.users,
+        userId,
+        const <String>['restore'],
+      ),
       decoder: (_) {},
     );
   }

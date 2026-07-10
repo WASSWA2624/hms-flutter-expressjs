@@ -60,6 +60,14 @@ router.get(
   branchController.listBranches
 );
 
+router.post(
+  '/:id/restore',
+  validateRequest({ params: branchIdParamsSchema }),
+  authenticate(),
+  authorize(SETUP_ADMIN_SCOPES, 'permission'),
+  branchController.restoreBranch
+);
+
 /**
  * @description Get branch by ID
  * @method GET

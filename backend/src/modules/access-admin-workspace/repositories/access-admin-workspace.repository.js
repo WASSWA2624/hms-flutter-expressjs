@@ -12,8 +12,11 @@ const mapError = (error) => {
 };
 
 const scopedWhere = (scope = {}, options = {}) => {
-  const { includeFacility = false } = options;
-  const where = { deleted_at: null };
+  const { includeFacility = false, includeDeleted = false } = options;
+  const where = {};
+  if (!includeDeleted) {
+    where.deleted_at = null;
+  }
 
   if (scope.tenant_id) {
     where.tenant_id = scope.tenant_id;
@@ -154,8 +157,10 @@ const findSummary = async (scope = {}) => {
 
 const findUsers = async ({ scope = {}, filters = {}, skip = 0, take = 20, orderBy = { updated_at: 'desc' } }) => {
   try {
+    const includeDeleted =
+      filters.include_deleted === true || filters.include_deleted === 'true';
     const where = {
-      ...scopedWhere(scope, { includeFacility: true }),
+      ...scopedWhere(scope, { includeFacility: true, includeDeleted }),
       ...(filters.status ? { status: filters.status } : {}),
       ...(filters.is_demo
         ? { email: { endsWith: DEMO_EMAIL_SUFFIX } }
@@ -166,12 +171,16 @@ const findUsers = async ({ scope = {}, filters = {}, skip = 0, take = 20, orderB
       where.OR = searchFilter.OR.filter((entry) => !entry.name && !entry.description);
     }
 
+    const resolvedOrderBy = includeDeleted
+      ? [{ deleted_at: 'asc' }, orderBy]
+      : orderBy;
+
     const [items, total] = await Promise.all([
       prisma.user.findMany({
         where,
         skip,
         take,
-        orderBy,
+        orderBy: resolvedOrderBy,
         include: {
           profile: {
             where: { deleted_at: null },

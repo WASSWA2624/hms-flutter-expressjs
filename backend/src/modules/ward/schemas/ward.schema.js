@@ -65,6 +65,7 @@ const listWardsQuerySchema = listQuerySchema.extend({
   ward_type: z.enum(['GENERAL', 'ICU', 'MATERNITY', 'PEDIATRIC', 'SURGICAL', 'OTHER']).optional(),
   is_active: z.enum(['true', 'false']).optional(),
   search: z.string().trim().optional(),
+  include_deleted: z.enum(['true', 'false']).optional(),
 });
 
 module.exports = {

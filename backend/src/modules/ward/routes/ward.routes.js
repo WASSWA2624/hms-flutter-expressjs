@@ -62,6 +62,14 @@ router.get(
   wardController.listWards
 );
 
+router.post(
+  '/:id/restore',
+  validateRequest({ params: wardIdParamsSchema }),
+  authenticate(),
+  authorize(BED_MANAGEMENT_ADMIN_SCOPES, 'permission'),
+  wardController.restoreWard
+);
+
 /**
  * @description Get ward by ID
  * @method GET

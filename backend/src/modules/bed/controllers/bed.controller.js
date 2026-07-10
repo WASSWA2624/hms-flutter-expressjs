@@ -19,7 +19,7 @@ const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
  * @returns {Promise<void>}
  */
 const listBeds = asyncHandler(async (req, res) => {
-  const { page, limit, sort_by, order, tenant_id, facility_id, ward_id, room_id, status, status_any, include_occupancy, search } = req.query;
+  const { page, limit, sort_by, order, tenant_id, facility_id, ward_id, room_id, status, status_any, include_occupancy, search, include_deleted } = req.query;
 
   const filters = {};
   if (tenant_id) filters.tenant_id = tenant_id;
@@ -30,6 +30,7 @@ const listBeds = asyncHandler(async (req, res) => {
   if (status_any) filters.status_any = status_any;
   if (include_occupancy) filters.include_occupancy = include_occupancy;
   if (search) filters.search = search;
+  if (include_deleted) filters.include_deleted = include_deleted;
 
   const result = await bedService.listBeds(
     filters,
@@ -135,10 +136,30 @@ const deleteBed = asyncHandler(async (req, res) => {
   return sendNoContent(res);
 });
 
+
+/**
+ * Restore bed
+ */
+const restoreBed = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const context = {
+    user_id: req.user?.id,
+    tenant_id: req.user?.tenant_id,
+    facility_id: req.user?.facility_id,
+    ip_address: req.ip,
+    user_agent: req.get('user-agent')
+  };
+
+  const entity = await bedService.restoreBed(id, context);
+
+  return sendSuccess(res, 200, 'messages.bed.restore.success', entity);
+});
+
 module.exports = {
   listBeds,
   getBedById,
   createBed,
   updateBed,
-  deleteBed
+  deleteBed,
+  restoreBed,
 };

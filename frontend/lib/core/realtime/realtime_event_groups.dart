@@ -303,6 +303,7 @@ abstract final class RealtimeEventGroups {
     RealtimeEvents.userCreated,
     RealtimeEvents.userUpdated,
     RealtimeEvents.userDeleted,
+    RealtimeEvents.userRestored,
     RealtimeEvents.platformDashboardInvalidate,
     ...subscriptions,
   };

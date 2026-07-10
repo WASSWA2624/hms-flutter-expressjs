@@ -47,6 +47,13 @@ router.get(
   authenticate(),
   userController.listUsers
 );
+router.post(
+  '/:id/restore',
+  validateRequest({ params: userIdParamsSchema }),
+  requireAuth(ADMIN_ROLE_SET),
+  userController.restoreUser
+);
+
 
 /**
  * @description Get user by ID

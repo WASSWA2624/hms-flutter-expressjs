@@ -29,10 +29,12 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   Future<Result<FacilitySetupSnapshot>> loadSetup({
     String? facilityId,
     String? tenantId,
+    bool includeDeleted = false,
   }) async {
     final workspaceResult = await _loadSetupFromWorkspace(
       facilityId: facilityId,
       tenantId: tenantId,
+      includeDeleted: includeDeleted,
     );
     if (workspaceResult case ResultSuccess<FacilitySetupSnapshot>(
       :final value,
@@ -52,7 +54,11 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
       }
     }
 
-    return _loadSetupComposed(facilityId: facilityId, tenantId: tenantId);
+    return _loadSetupComposed(
+      facilityId: facilityId,
+      tenantId: tenantId,
+      includeDeleted: includeDeleted,
+    );
   }
 
   @override
@@ -173,6 +179,7 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   Future<Result<FacilitySetupSnapshot>> _loadSetupFromWorkspace({
     String? facilityId,
     String? tenantId,
+    bool includeDeleted = false,
   }) {
     return _apiClient.get<FacilitySetupSnapshot>(
       ApiEndpoints.nested(
@@ -186,6 +193,7 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
         if (_normalizedOptional(facilityId)
             case final String selectedFacilityId)
           'facility_id': selectedFacilityId,
+        'include_deleted': includeDeleted ? 'true' : null,
       }),
       decoder: (Object? data) {
         return FacilitySetupWorkspaceDto.fromResponse(data).toEntity();
@@ -196,6 +204,7 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   Future<Result<FacilitySetupSnapshot>> _loadSetupComposed({
     String? facilityId,
     String? tenantId,
+    bool includeDeleted = false,
   }) async {
     final tenantsResult = await _listTenants();
     return tenantsResult.when(
@@ -225,14 +234,17 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
                   _listBranches(
                     tenant.id,
                     selectedFacility.id,
+                    includeDeleted: includeDeleted,
                   ).then((result) => result.map<Object>((value) => value)),
                   _listDepartments(
                     tenant.id,
                     selectedFacility.id,
+                    includeDeleted: includeDeleted,
                   ).then((result) => result.map<Object>((value) => value)),
                   _listUnits(
                     tenant.id,
                     selectedFacility.id,
+                    includeDeleted: includeDeleted,
                   ).then((result) => result.map<Object>((value) => value)),
                   _facilityContactAddress(
                     tenant.id,
@@ -241,14 +253,17 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
                   _listWards(
                     tenant.id,
                     selectedFacility.id,
+                    includeDeleted: includeDeleted,
                   ).then((result) => result.map<Object>((value) => value)),
                   _listRooms(
                     tenant.id,
                     selectedFacility.id,
+                    includeDeleted: includeDeleted,
                   ).then((result) => result.map<Object>((value) => value)),
                   _listBeds(
                     tenant.id,
                     selectedFacility.id,
+                    includeDeleted: includeDeleted,
                   ).then((result) => result.map<Object>((value) => value)),
                 ]);
 
@@ -499,6 +514,18 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   }
 
   @override
+  Future<Result<BranchProfile>> restoreBranch(String id) {
+    return _apiClient.post<BranchProfile>(
+      ApiEndpoints.nested(
+        HmsApiResource.branches,
+        id,
+        const <String>['restore'],
+      ),
+      decoder: _decodeBranch,
+    );
+  }
+
+  @override
   Future<Result<DepartmentProfile>> saveDepartment({
     String? id,
     required String tenantId,
@@ -542,6 +569,18 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   }
 
   @override
+  Future<Result<DepartmentProfile>> restoreDepartment(String id) {
+    return _apiClient.post<DepartmentProfile>(
+      ApiEndpoints.nested(
+        HmsApiResource.departments,
+        id,
+        const <String>['restore'],
+      ),
+      decoder: _decodeDepartment,
+    );
+  }
+
+  @override
   Future<Result<UnitProfile>> saveUnit({
     String? id,
     required String tenantId,
@@ -577,6 +616,14 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   @override
   Future<Result<void>> deleteUnit(String id) {
     return _deleteResource(HmsApiResource.units, id);
+  }
+
+  @override
+  Future<Result<UnitProfile>> restoreUnit(String id) {
+    return _apiClient.post<UnitProfile>(
+      ApiEndpoints.nested(HmsApiResource.units, id, const <String>['restore']),
+      decoder: _decodeUnit,
+    );
   }
 
   @override
@@ -620,6 +667,14 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   }
 
   @override
+  Future<Result<WardProfile>> restoreWard(String id) {
+    return _apiClient.post<WardProfile>(
+      ApiEndpoints.nested(HmsApiResource.wards, id, const <String>['restore']),
+      decoder: _decodeWard,
+    );
+  }
+
+  @override
   Future<Result<RoomProfile>> saveRoom({
     String? id,
     required String tenantId,
@@ -656,6 +711,14 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   @override
   Future<Result<void>> deleteRoom(String id) {
     return _deleteResource(HmsApiResource.rooms, id);
+  }
+
+  @override
+  Future<Result<RoomProfile>> restoreRoom(String id) {
+    return _apiClient.post<RoomProfile>(
+      ApiEndpoints.nested(HmsApiResource.rooms, id, const <String>['restore']),
+      decoder: _decodeRoom,
+    );
   }
 
   @override
@@ -698,6 +761,14 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     return _deleteResource(HmsApiResource.beds, id);
   }
 
+  @override
+  Future<Result<BedProfile>> restoreBed(String id) {
+    return _apiClient.post<BedProfile>(
+      ApiEndpoints.nested(HmsApiResource.beds, id, const <String>['restore']),
+      decoder: _decodeBed,
+    );
+  }
+
   Future<Result<List<TenantProfile>>> _listTenants() {
     return _apiClient.get<List<TenantProfile>>(
       ApiEndpoints.collection(
@@ -737,12 +808,17 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
 
   Future<Result<List<BranchProfile>>> _listBranches(
     String tenantId,
-    String facilityId,
-  ) async {
+    String facilityId, {
+    bool includeDeleted = false,
+  }) async {
     final result = await _apiClient.get<List<BranchProfile>>(
       ApiEndpoints.collection(
         HmsApiResource.branches,
-        queryParameters: _facilityQuery(tenantId, facilityId),
+        queryParameters: _facilityQuery(
+          tenantId,
+          facilityId,
+          includeDeleted: includeDeleted,
+        ),
       ),
       decoder: (data) => ApiResponseEnvelope.decodeData<List<BranchProfile>>(
         data,
@@ -758,12 +834,17 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
 
   Future<Result<List<DepartmentProfile>>> _listDepartments(
     String tenantId,
-    String facilityId,
-  ) async {
+    String facilityId, {
+    bool includeDeleted = false,
+  }) async {
     final result = await _apiClient.get<List<DepartmentProfile>>(
       ApiEndpoints.collection(
         HmsApiResource.departments,
-        queryParameters: _facilityQuery(tenantId, facilityId),
+        queryParameters: _facilityQuery(
+          tenantId,
+          facilityId,
+          includeDeleted: includeDeleted,
+        ),
       ),
       decoder: (data) =>
           ApiResponseEnvelope.decodeData<List<DepartmentProfile>>(
@@ -780,12 +861,17 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
 
   Future<Result<List<UnitProfile>>> _listUnits(
     String tenantId,
-    String facilityId,
-  ) async {
+    String facilityId, {
+    bool includeDeleted = false,
+  }) async {
     final result = await _apiClient.get<List<UnitProfile>>(
       ApiEndpoints.collection(
         HmsApiResource.units,
-        queryParameters: _facilityQuery(tenantId, facilityId),
+        queryParameters: _facilityQuery(
+          tenantId,
+          facilityId,
+          includeDeleted: includeDeleted,
+        ),
       ),
       decoder: (data) => ApiResponseEnvelope.decodeData<List<UnitProfile>>(
         data,
@@ -801,12 +887,17 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
 
   Future<Result<List<WardProfile>>> _listWards(
     String tenantId,
-    String facilityId,
-  ) async {
+    String facilityId, {
+    bool includeDeleted = false,
+  }) async {
     final result = await _apiClient.get<List<WardProfile>>(
       ApiEndpoints.collection(
         HmsApiResource.wards,
-        queryParameters: _facilityQuery(tenantId, facilityId),
+        queryParameters: _facilityQuery(
+          tenantId,
+          facilityId,
+          includeDeleted: includeDeleted,
+        ),
       ),
       decoder: (data) => ApiResponseEnvelope.decodeData<List<WardProfile>>(
         data,
@@ -822,12 +913,17 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
 
   Future<Result<List<RoomProfile>>> _listRooms(
     String tenantId,
-    String facilityId,
-  ) async {
+    String facilityId, {
+    bool includeDeleted = false,
+  }) async {
     final result = await _apiClient.get<List<RoomProfile>>(
       ApiEndpoints.collection(
         HmsApiResource.rooms,
-        queryParameters: _facilityQuery(tenantId, facilityId),
+        queryParameters: _facilityQuery(
+          tenantId,
+          facilityId,
+          includeDeleted: includeDeleted,
+        ),
       ),
       decoder: (data) => ApiResponseEnvelope.decodeData<List<RoomProfile>>(
         data,
@@ -843,12 +939,18 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
 
   Future<Result<List<BedProfile>>> _listBeds(
     String tenantId,
-    String facilityId,
-  ) async {
+    String facilityId, {
+    bool includeDeleted = false,
+  }) async {
     final result = await _apiClient.get<List<BedProfile>>(
       ApiEndpoints.collection(
         HmsApiResource.beds,
-        queryParameters: _facilityQuery(tenantId, facilityId, sortBy: 'label'),
+        queryParameters: _facilityQuery(
+          tenantId,
+          facilityId,
+          sortBy: 'label',
+          includeDeleted: includeDeleted,
+        ),
       ),
       decoder: (data) => ApiResponseEnvelope.decodeData<List<BedProfile>>(
         data,
@@ -1040,6 +1142,7 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     String tenantId,
     String facilityId, {
     String sortBy = 'name',
+    bool includeDeleted = false,
   }) {
     return <String, String>{
       'tenant_id': tenantId,
@@ -1047,6 +1150,7 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
       'limit': _setupListLimit,
       'sort_by': sortBy,
       'order': 'asc',
+      if (includeDeleted) 'include_deleted': 'true',
     };
   }
 

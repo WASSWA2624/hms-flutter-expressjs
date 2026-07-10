@@ -11,6 +11,10 @@ const bedRepository = require('@repositories/bed/bed.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { resolveIdentifierForFilter } = require('@lib/identifiers/service-identifier-resolution');
+const {
+  resolveModelIdByIdentifier,
+  resolveModelRecordByIdentifier,
+} = require('@lib/identifiers/resolve-entity-id');
 const { publishCrudRealtimeEvent, FACILITY_LAYOUT_EVENTS } = require('@lib/websocket');
 const { ROLES } = require('@config/roles');
 
@@ -77,6 +81,26 @@ const resolveBedFilterId = async (filters, field, model) => {
     model,
     where: { deleted_at: null },
   });
+};
+
+const resolveBedId = async (identifier, { includeDeleted = false } = {}) => {
+  const normalized = String(identifier ?? '').trim();
+  if (!normalized) return normalized;
+
+  if (includeDeleted) {
+    const resolved = await resolveModelIdByIdentifier({
+      model: 'bed',
+      identifier: normalized,
+      includeDeleted: true,
+    });
+    return resolved || normalized;
+  }
+
+  return resolveIdentifierForFilter({
+    value: normalized,
+    model: 'bed',
+    where: { deleted_at: null },
+  }) || normalized;
 };
 
 const ACTIVE_ASSIGNMENT_ADMISSION_STATUSES = Object.freeze([
@@ -156,6 +180,8 @@ const mapOccupancyBed = (bed) => {
 };
 
 const listBeds = async (filters = {}, page = 1, limit = 20, sort_by = 'created_at', order = 'desc') => {
+  const includeDeleted =
+    filters.include_deleted === true || filters.include_deleted === 'true';
   const repoFilters = {};
 
   const tenantId = await resolveBedFilterId(filters, 'tenant_id', 'tenant');
@@ -195,17 +221,21 @@ const listBeds = async (filters = {}, page = 1, limit = 20, sort_by = 'created_a
 
   const includeOccupancy = filters.include_occupancy === true || filters.include_occupancy === 'true';
   const skip = (page - 1) * limit;
-  const orderBy = {};
-  orderBy[sort_by] = order;
-
-  const findManyArgs = [repoFilters, skip, limit, orderBy];
-  if (includeOccupancy) {
-    findManyArgs.push(OCCUPANCY_INCLUDE);
-  }
+  const orderBy = includeDeleted
+    ? [{ deleted_at: 'asc' }, { [sort_by]: order }]
+    : { [sort_by]: order };
+  const listOptions = { includeDeleted };
 
   const [beds, total] = await Promise.all([
-    bedRepository.findMany(...findManyArgs),
-    bedRepository.count(repoFilters),
+    bedRepository.findMany(
+      repoFilters,
+      skip,
+      limit,
+      orderBy,
+      includeOccupancy ? OCCUPANCY_INCLUDE : undefined,
+      listOptions
+    ),
+    bedRepository.count(repoFilters, listOptions),
   ]);
 
   const mappedBeds = includeOccupancy ? beds.map(mapOccupancyBed) : beds;
@@ -220,7 +250,8 @@ const listBeds = async (filters = {}, page = 1, limit = 20, sort_by = 'created_a
  * @returns {Promise<Object>} Bed data
  */
 const getBedById = async (id) => {
-  const bed = await bedRepository.findById(id);
+  const bedId = await resolveBedId(id);
+  const bed = await bedRepository.findById(bedId);
   
   if (!bed) {
     throw new HttpError('errors.bed.not_found', 404);
@@ -301,21 +332,21 @@ const createBed = async (data, context = {}) => {
  * @returns {Promise<Object>} Updated bed
  */
 const updateBed = async (id, data, context = {}) => {
-  // Check if bed exists and get before state
-  const beforeBed = await bedRepository.findById(id);
+  const bedId = await resolveBedId(id);
+  const beforeBed = await bedRepository.findById(bedId);
   
   if (!beforeBed) {
     throw new HttpError('errors.bed.not_found', 404);
   }
 
   // Update bed
-  const bed = await bedRepository.update(id, data);
+  const bed = await bedRepository.update(bedId, data);
 
   // Create audit log
   await createAuditLog({
     action: 'BED_UPDATED',
     entity: 'bed',
-    entity_id: id,
+    entity_id: bedId,
     user_id: context.user_id,
     tenant_id: context.tenant_id,
     facility_id: context.facility_id,
@@ -363,21 +394,32 @@ const updateBed = async (id, data, context = {}) => {
  * @returns {Promise<void>}
  */
 const deleteBed = async (id, context = {}) => {
-  // Check if bed exists
-  const bed = await bedRepository.findById(id);
+  const normalizedId = String(id ?? '').trim();
+  const bedId = await resolveBedId(normalizedId);
+  const bed = await bedRepository.findById(bedId);
   
   if (!bed) {
+    const lookupIds = [...new Set([bedId, normalizedId].filter(Boolean))];
+    for (const candidate of lookupIds) {
+      const deletedBed = await resolveModelRecordByIdentifier({
+        model: 'bed',
+        identifier: candidate,
+        includeDeleted: true,
+        select: { id: true, deleted_at: true },
+      });
+      if (deletedBed?.deleted_at) {
+        return;
+      }
+    }
     throw new HttpError('errors.bed.not_found', 404);
   }
 
-  // Soft delete bed
-  await bedRepository.softDelete(id);
+  await bedRepository.softDelete(bedId);
 
-  // Create audit log
   await createAuditLog({
     action: 'BED_DELETED',
     entity: 'bed',
-    entity_id: id,
+    entity_id: bedId,
     user_id: context.user_id,
     tenant_id: context.tenant_id,
     facility_id: context.facility_id,
@@ -402,10 +444,48 @@ const deleteBed = async (id, context = {}) => {
   });
 };
 
+/**
+ * Restore soft-deleted bed
+ */
+const restoreBed = async (id, context = {}) => {
+  const bedId = await resolveBedId(id, { includeDeleted: true });
+  const bed = await bedRepository.restore(bedId);
+
+  await createAuditLog({
+    action: 'BED_RESTORED',
+    entity: 'bed',
+    entity_id: bedId,
+    user_id: context.user_id,
+    tenant_id: context.tenant_id,
+    facility_id: context.facility_id,
+    ip_address: context.ip_address,
+    user_agent: context.user_agent,
+    details: {
+      tenant_id: bed.tenant_id,
+      facility_id: bed.facility_id,
+      ward_id: bed.ward_id,
+      room_id: bed.room_id,
+      label: bed.label,
+      status: bed.status,
+    },
+  });
+
+  await publishFacilityLayoutRealtimeEvent(bed, 'bed', context.user_id, {
+    operation: 'restored',
+    label: bed.label,
+    status: bed.status,
+    ward_id: bed.ward_id,
+    room_id: bed.room_id,
+  });
+
+  return bed;
+};
+
 module.exports = {
   listBeds,
   getBedById,
   createBed,
   updateBed,
-  deleteBed
+  deleteBed,
+  restoreBed,
 };

@@ -6680,6 +6680,74 @@
       }
     }
   },
+  "tenantFacilityRestoreStructureAction": "Restore",
+  "@tenantFacilityRestoreStructureAction": {
+    "description": "Restore soft-deleted facility structure record action label."
+  },
+  "tenantFacilityRestoreStructureTitle": "Restore record",
+  "@tenantFacilityRestoreStructureTitle": {
+    "description": "Restore facility structure record confirmation dialog title."
+  },
+  "tenantFacilityRestoreStructureBody": "Restore \"{name}\"?",
+  "@tenantFacilityRestoreStructureBody": {
+    "description": "Restore facility structure record confirmation body.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantFacilityStructureDeletedStatus": "Deleted",
+  "@tenantFacilityStructureDeletedStatus": {
+    "description": "Soft-deleted facility structure status label."
+  },
+  "tenantFacilityStructureActiveStatus": "Active",
+  "@tenantFacilityStructureActiveStatus": {
+    "description": "Active facility structure status label."
+  },
+  "tenantFacilitySoftDeleteStructureTitle": "Delete record",
+  "@tenantFacilitySoftDeleteStructureTitle": {
+    "description": "Soft-delete facility structure confirmation dialog title."
+  },
+  "tenantFacilitySoftDeleteStructureBody": "Soft-delete \"{name}\"? Related child records will also be marked deleted and hidden from operational pickers. They will remain visible here for restore.",
+  "@tenantFacilitySoftDeleteStructureBody": {
+    "description": "Soft-delete facility structure confirmation body.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantFacilitySoftDeleteUserTitle": "Delete user",
+  "@tenantFacilitySoftDeleteUserTitle": {
+    "description": "Soft-delete user confirmation dialog title."
+  },
+  "tenantFacilitySoftDeleteUserBody": "Soft-delete user \"{name}\"? The user will be marked deleted and hidden from operational pickers, but remain visible here for restore.",
+  "@tenantFacilitySoftDeleteUserBody": {
+    "description": "Soft-delete user confirmation body.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantFacilityRestoreUserTitle": "Restore user",
+  "@tenantFacilityRestoreUserTitle": {
+    "description": "Restore soft-deleted user confirmation dialog title."
+  },
+  "tenantFacilityRestoreUserBody": "Restore user \"{name}\"?",
+  "@tenantFacilityRestoreUserBody": {
+    "description": "Restore soft-deleted user confirmation body.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "accessAdminRestoreUserAction": "Restore user",
+  "@accessAdminRestoreUserAction": {
+    "description": "Restore soft-deleted user action label in access admin."
+  },
   "tenantFacilityPermanentDeleteFacilityConfirmationTitle": "Permanent delete facility — irreversible",
   "@tenantFacilityPermanentDeleteFacilityConfirmationTitle": {
     "description": "Permanent delete facility confirmation dialog title."

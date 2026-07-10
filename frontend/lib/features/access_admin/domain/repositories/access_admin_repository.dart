@@ -28,6 +28,8 @@ abstract interface class AccessAdminRepository {
 
   Future<Result<void>> deleteUser(String userId);
 
+  Future<Result<void>> restoreUser(String userId);
+
   Future<Result<void>> setUserStatus(String userId, String status);
 
   Future<Result<List<AccessAdminUserRoleAssignment>>> listUserRoles({

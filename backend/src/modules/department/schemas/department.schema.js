@@ -66,7 +66,8 @@ const listDepartmentsQuerySchema = listQuerySchema.extend({
   branch_id: uuidSchema.optional(),
   department_type: z.enum(['CLINICAL', 'ADMINISTRATIVE', 'SUPPORT', 'DIAGNOSTICS', 'OTHER']).optional(),
   is_active: z.enum(['true', 'false']).optional(),
-  search: z.string().trim().optional()
+  search: z.string().trim().optional(),
+  include_deleted: z.enum(['true', 'false']).optional()
 });
 
 module.exports = {

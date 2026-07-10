@@ -73,7 +73,8 @@ const listUsersQuerySchema = listQuerySchema.extend({
   position_title: z.string().trim().optional(),
   email: z.string().trim().optional(),
   status: userStatusSchema.optional(),
-  search: z.string().trim().optional()
+  search: z.string().trim().optional(),
+  include_deleted: z.enum(['true', 'false']).optional()
 });
 
 module.exports = {

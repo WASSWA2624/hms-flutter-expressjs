@@ -61,7 +61,8 @@ const listRoomsQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   ward_id: uuidOrFriendlyIdentifierSchema.optional(),
-  search: z.string().trim().optional()
+  search: z.string().trim().optional(),
+  include_deleted: z.enum(['true', 'false']).optional()
 });
 
 module.exports = {

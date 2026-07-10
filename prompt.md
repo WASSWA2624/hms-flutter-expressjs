@@ -1,19 +1,14 @@
-# Platform Tenant Lifecycle — Implementation Prompt
+# Facility Details Structure CRUD — Implementation Prompt
 
 ## Objective
 
-Fix **Super Admin tenant lifecycle** so dashboard metrics, Manage Tenants, and the database stay in sync. Super admins must see **active tenants only** on the dashboard, and **all tenants (active + soft-deleted)** in Manage Tenants—with clear status, **Restore**, and **Permanent delete** actions.
+Complete **full CRUD** for every structure panel inside the **Facility details** dialog (`showFacilityDetailsDialog`), matching the Users panel UX and extending the same pattern to **Branches, Departments, Units, Wards, Rooms, and Beds**.
 
-**Observed state (screenshots + `hms_db.tenant`):**
+Create/edit dialogs must be **shared, reusable, and uniform** (usable from Facility details, setup page, and other entry points). After every mutation, counts, lists, and related surfaces must update **instantly** via optimistic patch + realtime reconcile.
 
-| Surface | Current | Expected |
-|--------|---------|----------|
-| Dashboard tenant card | Drifts between **3/3** and **2/2** | **2 / 2** (active only: Demo Care, Fairbanks) |
-| Manage Tenants list | Shows **C-Care** with active tenants | **5 rows** with a **Deleted** column; C-Care + 2× Testing marked deleted |
-| DB | 5 rows; 3 have `deleted_at` set (`slug` suffixed `__deleted__<id>`) | Unchanged soft-delete model; UI reflects truth |
-| Delete on stale row | **Not found** modal for already-deleted tenant | Idempotent soft delete or row removed; no false error |
+Soft delete is the default delete path: rows stay visible as **Deleted**, with **Restore**. Deleting a parent soft-deletes its **descendant structure** in cascade. Operational/clinical surfaces continue to ignore soft-deleted records (`deleted_at IS NULL`).
 
-Subscriptions (**1 / 2**) and **Tenants Without Subscription: 1** are correct for 2 active tenants—do not regress.
+**Reference UI:** Facility details → Structure sidebar → Users table (Create / Edit / Delete / Restore). Structure panels must behave the same way.
 
 ---
 
@@ -21,80 +16,116 @@ Subscriptions (**1 / 2**) and **Tenants Without Subscription: 1** are correct fo
 
 Follow [`prompts/00-global-implementation-standards.md`](./prompts/00-global-implementation-standards.md) and:
 
-- [`backend/.cursor/prisma.mdc`](./backend/.cursor/prisma.mdc) — soft delete via `deleted_at`; repositories filter by default
+- [`backend/.cursor/prisma.mdc`](./backend/.cursor/prisma.mdc) — soft delete via `deleted_at`; default queries exclude deleted
 - [`backend/.cursor/module-creation.mdc`](./backend/.cursor/module-creation.mdc) — service → repository; audit on every mutation
-- [`frontend/.cursor/instant_ui_sync.mdc`](./frontend/.cursor/instant_ui_sync.mdc) — optimistic patch + realtime reconcile; no stale counts
-- [`frontend/.cursor/realtime_sync.mdc`](./frontend/.cursor/realtime_sync.mdc) — `RealtimeEventGroups.platformAdmin`
-- [`frontend/.cursor/scope.mdc`](./frontend/.cursor/scope.mdc) — Super Admin platform scope only
-- [`backend/.cursor/websockets.mdc`](./backend/.cursor/websockets.mdc) — publish scoped platform events
+- [`frontend/.cursor/instant_ui_sync.mdc`](./frontend/.cursor/instant_ui_sync.mdc) — optimistic patch + realtime reconcile
+- [`frontend/.cursor/realtime_sync.mdc`](./frontend/.cursor/realtime_sync.mdc) — subscribe via `RealtimeEventGroups`
+- [`prompts/03-tenant-facility-module-prompt.md`](./prompts/03-tenant-facility-module-prompt.md) — facility catalog owns structure masters
+- Modal-first: reuse existing create/edit dialogs; do not invent parallel forms
 
 ---
 
-## Required Behavior
+## Hierarchy & Cascade Rules
 
-### Dashboard (Super Admin)
+```
+Facility
+ └─ Branch (optional parent for org grouping)
+ └─ Department
+     └─ Unit
+ └─ Ward
+     └─ Room
+         └─ Bed
+ └─ Users (facility-scoped membership; not a structural child of dept/ward)
+```
 
-- Count **only** tenants where `deleted_at IS NULL`.
-- Never include soft-deleted tenants in totals, charts, or alerts.
-- After manage-dialog mutations, clear optimistic dashboard patches and refetch server metrics.
+### Soft delete cascade (structure only)
 
-### Manage Tenants dialog
+| Deleted entity | Also soft-delete (set `deleted_at`) |
+|----------------|-------------------------------------|
+| Branch | Departments linked to that branch → Units under those departments |
+| Department | All Units under that department |
+| Unit | Unit only |
+| Ward | All Rooms under that ward → all Beds under those rooms / ward |
+| Room | All Beds under that room |
+| Bed | Bed only |
+| User | Soft-delete user + matching `user_permission` rows. Do **not** cascade-delete departments/wards/beds |
 
-- List **all** tenants for Super Admin (`include_deleted=true` or dedicated query).
-- Columns: `#`, name, slug, **Status** (Active / Deleted), actions.
-- **Active row actions:** Edit, Soft delete (existing).
-- **Deleted row actions:** **Restore**, **Permanent delete** (destructive confirm).
-- Soft-deleted rows: visually distinct (muted row or badge); Edit disabled or read-only.
-- Pagination/search must include deleted rows; default sort: active first, then name.
-- No contradictory loading + empty states; `pageSize` per `platform_admin_list_config.dart`.
+### Soft delete must not break the rest of the app
 
-### Backend API (`/api/v1/tenants`)
+- Default list/select APIs used by OPD, IPD, Nursing, bed board, pickers, etc. continue to filter `deleted_at IS NULL`.
+- Soft-deleted structure must not appear in operational dropdowns or assignment flows.
+- Only **management** surfaces (Facility details, setup/manage lists) request `include_deleted=true`.
+- Cascade is **soft** only — no hard purge of clinical history, encounters, or audit trails.
+
+### Restore rules
+
+- Restoring a parent does **not** auto-restore children (safer, explicit).
+- Restoring a child requires its parent chain to be active; otherwise return `409` with a clear message.
+- Restore clears `deleted_at`, audits, publishes realtime event, and patches UI instantly.
+
+---
+
+## Required Behavior — Facility Details Dialog
+
+### Shared list UX (all structure panels + Users)
+
+| Element | Requirement |
+|---------|-------------|
+| Header | Entity title + **Create** action (existing create dialog) |
+| Search | Filter current list (include deleted rows) |
+| Status | **Active** / **Deleted** badge; muted row styling for deleted |
+| Active row actions | **Edit**, **Soft delete** |
+| Deleted row actions | **Restore** (Edit disabled) |
+| Counts (sidebar) | Structure cards show **active** counts by default |
+| Empty / loading | No contradictory loading + empty; responsive mobile / tablet / desktop |
+
+### Create / Edit
+
+Reuse public `showTenantFacility*FormDialog` / Access Admin user dialogs — no Facility-details-only forms.
+
+### Instant UI Sync
+
+After create / update / soft-delete / restore:
+
+1. Optimistically patch Facility details list + structure counts.
+2. Patch `tenantFacilitySetup` / overview snapshot providers.
+3. Publish scoped backend realtime events (`facility.layout_updated`, `user.*`).
+4. Subscribe so setup page and Facility details stay aligned without full-page reload.
+
+---
+
+## Backend API Requirements
+
+For each entity: **user**, **branch**, **department**, **unit**, **ward**, **room**, **bed**:
 
 | Action | Behavior |
 |--------|----------|
-| `GET /` | Query `include_deleted` (Super Admin only). Default `false` for dashboard consumers. |
-| `DELETE /:id` | Soft delete (existing). **Idempotent** if already soft-deleted (`deleted_at` set). |
-| `POST /:id/restore` | Clear `deleted_at`; restore original slug when safe; audit + realtime event. |
-| `DELETE /:id/permanent` | Hard delete tenant graph (tenant, facilities, scoped data per FK/cascade rules) or documented cascade service; Super Admin only; audit before purge. |
+| `GET` list | Support `include_deleted` for management callers; default `false` |
+| `POST` create | Existing create; audit + realtime |
+| `PATCH/PUT` update | Existing update; reject updates on soft-deleted rows unless restoring |
+| `DELETE /:id` | Soft delete + **cascade soft-delete descendants**; idempotent if already deleted |
+| `POST /:id/restore` | Clear `deleted_at` when parent chain is active; audit + realtime |
 
-- Resolve IDs by UUID, `human_friendly_id`, and slug (including deleted slug suffix).
-- API `id` remains UUID; expose `display_id` separately (do not replace `id`).
-- Publish `tenant.deleted`, `tenant.restored`, `tenant.permanently_deleted` (or extend existing platform events).
-
-### Permanent delete safeguards
-
-- Second confirmation with tenant name typed or explicit “PERMANENT DELETE” label.
-- Block if active subscriptions or legal retention rules apply (return validation error with reason).
-- Log audit entry **before** destructive purge.
-
----
-
-## Scope — Files to Touch
-
-**Backend:** `tenant.service.js`, `tenant.repository.js`, `tenant.routes.js`, `tenant.controller.js`, validation schemas, `resolve-entity-id.js` (include-deleted lookups), platform realtime publishers, targeted tests.
-
-**Frontend:** `tenant_facility_management_dialogs.dart`, `tenant_facility_repository_impl.dart`, DTOs/entities, `home_controller.dart`, `home_dashboard_sync.dart`, `home_dashboard_optimistic_patch.dart`, `app_en.arb` strings.
-
-**Out of scope:** Non–Super Admin tenant lists; subscription billing changes beyond metric accuracy.
+Workspace aggregators (`tenant-facility-workspace`, `access-admin-workspace`) must honor `include_deleted` for management lists.
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] Dashboard shows **2 / 2** tenants matching DB active count (Demo Care, Fairbanks).
-- [ ] Manage Tenants shows **5** rows with correct **Deleted** status for C-Care and both Testing records.
-- [ ] Soft delete removes tenant from dashboard immediately; row remains in manage list as Deleted.
-- [ ] **Restore** clears `deleted_at`, restores slug, row returns to Active; dashboard increments.
-- [ ] **Permanent delete** removes tenant from DB and manage list; irreversible after confirm.
-- [ ] Delete on already-deleted tenant succeeds (idempotent) or row disappears—no **Not found** error for visible stale data.
-- [ ] Realtime/optimistic updates keep dashboard cards and manage list aligned without full-page reload.
-- [ ] Responsive UI on mobile, tablet, desktop; localized strings; destructive actions use `AppConfirmActionDialog`.
-- [ ] Backend tenant tests + `flutter analyze` on touched files pass.
+- [x] Each Structure panel has working **Create**, **Edit**, **Soft delete**, and **Restore**.
+- [x] Edit opens the **same** reusable form used elsewhere for that entity.
+- [x] Soft-deleted rows remain in the management list with **Deleted** status; operational pickers exclude them.
+- [x] Soft-deleting a department soft-deletes its units; soft-deleting a ward soft-deletes rooms and beds under it.
+- [x] Restore works when parents are active; blocked with clear error when parent is deleted.
+- [x] Sidebar structure counts and subscribed surfaces update after CRUD.
+- [x] Responsive on mobile, tablet, desktop; localized strings; destructive confirms via `AppConfirmActionDialog`.
 
 ---
 
 ## Verification
 
-1. Compare phpMyAdmin `tenant` table (`deleted_at`, `slug`) with Manage Tenants and dashboard cards.
-2. Soft delete → restore → permanent delete on a test tenant end-to-end.
-3. Hard refresh / hot restart after deploy; confirm C-Care does not appear as active anywhere.
+1. Open Facility details → for each structure tab: create → edit → soft delete → confirm Deleted + Restore → restore → Active.
+2. Soft-delete a department with units; confirm units show Deleted and vanish from operational unit pickers.
+3. Soft-delete a ward with rooms/beds; confirm cascade; attempt restore of a bed while ward is deleted → expect parent-guard error; restore ward then bed.
+4. Soft-delete a user; confirm row stays Deleted with Restore; facility user count / access surfaces stay consistent.
+5. Hot restart / reconnect: lists and counts still match DB `deleted_at` truth.

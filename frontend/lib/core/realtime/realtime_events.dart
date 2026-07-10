@@ -132,6 +132,7 @@ abstract final class RealtimeEvents {
   static const String userCreated = 'user.created';
   static const String userUpdated = 'user.updated';
   static const String userDeleted = 'user.deleted';
+  static const String userRestored = 'user.restored';
 
   static const String platformDashboardInvalidate =
       'platform.dashboard.invalidate';

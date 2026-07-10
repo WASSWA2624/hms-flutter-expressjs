@@ -9,20 +9,31 @@
 
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
+const { restoreBed } = require('@lib/facility-structure/cascade-soft-delete');
+
+const buildWhereClause = (filters = {}, { includeDeleted = false } = {}) => {
+  const where = { ...filters };
+  if (!includeDeleted) {
+    where.deleted_at = null;
+  }
+  return where;
+};
 
 /**
  * Find bed by ID
  *
  * @param {string} id - Bed ID
+ * @param {Object} [options]
+ * @param {boolean} [options.includeDeleted]
  * @returns {Promise<Object|null>} Bed object or null
  */
-const findById = async (id) => {
+const findById = async (id, { includeDeleted = false } = {}) => {
   try {
     return await prisma.bed.findFirst({
       where: {
         id,
-        deleted_at: null
-      }
+        ...(includeDeleted ? {} : { deleted_at: null }),
+      },
     });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
@@ -36,6 +47,9 @@ const findById = async (id) => {
  * @param {number} skip - Number of records to skip
  * @param {number} take - Number of records to take
  * @param {Object} orderBy - Sort order
+ * @param {Object} [include] - Prisma include
+ * @param {Object} [options]
+ * @param {boolean} [options.includeDeleted]
  * @returns {Promise<Array>} Array of beds
  */
 const findMany = async (
@@ -43,21 +57,16 @@ const findMany = async (
   skip = 0,
   take = 20,
   orderBy = { created_at: 'desc' },
-  include = undefined
+  include = undefined,
+  { includeDeleted = false } = {}
 ) => {
   try {
-    // Build where clause
-    const where = {
-      deleted_at: null,
-      ...filters
-    };
-
     return await prisma.bed.findMany({
-      where,
+      where: buildWhereClause(filters, { includeDeleted }),
       skip,
       take,
       orderBy,
-      ...(include ? { include } : {})
+      ...(include ? { include } : {}),
     });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
@@ -68,16 +77,15 @@ const findMany = async (
  * Count beds with filters
  *
  * @param {Object} filters - Filter criteria
+ * @param {Object} [options]
+ * @param {boolean} [options.includeDeleted]
  * @returns {Promise<number>} Count of beds
  */
-const count = async (filters = {}) => {
+const count = async (filters = {}, { includeDeleted = false } = {}) => {
   try {
-    const where = {
-      deleted_at: null,
-      ...filters
-    };
-
-    return await prisma.bed.count({ where });
+    return await prisma.bed.count({
+      where: buildWhereClause(filters, { includeDeleted }),
+    });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -92,16 +100,14 @@ const count = async (filters = {}) => {
 const create = async (data) => {
   try {
     return await prisma.bed.create({
-      data
+      data,
     });
   } catch (error) {
     if (error.code === 'P2002') {
-      // Unique constraint violation
       const target = error.meta?.target?.[0] || 'field';
       throw new HttpError('errors.database.unique_field', 409, [{ field: target }]);
     }
     if (error.code === 'P2003') {
-      // Foreign key constraint violation
       const target = error.meta?.field_name || 'field';
       throw new HttpError('errors.database.foreign_key_field', 400, [{ field: target }]);
     }
@@ -120,19 +126,17 @@ const update = async (id, data) => {
   try {
     return await prisma.bed.update({
       where: { id },
-      data
+      data,
     });
   } catch (error) {
     if (error.code === 'P2025') {
       throw new HttpError('errors.bed.not_found', 404);
     }
     if (error.code === 'P2002') {
-      // Unique constraint violation
       const target = error.meta?.target?.[0] || 'field';
       throw new HttpError('errors.database.unique_field', 409, [{ field: target }]);
     }
     if (error.code === 'P2003') {
-      // Foreign key constraint violation
       const target = error.meta?.field_name || 'field';
       throw new HttpError('errors.database.foreign_key_field', 400, [{ field: target }]);
     }
@@ -141,8 +145,7 @@ const update = async (id, data) => {
 };
 
 /**
- * Soft delete bed
- * Per prisma.mdc: Only soft deletes allowed
+ * Soft delete bed (leaf — no children).
  *
  * @param {string} id - Bed ID
  * @returns {Promise<Object>} Deleted bed
@@ -152,10 +155,28 @@ const softDelete = async (id) => {
     return await prisma.bed.update({
       where: { id },
       data: {
-        deleted_at: new Date()
-      }
+        deleted_at: new Date(),
+      },
     });
   } catch (error) {
+    if (error.code === 'P2025') {
+      throw new HttpError('errors.bed.not_found', 404);
+    }
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
+ * Restore a soft-deleted bed.
+ *
+ * @param {string} id - Bed ID
+ * @returns {Promise<Object>} Restored bed
+ */
+const restore = async (id) => {
+  try {
+    return await restoreBed(id);
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
     if (error.code === 'P2025') {
       throw new HttpError('errors.bed.not_found', 404);
     }
@@ -169,5 +190,6 @@ module.exports = {
   count,
   create,
   update,
-  softDelete
+  softDelete,
+  restore,
 };

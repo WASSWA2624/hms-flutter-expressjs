@@ -68,7 +68,7 @@ final class TenantFacilitySetupController
     );
     return ref
         .read(tenantFacilityRepositoryProvider)
-        .loadSetup(facilityId: _selectedFacilityId);
+        .loadSetup(facilityId: _selectedFacilityId, includeDeleted: true);
   }
 
   Future<Result<FacilitySetupSnapshot>> refresh() async {
@@ -82,7 +82,7 @@ final class TenantFacilitySetupController
     try {
       final result = await ref
           .read(tenantFacilityRepositoryProvider)
-          .loadSetup(facilityId: _selectedFacilityId);
+          .loadSetup(facilityId: _selectedFacilityId, includeDeleted: true);
       state = AsyncValue<Result<FacilitySetupSnapshot>>.data(result);
       return result;
     } catch (error, stackTrace) {
@@ -332,10 +332,45 @@ final class TenantFacilitySetupSubmissionController
     return _submit(
       () => _repository.deleteBranch(id),
       updateSnapshot: (FacilitySetupSnapshot snapshot, _) {
+        final DateTime deletedAt = DateTime.now().toUtc();
+        final List<DepartmentProfile> departments = <DepartmentProfile>[
+          for (final DepartmentProfile department in snapshot.departments)
+            department.branchId == id
+                ? department.copyWith(deletedAt: deletedAt)
+                : department,
+        ];
+        final Set<String> deletedDepartmentIds = <String>{
+          for (final DepartmentProfile department in departments)
+            if (department.branchId == id) department.id,
+        };
         return snapshot.copyWith(
-          branches: _removeById<BranchProfile>(
+          branches: <BranchProfile>[
+            for (final BranchProfile branch in snapshot.branches)
+              branch.id == id
+                  ? branch.copyWith(deletedAt: deletedAt)
+                  : branch,
+          ],
+          departments: departments,
+          units: <UnitProfile>[
+            for (final UnitProfile unit in snapshot.units)
+              unit.departmentId != null &&
+                      deletedDepartmentIds.contains(unit.departmentId)
+                  ? unit.copyWith(deletedAt: deletedAt)
+                  : unit,
+          ],
+        );
+      },
+    );
+  }
+
+  Future<bool> restoreBranch(String id) {
+    return _submit(
+      () => _repository.restoreBranch(id),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, BranchProfile branch) {
+        return snapshot.copyWith(
+          branches: _upsertById<BranchProfile>(
             snapshot.branches,
-            id,
+            branch.copyWith(clearDeletedAt: true),
             (BranchProfile item) => item.id,
           ),
         );
@@ -381,14 +416,38 @@ final class TenantFacilitySetupSubmissionController
     return _submit(
       () => _repository.deleteDepartment(id),
       updateSnapshot: (FacilitySetupSnapshot snapshot, _) {
+        final DateTime deletedAt = DateTime.now().toUtc();
         return snapshot.copyWith(
-          departments: _removeById<DepartmentProfile>(
-            snapshot.departments,
-            id,
-            (DepartmentProfile item) => item.id,
-          ),
+          departments: <DepartmentProfile>[
+            for (final DepartmentProfile department in snapshot.departments)
+              department.id == id
+                  ? department.copyWith(deletedAt: deletedAt)
+                  : department,
+          ],
+          units: <UnitProfile>[
+            for (final UnitProfile unit in snapshot.units)
+              unit.departmentId == id
+                  ? unit.copyWith(deletedAt: deletedAt)
+                  : unit,
+          ],
         );
       },
+    );
+  }
+
+  Future<bool> restoreDepartment(String id) {
+    return _submit(
+      () => _repository.restoreDepartment(id),
+      updateSnapshot:
+          (FacilitySetupSnapshot snapshot, DepartmentProfile department) {
+            return snapshot.copyWith(
+              departments: _upsertById<DepartmentProfile>(
+                snapshot.departments,
+                department.copyWith(clearDeletedAt: true),
+                (DepartmentProfile item) => item.id,
+              ),
+            );
+          },
     );
   }
 
@@ -425,10 +484,25 @@ final class TenantFacilitySetupSubmissionController
     return _submit(
       () => _repository.deleteUnit(id),
       updateSnapshot: (FacilitySetupSnapshot snapshot, _) {
+        final DateTime deletedAt = DateTime.now().toUtc();
         return snapshot.copyWith(
-          units: _removeById<UnitProfile>(
+          units: <UnitProfile>[
+            for (final UnitProfile unit in snapshot.units)
+              unit.id == id ? unit.copyWith(deletedAt: deletedAt) : unit,
+          ],
+        );
+      },
+    );
+  }
+
+  Future<bool> restoreUnit(String id) {
+    return _submit(
+      () => _repository.restoreUnit(id),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, UnitProfile unit) {
+        return snapshot.copyWith(
+          units: _upsertById<UnitProfile>(
             snapshot.units,
-            id,
+            unit.copyWith(clearDeletedAt: true),
             (UnitProfile item) => item.id,
           ),
         );
@@ -471,10 +545,42 @@ final class TenantFacilitySetupSubmissionController
     return _submit(
       () => _repository.deleteWard(id),
       updateSnapshot: (FacilitySetupSnapshot snapshot, _) {
+        final DateTime deletedAt = DateTime.now().toUtc();
+        final List<RoomProfile> rooms = <RoomProfile>[
+          for (final RoomProfile room in snapshot.rooms)
+            room.wardId == id ? room.copyWith(deletedAt: deletedAt) : room,
+        ];
+        final Set<String> deletedRoomIds = <String>{
+          for (final RoomProfile room in rooms)
+            if (room.wardId == id) room.id,
+        };
         return snapshot.copyWith(
-          wards: _removeById<WardProfile>(
+          wards: <WardProfile>[
+            for (final WardProfile ward in snapshot.wards)
+              ward.id == id ? ward.copyWith(deletedAt: deletedAt) : ward,
+          ],
+          rooms: rooms,
+          beds: <BedProfile>[
+            for (final BedProfile bed in snapshot.beds)
+              bed.wardId == id ||
+                      (bed.roomId != null &&
+                          deletedRoomIds.contains(bed.roomId))
+                  ? bed.copyWith(deletedAt: deletedAt)
+                  : bed,
+          ],
+        );
+      },
+    );
+  }
+
+  Future<bool> restoreWard(String id) {
+    return _submit(
+      () => _repository.restoreWard(id),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, WardProfile ward) {
+        return snapshot.copyWith(
+          wards: _upsertById<WardProfile>(
             snapshot.wards,
-            id,
+            ward.copyWith(clearDeletedAt: true),
             (WardProfile item) => item.id,
           ),
         );
@@ -515,10 +621,29 @@ final class TenantFacilitySetupSubmissionController
     return _submit(
       () => _repository.deleteRoom(id),
       updateSnapshot: (FacilitySetupSnapshot snapshot, _) {
+        final DateTime deletedAt = DateTime.now().toUtc();
         return snapshot.copyWith(
-          rooms: _removeById<RoomProfile>(
+          rooms: <RoomProfile>[
+            for (final RoomProfile room in snapshot.rooms)
+              room.id == id ? room.copyWith(deletedAt: deletedAt) : room,
+          ],
+          beds: <BedProfile>[
+            for (final BedProfile bed in snapshot.beds)
+              bed.roomId == id ? bed.copyWith(deletedAt: deletedAt) : bed,
+          ],
+        );
+      },
+    );
+  }
+
+  Future<bool> restoreRoom(String id) {
+    return _submit(
+      () => _repository.restoreRoom(id),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, RoomProfile room) {
+        return snapshot.copyWith(
+          rooms: _upsertById<RoomProfile>(
             snapshot.rooms,
-            id,
+            room.copyWith(clearDeletedAt: true),
             (RoomProfile item) => item.id,
           ),
         );
@@ -561,10 +686,25 @@ final class TenantFacilitySetupSubmissionController
     return _submit(
       () => _repository.deleteBed(id),
       updateSnapshot: (FacilitySetupSnapshot snapshot, _) {
+        final DateTime deletedAt = DateTime.now().toUtc();
         return snapshot.copyWith(
-          beds: _removeById<BedProfile>(
+          beds: <BedProfile>[
+            for (final BedProfile bed in snapshot.beds)
+              bed.id == id ? bed.copyWith(deletedAt: deletedAt) : bed,
+          ],
+        );
+      },
+    );
+  }
+
+  Future<bool> restoreBed(String id) {
+    return _submit(
+      () => _repository.restoreBed(id),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, BedProfile bed) {
+        return snapshot.copyWith(
+          beds: _upsertById<BedProfile>(
             snapshot.beds,
-            id,
+            bed.copyWith(clearDeletedAt: true),
             (BedProfile item) => item.id,
           ),
         );
@@ -652,11 +792,4 @@ List<T> _upsertById<T>(List<T> items, T value, String Function(T item) idOf) {
   final next = List<T>.of(items);
   next[index] = value;
   return next;
-}
-
-List<T> _removeById<T>(List<T> items, String id, String Function(T item) idOf) {
-  return <T>[
-    for (final item in items)
-      if (idOf(item) != id) item,
-  ];
 }

@@ -62,6 +62,7 @@ const listUnitsQuerySchema = listQuerySchema.extend({
   department_id: uuidOrFriendlyIdentifierSchema.optional(),
   is_active: z.enum(['true', 'false']).optional(),
   search: z.string().trim().optional(),
+  include_deleted: z.enum(['true', 'false']).optional(),
 });
 
 module.exports = {

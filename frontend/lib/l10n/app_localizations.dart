@@ -9658,6 +9658,78 @@ abstract class AppLocalizations {
   /// **'Restore facility \"{name}\"?'**
   String tenantFacilityRestoreFacilityConfirmationBody(String name);
 
+  /// Restore soft-deleted facility structure record action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get tenantFacilityRestoreStructureAction;
+
+  /// Restore facility structure record confirmation dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore record'**
+  String get tenantFacilityRestoreStructureTitle;
+
+  /// Restore facility structure record confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore \"{name}\"?'**
+  String tenantFacilityRestoreStructureBody(String name);
+
+  /// Soft-deleted facility structure status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get tenantFacilityStructureDeletedStatus;
+
+  /// Active facility structure status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get tenantFacilityStructureActiveStatus;
+
+  /// Soft-delete facility structure confirmation dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete record'**
+  String get tenantFacilitySoftDeleteStructureTitle;
+
+  /// Soft-delete facility structure confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft-delete \"{name}\"? Related child records will also be marked deleted and hidden from operational pickers. They will remain visible here for restore.'**
+  String tenantFacilitySoftDeleteStructureBody(String name);
+
+  /// Soft-delete user confirmation dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete user'**
+  String get tenantFacilitySoftDeleteUserTitle;
+
+  /// Soft-delete user confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft-delete user \"{name}\"? The user will be marked deleted and hidden from operational pickers, but remain visible here for restore.'**
+  String tenantFacilitySoftDeleteUserBody(String name);
+
+  /// Restore soft-deleted user confirmation dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore user'**
+  String get tenantFacilityRestoreUserTitle;
+
+  /// Restore soft-deleted user confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore user \"{name}\"?'**
+  String tenantFacilityRestoreUserBody(String name);
+
+  /// Restore soft-deleted user action label in access admin.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore user'**
+  String get accessAdminRestoreUserAction;
+
   /// Permanent delete facility confirmation dialog title.
   ///
   /// In en, this message translates to:

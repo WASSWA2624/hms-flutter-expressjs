@@ -27,6 +27,7 @@ const listUsers = asyncHandler(async (req, res) => {
     email,
     status,
     search,
+    include_deleted,
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
     sort_by,
@@ -39,8 +40,9 @@ const listUsers = asyncHandler(async (req, res) => {
     position_title,
     email,
     status,
-    search
+    search,
   };
+  if (include_deleted) filters.include_deleted = include_deleted;
 
   const userId = req.user?.id;
   const ipAddress = req.ip;
@@ -125,10 +127,25 @@ const deleteUser = asyncHandler(async (req, res) => {
   sendNoContent(res);
 });
 
+/**
+ * Restore user
+ * POST /api/v1/users/:id/restore
+ */
+const restoreUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user?.id;
+  const ipAddress = req.ip;
+
+  const user = await userService.restoreUser(id, userId, ipAddress);
+
+  sendSuccess(res, 200, 'messages.user.restore.success', user);
+});
+
 module.exports = {
   listUsers,
   getUserById,
   createUser,
   updateUser,
-  deleteUser
+  deleteUser,
+  restoreUser,
 };

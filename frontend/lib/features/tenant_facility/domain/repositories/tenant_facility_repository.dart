@@ -6,6 +6,7 @@ abstract interface class TenantFacilityRepository {
   Future<Result<FacilitySetupSnapshot>> loadSetup({
     String? facilityId,
     String? tenantId,
+    bool includeDeleted = false,
   });
 
   Future<Result<FacilityProfile>> getFacility(String id);
@@ -84,6 +85,8 @@ abstract interface class TenantFacilityRepository {
 
   Future<Result<void>> deleteBranch(String id);
 
+  Future<Result<BranchProfile>> restoreBranch(String id);
+
   Future<Result<DepartmentProfile>> saveDepartment({
     String? id,
     required String tenantId,
@@ -97,6 +100,8 @@ abstract interface class TenantFacilityRepository {
 
   Future<Result<void>> deleteDepartment(String id);
 
+  Future<Result<DepartmentProfile>> restoreDepartment(String id);
+
   Future<Result<UnitProfile>> saveUnit({
     String? id,
     required String tenantId,
@@ -107,6 +112,8 @@ abstract interface class TenantFacilityRepository {
   });
 
   Future<Result<void>> deleteUnit(String id);
+
+  Future<Result<UnitProfile>> restoreUnit(String id);
 
   Future<Result<WardProfile>> saveWard({
     String? id,
@@ -120,6 +127,8 @@ abstract interface class TenantFacilityRepository {
 
   Future<Result<void>> deleteWard(String id);
 
+  Future<Result<WardProfile>> restoreWard(String id);
+
   Future<Result<RoomProfile>> saveRoom({
     String? id,
     required String tenantId,
@@ -130,6 +139,8 @@ abstract interface class TenantFacilityRepository {
   });
 
   Future<Result<void>> deleteRoom(String id);
+
+  Future<Result<RoomProfile>> restoreRoom(String id);
 
   Future<Result<BedProfile>> saveBed({
     String? id,
@@ -142,4 +153,6 @@ abstract interface class TenantFacilityRepository {
   });
 
   Future<Result<void>> deleteBed(String id);
+
+  Future<Result<BedProfile>> restoreBed(String id);
 }

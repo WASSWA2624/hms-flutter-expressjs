@@ -29,6 +29,7 @@ import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_similarity_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -2396,15 +2397,31 @@ class _BranchSetupSection extends ConsumerWidget {
       canAdd: canManageRecords,
       onAdd: () => _openBranchDialog(context, snapshot),
       titleBuilder: (BranchProfile branch) => branch.name,
-      subtitleBuilder: (BranchProfile branch) =>
-          _activeStatusLabel(l10n, branch.isActive),
-      onEdit: (BranchProfile branch) =>
-          _openBranchDialog(context, snapshot, branch: branch),
+      subtitleBuilder: (BranchProfile branch) => branch.isDeleted
+          ? l10n.tenantFacilityStructureDeletedStatus
+          : _activeStatusLabel(l10n, branch.isActive),
+      isDeletedBuilder: (BranchProfile branch) => branch.isDeleted,
+      onEdit: (BranchProfile branch) {
+        if (branch.isDeleted) {
+          return;
+        }
+        _openBranchDialog(context, snapshot, branch: branch);
+      },
       onDelete: (BranchProfile branch) => _deleteEntity(
         context: context,
+        ref: ref,
+        name: branch.name,
         deleteAction: () => ref
             .read(tenantFacilitySetupSubmissionProvider.notifier)
             .deleteBranch(branch.id),
+      ),
+      onRestore: (BranchProfile branch) => _restoreEntity(
+        context: context,
+        ref: ref,
+        name: branch.name,
+        restoreAction: () => ref
+            .read(tenantFacilitySetupSubmissionProvider.notifier)
+            .restoreBranch(branch.id),
       ),
     );
 
@@ -2457,15 +2474,31 @@ class _DepartmentSetupSection extends ConsumerWidget {
       canAdd: canAdd,
       onAdd: () => _openDepartmentDialog(context, snapshot),
       titleBuilder: (DepartmentProfile department) => department.name,
-      subtitleBuilder: (DepartmentProfile department) =>
-          _departmentSubtitle(l10n, snapshot, department),
-      onEdit: (DepartmentProfile department) =>
-          _openDepartmentDialog(context, snapshot, department: department),
+      subtitleBuilder: (DepartmentProfile department) => department.isDeleted
+          ? l10n.tenantFacilityStructureDeletedStatus
+          : _departmentSubtitle(l10n, snapshot, department),
+      isDeletedBuilder: (DepartmentProfile department) => department.isDeleted,
+      onEdit: (DepartmentProfile department) {
+        if (department.isDeleted) {
+          return;
+        }
+        _openDepartmentDialog(context, snapshot, department: department);
+      },
       onDelete: (DepartmentProfile department) => _deleteEntity(
         context: context,
+        ref: ref,
+        name: department.name,
         deleteAction: () => ref
             .read(tenantFacilitySetupSubmissionProvider.notifier)
             .deleteDepartment(department.id),
+      ),
+      onRestore: (DepartmentProfile department) => _restoreEntity(
+        context: context,
+        ref: ref,
+        name: department.name,
+        restoreAction: () => ref
+            .read(tenantFacilitySetupSubmissionProvider.notifier)
+            .restoreDepartment(department.id),
       ),
     );
 
@@ -2519,15 +2552,31 @@ class _UnitSetupSection extends ConsumerWidget {
       canAdd: canAdd,
       onAdd: () => _openUnitDialog(context, snapshot),
       titleBuilder: (UnitProfile unit) => unit.name,
-      subtitleBuilder: (UnitProfile unit) =>
-          _unitSubtitle(l10n, snapshot, unit),
-      onEdit: (UnitProfile unit) =>
-          _openUnitDialog(context, snapshot, unit: unit),
+      subtitleBuilder: (UnitProfile unit) => unit.isDeleted
+          ? l10n.tenantFacilityStructureDeletedStatus
+          : _unitSubtitle(l10n, snapshot, unit),
+      isDeletedBuilder: (UnitProfile unit) => unit.isDeleted,
+      onEdit: (UnitProfile unit) {
+        if (unit.isDeleted) {
+          return;
+        }
+        _openUnitDialog(context, snapshot, unit: unit);
+      },
       onDelete: (UnitProfile unit) => _deleteEntity(
         context: context,
+        ref: ref,
+        name: unit.name,
         deleteAction: () => ref
             .read(tenantFacilitySetupSubmissionProvider.notifier)
             .deleteUnit(unit.id),
+      ),
+      onRestore: (UnitProfile unit) => _restoreEntity(
+        context: context,
+        ref: ref,
+        name: unit.name,
+        restoreAction: () => ref
+            .read(tenantFacilitySetupSubmissionProvider.notifier)
+            .restoreUnit(unit.id),
       ),
     );
 
@@ -2581,15 +2630,31 @@ class _WardSetupSection extends ConsumerWidget {
       canAdd: canAdd,
       onAdd: () => _openWardDialog(context, snapshot),
       titleBuilder: (WardProfile ward) => ward.name,
-      subtitleBuilder: (WardProfile ward) =>
-          _wardSubtitle(l10n, snapshot, ward),
-      onEdit: (WardProfile ward) =>
-          _openWardDialog(context, snapshot, ward: ward),
+      subtitleBuilder: (WardProfile ward) => ward.isDeleted
+          ? l10n.tenantFacilityStructureDeletedStatus
+          : _wardSubtitle(l10n, snapshot, ward),
+      isDeletedBuilder: (WardProfile ward) => ward.isDeleted,
+      onEdit: (WardProfile ward) {
+        if (ward.isDeleted) {
+          return;
+        }
+        _openWardDialog(context, snapshot, ward: ward);
+      },
       onDelete: (WardProfile ward) => _deleteEntity(
         context: context,
+        ref: ref,
+        name: ward.name,
         deleteAction: () => ref
             .read(tenantFacilitySetupSubmissionProvider.notifier)
             .deleteWard(ward.id),
+      ),
+      onRestore: (WardProfile ward) => _restoreEntity(
+        context: context,
+        ref: ref,
+        name: ward.name,
+        restoreAction: () => ref
+            .read(tenantFacilitySetupSubmissionProvider.notifier)
+            .restoreWard(ward.id),
       ),
     );
 
@@ -2644,15 +2709,31 @@ class _RoomSetupSection extends ConsumerWidget {
       canAdd: canAdd,
       onAdd: () => _openRoomDialog(context, snapshot),
       titleBuilder: (RoomProfile room) => room.name,
-      subtitleBuilder: (RoomProfile room) =>
-          _roomSubtitle(l10n, snapshot, room),
-      onEdit: (RoomProfile room) =>
-          _openRoomDialog(context, snapshot, room: room),
+      subtitleBuilder: (RoomProfile room) => room.isDeleted
+          ? l10n.tenantFacilityStructureDeletedStatus
+          : _roomSubtitle(l10n, snapshot, room),
+      isDeletedBuilder: (RoomProfile room) => room.isDeleted,
+      onEdit: (RoomProfile room) {
+        if (room.isDeleted) {
+          return;
+        }
+        _openRoomDialog(context, snapshot, room: room);
+      },
       onDelete: (RoomProfile room) => _deleteEntity(
         context: context,
+        ref: ref,
+        name: room.name,
         deleteAction: () => ref
             .read(tenantFacilitySetupSubmissionProvider.notifier)
             .deleteRoom(room.id),
+      ),
+      onRestore: (RoomProfile room) => _restoreEntity(
+        context: context,
+        ref: ref,
+        name: room.name,
+        restoreAction: () => ref
+            .read(tenantFacilitySetupSubmissionProvider.notifier)
+            .restoreRoom(room.id),
       ),
     );
 
@@ -2706,13 +2787,31 @@ class _BedSetupSection extends ConsumerWidget {
       canAdd: canAdd,
       onAdd: () => _openBedDialog(context, snapshot),
       titleBuilder: (BedProfile bed) => bed.label,
-      subtitleBuilder: (BedProfile bed) => _bedSubtitle(l10n, snapshot, bed),
-      onEdit: (BedProfile bed) => _openBedDialog(context, snapshot, bed: bed),
+      subtitleBuilder: (BedProfile bed) => bed.isDeleted
+          ? l10n.tenantFacilityStructureDeletedStatus
+          : _bedSubtitle(l10n, snapshot, bed),
+      isDeletedBuilder: (BedProfile bed) => bed.isDeleted,
+      onEdit: (BedProfile bed) {
+        if (bed.isDeleted) {
+          return;
+        }
+        _openBedDialog(context, snapshot, bed: bed);
+      },
       onDelete: (BedProfile bed) => _deleteEntity(
         context: context,
+        ref: ref,
+        name: bed.label,
         deleteAction: () => ref
             .read(tenantFacilitySetupSubmissionProvider.notifier)
             .deleteBed(bed.id),
+      ),
+      onRestore: (BedProfile bed) => _restoreEntity(
+        context: context,
+        ref: ref,
+        name: bed.label,
+        restoreAction: () => ref
+            .read(tenantFacilitySetupSubmissionProvider.notifier)
+            .restoreBed(bed.id),
       ),
     );
 
@@ -2786,8 +2885,10 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
     required this.onAdd,
     required this.titleBuilder,
     required this.subtitleBuilder,
+    required this.isDeletedBuilder,
     required this.onEdit,
     required this.onDelete,
+    required this.onRestore,
   });
 
   final String title;
@@ -2802,8 +2903,10 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
   final VoidCallback onAdd;
   final String Function(T item) titleBuilder;
   final String Function(T item) subtitleBuilder;
+  final bool Function(T item) isDeletedBuilder;
   final ValueChanged<T> onEdit;
   final ValueChanged<T> onDelete;
+  final ValueChanged<T> onRestore;
 
   @override
   State<_SearchableEntityGroup<T>> createState() =>
@@ -2864,8 +2967,10 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
           onAdd: widget.onAdd,
           titleBuilder: widget.titleBuilder,
           subtitleBuilder: widget.subtitleBuilder,
+          isDeletedBuilder: widget.isDeletedBuilder,
           onEdit: widget.onEdit,
           onDelete: widget.onDelete,
+          onRestore: widget.onRestore,
         ),
       ],
     );
@@ -2914,8 +3019,10 @@ class _EntityGroup<T> extends StatelessWidget {
     required this.onAdd,
     required this.titleBuilder,
     required this.subtitleBuilder,
+    required this.isDeletedBuilder,
     required this.onEdit,
     required this.onDelete,
+    required this.onRestore,
   });
 
   final String title;
@@ -2927,8 +3034,10 @@ class _EntityGroup<T> extends StatelessWidget {
   final VoidCallback onAdd;
   final String Function(T item) titleBuilder;
   final String Function(T item) subtitleBuilder;
+  final bool Function(T item) isDeletedBuilder;
   final ValueChanged<T> onEdit;
   final ValueChanged<T> onDelete;
+  final ValueChanged<T> onRestore;
 
   @override
   Widget build(BuildContext context) {
@@ -2963,9 +3072,11 @@ class _EntityGroup<T> extends StatelessWidget {
                 _EntityRow(
                   title: titleBuilder(item),
                   subtitle: subtitleBuilder(item),
+                  isDeleted: isDeletedBuilder(item),
                   canEdit: canManageRecords,
                   onEdit: () => onEdit(item),
                   onDelete: () => onDelete(item),
+                  onRestore: () => onRestore(item),
                 ),
                 if (item != items.last) const Divider(height: 1),
               ],
@@ -2980,21 +3091,34 @@ class _EntityRow extends StatelessWidget {
   const _EntityRow({
     required this.title,
     required this.subtitle,
+    required this.isDeleted,
     required this.canEdit,
     required this.onEdit,
     required this.onDelete,
+    required this.onRestore,
   });
 
   final String title;
   final String subtitle;
+  final bool isDeleted;
   final bool canEdit;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onRestore;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
+    final ColorScheme colorScheme = theme.colorScheme;
+    final TextStyle? mutedTitleStyle = isDeleted
+        ? theme.textTheme.titleSmall?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          )
+        : theme.textTheme.titleSmall;
+    final TextStyle? mutedSubtitleStyle = theme.textTheme.bodySmall?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+    );
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
@@ -3005,37 +3129,46 @@ class _EntityRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Text(title, style: theme.textTheme.titleSmall),
+                Text(title, style: mutedTitleStyle),
                 SizedBox(height: theme.spacing.xs),
                 Text(
                   subtitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                  style: mutedSubtitleStyle,
                 ),
               ],
             ),
           ),
           if (canEdit) ...<Widget>[
             SizedBox(width: theme.spacing.sm),
-            AppButton(
-              iconOnly: true,
-              leadingIcon: Icons.edit_outlined,
-              label: l10n.tenantFacilityEditAction,
+            if (isDeleted)
+              AppButton(
+                iconOnly: true,
+                leadingIcon: Icons.restore_outlined,
+                label: l10n.tenantFacilityRestoreStructureAction,
+                semanticLabel: l10n.tenantFacilityRestoreStructureAction,
+                tooltip: l10n.tenantFacilityRestoreStructureAction,
+                onPressed: onRestore,
+              )
+            else ...<Widget>[
+              AppButton(
+                iconOnly: true,
+                leadingIcon: Icons.edit_outlined,
+                label: l10n.tenantFacilityEditAction,
 
-              semanticLabel: l10n.tenantFacilityEditAction,
-              onPressed: onEdit,
-            ),
-            AppButton(
-              iconOnly: true,
-              icon: Icons.delete_outline,
-              label: l10n.tenantFacilityDeleteAction,
-              semanticLabel: l10n.tenantFacilityDeleteAction,
-              onPressed: onDelete,
-              color: theme.statusColors.error,
-            ),
+                semanticLabel: l10n.tenantFacilityEditAction,
+                onPressed: onEdit,
+              ),
+              AppButton(
+                iconOnly: true,
+                icon: Icons.delete_outline,
+                label: l10n.tenantFacilityDeleteAction,
+                semanticLabel: l10n.tenantFacilityDeleteAction,
+                onPressed: onDelete,
+                color: theme.statusColors.error,
+              ),
+            ],
           ],
         ],
       ),
@@ -4394,39 +4527,57 @@ Future<void> _openBedDialog(
 
 Future<void> _deleteEntity({
   required BuildContext context,
+  required WidgetRef ref,
+  required String name,
   required Future<bool> Function() deleteAction,
 }) async {
   final AppLocalizations l10n = context.l10n;
-  final bool? confirmed = await showAppDialog<bool>(
+  await showAppDialog<bool>(
     context: context,
-    builder: (BuildContext dialogContext) => AppDialog(
-      title: Text(l10n.tenantFacilityDeleteConfirmationTitle),
-      content: Text(l10n.tenantFacilityDeleteConfirmationBody),
-      icon: Icon(
-        Icons.delete_outline,
-        color: Theme.of(context).statusColors.error,
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          onPressed: () => Navigator.of(dialogContext).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.tenantFacilityDeleteConfirmAction,
-          leadingIcon: Icons.delete_outline,
-          onPressed: () => Navigator.of(dialogContext).pop(true),
-        ),
-      ],
+    builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+      title: l10n.tenantFacilitySoftDeleteStructureTitle,
+      body: l10n.tenantFacilitySoftDeleteStructureBody(name),
+      highlightedText: name,
+      submitLabel: l10n.tenantFacilityDeleteConfirmAction,
+      destructive: true,
+      icon: const Icon(Icons.delete_outline),
+      onConfirm: () async {
+        final bool deleted = await deleteAction();
+        if (deleted) {
+          return null;
+        }
+        return ref.read(tenantFacilitySetupSubmissionProvider).failure ??
+            const AppFailure.unexpected();
+      },
     ),
   );
-  if (confirmed != true) {
-    return;
-  }
+}
 
-  final bool deleted = await deleteAction();
-  if (!deleted) {
-    return;
-  }
+Future<void> _restoreEntity({
+  required BuildContext context,
+  required WidgetRef ref,
+  required String name,
+  required Future<bool> Function() restoreAction,
+}) async {
+  final AppLocalizations l10n = context.l10n;
+  await showAppDialog<bool>(
+    context: context,
+    builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+      title: l10n.tenantFacilityRestoreStructureTitle,
+      body: l10n.tenantFacilityRestoreStructureBody(name),
+      highlightedText: name,
+      submitLabel: l10n.tenantFacilityRestoreStructureAction,
+      icon: const Icon(Icons.restore_outlined),
+      onConfirm: () async {
+        final bool restored = await restoreAction();
+        if (restored) {
+          return null;
+        }
+        return ref.read(tenantFacilitySetupSubmissionProvider).failure ??
+            const AppFailure.unexpected();
+      },
+    ),
+  );
 }
 
 String? _optionalSelection(String? value) {

@@ -19,7 +19,7 @@ const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
  * @returns {Promise<void>}
  */
 const listDepartments = asyncHandler(async (req, res) => {
-  const { page, limit, sort_by, order, tenant_id, facility_id, branch_id, department_type, is_active, search } = req.query;
+  const { page, limit, sort_by, order, tenant_id, facility_id, branch_id, department_type, is_active, search, include_deleted } = req.query;
 
   const filters = {};
   if (tenant_id) filters.tenant_id = tenant_id;
@@ -28,6 +28,7 @@ const listDepartments = asyncHandler(async (req, res) => {
   if (department_type) filters.department_type = department_type;
   if (is_active) filters.is_active = is_active;
   if (search) filters.search = search;
+  if (include_deleted) filters.include_deleted = include_deleted;
 
   const result = await departmentService.listDepartments(
     filters,
@@ -134,6 +135,24 @@ const deleteDepartment = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Restore department
+ */
+const restoreDepartment = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const context = {
+    user_id: req.user?.id,
+    tenant_id: req.user?.tenant_id,
+    facility_id: req.user?.facility_id,
+    ip_address: req.ip,
+    user_agent: req.get('user-agent'),
+  };
+
+  const department = await departmentService.restoreDepartment(id, context);
+
+  return sendSuccess(res, 200, 'messages.department.restore.success', department);
+});
+
+/**
  * Get department units (nested resource)
  *
  * @param {Object} req - Express request
@@ -160,5 +179,6 @@ module.exports = {
   createDepartment,
   updateDepartment,
   deleteDepartment,
-  getDepartmentUnits
+  restoreDepartment,
+  getDepartmentUnits,
 };

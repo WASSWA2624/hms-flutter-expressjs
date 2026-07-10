@@ -16,8 +16,12 @@ const isSuperAdmin = (user = {}) => {
 };
 
 const tenantScopedWhere = (scope = {}, options = {}) => {
-  const { includeFacility = false } = options;
-  const where = { deleted_at: null };
+  const { includeFacility = false, includeDeleted = false } = options;
+  const where = {};
+
+  if (!includeDeleted) {
+    where.deleted_at = null;
+  }
 
   if (scope.tenant_id) {
     where.tenant_id = scope.tenant_id;
@@ -133,7 +137,7 @@ const findFacilities = async (tenantId) => {
   }
 };
 
-const findFacilityRecords = async (scope = {}) => {
+const findFacilityRecords = async (scope = {}, { includeDeleted = false } = {}) => {
   try {
     if (!scope.tenant_id || !scope.facility_id) {
       return {
@@ -148,7 +152,10 @@ const findFacilityRecords = async (scope = {}) => {
       };
     }
 
-    const baseWhere = tenantScopedWhere(scope, { includeFacility: true });
+    const baseWhere = tenantScopedWhere(scope, {
+      includeFacility: true,
+      includeDeleted,
+    });
 
     const [branches, departments, units, wards, rooms, beds, contacts, addresses] =
       await Promise.all([

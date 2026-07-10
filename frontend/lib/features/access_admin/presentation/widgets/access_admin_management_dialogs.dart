@@ -7,6 +7,8 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/app_permission_catalog_localizations.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
@@ -17,8 +19,6 @@ import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
-import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
-import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/shared/management/platform_admin_list_config.dart';
 import 'package:hosspi_hms/shared/management/platform_management_list_sync.dart';
 
@@ -213,7 +213,8 @@ class _ManageUsersDialog extends ConsumerStatefulWidget {
 class _ManageUsersDialogState
     extends _ScopedAccessAdminListDialogState<_ManageUsersDialog> {
   @override
-  AccessAdminWorkspaceQuery get listQuery => const AccessAdminWorkspaceQuery();
+  AccessAdminWorkspaceQuery get listQuery =>
+      const AccessAdminWorkspaceQuery(includeDeleted: true);
 
   Future<void> _openCreateUserDialog() async {
     final AccessAdminWorkspaceState? state = buildWorkspaceState();
@@ -286,15 +287,16 @@ class _ManageUsersDialogState
   }
 
   Future<void> _confirmDeleteUser(AccessAdminItem user) async {
-    if (user.isDemo || user.isSystemCritical) {
+    if (user.isDemo || user.isSystemCritical || user.isDeleted) {
       return;
     }
     final AppLocalizations l10n = context.l10n;
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) => AppConfirmActionDialog(
-        title: l10n.accessAdminDeleteUserAction,
-        body: l10n.tenantFacilityDeleteConfirmationBody,
+        title: l10n.tenantFacilitySoftDeleteUserTitle,
+        body: l10n.tenantFacilitySoftDeleteUserBody(user.title),
+        highlightedText: user.title,
         submitLabel: l10n.tenantFacilityDeleteConfirmAction,
         destructive: true,
         icon: const Icon(Icons.delete_outline),
@@ -312,15 +314,52 @@ class _ManageUsersDialogState
     if (confirmed == true && mounted) {
       mutated = true;
       setState(() {
-        items = items
-            .where(
-              (AccessAdminItem entry) =>
-                  entry.id != user.id && entry.mutationId != user.mutationId,
-            )
-            .toList(growable: false);
-        totalItemCount = math.max(0, totalItemCount - 1);
+        items = <AccessAdminItem>[
+          for (final AccessAdminItem entry in items)
+            entry.id == user.id || entry.mutationId == user.mutationId
+                ? entry.copyWith(deletedAt: DateTime.now().toUtc())
+                : entry,
+        ];
       });
-      unawaited(reload(resetPage: items.isEmpty, silent: true));
+      unawaited(reload(resetPage: false, silent: true));
+    }
+  }
+
+  Future<void> _confirmRestoreUser(AccessAdminItem user) async {
+    if (!user.isDeleted) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.tenantFacilityRestoreUserTitle,
+        body: l10n.tenantFacilityRestoreUserBody(user.title),
+        highlightedText: user.title,
+        submitLabel: l10n.accessAdminRestoreUserAction,
+        icon: const Icon(Icons.restore_outlined),
+        onConfirm: () async {
+          final Result<void> result = await repository.restoreUser(
+            user.mutationId,
+          );
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
+    );
+    if (confirmed == true && mounted) {
+      mutated = true;
+      setState(() {
+        items = <AccessAdminItem>[
+          for (final AccessAdminItem entry in items)
+            entry.id == user.id || entry.mutationId == user.mutationId
+                ? entry.copyWith(clearDeletedAt: true)
+                : entry,
+        ];
+      });
+      unawaited(reload(resetPage: false, silent: true));
     }
   }
 
@@ -430,8 +469,11 @@ class _ManageUsersDialogState
                   ),
                   AppListTableColumn<AccessAdminItem>(
                     label: l10n.accessAdminColumnStatus,
-                    cellBuilder: (_, AccessAdminItem item) =>
-                        Text(item.status ?? '—'),
+                    cellBuilder: (_, AccessAdminItem item) => Text(
+                      item.isDeleted
+                          ? l10n.tenantFacilityStructureDeletedStatus
+                          : (item.status ?? '—'),
+                    ),
                   ),
                   if (canWrite)
                     AppListTableColumn<AccessAdminItem>(
@@ -439,6 +481,21 @@ class _ManageUsersDialogState
                       alwaysVisible: true,
                       cellBuilder:
                           (BuildContext context, AccessAdminItem user) {
+                            if (user.isDeleted) {
+                              return AppButton.tertiary(
+                                leadingIcon: Icons.restore_outlined,
+                                label: l10n.accessAdminRestoreUserAction,
+                                semanticLabel:
+                                    l10n.accessAdminRestoreUserAction,
+                                tooltip: l10n.accessAdminRestoreUserAction,
+                                enabled: !loading && !mutating,
+                                onPressed: !loading && !mutating
+                                    ? () => unawaited(
+                                          _confirmRestoreUser(user),
+                                        )
+                                    : null,
+                              );
+                            }
                             return Row(
                               mainAxisSize: MainAxisSize.min,
                               children: <Widget>[
@@ -460,8 +517,14 @@ class _ManageUsersDialogState
                                       l10n.tenantFacilityDeleteAction,
                                   tooltip: l10n.tenantFacilityDeleteAction,
                                   color: colorScheme.error,
-                                  enabled: !loading && !mutating,
-                                  onPressed: !loading && !mutating
+                                  enabled: !loading &&
+                                      !mutating &&
+                                      !user.isDemo &&
+                                      !user.isSystemCritical,
+                                  onPressed: !loading &&
+                                          !mutating &&
+                                          !user.isDemo &&
+                                          !user.isSystemCritical
                                       ? () =>
                                             unawaited(_confirmDeleteUser(user))
                                       : null,

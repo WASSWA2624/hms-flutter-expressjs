@@ -65,6 +65,14 @@ router.get(
   unitController.listUnits
 );
 
+router.post(
+  '/:id/restore',
+  validateRequest({ params: unitIdParamsSchema }),
+  authenticate(),
+  authorize(SETUP_ADMIN_SCOPES, 'permission'),
+  unitController.restoreUnit
+);
+
 /**
  * @description Get unit by ID
  * @method GET

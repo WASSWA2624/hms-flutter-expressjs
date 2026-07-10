@@ -58,7 +58,8 @@ const listBranchesQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   is_active: z.enum(['true', 'false']).optional(),
-  search: z.string().trim().optional()
+  search: z.string().trim().optional(),
+  include_deleted: z.enum(['true', 'false']).optional(),
 });
 
 module.exports = {

@@ -60,6 +60,14 @@ router.get(
   roomController.listRooms
 );
 
+router.post(
+  '/:id/restore',
+  validateRequest({ params: roomIdParamsSchema }),
+  authenticate(),
+  authorize(BED_MANAGEMENT_ADMIN_SCOPES, 'permission'),
+  roomController.restoreRoom
+);
+
 /**
  * @description Get room by ID
  * @method GET
