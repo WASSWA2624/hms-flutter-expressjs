@@ -15,6 +15,8 @@ final class AuthSessionDto {
     this.moduleEntitlements = const <AppModuleEntitlement>[],
     this.subscriptionSummary,
     this.platformAdminContact,
+    this.tenantAdminContacts = const <OrgAdminContact>[],
+    this.facilityAdminContacts = const <OrgAdminContact>[],
   });
 
   factory AuthSessionDto.fromResponseData(Object? data) {
@@ -52,6 +54,20 @@ final class AuthSessionDto {
       platformAdminContact: userMap == null
           ? null
           : platformAdminContactFromResponseData(userMap),
+      tenantAdminContacts: userMap == null
+          ? const <OrgAdminContact>[]
+          : orgAdminContactsFromResponseData(
+              userMap,
+              'tenant_admin_contacts',
+              'tenantAdminContacts',
+            ),
+      facilityAdminContacts: userMap == null
+          ? const <OrgAdminContact>[]
+          : orgAdminContactsFromResponseData(
+              userMap,
+              'facility_admin_contacts',
+              'facilityAdminContacts',
+            ),
     );
   }
 
@@ -63,6 +79,8 @@ final class AuthSessionDto {
   final List<AppModuleEntitlement> moduleEntitlements;
   final TenantSubscriptionSummary? subscriptionSummary;
   final PlatformAdminContact? platformAdminContact;
+  final List<OrgAdminContact> tenantAdminContacts;
+  final List<OrgAdminContact> facilityAdminContacts;
 
   AuthSession toEntity() {
     return AuthSession(
@@ -77,6 +95,8 @@ final class AuthSessionDto {
       moduleEntitlements: moduleEntitlements,
       subscriptionSummary: subscriptionSummary,
       platformAdminContact: platformAdminContact,
+      tenantAdminContacts: tenantAdminContacts,
+      facilityAdminContacts: facilityAdminContacts,
     );
   }
 
@@ -171,6 +191,17 @@ final class AuthSessionDto {
     }
 
     return PlatformAdminContact.fromJson(contact);
+  }
+
+  static List<OrgAdminContact> orgAdminContactsFromResponseData(
+    Object? data,
+    String snakeKey,
+    String camelKey,
+  ) {
+    if (data is! Map<String, Object?>) {
+      return const <OrgAdminContact>[];
+    }
+    return OrgAdminContact.listFromJson(data[snakeKey] ?? data[camelKey]);
   }
 
   static List<AppModuleEntitlement> moduleEntitlementsFromResponseData(

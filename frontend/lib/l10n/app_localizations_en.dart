@@ -1260,10 +1260,34 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get subscriptionExpiredPromptContactAdminBody =>
-      'Your organization\'s subscription has expired. Ask a tenant administrator, facility administrator, or another user with subscription access to renew it.';
+      'Your organization\'s subscription has expired. Contact a facility or tenant administrator below so they can renew access.';
 
   @override
   String get subscriptionExpiredPromptContactAdminAction => 'Got it';
+
+  @override
+  String get subscriptionReportAdminsDialogTitle => 'Report subscription issue';
+
+  @override
+  String get subscriptionReportAdminsDialogBody =>
+      'Your subscription is due soon or needs attention. Contact a facility or tenant administrator so they can renew or upgrade the plan.';
+
+  @override
+  String get subscriptionReportFacilityAdminsLabel => 'Facility administrators';
+
+  @override
+  String get subscriptionReportTenantAdminsLabel => 'Tenant administrators';
+
+  @override
+  String get subscriptionReportFacilityAdminRoleLabel =>
+      'Facility administrator';
+
+  @override
+  String get subscriptionReportTenantAdminRoleLabel => 'Tenant administrator';
+
+  @override
+  String get subscriptionReportAdminsEmptyMessage =>
+      'No facility or tenant administrator contacts are available yet. Ask your supervisor who manages subscriptions for this organization.';
 
   @override
   String get subscriptionUpgradeAccessDeniedMessage =>

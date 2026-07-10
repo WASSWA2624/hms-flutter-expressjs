@@ -14,6 +14,8 @@ final class AuthSession {
         const <AppModuleEntitlement>[],
     this.subscriptionSummary,
     this.platformAdminContact,
+    Iterable<OrgAdminContact> tenantAdminContacts = const <OrgAdminContact>[],
+    Iterable<OrgAdminContact> facilityAdminContacts = const <OrgAdminContact>[],
   }) : subject =
            _normalizedSubject(subject) ??
            _normalizedSubject(user?.email) ??
@@ -22,7 +24,13 @@ final class AuthSession {
        moduleEntitlements = Map<String, AppModuleEntitlement>.unmodifiable({
          for (final entitlement in moduleEntitlements)
            entitlement.normalizedCode: entitlement,
-       });
+       }),
+       tenantAdminContacts = List<OrgAdminContact>.unmodifiable(
+         tenantAdminContacts,
+       ),
+       facilityAdminContacts = List<OrgAdminContact>.unmodifiable(
+         facilityAdminContacts,
+       );
 
   factory AuthSession.fromTokens(SessionTokens tokens) {
     final Map<String, Object?>? payload = _tokenPayload(tokens.accessToken);
@@ -46,6 +54,8 @@ final class AuthSession {
   final Map<String, AppModuleEntitlement> moduleEntitlements;
   final TenantSubscriptionSummary? subscriptionSummary;
   final PlatformAdminContact? platformAdminContact;
+  final List<OrgAdminContact> tenantAdminContacts;
+  final List<OrgAdminContact> facilityAdminContacts;
 
   bool hasPermission(AppPermission permission) {
     return permissions.grants(permission);
@@ -63,6 +73,8 @@ final class AuthSession {
     Iterable<AppModuleEntitlement>? moduleEntitlements,
     TenantSubscriptionSummary? subscriptionSummary,
     PlatformAdminContact? platformAdminContact,
+    Iterable<OrgAdminContact>? tenantAdminContacts,
+    Iterable<OrgAdminContact>? facilityAdminContacts,
   }) {
     return AuthSession(
       tokens: tokens ?? this.tokens,
@@ -72,6 +84,9 @@ final class AuthSession {
       moduleEntitlements: moduleEntitlements ?? this.moduleEntitlements.values,
       subscriptionSummary: subscriptionSummary ?? this.subscriptionSummary,
       platformAdminContact: platformAdminContact ?? this.platformAdminContact,
+      tenantAdminContacts: tenantAdminContacts ?? this.tenantAdminContacts,
+      facilityAdminContacts:
+          facilityAdminContacts ?? this.facilityAdminContacts,
     );
   }
 

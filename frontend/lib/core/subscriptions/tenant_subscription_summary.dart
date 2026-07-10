@@ -54,6 +54,95 @@ final class PlatformAdminContact {
 }
 
 @immutable
+final class OrgAdminContact {
+  const OrgAdminContact({
+    this.id,
+    this.fullName,
+    this.email,
+    this.phone,
+    this.roleName,
+  });
+
+  final String? id;
+  final String? fullName;
+  final String? email;
+  final String? phone;
+  final String? roleName;
+
+  bool get hasContact =>
+      (fullName?.trim().isNotEmpty ?? false) ||
+      (email?.trim().isNotEmpty ?? false) ||
+      (phone?.trim().isNotEmpty ?? false);
+
+  String get displayName {
+    final String? name = fullName?.trim();
+    if (name != null && name.isNotEmpty) {
+      return name;
+    }
+    final String? mail = email?.trim();
+    if (mail != null && mail.isNotEmpty) {
+      return mail;
+    }
+    return roleName?.trim().isNotEmpty == true ? roleName!.trim() : 'Administrator';
+  }
+
+  factory OrgAdminContact.fromJson(Map<String, Object?>? json) {
+    if (json == null) {
+      return const OrgAdminContact();
+    }
+    return OrgAdminContact(
+      id: _string(json['id']),
+      fullName:
+          _string(json['full_name']) ??
+          _string(json['fullName']) ??
+          _composeName(json),
+      email: _string(json['email']),
+      phone: _string(json['phone']),
+      roleName: _string(json['role_name']) ?? _string(json['roleName']),
+    );
+  }
+
+  static List<OrgAdminContact> listFromJson(Object? value) {
+    if (value is! Iterable) {
+      return const <OrgAdminContact>[];
+    }
+    final List<OrgAdminContact> contacts = <OrgAdminContact>[];
+    for (final Object? entry in value) {
+      if (entry is! Map) {
+        continue;
+      }
+      final OrgAdminContact contact = OrgAdminContact.fromJson(
+        Map<String, Object?>.from(entry),
+      );
+      if (contact.hasContact) {
+        contacts.add(contact);
+      }
+    }
+    return contacts;
+  }
+
+  static String? _composeName(Map<String, Object?> json) {
+    final List<String> parts = <String>[
+      ?_string(json['first_name'] ?? json['firstName']),
+      ?_string(json['middle_name'] ?? json['middleName']),
+      ?_string(json['last_name'] ?? json['lastName']),
+    ];
+    if (parts.isEmpty) {
+      return null;
+    }
+    return parts.join(' ');
+  }
+
+  static String? _string(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+}
+
+@immutable
 final class PlatformBankTransferDetails {
   const PlatformBankTransferDetails({
     this.accountName,

@@ -303,6 +303,18 @@ final class AuthRepositoryImpl implements AuthRepository {
               AuthSessionDto.subscriptionSummaryFromResponseData(payload);
           final platformAdminContact =
               AuthSessionDto.platformAdminContactFromResponseData(payload);
+          final tenantAdminContacts =
+              AuthSessionDto.orgAdminContactsFromResponseData(
+                payload,
+                'tenant_admin_contacts',
+                'tenantAdminContacts',
+              );
+          final facilityAdminContacts =
+              AuthSessionDto.orgAdminContactsFromResponseData(
+                payload,
+                'facility_admin_contacts',
+                'facilityAdminContacts',
+              );
           var enriched = session;
           if (profile != null) {
             enriched = enriched.enrichFromUserProfile(profile);
@@ -325,6 +337,10 @@ final class AuthRepositoryImpl implements AuthRepository {
               platformAdminContact: platformAdminContact,
             );
           }
+          enriched = enriched.copyWith(
+            tenantAdminContacts: tenantAdminContacts,
+            facilityAdminContacts: facilityAdminContacts,
+          );
           return enriched;
         },
       ),

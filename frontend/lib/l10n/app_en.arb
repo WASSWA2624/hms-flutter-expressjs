@@ -1641,13 +1641,41 @@
   "@subscriptionExpiredPromptLaterAction": {
     "description": "Dismiss action on the expired-subscription prompt."
   },
-  "subscriptionExpiredPromptContactAdminBody": "Your organization's subscription has expired. Ask a tenant administrator, facility administrator, or another user with subscription access to renew it.",
+  "subscriptionExpiredPromptContactAdminBody": "Your organization's subscription has expired. Contact a facility or tenant administrator below so they can renew access.",
   "@subscriptionExpiredPromptContactAdminBody": {
     "description": "Expired subscription message for users who cannot renew."
   },
   "subscriptionExpiredPromptContactAdminAction": "Got it",
   "@subscriptionExpiredPromptContactAdminAction": {
     "description": "Dismiss action for non-billing users on the expired prompt."
+  },
+  "subscriptionReportAdminsDialogTitle": "Report subscription issue",
+  "@subscriptionReportAdminsDialogTitle": {
+    "description": "Title for the dialog that shows org admins to contact about subscription renewal."
+  },
+  "subscriptionReportAdminsDialogBody": "Your subscription is due soon or needs attention. Contact a facility or tenant administrator so they can renew or upgrade the plan.",
+  "@subscriptionReportAdminsDialogBody": {
+    "description": "Body for the report-to-admins dialog when subscription is expiring soon."
+  },
+  "subscriptionReportFacilityAdminsLabel": "Facility administrators",
+  "@subscriptionReportFacilityAdminsLabel": {
+    "description": "Section title for facility admin contacts."
+  },
+  "subscriptionReportTenantAdminsLabel": "Tenant administrators",
+  "@subscriptionReportTenantAdminsLabel": {
+    "description": "Section title for tenant admin contacts."
+  },
+  "subscriptionReportFacilityAdminRoleLabel": "Facility administrator",
+  "@subscriptionReportFacilityAdminRoleLabel": {
+    "description": "Fallback role label for a facility admin contact."
+  },
+  "subscriptionReportTenantAdminRoleLabel": "Tenant administrator",
+  "@subscriptionReportTenantAdminRoleLabel": {
+    "description": "Fallback role label for a tenant admin contact."
+  },
+  "subscriptionReportAdminsEmptyMessage": "No facility or tenant administrator contacts are available yet. Ask your supervisor who manages subscriptions for this organization.",
+  "@subscriptionReportAdminsEmptyMessage": {
+    "description": "Shown when no org admin contacts could be loaded."
   },
   "subscriptionUpgradeAccessDeniedMessage": "Only tenant administrators, facility administrators, super administrators, or users with subscription access can manage billing.",
   "@subscriptionUpgradeAccessDeniedMessage": {

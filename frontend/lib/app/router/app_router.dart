@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -93,8 +95,9 @@ import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.da
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/controllers/subscriptions_workspace_controller.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/pages/subscriptions_workspace_page.dart';
-import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_header_button.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_expired_prompt.dart';
+import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_header_button.dart';
+import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_report_admins_dialog.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_upgrade_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dart';
@@ -1201,6 +1204,10 @@ class _AppShell extends ConsumerWidget {
     return SubscriptionExpiredPromptHost(
       summary: session?.subscriptionSummary,
       platformAdminContact: session?.platformAdminContact,
+      tenantAdminContacts:
+          session?.tenantAdminContacts ?? const <OrgAdminContact>[],
+      facilityAdminContacts:
+          session?.facilityAdminContacts ?? const <OrgAdminContact>[],
       canManageBilling: ref
           .watch(appAccessPolicyProvider)
           .canManageSubscriptionBilling(),
@@ -1347,40 +1354,50 @@ Widget? _subscriptionHeaderAction({
   final bool canManageBilling = ref
       .watch(appAccessPolicyProvider)
       .canManageSubscriptionBilling();
+  final bool needsAttention =
+      summary.headerState == TenantSubscriptionHeaderState.expired ||
+      summary.headerState == TenantSubscriptionHeaderState.expiringSoon;
 
-  return SubscriptionHeaderButton(
-    summary: summary,
-    onPressed: canManageBilling
-        ? () async {
-            final bool? submitted = await showSubscriptionUpgradeDialog(
-              context,
-              initialSummary: summary,
-              initialAdminContact: session.platformAdminContact,
-            );
-            if (submitted != true || !context.mounted) {
-              return;
-            }
+  VoidCallback? onPressed;
+  if (canManageBilling) {
+    onPressed = () async {
+      final bool? submitted = await showSubscriptionUpgradeDialog(
+        context,
+        initialSummary: summary,
+        initialAdminContact: session.platformAdminContact,
+      );
+      if (submitted != true || !context.mounted) {
+        return;
+      }
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(l10n.subscriptionUpgradeSubmittedMessage),
-              ),
-            );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.subscriptionUpgradeSubmittedMessage)),
+      );
 
-            final refreshResult = await ref
-                .read(authRepositoryProvider)
-                .fetchCurrentUser(session);
-            refreshResult.when(
-              success: (AuthSession refreshed) {
-                ref
-                    .read(sessionStateProvider.notifier)
-                    .persistSession(refreshed);
-              },
-              failure: (_) {},
-            );
-          }
-        : null,
-  );
+      final refreshResult = await ref
+          .read(authRepositoryProvider)
+          .fetchCurrentUser(session);
+      refreshResult.when(
+        success: (AuthSession refreshed) {
+          ref.read(sessionStateProvider.notifier).persistSession(refreshed);
+        },
+        failure: (_) {},
+      );
+    };
+  } else if (needsAttention) {
+    onPressed = () {
+      unawaited(
+        showSubscriptionReportAdminsDialog(
+          context,
+          headerState: summary.headerState,
+          tenantAdmins: session.tenantAdminContacts,
+          facilityAdmins: session.facilityAdminContacts,
+        ),
+      );
+    };
+  }
+
+  return SubscriptionHeaderButton(summary: summary, onPressed: onPressed);
 }
 
 UserMenuProfileData? _userMenuProfile(AuthSession? session) {

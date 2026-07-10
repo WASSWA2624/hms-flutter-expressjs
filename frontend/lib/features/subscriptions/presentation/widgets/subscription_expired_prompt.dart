@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
+import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_report_admins_dialog.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_upgrade_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -13,6 +14,8 @@ class SubscriptionExpiredPromptHost extends StatefulWidget {
     required this.summary,
     required this.platformAdminContact,
     required this.child,
+    this.tenantAdminContacts = const <OrgAdminContact>[],
+    this.facilityAdminContacts = const <OrgAdminContact>[],
     this.canManageBilling = false,
     this.onRenewed,
     super.key,
@@ -20,6 +23,8 @@ class SubscriptionExpiredPromptHost extends StatefulWidget {
 
   final TenantSubscriptionSummary? summary;
   final PlatformAdminContact? platformAdminContact;
+  final List<OrgAdminContact> tenantAdminContacts;
+  final List<OrgAdminContact> facilityAdminContacts;
   final Widget child;
   final bool canManageBilling;
   final Future<void> Function()? onRenewed;
@@ -86,22 +91,11 @@ class _SubscriptionExpiredPromptHostState
     setState(() => _dialogOpen = true);
 
     if (!widget.canManageBilling) {
-      await showAppDialog<void>(
-        context: context,
-        builder: (BuildContext dialogContext) {
-          return AppDialog(
-            title: Text(l10n.subscriptionExpiredPromptTitle),
-            icon: const Icon(Icons.warning_amber_rounded),
-            content: Text(l10n.subscriptionExpiredPromptContactAdminBody),
-            actions: <Widget>[
-              AppButton.primary(
-                label: l10n.subscriptionExpiredPromptContactAdminAction,
-                leadingIcon: Icons.check,
-                onPressed: () => Navigator.of(dialogContext).maybePop(),
-              ),
-            ],
-          );
-        },
+      await showSubscriptionReportAdminsDialog(
+        context,
+        headerState: summary.headerState,
+        tenantAdmins: widget.tenantAdminContacts,
+        facilityAdmins: widget.facilityAdminContacts,
       );
       if (mounted) {
         setState(() => _dialogOpen = false);

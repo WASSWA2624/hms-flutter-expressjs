@@ -2473,7 +2473,7 @@ abstract class AppLocalizations {
   /// Expired subscription message for users who cannot renew.
   ///
   /// In en, this message translates to:
-  /// **'Your organization\'s subscription has expired. Ask a tenant administrator, facility administrator, or another user with subscription access to renew it.'**
+  /// **'Your organization\'s subscription has expired. Contact a facility or tenant administrator below so they can renew access.'**
   String get subscriptionExpiredPromptContactAdminBody;
 
   /// Dismiss action for non-billing users on the expired prompt.
@@ -2481,6 +2481,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Got it'**
   String get subscriptionExpiredPromptContactAdminAction;
+
+  /// Title for the dialog that shows org admins to contact about subscription renewal.
+  ///
+  /// In en, this message translates to:
+  /// **'Report subscription issue'**
+  String get subscriptionReportAdminsDialogTitle;
+
+  /// Body for the report-to-admins dialog when subscription is expiring soon.
+  ///
+  /// In en, this message translates to:
+  /// **'Your subscription is due soon or needs attention. Contact a facility or tenant administrator so they can renew or upgrade the plan.'**
+  String get subscriptionReportAdminsDialogBody;
+
+  /// Section title for facility admin contacts.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility administrators'**
+  String get subscriptionReportFacilityAdminsLabel;
+
+  /// Section title for tenant admin contacts.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant administrators'**
+  String get subscriptionReportTenantAdminsLabel;
+
+  /// Fallback role label for a facility admin contact.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility administrator'**
+  String get subscriptionReportFacilityAdminRoleLabel;
+
+  /// Fallback role label for a tenant admin contact.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant administrator'**
+  String get subscriptionReportTenantAdminRoleLabel;
+
+  /// Shown when no org admin contacts could be loaded.
+  ///
+  /// In en, this message translates to:
+  /// **'No facility or tenant administrator contacts are available yet. Ask your supervisor who manages subscriptions for this organization.'**
+  String get subscriptionReportAdminsEmptyMessage;
 
   /// Shown when a user without subscription billing rights opens the upgrade dialog.
   ///

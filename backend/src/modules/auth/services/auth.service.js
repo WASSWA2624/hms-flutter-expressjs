@@ -19,6 +19,9 @@ const {
   resolveTenantSubscriptionSummary,
 } = require('@lib/subscriptions/tenant-subscription-summary');
 const {
+  resolveOrgAdminContacts,
+} = require('@lib/authorization/org-admin-contacts');
+const {
   filterPermissionNamesByPlanModules,
   normalizeEnabledModuleSet,
 } = require('@lib/authorization/permission-module-map');
@@ -189,10 +192,15 @@ const enrichAuthUserPayload = async (user = {}) => {
     return base;
   }
 
-  const [module_entitlements, subscription_summary] = await Promise.all([
-    resolveTenantModuleEntitlements(user.tenant_id),
-    resolveTenantSubscriptionSummary(user.tenant_id),
-  ]);
+  const [module_entitlements, subscription_summary, orgAdminContacts] =
+    await Promise.all([
+      resolveTenantModuleEntitlements(user.tenant_id),
+      resolveTenantSubscriptionSummary(user.tenant_id),
+      resolveOrgAdminContacts({
+        tenantId: user.tenant_id,
+        facilityId: user.facility_id || null,
+      }),
+    ]);
 
   const permissions = applyPlanGateToPermissionNames(
     base.permissions,
@@ -207,6 +215,8 @@ const enrichAuthUserPayload = async (user = {}) => {
     module_entitlements,
     subscription_summary,
     platform_admin_contact: resolvePlatformAdminContact(),
+    tenant_admin_contacts: orgAdminContacts.tenant_admins,
+    facility_admin_contacts: orgAdminContacts.facility_admins,
   };
 };
 

@@ -33,6 +33,12 @@ jest.mock('@lib/subscriptions/tenant-subscription-summary', () => ({
     phone: null,
   }),
 }));
+jest.mock('@lib/authorization/org-admin-contacts', () => ({
+  resolveOrgAdminContacts: jest.fn().mockResolvedValue({
+    tenant_admins: [],
+    facility_admins: [],
+  }),
+}));
 jest.mock('@config/env', () => ({
   JWT_SECRET: '12345678901234567890123456789012',
   APP_PUBLIC_URL: 'http://localhost:8081',
