@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/realtime/realtime_events.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
@@ -99,7 +101,10 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
       ref: ref,
       events: _tenantManagementRealtimeEvents,
       onMutated: () => _mutated = true,
-      reload: ({bool silent = false}) => _reload(resetPage: false, silent: silent),
+      reload: ({bool silent = false, RealtimeMessage? message}) async {
+        _applyTenantRealtimeMessage(message);
+        await _reload(resetPage: false, silent: silent);
+      },
     )..attach();
   }
 
@@ -245,15 +250,77 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
 
     if (confirmed == true) {
       _mutated = true;
+      _removeTenantLocally(tenant.id);
       _syncPlatformDashboard(
         ref,
         patch: HomeDashboardOptimisticPatch.tenantDeleted(
           isActive: tenant.isActive,
         ),
       );
+      await _reload(resetPage: _tenants.isEmpty, silent: true);
     }
+  }
 
-    await _reload(resetPage: false, silent: true);
+  void _removeTenantLocally(String tenantId) {
+    setState(() {
+      _tenants = _tenants
+          .where((TenantProfile entry) => entry.id != tenantId)
+          .toList(growable: false);
+      _totalItemCount = math.max(0, _totalItemCount - 1);
+    });
+  }
+
+  void _applyTenantRealtimeMessage(RealtimeMessage? message) {
+    if (message == null) {
+      return;
+    }
+    if (message.event == RealtimeEvents.tenantDeleted) {
+      final String? tenantId = _tenantResourceIdFromMessage(message);
+      if (tenantId != null) {
+        _removeTenantLocally(tenantId);
+      }
+    }
+  }
+
+  String? _tenantResourceIdFromMessage(RealtimeMessage message) {
+    final Map<String, Object?> payload = message.payload;
+    final Object? nested = payload['payload'];
+    final Map<String, Object?>? nestedMap = nested is Map<String, Object?>
+        ? nested
+        : nested is Map<Object?, Object?>
+        ? Map<String, Object?>.fromEntries(
+            nested.entries
+                .where((MapEntry<Object?, Object?> e) => e.key != null)
+                .map(
+                  (MapEntry<Object?, Object?> e) =>
+                      MapEntry<String, Object?>(e.key.toString(), e.value),
+                ),
+          )
+        : null;
+
+    for (final String key in <String>[
+      'resource_id',
+      'tenant_id',
+      'id',
+    ]) {
+      final String? fromRoot = _nonEmptyString(payload[key]);
+      if (fromRoot != null) {
+        return fromRoot;
+      }
+      final String? fromNested = _nonEmptyString(nestedMap?[key]);
+      if (fromNested != null) {
+        return fromNested;
+      }
+    }
+    return null;
+  }
+
+  String? _nonEmptyString(Object? value) {
+    if (value is! String) {
+      return null;
+    }
+    final String trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   bool get _canCreate => ref.read(appAccessPolicyProvider).canCreateTenant();
@@ -445,7 +512,8 @@ class _ManageFacilitiesDialogState
       ref: ref,
       events: _facilityManagementRealtimeEvents,
       onMutated: () => _mutated = true,
-      reload: ({bool silent = false}) async {
+      reload: ({bool silent = false, RealtimeMessage? message}) async {
+        _applyFacilityRealtimeMessage(message);
         await _loadTenants();
         await _reload(resetPage: false, silent: silent);
       },
@@ -592,16 +660,56 @@ class _ManageFacilitiesDialogState
 
     if (confirmed == true) {
       _mutated = true;
+      _removeFacilityLocally(facility.id);
       _syncPlatformDashboard(
         ref,
         patch: HomeDashboardOptimisticPatch.facilityDeleted(
           isActive: facility.isActive,
         ),
       );
+      await _loadTenants();
+      await _reload(resetPage: _facilities.isEmpty, silent: true);
     }
+  }
 
-    await _loadTenants();
-    await _reload(resetPage: false, silent: true);
+  void _removeFacilityLocally(String facilityId) {
+    setState(() {
+      _facilities = _facilities
+          .where((FacilityProfile entry) => entry.id != facilityId)
+          .toList(growable: false);
+      _totalItemCount = math.max(0, _totalItemCount - 1);
+    });
+  }
+
+  void _applyFacilityRealtimeMessage(RealtimeMessage? message) {
+    if (message == null) {
+      return;
+    }
+    if (message.event == RealtimeEvents.facilityDeleted) {
+      final String? facilityId = _facilityResourceIdFromMessage(message);
+      if (facilityId != null) {
+        _removeFacilityLocally(facilityId);
+      }
+    }
+  }
+
+  String? _facilityResourceIdFromMessage(RealtimeMessage message) {
+    final Map<String, Object?> payload = message.payload;
+    for (final String key in <String>['resource_id', 'facility_id', 'id']) {
+      final String? value = _nonEmptyString(payload[key]);
+      if (value != null) {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  String? _nonEmptyString(Object? value) {
+    if (value is! String) {
+      return null;
+    }
+    final String trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   bool get _canManage => ref.read(appAccessPolicyProvider).canManageFacility();

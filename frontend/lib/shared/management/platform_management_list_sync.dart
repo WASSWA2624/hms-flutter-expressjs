@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_providers.dart';
 
-typedef PlatformManagementReload = Future<void> Function({bool silent});
+typedef PlatformManagementReload =
+    Future<void> Function({bool silent, RealtimeMessage? message});
 
 /// Keeps a platform management list dialog aligned with websocket mutations.
 final class PlatformManagementListSync {
@@ -50,7 +51,7 @@ final class PlatformManagementListSync {
       _debounceTimer?.cancel();
       _debounceTimer = Timer(debounce, () {
         onMutated();
-        unawaited(reload(silent: true));
+        unawaited(reload(silent: true, message: message));
       });
     }
   }
