@@ -23,6 +23,10 @@ const {
   publishPlatformRealtimeEvent,
   buildFacilityDashboardDeltas
 } = require('@lib/realtime/platform-realtime');
+const { createStorageService } = require('@lib/storage');
+const {
+  deleteFacilityLogoFromStorage,
+} = require('@lib/storage/facility-logo-storage');
 
 const FACILITY_REALTIME_RECIPIENT_ROLES = Object.freeze([
   ROLES.FACILITY_ADMIN,
@@ -460,6 +464,13 @@ const permanentDeleteFacility = async (id, context = {}) => {
     throw new HttpError('errors.facility.permanent_delete_requires_soft_delete', 400);
   }
 
+  const extensionJson =
+    facility.extension_json && typeof facility.extension_json === 'object'
+      ? facility.extension_json
+      : {};
+  const logoUrl =
+    typeof extensionJson.logo_url === 'string' ? extensionJson.logo_url : null;
+
   await createAuditLog({
     action: 'FACILITY_PERMANENTLY_DELETED',
     entity: 'facility',
@@ -474,8 +485,15 @@ const permanentDeleteFacility = async (id, context = {}) => {
       facility_type: facility.facility_type,
       tenant_id: facility.tenant_id,
       irreversible: true,
+      logo_deleted: Boolean(logoUrl),
     },
   });
+
+  // Remove logo file from storage before the DB row is purged.
+  if (logoUrl) {
+    const storage = createStorageService();
+    await deleteFacilityLogoFromStorage(storage, logoUrl);
+  }
 
   await facilityRepository.permanentDelete(facilityId);
 

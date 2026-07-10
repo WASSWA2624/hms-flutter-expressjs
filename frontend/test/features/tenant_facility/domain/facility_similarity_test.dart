@@ -55,5 +55,44 @@ void main() {
       expect(result.hasExactConflict, isFalse);
       expect(result.similarMatches, isEmpty);
     });
+
+    test('ignores excluded facility by resource uuid alias', () {
+      const List<FacilityProfile> withUuid = <FacilityProfile>[
+        FacilityProfile(
+          id: 'FAC0001',
+          tenantId: 'TEN0001',
+          name: 'DemoCare General Hospital',
+          type: FacilitySetupType.hospital,
+          resourceUuid: 'uuid-facility-1',
+          displayId: 'FAC0001',
+        ),
+      ];
+
+      final FacilityDuplicateCheckResult result = checkFacilityDuplicates(
+        name: 'DemoCare General Hospital',
+        existing: withUuid,
+        excludeFacilityId: 'uuid-facility-1',
+      );
+
+      expect(result.hasExactConflict, isFalse);
+    });
+
+    test('ignores excluded FacilityProfile across id aliases', () {
+      const FacilityProfile editing = FacilityProfile(
+        id: 'FAC0001',
+        tenantId: 'TEN0001',
+        name: 'DemoCare General Hospital',
+        type: FacilitySetupType.hospital,
+        resourceUuid: 'uuid-facility-1',
+      );
+
+      final FacilityDuplicateCheckResult result = checkFacilityDuplicates(
+        name: 'DemoCare General Hospital',
+        existing: existing,
+        excludeFacility: editing,
+      );
+
+      expect(result.hasExactConflict, isFalse);
+    });
   });
 }

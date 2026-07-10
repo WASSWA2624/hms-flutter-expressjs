@@ -586,6 +586,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appImageCropConfirmAction => 'Use image';
 
   @override
+  String get appImageUploadPreviewTitle => 'Image preview';
+
+  @override
+  String get appImageUploadEmptyLabel => 'No images yet.';
+
+  @override
   String get appDateInvalidMessage => 'Enter a valid date.';
 
   @override

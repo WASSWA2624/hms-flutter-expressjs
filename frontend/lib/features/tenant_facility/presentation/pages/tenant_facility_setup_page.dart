@@ -1636,7 +1636,6 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       context.l10n,
       context: context,
       typeGroupLabel: 'facility-logo',
-      cropAspectRatio: null,
       showCropAspectPresets: true,
       preferredFileName: buildFacilityLogoFileName(facilityName),
     );
@@ -1801,9 +1800,9 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
             enabled: fieldsEnabled,
             existingImageUrl: _logoCleared ? null : _existingLogoUrl,
             pendingItems: _pendingLogoItems,
-            placeholderIcon: Icons.local_hospital_outlined,
+            previewSize: 104,
             onChoose: _pickLogo,
-            onClear: _clearLogo,
+            onClear: fieldsEnabled ? _clearLogo : null,
           ),
           AppPhoneField(
             controller: _phoneController,
@@ -1892,9 +1891,19 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         Text(
+          _isCreate
+              ? l10n.tenantFacilityCreateFacilityTitle
+              : l10n.tenantFacilityEditFacilityTitle,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(
           l10n.tenantFacilityFacilitySectionBody,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
+            height: 1.35,
           ),
         ),
         SizedBox(height: theme.spacing.lg),
@@ -1986,10 +1995,11 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       return false;
     }
 
+    final FacilityProfile? editingFacility = widget.facility ?? _activeFacility;
     final bool saved = await ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveFacility(
-          id: widget.facility?.id ?? _activeFacility?.id,
+          id: editingFacility?.mutationId ?? editingFacility?.id,
           tenantId: tenantId,
           name: resolvedName,
           type: _type,
@@ -2201,13 +2211,27 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     required String name,
   }) async {
     final AppLocalizations l10n = context.l10n;
+    final FacilityProfile? editingFacility = widget.facility ?? _activeFacility;
+
+    // Editing with an unchanged name cannot be a duplicate of itself.
+    if (editingFacility != null &&
+        normalizeFacilityName(name) == normalizeFacilityName(_baselineName)) {
+      setState(() {
+        _nameErrorText = null;
+        _similarMatches = const <FacilitySimilarityMatch>[];
+      });
+      return true;
+    }
+
     final List<FacilityProfile> existing = await _loadExistingFacilities(
       tenantId,
     );
     final FacilityDuplicateCheckResult result = checkFacilityDuplicates(
       name: name,
       existing: existing,
-      excludeFacilityId: widget.facility?.id ?? _activeFacility?.id,
+      excludeFacility: editingFacility,
+      excludeFacilityId:
+          editingFacility?.mutationId ?? editingFacility?.id,
     );
 
     if (result.hasExactConflict) {

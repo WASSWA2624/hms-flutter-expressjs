@@ -757,6 +757,14 @@
   "@appImageCropConfirmAction": {
     "description": "Action that accepts the cropped preview and continues."
   },
+  "appImageUploadPreviewTitle": "Image preview",
+  "@appImageUploadPreviewTitle": {
+    "description": "Title for the shared image upload preview dialog."
+  },
+  "appImageUploadEmptyLabel": "No images yet.",
+  "@appImageUploadEmptyLabel": {
+    "description": "Shown in the image upload field when disabled and empty."
+  },
   "appDateInvalidMessage": "Enter a valid date.",
   "@appDateInvalidMessage": {
     "description": "Validation message for manually typed date fields."

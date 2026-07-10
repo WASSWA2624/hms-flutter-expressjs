@@ -3,6 +3,9 @@ const repository = require('@repositories/tenant-facility-workspace/tenant-facil
 const facilityRepository = require('@repositories/facility/facility.repository');
 const { HttpError } = require('@lib/errors');
 const { createStorageService, sanitizeFilename } = require('@lib/storage');
+const {
+  resolveFacilityLogoUploadKey,
+} = require('@lib/storage/facility-logo-storage');
 const { resolveIdentifierForFilter } = require('@lib/billing/identifiers');
 const { ROLES } = require('@config/roles');
 const { PERMISSIONS } = require('@config/permissions');
@@ -540,21 +543,33 @@ const uploadFacilityLogo = async (facilityIdentifier, file = {}, user = {}) => {
     throw new HttpError('errors.facility.not_found', 404);
   }
 
+  const extensionJson =
+    facility.extension_json && typeof facility.extension_json === 'object'
+      ? facility.extension_json
+      : {};
+  const existingLogoUrl =
+    typeof extensionJson.logo_url === 'string' ? extensionJson.logo_url : null;
+
   const storage = createStorageService();
-  const storageKey = buildFacilityLogoPath(
+  const fallbackKey = buildFacilityLogoPath(
     facility.tenant_id,
     facility.id,
     normalizedFile.originalname,
     facility.name
   );
+  // Replace in place when a logo already exists for this facility.
+  const storageKey = resolveFacilityLogoUploadKey({
+    facilityId: facility.id,
+    existingLogoUrl,
+    fallbackKey,
+  });
   const uploaded = await storage.upload(normalizedFile.buffer, storageKey, {
     mimeType: normalizedFile.mimetype,
   });
-  const logoUrl = await storage.getUrl(uploaded?.path || storageKey);
-  const extensionJson =
-    facility.extension_json && typeof facility.extension_json === 'object'
-      ? facility.extension_json
-      : {};
+  const storedPath = uploaded?.path || storageKey;
+  // Keep the same storage filename; bust caches so clients show the new bytes.
+  const baseLogoUrl = await storage.getUrl(storedPath);
+  const logoUrl = `${baseLogoUrl}${baseLogoUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
 
   await facilityRepository.update(facility.id, {
     extension_json: {

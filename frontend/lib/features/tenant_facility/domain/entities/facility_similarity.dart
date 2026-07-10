@@ -35,17 +35,38 @@ final class FacilityDuplicateCheckResult {
 
 String normalizeFacilityName(String value) => normalizeTenantName(value);
 
+bool facilityMatchesExcludeId(FacilityProfile facility, String? excludeId) {
+  if (excludeId == null || excludeId.trim().isEmpty) {
+    return false;
+  }
+  final String needle = excludeId.trim();
+  return facility.id == needle ||
+      facility.mutationId == needle ||
+      (facility.resourceUuid != null && facility.resourceUuid == needle) ||
+      (facility.displayId != null && facility.displayId == needle);
+}
+
 FacilityDuplicateCheckResult checkFacilityDuplicates({
   required String name,
   required List<FacilityProfile> existing,
   String? excludeFacilityId,
+  FacilityProfile? excludeFacility,
 }) {
   final String normalizedName = normalizeFacilityName(name);
   var exactNameConflict = false;
   final List<FacilitySimilarityMatch> matches = <FacilitySimilarityMatch>[];
 
   for (final FacilityProfile facility in existing) {
-    if (excludeFacilityId != null && facility.id == excludeFacilityId) {
+    final bool excluded =
+        facilityMatchesExcludeId(facility, excludeFacilityId) ||
+        (excludeFacility != null &&
+            (facility.id == excludeFacility.id ||
+                facility.mutationId == excludeFacility.mutationId ||
+                (excludeFacility.resourceUuid != null &&
+                    facility.resourceUuid == excludeFacility.resourceUuid) ||
+                (excludeFacility.displayId != null &&
+                    facility.displayId == excludeFacility.displayId)));
+    if (excluded) {
       continue;
     }
 

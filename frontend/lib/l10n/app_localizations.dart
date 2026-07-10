@@ -1186,6 +1186,18 @@ abstract class AppLocalizations {
   /// **'Use image'**
   String get appImageCropConfirmAction;
 
+  /// Title for the shared image upload preview dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Image preview'**
+  String get appImageUploadPreviewTitle;
+
+  /// Shown in the image upload field when disabled and empty.
+  ///
+  /// In en, this message translates to:
+  /// **'No images yet.'**
+  String get appImageUploadEmptyLabel;
+
   /// Validation message for manually typed date fields.
   ///
   /// In en, this message translates to:

@@ -228,7 +228,7 @@ final class TenantFacilitySetupSubmissionController
             logoFileName != null &&
             logoFileName.trim().isNotEmpty) {
           final uploadResult = await _repository.uploadFacilityLogo(
-            facilityId: facility.id,
+            facilityId: facility.mutationId,
             bytes: logoBytes,
             fileName: logoFileName,
             mimeType: logoMimeType,
@@ -247,7 +247,7 @@ final class TenantFacilitySetupSubmissionController
           }
 
           facilityResult = await _repository.saveFacility(
-            id: facility.id,
+            id: facility.mutationId,
             tenantId: tenantId,
             name: name,
             type: type,
