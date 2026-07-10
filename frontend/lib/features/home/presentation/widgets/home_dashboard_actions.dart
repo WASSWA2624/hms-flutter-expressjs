@@ -1319,6 +1319,7 @@ void homeInvokeAction(
       showTenantFacilityFacilityFormDialog(
         context,
         requireTenantPicker: true,
+        managementMode: true,
       ).then((bool? saved) {
         homeOnDashboardDialogClosed(
           ref,

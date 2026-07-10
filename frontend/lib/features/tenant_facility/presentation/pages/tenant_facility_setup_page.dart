@@ -145,7 +145,10 @@ List<AppWorkspaceSummaryNotification> _setupSummaryNotifications(
         label: l10n.tenantFacilityFacilitySectionTitle,
         count: 1,
         icon: Icons.local_hospital_outlined,
-        onSelected: () => _openFacilityProfileModal(context),
+        onSelected: () => _openFacilityProfileModal(
+          context,
+          facility: snapshot.facility,
+        ),
       ),
     if (snapshot.branches.isNotEmpty)
       AppWorkspaceSummaryNotification(
@@ -793,7 +796,7 @@ class _SetupBody extends StatelessWidget {
             TenantFacilitySetupWizard(
               snapshot: snapshot,
               onStepSelected: (TenantFacilitySetupWizardStep step) {
-                _openWizardStep(context, step);
+                _openWizardStep(context, step, snapshot);
               },
             ),
             TenantFacilitySetupChecklist(snapshot: snapshot),
@@ -883,14 +886,20 @@ class _HrFacilitySetupBody extends StatelessWidget {
   }
 }
 
-void _openWizardStep(BuildContext context, TenantFacilitySetupWizardStep step) {
+void _openWizardStep(
+  BuildContext context,
+  TenantFacilitySetupWizardStep step,
+  FacilitySetupSnapshot snapshot,
+) {
   switch (step) {
     case TenantFacilitySetupWizardStep.tenant:
       unawaited(_openTenantProfileModal(context));
     case TenantFacilitySetupWizardStep.branches:
       unawaited(_openBranchesModal(context));
     case TenantFacilitySetupWizardStep.facility:
-      unawaited(_openFacilityProfileModal(context));
+      unawaited(
+        _openFacilityProfileModal(context, facility: snapshot.facility),
+      );
     case TenantFacilitySetupWizardStep.departments:
       unawaited(_openDepartmentsModal(context));
     case TenantFacilitySetupWizardStep.units:
@@ -1376,10 +1385,9 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   String? _baselineCountry;
   String? _baselineLogoUrl;
 
-  FacilityProfile? get _activeFacility =>
-      widget.facility ?? widget.snapshot.facility;
+  FacilityProfile? get _activeFacility => widget.facility;
 
-  bool get _isCreate => widget.facility == null && _activeFacility == null;
+  bool get _isCreate => widget.facility == null;
 
   String? get _resolvedTenantId {
     if (widget.requireTenantPicker) {
@@ -1433,15 +1441,22 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   void initState() {
     super.initState();
     final FacilityProfile? facility = _activeFacility;
-    final FacilityContactAddress contact = widget.snapshot.contactAddress;
+    // Create must start blank — never inherit contact/logo from setup snapshot.
+    final FacilityContactAddress contact = _isCreate
+        ? const FacilityContactAddress()
+        : widget.snapshot.contactAddress;
     _selectedTenantId =
-        widget.tenantId ?? widget.snapshot.tenant?.id ?? facility?.tenantId;
-    _nameController = TextEditingController(text: facility?.name);
+        widget.tenantId ??
+        (_isCreate ? null : widget.snapshot.tenant?.id) ??
+        facility?.tenantId;
+    _nameController = TextEditingController(text: facility?.name ?? '');
     _existingLogoUrl = facility?.logoUrl;
-    _phoneController = TextEditingController(text: contact.phone);
-    _emailController = TextEditingController(text: contact.email);
-    _addressLineController = TextEditingController(text: contact.addressLine1);
-    _cityController = TextEditingController(text: contact.city);
+    _phoneController = TextEditingController(text: contact.phone ?? '');
+    _emailController = TextEditingController(text: contact.email ?? '');
+    _addressLineController = TextEditingController(
+      text: contact.addressLine1 ?? '',
+    );
+    _cityController = TextEditingController(text: contact.city ?? '');
     _selectedCountry = contact.country;
     _type = facility?.type ?? FacilitySetupType.hospital;
     _isActive = facility?.isActive ?? true;
