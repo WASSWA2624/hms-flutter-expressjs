@@ -41,47 +41,49 @@ class AppWizardStepper extends StatelessWidget {
       children: <Widget>[
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            final bool compact = constraints.maxWidth < compactBreakpoint;
-            final double nodeSize = compact ? 32 : 40;
+            final double maxWidth = constraints.maxWidth.isFinite
+                ? constraints.maxWidth
+                : MediaQuery.sizeOf(context).width;
+            final bool compact = maxWidth < compactBreakpoint;
+            final double nodeSize = compact ? 30 : 36;
             final double connectorWidth = compact
-                ? theme.spacing.md
-                : theme.spacing.xl;
+                ? theme.spacing.sm
+                : theme.spacing.lg;
 
-            return Center(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                  child: IntrinsicHeight(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        for (int index = 0; index < steps.length; index += 1) ...<Widget>[
-                          if (index > 0)
-                            Padding(
-                              padding: EdgeInsets.only(top: (nodeSize / 2) - 1.5),
-                              child: _StepConnector(
-                                completed: index <= safeIndex,
-                                colorScheme: colorScheme,
-                                width: connectorWidth,
-                              ),
-                            ),
-                          _StepNode(
-                            index: index + 1,
-                            label: compact
-                                ? (steps[index].shortLabel ?? steps[index].label)
-                                : steps[index].label,
-                            showLabel: true,
-                            active: index == safeIndex,
-                            completed: index < safeIndex,
-                            nodeSize: nodeSize,
-                            compact: compact,
-                          ),
-                        ],
-                      ],
+            final Widget track = Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                for (int index = 0; index < steps.length; index += 1) ...<Widget>[
+                  if (index > 0)
+                    Padding(
+                      padding: EdgeInsets.only(top: (nodeSize / 2) - 1.5),
+                      child: _StepConnector(
+                        completed: index <= safeIndex,
+                        colorScheme: colorScheme,
+                        width: connectorWidth,
+                      ),
                     ),
+                  _StepNode(
+                    index: index + 1,
+                    label: compact
+                        ? (steps[index].shortLabel ?? steps[index].label)
+                        : steps[index].label,
+                    active: index == safeIndex,
+                    completed: index < safeIndex,
+                    nodeSize: nodeSize,
+                    compact: compact,
                   ),
+                ],
+              ],
+            );
+
+            return Padding(
+              padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
+              child: Align(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: track,
                 ),
               ),
             );
@@ -135,7 +137,6 @@ class _StepNode extends StatelessWidget {
   const _StepNode({
     required this.index,
     required this.label,
-    required this.showLabel,
     required this.active,
     required this.completed,
     required this.nodeSize,
@@ -144,7 +145,6 @@ class _StepNode extends StatelessWidget {
 
   final int index;
   final String label;
-  final bool showLabel;
   final bool active;
   final bool completed;
   final double nodeSize;
@@ -154,9 +154,7 @@ class _StepNode extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final Color circleFill = active
-        ? colorScheme.primary
-        : completed
+    final Color circleFill = active || completed
         ? colorScheme.primary
         : colorScheme.surfaceContainerHighest;
     final Color circleFg = active || completed
@@ -172,7 +170,7 @@ class _StepNode extends StatelessWidget {
       selected: active,
       label: 'Step $index: $label',
       child: ConstrainedBox(
-        constraints: BoxConstraints(minWidth: compact ? 72 : 96),
+        constraints: BoxConstraints(minWidth: compact ? 64 : 88),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
@@ -188,39 +186,41 @@ class _StepNode extends StatelessWidget {
                   color: active || completed
                       ? colorScheme.primary
                       : colorScheme.outlineVariant,
-                  width: active ? 3 : 1.5,
+                  width: active ? 2.5 : 1.5,
                 ),
               ),
               child: completed && !active
-                  ? Icon(Icons.check_rounded, size: nodeSize * 0.48, color: circleFg)
+                  ? Icon(
+                      Icons.check_rounded,
+                      size: nodeSize * 0.48,
+                      color: circleFg,
+                    )
                   : Text(
                       '$index',
                       style: theme.textTheme.titleSmall?.copyWith(
                         color: circleFg,
                         fontWeight: FontWeight.w800,
-                        fontSize: compact ? 13 : 15,
+                        fontSize: compact ? 12 : 14,
                         height: 1,
                       ),
                     ),
             ),
-            if (showLabel) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              SizedBox(
-                width: compact ? 78 : 108,
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: labelColor,
-                    fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-                    height: 1.15,
-                    fontSize: compact ? 11.5 : 12.5,
-                  ),
+            SizedBox(height: theme.spacing.sm),
+            SizedBox(
+              width: compact ? 72 : 100,
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: labelColor,
+                  fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                  height: 1.15,
+                  fontSize: compact ? 11 : 12,
                 ),
               ),
-            ],
+            ),
           ],
         ),
       ),
