@@ -64,11 +64,9 @@ class _SubscriptionReportAdminsDialogState
     _tenantAdmins = widget.tenantAdmins;
     _facilityAdmins = widget.facilityAdmins;
     _platformAdminContact = widget.platformAdminContact;
-    if (_platformAdminContact?.hasContact != true) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        unawaited(_refreshContacts());
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_refreshContacts());
+    });
   }
 
   Future<void> _refreshContacts() async {
@@ -375,32 +373,24 @@ class _ContactLine extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Icon(icon, size: 16, color: colorScheme.error),
-        SizedBox(width: theme.spacing.xs),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                label,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+    return Semantics(
+      label: '$label: $value',
+      child: Row(
+        children: <Widget>[
+          Icon(icon, size: 18, color: colorScheme.error),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: SelectableText(
+              value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: colorScheme.onSurface,
+                height: 1.25,
               ),
-              SelectableText(
-                value,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: colorScheme.error,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
