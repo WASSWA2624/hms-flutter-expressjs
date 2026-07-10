@@ -96,6 +96,7 @@ class _SubscriptionExpiredPromptHostState
         headerState: summary.headerState,
         tenantAdmins: widget.tenantAdminContacts,
         facilityAdmins: widget.facilityAdminContacts,
+        platformAdminContact: widget.platformAdminContact,
       );
       if (mounted) {
         setState(() => _dialogOpen = false);

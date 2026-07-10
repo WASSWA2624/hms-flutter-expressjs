@@ -1392,6 +1392,7 @@ Widget? _subscriptionHeaderAction({
           headerState: summary.headerState,
           tenantAdmins: session.tenantAdminContacts,
           facilityAdmins: session.facilityAdminContacts,
+          platformAdminContact: session.platformAdminContact,
         ),
       );
     };

@@ -1641,7 +1641,7 @@
   "@subscriptionExpiredPromptLaterAction": {
     "description": "Dismiss action on the expired-subscription prompt."
   },
-  "subscriptionExpiredPromptContactAdminBody": "Your organization's subscription has expired. Contact a facility or tenant administrator below so they can renew access.",
+  "subscriptionExpiredPromptContactAdminBody": "Access is paused until renewal. Contact a facility or tenant admin below — or platform support if none are listed.",
   "@subscriptionExpiredPromptContactAdminBody": {
     "description": "Expired subscription message for users who cannot renew."
   },
@@ -1649,11 +1649,11 @@
   "@subscriptionExpiredPromptContactAdminAction": {
     "description": "Dismiss action for non-billing users on the expired prompt."
   },
-  "subscriptionReportAdminsDialogTitle": "Report subscription issue",
+  "subscriptionReportAdminsDialogTitle": "Who can renew this?",
   "@subscriptionReportAdminsDialogTitle": {
     "description": "Title for the dialog that shows org admins to contact about subscription renewal."
   },
-  "subscriptionReportAdminsDialogBody": "Your subscription is due soon or needs attention. Contact a facility or tenant administrator so they can renew or upgrade the plan.",
+  "subscriptionReportAdminsDialogBody": "Ask an admin below to renew or upgrade. Use platform support if your org contacts are missing.",
   "@subscriptionReportAdminsDialogBody": {
     "description": "Body for the report-to-admins dialog when subscription is expiring soon."
   },
@@ -1673,9 +1673,21 @@
   "@subscriptionReportTenantAdminRoleLabel": {
     "description": "Fallback role label for a tenant admin contact."
   },
-  "subscriptionReportAdminsEmptyMessage": "No facility or tenant administrator contacts are available yet. Ask your supervisor who manages subscriptions for this organization.",
+  "subscriptionReportPlatformSupportLabel": "Platform support",
+  "@subscriptionReportPlatformSupportLabel": {
+    "description": "Section title for platform billing/support contact."
+  },
+  "subscriptionReportPlatformSupportName": "Hosspi platform support",
+  "@subscriptionReportPlatformSupportName": {
+    "description": "Display name for the platform support contact card."
+  },
+  "subscriptionReportPlatformSupportRoleLabel": "Platform administrator",
+  "@subscriptionReportPlatformSupportRoleLabel": {
+    "description": "Role label for the platform support contact card."
+  },
+  "subscriptionReportAdminsEmptyMessage": "No admin contacts are available yet. Ask your supervisor who manages subscriptions for this organization.",
   "@subscriptionReportAdminsEmptyMessage": {
-    "description": "Shown when no org admin contacts could be loaded."
+    "description": "Shown when neither org admins nor platform support contacts could be loaded."
   },
   "subscriptionUpgradeAccessDeniedMessage": "Only tenant administrators, facility administrators, super administrators, or users with subscription access can manage billing.",
   "@subscriptionUpgradeAccessDeniedMessage": {

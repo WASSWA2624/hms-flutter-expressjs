@@ -50,34 +50,37 @@ class AppWizardStepper extends StatelessWidget {
             return Center(
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                child: IntrinsicHeight(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      for (int index = 0; index < steps.length; index += 1) ...<Widget>[
-                        if (index > 0)
-                          Padding(
-                            padding: EdgeInsets.only(top: (nodeSize / 2) - 1.5),
-                            child: _StepConnector(
-                              completed: index <= safeIndex,
-                              colorScheme: colorScheme,
-                              width: connectorWidth,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                  child: IntrinsicHeight(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        for (int index = 0; index < steps.length; index += 1) ...<Widget>[
+                          if (index > 0)
+                            Padding(
+                              padding: EdgeInsets.only(top: (nodeSize / 2) - 1.5),
+                              child: _StepConnector(
+                                completed: index <= safeIndex,
+                                colorScheme: colorScheme,
+                                width: connectorWidth,
+                              ),
                             ),
+                          _StepNode(
+                            index: index + 1,
+                            label: compact
+                                ? (steps[index].shortLabel ?? steps[index].label)
+                                : steps[index].label,
+                            showLabel: true,
+                            active: index == safeIndex,
+                            completed: index < safeIndex,
+                            nodeSize: nodeSize,
+                            compact: compact,
                           ),
-                        _StepNode(
-                          index: index + 1,
-                          label: compact
-                              ? (steps[index].shortLabel ?? steps[index].label)
-                              : steps[index].label,
-                          showLabel: true,
-                          active: index == safeIndex,
-                          completed: index < safeIndex,
-                          nodeSize: nodeSize,
-                          compact: compact,
-                        ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),

@@ -568,6 +568,7 @@ class _SubscriptionUpgradeDialogState
         isRenewal ? Icons.autorenew : Icons.workspace_premium_outlined,
       ),
       maxWidth: 800,
+      initialMaximized: false,
       scrollable: true,
       content: AppFormShell(
         formKey: _formKey,

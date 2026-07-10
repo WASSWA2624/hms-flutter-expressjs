@@ -12,6 +12,7 @@ Future<void> showSubscriptionReportAdminsDialog(
   required TenantSubscriptionHeaderState headerState,
   required List<OrgAdminContact> tenantAdmins,
   required List<OrgAdminContact> facilityAdmins,
+  PlatformAdminContact? platformAdminContact,
 }) {
   return showAppDialog<void>(
     context: context,
@@ -20,6 +21,7 @@ Future<void> showSubscriptionReportAdminsDialog(
         headerState: headerState,
         tenantAdmins: tenantAdmins,
         facilityAdmins: facilityAdmins,
+        platformAdminContact: platformAdminContact,
       );
     },
   );
@@ -30,21 +32,26 @@ class SubscriptionReportAdminsDialog extends StatelessWidget {
     required this.headerState,
     required this.tenantAdmins,
     required this.facilityAdmins,
+    this.platformAdminContact,
     super.key,
   });
 
   final TenantSubscriptionHeaderState headerState;
   final List<OrgAdminContact> tenantAdmins;
   final List<OrgAdminContact> facilityAdmins;
+  final PlatformAdminContact? platformAdminContact;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final bool expired =
-        headerState == TenantSubscriptionHeaderState.expired;
-    final bool hasContacts =
+    final bool expired = headerState == TenantSubscriptionHeaderState.expired;
+    final PlatformAdminContact? platform = platformAdminContact?.hasContact == true
+        ? platformAdminContact
+        : null;
+    final bool hasOrgContacts =
         tenantAdmins.isNotEmpty || facilityAdmins.isNotEmpty;
+    final bool hasAnyContacts = hasOrgContacts || platform != null;
 
     return AppDialog(
       title: Text(
@@ -53,20 +60,25 @@ class SubscriptionReportAdminsDialog extends StatelessWidget {
             : l10n.subscriptionReportAdminsDialogTitle,
       ),
       icon: Icon(
-        expired
-            ? Icons.warning_amber_rounded
-            : Icons.support_agent_outlined,
+        expired ? Icons.warning_amber_rounded : Icons.support_agent_outlined,
       ),
       maxWidth: 520,
+      initialMaximized: false,
+      showMaximizeButton: false,
+      resizable: false,
       scrollable: true,
       content: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Text(
             expired
                 ? l10n.subscriptionExpiredPromptContactAdminBody
                 : l10n.subscriptionReportAdminsDialogBody,
-            style: theme.textTheme.bodyMedium,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           SizedBox(height: theme.spacing.md),
           if (facilityAdmins.isNotEmpty) ...<Widget>[
@@ -74,20 +86,27 @@ class SubscriptionReportAdminsDialog extends StatelessWidget {
               title: l10n.subscriptionReportFacilityAdminsLabel,
               contacts: facilityAdmins,
               roleFallback: l10n.subscriptionReportFacilityAdminRoleLabel,
+              leadingIcon: Icons.apartment_outlined,
             ),
-            SizedBox(height: theme.spacing.md),
+            SizedBox(height: theme.spacing.sm),
           ],
           if (tenantAdmins.isNotEmpty) ...<Widget>[
             _AdminContactGroup(
               title: l10n.subscriptionReportTenantAdminsLabel,
               contacts: tenantAdmins,
               roleFallback: l10n.subscriptionReportTenantAdminRoleLabel,
+              leadingIcon: Icons.business_outlined,
             ),
+            SizedBox(height: theme.spacing.sm),
           ],
-          if (!hasContacts)
+          if (platform != null)
+            _PlatformContactPanel(contact: platform)
+          else if (!hasAnyContacts)
             AppMessagePanel(
               message: l10n.subscriptionReportAdminsEmptyMessage,
               icon: Icons.info_outline,
+              tone: AppWorkspaceStatusTone.warning,
+              density: AppContentPanelDensity.compact,
             ),
         ],
       ),
@@ -102,30 +121,65 @@ class SubscriptionReportAdminsDialog extends StatelessWidget {
   }
 }
 
+class _PlatformContactPanel extends StatelessWidget {
+  const _PlatformContactPanel({required this.contact});
+
+  final PlatformAdminContact contact;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+
+    return AppSectionPanel(
+      title: l10n.subscriptionReportPlatformSupportLabel,
+      leadingIcon: Icons.support_agent_outlined,
+      tone: AppWorkspaceStatusTone.info,
+      density: AppContentPanelDensity.compact,
+      children: <Widget>[
+        _AdminContactCard(
+          contact: OrgAdminContact(
+            fullName: l10n.subscriptionReportPlatformSupportName,
+            email: contact.email,
+            phone: contact.phone,
+            roleName: l10n.subscriptionReportPlatformSupportRoleLabel,
+          ),
+          roleFallback: l10n.subscriptionReportPlatformSupportRoleLabel,
+        ),
+      ],
+    );
+  }
+}
+
 class _AdminContactGroup extends StatelessWidget {
   const _AdminContactGroup({
     required this.title,
     required this.contacts,
     required this.roleFallback,
+    required this.leadingIcon,
   });
 
   final String title;
   final List<OrgAdminContact> contacts;
   final String roleFallback;
+  final IconData leadingIcon;
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
     return AppSectionPanel(
       title: title,
-      leadingIcon: Icons.groups_outlined,
+      leadingIcon: leadingIcon,
       tone: AppWorkspaceStatusTone.info,
       density: AppContentPanelDensity.compact,
       children: <Widget>[
-        for (final OrgAdminContact contact in contacts)
+        for (int index = 0; index < contacts.length; index += 1) ...<Widget>[
+          if (index > 0) SizedBox(height: theme.spacing.sm),
           _AdminContactCard(
-            contact: contact,
+            contact: contacts[index],
             roleFallback: roleFallback,
           ),
+        ],
       ],
     );
   }

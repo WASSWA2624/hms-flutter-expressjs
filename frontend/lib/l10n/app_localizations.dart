@@ -2473,7 +2473,7 @@ abstract class AppLocalizations {
   /// Expired subscription message for users who cannot renew.
   ///
   /// In en, this message translates to:
-  /// **'Your organization\'s subscription has expired. Contact a facility or tenant administrator below so they can renew access.'**
+  /// **'Access is paused until renewal. Contact a facility or tenant admin below — or platform support if none are listed.'**
   String get subscriptionExpiredPromptContactAdminBody;
 
   /// Dismiss action for non-billing users on the expired prompt.
@@ -2485,13 +2485,13 @@ abstract class AppLocalizations {
   /// Title for the dialog that shows org admins to contact about subscription renewal.
   ///
   /// In en, this message translates to:
-  /// **'Report subscription issue'**
+  /// **'Who can renew this?'**
   String get subscriptionReportAdminsDialogTitle;
 
   /// Body for the report-to-admins dialog when subscription is expiring soon.
   ///
   /// In en, this message translates to:
-  /// **'Your subscription is due soon or needs attention. Contact a facility or tenant administrator so they can renew or upgrade the plan.'**
+  /// **'Ask an admin below to renew or upgrade. Use platform support if your org contacts are missing.'**
   String get subscriptionReportAdminsDialogBody;
 
   /// Section title for facility admin contacts.
@@ -2518,10 +2518,28 @@ abstract class AppLocalizations {
   /// **'Tenant administrator'**
   String get subscriptionReportTenantAdminRoleLabel;
 
-  /// Shown when no org admin contacts could be loaded.
+  /// Section title for platform billing/support contact.
   ///
   /// In en, this message translates to:
-  /// **'No facility or tenant administrator contacts are available yet. Ask your supervisor who manages subscriptions for this organization.'**
+  /// **'Platform support'**
+  String get subscriptionReportPlatformSupportLabel;
+
+  /// Display name for the platform support contact card.
+  ///
+  /// In en, this message translates to:
+  /// **'Hosspi platform support'**
+  String get subscriptionReportPlatformSupportName;
+
+  /// Role label for the platform support contact card.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform administrator'**
+  String get subscriptionReportPlatformSupportRoleLabel;
+
+  /// Shown when neither org admins nor platform support contacts could be loaded.
+  ///
+  /// In en, this message translates to:
+  /// **'No admin contacts are available yet. Ask your supervisor who manages subscriptions for this organization.'**
   String get subscriptionReportAdminsEmptyMessage;
 
   /// Shown when a user without subscription billing rights opens the upgrade dialog.

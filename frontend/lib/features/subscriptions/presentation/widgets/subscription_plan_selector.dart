@@ -1,11 +1,13 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/currency/fx_currency_utils.dart';
+import 'package:hosspi_hms/core/subscriptions/subscription_plan_theme.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace_board_toggle.dart';
 
 class SubscriptionPlanSelector extends StatelessWidget {
   const SubscriptionPlanSelector({
@@ -39,6 +41,8 @@ class SubscriptionPlanSelector extends StatelessWidget {
   final String? emptyTitle;
   final String? emptyMessage;
 
+  static const double _minCardWidth = 168;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -65,27 +69,11 @@ class SubscriptionPlanSelector extends StatelessWidget {
           tone: AppWorkspaceStatusTone.info,
           density: AppContentPanelDensity.compact,
           children: <Widget>[
-            Align(
-              alignment: Alignment.centerLeft,
-              child: AppWorkspaceBoardToggle<SubscriptionUpgradeBillingCycle>(
-                value: billingCycle,
-                segments: <ButtonSegment<SubscriptionUpgradeBillingCycle>>[
-                  ButtonSegment<SubscriptionUpgradeBillingCycle>(
-                    value: SubscriptionUpgradeBillingCycle.monthly,
-                    label: Text(monthlyLabel),
-                    icon: const Icon(
-                      Icons.calendar_view_month_outlined,
-                      size: 18,
-                    ),
-                  ),
-                  ButtonSegment<SubscriptionUpgradeBillingCycle>(
-                    value: SubscriptionUpgradeBillingCycle.annual,
-                    label: Text(annualLabel),
-                    icon: const Icon(Icons.calendar_today_outlined, size: 18),
-                  ),
-                ],
-                onChanged: onBillingCycleChanged,
-              ),
+            _BillingCycleToggle(
+              value: billingCycle,
+              monthlyLabel: monthlyLabel,
+              annualLabel: annualLabel,
+              onChanged: onBillingCycleChanged,
             ),
           ],
         ),
@@ -97,33 +85,57 @@ class SubscriptionPlanSelector extends StatelessWidget {
                 : MediaQuery.sizeOf(context).width;
             final int columns = _columnCount(maxWidth, ordered.length);
             final double gap = theme.spacing.sm;
-            final double tileWidth =
-                ((maxWidth - (gap * (columns - 1))) / columns).clamp(
-                  160.0,
-                  maxWidth,
-                );
+            final List<Widget> rows = <Widget>[];
 
-            return Wrap(
-              spacing: gap,
-              runSpacing: gap,
-              children: <Widget>[
-                for (final SubscriptionUpgradePlanOption plan in ordered)
-                  SizedBox(
-                    width: tileWidth,
-                    child: _PlanColumnTile(
-                      label: planLabelBuilder(plan),
-                      priceLabel: _priceLabel(context, plan),
-                      cycleLabel: billingCycle ==
-                              SubscriptionUpgradeBillingCycle.monthly
-                          ? monthlyLabel
-                          : annualLabel,
-                      selected: selectedPlanId == plan.id,
-                      isCurrentPlan: plan.id == currentPlanId,
-                      currentPlanLabel: currentPlanLabel,
-                      onTap: () => onSelected(plan.id),
-                    ),
+            for (int start = 0; start < ordered.length; start += columns) {
+              final List<SubscriptionUpgradePlanOption> rowPlans = ordered
+                  .skip(start)
+                  .take(columns)
+                  .toList(growable: false);
+              if (rows.isNotEmpty) {
+                rows.add(SizedBox(height: gap));
+              }
+              rows.add(
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      for (int index = 0; index < columns; index += 1) ...<Widget>[
+                        if (index > 0) SizedBox(width: gap),
+                        Expanded(
+                          child: index < rowPlans.length
+                              ? _PlanColumnTile(
+                                  label: planLabelBuilder(rowPlans[index]),
+                                  tierCode: rowPlans[index].tierCode,
+                                  priceLabel: _priceLabel(
+                                    context,
+                                    rowPlans[index],
+                                  ),
+                                  cycleLabel:
+                                      billingCycle ==
+                                          SubscriptionUpgradeBillingCycle
+                                              .monthly
+                                      ? monthlyLabel
+                                      : annualLabel,
+                                  selected:
+                                      selectedPlanId == rowPlans[index].id,
+                                  isCurrentPlan:
+                                      rowPlans[index].id == currentPlanId,
+                                  currentPlanLabel: currentPlanLabel,
+                                  onTap: () => onSelected(rowPlans[index].id),
+                                )
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
+                    ],
                   ),
-              ],
+                ),
+              );
+            }
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: rows,
             );
           },
         ),
@@ -134,7 +146,10 @@ class SubscriptionPlanSelector extends StatelessWidget {
   List<SubscriptionUpgradePlanOption> _sortedPlans() {
     final List<SubscriptionUpgradePlanOption> ordered =
         List<SubscriptionUpgradePlanOption>.of(plans);
-    ordered.sort((SubscriptionUpgradePlanOption a, SubscriptionUpgradePlanOption b) {
+    ordered.sort((
+      SubscriptionUpgradePlanOption a,
+      SubscriptionUpgradePlanOption b,
+    ) {
       final double? left = a.priceFor(billingCycle);
       final double? right = b.priceFor(billingCycle);
       if (left == null && right == null) {
@@ -156,13 +171,18 @@ class SubscriptionPlanSelector extends StatelessWidget {
   }
 
   int _columnCount(double width, int planCount) {
-    if (width >= 720) {
-      return planCount.clamp(1, 4);
+    if (width <= 0 || planCount <= 0) {
+      return 1;
     }
-    if (width >= 520) {
-      return 2;
-    }
-    return 1;
+    final int byMinWidth = math.max(1, (width / _minCardWidth).floor());
+    final int preferred = width >= 900
+        ? 4
+        : width >= 680
+        ? 3
+        : width >= 420
+        ? 2
+        : 1;
+    return math.min(planCount, math.min(byMinWidth, preferred));
   }
 
   String _priceLabel(BuildContext context, SubscriptionUpgradePlanOption plan) {
@@ -179,9 +199,124 @@ class SubscriptionPlanSelector extends StatelessWidget {
   }
 }
 
+class _BillingCycleToggle extends StatelessWidget {
+  const _BillingCycleToggle({
+    required this.value,
+    required this.monthlyLabel,
+    required this.annualLabel,
+    required this.onChanged,
+  });
+
+  final SubscriptionUpgradeBillingCycle value;
+  final String monthlyLabel;
+  final String annualLabel;
+  final ValueChanged<SubscriptionUpgradeBillingCycle> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final BorderRadius radius = BorderRadius.circular(theme.radius.md);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: radius,
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.xs),
+        child: Row(
+          children: <Widget>[
+            Expanded(
+              child: _BillingCycleOption(
+                label: monthlyLabel,
+                icon: Icons.calendar_view_month_outlined,
+                selected: value == SubscriptionUpgradeBillingCycle.monthly,
+                onTap: () =>
+                    onChanged(SubscriptionUpgradeBillingCycle.monthly),
+              ),
+            ),
+            SizedBox(width: theme.spacing.xs),
+            Expanded(
+              child: _BillingCycleOption(
+                label: annualLabel,
+                icon: Icons.calendar_today_outlined,
+                selected: value == SubscriptionUpgradeBillingCycle.annual,
+                onTap: () => onChanged(SubscriptionUpgradeBillingCycle.annual),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BillingCycleOption extends StatelessWidget {
+  const _BillingCycleOption({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final BorderRadius radius = BorderRadius.circular(theme.radius.sm);
+    final Color foreground = selected
+        ? colorScheme.onPrimary
+        : colorScheme.onSurface;
+
+    return Material(
+      color: selected ? colorScheme.primary : Colors.transparent,
+      borderRadius: radius,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: radius,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: EdgeInsets.symmetric(
+            horizontal: theme.spacing.sm,
+            vertical: theme.spacing.sm + 2,
+          ),
+          alignment: Alignment.center,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(icon, size: 18, color: foreground),
+              SizedBox(width: theme.spacing.xs),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: foreground,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _PlanColumnTile extends StatelessWidget {
   const _PlanColumnTile({
     required this.label,
+    required this.tierCode,
     required this.priceLabel,
     required this.cycleLabel,
     required this.selected,
@@ -191,6 +326,7 @@ class _PlanColumnTile extends StatelessWidget {
   });
 
   final String label;
+  final String? tierCode;
   final String priceLabel;
   final String cycleLabel;
   final bool selected;
@@ -201,94 +337,128 @@ class _PlanColumnTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final SubscriptionPlanTheme planTheme = SubscriptionPlanTheme.resolve(
+      theme,
+      tierCode ?? label,
+    );
     final BorderRadius radius = BorderRadius.circular(theme.radius.lg);
+    final Color fill = selected
+        ? Color.alphaBlend(
+            planTheme.foreground.withValues(alpha: 0.16),
+            planTheme.background,
+          )
+        : planTheme.background;
+    final Color borderColor = selected
+        ? planTheme.foreground
+        : planTheme.border;
 
     return Material(
-      elevation: selected ? 1.5 : 0,
-      shadowColor: colorScheme.primary.withValues(alpha: 0.18),
-      color: selected
-          ? colorScheme.primaryContainer.withValues(alpha: 0.42)
-          : colorScheme.surface,
+      color: fill,
       shape: RoundedRectangleBorder(
         borderRadius: radius,
-        side: BorderSide(
-          color: selected ? colorScheme.primary : colorScheme.outlineVariant,
-          width: selected ? 1.75 : 1,
-        ),
+        side: BorderSide(color: borderColor, width: selected ? 2 : 1.25),
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         borderRadius: radius,
-        child: Padding(
-          padding: EdgeInsets.all(theme.spacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Container(height: 5, color: planTheme.foreground),
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                theme.spacing.md,
+                theme.spacing.sm + 2,
+                theme.spacing.md,
+                theme.spacing.md,
+              ),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Expanded(
-                    child: Text(
-                      label,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Expanded(
+                        child: Text(
+                          label,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: planTheme.foreground,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      SizedBox(width: theme.spacing.xs),
+                      Icon(
+                        Icons.check_circle_rounded,
+                        size: 20,
+                        color: selected
+                            ? planTheme.foreground
+                            : planTheme.foreground.withValues(alpha: 0),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: theme.spacing.sm),
+                  Text(
+                    priceLabel,
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: planTheme.foreground,
+                      height: 1.1,
+                      fontSize: 22,
                     ),
                   ),
-                  AnimatedOpacity(
-                    opacity: selected ? 1 : 0,
-                    duration: const Duration(milliseconds: 160),
-                    child: Icon(
-                      Icons.check_circle_rounded,
-                      size: 20,
-                      color: colorScheme.primary,
+                  SizedBox(height: theme.spacing.xs),
+                  Text(
+                    cycleLabel,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: theme.spacing.sm),
+                  // Reserved so every card in a row shares one height.
+                  SizedBox(
+                    height: 24,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Opacity(
+                        opacity: isCurrentPlan ? 1 : 0,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: theme.spacing.sm,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: planTheme.foreground.withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(
+                              theme.radius.full,
+                            ),
+                            border: Border.all(
+                              color: planTheme.foreground.withValues(
+                                alpha: 0.35,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            currentPlanLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: planTheme.foreground,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: theme.spacing.md),
-              Text(
-                priceLabel,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: colorScheme.primary,
-                  height: 1.1,
-                ),
-              ),
-              SizedBox(height: theme.spacing.xs),
-              Text(
-                cycleLabel,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (isCurrentPlan) ...<Widget>[
-                SizedBox(height: theme.spacing.sm),
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: theme.spacing.sm,
-                    vertical: theme.spacing.xs,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.secondaryContainer.withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(theme.radius.full),
-                  ),
-                  child: Text(
-                    currentPlanLabel,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSecondaryContainer,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
