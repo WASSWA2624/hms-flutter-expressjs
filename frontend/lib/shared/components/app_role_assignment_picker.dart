@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/permissions/app_permission_catalog_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
@@ -170,8 +171,11 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
             for (final AppRoleAssignmentOption role in _availableRoles)
               AppSelectOption<String>(
                 value: role.id,
-                label: role.label,
-                searchText: '${role.label} ${role.description ?? ''}',
+                label: role.permissionCount > 0
+                    ? '${role.label} · ${l10n.hrAccessPermissionCountLabel(role.permissionCount)}'
+                    : role.label,
+                searchText:
+                    '${role.label} ${role.description ?? ''} ${role.permissionCount}',
               ),
           ],
           onChanged: _addRole,
@@ -210,7 +214,13 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
             runSpacing: 8,
             children: _previewPermissions
                 .take(32)
-                .map((String permission) => Chip(label: Text(permission)))
+                .map(
+                  (String permission) => Chip(
+                    label: Text(
+                      l10n.permissionCatalogLabelForCode(permission),
+                    ),
+                  ),
+                )
                 .toList(growable: false),
           ),
       ],
