@@ -2257,75 +2257,237 @@ class _PlanModulesCheckboxPanel extends StatelessWidget {
 
     final bool allSelected =
         modules.isNotEmpty && selectedIds.length >= modules.length;
+    final bool noneSelected = selectedIds.isEmpty;
+    final BorderRadius selectAllRadius = BorderRadius.circular(theme.radius.md);
 
-    return AppContentPanel(
-      density: AppContentPanelDensity.compact,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              AppButton.secondary(
-                label: allSelected
-                    ? _SubscriptionsText.clearAllModules
-                    : _SubscriptionsText.selectAllModules,
-                leadingIcon: allSelected
-                    ? Icons.deselect_outlined
-                    : Icons.select_all_outlined,
-                onPressed: () {
-                  if (allSelected) {
-                    onChanged(<String>{});
-                    return;
-                  }
-                  onChanged(
-                    modules
-                        .map((SubscriptionLookupItem module) => module.id)
-                        .toSet(),
-                  );
-                },
-              ),
-              const Spacer(),
-              Text(
-                _SubscriptionsText.modulesSelectedCount(
-                  selectedIds.length,
-                  modules.length,
-                ),
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Material(
+          color: theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
+          shape: RoundedRectangleBorder(
+            borderRadius: selectAllRadius,
+            side: BorderSide(
+              color: theme.colorScheme.primary.withValues(alpha: 0.18),
+            ),
           ),
-          SizedBox(height: theme.spacing.sm),
-          AppResponsiveWrap(
-            minItemWidth: 220,
-            spacing: theme.spacing.sm,
-            runSpacing: theme.spacing.xs,
-            children: <Widget>[
-              for (final SubscriptionLookupItem module in modules)
-                AppCheckboxField(
-                  title: module.label,
-                  subtitle: module.subtitle,
-                  value: selectedIds.contains(module.id),
-                  secondary: Icon(
-                    _moduleIconForLookup(module),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () {
+              if (allSelected) {
+                onChanged(<String>{});
+                return;
+              }
+              onChanged(
+                modules
+                    .map((SubscriptionLookupItem module) => module.id)
+                    .toSet(),
+              );
+            },
+            borderRadius: selectAllRadius,
+            hoverColor: theme.colorScheme.primary.withValues(alpha: 0.08),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: theme.spacing.sm,
+                vertical: theme.spacing.xs,
+              ),
+              child: Row(
+                children: <Widget>[
+                  Checkbox(
+                    tristate: true,
+                    value: allSelected
+                        ? true
+                        : noneSelected
+                        ? false
+                        : null,
+                    onChanged: (_) {
+                      if (allSelected) {
+                        onChanged(<String>{});
+                        return;
+                      }
+                      onChanged(
+                        modules
+                            .map((SubscriptionLookupItem module) => module.id)
+                            .toSet(),
+                      );
+                    },
+                  ),
+                  Icon(
+                    Icons.view_module_outlined,
                     size: theme.appTokens.listIconSize,
                     color: theme.colorScheme.primary,
                   ),
-                  onChanged: (bool selected) {
-                    final Set<String> next = Set<String>.of(selectedIds);
-                    if (selected) {
-                      next.add(module.id);
-                    } else {
-                      next.remove(module.id);
-                    }
-                    onChanged(next);
-                  },
+                  SizedBox(width: theme.spacing.sm),
+                  Expanded(
+                    child: Text(
+                      allSelected
+                          ? _SubscriptionsText.clearAllModules
+                          : _SubscriptionsText.selectAllModules,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(theme.radius.sm),
+                      border: Border.all(
+                        color: theme.colorScheme.outlineVariant.withValues(
+                          alpha: 0.7,
+                        ),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: theme.spacing.sm,
+                        vertical: 2,
+                      ),
+                      child: Text(
+                        _SubscriptionsText.modulesSelectedCount(
+                          selectedIds.length,
+                          modules.length,
+                        ),
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        SizedBox(height: theme.spacing.sm),
+        AppResponsiveWrap(
+          minItemWidth: 240,
+          spacing: theme.spacing.sm,
+          runSpacing: theme.spacing.sm,
+          children: <Widget>[
+            for (final SubscriptionLookupItem module in modules)
+              _PlanModuleOptionTile(
+                module: module,
+                selected: selectedIds.contains(module.id),
+                onChanged: (bool selected) {
+                  final Set<String> next = Set<String>.of(selectedIds);
+                  if (selected) {
+                    next.add(module.id);
+                  } else {
+                    next.remove(module.id);
+                  }
+                  onChanged(next);
+                },
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _PlanModuleOptionTile extends StatelessWidget {
+  const _PlanModuleOptionTile({
+    required this.module,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  final SubscriptionLookupItem module;
+  final bool selected;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final BorderRadius radius = BorderRadius.circular(theme.radius.md);
+    final Color baseFill = selected
+        ? colors.primaryContainer.withValues(alpha: 0.42)
+        : colors.surfaceContainerHighest.withValues(alpha: 0.55);
+    final Color borderColor = selected
+        ? colors.primary.withValues(alpha: 0.35)
+        : colors.outlineVariant.withValues(alpha: 0.55);
+
+    return Material(
+      color: baseFill,
+      shape: RoundedRectangleBorder(
+        borderRadius: radius,
+        side: BorderSide(color: borderColor),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => onChanged(!selected),
+        borderRadius: radius,
+        hoverColor: colors.primary.withValues(alpha: 0.10),
+        splashColor: colors.primary.withValues(alpha: 0.12),
+        highlightColor: colors.primary.withValues(alpha: 0.06),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            theme.spacing.xs,
+            theme.spacing.sm,
+            theme.spacing.sm,
+            theme.spacing.sm,
+          ),
+          child: Row(
+            children: <Widget>[
+              Checkbox(
+                value: selected,
+                onChanged: (bool? value) => onChanged(value ?? false),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colors.surface.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(theme.radius.sm),
+                  border: Border.all(
+                    color: colors.primary.withValues(alpha: 0.14),
+                  ),
                 ),
+                child: Padding(
+                  padding: EdgeInsets.all(theme.spacing.xs),
+                  child: Icon(
+                    _moduleIconForLookup(module),
+                    size: theme.appTokens.listIconSize,
+                    color: colors.primary,
+                  ),
+                ),
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      module.label,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                      ),
+                    ),
+                    if ((module.subtitle ?? '').trim().isNotEmpty) ...<Widget>[
+                      const SizedBox(height: 2),
+                      Text(
+                        module.subtitle!.trim(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
