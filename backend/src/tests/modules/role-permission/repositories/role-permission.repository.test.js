@@ -56,6 +56,13 @@ describe('Role-Permission Repository', () => {
       const result = await findMany({}, 0, 20);
 
       expect(result).toEqual(mocks);
+      expect(prisma.role_permission.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: expect.objectContaining({
+            permission: expect.any(Object),
+          }),
+        })
+      );
     });
   });
 

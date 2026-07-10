@@ -10,7 +10,10 @@
 const rolePermissionRepository = require('@repositories/role-permission/role-permission.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
-const { resolveIdentifierForPayload } = require('@lib/billing/identifiers');
+const {
+  resolveIdentifierForPayload,
+  resolvePublicIdentifier,
+} = require('@lib/billing/identifiers');
 const { assertPermissionIdAssignable } = require('@lib/authorization/assignable-access');
 
 const normalizeCreateRolePermissionPayload = async (data = {}) => ({
@@ -48,6 +51,35 @@ const normalizeUpdateRolePermissionPayload = async (data = {}) => {
   return payload;
 };
 
+const serializeRolePermission = (record) => {
+  if (!record) {
+    return null;
+  }
+
+  const permission = record.permission || null;
+  const publicPermissionId =
+    resolvePublicIdentifier(permission?.human_friendly_id, record.permission_id) ||
+    record.permission_id;
+
+  return {
+    id: resolvePublicIdentifier(record.human_friendly_id, record.id) || record.id,
+    human_friendly_id: record.human_friendly_id || null,
+    role_id: record.role_id,
+    permission_id: publicPermissionId,
+    permission: permission
+      ? {
+          id: publicPermissionId,
+          human_friendly_id: permission.human_friendly_id || null,
+          name: permission.name || null,
+        }
+      : undefined,
+    created_at: record.created_at,
+    updated_at: record.updated_at,
+    deleted_at: record.deleted_at,
+    version: record.version,
+  };
+};
+
 /**
  * List role-permissions with pagination and filtering
  *
@@ -67,9 +99,21 @@ const listRolePermissions = async (filters, page, limit, sortBy, order, userId, 
 
     // Build filter object
     const whereClause = {};
-    
-    if (filters.role_id) whereClause.role_id = filters.role_id;
-    if (filters.permission_id) whereClause.permission_id = filters.permission_id;
+
+    if (filters.role_id) {
+      whereClause.role_id = await resolveIdentifierForPayload({
+        value: filters.role_id,
+        model: 'role',
+        field: 'role_id',
+      });
+    }
+    if (filters.permission_id) {
+      whereClause.permission_id = await resolveIdentifierForPayload({
+        value: filters.permission_id,
+        model: 'permission',
+        field: 'permission_id',
+      });
+    }
 
     const [rolePermissions, total] = await Promise.all([
       rolePermissionRepository.findMany(whereClause, skip, limit, orderBy),
@@ -77,7 +121,7 @@ const listRolePermissions = async (filters, page, limit, sortBy, order, userId, 
     ]);
 
     return {
-      rolePermissions,
+      rolePermissions: rolePermissions.map(serializeRolePermission),
       pagination: {
         page,
         limit,

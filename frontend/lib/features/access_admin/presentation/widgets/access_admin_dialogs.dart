@@ -323,7 +323,8 @@ Future<bool?> openAccessAdminEditRoleDialog(
   Set<String> initialPermissionIds = role.permissions
       .map((AccessAdminPermissionRef permission) => permission.id)
       .toSet();
-  if (initialPermissionIds.isEmpty && role.permissionCount > 0) {
+  // List payloads are lean (count only). Always load assignments for edit.
+  if (initialPermissionIds.isEmpty) {
     final Result<List<AccessAdminRolePermissionAssignment>>
     permissionsResult = await repository.listRolePermissions(role.id);
     initialPermissionIds = permissionsResult.when(
@@ -334,6 +335,7 @@ Future<bool?> openAccessAdminEditRoleDialog(
                     assignment.permissionId,
               )
               .whereType<String>()
+              .where((String id) => id.trim().isNotEmpty)
               .toSet(),
       failure: (_) => initialPermissionIds,
     );

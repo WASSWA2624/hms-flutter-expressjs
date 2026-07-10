@@ -199,10 +199,27 @@ Future<bool?> showRoleMutationDialog({
           currentPermissionLookups = permissions;
           permissionLoadFailure = null;
           if (preserveSelection) {
-            selectedPermissionIds.removeWhere(
-              (String id) =>
-                  permissions.every((AccessAdminLookupOption o) => o.id != id),
-            );
+            final Set<String> lookupIds = permissions
+                .map((AccessAdminLookupOption option) => option.id)
+                .toSet();
+            final Map<String, String> idByLabel = <String, String>{
+              for (final AccessAdminLookupOption option in permissions)
+                option.label: option.id,
+            };
+            final Set<String> remapped = <String>{};
+            for (final String selected in selectedPermissionIds) {
+              if (lookupIds.contains(selected)) {
+                remapped.add(selected);
+                continue;
+              }
+              final String? byLabel = idByLabel[selected];
+              if (byLabel != null) {
+                remapped.add(byLabel);
+              }
+            }
+            selectedPermissionIds
+              ..clear()
+              ..addAll(remapped);
           }
         },
         failure: (AppFailure failure) {

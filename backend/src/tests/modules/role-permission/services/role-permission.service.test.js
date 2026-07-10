@@ -10,6 +10,7 @@ const { HttpError } = require('@lib/errors');
 jest.mock('@repositories/role-permission/role-permission.repository');
 jest.mock('@lib/billing/identifiers', () => ({
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
+  resolvePublicIdentifier: jest.fn((...values) => values.find((value) => value) || null),
 }));
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn().mockResolvedValue({})
@@ -17,6 +18,7 @@ jest.mock('@lib/audit', () => ({
 
 const rolePermissionRepository = require('@repositories/role-permission/role-permission.repository');
 const { createAuditLog } = require('@lib/audit');
+const { resolveIdentifierForPayload } = require('@lib/billing/identifiers');
 const {
   listRolePermissions,
   getRolePermissionById,
@@ -29,17 +31,66 @@ describe('Role-Permission Service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     createAuditLog.mockResolvedValue({});
+    resolveIdentifierForPayload.mockImplementation(async ({ value }) => value);
   });
 
   describe('listRolePermissions', () => {
     it('should list role-permissions with pagination', async () => {
-      const mocks = [{ id: 'rp-1' }];
+      const mocks = [
+        {
+          id: 'rp-1',
+          human_friendly_id: 'RPE0001',
+          role_id: 'role-uuid',
+          permission_id: 'perm-uuid',
+          permission: {
+            id: 'perm-uuid',
+            human_friendly_id: 'PRM0001',
+            name: 'clinical:read',
+          },
+        },
+      ];
       rolePermissionRepository.findMany.mockResolvedValue(mocks);
       rolePermissionRepository.count.mockResolvedValue(1);
 
       const result = await listRolePermissions({}, 1, 20, 'created_at', 'asc', 'user-123', '127.0.0.1');
 
-      expect(result.rolePermissions).toEqual(mocks);
+      expect(result.rolePermissions).toEqual([
+        expect.objectContaining({
+          id: 'RPE0001',
+          permission_id: 'PRM0001',
+          permission: expect.objectContaining({
+            id: 'PRM0001',
+            name: 'clinical:read',
+          }),
+        }),
+      ]);
+    });
+
+    it('should resolve friendly role_id before querying', async () => {
+      const { resolveIdentifierForPayload } = require('@lib/billing/identifiers');
+      resolveIdentifierForPayload.mockImplementation(async ({ value, model }) => {
+        if (model === 'role' && value === 'ROL0001') return 'role-uuid';
+        return value;
+      });
+      rolePermissionRepository.findMany.mockResolvedValue([]);
+      rolePermissionRepository.count.mockResolvedValue(0);
+
+      await listRolePermissions(
+        { role_id: 'ROL0001' },
+        1,
+        20,
+        null,
+        'asc',
+        'user-123',
+        '127.0.0.1'
+      );
+
+      expect(rolePermissionRepository.findMany).toHaveBeenCalledWith(
+        { role_id: 'role-uuid' },
+        0,
+        20,
+        { created_at: 'desc' }
+      );
     });
   });
 

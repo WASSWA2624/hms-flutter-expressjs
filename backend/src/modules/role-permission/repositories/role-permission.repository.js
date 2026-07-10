@@ -50,7 +50,16 @@ const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_a
       where,
       skip,
       take,
-      orderBy
+      orderBy,
+      include: {
+        permission: {
+          select: {
+            id: true,
+            human_friendly_id: true,
+            name: true,
+          },
+        },
+      },
     });
   } catch (error) {
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
