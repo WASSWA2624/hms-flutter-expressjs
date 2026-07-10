@@ -40,6 +40,46 @@ const Set<String> _facilityManagementRealtimeEvents = <String>{
   RealtimeEvents.facilityDeleted,
 };
 
+String? _managementNonEmptyString(Object? value) {
+  if (value is! String) {
+    return null;
+  }
+  final String trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
+String? _managementResourceIdFromMessage(
+  RealtimeMessage message, {
+  required Iterable<String> keys,
+}) {
+  final Map<String, Object?> payload = message.payload;
+  final Object? nested = payload['payload'];
+  final Map<String, Object?>? nestedMap = nested is Map<String, Object?>
+      ? nested
+      : nested is Map<Object?, Object?>
+      ? Map<String, Object?>.fromEntries(
+          nested.entries
+              .where((MapEntry<Object?, Object?> entry) => entry.key != null)
+              .map(
+                (MapEntry<Object?, Object?> entry) =>
+                    MapEntry<String, Object?>(entry.key.toString(), entry.value),
+              ),
+        )
+      : null;
+
+  for (final String key in keys) {
+    final String? fromRoot = _managementNonEmptyString(payload[key]);
+    if (fromRoot != null) {
+      return fromRoot;
+    }
+    final String? fromNested = _managementNonEmptyString(nestedMap?[key]);
+    if (fromNested != null) {
+      return fromNested;
+    }
+  }
+  return null;
+}
+
 void _syncPlatformDashboard(
   WidgetRef ref, {
   HomeDashboardOptimisticPatch? patch,
@@ -262,11 +302,19 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
   }
 
   void _removeTenantLocally(String tenantId) {
+    final int before = _tenants.length;
+    final List<TenantProfile> next = _tenants
+        .where(
+          (TenantProfile entry) =>
+              entry.id != tenantId && entry.slug != tenantId,
+        )
+        .toList(growable: false);
+    if (next.length == before) {
+      return;
+    }
     setState(() {
-      _tenants = _tenants
-          .where((TenantProfile entry) => entry.id != tenantId)
-          .toList(growable: false);
-      _totalItemCount = math.max(0, _totalItemCount - 1);
+      _tenants = next;
+      _totalItemCount = math.max(0, _totalItemCount - (before - next.length));
     });
   }
 
@@ -275,52 +323,14 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
       return;
     }
     if (message.event == RealtimeEvents.tenantDeleted) {
-      final String? tenantId = _tenantResourceIdFromMessage(message);
+      final String? tenantId = _managementResourceIdFromMessage(
+        message,
+        keys: const <String>['resource_id', 'tenant_id', 'id'],
+      );
       if (tenantId != null) {
         _removeTenantLocally(tenantId);
       }
     }
-  }
-
-  String? _tenantResourceIdFromMessage(RealtimeMessage message) {
-    final Map<String, Object?> payload = message.payload;
-    final Object? nested = payload['payload'];
-    final Map<String, Object?>? nestedMap = nested is Map<String, Object?>
-        ? nested
-        : nested is Map<Object?, Object?>
-        ? Map<String, Object?>.fromEntries(
-            nested.entries
-                .where((MapEntry<Object?, Object?> e) => e.key != null)
-                .map(
-                  (MapEntry<Object?, Object?> e) =>
-                      MapEntry<String, Object?>(e.key.toString(), e.value),
-                ),
-          )
-        : null;
-
-    for (final String key in <String>[
-      'resource_id',
-      'tenant_id',
-      'id',
-    ]) {
-      final String? fromRoot = _nonEmptyString(payload[key]);
-      if (fromRoot != null) {
-        return fromRoot;
-      }
-      final String? fromNested = _nonEmptyString(nestedMap?[key]);
-      if (fromNested != null) {
-        return fromNested;
-      }
-    }
-    return null;
-  }
-
-  String? _nonEmptyString(Object? value) {
-    if (value is! String) {
-      return null;
-    }
-    final String trimmed = value.trim();
-    return trimmed.isEmpty ? null : trimmed;
   }
 
   bool get _canCreate => ref.read(appAccessPolicyProvider).canCreateTenant();
@@ -673,11 +683,16 @@ class _ManageFacilitiesDialogState
   }
 
   void _removeFacilityLocally(String facilityId) {
+    final int before = _facilities.length;
+    final List<FacilityProfile> next = _facilities
+        .where((FacilityProfile entry) => entry.id != facilityId)
+        .toList(growable: false);
+    if (next.length == before) {
+      return;
+    }
     setState(() {
-      _facilities = _facilities
-          .where((FacilityProfile entry) => entry.id != facilityId)
-          .toList(growable: false);
-      _totalItemCount = math.max(0, _totalItemCount - 1);
+      _facilities = next;
+      _totalItemCount = math.max(0, _totalItemCount - (before - next.length));
     });
   }
 
@@ -686,30 +701,14 @@ class _ManageFacilitiesDialogState
       return;
     }
     if (message.event == RealtimeEvents.facilityDeleted) {
-      final String? facilityId = _facilityResourceIdFromMessage(message);
+      final String? facilityId = _managementResourceIdFromMessage(
+        message,
+        keys: const <String>['resource_id', 'facility_id', 'id'],
+      );
       if (facilityId != null) {
         _removeFacilityLocally(facilityId);
       }
     }
-  }
-
-  String? _facilityResourceIdFromMessage(RealtimeMessage message) {
-    final Map<String, Object?> payload = message.payload;
-    for (final String key in <String>['resource_id', 'facility_id', 'id']) {
-      final String? value = _nonEmptyString(payload[key]);
-      if (value != null) {
-        return value;
-      }
-    }
-    return null;
-  }
-
-  String? _nonEmptyString(Object? value) {
-    if (value is! String) {
-      return null;
-    }
-    final String trimmed = value.trim();
-    return trimmed.isEmpty ? null : trimmed;
   }
 
   bool get _canManage => ref.read(appAccessPolicyProvider).canManageFacility();
