@@ -2392,7 +2392,7 @@ abstract class AppLocalizations {
   /// **'Plans'**
   String get navigationSubscriptionsShortLabel;
 
-  /// Shell header label when the tenant subscription is active.
+  /// Fallback shell header label when the tenant subscription is active but the plan name is unavailable.
   ///
   /// In en, this message translates to:
   /// **'Subscribed'**
@@ -2427,6 +2427,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upgrade'**
   String get subscriptionHeaderUpgradeLabel;
+
+  /// Shell header upgrade hint naming the next subscription package.
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade to {plan}'**
+  String subscriptionHeaderUpgradeToLabel(String plan);
+
+  /// Shell header label showing the current plan and the next upgrade package.
+  ///
+  /// In en, this message translates to:
+  /// **'{plan} · Upgrade to {nextPlan}'**
+  String subscriptionHeaderPlanWithUpgradeLabel(String plan, String nextPlan);
 
   /// Tooltip for the shell header subscription action.
   ///

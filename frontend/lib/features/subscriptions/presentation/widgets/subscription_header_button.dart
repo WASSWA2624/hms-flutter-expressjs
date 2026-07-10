@@ -112,18 +112,17 @@ final class _SubscriptionHeaderPresentation {
 
     switch (summary.headerState) {
       case TenantSubscriptionHeaderState.active:
-        if (noPaidSubscription) {
-          return _SubscriptionHeaderPresentation(
-            label: l10n.subscriptionHeaderFreeLabel,
-            icon: Icons.workspace_premium_outlined,
-            foreground: planTheme.foreground,
-            background: planTheme.background,
-            border: planTheme.border,
-          );
-        }
         return _SubscriptionHeaderPresentation(
-          label: l10n.subscriptionHeaderActiveLabel,
-          icon: Icons.verified_outlined,
+          label: _planBadgeLabel(
+            summary: summary,
+            l10n: l10n,
+            fallback: noPaidSubscription
+                ? l10n.subscriptionHeaderFreeLabel
+                : l10n.subscriptionHeaderActiveLabel,
+          ),
+          icon: noPaidSubscription
+              ? Icons.workspace_premium_outlined
+              : Icons.verified_outlined,
           foreground: planTheme.foreground,
           background: planTheme.background,
           border: planTheme.border,
@@ -153,13 +152,36 @@ final class _SubscriptionHeaderPresentation {
           'FREE',
         );
         return _SubscriptionHeaderPresentation(
-          label: l10n.subscriptionHeaderFreeLabel,
+          label: _planBadgeLabel(
+            summary: summary,
+            l10n: l10n,
+            fallback: l10n.subscriptionHeaderFreeLabel,
+          ),
           icon: Icons.workspace_premium_outlined,
           foreground: freeTheme.foreground,
           background: freeTheme.background,
           border: freeTheme.border,
         );
     }
+  }
+
+  static String _planBadgeLabel({
+    required TenantSubscriptionSummary summary,
+    required AppLocalizations l10n,
+    required String fallback,
+  }) {
+    final String planLabel = _hasText(summary.planLabel)
+        ? summary.planLabel!.trim()
+        : fallback;
+    final String? nextPlanLabel = _hasText(summary.nextPlanLabel)
+        ? summary.nextPlanLabel!.trim()
+        : null;
+
+    if (nextPlanLabel == null) {
+      return planLabel;
+    }
+
+    return l10n.subscriptionHeaderPlanWithUpgradeLabel(planLabel, nextPlanLabel);
   }
 
   static bool _hasText(String? value) {

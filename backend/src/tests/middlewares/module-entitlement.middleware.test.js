@@ -195,7 +195,7 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path,
-      user: { tenant_id: 'tenant-entitled-diagnostics', roles: ['SUPER_ADMIN'] },
+      user: { tenant_id: 'tenant-entitled-diagnostics', roles: ['DOCTOR'] },
     };
 
     moduleRepository.count.mockImplementation(async (filters = {}) =>
@@ -234,7 +234,7 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path,
-      user: { tenant_id: 'tenant-entitled-workspace', roles: ['SUPER_ADMIN'] },
+      user: { tenant_id: 'tenant-entitled-workspace', roles: ['FACILITY_ADMIN'] },
     };
 
     moduleRepository.count.mockImplementation(async (filters = {}) =>
@@ -252,7 +252,7 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/mortuary',
-      user: { tenant_id: 'tenant-advanced-demo', roles: ['SUPER_ADMIN'] },
+      user: { tenant_id: 'tenant-advanced-demo', roles: ['MORTUARY_MANAGER'] },
     };
 
     moduleRepository.count.mockResolvedValue(0);
@@ -303,7 +303,7 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/therapy-flows',
-      user: { tenant_id: 'tenant-advanced-demo', roles: ['SUPER_ADMIN'] },
+      user: { tenant_id: 'tenant-advanced-demo', roles: ['NURSE'] },
     };
 
     moduleRepository.count.mockResolvedValue(0);
@@ -387,6 +387,23 @@ describe('module entitlement middleware', () => {
         }),
       })
     );
+  });
+
+  test('allows SUPER_ADMIN to access commercial modules without plan entitlement', async () => {
+    const { enforceModuleEntitlement } = loadMiddleware();
+    const req = {
+      path: '/subscription-plans',
+      user: {
+        tenant_id: 'tenant-advanced-demo',
+        roles: ['SUPER_ADMIN'],
+      },
+    };
+
+    const error = await invokeMiddleware(enforceModuleEntitlement(), req);
+
+    expect(error).toBeUndefined();
+    expect(moduleRepository.count).not.toHaveBeenCalled();
+    expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
   });
 
   test('does not bypass entitlement checks for elevated tenant roles', async () => {

@@ -1233,6 +1233,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionHeaderUpgradeLabel => 'Upgrade';
 
   @override
+  String subscriptionHeaderUpgradeToLabel(String plan) {
+    return 'Upgrade to $plan';
+  }
+
+  @override
+  String subscriptionHeaderPlanWithUpgradeLabel(String plan, String nextPlan) {
+    return '$plan · Upgrade to $nextPlan';
+  }
+
+  @override
   String get subscriptionHeaderTooltip => 'Manage subscription and billing';
 
   @override

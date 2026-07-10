@@ -29,5 +29,24 @@ void main() {
       expect(summary.headerState, TenantSubscriptionHeaderState.expiringSoon);
       expect(summary.daysUntilExpiry, 7);
     });
+
+    test('parses next upgrade plan fields', () {
+      final TenantSubscriptionSummary summary =
+          TenantSubscriptionSummary.fromJson(<String, Object?>{
+            'subscription_id': 'sub-2',
+            'status': 'ACTIVE',
+            'plan_label': 'Pro',
+            'tier_code': 'PRO',
+            'header_state': 'active',
+            'next_plan_id': 'plan-advanced',
+            'next_plan_label': 'Advanced',
+            'next_tier_code': 'ADVANCED',
+          });
+
+      expect(summary.planLabel, 'Pro');
+      expect(summary.nextPlanLabel, 'Advanced');
+      expect(summary.nextTierCode, 'ADVANCED');
+      expect(summary.canUpgrade, isTrue);
+    });
   });
 }

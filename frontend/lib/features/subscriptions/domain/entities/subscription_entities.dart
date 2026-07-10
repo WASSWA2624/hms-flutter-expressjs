@@ -20,7 +20,7 @@ enum SubscriptionPanel {
         return panel;
       }
     }
-    return SubscriptionPanel.overview;
+    return SubscriptionPanel.catalog;
   }
 }
 
@@ -44,7 +44,7 @@ enum SubscriptionResource {
         return resource;
       }
     }
-    return SubscriptionResource.subscriptions;
+    return SubscriptionResource.subscriptionPlans;
   }
 }
 
@@ -170,7 +170,8 @@ final class SubscriptionsWorkspaceQuery {
         action != null ||
         panel != SubscriptionPanel.catalog ||
         resource != SubscriptionResource.subscriptionPlans ||
-        queue != null;
+        queue != null ||
+        tenantId != null;
   }
 
   bool get hasActiveFilters {

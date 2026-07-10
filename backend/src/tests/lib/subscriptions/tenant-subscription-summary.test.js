@@ -1,11 +1,31 @@
 const {
   resolveHeaderState,
   resolveDaysUntil,
+  resolveNextTierCode,
   resolvePlatformAdminContact,
   resolvePlatformBankTransferDetails,
+  COMMERCIAL_TIER_LADDER,
 } = require('@lib/subscriptions/tenant-subscription-summary');
 
 describe('tenant-subscription-summary', () => {
+  describe('resolveNextTierCode', () => {
+    it('walks the commercial ladder and stops at Custom', () => {
+      expect(COMMERCIAL_TIER_LADDER).toEqual([
+        'FREE',
+        'BASIC',
+        'PRO',
+        'ADVANCED',
+        'CUSTOM',
+      ]);
+      expect(resolveNextTierCode('FREE')).toBe('BASIC');
+      expect(resolveNextTierCode('basic')).toBe('PRO');
+      expect(resolveNextTierCode('PRO')).toBe('ADVANCED');
+      expect(resolveNextTierCode('ADVANCED')).toBe('CUSTOM');
+      expect(resolveNextTierCode('CUSTOM')).toBeNull();
+      expect(resolveNextTierCode('DEVELOPER')).toBeNull();
+    });
+  });
+
   describe('resolveHeaderState', () => {
     it('returns active for healthy subscriptions', () => {
       expect(

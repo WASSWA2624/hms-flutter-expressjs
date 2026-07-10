@@ -112,6 +112,9 @@ final class TenantSubscriptionSummary {
     this.daysUntilExpiry,
     this.expiringSoonDays = 14,
     this.headerState = TenantSubscriptionHeaderState.unknown,
+    this.nextPlanId,
+    this.nextPlanLabel,
+    this.nextTierCode,
   });
 
   final String? subscriptionId;
@@ -123,6 +126,13 @@ final class TenantSubscriptionSummary {
   final int? daysUntilExpiry;
   final int expiringSoonDays;
   final TenantSubscriptionHeaderState headerState;
+  final String? nextPlanId;
+  final String? nextPlanLabel;
+  final String? nextTierCode;
+
+  bool get canUpgrade =>
+      (nextPlanLabel?.trim().isNotEmpty ?? false) ||
+      (nextTierCode?.trim().isNotEmpty ?? false);
 
   factory TenantSubscriptionSummary.fromJson(Map<String, Object?>? json) {
     if (json == null) {
@@ -141,6 +151,9 @@ final class TenantSubscriptionSummary {
       headerState: TenantSubscriptionHeaderState.fromServer(
         _string(json['header_state']),
       ),
+      nextPlanId: _string(json['next_plan_id']),
+      nextPlanLabel: _string(json['next_plan_label']),
+      nextTierCode: _string(json['next_tier_code']),
     );
   }
 

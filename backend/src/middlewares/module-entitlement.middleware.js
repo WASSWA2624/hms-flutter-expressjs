@@ -17,6 +17,7 @@ const {
   evaluateModuleEntitlement,
 } = require('@lib/subscriptions/policies');
 const { PLAN_TIER_RANK } = require('@lib/subscriptions/plan-module-matrix');
+const { ROLES, normalizeRoleName } = require('@config/roles');
 
 const CACHE_TTL_MS = 60 * 1000;
 const CACHE_MAX_ENTRIES = 5000;
@@ -504,6 +505,19 @@ const tenantHasFallbackModuleAccess = async (tenantId, moduleSlug) => {
   return allowed;
 };
 
+const isSuperAdminUser = (user = {}) => {
+  const rawRoles = Array.isArray(user.roles)
+    ? user.roles
+    : user.role
+      ? [user.role]
+      : [];
+  return rawRoles.some((entry) => {
+    const normalized =
+      normalizeRoleName(entry) || String(entry || '').trim().toUpperCase();
+    return normalized === ROLES.SUPER_ADMIN;
+  });
+};
+
 const enforceModuleEntitlement = () => async (req, res, next) => {
   try {
     const moduleSlug = resolveModuleSlugFromPath(req.path);
@@ -519,6 +533,12 @@ const enforceModuleEntitlement = () => async (req, res, next) => {
     }
 
     const user = req.user || {};
+    // Platform operators manage catalog/subscriptions across tenants; commercial
+    // plan packaging must not block SUPER_ADMIN ops tooling.
+    if (isSuperAdminUser(user)) {
+      return next();
+    }
+
     const tenantId = user.tenant_id || user.tenantId || null;
     if (!tenantId) {
       recordSecurityEvent('module.entitlement_denied', {

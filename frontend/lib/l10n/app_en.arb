@@ -1573,7 +1573,7 @@
   },
   "subscriptionHeaderActiveLabel": "Subscribed",
   "@subscriptionHeaderActiveLabel": {
-    "description": "Shell header label when the tenant subscription is active."
+    "description": "Fallback shell header label when the tenant subscription is active but the plan name is unavailable."
   },
   "subscriptionHeaderFreeLabel": "Free",
   "@subscriptionHeaderFreeLabel": {
@@ -1599,6 +1599,27 @@
   "subscriptionHeaderUpgradeLabel": "Upgrade",
   "@subscriptionHeaderUpgradeLabel": {
     "description": "Shell header action label to open the subscription upgrade dialog."
+  },
+  "subscriptionHeaderUpgradeToLabel": "Upgrade to {plan}",
+  "@subscriptionHeaderUpgradeToLabel": {
+    "description": "Shell header upgrade hint naming the next subscription package.",
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      }
+    }
+  },
+  "subscriptionHeaderPlanWithUpgradeLabel": "{plan} · Upgrade to {nextPlan}",
+  "@subscriptionHeaderPlanWithUpgradeLabel": {
+    "description": "Shell header label showing the current plan and the next upgrade package.",
+    "placeholders": {
+      "plan": {
+        "type": "String"
+      },
+      "nextPlan": {
+        "type": "String"
+      }
+    }
   },
   "subscriptionHeaderTooltip": "Manage subscription and billing",
   "@subscriptionHeaderTooltip": {
