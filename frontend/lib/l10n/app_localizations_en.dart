@@ -5137,6 +5137,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityManageFacilitiesTitle => 'Manage facilities';
 
   @override
+  String get tenantFacilityFacilityDetailsTitle => 'Facility details';
+
+  @override
+  String get tenantFacilityFacilityDetailsUsersHeading => 'Users';
+
+  @override
+  String get tenantFacilityFacilityDetailsNoUsers =>
+      'No users are assigned to this facility.';
+
+  @override
+  String get tenantFacilityFacilityDetailsNoLogo => 'No logo uploaded';
+
+  @override
+  String get tenantFacilityFacilityDetailsStructureHeading => 'Structure';
+
+  @override
+  String get tenantFacilityFacilityDetailsContactHeading => 'Contact';
+
+  @override
+  String get tenantFacilityEditFacilityDetailsAction => 'Edit facility';
+
+  @override
+  String get tenantFacilityDeleteFacilityDetailsAction => 'Delete facility';
+
+  @override
   String get tenantFacilityNoTenants => 'No tenants have been added.';
 
   @override

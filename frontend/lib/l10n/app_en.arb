@@ -6626,6 +6626,38 @@
   "@tenantFacilityManageFacilitiesTitle": {
     "description": "Platform admin dialog title for facility management."
   },
+  "tenantFacilityFacilityDetailsTitle": "Facility details",
+  "@tenantFacilityFacilityDetailsTitle": {
+    "description": "Title for facility details modal opened from Manage Facilities."
+  },
+  "tenantFacilityFacilityDetailsUsersHeading": "Users",
+  "@tenantFacilityFacilityDetailsUsersHeading": {
+    "description": "Users section heading in facility details modal."
+  },
+  "tenantFacilityFacilityDetailsNoUsers": "No users are assigned to this facility.",
+  "@tenantFacilityFacilityDetailsNoUsers": {
+    "description": "Empty users list body in facility details modal."
+  },
+  "tenantFacilityFacilityDetailsNoLogo": "No logo uploaded",
+  "@tenantFacilityFacilityDetailsNoLogo": {
+    "description": "Empty logo state in facility details summary."
+  },
+  "tenantFacilityFacilityDetailsStructureHeading": "Structure",
+  "@tenantFacilityFacilityDetailsStructureHeading": {
+    "description": "Structure counts heading in facility details summary."
+  },
+  "tenantFacilityFacilityDetailsContactHeading": "Contact",
+  "@tenantFacilityFacilityDetailsContactHeading": {
+    "description": "Contact section heading in facility details summary."
+  },
+  "tenantFacilityEditFacilityDetailsAction": "Edit facility",
+  "@tenantFacilityEditFacilityDetailsAction": {
+    "description": "Edit facility action label in facility details modal."
+  },
+  "tenantFacilityDeleteFacilityDetailsAction": "Delete facility",
+  "@tenantFacilityDeleteFacilityDetailsAction": {
+    "description": "Delete facility action label in facility details modal."
+  },
   "tenantFacilityNoTenants": "No tenants have been added.",
   "@tenantFacilityNoTenants": {
     "description": "Empty tenant list label."

@@ -3,7 +3,12 @@ import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facil
 import 'package:hosspi_hms/shared/data/data.dart';
 
 abstract interface class TenantFacilityRepository {
-  Future<Result<FacilitySetupSnapshot>> loadSetup({String? facilityId});
+  Future<Result<FacilitySetupSnapshot>> loadSetup({
+    String? facilityId,
+    String? tenantId,
+  });
+
+  Future<Result<FacilityProfile>> getFacility(String id);
 
   Future<Result<AppPage<TenantProfile>>> listTenants({
     required AppPageRequest request,

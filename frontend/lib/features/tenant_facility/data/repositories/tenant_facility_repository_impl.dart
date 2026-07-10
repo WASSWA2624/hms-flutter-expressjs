@@ -26,14 +26,22 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   final ApiClient _apiClient;
 
   @override
-  Future<Result<FacilitySetupSnapshot>> loadSetup({String? facilityId}) async {
+  Future<Result<FacilitySetupSnapshot>> loadSetup({
+    String? facilityId,
+    String? tenantId,
+  }) async {
     final workspaceResult = await _loadSetupFromWorkspace(
       facilityId: facilityId,
+      tenantId: tenantId,
     );
     if (workspaceResult case ResultSuccess<FacilitySetupSnapshot>(
       :final value,
     )) {
-      return Result<FacilitySetupSnapshot>.success(value);
+      // Prefer workspace when it resolved a facility, or when no specific
+      // facility was requested (caller is browsing setup context).
+      if (value.facility != null || _normalizedOptional(facilityId) == null) {
+        return Result<FacilitySetupSnapshot>.success(value);
+      }
     }
     if (workspaceResult case ResultFailure<FacilitySetupSnapshot>(
       :final failure,
@@ -44,7 +52,15 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
       }
     }
 
-    return _loadSetupComposed(facilityId: facilityId);
+    return _loadSetupComposed(facilityId: facilityId, tenantId: tenantId);
+  }
+
+  @override
+  Future<Result<FacilityProfile>> getFacility(String id) {
+    return _apiClient.get<FacilityProfile>(
+      ApiEndpoints.byId(HmsApiResource.facilities, id),
+      decoder: _decodeFacility,
+    );
   }
 
   @override
@@ -156,6 +172,7 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
 
   Future<Result<FacilitySetupSnapshot>> _loadSetupFromWorkspace({
     String? facilityId,
+    String? tenantId,
   }) {
     return _apiClient.get<FacilitySetupSnapshot>(
       ApiEndpoints.nested(
@@ -164,6 +181,8 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
         const <String>[],
       ),
       queryParameters: _withoutEmpty(<String, String?>{
+        if (_normalizedOptional(tenantId) case final String selectedTenantId)
+          'tenant_id': selectedTenantId,
         if (_normalizedOptional(facilityId)
             case final String selectedFacilityId)
           'facility_id': selectedFacilityId,
@@ -176,11 +195,12 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
 
   Future<Result<FacilitySetupSnapshot>> _loadSetupComposed({
     String? facilityId,
+    String? tenantId,
   }) async {
     final tenantsResult = await _listTenants();
     return tenantsResult.when(
       success: (List<TenantProfile> tenants) async {
-        final TenantProfile? tenant = tenants.firstOrNull;
+        final TenantProfile? tenant = _selectTenant(tenants, tenantId);
         if (tenant == null) {
           return const Result<FacilitySetupSnapshot>.success(
             FacilitySetupSnapshot(),
@@ -1018,6 +1038,25 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     };
   }
 
+  static TenantProfile? _selectTenant(
+    List<TenantProfile> tenants,
+    String? tenantId,
+  ) {
+    final String? normalizedTenantId = _normalizedOptional(tenantId);
+    if (normalizedTenantId == null) {
+      return tenants.firstOrNull;
+    }
+
+    return tenants
+            .where(
+              (TenantProfile tenant) =>
+                  tenant.id == normalizedTenantId ||
+                  tenant.mutationId == normalizedTenantId,
+            )
+            .firstOrNull ??
+        tenants.firstOrNull;
+  }
+
   static FacilityProfile? _selectFacility(
     List<FacilityProfile> facilities,
     String? facilityId,
@@ -1028,7 +1067,11 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     }
 
     return facilities
-            .where((facility) => facility.id == normalizedFacilityId)
+            .where(
+              (FacilityProfile facility) =>
+                  facility.id == normalizedFacilityId ||
+                  facility.mutationId == normalizedFacilityId,
+            )
             .firstOrNull ??
         facilities.firstOrNull;
   }

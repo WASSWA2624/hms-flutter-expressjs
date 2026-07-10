@@ -9562,6 +9562,54 @@ abstract class AppLocalizations {
   /// **'Manage facilities'**
   String get tenantFacilityManageFacilitiesTitle;
 
+  /// Title for facility details modal opened from Manage Facilities.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility details'**
+  String get tenantFacilityFacilityDetailsTitle;
+
+  /// Users section heading in facility details modal.
+  ///
+  /// In en, this message translates to:
+  /// **'Users'**
+  String get tenantFacilityFacilityDetailsUsersHeading;
+
+  /// Empty users list body in facility details modal.
+  ///
+  /// In en, this message translates to:
+  /// **'No users are assigned to this facility.'**
+  String get tenantFacilityFacilityDetailsNoUsers;
+
+  /// Empty logo state in facility details summary.
+  ///
+  /// In en, this message translates to:
+  /// **'No logo uploaded'**
+  String get tenantFacilityFacilityDetailsNoLogo;
+
+  /// Structure counts heading in facility details summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Structure'**
+  String get tenantFacilityFacilityDetailsStructureHeading;
+
+  /// Contact section heading in facility details summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get tenantFacilityFacilityDetailsContactHeading;
+
+  /// Edit facility action label in facility details modal.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit facility'**
+  String get tenantFacilityEditFacilityDetailsAction;
+
+  /// Delete facility action label in facility details modal.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete facility'**
+  String get tenantFacilityDeleteFacilityDetailsAction;
+
   /// Empty tenant list label.
   ///
   /// In en, this message translates to:
