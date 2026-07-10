@@ -4045,6 +4045,15 @@ Future<void> showTenantFacilityDepartmentFormDialog(
   return _openDepartmentDialog(context, snapshot, department: department);
 }
 
+/// Shared branch create/edit dialog for facility setup and management.
+Future<void> showTenantFacilityBranchFormDialog(
+  BuildContext context,
+  FacilitySetupSnapshot snapshot, {
+  BranchProfile? branch,
+}) {
+  return _openBranchDialog(context, snapshot, branch: branch);
+}
+
 /// Shared unit create/edit dialog for facility setup.
 Future<void> showTenantFacilityUnitFormDialog(
   BuildContext context,
@@ -4052,6 +4061,15 @@ Future<void> showTenantFacilityUnitFormDialog(
   UnitProfile? unit,
 }) {
   return _openUnitDialog(context, snapshot, unit: unit);
+}
+
+/// Shared ward create/edit dialog for facility setup and management.
+Future<void> showTenantFacilityWardFormDialog(
+  BuildContext context,
+  FacilitySetupSnapshot snapshot, {
+  WardProfile? ward,
+}) {
+  return _openWardDialog(context, snapshot, ward: ward);
 }
 
 /// Shared room create/edit dialog for facility setup and rooms & beds workspace.

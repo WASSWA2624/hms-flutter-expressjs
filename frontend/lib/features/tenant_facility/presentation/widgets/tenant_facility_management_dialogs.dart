@@ -12,6 +12,7 @@ import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
@@ -19,6 +20,7 @@ import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -1534,6 +1536,16 @@ class _ManagementRowActions extends StatelessWidget {
   }
 }
 
+enum _FacilityDetailsPanel {
+  users,
+  branches,
+  departments,
+  units,
+  wards,
+  rooms,
+  beds,
+}
+
 class _FacilityDetailsDialog extends ConsumerStatefulWidget {
   const _FacilityDetailsDialog({
     required this.facility,
@@ -1551,8 +1563,9 @@ class _FacilityDetailsDialog extends ConsumerStatefulWidget {
 class _FacilityDetailsDialogState extends ConsumerState<_FacilityDetailsDialog> {
   late FacilityProfile _facility;
   FacilitySetupSnapshot? _snapshot;
-  final TextEditingController _searchController = TextEditingController();
-  Timer? _searchDebounce;
+  final TextEditingController _usersSearchController = TextEditingController();
+  Timer? _usersSearchDebounce;
+  _FacilityDetailsPanel _selectedPanel = _FacilityDetailsPanel.users;
   bool _loadingOverview = true;
   bool _loadingUsers = true;
   AppFailure? _overviewFailure;
@@ -1568,20 +1581,27 @@ class _FacilityDetailsDialogState extends ConsumerState<_FacilityDetailsDialog> 
   void initState() {
     super.initState();
     _facility = widget.facility;
-    _searchController.addListener(_onSearchChanged);
+    _usersSearchController.addListener(_onUsersSearchChanged);
     unawaited(_loadOverview());
     unawaited(_loadUsers());
   }
 
   @override
   void dispose() {
-    _searchDebounce?.cancel();
-    _searchController.dispose();
+    _usersSearchDebounce?.cancel();
+    _usersSearchController.dispose();
     super.dispose();
   }
 
   bool get _canManageFacility =>
       ref.read(appAccessPolicyProvider).canManageFacility();
+
+  bool get _canEditStructure =>
+      ref.read(appAccessPolicyProvider).canEditFacilitySetupStructure();
+
+  bool get _canMutate => _canManageFacility && !_facility.isDeleted;
+
+  bool get _canMutateStructure => _canEditStructure && !_facility.isDeleted;
 
   String get _tenantLabel {
     final String? fromWidget = widget.tenantName?.trim();
@@ -1595,11 +1615,36 @@ class _FacilityDetailsDialogState extends ConsumerState<_FacilityDetailsDialog> 
     return _facility.tenantId;
   }
 
-  void _onSearchChanged() {
-    _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+  FacilitySetupSnapshot get _effectiveSnapshot {
+    final FacilitySetupSnapshot base =
+        _snapshot ?? FacilitySetupSnapshot(facility: _facility);
+    final FacilityProfile facility = base.facility ?? _facility;
+    final TenantProfile tenant =
+        base.tenant ??
+        TenantProfile(id: facility.tenantId, name: _tenantLabel);
+    if (identical(base.facility, facility) && identical(base.tenant, tenant)) {
+      return base;
+    }
+    return base.copyWith(tenant: tenant, facility: facility);
+  }
+
+  void _onUsersSearchChanged() {
+    _usersSearchDebounce?.cancel();
+    _usersSearchDebounce = Timer(const Duration(milliseconds: 300), () {
       unawaited(_loadUsers(resetPage: true));
     });
+  }
+
+  void _selectPanel(_FacilityDetailsPanel panel) {
+    if (_selectedPanel == panel) {
+      return;
+    }
+    setState(() {
+      _selectedPanel = panel;
+    });
+    if (panel == _FacilityDetailsPanel.users) {
+      unawaited(_loadUsers(resetPage: true));
+    }
   }
 
   Future<void> _loadOverview({bool silent = false}) async {
@@ -1680,7 +1725,7 @@ class _FacilityDetailsDialogState extends ConsumerState<_FacilityDetailsDialog> 
           AccessAdminWorkspaceQuery(
             tenantId: _facility.tenantId,
             facilityId: _facility.mutationId,
-            search: _searchController.text.trim(),
+            search: _usersSearchController.text.trim(),
             pageRequest: _pageRequest,
           ),
         );
@@ -1709,9 +1754,218 @@ class _FacilityDetailsDialogState extends ConsumerState<_FacilityDetailsDialog> 
     );
   }
 
-  Future<void> _onPageChanged(AppPageRequest request) async {
+  Future<void> _onUsersPageChanged(AppPageRequest request) async {
     _pageRequest = request;
     await _loadUsers();
+  }
+
+  AccessAdminWorkspaceState _usersWorkspaceState() {
+    final AccessAdminWorkspaceQuery query = AccessAdminWorkspaceQuery(
+      tenantId: _facility.tenantId,
+      facilityId: _facility.mutationId,
+      search: _usersSearchController.text.trim(),
+      pageRequest: _pageRequest,
+    );
+    return AccessAdminWorkspaceState(
+      data: AccessAdminWorkspaceData(
+        items: _users,
+        page: AppPage<AccessAdminItem>(
+          items: _users,
+          request: _pageRequest,
+          totalItemCount: _totalUserCount,
+        ),
+        query: query,
+      ),
+      query: query,
+    );
+  }
+
+  Future<void> _afterStructureMutation() async {
+    _mutated = true;
+    await _loadOverview(silent: true);
+    if (_selectedPanel == _FacilityDetailsPanel.users && mounted) {
+      await _loadUsers(silent: true);
+    }
+  }
+
+  Future<void> _createUser() async {
+    final bool? saved = await openAccessAdminCreateUserDialog(
+      context,
+      ref,
+      _usersWorkspaceState(),
+    );
+    if (!mounted || saved != true) {
+      return;
+    }
+    _mutated = true;
+    await _loadUsers(resetPage: true, silent: true);
+  }
+
+  Future<void> _editUser(AccessAdminItem user) async {
+    final AccessAdminRepository repository = ref.read(
+      accessAdminRepositoryProvider,
+    );
+    final Result<AccessAdminUserDetail> detailResult = await repository
+        .getUserDetail(
+          user.id,
+          tenantId: _facility.tenantId,
+          facilityId: _facility.mutationId,
+        );
+    if (!mounted) {
+      return;
+    }
+    final AccessAdminUserDetail? detail = detailResult.when(
+      success: (AccessAdminUserDetail value) => value,
+      failure: (_) => null,
+    );
+    if (detail == null) {
+      return;
+    }
+    await openAccessAdminEditUserDialog(
+      context,
+      ref,
+      _usersWorkspaceState(),
+      user: detail.item,
+      detail: detail,
+    );
+    if (!mounted) {
+      return;
+    }
+    _mutated = true;
+    await _loadUsers(silent: true);
+  }
+
+  Future<void> _deleteUser(AccessAdminItem user) async {
+    if (user.isDemo || user.isSystemCritical) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.accessAdminDeleteUserAction,
+        body: l10n.tenantFacilityDeleteConfirmationBody,
+        submitLabel: l10n.tenantFacilityDeleteConfirmAction,
+        destructive: true,
+        icon: const Icon(Icons.delete_outline),
+        onConfirm: () async {
+          final Result<void> result = await ref
+              .read(accessAdminRepositoryProvider)
+              .deleteUser(user.mutationId);
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
+    );
+    if (!mounted || confirmed != true) {
+      return;
+    }
+    _mutated = true;
+    await _loadUsers(resetPage: _users.length <= 1, silent: true);
+  }
+
+  Future<void> _openBranchForm({BranchProfile? branch}) async {
+    await showTenantFacilityBranchFormDialog(
+      context,
+      _effectiveSnapshot,
+      branch: branch,
+    );
+    if (!mounted) {
+      return;
+    }
+    await _afterStructureMutation();
+  }
+
+  Future<void> _openDepartmentForm({DepartmentProfile? department}) async {
+    await showTenantFacilityDepartmentFormDialog(
+      context,
+      _effectiveSnapshot,
+      department: department,
+    );
+    if (!mounted) {
+      return;
+    }
+    await _afterStructureMutation();
+  }
+
+  Future<void> _openUnitForm({UnitProfile? unit}) async {
+    await showTenantFacilityUnitFormDialog(
+      context,
+      _effectiveSnapshot,
+      unit: unit,
+    );
+    if (!mounted) {
+      return;
+    }
+    await _afterStructureMutation();
+  }
+
+  Future<void> _openWardForm({WardProfile? ward}) async {
+    await showTenantFacilityWardFormDialog(
+      context,
+      _effectiveSnapshot,
+      ward: ward,
+    );
+    if (!mounted) {
+      return;
+    }
+    await _afterStructureMutation();
+  }
+
+  Future<void> _openRoomForm({RoomProfile? room}) async {
+    await showTenantFacilityRoomFormDialog(
+      context,
+      _effectiveSnapshot,
+      room: room,
+    );
+    if (!mounted) {
+      return;
+    }
+    await _afterStructureMutation();
+  }
+
+  Future<void> _openBedForm({BedProfile? bed}) async {
+    await showTenantFacilityBedFormDialog(
+      context,
+      _effectiveSnapshot,
+      bed: bed,
+    );
+    if (!mounted) {
+      return;
+    }
+    await _afterStructureMutation();
+  }
+
+  Future<void> _confirmDeleteStructure({
+    required String name,
+    required Future<bool> Function() deleteAction,
+  }) async {
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.tenantFacilityDeleteConfirmationTitle,
+        body: l10n.tenantFacilityDeleteConfirmationBody,
+        highlightedText: name,
+        submitLabel: l10n.tenantFacilityDeleteConfirmAction,
+        destructive: true,
+        icon: const Icon(Icons.delete_outline),
+        onConfirm: () async {
+          final bool deleted = await deleteAction();
+          if (deleted) {
+            return null;
+          }
+          return ref.read(tenantFacilitySetupSubmissionProvider).failure ??
+              const AppFailure.unexpected();
+        },
+      ),
+    );
+    if (!mounted || confirmed != true) {
+      return;
+    }
+    await _afterStructureMutation();
   }
 
   String _facilityStatusLabel(AppLocalizations l10n) {
@@ -1789,12 +2043,173 @@ class _FacilityDetailsDialogState extends ConsumerState<_FacilityDetailsDialog> 
     Navigator.of(context).pop(true);
   }
 
+  Widget _buildRightPanel(AppLocalizations l10n) {
+    final FacilitySetupSnapshot snapshot = _effectiveSnapshot;
+    final bool canMutateStructure = _canMutateStructure;
+
+    switch (_selectedPanel) {
+      case _FacilityDetailsPanel.users:
+        return _FacilityDetailsUsersPanel(
+          searchController: _usersSearchController,
+          loading: _loadingUsers,
+          failure: _usersFailure,
+          users: _users,
+          pageRequest: _pageRequest,
+          totalItemCount: _totalUserCount,
+          canManage: _canMutate,
+          onRetry: () => unawaited(_loadUsers()),
+          onPageChanged: _onUsersPageChanged,
+          onAdd: () => unawaited(_createUser()),
+          onEdit: (AccessAdminItem user) => unawaited(_editUser(user)),
+          onDelete: (AccessAdminItem user) => unawaited(_deleteUser(user)),
+        );
+      case _FacilityDetailsPanel.branches:
+        return _FacilityStructureCrudPanel<BranchProfile>(
+          title: l10n.tenantFacilityBranchesSectionTitle,
+          items: snapshot.branches,
+          emptyLabel: l10n.tenantFacilityNoBranches,
+          addLabel: l10n.tenantFacilityAddBranchAction,
+          canManage: canMutateStructure,
+          titleBuilder: (BranchProfile item) => item.name,
+          subtitleBuilder: (BranchProfile item) => item.isActive
+              ? l10n.tenantFacilityActiveLabel
+              : l10n.commonNoLabel,
+          onAdd: () => unawaited(_openBranchForm()),
+          onEdit: (BranchProfile item) =>
+              unawaited(_openBranchForm(branch: item)),
+          onDelete: (BranchProfile item) => unawaited(
+            _confirmDeleteStructure(
+              name: item.name,
+              deleteAction: () => ref
+                  .read(tenantFacilitySetupSubmissionProvider.notifier)
+                  .deleteBranch(item.id),
+            ),
+          ),
+        );
+      case _FacilityDetailsPanel.departments:
+        return _FacilityStructureCrudPanel<DepartmentProfile>(
+          title: l10n.tenantFacilityDepartmentsListTitle,
+          items: snapshot.departments,
+          emptyLabel: l10n.tenantFacilityNoDepartments,
+          addLabel: l10n.tenantFacilityAddDepartmentAction,
+          canManage: canMutateStructure,
+          titleBuilder: (DepartmentProfile item) => item.name,
+          subtitleBuilder: (DepartmentProfile item) => item.type.name,
+          onAdd: () => unawaited(_openDepartmentForm()),
+          onEdit: (DepartmentProfile item) =>
+              unawaited(_openDepartmentForm(department: item)),
+          onDelete: (DepartmentProfile item) => unawaited(
+            _confirmDeleteStructure(
+              name: item.name,
+              deleteAction: () => ref
+                  .read(tenantFacilitySetupSubmissionProvider.notifier)
+                  .deleteDepartment(item.id),
+            ),
+          ),
+        );
+      case _FacilityDetailsPanel.units:
+        return _FacilityStructureCrudPanel<UnitProfile>(
+          title: l10n.tenantFacilityUnitsListTitle,
+          items: snapshot.units,
+          emptyLabel: l10n.tenantFacilityNoUnits,
+          addLabel: l10n.tenantFacilityAddUnitAction,
+          canManage: canMutateStructure,
+          canAdd: canMutateStructure && snapshot.departments.isNotEmpty,
+          blockedMessage: canMutateStructure && snapshot.departments.isEmpty
+              ? l10n.tenantFacilityGateNeedDepartmentForUnits
+              : null,
+          titleBuilder: (UnitProfile item) => item.name,
+          subtitleBuilder: (UnitProfile item) => item.isActive
+              ? l10n.tenantFacilityActiveLabel
+              : l10n.commonNoLabel,
+          onAdd: () => unawaited(_openUnitForm()),
+          onEdit: (UnitProfile item) => unawaited(_openUnitForm(unit: item)),
+          onDelete: (UnitProfile item) => unawaited(
+            _confirmDeleteStructure(
+              name: item.name,
+              deleteAction: () => ref
+                  .read(tenantFacilitySetupSubmissionProvider.notifier)
+                  .deleteUnit(item.id),
+            ),
+          ),
+        );
+      case _FacilityDetailsPanel.wards:
+        return _FacilityStructureCrudPanel<WardProfile>(
+          title: l10n.tenantFacilityWardsLabel,
+          items: snapshot.wards,
+          emptyLabel: l10n.tenantFacilityNoWards,
+          addLabel: l10n.tenantFacilityAddWardAction,
+          canManage: canMutateStructure && _canManageFacility,
+          titleBuilder: (WardProfile item) => item.name,
+          subtitleBuilder: (WardProfile item) => item.type.name,
+          onAdd: () => unawaited(_openWardForm()),
+          onEdit: (WardProfile item) => unawaited(_openWardForm(ward: item)),
+          onDelete: (WardProfile item) => unawaited(
+            _confirmDeleteStructure(
+              name: item.name,
+              deleteAction: () => ref
+                  .read(tenantFacilitySetupSubmissionProvider.notifier)
+                  .deleteWard(item.id),
+            ),
+          ),
+        );
+      case _FacilityDetailsPanel.rooms:
+        return _FacilityStructureCrudPanel<RoomProfile>(
+          title: l10n.tenantFacilityRoomsLabel,
+          items: snapshot.rooms,
+          emptyLabel: l10n.tenantFacilityNoRooms,
+          addLabel: l10n.tenantFacilityAddRoomAction,
+          canManage: canMutateStructure && _canManageFacility,
+          titleBuilder: (RoomProfile item) => item.name,
+          subtitleBuilder: (RoomProfile item) =>
+              item.floor?.trim().isNotEmpty == true ? item.floor! : '—',
+          onAdd: () => unawaited(_openRoomForm()),
+          onEdit: (RoomProfile item) => unawaited(_openRoomForm(room: item)),
+          onDelete: (RoomProfile item) => unawaited(
+            _confirmDeleteStructure(
+              name: item.name,
+              deleteAction: () => ref
+                  .read(tenantFacilitySetupSubmissionProvider.notifier)
+                  .deleteRoom(item.id),
+            ),
+          ),
+        );
+      case _FacilityDetailsPanel.beds:
+        return _FacilityStructureCrudPanel<BedProfile>(
+          title: l10n.tenantFacilityBedsLabel,
+          items: snapshot.beds,
+          emptyLabel: l10n.tenantFacilityNoBeds,
+          addLabel: l10n.tenantFacilityAddBedAction,
+          canManage: canMutateStructure && _canManageFacility,
+          canAdd: (canMutateStructure && _canManageFacility) &&
+              snapshot.wards.isNotEmpty,
+          blockedMessage:
+              (canMutateStructure && _canManageFacility) &&
+                  snapshot.wards.isEmpty
+              ? l10n.tenantFacilityGateNeedWardsForBeds
+              : null,
+          titleBuilder: (BedProfile item) => item.label,
+          subtitleBuilder: (BedProfile item) => item.status.name,
+          onAdd: () => unawaited(_openBedForm()),
+          onEdit: (BedProfile item) => unawaited(_openBedForm(bed: item)),
+          onDelete: (BedProfile item) => unawaited(
+            _confirmDeleteStructure(
+              name: item.label,
+              deleteAction: () => ref
+                  .read(tenantFacilitySetupSubmissionProvider.notifier)
+                  .deleteBed(item.id),
+            ),
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final bool canMutate = _canManageFacility && !_facility.isDeleted;
+    final bool canMutate = _canMutate;
 
     return AppDialog(
       title: Text(l10n.tenantFacilityFacilityDetailsTitle),
@@ -1819,17 +2234,10 @@ class _FacilityDetailsDialogState extends ConsumerState<_FacilityDetailsDialog> 
                     snapshot: _snapshot,
                     userCount: _totalUserCount,
                     loading: _loadingOverview,
+                    selectedPanel: _selectedPanel,
+                    onPanelSelected: _selectPanel,
                   );
-                  final Widget usersPanel = _FacilityDetailsUsersPanel(
-                    searchController: _searchController,
-                    loading: _loadingUsers,
-                    failure: _usersFailure,
-                    users: _users,
-                    pageRequest: _pageRequest,
-                    totalItemCount: _totalUserCount,
-                    onRetry: () => unawaited(_loadUsers()),
-                    onPageChanged: _onPageChanged,
-                  );
+                  final Widget rightPanel = _buildRightPanel(l10n);
 
                   if (wide) {
                     return Row(
@@ -1840,7 +2248,7 @@ class _FacilityDetailsDialogState extends ConsumerState<_FacilityDetailsDialog> 
                           child: SingleChildScrollView(child: summary),
                         ),
                         SizedBox(width: theme.spacing.md),
-                        Expanded(child: usersPanel),
+                        Expanded(child: rightPanel),
                       ],
                     );
                   }
@@ -1850,7 +2258,7 @@ class _FacilityDetailsDialogState extends ConsumerState<_FacilityDetailsDialog> 
                     children: <Widget>[
                       summary,
                       SizedBox(height: theme.spacing.md),
-                      Expanded(child: usersPanel),
+                      Expanded(child: rightPanel),
                     ],
                   );
                 },
@@ -1889,6 +2297,8 @@ class _FacilityDetailsSummary extends StatelessWidget {
     required this.snapshot,
     required this.userCount,
     required this.loading,
+    required this.selectedPanel,
+    required this.onPanelSelected,
   });
 
   final FacilityProfile facility;
@@ -1898,6 +2308,8 @@ class _FacilityDetailsSummary extends StatelessWidget {
   final FacilitySetupSnapshot? snapshot;
   final int userCount;
   final bool loading;
+  final _FacilityDetailsPanel selectedPanel;
+  final ValueChanged<_FacilityDetailsPanel> onPanelSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -1996,30 +2408,47 @@ class _FacilityDetailsSummary extends StatelessWidget {
                   _FacilityMetricChip(
                     label: l10n.tenantFacilityFacilityDetailsUsersHeading,
                     value: userCount,
+                    selected: selectedPanel == _FacilityDetailsPanel.users,
+                    onTap: () => onPanelSelected(_FacilityDetailsPanel.users),
                   ),
                   _FacilityMetricChip(
                     label: l10n.tenantFacilityBranchesSectionTitle,
                     value: snapshot?.branches.length ?? 0,
+                    selected: selectedPanel == _FacilityDetailsPanel.branches,
+                    onTap: () =>
+                        onPanelSelected(_FacilityDetailsPanel.branches),
                   ),
                   _FacilityMetricChip(
                     label: l10n.tenantFacilityDepartmentsListTitle,
                     value: snapshot?.departments.length ?? 0,
+                    selected:
+                        selectedPanel == _FacilityDetailsPanel.departments,
+                    onTap: () =>
+                        onPanelSelected(_FacilityDetailsPanel.departments),
                   ),
                   _FacilityMetricChip(
                     label: l10n.tenantFacilityUnitsListTitle,
                     value: snapshot?.units.length ?? 0,
+                    selected: selectedPanel == _FacilityDetailsPanel.units,
+                    onTap: () => onPanelSelected(_FacilityDetailsPanel.units),
                   ),
                   _FacilityMetricChip(
                     label: l10n.tenantFacilityWardsLabel,
                     value: snapshot?.wards.length ?? 0,
+                    selected: selectedPanel == _FacilityDetailsPanel.wards,
+                    onTap: () => onPanelSelected(_FacilityDetailsPanel.wards),
                   ),
                   _FacilityMetricChip(
                     label: l10n.tenantFacilityRoomsLabel,
                     value: snapshot?.rooms.length ?? 0,
+                    selected: selectedPanel == _FacilityDetailsPanel.rooms,
+                    onTap: () => onPanelSelected(_FacilityDetailsPanel.rooms),
                   ),
                   _FacilityMetricChip(
                     label: l10n.tenantFacilityBedsLabel,
                     value: snapshot?.beds.length ?? 0,
+                    selected: selectedPanel == _FacilityDetailsPanel.beds,
+                    onTap: () => onPanelSelected(_FacilityDetailsPanel.beds),
                   ),
                 ],
               ),
@@ -2088,10 +2517,15 @@ class _FacilityLogoAvatar extends StatelessWidget {
                 ? Image.network(
                     url,
                     fit: BoxFit.cover,
-                    errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) => Icon(
-                      Icons.domain_outlined,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                    errorBuilder:
+                        (
+                          BuildContext context,
+                          Object error,
+                          StackTrace? stackTrace,
+                        ) => Icon(
+                          Icons.domain_outlined,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                   )
                 : Icon(
                     Icons.domain_outlined,
@@ -2105,38 +2539,226 @@ class _FacilityLogoAvatar extends StatelessWidget {
 }
 
 class _FacilityMetricChip extends StatelessWidget {
-  const _FacilityMetricChip({required this.label, required this.value});
+  const _FacilityMetricChip({
+    required this.label,
+    required this.value,
+    this.selected = false,
+    this.onTap,
+  });
 
   final String label;
   final int value;
+  final bool selected;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final Color borderColor = selected
+        ? colorScheme.primary
+        : colorScheme.outlineVariant;
+    final Color background = selected
+        ? colorScheme.primary.withValues(alpha: 0.10)
+        : colorScheme.surface;
+
+    return Material(
+      color: background,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: borderColor, width: selected ? 1.5 : 1),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  '$value',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: selected ? colorScheme.primary : null,
+                  ),
+                ),
+                Text(
+                  label,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: selected
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
+                    fontWeight: selected ? FontWeight.w700 : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FacilityStructureCrudPanel<T> extends StatefulWidget {
+  const _FacilityStructureCrudPanel({
+    required this.title,
+    required this.items,
+    required this.emptyLabel,
+    required this.addLabel,
+    required this.canManage,
+    required this.titleBuilder,
+    required this.subtitleBuilder,
+    required this.onAdd,
+    required this.onEdit,
+    required this.onDelete,
+    this.canAdd,
+    this.blockedMessage,
+  });
+
+  final String title;
+  final List<T> items;
+  final String emptyLabel;
+  final String addLabel;
+  final bool canManage;
+  final bool? canAdd;
+  final String? blockedMessage;
+  final String Function(T item) titleBuilder;
+  final String Function(T item) subtitleBuilder;
+  final VoidCallback onAdd;
+  final ValueChanged<T> onEdit;
+  final ValueChanged<T> onDelete;
+
+  @override
+  State<_FacilityStructureCrudPanel<T>> createState() =>
+      _FacilityStructureCrudPanelState<T>();
+}
+
+class _FacilityStructureCrudPanelState<T>
+    extends State<_FacilityStructureCrudPanel<T>> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String query = _searchController.text.trim().toLowerCase();
+    final List<T> filtered = query.isEmpty
+        ? widget.items
+        : widget.items
+              .where((T item) {
+                final String title = widget.titleBuilder(item).toLowerCase();
+                final String subtitle =
+                    widget.subtitleBuilder(item).toLowerCase();
+                return title.contains(query) || subtitle.contains(query);
+              })
+              .toList(growable: false);
+    final bool canAdd = widget.canAdd ?? widget.canManage;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: EdgeInsets.all(theme.spacing.md),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Text(
-              '$value',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (widget.canManage)
+                  AppButton.tertiary(
+                    leadingIcon: Icons.add,
+                    label: widget.addLabel,
+                    semanticLabel: widget.addLabel,
+                    tooltip: widget.blockedMessage ?? widget.addLabel,
+                    enabled: canAdd,
+                    onPressed: canAdd ? widget.onAdd : null,
+                  ),
+              ],
             ),
-            Text(
-              label,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+            if (widget.blockedMessage != null) ...<Widget>[
+              SizedBox(height: theme.spacing.xs),
+              Text(
+                widget.blockedMessage!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
+            ],
+            SizedBox(height: theme.spacing.sm),
+            AppSearchBar(
+              controller: _searchController,
+              hintText: l10n.tenantFacilitySearchLabel,
+              semanticLabel: l10n.tenantFacilitySearchLabel,
+              onChanged: (_) => setState(() {}),
+            ),
+            SizedBox(height: theme.spacing.sm),
+            Expanded(
+              child: filtered.isEmpty
+                  ? AppWorkspaceStatePanel.empty(
+                      title: widget.title,
+                      body: widget.items.isEmpty
+                          ? widget.emptyLabel
+                          : l10n.tenantFacilitySearchNoResults,
+                    )
+                  : ListView.separated(
+                      itemCount: filtered.length,
+                      separatorBuilder: (BuildContext context, int index) =>
+                          const Divider(height: 1),
+                      itemBuilder: (BuildContext context, int index) {
+                        final T item = filtered[index];
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(widget.titleBuilder(item)),
+                          subtitle: Text(widget.subtitleBuilder(item)),
+                          trailing: widget.canManage
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    AppButton.tertiary(
+                                      leadingIcon: Icons.edit_outlined,
+                                      label: l10n.tenantFacilityEditFacilityAction,
+                                      semanticLabel:
+                                          l10n.tenantFacilityEditFacilityAction,
+                                      tooltip:
+                                          l10n.tenantFacilityEditFacilityAction,
+                                      onPressed: () => widget.onEdit(item),
+                                    ),
+                                    AppButton.tertiary(
+                                      leadingIcon: Icons.delete_outline,
+                                      label: l10n.tenantFacilityDeleteAction,
+                                      semanticLabel:
+                                          l10n.tenantFacilityDeleteAction,
+                                      tooltip: l10n.tenantFacilityDeleteAction,
+                                      color: colorScheme.error,
+                                      onPressed: () => widget.onDelete(item),
+                                    ),
+                                  ],
+                                )
+                              : null,
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -2153,8 +2775,12 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
     required this.users,
     required this.pageRequest,
     required this.totalItemCount,
+    required this.canManage,
     required this.onRetry,
     required this.onPageChanged,
+    required this.onAdd,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   final TextEditingController searchController;
@@ -2163,8 +2789,12 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
   final List<AccessAdminItem> users;
   final AppPageRequest pageRequest;
   final int totalItemCount;
+  final bool canManage;
   final VoidCallback onRetry;
   final Future<void> Function(AppPageRequest request) onPageChanged;
+  final VoidCallback onAdd;
+  final ValueChanged<AccessAdminItem> onEdit;
+  final ValueChanged<AccessAdminItem> onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -2182,11 +2812,25 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Text(
-              l10n.tenantFacilityFacilityDetailsUsersHeading,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    l10n.tenantFacilityFacilityDetailsUsersHeading,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (canManage)
+                  AppButton.tertiary(
+                    leadingIcon: Icons.person_add_outlined,
+                    label: l10n.accessAdminCreateUserAction,
+                    semanticLabel: l10n.accessAdminCreateUserAction,
+                    tooltip: l10n.accessAdminCreateUserAction,
+                    onPressed: onAdd,
+                  ),
+              ],
             ),
             SizedBox(height: theme.spacing.sm),
             AppSearchBar(
@@ -2244,6 +2888,42 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
                                       : l10n.commonNoLabel),
                           ),
                         ),
+                        if (canManage)
+                          AppListTableColumn<AccessAdminItem>(
+                            label: '',
+                            alwaysVisible: true,
+                            cellBuilder:
+                                (BuildContext context, AccessAdminItem user) {
+                                  return Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                      AppButton.tertiary(
+                                        leadingIcon: Icons.edit_outlined,
+                                        label: l10n.accessAdminEditUserAction,
+                                        semanticLabel:
+                                            l10n.accessAdminEditUserAction,
+                                        tooltip: l10n.accessAdminEditUserAction,
+                                        onPressed: () => onEdit(user),
+                                      ),
+                                      AppButton.tertiary(
+                                        leadingIcon: Icons.delete_outline,
+                                        label: l10n.accessAdminDeleteUserAction,
+                                        semanticLabel:
+                                            l10n.accessAdminDeleteUserAction,
+                                        tooltip:
+                                            l10n.accessAdminDeleteUserAction,
+                                        color: colorScheme.error,
+                                        enabled: !user.isDemo &&
+                                            !user.isSystemCritical,
+                                        onPressed: user.isDemo ||
+                                                user.isSystemCritical
+                                            ? null
+                                            : () => onDelete(user),
+                                      ),
+                                    ],
+                                  );
+                                },
+                          ),
                       ],
                       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
                         title: l10n.tenantFacilityFacilityDetailsUsersHeading,
@@ -2256,14 +2936,34 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
                               subtitle: Text(
                                 user.email ?? user.subtitle ?? '—',
                               ),
-                              trailing: Text(
-                                user.status?.trim().isNotEmpty == true
-                                    ? user.status!
-                                    : (user.isActive
-                                          ? l10n
-                                                .tenantFacilityTenantStatusActive
-                                          : l10n.commonNoLabel),
-                              ),
+                              trailing: canManage
+                                  ? Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: <Widget>[
+                                        IconButton(
+                                          icon: const Icon(Icons.edit_outlined),
+                                          onPressed: () => onEdit(user),
+                                        ),
+                                        IconButton(
+                                          icon: Icon(
+                                            Icons.delete_outline,
+                                            color: colorScheme.error,
+                                          ),
+                                          onPressed: user.isDemo ||
+                                                  user.isSystemCritical
+                                              ? null
+                                              : () => onDelete(user),
+                                        ),
+                                      ],
+                                    )
+                                  : Text(
+                                      user.status?.trim().isNotEmpty == true
+                                          ? user.status!
+                                          : (user.isActive
+                                                ? l10n
+                                                      .tenantFacilityTenantStatusActive
+                                                : l10n.commonNoLabel),
+                                    ),
                             );
                           },
                     ),
@@ -2274,6 +2974,7 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
     );
   }
 }
+
 
 class _ManageFacilitiesDialog extends ConsumerStatefulWidget {
   const _ManageFacilitiesDialog();
