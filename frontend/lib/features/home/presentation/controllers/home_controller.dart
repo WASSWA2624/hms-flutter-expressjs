@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/realtime/realtime_scope.dart';
@@ -55,8 +55,10 @@ final homeControllerProvider =
                     )
                   : current.mergePatch(patch);
             }
-            // Dashboard deltas are enough for instant UI; skip a heavy reload.
-            return;
+            if (!RealtimeEventGroups.platformAdmin.contains(message.event)) {
+              // Dashboard deltas are enough for instant UI; skip a heavy reload.
+              return;
+            }
           } else if (!isSelfMutation) {
             ref
                     .read(

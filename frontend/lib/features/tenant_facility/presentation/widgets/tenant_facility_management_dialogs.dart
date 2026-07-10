@@ -132,6 +132,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
   @override
   void initState() {
     super.initState();
+    _pendingDeletedTenantIds.clear();
     _searchController.addListener(_onSearchChanged);
     unawaited(_reload(resetPage: true));
   }
@@ -197,11 +198,13 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
           (page.totalItemCount ?? visibleTenants.length) -
               (page.items.length - visibleTenants.length),
         );
+        homeClearDashboardOptimisticPatch(ref, HomeDashboardRequest.empty);
         homeReconcileTenantsMetricFromList(
           ref,
           _countActiveTenants(visibleTenants),
           totalCount: totalItemCount,
         );
+        ref.invalidate(homeControllerProvider(HomeDashboardRequest.empty));
         setState(() {
           _loading = false;
           _tenants = visibleTenants;
@@ -297,7 +300,12 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
               .deleteTenant(tenant.mutationId);
           return result.when(
             success: (_) => null,
-            failure: (AppFailure failure) => failure,
+            failure: (AppFailure failure) {
+              if (failure.category == AppFailureCategory.notFound) {
+                return null;
+              }
+              return failure;
+            },
           );
         },
       ),
@@ -310,13 +318,14 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
     if (confirmed == true) {
       _mutated = true;
       _rememberPendingDeletedTenant(tenant);
-      _removeTenantLocally(tenant.id, slug: tenant.slug);
+      _removeTenantLocally(tenant.mutationId, slug: tenant.slug);
       _syncPlatformDashboard(
         ref,
         patch: HomeDashboardOptimisticPatch.tenantDeleted(
           isActive: tenant.isActive,
         ),
       );
+      ref.invalidate(homeControllerProvider(HomeDashboardRequest.empty));
     }
   }
 
@@ -380,6 +389,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
         .where(
           (TenantProfile entry) =>
               entry.id != tenantId &&
+              entry.mutationId != tenantId &&
               entry.slug != tenantId &&
               (slug == null || entry.slug != slug),
         )
@@ -758,7 +768,12 @@ class _ManageFacilitiesDialogState
               .deleteFacility(facility.mutationId);
           return result.when(
             success: (_) => null,
-            failure: (AppFailure failure) => failure,
+            failure: (AppFailure failure) {
+              if (failure.category == AppFailureCategory.notFound) {
+                return null;
+              }
+              return failure;
+            },
           );
         },
       ),

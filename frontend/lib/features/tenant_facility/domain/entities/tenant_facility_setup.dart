@@ -44,6 +44,7 @@ final class TenantProfile {
     this.slug,
     this.isActive = true,
     this.resourceUuid,
+    this.displayId,
   });
 
   final String id;
@@ -51,6 +52,7 @@ final class TenantProfile {
   final String? slug;
   final bool isActive;
   final String? resourceUuid;
+  final String? displayId;
 
   String get mutationId =>
       resourceUuid != null && resourceUuid!.isNotEmpty ? resourceUuid! : id;
@@ -65,6 +67,7 @@ final class FacilityProfile {
     this.isActive = true,
     this.logoUrl,
     this.resourceUuid,
+    this.displayId,
   });
 
   final String id;
@@ -74,6 +77,7 @@ final class FacilityProfile {
   final bool isActive;
   final String? logoUrl;
   final String? resourceUuid;
+  final String? displayId;
 
   String get mutationId =>
       resourceUuid != null && resourceUuid!.isNotEmpty ? resourceUuid! : id;

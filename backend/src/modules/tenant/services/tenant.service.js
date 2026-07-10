@@ -18,7 +18,7 @@ const {
   buildTenantDashboardDeltas,
   buildFacilityDashboardDeltas
 } = require('@lib/realtime/platform-realtime');
-const { resolveModelIdByIdentifier } = require('@lib/identifiers/resolve-entity-id');
+const { resolveModelIdByIdentifier, resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 
 const publishTenantRealtimeEvent = async (
   event,
@@ -121,7 +121,7 @@ const normalizeTenantRecord = (tenant) => {
   const normalized = {
     ...tenant,
     resource_uuid: tenant.id,
-    id:
+    display_id:
       resolvePublicIdentifier(tenant.human_friendly_id, tenant.id) || tenant.id,
   };
 
@@ -387,11 +387,26 @@ const updateTenant = async (id, data, context = {}) => {
  * @returns {Promise<void>}
  */
 const deleteTenant = async (id, context = {}) => {
-  const tenantId = await resolveTenantId(id);
-  // Check if tenant exists
+  const normalizedId = String(id ?? '').trim();
+  const tenantId = await resolveTenantId(normalizedId);
   const tenant = await tenantRepository.findById(tenantId);
-  
+
   if (!tenant) {
+    const lookupIds = [...new Set([tenantId, normalizedId].filter(Boolean))];
+    for (const candidate of lookupIds) {
+      const deletedTenant = await resolveModelRecordByIdentifier({
+        model: 'tenant',
+        identifier: candidate,
+        includeDeleted: true,
+        select: { id: true, deleted_at: true },
+        additionalFriendlyMatchers: [
+          (value) => ({ slug: value.toLowerCase() }),
+        ],
+      });
+      if (deletedTenant?.deleted_at) {
+        return;
+      }
+    }
     throw new HttpError('errors.tenant.not_found', 404);
   }
 

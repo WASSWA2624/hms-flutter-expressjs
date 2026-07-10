@@ -10,14 +10,19 @@ const { HttpError } = require('@lib/errors');
 // Mock dependencies
 jest.mock('@repositories/tenant/tenant.repository');
 jest.mock('@lib/audit');
+jest.mock('@lib/identifiers/resolve-entity-id', () => ({
+  resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier),
+  resolveModelRecordByIdentifier: jest.fn().mockResolvedValue(null),
+}));
 jest.mock('@lib/realtime/platform-realtime', () => ({
   publishPlatformRealtimeEvent: jest.fn().mockResolvedValue(1),
   buildTenantDashboardDeltas: jest.fn().mockReturnValue({}),
-  buildFacilityDashboardDeltas: jest.fn().mockReturnValue({})
+  buildFacilityDashboardDeltas: jest.fn().mockReturnValue({}),
 }));
 
 const tenantRepository = require('@repositories/tenant/tenant.repository');
 const { createAuditLog } = require('@lib/audit');
+const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { publishPlatformRealtimeEvent } = require('@lib/realtime/platform-realtime');
 const {
   listTenants,
@@ -245,6 +250,7 @@ describe('Tenant Service', () => {
       expect(result).toEqual({
         ...mockTenant,
         resource_uuid: 'tenant-123',
+        display_id: 'tenant-123',
       });
       expect(tenantRepository.findById).toHaveBeenCalledWith('tenant-123');
     });
@@ -301,6 +307,7 @@ describe('Tenant Service', () => {
       expect(result).toEqual({
         id: 'tenant-123',
         resource_uuid: 'tenant-123',
+        display_id: 'tenant-123',
         name: 'Test Hospital',
         slug: 'test-hospital',
         is_active: true,
@@ -595,12 +602,26 @@ describe('Tenant Service', () => {
 
     it('should throw HttpError if tenant not found', async () => {
       tenantRepository.findById.mockResolvedValue(null);
+      resolveModelRecordByIdentifier.mockResolvedValue(null);
 
       await expect(deleteTenant('tenant-123'))
         .rejects
         .toThrow(HttpError);
       
       expect(tenantRepository.softDelete).not.toHaveBeenCalled();
+    });
+
+    it('should no-op when tenant is already soft-deleted', async () => {
+      tenantRepository.findById.mockResolvedValue(null);
+      resolveModelRecordByIdentifier.mockResolvedValue({
+        id: 'tenant-123',
+        deleted_at: new Date('2026-01-01'),
+      });
+
+      await expect(deleteTenant('tenant-123')).resolves.toBeUndefined();
+
+      expect(tenantRepository.softDelete).not.toHaveBeenCalled();
+      expect(createAuditLog).not.toHaveBeenCalled();
     });
 
     it('should propagate repository errors', async () => {

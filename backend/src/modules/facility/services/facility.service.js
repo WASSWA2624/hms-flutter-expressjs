@@ -11,6 +11,7 @@ const facilityRepository = require('@repositories/facility/facility.repository')
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { resolveEntityId, resolvePublicIdentifier } = require('@lib/billing/identifiers');
+const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } = require('@config/constants');
 const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
 const { PLATFORM_ADMIN_EVENTS } = require('@lib/websocket/events');
@@ -73,7 +74,7 @@ const normalizeFacilityRecord = (facility) => {
   return {
     ...facility,
     resource_uuid: facility.id,
-    id:
+    display_id:
       resolvePublicIdentifier(facility.human_friendly_id, facility.id) ||
       facility.id,
   };
@@ -331,11 +332,23 @@ const updateFacility = async (id, data, context = {}) => {
  * @returns {Promise<void>}
  */
 const deleteFacility = async (id, context = {}) => {
-  const facilityId = await resolveFacilityId(id);
-  // Check if facility exists
+  const normalizedId = String(id ?? '').trim();
+  const facilityId = await resolveFacilityId(normalizedId);
   const facility = await facilityRepository.findById(facilityId);
-  
+
   if (!facility) {
+    const lookupIds = [...new Set([facilityId, normalizedId].filter(Boolean))];
+    for (const candidate of lookupIds) {
+      const deletedFacility = await resolveModelRecordByIdentifier({
+        model: 'facility',
+        identifier: candidate,
+        includeDeleted: true,
+        select: { id: true, deleted_at: true },
+      });
+      if (deletedFacility?.deleted_at) {
+        return;
+      }
+    }
     throw new HttpError('errors.facility.not_found', 404);
   }
 

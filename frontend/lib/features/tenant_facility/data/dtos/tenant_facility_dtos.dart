@@ -8,6 +8,7 @@ final class TenantProfileDto {
     this.slug,
     required this.isActive,
     this.resourceUuid,
+    this.displayId,
   });
 
   factory TenantProfileDto.fromJson(JsonMap json) {
@@ -16,7 +17,8 @@ final class TenantProfileDto {
       name: _requiredString(json, 'name'),
       slug: _optionalString(json, 'slug'),
       isActive: _optionalBool(json, 'is_active') ?? true,
-      resourceUuid: _optionalString(json, 'resource_uuid'),
+      resourceUuid: _optionalString(json, 'resource_uuid') ?? _requiredString(json, 'id'),
+      displayId: _optionalString(json, 'display_id'),
     );
   }
 
@@ -25,6 +27,7 @@ final class TenantProfileDto {
   final String? slug;
   final bool isActive;
   final String? resourceUuid;
+  final String? displayId;
 
   TenantProfile toEntity() {
     return TenantProfile(
@@ -33,6 +36,7 @@ final class TenantProfileDto {
       slug: slug,
       isActive: isActive,
       resourceUuid: resourceUuid,
+      displayId: displayId,
     );
   }
 }
@@ -46,6 +50,7 @@ final class FacilityProfileDto {
     required this.isActive,
     this.logoUrl,
     this.resourceUuid,
+    this.displayId,
   });
 
   factory FacilityProfileDto.fromJson(JsonMap json) {
@@ -60,7 +65,8 @@ final class FacilityProfileDto {
       ),
       isActive: _optionalBool(json, 'is_active') ?? true,
       logoUrl: _optionalString(extensionJson, 'logo_url'),
-      resourceUuid: _optionalString(json, 'resource_uuid'),
+      resourceUuid: _optionalString(json, 'resource_uuid') ?? _requiredString(json, 'id'),
+      displayId: _optionalString(json, 'display_id'),
     );
   }
 
@@ -71,6 +77,7 @@ final class FacilityProfileDto {
   final bool isActive;
   final String? logoUrl;
   final String? resourceUuid;
+  final String? displayId;
 
   FacilityProfile toEntity() {
     return FacilityProfile(
@@ -81,6 +88,7 @@ final class FacilityProfileDto {
       isActive: isActive,
       logoUrl: logoUrl,
       resourceUuid: resourceUuid,
+      displayId: displayId,
     );
   }
 }
