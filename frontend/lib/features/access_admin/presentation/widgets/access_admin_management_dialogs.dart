@@ -1647,14 +1647,18 @@ class _AccessAdminUserDetailDialogState
       return;
     }
 
-    final Set<String> assignedRoleIds = _roleGroups
-        .map((AppUserAccessRoleGroup group) => group.roleId)
-        .toSet();
+    final Set<String> assignedRoleIds = <String>{
+      for (final AccessAdminRolePermissionGroup group
+          in _detail.resolvedRoleGroups) ...<String>[
+        group.roleId,
+        if ((group.resourceUuid ?? '').trim().isNotEmpty) group.resourceUuid!,
+      ],
+    };
     final List<AccessAdminLookupOption> availableRoles = resolved.roles
         .where(
           (AccessAdminLookupOption role) =>
-              !assignedRoleIds.contains(role.id) &&
-              role.id.trim().isNotEmpty,
+              role.id.trim().isNotEmpty &&
+              !assignedRoleIds.contains(role.id),
         )
         .toList(growable: false);
 
@@ -1696,7 +1700,7 @@ class _AccessAdminUserDetailDialogState
       );
     }
 
-    final bool? confirmed = await showAppDialog<bool>(
+    final Set<String>? confirmed = await showAppDialog<Set<String>>(
       context: context,
       builder: (BuildContext dialogContext) {
         return StatefulBuilder(
@@ -1736,12 +1740,14 @@ class _AccessAdminUserDetailDialogState
                   leadingIcon: Icons.check,
                   onPressed: selectedRoleIds.isEmpty
                       ? null
-                      : () => Navigator.of(dialogContext).pop(true),
+                      : () => Navigator.of(dialogContext).pop(
+                            Set<String>.from(selectedRoleIds),
+                          ),
                 ),
                 AppButton.secondary(
                   label: l10n.commonCancelActionLabel,
                   leadingIcon: Icons.close,
-                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
                 ),
               ],
             );
@@ -1750,14 +1756,15 @@ class _AccessAdminUserDetailDialogState
       },
     );
 
-    if (confirmed != true || selectedRoleIds.isEmpty || !mounted) {
+    if (confirmed == null || confirmed.isEmpty || !mounted) {
       return;
     }
+    final Set<String> rolesToAssign = confirmed;
 
     setState(() => _saving = true);
     AppFailure? lastFailure;
     final List<Result<void>> results = await Future.wait(
-      selectedRoleIds.map(
+      rolesToAssign.map(
         (String roleId) => widget.repository.assignUserRole(
           AccessAdminUserRoleDraft(
             userId: _item.mutationId,

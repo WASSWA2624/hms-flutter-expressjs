@@ -171,24 +171,64 @@ const count = async (filters = {}) => {
 };
 
 /**
- * Create new user-role
+ * Create new user-role.
+ * Soft-deleted rows still occupy the unique key, so re-assign restores them.
+ * Active duplicates are returned as-is (idempotent assign).
  *
  * @param {Object} data - User-Role data
  * @returns {Promise<Object>} Created user-role
  */
 const create = async (data) => {
+  const matchWhere = {
+    user_id: data.user_id,
+    role_id: data.role_id,
+    tenant_id: data.tenant_id,
+    facility_id: data.facility_id ?? null,
+  };
+
+  const restoreOrReturnExisting = async () => {
+    const existing = await prisma.user_role.findFirst({
+      where: matchWhere,
+      orderBy: [{ deleted_at: 'asc' }, { updated_at: 'desc' }],
+    });
+    if (!existing) {
+      return null;
+    }
+    if (existing.deleted_at == null) {
+      return findById(existing.id);
+    }
+    await prisma.user_role.update({
+      where: { id: existing.id },
+      data: {
+        deleted_at: null,
+        version: { increment: 1 },
+      },
+    });
+    return findById(existing.id);
+  };
+
   try {
+    const existing = await restoreOrReturnExisting();
+    if (existing) {
+      return existing;
+    }
+
     const userRole = await prisma.user_role.create({
-      data
+      data,
     });
 
     return findById(userRole.id);
   } catch (error) {
     if (error.code === 'P2002') {
-      // Unique constraint violation
+      // Concurrent create/restore race — resolve to the surviving row.
+      const recovered = await restoreOrReturnExisting();
+      if (recovered) {
+        return recovered;
+      }
       const target = error.meta?.target?.[0] || 'field';
       throw new HttpError('errors.database.unique_field', 409, [{ field: target }]);
     }
+    if (error instanceof HttpError) throw error;
     if (error.code === 'P2003') {
       // Foreign key constraint violation
       const target = error.meta?.field_name || 'field';

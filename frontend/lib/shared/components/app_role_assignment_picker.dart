@@ -144,7 +144,9 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
     } else {
       next.remove(roleId);
     }
-    widget.onSelectionChanged(next);
+    // Always pass a new set so parents that mutate in place still rebuild
+    // cleanly and selection is not lost across dialog state updates.
+    widget.onSelectionChanged(Set<String>.unmodifiable(next));
     unawaited(_refreshPermissionPreview());
   }
 
@@ -415,10 +417,14 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
           onExpansionChanged: (bool value) {
             unawaited(_onExpansionChanged(role.id, value));
           },
-          leading: Checkbox(
-            value: selected,
-            visualDensity: VisualDensity.compact,
-            onChanged: (bool? value) => _toggleRole(role.id, value),
+          leading: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _toggleRole(role.id, !selected),
+            child: Checkbox(
+              value: selected,
+              visualDensity: VisualDensity.compact,
+              onChanged: (bool? value) => _toggleRole(role.id, value),
+            ),
           ),
           title: Text(
             role.label,

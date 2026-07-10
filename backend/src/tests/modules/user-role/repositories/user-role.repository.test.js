@@ -174,7 +174,13 @@ describe('User-Role Repository', () => {
 
   describe('create', () => {
     it('should create user-role and return the enriched record', async () => {
-      const created = { id: 'ur-123', user_id: 'user-123', facility_id: 'facility-123' };
+      const created = {
+        id: 'ur-123',
+        user_id: 'user-123',
+        role_id: 'role-123',
+        tenant_id: 'tenant-123',
+        facility_id: 'facility-123',
+      };
       const enriched = {
         ...created,
         user: { id: 'user-123', email: 'alice@example.com' },
@@ -186,8 +192,10 @@ describe('User-Role Repository', () => {
         human_friendly_id: 'FAC-001',
         name: 'Main Campus',
       };
+      prisma.user_role.findFirst
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(enriched);
       prisma.user_role.create.mockResolvedValue(created);
-      prisma.user_role.findFirst.mockResolvedValue(enriched);
       prisma.facility.findFirst.mockResolvedValue(facility);
 
       const result = await create(created);
@@ -195,15 +203,103 @@ describe('User-Role Repository', () => {
       expect(prisma.user_role.create).toHaveBeenCalledWith({
         data: created,
       });
-      expect(prisma.user_role.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-        where: {
-          id: 'ur-123',
-          deleted_at: null,
-        },
-      }));
+      expect(prisma.user_role.findFirst).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          where: {
+            user_id: 'user-123',
+            role_id: 'role-123',
+            tenant_id: 'tenant-123',
+            facility_id: 'facility-123',
+          },
+        })
+      );
+      expect(prisma.user_role.findFirst).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          where: {
+            id: 'ur-123',
+            deleted_at: null,
+          },
+        })
+      );
       expect(result).toEqual({
         ...enriched,
         facility,
+      });
+    });
+
+    it('should restore a soft-deleted user-role instead of failing unique', async () => {
+      const softDeleted = {
+        id: 'ur-123',
+        user_id: 'user-123',
+        role_id: 'role-123',
+        tenant_id: 'tenant-123',
+        facility_id: 'facility-123',
+        deleted_at: new Date('2026-01-01T00:00:00.000Z'),
+      };
+      const restored = {
+        ...softDeleted,
+        deleted_at: null,
+        user: { id: 'user-123', email: 'alice@example.com' },
+        role: { id: 'role-123', name: 'Admin' },
+        tenant: { id: 'tenant-123', name: 'Tenant One', slug: 'tenant-one' },
+      };
+      prisma.user_role.findFirst
+        .mockResolvedValueOnce(softDeleted)
+        .mockResolvedValueOnce(restored);
+      prisma.user_role.update.mockResolvedValue(restored);
+      prisma.facility.findFirst.mockResolvedValue(null);
+
+      const result = await create({
+        user_id: 'user-123',
+        role_id: 'role-123',
+        tenant_id: 'tenant-123',
+        facility_id: 'facility-123',
+      });
+
+      expect(prisma.user_role.create).not.toHaveBeenCalled();
+      expect(prisma.user_role.update).toHaveBeenCalledWith({
+        where: { id: 'ur-123' },
+        data: {
+          deleted_at: null,
+          version: { increment: 1 },
+        },
+      });
+      expect(result).toEqual({
+        ...restored,
+        facility: null,
+      });
+    });
+
+    it('should return an active user-role when already assigned', async () => {
+      const active = {
+        id: 'ur-123',
+        user_id: 'user-123',
+        role_id: 'role-123',
+        tenant_id: 'tenant-123',
+        facility_id: null,
+        deleted_at: null,
+        user: { id: 'user-123', email: 'alice@example.com' },
+        role: { id: 'role-123', name: 'Admin' },
+        tenant: { id: 'tenant-123', name: 'Tenant One', slug: 'tenant-one' },
+      };
+      prisma.user_role.findFirst
+        .mockResolvedValueOnce(active)
+        .mockResolvedValueOnce(active);
+
+      const result = await create({
+        user_id: 'user-123',
+        role_id: 'role-123',
+        tenant_id: 'tenant-123',
+        facility_id: null,
+      });
+
+      expect(prisma.user_role.create).not.toHaveBeenCalled();
+      expect(prisma.user_role.update).not.toHaveBeenCalled();
+      expect(result).toEqual({
+        ...active,
+        facility: null,
       });
     });
   });
