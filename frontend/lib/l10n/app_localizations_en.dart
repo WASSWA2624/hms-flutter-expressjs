@@ -1259,6 +1259,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionExpiredPromptLaterAction => 'Remind me later';
 
   @override
+  String get subscriptionExpiredPromptContactAdminBody =>
+      'Your organization\'s subscription has expired. Ask a tenant administrator, facility administrator, or another user with subscription access to renew it.';
+
+  @override
+  String get subscriptionExpiredPromptContactAdminAction => 'Got it';
+
+  @override
+  String get subscriptionUpgradeAccessDeniedMessage =>
+      'Only tenant administrators, facility administrators, super administrators, or users with subscription access can manage billing.';
+
+  @override
   String get subscriptionUpgradeDialogTitle => 'Upgrade subscription';
 
   @override

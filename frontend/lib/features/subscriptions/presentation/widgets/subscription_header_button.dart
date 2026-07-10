@@ -9,12 +9,14 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 final class SubscriptionHeaderButton extends StatelessWidget {
   const SubscriptionHeaderButton({
     required this.summary,
-    required this.onPressed,
+    this.onPressed,
     super.key,
   });
 
   final TenantSubscriptionSummary summary;
-  final VoidCallback onPressed;
+
+  /// When null, the badge is display-only (no upgrade/renew action).
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +24,7 @@ final class SubscriptionHeaderButton extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
     final bool compact = breakpoint.isMobile;
+    final bool interactive = onPressed != null;
     final _SubscriptionHeaderPresentation presentation =
         _SubscriptionHeaderPresentation.fromSummary(summary, l10n, theme);
 
@@ -46,34 +49,42 @@ final class SubscriptionHeaderButton extends StatelessWidget {
             ],
           );
 
+    final Widget padded = Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? theme.spacing.xs : theme.spacing.sm,
+        vertical: theme.spacing.xs,
+      ),
+      child: IconTheme(
+        data: IconThemeData(color: presentation.foreground),
+        child: DefaultTextStyle(
+          style: TextStyle(color: presentation.foreground),
+          child: content,
+        ),
+      ),
+    );
+
     return Semantics(
-      button: true,
+      button: interactive,
       label: presentation.label,
       child: Tooltip(
-        message: compact ? presentation.label : l10n.subscriptionHeaderTooltip,
+        message: compact
+            ? presentation.label
+            : (interactive
+                  ? l10n.subscriptionHeaderTooltip
+                  : presentation.label),
         child: Material(
           color: presentation.background,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(theme.radius.sm),
             side: BorderSide(color: presentation.border),
           ),
-          child: InkWell(
-            onTap: onPressed,
-            borderRadius: BorderRadius.circular(theme.radius.sm),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: compact ? theme.spacing.xs : theme.spacing.sm,
-                vertical: theme.spacing.xs,
-              ),
-              child: IconTheme(
-                data: IconThemeData(color: presentation.foreground),
-                child: DefaultTextStyle(
-                  style: TextStyle(color: presentation.foreground),
-                  child: content,
-                ),
-              ),
-            ),
-          ),
+          child: interactive
+              ? InkWell(
+                  onTap: onPressed,
+                  borderRadius: BorderRadius.circular(theme.radius.sm),
+                  child: padded,
+                )
+              : padded,
         ),
       ),
     );

@@ -312,6 +312,23 @@ final class AppAccessPolicy {
         ]);
   }
 
+  /// Who may start/complete subscription upgrade or renewal flows.
+  ///
+  /// Super / tenant / facility admins always qualify (even when the
+  /// subscription-controls module is inactive, so expired tenants can renew).
+  /// Custom roles qualify when they hold [AppPermissions.subscriptionsWrite]
+  /// after plan gating.
+  bool canManageSubscriptionBilling() {
+    if (isElevated ||
+        hasAnyRole(const <AppRole>[
+          AppRole.tenantAdmin,
+          AppRole.facilityAdmin,
+        ])) {
+      return true;
+    }
+    return permissions.contains(AppPermissions.subscriptionsWrite);
+  }
+
   bool canManageHrFacilitySetup() {
     return hasRole(AppRole.hr) &&
         grantsAny(const <AppPermission>[

@@ -1641,6 +1641,18 @@
   "@subscriptionExpiredPromptLaterAction": {
     "description": "Dismiss action on the expired-subscription prompt."
   },
+  "subscriptionExpiredPromptContactAdminBody": "Your organization's subscription has expired. Ask a tenant administrator, facility administrator, or another user with subscription access to renew it.",
+  "@subscriptionExpiredPromptContactAdminBody": {
+    "description": "Expired subscription message for users who cannot renew."
+  },
+  "subscriptionExpiredPromptContactAdminAction": "Got it",
+  "@subscriptionExpiredPromptContactAdminAction": {
+    "description": "Dismiss action for non-billing users on the expired prompt."
+  },
+  "subscriptionUpgradeAccessDeniedMessage": "Only tenant administrators, facility administrators, super administrators, or users with subscription access can manage billing.",
+  "@subscriptionUpgradeAccessDeniedMessage": {
+    "description": "Shown when a user without subscription billing rights opens the upgrade dialog."
+  },
   "subscriptionUpgradeDialogTitle": "Upgrade subscription",
   "@subscriptionUpgradeDialogTitle": {
     "description": "Title for the subscription upgrade and payment dialog."

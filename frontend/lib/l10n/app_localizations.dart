@@ -2470,6 +2470,24 @@ abstract class AppLocalizations {
   /// **'Remind me later'**
   String get subscriptionExpiredPromptLaterAction;
 
+  /// Expired subscription message for users who cannot renew.
+  ///
+  /// In en, this message translates to:
+  /// **'Your organization\'s subscription has expired. Ask a tenant administrator, facility administrator, or another user with subscription access to renew it.'**
+  String get subscriptionExpiredPromptContactAdminBody;
+
+  /// Dismiss action for non-billing users on the expired prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get subscriptionExpiredPromptContactAdminAction;
+
+  /// Shown when a user without subscription billing rights opens the upgrade dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Only tenant administrators, facility administrators, super administrators, or users with subscription access can manage billing.'**
+  String get subscriptionUpgradeAccessDeniedMessage;
+
   /// Title for the subscription upgrade and payment dialog.
   ///
   /// In en, this message translates to:

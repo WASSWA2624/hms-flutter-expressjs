@@ -1201,6 +1201,9 @@ class _AppShell extends ConsumerWidget {
     return SubscriptionExpiredPromptHost(
       summary: session?.subscriptionSummary,
       platformAdminContact: session?.platformAdminContact,
+      canManageBilling: ref
+          .watch(appAccessPolicyProvider)
+          .canManageSubscriptionBilling(),
       onRenewed: () async {
         if (session == null) {
           return;
@@ -1341,32 +1344,42 @@ Widget? _subscriptionHeaderAction({
     return null;
   }
 
+  final bool canManageBilling = ref
+      .watch(appAccessPolicyProvider)
+      .canManageSubscriptionBilling();
+
   return SubscriptionHeaderButton(
     summary: summary,
-    onPressed: () async {
-      final bool? submitted = await showSubscriptionUpgradeDialog(
-        context,
-        initialSummary: summary,
-        initialAdminContact: session.platformAdminContact,
-      );
-      if (submitted != true || !context.mounted) {
-        return;
-      }
+    onPressed: canManageBilling
+        ? () async {
+            final bool? submitted = await showSubscriptionUpgradeDialog(
+              context,
+              initialSummary: summary,
+              initialAdminContact: session.platformAdminContact,
+            );
+            if (submitted != true || !context.mounted) {
+              return;
+            }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.subscriptionUpgradeSubmittedMessage)),
-      );
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(l10n.subscriptionUpgradeSubmittedMessage),
+              ),
+            );
 
-      final refreshResult = await ref
-          .read(authRepositoryProvider)
-          .fetchCurrentUser(session);
-      refreshResult.when(
-        success: (AuthSession refreshed) {
-          ref.read(sessionStateProvider.notifier).persistSession(refreshed);
-        },
-        failure: (_) {},
-      );
-    },
+            final refreshResult = await ref
+                .read(authRepositoryProvider)
+                .fetchCurrentUser(session);
+            refreshResult.when(
+              success: (AuthSession refreshed) {
+                ref
+                    .read(sessionStateProvider.notifier)
+                    .persistSession(refreshed);
+              },
+              failure: (_) {},
+            );
+          }
+        : null,
   );
 }
 

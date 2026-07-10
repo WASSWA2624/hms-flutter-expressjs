@@ -316,5 +316,66 @@ void main() {
         expect(policy.grants(AppPermissions.mortuaryRead), isFalse);
       },
     );
+
+    test('allows subscription billing for admin roles even without module', () {
+      final session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(
+          tenantId: 'tenant-1',
+          roles: <String>['TENANT_ADMIN'],
+        ),
+        moduleEntitlements: const <AppModuleEntitlement>[],
+      );
+      final policy = AppAccessPolicy.fromSession(session);
+
+      expect(policy.canManageSubscriptionBilling(), isTrue);
+    });
+
+    test('allows subscription billing for facility admins', () {
+      final session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(
+          tenantId: 'tenant-1',
+          facilityId: 'facility-1',
+          roles: <String>['FACILITY_ADMIN'],
+        ),
+      );
+      final policy = AppAccessPolicy.fromSession(session);
+
+      expect(policy.canManageSubscriptionBilling(), isTrue);
+    });
+
+    test('allows subscription billing for custom roles with write permission', () {
+      final session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(
+          tenantId: 'tenant-1',
+          roles: <String>['BILLING'],
+        ),
+        permissions: const <AppPermission>[AppPermissions.subscriptionsWrite],
+        moduleEntitlements: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'subscription-controls',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+      final policy = AppAccessPolicy.fromSession(session);
+
+      expect(policy.canManageSubscriptionBilling(), isTrue);
+    });
+
+    test('denies subscription billing for clinical roles without write', () {
+      final session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(
+          tenantId: 'tenant-1',
+          roles: <String>['DOCTOR'],
+        ),
+      );
+      final policy = AppAccessPolicy.fromSession(session);
+
+      expect(policy.canManageSubscriptionBilling(), isFalse);
+    });
   });
 }

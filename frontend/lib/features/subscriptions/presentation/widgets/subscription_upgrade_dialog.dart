@@ -8,6 +8,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/currency/fx_currency_utils.dart';
 import 'package:hosspi_hms/core/currency/fx_rate_service.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
 import 'package:hosspi_hms/features/subscriptions/data/repositories/subscriptions_repository_impl.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
@@ -165,6 +166,14 @@ class _SubscriptionUpgradeDialogState
   }
 
   Future<void> _loadContext() async {
+    if (!ref.read(appAccessPolicyProvider).canManageSubscriptionBilling()) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _isLoading = false);
+      return;
+    }
+
     final result = await ref
         .read(subscriptionsRepositoryProvider)
         .getUpgradeContext();
@@ -492,6 +501,27 @@ class _SubscriptionUpgradeDialogState
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final bool isRenewal = _flowIntent == SubscriptionPaymentFlowIntent.renewal;
+    final bool canManageBilling = ref
+        .watch(appAccessPolicyProvider)
+        .canManageSubscriptionBilling();
+
+    if (!canManageBilling) {
+      return AppDialog(
+        title: Text(l10n.subscriptionUpgradeDialogTitle),
+        icon: const Icon(Icons.lock_outline),
+        content: SizedBox(
+          width: 420,
+          child: Text(l10n.subscriptionUpgradeAccessDeniedMessage),
+        ),
+        actions: buildAppDialogWizardActions(
+          cancelLabel: l10n.commonCloseActionLabel,
+          primaryLabel: l10n.commonCloseActionLabel,
+          onCancel: () => Navigator.of(context).maybePop(),
+          onPrimary: () => Navigator.of(context).maybePop(),
+          primaryIcon: Icons.close,
+        ),
+      );
+    }
 
     if (_isLoading) {
       return AppDialog(
