@@ -135,9 +135,21 @@ class _SubscriptionUpgradeDialogState
       _paymentMethod == SubscriptionPaymentMethodId.bankTransfer;
 
   bool get _requiresProof =>
+      !_isNoPaymentPlan &&
       subscriptionPaymentMethodRequiresProof(_paymentMethod);
 
+  bool get _isNoPaymentPlan {
+    final SubscriptionUpgradePlanOption? plan = _selectedPlan;
+    if (plan == null) {
+      return false;
+    }
+    return plan.isNoPaymentPlan(_billingCycle);
+  }
+
   List<_UpgradeStep> get _steps {
+    if (_isNoPaymentPlan) {
+      return const <_UpgradeStep>[_UpgradeStep.plan, _UpgradeStep.contact];
+    }
     return <_UpgradeStep>[
       _UpgradeStep.plan,
       _UpgradeStep.paymentMethod,
@@ -145,6 +157,13 @@ class _SubscriptionUpgradeDialogState
       if (_requiresProof) _UpgradeStep.proof,
       _UpgradeStep.contact,
     ];
+  }
+
+  void _ensureStepInFlow() {
+    final List<_UpgradeStep> steps = _steps;
+    if (!steps.contains(_step)) {
+      _step = steps.last;
+    }
   }
 
   int get _stepIndex => _steps.indexOf(_step).clamp(0, _steps.length - 1);
@@ -307,6 +326,7 @@ class _SubscriptionUpgradeDialogState
     setState(() {
       _selectedPlanId = planId;
       _syncUsdPriceFromSelection();
+      _ensureStepInFlow();
     });
     await _applyConvertedAmount();
   }
@@ -317,6 +337,7 @@ class _SubscriptionUpgradeDialogState
     setState(() {
       _billingCycle = cycle;
       _syncUsdPriceFromSelection();
+      _ensureStepInFlow();
     });
     await _applyConvertedAmount();
   }
@@ -404,15 +425,19 @@ class _SubscriptionUpgradeDialogState
   }
 
   Future<void> _submit() async {
-    AppPhoneField.commitPhone(_phoneFieldKey);
     if (!_validateCurrentStep()) {
       return;
     }
 
-    // Re-validate payment details form before submit.
-    if (!validateAndSaveAppForm(_formKey)) {
-      setState(() => _step = _UpgradeStep.paymentDetails);
-      return;
+    final bool noPayment = _isNoPaymentPlan;
+
+    if (!noPayment) {
+      AppPhoneField.commitPhone(_phoneFieldKey);
+      // Re-validate payment details form before submit.
+      if (!validateAndSaveAppForm(_formKey)) {
+        setState(() => _step = _UpgradeStep.paymentDetails);
+        return;
+      }
     }
 
     final String? planId = _selectedPlanId;
@@ -421,7 +446,7 @@ class _SubscriptionUpgradeDialogState
       return;
     }
 
-    if (_requiresProof && _proofBytes == null) {
+    if (!noPayment && _requiresProof && _proofBytes == null) {
       setState(() {
         _step = _UpgradeStep.proof;
         _failure = AppFailure.validation(
@@ -437,33 +462,50 @@ class _SubscriptionUpgradeDialogState
       _failure = null;
     });
 
-    final String? provider =
-        _paymentMethod == SubscriptionPaymentMethodId.mobileMoney
-        ? _mobileMoneyProvider.serverValue
-        : null;
+    final String? provider = noPayment
+        ? null
+        : (_paymentMethod == SubscriptionPaymentMethodId.mobileMoney
+              ? _mobileMoneyProvider.serverValue
+              : null);
 
     final result = await ref
         .read(subscriptionsRepositoryProvider)
         .submitPaymentRequest(
           SubscriptionPaymentRequestDraft(
             targetPlanId: planId,
-            paymentMethod: _paymentMethod.serverValue,
-            amount: normalizeCurrencyAmount(_amountController.text),
-            currency: _currency,
+            paymentMethod: noPayment
+                ? SubscriptionPaymentMethodId.other.serverValue
+                : _paymentMethod.serverValue,
+            amount: noPayment
+                ? '0'
+                : normalizeCurrencyAmount(_amountController.text),
+            currency: noPayment
+                ? subscriptionPlanBaseCurrencyCode
+                : _currency,
             billingCycle: _billingCycleServerValue(),
-            invoiceEmail: _emptyToNull(_invoiceEmailController.text),
-            reference: _showReferenceField
-                ? _emptyToNull(_referenceController.text)
-                : null,
-            notes: _buildSubmissionNotes(),
+            invoiceEmail: noPayment
+                ? null
+                : _emptyToNull(_invoiceEmailController.text),
+            reference: noPayment || !_showReferenceField
+                ? null
+                : _emptyToNull(_referenceController.text),
+            notes: _buildSubmissionNotes(noPayment: noPayment),
             paymentProvider: provider,
-            payerPhone: _emptyToNull(_phoneController.text),
-            bankName: _emptyToNull(_bankNameController.text),
-            cardHolderName: _emptyToNull(_cardHolderController.text),
-            cardLastFour: _emptyToNull(_cardLastFourController.text),
-            proofBytes: _proofBytes,
-            proofFileName: _proofFileName,
-            proofMimeType: _proofMimeType,
+            payerPhone: noPayment
+                ? null
+                : _emptyToNull(_phoneController.text),
+            bankName: noPayment
+                ? null
+                : _emptyToNull(_bankNameController.text),
+            cardHolderName: noPayment
+                ? null
+                : _emptyToNull(_cardHolderController.text),
+            cardLastFour: noPayment
+                ? null
+                : _emptyToNull(_cardLastFourController.text),
+            proofBytes: noPayment ? null : _proofBytes,
+            proofFileName: noPayment ? null : _proofFileName,
+            proofMimeType: noPayment ? null : _proofMimeType,
           ),
         );
 
@@ -482,13 +524,14 @@ class _SubscriptionUpgradeDialogState
     );
   }
 
-  String? _buildSubmissionNotes() {
+  String? _buildSubmissionNotes({required bool noPayment}) {
     final String base = _emptyToNull(_notesController.text) ?? '';
     final String intent = _flowIntent == SubscriptionPaymentFlowIntent.renewal
         ? 'renewal'
         : 'upgrade';
-    final String composed =
-        'flow:$intent;billing_cycle:${_billingCycleServerValue()}';
+    final String composed = noPayment
+        ? 'flow:$intent;billing_cycle:${_billingCycleServerValue()};no_payment:true'
+        : 'flow:$intent;billing_cycle:${_billingCycleServerValue()}';
     if (base.isEmpty) {
       return composed;
     }
@@ -503,7 +546,9 @@ class _SubscriptionUpgradeDialogState
       _UpgradeStep.paymentDetails =>
         l10n.subscriptionUpgradeStepPaymentDetailsTitle,
       _UpgradeStep.proof => l10n.subscriptionUpgradeStepProofTitle,
-      _UpgradeStep.contact => l10n.subscriptionUpgradeStepContactTitle,
+      _UpgradeStep.contact => _isNoPaymentPlan
+          ? l10n.subscriptionUpgradeStepConfirmTitle
+          : l10n.subscriptionUpgradeStepContactTitle,
     };
   }
 
@@ -604,14 +649,18 @@ class _SubscriptionUpgradeDialogState
         cancelLabel: l10n.commonCancelActionLabel,
         backLabel: l10n.commonBackActionLabel,
         primaryLabel: _isLastStep
-            ? (isRenewal
-                  ? l10n.subscriptionRenewSubmitAction
-                  : l10n.subscriptionUpgradeSubmitAction)
+            ? (_isNoPaymentPlan
+                  ? l10n.subscriptionUpgradeConfirmFreeAction
+                  : (isRenewal
+                        ? l10n.subscriptionRenewSubmitAction
+                        : l10n.subscriptionUpgradeSubmitAction))
             : l10n.commonNextActionLabel,
         showBack: !_isFirstStep,
         isSubmitting: _isSubmitting,
         primaryIcon: _isLastStep
-            ? Icons.payments_outlined
+            ? (_isNoPaymentPlan
+                  ? Icons.check_circle_outline
+                  : Icons.payments_outlined)
             : Icons.arrow_forward,
         onCancel: () => Navigator.of(context).maybePop(),
         onBack: _goBack,
@@ -709,6 +758,15 @@ class _SubscriptionUpgradeDialogState
       _UpgradeStep.contact => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          if (_isNoPaymentPlan) ...<Widget>[
+            AppMessagePanel(
+              message: l10n.subscriptionUpgradeFreePlanStepBody,
+              icon: Icons.verified_outlined,
+              tone: AppWorkspaceStatusTone.success,
+              density: AppContentPanelDensity.compact,
+            ),
+            SizedBox(height: theme.spacing.md),
+          ],
           if (adminContact?.hasContact == true)
             _AdminContactSection(
               adminContact: adminContact!,
@@ -717,14 +775,23 @@ class _SubscriptionUpgradeDialogState
               emailLabel: l10n.subscriptionUpgradeAdminContactEmailLabel,
               phoneLabel: l10n.subscriptionUpgradeAdminContactPhoneLabel,
             )
-          else
+          else if (!_isNoPaymentPlan)
             AppMessagePanel(
               title: l10n.subscriptionUpgradeAdminContactTitle,
               message: l10n.subscriptionUpgradeAdminContactBody,
               icon: Icons.support_agent_outlined,
             ),
-          if (!_requiresProof &&
+          if (!_isNoPaymentPlan &&
+              !_requiresProof &&
               _paymentMethod != SubscriptionPaymentMethodId.other) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            AppTextField(
+              controller: _notesController,
+              labelText: l10n.subscriptionUpgradeNotesLabel,
+              maxLines: 2,
+            ),
+          ],
+          if (_isNoPaymentPlan) ...<Widget>[
             SizedBox(height: theme.spacing.md),
             AppTextField(
               controller: _notesController,

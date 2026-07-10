@@ -1750,6 +1750,18 @@
   "@subscriptionUpgradeStepContactTitle": {
     "description": "Upgrade wizard step title for platform billing contacts."
   },
+  "subscriptionUpgradeStepConfirmTitle": "Confirm",
+  "@subscriptionUpgradeStepConfirmTitle": {
+    "description": "Final wizard step title when a free plan needs no payment."
+  },
+  "subscriptionUpgradeFreePlanStepBody": "No payment needed. Confirm to request this free plan.",
+  "@subscriptionUpgradeFreePlanStepBody": {
+    "description": "Shown on the final wizard step when a free or zero-price plan is selected."
+  },
+  "subscriptionUpgradeConfirmFreeAction": "Confirm free plan",
+  "@subscriptionUpgradeConfirmFreeAction": {
+    "description": "Submit action when the selected upgrade plan requires no payment."
+  },
   "subscriptionUpgradePlansEmptyTitle": "No plans available",
   "@subscriptionUpgradePlansEmptyTitle": {
     "description": "Title when the upgrade dialog has no selectable plans."

@@ -97,7 +97,6 @@ const loadUpgradePlans = async (tenantId) =>
       where: {
         deleted_at: null,
         OR: [{ tenant_id: null }, { tenant_id: tenantId }],
-        tier_code: { not: 'FREE' },
       },
       orderBy: [{ price: 'asc' }],
     })

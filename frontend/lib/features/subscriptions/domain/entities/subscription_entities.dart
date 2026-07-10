@@ -1075,6 +1075,16 @@ final class SubscriptionUpgradePlanOption {
     }
     return double.parse((price! * 12).toStringAsFixed(2));
   }
+
+  /// Free tier or zero-priced plan — no payment steps required.
+  bool isNoPaymentPlan(SubscriptionUpgradeBillingCycle cycle) {
+    final String tier = (tierCode ?? '').trim().toUpperCase();
+    if (tier == 'FREE') {
+      return true;
+    }
+    final double? amount = priceFor(cycle);
+    return amount != null && amount <= 0;
+  }
 }
 
 @immutable

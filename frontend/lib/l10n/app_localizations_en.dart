@@ -1342,6 +1342,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionUpgradeStepContactTitle => 'Billing contact';
 
   @override
+  String get subscriptionUpgradeStepConfirmTitle => 'Confirm';
+
+  @override
+  String get subscriptionUpgradeFreePlanStepBody =>
+      'No payment needed. Confirm to request this free plan.';
+
+  @override
+  String get subscriptionUpgradeConfirmFreeAction => 'Confirm free plan';
+
+  @override
   String get subscriptionUpgradePlansEmptyTitle => 'No plans available';
 
   @override

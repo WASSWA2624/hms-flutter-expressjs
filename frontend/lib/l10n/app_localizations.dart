@@ -2626,6 +2626,24 @@ abstract class AppLocalizations {
   /// **'Billing contact'**
   String get subscriptionUpgradeStepContactTitle;
 
+  /// Final wizard step title when a free plan needs no payment.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get subscriptionUpgradeStepConfirmTitle;
+
+  /// Shown on the final wizard step when a free or zero-price plan is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'No payment needed. Confirm to request this free plan.'**
+  String get subscriptionUpgradeFreePlanStepBody;
+
+  /// Submit action when the selected upgrade plan requires no payment.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm free plan'**
+  String get subscriptionUpgradeConfirmFreeAction;
+
   /// Title when the upgrade dialog has no selectable plans.
   ///
   /// In en, this message translates to:
