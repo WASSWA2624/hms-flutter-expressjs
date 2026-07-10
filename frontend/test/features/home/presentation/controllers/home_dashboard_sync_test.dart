@@ -71,6 +71,28 @@ void main() {
   });
 }
 
+final class _CountingHomeRepository implements HomeRepository {
+  _CountingHomeRepository(this.result);
+
+  final Result<HomeDashboard> result;
+  int callCount = 0;
+
+  @override
+  Future<Result<HomeDashboard>> loadDashboard(
+    HomeDashboardRequest request,
+  ) async {
+    callCount += 1;
+    return result;
+  }
+
+  @override
+  Future<Result<HomeDashboardLookups>> loadLookups(
+    HomeDashboardRequest request,
+  ) async {
+    return const Result<HomeDashboardLookups>.success(HomeDashboardLookups());
+  }
+}
+
 HomeDashboard _tenantDashboard({required int activeCount}) {
   return HomeDashboard(
     state: HomeDashboardLoadState.ready,
@@ -110,26 +132,4 @@ HomeDashboard _tenantDashboard({required int activeCount}) {
     activity: const <HomeActivityItem>[],
     tenantOptions: const <HomeTenantOption>[],
   );
-}
-
-final class _CountingHomeRepository implements HomeRepository {
-  _CountingHomeRepository(this.result);
-
-  final Result<HomeDashboard> result;
-  int callCount = 0;
-
-  @override
-  Future<Result<HomeDashboard>> loadDashboard(
-    HomeDashboardRequest request,
-  ) async {
-    callCount += 1;
-    return result;
-  }
-
-  @override
-  Future<Result<HomeDashboardLookups>> loadLookups(
-    HomeDashboardRequest request,
-  ) async {
-    return const Result<HomeDashboardLookups>.success(HomeDashboardLookups());
-  }
 }

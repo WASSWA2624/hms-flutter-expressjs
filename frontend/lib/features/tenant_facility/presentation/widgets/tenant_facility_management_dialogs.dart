@@ -123,6 +123,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
   AppPageRequest _pageRequest = const AppPageRequest(pageSize: _pageSize);
   int _totalItemCount = 0;
   List<TenantProfile> _tenants = const <TenantProfile>[];
+  final Set<String> _pendingDeletedTenantIds = <String>{};
   bool _mutated = false;
   int _reloadGeneration = 0;
   PlatformManagementListSync? _realtimeSync;
@@ -186,10 +187,24 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
     if (!mounted || generation != _reloadGeneration) return;
     result.when(
       success: (AppPage<TenantProfile> page) {
+        final List<TenantProfile> visibleTenants = _filterPendingDeletedTenants(
+          page.items,
+        );
+        _reconcilePendingDeletes(page.items);
+        final int totalItemCount = math.max(
+          0,
+          (page.totalItemCount ?? visibleTenants.length) -
+              (page.items.length - visibleTenants.length),
+        );
+        homeReconcileTenantsMetricFromList(
+          ref,
+          _countActiveTenants(visibleTenants),
+          totalCount: totalItemCount,
+        );
         setState(() {
           _loading = false;
-          _tenants = page.items;
-          _totalItemCount = page.totalItemCount ?? page.items.length;
+          _tenants = visibleTenants;
+          _totalItemCount = totalItemCount;
         });
       },
       failure: (AppFailure failure) {
@@ -290,23 +305,72 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
 
     if (confirmed == true) {
       _mutated = true;
-      _removeTenantLocally(tenant.id);
+      _rememberPendingDeletedTenant(tenant);
+      _removeTenantLocally(tenant.id, slug: tenant.slug);
       _syncPlatformDashboard(
         ref,
         patch: HomeDashboardOptimisticPatch.tenantDeleted(
           isActive: tenant.isActive,
         ),
       );
-      await _reload(resetPage: _tenants.isEmpty, silent: true);
     }
   }
 
-  void _removeTenantLocally(String tenantId) {
+  void _rememberPendingDeletedTenant(TenantProfile tenant) {
+    _pendingDeletedTenantIds.add(tenant.id);
+    final String? slug = tenant.slug?.trim();
+    if (slug != null && slug.isNotEmpty) {
+      _pendingDeletedTenantIds.add(slug);
+    }
+  }
+
+  List<TenantProfile> _filterPendingDeletedTenants(
+    List<TenantProfile> tenants,
+  ) {
+    if (_pendingDeletedTenantIds.isEmpty) {
+      return tenants;
+    }
+
+    return tenants
+        .where((TenantProfile tenant) => !_isPendingDeletedTenant(tenant))
+        .toList(growable: false);
+  }
+
+  bool _isPendingDeletedTenant(TenantProfile tenant) {
+    if (_pendingDeletedTenantIds.contains(tenant.id)) {
+      return true;
+    }
+    final String? slug = tenant.slug?.trim();
+    return slug != null && slug.isNotEmpty && _pendingDeletedTenantIds.contains(slug);
+  }
+
+  void _reconcilePendingDeletes(List<TenantProfile> serverTenants) {
+    if (_pendingDeletedTenantIds.isEmpty) {
+      return;
+    }
+
+    final Set<String> serverKeys = <String>{
+      for (final TenantProfile tenant in serverTenants) ...<String>{
+        tenant.id,
+        if (tenant.slug != null && tenant.slug!.trim().isNotEmpty)
+          tenant.slug!.trim(),
+      },
+    };
+    _pendingDeletedTenantIds.removeWhere((String id) => !serverKeys.contains(id));
+  }
+
+  int _countActiveTenants(List<TenantProfile> tenants) {
+    return tenants.where((TenantProfile tenant) => tenant.isActive).length;
+  }
+
+  void _removeTenantLocally(String tenantId, {String? slug}) {
     final int before = _tenants.length;
     final List<TenantProfile> next = _tenants
         .where(
           (TenantProfile entry) =>
-              entry.id != tenantId && entry.slug != tenantId,
+              entry.id != tenantId &&
+              entry.slug != tenantId &&
+              (slug == null || entry.slug != slug),
         )
         .toList(growable: false);
     if (next.length == before) {
@@ -316,20 +380,31 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
       _tenants = next;
       _totalItemCount = math.max(0, _totalItemCount - (before - next.length));
     });
+    homeReconcileTenantsMetricFromList(
+      ref,
+      _countActiveTenants(next),
+      totalCount: _totalItemCount,
+    );
   }
 
   void _applyTenantRealtimeMessage(RealtimeMessage? message) {
     if (message == null) {
       return;
     }
-    if (message.event == RealtimeEvents.tenantDeleted) {
+  if (message.event == RealtimeEvents.tenantDeleted) {
       final String? tenantId = _managementResourceIdFromMessage(
         message,
         keys: const <String>['resource_id', 'tenant_id', 'id'],
       );
       if (tenantId != null) {
+        _pendingDeletedTenantIds.add(tenantId);
         _removeTenantLocally(tenantId);
       }
+      return;
+    }
+
+    if (message.event == RealtimeEvents.tenantCreated) {
+      _pendingDeletedTenantIds.clear();
     }
   }
 

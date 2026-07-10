@@ -86,3 +86,57 @@ void homeApplyRealtimeDashboardPatch(
     homeApplyDashboardOptimisticPatch(ref, request, patch);
   }
 }
+
+/// Aligns the platform tenant metric card with a freshly loaded tenant list.
+void homeReconcileTenantsMetricFromList(
+  WidgetRef ref,
+  int activeCount, {
+  required int totalCount,
+}) {
+  const HomeDashboardRequest request = HomeDashboardRequest.empty;
+  final HomeDashboard? server = readSuccessfulHomeDashboard(ref, request);
+  if (server == null) {
+    return;
+  }
+
+  final HomeDashboardOptimisticPatchState? patchState = ref.read(
+    homeDashboardOptimisticPatchProvider(request),
+  );
+  final HomeDashboard display = homeDashboardWithOptimisticPatch(
+    server,
+    patchState,
+  );
+
+  HomeStatusCard? tenantsCard;
+  for (final HomeStatusCard card in display.statusCards) {
+    if (card.id == 'tenants_active') {
+      tenantsCard = card;
+      break;
+    }
+  }
+  if (tenantsCard == null) {
+    return;
+  }
+
+  final int currentTotal =
+      (tenantsCard.secondaryValue ?? tenantsCard.value).round();
+  final int currentActive = tenantsCard.value.round();
+  final int totalDelta = totalCount - currentTotal;
+  final int activeDelta = activeCount - currentActive;
+  if (totalDelta == 0 && activeDelta == 0) {
+    return;
+  }
+
+  homeApplyDashboardOptimisticPatch(
+    ref,
+    request,
+    HomeDashboardOptimisticPatch(
+      statusCardValueDeltas: activeDelta == 0
+          ? const <String, int>{}
+          : <String, int>{'tenants_active': activeDelta},
+      statusCardSecondaryDeltas: totalDelta == 0
+          ? const <String, int>{}
+          : <String, int>{'tenants_active': totalDelta},
+    ),
+  );
+}
