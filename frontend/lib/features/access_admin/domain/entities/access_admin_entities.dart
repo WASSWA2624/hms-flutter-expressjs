@@ -399,6 +399,7 @@ final class AccessAdminItem {
     this.subtitle,
     this.status,
     this.tenantId,
+    this.tenantName,
     this.facilityId,
     this.facilityName,
     this.roleScope,
@@ -438,6 +439,7 @@ final class AccessAdminItem {
   final String? subtitle;
   final String? status;
   final String? tenantId;
+  final String? tenantName;
   final String? facilityId;
   final String? facilityName;
   final String? roleScope;
@@ -489,6 +491,7 @@ final class AccessAdminItem {
     String? subtitle,
     String? status,
     String? tenantId,
+    String? tenantName,
     String? facilityId,
     String? facilityName,
     String? roleScope,
@@ -529,6 +532,7 @@ final class AccessAdminItem {
       subtitle: subtitle ?? this.subtitle,
       status: status ?? this.status,
       tenantId: tenantId ?? this.tenantId,
+      tenantName: tenantName ?? this.tenantName,
       facilityId: facilityId ?? this.facilityId,
       facilityName: facilityName ?? this.facilityName,
       roleScope: roleScope ?? this.roleScope,

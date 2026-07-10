@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
 
@@ -178,6 +180,22 @@ void main() {
         ]).role,
         AppRole.tenantAdmin,
       );
+    });
+
+    test('infers dashboard profile from permissions for custom roles', () {
+      final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['TESTING'],
+          ),
+          permissions: AppPermissions.adminAccess,
+        ),
+      );
+
+      expect(homeProfileForAccessPolicy(policy).role, AppRole.tenantAdmin);
     });
   });
 }

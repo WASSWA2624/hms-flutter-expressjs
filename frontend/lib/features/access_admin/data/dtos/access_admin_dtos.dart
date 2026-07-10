@@ -222,6 +222,7 @@ final class AccessAdminItemDto {
       subtitle: _subtitleForResource(),
       status: _nullableString(json['status']),
       tenantId: _nullableString(json['tenant_id']),
+      tenantName: _nullableString(json['tenant_name']),
       facilityId: _nullableString(json['facility_id']),
       facilityName: _nullableString(json['facility_name']),
       roleScope:

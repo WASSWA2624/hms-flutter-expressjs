@@ -27,6 +27,12 @@ const {
 } = require('@lib/subscriptions/serializers');
 const subscriptionPlanRepository = require('@repositories/subscription-plan/subscription-plan.repository');
 const {
+  syncSubscriptionModuleEntitlements,
+} = require('@lib/subscriptions/sync-subscription-module-entitlements');
+const {
+  clearModuleEntitlementCaches,
+} = require('@middlewares/module-entitlement.middleware');
+const {
   PLAN_TIER_ORDER,
   evaluatePlanSupport,
   normalizeTierCode,
@@ -352,6 +358,9 @@ const createSubscription = async (data, user, ip) => {
   const created = await subscriptionRepository.create(subscriptionData);
   const subscription = await loadSubscriptionRecord(created.id, user);
 
+  await syncSubscriptionModuleEntitlements(subscription.id).catch(() => {});
+  clearModuleEntitlementCaches();
+
   await createAuditLog({
     tenant_id: subscription.tenant_id,
     user_id: user?.id || null,
@@ -369,7 +378,9 @@ const createSubscription = async (data, user, ip) => {
     { operation: 'created' }
   );
 
-  return serializeSubscription(subscription);
+  return serializeSubscription(
+    await loadSubscriptionRecord(created.id, user)
+  );
 };
 
 const updateSubscription = async (id, data, user, ip) => {
@@ -377,6 +388,14 @@ const updateSubscription = async (id, data, user, ip) => {
   const payload = await resolveSubscriptionPayload(data, user, before.tenant_id);
   await subscriptionRepository.update(before.id, payload);
   const subscription = await loadSubscriptionRecord(before.id, user);
+
+  if (
+    payload.plan_id !== undefined &&
+    payload.plan_id !== before.plan_id
+  ) {
+    await syncSubscriptionModuleEntitlements(subscription.id).catch(() => {});
+    clearModuleEntitlementCaches();
+  }
 
   await createAuditLog({
     tenant_id: before.tenant_id,
@@ -395,7 +414,9 @@ const updateSubscription = async (id, data, user, ip) => {
     { operation: 'updated' }
   );
 
-  return serializeSubscription(subscription);
+  return serializeSubscription(
+    await loadSubscriptionRecord(before.id, user)
+  );
 };
 
 const cancelSubscription = async (id, user, ip) => {

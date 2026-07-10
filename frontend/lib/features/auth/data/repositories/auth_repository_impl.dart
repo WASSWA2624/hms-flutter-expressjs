@@ -310,11 +310,11 @@ final class AuthRepositoryImpl implements AuthRepository {
           if (permissions.isNotEmpty) {
             enriched = enriched.copyWith(permissions: permissions);
           }
-          if (moduleEntitlements.isNotEmpty) {
-            enriched = enriched.copyWith(
-              moduleEntitlements: moduleEntitlements,
-            );
-          }
+          // Always apply /me entitlements (including empty) so plan changes
+          // and backfills are reflected immediately.
+          enriched = enriched.copyWith(
+            moduleEntitlements: moduleEntitlements,
+          );
           if (subscriptionSummary != null) {
             enriched = enriched.copyWith(
               subscriptionSummary: subscriptionSummary,

@@ -1389,7 +1389,9 @@ UserMenuProfileData? _userMenuProfile(AuthSession? session) {
   return UserMenuProfileData(
     name: name,
     email: email,
-    title: _distinct(user?.effectiveTitle, name),
+    title:
+        _distinct(user?.facilityName, name) ??
+        _distinct(user?.effectiveTitle, name),
     overallRole: user?.overallRole,
     userType: user?.userType,
     initials: initials,

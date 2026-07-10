@@ -145,6 +145,7 @@ const serializeUser = (record) => {
     position_title: record.position_title,
     status: record.status,
     tenant_id: record.tenant_id || null,
+    tenant_name: record.tenant?.name || null,
     facility_id: record.facility_id || null,
     facility_name: record.facility?.name || null,
     profile_name: profile

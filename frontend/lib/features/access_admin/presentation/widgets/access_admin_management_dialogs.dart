@@ -1944,13 +1944,19 @@ class _AccessAdminUserDetailDialogState
                       _UserDetailInfoTile(
                         icon: Icons.apartment_outlined,
                         label: l10n.settingsWorkspaceTenantLabel,
-                        value: item.tenantId!,
+                        value:
+                            (item.tenantName?.trim().isNotEmpty == true
+                                ? item.tenantName!
+                                : item.tenantId!),
                       ),
                     if (item.facilityId != null)
                       _UserDetailInfoTile(
                         icon: Icons.local_hospital_outlined,
                         label: l10n.settingsWorkspaceFacilityLabel,
-                        value: item.facilityId!,
+                        value:
+                            (item.facilityName?.trim().isNotEmpty == true
+                                ? item.facilityName!
+                                : item.facilityId!),
                       ),
                   ];
 

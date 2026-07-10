@@ -188,11 +188,9 @@ final class SessionTokenProvider {
                   if (permissions.isNotEmpty) {
                     enriched = enriched.copyWith(permissions: permissions);
                   }
-                  if (moduleEntitlements.isNotEmpty) {
-                    enriched = enriched.copyWith(
-                      moduleEntitlements: moduleEntitlements,
-                    );
-                  }
+                  enriched = enriched.copyWith(
+                    moduleEntitlements: moduleEntitlements,
+                  );
                   if (subscriptionSummary != null) {
                     enriched = enriched.copyWith(
                       subscriptionSummary: subscriptionSummary,

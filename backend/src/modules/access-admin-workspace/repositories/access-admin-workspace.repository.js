@@ -307,6 +307,13 @@ const findUsers = async ({ scope = {}, filters = {}, skip = 0, take = 20, orderB
               name: true,
             },
           },
+          tenant: {
+            select: {
+              id: true,
+              human_friendly_id: true,
+              name: true,
+            },
+          },
         },
       }),
       prisma.user.count({ where }),
@@ -586,6 +593,13 @@ const findUserByIdentifier = async (identifier, scope = {}) => {
           },
         },
         facility: {
+          select: {
+            id: true,
+            human_friendly_id: true,
+            name: true,
+          },
+        },
+        tenant: {
           select: {
             id: true,
             human_friendly_id: true,

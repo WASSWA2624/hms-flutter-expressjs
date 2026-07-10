@@ -42,8 +42,8 @@ final class HomeRepositoryImpl implements HomeRepository {
     HomeDashboardRequest request,
   ) async {
     final HomeDashboardRequest effectiveRequest = _effectiveRequest(request);
-    final HomeDashboardProfile localProfile = homeProfileForRoles(
-      _accessPolicy.roles,
+    final HomeDashboardProfile localProfile = homeProfileForAccessPolicy(
+      _accessPolicy,
     );
 
     if (_shouldUseLocalDashboard(localProfile, effectiveRequest)) {
@@ -142,7 +142,9 @@ final class HomeRepositoryImpl implements HomeRepository {
     HomeDashboardProfile profile,
     HomeDashboardRequest request,
   ) {
-    if (profile.role == AppRole.other) {
+    // Custom roles with real permission packs should hit the API dashboard.
+    if (profile.role == AppRole.other &&
+        _accessPolicy.permissions.length < 8) {
       return true;
     }
     if (_session == null) {

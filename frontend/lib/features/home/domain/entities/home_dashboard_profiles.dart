@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 
 const Set<AppRole> _homeDashboardManagerOverlayRoles = <AppRole>{
@@ -817,6 +818,65 @@ HomeDashboardProfile homeProfileForRoles(Iterable<AppRole> roles) {
 
   return homeDashboardProfiles[candidates.first] ??
       homeDashboardProfiles[AppRole.other]!;
+}
+
+/// Prefer canonical roles; for custom roles, infer a dashboard from permissions.
+HomeDashboardProfile homeProfileForAccessPolicy(AppAccessPolicy policy) {
+  final HomeDashboardProfile fromRoles = homeProfileForRoles(policy.roles);
+  if (fromRoles.role != AppRole.other) {
+    return fromRoles;
+  }
+
+  final Set<AppPermission> permissions = policy.permissions;
+  if (permissions.isEmpty) {
+    return fromRoles;
+  }
+
+  bool has(AppPermission permission) => permissions.contains(permission);
+
+  if (policy.isElevated || has(AppPermissions.systemAdmin)) {
+    return homeDashboardProfiles[AppRole.superAdmin]!;
+  }
+  if (has(AppPermissions.tenantAdmin)) {
+    return homeDashboardProfiles[AppRole.tenantAdmin]!;
+  }
+  if (has(AppPermissions.facilityAdmin)) {
+    return homeDashboardProfiles[AppRole.facilityAdmin]!;
+  }
+  if (has(AppPermissions.clinicalWrite) || has(AppPermissions.clinicalRead)) {
+    return homeDashboardProfiles[AppRole.doctor]!;
+  }
+  if (has(AppPermissions.labWrite) || has(AppPermissions.labRead)) {
+    return homeDashboardProfiles[AppRole.labTech]!;
+  }
+  if (has(AppPermissions.pharmacyWrite) || has(AppPermissions.pharmacyRead)) {
+    return homeDashboardProfiles[AppRole.pharmacist]!;
+  }
+  if (has(AppPermissions.radiologyWrite) ||
+      has(AppPermissions.radiologyRead)) {
+    return homeDashboardProfiles[AppRole.radiologyTech]!;
+  }
+  if (has(AppPermissions.billingWrite) || has(AppPermissions.billingRead)) {
+    return homeDashboardProfiles[AppRole.billing]!;
+  }
+  if (has(AppPermissions.hrWrite) || has(AppPermissions.hrRead)) {
+    return homeDashboardProfiles[AppRole.hr]!;
+  }
+  if (has(AppPermissions.operationsWrite) ||
+      has(AppPermissions.operationsRead)) {
+    return homeDashboardProfiles[AppRole.operations]!;
+  }
+  if (has(AppPermissions.patientWrite) || has(AppPermissions.patientRead)) {
+    return homeDashboardProfiles[AppRole.receptionist]!;
+  }
+
+  // Broad custom permission packs should not fall back to the empty "other"
+  // dashboard when the user clearly has operational rights.
+  if (permissions.length >= 8) {
+    return homeDashboardProfiles[AppRole.facilityAdmin]!;
+  }
+
+  return fromRoles;
 }
 
 HomeDashboardProfile homeProfileForRole(AppRole? role) {
