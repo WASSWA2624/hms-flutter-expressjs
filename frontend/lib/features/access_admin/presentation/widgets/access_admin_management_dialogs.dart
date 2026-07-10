@@ -481,12 +481,11 @@ class _ManageUsersDialogState
       title: Text(l10n.homeManageUsersTitle),
       icon: const Icon(Icons.people_outline),
       pinActionsToBottom: true,
-      maxWidth: 1100,
-      content: SizedBox(
-        height: 560,
+      maxWidth: 1200,
+      content: SizedBox.expand(
         child: buildTable(
           l10n: l10n,
-          columnVisibilityStorageKey: 'access_admin_manage_users',
+          columnVisibilityStorageKey: 'access_admin_manage_users_v2',
           onRowSelected: (AccessAdminItem item) =>
               unawaited(_openUserDetail(item)),
           search: buildTableSearch(
@@ -506,12 +505,6 @@ class _ManageUsersDialogState
               cellBuilder: (_, AccessAdminItem item) => Text(item.title),
             ),
             AppListTableColumn<AccessAdminItem>(
-              id: 'details',
-              label: l10n.accessAdminColumnDetails,
-              cellBuilder: (_, AccessAdminItem item) =>
-                  Text(item.subtitle ?? item.email ?? '—'),
-            ),
-            AppListTableColumn<AccessAdminItem>(
               id: 'status',
               label: l10n.accessAdminColumnStatus,
               cellBuilder: (_, AccessAdminItem item) => Text(
@@ -526,55 +519,67 @@ class _ManageUsersDialogState
                 label: l10n.accessAdminColumnActions,
                 alwaysVisible: true,
                 cellBuilder: (BuildContext context, AccessAdminItem user) {
+                  final ThemeData theme = Theme.of(context);
                   if (user.isDeleted) {
-                    return AppButton.tertiary(
-                      leadingIcon: Icons.restore_outlined,
-                      label: l10n.accessAdminRestoreUserAction,
-                      semanticLabel: l10n.accessAdminRestoreUserAction,
-                      tooltip: l10n.accessAdminRestoreUserAction,
-                      iconOnly: true,
-                      enabled: !loading && !mutating,
-                      onPressed: !loading && !mutating
-                          ? () => unawaited(_confirmRestoreUser(user))
-                          : null,
-                    );
-                  }
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      AppButton.tertiary(
-                        leadingIcon: Icons.edit_outlined,
-                        label: l10n.tenantFacilityEditAction,
-                        semanticLabel: l10n.tenantFacilityEditAction,
-                        tooltip: l10n.tenantFacilityEditAction,
-                        iconOnly: true,
+                    return Padding(
+                      padding: EdgeInsetsDirectional.only(end: theme.spacing.sm),
+                      child: AppButton.tertiary(
+                        leadingIcon: Icons.restore_outlined,
+                        label: l10n.accessAdminRestoreUserAction,
+                        semanticLabel: l10n.accessAdminRestoreUserAction,
+                        tooltip: l10n.accessAdminRestoreUserAction,
                         enabled: !loading && !mutating,
                         onPressed: !loading && !mutating
-                            ? () => unawaited(_openEditUserDialog(user))
+                            ? () => unawaited(_confirmRestoreUser(user))
                             : null,
                       ),
-                      AppButton.tertiary(
-                        leadingIcon: Icons.delete_outline,
-                        label: l10n.tenantFacilityDeleteAction,
-                        semanticLabel: l10n.tenantFacilityDeleteAction,
-                        tooltip: l10n.tenantFacilityDeleteAction,
-                        iconOnly: true,
-                        color: colorScheme.error,
-                        enabled: !loading &&
-                            !mutating &&
-                            !user.isDemo &&
-                            !user.isSystemCritical,
-                        onPressed: !loading &&
-                                !mutating &&
-                                !user.isDemo &&
-                                !user.isSystemCritical
-                            ? () => unawaited(_confirmDeleteUser(user))
-                            : null,
-                      ),
-                    ],
+                    );
+                  }
+                  return Padding(
+                    padding: EdgeInsetsDirectional.only(end: theme.spacing.sm),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        AppButton.tertiary(
+                          leadingIcon: Icons.edit_outlined,
+                          label: l10n.tenantFacilityEditAction,
+                          semanticLabel: l10n.tenantFacilityEditAction,
+                          tooltip: l10n.tenantFacilityEditAction,
+                          enabled: !loading && !mutating,
+                          onPressed: !loading && !mutating
+                              ? () => unawaited(_openEditUserDialog(user))
+                              : null,
+                        ),
+                        AppButton.tertiary(
+                          leadingIcon: Icons.delete_outline,
+                          label: l10n.tenantFacilityDeleteAction,
+                          semanticLabel: l10n.tenantFacilityDeleteAction,
+                          tooltip: l10n.tenantFacilityDeleteAction,
+                          color: colorScheme.error,
+                          enabled: !loading &&
+                              !mutating &&
+                              !user.isDemo &&
+                              !user.isSystemCritical,
+                          onPressed: !loading &&
+                                  !mutating &&
+                                  !user.isDemo &&
+                                  !user.isSystemCritical
+                              ? () => unawaited(_confirmDeleteUser(user))
+                              : null,
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),
+          ],
+          columnChoices: <AppListTableColumn<AccessAdminItem>>[
+            AppListTableColumn<AccessAdminItem>(
+              id: 'details',
+              label: l10n.accessAdminColumnDetails,
+              cellBuilder: (_, AccessAdminItem item) =>
+                  Text(item.subtitle ?? item.email ?? '—'),
+            ),
           ],
         ),
       ),
@@ -710,12 +715,11 @@ class _ManageRolesPermissionsDialogState
       title: Text(l10n.homeManageRolesPermissionsTitle),
       icon: const Icon(Icons.admin_panel_settings_outlined),
       pinActionsToBottom: true,
-      maxWidth: 1100,
-      content: SizedBox(
-        height: 560,
+      maxWidth: 1200,
+      content: SizedBox.expand(
         child: buildTable(
           l10n: l10n,
-          columnVisibilityStorageKey: 'access_admin_manage_roles',
+          columnVisibilityStorageKey: 'access_admin_manage_roles_v2',
           onRowSelected: canWrite
               ? (AccessAdminItem role) => unawaited(_openEditRoleDialog(role))
               : null,
@@ -778,49 +782,53 @@ class _ManageRolesPermissionsDialogState
               cellBuilder: (BuildContext context, AccessAdminItem item) =>
                   _RoleScopeBadge(item: item),
             ),
-            AppListTableColumn<AccessAdminItem>(
-              id: 'details',
-              label: l10n.accessAdminColumnDetails,
-              cellBuilder: (_, AccessAdminItem item) =>
-                  Text(item.subtitle ?? '—'),
-            ),
             if (canWrite)
               AppListTableColumn<AccessAdminItem>(
                 id: 'actions',
                 label: l10n.accessAdminColumnActions,
                 alwaysVisible: true,
                 cellBuilder: (BuildContext context, AccessAdminItem role) {
-                  return Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      AppButton.tertiary(
-                        leadingIcon: Icons.edit_outlined,
-                        label: l10n.tenantFacilityEditAction,
-                        semanticLabel: l10n.tenantFacilityEditAction,
-                        tooltip: l10n.tenantFacilityEditAction,
-                        iconOnly: true,
-                        enabled: !loading && !mutating,
-                        onPressed: !loading && !mutating
-                            ? () => unawaited(_openEditRoleDialog(role))
-                            : null,
-                      ),
-                      if (!role.isSystemCritical)
+                  final ThemeData theme = Theme.of(context);
+                  return Padding(
+                    padding: EdgeInsetsDirectional.only(end: theme.spacing.sm),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
                         AppButton.tertiary(
-                          leadingIcon: Icons.delete_outline,
-                          label: l10n.tenantFacilityDeleteAction,
-                          semanticLabel: l10n.tenantFacilityDeleteAction,
-                          tooltip: l10n.tenantFacilityDeleteAction,
-                          iconOnly: true,
-                          color: colorScheme.error,
+                          leadingIcon: Icons.edit_outlined,
+                          label: l10n.tenantFacilityEditAction,
+                          semanticLabel: l10n.tenantFacilityEditAction,
+                          tooltip: l10n.tenantFacilityEditAction,
                           enabled: !loading && !mutating,
                           onPressed: !loading && !mutating
-                              ? () => unawaited(_confirmDeleteRole(role))
+                              ? () => unawaited(_openEditRoleDialog(role))
                               : null,
                         ),
-                    ],
+                        if (!role.isSystemCritical)
+                          AppButton.tertiary(
+                            leadingIcon: Icons.delete_outline,
+                            label: l10n.tenantFacilityDeleteAction,
+                            semanticLabel: l10n.tenantFacilityDeleteAction,
+                            tooltip: l10n.tenantFacilityDeleteAction,
+                            color: colorScheme.error,
+                            enabled: !loading && !mutating,
+                            onPressed: !loading && !mutating
+                                ? () => unawaited(_confirmDeleteRole(role))
+                                : null,
+                          ),
+                      ],
+                    ),
                   );
                 },
               ),
+          ],
+          columnChoices: <AppListTableColumn<AccessAdminItem>>[
+            AppListTableColumn<AccessAdminItem>(
+              id: 'details',
+              label: l10n.accessAdminColumnDetails,
+              cellBuilder: (_, AccessAdminItem item) =>
+                  Text(item.subtitle ?? '—'),
+            ),
           ],
         ),
       ),
