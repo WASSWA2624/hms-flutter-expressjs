@@ -1600,6 +1600,22 @@
   "@subscriptionHeaderTooltip": {
     "description": "Tooltip for the shell header subscription action."
   },
+  "subscriptionExpiredPromptTitle": "Subscription expired",
+  "@subscriptionExpiredPromptTitle": {
+    "description": "Title for the shell prompt when the tenant subscription has expired."
+  },
+  "subscriptionExpiredPromptBody": "Your organization's subscription has expired. Renew now to restore full module access. Tap the red Subscription expired badge anytime to renew or upgrade.",
+  "@subscriptionExpiredPromptBody": {
+    "description": "Body for the shell prompt when the tenant subscription has expired."
+  },
+  "subscriptionExpiredPromptRenewAction": "Renew now",
+  "@subscriptionExpiredPromptRenewAction": {
+    "description": "Primary action on the expired-subscription prompt that opens renewal."
+  },
+  "subscriptionExpiredPromptLaterAction": "Remind me later",
+  "@subscriptionExpiredPromptLaterAction": {
+    "description": "Dismiss action on the expired-subscription prompt."
+  },
   "subscriptionUpgradeDialogTitle": "Upgrade subscription",
   "@subscriptionUpgradeDialogTitle": {
     "description": "Title for the subscription upgrade and payment dialog."

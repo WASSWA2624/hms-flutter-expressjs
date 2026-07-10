@@ -1232,6 +1232,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionHeaderTooltip => 'Manage subscription and billing';
 
   @override
+  String get subscriptionExpiredPromptTitle => 'Subscription expired';
+
+  @override
+  String get subscriptionExpiredPromptBody =>
+      'Your organization\'s subscription has expired. Renew now to restore full module access. Tap the red Subscription expired badge anytime to renew or upgrade.';
+
+  @override
+  String get subscriptionExpiredPromptRenewAction => 'Renew now';
+
+  @override
+  String get subscriptionExpiredPromptLaterAction => 'Remind me later';
+
+  @override
   String get subscriptionUpgradeDialogTitle => 'Upgrade subscription';
 
   @override

@@ -2428,6 +2428,30 @@ abstract class AppLocalizations {
   /// **'Manage subscription and billing'**
   String get subscriptionHeaderTooltip;
 
+  /// Title for the shell prompt when the tenant subscription has expired.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription expired'**
+  String get subscriptionExpiredPromptTitle;
+
+  /// Body for the shell prompt when the tenant subscription has expired.
+  ///
+  /// In en, this message translates to:
+  /// **'Your organization\'s subscription has expired. Renew now to restore full module access. Tap the red Subscription expired badge anytime to renew or upgrade.'**
+  String get subscriptionExpiredPromptBody;
+
+  /// Primary action on the expired-subscription prompt that opens renewal.
+  ///
+  /// In en, this message translates to:
+  /// **'Renew now'**
+  String get subscriptionExpiredPromptRenewAction;
+
+  /// Dismiss action on the expired-subscription prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Remind me later'**
+  String get subscriptionExpiredPromptLaterAction;
+
   /// Title for the subscription upgrade and payment dialog.
   ///
   /// In en, this message translates to:

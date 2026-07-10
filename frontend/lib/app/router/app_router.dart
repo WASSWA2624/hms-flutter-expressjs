@@ -94,6 +94,7 @@ import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_e
 import 'package:hosspi_hms/features/subscriptions/presentation/controllers/subscriptions_workspace_controller.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/pages/subscriptions_workspace_page.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_header_button.dart';
+import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_expired_prompt.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_upgrade_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dart';
@@ -1197,95 +1198,113 @@ class _AppShell extends ConsumerWidget {
         );
     final bool isShellLoading = ref.watch(shellNavigationLoadingProvider);
 
-    return ResponsiveAppShell(
-      title: l10n.appTitle,
-      compactTitle: l10n.appShortTitle,
-      connectivityStatus: connectivityStatus,
-      onlineLabel: l10n.appStatusOnlineLabel,
-      offlineLabel: l10n.appStatusOfflineLabel,
-      fullscreenEnterLabel: l10n.workspaceFullscreenEnterLabel,
-      fullscreenExitLabel: l10n.workspaceFullscreenExitLabel,
-      openMenuTooltip: l10n.appOpenNavigationMenuTooltip,
-      closeDrawerTooltip: l10n.appCloseNavigationMenuTooltip,
-      toggleSidebarTooltip: l10n.appToggleSidebarTooltip,
-      navigationSearchLabel: l10n.appNavigationSearchLabel,
-      navigationSearchHint: l10n.appNavigationSearchHint,
-      navigationSearchNoResultsLabel: l10n.appNavigationSearchNoResultsLabel,
-      accountTooltip: l10n.appAccountTooltip,
-      notificationsTooltip: l10n.appNotificationsTooltip,
-      unreadNotificationCount: notificationUnreadCount ?? 0,
-      notificationsUnreadLabel: l10n.appNotificationsUnreadLabel(
-        notificationUnreadCount ?? 0,
-      ),
-      onNotificationsSelected: canAccessCommunications
-          ? () {
-              context.go(
-                AppRoutes.communications.location(
-                  queryParameters: <String, String>{
-                    'panel': CommunicationsPanel.notifications.serverValue,
-                  },
-                ),
-              );
-            }
-          : null,
-      profileLabel: l10n.appUserMenuProfileLabel,
-      settingsLabel: l10n.appUserMenuSettingsLabel,
-      changePasswordLabel: l10n.appUserMenuChangePasswordLabel,
-      logoutLabel: l10n.appUserMenuLogoutLabel,
-      signedInLabel: l10n.appUserMenuSignedInLabel,
-      userProfile: _userMenuProfile(session),
-      showUserAvatar: session != null,
-      onProfileSelected: () {
-        if (!AppRoutes.profile.matchesPath(location.path)) {
-          context.go(AppRoutes.profile.location());
-        }
-      },
-      onSettingsSelected: () {
-        if (!AppRoutes.settings.matchesPath(location.path)) {
-          context.go(AppRoutes.settings.location());
-        }
-      },
-      onChangePasswordSelected: () async {
-        final changed = await showAppDialog<bool>(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => const ChangePasswordDialog(),
-        );
-        if (changed == true && context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.authPasswordChangedMessage)),
-          );
-          context.go(AppRoutes.login.location());
-        }
-      },
-      onLogoutSelected: () async {
-        await ref.read(authRepositoryProvider).logout();
-        await ref.read(sessionStateProvider.notifier).logout();
-        if (context.mounted) {
-          context.go(AppRoutes.login.location());
-        }
-      },
-      headerTrailingActions: _subscriptionHeaderAction(
-        context: context,
-        ref: ref,
-        session: session,
-        l10n: l10n,
-      ),
-      destinations: <ResponsiveShellDestination>[
-        for (final _ShellDestinationRoute destination in shellDestinations)
-          destination.destination,
-      ],
-      selectedIndex: selectedIndex,
-      onDestinationSelected: (int index) {
-        if (index == selectedIndex) {
+    return SubscriptionExpiredPromptHost(
+      summary: session?.subscriptionSummary,
+      platformAdminContact: session?.platformAdminContact,
+      onRenewed: () async {
+        if (session == null) {
           return;
         }
-
-        context.go(shellDestinations[index].route.location());
+        final refreshResult = await ref
+            .read(authRepositoryProvider)
+            .fetchCurrentUser(session);
+        refreshResult.when(
+          success: (AuthSession refreshed) {
+            ref.read(sessionStateProvider.notifier).persistSession(refreshed);
+          },
+          failure: (_) {},
+        );
       },
-      isShellLoading: isShellLoading,
-      shellRouteKey: location.path,
-      child: child,
+      child: ResponsiveAppShell(
+        title: l10n.appTitle,
+        compactTitle: l10n.appShortTitle,
+        connectivityStatus: connectivityStatus,
+        onlineLabel: l10n.appStatusOnlineLabel,
+        offlineLabel: l10n.appStatusOfflineLabel,
+        fullscreenEnterLabel: l10n.workspaceFullscreenEnterLabel,
+        fullscreenExitLabel: l10n.workspaceFullscreenExitLabel,
+        openMenuTooltip: l10n.appOpenNavigationMenuTooltip,
+        closeDrawerTooltip: l10n.appCloseNavigationMenuTooltip,
+        toggleSidebarTooltip: l10n.appToggleSidebarTooltip,
+        navigationSearchLabel: l10n.appNavigationSearchLabel,
+        navigationSearchHint: l10n.appNavigationSearchHint,
+        navigationSearchNoResultsLabel: l10n.appNavigationSearchNoResultsLabel,
+        accountTooltip: l10n.appAccountTooltip,
+        notificationsTooltip: l10n.appNotificationsTooltip,
+        unreadNotificationCount: notificationUnreadCount ?? 0,
+        notificationsUnreadLabel: l10n.appNotificationsUnreadLabel(
+          notificationUnreadCount ?? 0,
+        ),
+        onNotificationsSelected: canAccessCommunications
+            ? () {
+                context.go(
+                  AppRoutes.communications.location(
+                    queryParameters: <String, String>{
+                      'panel': CommunicationsPanel.notifications.serverValue,
+                    },
+                  ),
+                );
+              }
+            : null,
+        profileLabel: l10n.appUserMenuProfileLabel,
+        settingsLabel: l10n.appUserMenuSettingsLabel,
+        changePasswordLabel: l10n.appUserMenuChangePasswordLabel,
+        logoutLabel: l10n.appUserMenuLogoutLabel,
+        signedInLabel: l10n.appUserMenuSignedInLabel,
+        userProfile: _userMenuProfile(session),
+        showUserAvatar: session != null,
+        onProfileSelected: () {
+          if (!AppRoutes.profile.matchesPath(location.path)) {
+            context.go(AppRoutes.profile.location());
+          }
+        },
+        onSettingsSelected: () {
+          if (!AppRoutes.settings.matchesPath(location.path)) {
+            context.go(AppRoutes.settings.location());
+          }
+        },
+        onChangePasswordSelected: () async {
+          final changed = await showAppDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => const ChangePasswordDialog(),
+          );
+          if (changed == true && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(l10n.authPasswordChangedMessage)),
+            );
+            context.go(AppRoutes.login.location());
+          }
+        },
+        onLogoutSelected: () async {
+          await ref.read(authRepositoryProvider).logout();
+          await ref.read(sessionStateProvider.notifier).logout();
+          if (context.mounted) {
+            context.go(AppRoutes.login.location());
+          }
+        },
+        headerTrailingActions: _subscriptionHeaderAction(
+          context: context,
+          ref: ref,
+          session: session,
+          l10n: l10n,
+        ),
+        destinations: <ResponsiveShellDestination>[
+          for (final _ShellDestinationRoute destination in shellDestinations)
+            destination.destination,
+        ],
+        selectedIndex: selectedIndex,
+        onDestinationSelected: (int index) {
+          if (index == selectedIndex) {
+            return;
+          }
+
+          context.go(shellDestinations[index].route.location());
+        },
+        isShellLoading: isShellLoading,
+        shellRouteKey: location.path,
+        child: child,
+      ),
     );
   }
 

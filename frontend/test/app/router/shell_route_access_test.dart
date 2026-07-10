@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 
@@ -138,6 +139,35 @@ void main() {
         );
         expect(canAccess(AppRoutes.nursing, policy), isTrue, reason: role);
       }
+    });
+
+    test('custom role permissions unlock matching shell routes', () {
+      final policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['TESTING'],
+          ),
+          permissions: <AppPermission>[
+            AppPermissions.patientRead,
+            AppPermissions.billingRead,
+            AppPermissions.clinicalRead,
+            AppPermissions.labRead,
+          ],
+          moduleEntitlements: _activeShellModules,
+        ),
+      );
+
+      expect(canAccess(AppRoutes.home, policy), isTrue);
+      expect(canAccess(AppRoutes.settings, policy), isTrue);
+      expect(canAccess(AppRoutes.patients, policy), isTrue);
+      expect(canAccess(AppRoutes.billing, policy), isTrue);
+      expect(canAccess(AppRoutes.clinical, policy), isTrue);
+      expect(canAccess(AppRoutes.lab, policy), isTrue);
+      expect(canAccess(AppRoutes.pharmacy, policy), isFalse);
+      expect(canAccess(AppRoutes.hr, policy), isFalse);
     });
   });
 }

@@ -28,8 +28,15 @@ final class AccessRequirement {
   }
 
   bool isAllowed(AppAccessPolicy policy) {
-    if (!policy.hasAnyRole(anyRoles)) {
-      return false;
+    final bool hasPermissionRequirements =
+        allPermissions.isNotEmpty || anyPermissions.isNotEmpty;
+
+    // Role packs authorize through their permissions. Canonical role names are
+    // only required when a route is role-gated with no permission requirements.
+    if (anyRoles.isNotEmpty && !policy.hasAnyRole(anyRoles)) {
+      if (!hasPermissionRequirements) {
+        return false;
+      }
     }
     if (!policy.grantsAll(allPermissions)) {
       return false;

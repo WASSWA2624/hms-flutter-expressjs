@@ -148,5 +148,28 @@ void main() {
         expect(requirement.isAllowed(policy), isTrue);
       },
     );
+
+    test(
+      'allows custom roles when their permission pack matches the route',
+      () {
+        final session = AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['TESTING'],
+          ),
+          permissions: const <AppPermission>[AppPermissions.patientRead],
+        );
+        final policy = AppAccessPolicy.fromSession(session);
+        const requirement = AccessRequirement(
+          anyRoles: <AppRole>[AppRole.doctor, AppRole.tenantAdmin],
+          allPermissions: <AppPermission>[AppPermissions.patientRead],
+        );
+
+        expect(policy.hasAnyRole(requirement.anyRoles), isFalse);
+        expect(requirement.isAllowed(policy), isTrue);
+      },
+    );
   });
 }
