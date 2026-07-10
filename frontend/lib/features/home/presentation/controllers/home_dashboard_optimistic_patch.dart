@@ -38,12 +38,47 @@ final class HomeDashboardOptimisticPatch {
     );
   }
 
+  factory HomeDashboardOptimisticPatch.tenantDeleted({bool isActive = true}) {
+    return HomeDashboardOptimisticPatch(
+      statusCardValueDeltas: isActive
+          ? const <String, int>{'tenants_active': -1}
+          : const <String, int>{},
+      statusCardSecondaryDeltas: const <String, int>{
+        'tenants_active': -1,
+        'subscriptions_health': -1,
+      },
+    );
+  }
+
+  factory HomeDashboardOptimisticPatch.tenantActiveChanged({
+    required bool wasActive,
+    required bool isActive,
+  }) {
+    if (wasActive == isActive) {
+      return const HomeDashboardOptimisticPatch();
+    }
+
+    final int sign = isActive ? 1 : -1;
+    return HomeDashboardOptimisticPatch(
+      statusCardValueDeltas: <String, int>{'tenants_active': sign},
+    );
+  }
+
   factory HomeDashboardOptimisticPatch.facilityCreated({bool isActive = true}) {
     return HomeDashboardOptimisticPatch(
       statusCardValueDeltas: isActive
           ? const <String, int>{'facilities_active': 1}
           : const <String, int>{},
       statusCardSecondaryDeltas: const <String, int>{'facilities_active': 1},
+    );
+  }
+
+  factory HomeDashboardOptimisticPatch.facilityDeleted({bool isActive = true}) {
+    return HomeDashboardOptimisticPatch(
+      statusCardValueDeltas: isActive
+          ? const <String, int>{'facilities_active': -1}
+          : const <String, int>{},
+      statusCardSecondaryDeltas: const <String, int>{'facilities_active': -1},
     );
   }
 

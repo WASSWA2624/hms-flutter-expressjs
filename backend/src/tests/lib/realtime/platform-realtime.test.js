@@ -67,4 +67,21 @@ describe('platform-realtime', () => {
       })
     );
   });
+
+  it('builds tenant update deltas when active status changes', () => {
+    expect(
+      buildTenantDashboardDeltas(
+        { is_active: false },
+        'update',
+        { is_active: true }
+      )
+    ).toEqual({
+      status_cards: {
+        tenants_active: {
+          value_delta: -1,
+          secondary_delta: 0
+        }
+      }
+    });
+  });
 });

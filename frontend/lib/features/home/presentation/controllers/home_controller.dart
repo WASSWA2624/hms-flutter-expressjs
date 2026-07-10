@@ -39,7 +39,7 @@ final homeControllerProvider =
           final HomeDashboardOptimisticPatch? patch =
               HomeDashboardOptimisticPatch.fromRealtimePayload(message.payload);
 
-          if (patch != null && !isSelfMutation) {
+          if (patch != null) {
             final HomeDashboardOptimisticPatch? current = ref.read(
               homeDashboardOptimisticPatchProvider(request),
             );
@@ -49,10 +49,10 @@ final homeControllerProvider =
                     )
                     .state =
                 current == null ? patch : current.merge(patch);
-            return;
-          }
-
-          if (!isSelfMutation) {
+            if (!isSelfMutation) {
+              return;
+            }
+          } else if (!isSelfMutation) {
             ref
                     .read(
                       homeDashboardOptimisticPatchProvider(request).notifier,
@@ -60,6 +60,7 @@ final homeControllerProvider =
                     .state =
                 null;
           }
+
           ref.invalidateSelf();
         },
       );

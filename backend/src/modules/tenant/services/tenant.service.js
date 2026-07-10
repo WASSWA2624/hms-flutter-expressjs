@@ -18,13 +18,19 @@ const {
   buildTenantDashboardDeltas
 } = require('@lib/realtime/platform-realtime');
 
-const publishTenantRealtimeEvent = async (event, tenant, actorUserId, operation = 'create') => {
+const publishTenantRealtimeEvent = async (
+  event,
+  tenant,
+  actorUserId,
+  operation = 'create',
+  before = null
+) => {
   await publishPlatformRealtimeEvent({
     event,
     resource_type: 'tenant',
     resource_id: tenant?.id || null,
     actor_user_id: actorUserId || null,
-    dashboard_deltas: buildTenantDashboardDeltas(tenant, operation),
+    dashboard_deltas: buildTenantDashboardDeltas(tenant, operation, before),
     payload: {
       is_active: tenant?.is_active !== false,
       name: tenant?.name || null
@@ -281,7 +287,8 @@ const updateTenant = async (id, data, context = {}) => {
     PLATFORM_ADMIN_EVENTS.TENANT_UPDATED,
     tenant,
     context.user_id,
-    'update'
+    'update',
+    beforeTenant
   );
 
   return tenant;

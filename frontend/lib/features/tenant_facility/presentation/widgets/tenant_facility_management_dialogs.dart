@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +6,11 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/realtime/realtime_events.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
+import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
+import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
+import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_sync.dart';
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
@@ -17,6 +21,33 @@ import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/management/platform_management_list_sync.dart';
+
+const Set<String> _tenantManagementRealtimeEvents = <String>{
+  RealtimeEvents.tenantCreated,
+  RealtimeEvents.tenantUpdated,
+  RealtimeEvents.tenantDeleted,
+};
+
+const Set<String> _facilityManagementRealtimeEvents = <String>{
+  RealtimeEvents.tenantCreated,
+  RealtimeEvents.tenantUpdated,
+  RealtimeEvents.tenantDeleted,
+  RealtimeEvents.facilityCreated,
+  RealtimeEvents.facilityUpdated,
+  RealtimeEvents.facilityDeleted,
+};
+
+void _syncPlatformDashboard(
+  WidgetRef ref, {
+  HomeDashboardOptimisticPatch? patch,
+}) {
+  const HomeDashboardRequest request = HomeDashboardRequest.empty;
+  if (patch != null && !patch.isEmpty) {
+    homeApplyDashboardOptimisticPatch(ref, request, patch);
+  }
+  ref.invalidate(homeControllerProvider(request));
+}
 
 Future<bool?> showManageTenantsDialog(BuildContext context, WidgetRef ref) {
   return showAppDialog<bool>(
@@ -52,6 +83,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
   List<TenantProfile> _tenants = const <TenantProfile>[];
   bool _mutated = false;
   int _reloadGeneration = 0;
+  PlatformManagementListSync? _realtimeSync;
 
   @override
   void initState() {
@@ -61,7 +93,19 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _realtimeSync ??= PlatformManagementListSync(
+      ref: ref,
+      events: _tenantManagementRealtimeEvents,
+      onMutated: () => _mutated = true,
+      reload: ({bool silent = false}) => _reload(resetPage: false, silent: silent),
+    )..attach();
+  }
+
+  @override
   void dispose() {
+    _realtimeSync?.dispose();
     _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
@@ -121,6 +165,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
   }
 
   Future<void> _openTenantForm({TenantProfile? tenant, bool forceCreate = false}) async {
+    final bool? wasActive = tenant?.isActive;
     final bool? saved = await showTenantFacilityTenantFormDialog(
       context,
       tenant: tenant,
@@ -130,8 +175,42 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
     if (!mounted || saved != true) {
       return;
     }
+
     _mutated = true;
-    unawaited(_reload(resetPage: forceCreate, silent: true));
+    await _reload(resetPage: forceCreate, silent: true);
+    if (!mounted) {
+      return;
+    }
+
+    if (forceCreate || tenant == null) {
+      _syncPlatformDashboard(
+        ref,
+        patch: HomeDashboardOptimisticPatch.tenantCreated(),
+      );
+      return;
+    }
+
+    if (wasActive == null) {
+      return;
+    }
+
+    TenantProfile? updatedTenant;
+    for (final TenantProfile entry in _tenants) {
+      if (entry.id == tenant.id) {
+        updatedTenant = entry;
+        break;
+      }
+    }
+
+    if (updatedTenant != null && updatedTenant.isActive != wasActive) {
+      _syncPlatformDashboard(
+        ref,
+        patch: HomeDashboardOptimisticPatch.tenantActiveChanged(
+          wasActive: wasActive,
+          isActive: updatedTenant.isActive,
+        ),
+      );
+    }
   }
 
   Future<void> _confirmDeleteTenant(TenantProfile tenant) async {
@@ -156,25 +235,22 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
         },
       ),
     );
-    if (confirmed != true || !mounted) {
+
+    if (!mounted) {
       return;
     }
 
-    final String deletedTenantId = tenant.id;
-    setState(() {
+    if (confirmed == true) {
       _mutated = true;
-      _tenants = _tenants
-          .where((TenantProfile entry) => entry.id != deletedTenantId)
-          .toList(growable: false);
-      _totalItemCount = math.max(0, _totalItemCount - 1);
-    });
-
-    if (_tenants.isEmpty && _totalItemCount > 0) {
-      if (_pageRequest.pageIndex > 0) {
-        _pageRequest = _pageRequest.previous();
-      }
-      unawaited(_reload(resetPage: false, silent: true));
+      _syncPlatformDashboard(
+        ref,
+        patch: HomeDashboardOptimisticPatch.tenantDeleted(
+          isActive: tenant.isActive,
+        ),
+      );
     }
+
+    await _reload(resetPage: false, silent: true);
   }
 
   bool get _canCreate => ref.read(appAccessPolicyProvider).canCreateTenant();
@@ -347,6 +423,7 @@ class _ManageFacilitiesDialogState
   String? _tenantFilterId;
   bool _mutated = false;
   int _reloadGeneration = 0;
+  PlatformManagementListSync? _realtimeSync;
 
   @override
   void initState() {
@@ -359,7 +436,22 @@ class _ManageFacilitiesDialogState
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _realtimeSync ??= PlatformManagementListSync(
+      ref: ref,
+      events: _facilityManagementRealtimeEvents,
+      onMutated: () => _mutated = true,
+      reload: ({bool silent = false}) async {
+        await _loadTenants();
+        await _reload(resetPage: false, silent: silent);
+      },
+    )..attach();
+  }
+
+  @override
   void dispose() {
+    _realtimeSync?.dispose();
     _searchDebounce?.cancel();
     _searchController.dispose();
     super.dispose();
@@ -452,8 +544,20 @@ class _ManageFacilitiesDialogState
     if (!mounted || saved != true) {
       return;
     }
+
     _mutated = true;
-    unawaited(_reload(resetPage: forceCreate, silent: true));
+    await _loadTenants();
+    await _reload(resetPage: forceCreate, silent: true);
+    if (!mounted) {
+      return;
+    }
+
+    if (forceCreate || facility == null) {
+      _syncPlatformDashboard(
+        ref,
+        patch: HomeDashboardOptimisticPatch.facilityCreated(),
+      );
+    }
   }
 
   Future<void> _confirmDeleteFacility(FacilityProfile facility) async {
@@ -478,25 +582,23 @@ class _ManageFacilitiesDialogState
         },
       ),
     );
-    if (confirmed != true || !mounted) {
+
+    if (!mounted) {
       return;
     }
 
-    final String deletedFacilityId = facility.id;
-    setState(() {
+    if (confirmed == true) {
       _mutated = true;
-      _facilities = _facilities
-          .where((FacilityProfile entry) => entry.id != deletedFacilityId)
-          .toList(growable: false);
-      _totalItemCount = math.max(0, _totalItemCount - 1);
-    });
-
-    if (_facilities.isEmpty && _totalItemCount > 0) {
-      if (_pageRequest.pageIndex > 0) {
-        _pageRequest = _pageRequest.previous();
-      }
-      unawaited(_reload(resetPage: false, silent: true));
+      _syncPlatformDashboard(
+        ref,
+        patch: HomeDashboardOptimisticPatch.facilityDeleted(
+          isActive: facility.isActive,
+        ),
+      );
     }
+
+    await _loadTenants();
+    await _reload(resetPage: false, silent: true);
   }
 
   bool get _canManage => ref.read(appAccessPolicyProvider).canManageFacility();

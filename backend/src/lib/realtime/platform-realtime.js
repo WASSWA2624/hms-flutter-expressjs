@@ -121,9 +121,27 @@ const publishPlatformRealtimeEvent = async ({
 
 const activeDelta = (isActive, delta = 1) => (isActive === false ? 0 : delta);
 
-const buildTenantDashboardDeltas = (tenant, operation = 'create') => {
+const buildTenantDashboardDeltas = (tenant, operation = 'create', before = null) => {
   if (operation === 'update') {
-    return {};
+    if (!before) {
+      return {};
+    }
+
+    const wasActive = before.is_active !== false;
+    const isActive = tenant?.is_active !== false;
+    if (wasActive === isActive) {
+      return {};
+    }
+
+    const sign = isActive ? 1 : -1;
+    return {
+      status_cards: {
+        tenants_active: {
+          value_delta: sign,
+          secondary_delta: 0
+        }
+      }
+    };
   }
 
   const sign = operation === 'delete' ? -1 : 1;
@@ -140,7 +158,9 @@ const buildTenantDashboardDeltas = (tenant, operation = 'create') => {
       }
     },
     alerts: {
-      tenants_without_subscription: { count_delta: operation === 'create' ? sign : 0 }
+      tenants_without_subscription: {
+        count_delta: operation === 'create' ? sign : 0
+      }
     }
   };
 };
