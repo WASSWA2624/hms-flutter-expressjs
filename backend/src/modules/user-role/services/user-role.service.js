@@ -10,7 +10,50 @@
 const userRoleRepository = require('@repositories/user-role/user-role.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { resolveIdentifierForPayload } = require('@lib/billing/identifiers');
 const { assertRoleIdAssignable } = require('@lib/authorization/assignable-access');
+
+const resolveUserRoleId = async (identifier) =>
+  resolveIdentifierForPayload({
+    value: identifier,
+    model: 'user_role',
+    field: 'id',
+  });
+
+const normalizeUserRolePayload = async (data = {}) => {
+  const payload = { ...data };
+
+  if (data.user_id !== undefined) {
+    payload.user_id = await resolveIdentifierForPayload({
+      value: data.user_id,
+      model: 'user',
+      field: 'user_id',
+    });
+  }
+  if (data.role_id !== undefined) {
+    payload.role_id = await resolveIdentifierForPayload({
+      value: data.role_id,
+      model: 'role',
+      field: 'role_id',
+    });
+  }
+  if (data.tenant_id !== undefined) {
+    payload.tenant_id = await resolveIdentifierForPayload({
+      value: data.tenant_id,
+      model: 'tenant',
+      field: 'tenant_id',
+    });
+  }
+  if (data.facility_id !== undefined && data.facility_id !== null) {
+    payload.facility_id = await resolveIdentifierForPayload({
+      value: data.facility_id,
+      model: 'facility',
+      field: 'facility_id',
+    });
+  }
+
+  return payload;
+};
 
 /**
  * List user-roles with pagination and filtering
@@ -69,7 +112,8 @@ const listUserRoles = async (filters, page, limit, sortBy, order, userId, ipAddr
  */
 const getUserRoleById = async (id, userId, ipAddress) => {
   try {
-    const userRole = await userRoleRepository.findById(id);
+    const resolvedId = await resolveUserRoleId(id);
+    const userRole = await userRoleRepository.findById(resolvedId);
 
     if (!userRole) {
       throw new HttpError('errors.user_role.not_found', 404);
@@ -93,10 +137,11 @@ const getUserRoleById = async (id, userId, ipAddress) => {
  */
 const createUserRole = async (data, userId, ipAddress, actor = null) => {
   try {
+    const payload = await normalizeUserRolePayload(data);
     if (actor) {
-      await assertRoleIdAssignable(data.role_id, actor);
+      await assertRoleIdAssignable(payload.role_id, actor);
     }
-    const userRole = await userRoleRepository.create(data);
+    const userRole = await userRoleRepository.create(payload);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -127,14 +172,16 @@ const createUserRole = async (data, userId, ipAddress, actor = null) => {
  */
 const updateUserRole = async (id, data, userId, ipAddress) => {
   try {
+    const resolvedId = await resolveUserRoleId(id);
     // Get current state for audit
-    const before = await userRoleRepository.findById(id);
+    const before = await userRoleRepository.findById(resolvedId);
 
     if (!before) {
       throw new HttpError('errors.user_role.not_found', 404);
     }
 
-    const userRole = await userRoleRepository.update(id, data);
+    const payload = await normalizeUserRolePayload(data);
+    const userRole = await userRoleRepository.update(resolvedId, payload);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -164,21 +211,22 @@ const updateUserRole = async (id, data, userId, ipAddress) => {
  */
 const deleteUserRole = async (id, userId, ipAddress) => {
   try {
+    const resolvedId = await resolveUserRoleId(id);
     // Get current state for audit
-    const before = await userRoleRepository.findById(id);
+    const before = await userRoleRepository.findById(resolvedId);
 
     if (!before) {
       throw new HttpError('errors.user_role.not_found', 404);
     }
 
-    await userRoleRepository.softDelete(id);
+    await userRoleRepository.softDelete(resolvedId);
 
     // Create audit log (non-blocking)
     createAuditLog({
       user_id: userId,
       action: 'DELETE',
       entity: 'user_role',
-      entity_id: id,
+      entity_id: resolvedId,
       diff: { before },
       ip_address: ipAddress
     }).catch(() => {});

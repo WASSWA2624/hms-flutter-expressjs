@@ -9,12 +9,16 @@
 
 const { z } = require('zod');
 const { 
-  uuidSchema, 
+  uuidSchema,
+  uuidOrFriendlyIdentifierSchema,
   listQuerySchema
 } = require('@lib/validation/zod');
 
 const userStatusSchema = z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING']);
-const permissionIdsSchema = z.array(uuidSchema).max(100).optional();
+const permissionIdsSchema = z
+  .array(uuidOrFriendlyIdentifierSchema)
+  .max(100)
+  .optional();
 
 // ==================== Body Schemas ====================
 

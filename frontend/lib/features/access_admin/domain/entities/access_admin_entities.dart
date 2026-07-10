@@ -64,6 +64,7 @@ final class AccessAdminWorkspaceQuery {
     this.facilityId,
     this.recordId,
     this.status,
+    this.roleScope,
     this.userId,
     this.roleId,
     this.includeDeleted = false,
@@ -80,6 +81,7 @@ final class AccessAdminWorkspaceQuery {
       facilityId: _nonEmpty(params['facilityId'] ?? params['facility_id']),
       recordId: _nonEmpty(params['id'] ?? params['recordId']),
       status: _nonEmpty(params['status']),
+      roleScope: _nonEmpty(params['roleScope'] ?? params['role_scope']),
       userId: _nonEmpty(params['userId'] ?? params['user_id']),
       roleId: _nonEmpty(params['roleId'] ?? params['role_id']),
       includeDeleted:
@@ -95,6 +97,7 @@ final class AccessAdminWorkspaceQuery {
   final String? facilityId;
   final String? recordId;
   final String? status;
+  final String? roleScope;
   final String? userId;
   final String? roleId;
   final bool includeDeleted;
@@ -116,6 +119,7 @@ final class AccessAdminWorkspaceQuery {
     Object? facilityId = _unset,
     Object? recordId = _unset,
     Object? status = _unset,
+    Object? roleScope = _unset,
     Object? userId = _unset,
     Object? roleId = _unset,
     bool? includeDeleted,
@@ -135,6 +139,9 @@ final class AccessAdminWorkspaceQuery {
           ? this.recordId
           : recordId as String?,
       status: identical(status, _unset) ? this.status : status as String?,
+      roleScope: identical(roleScope, _unset)
+          ? this.roleScope
+          : roleScope as String?,
       userId: identical(userId, _unset) ? this.userId : userId as String?,
       roleId: identical(roleId, _unset) ? this.roleId : roleId as String?,
       includeDeleted: includeDeleted ?? this.includeDeleted,
@@ -300,18 +307,52 @@ final class AccessAdminWorkspaceData {
 
 @immutable
 final class AccessAdminRoleRef {
-  const AccessAdminRoleRef({required this.id, required this.name});
+  const AccessAdminRoleRef({
+    required this.id,
+    required this.name,
+    this.userRoleId,
+    this.resourceUuid,
+  });
 
   final String id;
   final String name;
+  final String? userRoleId;
+  final String? resourceUuid;
 }
 
 @immutable
 final class AccessAdminPermissionRef {
-  const AccessAdminPermissionRef({required this.id, required this.name});
+  const AccessAdminPermissionRef({
+    required this.id,
+    required this.name,
+    this.resourceUuid,
+  });
 
   final String id;
   final String name;
+  final String? resourceUuid;
+
+  String get mutationId =>
+      (resourceUuid != null && resourceUuid!.trim().isNotEmpty)
+      ? resourceUuid!
+      : id;
+}
+
+@immutable
+final class AccessAdminRolePermissionGroup {
+  const AccessAdminRolePermissionGroup({
+    required this.roleId,
+    required this.roleName,
+    this.userRoleId,
+    this.resourceUuid,
+    this.permissions = const <AccessAdminRolePermissionPreview>[],
+  });
+
+  final String roleId;
+  final String roleName;
+  final String? userRoleId;
+  final String? resourceUuid;
+  final List<AccessAdminRolePermissionPreview> permissions;
 }
 
 @immutable
@@ -326,6 +367,8 @@ final class AccessAdminItem {
     this.status,
     this.tenantId,
     this.facilityId,
+    this.facilityName,
+    this.roleScope,
     this.email,
     this.phone,
     this.positionTitle,
@@ -361,6 +404,8 @@ final class AccessAdminItem {
   final String? status;
   final String? tenantId;
   final String? facilityId;
+  final String? facilityName;
+  final String? roleScope;
   final String? email;
   final String? phone;
   final String? positionTitle;
@@ -393,6 +438,11 @@ final class AccessAdminItem {
   String get mutationId =>
       resourceUuid != null && resourceUuid!.isNotEmpty ? resourceUuid! : id;
 
+  bool get isFacilityScopedRole =>
+      roleScope == 'facility' || (facilityId != null && facilityId!.isNotEmpty);
+
+  bool get isTenantScopedRole => !isFacilityScopedRole;
+
   AccessAdminItem copyWith({
     String? id,
     AccessAdminResource? resource,
@@ -403,6 +453,8 @@ final class AccessAdminItem {
     String? status,
     String? tenantId,
     String? facilityId,
+    String? facilityName,
+    String? roleScope,
     String? email,
     String? phone,
     String? positionTitle,
@@ -439,6 +491,8 @@ final class AccessAdminItem {
       status: status ?? this.status,
       tenantId: tenantId ?? this.tenantId,
       facilityId: facilityId ?? this.facilityId,
+      facilityName: facilityName ?? this.facilityName,
+      roleScope: roleScope ?? this.roleScope,
       email: email ?? this.email,
       phone: phone ?? this.phone,
       positionTitle: positionTitle ?? this.positionTitle,
@@ -475,12 +529,61 @@ final class AccessAdminUserDetail {
     this.directPermissions = const <AccessAdminPermissionRef>[],
     this.effectivePermissions = const <String>[],
     this.rolePermissionPreview = const <AccessAdminRolePermissionPreview>[],
+    this.permissionsByRole = const <AccessAdminRolePermissionGroup>[],
   });
 
   final AccessAdminItem item;
   final List<AccessAdminPermissionRef> directPermissions;
   final List<String> effectivePermissions;
   final List<AccessAdminRolePermissionPreview> rolePermissionPreview;
+  final List<AccessAdminRolePermissionGroup> permissionsByRole;
+
+  /// Role groups with permissions, falling back to flat preview when needed.
+  List<AccessAdminRolePermissionGroup> get resolvedRoleGroups {
+    if (permissionsByRole.isNotEmpty) {
+      return permissionsByRole;
+    }
+    if (item.roles.isEmpty && rolePermissionPreview.isEmpty) {
+      return const <AccessAdminRolePermissionGroup>[];
+    }
+
+    final Map<String, List<AccessAdminRolePermissionPreview>> byRole =
+        <String, List<AccessAdminRolePermissionPreview>>{};
+    for (final AccessAdminRolePermissionPreview preview
+        in rolePermissionPreview) {
+      final String key = preview.sourceRole.trim().toUpperCase();
+      byRole
+          .putIfAbsent(key, () => <AccessAdminRolePermissionPreview>[])
+          .add(preview);
+    }
+
+    if (item.roles.isNotEmpty) {
+      return item.roles
+          .map((AccessAdminRoleRef role) {
+            final String key = role.name.trim().toUpperCase();
+            return AccessAdminRolePermissionGroup(
+              roleId: role.id,
+              roleName: role.name,
+              userRoleId: role.userRoleId,
+              resourceUuid: role.resourceUuid,
+              permissions:
+                  byRole[key] ?? const <AccessAdminRolePermissionPreview>[],
+            );
+          })
+          .toList(growable: false);
+    }
+
+    return byRole.entries
+        .map(
+          (MapEntry<String, List<AccessAdminRolePermissionPreview>> entry) =>
+              AccessAdminRolePermissionGroup(
+                roleId: entry.key,
+                roleName: entry.key,
+                permissions: entry.value,
+              ),
+        )
+        .toList(growable: false);
+  }
 }
 
 @immutable

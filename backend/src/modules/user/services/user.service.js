@@ -21,7 +21,7 @@ const {
   REALTIME_SYNC_ACTIONS
 } = require('@lib/realtime/entity-envelope');
 const { serializeAccessAdminUserEntity } = require('@lib/realtime/access-admin-realtime');
-const { resolveEntityId } = require('@lib/billing/identifiers');
+const { resolveEntityId, resolveIdentifierForPayload } = require('@lib/billing/identifiers');
 const { resolveModelIdByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 
 const resolveUserId = async (identifier, { includeDeleted = false } = {}) => {
@@ -237,7 +237,15 @@ const normalizeUserPayload = async (data, isUpdate = false) => {
   }
 
   if (permissionIds !== undefined) {
-    next.permission_ids = permissionIds;
+    next.permission_ids = await Promise.all(
+      permissionIds.map((permissionId) =>
+        resolveIdentifierForPayload({
+          value: permissionId,
+          model: 'permission',
+          field: 'permission_ids',
+        })
+      )
+    );
   }
 
   if (typeof next.email === 'string') {

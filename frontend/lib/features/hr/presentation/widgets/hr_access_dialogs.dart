@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
@@ -16,6 +17,7 @@ import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.d
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -1067,6 +1069,7 @@ class _HrAccessUserDetailDialogState
   HrAccessUserDetail? _detail;
   AppFailure? _failure;
   bool _loading = true;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -1092,16 +1095,61 @@ class _HrAccessUserDetailDialogState
       success: (HrAccessUserDetail value) {
         setState(() {
           _loading = false;
+          _saving = false;
           _detail = value;
         });
       },
       failure: (AppFailure value) {
         setState(() {
           _loading = false;
+          _saving = false;
           _failure = value;
         });
       },
     );
+  }
+
+  Future<void> _removeRole(AppUserAccessRoleGroup group) async {
+    final HrAccessUserDetail? detail = _detail;
+    if (detail == null) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    HrUserRole? matched;
+    for (final HrUserRole role in detail.userRoles) {
+      final String assignmentId = role.backendIdentifier ?? role.effectiveId;
+      if (assignmentId == group.userRoleId ||
+          role.roleId == group.roleId ||
+          role.roleName == group.roleName) {
+        matched = role;
+        break;
+      }
+    }
+    if (matched == null) {
+      return;
+    }
+
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.accessAdminUserAccessRemoveRoleConfirmTitle,
+        body: l10n.accessAdminUserAccessRemoveRoleConfirmMessage(group.roleName),
+        highlightedText: group.roleName,
+        submitLabel: l10n.accessAdminUserAccessRemoveRoleAction,
+        destructive: true,
+        icon: const Icon(Icons.remove_circle_outline),
+        onConfirm: () async {
+          return ref
+              .read(hrWorkspaceControllerProvider.notifier)
+              .revokeUserRole(matched!);
+        },
+      ),
+    );
+    if (confirmed == true && mounted) {
+      setState(() => _saving = true);
+      widget.onChanged?.call();
+      await _loadDetail();
+    }
   }
 
   @override
@@ -1146,8 +1194,49 @@ class _HrAccessUserDetailDialogState
       title: Text(title),
       icon: const Icon(Icons.person_outline),
       scrollable: true,
-      maxWidth: 720,
-      content: _HrAccessUserDetailContent(detail: resolved),
+      maxWidth: 840,
+      content: _HrAccessUserDetailContent(
+        detail: resolved,
+        canWrite: canWrite,
+        isBusy: _saving,
+        onAddRole: canWrite
+            ? () async {
+                Navigator.of(context).pop();
+                await showHrEditAccessUserDialog(
+                  context,
+                  ref,
+                  resolved.toSummary(),
+                  initialDetail: resolved,
+                );
+                widget.onChanged?.call();
+              }
+            : null,
+        onRemoveRole: canWrite ? _removeRole : null,
+        onAddDirectPermission: canWrite
+            ? () async {
+                Navigator.of(context).pop();
+                await showHrEditAccessUserDialog(
+                  context,
+                  ref,
+                  resolved.toSummary(),
+                  initialDetail: resolved,
+                );
+                widget.onChanged?.call();
+              }
+            : null,
+        onRemoveDirectPermission: canWrite
+            ? (AppUserAccessDirectPermission permission) async {
+                Navigator.of(context).pop();
+                await showHrEditAccessUserDialog(
+                  context,
+                  ref,
+                  resolved.toSummary(),
+                  initialDetail: resolved,
+                );
+                widget.onChanged?.call();
+              }
+            : null,
+      ),
       actions: <Widget>[
         if ((resolved.staffProfileId ?? '').isNotEmpty)
           AppButton.secondary(
@@ -1185,9 +1274,23 @@ class _HrAccessUserDetailDialogState
 }
 
 class _HrAccessUserDetailContent extends StatelessWidget {
-  const _HrAccessUserDetailContent({required this.detail});
+  const _HrAccessUserDetailContent({
+    required this.detail,
+    this.canWrite = false,
+    this.isBusy = false,
+    this.onAddRole,
+    this.onRemoveRole,
+    this.onAddDirectPermission,
+    this.onRemoveDirectPermission,
+  });
 
   final HrAccessUserDetail detail;
+  final bool canWrite;
+  final bool isBusy;
+  final VoidCallback? onAddRole;
+  final ValueChanged<AppUserAccessRoleGroup>? onRemoveRole;
+  final VoidCallback? onAddDirectPermission;
+  final ValueChanged<AppUserAccessDirectPermission>? onRemoveDirectPermission;
 
   @override
   Widget build(BuildContext context) {
@@ -1221,62 +1324,32 @@ class _HrAccessUserDetailContent extends StatelessWidget {
             label: l10n.hrAccessLinkedStaffLabel,
             value: detail.staffProfileName ?? detail.staffProfileId!,
           ),
-        if (detail.userRoles.isNotEmpty) ...<Widget>[
-          const SizedBox(height: 12),
-          Text(
-            l10n.hrAccessAssignedRolesLabel,
-            style: theme.textTheme.titleSmall,
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            children: detail.roleNames
-                .map(
-                  (String role) => Chip(
-                    label: Text(
-                      l10n.hrReferenceRoleLabel(role, fallback: role),
-                    ),
-                  ),
-                )
-                .toList(growable: false),
-          ),
-        ],
-        if (detail.directPermissions.isNotEmpty) ...<Widget>[
-          const SizedBox(height: 12),
-          Text(
-            l10n.hrAccessDirectPermissionsLabel,
-            style: theme.textTheme.titleSmall,
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            children: detail.directPermissions
-                .map(
-                  (HrAccessPermission permission) => Chip(
-                    label: Text(permission.name ?? permission.effectiveId),
-                  ),
-                )
-                .toList(growable: false),
-          ),
-        ],
-        if (detail.effectivePermissionLabels.isNotEmpty) ...<Widget>[
-          const SizedBox(height: 12),
-          Text(
-            l10n.hrAccessEffectivePermissionsLabel,
-            style: theme.textTheme.titleSmall,
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            children: detail.effectivePermissionLabels
-                .take(24)
-                .map((String permission) => Chip(label: Text(permission)))
-                .toList(growable: false),
-          ),
-        ],
+        SizedBox(height: theme.spacing.md),
+        AppUserAccessPanel(
+          roleGroups: detail.userRoles
+              .map(
+                (HrUserRole role) => AppUserAccessRoleGroup(
+                  roleId: role.roleId ?? role.effectiveId,
+                  roleName: role.roleName ?? role.effectiveId,
+                  userRoleId: role.backendIdentifier ?? role.effectiveId,
+                ),
+              )
+              .toList(growable: false),
+          directPermissions: detail.directPermissions
+              .map(
+                (HrAccessPermission permission) => AppUserAccessDirectPermission(
+                  id: permission.effectiveId,
+                  name: permission.name ?? permission.effectiveId,
+                ),
+              )
+              .toList(growable: false),
+          canWrite: canWrite,
+          isBusy: isBusy,
+          onAddRole: onAddRole,
+          onRemoveRole: onRemoveRole,
+          onAddDirectPermission: onAddDirectPermission,
+          onRemoveDirectPermission: onRemoveDirectPermission,
+        ),
       ],
     );
   }

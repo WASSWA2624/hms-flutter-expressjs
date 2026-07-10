@@ -65,10 +65,13 @@ const countUsers = async (scope = {}, filters = {}) => {
   }
 };
 
-const countRoles = async (scope = {}, filters = {}) => {
+const countRoles = async (scope = {}, filters = {}, roleOptions = {}) => {
   try {
     const where = {
-      ...scopedRoleWhere(scope),
+      ...scopedRoleWhere(scope, {
+        includeTenantWide: roleOptions.includeTenantWide !== false,
+        roleScope: roleOptions.roleScope || null,
+      }),
     };
     const searchFilter = buildSearchFilter(filters.search);
     if (searchFilter) {
@@ -233,9 +236,17 @@ const findUsers = async ({ scope = {}, filters = {}, skip = 0, take = 20, orderB
   }
 };
 
-const findRoles = async ({ scope = {}, filters = {}, skip = 0, take = 20, orderBy = { name: 'asc' } }) => {
+const findRoles = async ({
+  scope = {},
+  filters = {},
+  skip = 0,
+  take = 20,
+  orderBy = { name: 'asc' },
+  includeTenantWide = true,
+  roleScope = null,
+}) => {
   try {
-    const where = scopedRoleWhere(scope);
+    const where = scopedRoleWhere(scope, { includeTenantWide, roleScope });
     const searchFilter = buildSearchFilter(filters.search);
     if (searchFilter) {
       const searchOr = searchFilter.OR.filter(
@@ -278,7 +289,32 @@ const findRoles = async ({ scope = {}, filters = {}, skip = 0, take = 20, orderB
       prisma.role.count({ where }),
     ]);
 
-    return { items, total };
+    const facilityIds = [
+      ...new Set(
+        items
+          .map((entry) => entry.facility_id)
+          .filter((value) => value != null && String(value).trim() !== '')
+      ),
+    ];
+    let facilityNameById = new Map();
+    if (facilityIds.length > 0) {
+      const facilities = await prisma.facility.findMany({
+        where: { id: { in: facilityIds }, deleted_at: null },
+        select: { id: true, name: true, human_friendly_id: true },
+      });
+      facilityNameById = new Map(
+        facilities.map((facility) => [facility.id, facility.name])
+      );
+    }
+
+    const enriched = items.map((entry) => ({
+      ...entry,
+      facility_name: entry.facility_id
+        ? facilityNameById.get(entry.facility_id) || null
+        : null,
+    }));
+
+    return { items: enriched, total };
   } catch (error) {
     mapError(error);
   }
@@ -472,7 +508,16 @@ const findUserByIdentifier = async (identifier, scope = {}) => {
         profile: { where: { deleted_at: null } },
         roles: {
           where: { deleted_at: null },
-          include: { role: true },
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  where: { deleted_at: null },
+                  include: { permission: true },
+                },
+              },
+            },
+          },
         },
         permissions: {
           where: { deleted_at: null },
@@ -498,6 +543,8 @@ const findLookups = async (
       includeRoles = true,
       includePermissions = true,
       includeRolePermissions = true,
+      includeTenantWide = true,
+      roleScope = null,
     } = options;
 
     const [tenants, facilities, roles, permissions] = await Promise.all([
@@ -509,7 +556,7 @@ const findLookups = async (
         : Promise.resolve([]),
       includeRoles
         ? prisma.role.findMany({
-            where: scopedRoleWhere(scope),
+            where: scopedRoleWhere(scope, { includeTenantWide, roleScope }),
             orderBy: { name: 'asc' },
             take: 200,
             select: {

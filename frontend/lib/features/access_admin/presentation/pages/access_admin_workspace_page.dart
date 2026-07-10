@@ -571,10 +571,22 @@ class _WorklistPanel extends StatelessWidget {
         onRowSelected: onItemSelected,
         onPageChanged: controller.changePage,
         mobileItemBuilder: (BuildContext context, AccessAdminItem item) {
+          final bool isRole =
+              state.query.resource == AccessAdminResource.roles;
           return ListTile(
             title: Text(item.title),
             subtitle: Text(item.subtitle ?? item.effectiveDisplayId),
-            trailing: Text(item.status ?? ''),
+            trailing: isRole
+                ? Chip(
+                    label: Text(
+                      item.isFacilityScopedRole
+                          ? context.l10n.accessAdminRoleScopeFacilityBadge
+                          : context.l10n.accessAdminRoleScopeTenantBadge,
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                  )
+                : Text(item.status ?? ''),
             onTap: () => onItemSelected(item),
           );
         },
@@ -589,16 +601,41 @@ class _WorklistPanel extends StatelessWidget {
             cellBuilder: (BuildContext context, AccessAdminItem item) =>
                 Text(item.title),
           ),
+          if (state.query.resource == AccessAdminResource.roles)
+            AppListTableColumn<AccessAdminItem>(
+              label: context.l10n.accessAdminColumnScope,
+              cellBuilder: (BuildContext context, AccessAdminItem item) {
+                final bool isFacility = item.isFacilityScopedRole;
+                return Chip(
+                  avatar: Icon(
+                    isFacility
+                        ? Icons.local_hospital_outlined
+                        : Icons.domain_outlined,
+                    size: 16,
+                  ),
+                  label: Text(
+                    isFacility
+                        ? (item.facilityName?.trim().isNotEmpty == true
+                              ? '${context.l10n.accessAdminRoleScopeFacilityBadge} · ${item.facilityName}'
+                              : context.l10n.accessAdminRoleScopeFacilityBadge)
+                        : context.l10n.accessAdminRoleScopeTenantBadge,
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                  visualDensity: VisualDensity.compact,
+                );
+              },
+            ),
           AppListTableColumn<AccessAdminItem>(
             label: context.l10n.accessAdminColumnDetails,
             cellBuilder: (BuildContext context, AccessAdminItem item) =>
                 Text(item.subtitle ?? '—'),
           ),
-          AppListTableColumn<AccessAdminItem>(
-            label: context.l10n.accessAdminColumnStatus,
-            cellBuilder: (BuildContext context, AccessAdminItem item) =>
-                Text(item.status ?? '—'),
-          ),
+          if (state.query.resource != AccessAdminResource.roles)
+            AppListTableColumn<AccessAdminItem>(
+              label: context.l10n.accessAdminColumnStatus,
+              cellBuilder: (BuildContext context, AccessAdminItem item) =>
+                  Text(item.status ?? '—'),
+            ),
         ],
       ),
     );
@@ -651,39 +688,46 @@ class _DetailContent extends ConsumerWidget {
             label: context.l10n.accessAdminStatusLabel,
             value: item.status!,
           ),
-        if (item.roles.isNotEmpty) ...<Widget>[
-          SizedBox(height: Theme.of(context).spacing.md),
-          Text(
-            context.l10n.accessAdminAssignedRolesLabel,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          Wrap(
-            spacing: Theme.of(context).spacing.xs,
-            children: item.roles
-                .map((AccessAdminRoleRef role) => Chip(label: Text(role.name)))
-                .toList(growable: false),
-          ),
-        ],
-        if (detail != null &&
-            detail!.effectivePermissions.isNotEmpty) ...<Widget>[
-          SizedBox(height: Theme.of(context).spacing.md),
-          Text(
-            context.l10n.accessAdminEffectivePermissionsLabel,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          Text(
-            '${detail!.effectivePermissions.length} ${context.l10n.accessAdminPermissionsLabel}',
-          ),
-          SizedBox(height: Theme.of(context).spacing.sm),
-          Wrap(
-            spacing: Theme.of(context).spacing.xs,
-            runSpacing: Theme.of(context).spacing.xs,
-            children: detail!.effectivePermissions
-                .take(24)
-                .map((String permission) => Chip(label: Text(permission)))
-                .toList(growable: false),
-          ),
-        ],
+        SizedBox(height: Theme.of(context).spacing.md),
+        AppUserAccessPanel(
+          roleGroups: (detail?.resolvedRoleGroups ??
+                  item.roles
+                      .map(
+                        (AccessAdminRoleRef role) =>
+                            AccessAdminRolePermissionGroup(
+                              roleId: role.id,
+                              roleName: role.name,
+                              userRoleId: role.userRoleId,
+                              resourceUuid: role.resourceUuid,
+                            ),
+                      )
+                      .toList(growable: false))
+              .map(
+                (AccessAdminRolePermissionGroup group) => AppUserAccessRoleGroup(
+                  roleId: group.roleId,
+                  roleName: group.roleName,
+                  userRoleId: group.userRoleId,
+                  permissions: group.permissions
+                      .map(
+                        (AccessAdminRolePermissionPreview preview) =>
+                            preview.name,
+                      )
+                      .toList(growable: false),
+                ),
+              )
+              .toList(growable: false),
+          directPermissions:
+              (detail?.directPermissions ?? const <AccessAdminPermissionRef>[])
+                  .map(
+                    (AccessAdminPermissionRef permission) =>
+                        AppUserAccessDirectPermission(
+                          id: permission.mutationId,
+                          name: permission.name,
+                        ),
+                  )
+                  .toList(growable: false),
+          canWrite: false,
+        ),
         if (item.staffProfileId != null) ...<Widget>[
           SizedBox(height: Theme.of(context).spacing.md),
           AppButton.secondary(

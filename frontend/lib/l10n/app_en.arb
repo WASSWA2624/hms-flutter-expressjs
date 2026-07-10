@@ -23318,6 +23318,30 @@
   "@accessAdminColumnDetails": {
     "description": "Access admin table details column."
   },
+  "accessAdminColumnScope": "Scope",
+  "@accessAdminColumnScope": {
+    "description": "Access admin roles table scope column (tenant vs facility)."
+  },
+  "accessAdminRoleScopeTenantBadge": "Organization",
+  "@accessAdminRoleScopeTenantBadge": {
+    "description": "Badge label for tenant-wide roles."
+  },
+  "accessAdminRoleScopeFacilityBadge": "Facility",
+  "@accessAdminRoleScopeFacilityBadge": {
+    "description": "Badge label for facility-specific roles."
+  },
+  "accessAdminRoleScopeFilterAll": "All scopes",
+  "@accessAdminRoleScopeFilterAll": {
+    "description": "Filter chip to show all role scopes."
+  },
+  "accessAdminRoleScopeFilterTenant": "Organization",
+  "@accessAdminRoleScopeFilterTenant": {
+    "description": "Filter chip to show tenant-wide roles only."
+  },
+  "accessAdminRoleScopeFilterFacility": "Facility",
+  "@accessAdminRoleScopeFilterFacility": {
+    "description": "Filter chip to show facility-specific roles only."
+  },
   "accessAdminColumnStatus": "Status",
   "@accessAdminColumnStatus": {
     "description": "Access admin table status column."
@@ -23429,6 +23453,76 @@
   "accessAdminUserDetailNoPermissionsMessage": "No permissions are currently effective for this user.",
   "@accessAdminUserDetailNoPermissionsMessage": {
     "description": "Empty state when a user has no effective permissions."
+  },
+  "accessAdminUserAccessAddRoleAction": "Add role",
+  "@accessAdminUserAccessAddRoleAction": {
+    "description": "Action to assign an additional role on the user access panel."
+  },
+  "accessAdminUserAccessRemoveRoleAction": "Remove role",
+  "@accessAdminUserAccessRemoveRoleAction": {
+    "description": "Action to revoke a role assignment from a user."
+  },
+  "accessAdminUserAccessRemoveRoleConfirmTitle": "Remove role?",
+  "@accessAdminUserAccessRemoveRoleConfirmTitle": {
+    "description": "Confirmation title when removing a role from a user."
+  },
+  "accessAdminUserAccessRemoveRoleConfirmMessage": "Removing {roleName} also removes all permissions granted by that role. Direct permissions are not affected.",
+  "@accessAdminUserAccessRemoveRoleConfirmMessage": {
+    "description": "Confirmation body when removing a role from a user.",
+    "placeholders": {
+      "roleName": {
+        "type": "String"
+      }
+    }
+  },
+  "accessAdminUserAccessAddRoleDialogTitle": "Assign role",
+  "@accessAdminUserAccessAddRoleDialogTitle": {
+    "description": "Title for the dialog that assigns a role to a user."
+  },
+  "accessAdminUserAccessAddRoleDialogDescription": "Choose a role to grant its full permission pack to this user.",
+  "@accessAdminUserAccessAddRoleDialogDescription": {
+    "description": "Description for the assign-role dialog."
+  },
+  "accessAdminUserAccessNoAssignableRolesMessage": "No additional roles are available to assign.",
+  "@accessAdminUserAccessNoAssignableRolesMessage": {
+    "description": "Empty state when every assignable role is already on the user."
+  },
+  "accessAdminUserAccessRolePermissionsHint": "These permissions come from the role and cannot be removed individually. Remove the role to revoke them.",
+  "@accessAdminUserAccessRolePermissionsHint": {
+    "description": "Hint that role-inherited permissions are not individually deletable."
+  },
+  "accessAdminUserAccessDirectPermissionsDescription": "Direct permissions are assigned to this user individually and can be removed one at a time.",
+  "@accessAdminUserAccessDirectPermissionsDescription": {
+    "description": "Section description for direct user permissions."
+  },
+  "accessAdminUserAccessAddDirectPermissionAction": "Add permission",
+  "@accessAdminUserAccessAddDirectPermissionAction": {
+    "description": "Action to add a direct permission to a user."
+  },
+  "accessAdminUserAccessRemoveDirectPermissionAction": "Remove permission",
+  "@accessAdminUserAccessRemoveDirectPermissionAction": {
+    "description": "Action to remove a direct permission from a user."
+  },
+  "accessAdminUserAccessAddDirectPermissionDialogTitle": "Add direct permission",
+  "@accessAdminUserAccessAddDirectPermissionDialogTitle": {
+    "description": "Title for the dialog that adds direct permissions."
+  },
+  "accessAdminUserAccessAddDirectPermissionDialogDescription": "Prefer assigning a role when possible. Use direct permissions only for one-off exceptions.",
+  "@accessAdminUserAccessAddDirectPermissionDialogDescription": {
+    "description": "Description for the add-direct-permission dialog."
+  },
+  "accessAdminUserAccessNoDirectPermissionsMessage": "No direct permissions. Prefer assigning a role, or create a custom role and assign it.",
+  "@accessAdminUserAccessNoDirectPermissionsMessage": {
+    "description": "Empty state when a user has no direct permissions."
+  },
+  "accessAdminUserAccessPermissionCountLabel": "{count, plural, =0{No permissions} =1{1 permission} other{{count} permissions}}",
+  "@accessAdminUserAccessPermissionCountLabel": {
+    "description": "Count label for permissions under a role group.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "accessAdminUserDetailDemoAccountTitle": "Demo account",
   "@accessAdminUserDetailDemoAccountTitle": {

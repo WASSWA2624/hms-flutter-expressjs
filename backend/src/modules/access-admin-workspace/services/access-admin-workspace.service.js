@@ -7,6 +7,7 @@ const { ensureTenantAccessCatalog, ensureTenantPermissionCatalog } = require('@l
 const {
   filterPermissionRecordsByCeiling,
   filterRoleRecordsByCeiling,
+  canActorCreateTenantWideRole,
 } = require('@lib/authorization/assignable-access');
 const { createAuditLog } = require('@lib/audit');
 const { provisionTrialSubscription } = require('@lib/subscriptions/tenant-onboarding');
@@ -122,12 +123,17 @@ const serializeUser = (record) => {
   const staffProfile = record.staff_profile || null;
   const roleAssignments = Array.isArray(record.roles) ? record.roles : [];
   const roles = roleAssignments
-    .map((entry) => entry.role)
-    .filter(Boolean)
-    .map((role) => ({
-      id: safePublicId(role.human_friendly_id, role.id),
-      name: role.name,
-    }));
+    .map((entry) => {
+      const role = entry?.role;
+      if (!role) return null;
+      return {
+        id: safePublicId(role.human_friendly_id, role.id),
+        name: role.name,
+        user_role_id: safePublicId(entry.human_friendly_id, entry.id),
+        resource_uuid: role.id,
+      };
+    })
+    .filter(Boolean);
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),
@@ -176,6 +182,8 @@ const serializeRole = (record) => {
     description: record.description || null,
     tenant_id: safePublicId(record.tenant_id),
     facility_id: safePublicId(record.facility_id),
+    facility_name: record.facility_name || null,
+    scope: record.facility_id ? 'facility' : 'tenant',
     permission_count: permissions.length,
     permissions,
     user_count: record._count?.users || 0,
@@ -282,6 +290,22 @@ const serializeRegistrationFollowUp = (record = {}) => {
   };
 };
 
+const collectAssignedRolePermissionNames = (role = {}) => {
+  const fromAssignments = Array.isArray(role.permissions)
+    ? role.permissions
+        .map((entry) => entry?.permission?.name || entry?.name || entry?.permission_name)
+        .map((value) => String(value || '').trim())
+        .filter(Boolean)
+    : [];
+
+  if (fromAssignments.length > 0) {
+    return fromAssignments;
+  }
+
+  const roleName = String(role.name || '').trim().toUpperCase();
+  return ROLE_PERMISSIONS[roleName] || [];
+};
+
 const serializeUserDetail = (record) => {
   const base = serializeUser(record);
   if (!base) return null;
@@ -292,14 +316,29 @@ const serializeUserDetail = (record) => {
     .map((permission) => ({
       id: safePublicId(permission.human_friendly_id, permission.id),
       name: permission.name,
+      resource_uuid: permission.id,
     }));
 
-  const rolePermissions = (record.roles || [])
-    .flatMap((entry) => {
-      const roleName = String(entry.role?.name || '').trim().toUpperCase();
-      const mapped = ROLE_PERMISSIONS[roleName] || [];
-      return mapped.map((name) => ({ name, source_role: roleName }));
-    });
+  const permissionsByRole = (record.roles || [])
+    .map((entry) => {
+      const role = entry?.role;
+      if (!role) return null;
+      const roleName = String(role.name || '').trim().toUpperCase();
+      const permissionNames = collectAssignedRolePermissionNames(role);
+      return {
+        role_id: safePublicId(role.human_friendly_id, role.id),
+        role_name: roleName,
+        user_role_id: safePublicId(entry.human_friendly_id, entry.id),
+        resource_uuid: role.id,
+        permissions: permissionNames.map((name) => ({
+          name,
+          source_role: roleName,
+        })),
+      };
+    })
+    .filter(Boolean);
+
+  const rolePermissions = permissionsByRole.flatMap((group) => group.permissions);
 
   const effectivePermissionNames = new Set([
     ...directPermissions.map((entry) => entry.name),
@@ -308,9 +347,16 @@ const serializeUserDetail = (record) => {
 
   return {
     ...base,
+    roles: permissionsByRole.map((group) => ({
+      id: group.role_id,
+      name: group.role_name,
+      user_role_id: group.user_role_id,
+      resource_uuid: group.resource_uuid,
+    })),
     direct_permissions: directPermissions,
     effective_permissions: [...effectivePermissionNames].sort(),
     role_permission_preview: rolePermissions,
+    permissions_by_role: permissionsByRole,
   };
 };
 
@@ -337,6 +383,7 @@ const buildLookups = (records = {}, user = null) => {
       label: entry.name,
       display_name: entry.display_name || entry.name,
       facility_id: safePublicId(entry.facility_id),
+      scope: entry.facility_id ? 'facility' : 'tenant',
     })),
     permissions: permissions.map((entry) => ({
       id: safePublicId(entry.human_friendly_id, entry.id),
@@ -395,7 +442,14 @@ const serializeItems = (resource, items = [], subscription = null) => {
   }
 };
 
-const findItemsForResource = async (resource, scope, filters, skip, take) => {
+const findItemsForResource = async (
+  resource,
+  scope,
+  filters,
+  skip,
+  take,
+  options = {}
+) => {
   if (resource === 'demo-users') {
     return repository.findUsers({
       scope,
@@ -450,9 +504,19 @@ const findItemsForResource = async (resource, scope, filters, skip, take) => {
     };
   }
 
+  if (resource === 'roles') {
+    return repository.findRoles({
+      scope,
+      filters,
+      skip,
+      take,
+      includeTenantWide: options.includeTenantWide !== false,
+      roleScope: options.roleScope || null,
+    });
+  }
+
   const finderMap = {
     users: repository.findUsers,
-    roles: repository.findRoles,
     permissions: repository.findPermissions,
     'user-roles': repository.findUserRoles,
     'role-permissions': repository.findRolePermissions,
@@ -514,6 +578,16 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
   }
 
   const scope = scopeResult.scope;
+  const includeTenantWideRoles = canActorCreateTenantWideRole(user);
+  const requestedRoleScope = text(query.role_scope || query.roleScope).toLowerCase();
+  const roleScope =
+    requestedRoleScope === 'tenant' || requestedRoleScope === 'facility'
+      ? requestedRoleScope
+      : null;
+  // Facility-only actors cannot request tenant-wide role lists.
+  const effectiveRoleScope =
+    !includeTenantWideRoles && roleScope === 'tenant' ? 'facility' : roleScope;
+
   const filters = {
     search: text(query.search),
     status: text(query.status).toUpperCase() || null,
@@ -524,6 +598,11 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
       query.include_deleted === 'true' ||
       query.includeDeleted === true ||
       query.includeDeleted === 'true',
+  };
+
+  const roleListOptions = {
+    includeTenantWide: includeTenantWideRoles,
+    roleScope: effectiveRoleScope,
   };
 
   const skip = (page - 1) * limit;
@@ -538,8 +617,17 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
       ]
     : await Promise.all([
         repository.findSummary(scope),
-        repository.findLookups(scope, includeAllTenants),
-        findItemsForResource(resource, scope, filters, skip, limit),
+        repository.findLookups(scope, includeAllTenants, {
+          includeTenantWide: includeTenantWideRoles,
+        }),
+        findItemsForResource(
+          resource,
+          scope,
+          filters,
+          skip,
+          limit,
+          roleListOptions
+        ),
       ]);
 
   const subscription = itemsResult.subscription || null;
@@ -571,7 +659,9 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
       facility_id: safePublicId(undefined, scope.facility_id),
       user_id: filters.user_id,
       role_id: filters.role_id,
+      role_scope: effectiveRoleScope,
       record_id: text(query.id || query.recordId) || null,
+      can_view_tenant_roles: includeTenantWideRoles,
     },
     lookups: buildLookups(lookups, user),
     items: serializeItems(resource, itemsResult.items || [], subscription),
@@ -635,7 +725,11 @@ const getReferenceData = async (query = {}, user = {}) => {
   const requestedTenantId = text(query.tenant_id || query.tenantId);
   const requestedFacilityId = text(query.facility_id || query.facilityId) || null;
   const canAssignPermissions = canWriteAccess(user);
-  const includeOptions = buildLookupIncludeOptions(parseIncludeSet(query));
+  const includeTenantWideRoles = canActorCreateTenantWideRole(user);
+  const includeOptions = {
+    ...buildLookupIncludeOptions(parseIncludeSet(query)),
+    includeTenantWide: includeTenantWideRoles,
+  };
 
   if (requestedTenantId && canAssignPermissions) {
     const tenantId = await resolveIdentifierForFilter({

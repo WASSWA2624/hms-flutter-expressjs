@@ -232,6 +232,36 @@ final class AccessAdminWorkspaceController
     );
   }
 
+  Future<AppFailure?> syncUserRoles({
+    required String userId,
+    required String tenantId,
+    required List<String> roleIds,
+    String? facilityId,
+  }) {
+    return _submitAction(
+      () => _repository.syncUserRoles(
+        userId: userId,
+        tenantId: tenantId,
+        roleIds: roleIds,
+        facilityId: facilityId,
+      ),
+      refreshSession: true,
+    );
+  }
+
+  Future<AppFailure?> syncUserDirectPermissions({
+    required String userId,
+    required List<String> permissionIds,
+  }) {
+    return _submitAction(
+      () => _repository.syncUserDirectPermissions(
+        userId: userId,
+        permissionIds: permissionIds,
+      ),
+      refreshSession: true,
+    );
+  }
+
   Future<AppFailure?> assignRolePermission(
     AccessAdminRolePermissionDraft draft,
   ) {

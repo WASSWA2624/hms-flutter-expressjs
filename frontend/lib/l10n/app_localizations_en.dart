@@ -18118,6 +18118,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminColumnDetails => 'Details';
 
   @override
+  String get accessAdminColumnScope => 'Scope';
+
+  @override
+  String get accessAdminRoleScopeTenantBadge => 'Organization';
+
+  @override
+  String get accessAdminRoleScopeFacilityBadge => 'Facility';
+
+  @override
+  String get accessAdminRoleScopeFilterAll => 'All scopes';
+
+  @override
+  String get accessAdminRoleScopeFilterTenant => 'Organization';
+
+  @override
+  String get accessAdminRoleScopeFilterFacility => 'Facility';
+
+  @override
   String get accessAdminColumnStatus => 'Status';
 
   @override
@@ -18216,6 +18234,70 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get accessAdminUserDetailNoPermissionsMessage =>
       'No permissions are currently effective for this user.';
+
+  @override
+  String get accessAdminUserAccessAddRoleAction => 'Add role';
+
+  @override
+  String get accessAdminUserAccessRemoveRoleAction => 'Remove role';
+
+  @override
+  String get accessAdminUserAccessRemoveRoleConfirmTitle => 'Remove role?';
+
+  @override
+  String accessAdminUserAccessRemoveRoleConfirmMessage(String roleName) {
+    return 'Removing $roleName also removes all permissions granted by that role. Direct permissions are not affected.';
+  }
+
+  @override
+  String get accessAdminUserAccessAddRoleDialogTitle => 'Assign role';
+
+  @override
+  String get accessAdminUserAccessAddRoleDialogDescription =>
+      'Choose a role to grant its full permission pack to this user.';
+
+  @override
+  String get accessAdminUserAccessNoAssignableRolesMessage =>
+      'No additional roles are available to assign.';
+
+  @override
+  String get accessAdminUserAccessRolePermissionsHint =>
+      'These permissions come from the role and cannot be removed individually. Remove the role to revoke them.';
+
+  @override
+  String get accessAdminUserAccessDirectPermissionsDescription =>
+      'Direct permissions are assigned to this user individually and can be removed one at a time.';
+
+  @override
+  String get accessAdminUserAccessAddDirectPermissionAction => 'Add permission';
+
+  @override
+  String get accessAdminUserAccessRemoveDirectPermissionAction =>
+      'Remove permission';
+
+  @override
+  String get accessAdminUserAccessAddDirectPermissionDialogTitle =>
+      'Add direct permission';
+
+  @override
+  String get accessAdminUserAccessAddDirectPermissionDialogDescription =>
+      'Prefer assigning a role when possible. Use direct permissions only for one-off exceptions.';
+
+  @override
+  String get accessAdminUserAccessNoDirectPermissionsMessage =>
+      'No direct permissions. Prefer assigning a role, or create a custom role and assign it.';
+
+  @override
+  String accessAdminUserAccessPermissionCountLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count permissions',
+      one: '1 permission',
+      zero: 'No permissions',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get accessAdminUserDetailDemoAccountTitle => 'Demo account';

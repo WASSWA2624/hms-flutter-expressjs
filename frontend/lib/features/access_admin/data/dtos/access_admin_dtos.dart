@@ -213,6 +213,12 @@ final class AccessAdminItemDto {
       status: _nullableString(json['status']),
       tenantId: _nullableString(json['tenant_id']),
       facilityId: _nullableString(json['facility_id']),
+      facilityName: _nullableString(json['facility_name']),
+      roleScope:
+          _nullableString(json['scope']) ??
+          (_nullableString(json['facility_id']) != null
+              ? 'facility'
+              : 'tenant'),
       email: _nullableString(json['email']),
       phone: _nullableString(json['phone']),
       positionTitle: _nullableString(json['position_title']),
@@ -300,6 +306,8 @@ final class AccessAdminItemDto {
           (Map<String, dynamic> json) => AccessAdminRoleRef(
             id: _string(json['id']),
             name: _string(json['name']),
+            userRoleId: _nullableString(json['user_role_id']),
+            resourceUuid: _nullableString(json['resource_uuid']),
           ),
         )
         .toList(growable: false);
@@ -313,6 +321,7 @@ final class AccessAdminItemDto {
           (Map<String, dynamic> json) => AccessAdminPermissionRef(
             id: _string(json['id']),
             name: _string(json['name']),
+            resourceUuid: _nullableString(json['resource_uuid']),
           ),
         )
         .toList(growable: false);
@@ -383,6 +392,7 @@ final class AccessAdminWorkspaceDto {
         tenantId: _nullableString(filters['tenant_id']) ?? query.tenantId,
         facilityId: _nullableString(filters['facility_id']) ?? query.facilityId,
         recordId: _nullableString(filters['record_id']) ?? query.recordId,
+        roleScope: _nullableString(filters['role_scope']) ?? query.roleScope,
         userId: _nullableString(filters['user_id']) ?? query.userId,
         roleId: _nullableString(filters['role_id']) ?? query.roleId,
         includeDeleted:
@@ -488,12 +498,41 @@ final class AccessAdminUserDetailDto {
             )
             .toList(growable: false) ??
         const <AccessAdminRolePermissionPreview>[];
+    final List<AccessAdminRolePermissionGroup> permissionsByRole =
+        (json['permissions_by_role'] as List<Object?>?)
+            ?.whereType<Map<String, dynamic>>()
+            .map((Map<String, dynamic> entry) {
+              final List<AccessAdminRolePermissionPreview> permissions =
+                  (entry['permissions'] as List<Object?>?)
+                      ?.whereType<Map<String, dynamic>>()
+                      .map(
+                        (Map<String, dynamic> permission) =>
+                            AccessAdminRolePermissionPreview(
+                              name: _string(permission['name']),
+                              sourceRole: _string(
+                                permission['source_role'] ?? entry['role_name'],
+                              ),
+                            ),
+                      )
+                      .toList(growable: false) ??
+                  const <AccessAdminRolePermissionPreview>[];
+              return AccessAdminRolePermissionGroup(
+                roleId: _string(entry['role_id']),
+                roleName: _string(entry['role_name']),
+                userRoleId: _nullableString(entry['user_role_id']),
+                resourceUuid: _nullableString(entry['resource_uuid']),
+                permissions: permissions,
+              );
+            })
+            .toList(growable: false) ??
+        const <AccessAdminRolePermissionGroup>[];
 
     return AccessAdminUserDetail(
       item: item,
       directPermissions: directPermissions,
       effectivePermissions: effectivePermissions,
       rolePermissionPreview: previews,
+      permissionsByRole: permissionsByRole,
     );
   }
 }

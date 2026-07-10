@@ -115,6 +115,42 @@ describe('assignable-access', () => {
         tenant_id: 'tenant-1',
       });
     });
+
+    it('excludes tenant-wide roles for facility-only actors', () => {
+      expect(
+        buildRoleScopeWhere(
+          { tenant_id: 'tenant-1', facility_id: 'facility-1' },
+          { includeTenantWide: false }
+        )
+      ).toEqual({
+        deleted_at: null,
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1',
+      });
+    });
+
+    it('supports explicit tenant and facility roleScope filters', () => {
+      expect(
+        buildRoleScopeWhere(
+          { tenant_id: 'tenant-1', facility_id: 'facility-1' },
+          { roleScope: 'tenant' }
+        )
+      ).toEqual({
+        deleted_at: null,
+        tenant_id: 'tenant-1',
+        facility_id: null,
+      });
+      expect(
+        buildRoleScopeWhere(
+          { tenant_id: 'tenant-1', facility_id: 'facility-1' },
+          { roleScope: 'facility' }
+        )
+      ).toEqual({
+        deleted_at: null,
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1',
+      });
+    });
   });
 
   describe('ROLE_PERMISSIONS hierarchy', () => {

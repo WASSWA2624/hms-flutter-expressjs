@@ -8,9 +8,9 @@
  */
 
 const { z } = require('zod');
-const { 
-  uuidSchema, 
-  listQuerySchema
+const {
+  uuidOrFriendlyIdentifierSchema,
+  listQuerySchema,
 } = require('@lib/validation/zod');
 
 // ==================== Body Schemas ====================
@@ -20,10 +20,10 @@ const {
  * Used for POST /user-roles endpoint
  */
 const createUserRoleSchema = z.object({
-  user_id: uuidSchema,
-  role_id: uuidSchema,
-  tenant_id: uuidSchema,
-  facility_id: uuidSchema.optional().nullable()
+  user_id: uuidOrFriendlyIdentifierSchema,
+  role_id: uuidOrFriendlyIdentifierSchema,
+  tenant_id: uuidOrFriendlyIdentifierSchema,
+  facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
 });
 
 /**
@@ -32,10 +32,10 @@ const createUserRoleSchema = z.object({
  * All fields optional for partial updates
  */
 const updateUserRoleSchema = z.object({
-  user_id: uuidSchema.optional(),
-  role_id: uuidSchema.optional(),
-  tenant_id: uuidSchema.optional(),
-  facility_id: uuidSchema.optional().nullable()
+  user_id: uuidOrFriendlyIdentifierSchema.optional(),
+  role_id: uuidOrFriendlyIdentifierSchema.optional(),
+  tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
+  facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
 });
 
 // ==================== URL Params ====================
@@ -45,7 +45,7 @@ const updateUserRoleSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const userRoleIdParamsSchema = z.object({
-  id: uuidSchema
+  id: uuidOrFriendlyIdentifierSchema,
 });
 
 // ==================== Query Params ====================
@@ -56,15 +56,15 @@ const userRoleIdParamsSchema = z.object({
  * Extends base listQuerySchema with user-role-specific filters
  */
 const listUserRolesQuerySchema = listQuerySchema.extend({
-  user_id: uuidSchema.optional(),
-  role_id: uuidSchema.optional(),
-  tenant_id: uuidSchema.optional(),
-  facility_id: uuidSchema.optional()
+  user_id: uuidOrFriendlyIdentifierSchema.optional(),
+  role_id: uuidOrFriendlyIdentifierSchema.optional(),
+  tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
+  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
 });
 
 module.exports = {
   createUserRoleSchema,
   updateUserRoleSchema,
   userRoleIdParamsSchema,
-  listUserRolesQuerySchema
+  listUserRolesQuerySchema,
 };

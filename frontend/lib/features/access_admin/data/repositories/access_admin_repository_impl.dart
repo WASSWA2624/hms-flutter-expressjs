@@ -66,6 +66,7 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         'facilityId': query.facilityId,
         'id': query.recordId,
         'status': query.status,
+        'roleScope': query.roleScope,
         'userId': query.userId,
         'roleId': query.roleId,
         'include_deleted': query.includeDeleted ? 'true' : null,
@@ -211,6 +212,18 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         'status': draft.status,
         'permission_ids': draft.permissionIds,
       }),
+      decoder: (_) {},
+    );
+  }
+
+  @override
+  Future<Result<void>> syncUserDirectPermissions({
+    required String userId,
+    required List<String> permissionIds,
+  }) {
+    return _apiClient.put<void>(
+      ApiEndpoints.byId(HmsApiResource.users, userId),
+      data: <String, Object?>{'permission_ids': permissionIds},
       decoder: (_) {},
     );
   }

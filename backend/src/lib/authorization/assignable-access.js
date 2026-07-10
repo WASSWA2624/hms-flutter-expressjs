@@ -245,10 +245,26 @@ const assertRoleScopeAllowed = async (payload = {}, user = {}) => {
 };
 
 /**
- * Role list/lookup where: when facility-scoped, include that facility's roles
- * plus tenant-wide roles (facility_id null).
+ * Role list/lookup where.
+ *
+ * - Facility-only actors: exact facility_id match (no tenant-wide roles).
+ * - Tenant/super admins: facility roles for the scope plus tenant-wide (null),
+ *   unless roleScope filter narrows to tenant or facility only.
+ *
+ * @param {Object} scope
+ * @param {Object} [options]
+ * @param {boolean} [options.includeDeleted=false]
+ * @param {boolean} [options.includeTenantWide=true]
+ * @param {'tenant'|'facility'|null} [options.roleScope]
  */
-const buildRoleScopeWhere = (scope = {}, { includeDeleted = false } = {}) => {
+const buildRoleScopeWhere = (
+  scope = {},
+  {
+    includeDeleted = false,
+    includeTenantWide = true,
+    roleScope = null,
+  } = {}
+) => {
   const where = {};
   if (!includeDeleted) {
     where.deleted_at = null;
@@ -256,12 +272,36 @@ const buildRoleScopeWhere = (scope = {}, { includeDeleted = false } = {}) => {
   if (scope.tenant_id) {
     where.tenant_id = scope.tenant_id;
   }
-  if (scope.facility_id) {
-    where.OR = [
-      { facility_id: scope.facility_id },
-      { facility_id: null },
-    ];
+
+  const normalizedScope = String(roleScope || '')
+    .trim()
+    .toLowerCase();
+
+  if (normalizedScope === 'tenant') {
+    where.facility_id = null;
+    return where;
   }
+
+  if (normalizedScope === 'facility') {
+    if (scope.facility_id) {
+      where.facility_id = scope.facility_id;
+    } else {
+      where.NOT = { facility_id: null };
+    }
+    return where;
+  }
+
+  if (scope.facility_id) {
+    if (includeTenantWide) {
+      where.OR = [
+        { facility_id: scope.facility_id },
+        { facility_id: null },
+      ];
+    } else {
+      where.facility_id = scope.facility_id;
+    }
+  }
+
   return where;
 };
 

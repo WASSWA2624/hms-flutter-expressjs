@@ -10,6 +10,8 @@ const workspaceQuerySchema = z.object({
   resource: z.string().trim().max(64).optional(),
   search: z.string().trim().max(255).optional(),
   status: z.string().trim().max(32).optional(),
+  roleScope: z.enum(['tenant', 'facility', 'all']).optional(),
+  role_scope: z.enum(['tenant', 'facility', 'all']).optional(),
   userId: uuidOrFriendlyIdentifierSchema.optional(),
   user_id: uuidOrFriendlyIdentifierSchema.optional(),
   roleId: uuidOrFriendlyIdentifierSchema.optional(),
@@ -27,6 +29,8 @@ const referenceDataQuerySchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facilityId: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
+  include: z.string().trim().max(255).optional(),
+  resources: z.string().trim().max(255).optional(),
 });
 
 const userIdentifierParamsSchema = z.object({

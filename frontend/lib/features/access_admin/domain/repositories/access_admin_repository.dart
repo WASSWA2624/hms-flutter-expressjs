@@ -28,6 +28,11 @@ abstract interface class AccessAdminRepository {
 
   Future<Result<void>> updateUser(String userId, AccessAdminUserDraft draft);
 
+  Future<Result<void>> syncUserDirectPermissions({
+    required String userId,
+    required List<String> permissionIds,
+  });
+
   Future<Result<void>> deleteUser(String userId);
 
   Future<Result<void>> restoreUser(String userId);

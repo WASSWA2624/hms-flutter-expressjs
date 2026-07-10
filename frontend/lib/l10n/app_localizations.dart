@@ -33663,6 +33663,42 @@ abstract class AppLocalizations {
   /// **'Details'**
   String get accessAdminColumnDetails;
 
+  /// Access admin roles table scope column (tenant vs facility).
+  ///
+  /// In en, this message translates to:
+  /// **'Scope'**
+  String get accessAdminColumnScope;
+
+  /// Badge label for tenant-wide roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization'**
+  String get accessAdminRoleScopeTenantBadge;
+
+  /// Badge label for facility-specific roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get accessAdminRoleScopeFacilityBadge;
+
+  /// Filter chip to show all role scopes.
+  ///
+  /// In en, this message translates to:
+  /// **'All scopes'**
+  String get accessAdminRoleScopeFilterAll;
+
+  /// Filter chip to show tenant-wide roles only.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization'**
+  String get accessAdminRoleScopeFilterTenant;
+
+  /// Filter chip to show facility-specific roles only.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get accessAdminRoleScopeFilterFacility;
+
   /// Access admin table status column.
   ///
   /// In en, this message translates to:
@@ -33830,6 +33866,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No permissions are currently effective for this user.'**
   String get accessAdminUserDetailNoPermissionsMessage;
+
+  /// Action to assign an additional role on the user access panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add role'**
+  String get accessAdminUserAccessAddRoleAction;
+
+  /// Action to revoke a role assignment from a user.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove role'**
+  String get accessAdminUserAccessRemoveRoleAction;
+
+  /// Confirmation title when removing a role from a user.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove role?'**
+  String get accessAdminUserAccessRemoveRoleConfirmTitle;
+
+  /// Confirmation body when removing a role from a user.
+  ///
+  /// In en, this message translates to:
+  /// **'Removing {roleName} also removes all permissions granted by that role. Direct permissions are not affected.'**
+  String accessAdminUserAccessRemoveRoleConfirmMessage(String roleName);
+
+  /// Title for the dialog that assigns a role to a user.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign role'**
+  String get accessAdminUserAccessAddRoleDialogTitle;
+
+  /// Description for the assign-role dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a role to grant its full permission pack to this user.'**
+  String get accessAdminUserAccessAddRoleDialogDescription;
+
+  /// Empty state when every assignable role is already on the user.
+  ///
+  /// In en, this message translates to:
+  /// **'No additional roles are available to assign.'**
+  String get accessAdminUserAccessNoAssignableRolesMessage;
+
+  /// Hint that role-inherited permissions are not individually deletable.
+  ///
+  /// In en, this message translates to:
+  /// **'These permissions come from the role and cannot be removed individually. Remove the role to revoke them.'**
+  String get accessAdminUserAccessRolePermissionsHint;
+
+  /// Section description for direct user permissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct permissions are assigned to this user individually and can be removed one at a time.'**
+  String get accessAdminUserAccessDirectPermissionsDescription;
+
+  /// Action to add a direct permission to a user.
+  ///
+  /// In en, this message translates to:
+  /// **'Add permission'**
+  String get accessAdminUserAccessAddDirectPermissionAction;
+
+  /// Action to remove a direct permission from a user.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove permission'**
+  String get accessAdminUserAccessRemoveDirectPermissionAction;
+
+  /// Title for the dialog that adds direct permissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Add direct permission'**
+  String get accessAdminUserAccessAddDirectPermissionDialogTitle;
+
+  /// Description for the add-direct-permission dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefer assigning a role when possible. Use direct permissions only for one-off exceptions.'**
+  String get accessAdminUserAccessAddDirectPermissionDialogDescription;
+
+  /// Empty state when a user has no direct permissions.
+  ///
+  /// In en, this message translates to:
+  /// **'No direct permissions. Prefer assigning a role, or create a custom role and assign it.'**
+  String get accessAdminUserAccessNoDirectPermissionsMessage;
+
+  /// Count label for permissions under a role group.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No permissions} =1{1 permission} other{{count} permissions}}'**
+  String accessAdminUserAccessPermissionCountLabel(int count);
 
   /// Banner title for demo user accounts.
   ///
