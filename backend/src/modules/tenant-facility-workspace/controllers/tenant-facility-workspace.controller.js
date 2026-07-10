@@ -22,7 +22,22 @@ const uploadFacilityLogo = asyncHandler(async (req, res) => {
   );
 });
 
+const deleteFacilityLogo = asyncHandler(async (req, res) => {
+  const facilityId = req.params.facilityId || req.params.facility_id;
+  const data = await tenantFacilityWorkspaceService.deleteFacilityLogo(
+    facilityId,
+    req.user
+  );
+  return sendSuccess(
+    res,
+    200,
+    'messages.tenant_facility_workspace.logo_delete.success',
+    data
+  );
+});
+
 module.exports = {
   getSetup,
   uploadFacilityLogo,
+  deleteFacilityLogo,
 };

@@ -411,6 +411,18 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   }
 
   @override
+  Future<Result<void>> deleteFacilityLogo(String facilityId) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.nested(
+        HmsApiResource.tenantFacilityWorkspace,
+        'facilities',
+        <String>[facilityId, 'logo'],
+      ),
+      decoder: (_) {},
+    );
+  }
+
+  @override
   Future<Result<void>> saveFacilityContactAddress({
     required String tenantId,
     required String facilityId,

@@ -51,4 +51,11 @@ router.post(
   tenantFacilityWorkspaceController.uploadFacilityLogo
 );
 
+router.delete(
+  '/facilities/:facilityId/logo',
+  validateRequest({ params: facilityLogoParamsSchema }),
+  authorize(TENANT_FACILITY_WORKSPACE_ROLES, 'role'),
+  tenantFacilityWorkspaceController.deleteFacilityLogo
+);
+
 module.exports = router;

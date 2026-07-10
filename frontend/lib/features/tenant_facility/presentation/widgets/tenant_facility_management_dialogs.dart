@@ -24,6 +24,7 @@ import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facil
 import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -1578,6 +1579,7 @@ class _FacilityDetailsDialogState extends ConsumerState<_FacilityDetailsDialog> 
   bool _mutated = false;
   int _usersReloadGeneration = 0;
   int _overviewReloadGeneration = 0;
+  bool _logoBusy = false;
 
   @override
   void initState() {
@@ -2004,6 +2006,113 @@ class _FacilityDetailsDialogState extends ConsumerState<_FacilityDetailsDialog> 
     await _loadUsers(silent: true);
   }
 
+  Future<void> _addOrChangeLogo() async {
+    if (!_canMutate || _logoBusy) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final AppImageUploadPendingItem? picked = await pickAppImageFile(
+      l10n,
+      context: context,
+      typeGroupLabel: 'facility-logo',
+      showCropAspectPresets: true,
+      preferredFileName: buildFacilityLogoFileName(_facility.name),
+    );
+    if (picked == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _logoBusy = true;
+    });
+    final Result<String> result = await ref
+        .read(tenantFacilityRepositoryProvider)
+        .uploadFacilityLogo(
+          facilityId: _facility.mutationId,
+          bytes: picked.bytes,
+          fileName: picked.fileName,
+          mimeType: picked.mimeType,
+        );
+    if (!mounted) {
+      return;
+    }
+
+    result.when(
+      success: (String logoUrl) {
+        setState(() {
+          _logoBusy = false;
+          _facility = _facility.copyWith(logoUrl: logoUrl);
+          _mutated = true;
+          if (_snapshot?.facility != null) {
+            _snapshot = _snapshot!.copyWith(
+              facility: _snapshot!.facility!.copyWith(logoUrl: logoUrl),
+            );
+          }
+        });
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(content: Text(l10n.tenantFacilityDetailsLogoUpdatedMessage)),
+          );
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _logoBusy = false;
+        });
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(content: Text(l10n.failureMessage(failure))),
+          );
+      },
+    );
+  }
+
+  Future<void> _removeLogo() async {
+    if (!_canMutate || _logoBusy) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.tenantFacilityDetailsRemoveLogoTitle,
+        body: l10n.tenantFacilityDetailsRemoveLogoBody(_facility.name),
+        highlightedText: _facility.name,
+        submitLabel: l10n.tenantFacilityDetailsRemoveLogoAction,
+        destructive: true,
+        icon: const Icon(Icons.hide_image_outlined),
+        onConfirm: () async {
+          final Result<void> result = await ref
+              .read(tenantFacilityRepositoryProvider)
+              .deleteFacilityLogo(_facility.mutationId);
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
+    );
+    if (!mounted || confirmed != true) {
+      return;
+    }
+
+    setState(() {
+      _facility = _facility.copyWith(clearLogoUrl: true);
+      _mutated = true;
+      if (_snapshot?.facility != null) {
+        _snapshot = _snapshot!.copyWith(
+          facility: _snapshot!.facility!.copyWith(clearLogoUrl: true),
+        );
+      }
+    });
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(l10n.tenantFacilityDetailsLogoRemovedMessage)),
+      );
+  }
+
   Future<void> _deleteFacility() async {
     final AppLocalizations l10n = context.l10n;
     final bool? confirmed = await showAppDialog<bool>(
@@ -2238,6 +2347,10 @@ class _FacilityDetailsDialogState extends ConsumerState<_FacilityDetailsDialog> 
                     loading: _loadingOverview,
                     selectedPanel: _selectedPanel,
                     onPanelSelected: _selectPanel,
+                    canManageLogo: canMutate,
+                    logoBusy: _logoBusy,
+                    onAddOrChangeLogo: () => unawaited(_addOrChangeLogo()),
+                    onRemoveLogo: () => unawaited(_removeLogo()),
                   );
                   final Widget rightPanel = _buildRightPanel(l10n);
 
@@ -2301,6 +2414,10 @@ class _FacilityDetailsSummary extends StatelessWidget {
     required this.loading,
     required this.selectedPanel,
     required this.onPanelSelected,
+    this.canManageLogo = false,
+    this.logoBusy = false,
+    this.onAddOrChangeLogo,
+    this.onRemoveLogo,
   });
 
   final FacilityProfile facility;
@@ -2312,6 +2429,10 @@ class _FacilityDetailsSummary extends StatelessWidget {
   final bool loading;
   final _FacilityDetailsPanel selectedPanel;
   final ValueChanged<_FacilityDetailsPanel> onPanelSelected;
+  final bool canManageLogo;
+  final bool logoBusy;
+  final VoidCallback? onAddOrChangeLogo;
+  final VoidCallback? onRemoveLogo;
 
   @override
   Widget build(BuildContext context) {
@@ -2321,6 +2442,8 @@ class _FacilityDetailsSummary extends StatelessWidget {
     final String? displayId = facility.displayId?.trim().isNotEmpty == true
         ? facility.displayId
         : null;
+    final bool hasLogo =
+        facility.logoUrl != null && facility.logoUrl!.trim().isNotEmpty;
     final FacilityContactAddress contact =
         snapshot?.contactAddress ?? const FacilityContactAddress();
     final String? phone = contact.phone?.trim();
@@ -2372,6 +2495,34 @@ class _FacilityDetailsSummary extends StatelessWidget {
                 ),
               ],
             ),
+            if (canManageLogo) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              if (logoBusy)
+                const LinearProgressIndicator(minHeight: 2)
+              else
+                Wrap(
+                  spacing: theme.spacing.sm,
+                  runSpacing: theme.spacing.xs,
+                  children: <Widget>[
+                    AppButton.secondary(
+                      label: hasLogo
+                          ? l10n.tenantFacilityDetailsChangeLogoAction
+                          : l10n.tenantFacilityDetailsAddLogoAction,
+                      leadingIcon: hasLogo
+                          ? Icons.sync_outlined
+                          : Icons.add_photo_alternate_outlined,
+                      onPressed: onAddOrChangeLogo,
+                    ),
+                    if (hasLogo)
+                      AppButton.secondary(
+                        label: l10n.tenantFacilityDetailsRemoveLogoAction,
+                        leadingIcon: Icons.hide_image_outlined,
+                        color: colorScheme.error,
+                        onPressed: onRemoveLogo,
+                      ),
+                  ],
+                ),
+            ],
             SizedBox(height: theme.spacing.md),
             const Divider(height: 1),
             SizedBox(height: theme.spacing.md),
@@ -2523,6 +2674,7 @@ class _FacilityLogoAvatar extends ConsumerWidget {
                     padding: const EdgeInsets.all(6),
                     child: Image.network(
                       url,
+                      key: ValueKey<String>(url),
                       fit: BoxFit.contain,
                       filterQuality: FilterQuality.high,
                       errorBuilder:

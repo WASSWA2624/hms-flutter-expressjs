@@ -62,6 +62,8 @@ abstract interface class TenantFacilityRepository {
     String? mimeType,
   });
 
+  Future<Result<void>> deleteFacilityLogo(String facilityId);
+
   Future<Result<void>> saveFacilityContactAddress({
     required String tenantId,
     required String facilityId,

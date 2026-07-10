@@ -572,9 +572,55 @@ const uploadFacilityLogo = async (facilityIdentifier, file = {}, user = {}) => {
   };
 };
 
+const deleteFacilityLogo = async (facilityIdentifier, user = {}) => {
+  const scopeResult = await repository.resolveWorkspaceScope({ filters: {}, user });
+  if (scopeResult.state !== 'ready' || !scopeResult.scope?.tenant_id) {
+    throw new HttpError('errors.auth.scope_mismatch', 403);
+  }
+
+  const facilityId = await resolveIdentifierForFilter({
+    value: facilityIdentifier,
+    model: 'facility',
+    where: { tenant_id: scopeResult.scope.tenant_id },
+  });
+  if (!facilityId) {
+    throw new HttpError('errors.facility.not_found', 404);
+  }
+
+  const facility = await facilityRepository.findById(facilityId);
+  if (!facility || facility.tenant_id !== scopeResult.scope.tenant_id) {
+    throw new HttpError('errors.facility.not_found', 404);
+  }
+
+  const extensionJson =
+    facility.extension_json && typeof facility.extension_json === 'object'
+      ? facility.extension_json
+      : {};
+  const existingLogoUrl =
+    typeof extensionJson.logo_url === 'string' ? extensionJson.logo_url : null;
+
+  if (existingLogoUrl) {
+    const storage = createStorageService();
+    await deleteFacilityLogoFromStorage(storage, existingLogoUrl);
+  }
+
+  await facilityRepository.update(facility.id, {
+    extension_json: {
+      ...extensionJson,
+      logo_url: null,
+    },
+  });
+
+  return {
+    logo_url: null,
+    facility_id: safePublicId(facility.human_friendly_id, facility.id),
+  };
+};
+
 module.exports = {
   buildFacilityLogoBasename,
   buildStableFacilityLogoKey,
   getSetup,
   uploadFacilityLogo,
+  deleteFacilityLogo,
 };

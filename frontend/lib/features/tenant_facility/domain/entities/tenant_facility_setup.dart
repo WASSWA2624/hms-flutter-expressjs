@@ -122,6 +122,7 @@ final class FacilityProfile {
     String? displayId,
     DateTime? deletedAt,
     bool clearDeletedAt = false,
+    bool clearLogoUrl = false,
   }) {
     return FacilityProfile(
       id: id ?? this.id,
@@ -129,7 +130,7 @@ final class FacilityProfile {
       name: name ?? this.name,
       type: type ?? this.type,
       isActive: isActive ?? this.isActive,
-      logoUrl: logoUrl ?? this.logoUrl,
+      logoUrl: clearLogoUrl ? null : (logoUrl ?? this.logoUrl),
       resourceUuid: resourceUuid ?? this.resourceUuid,
       displayId: displayId ?? this.displayId,
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),

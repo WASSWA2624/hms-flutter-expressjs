@@ -9706,6 +9706,48 @@ abstract class AppLocalizations {
   /// **'No logo uploaded'**
   String get tenantFacilityFacilityDetailsNoLogo;
 
+  /// Action to upload a facility logo from facility details.
+  ///
+  /// In en, this message translates to:
+  /// **'Add logo'**
+  String get tenantFacilityDetailsAddLogoAction;
+
+  /// Action to replace a facility logo from facility details.
+  ///
+  /// In en, this message translates to:
+  /// **'Change logo'**
+  String get tenantFacilityDetailsChangeLogoAction;
+
+  /// Action to remove a facility logo from facility details.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove logo'**
+  String get tenantFacilityDetailsRemoveLogoAction;
+
+  /// Confirm dialog title when removing a facility logo.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove facility logo'**
+  String get tenantFacilityDetailsRemoveLogoTitle;
+
+  /// Confirm dialog body when removing a facility logo.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the logo for {facilityName}? The image file will be deleted.'**
+  String tenantFacilityDetailsRemoveLogoBody(String facilityName);
+
+  /// SnackBar after adding or changing a facility logo from details.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility logo updated.'**
+  String get tenantFacilityDetailsLogoUpdatedMessage;
+
+  /// SnackBar after removing a facility logo from details.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility logo removed.'**
+  String get tenantFacilityDetailsLogoRemovedMessage;
+
   /// Structure counts heading in facility details summary.
   ///
   /// In en, this message translates to:

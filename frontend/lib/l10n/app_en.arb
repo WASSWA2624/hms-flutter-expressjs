@@ -6722,6 +6722,39 @@
   "@tenantFacilityFacilityDetailsNoLogo": {
     "description": "Empty logo state in facility details summary."
   },
+  "tenantFacilityDetailsAddLogoAction": "Add logo",
+  "@tenantFacilityDetailsAddLogoAction": {
+    "description": "Action to upload a facility logo from facility details."
+  },
+  "tenantFacilityDetailsChangeLogoAction": "Change logo",
+  "@tenantFacilityDetailsChangeLogoAction": {
+    "description": "Action to replace a facility logo from facility details."
+  },
+  "tenantFacilityDetailsRemoveLogoAction": "Remove logo",
+  "@tenantFacilityDetailsRemoveLogoAction": {
+    "description": "Action to remove a facility logo from facility details."
+  },
+  "tenantFacilityDetailsRemoveLogoTitle": "Remove facility logo",
+  "@tenantFacilityDetailsRemoveLogoTitle": {
+    "description": "Confirm dialog title when removing a facility logo."
+  },
+  "tenantFacilityDetailsRemoveLogoBody": "Remove the logo for {facilityName}? The image file will be deleted.",
+  "@tenantFacilityDetailsRemoveLogoBody": {
+    "description": "Confirm dialog body when removing a facility logo.",
+    "placeholders": {
+      "facilityName": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantFacilityDetailsLogoUpdatedMessage": "Facility logo updated.",
+  "@tenantFacilityDetailsLogoUpdatedMessage": {
+    "description": "SnackBar after adding or changing a facility logo from details."
+  },
+  "tenantFacilityDetailsLogoRemovedMessage": "Facility logo removed.",
+  "@tenantFacilityDetailsLogoRemovedMessage": {
+    "description": "SnackBar after removing a facility logo from details."
+  },
   "tenantFacilityFacilityDetailsStructureHeading": "Structure",
   "@tenantFacilityFacilityDetailsStructureHeading": {
     "description": "Structure counts heading in facility details summary."

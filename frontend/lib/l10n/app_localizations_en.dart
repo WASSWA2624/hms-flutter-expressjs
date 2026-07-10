@@ -5214,6 +5214,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityFacilityDetailsNoLogo => 'No logo uploaded';
 
   @override
+  String get tenantFacilityDetailsAddLogoAction => 'Add logo';
+
+  @override
+  String get tenantFacilityDetailsChangeLogoAction => 'Change logo';
+
+  @override
+  String get tenantFacilityDetailsRemoveLogoAction => 'Remove logo';
+
+  @override
+  String get tenantFacilityDetailsRemoveLogoTitle => 'Remove facility logo';
+
+  @override
+  String tenantFacilityDetailsRemoveLogoBody(String facilityName) {
+    return 'Remove the logo for $facilityName? The image file will be deleted.';
+  }
+
+  @override
+  String get tenantFacilityDetailsLogoUpdatedMessage =>
+      'Facility logo updated.';
+
+  @override
+  String get tenantFacilityDetailsLogoRemovedMessage =>
+      'Facility logo removed.';
+
+  @override
   String get tenantFacilityFacilityDetailsStructureHeading => 'Structure';
 
   @override

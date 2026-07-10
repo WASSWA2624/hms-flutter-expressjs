@@ -1459,6 +1459,7 @@
   "messages.tenant.update.success": "Tenant updated successfully",
   "messages.tenant_facility_workspace.setup.success": "Tenant and facility setup retrieved successfully",
   "messages.tenant_facility_workspace.logo_upload.success": "Facility logo uploaded successfully",
+  "messages.tenant_facility_workspace.logo_delete.success": "Facility logo removed successfully",
   "messages.terms_acceptance.create.success": "Terms acceptance created successfully",
   "messages.terms_acceptance.get.success": "Terms acceptance retrieved successfully",
   "messages.terms_acceptance.list.success": "Terms acceptances retrieved successfully",
