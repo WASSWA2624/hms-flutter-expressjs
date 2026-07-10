@@ -1120,16 +1120,16 @@ abstract class AppLocalizations {
   /// **'Crop image'**
   String get appImageCropTitle;
 
-  /// Helper text shown in the image crop dialog.
+  /// Helper text shown in the image crop dialog when an aspect ratio is locked.
   ///
   /// In en, this message translates to:
-  /// **'Drag and zoom to frame the image, then apply the crop.'**
+  /// **'The full image stays fixed. Drag and resize the crop box to choose what to keep, then apply.'**
   String get appImageCropBody;
 
   /// Helper text for free-form (unlocked aspect ratio) image cropping.
   ///
   /// In en, this message translates to:
-  /// **'Drag the handles to crop any size or aspect ratio. The full image is shown first—resize the box like a free crop tool, then apply.'**
+  /// **'The full image stays fixed. Drag and resize the crop box to any size or aspect ratio, then apply.'**
   String get appImageCropFreeformBody;
 
   /// Crop aspect preset: unlocked free-form ratio.
@@ -1156,11 +1156,35 @@ abstract class AppLocalizations {
   /// **'16:9'**
   String get appImageCropAspectSixteenNine;
 
-  /// Primary action that confirms the image crop.
+  /// Primary action that generates a crop preview.
   ///
   /// In en, this message translates to:
   /// **'Apply crop'**
   String get appImageCropApplyAction;
+
+  /// Title for the cropped-image preview step.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview crop'**
+  String get appImageCropPreviewTitle;
+
+  /// Helper text on the cropped-image preview step.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the cropped image. Confirm to use it, or go back to adjust the crop.'**
+  String get appImageCropPreviewBody;
+
+  /// Action that returns from preview to the crop editor.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust crop'**
+  String get appImageCropRecropAction;
+
+  /// Action that accepts the cropped preview and continues.
+  ///
+  /// In en, this message translates to:
+  /// **'Use image'**
+  String get appImageCropConfirmAction;
 
   /// Validation message for manually typed date fields.
   ///

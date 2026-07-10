@@ -713,11 +713,11 @@
   "@appImageCropTitle": {
     "description": "Title for the image crop dialog."
   },
-  "appImageCropBody": "Drag and zoom to frame the image, then apply the crop.",
+  "appImageCropBody": "The full image stays fixed. Drag and resize the crop box to choose what to keep, then apply.",
   "@appImageCropBody": {
-    "description": "Helper text shown in the image crop dialog."
+    "description": "Helper text shown in the image crop dialog when an aspect ratio is locked."
   },
-  "appImageCropFreeformBody": "Drag the handles to crop any size or aspect ratio. The full image is shown first—resize the box like a free crop tool, then apply.",
+  "appImageCropFreeformBody": "The full image stays fixed. Drag and resize the crop box to any size or aspect ratio, then apply.",
   "@appImageCropFreeformBody": {
     "description": "Helper text for free-form (unlocked aspect ratio) image cropping."
   },
@@ -739,7 +739,23 @@
   },
   "appImageCropApplyAction": "Apply crop",
   "@appImageCropApplyAction": {
-    "description": "Primary action that confirms the image crop."
+    "description": "Primary action that generates a crop preview."
+  },
+  "appImageCropPreviewTitle": "Preview crop",
+  "@appImageCropPreviewTitle": {
+    "description": "Title for the cropped-image preview step."
+  },
+  "appImageCropPreviewBody": "Review the cropped image. Confirm to use it, or go back to adjust the crop.",
+  "@appImageCropPreviewBody": {
+    "description": "Helper text on the cropped-image preview step."
+  },
+  "appImageCropRecropAction": "Adjust crop",
+  "@appImageCropRecropAction": {
+    "description": "Action that returns from preview to the crop editor."
+  },
+  "appImageCropConfirmAction": "Use image",
+  "@appImageCropConfirmAction": {
+    "description": "Action that accepts the cropped preview and continues."
   },
   "appDateInvalidMessage": "Enter a valid date.",
   "@appDateInvalidMessage": {

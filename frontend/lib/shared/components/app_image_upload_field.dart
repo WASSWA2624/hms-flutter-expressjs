@@ -235,16 +235,16 @@ class _ImagePreviewTile extends StatelessWidget {
 
 /// Picks an image from disk and optionally opens the crop editor.
 ///
-/// Pass [cropAspectRatio] as `null` for free-form cropping. When
-/// [showCropAspectPresets] is true (default for free-form), the crop dialog
-/// offers Free / 1:1 / 4:3 / 16:9 presets.
+/// Defaults to free-form cropping (static full image + movable crop box).
+/// When [showCropAspectPresets] is true (default for free-form), the crop
+/// dialog offers Free / 1:1 / 4:3 / 16:9 presets that only lock the box ratio.
 Future<AppImageUploadPendingItem?> pickAppImageFile(
   AppLocalizations l10n, {
   required BuildContext context,
   List<String> extensions = const <String>['jpg', 'jpeg', 'png', 'webp'],
   String typeGroupLabel = 'image',
   bool enableCrop = true,
-  double? cropAspectRatio = 1,
+  double? cropAspectRatio,
   bool? showCropAspectPresets,
   String? preferredFileName,
 }) async {

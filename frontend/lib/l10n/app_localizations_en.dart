@@ -551,11 +551,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appImageCropBody =>
-      'Drag and zoom to frame the image, then apply the crop.';
+      'The full image stays fixed. Drag and resize the crop box to choose what to keep, then apply.';
 
   @override
   String get appImageCropFreeformBody =>
-      'Drag the handles to crop any size or aspect ratio. The full image is shown first—resize the box like a free crop tool, then apply.';
+      'The full image stays fixed. Drag and resize the crop box to any size or aspect ratio, then apply.';
 
   @override
   String get appImageCropAspectFree => 'Free';
@@ -571,6 +571,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get appImageCropApplyAction => 'Apply crop';
+
+  @override
+  String get appImageCropPreviewTitle => 'Preview crop';
+
+  @override
+  String get appImageCropPreviewBody =>
+      'Review the cropped image. Confirm to use it, or go back to adjust the crop.';
+
+  @override
+  String get appImageCropRecropAction => 'Adjust crop';
+
+  @override
+  String get appImageCropConfirmAction => 'Use image';
 
   @override
   String get appDateInvalidMessage => 'Enter a valid date.';
