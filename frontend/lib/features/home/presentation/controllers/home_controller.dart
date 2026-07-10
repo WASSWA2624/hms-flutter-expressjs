@@ -40,15 +40,24 @@ final homeControllerProvider =
               HomeDashboardOptimisticPatch.fromRealtimePayload(message.payload);
 
           if (patch != null) {
-            final HomeDashboardOptimisticPatch? current = ref.read(
+            final HomeDashboardOptimisticPatchState? current = ref.read(
               homeDashboardOptimisticPatchProvider(request),
             );
-            ref
-                    .read(
-                      homeDashboardOptimisticPatchProvider(request).notifier,
+            final HomeDashboard? baseline =
+                current?.baseline ?? _readSuccessfulHomeDashboard(ref, request);
+            if (baseline != null) {
+              ref
+                      .read(
+                        homeDashboardOptimisticPatchProvider(request).notifier,
+                      )
+                      .state =
+                  current == null
+                  ? HomeDashboardOptimisticPatchState(
+                      patch: patch,
+                      baseline: baseline,
                     )
-                    .state =
-                current == null ? patch : current.merge(patch);
+                  : current.mergePatch(patch);
+            }
             if (!isSelfMutation) {
               return;
             }
@@ -134,4 +143,21 @@ String? _payloadActorUserId(Map<String, Object?> payload) {
   }
 
   return null;
+}
+
+HomeDashboard? _readSuccessfulHomeDashboard(
+  Ref ref,
+  HomeDashboardRequest request,
+) {
+  final AsyncValue<Result<HomeDashboard>> asyncValue = ref.read(
+    homeControllerProvider(request),
+  );
+
+  return switch (asyncValue) {
+    AsyncData<Result<HomeDashboard>>(:final value) => value.when(
+      success: (HomeDashboard dashboard) => dashboard,
+      failure: (_) => null,
+    ),
+    _ => null,
+  };
 }

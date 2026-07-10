@@ -3,9 +3,80 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 
 final homeDashboardOptimisticPatchProvider =
-    StateProvider.family<HomeDashboardOptimisticPatch?, HomeDashboardRequest>(
+    StateProvider.family<HomeDashboardOptimisticPatchState?, HomeDashboardRequest>(
       (Ref ref, HomeDashboardRequest request) => null,
     );
+
+/// Snapshot captured when a patch is first applied.
+final class HomeDashboardOptimisticPatchState {
+  const HomeDashboardOptimisticPatchState({
+    required this.patch,
+    required this.baseline,
+  });
+
+  final HomeDashboardOptimisticPatch patch;
+  final HomeDashboard baseline;
+
+  HomeDashboardOptimisticPatchState mergePatch(
+    HomeDashboardOptimisticPatch nextPatch,
+  ) {
+    return HomeDashboardOptimisticPatchState(
+      patch: patch.merge(nextPatch),
+      baseline: baseline,
+    );
+  }
+
+  bool isSatisfiedBy(HomeDashboard server) {
+    if (patch.isEmpty) {
+      return true;
+    }
+
+    final HomeDashboard expected = patch.applyTo(baseline);
+    return _dashboardMetricsMatch(expected, server);
+  }
+}
+
+bool _dashboardMetricsMatch(HomeDashboard left, HomeDashboard right) {
+  for (final HomeStatusCard card in left.statusCards) {
+    HomeStatusCard? other;
+    for (final HomeStatusCard entry in right.statusCards) {
+      if (entry.id == card.id) {
+        other = entry;
+        break;
+      }
+    }
+    if (other == null) {
+      continue;
+    }
+    if (other.value != card.value) {
+      return false;
+    }
+
+    final num leftSecondary = card.secondaryValue ?? card.value;
+    final num rightSecondary = other.secondaryValue ?? other.value;
+    if (leftSecondary != rightSecondary) {
+      return false;
+    }
+  }
+
+  for (final HomeAlertItem alert in left.alerts) {
+    HomeAlertItem? other;
+    for (final HomeAlertItem entry in right.alerts) {
+      if (entry.id == alert.id) {
+        other = entry;
+        break;
+      }
+    }
+    if (other == null) {
+      continue;
+    }
+    if (other.count != alert.count) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 /// Local count adjustments applied before HTTP refresh completes.
 final class HomeDashboardOptimisticPatch {

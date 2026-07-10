@@ -177,16 +177,19 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
     }
 
     _mutated = true;
+    if (forceCreate || tenant == null) {
+      _syncPlatformDashboard(
+        ref,
+        patch: HomeDashboardOptimisticPatch.tenantCreated(),
+      );
+    }
+
     await _reload(resetPage: forceCreate, silent: true);
     if (!mounted) {
       return;
     }
 
     if (forceCreate || tenant == null) {
-      _syncPlatformDashboard(
-        ref,
-        patch: HomeDashboardOptimisticPatch.tenantCreated(),
-      );
       return;
     }
 

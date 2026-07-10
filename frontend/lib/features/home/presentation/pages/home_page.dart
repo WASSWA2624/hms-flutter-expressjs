@@ -24,7 +24,7 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dashboard = ref.watch(homeControllerProvider(request));
-    final HomeDashboardOptimisticPatch? optimisticPatch = ref.watch(
+    final HomeDashboardOptimisticPatchState? optimisticState = ref.watch(
       homeDashboardOptimisticPatchProvider(request),
     );
     final l10n = context.l10n;
@@ -36,7 +36,12 @@ class HomePage extends ConsumerWidget {
       next.whenOrNull(
         data: (Result<HomeDashboard> result) {
           result.when(
-            success: (_) => homeClearDashboardOptimisticPatch(ref, request),
+            success: (HomeDashboard dashboard) =>
+                homeClearDashboardOptimisticPatchIfSatisfied(
+                  ref,
+                  request,
+                  dashboard,
+                ),
             failure: (_) {},
           );
         },
@@ -57,7 +62,7 @@ class HomePage extends ConsumerWidget {
       dataBuilder: (BuildContext context, HomeDashboard snapshot) {
         final HomeDashboard display = homeDashboardWithOptimisticPatch(
           snapshot,
-          optimisticPatch,
+          optimisticState,
         );
         return _HomeDashboardContent(dashboard: display, request: request);
       },

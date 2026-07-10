@@ -61,46 +61,6 @@ void main() {
       expect(patched.alerts.first.count, 3);
     });
 
-    test('tenantDeleted decrements tenant metrics', () {
-      const HomeDashboard dashboard = HomeDashboard(
-        state: HomeDashboardLoadState.ready,
-        profile: HomeDashboardProfile(
-          id: 'super_admin',
-          role: AppRole.superAdmin,
-          roleLabel: 'Super Admin',
-          homeTitle: 'Dashboard',
-          emptyMessage: 'Empty',
-          statusCards: <HomeStatusCardTemplate>[],
-          quickActionIds: <String>[],
-          shortcutIds: <String>[],
-        ),
-        context: HomeDashboardContext(),
-        statusCards: <HomeStatusCard>[
-          HomeStatusCard(
-            id: 'tenants_active',
-            label: 'Tenants',
-            value: 4,
-            secondaryValue: 4,
-            format: 'ratio',
-          ),
-        ],
-        trend: HomeDashboardTrend.empty,
-        distribution: HomeDashboardDistribution.empty,
-        quickActionIds: <String>[],
-        shortcutIds: <String>[],
-        queuePreview: <HomeQueueItem>[],
-        alerts: <HomeAlertItem>[],
-        activity: <HomeActivityItem>[],
-        tenantOptions: <HomeTenantOption>[],
-      );
-
-      final HomeDashboard patched = HomeDashboardOptimisticPatch.tenantDeleted()
-          .applyTo(dashboard);
-
-      expect(patched.statusCards.first.value, 3);
-      expect(patched.statusCards.first.secondaryValue, 3);
-    });
-
     test('tenantActiveChanged adjusts active tenant count only', () {
       const HomeDashboard dashboard = HomeDashboard(
         state: HomeDashboardLoadState.ready,
@@ -142,6 +102,96 @@ void main() {
 
       expect(patched.statusCards.first.value, 2);
       expect(patched.statusCards.first.secondaryValue, 4);
+    });
+
+    test('patch state stays active until server catches up', () {
+      const HomeDashboard baseline = HomeDashboard(
+        state: HomeDashboardLoadState.ready,
+        profile: HomeDashboardProfile(
+          id: 'super_admin',
+          role: AppRole.superAdmin,
+          roleLabel: 'Super Admin',
+          homeTitle: 'Dashboard',
+          emptyMessage: 'Empty',
+          statusCards: <HomeStatusCardTemplate>[],
+          quickActionIds: <String>[],
+          shortcutIds: <String>[],
+        ),
+        context: HomeDashboardContext(),
+        statusCards: <HomeStatusCard>[
+          HomeStatusCard(
+            id: 'tenants_active',
+            label: 'Tenants',
+            value: 3,
+            secondaryValue: 3,
+            format: 'ratio',
+          ),
+        ],
+        trend: HomeDashboardTrend.empty,
+        distribution: HomeDashboardDistribution.empty,
+        quickActionIds: <String>[],
+        shortcutIds: <String>[],
+        queuePreview: <HomeQueueItem>[],
+        alerts: <HomeAlertItem>[
+          HomeAlertItem(
+            id: 'tenants_without_subscription',
+            label: 'Tenants Without Subscription',
+            severity: 'warning',
+            count: 2,
+          ),
+        ],
+        activity: <HomeActivityItem>[],
+        tenantOptions: <HomeTenantOption>[],
+      );
+
+      final HomeDashboardOptimisticPatchState state =
+          HomeDashboardOptimisticPatchState(
+            patch: HomeDashboardOptimisticPatch.tenantCreated(),
+            baseline: baseline,
+          );
+
+      const HomeDashboard staleServer = baseline;
+      const HomeDashboard freshServer = HomeDashboard(
+        state: HomeDashboardLoadState.ready,
+        profile: HomeDashboardProfile(
+          id: 'super_admin',
+          role: AppRole.superAdmin,
+          roleLabel: 'Super Admin',
+          homeTitle: 'Dashboard',
+          emptyMessage: 'Empty',
+          statusCards: <HomeStatusCardTemplate>[],
+          quickActionIds: <String>[],
+          shortcutIds: <String>[],
+        ),
+        context: HomeDashboardContext(),
+        statusCards: <HomeStatusCard>[
+          HomeStatusCard(
+            id: 'tenants_active',
+            label: 'Tenants',
+            value: 4,
+            secondaryValue: 4,
+            format: 'ratio',
+          ),
+        ],
+        trend: HomeDashboardTrend.empty,
+        distribution: HomeDashboardDistribution.empty,
+        quickActionIds: <String>[],
+        shortcutIds: <String>[],
+        queuePreview: <HomeQueueItem>[],
+        alerts: <HomeAlertItem>[
+          HomeAlertItem(
+            id: 'tenants_without_subscription',
+            label: 'Tenants Without Subscription',
+            severity: 'warning',
+            count: 3,
+          ),
+        ],
+        activity: <HomeActivityItem>[],
+        tenantOptions: <HomeTenantOption>[],
+      );
+
+      expect(state.isSatisfiedBy(staleServer), isFalse);
+      expect(state.isSatisfiedBy(freshServer), isTrue);
     });
 
     test('fromRealtimePayload decodes backend dashboard deltas', () {
