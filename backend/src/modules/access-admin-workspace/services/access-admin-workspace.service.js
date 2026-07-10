@@ -586,6 +586,42 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
   };
 };
 
+const parseIncludeSet = (query = {}) => {
+  const raw = text(query.include || query.resources || '');
+  if (!raw) {
+    return null;
+  }
+  const values = new Set(
+    raw
+      .split(',')
+      .map((entry) => entry.trim().toLowerCase())
+      .filter(Boolean)
+  );
+  return values.size > 0 ? values : null;
+};
+
+const buildLookupIncludeOptions = (includeSet) => {
+  if (!includeSet) {
+    return {
+      includeTenants: true,
+      includeFacilities: true,
+      includeRoles: true,
+      includePermissions: true,
+      includeRolePermissions: true,
+    };
+  }
+  return {
+    includeTenants: includeSet.has('tenants') || includeSet.has('all'),
+    includeFacilities: includeSet.has('facilities') || includeSet.has('all'),
+    includeRoles: includeSet.has('roles') || includeSet.has('all'),
+    includePermissions: includeSet.has('permissions') || includeSet.has('all'),
+    includeRolePermissions:
+      includeSet.has('role_permissions') ||
+      includeSet.has('roles') ||
+      includeSet.has('all'),
+  };
+};
+
 const loadAssignablePermissionCatalog = async (tenantId, user = {}) => {
   if (!tenantId) {
     return [];
@@ -599,6 +635,7 @@ const getReferenceData = async (query = {}, user = {}) => {
   const requestedTenantId = text(query.tenant_id || query.tenantId);
   const requestedFacilityId = text(query.facility_id || query.facilityId) || null;
   const canAssignPermissions = canWriteAccess(user);
+  const includeOptions = buildLookupIncludeOptions(parseIncludeSet(query));
 
   if (requestedTenantId && canAssignPermissions) {
     const tenantId = await resolveIdentifierForFilter({
@@ -613,10 +650,17 @@ const getReferenceData = async (query = {}, user = {}) => {
       : null;
     if (tenantId) {
       const [permissions, lookups] = await Promise.all([
-        loadAssignablePermissionCatalog(tenantId, user),
+        includeOptions.includePermissions
+          ? loadAssignablePermissionCatalog(tenantId, user)
+          : Promise.resolve([]),
         repository.findLookups(
           { tenant_id: tenantId, facility_id: facilityId || null },
-          includeAllTenants
+          includeAllTenants,
+          {
+            ...includeOptions,
+            // Permissions come from the assignable catalog above.
+            includePermissions: false,
+          }
         ),
       ]);
       return buildLookups(
@@ -632,19 +676,28 @@ const getReferenceData = async (query = {}, user = {}) => {
   const scopeResult = await repository.resolveWorkspaceScope({ filters: query, user });
 
   if (scopeResult.state === 'tenant_context_required') {
-    const lookups = await repository.findLookups(null, includeAllTenants);
+    const lookups = await repository.findLookups(
+      null,
+      includeAllTenants,
+      includeOptions
+    );
     return {
       ...buildLookups(lookups, user),
-      permissions: [],
+      permissions: includeOptions.includePermissions ? [] : (lookups.permissions || []),
     };
   }
 
   const scope = scopeResult.scope;
   const [permissions, lookups] = await Promise.all([
-    canAssignPermissions
+    canAssignPermissions && includeOptions.includePermissions
       ? loadAssignablePermissionCatalog(scope.tenant_id, user)
       : Promise.resolve([]),
-    repository.findLookups(scope, includeAllTenants),
+    repository.findLookups(scope, includeAllTenants, {
+      ...includeOptions,
+      includePermissions:
+        includeOptions.includePermissions &&
+        !(canAssignPermissions && includeOptions.includePermissions),
+    }),
   ]);
 
   return buildLookups(

@@ -486,43 +486,67 @@ const findUserByIdentifier = async (identifier, scope = {}) => {
   }
 };
 
-const findLookups = async (scope = {}, includeAllTenants = false) => {
+const findLookups = async (
+  scope = {},
+  includeAllTenants = false,
+  options = {}
+) => {
   try {
+    const {
+      includeTenants = true,
+      includeFacilities = true,
+      includeRoles = true,
+      includePermissions = true,
+      includeRolePermissions = true,
+    } = options;
+
     const [tenants, facilities, roles, permissions] = await Promise.all([
-      tenantFacilityRepository.findTenants(scope, includeAllTenants),
-      tenantFacilityRepository.findFacilities(scope?.tenant_id),
-      prisma.role.findMany({
-        where: scopedRoleWhere(scope),
-        orderBy: { name: 'asc' },
-        take: 200,
-        select: {
-          id: true,
-          human_friendly_id: true,
-          name: true,
-          display_name: true,
-          facility_id: true,
-          permissions: {
-            where: { deleted_at: null },
+      includeTenants
+        ? tenantFacilityRepository.findTenants(scope, includeAllTenants)
+        : Promise.resolve([]),
+      includeFacilities
+        ? tenantFacilityRepository.findFacilities(scope?.tenant_id)
+        : Promise.resolve([]),
+      includeRoles
+        ? prisma.role.findMany({
+            where: scopedRoleWhere(scope),
+            orderBy: { name: 'asc' },
+            take: 200,
             select: {
-              permission: {
-                select: { name: true },
-              },
+              id: true,
+              human_friendly_id: true,
+              name: true,
+              display_name: true,
+              facility_id: true,
+              ...(includeRolePermissions
+                ? {
+                    permissions: {
+                      where: { deleted_at: null },
+                      select: {
+                        permission: {
+                          select: { name: true },
+                        },
+                      },
+                    },
+                  }
+                : {}),
             },
-          },
-        },
-      }),
-      prisma.permission.findMany({
-        where: scopedWhere(scope),
-        orderBy: { name: 'asc' },
-        take: 500,
-        select: {
-          id: true,
-          human_friendly_id: true,
-          name: true,
-          display_name: true,
-          description: true,
-        },
-      }),
+          })
+        : Promise.resolve([]),
+      includePermissions
+        ? prisma.permission.findMany({
+            where: scopedWhere(scope),
+            orderBy: { name: 'asc' },
+            take: 500,
+            select: {
+              id: true,
+              human_friendly_id: true,
+              name: true,
+              display_name: true,
+              description: true,
+            },
+          })
+        : Promise.resolve([]),
     ]);
 
     return { tenants, facilities, roles, permissions };

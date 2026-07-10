@@ -13,11 +13,37 @@ final accessAdminRepositoryProvider = Provider<AccessAdminRepository>((ref) {
   return AccessAdminRepositoryImpl(apiClient: ref.watch(apiClientProvider));
 });
 
+final class _ReferenceDataCacheEntry {
+  const _ReferenceDataCacheEntry({
+    required this.lookups,
+    required this.cachedAt,
+  });
+
+  final AccessAdminLookups lookups;
+  final DateTime cachedAt;
+}
+
 final class AccessAdminRepositoryImpl implements AccessAdminRepository {
-  const AccessAdminRepositoryImpl({required ApiClient apiClient})
+  AccessAdminRepositoryImpl({required ApiClient apiClient})
     : _apiClient = apiClient;
 
   final ApiClient _apiClient;
+  final Map<String, _ReferenceDataCacheEntry> _referenceDataCache =
+      <String, _ReferenceDataCacheEntry>{};
+  static const Duration _referenceDataTtl = Duration(minutes: 2);
+
+  String _referenceDataCacheKey({
+    String? tenantId,
+    String? facilityId,
+    List<String> include = const <String>[],
+  }) {
+    final List<String> includeKey = List<String>.from(include)..sort();
+    return <String>[
+      tenantId ?? '',
+      facilityId ?? '',
+      includeKey.join(','),
+    ].join('|');
+  }
 
   @override
   Future<Result<AccessAdminWorkspaceData>> getWorkspace(
@@ -54,21 +80,49 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
   Future<Result<AccessAdminLookups>> getReferenceData({
     String? tenantId,
     String? facilityId,
-  }) {
-    return _apiClient.get<AccessAdminLookups>(
-      ApiEndpoints.nested(
-        HmsApiResource.accessAdminWorkspace,
-        'reference-data',
-        const <String>[],
-      ),
-      queryParameters: _withoutEmpty(<String, Object?>{
-        'tenantId': tenantId,
-        'facilityId': facilityId,
-      }),
-      decoder: (Object? data) {
-        return AccessAdminLookupsDto.fromResponse(data).toEntity();
-      },
+    List<String> include = const <String>[],
+    bool forceRefresh = false,
+  }) async {
+    final String cacheKey = _referenceDataCacheKey(
+      tenantId: tenantId,
+      facilityId: facilityId,
+      include: include,
     );
+    if (!forceRefresh) {
+      final _ReferenceDataCacheEntry? cached = _referenceDataCache[cacheKey];
+      if (cached != null &&
+          DateTime.now().difference(cached.cachedAt) <= _referenceDataTtl) {
+        return Result<AccessAdminLookups>.success(cached.lookups);
+      }
+    }
+
+    final Result<AccessAdminLookups> result = await _apiClient
+        .get<AccessAdminLookups>(
+          ApiEndpoints.nested(
+            HmsApiResource.accessAdminWorkspace,
+            'reference-data',
+            const <String>[],
+          ),
+          queryParameters: _withoutEmpty(<String, Object?>{
+            'tenantId': tenantId,
+            'facilityId': facilityId,
+            'include': include.isEmpty ? null : include.join(','),
+          }),
+          decoder: (Object? data) {
+            return AccessAdminLookupsDto.fromResponse(data).toEntity();
+          },
+        );
+
+    result.when(
+      success: (AccessAdminLookups lookups) {
+        _referenceDataCache[cacheKey] = _ReferenceDataCacheEntry(
+          lookups: lookups,
+          cachedAt: DateTime.now(),
+        );
+      },
+      failure: (_) {},
+    );
+    return result;
   }
 
   @override

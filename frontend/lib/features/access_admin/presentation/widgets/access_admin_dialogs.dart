@@ -238,9 +238,26 @@ Future<bool?> openAccessAdminCreateRoleDialog(
     return null;
   }
 
+  final bool needsFacilityScope = !allowTenantWideScope;
+  final AccessAdminLookups? prefetched =
+      (initialTenantId ?? '').isEmpty
+      ? null
+      : await _prefetchRoleDialogLookups(
+          ref,
+          tenantId: initialTenantId!,
+          facilityId: needsFacilityScope ? initialFacilityId : null,
+          includeFacilities: needsFacilityScope || initialFacilityId != null,
+        );
+
+  if (!context.mounted) {
+    return null;
+  }
+
   return showRoleMutationDialog(
     context: context,
     mode: RoleMutationMode.create,
+    permissionLookups: prefetched?.permissions ?? state.data.lookups.permissions,
+    initialFacilityOptions: prefetched?.facilities ?? state.data.lookups.facilities,
     loadTenantOptions: requireTenantPicker
         ? () => loadAccessAdminTenantOptions(
             ref,
@@ -257,7 +274,6 @@ Future<bool?> openAccessAdminCreateRoleDialog(
               state,
               tenantId: tenantId,
               facilityId: facilityId,
-              forceRefresh: true,
             ),
     tenantId: initialTenantId,
     facilityId: initialFacilityId,
@@ -269,7 +285,7 @@ Future<bool?> openAccessAdminCreateRoleDialog(
   );
 }
 
-  Future<bool?> openAccessAdminEditRoleDialog(
+Future<bool?> openAccessAdminEditRoleDialog(
   BuildContext context,
   WidgetRef ref,
   AccessAdminWorkspaceState state,
@@ -286,9 +302,29 @@ Future<bool?> openAccessAdminCreateRoleDialog(
       ref.read(sessionStateProvider).session?.user?.tenantId;
   final String? facilityId = role.facilityId ?? state.query.facilityId;
 
+  final AccessAdminLookups? prefetched = (tenantId ?? '').isEmpty
+      ? null
+      : await _prefetchRoleDialogLookups(
+          ref,
+          tenantId: tenantId!,
+          facilityId: facilityId,
+          includeFacilities: true,
+        );
+
+  if (!context.mounted) {
+    return null;
+  }
+
   return showRoleMutationDialog(
     context: context,
     mode: RoleMutationMode.edit,
+    permissionLookups:
+        prefetched?.permissions ??
+        (state.data.lookups.permissions.isNotEmpty
+            ? state.data.lookups.permissions
+            : const <AccessAdminLookupOption>[]),
+    initialFacilityOptions:
+        prefetched?.facilities ?? state.data.lookups.facilities,
     initialName: role.title,
     initialDescription: role.subtitle,
     initialPermissionIds: role.permissions
@@ -310,7 +346,6 @@ Future<bool?> openAccessAdminCreateRoleDialog(
                 state,
                 tenantId: tenantId,
                 facilityId: facilityId,
-                forceRefresh: true,
               ),
     onSubmit: (AccessAdminRoleDraft draft) =>
         _submitAccessAdminRoleUpdate(ref, role.id, draft),
@@ -414,6 +449,29 @@ Future<AppFailure?> _submitAccessAdminRoleUpdate(
   return null;
 }
 
+Future<AccessAdminLookups?> _prefetchRoleDialogLookups(
+  WidgetRef ref, {
+  required String tenantId,
+  String? facilityId,
+  bool includeFacilities = false,
+}) async {
+  final List<String> include = <String>[
+    'permissions',
+    if (includeFacilities) 'facilities',
+  ];
+  final Result<AccessAdminLookups> result = await ref
+      .read(accessAdminRepositoryProvider)
+      .getReferenceData(
+        tenantId: tenantId,
+        facilityId: facilityId,
+        include: include,
+      );
+  return result.when(
+    success: (AccessAdminLookups lookups) => lookups,
+    failure: (_) => null,
+  );
+}
+
 Future<Result<List<AccessAdminLookupOption>>> _loadAccessAdminPermissionLookups(
   WidgetRef ref,
   AccessAdminWorkspaceState state, {
@@ -443,6 +501,8 @@ Future<Result<List<AccessAdminLookupOption>>> _loadAccessAdminPermissionLookups(
       .getReferenceData(
         tenantId: resolvedTenantId,
         facilityId: resolvedFacilityId,
+        include: const <String>['permissions'],
+        forceRefresh: forceRefresh,
       );
 
   return result.when(
@@ -457,6 +517,21 @@ Future<List<AccessAdminLookupOption>> loadAccessAdminFacilityOptions(
   WidgetRef ref,
   String tenantId,
 ) async {
+  final Result<AccessAdminLookups> cached = await ref
+      .read(accessAdminRepositoryProvider)
+      .getReferenceData(
+        tenantId: tenantId,
+        include: const <String>['facilities'],
+      );
+  final List<AccessAdminLookupOption>? fromReference = cached.when(
+    success: (AccessAdminLookups lookups) =>
+        lookups.facilities.isEmpty ? null : lookups.facilities,
+    failure: (_) => null,
+  );
+  if (fromReference != null) {
+    return fromReference;
+  }
+
   final Result<AppPage<FacilityProfile>> result = await ref
       .read(tenantFacilityRepositoryProvider)
       .listFacilities(

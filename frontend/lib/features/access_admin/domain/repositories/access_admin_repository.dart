@@ -9,6 +9,8 @@ abstract interface class AccessAdminRepository {
   Future<Result<AccessAdminLookups>> getReferenceData({
     String? tenantId,
     String? facilityId,
+    List<String> include = const <String>[],
+    bool forceRefresh = false,
   });
 
   Future<Result<AccessAdminLegacyRouteResolution>> resolveLegacyRoute(
