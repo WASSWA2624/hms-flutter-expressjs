@@ -27849,6 +27849,42 @@ abstract class AppLocalizations {
   /// **'Remove role'**
   String get hrRoleAssignmentRemoveRoleAction;
 
+  /// Role assignment group heading for admin roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Administration'**
+  String get hrRoleAssignmentGroupAdministrationLabel;
+
+  /// Role assignment group heading for clinical care roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical care'**
+  String get hrRoleAssignmentGroupClinicalLabel;
+
+  /// Role assignment group heading for lab, radiology, and pharmacy roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics & pharmacy'**
+  String get hrRoleAssignmentGroupDiagnosticsLabel;
+
+  /// Role assignment group heading for reception and billing roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Front office & billing'**
+  String get hrRoleAssignmentGroupFrontOfficeLabel;
+
+  /// Role assignment group heading for operations and support roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Operations & support'**
+  String get hrRoleAssignmentGroupOperationsLabel;
+
+  /// Role assignment group heading for custom or unclassified roles.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom roles'**
+  String get hrRoleAssignmentGroupCustomLabel;
+
   /// Section title for staff onboarding employment fields.
   ///
   /// In en, this message translates to:

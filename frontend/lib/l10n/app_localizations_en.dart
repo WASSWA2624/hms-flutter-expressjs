@@ -14930,6 +14930,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRoleAssignmentRemoveRoleAction => 'Remove role';
 
   @override
+  String get hrRoleAssignmentGroupAdministrationLabel => 'Administration';
+
+  @override
+  String get hrRoleAssignmentGroupClinicalLabel => 'Clinical care';
+
+  @override
+  String get hrRoleAssignmentGroupDiagnosticsLabel => 'Diagnostics & pharmacy';
+
+  @override
+  String get hrRoleAssignmentGroupFrontOfficeLabel => 'Front office & billing';
+
+  @override
+  String get hrRoleAssignmentGroupOperationsLabel => 'Operations & support';
+
+  @override
+  String get hrRoleAssignmentGroupCustomLabel => 'Custom roles';
+
+  @override
   String get hrStaffOnboardingEmploymentSectionTitle => 'Employment';
 
   @override

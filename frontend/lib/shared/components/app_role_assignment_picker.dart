@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/app_permission_catalog_localizations.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
@@ -27,7 +28,19 @@ final class AppRoleAssignmentOption {
 
 typedef AppRolePermissionsLoader = Future<Set<String>> Function(String roleId);
 
-/// Role picker: searchable checkbox list with expandable permission packs.
+enum _RoleLogicalGroup {
+  administration,
+  clinical,
+  diagnostics,
+  frontOffice,
+  operations,
+  custom,
+}
+
+/// Role picker: searchable checkbox grid with expandable permission packs.
+///
+/// Roles expand with the parent page by default (no nested list scroll).
+/// Layout is 1 column on mobile, 2 on tablet, and 3 on desktop widths.
 class AppRoleAssignmentPicker extends StatefulWidget {
   const AppRoleAssignmentPicker({
     required this.roles,
@@ -35,7 +48,9 @@ class AppRoleAssignmentPicker extends StatefulWidget {
     required this.onSelectionChanged,
     this.loadRolePermissions,
     this.emptyWarning,
-    this.maxListHeight = 420,
+    /// When null, roles expand with the parent (no nested scroll).
+    /// When set, the role list is capped and scrolls internally.
+    this.maxListHeight,
     super.key,
   });
 
@@ -44,7 +59,7 @@ class AppRoleAssignmentPicker extends StatefulWidget {
   final ValueChanged<Set<String>> onSelectionChanged;
   final AppRolePermissionsLoader? loadRolePermissions;
   final String? emptyWarning;
-  final double maxListHeight;
+  final double? maxListHeight;
 
   @override
   State<AppRoleAssignmentPicker> createState() =>
@@ -97,6 +112,29 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
           return haystack.contains(query);
         })
         .toList(growable: false);
+  }
+
+  Map<_RoleLogicalGroup, List<AppRoleAssignmentOption>> _groupedRoles(
+    List<AppRoleAssignmentOption> roles,
+  ) {
+    final Map<_RoleLogicalGroup, List<AppRoleAssignmentOption>> grouped =
+        <_RoleLogicalGroup, List<AppRoleAssignmentOption>>{
+          for (final _RoleLogicalGroup group in _RoleLogicalGroup.values)
+            group: <AppRoleAssignmentOption>[],
+        };
+
+    for (final AppRoleAssignmentOption role in roles) {
+      grouped[_classifyRole(role)]!.add(role);
+    }
+
+    for (final List<AppRoleAssignmentOption> groupRoles in grouped.values) {
+      groupRoles.sort(
+        (AppRoleAssignmentOption a, AppRoleAssignmentOption b) =>
+            a.label.toLowerCase().compareTo(b.label.toLowerCase()),
+      );
+    }
+
+    return grouped;
   }
 
   void _toggleRole(String roleId, bool? selected) {
@@ -232,134 +270,11 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
             ),
           )
         else
-          ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: widget.maxListHeight),
-            child: ListView.separated(
-              shrinkWrap: true,
-              itemCount: filtered.length,
-              separatorBuilder: (_, _) => SizedBox(height: theme.spacing.xs),
-              itemBuilder: (BuildContext context, int index) {
-                final AppRoleAssignmentOption role = filtered[index];
-                final bool selected = widget.selectedRoleIds.contains(role.id);
-                final bool expanded = _expandedRoleIds.contains(role.id);
-                final bool loadingPermissions = _loadingRoleIds.contains(
-                  role.id,
-                );
-                final Set<String> permissions =
-                    _permissionsByRole[role.id] ?? const <String>{};
-
-                return Material(
-                  color: selected
-                      ? colors.primaryContainer.withValues(alpha: 0.35)
-                      : colors.surfaceContainerHighest.withValues(alpha: 0.35),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(theme.radius.md),
-                    side: BorderSide(
-                      color: selected
-                          ? colors.primary.withValues(alpha: 0.45)
-                          : colors.outlineVariant,
-                    ),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Theme(
-                    data: theme.copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      key: PageStorageKey<String>('role-browse-${role.id}'),
-                      initiallyExpanded: expanded,
-                      onExpansionChanged: (bool value) {
-                        unawaited(_onExpansionChanged(role.id, value));
-                      },
-                      leading: Checkbox(
-                        value: selected,
-                        onChanged: (bool? value) => _toggleRole(role.id, value),
-                      ),
-                      title: Text(
-                        role.label,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      subtitle: Text(
-                        l10n.hrAccessPermissionCountLabel(
-                          role.permissionCount > 0
-                              ? role.permissionCount
-                              : permissions.length,
-                        ),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          if (role.isSystemCritical)
-                            Padding(
-                              padding: EdgeInsets.only(right: theme.spacing.xs),
-                              child: Chip(
-                                label: Text(
-                                  l10n.hrAccessSystemCriticalRoleBadge,
-                                ),
-                                visualDensity: VisualDensity.compact,
-                              ),
-                            ),
-                          Icon(
-                            expanded
-                                ? Icons.expand_less
-                                : Icons.expand_more,
-                          ),
-                        ],
-                      ),
-                      children: <Widget>[
-                        Padding(
-                          padding: EdgeInsets.fromLTRB(
-                            theme.spacing.md,
-                            0,
-                            theme.spacing.md,
-                            theme.spacing.md,
-                          ),
-                          child: Align(
-                            alignment: Alignment.centerLeft,
-                            child: loadingPermissions
-                                ? const LinearProgressIndicator(minHeight: 2)
-                                : permissions.isEmpty
-                                ? Text(
-                                    l10n.hrStaffOnboardingPermissionsPreviewEmpty,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: colors.onSurfaceVariant,
-                                    ),
-                                  )
-                                : Wrap(
-                                    spacing: theme.spacing.xs,
-                                    runSpacing: theme.spacing.xs,
-                                    children: permissions
-                                        .map(
-                                          (String permission) => Chip(
-                                            avatar: Icon(
-                                              Icons.verified_user_outlined,
-                                              size: 16,
-                                              color: colors.onSurfaceVariant,
-                                            ),
-                                            label: Text(
-                                              l10n.permissionCatalogLabelForCode(
-                                                permission,
-                                              ),
-                                            ),
-                                            visualDensity:
-                                                VisualDensity.compact,
-                                            labelStyle:
-                                                theme.textTheme.labelSmall,
-                                          ),
-                                        )
-                                        .toList(growable: false),
-                                  ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+          _buildRoleList(
+            l10n: l10n,
+            theme: theme,
+            colors: colors,
+            filtered: filtered,
           ),
         SizedBox(height: theme.spacing.md),
         Text(
@@ -392,4 +307,303 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
       ],
     );
   }
+
+  Widget _buildRoleList({
+    required AppLocalizations l10n,
+    required ThemeData theme,
+    required ColorScheme colors,
+    required List<AppRoleAssignmentOption> filtered,
+  }) {
+    final Map<_RoleLogicalGroup, List<AppRoleAssignmentOption>> grouped =
+        _groupedRoles(filtered);
+
+    final Widget content = LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final int columns = _columnCount(constraints.maxWidth);
+        final double gap = theme.spacing.sm;
+        final double itemWidth = columns == 1
+            ? constraints.maxWidth
+            : (constraints.maxWidth - gap * (columns - 1)) / columns;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            for (final _RoleLogicalGroup group in _RoleLogicalGroup.values)
+              if ((grouped[group] ?? const <AppRoleAssignmentOption>[])
+                  .isNotEmpty) ...<Widget>[
+                Padding(
+                  padding: EdgeInsets.only(
+                    top: theme.spacing.sm,
+                    bottom: theme.spacing.xs,
+                  ),
+                  child: Text(
+                    _groupLabel(l10n, group),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: colors.onSurface,
+                    ),
+                  ),
+                ),
+                Wrap(
+                  spacing: gap,
+                  runSpacing: gap,
+                  children: grouped[group]!
+                      .map(
+                        (AppRoleAssignmentOption role) => SizedBox(
+                          width: itemWidth,
+                          child: _buildRoleTile(
+                            l10n: l10n,
+                            theme: theme,
+                            colors: colors,
+                            role: role,
+                          ),
+                        ),
+                      )
+                      .toList(growable: false),
+                ),
+              ],
+          ],
+        );
+      },
+    );
+
+    final double? maxHeight = widget.maxListHeight;
+    if (maxHeight == null) {
+      return content;
+    }
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: SingleChildScrollView(child: content),
+    );
+  }
+
+  Widget _buildRoleTile({
+    required AppLocalizations l10n,
+    required ThemeData theme,
+    required ColorScheme colors,
+    required AppRoleAssignmentOption role,
+  }) {
+    final bool selected = widget.selectedRoleIds.contains(role.id);
+    final bool expanded = _expandedRoleIds.contains(role.id);
+    final bool loadingPermissions = _loadingRoleIds.contains(role.id);
+    final Set<String> permissions =
+        _permissionsByRole[role.id] ?? const <String>{};
+
+    return Material(
+      color: selected
+          ? colors.primaryContainer.withValues(alpha: 0.35)
+          : colors.surfaceContainerHighest.withValues(alpha: 0.35),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        side: BorderSide(
+          color: selected
+              ? colors.primary.withValues(alpha: 0.45)
+              : colors.outlineVariant,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Theme(
+        data: theme.copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          key: PageStorageKey<String>('role-browse-${role.id}'),
+          initiallyExpanded: expanded,
+          tilePadding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
+          childrenPadding: EdgeInsets.zero,
+          dense: true,
+          visualDensity: VisualDensity.compact,
+          onExpansionChanged: (bool value) {
+            unawaited(_onExpansionChanged(role.id, value));
+          },
+          leading: Checkbox(
+            value: selected,
+            visualDensity: VisualDensity.compact,
+            onChanged: (bool? value) => _toggleRole(role.id, value),
+          ),
+          title: Text(
+            role.label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          subtitle: Text(
+            l10n.hrAccessPermissionCountLabel(
+              role.permissionCount > 0
+                  ? role.permissionCount
+                  : permissions.length,
+            ),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (role.isSystemCritical)
+                Padding(
+                  padding: EdgeInsets.only(right: theme.spacing.xs),
+                  child: Chip(
+                    label: Text(l10n.hrAccessSystemCriticalRoleBadge),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              Icon(expanded ? Icons.expand_less : Icons.expand_more),
+            ],
+          ),
+          children: <Widget>[
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                theme.spacing.md,
+                0,
+                theme.spacing.md,
+                theme.spacing.md,
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: loadingPermissions
+                    ? const LinearProgressIndicator(minHeight: 2)
+                    : permissions.isEmpty
+                    ? Text(
+                        l10n.hrStaffOnboardingPermissionsPreviewEmpty,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      )
+                    : Wrap(
+                        spacing: theme.spacing.xs,
+                        runSpacing: theme.spacing.xs,
+                        children: permissions
+                            .map(
+                              (String permission) => Chip(
+                                avatar: Icon(
+                                  Icons.verified_user_outlined,
+                                  size: 16,
+                                  color: colors.onSurfaceVariant,
+                                ),
+                                label: Text(
+                                  l10n.permissionCatalogLabelForCode(
+                                    permission,
+                                  ),
+                                ),
+                                visualDensity: VisualDensity.compact,
+                                labelStyle: theme.textTheme.labelSmall,
+                              ),
+                            )
+                            .toList(growable: false),
+                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+int _columnCount(double maxWidth) {
+  if (maxWidth >= AppBreakpoints.lg) {
+    return 3;
+  }
+  if (maxWidth >= AppBreakpoints.md) {
+    return 2;
+  }
+  return 1;
+}
+
+_RoleLogicalGroup _classifyRole(AppRoleAssignmentOption role) {
+  final String haystack =
+      '${role.label} ${role.description ?? ''}'.toUpperCase();
+  final String normalized = haystack.replaceAll(RegExp(r'[^A-Z0-9]+'), '_');
+
+  if (_containsAny(normalized, const <String>[
+    'SUPER_ADMIN',
+    'TENANT_ADMIN',
+    'FACILITY_ADMIN',
+    'SYSTEM_ADMIN',
+  ])) {
+    return _RoleLogicalGroup.administration;
+  }
+
+  if (_containsAny(normalized, const <String>[
+    'LAB_TECH',
+    'LABORATORY',
+    'RADIOLOGY',
+    'PHARMAC',
+    'IMAGING',
+  ])) {
+    return _RoleLogicalGroup.diagnostics;
+  }
+
+  if (_containsAny(normalized, const <String>[
+    'DOCTOR',
+    'PHYSICIAN',
+    'NURSE',
+    'CLINICAL',
+    'WARD_MANAGER',
+    'UNIT_MANAGER',
+    'ICU_MANAGER',
+    'THEATRE_MANAGER',
+    'THEATER_MANAGER',
+    'PATIENT',
+  ])) {
+    return _RoleLogicalGroup.clinical;
+  }
+
+  if (_containsAny(normalized, const <String>[
+    'RECEPTION',
+    'BILLING',
+    'FRONT_DESK',
+    'CASHIER',
+  ])) {
+    return _RoleLogicalGroup.frontOffice;
+  }
+
+  if (_containsAny(normalized, const <String>[
+    'OPERATION',
+    'HUMAN_RESOURCE',
+    '_HR_',
+    'HR_',
+    '_HR',
+    'BIOMED',
+    'HOUSE_KEEP',
+    'HOUSEKEEP',
+    'AMBULANCE',
+    'MORTUARY',
+  ])) {
+    return _RoleLogicalGroup.operations;
+  }
+
+  // Exact / boundary HR match without swallowing other words.
+  if (normalized == 'HR' ||
+      normalized.startsWith('HR_') ||
+      normalized.endsWith('_HR')) {
+    return _RoleLogicalGroup.operations;
+  }
+
+  return _RoleLogicalGroup.custom;
+}
+
+bool _containsAny(String haystack, List<String> tokens) {
+  for (final String token in tokens) {
+    if (haystack.contains(token)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+String _groupLabel(AppLocalizations l10n, _RoleLogicalGroup group) {
+  return switch (group) {
+    _RoleLogicalGroup.administration =>
+      l10n.hrRoleAssignmentGroupAdministrationLabel,
+    _RoleLogicalGroup.clinical => l10n.hrRoleAssignmentGroupClinicalLabel,
+    _RoleLogicalGroup.diagnostics =>
+      l10n.hrRoleAssignmentGroupDiagnosticsLabel,
+    _RoleLogicalGroup.frontOffice =>
+      l10n.hrRoleAssignmentGroupFrontOfficeLabel,
+    _RoleLogicalGroup.operations => l10n.hrRoleAssignmentGroupOperationsLabel,
+    _RoleLogicalGroup.custom => l10n.hrRoleAssignmentGroupCustomLabel,
+  };
 }

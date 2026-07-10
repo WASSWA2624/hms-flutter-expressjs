@@ -917,16 +917,6 @@ class _ManageRolesPermissionsDialogState
     );
   }
 
-  Future<void> _setRoleScopeFilter(String? scope) async {
-    if (roleScopeFilter == scope) {
-      return;
-    }
-    setState(() {
-      roleScopeFilter = scope;
-    });
-    await reload(resetPage: true, silent: items.isNotEmpty);
-  }
-
   Future<void> _openCreateRoleDialog() async {
     final AccessAdminWorkspaceState? state = buildWorkspaceState();
     if (state == null || !mounted) {
@@ -1049,9 +1039,71 @@ class _ManageRolesPermissionsDialogState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final bool canViewTenantRoles = ref
-        .watch(appAccessPolicyProvider)
-        .canCreateTenantWideRole();
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final bool canViewTenantRoles = accessPolicy.canCreateTenantWideRole();
+    final bool canPickTenant = accessPolicy.canCreateTenant();
+    final bool canFilterFacilities = accessPolicy.canCreateTenantWideRole();
+    final bool showFacilityFilter =
+        canFilterFacilities && (!canPickTenant || tenantFilter != null);
+
+    final List<AppSearchBarFilterGroup> filterGroups = <AppSearchBarFilterGroup>[
+      if (canPickTenant)
+        AppSearchBarFilterGroup(
+          key: _tenantFilterKey,
+          label: l10n.settingsWorkspaceTenantLabel,
+          allLabel: l10n.accessAdminAllTenantsFilterLabel,
+          choices: (workspaceData?.lookups.tenants ?? const <AccessAdminLookupOption>[])
+              .map(
+                (AccessAdminLookupOption tenant) => AppSearchBarFilterChoice(
+                  value: tenant.id,
+                  label: tenant.label,
+                  icon: Icons.apartment_outlined,
+                ),
+              )
+              .toList(growable: false),
+        ),
+      if (showFacilityFilter)
+        AppSearchBarFilterGroup(
+          key: _facilityFilterKey,
+          label: l10n.settingsWorkspaceFacilityLabel,
+          allLabel: l10n.accessAdminAllFacilitiesFilterLabel,
+          choices: (workspaceData?.lookups.facilities ??
+                  const <AccessAdminLookupOption>[])
+              .map(
+                (AccessAdminLookupOption facility) => AppSearchBarFilterChoice(
+                  value: facility.id,
+                  label: facility.label,
+                  icon: Icons.local_hospital_outlined,
+                ),
+              )
+              .toList(growable: false),
+        ),
+      if (canViewTenantRoles)
+        AppSearchBarFilterGroup(
+          key: _roleScopeFilterKey,
+          label: l10n.accessAdminColumnScope,
+          allLabel: l10n.accessAdminRoleScopeFilterAll,
+          choices: <AppSearchBarFilterChoice>[
+            AppSearchBarFilterChoice(
+              value: 'tenant',
+              label: l10n.accessAdminRoleScopeFilterTenant,
+              icon: Icons.domain_outlined,
+            ),
+            AppSearchBarFilterChoice(
+              value: 'facility',
+              label: l10n.accessAdminRoleScopeFilterFacility,
+              icon: Icons.local_hospital_outlined,
+            ),
+          ],
+        ),
+    ];
+
+    final Map<String, String> activeOptions = <String, String>{
+      if (tenantFilter != null) _tenantFilterKey: tenantFilter!,
+      if (showFacilityFilter && !allFacilities && facilityFilter != null)
+        _facilityFilterKey: facilityFilter!,
+      if (roleScopeFilter != null) _roleScopeFilterKey: roleScopeFilter!,
+    };
 
     return AppDialog(
       title: Text(l10n.homeManageRolesPermissionsTitle),
@@ -1066,44 +1118,18 @@ class _ManageRolesPermissionsDialogState
               unawaited(_openRoleDetail(role)),
           search: buildTableSearch(
             l10n: l10n,
-            showAdvancedFilterButton: canViewTenantRoles,
+            showAdvancedFilterButton: filterGroups.isNotEmpty,
             advancedFilterTitle: l10n.accessAdminFiltersTitle,
-            filterGroups: canViewTenantRoles
-                ? <AppSearchBarFilterGroup>[
-                    AppSearchBarFilterGroup(
-                      key: _roleScopeFilterKey,
-                      label: l10n.accessAdminColumnScope,
-                      allLabel: l10n.accessAdminRoleScopeFilterAll,
-                      choices: <AppSearchBarFilterChoice>[
-                        AppSearchBarFilterChoice(
-                          value: 'tenant',
-                          label: l10n.accessAdminRoleScopeFilterTenant,
-                          icon: Icons.domain_outlined,
-                        ),
-                        AppSearchBarFilterChoice(
-                          value: 'facility',
-                          label: l10n.accessAdminRoleScopeFilterFacility,
-                          icon: Icons.local_hospital_outlined,
-                        ),
-                      ],
-                    ),
-                  ]
-                : const <AppSearchBarFilterGroup>[],
-            filterValue: roleScopeFilter == null
+            filterGroups: filterGroups,
+            filterValue: activeOptions.isEmpty
                 ? AppSearchBarFilterValue.empty
-                : AppSearchBarFilterValue(
-                    options: <String, String>{
-                      _roleScopeFilterKey: roleScopeFilter!,
-                    },
-                  ),
-            hasActiveFilters: roleScopeFilter != null,
-            onFilterChanged: canViewTenantRoles
-                ? (AppSearchBarFilterValue value) {
-                    unawaited(
-                      _setRoleScopeFilter(value.option(_roleScopeFilterKey)),
-                    );
-                  }
-                : null,
+                : AppSearchBarFilterValue(options: activeOptions),
+            hasActiveFilters: activeOptions.isNotEmpty,
+            onFilterChanged: filterGroups.isEmpty
+                ? null
+                : (AppSearchBarFilterValue value) {
+                    unawaited(_applyRoleListFilters(value));
+                  },
           ),
           columns: <AppListTableColumn<AccessAdminItem>>[
             AppListTableColumn<AccessAdminItem>(
@@ -1678,7 +1704,7 @@ class _AccessAdminUserDetailDialogState
             return AppDialog(
               title: Text(l10n.accessAdminUserAccessAddRoleDialogTitle),
               icon: const Icon(Icons.person_add_alt_1_outlined),
-              maxWidth: 720,
+              maxWidth: 960,
               scrollable: true,
               content: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1692,7 +1718,8 @@ class _AccessAdminUserDetailDialogState
                     roles: roleOptions,
                     selectedRoleIds: selectedRoleIds,
                     loadRolePermissions: loadRolePermissions,
-                    maxListHeight: 460,
+                    // Let the dialog scroll; avoid a nested roles scroller.
+                    maxListHeight: null,
                     onSelectionChanged: (Set<String> next) {
                       setDialogState(() {
                         selectedRoleIds

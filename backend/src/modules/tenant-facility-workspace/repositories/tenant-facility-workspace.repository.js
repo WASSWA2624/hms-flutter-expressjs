@@ -59,32 +59,19 @@ const isAllFacilitiesRequested = (filters = {}) => {
   );
 };
 
-const isAllTenantsRequested = (filters = {}) => {
-  const tenantScope = String(filters.tenant_scope || filters.tenantScope || '')
-    .trim()
-    .toLowerCase();
-  return (
-    filters.all_tenants === true ||
-    filters.all_tenants === 'true' ||
-    filters.allTenants === true ||
-    filters.allTenants === 'true' ||
-    tenantScope === 'all'
-  );
-};
-
 const resolveWorkspaceScope = async ({ filters = {}, user = {} }) => {
   try {
     const requestedTenantId = filters.tenant_id || filters.tenantId;
     const requestedFacilityId = filters.facility_id || filters.facilityId;
     const allFacilities = isAllFacilitiesRequested(filters);
-    const allTenants = isAllTenantsRequested(filters);
 
     const userTenantId = user.tenant_id || user.tenantId || null;
     const userFacilityId = user.facility_id || user.facilityId || null;
 
     if (isSuperAdmin(user)) {
-      // Cross-tenant directory: no tenant filter means every tenant the actor can see.
-      if (allTenants && !requestedTenantId) {
+      // No explicit tenant → cross-tenant directory. Requiring allTenants (or a
+      // session tenant) previously returned empty lists and hid custom roles.
+      if (!requestedTenantId) {
         return {
           state: 'ready',
           scope: {
@@ -95,7 +82,7 @@ const resolveWorkspaceScope = async ({ filters = {}, user = {} }) => {
       }
 
       const tenantId = await resolveIdentifierForFilter({
-        value: requestedTenantId || (!allTenants ? userTenantId : null),
+        value: requestedTenantId,
         model: 'tenant',
       });
 
@@ -130,19 +117,39 @@ const resolveWorkspaceScope = async ({ filters = {}, user = {} }) => {
       throw new HttpError('errors.auth.scope_mismatch', 403);
     }
 
-    let facilityId = null;
-    if (allFacilities && canViewAllFacilitiesInTenant(user)) {
-      facilityId = null;
-    } else {
-      facilityId = await resolveIdentifierForFilter({
-        value: requestedFacilityId || userFacilityId,
-        model: 'facility',
-        where: { tenant_id: userTenantId },
-      });
-
-      if (facilityId === null) {
-        throw new HttpError('errors.validation.invalid', 400, [{ field: 'facility_id' }]);
+    // Tenant admins: default to all facilities in the tenant unless a facility
+    // is explicit. Falling back to session facility_id hid custom roles created
+    // for other facilities (they exist in DB but never appeared in the list).
+    if (canViewAllFacilitiesInTenant(user)) {
+      let facilityId = null;
+      if (!allFacilities && requestedFacilityId) {
+        facilityId = await resolveIdentifierForFilter({
+          value: requestedFacilityId,
+          model: 'facility',
+          where: { tenant_id: userTenantId },
+        });
+        if (facilityId === null) {
+          throw new HttpError('errors.validation.invalid', 400, [{ field: 'facility_id' }]);
+        }
       }
+
+      return {
+        state: 'ready',
+        scope: {
+          tenant_id: userTenantId,
+          facility_id: facilityId || null,
+        },
+      };
+    }
+
+    const facilityId = await resolveIdentifierForFilter({
+      value: requestedFacilityId || userFacilityId,
+      model: 'facility',
+      where: { tenant_id: userTenantId },
+    });
+
+    if (facilityId === null) {
+      throw new HttpError('errors.validation.invalid', 400, [{ field: 'facility_id' }]);
     }
 
     return {

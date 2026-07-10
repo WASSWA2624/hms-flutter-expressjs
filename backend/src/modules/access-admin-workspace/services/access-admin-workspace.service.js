@@ -6,7 +6,6 @@ const { ROLE_PERMISSIONS } = require('@config/permissions');
 const { ensureTenantAccessCatalog, ensureTenantPermissionCatalog } = require('@lib/authorization/permission-catalog-sync');
 const {
   filterPermissionRecordsByCeiling,
-  filterRoleRecordsByCeiling,
   canActorCreateTenantWideRole,
   resolveAssignablePlanModules,
 } = require('@lib/authorization/assignable-access');
@@ -365,9 +364,11 @@ const serializeUserDetail = (record) => {
 };
 
 const buildLookups = (records = {}, user = null, enabledModules = null) => {
-  const roles = user
-    ? filterRoleRecordsByCeiling(records.roles || [], user)
-    : records.roles || [];
+  // Role directory lookups should show every in-scope role. Ceiling filtering
+  // belongs on assignable permission catalogs / assignment APIs, not the role
+  // list itself — otherwise custom roles with broad packs disappear for
+  // plan-gated actors even though they exist in the tenant.
+  const roles = records.roles || [];
   const permissions = user
     ? filterPermissionRecordsByCeiling(
         records.permissions || [],

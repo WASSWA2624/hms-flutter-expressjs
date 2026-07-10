@@ -85,6 +85,43 @@ void main() {
       expect(selected, <String>{'role-nurse'});
     });
 
+    testWidgets('groups roles logically and lists them without nested scroll', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          AppRoleAssignmentPicker(
+            roles: const <AppRoleAssignmentOption>[
+              AppRoleAssignmentOption(
+                id: 'role-admin',
+                label: 'FACILITY_ADMIN',
+                permissionCount: 10,
+              ),
+              AppRoleAssignmentOption(
+                id: 'role-nurse',
+                label: 'NURSE',
+                permissionCount: 4,
+              ),
+              AppRoleAssignmentOption(
+                id: 'role-custom',
+                label: 'Night Shift Lead',
+                permissionCount: 2,
+              ),
+            ],
+            selectedRoleIds: const <String>{},
+            onSelectionChanged: (_) {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Administration'), findsOneWidget);
+      expect(find.text('Clinical care'), findsOneWidget);
+      expect(find.text('Custom roles'), findsOneWidget);
+      expect(find.byType(ListView), findsNothing);
+      expect(find.byType(Checkbox), findsNWidgets(3));
+    });
+
     testWidgets('loads permissions when a role card is expanded', (
       tester,
     ) async {

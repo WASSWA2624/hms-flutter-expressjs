@@ -19374,6 +19374,30 @@
   "@hrRoleAssignmentRemoveRoleAction": {
     "description": "Tooltip for removing a selected role from the assignment picker."
   },
+  "hrRoleAssignmentGroupAdministrationLabel": "Administration",
+  "@hrRoleAssignmentGroupAdministrationLabel": {
+    "description": "Role assignment group heading for admin roles."
+  },
+  "hrRoleAssignmentGroupClinicalLabel": "Clinical care",
+  "@hrRoleAssignmentGroupClinicalLabel": {
+    "description": "Role assignment group heading for clinical care roles."
+  },
+  "hrRoleAssignmentGroupDiagnosticsLabel": "Diagnostics & pharmacy",
+  "@hrRoleAssignmentGroupDiagnosticsLabel": {
+    "description": "Role assignment group heading for lab, radiology, and pharmacy roles."
+  },
+  "hrRoleAssignmentGroupFrontOfficeLabel": "Front office & billing",
+  "@hrRoleAssignmentGroupFrontOfficeLabel": {
+    "description": "Role assignment group heading for reception and billing roles."
+  },
+  "hrRoleAssignmentGroupOperationsLabel": "Operations & support",
+  "@hrRoleAssignmentGroupOperationsLabel": {
+    "description": "Role assignment group heading for operations and support roles."
+  },
+  "hrRoleAssignmentGroupCustomLabel": "Custom roles",
+  "@hrRoleAssignmentGroupCustomLabel": {
+    "description": "Role assignment group heading for custom or unclassified roles."
+  },
   "hrStaffOnboardingEmploymentSectionTitle": "Employment",
   "@hrStaffOnboardingEmploymentSectionTitle": {
     "description": "Section title for staff onboarding employment fields."

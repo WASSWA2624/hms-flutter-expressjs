@@ -268,7 +268,7 @@ Future<bool?> showUserMutationDialog({
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
     cancelIcon: Icons.close_outlined,
-    maxWidth: 920,
+    maxWidth: 1080,
     buildFields:
         (
           BuildContext context,
