@@ -213,15 +213,24 @@ Future<bool?> openAccessAdminCreateRoleDialog(
 ) async {
   final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
   final bool isCrossTenantAdmin = accessPolicy.canCreateTenant();
+  final bool allowTenantWideScope = accessPolicy.canCreateTenantWideRole();
   final String? workspaceTenantId = state.query.tenantId;
   final String? sessionTenantId = ref
       .read(sessionStateProvider)
       .session
       ?.user
       ?.tenantId;
+  final String? sessionFacilityId = ref
+      .read(sessionStateProvider)
+      .session
+      ?.user
+      ?.facilityId;
   final String? initialTenantId = isCrossTenantAdmin
       ? workspaceTenantId
       : (workspaceTenantId ?? sessionTenantId);
+  final String? initialFacilityId =
+      state.query.facilityId ??
+      (allowTenantWideScope ? null : sessionFacilityId);
   final bool requireTenantPicker = isCrossTenantAdmin
       ? workspaceTenantId == null
       : initialTenantId == null;
@@ -239,36 +248,45 @@ Future<bool?> openAccessAdminCreateRoleDialog(
             preferTenantFacilityApi: isCrossTenantAdmin,
           )
         : null,
-    loadPermissionsForTenant: (String tenantId) =>
-        _loadAccessAdminPermissionLookups(
-          ref,
-          state,
-          tenantId: tenantId,
-          forceRefresh: true,
-        ),
+    loadFacilityOptions: (String tenantId) =>
+        loadAccessAdminFacilityOptions(ref, tenantId),
+    loadPermissionsForTenant:
+        ({required String tenantId, String? facilityId}) =>
+            _loadAccessAdminPermissionLookups(
+              ref,
+              state,
+              tenantId: tenantId,
+              facilityId: facilityId,
+              forceRefresh: true,
+            ),
     tenantId: initialTenantId,
-    facilityId: state.query.facilityId,
+    facilityId: initialFacilityId,
     requireTenantPicker: requireTenantPicker,
+    allowTenantWideScope: allowTenantWideScope,
+    forceFacilityScope: !allowTenantWideScope,
     onSubmit: (AccessAdminRoleDraft draft) =>
         _submitAccessAdminRoleCreate(ref, draft),
   );
 }
 
-Future<void> openAccessAdminEditRoleDialog(
+  Future<bool?> openAccessAdminEditRoleDialog(
   BuildContext context,
   WidgetRef ref,
   AccessAdminWorkspaceState state,
   AccessAdminItem role,
 ) async {
   if (!context.mounted) {
-    return;
+    return null;
   }
 
+  final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
+  final bool allowTenantWideScope = accessPolicy.canCreateTenantWideRole();
   final String? tenantId =
       state.query.tenantId ??
       ref.read(sessionStateProvider).session?.user?.tenantId;
+  final String? facilityId = role.facilityId ?? state.query.facilityId;
 
-  await showRoleMutationDialog(
+  return showRoleMutationDialog(
     context: context,
     mode: RoleMutationMode.edit,
     initialName: role.title,
@@ -277,15 +295,23 @@ Future<void> openAccessAdminEditRoleDialog(
         .map((AccessAdminPermissionRef permission) => permission.id)
         .toSet(),
     tenantId: tenantId,
-    facilityId: state.query.facilityId,
+    facilityId: facilityId,
+    allowTenantWideScope: allowTenantWideScope,
+    forceFacilityScope: !allowTenantWideScope,
+    loadFacilityOptions: tenantId == null
+        ? null
+        : (String resolvedTenantId) =>
+              loadAccessAdminFacilityOptions(ref, resolvedTenantId),
     loadPermissionsForTenant: tenantId == null
         ? null
-        : (String resolvedTenantId) => _loadAccessAdminPermissionLookups(
-            ref,
-            state,
-            tenantId: resolvedTenantId,
-            forceRefresh: true,
-          ),
+        : ({required String tenantId, String? facilityId}) =>
+              _loadAccessAdminPermissionLookups(
+                ref,
+                state,
+                tenantId: tenantId,
+                facilityId: facilityId,
+                forceRefresh: true,
+              ),
     onSubmit: (AccessAdminRoleDraft draft) =>
         _submitAccessAdminRoleUpdate(ref, role.id, draft),
   );
@@ -365,13 +391,10 @@ Future<AppFailure?> _submitAccessAdminRoleCreate(
   WidgetRef ref,
   AccessAdminRoleDraft draft,
 ) async {
-  final Result<void> result = await ref
-      .read(accessAdminRepositoryProvider)
+  final AppFailure? failure = await ref
+      .read(accessAdminWorkspaceControllerProvider.notifier)
       .createRole(draft);
-  return result.when(
-    success: (_) => null,
-    failure: (AppFailure failure) => failure,
-  );
+  return failure;
 }
 
 Future<AppFailure?> _submitAccessAdminRoleUpdate(
@@ -382,19 +405,24 @@ Future<AppFailure?> _submitAccessAdminRoleUpdate(
   final Result<void> result = await ref
       .read(accessAdminRepositoryProvider)
       .updateRole(roleId, draft);
-  return result.when(
-    success: (_) => null,
-    failure: (AppFailure failure) => failure,
+  if (result case ResultFailure<void>(:final failure)) {
+    return failure;
+  }
+  unawaited(
+    ref.read(accessAdminWorkspaceControllerProvider.notifier).refresh(),
   );
+  return null;
 }
 
 Future<Result<List<AccessAdminLookupOption>>> _loadAccessAdminPermissionLookups(
   WidgetRef ref,
   AccessAdminWorkspaceState state, {
   String? tenantId,
+  String? facilityId,
   bool forceRefresh = false,
 }) async {
   final String? resolvedTenantId = tenantId ?? state.query.tenantId;
+  final String? resolvedFacilityId = facilityId ?? state.query.facilityId;
   if ((resolvedTenantId ?? '').isEmpty) {
     return const Result<List<AccessAdminLookupOption>>.success(
       <AccessAdminLookupOption>[],
@@ -403,6 +431,7 @@ Future<Result<List<AccessAdminLookupOption>>> _loadAccessAdminPermissionLookups(
 
   if (!forceRefresh &&
       resolvedTenantId == state.query.tenantId &&
+      resolvedFacilityId == state.query.facilityId &&
       state.data.lookups.permissions.isNotEmpty) {
     return Result<List<AccessAdminLookupOption>>.success(
       state.data.lookups.permissions,
@@ -413,7 +442,7 @@ Future<Result<List<AccessAdminLookupOption>>> _loadAccessAdminPermissionLookups(
       .read(accessAdminRepositoryProvider)
       .getReferenceData(
         tenantId: resolvedTenantId,
-        facilityId: state.query.facilityId,
+        facilityId: resolvedFacilityId,
       );
 
   return result.when(
@@ -421,6 +450,27 @@ Future<Result<List<AccessAdminLookupOption>>> _loadAccessAdminPermissionLookups(
         Result<List<AccessAdminLookupOption>>.success(lookups.permissions),
     failure: (AppFailure failure) =>
         Result<List<AccessAdminLookupOption>>.failure(failure),
+  );
+}
+
+Future<List<AccessAdminLookupOption>> loadAccessAdminFacilityOptions(
+  WidgetRef ref,
+  String tenantId,
+) async {
+  final Result<AppPage<FacilityProfile>> result = await ref
+      .read(tenantFacilityRepositoryProvider)
+      .listFacilities(
+        tenantId: tenantId,
+        request: const AppPageRequest(pageSize: 100),
+      );
+  return result.when(
+    success: (AppPage<FacilityProfile> page) => page.items
+        .map(
+          (FacilityProfile facility) =>
+              AccessAdminLookupOption(id: facility.id, label: facility.name),
+        )
+        .toList(growable: false),
+    failure: (_) => const <AccessAdminLookupOption>[],
   );
 }
 

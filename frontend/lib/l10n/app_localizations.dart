@@ -33864,7 +33864,7 @@ abstract class AppLocalizations {
   /// Introductory helper text at the top of the create role dialog.
   ///
   /// In en, this message translates to:
-  /// **'Define a role for your organization, then assign the permissions users need to perform their work.'**
+  /// **'Define a role, then choose the permissions it grants.'**
   String get accessAdminCreateRoleIntro;
 
   /// Section title for tenant selection in the create role dialog.
@@ -33876,7 +33876,7 @@ abstract class AppLocalizations {
   /// Section description for tenant selection in the create role dialog.
   ///
   /// In en, this message translates to:
-  /// **'Select the tenant this role belongs to. Permissions are loaded from that organization\'s catalog.'**
+  /// **'Choose where this role applies.'**
   String get accessAdminCreateRoleScopeSectionDescription;
 
   /// Section title for role name and description fields.
@@ -33888,13 +33888,13 @@ abstract class AppLocalizations {
   /// Section description for role name and description fields.
   ///
   /// In en, this message translates to:
-  /// **'Use a short, recognizable name. An optional description helps other administrators.'**
+  /// **'Short name and optional description.'**
   String get accessAdminCreateRoleDetailsSectionDescription;
 
   /// Section description for the permissions picker in the create role dialog.
   ///
   /// In en, this message translates to:
-  /// **'Search by module or action, then select the capabilities this role should grant.'**
+  /// **'Select the permissions this role grants.'**
   String get accessAdminCreateRolePermissionsSectionDescription;
 
   /// Loading label while permission catalog is fetched.
@@ -33908,6 +33908,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loading tenants…'**
   String get accessAdminCreateRoleLoadingTenants;
+
+  /// Loading label while facility options are fetched for role scope.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading facilities…'**
+  String get accessAdminCreateRoleLoadingFacilities;
+
+  /// Label for role scope (tenant-wide vs facility) control.
+  ///
+  /// In en, this message translates to:
+  /// **'Scope'**
+  String get accessAdminRoleScopeLabel;
+
+  /// Role scope option for tenant-wide roles available to all facilities.
+  ///
+  /// In en, this message translates to:
+  /// **'Entire organization'**
+  String get accessAdminRoleScopeTenantLabel;
+
+  /// Role scope option for facility-specific roles.
+  ///
+  /// In en, this message translates to:
+  /// **'One facility'**
+  String get accessAdminRoleScopeFacilityLabel;
+
+  /// Title when facility options cannot be loaded for a facility-scoped role.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility required'**
+  String get accessAdminRoleFacilityRequiredTitle;
+
+  /// Message when facility options are empty for a facility-scoped role.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a facility for this role, or retry loading facilities.'**
+  String get accessAdminRoleFacilityRequiredMessage;
+
+  /// Prompt shown before permissions load when facility scope is selected.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a facility to load assignable permissions.'**
+  String get accessAdminRoleSelectFacilityMessage;
 
   /// Access admin edit role action.
   ///

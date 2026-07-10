@@ -18236,31 +18236,54 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessAdminCreateRoleIntro =>
-      'Define a role for your organization, then assign the permissions users need to perform their work.';
+      'Define a role, then choose the permissions it grants.';
 
   @override
   String get accessAdminCreateRoleScopeSectionTitle => 'Organization';
 
   @override
   String get accessAdminCreateRoleScopeSectionDescription =>
-      'Select the tenant this role belongs to. Permissions are loaded from that organization\'s catalog.';
+      'Choose where this role applies.';
 
   @override
   String get accessAdminCreateRoleDetailsSectionTitle => 'Role details';
 
   @override
   String get accessAdminCreateRoleDetailsSectionDescription =>
-      'Use a short, recognizable name. An optional description helps other administrators.';
+      'Short name and optional description.';
 
   @override
   String get accessAdminCreateRolePermissionsSectionDescription =>
-      'Search by module or action, then select the capabilities this role should grant.';
+      'Select the permissions this role grants.';
 
   @override
   String get accessAdminCreateRoleLoadingPermissions => 'Loading permissions…';
 
   @override
   String get accessAdminCreateRoleLoadingTenants => 'Loading tenants…';
+
+  @override
+  String get accessAdminCreateRoleLoadingFacilities => 'Loading facilities…';
+
+  @override
+  String get accessAdminRoleScopeLabel => 'Scope';
+
+  @override
+  String get accessAdminRoleScopeTenantLabel => 'Entire organization';
+
+  @override
+  String get accessAdminRoleScopeFacilityLabel => 'One facility';
+
+  @override
+  String get accessAdminRoleFacilityRequiredTitle => 'Facility required';
+
+  @override
+  String get accessAdminRoleFacilityRequiredMessage =>
+      'Select a facility for this role, or retry loading facilities.';
+
+  @override
+  String get accessAdminRoleSelectFacilityMessage =>
+      'Select a facility to load assignable permissions.';
 
   @override
   String get accessAdminEditRoleAction => 'Edit role';

@@ -120,7 +120,12 @@ describe('Role Service', () => {
       const mockRole = { id: 'role-123', name: 'New Role' };
       roleRepository.create.mockResolvedValue(mockRole);
 
-      const result = await createRole({ name: 'New Role' }, 'user-123', '127.0.0.1');
+      const result = await createRole(
+        { name: 'New Role', tenant_id: 'tenant-1' },
+        'user-123',
+        '127.0.0.1',
+        { id: 'user-123', roles: ['TENANT_ADMIN'] }
+      );
 
       expect(result).toEqual(mockRole);
       expect(createAuditLog).toHaveBeenCalledWith({
@@ -131,6 +136,18 @@ describe('Role Service', () => {
         diff: { after: mockRole },
         ip_address: '127.0.0.1'
       });
+    });
+
+    it('should reject tenant-wide role create for facility admins', async () => {
+      await expect(
+        createRole(
+          { name: 'Ward Clerk', tenant_id: 'tenant-1' },
+          'user-123',
+          '127.0.0.1',
+          { id: 'user-123', roles: ['FACILITY_ADMIN'], facility_id: 'facility-1' }
+        )
+      ).rejects.toThrow(HttpError);
+      expect(roleRepository.create).not.toHaveBeenCalled();
     });
   });
 

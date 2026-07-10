@@ -33,7 +33,7 @@ const createRoleSchema = z.object({
  * All fields optional for partial updates
  */
 const updateRoleSchema = z.object({
-  facility_id: uuidSchema.optional().nullable(),
+  facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(120).optional(),
   description: z.string().trim().min(1).max(255).optional().nullable()
 });

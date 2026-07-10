@@ -82,7 +82,12 @@ const createUserRole = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  const userRole = await userRoleService.createUserRole(req.body, userId, ipAddress);
+  const userRole = await userRoleService.createUserRole(
+    req.body,
+    userId,
+    ipAddress,
+    req.user
+  );
 
   sendSuccess(res, 201, 'messages.user_role.create.success', userRole);
 });

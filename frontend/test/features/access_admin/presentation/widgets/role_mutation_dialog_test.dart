@@ -35,10 +35,11 @@ void main() {
                         ),
                       ];
                     },
-                    loadPermissionsForTenant: (_) async =>
-                        const Result<List<AccessAdminLookupOption>>.success(
-                          <AccessAdminLookupOption>[],
-                        ),
+                    loadPermissionsForTenant:
+                        ({required String tenantId, String? facilityId}) async =>
+                            const Result<List<AccessAdminLookupOption>>.success(
+                              <AccessAdminLookupOption>[],
+                            ),
                     onSubmit: (_) async => null,
                   ),
                 );
@@ -62,5 +63,60 @@ void main() {
 
     expect(tenantLoadCount, 1);
     expect(find.text('CREATE ROLE'), findsOneWidget);
+    expect(find.text('Entire organization'), findsOneWidget);
+    expect(find.text('One facility'), findsOneWidget);
+  });
+
+  testWidgets('forces facility scope when tenant-wide is not allowed', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Builder(
+          builder: (BuildContext context) {
+            return ElevatedButton(
+              onPressed: () {
+                unawaited(
+                  showRoleMutationDialog(
+                    context: context,
+                    mode: RoleMutationMode.create,
+                    tenantId: 'tenant-1',
+                    allowTenantWideScope: false,
+                    forceFacilityScope: true,
+                    loadFacilityOptions: (_) async =>
+                        const <AccessAdminLookupOption>[
+                          AccessAdminLookupOption(
+                            id: 'facility-1',
+                            label: 'Main Campus',
+                          ),
+                        ],
+                    loadPermissionsForTenant:
+                        ({required String tenantId, String? facilityId}) async =>
+                            const Result<List<AccessAdminLookupOption>>.success(
+                              <AccessAdminLookupOption>[
+                                AccessAdminLookupOption(
+                                  id: 'perm-1',
+                                  label: 'patient:read',
+                                ),
+                              ],
+                            ),
+                    onSubmit: (_) async => null,
+                  ),
+                );
+              },
+              child: const Text('Open'),
+            );
+          },
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('One facility'), findsOneWidget);
+    expect(find.text('Main Campus'), findsOneWidget);
   });
 }

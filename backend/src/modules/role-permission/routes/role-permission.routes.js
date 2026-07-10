@@ -11,13 +11,15 @@ const express = require('express');
 const router = express.Router();
 const rolePermissionController = require('@controllers/role-permission/role-permission.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
-const { authenticate } = require('@middlewares/auth.middleware');
+const { authenticate, requireAuth } = require('@middlewares/auth.middleware');
 const {
   createRolePermissionSchema,
   updateRolePermissionSchema,
   rolePermissionIdParamsSchema,
   listRolePermissionsQuerySchema
 } = require('@validations/role-permission/role-permission.schema');
+
+const ADMIN_ROLE_SET = ['TENANT_ADMIN', 'FACILITY_ADMIN', 'SUPER_ADMIN', 'OPERATIONS', 'HR'];
 
 /**
  * @description List role-permissions with pagination and filters
@@ -37,7 +39,8 @@ const {
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',  validateRequest({ query: listRolePermissionsQuerySchema }),
+  '/',
+  validateRequest({ query: listRolePermissionsQuerySchema }),
 
   authenticate(),
   rolePermissionController.listRolePermissions
@@ -57,7 +60,8 @@ router.get(
  * @throws 404 Role-Permission not found
  */
 router.get(
-  '/:id',  validateRequest({ params: rolePermissionIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: rolePermissionIdParamsSchema }),
 
   authenticate(),
   rolePermissionController.getRolePermissionById
@@ -79,9 +83,9 @@ router.get(
  * @throws 400 Foreign key constraint violation
  */
 router.post(
-  '/',  validateRequest({ body: createRolePermissionSchema }),
-
-  authenticate(),
+  '/',
+  validateRequest({ body: createRolePermissionSchema }),
+  requireAuth(ADMIN_ROLE_SET),
   rolePermissionController.createRolePermission
 );
 
@@ -102,9 +106,9 @@ router.post(
  * @throws 400 Foreign key constraint violation
  */
 router.put(
-  '/:id',  validateRequest({ params: rolePermissionIdParamsSchema, body: updateRolePermissionSchema }),
-
-  authenticate(),
+  '/:id',
+  validateRequest({ params: rolePermissionIdParamsSchema, body: updateRolePermissionSchema }),
+  requireAuth(ADMIN_ROLE_SET),
   rolePermissionController.updateRolePermission
 );
 
@@ -122,9 +126,9 @@ router.put(
  * @throws 404 Role-Permission not found
  */
 router.delete(
-  '/:id',  validateRequest({ params: rolePermissionIdParamsSchema }),
-
-  authenticate(),
+  '/:id',
+  validateRequest({ params: rolePermissionIdParamsSchema }),
+  requireAuth(ADMIN_ROLE_SET),
   rolePermissionController.deleteRolePermission
 );
 

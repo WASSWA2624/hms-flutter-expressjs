@@ -10,6 +10,7 @@
 const userRoleRepository = require('@repositories/user-role/user-role.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { assertRoleIdAssignable } = require('@lib/authorization/assignable-access');
 
 /**
  * List user-roles with pagination and filtering
@@ -90,8 +91,11 @@ const getUserRoleById = async (id, userId, ipAddress) => {
  * @param {string} ipAddress - User IP for audit
  * @returns {Promise<Object>} Created user-role
  */
-const createUserRole = async (data, userId, ipAddress) => {
+const createUserRole = async (data, userId, ipAddress, actor = null) => {
   try {
+    if (actor) {
+      await assertRoleIdAssignable(data.role_id, actor);
+    }
     const userRole = await userRoleRepository.create(data);
 
     // Create audit log (non-blocking)

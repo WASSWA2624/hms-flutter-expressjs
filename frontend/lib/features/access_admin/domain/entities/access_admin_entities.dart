@@ -569,6 +569,17 @@ final class AccessAdminRolePermissionDraft {
 }
 
 @immutable
+final class AccessAdminRolePermissionAssignment {
+  const AccessAdminRolePermissionAssignment({
+    required this.id,
+    this.permissionId,
+  });
+
+  final String id;
+  final String? permissionId;
+}
+
+@immutable
 final class AccessAdminDemoResetResult {
   const AccessAdminDemoResetResult({
     required this.userId,

@@ -9,21 +9,29 @@ import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_en
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/forms/app_form_section.dart';
 import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
 import 'package:hosspi_hms/shared/forms/app_validators.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_mutation_dialog.dart';
 
 enum RoleMutationMode { create, edit }
+
+enum RoleScopeKind { tenant, facility }
 
 typedef RoleMutationSubmitHandler =
     Future<AppFailure?> Function(AccessAdminRoleDraft draft);
 
 typedef RolePermissionLookupsLoader =
-    Future<Result<List<AccessAdminLookupOption>>> Function(String tenantId);
+    Future<Result<List<AccessAdminLookupOption>>> Function({
+      required String tenantId,
+      String? facilityId,
+    });
 
 typedef RoleTenantOptionsLoader =
     Future<List<AccessAdminLookupOption>> Function();
+
+typedef RoleFacilityOptionsLoader =
+    Future<List<AccessAdminLookupOption>> Function(String tenantId);
 
 Future<bool?> showRoleMutationDialog({
   required BuildContext context,
@@ -32,9 +40,12 @@ Future<bool?> showRoleMutationDialog({
       const <AccessAdminLookupOption>[],
   RolePermissionLookupsLoader? loadPermissionsForTenant,
   RoleTenantOptionsLoader? loadTenantOptions,
+  RoleFacilityOptionsLoader? loadFacilityOptions,
   String? tenantId,
   String? facilityId,
   bool requireTenantPicker = false,
+  bool allowTenantWideScope = true,
+  bool forceFacilityScope = false,
   String? initialName,
   String? initialDescription,
   Set<String> initialPermissionIds = const <String>{},
@@ -51,14 +62,27 @@ Future<bool?> showRoleMutationDialog({
     initialPermissionIds,
   );
   String? selectedTenantId = tenantId;
+  String? selectedFacilityId = facilityId;
   final bool showTenantPicker =
       requireTenantPicker ||
       (mode == RoleMutationMode.create && tenantId == null);
+  final bool lockedFacilityScope = forceFacilityScope || !allowTenantWideScope;
+  RoleScopeKind scopeKind = lockedFacilityScope || (facilityId ?? '').isNotEmpty
+      ? RoleScopeKind.facility
+      : RoleScopeKind.tenant;
+
   List<AccessAdminLookupOption> tenantOptions =
       const <AccessAdminLookupOption>[];
   bool isLoadingTenants = false;
   bool tenantLoadAttempted = false;
   bool scheduledInitialTenantLoad = false;
+
+  List<AccessAdminLookupOption> facilityOptions =
+      const <AccessAdminLookupOption>[];
+  bool isLoadingFacilities = false;
+  bool facilityLoadAttempted = false;
+  bool scheduledInitialFacilityLoad = false;
+
   List<AccessAdminLookupOption> currentPermissionLookups =
       List<AccessAdminLookupOption>.from(permissionLookups);
   bool isLoadingPermissions = false;
@@ -99,22 +123,66 @@ Future<bool?> showRoleMutationDialog({
     });
   }
 
-  Future<void> loadPermissionsForSelectedTenant(StateSetter setState) async {
+  Future<void> reloadFacilityOptions(StateSetter setState) async {
+    final RoleFacilityOptionsLoader? loader = loadFacilityOptions;
+    final String? resolvedTenantId = selectedTenantId;
+    if (loader == null || (resolvedTenantId ?? '').isEmpty) {
+      setState(() {
+        facilityOptions = const <AccessAdminLookupOption>[];
+        facilityLoadAttempted = true;
+        isLoadingFacilities = false;
+      });
+      return;
+    }
+
+    setState(() {
+      isLoadingFacilities = true;
+      facilityOptions = const <AccessAdminLookupOption>[];
+    });
+
+    final List<AccessAdminLookupOption> loaded = await loader(resolvedTenantId!);
+
+    setState(() {
+      isLoadingFacilities = false;
+      facilityLoadAttempted = true;
+      facilityOptions = loaded;
+      if ((selectedFacilityId ?? '').isNotEmpty &&
+          loaded.every(
+            (AccessAdminLookupOption option) => option.id != selectedFacilityId,
+          )) {
+        selectedFacilityId = null;
+      }
+      if ((selectedFacilityId ?? '').isEmpty && loaded.length == 1) {
+        selectedFacilityId = loaded.first.id;
+      }
+    });
+  }
+
+  Future<void> loadPermissionsForScope(StateSetter setState) async {
     final String? resolvedTenantId = selectedTenantId;
     final RolePermissionLookupsLoader? loader = loadPermissionsForTenant;
     if (loader == null || (resolvedTenantId ?? '').isEmpty) {
       return;
     }
 
+    final String? scopeFacilityId = scopeKind == RoleScopeKind.facility
+        ? selectedFacilityId
+        : null;
+    final bool preserveSelection =
+        mode == RoleMutationMode.edit && !permissionLoadAttempted;
+
     setState(() {
       isLoadingPermissions = true;
       currentPermissionLookups = <AccessAdminLookupOption>[];
-      selectedPermissionIds.clear();
+      if (!preserveSelection) {
+        selectedPermissionIds.clear();
+      }
       permissionLoadFailure = null;
     });
 
     final Result<List<AccessAdminLookupOption>> loaded = await loader(
-      resolvedTenantId!,
+      tenantId: resolvedTenantId!,
+      facilityId: scopeFacilityId,
     );
 
     setState(() {
@@ -124,6 +192,12 @@ Future<bool?> showRoleMutationDialog({
         success: (List<AccessAdminLookupOption> permissions) {
           currentPermissionLookups = permissions;
           permissionLoadFailure = null;
+          if (preserveSelection) {
+            selectedPermissionIds.removeWhere(
+              (String id) =>
+                  permissions.every((AccessAdminLookupOption o) => o.id != id),
+            );
+          }
         },
         failure: (AppFailure failure) {
           currentPermissionLookups = <AccessAdminLookupOption>[];
@@ -149,7 +223,7 @@ Future<bool?> showRoleMutationDialog({
     cancelLabel: l10n.commonCancelActionLabel,
     submitIcon: Icons.save_outlined,
     cancelIcon: Icons.close_outlined,
-    maxWidth: 920,
+    maxWidth: 760,
     buildFields:
         (
           BuildContext context,
@@ -160,10 +234,15 @@ Future<bool?> showRoleMutationDialog({
           return StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
               final bool tenantSelected = (selectedTenantId ?? '').isNotEmpty;
-              final bool fieldsEnabled =
-                  !isSubmitting && (!showTenantPicker || tenantSelected);
+              final bool facilitySelected =
+                  (selectedFacilityId ?? '').isNotEmpty;
+              final bool scopeReady =
+                  tenantSelected &&
+                  (scopeKind == RoleScopeKind.tenant || facilitySelected);
+              final bool fieldsEnabled = !isSubmitting && scopeReady;
               final List<AppPermissionAssignmentOption> permissionOptions =
                   buildPermissionOptions();
+              final ThemeData theme = Theme.of(context);
 
               if (loadTenantOptions != null &&
                   showTenantPicker &&
@@ -174,34 +253,33 @@ Future<bool?> showRoleMutationDialog({
                 unawaited(reloadTenantOptions(setState));
               }
 
-              if (loadPermissionsForTenant != null &&
+              if (scopeKind == RoleScopeKind.facility &&
+                  loadFacilityOptions != null &&
                   tenantSelected &&
+                  !facilityLoadAttempted &&
+                  !isLoadingFacilities &&
+                  !scheduledInitialFacilityLoad) {
+                scheduledInitialFacilityLoad = true;
+                unawaited(reloadFacilityOptions(setState));
+              }
+
+              if (loadPermissionsForTenant != null &&
+                  scopeReady &&
                   !permissionLoadAttempted &&
                   !isLoadingPermissions &&
                   !scheduledInitialPermissionLoad) {
                 scheduledInitialPermissionLoad = true;
-                unawaited(loadPermissionsForSelectedTenant(setState));
+                unawaited(loadPermissionsForScope(setState));
               }
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
-                  if (mode == RoleMutationMode.create) ...<Widget>[
-                    AppMessagePanel(
-                      icon: Icons.lightbulb_outline,
-                      message: l10n.accessAdminCreateRoleIntro,
-                      density: AppContentPanelDensity.compact,
-                    ),
-                    SizedBox(height: Theme.of(context).spacing.md),
-                  ],
-                  if (showTenantPicker)
-                    AppSectionPanel(
-                      title: l10n.accessAdminCreateRoleScopeSectionTitle,
-                      description:
-                          l10n.accessAdminCreateRoleScopeSectionDescription,
-                      leadingIcon: Icons.apartment_outlined,
-                      tone: AppWorkspaceStatusTone.info,
-                      children: <Widget>[
+                  AppFormSection(
+                    density: AppFormSectionDensity.compact,
+                    title: l10n.accessAdminRoleScopeLabel,
+                    children: <Widget>[
+                      if (showTenantPicker) ...<Widget>[
                         if (isLoadingTenants)
                           _RoleMutationLoadingIndicator(
                             label: l10n.accessAdminCreateRoleLoadingTenants,
@@ -236,7 +314,7 @@ Future<bool?> showRoleMutationDialog({
                             enabled: !isSubmitting,
                             labelText: l10n.tenantFacilitySelectTenantLabel,
                             isRequired: true,
-                            menuHeight: 320,
+                            menuHeight: 280,
                             options: tenantOptions
                                 .map(
                                   (AccessAdminLookupOption tenant) =>
@@ -249,19 +327,126 @@ Future<bool?> showRoleMutationDialog({
                             onChanged: (String? value) {
                               setState(() {
                                 selectedTenantId = value;
+                                selectedFacilityId = null;
+                                facilityLoadAttempted = false;
+                                scheduledInitialFacilityLoad = false;
                                 permissionLoadAttempted = false;
                                 scheduledInitialPermissionLoad = false;
+                                currentPermissionLookups =
+                                    <AccessAdminLookupOption>[];
+                                selectedPermissionIds.clear();
                               });
-                              if ((value ?? '').isEmpty) {
+                            },
+                            validator: (String? value) =>
+                                (value ?? '').trim().isEmpty
+                                ? l10n.validationRequired
+                                : null,
+                          ),
+                        SizedBox(height: theme.spacing.sm),
+                      ],
+                      SegmentedButton<RoleScopeKind>(
+                        segments: <ButtonSegment<RoleScopeKind>>[
+                          ButtonSegment<RoleScopeKind>(
+                            value: RoleScopeKind.tenant,
+                            enabled: !lockedFacilityScope && !isSubmitting,
+                            label: Text(l10n.accessAdminRoleScopeTenantLabel),
+                            icon: const Icon(Icons.domain_outlined, size: 18),
+                          ),
+                          ButtonSegment<RoleScopeKind>(
+                            value: RoleScopeKind.facility,
+                            enabled: !isSubmitting,
+                            label: Text(l10n.accessAdminRoleScopeFacilityLabel),
+                            icon: const Icon(
+                              Icons.local_hospital_outlined,
+                              size: 18,
+                            ),
+                          ),
+                        ],
+                        selected: <RoleScopeKind>{scopeKind},
+                        onSelectionChanged: lockedFacilityScope || isSubmitting
+                            ? null
+                            : (Set<RoleScopeKind> next) {
+                                if (next.isEmpty) {
+                                  return;
+                                }
                                 setState(() {
+                                  scopeKind = next.first;
+                                  if (scopeKind == RoleScopeKind.tenant) {
+                                    selectedFacilityId = null;
+                                  }
+                                  facilityLoadAttempted = false;
+                                  scheduledInitialFacilityLoad = false;
+                                  permissionLoadAttempted = false;
+                                  scheduledInitialPermissionLoad = false;
                                   currentPermissionLookups =
                                       <AccessAdminLookupOption>[];
+                                  selectedPermissionIds.clear();
                                 });
-                                return;
-                              }
-                              unawaited(
-                                loadPermissionsForSelectedTenant(setState),
-                              );
+                              },
+                      ),
+                      if (scopeKind == RoleScopeKind.facility) ...<Widget>[
+                        SizedBox(height: theme.spacing.sm),
+                        if (!tenantSelected)
+                          AppMessagePanel(
+                            icon: Icons.touch_app_outlined,
+                            message: l10n
+                                .accessAdminPermissionCatalogSelectTenantMessage,
+                            density: AppContentPanelDensity.compact,
+                          )
+                        else if (isLoadingFacilities)
+                          _RoleMutationLoadingIndicator(
+                            label: l10n.accessAdminCreateRoleLoadingFacilities,
+                          )
+                        else if (facilityOptions.isEmpty)
+                          AppFormInformationBanner(
+                            title: l10n.accessAdminRoleFacilityRequiredTitle,
+                            message:
+                                l10n.accessAdminRoleFacilityRequiredMessage,
+                            variant: AppFormInformationVariant.warning,
+                            icon: Icons.local_hospital_outlined,
+                            children: loadFacilityOptions != null
+                                ? <Widget>[
+                                    AppButton.secondary(
+                                      label: l10n.commonRetryActionLabel,
+                                      enabled: !isSubmitting,
+                                      onPressed: () {
+                                        setState(() {
+                                          facilityLoadAttempted = false;
+                                          scheduledInitialFacilityLoad = false;
+                                        });
+                                        unawaited(
+                                          reloadFacilityOptions(setState),
+                                        );
+                                      },
+                                    ),
+                                  ]
+                                : const <Widget>[],
+                          )
+                        else
+                          AppSelectField<String>.searchable(
+                            value: selectedFacilityId,
+                            enabled: !isSubmitting,
+                            labelText: l10n.tenantFacilityFacilitySelectLabel,
+                            isRequired: true,
+                            menuHeight: 280,
+                            options: facilityOptions
+                                .map(
+                                  (AccessAdminLookupOption facility) =>
+                                      AppSelectOption<String>(
+                                        value: facility.id,
+                                        label: facility.label,
+                                      ),
+                                )
+                                .toList(growable: false),
+                            onChanged: (String? value) {
+                              setState(() {
+                                selectedFacilityId = value;
+                                permissionLoadAttempted = false;
+                                scheduledInitialPermissionLoad = false;
+                                currentPermissionLookups =
+                                    <AccessAdminLookupOption>[];
+                                selectedPermissionIds.clear();
+                              });
                             },
                             validator: (String? value) =>
                                 (value ?? '').trim().isEmpty
@@ -269,18 +454,16 @@ Future<bool?> showRoleMutationDialog({
                                 : null,
                           ),
                       ],
-                    ),
-                  if (showTenantPicker)
-                    SizedBox(height: Theme.of(context).spacing.md),
-                  AppSectionPanel(
+                    ],
+                  ),
+                  SizedBox(height: theme.spacing.md),
+                  AppFormSection(
+                    density: AppFormSectionDensity.compact,
                     title: l10n.accessAdminCreateRoleDetailsSectionTitle,
-                    description:
-                        l10n.accessAdminCreateRoleDetailsSectionDescription,
-                    leadingIcon: Icons.badge_outlined,
                     children: <Widget>[
                       AppResponsiveFieldRow.two(
                         gap: AppResponsiveFieldRowGap.form,
-                        breakpoint: 720,
+                        breakpoint: 640,
                         left: AppTextField(
                           controller: nameController,
                           enabled: fieldsEnabled,
@@ -299,28 +482,18 @@ Future<bool?> showRoleMutationDialog({
                       ),
                     ],
                   ),
-                  SizedBox(height: Theme.of(context).spacing.md),
-                  AppSectionPanel(
+                  SizedBox(height: theme.spacing.md),
+                  AppFormSection(
+                    density: AppFormSectionDensity.compact,
                     title: l10n.accessAdminRolePermissionsLabel,
-                    description:
-                        l10n.accessAdminCreateRolePermissionsSectionDescription,
-                    leadingIcon: Icons.security_outlined,
-                    trailing: permissionOptions.isNotEmpty
-                        ? _RoleMutationSelectionChip(
-                            selectedCount: selectedPermissionIds.length,
-                            totalCount: permissionOptions.length,
-                          )
-                        : null,
                     children: <Widget>[
-                      if (showTenantPicker &&
-                          !tenantSelected &&
-                          !isLoadingTenants)
+                      if (!scopeReady && !isLoadingPermissions)
                         AppMessagePanel(
                           icon: Icons.touch_app_outlined,
-                          title: l10n
-                              .accessAdminPermissionCatalogSelectTenantTitle,
-                          message: l10n
-                              .accessAdminPermissionCatalogSelectTenantMessage,
+                          message: scopeKind == RoleScopeKind.facility
+                              ? l10n.accessAdminRoleSelectFacilityMessage
+                              : l10n
+                                    .accessAdminPermissionCatalogSelectTenantMessage,
                           density: AppContentPanelDensity.compact,
                         )
                       else if (isLoadingPermissions)
@@ -333,7 +506,7 @@ Future<bool?> showRoleMutationDialog({
                           context: context,
                           failure: permissionLoadFailure!,
                           children:
-                              loadPermissionsForTenant != null && tenantSelected
+                              loadPermissionsForTenant != null && scopeReady
                               ? <Widget>[
                                   AppButton.secondary(
                                     label: l10n.commonRetryActionLabel,
@@ -345,9 +518,7 @@ Future<bool?> showRoleMutationDialog({
                                         permissionLoadFailure = null;
                                       });
                                       unawaited(
-                                        loadPermissionsForSelectedTenant(
-                                          setState,
-                                        ),
+                                        loadPermissionsForScope(setState),
                                       );
                                     },
                                   ),
@@ -363,7 +534,7 @@ Future<bool?> showRoleMutationDialog({
                           variant: AppFormInformationVariant.warning,
                           icon: Icons.security_outlined,
                           children:
-                              loadPermissionsForTenant != null && tenantSelected
+                              loadPermissionsForTenant != null && scopeReady
                               ? <Widget>[
                                   AppButton.secondary(
                                     label: l10n.commonRetryActionLabel,
@@ -374,9 +545,7 @@ Future<bool?> showRoleMutationDialog({
                                         scheduledInitialPermissionLoad = false;
                                       });
                                       unawaited(
-                                        loadPermissionsForSelectedTenant(
-                                          setState,
-                                        ),
+                                        loadPermissionsForScope(setState),
                                       );
                                     },
                                   ),
@@ -384,6 +553,14 @@ Future<bool?> showRoleMutationDialog({
                               : const <Widget>[],
                         )
                       else ...<Widget>[
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: _RoleMutationSelectionChip(
+                            selectedCount: selectedPermissionIds.length,
+                            totalCount: permissionOptions.length,
+                          ),
+                        ),
+                        SizedBox(height: theme.spacing.xs),
                         AppPermissionAssignmentPicker(
                           permissions: permissionOptions,
                           selectedPermissionIds: selectedPermissionIds,
@@ -399,12 +576,14 @@ Future<bool?> showRoleMutationDialog({
                               : (_) {},
                         ),
                         if (selectedPermissionIds.isEmpty)
-                          Text(
-                            l10n.accessAdminRolePermissionsRequired,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(context).colorScheme.error,
-                                ),
+                          Padding(
+                            padding: EdgeInsets.only(top: theme.spacing.xs),
+                            child: Text(
+                              l10n.accessAdminRolePermissionsRequired,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.error,
+                              ),
+                            ),
                           ),
                       ],
                     ],
@@ -419,13 +598,19 @@ Future<bool?> showRoleMutationDialog({
       if (resolvedTenantId == null || resolvedTenantId.trim().isEmpty) {
         return Future<AppFailure?>.value(AppFailure.validation());
       }
+      if (scopeKind == RoleScopeKind.facility &&
+          (selectedFacilityId == null || selectedFacilityId!.trim().isEmpty)) {
+        return Future<AppFailure?>.value(AppFailure.validation());
+      }
       if (currentPermissionLookups.isEmpty || selectedPermissionIds.isEmpty) {
         return Future<AppFailure?>.value(AppFailure.validation());
       }
       return onSubmit(
         AccessAdminRoleDraft(
           tenantId: resolvedTenantId,
-          facilityId: facilityId,
+          facilityId: scopeKind == RoleScopeKind.facility
+              ? selectedFacilityId
+              : null,
           name: nameController.text.trim().toUpperCase(),
           description: descriptionController.text.trim(),
           permissionIds: selectedPermissionIds.toList(growable: false),
@@ -449,7 +634,7 @@ class _RoleMutationLoadingIndicator extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
 
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: theme.spacing.lg),
+      padding: EdgeInsets.symmetric(vertical: theme.spacing.md),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

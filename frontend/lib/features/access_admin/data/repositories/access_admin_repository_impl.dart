@@ -237,14 +237,30 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
   }
 
   @override
-  Future<Result<void>> updateRole(String roleId, AccessAdminRoleDraft draft) {
-    return _apiClient.put<void>(
-      ApiEndpoints.byId(HmsApiResource.roles, roleId),
-      data: _withoutEmpty(<String, Object?>{
+  Future<Result<void>> updateRole(String roleId, AccessAdminRoleDraft draft) async {
+    final Map<String, Object?> payload = <String, Object?>{
+      ..._withoutEmpty(<String, Object?>{
         'name': draft.name,
         'description': draft.description,
       }),
+      'facility_id': draft.facilityId,
+    };
+    final Result<void> updateResult = await _apiClient.put<void>(
+      ApiEndpoints.byId(HmsApiResource.roles, roleId),
+      data: payload,
       decoder: (_) {},
+    );
+    final AppFailure? updateFailure = updateResult.when(
+      success: (_) => null,
+      failure: (AppFailure failure) => failure,
+    );
+    if (updateFailure != null) {
+      return Result<void>.failure(updateFailure);
+    }
+
+    return syncRolePermissions(
+      roleId: roleId,
+      permissionIds: draft.permissionIds,
     );
   }
 
@@ -254,6 +270,158 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
       ApiEndpoints.byId(HmsApiResource.roles, roleId),
       decoder: (_) {},
     );
+  }
+
+  @override
+  Future<Result<List<AccessAdminRolePermissionAssignment>>> listRolePermissions(
+    String roleId,
+  ) async {
+    final List<AccessAdminRolePermissionAssignment> all =
+        <AccessAdminRolePermissionAssignment>[];
+    var pageIndex = 0;
+    const int pageSize = AppPageRequest.maxPageSize;
+
+    while (true) {
+      final Result<List<AccessAdminRolePermissionAssignment>> result =
+          await _fetchRolePermissionsPage(
+            roleId: roleId,
+            pageIndex: pageIndex,
+            pageSize: pageSize,
+          );
+      final AppFailure? failure = result.when(
+        success: (_) => null,
+        failure: (AppFailure value) => value,
+      );
+      if (failure != null) {
+        return Result<List<AccessAdminRolePermissionAssignment>>.failure(
+          failure,
+        );
+      }
+
+      final List<AccessAdminRolePermissionAssignment> page = result.when(
+        success: (List<AccessAdminRolePermissionAssignment> value) => value,
+        failure: (_) => throw StateError('unreachable'),
+      );
+      all.addAll(page);
+      if (page.length < pageSize) {
+        break;
+      }
+      pageIndex += 1;
+    }
+
+    return Result<List<AccessAdminRolePermissionAssignment>>.success(all);
+  }
+
+  Future<Result<List<AccessAdminRolePermissionAssignment>>>
+  _fetchRolePermissionsPage({
+    required String roleId,
+    required int pageIndex,
+    required int pageSize,
+  }) {
+    return _apiClient.get<List<AccessAdminRolePermissionAssignment>>(
+      ApiEndpoints.collection(HmsApiResource.rolePermissions),
+      queryParameters: <String, Object?>{
+        'role_id': roleId,
+        'page': pageIndex + 1,
+        'limit': pageSize,
+      },
+      decoder: (Object? data) {
+        final Map<String, Object?> response = data is Map<String, Object?>
+            ? data
+            : <String, Object?>{};
+        final List<Object?> rows = response['data'] is List<Object?>
+            ? response['data']! as List<Object?>
+            : const <Object?>[];
+        return rows
+            .whereType<Map<Object?, Object?>>()
+            .map((Map<Object?, Object?> entry) {
+              final Map<String, Object?> row = entry.map(
+                (Object? key, Object? value) =>
+                    MapEntry<String, Object?>(key.toString(), value),
+              );
+              final Object? permissionRaw = row['permission'];
+              final Map<String, Object?> permission =
+                  permissionRaw is Map<Object?, Object?>
+                  ? permissionRaw.map(
+                      (Object? key, Object? value) =>
+                          MapEntry<String, Object?>(key.toString(), value),
+                    )
+                  : <String, Object?>{};
+              final String assignmentId =
+                  _string(row['human_friendly_id']) ??
+                  _string(row['display_id']) ??
+                  _string(row['id']) ??
+                  '';
+              final String? permissionId =
+                  _string(permission['human_friendly_id']) ??
+                  _string(permission['display_id']) ??
+                  _string(permission['id']) ??
+                  _string(row['permission_id']);
+              return AccessAdminRolePermissionAssignment(
+                id: assignmentId,
+                permissionId: permissionId,
+              );
+            })
+            .where(
+              (AccessAdminRolePermissionAssignment item) => item.id.isNotEmpty,
+            )
+            .toList(growable: false);
+      },
+    );
+  }
+
+  @override
+  Future<Result<void>> syncRolePermissions({
+    required String roleId,
+    required List<String> permissionIds,
+  }) async {
+    final Result<List<AccessAdminRolePermissionAssignment>> currentResult =
+        await listRolePermissions(roleId);
+    final List<AccessAdminRolePermissionAssignment> current =
+        currentResult.when(
+          success: (List<AccessAdminRolePermissionAssignment> value) => value,
+          failure: (_) => const <AccessAdminRolePermissionAssignment>[],
+        );
+    final Set<String> desiredPermissionIds = permissionIds.toSet();
+    final Set<String> currentPermissionIds = current
+        .map(
+          (AccessAdminRolePermissionAssignment assignment) =>
+              assignment.permissionId,
+        )
+        .whereType<String>()
+        .toSet();
+
+    AppFailure? lastFailure;
+    for (final AccessAdminRolePermissionAssignment assignment in current) {
+      final String? permissionId = assignment.permissionId;
+      if (permissionId == null || desiredPermissionIds.contains(permissionId)) {
+        continue;
+      }
+      final Result<void> result = await revokeRolePermission(assignment.id);
+      if (result case ResultFailure<void>(:final failure)) {
+        lastFailure ??= failure;
+      }
+    }
+
+    for (final String permissionId in desiredPermissionIds) {
+      if (currentPermissionIds.contains(permissionId)) {
+        continue;
+      }
+      final Result<void> result = await assignRolePermission(
+        AccessAdminRolePermissionDraft(
+          roleId: roleId,
+          permissionId: permissionId,
+        ),
+      );
+      if (result case ResultFailure<void>(:final failure)) {
+        lastFailure ??= failure;
+      }
+    }
+
+    if (lastFailure != null) {
+      return Result<void>.failure(lastFailure);
+    }
+    return const Result<void>.success(null);
   }
 
   @override

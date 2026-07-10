@@ -23450,7 +23450,7 @@
   "@accessAdminCreateRoleAction": {
     "description": "Access admin create role action."
   },
-  "accessAdminCreateRoleIntro": "Define a role for your organization, then assign the permissions users need to perform their work.",
+  "accessAdminCreateRoleIntro": "Define a role, then choose the permissions it grants.",
   "@accessAdminCreateRoleIntro": {
     "description": "Introductory helper text at the top of the create role dialog."
   },
@@ -23458,7 +23458,7 @@
   "@accessAdminCreateRoleScopeSectionTitle": {
     "description": "Section title for tenant selection in the create role dialog."
   },
-  "accessAdminCreateRoleScopeSectionDescription": "Select the tenant this role belongs to. Permissions are loaded from that organization's catalog.",
+  "accessAdminCreateRoleScopeSectionDescription": "Choose where this role applies.",
   "@accessAdminCreateRoleScopeSectionDescription": {
     "description": "Section description for tenant selection in the create role dialog."
   },
@@ -23466,11 +23466,11 @@
   "@accessAdminCreateRoleDetailsSectionTitle": {
     "description": "Section title for role name and description fields."
   },
-  "accessAdminCreateRoleDetailsSectionDescription": "Use a short, recognizable name. An optional description helps other administrators.",
+  "accessAdminCreateRoleDetailsSectionDescription": "Short name and optional description.",
   "@accessAdminCreateRoleDetailsSectionDescription": {
     "description": "Section description for role name and description fields."
   },
-  "accessAdminCreateRolePermissionsSectionDescription": "Search by module or action, then select the capabilities this role should grant.",
+  "accessAdminCreateRolePermissionsSectionDescription": "Select the permissions this role grants.",
   "@accessAdminCreateRolePermissionsSectionDescription": {
     "description": "Section description for the permissions picker in the create role dialog."
   },
@@ -23481,6 +23481,34 @@
   "accessAdminCreateRoleLoadingTenants": "Loading tenants…",
   "@accessAdminCreateRoleLoadingTenants": {
     "description": "Loading label while tenant options are fetched."
+  },
+  "accessAdminCreateRoleLoadingFacilities": "Loading facilities…",
+  "@accessAdminCreateRoleLoadingFacilities": {
+    "description": "Loading label while facility options are fetched for role scope."
+  },
+  "accessAdminRoleScopeLabel": "Scope",
+  "@accessAdminRoleScopeLabel": {
+    "description": "Label for role scope (tenant-wide vs facility) control."
+  },
+  "accessAdminRoleScopeTenantLabel": "Entire organization",
+  "@accessAdminRoleScopeTenantLabel": {
+    "description": "Role scope option for tenant-wide roles available to all facilities."
+  },
+  "accessAdminRoleScopeFacilityLabel": "One facility",
+  "@accessAdminRoleScopeFacilityLabel": {
+    "description": "Role scope option for facility-specific roles."
+  },
+  "accessAdminRoleFacilityRequiredTitle": "Facility required",
+  "@accessAdminRoleFacilityRequiredTitle": {
+    "description": "Title when facility options cannot be loaded for a facility-scoped role."
+  },
+  "accessAdminRoleFacilityRequiredMessage": "Select a facility for this role, or retry loading facilities.",
+  "@accessAdminRoleFacilityRequiredMessage": {
+    "description": "Message when facility options are empty for a facility-scoped role."
+  },
+  "accessAdminRoleSelectFacilityMessage": "Select a facility to load assignable permissions.",
+  "@accessAdminRoleSelectFacilityMessage": {
+    "description": "Prompt shown before permissions load when facility scope is selected."
   },
   "accessAdminEditRoleAction": "Edit role",
   "@accessAdminEditRoleAction": {

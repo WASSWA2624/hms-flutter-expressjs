@@ -1,6 +1,9 @@
 /**
  * Sync canonical permission catalog and system roles from config into tenant DB rows.
  *
+ * Hot paths (reference-data / workspace) use a short in-memory TTL cache and only
+ * create missing rows — they do not rewrite metadata on every request.
+ *
  * @module lib/authorization/permission-catalog-sync
  */
 
@@ -17,6 +20,14 @@ const CANONICAL_PERMISSION_KEYS = Object.freeze(
 );
 
 const SYSTEM_ROLE_CODES = Object.freeze(Object.keys(ROLE_PERMISSIONS).sort());
+
+const CATALOG_TTL_MS = Number(process.env.ACCESS_CATALOG_CACHE_TTL_MS || 5 * 60 * 1000);
+
+/** @type {Map<string, { at: number, records: Object[] }>} */
+const permissionCatalogCache = new Map();
+
+/** @type {Map<string, { at: number, permissions: number, roles: number }>} */
+const accessCatalogCache = new Map();
 
 const friendlyId = (prefix, key) =>
   `${prefix}-${crypto.createHash('sha256').update(String(key || '')).digest('hex').slice(0, 10).toUpperCase()}`;
@@ -109,7 +120,7 @@ const upsertRolePermissionLink = async (roleId, permissionId) => {
   });
 };
 
-const syncSystemRole = async (tenantId, roleName, permissionMap) => {
+const syncSystemRole = async (tenantId, roleName, permissionMap, { refreshMetadata = true } = {}) => {
   const { displayName, description } = getRoleMetadata(roleName);
   let role = await findRoleByName(tenantId, roleName);
 
@@ -123,7 +134,7 @@ const syncSystemRole = async (tenantId, roleName, permissionMap) => {
         human_friendly_id: friendlyId('ROLE', `${tenantId}:${roleName}`),
       },
     });
-  } else {
+  } else if (refreshMetadata) {
     role = await prisma.role.update({
       where: { id: role.id },
       data: {
@@ -145,9 +156,14 @@ const syncSystemRole = async (tenantId, roleName, permissionMap) => {
   return role;
 };
 
-const syncSystemRolesForTenant = async (tenantId, permissionMap, roleNames = SYSTEM_ROLE_CODES) => {
+const syncSystemRolesForTenant = async (
+  tenantId,
+  permissionMap,
+  roleNames = SYSTEM_ROLE_CODES,
+  options = {}
+) => {
   for (const roleName of roleNames) {
-    await syncSystemRole(tenantId, roleName, permissionMap);
+    await syncSystemRole(tenantId, roleName, permissionMap, options);
   }
 };
 
@@ -160,9 +176,32 @@ const countSystemRoles = async (tenantId) =>
     },
   });
 
-const ensureTenantPermissionCatalog = async (tenantId) => {
+const readCachedPermissionCatalog = (tenantId) => {
+  const cached = permissionCatalogCache.get(tenantId);
+  if (!cached) {
+    return null;
+  }
+  if (Date.now() - cached.at > CATALOG_TTL_MS) {
+    permissionCatalogCache.delete(tenantId);
+    return null;
+  }
+  return cached.records;
+};
+
+const writeCachedPermissionCatalog = (tenantId, records) => {
+  permissionCatalogCache.set(tenantId, { at: Date.now(), records });
+};
+
+const ensureTenantPermissionCatalog = async (tenantId, { force = false } = {}) => {
   if (!tenantId) {
     return [];
+  }
+
+  if (!force) {
+    const cached = readCachedPermissionCatalog(tenantId);
+    if (cached) {
+      return cached;
+    }
   }
 
   const existing = await prisma.permission.findMany({
@@ -177,6 +216,7 @@ const ensureTenantPermissionCatalog = async (tenantId) => {
   const existingNames = new Set(existing.map((entry) => entry.name));
   const missing = CANONICAL_PERMISSION_KEYS.filter((name) => !existingNames.has(name));
 
+  let records = existing;
   if (missing.length > 0) {
     await prisma.permission.createMany({
       data: missing.map((name) => {
@@ -191,7 +231,7 @@ const ensureTenantPermissionCatalog = async (tenantId) => {
       }),
     });
 
-    return prisma.permission.findMany({
+    records = await prisma.permission.findMany({
       where: {
         tenant_id: tenantId,
         deleted_at: null,
@@ -201,22 +241,69 @@ const ensureTenantPermissionCatalog = async (tenantId) => {
     });
   }
 
-  return existing;
+  writeCachedPermissionCatalog(tenantId, records);
+  return records;
 };
 
 /**
- * Idempotently ensures tenant permission catalog and system roles exist with metadata.
- *
- * @param {string} tenantId
- * @returns {Promise<{ permissions: number, roles: number }|null>}
+ * Fast path for workspace/reference-data: ensure missing catalog rows exist.
+ * Skips per-row metadata rewrites once the catalog is complete.
  */
-const ensureTenantAccessCatalog = async (tenantId) => {
+const ensureTenantAccessCatalog = async (tenantId, { force = false } = {}) => {
   if (!tenantId) {
     return null;
   }
 
+  if (!force) {
+    const cached = accessCatalogCache.get(tenantId);
+    if (cached && Date.now() - cached.at <= CATALOG_TTL_MS) {
+      return { permissions: cached.permissions, roles: cached.roles };
+    }
+  }
+
+  const permissionRecords = await ensureTenantPermissionCatalog(tenantId, { force });
+  const permissionMap = new Map(permissionRecords.map((entry) => [entry.name, entry]));
+
+  const existingRoles = await prisma.role.findMany({
+    where: {
+      tenant_id: tenantId,
+      deleted_at: null,
+      name: { in: [...SYSTEM_ROLE_CODES] },
+    },
+    select: { id: true, name: true },
+  });
+  const existingRoleNames = new Set(existingRoles.map((entry) => entry.name));
+  const missingRoleNames = SYSTEM_ROLE_CODES.filter((name) => !existingRoleNames.has(name));
+
+  if (missingRoleNames.length > 0) {
+    await syncSystemRolesForTenant(tenantId, permissionMap, missingRoleNames, {
+      refreshMetadata: false,
+    });
+  }
+
+  const roles = existingRoles.length + missingRoleNames.length;
+  const result = {
+    permissions: permissionRecords.length,
+    roles,
+  };
+  accessCatalogCache.set(tenantId, { at: Date.now(), ...result });
+  return result;
+};
+
+/**
+ * Full metadata refresh (slower). Prefer ensureTenantAccessCatalog for request paths.
+ */
+const refreshTenantAccessCatalog = async (tenantId) => {
+  if (!tenantId) {
+    return null;
+  }
+  permissionCatalogCache.delete(tenantId);
+  accessCatalogCache.delete(tenantId);
+
   const permissionMap = await syncPermissionsForTenant(tenantId);
-  await syncSystemRolesForTenant(tenantId, permissionMap);
+  await syncSystemRolesForTenant(tenantId, permissionMap, SYSTEM_ROLE_CODES, {
+    refreshMetadata: true,
+  });
 
   const [permissions, roles] = await Promise.all([
     prisma.permission.count({
@@ -229,14 +316,30 @@ const ensureTenantAccessCatalog = async (tenantId) => {
     countSystemRoles(tenantId),
   ]);
 
+  const permissionRecords = await ensureTenantPermissionCatalog(tenantId, { force: true });
+  accessCatalogCache.set(tenantId, { at: Date.now(), permissions, roles });
+  writeCachedPermissionCatalog(tenantId, permissionRecords);
+
   return { permissions, roles };
+};
+
+const clearAccessCatalogCache = (tenantId = null) => {
+  if (tenantId) {
+    permissionCatalogCache.delete(tenantId);
+    accessCatalogCache.delete(tenantId);
+    return;
+  }
+  permissionCatalogCache.clear();
+  accessCatalogCache.clear();
 };
 
 module.exports = {
   CANONICAL_PERMISSION_KEYS,
   SYSTEM_ROLE_CODES,
+  clearAccessCatalogCache,
   ensureTenantAccessCatalog,
   ensureTenantPermissionCatalog,
+  refreshTenantAccessCatalog,
   syncPermissionsForTenant,
   syncSystemRolesForTenant,
 };

@@ -595,10 +595,15 @@ class _ManageRolesPermissionsDialogState
     if (state == null || !mounted) {
       return;
     }
-    await openAccessAdminEditRoleDialog(context, ref, state, role);
-    if (mounted) {
+    final bool? saved = await openAccessAdminEditRoleDialog(
+      context,
+      ref,
+      state,
+      role,
+    );
+    if (saved == true && mounted) {
       mutated = true;
-      unawaited(reload(resetPage: false, silent: true));
+      unawaited(reload(resetPage: true, silent: true));
     }
   }
 

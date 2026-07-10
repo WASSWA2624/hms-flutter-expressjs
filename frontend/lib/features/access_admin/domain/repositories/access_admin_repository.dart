@@ -50,6 +50,15 @@ abstract interface class AccessAdminRepository {
 
   Future<Result<void>> deleteRole(String roleId);
 
+  Future<Result<List<AccessAdminRolePermissionAssignment>>> listRolePermissions(
+    String roleId,
+  );
+
+  Future<Result<void>> syncRolePermissions({
+    required String roleId,
+    required List<String> permissionIds,
+  });
+
   Future<Result<void>> assignUserRole(AccessAdminUserRoleDraft draft);
 
   Future<Result<void>> revokeUserRole(String userRoleId);

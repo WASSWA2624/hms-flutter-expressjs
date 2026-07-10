@@ -82,7 +82,7 @@ const createRole = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  const role = await roleService.createRole(req.body, userId, ipAddress);
+  const role = await roleService.createRole(req.body, userId, ipAddress, req.user);
 
   sendSuccess(res, 201, 'messages.role.create.success', role);
 });
@@ -99,7 +99,7 @@ const updateRole = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  const role = await roleService.updateRole(id, req.body, userId, ipAddress);
+  const role = await roleService.updateRole(id, req.body, userId, ipAddress, req.user);
 
   sendSuccess(res, 200, 'messages.role.update.success', role);
 });

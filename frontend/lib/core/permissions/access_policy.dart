@@ -261,6 +261,14 @@ final class AppAccessPolicy {
     return isElevated || grants(AppPermissions.systemAdmin);
   }
 
+  /// Tenant-wide roles (facility_id null) may be created by super/tenant admins.
+  /// Facility admins must create facility-scoped roles only.
+  bool canCreateTenantWideRole() {
+    return isElevated ||
+        hasRole(AppRole.tenantAdmin) ||
+        grants(AppPermissions.tenantAdmin);
+  }
+
   bool canManageFacility() {
     return isElevated ||
         grantsAny(const <AppPermission>[

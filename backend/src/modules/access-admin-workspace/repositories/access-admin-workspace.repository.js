@@ -2,6 +2,7 @@ const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 const { resolveIdentifierForFilter } = require('@lib/billing/identifiers');
 const { ROLES } = require('@config/roles');
+const { buildRoleScopeWhere } = require('@lib/authorization/assignable-access');
 const tenantFacilityRepository = require('@repositories/tenant-facility-workspace/tenant-facility-workspace.repository');
 
 const DEMO_EMAIL_SUFFIX = '@hosspi.com';
@@ -28,6 +29,9 @@ const scopedWhere = (scope = {}, options = {}) => {
 
   return where;
 };
+
+const scopedRoleWhere = (scope = {}, options = {}) =>
+  buildRoleScopeWhere(scope, options);
 
 const buildSearchFilter = (search = '') => {
   const term = String(search || '').trim();
@@ -64,11 +68,19 @@ const countUsers = async (scope = {}, filters = {}) => {
 const countRoles = async (scope = {}, filters = {}) => {
   try {
     const where = {
-      ...scopedWhere(scope, { includeFacility: true }),
+      ...scopedRoleWhere(scope),
     };
     const searchFilter = buildSearchFilter(filters.search);
     if (searchFilter) {
-      where.OR = searchFilter.OR.filter((entry) => !entry.email && !entry.position_title);
+      const searchOr = searchFilter.OR.filter(
+        (entry) => !entry.email && !entry.position_title
+      );
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchOr }];
+        delete where.OR;
+      } else {
+        where.OR = searchOr;
+      }
     }
     return prisma.role.count({ where });
   } catch (error) {
@@ -223,10 +235,18 @@ const findUsers = async ({ scope = {}, filters = {}, skip = 0, take = 20, orderB
 
 const findRoles = async ({ scope = {}, filters = {}, skip = 0, take = 20, orderBy = { name: 'asc' } }) => {
   try {
-    const where = scopedWhere(scope, { includeFacility: true });
+    const where = scopedRoleWhere(scope);
     const searchFilter = buildSearchFilter(filters.search);
     if (searchFilter) {
-      where.OR = searchFilter.OR.filter((entry) => !entry.email && !entry.position_title);
+      const searchOr = searchFilter.OR.filter(
+        (entry) => !entry.email && !entry.position_title
+      );
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchOr }];
+        delete where.OR;
+      } else {
+        where.OR = searchOr;
+      }
     }
 
     const [items, total] = await Promise.all([
@@ -472,7 +492,7 @@ const findLookups = async (scope = {}, includeAllTenants = false) => {
       tenantFacilityRepository.findTenants(scope, includeAllTenants),
       tenantFacilityRepository.findFacilities(scope?.tenant_id),
       prisma.role.findMany({
-        where: scopedWhere(scope, { includeFacility: true }),
+        where: scopedRoleWhere(scope),
         orderBy: { name: 'asc' },
         take: 200,
         select: {
@@ -481,6 +501,14 @@ const findLookups = async (scope = {}, includeAllTenants = false) => {
           name: true,
           display_name: true,
           facility_id: true,
+          permissions: {
+            where: { deleted_at: null },
+            select: {
+              permission: {
+                select: { name: true },
+              },
+            },
+          },
         },
       }),
       prisma.permission.findMany({

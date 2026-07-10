@@ -11,6 +11,7 @@ const rolePermissionRepository = require('@repositories/role-permission/role-per
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { resolveIdentifierForPayload } = require('@lib/billing/identifiers');
+const { assertPermissionIdAssignable } = require('@lib/authorization/assignable-access');
 
 const normalizeCreateRolePermissionPayload = async (data = {}) => ({
   role_id: await resolveIdentifierForPayload({
@@ -124,8 +125,11 @@ const getRolePermissionById = async (id, userId, ipAddress) => {
  * @param {string} ipAddress - User IP for audit
  * @returns {Promise<Object>} Created role-permission
  */
-const createRolePermission = async (data, userId, ipAddress) => {
+const createRolePermission = async (data, userId, ipAddress, actor = null) => {
   try {
+    if (actor) {
+      await assertPermissionIdAssignable(data.permission_id, actor);
+    }
     const payload = await normalizeCreateRolePermissionPayload(data);
     const rolePermission = await rolePermissionRepository.create(payload);
 

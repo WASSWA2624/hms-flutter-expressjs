@@ -424,7 +424,14 @@ class _AccessAdminWorkspaceContentState
     BuildContext context,
     AccessAdminWorkspaceState state,
   ) async {
-    await openAccessAdminCreateRoleDialog(context, ref, state);
+    final bool? saved = await openAccessAdminCreateRoleDialog(
+      context,
+      ref,
+      state,
+    );
+    if (saved == true && context.mounted) {
+      await ref.read(accessAdminWorkspaceControllerProvider.notifier).refresh();
+    }
   }
 
   void _showSnack(BuildContext context, String message) {

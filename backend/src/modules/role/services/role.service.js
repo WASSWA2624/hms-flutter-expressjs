@@ -20,6 +20,7 @@ const {
   REALTIME_SYNC_ACTIONS
 } = require('@lib/realtime/entity-envelope');
 const { serializeAccessAdminRoleEntity } = require('@lib/realtime/access-admin-realtime');
+const { assertRoleScopeAllowed } = require('@lib/authorization/assignable-access');
 
 const ROLE_REALTIME_RECIPIENT_ROLES = Object.freeze([ROLES.TENANT_ADMIN]);
 
@@ -179,10 +180,11 @@ const getRoleById = async (id, userId, ipAddress) => {
  * @param {string} ipAddress - User IP for audit
  * @returns {Promise<Object>} Created role
  */
-const createRole = async (data, userId, ipAddress) => {
+const createRole = async (data, userId, ipAddress, actor = null) => {
   try {
     const payload = await normalizeCreateRolePayload(data);
-    const role = await roleRepository.create(payload);
+    const scopedPayload = await assertRoleScopeAllowed(payload, actor || { id: userId });
+    const role = await roleRepository.create(scopedPayload);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -217,7 +219,7 @@ const createRole = async (data, userId, ipAddress) => {
  * @param {string} ipAddress - User IP for audit
  * @returns {Promise<Object>} Updated role
  */
-const updateRole = async (id, data, userId, ipAddress) => {
+const updateRole = async (id, data, userId, ipAddress, actor = null) => {
   try {
     const resolvedRoleId = await resolveRoleId(id);
     // Get current state for audit
@@ -227,7 +229,29 @@ const updateRole = async (id, data, userId, ipAddress) => {
       throw new HttpError('errors.role.not_found', 404);
     }
 
-    const role = await roleRepository.update(resolvedRoleId, data);
+    const payload = { ...data };
+    if (Object.prototype.hasOwnProperty.call(data, 'facility_id')) {
+      if (data.facility_id != null && String(data.facility_id).trim() !== '') {
+        payload.facility_id = await resolveIdentifierForPayload({
+          value: data.facility_id,
+          model: 'facility',
+          field: 'facility_id',
+          nullable: true,
+        });
+      } else {
+        payload.facility_id = null;
+      }
+
+      await assertRoleScopeAllowed(
+        {
+          tenant_id: before.tenant_id,
+          facility_id: payload.facility_id,
+        },
+        actor || { id: userId }
+      );
+    }
+
+    const role = await roleRepository.update(resolvedRoleId, payload);
 
     // Create audit log (non-blocking)
     createAuditLog({

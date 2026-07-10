@@ -78,7 +78,12 @@ const createRolePermission = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  const rolePermission = await rolePermissionService.createRolePermission(req.body, userId, ipAddress);
+  const rolePermission = await rolePermissionService.createRolePermission(
+    req.body,
+    userId,
+    ipAddress,
+    req.user
+  );
 
   sendSuccess(res, 201, 'messages.role_permission.create.success', rolePermission);
 });

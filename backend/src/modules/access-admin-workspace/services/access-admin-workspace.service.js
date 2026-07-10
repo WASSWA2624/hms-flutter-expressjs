@@ -4,6 +4,10 @@ const { resolvePublicIdentifier, resolveIdentifierForFilter } = require('@lib/bi
 const { ROLES } = require('@config/roles');
 const { ROLE_PERMISSIONS } = require('@config/permissions');
 const { ensureTenantAccessCatalog, ensureTenantPermissionCatalog } = require('@lib/authorization/permission-catalog-sync');
+const {
+  filterPermissionRecordsByCeiling,
+  filterRoleRecordsByCeiling,
+} = require('@lib/authorization/assignable-access');
 const { createAuditLog } = require('@lib/audit');
 const { provisionTrialSubscription } = require('@lib/subscriptions/tenant-onboarding');
 const { listPendingPaymentRequests } = require('@lib/subscriptions/subscription-payment-request');
@@ -310,31 +314,40 @@ const serializeUserDetail = (record) => {
   };
 };
 
-const buildLookups = (records = {}) => ({
-  tenants: (records.tenants || []).map((entry) => ({
-    id: safePublicId(entry.human_friendly_id, entry.id),
-    label: entry.name,
-  })),
-  facilities: (records.facilities || []).map((entry) => ({
-    id: safePublicId(entry.human_friendly_id, entry.id),
-    label: entry.name,
-    facility_type: entry.facility_type || null,
-  })),
-  roles: (records.roles || []).map((entry) => ({
-    id: safePublicId(entry.human_friendly_id, entry.id),
-    label: entry.name,
-    display_name: entry.display_name || entry.name,
-    facility_id: safePublicId(entry.facility_id),
-  })),
-  permissions: (records.permissions || []).map((entry) => ({
-    id: safePublicId(entry.human_friendly_id, entry.id),
-    label: entry.name,
-    display_name: entry.display_name || entry.name,
-    description: entry.description || null,
-  })),
-  user_statuses: ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING'],
-  clinical_flow_roles: [...CLINICAL_FLOW_ROLES],
-});
+const buildLookups = (records = {}, user = null) => {
+  const roles = user
+    ? filterRoleRecordsByCeiling(records.roles || [], user)
+    : records.roles || [];
+  const permissions = user
+    ? filterPermissionRecordsByCeiling(records.permissions || [], user)
+    : records.permissions || [];
+
+  return {
+    tenants: (records.tenants || []).map((entry) => ({
+      id: safePublicId(entry.human_friendly_id, entry.id),
+      label: entry.name,
+    })),
+    facilities: (records.facilities || []).map((entry) => ({
+      id: safePublicId(entry.human_friendly_id, entry.id),
+      label: entry.name,
+      facility_type: entry.facility_type || null,
+    })),
+    roles: roles.map((entry) => ({
+      id: safePublicId(entry.human_friendly_id, entry.id),
+      label: entry.name,
+      display_name: entry.display_name || entry.name,
+      facility_id: safePublicId(entry.facility_id),
+    })),
+    permissions: permissions.map((entry) => ({
+      id: safePublicId(entry.human_friendly_id, entry.id),
+      label: entry.name,
+      display_name: entry.display_name || entry.name,
+      description: entry.description || null,
+    })),
+    user_statuses: ['ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING'],
+    clinical_flow_roles: [...CLINICAL_FLOW_ROLES],
+  };
+};
 
 const buildOverview = (summary = {}, subscriptionRecord = null) => ({
   active_users: summary.active_users || 0,
@@ -487,7 +500,7 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
         default_resource: entry.default_resource,
       })),
       filters: { panel, resource, tenant_id: null, facility_id: null },
-      lookups: buildLookups(lookups),
+      lookups: buildLookups(lookups, user),
       items: [],
       pagination: buildPagination(page, limit, 0),
       overview: buildOverview(),
@@ -560,7 +573,7 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
       role_id: filters.role_id,
       record_id: text(query.id || query.recordId) || null,
     },
-    lookups: buildLookups(lookups),
+    lookups: buildLookups(lookups, user),
     items: serializeItems(resource, itemsResult.items || [], subscription),
     pagination: buildPagination(page, limit, Number(itemsResult.total || 0)),
     overview: buildOverview(summary, overviewSubscription),
@@ -573,16 +586,18 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
   };
 };
 
-const loadAssignablePermissionCatalog = async (tenantId) => {
+const loadAssignablePermissionCatalog = async (tenantId, user = {}) => {
   if (!tenantId) {
     return [];
   }
-  return ensureTenantPermissionCatalog(tenantId);
+  const permissions = await ensureTenantPermissionCatalog(tenantId);
+  return filterPermissionRecordsByCeiling(permissions, user);
 };
 
 const getReferenceData = async (query = {}, user = {}) => {
   const includeAllTenants = roleList(user).includes(ROLES.SUPER_ADMIN);
   const requestedTenantId = text(query.tenant_id || query.tenantId);
+  const requestedFacilityId = text(query.facility_id || query.facilityId) || null;
   const canAssignPermissions = canWriteAccess(user);
 
   if (requestedTenantId && canAssignPermissions) {
@@ -590,18 +605,27 @@ const getReferenceData = async (query = {}, user = {}) => {
       value: requestedTenantId,
       model: 'tenant',
     });
+    const facilityId = requestedFacilityId
+      ? await resolveIdentifierForFilter({
+          value: requestedFacilityId,
+          model: 'facility',
+        })
+      : null;
     if (tenantId) {
       const [permissions, lookups] = await Promise.all([
-        loadAssignablePermissionCatalog(tenantId),
+        loadAssignablePermissionCatalog(tenantId, user),
         repository.findLookups(
-          { tenant_id: tenantId, facility_id: null },
+          { tenant_id: tenantId, facility_id: facilityId || null },
           includeAllTenants
         ),
       ]);
-      return buildLookups({
-        ...lookups,
-        permissions,
-      });
+      return buildLookups(
+        {
+          ...lookups,
+          permissions,
+        },
+        user
+      );
     }
   }
 
@@ -610,23 +634,29 @@ const getReferenceData = async (query = {}, user = {}) => {
   if (scopeResult.state === 'tenant_context_required') {
     const lookups = await repository.findLookups(null, includeAllTenants);
     return {
-      ...buildLookups(lookups),
+      ...buildLookups(lookups, user),
       permissions: [],
     };
   }
 
   const scope = scopeResult.scope;
   const [permissions, lookups] = await Promise.all([
-    canAssignPermissions ? loadAssignablePermissionCatalog(scope.tenant_id) : Promise.resolve([]),
+    canAssignPermissions
+      ? loadAssignablePermissionCatalog(scope.tenant_id, user)
+      : Promise.resolve([]),
     repository.findLookups(scope, includeAllTenants),
   ]);
 
-  return buildLookups({
-    ...lookups,
-    permissions: canAssignPermissions && permissions.length > 0
-      ? permissions
-      : lookups.permissions,
-  });
+  return buildLookups(
+    {
+      ...lookups,
+      permissions:
+        canAssignPermissions && permissions.length > 0
+          ? permissions
+          : lookups.permissions,
+    },
+    user
+  );
 };
 
 const getUserDetail = async (identifier, query = {}, user = {}) => {
