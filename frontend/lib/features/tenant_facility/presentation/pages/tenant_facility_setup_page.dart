@@ -3129,14 +3129,6 @@ class _FacilityChangeValuePane extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            Text(
-              caption,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: captionColor,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            SizedBox(height: theme.spacing.sm),
             if (isLogo)
               _FacilityConfirmLogoPreview(
                 url: logoUrl,
@@ -3145,7 +3137,15 @@ class _FacilityChangeValuePane extends StatelessWidget {
                 emptyLabel: emptyLogoLabel,
                 emphasizeRemoval: isPrevious || logoCleared,
               )
-            else
+            else ...<Widget>[
+              Text(
+                caption,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: captionColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(height: theme.spacing.sm),
               Text(
                 textValue,
                 style: theme.textTheme.bodyLarge?.copyWith(
@@ -3156,6 +3156,7 @@ class _FacilityChangeValuePane extends StatelessWidget {
                       : colorScheme.onSurface,
                 ),
               ),
+            ],
           ],
         ),
       ),
@@ -3178,6 +3179,8 @@ class _FacilityConfirmLogoPreview extends StatelessWidget {
   final String emptyLabel;
   final bool emphasizeRemoval;
 
+  static const double _previewHeight = 128;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -3189,32 +3192,37 @@ class _FacilityConfirmLogoPreview extends StatelessWidget {
     if (hasBytes) {
       image = Image.memory(
         Uint8List.fromList(bytes!),
-        fit: BoxFit.cover,
-        errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) =>
-            Icon(Icons.broken_image_outlined, color: colorScheme.error),
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+        errorBuilder:
+            (BuildContext context, Object error, StackTrace? stackTrace) =>
+                Icon(Icons.broken_image_outlined, color: colorScheme.error),
       );
     } else if (hasUrl && !cleared) {
       image = Image.network(
         url!.trim(),
-        fit: BoxFit.cover,
-        errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) =>
-            Icon(Icons.broken_image_outlined, color: colorScheme.error),
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+        errorBuilder:
+            (BuildContext context, Object error, StackTrace? stackTrace) =>
+                Icon(Icons.broken_image_outlined, color: colorScheme.error),
       );
     } else {
       image = Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
           Icon(
-            cleared ? Icons.hide_image_outlined : Icons.domain_outlined,
+            cleared ? Icons.hide_image_outlined : Icons.image_not_supported_outlined,
             color: colorScheme.onSurfaceVariant,
+            size: 28,
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: theme.spacing.xs),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
               emptyLabel,
               textAlign: TextAlign.center,
-              style: theme.textTheme.labelSmall?.copyWith(
+              style: theme.textTheme.labelMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
             ),
@@ -3223,45 +3231,33 @@ class _FacilityConfirmLogoPreview extends StatelessWidget {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: colorScheme.outlineVariant),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: SizedBox(
-              width: 96,
-              height: 96,
-              child: Stack(
-                fit: StackFit.expand,
-                children: <Widget>[
-                  image,
-                  if (emphasizeRemoval && (hasUrl || cleared) && !hasBytes)
-                    ColoredBox(
-                      color: colorScheme.error.withValues(alpha: 0.12),
-                      child: const SizedBox.expand(),
-                    ),
-                ],
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: SizedBox(
+          width: double.infinity,
+          height: _previewHeight,
+          child: Stack(
+            fit: StackFit.expand,
+            children: <Widget>[
+              Padding(
+                padding: EdgeInsets.all(theme.spacing.sm),
+                child: image,
               ),
-            ),
+              if (emphasizeRemoval && (hasUrl || cleared) && !hasBytes)
+                ColoredBox(
+                  color: colorScheme.error.withValues(alpha: 0.12),
+                  child: const SizedBox.expand(),
+                ),
+            ],
           ),
         ),
-        if (hasBytes) ...<Widget>[
-          SizedBox(height: theme.spacing.xs),
-          Text(
-            context.l10n.tenantFacilityLogoAddedLabel,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: colorScheme.primary,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ],
+      ),
     );
   }
 }

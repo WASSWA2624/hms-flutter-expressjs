@@ -50,11 +50,16 @@ class _AppImageCropDialog extends StatefulWidget {
 }
 
 class _AppImageCropDialogState extends State<_AppImageCropDialog> {
+  static const double _minCropSide = 32;
+  static const double _edgeHitSize = 22;
+
   late CropController _controller;
   late double? _aspectRatio;
   bool _isCropping = false;
   int _cropViewGeneration = 0;
   Uint8List? _previewBytes;
+  Rect? _cropViewportRect;
+  Rect? _imageViewportRect;
 
   bool get _showingPreview => _previewBytes != null;
 
@@ -65,14 +70,20 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
     _aspectRatio = widget.initialAspectRatio;
   }
 
+  void _resetCropSession() {
+    _cropViewGeneration += 1;
+    _controller = CropController();
+    _cropViewportRect = null;
+    _imageViewportRect = null;
+  }
+
   void _setAspectRatio(double? next) {
     if (_isCropping || _showingPreview || _aspectRatio == next) {
       return;
     }
     setState(() {
       _aspectRatio = next;
-      _cropViewGeneration += 1;
-      _controller = CropController();
+      _resetCropSession();
     });
   }
 
@@ -82,9 +93,159 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
     }
     setState(() {
       _previewBytes = null;
-      _cropViewGeneration += 1;
-      _controller = CropController();
+      _resetCropSession();
     });
+  }
+
+  MouseCursor _cursorForCorner(EdgeAlignment alignment) {
+    return switch (alignment) {
+      EdgeAlignment.topLeft || EdgeAlignment.bottomRight =>
+        SystemMouseCursors.resizeUpLeftDownRight,
+      EdgeAlignment.topRight || EdgeAlignment.bottomLeft =>
+        SystemMouseCursors.resizeUpRightDownLeft,
+    };
+  }
+
+  void _onCropMoved(Rect viewportRect, Rect _) {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _cropViewportRect = viewportRect;
+    });
+  }
+
+  void _onImageMoved(Rect imageRect) {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _imageViewportRect = imageRect;
+    });
+  }
+
+  void _resizeFromEdge(_CropEdge edge, Offset delta) {
+    final Rect? crop = _cropViewportRect;
+    if (crop == null) {
+      return;
+    }
+    final Rect bounds = _imageViewportRect ?? crop;
+    late final Rect next;
+    switch (edge) {
+      case _CropEdge.top:
+        next = Rect.fromLTRB(
+          crop.left,
+          (crop.top + delta.dy).clamp(bounds.top, crop.bottom - _minCropSide),
+          crop.right,
+          crop.bottom,
+        );
+      case _CropEdge.bottom:
+        next = Rect.fromLTRB(
+          crop.left,
+          crop.top,
+          crop.right,
+          (crop.bottom + delta.dy).clamp(crop.top + _minCropSide, bounds.bottom),
+        );
+      case _CropEdge.left:
+        next = Rect.fromLTRB(
+          (crop.left + delta.dx).clamp(bounds.left, crop.right - _minCropSide),
+          crop.top,
+          crop.right,
+          crop.bottom,
+        );
+      case _CropEdge.right:
+        next = Rect.fromLTRB(
+          crop.left,
+          crop.top,
+          (crop.right + delta.dx).clamp(crop.left + _minCropSide, bounds.right),
+          crop.bottom,
+        );
+    }
+    _controller.cropRect = next;
+  }
+
+  List<Widget> _buildEdgeHandles(ColorScheme colorScheme) {
+    final Rect? crop = _cropViewportRect;
+    if (crop == null || _aspectRatio != null) {
+      return const <Widget>[];
+    }
+
+    Widget handle({
+      required double left,
+      required double top,
+      required MouseCursor cursor,
+      required _CropEdge edge,
+      required bool horizontalBar,
+    }) {
+      return Positioned(
+        left: left,
+        top: top,
+        child: MouseRegion(
+          cursor: cursor,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onPanUpdate: (DragUpdateDetails details) {
+              _resizeFromEdge(edge, details.delta);
+            },
+            child: SizedBox(
+              width: horizontalBar ? 36 : _edgeHitSize,
+              height: horizontalBar ? _edgeHitSize : 36,
+              child: Center(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: colorScheme.outlineVariant),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: colorScheme.shadow.withValues(alpha: 0.18),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: SizedBox(
+                    width: horizontalBar ? 22 : 6,
+                    height: horizontalBar ? 6 : 22,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return <Widget>[
+      handle(
+        left: crop.center.dx - 18,
+        top: crop.top - (_edgeHitSize / 2),
+        cursor: SystemMouseCursors.resizeUpDown,
+        edge: _CropEdge.top,
+        horizontalBar: true,
+      ),
+      handle(
+        left: crop.center.dx - 18,
+        top: crop.bottom - (_edgeHitSize / 2),
+        cursor: SystemMouseCursors.resizeUpDown,
+        edge: _CropEdge.bottom,
+        horizontalBar: true,
+      ),
+      handle(
+        left: crop.left - (_edgeHitSize / 2),
+        top: crop.center.dy - 18,
+        cursor: SystemMouseCursors.resizeLeftRight,
+        edge: _CropEdge.left,
+        horizontalBar: false,
+      ),
+      handle(
+        left: crop.right - (_edgeHitSize / 2),
+        top: crop.center.dy - 18,
+        cursor: SystemMouseCursors.resizeLeftRight,
+        edge: _CropEdge.right,
+        horizontalBar: false,
+      ),
+    ];
   }
 
   @override
@@ -172,40 +333,59 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
                           filterQuality: FilterQuality.high,
                         ),
                       )
-                    : Crop(
-                        key: ValueKey<int>(_cropViewGeneration),
-                        image: widget.imageBytes,
-                        controller: _controller,
-                        aspectRatio: aspectRatio,
-                        // Static full image (interactive: false default); only
-                        // the crop rectangle moves/resizes.
-                        // Nearly full image so the whole photo is visible;
-                        // leave a thin margin so corner handles stay obvious.
-                        initialRectBuilder: aspectRatio == null
-                            ? InitialRectBuilder.withSizeAndRatio(size: 0.92)
-                            : InitialRectBuilder.withSizeAndRatio(
-                                size: 0.92,
-                                aspectRatio: aspectRatio,
-                              ),
-                        baseColor: colorScheme.surface,
-                        maskColor: colorScheme.scrim.withValues(alpha: 0.45),
-                        radius: theme.radius.sm,
-                        onCropped: (CropResult result) {
-                          if (!mounted) {
-                            return;
-                          }
-                          switch (result) {
-                            case CropSuccess(:final Uint8List croppedImage):
-                              setState(() {
-                                _isCropping = false;
-                                _previewBytes = croppedImage;
-                              });
-                            case CropFailure():
-                              setState(() {
-                                _isCropping = false;
-                              });
-                          }
-                        },
+                    : Stack(
+                        fit: StackFit.expand,
+                        children: <Widget>[
+                          Crop(
+                            key: ValueKey<int>(_cropViewGeneration),
+                            image: widget.imageBytes,
+                            controller: _controller,
+                            aspectRatio: aspectRatio,
+                            initialRectBuilder: aspectRatio == null
+                                ? InitialRectBuilder.withSizeAndRatio(
+                                    size: 0.92,
+                                  )
+                                : InitialRectBuilder.withSizeAndRatio(
+                                    size: 0.92,
+                                    aspectRatio: aspectRatio,
+                                  ),
+                            baseColor: colorScheme.surface,
+                            maskColor: colorScheme.scrim.withValues(
+                              alpha: 0.45,
+                            ),
+                            radius: theme.radius.sm,
+                            onMoved: _onCropMoved,
+                            onImageMoved: _onImageMoved,
+                            cornerDotBuilder:
+                                (double size, EdgeAlignment alignment) {
+                              return MouseRegion(
+                                cursor: _cursorForCorner(alignment),
+                                child: DotControl(
+                                  color: colorScheme.surface,
+                                ),
+                              );
+                            },
+                            onCropped: (CropResult result) {
+                              if (!mounted) {
+                                return;
+                              }
+                              switch (result) {
+                                case CropSuccess(
+                                  :final Uint8List croppedImage,
+                                ):
+                                  setState(() {
+                                    _isCropping = false;
+                                    _previewBytes = croppedImage;
+                                  });
+                                case CropFailure():
+                                  setState(() {
+                                    _isCropping = false;
+                                  });
+                              }
+                            },
+                          ),
+                          ..._buildEdgeHandles(colorScheme),
+                        ],
                       ),
               ),
             ),
@@ -256,6 +436,8 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
     );
   }
 }
+
+enum _CropEdge { top, right, bottom, left }
 
 class _AspectPresetChip extends StatelessWidget {
   const _AspectPresetChip({
