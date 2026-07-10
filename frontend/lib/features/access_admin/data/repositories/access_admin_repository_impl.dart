@@ -269,6 +269,7 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         'tenant_id': draft.tenantId,
         'facility_id': draft.facilityId,
         'name': draft.name,
+        'display_name': draft.displayName,
         'description': draft.description,
         'permission_ids': draft.permissionIds,
       }),
@@ -283,6 +284,7 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         'name': draft.name,
         'description': draft.description,
       }),
+      'display_name': draft.displayName,
       'facility_id': draft.facilityId,
       'permission_ids': draft.permissionIds,
     };

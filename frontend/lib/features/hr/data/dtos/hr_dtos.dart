@@ -978,6 +978,7 @@ final class HrAccessRoleDto {
       id: _string(json['display_id']) ?? _string(json['id']) ?? '',
       displayId: _string(json['display_id']),
       name: _string(json['name']),
+      displayName: _string(json['display_name']),
       description: _string(json['description']),
       permissionCount: _int(json['permission_count']) ?? 0,
       userCount:

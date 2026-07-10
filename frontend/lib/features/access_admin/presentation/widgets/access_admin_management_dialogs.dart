@@ -1270,6 +1270,16 @@ class _RoleDetailSummaryCard extends StatelessWidget {
                 _RoleScopeBadge(item: role),
               ],
             ),
+            if ((role.name ?? '').trim().isNotEmpty &&
+                role.name != role.title) ...<Widget>[
+              SizedBox(height: theme.spacing.xs),
+              Text(
+                role.name!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+            ],
             if ((role.subtitle ?? '').trim().isNotEmpty) ...<Widget>[
               SizedBox(height: theme.spacing.xs),
               Text(

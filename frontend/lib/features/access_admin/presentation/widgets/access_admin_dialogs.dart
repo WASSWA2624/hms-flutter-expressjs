@@ -363,7 +363,8 @@ Future<bool?> openAccessAdminEditRoleDialog(
     permissionLookups: permissionLookups,
     initialFacilityOptions:
         prefetched?.facilities ?? state.data.lookups.facilities,
-    initialName: role.title,
+    initialName: role.name ?? role.title,
+    initialDisplayName: role.displayName,
     initialDescription: role.subtitle,
     initialPermissionIds: initialPermissionIds,
     tenantId: tenantId,

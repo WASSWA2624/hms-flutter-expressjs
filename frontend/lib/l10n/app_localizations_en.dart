@@ -15926,6 +15926,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrAccessRoleNameLabel => 'Role name';
 
   @override
+  String get hrAccessRoleDisplayNameLabel => 'Display name';
+
+  @override
   String get hrAccessRoleDescriptionLabel => 'Description';
 
   @override
@@ -18448,6 +18451,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessAdminRoleNameLabel => 'Role name';
+
+  @override
+  String get accessAdminRoleDisplayNameLabel => 'Display name';
 
   @override
   String get accessAdminRoleDescriptionLabel => 'Description';

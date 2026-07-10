@@ -702,11 +702,14 @@ class _HrAccessWorkspaceDialogState
         AppListTableColumn<HrAccessRole>(
           label: l10n.hrAccessRoleNameLabel,
           sortComparator: (HrAccessRole left, HrAccessRole right) =>
-              appListTableCompareText(left.name, right.name),
+              appListTableCompareText(
+                left.effectiveDisplayName,
+                right.effectiveDisplayName,
+              ),
           cellBuilder: (BuildContext context, HrAccessRole item) {
             final String label = l10n.hrReferenceRoleLabel(
               item.name ?? item.effectiveId,
-              fallback: item.name ?? item.effectiveId,
+              fallback: item.effectiveDisplayName,
             );
             return Text(label, maxLines: 1, overflow: TextOverflow.ellipsis);
           },
@@ -763,7 +766,7 @@ class _HrAccessWorkspaceDialogState
       ],
       mobileItemBuilder: (BuildContext context, HrAccessRole item) {
         return ListTile(
-          title: Text(item.name ?? item.effectiveId),
+          title: Text(item.effectiveDisplayName),
           subtitle: Text(
             l10n.hrAccessRoleSummary(item.permissionCount, item.userCount),
           ),
@@ -931,7 +934,7 @@ Future<void> showHrAccessRoleDetailDialog(
   final AppLocalizations l10n = context.l10n;
   final String roleLabel = l10n.hrReferenceRoleLabel(
     role.name ?? role.effectiveId,
-    fallback: role.name ?? role.effectiveId,
+    fallback: role.effectiveDisplayName,
   );
 
   await showAppDialog<void>(
@@ -953,6 +956,18 @@ Future<void> showHrAccessRoleDetailDialog(
                   visualDensity: VisualDensity.compact,
                 ),
               ),
+            _HrAccessDetailRow(
+              label: l10n.hrAccessRoleNameLabel,
+              value: (role.name ?? '').trim().isNotEmpty
+                  ? role.name!
+                  : '—',
+            ),
+            _HrAccessDetailRow(
+              label: l10n.hrAccessRoleDisplayNameLabel,
+              value: (role.displayName ?? '').trim().isNotEmpty
+                  ? role.displayName!
+                  : '—',
+            ),
             _HrAccessDetailRow(
               label: l10n.hrAccessRoleDescriptionLabel,
               value: (role.description ?? '').trim().isNotEmpty
@@ -1613,6 +1628,7 @@ Future<void> showHrCreateRoleDialog(BuildContext context, WidgetRef ref) async {
     return;
   }
   final TextEditingController nameController = TextEditingController();
+  final TextEditingController displayNameController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
 
   final bool? saved = await showAppWorkspaceMutationDialog(
@@ -1635,9 +1651,15 @@ Future<void> showHrCreateRoleDialog(BuildContext context, WidgetRef ref) async {
                 controller: nameController,
                 labelText: l10n.hrAccessRoleNameLabel,
                 isRequired: true,
+                textCapitalization: TextCapitalization.characters,
                 validator: AppValidators.requiredText(
                   l10n.hrFieldRequiredLabel(l10n.hrAccessRoleNameLabel),
                 ),
+              ),
+              AppTextField(
+                controller: displayNameController,
+                labelText: l10n.hrAccessRoleDisplayNameLabel,
+                textCapitalization: TextCapitalization.words,
               ),
               AppTextField(
                 controller: descriptionController,
@@ -1649,11 +1671,14 @@ Future<void> showHrCreateRoleDialog(BuildContext context, WidgetRef ref) async {
         },
     onSubmit: () => controller.createAccessRole(<String, Object?>{
       'tenant_id': tenantId,
-      'name': nameController.text.trim(),
+      'name': nameController.text.trim().toUpperCase(),
+      if (displayNameController.text.trim().isNotEmpty)
+        'display_name': displayNameController.text.trim(),
       'description': descriptionController.text.trim(),
     }),
   );
   nameController.dispose();
+  displayNameController.dispose();
   descriptionController.dispose();
   if (saved == true && context.mounted) {
     _showHrAccessSnackBar(context, null);
@@ -1671,6 +1696,9 @@ Future<void> showHrEditRoleDialog(
   );
   final TextEditingController nameController = TextEditingController(
     text: role.name,
+  );
+  final TextEditingController displayNameController = TextEditingController(
+    text: role.displayName,
   );
   final TextEditingController descriptionController = TextEditingController(
     text: role.description,
@@ -1696,6 +1724,12 @@ Future<void> showHrEditRoleDialog(
                 controller: nameController,
                 labelText: l10n.hrAccessRoleNameLabel,
                 isRequired: true,
+                textCapitalization: TextCapitalization.characters,
+              ),
+              AppTextField(
+                controller: displayNameController,
+                labelText: l10n.hrAccessRoleDisplayNameLabel,
+                textCapitalization: TextCapitalization.words,
               ),
               AppTextField(
                 controller: descriptionController,
@@ -1707,11 +1741,15 @@ Future<void> showHrEditRoleDialog(
         },
     onSubmit: () =>
         controller.updateAccessRole(role.effectiveId, <String, Object?>{
-          'name': nameController.text.trim(),
+          'name': nameController.text.trim().toUpperCase(),
+          'display_name': displayNameController.text.trim().isEmpty
+              ? null
+              : displayNameController.text.trim(),
           'description': descriptionController.text.trim(),
         }),
   );
   nameController.dispose();
+  displayNameController.dispose();
   descriptionController.dispose();
   if (saved == true && context.mounted) {
     _showHrAccessSnackBar(context, null);

@@ -217,6 +217,8 @@ final class AccessAdminItemDto {
       displayId: _string(json['display_id'] ?? json['id']),
       title: _titleForResource(),
       resourceUuid: _nullableString(json['resource_uuid']),
+      name: _nullableString(json['name']),
+      displayName: _nullableString(json['display_name']),
       subtitle: _subtitleForResource(),
       status: _nullableString(json['status']),
       tenantId: _nullableString(json['tenant_id']),
@@ -265,9 +267,9 @@ final class AccessAdminItemDto {
       case AccessAdminResource.demoUsers:
         return _nullableString(json['profile_name']) ?? _string(json['email']);
       case AccessAdminResource.roles:
-        return _string(json['name']);
+        return _nullableString(json['display_name']) ?? _string(json['name']);
       case AccessAdminResource.permissions:
-        return _string(json['name']);
+        return _nullableString(json['display_name']) ?? _string(json['name']);
       case AccessAdminResource.userRoles:
         return _string(json['user_label'] ?? json['role_name']);
       case AccessAdminResource.rolePermissions:

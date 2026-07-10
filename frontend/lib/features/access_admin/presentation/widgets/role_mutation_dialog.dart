@@ -49,6 +49,7 @@ Future<bool?> showRoleMutationDialog({
   bool allowTenantWideScope = true,
   bool forceFacilityScope = false,
   String? initialName,
+  String? initialDisplayName,
   String? initialDescription,
   Set<String> initialPermissionIds = const <String>{},
   required RoleMutationSubmitHandler onSubmit,
@@ -56,6 +57,9 @@ Future<bool?> showRoleMutationDialog({
   final AppLocalizations l10n = context.l10n;
   final TextEditingController nameController = TextEditingController(
     text: initialName,
+  );
+  final TextEditingController displayNameController = TextEditingController(
+    text: initialDisplayName,
   );
   final TextEditingController descriptionController = TextEditingController(
     text: initialDescription,
@@ -516,10 +520,18 @@ Future<bool?> showRoleMutationDialog({
                           ),
                         ),
                         right: AppTextField(
-                          controller: descriptionController,
+                          controller: displayNameController,
                           enabled: fieldsEnabled,
-                          labelText: l10n.accessAdminRoleDescriptionLabel,
+                          labelText: l10n.accessAdminRoleDisplayNameLabel,
+                          textCapitalization: TextCapitalization.words,
                         ),
+                      ),
+                      SizedBox(height: theme.spacing.sm),
+                      AppTextField(
+                        controller: descriptionController,
+                        enabled: fieldsEnabled,
+                        labelText: l10n.accessAdminRoleDescriptionLabel,
+                        maxLines: 2,
                       ),
                     ],
                   ),
@@ -653,6 +665,9 @@ Future<bool?> showRoleMutationDialog({
               ? selectedFacilityId
               : null,
           name: nameController.text.trim().toUpperCase(),
+          displayName: displayNameController.text.trim().isEmpty
+              ? null
+              : displayNameController.text.trim(),
           description: descriptionController.text.trim(),
           permissionIds: selectedPermissionIds.toList(growable: false),
         ),
@@ -661,6 +676,7 @@ Future<bool?> showRoleMutationDialog({
   );
 
   nameController.dispose();
+  displayNameController.dispose();
   descriptionController.dispose();
   return saved;
 }

@@ -19,10 +19,31 @@ describe('Role Schema Validation', () => {
         tenant_id: '123e4567-e89b-12d3-a456-426614174000',
         facility_id: '123e4567-e89b-12d3-a456-426614174001',
         name: 'Admin Role',
+        display_name: 'Administrator',
         description: 'Administrator role with full permissions'
       };
       const result = createRoleSchema.safeParse(validData);
       expect(result.success).toBe(true);
+    });
+
+    it('should validate with null display_name', () => {
+      const validData = {
+        tenant_id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Test Role',
+        display_name: null
+      };
+      const result = createRoleSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject display_name exceeding max length', () => {
+      const invalidData = {
+        tenant_id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Test Role',
+        display_name: 'a'.repeat(161)
+      };
+      const result = createRoleSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
     });
 
     it('should validate with minimal data (tenant_id and name only)', () => {
@@ -125,7 +146,16 @@ describe('Role Schema Validation', () => {
       const validData = {
         facility_id: '123e4567-e89b-12d3-a456-426614174001',
         name: 'Updated Role',
+        display_name: 'Updated Display Name',
         description: 'Updated description'
+      };
+      const result = updateRoleSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate display_name-only update', () => {
+      const validData = {
+        display_name: 'Front Desk'
       };
       const result = updateRoleSchema.safeParse(validData);
       expect(result.success).toBe(true);

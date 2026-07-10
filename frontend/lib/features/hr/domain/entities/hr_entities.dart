@@ -1139,6 +1139,7 @@ final class HrAccessRole {
     required this.id,
     this.displayId,
     this.name,
+    this.displayName,
     this.description,
     this.permissionCount = 0,
     this.userCount = 0,
@@ -1148,12 +1149,18 @@ final class HrAccessRole {
   final String id;
   final String? displayId;
   final String? name;
+  final String? displayName;
   final String? description;
   final int permissionCount;
   final int userCount;
   final bool isSystemCritical;
 
   String get effectiveId => displayId ?? id;
+
+  String get effectiveDisplayName =>
+      (displayName != null && displayName!.trim().isNotEmpty)
+      ? displayName!.trim()
+      : (name ?? effectiveId);
 }
 
 @immutable

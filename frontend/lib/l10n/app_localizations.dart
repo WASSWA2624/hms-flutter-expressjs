@@ -29775,6 +29775,12 @@ abstract class AppLocalizations {
   /// **'Role name'**
   String get hrAccessRoleNameLabel;
 
+  /// Role display name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Display name'**
+  String get hrAccessRoleDisplayNameLabel;
+
   /// Role description field label.
   ///
   /// In en, this message translates to:
@@ -34226,6 +34232,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Role name'**
   String get accessAdminRoleNameLabel;
+
+  /// Access admin role display name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Display name'**
+  String get accessAdminRoleDisplayNameLabel;
 
   /// Access admin role description field label.
   ///

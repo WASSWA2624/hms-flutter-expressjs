@@ -394,6 +394,8 @@ final class AccessAdminItem {
     required this.displayId,
     required this.title,
     this.resourceUuid,
+    this.name,
+    this.displayName,
     this.subtitle,
     this.status,
     this.tenantId,
@@ -431,6 +433,8 @@ final class AccessAdminItem {
   final String displayId;
   final String title;
   final String? resourceUuid;
+  final String? name;
+  final String? displayName;
   final String? subtitle;
   final String? status;
   final String? tenantId;
@@ -480,6 +484,8 @@ final class AccessAdminItem {
     String? displayId,
     String? title,
     String? resourceUuid,
+    String? name,
+    String? displayName,
     String? subtitle,
     String? status,
     String? tenantId,
@@ -518,6 +524,8 @@ final class AccessAdminItem {
       displayId: displayId ?? this.displayId,
       title: title ?? this.title,
       resourceUuid: resourceUuid ?? this.resourceUuid,
+      name: name ?? this.name,
+      displayName: displayName ?? this.displayName,
       subtitle: subtitle ?? this.subtitle,
       status: status ?? this.status,
       tenantId: tenantId ?? this.tenantId,
@@ -665,6 +673,7 @@ final class AccessAdminRoleDraft {
     required this.tenantId,
     required this.name,
     this.facilityId,
+    this.displayName,
     this.description,
     this.permissionIds = const <String>[],
   });
@@ -672,6 +681,7 @@ final class AccessAdminRoleDraft {
   final String tenantId;
   final String? facilityId;
   final String name;
+  final String? displayName;
   final String? description;
   final List<String> permissionIds;
 }

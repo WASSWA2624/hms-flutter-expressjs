@@ -28,6 +28,7 @@ const createRoleSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema,
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(120),
+  display_name: z.string().trim().min(1).max(160).optional().nullable(),
   description: z.string().trim().min(1).max(255).optional().nullable(),
   permission_ids: permissionIdsSchema,
 });
@@ -40,6 +41,7 @@ const createRoleSchema = z.object({
 const updateRoleSchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(120).optional(),
+  display_name: z.string().trim().min(1).max(160).optional().nullable(),
   description: z.string().trim().min(1).max(255).optional().nullable(),
   permission_ids: permissionIdsSchema,
 });

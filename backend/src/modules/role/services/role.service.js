@@ -117,10 +117,11 @@ const listRoles = async (filters, page, limit, sortBy, order, userId, ipAddress)
     if (filters.facility_id) whereClause.facility_id = filters.facility_id;
     if (filters.name) whereClause.name = { contains: filters.name };
     
-    // Search filter (searches in name and description)
+    // Search filter (searches in name, display name, and description)
     if (filters.search) {
       whereClause.OR = [
         { name: { contains: filters.search } },
+        { display_name: { contains: filters.search } },
         { description: { contains: filters.search } }
       ];
     }

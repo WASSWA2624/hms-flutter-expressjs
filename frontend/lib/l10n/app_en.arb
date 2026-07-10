@@ -20557,6 +20557,10 @@
   "@hrAccessRoleNameLabel": {
     "description": "Role name field label."
   },
+  "hrAccessRoleDisplayNameLabel": "Display name",
+  "@hrAccessRoleDisplayNameLabel": {
+    "description": "Role display name field label."
+  },
   "hrAccessRoleDescriptionLabel": "Description",
   "@hrAccessRoleDescriptionLabel": {
     "description": "Role description field label."
@@ -23703,6 +23707,10 @@
   "accessAdminRoleNameLabel": "Role name",
   "@accessAdminRoleNameLabel": {
     "description": "Access admin role name field label."
+  },
+  "accessAdminRoleDisplayNameLabel": "Display name",
+  "@accessAdminRoleDisplayNameLabel": {
+    "description": "Access admin role display name field label."
   },
   "accessAdminRoleDescriptionLabel": "Description",
   "@accessAdminRoleDescriptionLabel": {
