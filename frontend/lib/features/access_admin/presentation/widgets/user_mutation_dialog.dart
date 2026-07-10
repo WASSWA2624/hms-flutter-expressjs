@@ -188,6 +188,7 @@ Future<bool?> showUserMutationDialog({
     final Result<AccessAdminLookups> result = await repository.getReferenceData(
       tenantId: tenantId,
       facilityId: selectedFacilityId,
+      include: const <String>['roles', 'permissions', 'facilities'],
     );
 
     setState(() {

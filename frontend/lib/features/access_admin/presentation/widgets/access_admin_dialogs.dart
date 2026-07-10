@@ -239,15 +239,27 @@ Future<bool?> openAccessAdminCreateRoleDialog(
   }
 
   final bool needsFacilityScope = !allowTenantWideScope;
-  final AccessAdminLookups? prefetched =
-      (initialTenantId ?? '').isEmpty
-      ? null
-      : await _prefetchRoleDialogLookups(
+  final bool hasCachedPermissions = state.data.lookups.permissions.isNotEmpty;
+  AccessAdminLookups? prefetched;
+  if ((initialTenantId ?? '').isNotEmpty) {
+    if (hasCachedPermissions) {
+      unawaited(
+        _prefetchRoleDialogLookups(
           ref,
           tenantId: initialTenantId!,
           facilityId: needsFacilityScope ? initialFacilityId : null,
           includeFacilities: needsFacilityScope || initialFacilityId != null,
-        );
+        ),
+      );
+    } else {
+      prefetched = await _prefetchRoleDialogLookups(
+        ref,
+        tenantId: initialTenantId!,
+        facilityId: needsFacilityScope ? initialFacilityId : null,
+        includeFacilities: needsFacilityScope || initialFacilityId != null,
+      );
+    }
+  }
 
   if (!context.mounted) {
     return null;
@@ -256,8 +268,10 @@ Future<bool?> openAccessAdminCreateRoleDialog(
   return showRoleMutationDialog(
     context: context,
     mode: RoleMutationMode.create,
-    permissionLookups: prefetched?.permissions ?? state.data.lookups.permissions,
-    initialFacilityOptions: prefetched?.facilities ?? state.data.lookups.facilities,
+    permissionLookups:
+        prefetched?.permissions ?? state.data.lookups.permissions,
+    initialFacilityOptions:
+        prefetched?.facilities ?? state.data.lookups.facilities,
     loadTenantOptions: requireTenantPicker
         ? () => loadAccessAdminTenantOptions(
             ref,
@@ -302,14 +316,27 @@ Future<bool?> openAccessAdminEditRoleDialog(
       ref.read(sessionStateProvider).session?.user?.tenantId;
   final String? facilityId = role.facilityId ?? state.query.facilityId;
 
-  final AccessAdminLookups? prefetched = (tenantId ?? '').isEmpty
-      ? null
-      : await _prefetchRoleDialogLookups(
-          ref,
-          tenantId: tenantId!,
-          facilityId: facilityId,
-          includeFacilities: true,
-        );
+  final AccessAdminLookups? prefetched;
+  if ((tenantId ?? '').isEmpty) {
+    prefetched = null;
+  } else if (state.data.lookups.permissions.isNotEmpty) {
+    unawaited(
+      _prefetchRoleDialogLookups(
+        ref,
+        tenantId: tenantId!,
+        facilityId: facilityId,
+        includeFacilities: true,
+      ),
+    );
+    prefetched = null;
+  } else {
+    prefetched = await _prefetchRoleDialogLookups(
+      ref,
+      tenantId: tenantId!,
+      facilityId: facilityId,
+      includeFacilities: true,
+    );
+  }
 
   if (!context.mounted) {
     return null;

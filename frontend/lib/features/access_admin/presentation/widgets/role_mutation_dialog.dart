@@ -38,6 +38,8 @@ Future<bool?> showRoleMutationDialog({
   required RoleMutationMode mode,
   List<AccessAdminLookupOption> permissionLookups =
       const <AccessAdminLookupOption>[],
+  List<AccessAdminLookupOption> initialFacilityOptions =
+      const <AccessAdminLookupOption>[],
   RolePermissionLookupsLoader? loadPermissionsForTenant,
   RoleTenantOptionsLoader? loadTenantOptions,
   RoleFacilityOptionsLoader? loadFacilityOptions,
@@ -78,10 +80,14 @@ Future<bool?> showRoleMutationDialog({
   bool scheduledInitialTenantLoad = false;
 
   List<AccessAdminLookupOption> facilityOptions =
-      const <AccessAdminLookupOption>[];
+      List<AccessAdminLookupOption>.from(initialFacilityOptions);
   bool isLoadingFacilities = false;
-  bool facilityLoadAttempted = false;
+  bool facilityLoadAttempted = initialFacilityOptions.isNotEmpty;
   bool scheduledInitialFacilityLoad = false;
+
+  if ((selectedFacilityId ?? '').isEmpty && facilityOptions.length == 1) {
+    selectedFacilityId = facilityOptions.first.id;
+  }
 
   List<AccessAdminLookupOption> currentPermissionLookups =
       List<AccessAdminLookupOption>.from(permissionLookups);
@@ -253,23 +259,38 @@ Future<bool?> showRoleMutationDialog({
                 unawaited(reloadTenantOptions(setState));
               }
 
-              if (scopeKind == RoleScopeKind.facility &&
+              final bool shouldLoadFacilities =
+                  scopeKind == RoleScopeKind.facility &&
                   loadFacilityOptions != null &&
                   tenantSelected &&
                   !facilityLoadAttempted &&
                   !isLoadingFacilities &&
-                  !scheduledInitialFacilityLoad) {
-                scheduledInitialFacilityLoad = true;
-                unawaited(reloadFacilityOptions(setState));
-              }
-
-              if (loadPermissionsForTenant != null &&
+                  !scheduledInitialFacilityLoad;
+              final bool shouldLoadPermissions =
+                  loadPermissionsForTenant != null &&
                   scopeReady &&
                   !permissionLoadAttempted &&
                   !isLoadingPermissions &&
-                  !scheduledInitialPermissionLoad) {
+                  !scheduledInitialPermissionLoad;
+
+              if (shouldLoadFacilities && shouldLoadPermissions) {
+                scheduledInitialFacilityLoad = true;
                 scheduledInitialPermissionLoad = true;
-                unawaited(loadPermissionsForScope(setState));
+                unawaited(() async {
+                  await Future.wait(<Future<void>>[
+                    reloadFacilityOptions(setState),
+                    loadPermissionsForScope(setState),
+                  ]);
+                }());
+              } else {
+                if (shouldLoadFacilities) {
+                  scheduledInitialFacilityLoad = true;
+                  unawaited(reloadFacilityOptions(setState));
+                }
+                if (shouldLoadPermissions) {
+                  scheduledInitialPermissionLoad = true;
+                  unawaited(loadPermissionsForScope(setState));
+                }
               }
 
               return Column(
