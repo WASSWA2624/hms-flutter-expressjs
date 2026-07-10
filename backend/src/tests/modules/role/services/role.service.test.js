@@ -11,10 +11,17 @@ const { HttpError } = require('@lib/errors');
 jest.mock('@repositories/role/role.repository');
 jest.mock('@lib/billing/identifiers', () => ({
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
+  resolvePublicIdentifier: jest.fn((...values) => values.find((value) => value) || null),
 }));
 // Mock audit log
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn().mockResolvedValue({})
+}));
+jest.mock('@lib/websocket/crud-realtime', () => ({
+  publishCrudRealtimeEvent: jest.fn().mockResolvedValue(undefined)
+}));
+jest.mock('@lib/realtime/platform-realtime', () => ({
+  publishPlatformRealtimeEvent: jest.fn().mockResolvedValue(undefined)
 }));
 
 const roleRepository = require('@repositories/role/role.repository');

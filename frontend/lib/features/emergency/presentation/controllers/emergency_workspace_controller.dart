@@ -7,6 +7,7 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
 import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
