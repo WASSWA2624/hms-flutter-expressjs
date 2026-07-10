@@ -4227,7 +4227,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String tenantFacilityDeleteFacilityConfirmationBody(String name) {
-    return 'Delete facility \"$name\"? This cannot be undone.';
+    return 'Soft-delete facility \"$name\"? Its data will become inaccessible in the app. You can restore it later.';
   }
 
   @override
@@ -5090,6 +5090,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityPermanentDeleteConfirmAction => 'Permanent delete';
+
+  @override
+  String get tenantFacilityRestoreFacilityConfirmationTitle =>
+      'Restore facility';
+
+  @override
+  String tenantFacilityRestoreFacilityConfirmationBody(String name) {
+    return 'Restore facility \"$name\"?';
+  }
+
+  @override
+  String get tenantFacilityPermanentDeleteFacilityConfirmationTitle =>
+      'Permanent delete facility — irreversible';
+
+  @override
+  String tenantFacilityPermanentDeleteFacilityWarningBody(String name) {
+    return 'WARNING: Permanently deleting \"$name\" will erase this facility and all related data forever. This cannot be recovered.';
+  }
+
+  @override
+  String tenantFacilityPermanentDeleteFacilityConfirmationBody(String name) {
+    return 'Final confirmation: permanently delete facility \"$name\" and all related data? This action is irreversible and the data can never be recovered.';
+  }
 
   @override
   String get tenantFacilityManageFacilitiesTitle => 'Manage facilities';

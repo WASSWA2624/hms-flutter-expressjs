@@ -240,6 +240,8 @@ const PLATFORM_ADMIN_EVENTS = {
   FACILITY_CREATED: 'facility.created',
   FACILITY_UPDATED: 'facility.updated',
   FACILITY_DELETED: 'facility.deleted',
+  FACILITY_RESTORED: 'facility.restored',
+  FACILITY_PERMANENTLY_DELETED: 'facility.permanently_deleted',
   ROLE_CREATED: 'role.created',
   ROLE_UPDATED: 'role.updated',
   ROLE_DELETED: 'role.deleted',

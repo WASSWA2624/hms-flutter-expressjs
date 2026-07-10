@@ -33,6 +33,7 @@ const FACILITY_ADMIN_SCOPES = [
   PERMISSIONS.FACILITY_ADMIN,
   PERMISSIONS.SYSTEM_ADMIN,
 ];
+const PLATFORM_FACILITY_SCOPES = [PERMISSIONS.SYSTEM_ADMIN];
 
 /**
  * @description List facilities with pagination and filters
@@ -54,11 +55,28 @@ const FACILITY_ADMIN_SCOPES = [
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',  validateRequest({ query: listFacilitiesQuerySchema }),
+  '/',
+  validateRequest({ query: listFacilitiesQuerySchema }),
 
   authenticate(),
   authorize(FACILITY_READ_SCOPES, 'permission'),
   facilityController.listFacilities
+);
+
+router.post(
+  '/:id/restore',
+  validateRequest({ params: facilityIdParamsSchema }),
+  authenticate(),
+  authorize(PLATFORM_FACILITY_SCOPES, 'permission'),
+  facilityController.restoreFacility
+);
+
+router.delete(
+  '/:id/permanent',
+  validateRequest({ params: facilityIdParamsSchema }),
+  authenticate(),
+  authorize(PLATFORM_FACILITY_SCOPES, 'permission'),
+  facilityController.permanentDeleteFacility
 );
 
 /**
@@ -75,7 +93,8 @@ router.get(
  * @throws 404 Facility not found
  */
 router.get(
-  '/:id',  validateRequest({ params: facilityIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: facilityIdParamsSchema }),
 
   authenticate(),
   authorize(FACILITY_READ_SCOPES, 'permission'),
@@ -100,7 +119,8 @@ router.get(
  * @throws 409 Duplicate facility
  */
 router.post(
-  '/',  validateRequest({ body: createFacilitySchema }),
+  '/',
+  validateRequest({ body: createFacilitySchema }),
 
   authenticate(),
   authorize(FACILITY_ADMIN_SCOPES, 'permission'),
@@ -125,7 +145,8 @@ router.post(
  * @throws 409 Duplicate facility
  */
 router.put(
-  '/:id',  validateRequest({ params: facilityIdParamsSchema, body: updateFacilitySchema }),
+  '/:id',
+  validateRequest({ params: facilityIdParamsSchema, body: updateFacilitySchema }),
 
   authenticate(),
   authorize(FACILITY_ADMIN_SCOPES, 'permission'),
@@ -146,7 +167,8 @@ router.put(
  * @throws 404 Facility not found
  */
 router.delete(
-  '/:id',  validateRequest({ params: facilityIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: facilityIdParamsSchema }),
 
   authenticate(),
   authorize(FACILITY_ADMIN_SCOPES, 'permission'),

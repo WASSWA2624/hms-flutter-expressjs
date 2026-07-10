@@ -55,6 +55,7 @@ final class FacilityProfileDto {
     this.logoUrl,
     this.resourceUuid,
     this.displayId,
+    this.deletedAt,
   });
 
   factory FacilityProfileDto.fromJson(JsonMap json) {
@@ -71,6 +72,7 @@ final class FacilityProfileDto {
       logoUrl: _optionalString(extensionJson, 'logo_url'),
       resourceUuid: _optionalString(json, 'resource_uuid') ?? _requiredString(json, 'id'),
       displayId: _optionalString(json, 'display_id'),
+      deletedAt: _optionalDateTime(json, 'deleted_at'),
     );
   }
 
@@ -82,6 +84,7 @@ final class FacilityProfileDto {
   final String? logoUrl;
   final String? resourceUuid;
   final String? displayId;
+  final DateTime? deletedAt;
 
   FacilityProfile toEntity() {
     return FacilityProfile(
@@ -93,6 +96,7 @@ final class FacilityProfileDto {
       logoUrl: logoUrl,
       resourceUuid: resourceUuid,
       displayId: displayId,
+      deletedAt: deletedAt,
     );
   }
 }

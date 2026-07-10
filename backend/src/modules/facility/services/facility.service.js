@@ -11,7 +11,10 @@ const facilityRepository = require('@repositories/facility/facility.repository')
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { resolveEntityId, resolvePublicIdentifier } = require('@lib/billing/identifiers');
-const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
+const {
+  resolveModelIdByIdentifier,
+  resolveModelRecordByIdentifier,
+} = require('@lib/identifiers/resolve-entity-id');
 const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } = require('@config/constants');
 const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
 const { PLATFORM_ADMIN_EVENTS } = require('@lib/websocket/events');
@@ -63,8 +66,23 @@ const publishFacilityRealtimeEvent = async (
 const resolveTenantId = async (identifier) =>
   resolveEntityId({ model: 'tenant', identifier });
 
-const resolveFacilityId = async (identifier) =>
-  resolveEntityId({ model: 'facility', identifier });
+const resolveFacilityId = async (identifier, { includeDeleted = false } = {}) => {
+  const normalized = String(identifier ?? '').trim();
+  if (!normalized) {
+    return normalized;
+  }
+
+  if (includeDeleted) {
+    const resolved = await resolveModelIdByIdentifier({
+      model: 'facility',
+      identifier: normalized,
+      includeDeleted: true,
+    });
+    return resolved || normalized;
+  }
+
+  return resolveEntityId({ model: 'facility', identifier: normalized });
+};
 
 const normalizeFacilityRecord = (facility) => {
   if (!facility || typeof facility !== 'object') {
@@ -114,6 +132,8 @@ const listFacilities = async (filters = {}, page = 1, limit = 20, sort_by = 'cre
     ? sort_by.trim()
     : 'created_at';
   const resolvedOrder = normalizeSortOrder(order);
+  const includeDeleted =
+    filters.include_deleted === true || filters.include_deleted === 'true';
 
   // Build repository filters
   const repoFilters = {};
@@ -139,13 +159,26 @@ const listFacilities = async (filters = {}, page = 1, limit = 20, sort_by = 'cre
   const skip = (resolvedPage - 1) * resolvedLimit;
 
   // Build sort order
-  const orderBy = {};
-  orderBy[resolvedSortBy] = resolvedOrder;
+  const orderBy = includeDeleted
+    ? [
+        { deleted_at: 'asc' },
+        { [resolvedSortBy]: resolvedOrder },
+      ]
+    : { [resolvedSortBy]: resolvedOrder };
+
+  const listOptions = { includeDeleted };
 
   // Fetch facilities and count
   const [facilities, total] = await Promise.all([
-    facilityRepository.findMany(repoFilters, skip, resolvedLimit, orderBy),
-    facilityRepository.count(repoFilters)
+    facilityRepository.findMany(
+      repoFilters,
+      skip,
+      resolvedLimit,
+      orderBy,
+      {},
+      listOptions
+    ),
+    facilityRepository.count(repoFilters, listOptions)
   ]);
 
   // Calculate pagination metadata
@@ -380,6 +413,87 @@ const deleteFacility = async (id, context = {}) => {
 };
 
 /**
+ * Restore soft-deleted facility
+ */
+const restoreFacility = async (id, context = {}) => {
+  const facilityId = await resolveFacilityId(id, { includeDeleted: true });
+  const facility = await facilityRepository.restore(facilityId);
+
+  await createAuditLog({
+    action: 'FACILITY_RESTORED',
+    entity: 'facility',
+    entity_id: facilityId,
+    user_id: context.user_id,
+    tenant_id: context.tenant_id,
+    facility_id: context.facility_id,
+    ip_address: context.ip_address,
+    user_agent: context.user_agent,
+    details: {
+      name: facility.name,
+      facility_type: facility.facility_type,
+      tenant_id: facility.tenant_id,
+    },
+  });
+
+  await publishFacilityRealtimeEvent(
+    PLATFORM_ADMIN_EVENTS.FACILITY_RESTORED,
+    facility,
+    context.user_id,
+    'create'
+  );
+
+  return normalizeFacilityRecord(facility);
+};
+
+/**
+ * Permanently delete a soft-deleted facility and all related facility data.
+ */
+const permanentDeleteFacility = async (id, context = {}) => {
+  const normalizedId = String(id ?? '').trim();
+  const facilityId = await resolveFacilityId(normalizedId, { includeDeleted: true });
+  const facility = await facilityRepository.findById(facilityId, { includeDeleted: true });
+
+  if (!facility) {
+    return;
+  }
+  if (!facility.deleted_at) {
+    throw new HttpError('errors.facility.permanent_delete_requires_soft_delete', 400);
+  }
+
+  await createAuditLog({
+    action: 'FACILITY_PERMANENTLY_DELETED',
+    entity: 'facility',
+    entity_id: facilityId,
+    user_id: context.user_id,
+    tenant_id: context.tenant_id,
+    facility_id: context.facility_id,
+    ip_address: context.ip_address,
+    user_agent: context.user_agent,
+    details: {
+      name: facility.name,
+      facility_type: facility.facility_type,
+      tenant_id: facility.tenant_id,
+      irreversible: true,
+    },
+  });
+
+  await facilityRepository.permanentDelete(facilityId);
+
+  await publishPlatformRealtimeEvent({
+    event: PLATFORM_ADMIN_EVENTS.FACILITY_PERMANENTLY_DELETED,
+    resource_type: 'facility',
+    resource_id: facilityId,
+    actor_user_id: context.user_id || null,
+    tenant_id: facility.tenant_id || null,
+    facility_id: facilityId,
+    payload: {
+      name: facility.name,
+      permanent: true,
+    },
+  });
+};
+
+/**
  * Get facility branches with pagination
  *
  * @param {string} facilityId - Facility ID
@@ -443,5 +557,7 @@ module.exports = {
   createFacility,
   updateFacility,
   deleteFacility,
+  restoreFacility,
+  permanentDeleteFacility,
   getFacilityBranches
 };

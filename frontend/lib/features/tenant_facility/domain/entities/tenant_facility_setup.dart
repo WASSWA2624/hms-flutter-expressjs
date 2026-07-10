@@ -93,6 +93,7 @@ final class FacilityProfile {
     this.logoUrl,
     this.resourceUuid,
     this.displayId,
+    this.deletedAt,
   });
 
   final String id;
@@ -103,9 +104,37 @@ final class FacilityProfile {
   final String? logoUrl;
   final String? resourceUuid;
   final String? displayId;
+  final DateTime? deletedAt;
+
+  bool get isDeleted => deletedAt != null;
 
   String get mutationId =>
       resourceUuid != null && resourceUuid!.isNotEmpty ? resourceUuid! : id;
+
+  FacilityProfile copyWith({
+    String? id,
+    String? tenantId,
+    String? name,
+    FacilitySetupType? type,
+    bool? isActive,
+    String? logoUrl,
+    String? resourceUuid,
+    String? displayId,
+    DateTime? deletedAt,
+    bool clearDeletedAt = false,
+  }) {
+    return FacilityProfile(
+      id: id ?? this.id,
+      tenantId: tenantId ?? this.tenantId,
+      name: name ?? this.name,
+      type: type ?? this.type,
+      isActive: isActive ?? this.isActive,
+      logoUrl: logoUrl ?? this.logoUrl,
+      resourceUuid: resourceUuid ?? this.resourceUuid,
+      displayId: displayId ?? this.displayId,
+      deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
+    );
+  }
 }
 
 final class BranchProfile {

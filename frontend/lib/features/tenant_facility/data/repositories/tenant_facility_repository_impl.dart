@@ -78,6 +78,7 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     String? search,
     FacilitySetupType? type,
     bool? isActive,
+    bool includeDeleted = false,
   }) {
     return _apiClient.get<AppPage<FacilityProfile>>(
       ApiEndpoints.collection(
@@ -89,6 +90,7 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
           'search': search,
           'facility_type': type?.apiValue,
           'is_active': isActive?.toString(),
+          'include_deleted': includeDeleted ? 'true' : null,
           'sort_by': 'name',
           'order': 'asc',
         }),
@@ -126,6 +128,30 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   @override
   Future<Result<void>> deleteFacility(String id) {
     return _deleteResource(HmsApiResource.facilities, id);
+  }
+
+  @override
+  Future<Result<FacilityProfile>> restoreFacility(String id) {
+    return _apiClient.post<FacilityProfile>(
+      ApiEndpoints.nested(
+        HmsApiResource.facilities,
+        id,
+        const <String>['restore'],
+      ),
+      decoder: _decodeFacility,
+    );
+  }
+
+  @override
+  Future<Result<void>> permanentDeleteFacility(String id) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.nested(
+        HmsApiResource.facilities,
+        id,
+        const <String>['permanent'],
+      ),
+      decoder: _decodeVoid,
+    );
   }
 
   Future<Result<FacilitySetupSnapshot>> _loadSetupFromWorkspace({

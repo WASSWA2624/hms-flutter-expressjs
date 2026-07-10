@@ -70,7 +70,8 @@ const listFacilitiesQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facility_type: facilityTypeEnum.optional(),
   is_active: z.enum(['true', 'false']).optional(),
-  search: z.string().trim().optional()
+  search: z.string().trim().optional(),
+  include_deleted: z.enum(['true', 'false']).optional(),
 });
 
 module.exports = {

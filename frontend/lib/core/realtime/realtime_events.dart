@@ -121,6 +121,9 @@ abstract final class RealtimeEvents {
   static const String facilityCreated = 'facility.created';
   static const String facilityUpdated = 'facility.updated';
   static const String facilityDeleted = 'facility.deleted';
+  static const String facilityRestored = 'facility.restored';
+  static const String facilityPermanentlyDeleted =
+      'facility.permanently_deleted';
 
   static const String roleCreated = 'role.created';
   static const String roleUpdated = 'role.updated';

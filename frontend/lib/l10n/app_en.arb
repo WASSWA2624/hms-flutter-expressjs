@@ -5541,9 +5541,9 @@
       }
     }
   },
-  "tenantFacilityDeleteFacilityConfirmationBody": "Delete facility \"{name}\"? This cannot be undone.",
+  "tenantFacilityDeleteFacilityConfirmationBody": "Soft-delete facility \"{name}\"? Its data will become inaccessible in the app. You can restore it later.",
   "@tenantFacilityDeleteFacilityConfirmationBody": {
-    "description": "Confirmation body when deleting a facility from management dialog.",
+    "description": "Confirmation body when soft-deleting a facility from management dialog.",
     "placeholders": {
       "name": {
         "type": "String"
@@ -6562,6 +6562,41 @@
   "tenantFacilityPermanentDeleteConfirmAction": "Permanent delete",
   "@tenantFacilityPermanentDeleteConfirmAction": {
     "description": "Permanent delete confirmation submit label."
+  },
+  "tenantFacilityRestoreFacilityConfirmationTitle": "Restore facility",
+  "@tenantFacilityRestoreFacilityConfirmationTitle": {
+    "description": "Restore facility confirmation dialog title."
+  },
+  "tenantFacilityRestoreFacilityConfirmationBody": "Restore facility \"{name}\"?",
+  "@tenantFacilityRestoreFacilityConfirmationBody": {
+    "description": "Restore facility confirmation body.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantFacilityPermanentDeleteFacilityConfirmationTitle": "Permanent delete facility — irreversible",
+  "@tenantFacilityPermanentDeleteFacilityConfirmationTitle": {
+    "description": "Permanent delete facility confirmation dialog title."
+  },
+  "tenantFacilityPermanentDeleteFacilityWarningBody": "WARNING: Permanently deleting \"{name}\" will erase this facility and all related data forever. This cannot be recovered.",
+  "@tenantFacilityPermanentDeleteFacilityWarningBody": {
+    "description": "Strong irreversible warning before typing confirmation for permanent facility delete.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantFacilityPermanentDeleteFacilityConfirmationBody": "Final confirmation: permanently delete facility \"{name}\" and all related data? This action is irreversible and the data can never be recovered.",
+  "@tenantFacilityPermanentDeleteFacilityConfirmationBody": {
+    "description": "Final confirmation body for permanent facility deletion.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "tenantFacilityManageFacilitiesTitle": "Manage facilities",
   "@tenantFacilityManageFacilitiesTitle": {

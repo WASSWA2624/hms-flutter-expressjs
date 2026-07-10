@@ -18,6 +18,7 @@ abstract interface class TenantFacilityRepository {
     String? search,
     FacilitySetupType? type,
     bool? isActive,
+    bool includeDeleted = false,
   });
 
   Future<Result<void>> deleteTenant(String id);
@@ -27,6 +28,10 @@ abstract interface class TenantFacilityRepository {
   Future<Result<void>> permanentDeleteTenant(String id);
 
   Future<Result<void>> deleteFacility(String id);
+
+  Future<Result<FacilityProfile>> restoreFacility(String id);
+
+  Future<Result<void>> permanentDeleteFacility(String id);
 
   Future<Result<TenantProfile>> saveTenant({
     String? id,

@@ -8080,10 +8080,10 @@ abstract class AppLocalizations {
   /// **'Soft-delete tenant \"{name}\"? All of its facilities will also be soft-deleted. You can restore the tenant later.'**
   String tenantFacilityDeleteTenantConfirmationBody(String name);
 
-  /// Confirmation body when deleting a facility from management dialog.
+  /// Confirmation body when soft-deleting a facility from management dialog.
   ///
   /// In en, this message translates to:
-  /// **'Delete facility \"{name}\"? This cannot be undone.'**
+  /// **'Soft-delete facility \"{name}\"? Its data will become inaccessible in the app. You can restore it later.'**
   String tenantFacilityDeleteFacilityConfirmationBody(String name);
 
   /// Subtitle for HR staffing trend chart on the home dashboard.
@@ -9489,6 +9489,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Permanent delete'**
   String get tenantFacilityPermanentDeleteConfirmAction;
+
+  /// Restore facility confirmation dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore facility'**
+  String get tenantFacilityRestoreFacilityConfirmationTitle;
+
+  /// Restore facility confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore facility \"{name}\"?'**
+  String tenantFacilityRestoreFacilityConfirmationBody(String name);
+
+  /// Permanent delete facility confirmation dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanent delete facility — irreversible'**
+  String get tenantFacilityPermanentDeleteFacilityConfirmationTitle;
+
+  /// Strong irreversible warning before typing confirmation for permanent facility delete.
+  ///
+  /// In en, this message translates to:
+  /// **'WARNING: Permanently deleting \"{name}\" will erase this facility and all related data forever. This cannot be recovered.'**
+  String tenantFacilityPermanentDeleteFacilityWarningBody(String name);
+
+  /// Final confirmation body for permanent facility deletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Final confirmation: permanently delete facility \"{name}\" and all related data? This action is irreversible and the data can never be recovered.'**
+  String tenantFacilityPermanentDeleteFacilityConfirmationBody(String name);
 
   /// Platform admin dialog title for facility management.
   ///

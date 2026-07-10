@@ -41,6 +41,8 @@ const Set<String> _facilityManagementRealtimeEvents = <String>{
   RealtimeEvents.facilityCreated,
   RealtimeEvents.facilityUpdated,
   RealtimeEvents.facilityDeleted,
+  RealtimeEvents.facilityRestored,
+  RealtimeEvents.facilityPermanentlyDeleted,
 };
 
 String? _managementNonEmptyString(Object? value) {
@@ -855,19 +857,28 @@ class _ManageFacilitiesDialogState
           request: _pageRequest,
           tenantId: _tenantFilterId,
           search: _searchController.text.trim(),
+          includeDeleted: true,
         );
 
     if (!mounted || generation != _reloadGeneration) return;
     result.when(
       success: (AppPage<FacilityProfile> page) {
         final int activeCount = page.items
-            .where((FacilityProfile facility) => facility.isActive)
+            .where(
+              (FacilityProfile facility) =>
+                  !facility.isDeleted && facility.isActive,
+            )
             .length;
         final int totalItemCount = page.totalItemCount ?? page.items.length;
+        final int visibleTotalCount = page.items
+            .where((FacilityProfile facility) => !facility.isDeleted)
+            .length;
         homeReconcileFacilitiesMetricFromList(
           ref,
           activeCount,
-          totalCount: totalItemCount,
+          totalCount: page.items.length == totalItemCount
+              ? visibleTotalCount
+              : totalItemCount,
         );
         setState(() {
           _loading = false;
@@ -956,16 +967,152 @@ class _ManageFacilitiesDialogState
 
     if (confirmed == true) {
       _mutated = true;
-      _removeFacilityLocally(facility.mutationId);
+      _markFacilitySoftDeletedLocally(facility);
       _syncPlatformDashboard(
         ref,
         patch: HomeDashboardOptimisticPatch.facilityDeleted(
-          isActive: facility.isActive,
+          isActive: facility.isActive && !facility.isDeleted,
         ),
       );
       await _loadTenants();
-      await _reload(resetPage: _facilities.isEmpty, silent: true);
+      await _reload(resetPage: false, silent: true);
     }
+  }
+
+  Future<void> _confirmRestoreFacility(FacilityProfile facility) async {
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.tenantFacilityRestoreFacilityConfirmationTitle,
+        body: l10n.tenantFacilityRestoreFacilityConfirmationBody(facility.name),
+        highlightedText: facility.name,
+        submitLabel: l10n.tenantFacilityRestoreTenantAction,
+        icon: const Icon(Icons.restore_outlined),
+        onConfirm: () async {
+          final Result<FacilityProfile> result = await ref
+              .read(tenantFacilityRepositoryProvider)
+              .restoreFacility(facility.mutationId);
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
+    );
+
+    if (!mounted || confirmed != true) {
+      return;
+    }
+
+    _mutated = true;
+    _markFacilityRestoredLocally(facility);
+    _syncPlatformDashboard(
+      ref,
+      patch: HomeDashboardOptimisticPatch.facilityCreated(
+        isActive: facility.isActive,
+      ),
+    );
+    await _loadTenants();
+    await _reload(resetPage: false, silent: true);
+  }
+
+  Future<void> _confirmPermanentDeleteFacility(FacilityProfile facility) async {
+    final AppLocalizations l10n = context.l10n;
+    final String? typed = await showAppDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppTextInputActionDialog(
+        title: l10n.tenantFacilityPermanentDeleteFacilityConfirmationTitle,
+        description: l10n.tenantFacilityPermanentDeleteFacilityWarningBody(
+          facility.name,
+        ),
+        fieldLabel: l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(
+          facility.name,
+        ),
+        submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
+        cancelLabel: l10n.commonCancelActionLabel,
+        requiredMessage: l10n.validationRequired,
+        destructive: true,
+        minLines: 1,
+        maxLines: 1,
+        icon: const Icon(Icons.delete_forever_outlined),
+      ),
+    );
+
+    if (!mounted || typed == null) {
+      return;
+    }
+    if (typed.trim() != facility.name.trim()) {
+      return;
+    }
+
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.tenantFacilityPermanentDeleteFacilityConfirmationTitle,
+        body: l10n.tenantFacilityPermanentDeleteFacilityConfirmationBody(
+          facility.name,
+        ),
+        highlightedText: facility.name,
+        submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
+        destructive: true,
+        icon: const Icon(Icons.delete_forever_outlined),
+        onConfirm: () async {
+          final Result<void> result = await ref
+              .read(tenantFacilityRepositoryProvider)
+              .permanentDeleteFacility(facility.mutationId);
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) {
+              if (failure.category == AppFailureCategory.notFound) {
+                return null;
+              }
+              return failure;
+            },
+          );
+        },
+      ),
+    );
+
+    if (!mounted || confirmed != true) {
+      return;
+    }
+
+    _mutated = true;
+    _removeFacilityLocally(facility.mutationId);
+    _syncPlatformDashboard(ref);
+    await _loadTenants();
+    await _reload(resetPage: false, silent: true);
+  }
+
+  void _markFacilitySoftDeletedLocally(FacilityProfile facility) {
+    final int index = _facilities.indexWhere(
+      (FacilityProfile entry) =>
+          entry.id == facility.id || entry.mutationId == facility.mutationId,
+    );
+    if (index < 0) {
+      return;
+    }
+    final List<FacilityProfile> next = List<FacilityProfile>.of(_facilities);
+    next[index] = facility.copyWith(deletedAt: DateTime.now().toUtc());
+    setState(() {
+      _facilities = next;
+    });
+  }
+
+  void _markFacilityRestoredLocally(FacilityProfile facility) {
+    final int index = _facilities.indexWhere(
+      (FacilityProfile entry) =>
+          entry.id == facility.id || entry.mutationId == facility.mutationId,
+    );
+    if (index < 0) {
+      return;
+    }
+    final List<FacilityProfile> next = List<FacilityProfile>.of(_facilities);
+    next[index] = facility.copyWith(clearDeletedAt: true);
+    setState(() {
+      _facilities = next;
+    });
   }
 
   void _removeFacilityLocally(String facilityId) {
@@ -989,15 +1136,49 @@ class _ManageFacilitiesDialogState
     if (message == null) {
       return;
     }
-    if (message.event == RealtimeEvents.facilityDeleted) {
-      final String? facilityId = _managementResourceIdFromMessage(
-        message,
-        keys: const <String>['resource_id', 'facility_id', 'id'],
-      );
-      if (facilityId != null) {
-        _removeFacilityLocally(facilityId);
-      }
+
+    final String? facilityId = _managementResourceIdFromMessage(
+      message,
+      keys: const <String>['resource_id', 'facility_id', 'id'],
+    );
+
+    switch (message.event) {
+      case RealtimeEvents.facilityDeleted:
+        if (facilityId == null) {
+          return;
+        }
+        final int index = _facilities.indexWhere(
+          (FacilityProfile entry) =>
+              entry.id == facilityId || entry.mutationId == facilityId,
+        );
+        if (index < 0) {
+          return;
+        }
+        final List<FacilityProfile> next = List<FacilityProfile>.of(_facilities);
+        next[index] = next[index].copyWith(deletedAt: DateTime.now().toUtc());
+        setState(() {
+          _facilities = next;
+        });
+        return;
+      case RealtimeEvents.facilityPermanentlyDeleted:
+        if (facilityId != null) {
+          _removeFacilityLocally(facilityId);
+        }
+        return;
+      case RealtimeEvents.facilityRestored:
+      case RealtimeEvents.facilityCreated:
+      case RealtimeEvents.facilityUpdated:
+        return;
     }
+  }
+
+  String _facilityStatusLabel(AppLocalizations l10n, FacilityProfile facility) {
+    if (facility.isDeleted) {
+      return l10n.tenantFacilityTenantStatusDeleted;
+    }
+    return facility.isActive
+        ? l10n.tenantFacilityTenantStatusActive
+        : l10n.commonNoLabel;
   }
 
   bool get _canManage => ref.read(appAccessPolicyProvider).canManageFacility();
@@ -1073,8 +1254,12 @@ class _ManageFacilitiesDialogState
                       itemKeyBuilder: (FacilityProfile item) =>
                           ValueKey<String>(item.id),
                       onRowSelected: _canManage
-                          ? (FacilityProfile facility) =>
-                                unawaited(_openFacilityForm(facility: facility))
+                          ? (FacilityProfile facility) {
+                              if (facility.isDeleted) {
+                                return;
+                              }
+                              unawaited(_openFacilityForm(facility: facility));
+                            }
                           : null,
                       previousPageLabel: l10n.hrPreviousPageLabel,
                       nextPageLabel: l10n.hrNextPageLabel,
@@ -1107,11 +1292,17 @@ class _ManageFacilitiesDialogState
                               Text(facility.type.name),
                         ),
                         AppListTableColumn<FacilityProfile>(
-                          label: l10n.tenantFacilityActiveLabel,
+                          label: l10n.tenantFacilityTenantStatusLabel,
                           cellBuilder: (_, FacilityProfile facility) => Text(
-                            facility.isActive
-                                ? l10n.commonYesLabel
-                                : l10n.commonNoLabel,
+                            _facilityStatusLabel(l10n, facility),
+                            style: facility.isDeleted
+                                ? Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      )
+                                : null,
                           ),
                         ),
                         if (_canManage)
@@ -1123,17 +1314,28 @@ class _ManageFacilitiesDialogState
                                   BuildContext context,
                                   FacilityProfile facility,
                                 ) {
-                                  return _ManagementRowActions(
+                                  return _FacilityManagementRowActions(
                                     enabled: !_loading,
+                                    facility: facility,
                                     editLabel:
                                         l10n.tenantFacilityEditFacilityAction,
                                     deleteLabel:
                                         l10n.tenantFacilityDeleteAction,
+                                    restoreLabel:
+                                        l10n.tenantFacilityRestoreTenantAction,
+                                    permanentDeleteLabel: l10n
+                                        .tenantFacilityPermanentDeleteAction,
                                     onEdit: () => unawaited(
                                       _openFacilityForm(facility: facility),
                                     ),
                                     onDelete: () => unawaited(
                                       _confirmDeleteFacility(facility),
+                                    ),
+                                    onRestore: () => unawaited(
+                                      _confirmRestoreFacility(facility),
+                                    ),
+                                    onPermanentDelete: () => unawaited(
+                                      _confirmPermanentDeleteFacility(facility),
                                     ),
                                   );
                                 },
@@ -1146,28 +1348,49 @@ class _ManageFacilitiesDialogState
                       mobileItemBuilder:
                           (BuildContext context, FacilityProfile facility) {
                             return ListTile(
-                              title: Text(facility.name),
-                              subtitle: Text(_tenantLabel(facility.tenantId)),
+                              title: Text(
+                                facility.name,
+                                style: facility.isDeleted
+                                    ? Theme.of(context).textTheme.titleMedium
+                                          ?.copyWith(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                          )
+                                    : null,
+                              ),
+                              subtitle: Text(
+                                '${_tenantLabel(facility.tenantId)} · ${_facilityStatusLabel(l10n, facility)}',
+                              ),
                               trailing: _canManage
-                                  ? _ManagementRowActions(
+                                  ? _FacilityManagementRowActions(
                                       enabled: !_loading,
-                                      editLabel:
-                                          l10n.tenantFacilityEditFacilityAction,
+                                      facility: facility,
+                                      editLabel: l10n
+                                          .tenantFacilityEditFacilityAction,
                                       deleteLabel:
                                           l10n.tenantFacilityDeleteAction,
+                                      restoreLabel: l10n
+                                          .tenantFacilityRestoreTenantAction,
+                                      permanentDeleteLabel: l10n
+                                          .tenantFacilityPermanentDeleteAction,
                                       onEdit: () => unawaited(
                                         _openFacilityForm(facility: facility),
                                       ),
                                       onDelete: () => unawaited(
                                         _confirmDeleteFacility(facility),
                                       ),
+                                      onRestore: () => unawaited(
+                                        _confirmRestoreFacility(facility),
+                                      ),
+                                      onPermanentDelete: () => unawaited(
+                                        _confirmPermanentDeleteFacility(
+                                          facility,
+                                        ),
+                                      ),
                                     )
-                                  : Text(
-                                      facility.isActive
-                                          ? l10n.commonYesLabel
-                                          : l10n.commonNoLabel,
-                                    ),
-                              onTap: _canManage
+                                  : Text(_facilityStatusLabel(l10n, facility)),
+                              onTap: _canManage && !facility.isDeleted
                                   ? () => unawaited(
                                       _openFacilityForm(facility: facility),
                                     )
@@ -1277,24 +1500,59 @@ class _TenantManagementRowActions extends StatelessWidget {
   }
 }
 
-class _ManagementRowActions extends StatelessWidget {
-  const _ManagementRowActions({
+class _FacilityManagementRowActions extends StatelessWidget {
+  const _FacilityManagementRowActions({
     required this.enabled,
+    required this.facility,
     required this.editLabel,
     required this.deleteLabel,
+    required this.restoreLabel,
+    required this.permanentDeleteLabel,
     required this.onEdit,
     required this.onDelete,
+    required this.onRestore,
+    required this.onPermanentDelete,
   });
 
   final bool enabled;
+  final FacilityProfile facility;
   final String editLabel;
   final String deleteLabel;
+  final String restoreLabel;
+  final String permanentDeleteLabel;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final VoidCallback onRestore;
+  final VoidCallback onPermanentDelete;
 
   @override
   Widget build(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    if (facility.isDeleted) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          AppButton.tertiary(
+            leadingIcon: Icons.restore_outlined,
+            label: restoreLabel,
+            semanticLabel: restoreLabel,
+            tooltip: restoreLabel,
+            enabled: enabled,
+            onPressed: enabled ? onRestore : null,
+          ),
+          AppButton.tertiary(
+            leadingIcon: Icons.delete_forever_outlined,
+            label: permanentDeleteLabel,
+            semanticLabel: permanentDeleteLabel,
+            tooltip: permanentDeleteLabel,
+            color: colorScheme.error,
+            enabled: enabled,
+            onPressed: enabled ? onPermanentDelete : null,
+          ),
+        ],
+      );
+    }
 
     return Row(
       mainAxisSize: MainAxisSize.min,

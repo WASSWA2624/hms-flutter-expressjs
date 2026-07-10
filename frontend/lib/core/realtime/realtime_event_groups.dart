@@ -281,6 +281,8 @@ abstract final class RealtimeEventGroups {
     RealtimeEvents.facilityCreated,
     RealtimeEvents.facilityUpdated,
     RealtimeEvents.facilityDeleted,
+    RealtimeEvents.facilityRestored,
+    RealtimeEvents.facilityPermanentlyDeleted,
     ...subscriptions,
   };
 
@@ -293,6 +295,8 @@ abstract final class RealtimeEventGroups {
     RealtimeEvents.facilityCreated,
     RealtimeEvents.facilityUpdated,
     RealtimeEvents.facilityDeleted,
+    RealtimeEvents.facilityRestored,
+    RealtimeEvents.facilityPermanentlyDeleted,
     RealtimeEvents.roleCreated,
     RealtimeEvents.roleUpdated,
     RealtimeEvents.roleDeleted,
