@@ -18,15 +18,15 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
-Future<void> showManageTenantsDialog(BuildContext context, WidgetRef ref) {
-  return showAppDialog<void>(
+Future<bool?> showManageTenantsDialog(BuildContext context, WidgetRef ref) {
+  return showAppDialog<bool>(
     context: context,
     builder: (_) => const _ManageTenantsDialog(),
   );
 }
 
-Future<void> showManageFacilitiesDialog(BuildContext context, WidgetRef ref) {
-  return showAppDialog<void>(
+Future<bool?> showManageFacilitiesDialog(BuildContext context, WidgetRef ref) {
+  return showAppDialog<bool>(
     context: context,
     builder: (_) => const _ManageFacilitiesDialog(),
   );
@@ -50,6 +50,8 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
   AppPageRequest _pageRequest = const AppPageRequest(pageSize: _pageSize);
   int _totalItemCount = 0;
   List<TenantProfile> _tenants = const <TenantProfile>[];
+  bool _mutated = false;
+  int _reloadGeneration = 0;
 
   @override
   void initState() {
@@ -76,6 +78,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
     if (resetPage) {
       _pageRequest = _pageRequest.first();
     }
+    final int generation = ++_reloadGeneration;
     if (!silent) {
       setState(() {
         _loading = true;
@@ -91,7 +94,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
       search: _searchController.text.trim(),
     );
 
-    if (!mounted) return;
+    if (!mounted || generation != _reloadGeneration) return;
     result.when(
       success: (AppPage<TenantProfile> page) {
         setState(() {
@@ -127,6 +130,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
     if (!mounted || saved != true) {
       return;
     }
+    _mutated = true;
     unawaited(_reload(resetPage: forceCreate, silent: true));
   }
 
@@ -137,7 +141,9 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
       builder: (BuildContext dialogContext) => AppConfirmActionDialog(
         title: l10n.tenantFacilityDeleteConfirmationTitle,
         body: l10n.tenantFacilityDeleteTenantConfirmationBody(tenant.name),
+        highlightedText: tenant.name,
         submitLabel: l10n.tenantFacilityDeleteConfirmAction,
+        destructive: true,
         icon: const Icon(Icons.delete_outline),
         onConfirm: () async {
           final Result<void> result = await ref
@@ -150,14 +156,24 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
         },
       ),
     );
-    if (confirmed == true && mounted) {
-      setState(() {
-        _tenants = _tenants
-            .where((TenantProfile entry) => entry.id != tenant.id)
-            .toList(growable: false);
-        _totalItemCount = math.max(0, _totalItemCount - 1);
-      });
-      unawaited(_reload(resetPage: _tenants.isEmpty, silent: true));
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    final String deletedTenantId = tenant.id;
+    setState(() {
+      _mutated = true;
+      _tenants = _tenants
+          .where((TenantProfile entry) => entry.id != deletedTenantId)
+          .toList(growable: false);
+      _totalItemCount = math.max(0, _totalItemCount - 1);
+    });
+
+    if (_tenants.isEmpty && _totalItemCount > 0) {
+      if (_pageRequest.pageIndex > 0) {
+        _pageRequest = _pageRequest.previous();
+      }
+      unawaited(_reload(resetPage: false, silent: true));
     }
   }
 
@@ -301,7 +317,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
         AppButton.secondary(
           label: l10n.commonCloseActionLabel,
           leadingIcon: Icons.close,
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(context).pop(_mutated ? true : null),
         ),
       ],
     );
@@ -329,6 +345,8 @@ class _ManageFacilitiesDialogState
   List<FacilityProfile> _facilities = const <FacilityProfile>[];
   List<TenantProfile> _tenantOptions = const <TenantProfile>[];
   String? _tenantFilterId;
+  bool _mutated = false;
+  int _reloadGeneration = 0;
 
   @override
   void initState() {
@@ -376,6 +394,7 @@ class _ManageFacilitiesDialogState
     if (resetPage) {
       _pageRequest = _pageRequest.first();
     }
+    final int generation = ++_reloadGeneration;
     if (!silent) {
       setState(() {
         _loading = true;
@@ -393,7 +412,7 @@ class _ManageFacilitiesDialogState
           search: _searchController.text.trim(),
         );
 
-    if (!mounted) return;
+    if (!mounted || generation != _reloadGeneration) return;
     result.when(
       success: (AppPage<FacilityProfile> page) {
         setState(() {
@@ -433,6 +452,7 @@ class _ManageFacilitiesDialogState
     if (!mounted || saved != true) {
       return;
     }
+    _mutated = true;
     unawaited(_reload(resetPage: forceCreate, silent: true));
   }
 
@@ -443,7 +463,9 @@ class _ManageFacilitiesDialogState
       builder: (BuildContext dialogContext) => AppConfirmActionDialog(
         title: l10n.tenantFacilityDeleteConfirmationTitle,
         body: l10n.tenantFacilityDeleteFacilityConfirmationBody(facility.name),
+        highlightedText: facility.name,
         submitLabel: l10n.tenantFacilityDeleteConfirmAction,
+        destructive: true,
         icon: const Icon(Icons.delete_outline),
         onConfirm: () async {
           final Result<void> result = await ref
@@ -456,14 +478,24 @@ class _ManageFacilitiesDialogState
         },
       ),
     );
-    if (confirmed == true && mounted) {
-      setState(() {
-        _facilities = _facilities
-            .where((FacilityProfile entry) => entry.id != facility.id)
-            .toList(growable: false);
-        _totalItemCount = math.max(0, _totalItemCount - 1);
-      });
-      unawaited(_reload(resetPage: _facilities.isEmpty, silent: true));
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    final String deletedFacilityId = facility.id;
+    setState(() {
+      _mutated = true;
+      _facilities = _facilities
+          .where((FacilityProfile entry) => entry.id != deletedFacilityId)
+          .toList(growable: false);
+      _totalItemCount = math.max(0, _totalItemCount - 1);
+    });
+
+    if (_facilities.isEmpty && _totalItemCount > 0) {
+      if (_pageRequest.pageIndex > 0) {
+        _pageRequest = _pageRequest.previous();
+      }
+      unawaited(_reload(resetPage: false, silent: true));
     }
   }
 
@@ -653,7 +685,7 @@ class _ManageFacilitiesDialogState
         AppButton.secondary(
           label: l10n.commonCloseActionLabel,
           leadingIcon: Icons.close,
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(context).pop(_mutated ? true : null),
         ),
       ],
     );

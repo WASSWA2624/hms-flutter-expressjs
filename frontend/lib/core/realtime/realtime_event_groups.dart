@@ -278,6 +278,26 @@ abstract final class RealtimeEventGroups {
 
   static const Set<String> tenantFacility = <String>{
     RealtimeEvents.facilityLayoutUpdated,
+    RealtimeEvents.facilityCreated,
+    RealtimeEvents.facilityUpdated,
+    RealtimeEvents.facilityDeleted,
+    ...subscriptions,
+  };
+
+  static const Set<String> platformAdmin = <String>{
+    RealtimeEvents.tenantCreated,
+    RealtimeEvents.tenantUpdated,
+    RealtimeEvents.tenantDeleted,
+    RealtimeEvents.facilityCreated,
+    RealtimeEvents.facilityUpdated,
+    RealtimeEvents.facilityDeleted,
+    RealtimeEvents.roleCreated,
+    RealtimeEvents.roleUpdated,
+    RealtimeEvents.roleDeleted,
+    RealtimeEvents.userCreated,
+    RealtimeEvents.userUpdated,
+    RealtimeEvents.userDeleted,
+    RealtimeEvents.platformDashboardInvalidate,
     ...subscriptions,
   };
 
@@ -286,5 +306,5 @@ abstract final class RealtimeEventGroups {
     ...integrations,
   };
 
-  static const Set<String> accessAdmin = <String>{...subscriptions};
+  static const Set<String> accessAdmin = <String>{...platformAdmin};
 }

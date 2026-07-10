@@ -31,7 +31,7 @@ Future<void> showAccessAdminWorkspaceDialog(
   );
 }
 
-Future<void> showAccessAdminCreateUserDialog(
+Future<bool?> showAccessAdminCreateUserDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
@@ -58,18 +58,19 @@ Future<void> showAccessAdminCreateUserDialog(
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.failureMessage(failure))),
       );
+      return Future<bool?>.value(null);
     },
   );
 }
 
-Future<void> showAccessAdminCreateRoleDialog(
+Future<bool?> showAccessAdminCreateRoleDialog(
   BuildContext context,
   WidgetRef ref,
 ) async {
   if (!context.mounted) {
-    return;
+    return null;
   }
-  await openAccessAdminCreateRoleDialog(
+  return openAccessAdminCreateRoleDialog(
     context,
     ref,
     _emptyCreateRoleWorkspaceState(),
@@ -163,16 +164,16 @@ Future<void> showAccessAdminUserFormDialog(
   return openAccessAdminCreateUserDialog(context, ref, state);
 }
 
-Future<void> openAccessAdminCreateUserDialog(
+Future<bool?> openAccessAdminCreateUserDialog(
   BuildContext context,
   WidgetRef ref,
   AccessAdminWorkspaceState state,
 ) async {
   if (!context.mounted) {
-    return;
+    return null;
   }
 
-  await showUserMutationDialog(
+  return showUserMutationDialog(
     context: context,
     ref: ref,
     mode: UserMutationMode.create,
@@ -201,16 +202,11 @@ Future<void> openAccessAdminEditUserDialog(
     initialUser: user,
     initialDetail: detail,
     onSubmit: (AccessAdminUserDraft draft, List<String> roleIds) =>
-        _submitAccessAdminUserUpdate(
-          ref,
-          user.id,
-          draft,
-          roleIds,
-        ),
+        _submitAccessAdminUserUpdate(ref, user.id, draft, roleIds),
   );
 }
 
-Future<void> openAccessAdminCreateRoleDialog(
+Future<bool?> openAccessAdminCreateRoleDialog(
   BuildContext context,
   WidgetRef ref,
   AccessAdminWorkspaceState state,
@@ -218,8 +214,11 @@ Future<void> openAccessAdminCreateRoleDialog(
   final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
   final bool isCrossTenantAdmin = accessPolicy.canCreateTenant();
   final String? workspaceTenantId = state.query.tenantId;
-  final String? sessionTenantId =
-      ref.read(sessionStateProvider).session?.user?.tenantId;
+  final String? sessionTenantId = ref
+      .read(sessionStateProvider)
+      .session
+      ?.user
+      ?.tenantId;
   final String? initialTenantId = isCrossTenantAdmin
       ? workspaceTenantId
       : (workspaceTenantId ?? sessionTenantId);
@@ -227,10 +226,10 @@ Future<void> openAccessAdminCreateRoleDialog(
       ? workspaceTenantId == null
       : initialTenantId == null;
   if (!context.mounted) {
-    return;
+    return null;
   }
 
-  await showRoleMutationDialog(
+  return showRoleMutationDialog(
     context: context,
     mode: RoleMutationMode.create,
     loadTenantOptions: requireTenantPicker
@@ -240,19 +239,18 @@ Future<void> openAccessAdminCreateRoleDialog(
             preferTenantFacilityApi: isCrossTenantAdmin,
           )
         : null,
-    loadPermissionsForTenant: (String tenantId) => _loadAccessAdminPermissionLookups(
-      ref,
-      state,
-      tenantId: tenantId,
-      forceRefresh: true,
-    ),
+    loadPermissionsForTenant: (String tenantId) =>
+        _loadAccessAdminPermissionLookups(
+          ref,
+          state,
+          tenantId: tenantId,
+          forceRefresh: true,
+        ),
     tenantId: initialTenantId,
     facilityId: state.query.facilityId,
     requireTenantPicker: requireTenantPicker,
-    onSubmit: (AccessAdminRoleDraft draft) => _submitAccessAdminRoleCreate(
-      ref,
-      draft,
-    ),
+    onSubmit: (AccessAdminRoleDraft draft) =>
+        _submitAccessAdminRoleCreate(ref, draft),
   );
 }
 
@@ -288,11 +286,8 @@ Future<void> openAccessAdminEditRoleDialog(
             tenantId: resolvedTenantId,
             forceRefresh: true,
           ),
-    onSubmit: (AccessAdminRoleDraft draft) => _submitAccessAdminRoleUpdate(
-      ref,
-      role.id,
-      draft,
-    ),
+    onSubmit: (AccessAdminRoleDraft draft) =>
+        _submitAccessAdminRoleUpdate(ref, role.id, draft),
   );
 }
 
@@ -301,7 +296,9 @@ Future<AppFailure?> _submitAccessAdminUserCreate(
   AccessAdminUserDraft draft,
   List<String> roleIds,
 ) async {
-  final AccessAdminRepository repository = ref.read(accessAdminRepositoryProvider);
+  final AccessAdminRepository repository = ref.read(
+    accessAdminRepositoryProvider,
+  );
   final Result<String> createResult = await repository.createUser(draft);
   final String? userId = createResult.when(
     success: (String value) => value,
@@ -337,7 +334,9 @@ Future<AppFailure?> _submitAccessAdminUserUpdate(
   AccessAdminUserDraft draft,
   List<String> roleIds,
 ) async {
-  final AccessAdminRepository repository = ref.read(accessAdminRepositoryProvider);
+  final AccessAdminRepository repository = ref.read(
+    accessAdminRepositoryProvider,
+  );
   final Result<void> updateResult = await repository.updateUser(userId, draft);
   final AppFailure? updateFailure = updateResult.when(
     success: (_) => null,
@@ -442,10 +441,8 @@ Future<List<AccessAdminLookupOption>> loadAccessAdminTenantOptions(
         tenantPageResult.when(
           success: (AppPage<TenantProfile> page) => page.items
               .map(
-                (TenantProfile tenant) => AccessAdminLookupOption(
-                  id: tenant.id,
-                  label: tenant.name,
-                ),
+                (TenantProfile tenant) =>
+                    AccessAdminLookupOption(id: tenant.id, label: tenant.name),
               )
               .toList(growable: false),
           failure: (_) => null,

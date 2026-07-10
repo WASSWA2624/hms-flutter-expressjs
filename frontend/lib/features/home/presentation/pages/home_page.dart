@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
+import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_sync.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_context_panel.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_actions.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_mapper.dart';
@@ -21,7 +23,24 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dashboard = ref.watch(homeControllerProvider(request));
+    final optimisticPatch = ref.watch(
+      homeDashboardOptimisticPatchProvider(request),
+    );
     final l10n = context.l10n;
+
+    ref.listen(homeControllerProvider(request), (
+      AsyncValue<Result<HomeDashboard>>? previous,
+      AsyncValue<Result<HomeDashboard>> next,
+    ) {
+      next.whenOrNull(
+        data: (Result<HomeDashboard> result) {
+          result.when(
+            success: (_) => homeClearDashboardOptimisticPatch(ref, request),
+            failure: (_) {},
+          );
+        },
+      );
+    });
 
     return AsyncStateScaffold<HomeDashboard>(
       value: dashboard,
@@ -31,10 +50,15 @@ class HomePage extends ConsumerWidget {
       maxWidth: PageMaxWidth.dataHeavy,
       centerVertically: false,
       onRetry: () {
+        homeClearDashboardOptimisticPatch(ref, request);
         ref.invalidate(homeControllerProvider(request));
       },
       dataBuilder: (BuildContext context, HomeDashboard snapshot) {
-        return _HomeDashboardContent(dashboard: snapshot, request: request);
+        final HomeDashboard display = homeDashboardWithOptimisticPatch(
+          snapshot,
+          optimisticPatch,
+        );
+        return _HomeDashboardContent(dashboard: display, request: request);
       },
     );
   }

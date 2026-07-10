@@ -10,9 +10,14 @@ const { HttpError } = require('@lib/errors');
 // Mock dependencies
 jest.mock('@repositories/tenant/tenant.repository');
 jest.mock('@lib/audit');
+jest.mock('@lib/realtime/platform-realtime', () => ({
+  publishPlatformRealtimeEvent: jest.fn().mockResolvedValue(1),
+  buildTenantDashboardDeltas: jest.fn().mockReturnValue({})
+}));
 
 const tenantRepository = require('@repositories/tenant/tenant.repository');
 const { createAuditLog } = require('@lib/audit');
+const { publishPlatformRealtimeEvent } = require('@lib/realtime/platform-realtime');
 const {
   listTenants,
   getTenantById,
@@ -343,6 +348,14 @@ describe('Tenant Service', () => {
           is_active: mockCreatedTenant.is_active
         }
       });
+      expect(publishPlatformRealtimeEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'tenant.created',
+          resource_type: 'tenant',
+          resource_id: mockCreatedTenant.id,
+          actor_user_id: context.user_id
+        })
+      );
     });
 
     it('should create tenant without context', async () => {

@@ -5,9 +5,12 @@ import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/realtime/realtime_scope.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/home/data/repositories/home_repository_impl.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
+import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
+import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_sync.dart';
 
 final homeControllerProvider =
     FutureProvider.family<Result<HomeDashboard>, HomeDashboardRequest>((
@@ -22,10 +25,47 @@ final homeControllerProvider =
         shouldRefresh: (RealtimeMessage message) {
           return _matchesDashboardScope(request, message.payload);
         },
-        onRefresh: (_) async {
+        onRefresh: (RealtimeMessage message) async {
+          final String? actorUserId = _payloadActorUserId(message.payload);
+          final String? currentUserId = ref
+              .read(sessionStateProvider)
+              .session
+              ?.user
+              ?.id;
+          final bool isSelfMutation =
+              actorUserId != null &&
+              currentUserId != null &&
+              actorUserId == currentUserId;
+
+          final HomeDashboardOptimisticPatch? patch =
+              HomeDashboardOptimisticPatch.fromRealtimePayload(message.payload);
+
+          if (patch != null && !isSelfMutation) {
+            homeApplyRealtimeDashboardPatch(
+              ref,
+              request,
+              patch,
+              invalidateAfterPatch: false,
+            );
+            return;
+          }
+
+          if (!isSelfMutation) {
+            ref
+                    .read(
+                      homeDashboardOptimisticPatchProvider(request).notifier,
+                    )
+                    .state =
+                null;
+          }
           ref.invalidateSelf();
         },
       );
+
+      ref.onDispose(() {
+        ref.read(homeDashboardOptimisticPatchProvider(request).notifier).state =
+            null;
+      });
 
       return ref.read(homeRepositoryProvider).loadDashboard(request);
     });
@@ -54,6 +94,7 @@ const Set<String> _homeDashboardRealtimeEvents = <String>{
   ...RealtimeEventGroups.communications,
   RealtimeEvents.facilityLayoutUpdated,
   ...RealtimeEventGroups.subscriptions,
+  ...RealtimeEventGroups.platformAdmin,
 };
 
 bool _matchesDashboardScope(
@@ -66,4 +107,29 @@ bool _matchesDashboardScope(
     facilityId: request.facilityId,
     branchId: request.branchId,
   );
+}
+
+String? _payloadActorUserId(Map<String, Object?> payload) {
+  final Object? direct = payload['actor_user_id'] ?? payload['actorUserId'];
+  if (direct is String && direct.trim().isNotEmpty) {
+    return direct.trim();
+  }
+
+  final Object? nested = payload['payload'];
+  if (nested is Map<String, Object?>) {
+    final Object? nestedActor =
+        nested['actor_user_id'] ?? nested['actorUserId'];
+    if (nestedActor is String && nestedActor.trim().isNotEmpty) {
+      return nestedActor.trim();
+    }
+  }
+  if (nested is Map<Object?, Object?>) {
+    final Object? nestedActor =
+        nested['actor_user_id'] ?? nested['actorUserId'];
+    if (nestedActor is String && nestedActor.trim().isNotEmpty) {
+      return nestedActor.trim();
+    }
+  }
+
+  return null;
 }

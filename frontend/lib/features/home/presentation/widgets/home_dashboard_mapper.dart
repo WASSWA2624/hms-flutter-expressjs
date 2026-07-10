@@ -95,12 +95,8 @@ List<DashboardQuickActionData> homeDashboardQuickActions({
           label: action.label,
           icon: action.icon,
           semanticsLabel: action.label,
-          onPressed: () => homeInvokeAction(
-            context,
-            ref,
-            action,
-            request: request,
-          ),
+          onPressed: () =>
+              homeInvokeAction(context, ref, action, request: request),
         ),
       )
       .toList(growable: false);
@@ -225,12 +221,8 @@ List<DashboardQuickActionData> homeDashboardEmptyActions(
           label: action.label,
           icon: action.icon,
           semanticsLabel: action.label,
-          onPressed: () => homeInvokeAction(
-            context,
-            ref,
-            action,
-            request: request,
-          ),
+          onPressed: () =>
+              homeInvokeAction(context, ref, action, request: request),
         ),
       )
       .toList(growable: false);

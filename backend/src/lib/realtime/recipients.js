@@ -59,6 +59,11 @@ const findRealtimeRecipientUserIds = async ({
   }
 };
 
+const {
+  findPlatformAdminRecipientUserIds
+} = require('@lib/realtime/platform-realtime');
+
 module.exports = {
-  findRealtimeRecipientUserIds
+  findRealtimeRecipientUserIds,
+  findPlatformAdminRecipientUserIds
 };

@@ -11,6 +11,35 @@ const roleRepository = require('@repositories/role/role.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { resolveIdentifierForPayload } = require('@lib/billing/identifiers');
+const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
+const { PLATFORM_ADMIN_EVENTS } = require('@lib/websocket/events');
+const { ROLES } = require('@config/roles');
+const { publishPlatformRealtimeEvent } = require('@lib/realtime/platform-realtime');
+
+const ROLE_REALTIME_RECIPIENT_ROLES = Object.freeze([ROLES.TENANT_ADMIN]);
+
+const publishRoleRealtimeEvent = async (event, role, actorUserId) => {
+  await Promise.all([
+    publishCrudRealtimeEvent({
+      event,
+      resource: role,
+      resource_type: 'role',
+      actor_user_id: actorUserId,
+      recipient_roles: ROLE_REALTIME_RECIPIENT_ROLES
+    }),
+    publishPlatformRealtimeEvent({
+      event,
+      resource_type: 'role',
+      resource_id: role?.id || null,
+      actor_user_id: actorUserId,
+      tenant_id: role?.tenant_id || null,
+      facility_id: role?.facility_id || null,
+      payload: {
+        name: role?.name || null
+      }
+    })
+  ]);
+};
 
 const normalizeCreateRolePayload = async (data = {}) => {
   const payload = { ...data };
@@ -136,6 +165,12 @@ const createRole = async (data, userId, ipAddress) => {
       ip_address: ipAddress
     }).catch(() => {});
 
+    await publishRoleRealtimeEvent(
+      PLATFORM_ADMIN_EVENTS.ROLE_CREATED,
+      role,
+      userId
+    );
+
     return role;
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -174,6 +209,12 @@ const updateRole = async (id, data, userId, ipAddress) => {
       ip_address: ipAddress
     }).catch(() => {});
 
+    await publishRoleRealtimeEvent(
+      PLATFORM_ADMIN_EVENTS.ROLE_UPDATED,
+      role,
+      userId
+    );
+
     return role;
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -210,6 +251,12 @@ const deleteRole = async (id, userId, ipAddress) => {
       diff: { before },
       ip_address: ipAddress
     }).catch(() => {});
+
+    await publishRoleRealtimeEvent(
+      PLATFORM_ADMIN_EVENTS.ROLE_DELETED,
+      before,
+      userId
+    );
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);

@@ -12,6 +12,38 @@ const userRepository = require('@repositories/user/user.repository');
 const { createAuditLog } = require('@lib/audit');
 const { hashPassword } = require('@lib/crypto');
 const { HttpError } = require('@lib/errors');
+const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
+const { PLATFORM_ADMIN_EVENTS } = require('@lib/websocket/events');
+const { ROLES } = require('@config/roles');
+const { publishPlatformRealtimeEvent } = require('@lib/realtime/platform-realtime');
+
+const USER_REALTIME_RECIPIENT_ROLES = Object.freeze([
+  ROLES.FACILITY_ADMIN,
+  ROLES.TENANT_ADMIN
+]);
+
+const publishUserRealtimeEvent = async (event, user, actorUserId) => {
+  await Promise.all([
+    publishCrudRealtimeEvent({
+      event,
+      resource: user,
+      resource_type: 'user',
+      actor_user_id: actorUserId,
+      recipient_roles: USER_REALTIME_RECIPIENT_ROLES
+    }),
+    publishPlatformRealtimeEvent({
+      event,
+      resource_type: 'user',
+      resource_id: user?.id || null,
+      actor_user_id: actorUserId,
+      tenant_id: user?.tenant_id || null,
+      facility_id: user?.facility_id || null,
+      payload: {
+        email: user?.email || null
+      }
+    })
+  ]);
+};
 
 const BCRYPT_PREFIX_REGEX = /^\$2[aby]\$\d{2}\$/;
 const USER_LIST_INCLUDE = Object.freeze({
@@ -301,6 +333,12 @@ const createUser = async (data, userId, ipAddress) => {
       ip_address: ipAddress
     }).catch(() => {});
 
+    await publishUserRealtimeEvent(
+      PLATFORM_ADMIN_EVENTS.USER_CREATED,
+      user,
+      userId
+    );
+
     return user;
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -346,6 +384,12 @@ const updateUser = async (id, data, userId, ipAddress) => {
       ip_address: ipAddress
     }).catch(() => {});
 
+    await publishUserRealtimeEvent(
+      PLATFORM_ADMIN_EVENTS.USER_UPDATED,
+      user,
+      userId
+    );
+
     return user;
   } catch (error) {
     if (error instanceof HttpError) throw error;
@@ -382,6 +426,12 @@ const deleteUser = async (id, userId, ipAddress) => {
       diff: { before },
       ip_address: ipAddress
     }).catch(() => {});
+
+    await publishUserRealtimeEvent(
+      PLATFORM_ADMIN_EVENTS.USER_DELETED,
+      before,
+      userId
+    );
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);

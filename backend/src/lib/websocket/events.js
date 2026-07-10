@@ -229,6 +229,25 @@ const FACILITY_LAYOUT_EVENTS = {
 };
 
 /**
+ * Platform admin profile events (tenants, facilities, access control)
+ */
+const PLATFORM_ADMIN_EVENTS = {
+  TENANT_CREATED: 'tenant.created',
+  TENANT_UPDATED: 'tenant.updated',
+  TENANT_DELETED: 'tenant.deleted',
+  FACILITY_CREATED: 'facility.created',
+  FACILITY_UPDATED: 'facility.updated',
+  FACILITY_DELETED: 'facility.deleted',
+  ROLE_CREATED: 'role.created',
+  ROLE_UPDATED: 'role.updated',
+  ROLE_DELETED: 'role.deleted',
+  USER_CREATED: 'user.created',
+  USER_UPDATED: 'user.updated',
+  USER_DELETED: 'user.deleted',
+  PLATFORM_DASHBOARD_INVALIDATE: 'platform.dashboard.invalidate'
+};
+
+/**
  * Integration Events
  */
 const INTEGRATION_EVENTS = {
@@ -281,6 +300,7 @@ const WS_EVENTS = {
   ...NOTIFICATION_EVENTS,
   ...SUBSCRIPTION_EVENTS,
   ...FACILITY_LAYOUT_EVENTS,
+  ...PLATFORM_ADMIN_EVENTS,
   ...INTEGRATION_EVENTS,
   ...ACCESS_CONTROL_EVENTS,
   ...LAST_OFFICE_EVENTS
@@ -310,6 +330,7 @@ module.exports = {
   NOTIFICATION_EVENTS,
   SUBSCRIPTION_EVENTS,
   FACILITY_LAYOUT_EVENTS,
+  PLATFORM_ADMIN_EVENTS,
   INTEGRATION_EVENTS,
   ACCESS_CONTROL_EVENTS,
   LAST_OFFICE_EVENTS,

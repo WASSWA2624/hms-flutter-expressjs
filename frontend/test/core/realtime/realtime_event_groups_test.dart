@@ -105,5 +105,20 @@ void main() {
         expect(group, contains(RealtimeEvents.invoiceUpdated));
       }
     });
+
+    test('routes platform admin events for dashboard sync', () {
+      expect(
+        RealtimeEventGroups.platformAdmin,
+        contains(RealtimeEvents.tenantCreated),
+      );
+      expect(
+        RealtimeEventGroups.platformAdmin,
+        contains(RealtimeEvents.facilityCreated),
+      );
+      expect(
+        RealtimeEventGroups.accessAdmin,
+        contains(RealtimeEvents.userCreated),
+      );
+    });
   });
 }

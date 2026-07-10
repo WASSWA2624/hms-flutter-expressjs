@@ -12,6 +12,52 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { resolveEntityId } = require('@lib/billing/identifiers');
 const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } = require('@config/constants');
+const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
+const { PLATFORM_ADMIN_EVENTS } = require('@lib/websocket/events');
+const { ROLES } = require('@config/roles');
+const {
+  publishPlatformRealtimeEvent,
+  buildFacilityDashboardDeltas
+} = require('@lib/realtime/platform-realtime');
+
+const FACILITY_REALTIME_RECIPIENT_ROLES = Object.freeze([
+  ROLES.FACILITY_ADMIN,
+  ROLES.TENANT_ADMIN
+]);
+
+const publishFacilityRealtimeEvent = async (
+  event,
+  facility,
+  actorUserId,
+  operation = 'create'
+) => {
+  await Promise.all([
+    publishCrudRealtimeEvent({
+      event,
+      resource: facility,
+      resource_type: 'facility',
+      actor_user_id: actorUserId,
+      recipient_roles: FACILITY_REALTIME_RECIPIENT_ROLES,
+      payload: {
+        is_active: facility?.is_active !== false,
+        name: facility?.name || null
+      }
+    }),
+    publishPlatformRealtimeEvent({
+      event,
+      resource_type: 'facility',
+      resource_id: facility?.id || null,
+      actor_user_id: actorUserId,
+      tenant_id: facility?.tenant_id || null,
+      facility_id: facility?.id || null,
+      dashboard_deltas: buildFacilityDashboardDeltas(facility, operation),
+      payload: {
+        is_active: facility?.is_active !== false,
+        name: facility?.name || null
+      }
+    })
+  ]);
+};
 
 const resolveTenantId = async (identifier) =>
   resolveEntityId({ model: 'tenant', identifier });
@@ -178,11 +224,15 @@ const createFacility = async (data, context = {}) => {
     }
   });
 
+  await publishFacilityRealtimeEvent(
+    PLATFORM_ADMIN_EVENTS.FACILITY_CREATED,
+    facility,
+    context.user_id,
+    'create'
+  );
+
   return facility;
 };
-
-/**
- * Update facility
  *
  * @param {string} id - Facility ID
  * @param {Object} data - Update data
@@ -241,6 +291,13 @@ const updateFacility = async (id, data, context = {}) => {
     }
   });
 
+  await publishFacilityRealtimeEvent(
+    PLATFORM_ADMIN_EVENTS.FACILITY_UPDATED,
+    facility,
+    context.user_id,
+    'update'
+  );
+
   return facility;
 };
 
@@ -283,6 +340,13 @@ const deleteFacility = async (id, context = {}) => {
       facility_type: facility.facility_type
     }
   });
+
+  await publishFacilityRealtimeEvent(
+    PLATFORM_ADMIN_EVENTS.FACILITY_DELETED,
+    facility,
+    context.user_id,
+    'delete'
+  );
 };
 
 /**

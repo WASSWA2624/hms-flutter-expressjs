@@ -1,98 +1,131 @@
-# Platform Admin Dashboard — Management UX Refinement
+# Instant UI Sync After Mutations — Performance Prompt
 
-## Context
+## Objective
 
-Super-admin home dashboard (`127.0.0.1:5201`, Platform view) exposes four management entry points below the status cards. Screenshots show the current dialogs for **Manage tenants**, **Manage facilities**, and **Users and access** (Roles / Demo accounts tabs). These flows need clearer labeling, faster launch, full CRUD, and tighter UI consistency.
-
-**Primary files**
-- `frontend/lib/features/home/domain/entities/home_dashboard_profiles.dart`
-- `frontend/lib/features/home/presentation/widgets/home_dashboard_actions.dart`
-- `frontend/lib/shared/dashboard/dashboard_priority_panel.dart`
-- `frontend/lib/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart`
-- `frontend/lib/features/access_admin/presentation/widgets/access_admin_dialogs.dart`
-- `frontend/lib/features/access_admin/presentation/pages/access_admin_workspace_page.dart`
-- `frontend/lib/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart`
+Eliminate perceptible delay between frontend mutations (create/edit/delete via dialogs and quick actions) and the UI reflecting the new state. The dashboard and all workspaces must feel **instant**: summary cards, alerts, badges, queues, and lists update as soon as a mutation succeeds — not tens of seconds later.
 
 ---
 
-## 1. Dashboard — Rename the empty management section
+## Problem (reproducible)
 
-**Problem:** The section that shows *"No follow-ups required."* with the four management buttons has no section title. The message describes queue state, not the actions below it.
+**Role:** Super Admin (platform scope)  
+**Screen:** Home dashboard (`/`) — platform management profile
 
-**Required**
-- Give this section an explicit title (e.g. **Platform management** or **Administration**) that reflects the four shortcuts: Manage tenants, Manage facilities, Manage roles and permissions, Manage users.
-- Keep the empty-state message separate from the section title, or replace it with copy that fits an always-available admin shortcut panel.
-- Update l10n (`app_en.arb`) for super-admin profile in `home_dashboard_profiles.dart`.
+| Step | Action |
+| ---- | ------ |
+| 1 | Log in as Super Admin |
+| 2 | On the dashboard, click **Create tenant** (Quick Actions) |
+| 3 | Complete the create-tenant dialog and save |
+| 4 | Observe the dashboard metric strip and Alerts panel |
 
----
+**Observed (see attached screenshots):**
 
-## 2. Manage Tenants dialog — Full CRUD + live UI
+- **Tenants** card stays at `3 / 3` for ~30+ seconds, then updates to `4 / 4`
+- **Alerts → Tenants Without Subscription** stays at `2`, then updates to `3`
+- Other platform metrics (Facilities, Subscriptions, Entitlements) likely suffer the same lag after their respective quick actions
 
-**Current behavior (screenshot):** Table with Tenant name, Tenant slug, Active. Footer: Refresh | Add tenant | Close. Row click opens edit form; save succeeds but the table does not reflect changes immediately.
-
-**Required**
-- **Edit:** After create/update, refresh the table in place without requiring manual Refresh. Invalidate or update local list state optimistically.
-- **Delete:** Add delete action per row (with confirmation). Wire to `TenantFacilityRepository.deleteTenant`.
-- **Remove Refresh button** — mutations and search/pagination should keep data current automatically.
-- **Footer actions (left → right):** `Add tenant` (primary) → `Close` (secondary, with close icon e.g. `Icons.close`).
-- Preserve search, pagination, responsive table (mobile/tablet/desktop), and permission gating (`canCreateTenant`).
+**Expected:** Metric cards, alerts, nav badges, and related lists update **immediately** (≤ 1 s perceived) after a successful save, without requiring navigation away or a manual refresh.
 
 ---
 
-## 3. Manage Facilities dialog — Full CRUD + “All” filter fix
+## Scope
 
-**Current behavior (screenshot):** Tenant filter dropdown (All + per-tenant), search, table. Footer: Refresh | Add facility | Close.
+This is an **app-wide** UX problem, not limited to the home dashboard. Apply the same instant-sync standard everywhere a user action mutates backend data and the UI must reflect it:
 
-**Required**
-- **“All” filter:** When **All** is selected, list every facility across tenants (verify `listFacilities` with `tenantId: null` returns full paginated results).
-- **Edit + Delete:** Same CRUD pattern as tenants. Wire delete to `TenantFacilityRepository.deleteFacility`.
-- **Live UI:** Table updates immediately after create/edit/delete.
-- **Remove Refresh button.**
-- **Footer actions:** `Add facility` (primary) → `Close` (secondary, with close icon).
-- Keep tenant filter, search, pagination, and responsive layout.
+- Home dashboard (platform + tenant/facility profiles)
+- Quick Actions and management dialogs (`create_tenant`, `create_facility`, `create_role`, `create_user`, etc.)
+- Module workspaces (OPD, IPD, billing, HR, subscriptions, access admin, tenant/facility setup, …)
+- Nav notification/workload badges
 
 ---
 
-## 4. Split and simplify Users & Access
+## Investigation starting points
 
-**Problem:** **Manage roles and access** and **Manage users** both open the same heavy **Users and access** dialog (`showAccessAdminWorkspaceDialog`) with seven tabs (Overview, User directory, Roles, Permissions, Module entitlements, Pending registrations, Demo accounts). Launch is slow; labels are misleading because both entry points feel identical.
+Search the codebase for bottlenecks and gaps. Known areas to inspect:
 
-**Required — two distinct dialogs**
-
-| Dashboard action | New label | Scope |
-|---|---|---|
-| `manage_roles_access` | **Manage roles and permissions** | Roles list + permission assignment only. No user directory, demo accounts, or entitlements tabs. |
-| `manage_users` | **Manage users** | Single searchable, paginated **users table** (ID, name, email/role details, status). Create, edit, deactivate/delete users inline or via row action. No tab bar. |
-
-**Performance**
-- Dialog must open instantly (< 300 ms perceived). Do **not** block on full workspace load.
-- Lazy-load data per dialog scope (users-only vs roles-only).
-- Show skeleton/inline loading in the table area, not a full-screen spinner.
-- Avoid loading all panels/resources on open; refactor `AccessAdminWorkspaceController.build()` / `_loadInitialState` if needed.
-
-**Rename & align copy**
-- Update action labels in `home_dashboard_actions.dart` and l10n keys.
-- Dialog titles must match dashboard action intent (not generic “Users and access” for both).
-- Remove or hide tabs that are out of scope for each entry point.
+| Area | Location | Suspected gap |
+| ---- | -------- | ------------- |
+| Post-mutation refresh | `frontend/lib/features/home/presentation/widgets/home_dashboard_actions.dart` — `homeRefreshDashboard`, `homeInvokeAction` | `ref.invalidate(homeControllerProvider)` runs on dialog close (`.then((_)`) regardless of success; full HTTP round-trip only |
+| Dashboard realtime | `frontend/lib/features/home/presentation/controllers/home_controller.dart` | `_homeDashboardRealtimeEvents` has no tenant/platform/admin events |
+| Realtime event catalog | `frontend/lib/core/realtime/realtime_events.dart`, `realtime_event_groups.dart` | No `tenant.created` / `tenant.updated` / platform-admin events |
+| Backend fan-out | `backend/src/modules/tenant/`, `dashboard-workspace`, `dashboard-widget` | Tenant CRUD may not publish websocket events after mutation |
+| Reference pattern (good) | `frontend/lib/core/workspace/workspace_sync_engine.dart`, `opd_realtime_delta_applier.dart` | OPD applies local deltas before HTTP fallback — dashboard lacks equivalent |
+| Stale-while-revalidate | `frontend/lib/features/home/presentation/pages/home_page.dart` — `keepPreviousDataDuringRefresh: true` | May mask refresh in progress but can show stale counts until slow fetch completes |
+| Platform metrics source | `backend/src/modules/dashboard-widget/repositories/dashboard-widget.repository.js`, `backend/src/lib/dashboard/summary.js` | Live Prisma counts for Super Admin — delay is likely frontend sync, not snapshot TTL |
 
 ---
 
-## 5. Cross-cutting UX rules
+## Required outcomes
 
-- **Responsive:** All dialogs and tables must work on mobile, tablet, and desktop (`AppListTable`, `AppDialog`, existing breakpoints).
-- **Consistency:** Match existing HOSSPI patterns — `AppButton.primary/secondary`, `AppSearchBar`, `AppDialog` with `pinActionsToBottom`, confirmation before destructive actions.
-- **No manual refresh:** Prefer automatic list invalidation after mutations across all three management dialogs.
-- **Permissions:** Respect existing `AppAccessPolicy` checks; hide create/delete where unauthorized.
-- **Tests:** Add/update widget or controller tests for list refresh after edit, delete confirmation, and split access-admin entry points.
+### 1. Optimistic / immediate local updates
+
+After a **successful** mutation, patch affected UI state locally before (or without waiting for) a full workspace reload:
+
+- Increment/decrement dashboard metric cards (`tenants_active`, `subscriptions_active`, etc.)
+- Update alert counts (`tenants_without_subscription`, …)
+- Refresh only the affected provider slice — avoid blanket invalidation when a targeted patch suffices
+
+Only refresh on mutation **success** (`saved == true`), not on cancel/dismiss.
+
+### 2. Realtime propagation (multi-user + cross-widget)
+
+For mutations that affect shared views:
+
+- Emit websocket events from backend services on tenant, facility, role, user, and subscription CRUD
+- Add matching entries to `RealtimeEvents` / `RealtimeEventGroups`
+- Subscribe `homeControllerProvider` (and other affected controllers) to those events via `listenForRealtimeRefresh`
+
+### 3. Fast HTTP fallback
+
+When a full reload is unavoidable:
+
+- Ensure `homeRefreshDashboard` / controller `invalidate` triggers an immediate fetch with no artificial debounce beyond existing 200 ms coalescing
+- Profile and remove slow queries, redundant serial fetches, or blocking work in the mutation → refresh path
+- Return mutation responses with enough summary deltas for the frontend to patch without a second heavy `GET /dashboard-workspace/workspace` when possible
+
+### 4. Consistency with existing patterns
+
+Reuse established infrastructure — do not invent parallel sync mechanisms:
+
+- `listenForRealtimeRefresh` for event-driven invalidation
+- `WorkspaceSyncEngine` + `RealtimeDelta` for local patching where applicable
+- `homeRefreshDashboard(ref, request)` after successful modal actions
+- Modal-first workflows per `frontend/.cursor/ui-patterns.mdc`
 
 ---
 
 ## Acceptance criteria
 
-- [ ] Super-admin dashboard section has a clear **Platform management** (or equivalent) title; buttons sit under it, not under a queue-empty message alone.
-- [ ] Manage Tenants: edit updates table immediately; delete works; no Refresh button; Close has icon.
-- [ ] Manage Facilities: **All** shows all facilities; full CRUD; no Refresh button; Close has icon.
-- [ ] Manage roles and permissions opens a focused roles/permissions dialog — fast, no irrelevant tabs.
-- [ ] Manage users opens a single user-table dialog — fast, no tab bar.
-- [ ] Dashboard action labels match dialog content; no duplicate “Users and access” experience.
-- [ ] All changes are l10n-ready and responsive across breakpoints.
+- [ ] Create tenant from dashboard Quick Actions → **Tenants** card and **Tenants Without Subscription** alert update within **1 second** of save success
+- [ ] Same instant behavior for **Create facility**, **Create role**, and other platform quick actions on the Super Admin dashboard
+- [ ] Cancelling a dialog does **not** trigger a dashboard reload
+- [ ] A second browser/session sees the update via realtime within normal websocket latency
+- [ ] No regressions to OPD/IPD/billing realtime sync (existing `WorkspaceSyncEngine` flows still pass tests)
+- [ ] Responsive on mobile, tablet, and desktop — no layout shift during optimistic updates
+
+---
+
+## Quality gate
+
+| Layer | Command |
+| ----- | ------- |
+| Frontend | `flutter pub get`, `dart format --set-exit-if-changed .`, `flutter analyze`, `flutter test` |
+| Backend | Targeted `npm test` for touched modules (`tenant`, `dashboard-workspace`, `dashboard-widget`, realtime) |
+| Manual | Reproduce the screenshot scenario on `127.0.0.1:5201` before and after — confirm sub-second update |
+
+---
+
+## Key files
+
+```
+frontend/lib/features/home/
+frontend/lib/features/tenant_facility/
+frontend/lib/features/access_admin/
+frontend/lib/core/realtime/
+frontend/lib/core/workspace/
+backend/src/modules/tenant/
+backend/src/modules/dashboard-workspace/
+backend/src/modules/dashboard-widget/
+backend/src/lib/dashboard/summary.js
+prompts/07-home-dashboard-module-prompt.md
+```

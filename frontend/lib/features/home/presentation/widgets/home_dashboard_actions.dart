@@ -11,7 +11,8 @@ import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_adm
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
-import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
+import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
+import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_sync.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart';
@@ -1228,7 +1229,7 @@ List<HomeActionDefinition> homeVisibleEmptyActions(
 }
 
 void homeRefreshDashboard(WidgetRef ref, HomeDashboardRequest request) {
-  ref.invalidate(homeControllerProvider(request));
+  homeOnDashboardMutationSuccess(ref, request);
 }
 
 HomeRouteTarget? homeFirstQueueTarget(List<HomeQueueItem> items) {
@@ -1291,8 +1292,8 @@ void homeInvokeAction(
 }) {
   if (action.id == 'add_staff_profile' || action.id == 'staff_profile') {
     unawaited(
-      showHrStaffOnboardingDialog(context, ref).then((_) {
-        homeRefreshDashboard(ref, request);
+      showHrStaffOnboardingDialog(context, ref).then((bool? saved) {
+        homeOnDashboardDialogClosed(ref, request, saved);
       }),
     );
     return;
@@ -1303,8 +1304,17 @@ void homeInvokeAction(
   }
   if (action.id == 'create_tenant') {
     unawaited(
-      showTenantFacilityTenantFormDialog(context, forceCreate: true).then((_) {
-        homeRefreshDashboard(ref, request);
+      showTenantFacilityTenantFormDialog(context, forceCreate: true).then((
+        bool? saved,
+      ) {
+        homeOnDashboardDialogClosed(
+          ref,
+          request,
+          saved,
+          patch: saved == true
+              ? HomeDashboardOptimisticPatch.tenantCreated()
+              : null,
+        );
       }),
     );
     return;
@@ -1314,40 +1324,47 @@ void homeInvokeAction(
       showTenantFacilityFacilityFormDialog(
         context,
         requireTenantPicker: true,
-      ).then((_) {
-        homeRefreshDashboard(ref, request);
+      ).then((bool? saved) {
+        homeOnDashboardDialogClosed(
+          ref,
+          request,
+          saved,
+          patch: saved == true
+              ? HomeDashboardOptimisticPatch.facilityCreated()
+              : null,
+        );
       }),
     );
     return;
   }
   if (action.id == 'create_role') {
     unawaited(
-      showAccessAdminCreateRoleDialog(context, ref).then((_) {
-        homeRefreshDashboard(ref, request);
+      showAccessAdminCreateRoleDialog(context, ref).then((bool? saved) {
+        homeOnDashboardDialogClosed(ref, request, saved);
       }),
     );
     return;
   }
   if (action.id == 'create_user') {
     unawaited(
-      showAccessAdminCreateUserDialog(context, ref).then((_) {
-        homeRefreshDashboard(ref, request);
+      showAccessAdminCreateUserDialog(context, ref).then((bool? saved) {
+        homeOnDashboardDialogClosed(ref, request, saved);
       }),
     );
     return;
   }
   if (action.id == 'manage_tenants') {
     unawaited(
-      showManageTenantsDialog(context, ref).then((_) {
-        homeRefreshDashboard(ref, request);
+      showManageTenantsDialog(context, ref).then((bool? saved) {
+        homeOnDashboardDialogClosed(ref, request, saved);
       }),
     );
     return;
   }
   if (action.id == 'manage_facilities') {
     unawaited(
-      showManageFacilitiesDialog(context, ref).then((_) {
-        homeRefreshDashboard(ref, request);
+      showManageFacilitiesDialog(context, ref).then((bool? saved) {
+        homeOnDashboardDialogClosed(ref, request, saved);
       }),
     );
     return;

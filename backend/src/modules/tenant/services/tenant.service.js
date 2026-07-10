@@ -12,6 +12,25 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { resolveEntityId } = require('@lib/billing/identifiers');
 const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } = require('@config/constants');
+const { PLATFORM_ADMIN_EVENTS } = require('@lib/websocket/events');
+const {
+  publishPlatformRealtimeEvent,
+  buildTenantDashboardDeltas
+} = require('@lib/realtime/platform-realtime');
+
+const publishTenantRealtimeEvent = async (event, tenant, actorUserId, operation = 'create') => {
+  await publishPlatformRealtimeEvent({
+    event,
+    resource_type: 'tenant',
+    resource_id: tenant?.id || null,
+    actor_user_id: actorUserId || null,
+    dashboard_deltas: buildTenantDashboardDeltas(tenant, operation),
+    payload: {
+      is_active: tenant?.is_active !== false,
+      name: tenant?.name || null
+    }
+  });
+};
 
 const resolveTenantId = async (identifier) =>
   resolveEntityId({ model: 'tenant', identifier });
@@ -196,6 +215,13 @@ const createTenant = async (data, context = {}) => {
     }
   });
 
+  await publishTenantRealtimeEvent(
+    PLATFORM_ADMIN_EVENTS.TENANT_CREATED,
+    tenant,
+    context.user_id,
+    'create'
+  );
+
   return tenant;
 };
 
@@ -251,6 +277,13 @@ const updateTenant = async (id, data, context = {}) => {
     }
   });
 
+  await publishTenantRealtimeEvent(
+    PLATFORM_ADMIN_EVENTS.TENANT_UPDATED,
+    tenant,
+    context.user_id,
+    'update'
+  );
+
   return tenant;
 };
 
@@ -293,6 +326,13 @@ const deleteTenant = async (id, context = {}) => {
       slug: tenant.slug
     }
   });
+
+  await publishTenantRealtimeEvent(
+    PLATFORM_ADMIN_EVENTS.TENANT_DELETED,
+    tenant,
+    context.user_id,
+    'delete'
+  );
 };
 
 module.exports = {

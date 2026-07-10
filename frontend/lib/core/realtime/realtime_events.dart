@@ -112,6 +112,25 @@ abstract final class RealtimeEvents {
 
   static const String facilityLayoutUpdated = 'facility.layout_updated';
 
+  static const String tenantCreated = 'tenant.created';
+  static const String tenantUpdated = 'tenant.updated';
+  static const String tenantDeleted = 'tenant.deleted';
+
+  static const String facilityCreated = 'facility.created';
+  static const String facilityUpdated = 'facility.updated';
+  static const String facilityDeleted = 'facility.deleted';
+
+  static const String roleCreated = 'role.created';
+  static const String roleUpdated = 'role.updated';
+  static const String roleDeleted = 'role.deleted';
+
+  static const String userCreated = 'user.created';
+  static const String userUpdated = 'user.updated';
+  static const String userDeleted = 'user.deleted';
+
+  static const String platformDashboardInvalidate =
+      'platform.dashboard.invalidate';
+
   static const String integrationWebhookRetry = 'integration.webhook_retry';
   static const String integrationFailure = 'integration.failure';
   static const String integrationReplayComplete = 'integration.replay_complete';

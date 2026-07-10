@@ -38,13 +38,13 @@ const Set<String> _clinicalPrescriberRoleNames = <String>{
 enum StaffNumberEntryMode { generate, manual }
 
 /// Opens the canonical HR staff onboarding dialog (create or edit).
-Future<void> showHrStaffOnboardingDialog(
+Future<bool?> showHrStaffOnboardingDialog(
   BuildContext context,
   WidgetRef ref, {
   HrStaffProfile? staff,
 }) async {
   if (!canWriteHrAccess(ref)) {
-    return;
+    return null;
   }
 
   final AppLocalizations l10n = context.l10n;
@@ -53,7 +53,7 @@ Future<void> showHrStaffOnboardingDialog(
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(l10n.hrAccessTenantContextRequiredBody)),
     );
-    return;
+    return null;
   }
 
   final HrWorkspaceController controller = ref.read(
@@ -66,7 +66,7 @@ Future<void> showHrStaffOnboardingDialog(
       ?.facilityId;
   await controller.ensureOnboardingReferenceData(facilityId: facilityId);
   if (!context.mounted) {
-    return;
+    return null;
   }
 
   final HrWorkspaceState? state = readHrWorkspaceState(ref);
@@ -119,6 +119,8 @@ Future<void> showHrStaffOnboardingDialog(
   if (saved == true && context.mounted) {
     showHrMutationSnackBar(context, null);
   }
+
+  return saved;
 }
 
 /// Staff onboarding form fields used by [showHrStaffOnboardingDialog].

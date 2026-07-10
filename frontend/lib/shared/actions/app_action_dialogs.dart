@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -14,6 +15,10 @@ class AppConfirmActionDialog extends StatefulWidget {
     required this.submitLabel,
     this.onConfirm,
     this.icon = const Icon(Icons.help_outline),
+    this.highlightedText,
+    this.destructive = false,
+    this.submitLeadingIcon,
+    this.cancelLeadingIcon = Icons.close,
     this.maxWidth = 600,
     super.key,
   });
@@ -22,6 +27,10 @@ class AppConfirmActionDialog extends StatefulWidget {
   final String body;
   final String submitLabel;
   final Widget icon;
+  final String? highlightedText;
+  final bool destructive;
+  final IconData? submitLeadingIcon;
+  final IconData cancelLeadingIcon;
   final double maxWidth;
   final Future<AppFailure?> Function()? onConfirm;
 
@@ -35,9 +44,12 @@ class _AppConfirmActionDialogState extends State<AppConfirmActionDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
     return AppDialog(
       title: Text(widget.title),
-      icon: widget.icon,
+      icon: _resolveHeaderIcon(colorScheme),
       maxWidth: widget.maxWidth,
       initialMaximized: false,
       closeEnabled: !_isSaving,
@@ -48,7 +60,19 @@ class _AppConfirmActionDialogState extends State<AppConfirmActionDialog> {
               context: context,
               failure: _failure!,
             ),
-          Text(widget.body),
+          if (widget.destructive)
+            _DestructiveConfirmationBody(
+              body: widget.body,
+              highlightedText: widget.highlightedText,
+            )
+          else
+            Text(
+              widget.body,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                height: 1.45,
+              ),
+            ),
         ],
       ),
       actions: _actionDialogButtons(
@@ -56,7 +80,30 @@ class _AppConfirmActionDialogState extends State<AppConfirmActionDialog> {
         submitLabel: widget.submitLabel,
         isSaving: _isSaving,
         onSubmit: _submit,
+        destructive: widget.destructive,
+        submitLeadingIcon: widget.submitLeadingIcon,
+        cancelLeadingIcon: widget.cancelLeadingIcon,
       ),
+    );
+  }
+
+  Widget _resolveHeaderIcon(ColorScheme colorScheme) {
+    if (!widget.destructive) {
+      return widget.icon;
+    }
+
+    if (widget.icon case final Icon icon) {
+      return Icon(
+        icon.icon,
+        size: icon.size,
+        semanticLabel: icon.semanticLabel,
+        color: colorScheme.error,
+      );
+    }
+
+    return IconTheme(
+      data: IconThemeData(color: colorScheme.error),
+      child: widget.icon,
     );
   }
 
@@ -432,18 +479,125 @@ List<Widget> _actionDialogButtons(
   required String submitLabel,
   required bool isSaving,
   required VoidCallback onSubmit,
+  bool destructive = false,
+  IconData? submitLeadingIcon,
+  IconData cancelLeadingIcon = Icons.close,
 }) {
   final AppLocalizations l10n = context.l10n;
+  final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
   return <Widget>[
-    AppButton.tertiary(
+    AppButton.secondary(
       label: l10n.commonCancelActionLabel,
+      leadingIcon: cancelLeadingIcon,
       enabled: !isSaving,
       onPressed: () => Navigator.of(context).pop(false),
     ),
     AppButton.primary(
       label: submitLabel,
+      leadingIcon: submitLeadingIcon ?? (destructive ? Icons.delete_outline : null),
+      color: destructive ? colorScheme.error : null,
       isLoading: isSaving,
       onPressed: onSubmit,
     ),
   ];
+}
+
+class _DestructiveConfirmationBody extends StatelessWidget {
+  const _DestructiveConfirmationBody({
+    required this.body,
+    this.highlightedText,
+  });
+
+  final String body;
+  final String? highlightedText;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final TextStyle baseStyle =
+        theme.textTheme.bodyMedium?.copyWith(
+          color: colorScheme.onSurface,
+          height: 1.5,
+        ) ??
+        TextStyle(color: colorScheme.onSurface, height: 1.5);
+    final TextStyle emphasisStyle = baseStyle.copyWith(
+      fontWeight: FontWeight.w600,
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(theme.spacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        border: Border.all(color: colorScheme.error.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: EdgeInsets.only(top: theme.spacing.xs),
+            child: Icon(
+              Icons.warning_amber_rounded,
+              color: colorScheme.error,
+              size: 22,
+            ),
+          ),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: _HighlightedConfirmationText(
+              text: body,
+              highlightedText: highlightedText,
+              baseStyle: baseStyle,
+              emphasisStyle: emphasisStyle,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HighlightedConfirmationText extends StatelessWidget {
+  const _HighlightedConfirmationText({
+    required this.text,
+    required this.baseStyle,
+    required this.emphasisStyle,
+    this.highlightedText,
+  });
+
+  final String text;
+  final String? highlightedText;
+  final TextStyle baseStyle;
+  final TextStyle emphasisStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final String? highlight = highlightedText?.trim();
+    if (highlight == null || highlight.isEmpty || !text.contains(highlight)) {
+      return Text(text, style: baseStyle);
+    }
+
+    final List<InlineSpan> spans = <InlineSpan>[];
+    int start = 0;
+    while (true) {
+      final int index = text.indexOf(highlight, start);
+      if (index < 0) {
+        if (start < text.length) {
+          spans.add(TextSpan(text: text.substring(start), style: baseStyle));
+        }
+        break;
+      }
+
+      if (index > start) {
+        spans.add(TextSpan(text: text.substring(start, index), style: baseStyle));
+      }
+      spans.add(TextSpan(text: highlight, style: emphasisStyle));
+      start = index + highlight.length;
+    }
+
+    return Text.rich(TextSpan(children: spans));
+  }
 }
