@@ -34113,6 +34113,24 @@ abstract class AppLocalizations {
   /// **'Permissions'**
   String get accessAdminRolePermissionsLabel;
 
+  /// Description for the permissions section on the role details dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions granted by this role.'**
+  String get accessAdminRoleDetailPermissionsDescription;
+
+  /// Empty state when a role has no attached permissions.
+  ///
+  /// In en, this message translates to:
+  /// **'This role has no permissions assigned yet.'**
+  String get accessAdminRoleDetailNoPermissionsMessage;
+
+  /// Label for the number of users assigned to a role.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned users'**
+  String get accessAdminRoleDetailUsersLabel;
+
   /// Validation message when no permissions are selected for a role.
   ///
   /// In en, this message translates to:

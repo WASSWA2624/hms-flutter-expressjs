@@ -383,9 +383,13 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
                   _string(permission['display_id']) ??
                   _string(permission['id']) ??
                   _string(row['permission_id']);
+              final String? permissionName =
+                  _string(permission['name']) ??
+                  _string(row['permission_name']);
               return AccessAdminRolePermissionAssignment(
                 id: assignmentId,
                 permissionId: permissionId,
+                permissionName: permissionName,
               );
             })
             .where(

@@ -648,6 +648,49 @@ class _ManageRolesPermissionsDialogState
     }
   }
 
+  Future<void> _openRoleDetail(AccessAdminItem role) async {
+    if (!mounted) {
+      return;
+    }
+
+    final Result<List<AccessAdminRolePermissionAssignment>> permissionsResult =
+        await repository.listRolePermissions(role.id);
+    if (!mounted) {
+      return;
+    }
+
+    final List<AccessAdminRolePermissionAssignment>? permissions =
+        permissionsResult.when(
+          success: (List<AccessAdminRolePermissionAssignment> value) => value,
+          failure: (AppFailure failure) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(context.l10n.failureMessage(failure))),
+            );
+            return null;
+          },
+        );
+    if (permissions == null || !mounted) {
+      return;
+    }
+
+    await showAppDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) => _AccessAdminRoleDetailDialog(
+        role: role,
+        permissions: permissions,
+        canWrite: canWrite,
+        onEdit: () {
+          Navigator.of(dialogContext).pop();
+          unawaited(_openEditRoleDialog(role));
+        },
+        onDelete: () {
+          Navigator.of(dialogContext).pop();
+          unawaited(_confirmDeleteRole(role));
+        },
+      ),
+    );
+  }
+
   Future<void> _openEditRoleDialog(AccessAdminItem role) async {
     final AccessAdminWorkspaceState? state = buildWorkspaceState();
     if (state == null || !mounted) {
@@ -721,9 +764,8 @@ class _ManageRolesPermissionsDialogState
         child: buildTable(
           l10n: l10n,
           columnVisibilityStorageKey: 'access_admin_manage_roles_v2',
-          onRowSelected: canWrite
-              ? (AccessAdminItem role) => unawaited(_openEditRoleDialog(role))
-              : null,
+          onRowSelected: (AccessAdminItem role) =>
+              unawaited(_openRoleDetail(role)),
           search: buildTableSearch(
             l10n: l10n,
             showAdvancedFilterButton: canViewTenantRoles,
@@ -853,6 +895,232 @@ class _ManageRolesPermissionsDialogState
 }
 
 const String _roleScopeFilterKey = 'role_scope';
+
+class _AccessAdminRoleDetailDialog extends StatelessWidget {
+  const _AccessAdminRoleDetailDialog({
+    required this.role,
+    required this.permissions,
+    required this.canWrite,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final AccessAdminItem role;
+  final List<AccessAdminRolePermissionAssignment> permissions;
+  final bool canWrite;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+
+    final List<AccessAdminRolePermissionAssignment> sortedPermissions =
+        List<AccessAdminRolePermissionAssignment>.from(permissions)
+          ..sort((
+            AccessAdminRolePermissionAssignment a,
+            AccessAdminRolePermissionAssignment b,
+          ) {
+            final String left = (a.permissionName ?? a.permissionId ?? '')
+                .toLowerCase();
+            final String right = (b.permissionName ?? b.permissionId ?? '')
+                .toLowerCase();
+            return left.compareTo(right);
+          });
+
+    return AppDialog(
+      title: Text(role.title),
+      icon: const Icon(Icons.badge_outlined),
+      scrollable: true,
+      pinActionsToBottom: true,
+      maxWidth: 760,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          _RoleDetailSummaryCard(role: role, permissionCount: permissions.length),
+          SizedBox(height: theme.spacing.md),
+          AppSectionPanel(
+            title: l10n.accessAdminRolePermissionsLabel,
+            description: l10n.accessAdminRoleDetailPermissionsDescription,
+            leadingIcon: Icons.lock_outline,
+            children: <Widget>[
+              if (sortedPermissions.isEmpty)
+                AppFormInformationBanner(
+                  title: l10n.accessAdminRolePermissionsLabel,
+                  message: l10n.accessAdminRoleDetailNoPermissionsMessage,
+                  icon: Icons.info_outline,
+                )
+              else
+                ...sortedPermissions.map((
+                  AccessAdminRolePermissionAssignment assignment,
+                ) {
+                  final String code =
+                      assignment.permissionName ??
+                      assignment.permissionId ??
+                      '—';
+                  final String label = l10n.permissionCatalogLabelForCode(code);
+                  return ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: Icon(
+                      Icons.check_circle_outline,
+                      color: colors.primary,
+                    ),
+                    title: Text(label),
+                    subtitle: label == code ? null : Text(code),
+                  );
+                }),
+            ],
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        if (canWrite) ...<Widget>[
+          AppButton.secondary(
+            label: l10n.accessAdminEditRoleAction,
+            leadingIcon: Icons.edit_outlined,
+            onPressed: onEdit,
+          ),
+          if (!role.isSystemCritical)
+            AppButton.secondary(
+              label: l10n.accessAdminDeleteRoleAction,
+              leadingIcon: Icons.delete_outline,
+              color: colors.error,
+              onPressed: onDelete,
+            ),
+        ],
+        AppButton.secondary(
+          label: l10n.commonCloseActionLabel,
+          leadingIcon: Icons.close,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ],
+    );
+  }
+}
+
+class _RoleDetailSummaryCard extends StatelessWidget {
+  const _RoleDetailSummaryCard({
+    required this.role,
+    required this.permissionCount,
+  });
+
+  final AccessAdminItem role;
+  final int permissionCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Text(
+                    role.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                _RoleScopeBadge(item: role),
+              ],
+            ),
+            if ((role.subtitle ?? '').trim().isNotEmpty) ...<Widget>[
+              SizedBox(height: theme.spacing.xs),
+              Text(
+                role.subtitle!,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+            ],
+            SizedBox(height: theme.spacing.md),
+            Wrap(
+              spacing: theme.spacing.md,
+              runSpacing: theme.spacing.sm,
+              children: <Widget>[
+                _RoleDetailMetaChip(
+                  icon: Icons.tag_outlined,
+                  label: l10n.accessAdminColumnId,
+                  value: role.effectiveDisplayId,
+                ),
+                _RoleDetailMetaChip(
+                  icon: Icons.lock_outline,
+                  label: l10n.accessAdminRolePermissionsLabel,
+                  value: l10n.hrAccessPermissionCountLabel(permissionCount),
+                ),
+                _RoleDetailMetaChip(
+                  icon: Icons.group_outlined,
+                  label: l10n.accessAdminRoleDetailUsersLabel,
+                  value: '${role.userCount}',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RoleDetailMetaChip extends StatelessWidget {
+  const _RoleDetailMetaChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(icon, size: 16, color: colors.onSurfaceVariant),
+          SizedBox(width: theme.spacing.xs),
+          Text(
+            '$label: ',
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+          ),
+          Text(value, style: theme.textTheme.labelMedium),
+        ],
+      ),
+    );
+  }
+}
 
 class _RoleScopeBadge extends StatelessWidget {
   const _RoleScopeBadge({required this.item});

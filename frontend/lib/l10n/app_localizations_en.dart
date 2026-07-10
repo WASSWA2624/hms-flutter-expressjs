@@ -18386,6 +18386,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminRolePermissionsLabel => 'Permissions';
 
   @override
+  String get accessAdminRoleDetailPermissionsDescription =>
+      'Permissions granted by this role.';
+
+  @override
+  String get accessAdminRoleDetailNoPermissionsMessage =>
+      'This role has no permissions assigned yet.';
+
+  @override
+  String get accessAdminRoleDetailUsersLabel => 'Assigned users';
+
+  @override
   String get accessAdminRolePermissionsRequired =>
       'Select at least one permission for this role.';
 

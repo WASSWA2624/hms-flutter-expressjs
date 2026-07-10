@@ -8,10 +8,14 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/app_permission_catalog_localizations.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
+import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -268,6 +272,29 @@ class _AccessAdminWorkspaceContentState
       }
     }
 
+    List<AccessAdminRolePermissionAssignment> rolePermissions =
+        const <AccessAdminRolePermissionAssignment>[];
+    if (item.resource == AccessAdminResource.roles) {
+      final AccessAdminRepository repository = ref.read(
+        accessAdminRepositoryProvider,
+      );
+      final Result<List<AccessAdminRolePermissionAssignment>>
+      permissionsResult = await repository.listRolePermissions(item.id);
+      if (!context.mounted) {
+        return;
+      }
+      final AppFailure? permissionsFailure = permissionsResult.when(
+        success: (List<AccessAdminRolePermissionAssignment> value) {
+          rolePermissions = value;
+          return null;
+        },
+        failure: (AppFailure failure) => failure,
+      );
+      if (permissionsFailure != null) {
+        _showSnack(context, context.l10n.failureMessage(permissionsFailure));
+      }
+    }
+
     if (!context.mounted) return;
 
     await showAppDialog<void>(
@@ -288,16 +315,49 @@ class _AccessAdminWorkspaceContentState
 
           return AppDialog(
             title: Text(selected.title),
-            icon: const Icon(Icons.manage_accounts_outlined),
+            icon: Icon(
+              selected.resource == AccessAdminResource.roles
+                  ? Icons.badge_outlined
+                  : Icons.manage_accounts_outlined,
+            ),
             scrollable: true,
             maxWidth: 920,
             content: _DetailContent(
               item: selected,
               detail: detail,
+              rolePermissions: rolePermissions,
               state: current ?? widget.state,
               canWrite: canWrite,
             ),
             actions: <Widget>[
+              if (canWrite &&
+                  selected.resource == AccessAdminResource.roles) ...<Widget>[
+                AppButton.secondary(
+                  label: context.l10n.accessAdminEditRoleAction,
+                  leadingIcon: Icons.edit_outlined,
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    unawaited(
+                      openAccessAdminEditRoleDialog(
+                        context,
+                        ref,
+                        current ?? widget.state,
+                        selected,
+                      ),
+                    );
+                  },
+                ),
+                if (!selected.isSystemCritical)
+                  AppButton.secondary(
+                    label: context.l10n.accessAdminDeleteRoleAction,
+                    leadingIcon: Icons.delete_outline,
+                    color: Theme.of(context).colorScheme.error,
+                    onPressed: () {
+                      Navigator.of(dialogContext).pop();
+                      unawaited(controller.deleteRole(selected));
+                    },
+                  ),
+              ],
               AppButton.secondary(
                 label: context.l10n.commonCloseActionLabel,
                 onPressed: () => Navigator.of(dialogContext).pop(),
@@ -648,106 +708,184 @@ class _DetailContent extends ConsumerWidget {
     required this.detail,
     required this.state,
     required this.canWrite,
+    this.rolePermissions = const <AccessAdminRolePermissionAssignment>[],
   });
 
   final AccessAdminItem item;
   final AccessAdminUserDetail? detail;
   final AccessAdminWorkspaceState state;
   final bool canWrite;
+  final List<AccessAdminRolePermissionAssignment> rolePermissions;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AccessAdminWorkspaceController controller = ref.read(
       accessAdminWorkspaceControllerProvider.notifier,
     );
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final bool isRole = item.resource == AccessAdminResource.roles;
+
+    final List<AccessAdminRolePermissionAssignment> sortedRolePermissions =
+        List<AccessAdminRolePermissionAssignment>.from(rolePermissions)
+          ..sort((
+            AccessAdminRolePermissionAssignment a,
+            AccessAdminRolePermissionAssignment b,
+          ) {
+            final String left = (a.permissionName ?? a.permissionId ?? '')
+                .toLowerCase();
+            final String right = (b.permissionName ?? b.permissionId ?? '')
+                .toLowerCase();
+            return left.compareTo(right);
+          });
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         _DetailRow(
-          label: context.l10n.accessAdminColumnId,
+          label: l10n.accessAdminColumnId,
           value: item.effectiveDisplayId,
         ),
-        if (item.email != null)
+        if (isRole) ...<Widget>[
           _DetailRow(
-            label: context.l10n.accessAdminEmailLabel,
-            value: item.email!,
+            label: l10n.accessAdminColumnScope,
+            value: item.isFacilityScopedRole
+                ? (item.facilityName?.trim().isNotEmpty == true
+                      ? '${l10n.accessAdminRoleScopeFacilityBadge} · ${item.facilityName}'
+                      : l10n.accessAdminRoleScopeFacilityBadge)
+                : l10n.accessAdminRoleScopeTenantBadge,
           ),
-        if (item.phone != null)
+          if ((item.subtitle ?? '').trim().isNotEmpty)
+            _DetailRow(
+              label: l10n.accessAdminCreateRoleDetailsSectionTitle,
+              value: item.subtitle!,
+            ),
           _DetailRow(
-            label: context.l10n.accessAdminPhoneLabel,
-            value: item.phone!,
+            label: l10n.accessAdminRolePermissionsLabel,
+            value: l10n.hrAccessPermissionCountLabel(
+              sortedRolePermissions.length,
+            ),
           ),
-        if (item.positionTitle != null)
           _DetailRow(
-            label: context.l10n.accessAdminPositionLabel,
-            value: item.positionTitle!,
+            label: l10n.accessAdminRoleDetailUsersLabel,
+            value: '${item.userCount}',
           ),
-        if (item.status != null)
-          _DetailRow(
-            label: context.l10n.accessAdminStatusLabel,
-            value: item.status!,
+          SizedBox(height: theme.spacing.md),
+          Text(
+            l10n.accessAdminRolePermissionsLabel,
+            style: theme.textTheme.titleSmall,
           ),
-        SizedBox(height: Theme.of(context).spacing.md),
-        AppUserAccessPanel(
-          roleGroups: (detail?.resolvedRoleGroups ??
-                  item.roles
-                      .map(
-                        (AccessAdminRoleRef role) =>
-                            AccessAdminRolePermissionGroup(
-                              roleId: role.id,
-                              roleName: role.name,
-                              userRoleId: role.userRoleId,
-                              resourceUuid: role.resourceUuid,
-                            ),
-                      )
-                      .toList(growable: false))
-              .map(
-                (AccessAdminRolePermissionGroup group) => AppUserAccessRoleGroup(
-                  roleId: group.roleId,
-                  roleName: group.roleName,
-                  userRoleId: group.userRoleId,
-                  permissions: group.permissions
-                      .map(
-                        (AccessAdminRolePermissionPreview preview) =>
-                            preview.name,
-                      )
-                      .toList(growable: false),
+          SizedBox(height: theme.spacing.sm),
+          if (sortedRolePermissions.isEmpty)
+            Text(
+              l10n.accessAdminRoleDetailNoPermissionsMessage,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            )
+          else
+            ...sortedRolePermissions.map((
+              AccessAdminRolePermissionAssignment assignment,
+            ) {
+              final String code =
+                  assignment.permissionName ?? assignment.permissionId ?? '—';
+              final String label = l10n.permissionCatalogLabelForCode(code);
+              return ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(
+                  Icons.check_circle_outline,
+                  color: theme.colorScheme.primary,
                 ),
-              )
-                  .toList(growable: false),
-          directPermissions:
-              (detail?.directPermissions ?? const <AccessAdminPermissionRef>[])
-                  .map(
-                    (AccessAdminPermissionRef permission) =>
-                        AppUserAccessDirectPermission(
-                          id: permission.mutationId,
-                          name: permission.name,
-                        ),
-                  )
-                  .toList(growable: false),
-        ),
+                title: Text(label),
+                subtitle: label == code ? null : Text(code),
+              );
+            }),
+        ] else ...<Widget>[
+          if (item.email != null)
+            _DetailRow(
+              label: l10n.accessAdminEmailLabel,
+              value: item.email!,
+            ),
+          if (item.phone != null)
+            _DetailRow(
+              label: l10n.accessAdminPhoneLabel,
+              value: item.phone!,
+            ),
+          if (item.positionTitle != null)
+            _DetailRow(
+              label: l10n.accessAdminPositionLabel,
+              value: item.positionTitle!,
+            ),
+          if (item.status != null)
+            _DetailRow(
+              label: l10n.accessAdminStatusLabel,
+              value: item.status!,
+            ),
+          SizedBox(height: theme.spacing.md),
+          AppUserAccessPanel(
+            roleGroups:
+                (detail?.resolvedRoleGroups ??
+                        item.roles
+                            .map(
+                              (AccessAdminRoleRef role) =>
+                                  AccessAdminRolePermissionGroup(
+                                    roleId: role.id,
+                                    roleName: role.name,
+                                    userRoleId: role.userRoleId,
+                                    resourceUuid: role.resourceUuid,
+                                  ),
+                            )
+                            .toList(growable: false))
+                    .map(
+                      (AccessAdminRolePermissionGroup group) =>
+                          AppUserAccessRoleGroup(
+                            roleId: group.roleId,
+                            roleName: group.roleName,
+                            userRoleId: group.userRoleId,
+                            permissions: group.permissions
+                                .map(
+                                  (AccessAdminRolePermissionPreview preview) =>
+                                      preview.name,
+                                )
+                                .toList(growable: false),
+                          ),
+                    )
+                    .toList(growable: false),
+            directPermissions:
+                (detail?.directPermissions ??
+                        const <AccessAdminPermissionRef>[])
+                    .map(
+                      (AccessAdminPermissionRef permission) =>
+                          AppUserAccessDirectPermission(
+                            id: permission.mutationId,
+                            name: permission.name,
+                          ),
+                    )
+                    .toList(growable: false),
+          ),
+        ],
         if (item.staffProfileId != null) ...<Widget>[
-          SizedBox(height: Theme.of(context).spacing.md),
+          SizedBox(height: theme.spacing.md),
           AppButton.secondary(
-            label: context.l10n.accessAdminOpenHrProfileAction,
+            label: l10n.accessAdminOpenHrProfileAction,
             leadingIcon: AppRouteIcons.hr,
             onPressed: () => context.go(AppRoutes.hr.location()),
           ),
         ],
         if (item.isClinicalFlowRole)
           Padding(
-            padding: EdgeInsets.only(top: Theme.of(context).spacing.sm),
+            padding: EdgeInsets.only(top: theme.spacing.sm),
             child: Text(
-              context.l10n.accessAdminClinicalRoleHint,
-              style: Theme.of(context).textTheme.bodySmall,
+              l10n.accessAdminClinicalRoleHint,
+              style: theme.textTheme.bodySmall,
             ),
           ),
-        if (canWrite) ...<Widget>[
-          SizedBox(height: Theme.of(context).spacing.lg),
+        if (canWrite && !isRole) ...<Widget>[
+          SizedBox(height: theme.spacing.lg),
           Wrap(
-            spacing: Theme.of(context).spacing.sm,
-            runSpacing: Theme.of(context).spacing.sm,
+            spacing: theme.spacing.sm,
+            runSpacing: theme.spacing.sm,
             children: _actions(context, controller),
           ),
         ],
@@ -814,15 +952,6 @@ class _DetailContent extends ConsumerWidget {
           label: context.l10n.accessAdminResetDemoPasswordAction,
           leadingIcon: Icons.lock_reset_outlined,
           onPressed: () => unawaited(controller.resetDemoPassword(item)),
-        ),
-      );
-    }
-
-    if (item.resource == AccessAdminResource.roles && !item.isSystemCritical) {
-      actions.add(
-        AppButton.secondary(
-          label: context.l10n.accessAdminDeleteRoleAction,
-          onPressed: () => unawaited(controller.deleteRole(item)),
         ),
       );
     }

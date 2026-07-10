@@ -681,10 +681,12 @@ final class AccessAdminRolePermissionAssignment {
   const AccessAdminRolePermissionAssignment({
     required this.id,
     this.permissionId,
+    this.permissionName,
   });
 
   final String id;
   final String? permissionId;
+  final String? permissionName;
 }
 
 @immutable

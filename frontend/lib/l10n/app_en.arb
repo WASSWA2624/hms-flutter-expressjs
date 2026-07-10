@@ -23628,6 +23628,18 @@
   "@accessAdminRolePermissionsLabel": {
     "description": "Access admin role permissions field label."
   },
+  "accessAdminRoleDetailPermissionsDescription": "Permissions granted by this role.",
+  "@accessAdminRoleDetailPermissionsDescription": {
+    "description": "Description for the permissions section on the role details dialog."
+  },
+  "accessAdminRoleDetailNoPermissionsMessage": "This role has no permissions assigned yet.",
+  "@accessAdminRoleDetailNoPermissionsMessage": {
+    "description": "Empty state when a role has no attached permissions."
+  },
+  "accessAdminRoleDetailUsersLabel": "Assigned users",
+  "@accessAdminRoleDetailUsersLabel": {
+    "description": "Label for the number of users assigned to a role."
+  },
   "accessAdminRolePermissionsRequired": "Select at least one permission for this role.",
   "@accessAdminRolePermissionsRequired": {
     "description": "Validation message when no permissions are selected for a role."
