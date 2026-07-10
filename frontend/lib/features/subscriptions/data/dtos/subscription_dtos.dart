@@ -362,7 +362,7 @@ final class SubscriptionItemDto {
       moduleSlug: _string(json['module_slug']) ?? _string(json['slug']),
       name: _string(json['name']),
       code: _string(json['code']),
-      description: _string(json['description']) ??
+      description: _plainTextString(json['description']) ??
           _extensionDescription(json['extension_json']),
       status: _string(json['status']),
       changeStatus: _string(json['change_status']),
@@ -456,9 +456,22 @@ num? _extensionAnnualPrice(Object? extensionJson) {
 
 String? _extensionDescription(Object? extensionJson) {
   final SubscriptionJsonMap extension = _map(extensionJson);
-  return _string(extension['description']) ??
-      _string(extension['marketing_description']) ??
-      _string(extension['price_notes']);
+  return _plainTextString(extension['description']) ??
+      _plainTextString(extension['marketing_description']);
+}
+
+String? _plainTextString(Object? value) {
+  if (value is! String) {
+    return null;
+  }
+  final String normalized = value.trim();
+  if (normalized.isEmpty ||
+      normalized == '[object Object]' ||
+      normalized.toLowerCase() == 'null' ||
+      normalized.toLowerCase() == 'undefined') {
+    return null;
+  }
+  return normalized;
 }
 
 List<String> _stringList(Object? value) {

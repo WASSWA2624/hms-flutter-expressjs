@@ -877,10 +877,13 @@ List<AppListTableColumn<SubscriptionItem>> _worklistColumns(
             );
           },
           cellBuilder: (BuildContext context, SubscriptionItem item) {
-            return AppCopyableIdentifier(
-              value: item.effectiveDisplayId,
-              textStyle: Theme.of(context).textTheme.bodySmall,
-              showCopyIcon: false,
+            return Text(
+              item.effectiveDisplayId,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             );
           },
         ),
@@ -1096,14 +1099,14 @@ class _SubscriptionDetailPanel extends ConsumerWidget {
   }
 }
 
-class _PlanDetailContent extends StatelessWidget {
+class _PlanDetailContent extends ConsumerWidget {
   const _PlanDetailContent({required this.state, required this.item});
 
   final SubscriptionsWorkspaceState state;
   final SubscriptionItem item;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final SubscriptionPlanTheme planTheme = SubscriptionPlanTheme.of(
       context,
@@ -1116,6 +1119,9 @@ class _PlanDetailContent extends StatelessWidget {
       item.includedModuleIds,
       modules,
     );
+    final String? description = _sanitizedPlanDescription(item.description);
+    final String planName = item.name ?? item.title;
+    final String planId = item.effectiveDisplayId;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1124,7 +1130,6 @@ class _PlanDetailContent extends StatelessWidget {
           borderColor: Colors.transparent,
           backgroundColor: planTheme.rowTint,
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Icon(
                 Icons.workspace_premium_outlined,
@@ -1136,22 +1141,32 @@ class _PlanDetailContent extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      item.name ?? item.title,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: planTheme.foreground,
-                      ),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: theme.spacing.md,
+                      runSpacing: theme.spacing.xs,
+                      children: <Widget>[
+                        Text(
+                          planName,
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: planTheme.foreground,
+                          ),
+                        ),
+                        if (planId.trim().isNotEmpty)
+                          Text(
+                            planId,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      ],
                     ),
-                    SizedBox(height: theme.spacing.xs),
-                    AppCopyableIdentifier(
-                      value: item.effectiveDisplayId,
-                      textStyle: theme.textTheme.bodySmall,
-                    ),
-                    if ((item.description ?? '').trim().isNotEmpty) ...<Widget>[
+                    if (description != null) ...<Widget>[
                       SizedBox(height: theme.spacing.sm),
                       Text(
-                        item.description!,
+                        description,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -1184,54 +1199,75 @@ class _PlanDetailContent extends StatelessWidget {
           ),
         ),
         SizedBox(height: theme.spacing.md),
-        AppInfoTileGrid(
-          emptyValue: _SubscriptionsText.notRecorded,
-          items: <AppInfoTileData>[
+        AppResponsiveWrap(
+          maxColumns: 5,
+          minItemWidth: 150,
+          children: <Widget>[
             if (isFree)
-              AppInfoTileData(
+              const _PlanMetricChip(
+                icon: Icons.payments_outlined,
                 label: _SubscriptionsText.pricing,
                 value: _SubscriptionsText.freePlan,
-                icon: Icons.payments_outlined,
               )
-            else ...<AppInfoTileData>[
-              AppInfoTileData(
-                label: _SubscriptionsText.monthlyPriceUsd,
-                value: _money(context, item.resolvedMonthlyPrice, item.currency),
+            else ...<Widget>[
+              _PlanMetricChip(
                 icon: Icons.payments_outlined,
+                label: _SubscriptionsText.monthlyPriceUsd,
+                value: _money(
+                  context,
+                  item.resolvedMonthlyPrice,
+                  item.currency,
+                ),
               ),
-              AppInfoTileData(
-                label: _SubscriptionsText.annualPriceUsd,
-                value: _money(context, item.resolvedAnnualPrice, item.currency),
+              _PlanMetricChip(
                 icon: Icons.calendar_month_outlined,
+                label: _SubscriptionsText.annualPriceUsd,
+                value: _money(
+                  context,
+                  item.resolvedAnnualPrice,
+                  item.currency,
+                ),
               ),
             ],
-            AppInfoTileData(
-              label: _SubscriptionsText.maxUsers,
-              value: item.maxUsers?.toString(),
+            _PlanMetricChip(
               icon: Icons.group_outlined,
+              label: _SubscriptionsText.maxUsers,
+              value: item.maxUsers?.toString() ?? _SubscriptionsText.notRecorded,
             ),
-            AppInfoTileData(
-              label: _SubscriptionsText.maxFacilities,
-              value: item.maxFacilities?.toString(),
+            _PlanMetricChip(
               icon: Icons.apartment_outlined,
+              label: _SubscriptionsText.maxFacilities,
+              value:
+                  item.maxFacilities?.toString() ??
+                  _SubscriptionsText.notRecorded,
             ),
-            AppInfoTileData(
-              label: _SubscriptionsText.maxStorage,
-              value: item.maxStorageMb?.toString(),
+            _PlanMetricChip(
               icon: Icons.sd_storage_outlined,
+              label: _SubscriptionsText.maxStorage,
+              value:
+                  item.maxStorageMb?.toString() ??
+                  _SubscriptionsText.notRecorded,
             ),
-            AppInfoTileData(
+            _PlanMetricChip(
+              icon: Icons.update_outlined,
               label: _SubscriptionsText.updated,
               value: _date(context, item.updatedAt),
-              icon: Icons.update_outlined,
             ),
           ],
         ),
         SizedBox(height: theme.spacing.md),
         AppSectionPanel(
           title: _SubscriptionsText.includedModules,
+          description: _SubscriptionsText.includedModulesAccessHint,
           leadingIcon: Icons.extension_outlined,
           density: AppContentPanelDensity.compact,
+          trailing: AppButton.secondary(
+            label: _SubscriptionsText.addModules,
+            leadingIcon: Icons.add,
+            onPressed: () async {
+              await _showPlanModulesDialog(context, ref, item);
+            },
+          ),
           children: <Widget>[
             if (includedLabels.isEmpty)
               Text(
@@ -1287,7 +1323,8 @@ class _PlanDetailContent extends StatelessWidget {
           _PlanAccountsSection(
             title: _SubscriptionsText.linkedTenants,
             emptyLabel: _SubscriptionsText.noLinkedTenants,
-            accounts: detail?.activeAccounts ?? const <SubscriptionTenantAccount>[],
+            accounts:
+                detail?.activeAccounts ?? const <SubscriptionTenantAccount>[],
           ),
           SizedBox(height: theme.spacing.md),
           _PlanAccountsSection(
@@ -1300,6 +1337,54 @@ class _PlanDetailContent extends StatelessWidget {
       ],
     );
   }
+}
+
+class _PlanMetricChip extends StatelessWidget {
+  const _PlanMetricChip({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return AppContentPanel(
+      density: AppContentPanelDensity.compact,
+      child: Row(
+        children: <Widget>[
+          Icon(icon, size: 18, color: theme.colorScheme.primary),
+          SizedBox(width: theme.spacing.xs),
+          Flexible(
+            child: Text(
+              '$label · $value',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String? _sanitizedPlanDescription(String? value) {
+  final String? normalized = value?.trim();
+  if (normalized == null ||
+      normalized.isEmpty ||
+      normalized == '[object Object]' ||
+      normalized.toLowerCase() == 'null' ||
+      normalized.toLowerCase() == 'undefined') {
+    return null;
+  }
+  return normalized;
 }
 
 class _PlanStatCard extends StatelessWidget {
@@ -1966,76 +2051,89 @@ class _PlanFormState extends State<_PlanForm> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final List<SubscriptionLookupItem> modules = widget.modules;
     return AppDialog(
       title: widget.dialogTitle,
       icon: widget.dialogIcon,
       scrollable: true,
+      pinActionsToBottom: true,
+      maxWidth: 920,
       content: AppFormShell(
         formKey: _formKey,
+        density: AppFormSectionDensity.compact,
         children: <Widget>[
-          AppTextField(
-            controller: _nameController,
-            labelText: _SubscriptionsText.planName,
-            isRequired: true,
-            validator: AppValidators.requiredText(
-              _SubscriptionsText.planNameRequired,
+          AppResponsiveFieldRow.two(
+            gap: AppResponsiveFieldRowGap.form,
+            left: AppTextField(
+              controller: _nameController,
+              labelText: _SubscriptionsText.planName,
+              isRequired: true,
+              validator: AppValidators.requiredText(
+                _SubscriptionsText.planNameRequired,
+              ),
             ),
-          ),
-          AppTextField(
-            controller: _codeController,
-            labelText: _SubscriptionsText.planCode,
+            right: AppTextField(
+              controller: _codeController,
+              labelText: _SubscriptionsText.planCode,
+            ),
           ),
           AppTextField(
             controller: _descriptionController,
             labelText: _SubscriptionsText.planDescription,
-            maxLines: 3,
+            maxLines: 2,
           ),
-          AppSelectField<String>(
-            value: _tierCode,
-            labelText: _SubscriptionsText.tier,
-            options: _tierOptions(),
-            onChanged: _onTierChanged,
+          AppResponsiveFieldRow.two(
+            gap: AppResponsiveFieldRowGap.form,
+            left: AppSelectField<String>(
+              value: _tierCode,
+              labelText: _SubscriptionsText.tier,
+              options: _tierOptions(),
+              onChanged: _onTierChanged,
+            ),
+            right: AppSelectField<String>(
+              value: _billingCycle,
+              labelText: _SubscriptionsText.defaultBillingCycle,
+              isRequired: true,
+              allowClear: false,
+              enabled: !_isFreeTier,
+              options: _billingCycleOptions(),
+              onChanged: (String? value) {
+                if (value != null) {
+                  setState(() => _billingCycle = value);
+                }
+              },
+            ),
           ),
-          AppSelectField<String>(
-            value: _billingCycle,
-            labelText: _SubscriptionsText.defaultBillingCycle,
-            isRequired: true,
-            allowClear: false,
-            enabled: !_isFreeTier,
-            options: _billingCycleOptions(),
-            onChanged: (String? value) {
-              if (value != null) {
-                setState(() => _billingCycle = value);
-              }
-            },
-          ),
-          AppTextField(
-            controller: _monthlyPriceController,
-            labelText: _SubscriptionsText.monthlyPriceUsd,
-            isRequired: !_isFreeTier,
-            enabled: !_isFreeTier,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            validator: _isFreeTier
-                ? null
-                : AppValidators.pattern(
-                    RegExp(r'^\d+(\.\d{1,2})?$'),
-                    _SubscriptionsText.amountInvalid,
-                    allowEmpty: false,
-                  ),
-          ),
-          AppTextField(
-            controller: _annualPriceController,
-            labelText: _SubscriptionsText.annualPriceUsd,
-            isRequired: !_isFreeTier,
-            enabled: !_isFreeTier,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            validator: _isFreeTier
-                ? null
-                : AppValidators.pattern(
-                    RegExp(r'^\d+(\.\d{1,2})?$'),
-                    _SubscriptionsText.amountInvalid,
-                    allowEmpty: false,
-                  ),
+          AppResponsiveFieldRow.two(
+            gap: AppResponsiveFieldRowGap.form,
+            left: AppTextField(
+              controller: _monthlyPriceController,
+              labelText: _SubscriptionsText.monthlyPriceUsd,
+              isRequired: !_isFreeTier,
+              enabled: !_isFreeTier,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              validator: _isFreeTier
+                  ? null
+                  : AppValidators.pattern(
+                      RegExp(r'^\d+(\.\d{1,2})?$'),
+                      _SubscriptionsText.amountInvalid,
+                      allowEmpty: false,
+                    ),
+            ),
+            right: AppTextField(
+              controller: _annualPriceController,
+              labelText: _SubscriptionsText.annualPriceUsd,
+              isRequired: !_isFreeTier,
+              enabled: !_isFreeTier,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              validator: _isFreeTier
+                  ? null
+                  : AppValidators.pattern(
+                      RegExp(r'^\d+(\.\d{1,2})?$'),
+                      _SubscriptionsText.amountInvalid,
+                      allowEmpty: false,
+                    ),
+            ),
           ),
           if (_isFreeTier)
             Text(
@@ -2044,64 +2142,59 @@ class _PlanFormState extends State<_PlanForm> {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
-          AppTextField(
-            controller: _usersController,
-            labelText: _SubscriptionsText.maxUsers,
-            keyboardType: TextInputType.number,
-            validator: _optionalIntegerValidator,
-          ),
-          AppTextField(
-            controller: _facilitiesController,
-            labelText: _SubscriptionsText.maxFacilities,
-            keyboardType: TextInputType.number,
-            validator: _optionalIntegerValidator,
-          ),
-          AppTextField(
-            controller: _storageController,
-            labelText: _SubscriptionsText.maxStorage,
-            keyboardType: TextInputType.number,
-            validator: _optionalIntegerValidator,
-          ),
-          AppTextField(
-            controller: _modulesController,
-            labelText: _SubscriptionsText.maxModules,
-            keyboardType: TextInputType.number,
-            validator: _optionalIntegerValidator,
-          ),
-          if (widget.modules.isNotEmpty) ...<Widget>[
-            Text(
-              _SubscriptionsText.includedModules,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+          AppResponsiveFieldRow.two(
+            gap: AppResponsiveFieldRowGap.form,
+            left: AppTextField(
+              controller: _usersController,
+              labelText: _SubscriptionsText.maxUsers,
+              keyboardType: TextInputType.number,
+              validator: _optionalIntegerValidator,
             ),
-            Text(
-              _SubscriptionsText.includedModulesHint,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+            right: AppTextField(
+              controller: _facilitiesController,
+              labelText: _SubscriptionsText.maxFacilities,
+              keyboardType: TextInputType.number,
+              validator: _optionalIntegerValidator,
             ),
-            Wrap(
-              spacing: theme.spacing.xs,
-              runSpacing: theme.spacing.xs,
-              children: <Widget>[
-                for (final SubscriptionLookupItem module in widget.modules)
-                  FilterChip(
-                    label: Text(module.label),
-                    selected: _includedModuleIds.contains(module.id),
-                    onSelected: (bool selected) {
-                      setState(() {
-                        if (selected) {
-                          _includedModuleIds.add(module.id);
-                        } else {
-                          _includedModuleIds.remove(module.id);
-                        }
-                      });
-                    },
-                  ),
-              ],
+          ),
+          AppResponsiveFieldRow.two(
+            gap: AppResponsiveFieldRowGap.form,
+            left: AppTextField(
+              controller: _storageController,
+              labelText: _SubscriptionsText.maxStorage,
+              keyboardType: TextInputType.number,
+              validator: _optionalIntegerValidator,
             ),
-          ],
+            right: AppTextField(
+              controller: _modulesController,
+              labelText: _SubscriptionsText.maxModules,
+              keyboardType: TextInputType.number,
+              validator: _optionalIntegerValidator,
+            ),
+          ),
+          Text(
+            _SubscriptionsText.includedModules,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text(
+            _SubscriptionsText.includedModulesCheckboxHint,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          _PlanModulesCheckboxPanel(
+            modules: modules,
+            selectedIds: _includedModuleIds,
+            onChanged: (Set<String> next) {
+              setState(() {
+                _includedModuleIds
+                  ..clear()
+                  ..addAll(next);
+              });
+            },
+          ),
         ],
       ),
       actions: buildAppDialogFormActions(
@@ -2133,6 +2226,187 @@ class _PlanFormState extends State<_PlanForm> {
               includedModuleIds: _includedModuleIds.toList(growable: false),
             ),
           );
+        },
+      ),
+    );
+  }
+}
+
+class _PlanModulesCheckboxPanel extends StatelessWidget {
+  const _PlanModulesCheckboxPanel({
+    required this.modules,
+    required this.selectedIds,
+    required this.onChanged,
+  });
+
+  final List<SubscriptionLookupItem> modules;
+  final Set<String> selectedIds;
+  final ValueChanged<Set<String>> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    if (modules.isEmpty) {
+      return Text(
+        _SubscriptionsText.noModulesAvailable,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    return AppContentPanel(
+      density: AppContentPanelDensity.compact,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              TextButton(
+                onPressed: () {
+                  onChanged(
+                    modules
+                        .map((SubscriptionLookupItem module) => module.id)
+                        .toSet(),
+                  );
+                },
+                child: const Text(_SubscriptionsText.selectAllModules),
+              ),
+              TextButton(
+                onPressed: () => onChanged(<String>{}),
+                child: const Text(_SubscriptionsText.clearAllModules),
+              ),
+              const Spacer(),
+              Text(
+                _SubscriptionsText.modulesSelectedCount(
+                  selectedIds.length,
+                  modules.length,
+                ),
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.xs),
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final bool twoColumns = constraints.maxWidth >= 560;
+              Widget checkboxFor(SubscriptionLookupItem module) {
+                return AppCheckboxField(
+                  title: module.label,
+                  subtitle: module.subtitle,
+                  value: selectedIds.contains(module.id),
+                  onChanged: (bool selected) {
+                    final Set<String> next = Set<String>.of(selectedIds);
+                    if (selected) {
+                      next.add(module.id);
+                    } else {
+                      next.remove(module.id);
+                    }
+                    onChanged(next);
+                  },
+                );
+              }
+
+              if (!twoColumns) {
+                return Column(
+                  children: <Widget>[
+                    for (final SubscriptionLookupItem module in modules)
+                      checkboxFor(module),
+                  ],
+                );
+              }
+
+              final List<Widget> left = <Widget>[];
+              final List<Widget> right = <Widget>[];
+              for (var index = 0; index < modules.length; index += 1) {
+                final Widget checkbox = checkboxFor(modules[index]);
+                if (index.isEven) {
+                  left.add(checkbox);
+                } else {
+                  right.add(checkbox);
+                }
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(child: Column(children: left)),
+                  SizedBox(width: theme.spacing.md),
+                  Expanded(child: Column(children: right)),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanModulesForm extends StatefulWidget {
+  const _PlanModulesForm({
+    required this.modules,
+    required this.initialSelectedIds,
+  });
+
+  final List<SubscriptionLookupItem> modules;
+  final List<String> initialSelectedIds;
+
+  @override
+  State<_PlanModulesForm> createState() => _PlanModulesFormState();
+}
+
+class _PlanModulesFormState extends State<_PlanModulesForm> {
+  late final Set<String> _selectedIds;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedIds = Set<String>.of(widget.initialSelectedIds);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return AppDialog(
+      title: const Text(_SubscriptionsText.addModules),
+      icon: const Icon(Icons.extension_outlined),
+      scrollable: true,
+      pinActionsToBottom: true,
+      maxWidth: 760,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text(
+            _SubscriptionsText.includedModulesCheckboxHint,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: theme.spacing.sm),
+          _PlanModulesCheckboxPanel(
+            modules: widget.modules,
+            selectedIds: _selectedIds,
+            onChanged: (Set<String> next) {
+              setState(() {
+                _selectedIds
+                  ..clear()
+                  ..addAll(next);
+              });
+            },
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: context.l10n.commonCancelActionLabel,
+        submitLabel: _SubscriptionsText.saveModules,
+        submitIcon: Icons.save_outlined,
+        onCancel: () => Navigator.of(context).maybePop(),
+        onSubmit: () {
+          Navigator.of(context).pop(_selectedIds.toList(growable: false));
         },
       ),
     );
@@ -2890,6 +3164,58 @@ Future<void> _showPlanDialog(
   if (context.mounted) {
     _showMutationResult(context, failure);
   }
+}
+
+Future<void> _showPlanModulesDialog(
+  BuildContext context,
+  WidgetRef ref,
+  SubscriptionItem plan,
+) async {
+  final SubscriptionsWorkspaceState? state = _subscriptionsStateFromAsync(
+    ref.read(subscriptionsWorkspaceControllerProvider),
+  );
+  final List<String>? selectedIds = await showAppDialog<List<String>>(
+    context: context,
+    builder: (_) => _PlanModulesForm(
+      modules: state?.lookups.modules ?? const <SubscriptionLookupItem>[],
+      initialSelectedIds: plan.includedModuleIds,
+    ),
+  );
+  if (selectedIds == null || !context.mounted) {
+    return;
+  }
+
+  final SubscriptionPlanDraft draft = _planDraftFromItem(
+    plan,
+    includedModuleIds: selectedIds,
+  );
+  final AppFailure? failure = await ref
+      .read(subscriptionsWorkspaceControllerProvider.notifier)
+      .updateSelectedPlan(draft);
+  if (context.mounted) {
+    _showMutationResult(context, failure);
+  }
+}
+
+SubscriptionPlanDraft _planDraftFromItem(
+  SubscriptionItem item, {
+  List<String>? includedModuleIds,
+}) {
+  return SubscriptionPlanDraft(
+    name: item.name ?? item.title,
+    code: item.code,
+    tierCode: item.tierCode,
+    description: item.description,
+    monthlyPrice: (item.resolvedMonthlyPrice ?? item.price ?? 0).toString(),
+    annualPrice: (item.resolvedAnnualPrice ?? item.price ?? 0).toString(),
+    billingCycle: item.billingCycle ?? _BillingCycles.monthly,
+    maxUsers: item.maxUsers?.toString(),
+    maxFacilities: item.maxFacilities?.toString(),
+    maxStorageMb: item.maxStorageMb?.toString(),
+    maxModules: item.maxModules?.toString(),
+    includedModuleIds:
+        includedModuleIds ?? item.includedModuleIds,
+  );
 }
 
 Future<void> _showSubscriptionDialog(
@@ -4176,8 +4502,18 @@ abstract final class _SubscriptionsText {
   static const String storageMb = 'Storage MB';
   static const String modules = 'Modules';
   static const String includedModules = 'Included modules';
-  static const String includedModulesHint =
-      'Select modules tenants on this plan can access. Role permissions still control what users can do inside each module.';
+  static const String includedModulesCheckboxHint =
+      'Checked modules are visible in the app menu for tenants on this plan.';
+  static const String includedModulesAccessHint =
+      'Modules control what appears in the app menu and what the tenant can access.';
+  static const String addModules = 'Add modules';
+  static const String saveModules = 'Save modules';
+  static const String selectAllModules = 'Select all';
+  static const String clearAllModules = 'Clear all';
+  static const String noModulesAvailable = 'No modules are available yet.';
+  static String modulesSelectedCount(int selected, int total) {
+    return '$selected of $total selected';
+  }
   static const String noModulesIncluded = 'No modules included yet.';
   static const String planDescription = 'Short description';
   static const String freePlan = 'Free';

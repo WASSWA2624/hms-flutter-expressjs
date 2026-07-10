@@ -90,12 +90,23 @@ const resolvePlanDescription = (record) => {
     record?.extension_json && typeof record.extension_json === 'object'
       ? record.extension_json
       : {};
-  return (
-    safeString(extension.description) ||
-    safeString(extension.marketing_description) ||
-    safeString(extension.price_notes) ||
-    null
-  );
+  for (const candidate of [
+    extension.description,
+    extension.marketing_description,
+  ]) {
+    if (typeof candidate === 'string') {
+      const normalized = candidate.trim();
+      if (
+        normalized &&
+        normalized !== '[object Object]' &&
+        normalized.toLowerCase() !== 'null' &&
+        normalized.toLowerCase() !== 'undefined'
+      ) {
+        return normalized;
+      }
+    }
+  }
+  return null;
 };
 
 const resolveIncludedModuleIds = (record) => {
