@@ -74,11 +74,35 @@ const listUserRoles = async (filters, page, limit, sortBy, order, userId, ipAddr
 
     // Build filter object
     const whereClause = {};
-    
-    if (filters.user_id) whereClause.user_id = filters.user_id;
-    if (filters.role_id) whereClause.role_id = filters.role_id;
-    if (filters.tenant_id) whereClause.tenant_id = filters.tenant_id;
-    if (filters.facility_id) whereClause.facility_id = filters.facility_id;
+
+    if (filters.user_id) {
+      whereClause.user_id = await resolveIdentifierForPayload({
+        value: filters.user_id,
+        model: 'user',
+        field: 'user_id',
+      });
+    }
+    if (filters.role_id) {
+      whereClause.role_id = await resolveIdentifierForPayload({
+        value: filters.role_id,
+        model: 'role',
+        field: 'role_id',
+      });
+    }
+    if (filters.tenant_id) {
+      whereClause.tenant_id = await resolveIdentifierForPayload({
+        value: filters.tenant_id,
+        model: 'tenant',
+        field: 'tenant_id',
+      });
+    }
+    if (filters.facility_id) {
+      whereClause.facility_id = await resolveIdentifierForPayload({
+        value: filters.facility_id,
+        model: 'facility',
+        field: 'facility_id',
+      });
+    }
 
     const [userRoles, total] = await Promise.all([
       userRoleRepository.findMany(whereClause, skip, limit, orderBy),

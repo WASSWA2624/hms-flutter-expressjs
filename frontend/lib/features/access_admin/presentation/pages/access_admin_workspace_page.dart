@@ -715,7 +715,7 @@ class _DetailContent extends ConsumerWidget {
                       .toList(growable: false),
                 ),
               )
-              .toList(growable: false),
+                  .toList(growable: false),
           directPermissions:
               (detail?.directPermissions ?? const <AccessAdminPermissionRef>[])
                   .map(
@@ -726,7 +726,6 @@ class _DetailContent extends ConsumerWidget {
                         ),
                   )
                   .toList(growable: false),
-          canWrite: false,
         ),
         if (item.staffProfileId != null) ...<Widget>[
           SizedBox(height: Theme.of(context).spacing.md),
