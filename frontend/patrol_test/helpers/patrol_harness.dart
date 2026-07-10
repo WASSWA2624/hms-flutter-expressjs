@@ -43,7 +43,8 @@ const String patrolTestFacilityId = 'facility-patrol-test';
 /// Module entitlements for offline shell tests that deep-link gated routes.
 const List<AppModuleEntitlement> patrolModuleEntitlements =
     <AppModuleEntitlement>[
-      AppModuleEntitlement(code: 'billing-insurance'),
+      AppModuleEntitlement(code: 'billing-payments'),
+      AppModuleEntitlement(code: 'insurance-claims'),
       AppModuleEntitlement(code: 'scheduling-queue'),
       AppModuleEntitlement(code: 'inpatient-bed-management'),
       AppModuleEntitlement(code: 'icu-critical-care'),

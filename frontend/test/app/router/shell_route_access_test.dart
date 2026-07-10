@@ -31,7 +31,8 @@ const List<AppModuleEntitlement> _activeShellModules = <AppModuleEntitlement>[
   AppModuleEntitlement(code: 'integrations-core', licenseStatus: 'ACTIVE'),
   AppModuleEntitlement(code: 'theatre-anesthesia', licenseStatus: 'ACTIVE'),
   AppModuleEntitlement(code: 'reporting-analytics', licenseStatus: 'ACTIVE'),
-  AppModuleEntitlement(code: 'billing-insurance', licenseStatus: 'ACTIVE'),
+  AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+  AppModuleEntitlement(code: 'insurance-claims', licenseStatus: 'ACTIVE'),
   AppModuleEntitlement(code: 'mortuary', licenseStatus: 'ACTIVE'),
 ];
 

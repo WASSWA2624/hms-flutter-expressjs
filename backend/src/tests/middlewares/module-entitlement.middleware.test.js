@@ -7,117 +7,133 @@ describe('module entitlement middleware', () => {
   let moduleRepository;
   let moduleSubscriptionRepository;
   let subscriptionRepository;
+  let prismaMock;
+
+  const platformModules = [
+    {
+      slug: 'platform-facility-structure',
+      extension_json: {
+        is_platform_infrastructure: true,
+        api_path_segments: ['branch', 'branches', 'facility'],
+      },
+    },
+    {
+      slug: 'platform-workspace-shell',
+      extension_json: {
+        is_platform_infrastructure: true,
+        api_path_segments: ['dashboard-workspace'],
+      },
+    },
+  ];
 
   const loadMiddleware = () => {
     jest.resetModules();
 
     moduleRepository = {
-      count: jest.fn()
+      count: jest.fn(),
     };
     moduleSubscriptionRepository = {
-      count: jest.fn()
+      count: jest.fn(),
     };
     subscriptionRepository = {
-      count: jest.fn()
+      count: jest.fn(),
+    };
+    prismaMock = {
+      module: {
+        findMany: jest.fn().mockResolvedValue(platformModules),
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+      subscription: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'sub-1',
+          tenant_id: 'tenant-1',
+          status: 'ACTIVE',
+          plan: { tier_code: 'FREE', extension_json: { allowed_modules: { included: [] } } },
+        }),
+      },
     };
 
     jest.doMock('@repositories/module/module.repository', () => moduleRepository);
-    jest.doMock('@repositories/module-subscription/module-subscription.repository', () => moduleSubscriptionRepository);
-    jest.doMock('@repositories/subscription/subscription.repository', () => subscriptionRepository);
+    jest.doMock(
+      '@repositories/module-subscription/module-subscription.repository',
+      () => moduleSubscriptionRepository
+    );
+    jest.doMock(
+      '@repositories/subscription/subscription.repository',
+      () => subscriptionRepository
+    );
+    jest.doMock('@prisma/client', () => prismaMock);
 
     return require('@middlewares/module-entitlement.middleware');
   };
 
-  test('allows free-core equipment incident reporting without subscription lookup', async () => {
-    const { enforceModuleEntitlement } = loadMiddleware();
-    const req = {
-      path: '/equipment-incident-reports',
-      user: { tenant_id: 'tenant-free', roles: ['NURSE'] }
-    };
-
-    const error = await invokeMiddleware(enforceModuleEntitlement(), req);
-
-    expect(error).toBeUndefined();
-    expect(subscriptionRepository.count).not.toHaveBeenCalled();
-    expect(moduleRepository.count).not.toHaveBeenCalled();
-    expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
-  });
-
-  test('allows branch endpoints as free-core without singularizing to branche', async () => {
+  test('allows platform infrastructure paths without commercial entitlement lookup', async () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/branches',
-      user: { tenant_id: 'tenant-free', roles: ['SUPER_ADMIN'] }
+      user: { tenant_id: 'tenant-free', roles: ['SUPER_ADMIN'] },
     };
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 
     expect(error).toBeUndefined();
-    expect(subscriptionRepository.count).not.toHaveBeenCalled();
     expect(moduleRepository.count).not.toHaveBeenCalled();
     expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
   });
 
-  test('allows dashboard workspace without subscription lookup because it is free-core', async () => {
+  test('allows dashboard workspace as platform infrastructure', async () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/dashboard-workspace/workspace',
-      user: { tenant_id: 'tenant-dashboard', roles: ['SUPER_ADMIN'] }
+      user: { tenant_id: 'tenant-dashboard', roles: ['SUPER_ADMIN'] },
     };
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 
     expect(error).toBeUndefined();
-    expect(subscriptionRepository.count).not.toHaveBeenCalled();
-    expect(moduleRepository.count).not.toHaveBeenCalled();
     expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
   });
 
-  test('allows communications workspace without subscription lookup because it is free-core', async () => {
+  test('evaluates commercial patient paths via DB entitlement', async () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
-      path: '/communications-workspace/workspace',
-      user: { tenant_id: 'tenant-communications', roles: ['SUPER_ADMIN'] }
-    };
-
-    const error = await invokeMiddleware(enforceModuleEntitlement(), req);
-
-    expect(error).toBeUndefined();
-    expect(subscriptionRepository.count).not.toHaveBeenCalled();
-    expect(moduleRepository.count).not.toHaveBeenCalled();
-    expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
-  });
-
-  test.each([
-    '/patient-allergies',
-    '/patient-medical-histories',
-    '/patient-documents',
-    '/consents',
-  ])('allows %s as patient-core without subscription lookup', async (path) => {
-    const { enforceModuleEntitlement } = loadMiddleware();
-    const req = {
-      path,
+      path: '/patient-allergies',
       user: { tenant_id: 'tenant-patient-core', roles: ['DOCTOR'] },
     };
 
+    moduleRepository.count.mockResolvedValue(1);
+    moduleSubscriptionRepository.count.mockResolvedValue(1);
+
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 
     expect(error).toBeUndefined();
-    expect(subscriptionRepository.count).not.toHaveBeenCalled();
-    expect(moduleRepository.count).not.toHaveBeenCalled();
-    expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
+    expect(moduleRepository.count).toHaveBeenCalledWith({
+      slug: 'patient-registry',
+    });
+    expect(moduleSubscriptionRepository.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        is_active: true,
+        module: expect.objectContaining({
+          slug: { in: ['patient-registry'] },
+        }),
+      })
+    );
   });
 
   test('blocks paid module when active subscription exists but tenant lacks entitlement', async () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/equipment-work-orders',
-      user: { tenant_id: 'tenant-no-entitlement', roles: ['NURSE'] }
+      user: { tenant_id: 'tenant-no-entitlement', roles: ['NURSE'] },
     };
 
-    subscriptionRepository.count.mockResolvedValue(1);
     moduleRepository.count.mockResolvedValue(1);
     moduleSubscriptionRepository.count.mockResolvedValue(0);
+    prismaMock.module.findFirst.mockResolvedValue({
+      id: 'mod-biomed',
+      slug: 'biomedical-engineering-suite',
+      minimum_plan_tier_code: 'ADVANCED',
+    });
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 
@@ -130,51 +146,29 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/ipd-flows',
-      user: { tenant_id: 'tenant-no-ipd', roles: ['NURSE'] }
+      user: { tenant_id: 'tenant-no-ipd', roles: ['NURSE'] },
     };
 
-    subscriptionRepository.count.mockResolvedValue(1);
     moduleRepository.count.mockImplementation(async (filters = {}) =>
       filters.slug === 'inpatient-bed-management' ? 1 : 0
     );
     moduleSubscriptionRepository.count.mockResolvedValue(0);
+    prismaMock.module.findFirst.mockResolvedValue({
+      id: 'mod-ipd',
+      slug: 'inpatient-bed-management',
+      minimum_plan_tier_code: 'PRO',
+    });
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 
-    expect(moduleRepository.count).toHaveBeenCalledWith({ slug: 'inpatient-bed-management' });
+    expect(moduleRepository.count).toHaveBeenCalledWith({
+      slug: 'inpatient-bed-management',
+    });
     expect(moduleSubscriptionRepository.count).toHaveBeenCalledWith(
       expect.objectContaining({
         is_active: true,
         module: expect.objectContaining({
-          slug: 'inpatient-bed-management',
-        }),
-      })
-    );
-    expect(error).toBeDefined();
-    expect(error.messageKey).toBe('errors.auth.module_not_entitled');
-  });
-
-  test('maps theatre endpoints to the theatre and anesthesia subscription module slug', async () => {
-    const { enforceModuleEntitlement } = loadMiddleware();
-    const req = {
-      path: '/theatre-flows',
-      user: { tenant_id: 'tenant-no-theatre', roles: ['NURSE'] }
-    };
-
-    subscriptionRepository.count.mockResolvedValue(1);
-    moduleRepository.count.mockImplementation(async (filters = {}) =>
-      filters.slug === 'theatre-anesthesia' ? 1 : 0
-    );
-    moduleSubscriptionRepository.count.mockResolvedValue(0);
-
-    const error = await invokeMiddleware(enforceModuleEntitlement(), req);
-
-    expect(moduleRepository.count).toHaveBeenCalledWith({ slug: 'theatre-anesthesia' });
-    expect(moduleSubscriptionRepository.count).toHaveBeenCalledWith(
-      expect.objectContaining({
-        is_active: true,
-        module: expect.objectContaining({
-          slug: 'theatre-anesthesia',
+          slug: { in: ['inpatient-bed-management'] },
         }),
       })
     );
@@ -190,6 +184,13 @@ describe('module entitlement middleware', () => {
     ['/radiology-orders', 'radiology-workflows'],
     ['/pharmacy/workbench', 'pharmacy-dispensing'],
     ['/pharmacy-orders', 'pharmacy-dispensing'],
+    ['/invoices', 'billing-payments'],
+    ['/payments', 'billing-payments'],
+    ['/pre-authorizations', 'insurance-claims'],
+    ['/insurance-claims', 'insurance-claims'],
+    ['/api-keys', 'developer-tools'],
+    ['/inventory-items', 'inventory-procurement-lite'],
+    ['/purchase-orders', 'inventory-procurement-lite'],
   ])('maps %s to subscription module slug %s', async (path, expectedSlug) => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
@@ -197,7 +198,6 @@ describe('module entitlement middleware', () => {
       user: { tenant_id: 'tenant-entitled-diagnostics', roles: ['SUPER_ADMIN'] },
     };
 
-    subscriptionRepository.count.mockResolvedValue(1);
     moduleRepository.count.mockImplementation(async (filters = {}) =>
       filters.slug === expectedSlug ? 1 : 0
     );
@@ -211,7 +211,9 @@ describe('module entitlement middleware', () => {
       expect.objectContaining({
         is_active: true,
         module: expect.objectContaining({
-          slug: expectedSlug,
+          slug: expect.objectContaining({
+            in: expect.arrayContaining([expectedSlug]),
+          }),
         }),
       })
     );
@@ -221,12 +223,7 @@ describe('module entitlement middleware', () => {
     ['/triage', 'scheduling-queue'],
     ['/opd-flows', 'scheduling-queue'],
     ['/emergency-cases', 'scheduling-queue'],
-    ['/triage-assessments', 'scheduling-queue'],
-    ['/ambulance-trips', 'scheduling-queue'],
     ['/icu-stays', 'icu-critical-care'],
-    ['/critical-alerts', 'icu-critical-care'],
-    ['/pre-authorizations', 'billing-insurance'],
-    ['/insurance-claims', 'billing-insurance'],
     ['/hr/workspace', 'hr-rosters'],
     ['/maintenance-requests', 'facilities-maintenance'],
     ['/biomedical/workspace', 'biomedical-engineering-suite'],
@@ -240,7 +237,6 @@ describe('module entitlement middleware', () => {
       user: { tenant_id: 'tenant-entitled-workspace', roles: ['SUPER_ADMIN'] },
     };
 
-    subscriptionRepository.count.mockResolvedValue(1);
     moduleRepository.count.mockImplementation(async (filters = {}) =>
       filters.slug === expectedSlug ? 1 : 0
     );
@@ -250,14 +246,6 @@ describe('module entitlement middleware', () => {
 
     expect(error).toBeUndefined();
     expect(moduleRepository.count).toHaveBeenCalledWith({ slug: expectedSlug });
-    expect(moduleSubscriptionRepository.count).toHaveBeenCalledWith(
-      expect.objectContaining({
-        is_active: true,
-        module: expect.objectContaining({
-          slug: expectedSlug,
-        }),
-      })
-    );
   });
 
   test('allows mortuary from the core catalog fallback when module metadata is missing', async () => {
@@ -267,36 +255,33 @@ describe('module entitlement middleware', () => {
       user: { tenant_id: 'tenant-advanced-demo', roles: ['SUPER_ADMIN'] },
     };
 
-    subscriptionRepository.count
-      .mockResolvedValueOnce(1)
-      .mockResolvedValueOnce(1);
     moduleRepository.count.mockResolvedValue(0);
+    subscriptionRepository.count.mockResolvedValue(1);
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 
     expect(error).toBeUndefined();
     expect(moduleRepository.count).toHaveBeenCalledWith({ slug: 'mortuary' });
-    expect(subscriptionRepository.count).toHaveBeenLastCalledWith(
+    expect(subscriptionRepository.count).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: 'tenant-advanced-demo',
         plan: expect.objectContaining({
           tier_code: expect.objectContaining({
-            in: ['BASIC', 'PRO', 'ADVANCED', 'CUSTOM'],
+            in: expect.arrayContaining(['ADVANCED', 'CUSTOM', 'DEVELOPER']),
           }),
         }),
       })
     );
-    expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
   });
 
   test('blocks paid module when tenant has no active subscription', async () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/equipment-work-orders',
-      user: { tenant_id: 'tenant-legacy', roles: ['NURSE'] }
+      user: { tenant_id: 'tenant-legacy', roles: ['NURSE'] },
     };
 
-    subscriptionRepository.count.mockResolvedValue(0);
+    prismaMock.subscription.findFirst.mockResolvedValue(null);
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 
@@ -321,37 +306,36 @@ describe('module entitlement middleware', () => {
       user: { tenant_id: 'tenant-advanced-demo', roles: ['SUPER_ADMIN'] },
     };
 
-    subscriptionRepository.count
-      .mockResolvedValueOnce(1)
-      .mockResolvedValueOnce(1);
     moduleRepository.count.mockResolvedValue(0);
+    subscriptionRepository.count.mockResolvedValue(1);
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 
     expect(error).toBeUndefined();
-    expect(moduleRepository.count).toHaveBeenCalledWith({ slug: 'physiotherapy' });
-    expect(subscriptionRepository.count).toHaveBeenLastCalledWith(
+    expect(moduleRepository.count).toHaveBeenCalledWith({
+      slug: 'physiotherapy',
+    });
+    expect(subscriptionRepository.count).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: 'tenant-advanced-demo',
         plan: expect.objectContaining({
           tier_code: expect.objectContaining({
-            in: ['PRO', 'ADVANCED', 'CUSTOM'],
+            in: expect.arrayContaining(['PRO', 'ADVANCED', 'CUSTOM', 'DEVELOPER']),
           }),
         }),
       })
     );
-    expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
   });
 
-  test('blocks paid module when module metadata is missing', async () => {
+  test('blocks paid module when module metadata is missing and no fallback applies', async () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/equipment-work-orders',
-      user: { tenant_id: 'tenant-missing-module', roles: ['NURSE'] }
+      user: { tenant_id: 'tenant-missing-module', roles: ['NURSE'] },
     };
 
-    subscriptionRepository.count.mockResolvedValue(1);
     moduleRepository.count.mockResolvedValue(0);
+    subscriptionRepository.count.mockResolvedValue(0);
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 
@@ -372,10 +356,9 @@ describe('module entitlement middleware', () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/equipment-work-orders',
-      user: { tenant_id: 'tenant-entitled', roles: ['NURSE'] }
+      user: { tenant_id: 'tenant-entitled', roles: ['NURSE'] },
     };
 
-    subscriptionRepository.count.mockResolvedValue(1);
     moduleRepository.count.mockResolvedValue(1);
     moduleSubscriptionRepository.count.mockResolvedValue(1);
 
@@ -384,16 +367,42 @@ describe('module entitlement middleware', () => {
     expect(error).toBeUndefined();
   });
 
+  test('accepts legacy billing-insurance entitlement for billing-payments paths', async () => {
+    const { enforceModuleEntitlement } = loadMiddleware();
+    const req = {
+      path: '/invoices',
+      user: { tenant_id: 'tenant-legacy-billing', roles: ['BILLING'] },
+    };
+
+    moduleRepository.count.mockResolvedValue(1);
+    moduleSubscriptionRepository.count.mockResolvedValue(1);
+
+    const error = await invokeMiddleware(enforceModuleEntitlement(), req);
+
+    expect(error).toBeUndefined();
+    expect(moduleSubscriptionRepository.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        module: expect.objectContaining({
+          slug: { in: ['billing-payments', 'billing-insurance'] },
+        }),
+      })
+    );
+  });
+
   test('does not bypass entitlement checks for elevated tenant roles', async () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {
       path: '/equipment-work-orders',
-      user: { tenant_id: 'tenant-admin-no-entitlement', roles: ['TENANT_ADMIN'] }
+      user: { tenant_id: 'tenant-admin-no-entitlement', roles: ['TENANT_ADMIN'] },
     };
 
-    subscriptionRepository.count.mockResolvedValue(1);
     moduleRepository.count.mockResolvedValue(1);
     moduleSubscriptionRepository.count.mockResolvedValue(0);
+    prismaMock.module.findFirst.mockResolvedValue({
+      id: 'mod-biomed',
+      slug: 'biomedical-engineering-suite',
+      minimum_plan_tier_code: 'ADVANCED',
+    });
 
     const error = await invokeMiddleware(enforceModuleEntitlement(), req);
 

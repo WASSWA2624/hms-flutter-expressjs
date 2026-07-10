@@ -3,15 +3,13 @@
  *
  * Core modules whose minimum_plan_tier_code is at or below the plan tier are
  * included by default. Add-ons are never auto-included.
+ * Platform infrastructure modules are included so plan allowlists stay complete.
  */
 
-const PLAN_TIER_RANK = Object.freeze({
-  FREE: 0,
-  BASIC: 1,
-  PRO: 2,
-  ADVANCED: 3,
-  CUSTOM: 4,
-});
+const {
+  PLAN_TIER_RANK,
+  isEligibleForTier,
+} = require('@lib/subscriptions/plan-module-matrix');
 
 const text = (value) => String(value || '').trim();
 
@@ -23,21 +21,41 @@ const planTierRank = (tierCode) => {
 };
 
 const isModuleEligibleForTier = (tierCode, minimumPlanTierCode) =>
-  planTierRank(tierCode) >= planTierRank(minimumPlanTierCode);
+  isEligibleForTier(tierCode, minimumPlanTierCode);
 
 const modulePublicId = (moduleRecord = {}) =>
   text(moduleRecord.human_friendly_id) || text(moduleRecord.id) || null;
 
+const isPlatformInfrastructure = (moduleRecord = {}) => {
+  const extension =
+    moduleRecord.extension_json && typeof moduleRecord.extension_json === 'object'
+      ? moduleRecord.extension_json
+      : moduleRecord.extensionJson && typeof moduleRecord.extensionJson === 'object'
+        ? moduleRecord.extensionJson
+        : {};
+  return Boolean(extension.is_platform_infrastructure);
+};
+
+const isDeprecatedLegacyAlias = (moduleRecord = {}) => {
+  const extension =
+    moduleRecord.extension_json && typeof moduleRecord.extension_json === 'object'
+      ? moduleRecord.extension_json
+      : moduleRecord.extensionJson && typeof moduleRecord.extensionJson === 'object'
+        ? moduleRecord.extensionJson
+        : {};
+  return Boolean(extension.deprecated);
+};
+
 /**
  * @param {string|null|undefined} tierCode
  * @param {Array<Object>} modules
- * @param {{ includeAddOns?: boolean }} [options]
+ * @param {{ includeAddOns?: boolean, includeLegacyAliases?: boolean }} [options]
  * @returns {string[]} Public module IDs eligible for the plan tier
  */
 const resolveDefaultIncludedModuleIds = (
   tierCode,
   modules = [],
-  { includeAddOns = false } = {}
+  { includeAddOns = false, includeLegacyAliases = false } = {}
 ) => {
   if (!tierCode || !Array.isArray(modules) || modules.length === 0) {
     return [];
@@ -52,7 +70,11 @@ const resolveDefaultIncludedModuleIds = (
     if (!includeAddOns && moduleRecord.is_add_on) {
       continue;
     }
+    if (!includeLegacyAliases && isDeprecatedLegacyAlias(moduleRecord)) {
+      continue;
+    }
     if (
+      !isPlatformInfrastructure(moduleRecord) &&
       !isModuleEligibleForTier(
         tierCode,
         moduleRecord.minimum_plan_tier_code ||

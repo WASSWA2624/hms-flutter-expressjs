@@ -36,7 +36,8 @@ AppConfig testAppConfig() {
 /// Module entitlements for integration deep-link navigation tests.
 const List<AppModuleEntitlement> integrationModuleEntitlements =
     <AppModuleEntitlement>[
-      AppModuleEntitlement(code: 'billing-insurance'),
+      AppModuleEntitlement(code: 'billing-payments'),
+      AppModuleEntitlement(code: 'insurance-claims'),
       AppModuleEntitlement(code: 'scheduling-queue'),
       AppModuleEntitlement(code: 'inpatient-bed-management'),
       AppModuleEntitlement(code: 'icu-critical-care'),

@@ -13,7 +13,8 @@ const DOMAIN_TO_MODULE = Object.freeze({
   lab: 'lab-workflows',
   radiology: 'radiology-workflows',
   pharmacy: 'pharmacy-dispensing',
-  billing: 'billing-insurance',
+  billing: 'billing-payments',
+  financial: 'billing-payments',
   operations: 'facilities-maintenance',
   hr: 'hr-rosters',
   unit: 'hr-rosters',
@@ -23,6 +24,7 @@ const DOMAIN_TO_MODULE = Object.freeze({
   communications: 'notifications-communications',
   integration: 'integrations-core',
   reports: 'reporting-analytics',
+  subscriptions: 'subscription-controls',
 });
 
 const text = (value) => String(value || '').trim();

@@ -15,7 +15,7 @@ void main() {
       );
       expect(
         PermissionModuleMap.moduleForPermissionCode('billing:read'),
-        'billing-insurance',
+        'billing-payments',
       );
     });
 

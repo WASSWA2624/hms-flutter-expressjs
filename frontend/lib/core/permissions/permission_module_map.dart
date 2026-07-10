@@ -7,13 +7,14 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 /// are not plan-gated at the permission layer.
 abstract final class PermissionModuleMap {
   static const Map<String, String> domainToModule = <String, String>{
+    'billing': 'billing-payments',
+    'financial': 'billing-payments',
     'patient': 'patient-registry',
     'clinical': 'encounters-vitals',
     'emergency': 'scheduling-queue',
     'lab': 'lab-workflows',
     'radiology': 'radiology-workflows',
     'pharmacy': 'pharmacy-dispensing',
-    'billing': 'billing-insurance',
     'operations': 'facilities-maintenance',
     'hr': 'hr-rosters',
     'unit': 'hr-rosters',
@@ -23,6 +24,7 @@ abstract final class PermissionModuleMap {
     'communications': 'notifications-communications',
     'integration': 'integrations-core',
     'reports': 'reporting-analytics',
+    'subscriptions': 'subscription-controls',
   };
 
   /// Returns the subscription module slug for [permission], or null if core/platform.

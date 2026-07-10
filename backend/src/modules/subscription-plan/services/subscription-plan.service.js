@@ -33,6 +33,15 @@ const {
   canAccessTenantOrGlobal,
   resolveUserTenantScope,
 } = require('@lib/subscriptions/access');
+const {
+  clearModuleEntitlementCaches,
+} = require('@middlewares/module-entitlement.middleware');
+const {
+  publishCrudRealtimeEvent,
+  SUBSCRIPTION_EVENTS,
+} = require('@lib/websocket');
+const { ROLES } = require('@config/roles');
+
 const PLAN_INCLUDE = Object.freeze({
   tenant: true,
   _count: {
@@ -41,6 +50,82 @@ const PLAN_INCLUDE = Object.freeze({
     },
   },
 });
+
+const mergeExtensionJson = (existing, incoming) => {
+  if (incoming == null) {
+    return existing ?? null;
+  }
+  if (!existing || typeof existing !== 'object' || Array.isArray(existing)) {
+    return incoming;
+  }
+  if (typeof incoming !== 'object' || Array.isArray(incoming)) {
+    return incoming;
+  }
+
+  const merged = {
+    ...existing,
+    ...incoming,
+  };
+
+  if (
+    incoming.allowed_modules &&
+    typeof incoming.allowed_modules === 'object' &&
+    !Array.isArray(incoming.allowed_modules)
+  ) {
+    const previousAllowed =
+      existing.allowed_modules &&
+      typeof existing.allowed_modules === 'object' &&
+      !Array.isArray(existing.allowed_modules)
+        ? existing.allowed_modules
+        : {};
+    merged.allowed_modules = {
+      ...previousAllowed,
+      ...incoming.allowed_modules,
+    };
+  }
+
+  if (
+    incoming.pricing &&
+    typeof incoming.pricing === 'object' &&
+    !Array.isArray(incoming.pricing)
+  ) {
+    const previousPricing =
+      existing.pricing &&
+      typeof existing.pricing === 'object' &&
+      !Array.isArray(existing.pricing)
+        ? existing.pricing
+        : {};
+    merged.pricing = {
+      ...previousPricing,
+      ...incoming.pricing,
+    };
+  }
+
+  return merged;
+};
+
+const notifyPlanModuleEntitlementChange = async (planRecord, user) => {
+  clearModuleEntitlementCaches();
+  const tenantId = planRecord?.tenant_id || null;
+  if (!tenantId) {
+    return;
+  }
+  try {
+    await publishCrudRealtimeEvent({
+      event: SUBSCRIPTION_EVENTS.MODULE_ENTITLEMENT_UPDATED,
+      resource: planRecord,
+      resource_type: 'subscription_plan',
+      actor_user_id: user?.id || null,
+      recipient_roles: [ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.SUPER_ADMIN],
+      payload: {
+        reason: 'subscription_plan_updated',
+        plan_id: planRecord?.human_friendly_id || planRecord?.id || null,
+      },
+    });
+  } catch (_error) {
+    // Realtime is best-effort; entitlement cache already cleared.
+  }
+};
 
 const TIER_BASE_ENTITLEMENTS = {
   FREE: ['group_1', 'group_2_basic', 'group_3_basic', 'group_4_basic', 'group_13_basic', 'group_17_view_only', 'group_15_fault_reporting'],
@@ -237,6 +322,8 @@ const createSubscriptionPlan = async (data, user, ip) => {
     true
   );
 
+  await notifyPlanModuleEntitlementChange(subscriptionPlan, user);
+
   await createAuditLog({
     tenant_id: subscriptionPlan.tenant_id,
     user_id: user?.id || null,
@@ -253,8 +340,16 @@ const createSubscriptionPlan = async (data, user, ip) => {
 const updateSubscriptionPlan = async (id, data, user, ip) => {
   const before = await loadSubscriptionPlanRecord(id, user, true);
   const payload = await resolveSubscriptionPlanPayload(data, user);
+  if (payload.extension_json !== undefined) {
+    payload.extension_json = mergeExtensionJson(
+      before.extension_json,
+      payload.extension_json
+    );
+  }
   await subscriptionPlanRepository.update(before.id, payload);
   const subscriptionPlan = await loadSubscriptionPlanRecord(before.id, user, true);
+
+  await notifyPlanModuleEntitlementChange(subscriptionPlan, user);
 
   await createAuditLog({
     tenant_id: before.tenant_id,

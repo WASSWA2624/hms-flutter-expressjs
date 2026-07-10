@@ -384,6 +384,12 @@ const buildLookups = (lookups = {}) => ({
     meta: {
       minimum_plan_tier_code: entry.minimum_plan_tier_code || null,
       is_add_on: Boolean(entry.is_add_on),
+      slug: entry.slug || null,
+      extension_json: entry.extension_json || null,
+      deprecated: Boolean(entry.extension_json?.deprecated),
+      is_platform_infrastructure: Boolean(
+        entry.extension_json?.is_platform_infrastructure
+      ),
     },
   })),
   module_groups: (lookups.module_groups || []).map((entry) => ({

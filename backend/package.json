@@ -21,6 +21,7 @@
     "db:backfill:ambulance-role": "node scripts/backfill-ambulance-operator-role.js",
     "db:backfill:vital-bp": "node scripts/backfill-vital-bp-components.js",
     "db:backfill:subscription-friendly-ids": "node scripts/backfill-subscription-friendly-ids.js",
+    "db:backfill:plan-module-matrix": "node scripts/backfill-plan-module-matrix.js",
     "db:backfill:catalog-modules": "node scripts/backfill-catalog-modules.js",
     "db:backfill:user-position-title": "node scripts/backfill-user-position-title.js",
     "db:backfill:drug-inventory-map": "node scripts/backfill-drug-inventory-map.js",

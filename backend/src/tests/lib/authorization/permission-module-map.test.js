@@ -16,6 +16,9 @@ describe('permission-module-map', () => {
     expect(moduleForPermissionName(PERMISSIONS.PATIENT_READ)).toBe(
       'patient-registry'
     );
+    expect(moduleForPermissionName(PERMISSIONS.BILLING_READ)).toBe(
+      'billing-payments'
+    );
     expect(moduleForPermissionName(PERMISSIONS.PROFILE_READ)).toBeNull();
     expect(moduleForPermissionName(PERMISSIONS.TENANT_ADMIN)).toBeNull();
   });

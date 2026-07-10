@@ -4,6 +4,10 @@ const {
   DEMO_PLAN_CATALOG,
   DEMO_TENANT,
 } = require('./seed-catalog');
+const {
+  isEligibleForTier,
+  modulesForPlanTier,
+} = require('../../src/lib/subscriptions/plan-module-matrix');
 
 const PLAN_RANK = Object.freeze({
   FREE: 1,
@@ -35,8 +39,37 @@ const buildEligibilityMap = () =>
     return acc;
   }, {});
 
-const isEligibleForTier = (tierCode, minimumTierCode) =>
-  (PLAN_RANK[tierCode] || 0) >= (PLAN_RANK[minimumTierCode] || 0);
+const resolveIncludedModuleIds = (planDefinition, modulesByCode) => {
+  const includeAll = Boolean(planDefinition.extension_json?.includes_all_modules);
+  const commercialCodes = new Set(
+    modulesForPlanTier(planDefinition.tier_code, {
+      includeLegacyAliases: false,
+    }).map((entry) => entry.code)
+  );
+
+  const selected = DEMO_CORE_MODULE_CATALOG.filter((entry) => {
+    if (entry.extension_json?.is_platform_infrastructure) {
+      return true;
+    }
+    if (includeAll) {
+      return true;
+    }
+    return commercialCodes.has(entry.code);
+  });
+
+  // Developer / custom-all also gets optional add-ons.
+  const addOns =
+    includeAll || planDefinition.tier_code === 'CUSTOM'
+      ? DEMO_ADD_ON_CATALOG
+      : [];
+
+  return [...selected, ...addOns]
+    .map((entry) => {
+      const moduleRecord = modulesByCode[entry.code];
+      return moduleRecord?.human_friendly_id || moduleRecord?.id || null;
+    })
+    .filter(Boolean);
+};
 
 const seedSubscriptionsPack = async (ctx, orgPack) => {
   const result = {
@@ -46,38 +79,15 @@ const seedSubscriptionsPack = async (ctx, orgPack) => {
     licenses: {},
   };
 
-  for (const planDefinition of DEMO_PLAN_CATALOG) {
-    const plan = await ctx.upsert(
-      'subscription_plan',
-      `plan:${planDefinition.code}`,
-      {
-        tenant_id: null,
-        code: planDefinition.code,
-        name: planDefinition.name,
-        tier_code: planDefinition.tier_code,
-        price: planDefinition.price,
-        billing_cycle: planDefinition.billing_cycle,
-        max_users: planDefinition.max_users,
-        max_facilities: planDefinition.max_facilities,
-        max_storage_mb: planDefinition.max_storage_mb,
-        max_modules: planDefinition.max_modules,
-        plan_fit_warning_percent: 80,
-        limit_policy_json: buildPlanPolicies(planDefinition),
-        add_on_eligibility_json: buildEligibilityMap(),
-        extension_json: planDefinition.extension_json,
-      },
-      {
-        tenantCode: 'GLOBAL',
-        scenarioKey: 'CATALOG',
-        publicIdPrefix: 'SPLAN',
-      }
-    );
-    result.plans[planDefinition.code] = plan;
-  }
-
   const allModuleDefinitions = [
-    ...DEMO_CORE_MODULE_CATALOG.map((definition) => ({ ...definition, is_add_on: false })),
-    ...DEMO_ADD_ON_CATALOG.map((definition) => ({ ...definition, is_add_on: true })),
+    ...DEMO_CORE_MODULE_CATALOG.map((definition) => ({
+      ...definition,
+      is_add_on: Boolean(definition.is_add_on),
+    })),
+    ...DEMO_ADD_ON_CATALOG.map((definition) => ({
+      ...definition,
+      is_add_on: true,
+    })),
   ];
 
   for (const moduleDefinition of allModuleDefinitions) {
@@ -87,7 +97,9 @@ const seedSubscriptionsPack = async (ctx, orgPack) => {
       {
         name: moduleDefinition.name,
         slug: moduleDefinition.slug,
-        description: `${moduleDefinition.name} demo module`,
+        description:
+          moduleDefinition.description ||
+          `${moduleDefinition.name} catalog module`,
         module_group: moduleDefinition.module_group,
         minimum_plan_tier_code: moduleDefinition.minimum_plan_tier_code,
         is_add_on: Boolean(moduleDefinition.is_add_on),
@@ -107,22 +119,9 @@ const seedSubscriptionsPack = async (ctx, orgPack) => {
     result.modules[moduleDefinition.code] = module;
   }
 
-  // Persist predefined included modules per plan (core modules by tier).
+  // Persist predefined included modules per plan from the DB matrix (seed defaults).
   for (const planDefinition of DEMO_PLAN_CATALOG) {
-    const included = allModuleDefinitions
-      .filter(
-        (entry) =>
-          !entry.is_add_on &&
-          isEligibleForTier(
-            planDefinition.tier_code,
-            entry.minimum_plan_tier_code
-          )
-      )
-      .map((entry) => {
-        const moduleRecord = result.modules[entry.code];
-        return moduleRecord?.human_friendly_id || moduleRecord?.id || null;
-      })
-      .filter(Boolean);
+    const included = resolveIncludedModuleIds(planDefinition, result.modules);
 
     const plan = await ctx.upsert(
       'subscription_plan',

@@ -1,14 +1,22 @@
 /**
  * Module entitlement middleware
  *
- * Enforces free-core vs paid-module access for tenant-scoped requests.
+ * Commercial module access is decided from the database (plan allowlists +
+ * module_subscription). Path→slug maps are routing only. Platform
+ * infrastructure path segments are loaded from module.extension_json
+ * (is_platform_infrastructure), not from a hardcoded commercial free list.
  */
 
 const { HttpError } = require('@lib/errors');
+const prisma = require('@prisma/client');
 const moduleRepository = require('@repositories/module/module.repository');
 const moduleSubscriptionRepository = require('@repositories/module-subscription/module-subscription.repository');
 const subscriptionRepository = require('@repositories/subscription/subscription.repository');
 const { recordSecurityEvent } = require('@lib/telemetry/metrics');
+const {
+  evaluateModuleEntitlement,
+} = require('@lib/subscriptions/policies');
+const { PLAN_TIER_RANK } = require('@lib/subscriptions/plan-module-matrix');
 
 const CACHE_TTL_MS = 60 * 1000;
 const CACHE_MAX_ENTRIES = 5000;
@@ -17,98 +25,23 @@ const entitlementCache = new Map();
 const fallbackEntitlementCache = new Map();
 const moduleExistenceCache = new Map();
 const subscriptionStateCache = new Map();
+const platformInfrastructureCache = new Map();
 
-const PLAN_TIER_RANK = Object.freeze({
-  FREE: 0,
-  BASIC: 1,
-  PRO: 2,
-  ADVANCED: 3,
-  CUSTOM: 4,
-});
-
-// Core module definitions used when older demo databases are missing module rows.
+// Legacy fallbacks when a commercial module row is missing from older DBs.
 const CORE_MODULE_METADATA_FALLBACKS = Object.freeze({
-  mortuary: Object.freeze({ minimumPlanTierCode: 'BASIC' }),
+  mortuary: Object.freeze({ minimumPlanTierCode: 'ADVANCED' }),
   physiotherapy: Object.freeze({ minimumPlanTierCode: 'PRO' }),
 });
 
-// Free core modules available across all plans.
-const FREE_CORE_MODULES = new Set([
-  'tenant',
-  'user-session',
-  'facility',
-  'branch',
-  'department',
-  'unit',
-  'room',
-  'ward',
-  'bed',
-  'address',
-  'contact',
-  'user',
-  'user-profile',
-  'role',
-  'permission',
-  'role-permission',
-  'user-role',
-  'user-mfa',
-  'oauth-account',
-  'api-key',
-  'api-key-permission',
-  'patient',
-  'patient-identifier',
-  'patient-contact',
-  'patient-guardian',
-  'patient-allergy',
-  'patient-medical-history',
-  'patient-document',
-  'consent',
-  'appointment',
-  'appointment-participant',
-  'appointment-reminder',
-  'provider-schedule',
-  'availability-slot',
-  'doctor',
-  'visit-queue',
-  'opd-flow',
-  'encounter',
-  'clinical-note',
-  'vital-sign',
-  'invoice',
-  'invoice-item',
-  'payment',
-  'billing',
-  'notification',
-  'notification-delivery',
-  'communications-workspace',
-  'template',
-  'template-variable',
-  'report-definition',
-  'report-run',
-  'dashboard-workspace',
-  'dashboard-widget',
-  'settings-workspace',
-  'access-admin-workspace',
-  'tenant-facility-workspace',
-  'kpi-snapshot',
-  'module',
-  'module-subscription',
-  'subscription',
-  'subscription-plan',
-  'subscription-invoice',
-  'license',
-  'maintenance-request',
-  'equipment-incident-report',
-  'asset',
-  'asset-service-log',
-  'staff-position'
-]);
-
 const IRREGULAR_PATH_SEGMENTS = {
   branches: 'branch',
-  diagnoses: 'diagnosis'
+  diagnoses: 'diagnosis',
 };
 
+/**
+ * Routing dictionary: API path segment → commercial module slug.
+ * This does NOT grant access; entitlement is evaluated from the DB.
+ */
 const MODULE_SEGMENT_SLUG_OVERRIDES = Object.freeze({
   appointments: 'scheduling-queue',
   'appointment-participants': 'scheduling-queue',
@@ -124,6 +57,12 @@ const MODULE_SEGMENT_SLUG_OVERRIDES = Object.freeze({
   campaigns: 'scheduling-queue',
   feedback: 'scheduling-queue',
   'follow-ups': 'scheduling-queue',
+  'emergency-cases': 'scheduling-queue',
+  'triage-assessments': 'scheduling-queue',
+  'emergency-responses': 'scheduling-queue',
+  ambulances: 'scheduling-queue',
+  'ambulance-dispatches': 'scheduling-queue',
+  'ambulance-trips': 'scheduling-queue',
   'vital-signs': 'encounters-vitals',
   'care-plans': 'encounters-vitals',
   'clinical-alerts': 'encounters-vitals',
@@ -132,10 +71,21 @@ const MODULE_SEGMENT_SLUG_OVERRIDES = Object.freeze({
   'clinical-catalog': 'encounters-vitals',
   'clinical-term-favorites': 'encounters-vitals',
   encounters: 'encounters-vitals',
+  encounter: 'encounters-vitals',
   'clinical-notes': 'encounters-vitals',
   diagnoses: 'encounters-vitals',
   procedures: 'encounters-vitals',
   'adverse-events': 'encounters-vitals',
+  patients: 'patient-registry',
+  patient: 'patient-registry',
+  'patient-identifiers': 'patient-registry',
+  'patient-contacts': 'patient-registry',
+  'patient-guardians': 'patient-registry',
+  'patient-allergies': 'patient-registry',
+  'patient-medical-histories': 'patient-registry',
+  'patient-documents': 'patient-registry',
+  consents: 'patient-registry',
+  consent: 'patient-registry',
   'ipd-flows': 'inpatient-bed-management',
   admissions: 'inpatient-bed-management',
   'bed-assignments': 'inpatient-bed-management',
@@ -176,20 +126,39 @@ const MODULE_SEGMENT_SLUG_OVERRIDES = Object.freeze({
   'pharmacy-orders': 'pharmacy-dispensing',
   'pharmacy-order-items': 'pharmacy-dispensing',
   'dispense-logs': 'pharmacy-dispensing',
-  'emergency-cases': 'scheduling-queue',
-  'triage-assessments': 'scheduling-queue',
-  'emergency-responses': 'scheduling-queue',
-  ambulances: 'scheduling-queue',
-  'ambulance-dispatches': 'scheduling-queue',
-  'ambulance-trips': 'scheduling-queue',
-  refunds: 'billing-insurance',
-  billing: 'billing-insurance',
-  'pricing-rules': 'billing-insurance',
-  'coverage-plans': 'billing-insurance',
-  'insurance-claims': 'billing-insurance',
-  'pre-authorizations': 'billing-insurance',
-  'claims-workspace': 'billing-insurance',
-  'billing-adjustments': 'billing-insurance',
+  inventory: 'inventory-procurement-lite',
+  'inventory-items': 'inventory-procurement-lite',
+  'inventory-stocks': 'inventory-procurement-lite',
+  'inventory-movements': 'inventory-procurement-lite',
+  suppliers: 'inventory-procurement-lite',
+  'purchase-requests': 'inventory-procurement-lite',
+  'purchase-orders': 'inventory-procurement-lite',
+  'goods-receipts': 'inventory-procurement-lite',
+  invoices: 'billing-payments',
+  invoice: 'billing-payments',
+  'invoice-items': 'billing-payments',
+  payments: 'billing-payments',
+  payment: 'billing-payments',
+  refunds: 'billing-payments',
+  billing: 'billing-payments',
+  'pricing-rules': 'billing-payments',
+  'billing-adjustments': 'billing-payments',
+  'coverage-plans': 'insurance-claims',
+  'insurance-claims': 'insurance-claims',
+  insurance: 'insurance-claims',
+  'pre-authorizations': 'insurance-claims',
+  'claims-workspace': 'insurance-claims',
+  mortuary: 'mortuary',
+  'mortuary-cases': 'mortuary',
+  'mortuary-deceased-profiles': 'mortuary',
+  'mortuary-storage-units': 'mortuary',
+  'mortuary-storage-slots': 'mortuary',
+  'mortuary-storage-assignments': 'mortuary',
+  'mortuary-custody-events': 'mortuary',
+  'mortuary-viewings': 'mortuary',
+  'mortuary-post-mortem-requests': 'mortuary',
+  'mortuary-release-authorisations': 'mortuary',
+  'mortuary-billable-events': 'mortuary',
   'payroll-runs': 'hr-rosters',
   'payroll-items': 'hr-rosters',
   hr: 'hr-rosters',
@@ -230,8 +199,14 @@ const MODULE_SEGMENT_SLUG_OVERRIDES = Object.freeze({
   'equipment-recall-notices': 'biomedical-engineering-suite',
   'equipment-utilization-snapshots': 'biomedical-engineering-suite',
   'equipment-disposal-transfers': 'biomedical-engineering-suite',
+  'equipment-incident-reports': 'biomedical-engineering-suite',
   conversations: 'notifications-communications',
   messages: 'notifications-communications',
+  notifications: 'notifications-communications',
+  'notification-deliveries': 'notifications-communications',
+  templates: 'notifications-communications',
+  'template-variables': 'notifications-communications',
+  'communications-workspace': 'notifications-communications',
   'report-definitions': 'reporting-analytics',
   'report-runs': 'reporting-analytics',
   'report-schedules': 'reporting-analytics',
@@ -252,7 +227,16 @@ const MODULE_SEGMENT_SLUG_OVERRIDES = Object.freeze({
   'integration-logs': 'integrations-core',
   'webhook-subscriptions': 'integrations-core',
   interop: 'integrations-core',
-  'break-glass-access': 'break-glass-access',
+  'api-keys': 'developer-tools',
+  'api-key-permissions': 'developer-tools',
+  'developer-tools': 'developer-tools',
+});
+
+/** Legacy commercial slugs that still satisfy a newer product slug. */
+const LEGACY_MODULE_SLUG_ALIASES = Object.freeze({
+  'billing-payments': Object.freeze(['billing-insurance']),
+  'insurance-claims': Object.freeze(['billing-insurance', 'insurance']),
+  'inventory-procurement-lite': Object.freeze(['inventory-procurement']),
 });
 
 const trimExpiredEntries = (cache) => {
@@ -266,11 +250,8 @@ const trimExpiredEntries = (cache) => {
 
 const enforceCacheLimit = (cache) => {
   if (cache.size <= CACHE_MAX_ENTRIES) return;
-
   trimExpiredEntries(cache);
   if (cache.size <= CACHE_MAX_ENTRIES) return;
-
-  // Remove oldest entries first (Map iteration order is insertion order)
   while (cache.size > CACHE_MAX_ENTRIES) {
     const oldestKey = cache.keys().next().value;
     if (!oldestKey) break;
@@ -291,13 +272,22 @@ const getCached = (cache, key) => {
 const setCached = (cache, key, value) => {
   cache.set(key, {
     value,
-    expiresAt: Date.now() + CACHE_TTL_MS
+    expiresAt: Date.now() + CACHE_TTL_MS,
   });
   enforceCacheLimit(cache);
 };
 
+const clearModuleEntitlementCaches = () => {
+  entitlementCache.clear();
+  fallbackEntitlementCache.clear();
+  moduleExistenceCache.clear();
+  subscriptionStateCache.clear();
+  platformInfrastructureCache.clear();
+};
+
 const resolveEligiblePlanTiers = (minimumPlanTierCode) => {
-  const minimumRank = PLAN_TIER_RANK[String(minimumPlanTierCode || '').toUpperCase()];
+  const minimumRank =
+    PLAN_TIER_RANK[String(minimumPlanTierCode || '').toUpperCase()];
   if (minimumRank === undefined) return [];
 
   return Object.entries(PLAN_TIER_RANK)
@@ -330,13 +320,69 @@ const normalizeSegmentToModuleSlug = (segment) => {
 
 const resolveModuleSlugFromPath = (reqPath) => {
   const normalizedPath = String(reqPath || '').trim();
-  if (!normalizedPath || normalizedPath === '/' || normalizedPath === '.') return null;
+  if (!normalizedPath || normalizedPath === '/' || normalizedPath === '.') {
+    return null;
+  }
 
   const rawSegment = normalizedPath.replace(/^\/+/, '').split('/')[0];
   const mappedSlug =
-    MODULE_SEGMENT_SLUG_OVERRIDES[String(rawSegment || '').trim().toLowerCase()];
+    MODULE_SEGMENT_SLUG_OVERRIDES[
+      String(rawSegment || '').trim().toLowerCase()
+    ];
   if (mappedSlug) return mappedSlug;
   return normalizeSegmentToModuleSlug(rawSegment);
+};
+
+/**
+ * Load platform infrastructure path segments from DB module.extension_json.
+ */
+const loadPlatformInfrastructureSegments = async () => {
+  const cacheKey = 'platform-infrastructure-segments';
+  const cached = getCached(platformInfrastructureCache, cacheKey);
+  if (cached !== null) return cached;
+
+  const modules = await prisma.module.findMany({
+    where: { deleted_at: null },
+    select: { slug: true, extension_json: true },
+    take: 500,
+  });
+
+  const segments = new Set();
+  for (const entry of modules) {
+    const extension =
+      entry.extension_json && typeof entry.extension_json === 'object'
+        ? entry.extension_json
+        : {};
+    if (!extension.is_platform_infrastructure) {
+      continue;
+    }
+    if (entry.slug) {
+      segments.add(String(entry.slug).toLowerCase());
+    }
+    const paths = Array.isArray(extension.api_path_segments)
+      ? extension.api_path_segments
+      : [];
+    for (const pathSegment of paths) {
+      const normalized = String(pathSegment || '')
+        .trim()
+        .toLowerCase();
+      if (normalized) {
+        segments.add(normalized);
+      }
+    }
+  }
+
+  setCached(platformInfrastructureCache, cacheKey, segments);
+  return segments;
+};
+
+const isPlatformInfrastructureSlug = async (moduleSlug, rawPathSegment) => {
+  const segments = await loadPlatformInfrastructureSegments();
+  const slug = String(moduleSlug || '').toLowerCase();
+  const raw = String(rawPathSegment || '')
+    .trim()
+    .toLowerCase();
+  return segments.has(slug) || (raw && segments.has(raw));
 };
 
 const moduleExists = async (moduleSlug) => {
@@ -349,49 +395,82 @@ const moduleExists = async (moduleSlug) => {
   return exists;
 };
 
+const loadActiveSubscriptionWithPlan = async (tenantId) => {
+  const cacheKey = `tenant-subscription-plan:${tenantId}`;
+  const cached = getCached(subscriptionStateCache, cacheKey);
+  if (cached !== null) return cached;
+
+  const subscription = await prisma.subscription.findFirst({
+    where: {
+      tenant_id: tenantId,
+      deleted_at: null,
+      status: { in: ['ACTIVE', 'TRIAL'] },
+      OR: [{ end_date: null }, { end_date: { gte: new Date() } }],
+    },
+    include: { plan: true },
+    orderBy: { updated_at: 'desc' },
+  });
+
+  setCached(subscriptionStateCache, cacheKey, subscription || false);
+  return subscription || null;
+};
+
 const tenantHasModuleAccess = async (tenantId, moduleSlug) => {
   const cacheKey = `${tenantId}:${moduleSlug}`;
   const cached = getCached(entitlementCache, cacheKey);
   if (cached !== null) return cached;
 
-  const allowed = (await moduleSubscriptionRepository.count({
+  const candidateSlugs = [
+    moduleSlug,
+    ...(LEGACY_MODULE_SLUG_ALIASES[moduleSlug] || []),
+  ];
+
+  const activeSubscriptionCount = await moduleSubscriptionRepository.count({
     is_active: true,
+    entitlement_denied: false,
     module: {
-      slug: moduleSlug,
-      deleted_at: null
+      slug: { in: candidateSlugs },
+      deleted_at: null,
     },
     subscription: {
       tenant_id: tenantId,
       deleted_at: null,
       status: { in: ['ACTIVE', 'TRIAL'] },
-      OR: [
-        { end_date: null },
-        { end_date: { gte: new Date() } }
-      ]
-    }
-  })) > 0;
+      OR: [{ end_date: null }, { end_date: { gte: new Date() } }],
+    },
+  });
 
+  if (activeSubscriptionCount > 0) {
+    setCached(entitlementCache, cacheKey, true);
+    return true;
+  }
+
+  const [subscription, moduleRecord] = await Promise.all([
+    loadActiveSubscriptionWithPlan(tenantId),
+    prisma.module.findFirst({
+      where: { slug: moduleSlug, deleted_at: null },
+    }),
+  ]);
+
+  if (!subscription || !moduleRecord) {
+    setCached(entitlementCache, cacheKey, false);
+    return false;
+  }
+
+  const evaluation = evaluateModuleEntitlement({
+    subscriptionRecord: subscription,
+    moduleRecord,
+    planRecord: subscription.plan || {},
+  });
+
+  const allowed = Boolean(evaluation.eligible);
   setCached(entitlementCache, cacheKey, allowed);
   return allowed;
 };
 
 const tenantHasActiveSubscription = async (tenantId) => {
-  const cacheKey = `tenant-subscription:${tenantId}`;
-  const cached = getCached(subscriptionStateCache, cacheKey);
-  if (cached !== null) return cached;
-
-  const hasActiveSubscription = (await subscriptionRepository.count({
-    tenant_id: tenantId,
-    deleted_at: null,
-    status: { in: ['ACTIVE', 'TRIAL'] },
-    OR: [
-      { end_date: null },
-      { end_date: { gte: new Date() } }
-    ]
-  })) > 0;
-
-  setCached(subscriptionStateCache, cacheKey, hasActiveSubscription);
-  return hasActiveSubscription;
+  const subscription = await loadActiveSubscriptionWithPlan(tenantId);
+  return Boolean(subscription);
 };
 
 const tenantHasFallbackModuleAccess = async (tenantId, moduleSlug) => {
@@ -402,24 +481,24 @@ const tenantHasFallbackModuleAccess = async (tenantId, moduleSlug) => {
   const cached = getCached(fallbackEntitlementCache, cacheKey);
   if (cached !== null) return cached;
 
-  const eligiblePlanTiers = resolveEligiblePlanTiers(fallback.minimumPlanTierCode);
+  const eligiblePlanTiers = resolveEligiblePlanTiers(
+    fallback.minimumPlanTierCode
+  );
   if (eligiblePlanTiers.length === 0) {
     setCached(fallbackEntitlementCache, cacheKey, false);
     return false;
   }
 
-  const allowed = (await subscriptionRepository.count({
-    tenant_id: tenantId,
-    deleted_at: null,
-    status: { in: ['ACTIVE', 'TRIAL'] },
-    OR: [
-      { end_date: null },
-      { end_date: { gte: new Date() } }
-    ],
-    plan: {
-      tier_code: { in: eligiblePlanTiers }
-    }
-  })) > 0;
+  const allowed =
+    (await subscriptionRepository.count({
+      tenant_id: tenantId,
+      deleted_at: null,
+      status: { in: ['ACTIVE', 'TRIAL'] },
+      OR: [{ end_date: null }, { end_date: { gte: new Date() } }],
+      plan: {
+        tier_code: { in: eligiblePlanTiers },
+      },
+    })) > 0;
 
   setCached(fallbackEntitlementCache, cacheKey, allowed);
   return allowed;
@@ -430,7 +509,14 @@ const enforceModuleEntitlement = () => async (req, res, next) => {
     const moduleSlug = resolveModuleSlugFromPath(req.path);
     if (!moduleSlug) return next();
 
-    if (FREE_CORE_MODULES.has(moduleSlug)) return next();
+    const rawSegment = String(req.path || '')
+      .replace(/^\/+/, '')
+      .split('/')[0]
+      .toLowerCase();
+
+    if (await isPlatformInfrastructureSlug(moduleSlug, rawSegment)) {
+      return next();
+    }
 
     const user = req.user || {};
     const tenantId = user.tenant_id || user.tenantId || null;
@@ -438,9 +524,15 @@ const enforceModuleEntitlement = () => async (req, res, next) => {
       recordSecurityEvent('module.entitlement_denied', {
         'hms.module.slug': moduleSlug,
       });
-      return next(new HttpError('errors.auth.module_not_entitled', 403, [
-        { tenant_id: null, module: moduleSlug, reason: 'missing_tenant_scope' }
-      ]));
+      return next(
+        new HttpError('errors.auth.module_not_entitled', 403, [
+          {
+            tenant_id: null,
+            module: moduleSlug,
+            reason: 'missing_tenant_scope',
+          },
+        ])
+      );
     }
 
     const hasSubscription = await tenantHasActiveSubscription(tenantId);
@@ -448,22 +540,37 @@ const enforceModuleEntitlement = () => async (req, res, next) => {
       recordSecurityEvent('module.entitlement_denied', {
         'hms.module.slug': moduleSlug,
       });
-      return next(new HttpError('errors.auth.module_not_entitled', 403, [
-        { tenant_id: tenantId, module: moduleSlug, reason: 'subscription_required' }
-      ]));
+      return next(
+        new HttpError('errors.auth.module_not_entitled', 403, [
+          {
+            tenant_id: tenantId,
+            module: moduleSlug,
+            reason: 'subscription_required',
+          },
+        ])
+      );
     }
 
     const knownModule = await moduleExists(moduleSlug);
     if (!knownModule) {
-      const fallbackAllowed = await tenantHasFallbackModuleAccess(tenantId, moduleSlug);
+      const fallbackAllowed = await tenantHasFallbackModuleAccess(
+        tenantId,
+        moduleSlug
+      );
       if (fallbackAllowed) return next();
 
       recordSecurityEvent('module.entitlement_denied', {
         'hms.module.slug': moduleSlug,
       });
-      return next(new HttpError('errors.auth.module_not_entitled', 403, [
-        { tenant_id: tenantId, module: moduleSlug, reason: 'module_metadata_missing' }
-      ]));
+      return next(
+        new HttpError('errors.auth.module_not_entitled', 403, [
+          {
+            tenant_id: tenantId,
+            module: moduleSlug,
+            reason: 'module_metadata_missing',
+          },
+        ])
+      );
     }
 
     const allowed = await tenantHasModuleAccess(tenantId, moduleSlug);
@@ -471,9 +578,11 @@ const enforceModuleEntitlement = () => async (req, res, next) => {
       recordSecurityEvent('module.entitlement_denied', {
         'hms.module.slug': moduleSlug,
       });
-      return next(new HttpError('errors.auth.module_not_entitled', 403, [
-        { tenant_id: tenantId, module: moduleSlug }
-      ]));
+      return next(
+        new HttpError('errors.auth.module_not_entitled', 403, [
+          { tenant_id: tenantId, module: moduleSlug },
+        ])
+      );
     }
 
     return next();
@@ -483,5 +592,8 @@ const enforceModuleEntitlement = () => async (req, res, next) => {
 };
 
 module.exports = {
-  enforceModuleEntitlement
+  enforceModuleEntitlement,
+  resolveModuleSlugFromPath,
+  loadPlatformInfrastructureSegments,
+  clearModuleEntitlementCaches,
 };

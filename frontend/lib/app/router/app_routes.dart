@@ -270,7 +270,7 @@ abstract final class AppRoutes {
       AppPermissions.billingWrite,
     ],
     requiredAnyRoles: billingWorkspaceRoles,
-    requiredActiveModules: <String>['billing-insurance'],
+    requiredActiveModules: <String>['billing-payments'],
   );
   static const AppRouteData claims = AppRouteData(
     name: 'claims',
@@ -282,7 +282,7 @@ abstract final class AppRoutes {
       AppPermissions.financialApprove,
     ],
     requiredAnyRoles: billingWorkspaceRoles,
-    requiredActiveModules: <String>['billing-insurance'],
+    requiredActiveModules: <String>['insurance-claims'],
   );
   static const AppRouteData subscriptions = AppRouteData(
     name: 'subscriptions',

@@ -8,7 +8,7 @@
  * coverage-plan, pre-authorization, and insurance-claim modules.
  *
  * Per module-creation.mdc: apply authentication + authorization per route.
- * All endpoints require billing read access and the billing-insurance module
+ * All endpoints require billing read access and the insurance-claims module
  * entitlement (enforced globally by enforceModuleEntitlement).
  */
 

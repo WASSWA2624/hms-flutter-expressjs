@@ -37,6 +37,7 @@ const moduleSelect = {
   is_add_on: true,
   add_on_price: true,
   add_on_billing_cycle: true,
+  extension_json: true,
 };
 
 const invoiceSelect = {

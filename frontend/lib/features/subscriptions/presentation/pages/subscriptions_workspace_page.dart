@@ -1530,6 +1530,7 @@ const Map<String, int> _planTierRank = <String, int>{
   'PRO': 2,
   'ADVANCED': 3,
   'CUSTOM': 4,
+  'DEVELOPER': 5,
 };
 
 int _tierRank(String? tierCode) {
@@ -1539,6 +1540,30 @@ int _tierRank(String? tierCode) {
 
 bool _moduleIsAddOn(SubscriptionLookupItem module) {
   final Object? value = module.meta['is_add_on'];
+  return value == true || value == 'true' || value == 1;
+}
+
+bool _moduleIsDeprecated(SubscriptionLookupItem module) {
+  final Object? extension = module.meta['extension_json'];
+  if (extension is Map) {
+    final Object? deprecated = extension['deprecated'];
+    if (deprecated == true || deprecated == 'true' || deprecated == 1) {
+      return true;
+    }
+  }
+  final Object? value = module.meta['deprecated'];
+  return value == true || value == 'true' || value == 1;
+}
+
+bool _moduleIsPlatformInfrastructure(SubscriptionLookupItem module) {
+  final Object? extension = module.meta['extension_json'];
+  if (extension is Map) {
+    final Object? flag = extension['is_platform_infrastructure'];
+    if (flag == true || flag == 'true' || flag == 1) {
+      return true;
+    }
+  }
+  final Object? value = module.meta['is_platform_infrastructure'];
   return value == true || value == 'true' || value == 1;
 }
 
@@ -1566,8 +1591,11 @@ List<String> _defaultIncludedModuleIdsForTier(
 
   return modules
       .where((SubscriptionLookupItem module) {
-        if (_moduleIsAddOn(module)) {
+        if (_moduleIsAddOn(module) || _moduleIsDeprecated(module)) {
           return false;
+        }
+        if (_moduleIsPlatformInfrastructure(module)) {
+          return true;
         }
         final String? minimum = _moduleMinimumTier(module);
         if (minimum == null) {
