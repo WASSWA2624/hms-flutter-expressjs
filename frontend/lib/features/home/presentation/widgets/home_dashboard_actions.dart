@@ -683,16 +683,8 @@ homeActionLibrary = <String, HomeActionDefinition>{
     label: 'Manage subscription',
     icon: Icons.workspace_premium_outlined,
     route: AppRoutes.subscriptions,
-    allowedRoles: <AppRole>[
-      AppRole.superAdmin,
-      AppRole.tenantAdmin,
-      AppRole.facilityAdmin,
-    ],
-    requiredAnyPermissions: <AppPermission>[
-      AppPermissions.subscriptionsWrite,
-      AppPermissions.subscriptionsRead,
-    ],
-    requiredModules: <String>['subscriptions'],
+    allowedRoles: <AppRole>[AppRole.superAdmin],
+    requiredPermissions: <AppPermission>[AppPermissions.systemAdmin],
   ),
   'select_context': HomeActionDefinition(
     id: 'select_context',

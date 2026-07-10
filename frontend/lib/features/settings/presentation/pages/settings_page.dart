@@ -366,13 +366,7 @@ const AccessRequirement _hrSettingsWorkspaceRequirement = AccessRequirement(
 );
 
 const AccessRequirement _subscriptionsRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.subscriptionsRead,
-    AppPermissions.subscriptionsWrite,
-    AppPermissions.tenantAdmin,
-    AppPermissions.systemAdmin,
-  ],
-  anyRoles: <AppRole>[AppRole.superAdmin, AppRole.tenantAdmin],
+  anyRoles: <AppRole>[AppRole.superAdmin],
 );
 
 const AccessRequirement _accessAdminRequirement = AccessRequirement(

@@ -3,6 +3,7 @@ const multer = require('multer');
 const { HttpError } = require('@lib/errors');
 const { isFeatureEnabled } = require('@config/feature-flags');
 const { PERMISSIONS } = require('@config/permissions');
+const { ROLES } = require('@config/roles');
 const { authorize } = require('@middlewares/auth.middleware');
 const { validateRequest } = require('@middlewares/validate.middleware');
 const subscriptionsWorkspaceController = require('@controllers/subscriptions-workspace/subscriptions-workspace.controller');
@@ -34,21 +35,21 @@ router.use(requireSubscriptionsWorkspaceV1);
 router.get(
   '/workspace',
   validateRequest({ query: workspaceQuerySchema }),
-  authorize(PERMISSIONS.SUBSCRIPTIONS_READ, 'permission'),
+  authorize(ROLES.SUPER_ADMIN, 'role'),
   subscriptionsWorkspaceController.getWorkspace
 );
 
 router.get(
   '/reference-data',
   validateRequest({ query: referenceDataQuerySchema }),
-  authorize(PERMISSIONS.SUBSCRIPTIONS_READ, 'permission'),
+  authorize(ROLES.SUPER_ADMIN, 'role'),
   subscriptionsWorkspaceController.getReferenceData
 );
 
 router.get(
   '/resolve-legacy/:resource/:id',
   validateRequest({ params: resolveLegacyParamsSchema }),
-  authorize(PERMISSIONS.SUBSCRIPTIONS_READ, 'permission'),
+  authorize(ROLES.SUPER_ADMIN, 'role'),
   subscriptionsWorkspaceController.resolveLegacyRoute
 );
 

@@ -100,13 +100,9 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
                 context,
                 l10n,
                 snapshot,
-                canViewSubscriptions: accessPolicy
-                    .grantsAny(const <AppPermission>[
-                      AppPermissions.subscriptionsRead,
-                      AppPermissions.subscriptionsWrite,
-                      AppPermissions.tenantAdmin,
-                      AppPermissions.systemAdmin,
-                    ]),
+                canViewSubscriptions: accessPolicy.hasAnyRole(const <AppRole>[
+                  AppRole.superAdmin,
+                ]),
               ),
         onRefresh: () async {
           await ref

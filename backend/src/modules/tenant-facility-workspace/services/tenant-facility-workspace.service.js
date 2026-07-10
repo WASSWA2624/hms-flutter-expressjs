@@ -113,12 +113,7 @@ const canManageFacility = (user = {}) =>
   ]);
 
 const canViewSubscriptions = (user = {}) =>
-  hasAnyPermission(user, [
-    PERMISSIONS.SUBSCRIPTIONS_READ,
-    PERMISSIONS.SUBSCRIPTIONS_WRITE,
-    PERMISSIONS.TENANT_ADMIN,
-    PERMISSIONS.SYSTEM_ADMIN,
-  ]);
+  roleList(user).includes(ROLES.SUPER_ADMIN);
 
 const serializeTenant = (record) => {
   if (!record) return null;

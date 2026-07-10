@@ -286,13 +286,7 @@ abstract final class AppRoutes {
     name: 'subscriptions',
     path: '/subscriptions',
     access: AppRouteAccess.authenticated,
-    requiredAnyPermissions: <AppPermission>[
-      AppPermissions.subscriptionsRead,
-      AppPermissions.subscriptionsWrite,
-      AppPermissions.tenantAdmin,
-      AppPermissions.systemAdmin,
-    ],
-    requiredAnyRoles: adminShellRoles,
+    requiredAnyRoles: <AppRole>[AppRole.superAdmin],
   );
   static const AppRouteData opd = AppRouteData(
     name: 'opd',

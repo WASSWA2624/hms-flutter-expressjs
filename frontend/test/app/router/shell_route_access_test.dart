@@ -136,13 +136,21 @@ void main() {
         final policy = policyForRole(role);
 
         expect(canAccess(AppRoutes.integrations, policy), isTrue, reason: role);
-        expect(
-          canAccess(AppRoutes.subscriptions, policy),
-          isTrue,
-          reason: role,
-        );
         expect(canAccess(AppRoutes.nursing, policy), isTrue, reason: role);
       }
+
+      expect(
+        canAccess(AppRoutes.subscriptions, policyForRole('SUPER_ADMIN')),
+        isTrue,
+      );
+      expect(
+        canAccess(AppRoutes.subscriptions, policyForRole('TENANT_ADMIN')),
+        isFalse,
+      );
+      expect(
+        canAccess(AppRoutes.subscriptions, policyForRole('FACILITY_ADMIN')),
+        isFalse,
+      );
     });
 
     test('custom role permissions unlock matching shell routes', () {

@@ -169,7 +169,7 @@ void main() {
       );
     });
 
-    test('gates the subscriptions workspace by subscription permissions', () {
+    test('gates the subscriptions workspace to super admins only', () {
       final Uri targetLocation = Uri(path: AppRoutes.subscriptions.path);
       const AppRouteGuards guards = AppRouteGuards(
         sessionState: SessionState.authenticated(),
@@ -189,6 +189,23 @@ void main() {
               const AppPermission('subscriptions:read'),
             }),
           ),
+        ),
+        AppRoutes.forbidden.locationWithFrom(targetLocation),
+      );
+
+      final AppRouteGuards superAdminGuards = AppRouteGuards(
+        sessionState: SessionState.authenticated(
+          session: AuthSession(
+            tokens: SessionTokens(accessToken: 'access-token'),
+            user: const AuthUserProfile(roles: <String>['SUPER_ADMIN']),
+          ),
+        ),
+        routes: <AppRouteData>[AppRoutes.subscriptions],
+      );
+
+      expect(
+        superAdminGuards.redirect(
+          AppRouteGuardRequest(location: targetLocation),
         ),
         isNull,
       );
