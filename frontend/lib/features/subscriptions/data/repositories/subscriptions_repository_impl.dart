@@ -115,6 +115,21 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
   }
 
   @override
+  Future<Result<SubscriptionPlanDetail>> getPlanDetail(String planId) {
+    return _apiClient.get<SubscriptionPlanDetail>(
+      ApiEndpoints.nested(
+        HmsApiResource.subscriptionsWorkspace,
+        'plan-detail',
+        const <String>[],
+      ),
+      queryParameters: <String, Object?>{'planId': planId},
+      decoder: (Object? data) {
+        return SubscriptionPlanDetailDto.fromResponse(data).toEntity();
+      },
+    );
+  }
+
+  @override
   Future<Result<void>> createSubscription(SubscriptionDraft draft) {
     return _apiClient.post<void>(
       ApiEndpoints.collection(HmsApiResource.subscriptions),
@@ -373,6 +388,8 @@ Map<String, Object?> _planPayload(
     'max_modules': _intOrNull(draft.maxModules),
   });
   payload['extension_json'] = <String, Object?>{
+    if (draft.description != null && draft.description!.trim().isNotEmpty)
+      'description': draft.description!.trim(),
     'allowed_modules': <String, Object?>{
       'included': draft.includedModuleIds,
     },

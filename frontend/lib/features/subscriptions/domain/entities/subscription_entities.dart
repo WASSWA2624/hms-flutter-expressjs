@@ -564,6 +564,7 @@ final class SubscriptionItem {
     this.moduleSlug,
     this.name,
     this.code,
+    this.description,
     this.status,
     this.changeStatus,
     this.fitStatus,
@@ -615,6 +616,7 @@ final class SubscriptionItem {
   final String? moduleSlug;
   final String? name;
   final String? code;
+  final String? description;
   final String? status;
   final String? changeStatus;
   final String? fitStatus;
@@ -803,6 +805,8 @@ final class SubscriptionsWorkspaceState {
   const SubscriptionsWorkspaceState({
     required this.data,
     this.selectedItem,
+    this.planDetail,
+    this.isLoadingPlanDetail = false,
     this.lastFailure,
     this.isRefreshing = false,
     this.isSaving = false,
@@ -810,6 +814,8 @@ final class SubscriptionsWorkspaceState {
 
   final SubscriptionsWorkspaceData data;
   final SubscriptionItem? selectedItem;
+  final SubscriptionPlanDetail? planDetail;
+  final bool isLoadingPlanDetail;
   final Object? lastFailure;
   final bool isRefreshing;
   final bool isSaving;
@@ -842,10 +848,13 @@ final class SubscriptionsWorkspaceState {
   SubscriptionsWorkspaceState copyWith({
     SubscriptionsWorkspaceData? data,
     SubscriptionItem? selectedItem,
+    SubscriptionPlanDetail? planDetail,
     Object? lastFailure,
     bool? isRefreshing,
     bool? isSaving,
+    bool? isLoadingPlanDetail,
     bool clearSelectedItem = false,
+    bool clearPlanDetail = false,
     bool clearLastFailure = false,
   }) {
     return SubscriptionsWorkspaceState(
@@ -853,6 +862,8 @@ final class SubscriptionsWorkspaceState {
       selectedItem: clearSelectedItem
           ? null
           : selectedItem ?? this.selectedItem,
+      planDetail: clearPlanDetail ? null : planDetail ?? this.planDetail,
+      isLoadingPlanDetail: isLoadingPlanDetail ?? this.isLoadingPlanDetail,
       lastFailure: clearLastFailure ? null : lastFailure ?? this.lastFailure,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       isSaving: isSaving ?? this.isSaving,
@@ -869,6 +880,7 @@ final class SubscriptionPlanDraft {
     required this.billingCycle,
     this.code,
     this.tierCode,
+    this.description,
     this.maxUsers,
     this.maxFacilities,
     this.maxStorageMb,
@@ -883,6 +895,7 @@ final class SubscriptionPlanDraft {
   final String billingCycle;
   final String? code;
   final String? tierCode;
+  final String? description;
   final String? maxUsers;
   final String? maxFacilities;
   final String? maxStorageMb;
@@ -892,6 +905,38 @@ final class SubscriptionPlanDraft {
 
   /// Canonical billable amount kept for backend compatibility.
   String get price => monthlyPrice;
+}
+
+@immutable
+final class SubscriptionPlanDetailStats {
+  const SubscriptionPlanDetailStats({
+    this.activeCount = 0,
+    this.pendingCount = 0,
+    this.closedCount = 0,
+    this.totalCount = 0,
+  });
+
+  final int activeCount;
+  final int pendingCount;
+  final int closedCount;
+  final int totalCount;
+}
+
+@immutable
+final class SubscriptionPlanDetail {
+  const SubscriptionPlanDetail({
+    required this.plan,
+    this.stats = const SubscriptionPlanDetailStats(),
+    this.activeAccounts = const <SubscriptionTenantAccount>[],
+    this.pendingAccounts = const <SubscriptionTenantAccount>[],
+    this.closedAccounts = const <SubscriptionTenantAccount>[],
+  });
+
+  final SubscriptionItem plan;
+  final SubscriptionPlanDetailStats stats;
+  final List<SubscriptionTenantAccount> activeAccounts;
+  final List<SubscriptionTenantAccount> pendingAccounts;
+  final List<SubscriptionTenantAccount> closedAccounts;
 }
 
 @immutable

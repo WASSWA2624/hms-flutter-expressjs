@@ -362,6 +362,8 @@ final class SubscriptionItemDto {
       moduleSlug: _string(json['module_slug']) ?? _string(json['slug']),
       name: _string(json['name']),
       code: _string(json['code']),
+      description: _string(json['description']) ??
+          _extensionDescription(json['extension_json']),
       status: _string(json['status']),
       changeStatus: _string(json['change_status']),
       fitStatus:
@@ -395,7 +397,13 @@ final class SubscriptionItemDto {
       isAddOn: _bool(json['is_add_on']),
       entitlementDenied: _bool(json['entitlement_denied']) ?? false,
       entitlementDenialReason: _string(json['entitlement_denial_reason']),
-      includedModuleIds: _includedModuleIds(json['extension_json']),
+      includedModuleIds: () {
+        final List<String> topLevel = _stringList(json['included_module_ids']);
+        if (topLevel.isNotEmpty) {
+          return topLevel;
+        }
+        return _includedModuleIds(json['extension_json']);
+      }(),
       startDate: _date(json['start_date']),
       endDate: _date(json['end_date']),
       issuedAt: _date(json['issued_at']),
@@ -444,6 +452,13 @@ num? _extensionAnnualPrice(Object? extensionJson) {
       _num(pricing['annual']) ??
       _num(pricing['yearly_price']) ??
       _num(extension['annual_price']);
+}
+
+String? _extensionDescription(Object? extensionJson) {
+  final SubscriptionJsonMap extension = _map(extensionJson);
+  return _string(extension['description']) ??
+      _string(extension['marketing_description']) ??
+      _string(extension['price_notes']);
 }
 
 List<String> _stringList(Object? value) {
@@ -698,5 +713,49 @@ final class SubscriptionUpgradeContextDto {
       return value.toInt();
     }
     return int.tryParse('$value');
+  }
+}
+
+final class SubscriptionPlanDetailDto {
+  const SubscriptionPlanDetailDto(this.json);
+
+  final SubscriptionJsonMap json;
+
+  factory SubscriptionPlanDetailDto.fromResponse(Object? data) {
+    return SubscriptionPlanDetailDto(_map(data));
+  }
+
+  SubscriptionPlanDetail toEntity() {
+    final SubscriptionJsonMap stats = _map(json['stats']);
+    return SubscriptionPlanDetail(
+      plan: SubscriptionItemDto(
+        _map(json['plan']),
+        resource: SubscriptionResource.subscriptionPlans,
+      ).toEntity(),
+      stats: SubscriptionPlanDetailStats(
+        activeCount: _int(stats['active_count']) ?? 0,
+        pendingCount: _int(stats['pending_count']) ?? 0,
+        closedCount: _int(stats['closed_count']) ?? 0,
+        totalCount: _int(stats['total_count']) ?? 0,
+      ),
+      activeAccounts: _list(json['active_accounts'])
+          .map(
+            (SubscriptionJsonMap item) =>
+                SubscriptionTenantAccountDto(item).toEntity(),
+          )
+          .toList(growable: false),
+      pendingAccounts: _list(json['pending_accounts'])
+          .map(
+            (SubscriptionJsonMap item) =>
+                SubscriptionTenantAccountDto(item).toEntity(),
+          )
+          .toList(growable: false),
+      closedAccounts: _list(json['closed_accounts'])
+          .map(
+            (SubscriptionJsonMap item) =>
+                SubscriptionTenantAccountDto(item).toEntity(),
+          )
+          .toList(growable: false),
+    );
   }
 }

@@ -85,10 +85,51 @@ const resolvePlanPrices = (record) => {
   };
 };
 
+const resolvePlanDescription = (record) => {
+  const extension =
+    record?.extension_json && typeof record.extension_json === 'object'
+      ? record.extension_json
+      : {};
+  return (
+    safeString(extension.description) ||
+    safeString(extension.marketing_description) ||
+    safeString(extension.price_notes) ||
+    null
+  );
+};
+
+const resolveIncludedModuleIds = (record) => {
+  const extension =
+    record?.extension_json && typeof record.extension_json === 'object'
+      ? record.extension_json
+      : {};
+  const allowedModules =
+    extension.allowed_modules && typeof extension.allowed_modules === 'object'
+      ? extension.allowed_modules
+      : {};
+  const raw = [
+    ...(Array.isArray(allowedModules.included) ? allowedModules.included : []),
+    ...(Array.isArray(extension.included_module_ids)
+      ? extension.included_module_ids
+      : []),
+  ];
+  const seen = new Set();
+  const ids = [];
+  for (const entry of raw) {
+    const value = safeString(entry);
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    ids.push(value);
+  }
+  return ids;
+};
+
 const serializeSubscriptionPlan = (record) => {
   if (!record) return null;
 
   const prices = resolvePlanPrices(record);
+  const description = resolvePlanDescription(record);
+  const includedModuleIds = resolveIncludedModuleIds(record);
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),
@@ -97,6 +138,7 @@ const serializeSubscriptionPlan = (record) => {
     ...mapTenant(record),
     code: safeString(record.code),
     name: safeString(record.name),
+    description,
     tier_code: safeString(record.tier_code),
     price: safeNumber(record.price, 0),
     monthly_price: prices.monthly_price,
@@ -111,6 +153,7 @@ const serializeSubscriptionPlan = (record) => {
     limit_policy_json: record.limit_policy_json || null,
     add_on_eligibility_json: record.add_on_eligibility_json || null,
     extension_json: record.extension_json || null,
+    included_module_ids: includedModuleIds,
     subscription_count: safeNumber(record?._count?.subscriptions, 0),
     created_at: record.created_at || null,
     updated_at: record.updated_at || null,

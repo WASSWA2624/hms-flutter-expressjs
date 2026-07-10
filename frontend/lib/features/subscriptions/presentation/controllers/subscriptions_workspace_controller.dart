@@ -192,7 +192,51 @@ final class SubscriptionsWorkspaceController
     if (current == null) {
       return;
     }
-    _emit(current.copyWith(selectedItem: item, clearLastFailure: true));
+    _emit(
+      current.copyWith(
+        selectedItem: item,
+        clearPlanDetail: true,
+        clearLastFailure: true,
+      ),
+    );
+  }
+
+  Future<void> loadPlanDetail(String planId) async {
+    final SubscriptionsWorkspaceState? current = _currentState;
+    if (current == null || planId.trim().isEmpty) {
+      return;
+    }
+    _emit(current.copyWith(isLoadingPlanDetail: true, clearLastFailure: true));
+    final Result<SubscriptionPlanDetail> result = await _repository
+        .getPlanDetail(planId);
+    final SubscriptionsWorkspaceState? latest = _currentState;
+    if (latest == null) {
+      return;
+    }
+    result.when(
+      success: (SubscriptionPlanDetail detail) {
+        final bool sameSelection =
+            latest.selectedItem?.id == detail.plan.id ||
+            latest.selectedItem?.effectiveDisplayId ==
+                detail.plan.effectiveDisplayId;
+        _emit(
+          latest.copyWith(
+            planDetail: detail,
+            isLoadingPlanDetail: false,
+            selectedItem: sameSelection ? detail.plan : latest.selectedItem,
+          ),
+        );
+      },
+      failure: (AppFailure failure) {
+        _emit(
+          latest.copyWith(
+            isLoadingPlanDetail: false,
+            lastFailure: failure,
+            clearPlanDetail: true,
+          ),
+        );
+      },
+    );
   }
 
   Future<AppFailure?> createPlan(SubscriptionPlanDraft draft) {
@@ -206,7 +250,14 @@ final class SubscriptionsWorkspaceController
     if (selected == null) {
       return Future<AppFailure?>.value(_missingSelectionFailure());
     }
-    return _submitAction(() => _repository.updatePlan(selected.id, draft));
+    return _submitAction(() => _repository.updatePlan(selected.id, draft)).then(
+      (AppFailure? failure) async {
+        if (failure == null) {
+          await loadPlanDetail(selected.id);
+        }
+        return failure;
+      },
+    );
   }
 
   Future<AppFailure?> createSubscription(SubscriptionDraft draft) {

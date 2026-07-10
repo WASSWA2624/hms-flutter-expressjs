@@ -1068,35 +1068,370 @@ class _SubscriptionDetailPanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final SubscriptionItem? item = state.selectedItem;
     if (item == null) {
-      return const AppWorkspaceDetailPanel(
-        title: _SubscriptionsText.detailTitle,
-        child: AppStateView(
-          title: _SubscriptionsText.noSelectionTitle,
-          body: _SubscriptionsText.noSelectionBody,
-          variant: AppStateViewVariant.empty,
-        ),
+      return const AppStateView(
+        title: _SubscriptionsText.noSelectionTitle,
+        body: _SubscriptionsText.noSelectionBody,
+        variant: AppStateViewVariant.empty,
       );
     }
 
-    return AppWorkspaceDetailPanel(
-      title: _SubscriptionsText.detailTitle,
-      description: item.title,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _DetailHeader(item: item),
+    if (item.resource == SubscriptionResource.subscriptionPlans) {
+      return _PlanDetailContent(state: state, item: item);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _DetailHeader(item: item),
+        SizedBox(height: Theme.of(context).spacing.md),
+        if (canWrite) _DetailActions(item: item, state: state),
+        if (canWrite) SizedBox(height: Theme.of(context).spacing.md),
+        _DetailFields(item: item),
+        if (state.timeline.isNotEmpty) ...<Widget>[
           SizedBox(height: Theme.of(context).spacing.md),
-          if (canWrite) _DetailActions(item: item, state: state),
-          if (canWrite) SizedBox(height: Theme.of(context).spacing.md),
-          _DetailFields(item: item),
-          if (state.timeline.isNotEmpty) ...<Widget>[
-            SizedBox(height: Theme.of(context).spacing.md),
-            _TimelinePanel(timeline: state.timeline),
+          _TimelinePanel(timeline: state.timeline),
+        ],
+      ],
+    );
+  }
+}
+
+class _PlanDetailContent extends StatelessWidget {
+  const _PlanDetailContent({required this.state, required this.item});
+
+  final SubscriptionsWorkspaceState state;
+  final SubscriptionItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final SubscriptionPlanTheme planTheme = SubscriptionPlanTheme.of(
+      context,
+      item.tierCode ?? item.name ?? item.code,
+    );
+    final bool isFree = SubscriptionPlanTheme.isFreeTier(item.tierCode);
+    final SubscriptionPlanDetail? detail = state.planDetail;
+    final List<SubscriptionLookupItem> modules = state.lookups.modules;
+    final List<String> includedLabels = _includedModuleLabels(
+      item.includedModuleIds,
+      modules,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        AppContentPanel(
+          borderColor: Colors.transparent,
+          backgroundColor: planTheme.rowTint,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Icon(
+                Icons.workspace_premium_outlined,
+                size: 28,
+                color: planTheme.foreground,
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      item.name ?? item.title,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: planTheme.foreground,
+                      ),
+                    ),
+                    SizedBox(height: theme.spacing.xs),
+                    AppCopyableIdentifier(
+                      value: item.effectiveDisplayId,
+                      textStyle: theme.textTheme.bodySmall,
+                    ),
+                    if ((item.description ?? '').trim().isNotEmpty) ...<Widget>[
+                      SizedBox(height: theme.spacing.sm),
+                      Text(
+                        item.description!,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: theme.spacing.sm,
+                  vertical: theme.spacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  color: planTheme.background,
+                  borderRadius: BorderRadius.circular(theme.radius.sm),
+                  border: Border.all(color: planTheme.border),
+                ),
+                child: Text(
+                  isFree
+                      ? _SubscriptionsText.freePlan
+                      : (item.tierCode ?? item.name ?? item.title),
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: planTheme.foreground,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: theme.spacing.md),
+        AppInfoTileGrid(
+          emptyValue: _SubscriptionsText.notRecorded,
+          items: <AppInfoTileData>[
+            if (isFree)
+              AppInfoTileData(
+                label: _SubscriptionsText.pricing,
+                value: _SubscriptionsText.freePlan,
+                icon: Icons.payments_outlined,
+              )
+            else ...<AppInfoTileData>[
+              AppInfoTileData(
+                label: _SubscriptionsText.monthlyPriceUsd,
+                value: _money(context, item.resolvedMonthlyPrice, item.currency),
+                icon: Icons.payments_outlined,
+              ),
+              AppInfoTileData(
+                label: _SubscriptionsText.annualPriceUsd,
+                value: _money(context, item.resolvedAnnualPrice, item.currency),
+                icon: Icons.calendar_month_outlined,
+              ),
+            ],
+            AppInfoTileData(
+              label: _SubscriptionsText.maxUsers,
+              value: item.maxUsers?.toString(),
+              icon: Icons.group_outlined,
+            ),
+            AppInfoTileData(
+              label: _SubscriptionsText.maxFacilities,
+              value: item.maxFacilities?.toString(),
+              icon: Icons.apartment_outlined,
+            ),
+            AppInfoTileData(
+              label: _SubscriptionsText.maxStorage,
+              value: item.maxStorageMb?.toString(),
+              icon: Icons.sd_storage_outlined,
+            ),
+            AppInfoTileData(
+              label: _SubscriptionsText.updated,
+              value: _date(context, item.updatedAt),
+              icon: Icons.update_outlined,
+            ),
           ],
+        ),
+        SizedBox(height: theme.spacing.md),
+        AppSectionPanel(
+          title: _SubscriptionsText.includedModules,
+          leadingIcon: Icons.extension_outlined,
+          density: AppContentPanelDensity.compact,
+          children: <Widget>[
+            if (includedLabels.isEmpty)
+              Text(
+                _SubscriptionsText.noModulesIncluded,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              )
+            else
+              Wrap(
+                spacing: theme.spacing.xs,
+                runSpacing: theme.spacing.xs,
+                children: <Widget>[
+                  for (final String label in includedLabels)
+                    Chip(label: Text(label)),
+                ],
+              ),
+          ],
+        ),
+        SizedBox(height: theme.spacing.md),
+        if (state.isLoadingPlanDetail)
+          const AppStateView(
+            title: _SubscriptionsText.loadingTitle,
+            body: _SubscriptionsText.loadingBody,
+            variant: AppStateViewVariant.loading,
+          )
+        else ...<Widget>[
+          AppResponsiveWrap(
+            maxColumns: 3,
+            minItemWidth: 160,
+            children: <Widget>[
+              _PlanStatCard(
+                label: _SubscriptionsText.activeTenants,
+                value: (detail?.stats.activeCount ?? 0).toString(),
+                tone: AppWorkspaceStatusTone.success,
+                icon: Icons.verified_outlined,
+              ),
+              _PlanStatCard(
+                label: _SubscriptionsText.pendingApprovals,
+                value: (detail?.stats.pendingCount ?? 0).toString(),
+                tone: AppWorkspaceStatusTone.warning,
+                icon: Icons.hourglass_top_outlined,
+              ),
+              _PlanStatCard(
+                label: _SubscriptionsText.closedSubscriptions,
+                value: (detail?.stats.closedCount ?? 0).toString(),
+                tone: AppWorkspaceStatusTone.neutral,
+                icon: Icons.cancel_outlined,
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.md),
+          _PlanAccountsSection(
+            title: _SubscriptionsText.linkedTenants,
+            emptyLabel: _SubscriptionsText.noLinkedTenants,
+            accounts: detail?.activeAccounts ?? const <SubscriptionTenantAccount>[],
+          ),
+          SizedBox(height: theme.spacing.md),
+          _PlanAccountsSection(
+            title: _SubscriptionsText.pendingApprovals,
+            emptyLabel: _SubscriptionsText.noPendingApprovals,
+            accounts:
+                detail?.pendingAccounts ?? const <SubscriptionTenantAccount>[],
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _PlanStatCard extends StatelessWidget {
+  const _PlanStatCard({
+    required this.label,
+    required this.value,
+    required this.tone,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final AppWorkspaceStatusTone tone;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color accent = workspaceStatusToneAccentColor(theme, tone);
+    return AppContentPanel(
+      tone: tone,
+      density: AppContentPanelDensity.compact,
+      borderColor: Colors.transparent,
+      child: Row(
+        children: <Widget>[
+          Icon(icon, color: accent),
+          SizedBox(width: theme.spacing.sm),
+          Text(
+            value,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              color: accent,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
+}
+
+class _PlanAccountsSection extends StatelessWidget {
+  const _PlanAccountsSection({
+    required this.title,
+    required this.emptyLabel,
+    required this.accounts,
+  });
+
+  final String title;
+  final String emptyLabel;
+  final List<SubscriptionTenantAccount> accounts;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return AppSectionPanel(
+      title: title,
+      leadingIcon: Icons.business_outlined,
+      density: AppContentPanelDensity.compact,
+      children: <Widget>[
+        if (accounts.isEmpty)
+          Text(
+            emptyLabel,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          )
+        else
+          for (final SubscriptionTenantAccount account in accounts)
+            Padding(
+              padding: EdgeInsets.only(bottom: theme.spacing.sm),
+              child: AppContentPanel(
+                density: AppContentPanelDensity.compact,
+                child: Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            account.title,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          SizedBox(height: theme.spacing.xs),
+                          Text(
+                            _joinDisplay(<String?>[
+                              _statusLabel(account.status),
+                              _date(context, account.startDate),
+                              _date(context, account.endDate),
+                            ]),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    _StatusBadge(status: account.status),
+                  ],
+                ),
+              ),
+            ),
+      ],
+    );
+  }
+}
+
+List<String> _includedModuleLabels(
+  List<String> moduleIds,
+  List<SubscriptionLookupItem> modules,
+) {
+  if (moduleIds.isEmpty) {
+    return const <String>[];
+  }
+  final Map<String, String> labelsById = <String, String>{
+    for (final SubscriptionLookupItem module in modules) module.id: module.label,
+  };
+  final List<String> labels = <String>[];
+  for (final String id in moduleIds) {
+    labels.add(labelsById[id] ?? id);
+  }
+  return labels;
 }
 
 class _DetailHeader extends StatelessWidget {
@@ -1142,13 +1477,6 @@ class _DetailActions extends ConsumerWidget {
       spacing: Theme.of(context).spacing.sm,
       runSpacing: Theme.of(context).spacing.sm,
       children: <Widget>[
-        if (item.resource == SubscriptionResource.subscriptionPlans)
-          AppButton.secondary(
-            label: _SubscriptionsText.editPlan,
-            leadingIcon: Icons.edit_outlined,
-            enabled: !state.isSaving,
-            onPressed: () => _showPlanDialog(context, ref, initial: item),
-          ),
         if (item.resource == SubscriptionResource.subscriptions) ...<Widget>[
           AppButton.secondary(
             label: _SubscriptionsText.editSubscription,
@@ -1556,6 +1884,7 @@ class _PlanFormState extends State<_PlanForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _codeController;
+  late final TextEditingController _descriptionController;
   late final TextEditingController _monthlyPriceController;
   late final TextEditingController _annualPriceController;
   late final TextEditingController _usersController;
@@ -1566,12 +1895,17 @@ class _PlanFormState extends State<_PlanForm> {
   String? _tierCode;
   String _billingCycle = _BillingCycles.monthly;
 
+  bool get _isFreeTier => SubscriptionPlanTheme.isFreeTier(_tierCode);
+
   @override
   void initState() {
     super.initState();
     final SubscriptionItem? initial = widget.initial;
     _nameController = TextEditingController(text: initial?.name ?? '');
     _codeController = TextEditingController(text: initial?.code ?? '');
+    _descriptionController = TextEditingController(
+      text: initial?.description ?? '',
+    );
     _monthlyPriceController = TextEditingController(
       text: initial?.resolvedMonthlyPrice == null
           ? ''
@@ -1599,12 +1933,17 @@ class _PlanFormState extends State<_PlanForm> {
     _includedModuleIds = Set<String>.of(
       initial?.includedModuleIds ?? const <String>[],
     );
+    if (_isFreeTier) {
+      _monthlyPriceController.text = '0';
+      _annualPriceController.text = '0';
+    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _codeController.dispose();
+    _descriptionController.dispose();
     _monthlyPriceController.dispose();
     _annualPriceController.dispose();
     _usersController.dispose();
@@ -1612,6 +1951,16 @@ class _PlanFormState extends State<_PlanForm> {
     _storageController.dispose();
     _modulesController.dispose();
     super.dispose();
+  }
+
+  void _onTierChanged(String? value) {
+    setState(() {
+      _tierCode = value;
+      if (SubscriptionPlanTheme.isFreeTier(value)) {
+        _monthlyPriceController.text = '0';
+        _annualPriceController.text = '0';
+      }
+    });
   }
 
   @override
@@ -1636,17 +1985,23 @@ class _PlanFormState extends State<_PlanForm> {
             controller: _codeController,
             labelText: _SubscriptionsText.planCode,
           ),
+          AppTextField(
+            controller: _descriptionController,
+            labelText: _SubscriptionsText.planDescription,
+            maxLines: 3,
+          ),
           AppSelectField<String>(
             value: _tierCode,
             labelText: _SubscriptionsText.tier,
             options: _tierOptions(),
-            onChanged: (String? value) => setState(() => _tierCode = value),
+            onChanged: _onTierChanged,
           ),
           AppSelectField<String>(
             value: _billingCycle,
             labelText: _SubscriptionsText.defaultBillingCycle,
             isRequired: true,
             allowClear: false,
+            enabled: !_isFreeTier,
             options: _billingCycleOptions(),
             onChanged: (String? value) {
               if (value != null) {
@@ -1657,25 +2012,38 @@ class _PlanFormState extends State<_PlanForm> {
           AppTextField(
             controller: _monthlyPriceController,
             labelText: _SubscriptionsText.monthlyPriceUsd,
-            isRequired: true,
+            isRequired: !_isFreeTier,
+            enabled: !_isFreeTier,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            validator: AppValidators.pattern(
-              RegExp(r'^\d+(\.\d{1,2})?$'),
-              _SubscriptionsText.amountInvalid,
-              allowEmpty: false,
-            ),
+            validator: _isFreeTier
+                ? null
+                : AppValidators.pattern(
+                    RegExp(r'^\d+(\.\d{1,2})?$'),
+                    _SubscriptionsText.amountInvalid,
+                    allowEmpty: false,
+                  ),
           ),
           AppTextField(
             controller: _annualPriceController,
             labelText: _SubscriptionsText.annualPriceUsd,
-            isRequired: true,
+            isRequired: !_isFreeTier,
+            enabled: !_isFreeTier,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            validator: AppValidators.pattern(
-              RegExp(r'^\d+(\.\d{1,2})?$'),
-              _SubscriptionsText.amountInvalid,
-              allowEmpty: false,
-            ),
+            validator: _isFreeTier
+                ? null
+                : AppValidators.pattern(
+                    RegExp(r'^\d+(\.\d{1,2})?$'),
+                    _SubscriptionsText.amountInvalid,
+                    allowEmpty: false,
+                  ),
           ),
+          if (_isFreeTier)
+            Text(
+              _SubscriptionsText.freePlanPricingHint,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
           AppTextField(
             controller: _usersController,
             labelText: _SubscriptionsText.maxUsers,
@@ -1750,8 +2118,13 @@ class _PlanFormState extends State<_PlanForm> {
               name: _nameController.text.trim(),
               code: _emptyToNull(_codeController.text),
               tierCode: _tierCode,
-              monthlyPrice: _monthlyPriceController.text.trim(),
-              annualPrice: _annualPriceController.text.trim(),
+              description: _emptyToNull(_descriptionController.text),
+              monthlyPrice: _isFreeTier
+                  ? '0'
+                  : _monthlyPriceController.text.trim(),
+              annualPrice: _isFreeTier
+                  ? '0'
+                  : _annualPriceController.text.trim(),
               billingCycle: _billingCycle,
               maxUsers: _emptyToNull(_usersController.text),
               maxFacilities: _emptyToNull(_facilitiesController.text),
@@ -2417,14 +2790,24 @@ Future<void> _openSubscriptionDetailDialog(
   SubscriptionItem item,
   bool canWrite,
 ) async {
-  ref.read(subscriptionsWorkspaceControllerProvider.notifier).selectItem(item);
+  final controller = ref.read(subscriptionsWorkspaceControllerProvider.notifier);
+  controller.selectItem(item);
+  if (item.resource == SubscriptionResource.subscriptionPlans) {
+    unawaited(controller.loadPlanDetail(item.id));
+  }
   final l10n = context.l10n;
+  final bool isPlan = item.resource == SubscriptionResource.subscriptionPlans;
+  final String dialogTitle = isPlan
+      ? _SubscriptionsText.planDetailTitleWithName(item.name ?? item.title)
+      : _SubscriptionsText.detailTitle;
+
   await showAppDialog<void>(
     context: context,
     builder: (BuildContext dialogContext) => AppDialog(
-      title: const Text(_SubscriptionsText.detailTitle),
+      title: Text(dialogTitle),
       icon: Icon(_resourceIcon(item.resource)),
       scrollable: true,
+      pinActionsToBottom: true,
       maxWidth: 980,
       content: Consumer(
         builder: (BuildContext context, WidgetRef dialogRef, _) {
@@ -2446,8 +2829,22 @@ Future<void> _openSubscriptionDetailDialog(
         },
       ),
       actions: <Widget>[
+        if (isPlan && canWrite)
+          AppButton.secondary(
+            label: _SubscriptionsText.editPlan,
+            leadingIcon: Icons.edit_outlined,
+            onPressed: () async {
+              final SubscriptionItem? selected =
+                  _subscriptionsStateFromAsync(
+                    ref.read(subscriptionsWorkspaceControllerProvider),
+                  )?.selectedItem ??
+                  item;
+              await _showPlanDialog(dialogContext, ref, initial: selected);
+            },
+          ),
         AppButton.secondary(
           label: l10n.commonCloseActionLabel,
+          leadingIcon: Icons.close,
           onPressed: () => Navigator.of(dialogContext).maybePop(),
         ),
       ],
@@ -3780,7 +4177,19 @@ abstract final class _SubscriptionsText {
   static const String modules = 'Modules';
   static const String includedModules = 'Included modules';
   static const String includedModulesHint =
-      'Select the modules and functionalities included in this plan.';
+      'Select modules tenants on this plan can access. Role permissions still control what users can do inside each module.';
+  static const String noModulesIncluded = 'No modules included yet.';
+  static const String planDescription = 'Short description';
+  static const String freePlan = 'Free';
+  static const String freePlanPricingHint =
+      'Free plans have no monthly or annual charge.';
+  static const String pricing = 'Pricing';
+  static const String activeTenants = 'Active tenants';
+  static const String pendingApprovals = 'Pending approvals';
+  static const String linkedTenants = 'Tenants on this plan';
+  static const String noLinkedTenants = 'No active tenants on this plan yet.';
+  static const String noPendingApprovals =
+      'No pending approvals for this plan.';
   static const String recommendations = 'Recommendations';
   static const String searchLabel = 'Search subscriptions';
   static const String searchHint =
@@ -3799,6 +4208,14 @@ abstract final class _SubscriptionsText {
   static const String status = 'Status';
   static const String amountLimit = 'Amount / limit';
   static const String detailTitle = 'Subscription detail';
+  static const String planDetailTitle = 'Subscription plan details';
+  static String planDetailTitleWithName(String name) {
+    final String trimmed = name.trim();
+    if (trimmed.isEmpty) {
+      return planDetailTitle;
+    }
+    return '$planDetailTitle · $trimmed';
+  }
   static const String noSelectionTitle = 'Select a record';
   static const String noSelectionBody =
       'Choose a subscription record to review plan limits, modules, invoices, licenses, and next actions.';

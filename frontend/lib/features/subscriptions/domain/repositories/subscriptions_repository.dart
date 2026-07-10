@@ -17,6 +17,8 @@ abstract interface class SubscriptionsRepository {
 
   Future<Result<void>> updatePlan(String planId, SubscriptionPlanDraft draft);
 
+  Future<Result<SubscriptionPlanDetail>> getPlanDetail(String planId);
+
   Future<Result<void>> createSubscription(SubscriptionDraft draft);
 
   Future<Result<void>> updateSubscription(

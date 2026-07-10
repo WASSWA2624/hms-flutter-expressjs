@@ -44,7 +44,14 @@ const submitPaymentRequest = asyncHandler(async (req, res) => {
   return sendSuccess(res, 201, 'messages.subscriptions_workspace.payment_request.success', data);
 });
 
+const getPlanDetail = asyncHandler(async (req, res) => {
+  const planId = req.query.planId || req.query.plan_id || req.params.planId;
+  const data = await subscriptionsWorkspaceService.getPlanDetail(planId, req.user);
+  return sendSuccess(res, 200, 'messages.subscriptions_workspace.plan_detail.success', data);
+});
+
 module.exports = {
+  getPlanDetail,
   getReferenceData,
   getUpgradeContext,
   getWorkspace,

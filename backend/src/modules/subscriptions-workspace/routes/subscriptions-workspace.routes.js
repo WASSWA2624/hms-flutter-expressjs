@@ -9,6 +9,7 @@ const { validateRequest } = require('@middlewares/validate.middleware');
 const subscriptionsWorkspaceController = require('@controllers/subscriptions-workspace/subscriptions-workspace.controller');
 const {
   paymentRequestBodySchema,
+  planDetailQuerySchema,
   referenceDataQuerySchema,
   resolveLegacyParamsSchema,
   workspaceQuerySchema,
@@ -37,6 +38,13 @@ router.get(
   validateRequest({ query: workspaceQuerySchema }),
   authorize(ROLES.SUPER_ADMIN, 'role'),
   subscriptionsWorkspaceController.getWorkspace
+);
+
+router.get(
+  '/plan-detail',
+  validateRequest({ query: planDetailQuerySchema }),
+  authorize(ROLES.SUPER_ADMIN, 'role'),
+  subscriptionsWorkspaceController.getPlanDetail
 );
 
 router.get(

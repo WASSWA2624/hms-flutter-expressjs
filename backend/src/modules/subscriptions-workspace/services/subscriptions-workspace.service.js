@@ -719,7 +719,28 @@ const resolveLegacyRoute = async (resource, identifier, user = {}) => {
   };
 };
 
+const getPlanDetail = async (planId, user = {}) => {
+  const identifier = text(planId);
+  if (!identifier) {
+    throw new HttpError('errors.validation.required', 400);
+  }
+
+  const detail = await repository.findPlanDetail(identifier);
+  if (!detail) {
+    throw new HttpError('errors.subscription_plan.not_found', 404);
+  }
+
+  return {
+    plan: serializeSubscriptionPlan(detail.plan),
+    stats: detail.stats,
+    active_accounts: detail.active_accounts,
+    pending_accounts: detail.pending_accounts,
+    closed_accounts: detail.closed_accounts,
+  };
+};
+
 module.exports = {
+  getPlanDetail,
   getReferenceData,
   getUpgradeContext: loadUpgradeContext,
   getWorkspace,

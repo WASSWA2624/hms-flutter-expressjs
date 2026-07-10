@@ -796,10 +796,115 @@ const resolveLegacyRecord = async (resource, identifier, tenantId = '') => {
   });
 };
 
+const findPlanDetail = async (planIdentifier) => {
+  try {
+    const plan = await resolveModelRecordByIdentifier({
+      model: 'subscription_plan',
+      identifier: planIdentifier,
+      where: { deleted_at: null },
+      include: {
+        tenant: { select: tenantSelect },
+        _count: { select: { subscriptions: true } },
+      },
+    });
+    if (!plan) {
+      return null;
+    }
+
+    const subscriptions = await prisma.subscription.findMany({
+      where: {
+        deleted_at: null,
+        OR: [
+          { plan_id: plan.id },
+          { pending_plan_id: plan.id },
+        ],
+      },
+      orderBy: { updated_at: 'desc' },
+      take: 500,
+      include: {
+        tenant: { select: tenantSelect },
+        plan: { select: subscriptionPlanSelect },
+        pending_plan: { select: subscriptionPlanSelect },
+      },
+    });
+
+    const active = [];
+    const pending = [];
+    const closed = [];
+    const seenTenants = new Set();
+
+    for (const subscription of subscriptions) {
+      const tenant = subscription.tenant;
+      if (!tenant) continue;
+      const tenantKey = String(tenant.id || '');
+      const status = String(subscription.status || '').toUpperCase();
+      const changeStatus = String(subscription.change_status || '').toUpperCase();
+      const pendingForThisPlan =
+        String(subscription.pending_plan_id || '') === String(plan.id);
+
+      if (pendingForThisPlan) {
+        const key = `pending:${tenantKey}`;
+        if (!seenTenants.has(key)) {
+          seenTenants.add(key);
+          pending.push(
+            mapTenantAccount(
+              tenant,
+              {
+                ...subscription,
+                plan: subscription.pending_plan || subscription.plan,
+              },
+              changeStatus || 'PENDING'
+            )
+          );
+        }
+        continue;
+      }
+
+      if (String(subscription.plan_id || '') !== String(plan.id)) {
+        continue;
+      }
+
+      if (ACTIVE_SUBSCRIPTION_STATUSES.includes(status)) {
+        const key = `active:${tenantKey}`;
+        if (!seenTenants.has(key)) {
+          seenTenants.add(key);
+          active.push(mapTenantAccount(tenant, subscription));
+        }
+        continue;
+      }
+
+      const key = `closed:${tenantKey}`;
+      if (!seenTenants.has(key)) {
+        seenTenants.add(key);
+        closed.push(
+          mapTenantAccount(tenant, subscription, status || 'CANCELLED')
+        );
+      }
+    }
+
+    return {
+      plan,
+      stats: {
+        active_count: active.length,
+        pending_count: pending.length,
+        closed_count: closed.length,
+        total_count: active.length + pending.length + closed.length,
+      },
+      active_accounts: active,
+      pending_accounts: pending,
+      closed_accounts: closed,
+    };
+  } catch (error) {
+    if (error && error.code === 'P2025') return null;
+    throw error;
+  }
+};
+
 module.exports = {
   findItems,
   findLookups,
   findOverview,
+  findPlanDetail,
   findSummary,
   findTenantCohorts,
   findTimeline,

@@ -87,8 +87,17 @@ const resolveLegacyParamsSchema = z.object({
   id: uuidOrFriendlyIdentifierSchema,
 });
 
+const planDetailQuerySchema = z.object({
+  planId: uuidOrFriendlyIdentifierSchema.optional(),
+  plan_id: uuidOrFriendlyIdentifierSchema.optional(),
+}).refine(
+  (value) => Boolean(value.planId || value.plan_id),
+  { message: 'planId is required' }
+);
+
 module.exports = {
   paymentRequestBodySchema,
+  planDetailQuerySchema,
   referenceDataQuerySchema,
   resolveLegacyParamsSchema,
   subscriptionsPanelSchema,
