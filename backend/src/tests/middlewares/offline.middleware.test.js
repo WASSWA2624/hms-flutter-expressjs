@@ -122,6 +122,80 @@ describe('offline support middleware', () => {
     expect(secondRes.body).toBeUndefined();
   });
 
+  test('does not 304 a shrunk collection via If-Modified-Since alone', () => {
+    const middleware = offlineSupportMiddleware();
+    const sharedUpdatedAt = '2026-02-10T10:00:00.000Z';
+    const fullPayload = {
+      status: 200,
+      message: 'ok',
+      data: [
+        { id: 'active-1', updated_at: sharedUpdatedAt },
+        { id: 'deleted-1', updated_at: sharedUpdatedAt, deleted_at: '2026-02-11T10:00:00.000Z' },
+      ],
+      meta: { locale: 'en', direction: 'ltr' },
+      pagination: { page: 1, limit: 20, total: 2 },
+    };
+    const shrunkPayload = {
+      status: 200,
+      message: 'ok',
+      data: [{ id: 'active-1', updated_at: sharedUpdatedAt }],
+      meta: { locale: 'en', direction: 'ltr' },
+      pagination: { page: 1, limit: 20, total: 1 },
+    };
+
+    const firstReq = createReq({ method: 'GET', path: '/api/v1/tenants' });
+    const firstRes = createRes();
+    middleware(firstReq, firstRes, jest.fn());
+    firstRes.json(fullPayload);
+    const lastModified = firstRes.headers['Last-Modified'];
+    const staleEtag = firstRes.headers.ETag;
+
+    const secondReq = createReq({
+      method: 'GET',
+      path: '/api/v1/tenants',
+      headers: {
+        'if-none-match': staleEtag,
+        'if-modified-since': lastModified,
+      },
+    });
+    const secondRes = createRes();
+    middleware(secondReq, secondRes, jest.fn());
+    secondRes.json(shrunkPayload);
+
+    expect(secondRes.statusCode).toBe(200);
+    expect(secondRes.ended).toBe(false);
+    expect(secondRes.body.data).toHaveLength(1);
+    expect(secondRes.headers['Cache-Control']).toBe('private, no-cache');
+  });
+
+  test('does not 304 collections when only If-Modified-Since matches', () => {
+    const middleware = offlineSupportMiddleware();
+    const payload = {
+      status: 200,
+      message: 'ok',
+      data: [{ id: 't1', updated_at: '2026-02-10T10:00:00.000Z' }],
+      meta: { locale: 'en', direction: 'ltr' },
+    };
+
+    const firstReq = createReq({ method: 'GET', path: '/api/v1/tenants' });
+    const firstRes = createRes();
+    middleware(firstReq, firstRes, jest.fn());
+    firstRes.json(payload);
+    const lastModified = firstRes.headers['Last-Modified'];
+
+    const secondReq = createReq({
+      method: 'GET',
+      path: '/api/v1/tenants',
+      headers: { 'if-modified-since': lastModified },
+    });
+    const secondRes = createRes();
+    middleware(secondReq, secondRes, jest.fn());
+    secondRes.json(payload);
+
+    expect(secondRes.statusCode).toBe(200);
+    expect(secondRes.body).toEqual(payload);
+  });
+
   test('does not return 304 for auth endpoints even when If-None-Match matches', () => {
     const middleware = offlineSupportMiddleware();
     const payload = {

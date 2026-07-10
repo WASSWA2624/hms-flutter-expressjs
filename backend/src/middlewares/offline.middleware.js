@@ -13,7 +13,10 @@ const { logger } = require('@lib/logging');
 const { HttpError } = require('@lib/errors');
 const { resolveOfflinePolicy } = require('@config/offline-policies');
 
-const OFFLINE_CACHE_CONTROL = 'private, max-age=60, stale-while-revalidate=30';
+// Must revalidate on every use. `max-age` is unsafe for mutable collections:
+// deletions do not bump remaining rows' updated_at, so a fresh body can still
+// look "unchanged" to If-Modified-Since and resurrect purged rows in the UI.
+const OFFLINE_CACHE_CONTROL = 'private, no-cache';
 const MUTATION_CACHE_CONTROL = 'no-store';
 const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_IDEMPOTENCY_ENTRIES = 5000;
@@ -189,14 +192,29 @@ const getLastModifiedFromPayload = (payload) => {
 };
 
 /**
+ * Whether the JSON payload represents a collection/list response.
+ *
+ * @param {any} payload - Response payload
+ * @returns {boolean} True when payload.data is an array
+ */
+const isCollectionPayload = (payload) =>
+  Boolean(payload && typeof payload === 'object' && Array.isArray(payload.data));
+
+/**
  * Check if request validators indicate unchanged resource.
+ *
+ * RFC 9110: when If-None-Match is present and does not match, do not fall
+ * through to If-Modified-Since. Collection responses also skip
+ * If-Modified-Since entirely — list membership can change (deletes) without
+ * updating remaining rows' timestamps.
  *
  * @param {Object} req - Express request
  * @param {string} etag - Response ETag
  * @param {Date} lastModified - Response last modified date
+ * @param {{ isCollection?: boolean }} [options]
  * @returns {boolean} True if response should be 304
  */
-const shouldReturnNotModified = (req, etag, lastModified) => {
+const shouldReturnNotModified = (req, etag, lastModified, options = {}) => {
   const ifNoneMatch = req.headers?.['if-none-match'];
   if (ifNoneMatch && typeof ifNoneMatch === 'string') {
     const candidates = ifNoneMatch
@@ -207,6 +225,13 @@ const shouldReturnNotModified = (req, etag, lastModified) => {
     if (candidates.includes('*') || candidates.includes(etag)) {
       return true;
     }
+
+    // If-None-Match present but unmatched → must not use If-Modified-Since.
+    return false;
+  }
+
+  if (options.isCollection) {
+    return false;
   }
 
   const ifModifiedSince = req.headers?.['if-modified-since'];
@@ -480,7 +505,11 @@ const offlineSupportMiddleware = () => {
           res.setHeader('Last-Modified', lastModifiedDate.toUTCString());
         }
 
-        if (shouldReturnNotModified(req, String(etag), lastModifiedDate)) {
+        if (
+          shouldReturnNotModified(req, String(etag), lastModifiedDate, {
+            isCollection: isCollectionPayload(nextPayload),
+          })
+        ) {
           res.status(304);
           return {
             notModified: true,
