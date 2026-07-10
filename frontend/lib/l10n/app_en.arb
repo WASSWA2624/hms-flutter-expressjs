@@ -12,7 +12,7 @@
   "@startupLoadingTitle": {
     "description": "Title shown while startup dependencies initialize."
   },
-  "startupLoadingBody": "Preparing your workspace. This only takes a moment.",
+  "startupLoadingBody": "Preparing your workspace...",
   "@startupLoadingBody": {
     "description": "Body text shown while startup dependencies initialize."
   },
@@ -40,7 +40,7 @@
   "@workspaceNotificationsMenuLabel": {
     "description": "Label for the workspace toolbar notifications submenu that lists worklist filter shortcuts."
   },
-  "workspaceToolbarOverflowAttentionTooltip": "More actions — {count} items need attention",
+  "workspaceToolbarOverflowAttentionTooltip": "More actions — {count} need attention",
   "@workspaceToolbarOverflowAttentionTooltip": {
     "description": "Accessibility label for the workspace overflow menu when notification counts are pending.",
     "placeholders": {
@@ -53,15 +53,15 @@
   "@workspaceToolbarSectionStaffAccess": {
     "description": "Overflow menu section header for staffing and access administration actions."
   },
-  "workspaceToolbarSectionScheduling": "Scheduling & roster",
+  "workspaceToolbarSectionScheduling": "Scheduling",
   "@workspaceToolbarSectionScheduling": {
     "description": "Overflow menu section header for roster and schedule template actions."
   },
-  "workspaceToolbarSectionApprovals": "Approvals & alerts",
+  "workspaceToolbarSectionApprovals": "Approvals",
   "@workspaceToolbarSectionApprovals": {
     "description": "Overflow menu section header for notification shortcuts and approval queues."
   },
-  "workspaceToolbarSectionActivity": "Activity & audit",
+  "workspaceToolbarSectionActivity": "Activity",
   "@workspaceToolbarSectionActivity": {
     "description": "Overflow menu section header for HR activity and audit trail actions."
   },
@@ -73,7 +73,7 @@
   "@workspaceToolbarSectionFacilities": {
     "description": "Overflow menu section header for housekeeping and equipment fault actions."
   },
-  "workspaceNotificationsToolbarTooltip": "Jump directly to queues that need your attention.",
+  "workspaceNotificationsToolbarTooltip": "Open queues that need attention.",
   "@workspaceNotificationsToolbarTooltip": {
     "description": "Tooltip clarifying that notifications are badge-driven queue shortcuts."
   },
@@ -109,7 +109,7 @@
   "@icuLoadingBoardTitle": {
     "description": "Loading title for the ICU workspace."
   },
-  "icuLoadingBoardBody": "Loading intensive care patients and alert state.",
+  "icuLoadingBoardBody": "Loading ICU patients and alerts...",
   "@icuLoadingBoardBody": {
     "description": "Loading body for the ICU workspace."
   },
@@ -213,7 +213,7 @@
   "@icuDetailEmptyTitle": {
     "description": "Empty state title for the ICU detail panel."
   },
-  "icuDetailEmptyBody": "Select an ICU patient to review observations, orders, alerts, and transfer readiness.",
+  "icuDetailEmptyBody": "Select an ICU patient for observations and alerts.",
   "@icuDetailEmptyBody": {
     "description": "Empty state body for the ICU detail panel."
   },
@@ -221,7 +221,7 @@
   "@icuDetailLoadingTitle": {
     "description": "Loading title for the ICU detail panel."
   },
-  "icuDetailLoadingBody": "Loading observations, alerts, and transfer state.",
+  "icuDetailLoadingBody": "Loading observations and transfer state...",
   "@icuDetailLoadingBody": {
     "description": "Loading body for the ICU detail panel."
   },
@@ -279,7 +279,7 @@
   "@icuObservationsPanelTitle": {
     "description": "Title for the ICU observations panel."
   },
-  "icuObservationsPanelDescription": "Recent intensive observations for this ICU stay.",
+  "icuObservationsPanelDescription": "Recent intensive observations for this stay.",
   "@icuObservationsPanelDescription": {
     "description": "Description for the ICU observations panel."
   },
@@ -291,7 +291,7 @@
   "@icuVitalsTrendTitle": {
     "description": "Title for the ICU vitals trend panel."
   },
-  "icuVitalsTrendDescription": "Latest recorded vital values for the admission encounter.",
+  "icuVitalsTrendDescription": "Latest vitals for this admission.",
   "@icuVitalsTrendDescription": {
     "description": "Description for the ICU vitals trend panel."
   },
@@ -303,7 +303,7 @@
   "@icuCarePanelTitle": {
     "description": "Title for the ICU care panel."
   },
-  "icuCarePanelDescription": "Recent care notes and medication tasks linked to IPD.",
+  "icuCarePanelDescription": "Care notes and medication tasks linked to IPD.",
   "@icuCarePanelDescription": {
     "description": "Description for the ICU care panel."
   },
@@ -315,7 +315,7 @@
   "@icuTransferPanelTitle": {
     "description": "Title for the ICU transfer and readiness panel."
   },
-  "icuTransferPanelDescription": "ICU stay movement, planned discharge, and handoff state.",
+  "icuTransferPanelDescription": "Stay movement, planned discharge, and handoff.",
   "@icuTransferPanelDescription": {
     "description": "Description for the ICU transfer panel."
   },
@@ -513,7 +513,7 @@
   "@icuReadinessNoteLabel": {
     "description": "Field label for the discharge readiness note."
   },
-  "icuReadinessDescription": "This records a planned discharge readiness note and keeps the patient in the IPD discharge workflow.",
+  "icuReadinessDescription": "Records discharge readiness; patient stays in IPD discharge.",
   "@icuReadinessDescription": {
     "description": "Description for the ICU discharge readiness dialog."
   },
@@ -525,7 +525,7 @@
   "@icuStartStayTitle": {
     "description": "Title for the start ICU stay confirmation."
   },
-  "icuStartStayBody": "This opens an active ICU stay on the IPD admission so critical-care documentation can begin.",
+  "icuStartStayBody": "Opens an ICU stay on this IPD admission for critical-care notes.",
   "@icuStartStayBody": {
     "description": "Body for the start ICU stay confirmation."
   },
@@ -545,7 +545,7 @@
   "@icuEndStayTitle": {
     "description": "Title for the end ICU stay confirmation."
   },
-  "icuEndStayBody": "This ends the active ICU stay. Continue only after the receiving ward or discharge workflow is ready.",
+  "icuEndStayBody": "Ends the ICU stay. Confirm receiving ward or discharge is ready.",
   "@icuEndStayBody": {
     "description": "Body for the end ICU stay confirmation."
   },
@@ -585,7 +585,7 @@
   "@icuStepDownPromptTitle": {
     "description": "Title prompting to end the ICU stay after a step-down."
   },
-  "icuStepDownPromptBody": "The transfer is complete. End the active ICU stay now that the patient has stepped down to ward care.",
+  "icuStepDownPromptBody": "Transfer complete. End the ICU stay — patient is on the ward.",
   "@icuStepDownPromptBody": {
     "description": "Body prompting to end the ICU stay after a step-down."
   },
@@ -597,7 +597,7 @@
   "@icuBedBoardTitle": {
     "description": "Title for the ICU bed board."
   },
-  "icuBedBoardDescription": "ICU ward bed occupancy and bed operations.",
+  "icuBedBoardDescription": "ICU bed occupancy and operations.",
   "@icuBedBoardDescription": {
     "description": "Description for the ICU bed board."
   },
@@ -693,7 +693,7 @@
   "@ipdStartIcuStayAction": {
     "description": "IPD action to start an ICU stay on this admission."
   },
-  "ipdStartIcuStayBody": "This opens an active ICU stay on this admission so the ICU team can begin critical-care documentation.",
+  "ipdStartIcuStayBody": "Opens an ICU stay so critical-care documentation can begin.",
   "@ipdStartIcuStayBody": {
     "description": "Confirmation body for starting an ICU stay from IPD."
   },
@@ -713,11 +713,11 @@
   "@appImageCropTitle": {
     "description": "Title for the image crop dialog."
   },
-  "appImageCropBody": "The full image stays fixed. Drag and resize the crop box to choose what to keep, then apply.",
+  "appImageCropBody": "Drag and resize the crop box, then apply.",
   "@appImageCropBody": {
     "description": "Helper text shown in the image crop dialog when an aspect ratio is locked."
   },
-  "appImageCropFreeformBody": "The full image stays fixed. Drag and resize the crop box to any size or aspect ratio, then apply.",
+  "appImageCropFreeformBody": "Drag and resize freely to any aspect ratio, then apply.",
   "@appImageCropFreeformBody": {
     "description": "Helper text for free-form (unlocked aspect ratio) image cropping."
   },
@@ -745,7 +745,7 @@
   "@appImageCropPreviewTitle": {
     "description": "Title for the cropped-image preview step."
   },
-  "appImageCropPreviewBody": "Review the cropped image. Confirm to use it, or go back to adjust the crop.",
+  "appImageCropPreviewBody": "Confirm the crop, or go back to adjust.",
   "@appImageCropPreviewBody": {
     "description": "Helper text on the cropped-image preview step."
   },
@@ -954,7 +954,7 @@
   "@billingLoadingTitle": {
     "description": "Loading title for the billing workspace."
   },
-  "billingLoadingBody": "Fetching invoices, payments, refunds, and closeout queues.",
+  "billingLoadingBody": "Loading invoices and payment queues...",
   "@billingLoadingBody": {
     "description": "Loading body for the billing workspace."
   },
@@ -966,7 +966,7 @@
   "@billingStatusPosting": {
     "description": "Saving status label for billing workspace."
   },
-  "billingWorklistDescription": "Cashier worklist for invoices, payments, claims, and approvals.",
+  "billingWorklistDescription": "Invoices, payments, claims, and approvals.",
   "@billingWorklistDescription": {
     "description": "Description for the billing worklist panel."
   },
@@ -1098,7 +1098,7 @@
   "@billingEmptyTitle": {
     "description": "Empty state title for billing worklist."
   },
-  "billingEmptyBody": "This queue has no invoices or billing actions right now.",
+  "billingEmptyBody": "No invoices or billing actions in this queue.",
   "@billingEmptyBody": {
     "description": "Empty state body for billing worklist."
   },
@@ -1298,7 +1298,7 @@
   "@billingPrintInvoiceAction": {
     "description": "Action label for printing an invoice with the standard template."
   },
-  "billingPrintInvoiceTooltip": "Print invoice with line items and payment details",
+  "billingPrintInvoiceTooltip": "Print invoice with line items and payments",
   "@billingPrintInvoiceTooltip": {
     "description": "Tooltip for invoice print action."
   },
@@ -1354,7 +1354,7 @@
   "@billingFinalizeEncounterAction": {
     "description": "Finalize encounter billing when balances are cleared."
   },
-  "billingFinalizeEncounterBody": "All linked charges are issued and settled. Confirm financial clearance for this encounter.",
+  "billingFinalizeEncounterBody": "Linked charges are settled. Confirm financial clearance for this encounter.",
   "@billingFinalizeEncounterBody": {
     "description": "Body for finalize encounter billing confirmation."
   },
@@ -1592,9 +1592,9 @@
       }
     }
   },
-  "subscriptionHeaderExpiredLabel": "Subscription expired",
+  "subscriptionHeaderExpiredLabel": "Limited access",
   "@subscriptionHeaderExpiredLabel": {
-    "description": "Shell header label when the tenant subscription is expired or past due."
+    "description": "Shell header label when the tenant subscription is expired; access is limited, not fully cut off."
   },
   "subscriptionHeaderUpgradeLabel": "Upgrade",
   "@subscriptionHeaderUpgradeLabel": {
@@ -1629,31 +1629,39 @@
   "@subscriptionExpiredPromptTitle": {
     "description": "Title for the shell prompt when the tenant subscription has expired."
   },
-  "subscriptionExpiredPromptBody": "Your organization's subscription has expired. Renew now to restore full module access. Tap the red Subscription expired badge anytime to renew or upgrade.",
+  "subscriptionExpiredPromptBody": "Some features are limited — not fully blocked. Renew to restore full access.",
   "@subscriptionExpiredPromptBody": {
-    "description": "Body for the shell prompt when the tenant subscription has expired."
+    "description": "Body for billing users when the tenant subscription has expired."
   },
   "subscriptionExpiredPromptRenewAction": "Renew now",
   "@subscriptionExpiredPromptRenewAction": {
     "description": "Primary action on the expired-subscription prompt that opens renewal."
   },
-  "subscriptionExpiredPromptLaterAction": "Remind me later",
+  "subscriptionExpiredPromptLaterAction": "Later",
   "@subscriptionExpiredPromptLaterAction": {
     "description": "Dismiss action on the expired-subscription prompt."
   },
-  "subscriptionExpiredPromptContactAdminBody": "Access is paused until renewal. Contact a facility or tenant admin below — or platform support if none are listed.",
+  "subscriptionExpiredPromptContactAdminBody": "Some features are limited — not fully blocked. Ask an admin below to renew.",
   "@subscriptionExpiredPromptContactAdminBody": {
     "description": "Expired subscription message for users who cannot renew."
+  },
+  "subscriptionExpiredRiskTitle": "Action needed",
+  "@subscriptionExpiredRiskTitle": {
+    "description": "High-risk banner title on the expired subscription contact dialog."
+  },
+  "subscriptionReportRiskTitle": "Renewal needed",
+  "@subscriptionReportRiskTitle": {
+    "description": "High-risk banner title when subscription is expiring and staff must contact admins."
   },
   "subscriptionExpiredPromptContactAdminAction": "Got it",
   "@subscriptionExpiredPromptContactAdminAction": {
     "description": "Dismiss action for non-billing users on the expired prompt."
   },
-  "subscriptionReportAdminsDialogTitle": "Who can renew this?",
+  "subscriptionReportAdminsDialogTitle": "Who can renew?",
   "@subscriptionReportAdminsDialogTitle": {
     "description": "Title for the dialog that shows org admins to contact about subscription renewal."
   },
-  "subscriptionReportAdminsDialogBody": "Ask an admin below to renew or upgrade. Use platform support if your org contacts are missing.",
+  "subscriptionReportAdminsDialogBody": "Some features are limited. Ask an admin below to renew or upgrade.",
   "@subscriptionReportAdminsDialogBody": {
     "description": "Body for the report-to-admins dialog when subscription is expiring soon."
   },
@@ -1685,11 +1693,11 @@
   "@subscriptionReportPlatformSupportRoleLabel": {
     "description": "Role label for the platform support contact card."
   },
-  "subscriptionReportAdminsEmptyMessage": "No admin contacts are available yet. Ask your supervisor who manages subscriptions for this organization.",
+  "subscriptionReportAdminsEmptyMessage": "No admin contacts listed. Ask who manages renewals.",
   "@subscriptionReportAdminsEmptyMessage": {
     "description": "Shown when neither org admins nor platform support contacts could be loaded."
   },
-  "subscriptionUpgradeAccessDeniedMessage": "Only tenant administrators, facility administrators, super administrators, or users with subscription access can manage billing.",
+  "subscriptionUpgradeAccessDeniedMessage": "Only admins or users with subscription access can manage billing.",
   "@subscriptionUpgradeAccessDeniedMessage": {
     "description": "Shown when a user without subscription billing rights opens the upgrade dialog."
   },
@@ -1701,7 +1709,7 @@
   "@subscriptionRenewDialogTitle": {
     "description": "Title when the tenant is renewing the current subscription plan."
   },
-  "subscriptionUpgradeDialogBody": "Choose a plan and submit payment to keep full access after your trial or renewal date.",
+  "subscriptionUpgradeDialogBody": "Choose a plan and submit payment to keep full access.",
   "@subscriptionUpgradeDialogBody": {
     "description": "Body text for the subscription upgrade and payment dialog."
   },
@@ -1746,7 +1754,7 @@
   "@subscriptionUpgradePlansEmptyTitle": {
     "description": "Title when the upgrade dialog has no selectable plans."
   },
-  "subscriptionUpgradePlansEmptyMessage": "Commercial plans could not be loaded. Refresh and try again, or contact your platform administrator.",
+  "subscriptionUpgradePlansEmptyMessage": "Plans could not be loaded. Refresh or contact support.",
   "@subscriptionUpgradePlansEmptyMessage": {
     "description": "Body when the upgrade dialog has no selectable plans."
   },
@@ -1770,7 +1778,7 @@
   "@subscriptionUpgradeInvoiceEmailLabel": {
     "description": "Email field label for subscription invoice delivery."
   },
-  "subscriptionUpgradeInvoiceEmailHelper": "We will send the invoice to this email address.",
+  "subscriptionUpgradeInvoiceEmailHelper": "Invoice will be sent to this email.",
   "@subscriptionUpgradeInvoiceEmailHelper": {
     "description": "Helper text for the invoice email field."
   },
@@ -1818,7 +1826,7 @@
   "@subscriptionUpgradeAdminContactTitle": {
     "description": "Section title for platform admin contact details in the upgrade dialog."
   },
-  "subscriptionUpgradeAdminContactBody": "If your account is not activated after payment, contact our platform administrators using the details below. Support is available at any time.",
+  "subscriptionUpgradeAdminContactBody": "If access is not restored after payment, contact platform admins below.",
   "@subscriptionUpgradeAdminContactBody": {
     "description": "Helper text for platform admin contact details in the upgrade dialog."
   },
@@ -2094,7 +2102,7 @@
   "@theaterTitle": {
     "description": "Title for the theater workspace."
   },
-  "theaterDescription": "Manage daily cases, readiness, room and team allocation, anesthesia, post-op notes, and handover.",
+  "theaterDescription": "Cases, readiness, room/team, anesthesia, and post-op handover.",
   "@theaterDescription": {
     "description": "Description for the theater workspace."
   },
@@ -2102,7 +2110,7 @@
   "@theaterLoadingTitle": {
     "description": "Loading title for the theater workspace."
   },
-  "theaterLoadingBody": "Loading theater cases and clinical records.",
+  "theaterLoadingBody": "Loading theater cases...",
   "@theaterLoadingBody": {
     "description": "Loading body for the theater workspace."
   },
@@ -2254,7 +2262,7 @@
   "@theaterCasesTitle": {
     "description": "Title for theater case board."
   },
-  "theaterCasesDescription": "Select a case to review readiness, records, resources, and handover.",
+  "theaterCasesDescription": "Case readiness, records, resources, and handover.",
   "@theaterCasesDescription": {
     "description": "Description for theater case board."
   },
@@ -2353,7 +2361,7 @@
   "@theaterEmergencyCaseSelectPatientFirstHint": {
     "description": "Hint when emergency case select is disabled until patient is chosen."
   },
-  "theaterScheduleEmergencyHint": "Emergency cases require linking the active ED case so theater billing and handoff context stay connected.",
+  "theaterScheduleEmergencyHint": "Link the active ED case for billing and handoff context.",
   "@theaterScheduleEmergencyHint": {
     "description": "Helper text shown when scheduling theater cases from emergency context."
   },
@@ -2509,7 +2517,7 @@
   "@theaterScheduleCaseDialogTitle": {
     "description": "Dialog title for scheduling a theater case."
   },
-  "theaterScheduleCaseDialogBody": "Search for the patient and their active encounter, then set the schedule, team, procedures, and billing.",
+  "theaterScheduleCaseDialogBody": "Select patient and encounter, then set schedule, team, and procedures.",
   "@theaterScheduleCaseDialogBody": {
     "description": "Introductory help text for the schedule theater case dialog."
   },
@@ -2525,7 +2533,7 @@
   "@theaterScheduleBillingSection": {
     "description": "Section title for procedure billing in schedule case dialog."
   },
-  "theaterScheduleBillingSectionBody": "Add catalog procedures to build line items. Bill later sends charges to the Billing workspace.",
+  "theaterScheduleBillingSectionBody": "Add procedures for line items. Bill later sends charges to Billing.",
   "@theaterScheduleBillingSectionBody": {
     "description": "Help text for procedure billing in schedule case dialog."
   },
@@ -2735,15 +2743,15 @@
     }
   },
   "opdTitle": "OPD flow",
-  "opdDescription": "Manage arrivals, queues, staff readiness, and outpatient clinical handoffs.",
+  "opdDescription": "Arrivals, queues, and OPD clinical handoffs.",
   "opdLoadingTitle": "Loading OPD flow",
-  "opdLoadingBody": "Loading outpatient queue and encounter data.",
+  "opdLoadingBody": "Loading OPD queue and encounters...",
   "opdLiveStatus": "Live sync",
   "opdSavingStatus": "Saving",
   "opdStartWalkInAction": "Start OPD encounter",
   "opdStartEncounterAction": "Start encounter",
   "opdOpenActiveEncounterAction": "Update encounter",
-  "opdStartEncounterTooltip": "Create or continue an OPD encounter for this patient",
+  "opdStartEncounterTooltip": "Create or continue an OPD encounter",
   "opdSavedMessage": "OPD changes saved.",
   "opdArrivalsSummaryLabel": "Arrivals",
   "opdQueueSummaryLabel": "Queue",
@@ -2967,7 +2975,7 @@
   "@opdAdmissionHandoffTitle": {
     "description": "Title of the dialog confirming the OPD to IPD admission handoff."
   },
-  "opdAdmissionHandoffBody": "This outpatient visit has been admitted to inpatient care. Open the inpatient workspace to allocate a bed and continue the admission. The OPD encounter stays linked as the source visit.",
+  "opdAdmissionHandoffBody": "Admitted to IPD. Open inpatient care to assign a bed. OPD visit stays linked.",
   "@opdAdmissionHandoffBody": {
     "description": "Explanation shown when an OPD patient is admitted and can be handed off to the IPD workspace."
   },
@@ -2979,7 +2987,7 @@
   "@opdPhysiotherapyHandoffTitle": {
     "description": "Title for the dialog shown after referring a patient to physiotherapy from OPD disposition."
   },
-  "opdPhysiotherapyHandoffBody": "The patient has been referred to physiotherapy on this visit. Open the physiotherapy workspace to accept the referral and begin assessment.",
+  "opdPhysiotherapyHandoffBody": "Referred to physiotherapy. Open that workspace to accept and assess.",
   "@opdPhysiotherapyHandoffBody": {
     "description": "Body copy for the post-referral physiotherapy handoff dialog."
   },
@@ -2997,7 +3005,7 @@
   "opdArrivalsTitle": "Arrivals",
   "opdQueueBoardTitle": "Queue board",
   "opdFlowsTitle": "OPD encounters",
-  "opdTableDescription": "Track arrivals, queue status, billing state, assigned staff, and next steps.",
+  "opdTableDescription": "Arrivals, queue status, billing, and next steps.",
   "opdProviderReadinessTitle": "Staff readiness",
   "opdActivityTitle": "Recent OPD activity",
   "opdActivityDescription": "Latest visible outpatient flow changes.",
@@ -3185,10 +3193,10 @@
   "opdNewPatientModeLabel": "New patient",
   "opdSearchPatientLabel": "Search patient",
   "opdAppointmentPatientLabel": "Search appointment",
-  "opdAppointmentPatientHelper": "Select a scheduled appointment to check the patient into OPD.",
+  "opdAppointmentPatientHelper": "Select an appointment to check the patient into OPD.",
   "opdActiveEncounterCheckingLabel": "Checking for an active OPD encounter...",
   "opdActiveEncounterFoundTitle": "Active OPD encounter found",
-  "opdActiveEncounterFoundBody": "This patient already has an active OPD encounter. Update the active encounter instead of creating a duplicate.",
+  "opdActiveEncounterFoundBody": "Active OPD encounter exists. Update it instead of creating a duplicate.",
   "opdContinueEncounterAction": "Continue encounter",
   "opdCloseEncounterAction": "Close encounter",
   "opdCancelEncounterAction": "Cancel encounter",
@@ -3203,11 +3211,11 @@
   "opdEncounterCancelReasonNotesLabel": "Additional details",
   "opdEncounterCancelReasonNotesRequiredMessage": "Enter details when selecting Other.",
   "opdEncounterBillingPaidBanner": "Consultation payment is already recorded for this encounter.",
-  "opdEncounterArrivalModeLockedHelper": "Arrival mode is fixed while updating an active encounter.",
+  "opdEncounterArrivalModeLockedHelper": "Arrival mode is fixed on an active encounter.",
   "opdInactiveEncounterActionReason": "Start or update an OPD encounter first.",
   "opdSearchProviderLabel": "Search doctor",
   "opdSearchProviderHelper": "This doctor will handle the patient.",
-  "opdNoProvidersHelper": "No registered doctors were found. Check doctor setup or staff permissions.",
+  "opdNoProvidersHelper": "No doctors found. Check doctor setup or permissions.",
   "opdRegisterNewPatientLabel": "Register a new patient",
   "opdPatientIdLabel": "Patient ID",
   "opdFirstNameLabel": "First name",
@@ -4127,7 +4135,7 @@
   "@patientsTableTitle": {
     "description": "Patient registry table title."
   },
-  "patientsTableDescription": "Browse registered patients, visit context, alerts, status, and available next actions.",
+  "patientsTableDescription": "Registered patients, visit context, alerts, and actions.",
   "@patientsTableDescription": {
     "description": "Patient registry table description."
   },
@@ -4446,7 +4454,7 @@
   "@patientsEmptyTitle": {
     "description": "Patient list empty state title."
   },
-  "patientsEmptyBody": "Adjust the filters or register a patient.",
+  "patientsEmptyBody": "Adjust filters or register a patient.",
   "@patientsEmptyBody": {
     "description": "Patient list empty state body."
   },
@@ -4458,7 +4466,7 @@
   "@patientsDetailLoadingTitle": {
     "description": "Patient detail loading state title."
   },
-  "patientsDetailLoadingBody": "Loading demographics and related records.",
+  "patientsDetailLoadingBody": "Loading demographics and related records...",
   "@patientsDetailLoadingBody": {
     "description": "Patient detail loading state body."
   },
@@ -4466,7 +4474,7 @@
   "@patientsNoSelectionTitle": {
     "description": "Patient detail empty selection title."
   },
-  "patientsNoSelectionBody": "Open a patient to review demographics, contacts, clinical flags, documents, and visits.",
+  "patientsNoSelectionBody": "Open a patient for demographics and visits.",
   "@patientsNoSelectionBody": {
     "description": "Patient detail empty selection body."
   },
@@ -4574,7 +4582,7 @@
   "@patientsEmergencyRegisterTitle": {
     "description": "Emergency patient registration dialog title."
   },
-  "patientsEmergencyRegisterBody": "Create a minimal patient record now; demographics and documents can be completed after urgent care starts.",
+  "patientsEmergencyRegisterBody": "Create a minimal record now; complete demographics after urgent care.",
   "@patientsEmergencyRegisterBody": {
     "description": "Emergency patient registration dialog body."
   },
@@ -4764,35 +4772,35 @@
   "@patientsActiveWorkStatusAdmissionDischargePlanned": {
     "description": "Status badge when discharge planning is active."
   },
-  "patientsQuickAppointmentTooltip": "Schedule a new appointment for this patient.",
+  "patientsQuickAppointmentTooltip": "Schedule an appointment",
   "@patientsQuickAppointmentTooltip": {
     "description": "Tooltip for the patient quick action to schedule an appointment."
   },
-  "patientsQuickOpdCheckInTooltip": "Start a new outpatient encounter for this patient.",
+  "patientsQuickOpdCheckInTooltip": "Start a new OPD encounter",
   "@patientsQuickOpdCheckInTooltip": {
     "description": "Tooltip for the patient quick action to start an OPD encounter."
   },
-  "patientsQuickViewActiveOpdTooltip": "Continue the active outpatient encounter workflow.",
+  "patientsQuickViewActiveOpdTooltip": "Continue the active OPD encounter",
   "@patientsQuickViewActiveOpdTooltip": {
     "description": "Tooltip for the patient quick action to continue an active OPD encounter."
   },
-  "patientsQuickAdmitPatientTooltip": "Submit an inpatient admission request for this patient.",
+  "patientsQuickAdmitPatientTooltip": "Request IPD admission",
   "@patientsQuickAdmitPatientTooltip": {
     "description": "Tooltip for the patient quick action to request admission."
   },
-  "patientsQuickDischargeTooltip": "Continue discharge planning for the active admission.",
+  "patientsQuickDischargeTooltip": "Continue discharge for the active admission",
   "@patientsQuickDischargeTooltip": {
     "description": "Tooltip for the patient quick action to manage discharge."
   },
-  "patientsQuickLabOrderTooltip": "Request a new laboratory order for this patient.",
+  "patientsQuickLabOrderTooltip": "Request a lab order",
   "@patientsQuickLabOrderTooltip": {
     "description": "Tooltip for the patient quick action to request a lab order."
   },
-  "patientsQuickRadiologyOrderTooltip": "Request a new radiology imaging order for this patient.",
+  "patientsQuickRadiologyOrderTooltip": "Request an imaging order",
   "@patientsQuickRadiologyOrderTooltip": {
     "description": "Tooltip for the patient quick action to request radiology imaging."
   },
-  "patientsQuickTheaterScheduleTooltip": "Schedule a theater procedure for this patient.",
+  "patientsQuickTheaterScheduleTooltip": "Schedule a theater procedure",
   "@patientsQuickTheaterScheduleTooltip": {
     "description": "Tooltip for the patient quick action to schedule theater."
   },
@@ -4800,7 +4808,7 @@
   "@patientsQuickPhysiotherapyTooltip": {
     "description": "Tooltip for the patient quick action to request physiotherapy."
   },
-  "patientsQuickReportTooltip": "Open the printable patient summary report.",
+  "patientsQuickReportTooltip": "Open patient summary report",
   "@patientsQuickReportTooltip": {
     "description": "Tooltip for the patient quick action to open the patient report."
   },
@@ -5440,7 +5448,7 @@
   "@patientsStorageKeyAdvancedLabel": {
     "description": "Patient document advanced storage key field label."
   },
-  "patientsStorageKeyAdvancedHelper": "Upload a file instead. Only enter this when referencing an existing stored document.",
+  "patientsStorageKeyAdvancedHelper": "Prefer file upload. Use only for an existing stored document.",
   "@patientsStorageKeyAdvancedHelper": {
     "description": "Helper text for patient document storage key."
   },
@@ -5448,7 +5456,7 @@
   "@patientsDocumentUploadTitle": {
     "description": "Patient document upload panel title."
   },
-  "patientsDocumentUploadEmpty": "No file selected. PDF, JPG, and PNG files up to 10 MB are supported.",
+  "patientsDocumentUploadEmpty": "No file selected. PDF, JPG, or PNG up to 10 MB.",
   "@patientsDocumentUploadEmpty": {
     "description": "Patient document upload empty selection text."
   },
@@ -5480,7 +5488,7 @@
   "@patientsDuplicateWarningTitle": {
     "description": "Patient registration duplicate warning title."
   },
-  "patientsDuplicateWarningBody": "Review the matches before creating another patient record. Continue only when this is a different patient.",
+  "patientsDuplicateWarningBody": "Review matches before creating another record.",
   "@patientsDuplicateWarningBody": {
     "description": "Patient registration duplicate warning body."
   },
@@ -5500,7 +5508,7 @@
   "@patientsMergePreviewLoadingTitle": {
     "description": "Patient merge preview loading title."
   },
-  "patientsMergePreviewLoadingBody": "Checking which records will move to the retained patient.",
+  "patientsMergePreviewLoadingBody": "Checking records for the retained patient...",
   "@patientsMergePreviewLoadingBody": {
     "description": "Patient merge preview loading body."
   },
@@ -5554,7 +5562,7 @@
   "@patientsActivityEmptyTitle": {
     "description": "Patient registry activity empty title."
   },
-  "patientsActivityEmptyBody": "No duplicate, consent, or document alerts are visible.",
+  "patientsActivityEmptyBody": "No duplicate, consent, or document alerts.",
   "@patientsActivityEmptyBody": {
     "description": "Patient registry activity empty body."
   },
@@ -5601,7 +5609,7 @@
   "@homeReadyTitle": {
     "description": "Home page title for the HMS overview state."
   },
-  "homeReadyBody": "Coordinate patient registration, clinical care, pharmacy, billing, diagnostics, operations, and compliance from one responsive HMS shell.",
+  "homeReadyBody": "Patient care, pharmacy, billing, diagnostics, and operations in one place.",
   "@homeReadyBody": {
     "description": "Home page body for the HMS overview state."
   },
@@ -5729,7 +5737,7 @@
   "@homeManageRolesPermissionsTitle": {
     "description": "Title for the focused roles and permissions management dialog."
   },
-  "tenantFacilityDeleteTenantConfirmationBody": "Soft-delete tenant \"{name}\"? All of its facilities will also be soft-deleted. You can restore the tenant later.",
+  "tenantFacilityDeleteTenantConfirmationBody": "Soft-delete tenant \"{name}\"? Its facilities are soft-deleted too. You can restore later.",
   "@tenantFacilityDeleteTenantConfirmationBody": {
     "description": "Confirmation body when soft-deleting a tenant from management dialog.",
     "placeholders": {
@@ -5738,7 +5746,7 @@
       }
     }
   },
-  "tenantFacilityDeleteFacilityConfirmationBody": "Soft-delete facility \"{name}\"? Its data will become inaccessible in the app. You can restore it later.",
+  "tenantFacilityDeleteFacilityConfirmationBody": "Soft-delete facility \"{name}\"? Data is hidden in the app. You can restore later.",
   "@tenantFacilityDeleteFacilityConfirmationBody": {
     "description": "Confirmation body when soft-deleting a facility from management dialog.",
     "placeholders": {
@@ -5755,7 +5763,7 @@
   "@homeTrendDefaultSubtitle": {
     "description": "Default subtitle for home dashboard trend charts."
   },
-  "homeTrendEmptyMessage": "No trend data is available yet.",
+  "homeTrendEmptyMessage": "No trend data yet.",
   "@homeTrendEmptyMessage": {
     "description": "Empty state message when a home dashboard trend chart has no data."
   },
@@ -5767,7 +5775,7 @@
   "@homeDistributionDefaultSubtitle": {
     "description": "Default subtitle for home dashboard distribution charts."
   },
-  "homeDistributionEmptyMessage": "No distribution data is available yet.",
+  "homeDistributionEmptyMessage": "No distribution data yet.",
   "@homeDistributionEmptyMessage": {
     "description": "Empty state message when a home dashboard distribution chart has no data."
   },
@@ -5896,7 +5904,7 @@
   "@profileLoadingTitle": {
     "description": "Profile screen title while profile data loads."
   },
-  "profileLoadingBody": "Refreshing account, role, and permission details.",
+  "profileLoadingBody": "Refreshing account and permissions...",
   "@profileLoadingBody": {
     "description": "Profile screen body while profile data loads."
   },
@@ -6077,7 +6085,7 @@
   "@settingsReduceMotionLabel": {
     "description": "Accessibility option label for reducing motion."
   },
-  "settingsReduceMotionDescription": "Use simpler transitions and fewer animations.",
+  "settingsReduceMotionDescription": "Simpler transitions and fewer animations.",
   "@settingsReduceMotionDescription": {
     "description": "Accessibility option description for reducing motion."
   },
@@ -6177,7 +6185,7 @@
   "@tenantFacilitySetupLoadingTitle": {
     "description": "Title while tenant and facility setup loads."
   },
-  "tenantFacilitySetupLoadingBody": "Loading organization and facility configuration.",
+  "tenantFacilitySetupLoadingBody": "Loading organization and facility setup...",
   "@tenantFacilitySetupLoadingBody": {
     "description": "Body while tenant and facility setup loads."
   },
@@ -6185,7 +6193,7 @@
   "@tenantFacilityHrSetupTitle": {
     "description": "HR-scoped facility setup screen title."
   },
-  "tenantFacilityHrSetupBody": "Maintain departments and units for the current facility so staff onboarding and assignments stay accurate.",
+  "tenantFacilityHrSetupBody": "Maintain departments and units for staff onboarding and assignments.",
   "@tenantFacilityHrSetupBody": {
     "description": "HR-scoped facility setup screen body."
   },
@@ -6357,7 +6365,7 @@
   "@tenantFacilityWizardContinueAction": {
     "description": "Wizard action to open the next incomplete setup step."
   },
-  "tenantFacilityBranchesOptionalHint": "Branches are optional for single-site facilities. Skip this step when the facility acts as the only site.",
+  "tenantFacilityBranchesOptionalHint": "Optional for single-site facilities. Skip when there is only one site.",
   "@tenantFacilityBranchesOptionalHint": {
     "description": "Guidance for the optional branches setup step."
   },
@@ -6506,7 +6514,7 @@
   "@tenantFacilitySimilarTenantDialogTitle": {
     "description": "Title for similar tenant confirmation dialog."
   },
-  "tenantFacilitySimilarTenantDialogBody": "The tenant you are creating looks similar to existing organizations. Review the matches below before continuing.",
+  "tenantFacilitySimilarTenantDialogBody": "Similar organizations exist. Review matches before continuing.",
   "@tenantFacilitySimilarTenantDialogBody": {
     "description": "Body for similar tenant confirmation dialog."
   },
@@ -6579,7 +6587,7 @@
   "@tenantFacilitySimilarFacilityDialogTitle": {
     "description": "Dialog title when creating a facility similar to an existing one."
   },
-  "tenantFacilitySimilarFacilityDialogBody": "The facility you are creating looks similar to existing facilities for this tenant. Review the matches below before continuing.",
+  "tenantFacilitySimilarFacilityDialogBody": "Similar facilities exist for this tenant. Review matches before continuing.",
   "@tenantFacilitySimilarFacilityDialogBody": {
     "description": "Dialog body when creating a facility similar to an existing one."
   },
@@ -6620,7 +6628,7 @@
   "@tenantFacilityLogoLabel": {
     "description": "Facility logo upload field label."
   },
-  "tenantFacilityLogoHelper": "Upload a JPG, PNG, or WebP image (up to 5 MB). Crop freely to any size, then save.",
+  "tenantFacilityLogoHelper": "JPG, PNG, or WebP up to 5 MB. Crop, then save.",
   "@tenantFacilityLogoHelper": {
     "description": "Facility logo upload helper text."
   },
@@ -6862,7 +6870,7 @@
   "@tenantFacilitySoftDeleteStructureTitle": {
     "description": "Soft-delete facility structure confirmation dialog title."
   },
-  "tenantFacilitySoftDeleteStructureBody": "Soft-delete \"{name}\"? Related child records will also be marked deleted and hidden from operational pickers. They will remain visible here for restore.",
+  "tenantFacilitySoftDeleteStructureBody": "Soft-delete \"{name}\"? Child records are hidden from pickers; still visible here to restore.",
   "@tenantFacilitySoftDeleteStructureBody": {
     "description": "Soft-delete facility structure confirmation body.",
     "placeholders": {
@@ -6875,7 +6883,7 @@
   "@tenantFacilitySoftDeleteUserTitle": {
     "description": "Soft-delete user confirmation dialog title."
   },
-  "tenantFacilitySoftDeleteUserBody": "Soft-delete user \"{name}\"? The user will be marked deleted and hidden from operational pickers, but remain visible here for restore.",
+  "tenantFacilitySoftDeleteUserBody": "Soft-delete user \"{name}\"? Hidden from pickers; still visible here to restore.",
   "@tenantFacilitySoftDeleteUserBody": {
     "description": "Soft-delete user confirmation body.",
     "placeholders": {
@@ -7160,7 +7168,7 @@
   "@tenantFacilityLocationsSectionTitle": {
     "description": "Rooms wards and beds section title."
   },
-  "tenantFacilityLocationsSectionBody": "Use the location setup entry points after facility identity and departments are in place.",
+  "tenantFacilityLocationsSectionBody": "Set up locations after facility identity and departments.",
   "@tenantFacilityLocationsSectionBody": {
     "description": "Rooms wards and beds section body."
   },
@@ -7454,7 +7462,7 @@
       }
     }
   },
-  "authPendingVerificationBody": "This email is already registered but has not been verified. Enter the verification code sent to {email}.",
+  "authPendingVerificationBody": "Email registered but not verified. Enter the code sent to {email}.",
   "@authPendingVerificationBody": {
     "description": "Email verification page body after login is attempted with an unverified registered email.",
     "placeholders": {
@@ -7472,11 +7480,11 @@
   "@authEmailVerifiedBody": {
     "description": "Email verification success body."
   },
-  "authEmailVerifiedAwaitingApprovalBody": "Your email is verified. A platform administrator will review your registration before you can sign in.",
+  "authEmailVerifiedAwaitingApprovalBody": "Email verified. A platform admin will approve before you can sign in.",
   "@authEmailVerifiedAwaitingApprovalBody": {
     "description": "Email verification success body when platform approval is still required."
   },
-  "authAccountPendingApprovalMessage": "Your email is verified. Your account is awaiting platform approval before you can sign in.",
+  "authAccountPendingApprovalMessage": "Email verified. Awaiting platform approval before sign-in.",
   "@authAccountPendingApprovalMessage": {
     "description": "Login failure message when email is verified but platform approval is pending."
   },
@@ -7500,7 +7508,7 @@
   "@authVerificationCodeInvalidMessage": {
     "description": "Email verification code validation error."
   },
-  "authAccountPendingMessage": "This email is already registered but has not been verified. Enter the email verification code we sent to continue.",
+  "authAccountPendingMessage": "Email registered but not verified. Enter the verification code to continue.",
   "@authAccountPendingMessage": {
     "description": "Login failure message when an email account exists but has not been verified."
   },
@@ -7580,7 +7588,7 @@
   "@authInvalidCredentialsMessage": {
     "description": "Safe login failure message."
   },
-  "authAccountNotFoundMessage": "No account exists for that email or phone. Check the details or create an account.",
+  "authAccountNotFoundMessage": "No account for that email or phone. Check details or register.",
   "@authAccountNotFoundMessage": {
     "description": "Login failure message when the entered email or phone does not match an account."
   },
@@ -7612,7 +7620,7 @@
   "@authForgotPasswordTitle": {
     "description": "Forgot password page title."
   },
-  "authForgotPasswordBody": "Enter the email on your facility account. If it matches an account, we will send reset instructions.",
+  "authForgotPasswordBody": "Enter your facility account email. We send reset instructions if it matches.",
   "@authForgotPasswordBody": {
     "description": "Forgot password page body."
   },
@@ -7632,7 +7640,7 @@
   "@authForgotPasswordSubmittedTitle": {
     "description": "Title after forgot password request succeeds."
   },
-  "authForgotPasswordSubmittedBody": "If an account exists for that email, reset instructions with a secure link and a six-digit code have been sent.",
+  "authForgotPasswordSubmittedBody": "If an account exists, we sent a reset link and six-digit code.",
   "@authForgotPasswordSubmittedBody": {
     "description": "Body after forgot password request succeeds."
   },
@@ -7648,7 +7656,7 @@
   "@authResetPasswordBody": {
     "description": "Reset password page body."
   },
-  "authResetPasswordCodeModeBody": "Enter your email, the six-digit reset code from your email, and a new password.",
+  "authResetPasswordCodeModeBody": "Enter email, the six-digit code, and a new password.",
   "@authResetPasswordCodeModeBody": {
     "description": "Reset password page body when using code entry."
   },
@@ -7664,7 +7672,7 @@
   "@authResetPasswordActionLabel": {
     "description": "Reset password submit action label."
   },
-  "authResetPasswordMissingTokenMessage": "This reset link is missing or invalid. Request a new password reset from the sign-in page.",
+  "authResetPasswordMissingTokenMessage": "Reset link missing or invalid. Request a new one from sign-in.",
   "@authResetPasswordMissingTokenMessage": {
     "description": "Shown when reset password page has no token."
   },
@@ -7676,7 +7684,7 @@
   "@authResetPasswordCompletedBody": {
     "description": "Body after password reset succeeds."
   },
-  "authResetPasswordInvalidTokenMessage": "This reset link has expired or is invalid. Request a new password reset.",
+  "authResetPasswordInvalidTokenMessage": "Reset link expired or invalid. Request a new one.",
   "@authResetPasswordInvalidTokenMessage": {
     "description": "Reset password failure for invalid or expired token."
   },
@@ -7844,7 +7852,7 @@
   "@clinicalTitle": {
     "description": "Clinical workspace page title."
   },
-  "clinicalDescription": "Review clinical queues, document care, order services, prescribe, refer, admit, and complete encounters.",
+  "clinicalDescription": "Document care, order services, prescribe, refer, and admit.",
   "@clinicalDescription": {
     "description": "Clinical workspace page description."
   },
@@ -7852,7 +7860,7 @@
   "@clinicalLoadingTitle": {
     "description": "Clinical workspace loading title."
   },
-  "clinicalLoadingBody": "Loading provider worklist and encounter context.",
+  "clinicalLoadingBody": "Loading clinical worklist...",
   "@clinicalLoadingBody": {
     "description": "Clinical workspace loading body."
   },
@@ -7920,7 +7928,7 @@
   "@clinicalWorklistTitle": {
     "description": "Clinical provider worklist title."
   },
-  "clinicalWorklistDescription": "Open consultations, admissions, triage handoffs, and result-review queues.",
+  "clinicalWorklistDescription": "Consultations, admissions, triage, and result review.",
   "@clinicalWorklistDescription": {
     "description": "Clinical provider worklist description."
   },
@@ -7944,7 +7952,7 @@
   "@clinicalNoSelectionTitle": {
     "description": "Clinical no selection title."
   },
-  "clinicalNoSelectionBody": "Open a patient from the worklist to review context, document care, and place orders.",
+  "clinicalNoSelectionBody": "Open a patient to document care and place orders.",
   "@clinicalNoSelectionBody": {
     "description": "Clinical no selection body."
   },
@@ -8024,7 +8032,7 @@
   "@clinicalCatalogConfigurationTitle": {
     "description": "Title for facility clinical catalog configuration section."
   },
-  "clinicalCatalogConfigurationBody": "Choose which diagnoses, procedures, lab tests, radiology tests, and prescriptions this facility offers.",
+  "clinicalCatalogConfigurationBody": "Choose diagnoses, procedures, lab, imaging, and prescriptions for this facility.",
   "@clinicalCatalogConfigurationBody": {
     "description": "Body text for facility clinical catalog configuration section."
   },
@@ -8363,7 +8371,7 @@
   "@clinicalRadiologyCatalogSelectTitle": {
     "description": "Clinical radiology searchable catalog selector title."
   },
-  "clinicalRadiologyCatalogSelectBody": "Search and select one matching imaging test, then add it to the request list.",
+  "clinicalRadiologyCatalogSelectBody": "Select an imaging test, then add it to the request.",
   "@clinicalRadiologyCatalogSelectBody": {
     "description": "Clinical radiology searchable catalog selector body."
   },
@@ -8411,7 +8419,7 @@
   "@clinicalPrescriptionMedicineLabel": {
     "description": "Clinical prescription item title prefix."
   },
-  "clinicalPrescriptionItemDescription": "Select a drug and complete the prescription details.",
+  "clinicalPrescriptionItemDescription": "Select a drug and complete prescription details.",
   "@clinicalPrescriptionItemDescription": {
     "description": "Clinical prescription item helper text before a drug is selected."
   },
@@ -8431,7 +8439,7 @@
   "@clinicalRequestProcedureAction": {
     "description": "Clinical add procedure action label."
   },
-  "clinicalProcedureDialogHelp": "Search the procedure catalog, add one or more procedures to the review list, then save them together.",
+  "clinicalProcedureDialogHelp": "Search the catalog, add procedures, then save together.",
   "@clinicalProcedureDialogHelp": {
     "description": "Clinical procedure dialog helper text."
   },
@@ -8656,7 +8664,7 @@
   "@clinicalAdmissionNoBedsForRoomMessage": {
     "description": "Clinical admission empty-state message when no beds are available for the selected room."
   },
-  "clinicalAdmissionNoWardsHelper": "No wards with available beds match the selected facility.",
+  "clinicalAdmissionNoWardsHelper": "No wards with available beds for this facility.",
   "@clinicalAdmissionNoWardsHelper": {
     "description": "Helper shown when the ward field is inactive because no wards have available beds."
   },
@@ -8692,7 +8700,7 @@
   "@ipdTitle": {
     "description": "Inpatient workspace page title."
   },
-  "ipdDescription": "Manage admission queues, beds, transfers, ward rounds, nursing handoffs, medication records, and discharge readiness.",
+  "ipdDescription": "Admissions, beds, transfers, rounds, and discharge readiness.",
   "@ipdDescription": {
     "description": "Inpatient workspace page description."
   },
@@ -8700,7 +8708,7 @@
   "@ipdLoadingTitle": {
     "description": "Inpatient workspace loading title."
   },
-  "ipdLoadingBody": "Loading admissions, beds, and ward context.",
+  "ipdLoadingBody": "Loading admissions, beds, and wards...",
   "@ipdLoadingBody": {
     "description": "Inpatient workspace loading body."
   },
@@ -8764,7 +8772,7 @@
   "@ipdBoardTitle": {
     "description": "IPD admissions board title."
   },
-  "ipdBoardDescription": "Track waiting admissions, bedded patients, transfers, ward activity, and discharge plans.",
+  "ipdBoardDescription": "Waiting admissions, bedded patients, transfers, and discharge.",
   "@ipdBoardDescription": {
     "description": "IPD admissions board description."
   },
@@ -8792,7 +8800,7 @@
   "@ipdAdmissionDetailTitle": {
     "description": "IPD admission detail panel title."
   },
-  "ipdAdmissionDetailDescription": "Review bed status, transfers, ward rounds, medication records, nursing notes, and discharge state.",
+  "ipdAdmissionDetailDescription": "Bed, transfers, rounds, meds, nursing notes, and discharge.",
   "@ipdAdmissionDetailDescription": {
     "description": "IPD admission detail panel description."
   },
@@ -8800,7 +8808,7 @@
   "@ipdNoSelectionTitle": {
     "description": "IPD no selection title."
   },
-  "ipdNoSelectionBody": "Open an admission from the board to manage inpatient care.",
+  "ipdNoSelectionBody": "Open an admission to manage IPD care.",
   "@ipdNoSelectionBody": {
     "description": "IPD no selection body."
   },
@@ -8836,7 +8844,7 @@
   "@ipdApproveAdmissionAction": {
     "description": "IPD action label to approve a pending admission request."
   },
-  "ipdApproveAdmissionBody": "Approve this admission request? The patient will move to inpatient care and you can assign a bed next.",
+  "ipdApproveAdmissionBody": "Approve admission? Patient moves to IPD; assign a bed next.",
   "@ipdApproveAdmissionBody": {
     "description": "Confirmation body for approving a pending admission request."
   },
@@ -9173,7 +9181,7 @@
   "@ipdBedBoardTitle": {
     "description": "Title of the IPD bed board panel."
   },
-  "ipdBedBoardDescription": "Live ward bed occupancy and bed operations.",
+  "ipdBedBoardDescription": "Live ward bed occupancy and operations.",
   "@ipdBedBoardDescription": {
     "description": "Description of the IPD bed board panel."
   },
@@ -9189,7 +9197,7 @@
   "@ipdBedBoardEmptyTitle": {
     "description": "Empty state title for the bed board."
   },
-  "ipdBedBoardEmptyBody": "Adjust the ward or status filter to see more beds.",
+  "ipdBedBoardEmptyBody": "Adjust ward or status filters to see beds.",
   "@ipdBedBoardEmptyBody": {
     "description": "Empty state body for the bed board."
   },
@@ -9593,7 +9601,7 @@
   "@nursingTitle": {
     "description": "Nursing workspace page title."
   },
-  "nursingDescription": "Monitor ward queues, observations, medication administration, handovers, transfers, and escalation.",
+  "nursingDescription": "Ward queues, observations, MAR, handovers, and escalation.",
   "@nursingDescription": {
     "description": "Nursing workspace page description."
   },
@@ -9601,7 +9609,7 @@
   "@nursingLoadingTitle": {
     "description": "Nursing workspace loading title."
   },
-  "nursingLoadingBody": "Loading ward patients, observations, medications, and handovers.",
+  "nursingLoadingBody": "Loading ward patients and handovers...",
   "@nursingLoadingBody": {
     "description": "Nursing workspace loading body."
   },
@@ -9697,7 +9705,7 @@
   "@nursingWorklistTitle": {
     "description": "Nursing ward worklist panel title."
   },
-  "nursingWorklistDescription": "Patients needing observations, medication, handover, transfer, or discharge coordination.",
+  "nursingWorklistDescription": "Observations, medication, handover, transfer, or discharge.",
   "@nursingWorklistDescription": {
     "description": "Nursing ward worklist panel description."
   },
@@ -9713,7 +9721,7 @@
   "@nursingNoSelectionTitle": {
     "description": "Nursing detail empty state title."
   },
-  "nursingNoSelectionBody": "Open a patient from the worklist to review observations, medications, handovers, and ward activity.",
+  "nursingNoSelectionBody": "Open a patient for observations, MAR, and handovers.",
   "@nursingNoSelectionBody": {
     "description": "Nursing detail empty state body."
   },
@@ -9909,7 +9917,7 @@
   "@nursingConfirmMedicationLabel": {
     "description": "Nursing medication administration confirmation checkbox label."
   },
-  "nursingConfirmMedicationSubtitle": "Verify the patient, medication, dose, route, and time before saving.",
+  "nursingConfirmMedicationSubtitle": "Verify patient, medication, dose, route, and time.",
   "@nursingConfirmMedicationSubtitle": {
     "description": "Nursing medication administration confirmation checkbox helper text."
   },
@@ -10081,7 +10089,7 @@
   "@nursingWardAdmissionChecklistTitle": {
     "description": "Localized text for nursingWardAdmissionChecklistTitle."
   },
-  "nursingWardAdmissionChecklistDescription": "Checks tied to bed location, admission handover, observations, care plan, medication, and discharge readiness.",
+  "nursingWardAdmissionChecklistDescription": "Bed, handover, observations, care plan, meds, and discharge.",
   "@nursingWardAdmissionChecklistDescription": {
     "description": "Localized text for nursingWardAdmissionChecklistDescription."
   },
@@ -10261,7 +10269,7 @@
   "@nursingDischargeClearanceTitle": {
     "description": "Dialog title for nursing discharge clearance."
   },
-  "nursingDischargeClearanceDescription": "Complete ward checks and patient education before IPD finalizes discharge.",
+  "nursingDischargeClearanceDescription": "Ward checks and patient education before discharge.",
   "@nursingDischargeClearanceDescription": {
     "description": "Dialog description for nursing discharge clearance."
   },
@@ -10297,7 +10305,7 @@
   "@nursingShiftContextTitle": {
     "description": "Localized text for nursingShiftContextTitle."
   },
-  "nursingShiftContextDescription": "Current roster and handover items stay visible without opening another module.",
+  "nursingShiftContextDescription": "Roster and handover items for this shift.",
   "@nursingShiftContextDescription": {
     "description": "Localized text for nursingShiftContextDescription."
   },
@@ -10325,7 +10333,7 @@
   "@dischargeWorkspaceTitle": {
     "description": "Discharge workspace page title."
   },
-  "dischargeWorkspaceDescription": "Coordinate discharge plans, clearances, medicines, final billing, documents, and bed release.",
+  "dischargeWorkspaceDescription": "Plans, clearances, meds, billing, documents, and bed release.",
   "@dischargeWorkspaceDescription": {
     "description": "Discharge workspace page description."
   },
@@ -10401,7 +10409,7 @@
   "@dischargeWorklistTitle": {
     "description": "Discharge queue panel title."
   },
-  "dischargeWorklistDescription": "Patients with a discharge plan, pending clearance, or recent completion.",
+  "dischargeWorklistDescription": "Planned, pending clearance, or recently completed discharges.",
   "@dischargeWorklistDescription": {
     "description": "Discharge queue panel description."
   },
@@ -10432,7 +10440,7 @@
   "@dischargeEmptyQueueTitle": {
     "description": "Empty state title for discharge queue."
   },
-  "dischargeEmptyQueueBody": "Adjust the status filter or search term to find discharge work.",
+  "dischargeEmptyQueueBody": "Adjust filters to find discharge work.",
   "@dischargeEmptyQueueBody": {
     "description": "Empty state body for discharge queue."
   },
@@ -10464,7 +10472,7 @@
   "@dischargeDetailLoadingTitle": {
     "description": "Discharge detail loading title."
   },
-  "dischargeDetailLoadingBody": "Loading patient context, clearance, medicines, billing, and documents.",
+  "dischargeDetailLoadingBody": "Loading clearance, meds, and billing...",
   "@dischargeDetailLoadingBody": {
     "description": "Discharge detail loading body."
   },
@@ -10472,7 +10480,7 @@
   "@dischargeNoSelectionTitle": {
     "description": "Discharge detail empty selection title."
   },
-  "dischargeNoSelectionBody": "Choose a patient from the worklist to coordinate discharge.",
+  "dischargeNoSelectionBody": "Select a patient to coordinate discharge.",
   "@dischargeNoSelectionBody": {
     "description": "Discharge detail empty selection body."
   },
@@ -10588,7 +10596,7 @@
   "@dischargeEmptySummaryTitle": {
     "description": "Empty state title for missing discharge summary."
   },
-  "dischargeEmptySummaryBody": "Start a discharge plan to prepare the printable summary.",
+  "dischargeEmptySummaryBody": "Start a discharge plan for the summary.",
   "@dischargeEmptySummaryBody": {
     "description": "Empty state body for missing discharge summary."
   },
@@ -10640,7 +10648,7 @@
   "@dischargeBackendGapsTitle": {
     "description": "Discharge unavailable workflows section title."
   },
-  "dischargeBackendGapsBody": "These workflow actions are unavailable until system support is enabled for this facility.",
+  "dischargeBackendGapsBody": "These actions are unavailable until enabled for this facility.",
   "@dischargeBackendGapsBody": {
     "description": "Discharge unavailable workflows empty body."
   },
@@ -10652,7 +10660,7 @@
   "@dischargeGapChecklistTitle": {
     "description": "Discharge unavailable workflow title for checklist persistence."
   },
-  "dischargeGapChecklistBody": "Individual doctor, nursing, pharmacy, billing, document, and exit checklist decisions are not available in this workflow yet.",
+  "dischargeGapChecklistBody": "Per-role checklist decisions are not available in this workflow yet.",
   "@dischargeGapChecklistBody": {
     "description": "Discharge unavailable workflow body for checklist persistence."
   },
@@ -10668,7 +10676,7 @@
   "@dischargeGapDocumentsTitle": {
     "description": "Discharge unavailable workflow title for document readiness."
   },
-  "dischargeGapDocumentsBody": "Discharge documents can be generated from the summary. Handover readiness is not available yet.",
+  "dischargeGapDocumentsBody": "Documents can be generated. Handover readiness is not available yet.",
   "@dischargeGapDocumentsBody": {
     "description": "Discharge unavailable workflow body for document readiness."
   },
@@ -10692,7 +10700,7 @@
   "@dischargeSummaryFieldLabel": {
     "description": "Discharge summary text field label."
   },
-  "dischargeSummaryHelperText": "Include diagnosis, treatment, medicines, advice, follow-up, warning signs, and signature context.",
+  "dischargeSummaryHelperText": "Include diagnosis, treatment, meds, advice, follow-up, and warnings.",
   "@dischargeSummaryHelperText": {
     "description": "Discharge summary field helper text."
   },
@@ -10796,7 +10804,7 @@
   "@dischargeCompleteDialogTitle": {
     "description": "Complete discharge dialog title."
   },
-  "dischargeCompleteDialogBody": "Confirm the patient exit only after required clinical, nursing, pharmacy, billing, and document checks are complete.",
+  "dischargeCompleteDialogBody": "Confirm exit after clinical, nursing, pharmacy, billing, and document checks.",
   "@dischargeCompleteDialogBody": {
     "description": "Complete discharge dialog body."
   },
@@ -10936,7 +10944,7 @@
   "@dischargeLoadingTitle": {
     "description": "Discharge workspace loading title."
   },
-  "dischargeLoadingBody": "Loading discharge queue and reference data.",
+  "dischargeLoadingBody": "Loading discharge queue...",
   "@dischargeLoadingBody": {
     "description": "Discharge workspace loading body."
   },
@@ -10952,7 +10960,7 @@
   "@radiologyTitle": {
     "description": "Localized text for radiologyTitle."
   },
-  "radiologyDescription": "Manage imaging requests, modality worklists, study capture, PACS links, reporting, and release.",
+  "radiologyDescription": "Imaging requests, studies, PACS, reporting, and release.",
   "@radiologyDescription": {
     "description": "Localized text for radiologyDescription."
   },
@@ -10960,7 +10968,7 @@
   "@radiologyLoadingTitle": {
     "description": "Localized text for radiologyLoadingTitle."
   },
-  "radiologyLoadingBody": "Loading imaging orders, reports, studies, and reference data.",
+  "radiologyLoadingBody": "Loading imaging orders and reports...",
   "@radiologyLoadingBody": {
     "description": "Localized text for radiologyLoadingBody."
   },
@@ -11064,7 +11072,7 @@
   "@radiologyWorklistTitle": {
     "description": "Localized text for radiologyWorklistTitle."
   },
-  "radiologyWorklistDescription": "System imaging orders with modality workflow and report status.",
+  "radiologyWorklistDescription": "Imaging orders by modality and report status.",
   "@radiologyWorklistDescription": {
     "description": "Localized text for radiologyWorklistDescription."
   },
@@ -11142,7 +11150,7 @@
   "@radiologyNoSelectionTitle": {
     "description": "Localized text for radiologyNoSelectionTitle."
   },
-  "radiologyNoSelectionBody": "Choose an imaging request to view study, report, and release details.",
+  "radiologyNoSelectionBody": "Select an imaging request for study and report.",
   "@radiologyNoSelectionBody": {
     "description": "Localized text for radiologyNoSelectionBody."
   },
@@ -11270,7 +11278,7 @@
   "@radiologyLateralityOblique": {
     "description": "Radiology oblique view laterality label."
   },
-  "clinicalRadiologyBodyRegionPickerHint": "Select a body region to filter the imaging catalog.",
+  "clinicalRadiologyBodyRegionPickerHint": "Select a body region to filter imaging tests.",
   "@clinicalRadiologyBodyRegionPickerHint": {
     "description": "Helper text for the radiology body region chip picker."
   },
@@ -11414,7 +11422,7 @@
   "@radiologyDoctorReviewTitle": {
     "description": "Localized text for radiologyDoctorReviewTitle."
   },
-  "radiologyDoctorReviewReleasedBody": "The final radiology report is ready for the requesting clinician or doctor to review.",
+  "radiologyDoctorReviewReleasedBody": "Final report ready for the requesting clinician.",
   "@radiologyDoctorReviewReleasedBody": {
     "description": "Localized text for radiologyDoctorReviewReleasedBody."
   },
@@ -11722,7 +11730,7 @@
   "@pharmacyLoadingTitle": {
     "description": "Pharmacy workspace loading title."
   },
-  "pharmacyLoadingBody": "Loading pharmacy orders, dispense state, and stock visibility.",
+  "pharmacyLoadingBody": "Loading pharmacy orders and stock...",
   "@pharmacyLoadingBody": {
     "description": "Pharmacy workspace loading body."
   },
@@ -11730,7 +11738,7 @@
   "@pharmacyTitle": {
     "description": "Pharmacy workspace title."
   },
-  "pharmacyDescription": "Manage prescriptions, dispense handoff, returns, and drug stock visibility from one queue.",
+  "pharmacyDescription": "Prescriptions, dispense, returns, and stock visibility.",
   "@pharmacyDescription": {
     "description": "Pharmacy workspace header description."
   },
@@ -11778,7 +11786,7 @@
   "@pharmacyQueuePanelTitle": {
     "description": "Pharmacy order queue panel title."
   },
-  "pharmacyQueuePanelDescription": "System pharmacy orders with dispense and return actions.",
+  "pharmacyQueuePanelDescription": "Pharmacy orders with dispense and return actions.",
   "@pharmacyQueuePanelDescription": {
     "description": "Pharmacy order queue panel description."
   },
@@ -11818,7 +11826,7 @@
   "@pharmacyDetailLoadingTitle": {
     "description": "Pharmacy prescription detail loading title."
   },
-  "pharmacyDetailLoadingBody": "Loading medicines, dispense history, and workflow actions.",
+  "pharmacyDetailLoadingBody": "Loading medicines and dispense history...",
   "@pharmacyDetailLoadingBody": {
     "description": "Pharmacy prescription detail loading body."
   },
@@ -11830,7 +11838,7 @@
   "@pharmacyNoSelectionTitle": {
     "description": "Pharmacy detail empty title."
   },
-  "pharmacyNoSelectionBody": "Select an order to review medicines, stock mapping, billing gate visibility, and dispense history.",
+  "pharmacyNoSelectionBody": "Select an order to review meds and dispense.",
   "@pharmacyNoSelectionBody": {
     "description": "Pharmacy detail empty body."
   },
@@ -11886,7 +11894,7 @@
   "@pharmacyMedicationPanelTitle": {
     "description": "Pharmacy medication panel title."
   },
-  "pharmacyMedicationPanelDescription": "Drug, dose, route, frequency, duration, quantity, instructions, and dispense state.",
+  "pharmacyMedicationPanelDescription": "Drug, dose, route, frequency, quantity, and status.",
   "@pharmacyMedicationPanelDescription": {
     "description": "Pharmacy medication panel description."
   },
@@ -11978,7 +11986,7 @@
   "@pharmacyTimelinePanelTitle": {
     "description": "Pharmacy timeline panel title."
   },
-  "pharmacyTimelinePanelDescription": "Order placement, prepare, attest, dispense, and return events from the workflow.",
+  "pharmacyTimelinePanelDescription": "Prepare, attest, dispense, and return events.",
   "@pharmacyTimelinePanelDescription": {
     "description": "Pharmacy timeline panel description."
   },
@@ -11990,7 +11998,7 @@
   "@pharmacyDrugPanelTitle": {
     "description": "Pharmacy drug and stock panel title."
   },
-  "pharmacyDrugPanelDescription": "Search configured drugs and review aggregate stock visibility.",
+  "pharmacyDrugPanelDescription": "Configured drugs and aggregate stock.",
   "@pharmacyDrugPanelDescription": {
     "description": "Pharmacy drug and stock panel description."
   },
@@ -12187,15 +12195,15 @@
   "@pharmacyExpiryAlertLeadLabel": {
     "description": "Pharmacy field for how early to alert before batch expiry."
   },
-  "pharmacyExpiryAlertLeadHelper": "Alerts appear when a batch is within this window of its expiry date.",
+  "pharmacyExpiryAlertLeadHelper": "Alert when a batch is within this window of expiry.",
   "@pharmacyExpiryAlertLeadHelper": {
     "description": "Helper text for pharmacy expiry alert lead field."
   },
-  "pharmacyReorderLevelHelper": "Alerts fire when on-hand quantity falls at or below this value.",
+  "pharmacyReorderLevelHelper": "Alert when on-hand quantity is at or below this level.",
   "@pharmacyReorderLevelHelper": {
     "description": "Helper text for pharmacy reorder threshold field."
   },
-  "pharmacyReorderLevelHelperWithUnit": "Enter the threshold in the selected inventory unit. Alerts fire when on-hand quantity falls at or below this value.",
+  "pharmacyReorderLevelHelperWithUnit": "Threshold in the selected unit. Alerts at or below this level.",
   "@pharmacyReorderLevelHelperWithUnit": {
     "description": "Helper text for pharmacy reorder threshold when inventory unit is selected."
   },
@@ -12272,7 +12280,7 @@
   "@pharmacyStoragePanelTitle": {
     "description": "Pharmacy storage layout panel title."
   },
-  "pharmacyStoragePanelDescription": "Maintain storage rooms and shelf codes for locating medication stock.",
+  "pharmacyStoragePanelDescription": "Storage rooms and shelf codes for medication stock.",
   "@pharmacyStoragePanelDescription": {
     "description": "Pharmacy storage layout panel description."
   },
@@ -12304,7 +12312,7 @@
   "@pharmacyDeleteStorageRoomDialogTitle": {
     "description": "Pharmacy delete storage room confirmation title."
   },
-  "pharmacyDeleteStorageRoomDialogBody": "Remove this storage room and all its shelves? Drugs stored here will lose this location.",
+  "pharmacyDeleteStorageRoomDialogBody": "Remove this storage room and shelves? Drugs will lose this location.",
   "@pharmacyDeleteStorageRoomDialogBody": {
     "description": "Pharmacy delete storage room confirmation body."
   },
@@ -12348,7 +12356,7 @@
   "@pharmacyDrugStorageSectionTitle": {
     "description": "Pharmacy add drug dialog storage section title."
   },
-  "pharmacyDrugStorageSectionHelper": "Optional—helps staff find this drug on the floor.",
+  "pharmacyDrugStorageSectionHelper": "Optional — helps staff locate this drug.",
   "@pharmacyDrugStorageSectionHelper": {
     "description": "Pharmacy add drug dialog storage section helper."
   },
@@ -12380,7 +12388,7 @@
   "@pharmacyInventoryPanelTitle": {
     "description": "Pharmacy inventory panel title."
   },
-  "pharmacyInventoryPanelDescription": "Review on-hand quantities and post controlled adjustments.",
+  "pharmacyInventoryPanelDescription": "On-hand quantities and controlled adjustments.",
   "@pharmacyInventoryPanelDescription": {
     "description": "Pharmacy inventory panel description."
   },
@@ -12832,7 +12840,7 @@
   "@claimsWorkspaceTitle": {
     "description": "Localized text for claimsWorkspaceTitle."
   },
-  "claimsWorkspaceDescription": "Manage authorizations, payer responses, claim submission, resubmission, and invoice follow-up.",
+  "claimsWorkspaceDescription": "Authorizations, submissions, payer responses, and invoices.",
   "@claimsWorkspaceDescription": {
     "description": "Localized text for claimsWorkspaceDescription."
   },
@@ -12848,7 +12856,7 @@
   "@claimsLoadingTitle": {
     "description": "Localized text for claimsLoadingTitle."
   },
-  "claimsLoadingBody": "Fetching authorization and claim queues.",
+  "claimsLoadingBody": "Loading authorization and claim queues...",
   "@claimsLoadingBody": {
     "description": "Localized text for claimsLoadingBody."
   },
@@ -12908,7 +12916,7 @@
   "@claimsWorklistTitle": {
     "description": "Localized text for claimsWorklistTitle."
   },
-  "claimsWorklistDescription": "Review pre-authorizations and claim records backed by billing data.",
+  "claimsWorklistDescription": "Pre-authorizations and claims linked to billing.",
   "@claimsWorklistDescription": {
     "description": "Localized text for claimsWorklistDescription."
   },
@@ -12938,7 +12946,7 @@
   "@claimsEmptyQueueTitle": {
     "description": "Localized text for claimsEmptyQueueTitle."
   },
-  "claimsEmptyQueueBody": "No authorization or claim records match the current queue.",
+  "claimsEmptyQueueBody": "No authorizations or claims in this queue.",
   "@claimsEmptyQueueBody": {
     "description": "Localized text for claimsEmptyQueueBody."
   },
@@ -12985,7 +12993,7 @@
   "@claimsDetailLoadingTitle": {
     "description": "Localized text for claimsDetailLoadingTitle."
   },
-  "claimsDetailLoadingBody": "Fetching payer, invoice, and coverage context.",
+  "claimsDetailLoadingBody": "Loading payer and coverage context...",
   "@claimsDetailLoadingBody": {
     "description": "Localized text for claimsDetailLoadingBody."
   },
@@ -12993,7 +13001,7 @@
   "@claimsNoSelectionTitle": {
     "description": "Localized text for claimsNoSelectionTitle."
   },
-  "claimsNoSelectionBody": "Choose a row to review coverage, billing impact, and next actions.",
+  "claimsNoSelectionBody": "Select a row for coverage and next actions.",
   "@claimsNoSelectionBody": {
     "description": "Localized text for claimsNoSelectionBody."
   },
@@ -13053,7 +13061,7 @@
   "@claimsPatientBalanceLabel": {
     "description": "Localized text for claimsPatientBalanceLabel."
   },
-  "claimsBillingInvoiceUnavailableBody": "Invoice details are not available, so the patient balance cannot be confirmed here.",
+  "claimsBillingInvoiceUnavailableBody": "Invoice details unavailable; patient balance cannot be confirmed here.",
   "@claimsBillingInvoiceUnavailableBody": {
     "description": "Localized text for claimsBillingInvoiceUnavailableBody."
   },
@@ -13061,7 +13069,7 @@
   "@claimsBillingAuthorizedBody": {
     "description": "Localized text for claimsBillingAuthorizedBody."
   },
-  "claimsBillingPaidBody": "Claim is paid or closed. Billing can use the latest invoice status for follow-up.",
+  "claimsBillingPaidBody": "Claim paid or closed. Use latest invoice status for follow-up.",
   "@claimsBillingPaidBody": {
     "description": "Localized text for claimsBillingPaidBody."
   },
@@ -13101,7 +13109,7 @@
   "@claimsTimelineTitle": {
     "description": "Localized text for claimsTimelineTitle."
   },
-  "claimsTimelineDescription": "Authorization, submission, and response timestamps from the claims workflow.",
+  "claimsTimelineDescription": "Authorization, submission, and response timestamps.",
   "@claimsTimelineDescription": {
     "description": "Localized text for claimsTimelineDescription."
   },
@@ -13125,7 +13133,7 @@
   "@claimsBackendGapTitle": {
     "description": "Localized text for claimsBackendGapTitle."
   },
-  "claimsBackendGapDescription": "These items are unavailable in the current claims workflow.",
+  "claimsBackendGapDescription": "Unavailable in the current claims workflow.",
   "@claimsBackendGapDescription": {
     "description": "Localized text for claimsBackendGapDescription."
   },
@@ -13197,7 +13205,7 @@
   "@claimsPrepareClaimUnavailableTitle": {
     "description": "Localized text for claimsPrepareClaimUnavailableTitle."
   },
-  "claimsPrepareClaimUnavailableBody": "A coverage plan and invoice are required before a claim can be prepared.",
+  "claimsPrepareClaimUnavailableBody": "Coverage plan and invoice are required before preparing a claim.",
   "@claimsPrepareClaimUnavailableBody": {
     "description": "Localized text for claimsPrepareClaimUnavailableBody."
   },
@@ -13281,7 +13289,7 @@
   "@claimsInsuranceAuthorizationTitle": {
     "description": "Insurance authorization panel title for IPD and encounter contexts."
   },
-  "claimsInsuranceAuthorizationEmpty": "No authorization on file. Request pre-authorization before high-cost orders or elective admission.",
+  "claimsInsuranceAuthorizationEmpty": "No authorization on file. Request pre-auth before high-cost orders or elective admission.",
   "@claimsInsuranceAuthorizationEmpty": {
     "description": "Empty state when no pre-authorization is linked."
   },
@@ -13457,7 +13465,7 @@
   "@labTitle": {
     "description": "Localized text for labTitle."
   },
-  "labDescription": "Manage lab requests, result entry, backend interpretation, verification, reference ranges, reports, and clinician handoff.",
+  "labDescription": "Lab requests, results, verification, ranges, and reports.",
   "@labDescription": {
     "description": "Localized text for labDescription."
   },
@@ -13465,7 +13473,7 @@
   "@labLoadingTitle": {
     "description": "Localized text for labLoadingTitle."
   },
-  "labLoadingBody": "Loading lab queues, catalog configuration, results, and QC logs.",
+  "labLoadingBody": "Loading lab queues and results...",
   "@labLoadingBody": {
     "description": "Localized text for labLoadingBody."
   },
@@ -13561,7 +13569,7 @@
   "@labWorklistTitle": {
     "description": "Localized text for labWorklistTitle."
   },
-  "labWorklistDescription": "Actionable lab orders with requested tests, result entry state, verification state, and report readiness.",
+  "labWorklistDescription": "Orders awaiting entry, verification, or report release.",
   "@labWorklistDescription": {
     "description": "Localized text for labWorklistDescription."
   },
@@ -13643,7 +13651,7 @@
   "@labDetailLoadingTitle": {
     "description": "Localized text for labDetailLoadingTitle."
   },
-  "labDetailLoadingBody": "Loading order details, ordered tests, results, timeline, and available actions.",
+  "labDetailLoadingBody": "Loading order details and results...",
   "@labDetailLoadingBody": {
     "description": "Localized text for labDetailLoadingBody."
   },
@@ -13719,7 +13727,7 @@
   "@labResultEntryRequiredMessage": {
     "description": "Inline validation message when a lab result row is missing a required value."
   },
-  "labBatchValidationSummaryMessage": "{count, plural, =1{1 selected test needs attention before this action can continue.} other{{count} selected tests need attention before this action can continue.}}",
+  "labBatchValidationSummaryMessage": "{count, plural, =1{1 selected test needs attention before continuing.} other{{count} selected tests need attention before continuing.}}",
   "@labBatchValidationSummaryMessage": {
     "description": "Summary shown when batch lab result actions fail validation.",
     "placeholders": {
@@ -13762,19 +13770,19 @@
       }
     }
   },
-  "labBatchInvalidTransitionMessage": "Some selected tests cannot be verified yet. Enter and submit results for the highlighted tests first, or remove rejected tests from the selection.",
+  "labBatchInvalidTransitionMessage": "Some tests cannot be verified yet. Submit results first, or remove rejected tests.",
   "@labBatchInvalidTransitionMessage": {
     "description": "Shown when lab workflow transition fails during batch verify or submit."
   },
-  "labBatchItemNotFoundMessage": "One or more selected tests are no longer available. Refresh the order and try again.",
+  "labBatchItemNotFoundMessage": "Selected tests are no longer available. Refresh and try again.",
   "@labBatchItemNotFoundMessage": {
     "description": "Shown when a selected lab test cannot be resolved during batch actions."
   },
-  "labBatchOrderNotSelectedMessage": "The lab order could not be found. Close this dialog, reopen the order, and try again.",
+  "labBatchOrderNotSelectedMessage": "Lab order not found. Close, reopen the order, and try again.",
   "@labBatchOrderNotSelectedMessage": {
     "description": "Shown when batch lab actions cannot resolve the selected order workflow."
   },
-  "labApplyingResultChangesMessage": "Updating results…",
+  "labApplyingResultChangesMessage": "Updating results...",
   "@labApplyingResultChangesMessage": {
     "description": "Inline status shown while lab result entry saves and refreshes affected rows."
   },
@@ -13933,7 +13941,7 @@
   "@labRemoveAllDraftsDialogTitle": {
     "description": "Title for bulk remove draft lab results confirmation."
   },
-  "labRemoveAllDraftsDialogBody": "This will remove all saved or entered draft results that have not been verified.",
+  "labRemoveAllDraftsDialogBody": "Remove all unverified draft results?",
   "@labRemoveAllDraftsDialogBody": {
     "description": "Body for bulk remove draft lab results confirmation."
   },
@@ -13965,7 +13973,7 @@
   "@labNoSelectionTitle": {
     "description": "Localized text for labNoSelectionTitle."
   },
-  "labNoSelectionBody": "Choose a lab order from the queue to enter, verify, and report results.",
+  "labNoSelectionBody": "Select a lab order to enter, verify, or report.",
   "@labNoSelectionBody": {
     "description": "Localized text for labNoSelectionBody."
   },
@@ -14101,7 +14109,7 @@
   "@labEncounterIdLabel": {
     "description": "Localized text for labEncounterIdLabel."
   },
-  "labOrderContextDialogBody": "Search and select an existing patient. Encounter and existing order context are optional where available.",
+  "labOrderContextDialogBody": "Select a patient. Encounter and existing order are optional.",
   "@labOrderContextDialogBody": {
     "description": "Body text for the lab order context selection dialog."
   },
@@ -14429,7 +14437,7 @@
   "@labGapVerificationTitle": {
     "description": "Localized text for labGapVerificationTitle."
   },
-  "labGapVerificationBody": "Order item results can be released. A separate verified-before-release state is not available.",
+  "labGapVerificationBody": "Results can be released. Separate verified-before-release is not available.",
   "@labGapVerificationBody": {
     "description": "Localized text for labGapVerificationBody."
   },
@@ -14437,7 +14445,7 @@
   "@labGapReportGenerationTitle": {
     "description": "Localized text for labGapReportGenerationTitle."
   },
-  "labGapReportGenerationBody": "The shared report preview is available. A lab-specific generated document is not available yet.",
+  "labGapReportGenerationBody": "Shared report preview available. Lab-specific document not yet.",
   "@labGapReportGenerationBody": {
     "description": "Localized text for labGapReportGenerationBody."
   },
@@ -14457,7 +14465,7 @@
   "@operationsLoadingTitle": {
     "description": "Loading title for the operations workspace."
   },
-  "operationsLoadingBody": "Loading maintenance requests, assets, and service logs.",
+  "operationsLoadingBody": "Loading maintenance requests...",
   "@operationsLoadingBody": {
     "description": "Loading body for the operations workspace."
   },
@@ -14509,7 +14517,7 @@
   "@operationsQueueTitle": {
     "description": "Title for the operations maintenance queue."
   },
-  "operationsQueueDescription": "Track facility repairs, assets, safety notes, and readiness work.",
+  "operationsQueueDescription": "Facility repairs, assets, safety, and readiness.",
   "@operationsQueueDescription": {
     "description": "Description for the operations maintenance queue."
   },
@@ -14600,7 +14608,7 @@
   "@operationsNoSelectionTitle": {
     "description": "Empty detail title when no operations request is selected."
   },
-  "operationsNoSelectionBody": "Choose a queue row to review assignments, service logs, and readiness notes.",
+  "operationsNoSelectionBody": "Select a request for assignment and service logs.",
   "@operationsNoSelectionBody": {
     "description": "Empty detail body when no operations request is selected."
   },
@@ -14923,7 +14931,7 @@
   "@biomedicalLoadingTitle": {
     "description": "Loading title for the biomedical workspace."
   },
-  "biomedicalLoadingBody": "Loading equipment registry, work orders, and compliance records.",
+  "biomedicalLoadingBody": "Loading equipment and work orders...",
   "@biomedicalLoadingBody": {
     "description": "Loading body for the biomedical workspace."
   },
@@ -14971,7 +14979,7 @@
   "@biomedicalAssetListTitle": {
     "description": "Title for the biomedical equipment list."
   },
-  "biomedicalAssetListDescription": "Search equipment, schedules, work orders, downtime, recalls, and lifecycle records.",
+  "biomedicalAssetListDescription": "Equipment, schedules, work orders, downtime, and recalls.",
   "@biomedicalAssetListDescription": {
     "description": "Description for the biomedical equipment list."
   },
@@ -15078,7 +15086,7 @@
   "@biomedicalNoSelectionTitle": {
     "description": "Empty title when no biomedical record is selected."
   },
-  "biomedicalNoSelectionBody": "Choose equipment or a related record to review readiness, work orders, compliance, and lifecycle actions.",
+  "biomedicalNoSelectionBody": "Select equipment to review work orders and status.",
   "@biomedicalNoSelectionBody": {
     "description": "Empty body when no biomedical record is selected."
   },
@@ -15487,7 +15495,7 @@
   "@integrationsLoadingTitle": {
     "description": "Localized text for integrationsLoadingTitle."
   },
-  "integrationsLoadingBody": "Preparing integrations, API keys, webhooks, and logs.",
+  "integrationsLoadingBody": "Loading integrations and logs...",
   "@integrationsLoadingBody": {
     "description": "Localized text for integrationsLoadingBody."
   },
@@ -15547,7 +15555,7 @@
   "@integrationsWorklistTitle": {
     "description": "Localized text for integrationsWorklistTitle."
   },
-  "integrationsWorklistDescription": "Review integrations, API keys, webhooks, sanitized logs, and interoperability readiness.",
+  "integrationsWorklistDescription": "Integrations, API keys, webhooks, and logs.",
   "@integrationsWorklistDescription": {
     "description": "Localized text for integrationsWorklistDescription."
   },
@@ -15598,7 +15606,7 @@
   "@integrationsEmptyTitle": {
     "description": "Localized text for integrationsEmptyTitle."
   },
-  "integrationsEmptyBody": "Create an integration, API key, or webhook to populate this workspace.",
+  "integrationsEmptyBody": "Create an integration, API key, or webhook.",
   "@integrationsEmptyBody": {
     "description": "Localized text for integrationsEmptyBody."
   },
@@ -15646,7 +15654,7 @@
   "@integrationsNoSelectionTitle": {
     "description": "Localized text for integrationsNoSelectionTitle."
   },
-  "integrationsNoSelectionBody": "Choose a row to review configuration, keys, webhooks, logs, and available actions.",
+  "integrationsNoSelectionBody": "Select a row for config, keys, and logs.",
   "@integrationsNoSelectionBody": {
     "description": "Localized text for integrationsNoSelectionBody."
   },
@@ -15706,7 +15714,7 @@
   "@integrationsRotationGapTitle": {
     "description": "Localized text for integrationsRotationGapTitle."
   },
-  "integrationsRotationGapBody": "Create a replacement key, update downstream systems, then revoke the old key.",
+  "integrationsRotationGapBody": "Create a new key, update systems, then revoke the old key.",
   "@integrationsRotationGapBody": {
     "description": "Localized text for integrationsRotationGapBody."
   },
@@ -15738,7 +15746,7 @@
   "@integrationsConfigurationMaskedBody": {
     "description": "Localized text for integrationsConfigurationMaskedBody."
   },
-  "integrationsConfigurationEmptyBody": "No configuration values are available for this integration.",
+  "integrationsConfigurationEmptyBody": "No configuration values for this integration.",
   "@integrationsConfigurationEmptyBody": {
     "description": "Localized text for integrationsConfigurationEmptyBody."
   },
@@ -15798,11 +15806,11 @@
   "@integrationsConfigFieldLabel": {
     "description": "Localized text for integrationsConfigFieldLabel."
   },
-  "integrationsConfigCreateHelper": "Enter one key=value setting per line. Sensitive keys are accepted but are not shown again.",
+  "integrationsConfigCreateHelper": "One key=value per line. Sensitive keys are not shown again.",
   "@integrationsConfigCreateHelper": {
     "description": "Localized text for integrationsConfigCreateHelper."
   },
-  "integrationsConfigUpdateHelper": "Enter only settings to change. Existing sensitive values are not shown here.",
+  "integrationsConfigUpdateHelper": "Enter only settings to change. Sensitive values stay hidden.",
   "@integrationsConfigUpdateHelper": {
     "description": "Localized text for integrationsConfigUpdateHelper."
   },
@@ -16231,7 +16239,7 @@
   "@integrationsInteropReadinessTitle": {
     "description": "Localized text for integrationsInteropReadinessTitle."
   },
-  "integrationsInteropReadinessGapBody": "No dedicated interoperability readiness signal is available. Use integration status and sanitized logs.",
+  "integrationsInteropReadinessGapBody": "No dedicated readiness signal. Use integration status and logs.",
   "@integrationsInteropReadinessGapBody": {
     "description": "Localized text for integrationsInteropReadinessGapBody."
   },
@@ -16247,7 +16255,7 @@
   "@reportsLoadingTitle": {
     "description": "Loading title for the reports workspace."
   },
-  "reportsLoadingBody": "Fetching report definitions, runs, schedules, dashboards, and audit evidence.",
+  "reportsLoadingBody": "Loading reports, schedules, and dashboards...",
   "@reportsLoadingBody": {
     "description": "Loading body for the reports workspace."
   },
@@ -16395,11 +16403,11 @@
   "@reportsPanelProcessing": {
     "description": "Reports workspace data processing logs panel label."
   },
-  "reportsWorklistDescription": "Search, filter, preview, run, schedule, print, and export report records.",
+  "reportsWorklistDescription": "Search, run, schedule, print, and export reports.",
   "@reportsWorklistDescription": {
     "description": "Description for the report worklist panel."
   },
-  "reportsComplianceDescription": "Search and review audit, PHI access, and data processing logs within permitted scope.",
+  "reportsComplianceDescription": "Audit, PHI access, and data-processing logs.",
   "@reportsComplianceDescription": {
     "description": "Description for compliance log worklists."
   },
@@ -16407,7 +16415,7 @@
   "@reportsSchedulesTitle": {
     "description": "Title for report schedule list."
   },
-  "reportsSchedulesDescription": "Saved schedules refresh independently from report runs.",
+  "reportsSchedulesDescription": "Saved schedules refresh independently of runs.",
   "@reportsSchedulesDescription": {
     "description": "Description for report schedule list."
   },
@@ -16447,11 +16455,11 @@
   "@reportsNoSelectionTitle": {
     "description": "No selection title in reports workspace."
   },
-  "reportsNoSelectionBody": "Choose a report definition, run, widget, KPI, event, or schedule to preview generated details.",
+  "reportsNoSelectionBody": "Select a report, run, KPI, or schedule.",
   "@reportsNoSelectionBody": {
     "description": "No selection body in reports workspace."
   },
-  "reportsNoComplianceSelectionBody": "Choose an audit, PHI access, or processing log to review evidence details.",
+  "reportsNoComplianceSelectionBody": "Select an audit, PHI access, or processing log.",
   "@reportsNoComplianceSelectionBody": {
     "description": "No selection body for compliance detail."
   },
@@ -16574,7 +16582,7 @@
   "@reportsTimelineTitle": {
     "description": "Title for recent report activity panel."
   },
-  "reportsTimelineDescription": "Latest report runs, schedules, KPI snapshots, and analytics events.",
+  "reportsTimelineDescription": "Recent runs, schedules, KPIs, and analytics events.",
   "@reportsTimelineDescription": {
     "description": "Description for recent report activity panel."
   },
@@ -16634,7 +16642,7 @@
   "@reportsCancelRunDialogTitle": {
     "description": "Dialog title for canceling a report run."
   },
-  "reportsCancelRunDialogBody": "Cancel this queued or processing report run? The run row will refresh after the system confirms the change.",
+  "reportsCancelRunDialogBody": "Cancel this queued or processing report run?",
   "@reportsCancelRunDialogBody": {
     "description": "Dialog body for canceling a report run."
   },
@@ -16686,7 +16694,7 @@
   "@communicationsLoadingTitle": {
     "description": "Loading title for the communications workspace."
   },
-  "communicationsLoadingBody": "Loading notifications, conversations, delivery state, and templates.",
+  "communicationsLoadingBody": "Loading notifications and threads...",
   "@communicationsLoadingBody": {
     "description": "Loading body for the communications workspace."
   },
@@ -16746,7 +16754,7 @@
   "@communicationsTemplatesSummaryLabel": {
     "description": "Summary card label for communication templates."
   },
-  "communicationsListDescription": "Find alerts, threads, delivery state, and message templates.",
+  "communicationsListDescription": "Alerts, threads, delivery state, and templates.",
   "@communicationsListDescription": {
     "description": "Description for the communications worklist."
   },
@@ -17314,7 +17322,7 @@
   "@housekeepingLoadingTitle": {
     "description": "Localized text for housekeepingLoadingTitle."
   },
-  "housekeepingLoadingBody": "Preparing cleaning tasks, schedules, bed turnover, and readiness.",
+  "housekeepingLoadingBody": "Loading cleaning tasks and schedules...",
   "@housekeepingLoadingBody": {
     "description": "Localized text for housekeepingLoadingBody."
   },
@@ -17366,7 +17374,7 @@
   "@housekeepingAssetsSummaryLabel": {
     "description": "Localized text for housekeepingAssetsSummaryLabel."
   },
-  "housekeepingWorklistDescription": "Track cleaning tasks, schedules, bed turnover, and maintenance handoffs.",
+  "housekeepingWorklistDescription": "Cleaning, schedules, bed turnover, and maintenance.",
   "@housekeepingWorklistDescription": {
     "description": "Localized text for housekeepingWorklistDescription."
   },
@@ -17425,7 +17433,7 @@
   "@housekeepingEmptyQueueTitle": {
     "description": "Localized text for housekeepingEmptyQueueTitle."
   },
-  "housekeepingEmptyQueueBody": "No tasks, schedules, or maintenance handoffs match the current filters.",
+  "housekeepingEmptyQueueBody": "No tasks match the current filters.",
   "@housekeepingEmptyQueueBody": {
     "description": "Localized text for housekeepingEmptyQueueBody."
   },
@@ -17457,7 +17465,7 @@
   "@housekeepingNoSelectionTitle": {
     "description": "Localized text for housekeepingNoSelectionTitle."
   },
-  "housekeepingNoSelectionBody": "Choose a task, schedule, or maintenance handoff to review readiness and available actions.",
+  "housekeepingNoSelectionBody": "Select a task or schedule to review actions.",
   "@housekeepingNoSelectionBody": {
     "description": "Localized text for housekeepingNoSelectionBody."
   },
@@ -17529,7 +17537,7 @@
   "@housekeepingMarkReadyAction": {
     "description": "Localized text for housekeepingMarkReadyAction."
   },
-  "housekeepingBackendGapTooltip": "This workflow is not available yet.",
+  "housekeepingBackendGapTooltip": "Workflow not available yet",
   "@housekeepingBackendGapTooltip": {
     "description": "Localized text for housekeepingBackendGapTooltip."
   },
@@ -17901,7 +17909,7 @@
   "@physiotherapyLoadingTitle": {
     "description": "Localized text for physiotherapyLoadingTitle."
   },
-  "physiotherapyLoadingBody": "Preparing referrals, sessions, care plans, notes, and follow-ups.",
+  "physiotherapyLoadingBody": "Loading referrals and sessions...",
   "@physiotherapyLoadingBody": {
     "description": "Localized text for physiotherapyLoadingBody."
   },
@@ -17945,7 +17953,7 @@
   "@physiotherapyWorklistTitle": {
     "description": "Localized text for physiotherapyWorklistTitle."
   },
-  "physiotherapyWorklistDescription": "Referrals, therapy sessions, plans, notes, and follow-up work from available clinical records.",
+  "physiotherapyWorklistDescription": "Referrals, sessions, plans, notes, and follow-up.",
   "@physiotherapyWorklistDescription": {
     "description": "Localized text for physiotherapyWorklistDescription."
   },
@@ -18093,7 +18101,7 @@
   "@physiotherapyDetailLoadingTitle": {
     "description": "Localized text for physiotherapyDetailLoadingTitle."
   },
-  "physiotherapyDetailLoadingBody": "Fetching session history, plan, notes, and follow-up details.",
+  "physiotherapyDetailLoadingBody": "Loading session, plan, and notes...",
   "@physiotherapyDetailLoadingBody": {
     "description": "Localized text for physiotherapyDetailLoadingBody."
   },
@@ -18101,7 +18109,7 @@
   "@physiotherapyNoSelectionTitle": {
     "description": "Localized text for physiotherapyNoSelectionTitle."
   },
-  "physiotherapyNoSelectionBody": "Choose a referral or session to review assessment, plan, attendance, and follow-up actions.",
+  "physiotherapyNoSelectionBody": "Select a referral or session to continue.",
   "@physiotherapyNoSelectionBody": {
     "description": "Localized text for physiotherapyNoSelectionBody."
   },
@@ -18177,7 +18185,7 @@
   "@physiotherapyBackendGapsPanelTitle": {
     "description": "Localized text for physiotherapyBackendGapsPanelTitle."
   },
-  "physiotherapyBackendGapBody": "This workspace uses available shared clinical records and lists unavailable dedicated physiotherapy workflows here.",
+  "physiotherapyBackendGapBody": "Uses shared clinical records. Dedicated physio workflows are listed as unavailable.",
   "@physiotherapyBackendGapBody": {
     "description": "Localized text for physiotherapyBackendGapBody."
   },
@@ -18421,7 +18429,7 @@
   "@physiotherapyMissingValueLabel": {
     "description": "Localized text for physiotherapyMissingValueLabel."
   },
-  "physiotherapyBackendGapStatusEndpoint": "Dedicated physiotherapy episode and therapy status are not available. Status is derived from procedures, care plans, appointments, and follow-ups.",
+  "physiotherapyBackendGapStatusEndpoint": "Episode status unavailable. Derived from procedures, plans, and follow-ups.",
   "@physiotherapyBackendGapStatusEndpoint": {
     "description": "Localized text for physiotherapyBackendGapStatusEndpoint."
   },
@@ -18473,7 +18481,7 @@
   "@mortuaryLoadErrorTitle": {
     "description": "Title shown when the mortuary workspace cannot load."
   },
-  "mortuaryLoadErrorBody": "The mortuary workspace could not be loaded. Try again or contact an administrator if the issue continues.",
+  "mortuaryLoadErrorBody": "Mortuary workspace could not load. Try again or contact an admin.",
   "@mortuaryLoadErrorBody": {
     "description": "Body shown when the mortuary workspace cannot load."
   },
@@ -18481,7 +18489,7 @@
   "@mortuaryLoadingTitle": {
     "description": "Title shown while loading the mortuary workspace."
   },
-  "mortuaryLoadingBody": "Retrieving cases, storage, custody, release, and billing information.",
+  "mortuaryLoadingBody": "Loading cases, storage, and release...",
   "@mortuaryLoadingBody": {
     "description": "Body shown while loading the mortuary workspace."
   },
@@ -18529,7 +18537,7 @@
   "@mortuaryConfirmReleaseAction": {
     "description": "Action label for confirming release."
   },
-  "mortuaryActionsUnavailableTooltip": "This action is not available yet.",
+  "mortuaryActionsUnavailableTooltip": "Action not available yet",
   "@mortuaryActionsUnavailableTooltip": {
     "description": "Tooltip for mortuary actions that are not available yet."
   },
@@ -18541,7 +18549,7 @@
   "@mortuaryWorklistEmptyTitle": {
     "description": "Empty state title for the mortuary worklist."
   },
-  "mortuaryWorklistEmptyBody": "Adjust the filters or search terms to view matching mortuary records.",
+  "mortuaryWorklistEmptyBody": "Adjust filters to view matching records.",
   "@mortuaryWorklistEmptyBody": {
     "description": "Empty state body for the mortuary worklist."
   },
@@ -18804,7 +18812,7 @@
   "@mortuaryNoSelectionTitle": {
     "description": "Empty state title when no mortuary case is selected."
   },
-  "mortuaryNoSelectionBody": "Choose a record from the worklist to review identity, storage, custody, release, billing, and documents.",
+  "mortuaryNoSelectionBody": "Select a case for identity, storage, and release.",
   "@mortuaryNoSelectionBody": {
     "description": "Empty state body when no mortuary case is selected."
   },
@@ -18844,7 +18852,7 @@
   "@mortuaryActionGapTitle": {
     "description": "Title for unsupported mortuary action notice."
   },
-  "mortuaryActionGapBody": "Mortuary lookup data is available. Action buttons remain disabled until the workflow is enabled for this facility.",
+  "mortuaryActionGapBody": "Lookups available. Actions disabled until this workflow is enabled.",
   "@mortuaryActionGapBody": {
     "description": "Body for unsupported mortuary action notice."
   },
@@ -18988,7 +18996,7 @@
   "@mortuaryNoBillingBody": {
     "description": "Empty body for mortuary billing events."
   },
-  "mortuaryNoDocumentsBody": "Generated intake, custody, release, and billing documents are available from the print action when case data is selected.",
+  "mortuaryNoDocumentsBody": "Intake, custody, release, and billing docs are available from Print.",
   "@mortuaryNoDocumentsBody": {
     "description": "Body text for the mortuary documents section."
   },
@@ -19052,7 +19060,7 @@
   "@roomsBedsLoadingTitle": {
     "description": "Title shown while loading the rooms and beds workspace."
   },
-  "roomsBedsLoadingBody": "Retrieving wards, rooms, beds, assignments, and facility context.",
+  "roomsBedsLoadingBody": "Loading wards, rooms, and beds...",
   "@roomsBedsLoadingBody": {
     "description": "Body shown while loading the rooms and beds workspace."
   },
@@ -19072,7 +19080,7 @@
   "@roomsBedsBackendGapsTitle": {
     "description": "Title for the rooms and beds unavailable workflow notice."
   },
-  "roomsBedsBackendGapsBody": "Cleaning, maintenance, block, isolation, and detailed readiness states are not available for this facility. Current actions use available ward, room, bed, bed assignment, and IPD flow workflows only.",
+  "roomsBedsBackendGapsBody": "Cleaning, block, isolation, and full readiness states are limited for this facility.",
   "@roomsBedsBackendGapsBody": {
     "description": "Body for the rooms and beds unavailable workflow notice."
   },
@@ -19148,7 +19156,7 @@
   "@roomsBedsBoardTitle": {
     "description": "Title for the rooms and beds board panel."
   },
-  "roomsBedsBoardDescription": "Track availability, occupancy, reservations, and bed readiness by facility location.",
+  "roomsBedsBoardDescription": "Availability, occupancy, reservations, and readiness.",
   "@roomsBedsBoardDescription": {
     "description": "Description for the rooms and beds board panel."
   },
@@ -19227,7 +19235,7 @@
   "@roomsBedsEmptyTitle": {
     "description": "Empty state title for rooms and beds."
   },
-  "roomsBedsEmptyBody": "Adjust the filters or add beds from facility setup to start using the operational board.",
+  "roomsBedsEmptyBody": "Adjust filters or add beds in facility setup.",
   "@roomsBedsEmptyBody": {
     "description": "Empty state body for rooms and beds."
   },
@@ -19340,7 +19348,7 @@
   "@roomsBedsTransferDialogTitle": {
     "description": "Dialog title for requesting a bed transfer."
   },
-  "roomsBedsTransferDialogBody": "Choose the destination ward. Bed selection is completed by the IPD transfer workflow after approval.",
+  "roomsBedsTransferDialogBody": "Choose destination ward. Bed assignment follows in the IPD transfer workflow.",
   "@roomsBedsTransferDialogBody": {
     "description": "Body text for the transfer request dialog."
   },
@@ -19398,7 +19406,7 @@
       }
     }
   },
-  "hrActivityDescription": "Audit-style feed of recent HR updates, roster publishes, and shift changes.",
+  "hrActivityDescription": "Recent HR updates, roster publishes, and shift changes.",
   "@hrActivityDescription": {
     "description": "Human resources workspace text for hrActivityDescription."
   },
@@ -19466,7 +19474,7 @@
   "@hrStaffOnboardingRolesSectionTitle": {
     "description": "Section title for role assignment during staff onboarding."
   },
-  "hrStaffOnboardingCompensationEditHint": "Update compensation for this staff member. New staff can set pay later from staff detail.",
+  "hrStaffOnboardingCompensationEditHint": "Update pay. New staff can set compensation later from staff detail.",
   "@hrStaffOnboardingCompensationEditHint": {
     "description": "Helper text for compensation section when editing an existing staff profile."
   },
@@ -19646,7 +19654,7 @@
   "@hrRemoveScheduleSlotAction": {
     "description": "Shared weekly schedule editor action to remove a time slot."
   },
-  "hrDuplicateScheduleToAction": "Duplicate to…",
+  "hrDuplicateScheduleToAction": "Duplicate to...",
   "@hrDuplicateScheduleToAction": {
     "description": "Shared weekly schedule editor action to copy slots to other days."
   },
@@ -19654,7 +19662,7 @@
   "@hrScheduleDuplicateToDialogTitle": {
     "description": "Title for the shared weekly schedule duplicate-to dialog."
   },
-  "hrScheduleDuplicateToDialogDescription": "Replace the selected days with {dayName}'s time slots.",
+  "hrScheduleDuplicateToDialogDescription": "Replace selected days with {dayName}'s slots.",
   "@hrScheduleDuplicateToDialogDescription": {
     "description": "Explains that duplicating replaces target day slots in the shared weekly schedule editor.",
     "placeholders": {
@@ -19699,7 +19707,7 @@
   "@hrAvailabilityCopyFromTemplateLabel": {
     "description": "Label for the template picker when copying availability from a schedule template."
   },
-  "hrAvailabilityDuplicateToAction": "Duplicate to…",
+  "hrAvailabilityDuplicateToAction": "Duplicate to...",
   "@hrAvailabilityDuplicateToAction": {
     "description": "Action to copy one day's time slots to other days of the week."
   },
@@ -19707,7 +19715,7 @@
   "@hrAvailabilityDuplicateToDialogTitle": {
     "description": "Title for the dialog that selects target days when duplicating availability slots."
   },
-  "hrAvailabilityDuplicateToDialogDescription": "Replace the selected days with {dayName}'s time slots.",
+  "hrAvailabilityDuplicateToDialogDescription": "Replace selected days with {dayName}'s slots.",
   "@hrAvailabilityDuplicateToDialogDescription": {
     "description": "Explains that duplicating replaces target day slots.",
     "placeholders": {
@@ -19841,7 +19849,7 @@
   "@hrLeaveHalfDayLabel": {
     "description": "Human resources workspace text for hrLeaveHalfDayLabel."
   },
-  "hrLeaveHalfDayHelper": "Use for a single morning or afternoon away from work.",
+  "hrLeaveHalfDayHelper": "For a single morning or afternoon absence.",
   "@hrLeaveHalfDayHelper": {
     "description": "Human resources workspace text for hrLeaveHalfDayHelper."
   },
@@ -19879,7 +19887,7 @@
   "@hrHandoverNotesLabel": {
     "description": "Human resources workspace text for hrHandoverNotesLabel."
   },
-  "hrHandoverNotesHelper": "Tasks, patients, or shift details the covering colleague should know.",
+  "hrHandoverNotesHelper": "Tasks or patients the covering colleague should know.",
   "@hrHandoverNotesHelper": {
     "description": "Human resources workspace text for hrHandoverNotesHelper."
   },
@@ -19967,7 +19975,7 @@
   "@hrLiveStatus": {
     "description": "Human resources workspace text for hrLiveStatus."
   },
-  "hrLoadingBody": "Loading staff records and rosters.",
+  "hrLoadingBody": "Loading staff and rosters...",
   "@hrLoadingBody": {
     "description": "Human resources workspace text for hrLoadingBody."
   },
@@ -20039,7 +20047,7 @@
   "@hrNoStaffBody": {
     "description": "Human resources workspace text for hrNoStaffBody."
   },
-  "hrNoStaffSelectedBody": "Select a staff member to review assignments, availability, leave, shifts, and payroll links.",
+  "hrNoStaffSelectedBody": "Select a staff member for assignments, leave, shifts, and payroll.",
   "@hrNoStaffSelectedBody": {
     "description": "Human resources workspace text for hrNoStaffSelectedBody."
   },
@@ -20314,7 +20322,7 @@
   "@hrManageScheduleTemplatesTitle": {
     "description": "Dialog title for managing shift schedule templates."
   },
-  "hrManageScheduleTemplatesDescription": "Reusable shift patterns for roster generation and staff scheduling.",
+  "hrManageScheduleTemplatesDescription": "Reusable shift patterns for roster generation.",
   "@hrManageScheduleTemplatesDescription": {
     "description": "Description for the schedule templates manage dialog."
   },
@@ -20330,7 +20338,7 @@
   "@hrStaffDetailTitle": {
     "description": "Human resources workspace text for hrStaffDetailTitle."
   },
-  "hrStaffDirectoryDescription": "Search staff by name, department, position, role, and status.",
+  "hrStaffDirectoryDescription": "Search staff by name, department, position, or status.",
   "@hrStaffDirectoryDescription": {
     "description": "Human resources workspace text for hrStaffDirectoryDescription."
   },
@@ -20510,7 +20518,7 @@
   "@hrAccessWorkspaceTitle": {
     "description": "Title for the HR access management dialog."
   },
-  "hrAccessWorkspaceDescription": "Manage staff user accounts, roles, and permissions for your organization.",
+  "hrAccessWorkspaceDescription": "Staff accounts, roles, and permissions.",
   "@hrAccessWorkspaceDescription": {
     "description": "Body text for the HR access management dialog."
   },
@@ -20837,7 +20845,7 @@
   "@hrAccessTenantContextRequiredTitle": {
     "description": "Title when HR staff access cannot resolve a tenant UUID."
   },
-  "hrAccessTenantContextRequiredBody": "Select a staff member or sign in with a tenant account before managing users, roles, and permissions.",
+  "hrAccessTenantContextRequiredBody": "Select a staff member or sign in with a tenant account first.",
   "@hrAccessTenantContextRequiredBody": {
     "description": "Body when HR staff access cannot resolve a tenant UUID."
   },
@@ -20949,11 +20957,11 @@
   "@hrAvailabilityEditDayAction": {
     "description": "Action to edit availability for a day."
   },
-  "hrCompensationActionTooltip": "Define or update pay structure for this staff member.",
+  "hrCompensationActionTooltip": "Define or update pay structure",
   "@hrCompensationActionTooltip": {
     "description": "Tooltip for compensation action."
   },
-  "hrRunPayrollActionTooltip": "Calculate and process pay for a pay period. Requires Financial Approve permission.",
+  "hrRunPayrollActionTooltip": "Process pay for a period (Financial Approve required)",
   "@hrRunPayrollActionTooltip": {
     "description": "Tooltip for run payroll action."
   },
@@ -21131,7 +21139,7 @@
   "@hrOffboardStaffAction": {
     "description": "Action to offboard a staff member."
   },
-  "hrOffboardStaffActionTooltip": "Record separation and optionally end assignments and revoke access.",
+  "hrOffboardStaffActionTooltip": "Record separation; optionally end access",
   "@hrOffboardStaffActionTooltip": {
     "description": "Tooltip for offboard staff action."
   },
@@ -21139,7 +21147,7 @@
   "@hrOffboardStaffDialogTitle": {
     "description": "Dialog title for staff offboarding."
   },
-  "hrOffboardStaffDialogHint": "This ends employment for the staff member. Active assignments can be closed on the last working day.",
+  "hrOffboardStaffDialogHint": "Ends employment. Active assignments can close on the last working day.",
   "@hrOffboardStaffDialogHint": {
     "description": "Hint text in offboarding dialog."
   },
@@ -21331,7 +21339,7 @@
   "@hrWorkQueuesTitle": {
     "description": "Human resources workspace text for hrWorkQueuesTitle."
   },
-  "hrWorkQueuesToolbarTooltip": "Browse and act on all queue types in one dialog.",
+  "hrWorkQueuesToolbarTooltip": "Browse and act on all queue types",
   "@hrWorkQueuesToolbarTooltip": {
     "description": "Tooltip clarifying that work queues opens the full multi-queue dialog."
   },
@@ -21371,7 +21379,7 @@
   "@settingsWorkspaceLoadingTitle": {
     "description": "Settings workspace LoadingTitle."
   },
-  "settingsWorkspaceLoadingBody": "Loading setup readiness, actions, and reference data.",
+  "settingsWorkspaceLoadingBody": "Loading setup readiness...",
   "@settingsWorkspaceLoadingBody": {
     "description": "Settings workspace LoadingBody."
   },
@@ -21383,7 +21391,7 @@
   "@settingsWorkspaceEmptyTitle": {
     "description": "Settings workspace EmptyTitle."
   },
-  "settingsWorkspaceEmptyBody": "No setup modules match the current filters.",
+  "settingsWorkspaceEmptyBody": "No setup modules match the filters.",
   "@settingsWorkspaceEmptyBody": {
     "description": "Settings workspace EmptyBody."
   },
@@ -21751,7 +21759,7 @@
   "@labPatientsWorklistTitle": {
     "description": "Localized text for labPatientsWorklistTitle."
   },
-  "labPatientsWorklistDescription": "Patients with active lab orders and result-entry work.",
+  "labPatientsWorklistDescription": "Patients with active lab orders.",
   "@labPatientsWorklistDescription": {
     "description": "Localized text for labPatientsWorklistDescription."
   },
@@ -21759,7 +21767,7 @@
   "@labNoPatientsTitle": {
     "description": "Localized text for labNoPatientsTitle."
   },
-  "labNoPatientsBody": "Adjust the queue filter or search term to find patient lab work.",
+  "labNoPatientsBody": "Patients with matching lab orders will appear here.",
   "@labNoPatientsBody": {
     "description": "Localized text for labNoPatientsBody."
   },
@@ -21811,7 +21819,7 @@
   "@labReopenVerifiedResultDialogTitle": {
     "description": "Title for the dialog that reopens a verified lab result."
   },
-  "labReopenVerifiedResultDialogBody": "Update the result value and provide a reason for changing a verified result. The corrected value is re-verified when you save.",
+  "labReopenVerifiedResultDialogBody": "Update the value and reason. Saving re-verifies the corrected result.",
   "@labReopenVerifiedResultDialogBody": {
     "description": "Body text for the verified result reopen dialog."
   },
@@ -21831,7 +21839,7 @@
   "@labRestoreOrderItemDialogTitle": {
     "description": "Title for the dialog confirming restoration of a cancelled lab test."
   },
-  "labRestoreOrderItemDialogBody": "Restore \"{testName}\"? It was cancelled and will return to the active worklist for processing.",
+  "labRestoreOrderItemDialogBody": "Restore \"{testName}\"? It returns to the active worklist.",
   "@labRestoreOrderItemDialogBody": {
     "description": "Body confirming restoration of a cancelled lab test.",
     "placeholders": {
@@ -21848,7 +21856,7 @@
   "@labDeleteOrderItemDialogTitle": {
     "description": "Title for the dialog confirming deletion of a lab test request."
   },
-  "labDeleteOrderItemDialogBody": "Delete \"{testName}\" from this order? This removes the requested test entirely and cannot be undone.",
+  "labDeleteOrderItemDialogBody": "Delete \"{testName}\" from this order? This cannot be undone.",
   "@labDeleteOrderItemDialogBody": {
     "description": "Body confirming deletion of an individual lab test request.",
     "placeholders": {
@@ -21865,7 +21873,7 @@
   "@labDeletePanelDialogTitle": {
     "description": "Dialog title for deleting a lab panel."
   },
-  "labDeletePanelDialogBody": "This will remove {panelName} from the configurable lab catalog. A reason is required for the audit trail.",
+  "labDeletePanelDialogBody": "Remove {panelName} from the lab catalog? A reason is required for audit.",
   "@labDeletePanelDialogBody": {
     "description": "Confirmation body for deleting a lab panel.",
     "placeholders": {
@@ -21923,7 +21931,7 @@
   "@labReferenceRangesDialogTitle": {
     "description": "Localized text for labReferenceRangesDialogTitle."
   },
-  "labReferenceRangesDialogBody": "Enable platform lab tests and panels for this facility, set prices, and customize reference ranges and result options.",
+  "labReferenceRangesDialogBody": "Enable tests and panels, set prices, and customize ranges and result options.",
   "@labReferenceRangesDialogBody": {
     "description": "Localized text for labReferenceRangesDialogBody."
   },
@@ -21947,7 +21955,7 @@
   "@labEnableOfferingDialogTitle": {
     "description": "Title for the dialog that enables a platform lab test or panel at the facility."
   },
-  "labEnableOfferingDialogBody": "Select a platform catalog item and set the facility price clinicians will use when ordering.",
+  "labEnableOfferingDialogBody": "Select a catalog item and set the facility price for ordering.",
   "@labEnableOfferingDialogBody": {
     "description": "Body for the dialog that enables a platform lab test or panel at the facility."
   },
@@ -22289,7 +22297,7 @@
   "@labDeleteOrderDialogTitle": {
     "description": "Dialog title for deleting a lab order."
   },
-  "labDeleteOrderDialogBody": "This will remove lab order {orderId} from the active laboratory queue. A reason is required for the audit trail.",
+  "labDeleteOrderDialogBody": "Remove lab order {orderId} from the queue? A reason is required for audit.",
   "@labDeleteOrderDialogBody": {
     "description": "Confirmation body for deleting a lab order.",
     "placeholders": {
@@ -22303,7 +22311,7 @@
   "@labDeleteTestDialogTitle": {
     "description": "Dialog title for deleting a lab test."
   },
-  "labDeleteTestDialogBody": "This will remove {testName} from the configurable lab catalog. A reason is required for the audit trail.",
+  "labDeleteTestDialogBody": "Remove {testName} from the lab catalog? A reason is required for audit.",
   "@labDeleteTestDialogBody": {
     "description": "Confirmation body for deleting a lab test.",
     "placeholders": {
@@ -22415,7 +22423,7 @@
   "@labReportSelectionTitle": {
     "description": "Title for the lab report print preview selection controls."
   },
-  "labReportSelectionHint": "Use the checkboxes on each result row below to choose what to print.",
+  "labReportSelectionHint": "Use checkboxes on each result row to choose what to print.",
   "@labReportSelectionHint": {
     "description": "Hint explaining how to select lab report content."
   },
@@ -22543,11 +22551,11 @@
   "@radiologyConfigurationsLoadingBody": {
     "description": "Radiology configuration loading body."
   },
-  "radiologyConfigurationsSelectScopeBody": "Select a tenant and facility to load and configure the radiology catalog.",
+  "radiologyConfigurationsSelectScopeBody": "Select tenant and facility to configure the radiology catalog.",
   "@radiologyConfigurationsSelectScopeBody": {
     "description": "Radiology configuration scope prompt for platform admins."
   },
-  "radiologyConfigurationsSelectFacilityOnlyBody": "Select a facility for {tenantName} to load and configure the radiology catalog.",
+  "radiologyConfigurationsSelectFacilityOnlyBody": "Select a facility for {tenantName} to configure the radiology catalog.",
   "@radiologyConfigurationsSelectFacilityOnlyBody": {
     "description": "Radiology configuration scope prompt for tenant admins.",
     "placeholders": {
@@ -22573,7 +22581,7 @@
   "@radiologyEnableOfferingDialogTitle": {
     "description": "Radiology enable offering catalog picker dialog title."
   },
-  "radiologyEnableOfferingDialogBody": "Select a platform catalog procedure and set the facility price clinicians will use when ordering.",
+  "radiologyEnableOfferingDialogBody": "Select a catalog procedure and set the facility price.",
   "@radiologyEnableOfferingDialogBody": {
     "description": "Radiology enable offering catalog picker dialog body."
   },
@@ -22601,7 +22609,7 @@
   "@radiologyDeleteSelectedOfferingsDialogTitle": {
     "description": "Title for batch removal of radiology facility offerings."
   },
-  "radiologyDeleteSelectedOfferingsDialogBody": "Remove {count, plural, =1{1 procedure} other{{count} procedures}} from this facility catalog? Clinicians will no longer be able to order them here.",
+  "radiologyDeleteSelectedOfferingsDialogBody": "Remove {count, plural, =1{1 procedure} other{{count} procedures}} from this catalog? Clinicians cannot order them here.",
   "@radiologyDeleteSelectedOfferingsDialogBody": {
     "description": "Body for batch removal of radiology facility offerings.",
     "placeholders": {
@@ -22618,7 +22626,7 @@
   "@radiologyDisableOfferingDialogTitle": {
     "description": "Title for disabling a single radiology facility offering."
   },
-  "radiologyDisableOfferingDialogBody": "Remove {name} from this facility catalog? Clinicians will no longer be able to order it here.",
+  "radiologyDisableOfferingDialogBody": "Remove {name} from this catalog? Clinicians cannot order it here.",
   "@radiologyDisableOfferingDialogBody": {
     "description": "Body for disabling a single radiology facility offering.",
     "placeholders": {
@@ -22647,7 +22655,7 @@
   "@radiologyPatientsWorklistTitle": {
     "description": "Radiology patients worklist title."
   },
-  "radiologyPatientsWorklistDescription": "Patients grouped by active imaging orders, reporting status, and next action.",
+  "radiologyPatientsWorklistDescription": "Patients with active imaging orders.",
   "@radiologyPatientsWorklistDescription": {
     "description": "Radiology patients worklist description."
   },
@@ -22655,7 +22663,7 @@
   "@radiologyNoPatientsTitle": {
     "description": "Radiology patients empty state title."
   },
-  "radiologyNoPatientsBody": "Patients with imaging requests matching this search and filter will appear here.",
+  "radiologyNoPatientsBody": "Patients with matching imaging requests will appear here.",
   "@radiologyNoPatientsBody": {
     "description": "Radiology patients empty state body."
   },
@@ -22787,7 +22795,7 @@
   "@radiologyReadOnlyStandardTestTitle": {
     "description": "Radiology standard catalog read-only title."
   },
-  "radiologyReadOnlyStandardTestMessage": "Standard catalog rows cannot be edited directly. Copy one to save a custom test.",
+  "radiologyReadOnlyStandardTestMessage": "Standard catalog rows are read-only. Copy one to create a custom test.",
   "@radiologyReadOnlyStandardTestMessage": {
     "description": "Radiology standard catalog read-only body."
   },
@@ -22795,7 +22803,7 @@
   "@radiologyDeleteImagingTestDialogTitle": {
     "description": "Radiology delete imaging test dialog title."
   },
-  "radiologyTenantRequiredForConfigMessage": "Tenant context is required before a custom imaging test can be saved.",
+  "radiologyTenantRequiredForConfigMessage": "Tenant context is required to save a custom imaging test.",
   "@radiologyTenantRequiredForConfigMessage": {
     "description": "Radiology tenant required validation message."
   },
@@ -22843,7 +22851,7 @@
   "@radiologyEquipmentLinkGapTitle": {
     "description": "Radiology equipment-test mapping gap title."
   },
-  "radiologyEquipmentLinkGapBody": "The current backend schema does not persist a direct imaging-test-to-equipment relationship, so this workspace does not save local-only mappings.",
+  "radiologyEquipmentLinkGapBody": "Imaging-to-equipment links are not persisted; local mappings are not saved.",
   "@radiologyEquipmentLinkGapBody": {
     "description": "Radiology equipment-test mapping gap body."
   },
@@ -22855,7 +22863,7 @@
   "@radiologyAttachImagesTitle": {
     "description": "Radiology attach images panel title."
   },
-  "radiologyAttachImagesBody": "Choose one or more images, add captions, then upload to attach them to this study.",
+  "radiologyAttachImagesBody": "Select images, add captions, then upload to this study.",
   "@radiologyAttachImagesBody": {
     "description": "Radiology image attachment helper body."
   },
@@ -22911,7 +22919,7 @@
   "@radiologyPrintReportDialogTitle": {
     "description": "Radiology print report dialog title."
   },
-  "radiologyPrintReportDialogBody": "Choose clinical report sections to include. Patient context, test details, findings, impression, and signer are selected by default; metadata is optional.",
+  "radiologyPrintReportDialogBody": "Choose report sections. Patient, findings, impression, and signer are included by default.",
   "@radiologyPrintReportDialogBody": {
     "description": "Radiology print dialog body."
   },
@@ -23012,7 +23020,7 @@
       }
     }
   },
-  "radiologyDeleteImagingTestDialogBody": "Delete {name}? This custom imaging test will no longer be available for new requests.",
+  "radiologyDeleteImagingTestDialogBody": "Delete {name}? It will no longer be available for new requests.",
   "@radiologyDeleteImagingTestDialogBody": {
     "description": "Radiology delete imaging test dialog body.",
     "placeholders": {
@@ -23064,7 +23072,7 @@
   "@clinicalRequestCatalogPickerDoneAction": {
     "description": "Close nested catalog or billing dialog."
   },
-  "clinicalRequestMainPanelHelp": "Review your selection below. Use Add items to browse the catalog, then review billing before submitting.",
+  "clinicalRequestMainPanelHelp": "Review selection, add catalog items, then confirm billing.",
   "@clinicalRequestMainPanelHelp": {
     "description": "Help text on modular clinical request main dialog."
   },
@@ -23125,7 +23133,7 @@
   "@clinicalRequestSelectedActionsColumnLabel": {
     "description": "Actions column on selected catalog item table."
   },
-  "clinicalLabRequestSelectedTableEmptyLabel": "No lab requests selected. Use Add items to choose tests or panels.",
+  "clinicalLabRequestSelectedTableEmptyLabel": "No lab requests selected. Use Add items.",
   "@clinicalLabRequestSelectedTableEmptyLabel": {
     "description": "Empty state for selected lab requests table."
   },
@@ -23158,7 +23166,7 @@
   "@clinicalRadiologyAddStudyAction": {
     "description": "Open radiology catalog picker."
   },
-  "clinicalRadiologyRequestSelectedTableEmptyLabel": "No radiology requests selected. Use Add study to choose imaging tests.",
+  "clinicalRadiologyRequestSelectedTableEmptyLabel": "No imaging requests selected. Use Add study.",
   "@clinicalRadiologyRequestSelectedTableEmptyLabel": {
     "description": "Empty state for the selected radiology requests table."
   },
@@ -23282,11 +23290,11 @@
   "@radiologyWorkflowStepReceiveDescription": {
     "description": "Workflow step description."
   },
-  "radiologyWorkflowStepReviewDescription": "Review study details and clinical notes",
+  "radiologyWorkflowStepReviewDescription": "Review study details and clinical notes.",
   "@radiologyWorkflowStepReviewDescription": {
     "description": "Workflow step description."
   },
-  "radiologyWorkflowStepPerformDescription": "Mark the imaging study as performed",
+  "radiologyWorkflowStepPerformDescription": "Mark the imaging study as performed.",
   "@radiologyWorkflowStepPerformDescription": {
     "description": "Workflow step description."
   },
@@ -23294,7 +23302,7 @@
   "@radiologyWorkflowStepUploadDescription": {
     "description": "Workflow step description."
   },
-  "radiologyWorkflowStepReportDescription": "Draft and edit the radiology report",
+  "radiologyWorkflowStepReportDescription": "Draft and edit the radiology report.",
   "@radiologyWorkflowStepReportDescription": {
     "description": "Workflow step description."
   },
@@ -23395,7 +23403,7 @@
   "@accessAdminLoadingTitle": {
     "description": "Access admin loading title."
   },
-  "accessAdminLoadingBody": "Fetching users, roles, permissions, and entitlements.",
+  "accessAdminLoadingBody": "Loading users, roles, and permissions...",
   "@accessAdminLoadingBody": {
     "description": "Access admin loading body."
   },
@@ -23483,7 +23491,7 @@
   "@accessAdminEmptyTitle": {
     "description": "Access admin empty state title."
   },
-  "accessAdminEmptyBody": "Adjust filters or create users and roles to populate this workspace.",
+  "accessAdminEmptyBody": "Adjust filters or create users and roles.",
   "@accessAdminEmptyBody": {
     "description": "Access admin empty state body."
   },
@@ -23587,11 +23595,11 @@
   "@accessAdminViewUserAction": {
     "description": "Access admin view user detail action."
   },
-  "accessAdminCreateUserIntro": "Create an account for a staff member. Select the tenant and facility first, then complete the profile, roles, and permissions.",
+  "accessAdminCreateUserIntro": "Create a staff account. Select tenant and facility, then profile and roles.",
   "@accessAdminCreateUserIntro": {
     "description": "Introductory helper text at the top of the create user dialog."
   },
-  "accessAdminCreateUserScopeSectionDescription": "Select the tenant and facility this user belongs to. Roles and permissions load from that organization.",
+  "accessAdminCreateUserScopeSectionDescription": "Select tenant and facility. Roles load from that org.",
   "@accessAdminCreateUserScopeSectionDescription": {
     "description": "Section description for tenant and facility selection in the user form."
   },
@@ -23599,19 +23607,19 @@
   "@accessAdminCreateUserDetailsSectionTitle": {
     "description": "Section title for user profile fields."
   },
-  "accessAdminCreateUserDetailsSectionDescription": "Provide contact details, position title, and account status.",
+  "accessAdminCreateUserDetailsSectionDescription": "Contact details, position, and account status.",
   "@accessAdminCreateUserDetailsSectionDescription": {
     "description": "Section description for user profile fields."
   },
-  "accessAdminCreateUserRolesSectionDescription": "Assign one or more roles. Effective permissions include both role grants and direct assignments below.",
+  "accessAdminCreateUserRolesSectionDescription": "Assign roles. Effective access includes role and direct grants.",
   "@accessAdminCreateUserRolesSectionDescription": {
     "description": "Section description for role assignment in the user form."
   },
-  "accessAdminCreateUserPermissionsSectionDescription": "Grant additional permissions directly to this user, on top of any role assignments.",
+  "accessAdminCreateUserPermissionsSectionDescription": "Grant extra permissions beyond assigned roles.",
   "@accessAdminCreateUserPermissionsSectionDescription": {
     "description": "Section description for direct permission assignment in the user form."
   },
-  "accessAdminCreateUserLoadingFacilities": "Loading facilities…",
+  "accessAdminCreateUserLoadingFacilities": "Loading facilities...",
   "@accessAdminCreateUserLoadingFacilities": {
     "description": "Loading label while facilities are fetched for the selected tenant."
   },
@@ -23619,7 +23627,7 @@
   "@accessAdminCreateUserSelectScopeTitle": {
     "description": "Title shown when user form fields are disabled pending scope selection."
   },
-  "accessAdminCreateUserSelectScopeMessage": "Choose a tenant and facility above to enable the rest of this form.",
+  "accessAdminCreateUserSelectScopeMessage": "Choose tenant and facility above to continue.",
   "@accessAdminCreateUserSelectScopeMessage": {
     "description": "Message shown when user form fields are disabled pending scope selection."
   },
@@ -23651,15 +23659,15 @@
   "@accessAdminUserDetailProfileSectionTitle": {
     "description": "Section title for user account details in the user detail dialog."
   },
-  "accessAdminUserDetailProfileSectionDescription": "Identifiers and contact information for this account.",
+  "accessAdminUserDetailProfileSectionDescription": "Identifiers and contact information.",
   "@accessAdminUserDetailProfileSectionDescription": {
     "description": "Section description for user account details in the user detail dialog."
   },
-  "accessAdminUserDetailRolesSectionDescription": "Roles determine the baseline permissions granted to this user.",
+  "accessAdminUserDetailRolesSectionDescription": "Roles set the baseline permissions for this user.",
   "@accessAdminUserDetailRolesSectionDescription": {
     "description": "Section description for assigned roles in the user detail dialog."
   },
-  "accessAdminUserDetailPermissionsSectionDescription": "Effective permissions include role grants and any direct assignments.",
+  "accessAdminUserDetailPermissionsSectionDescription": "Effective access from roles plus direct grants.",
   "@accessAdminUserDetailPermissionsSectionDescription": {
     "description": "Section description for permissions in the user detail dialog."
   },
@@ -23687,7 +23695,7 @@
   "@accessAdminUserAccessRemoveRoleConfirmTitle": {
     "description": "Confirmation title when removing a role from a user."
   },
-  "accessAdminUserAccessRemoveRoleConfirmMessage": "Removing {roleName} also removes all permissions granted by that role. Direct permissions are not affected.",
+  "accessAdminUserAccessRemoveRoleConfirmMessage": "Removing {roleName} also removes its permissions. Direct grants stay.",
   "@accessAdminUserAccessRemoveRoleConfirmMessage": {
     "description": "Confirmation body when removing a role from a user.",
     "placeholders": {
@@ -23700,7 +23708,7 @@
   "@accessAdminUserAccessAddRoleDialogTitle": {
     "description": "Title for the dialog that assigns a role to a user."
   },
-  "accessAdminUserAccessAddRoleDialogDescription": "Select one or more roles. Expand a role to review the permissions it grants before assigning.",
+  "accessAdminUserAccessAddRoleDialogDescription": "Select roles. Expand to review granted permissions.",
   "@accessAdminUserAccessAddRoleDialogDescription": {
     "description": "Description for the assign-role dialog."
   },
@@ -23708,11 +23716,11 @@
   "@accessAdminUserAccessNoAssignableRolesMessage": {
     "description": "Empty state when every assignable role is already on the user."
   },
-  "accessAdminUserAccessRolePermissionsHint": "These permissions come from the role and cannot be removed individually. Remove the role to revoke them.",
+  "accessAdminUserAccessRolePermissionsHint": "Role permissions cannot be removed individually. Remove the role to revoke.",
   "@accessAdminUserAccessRolePermissionsHint": {
     "description": "Hint that role-inherited permissions are not individually deletable."
   },
-  "accessAdminUserAccessDirectPermissionsDescription": "Direct permissions are assigned to this user individually and can be removed one at a time.",
+  "accessAdminUserAccessDirectPermissionsDescription": "Direct permissions can be removed one at a time.",
   "@accessAdminUserAccessDirectPermissionsDescription": {
     "description": "Section description for direct user permissions."
   },
@@ -23728,11 +23736,11 @@
   "@accessAdminUserAccessAddDirectPermissionDialogTitle": {
     "description": "Title for the dialog that adds direct permissions."
   },
-  "accessAdminUserAccessAddDirectPermissionDialogDescription": "Prefer assigning a role when possible. Use direct permissions only for one-off exceptions.",
+  "accessAdminUserAccessAddDirectPermissionDialogDescription": "Prefer roles; use direct grants for one-off exceptions.",
   "@accessAdminUserAccessAddDirectPermissionDialogDescription": {
     "description": "Description for the add-direct-permission dialog."
   },
-  "accessAdminUserAccessNoDirectPermissionsMessage": "No direct permissions. Prefer assigning a role, or create a custom role and assign it.",
+  "accessAdminUserAccessNoDirectPermissionsMessage": "No direct permissions. Prefer assigning a role.",
   "@accessAdminUserAccessNoDirectPermissionsMessage": {
     "description": "Empty state when a user has no direct permissions."
   },
@@ -23789,15 +23797,15 @@
   "@accessAdminCreateRolePermissionsSectionDescription": {
     "description": "Section description for the permissions picker in the create role dialog."
   },
-  "accessAdminCreateRoleLoadingPermissions": "Loading permissions…",
+  "accessAdminCreateRoleLoadingPermissions": "Loading permissions...",
   "@accessAdminCreateRoleLoadingPermissions": {
     "description": "Loading label while permission catalog is fetched."
   },
-  "accessAdminCreateRoleLoadingTenants": "Loading tenants…",
+  "accessAdminCreateRoleLoadingTenants": "Loading tenants...",
   "@accessAdminCreateRoleLoadingTenants": {
     "description": "Loading label while tenant options are fetched."
   },
-  "accessAdminCreateRoleLoadingFacilities": "Loading facilities…",
+  "accessAdminCreateRoleLoadingFacilities": "Loading facilities...",
   "@accessAdminCreateRoleLoadingFacilities": {
     "description": "Loading label while facility options are fetched for role scope."
   },
@@ -23853,7 +23861,7 @@
   "@accessAdminPermissionCatalogUnavailableTitle": {
     "description": "Title when tenant permission catalog failed to load."
   },
-  "accessAdminPermissionCatalogUnavailableMessage": "Permissions could not be loaded for this tenant. Contact your administrator or try again after refreshing.",
+  "accessAdminPermissionCatalogUnavailableMessage": "Permissions could not load. Contact an admin or refresh.",
   "@accessAdminPermissionCatalogUnavailableMessage": {
     "description": "Message when tenant permission catalog is empty."
   },
@@ -23932,7 +23940,7 @@
       "name": { "type": "String" }
     }
   },
-  "accessAdminDeleteRoleAssignedBody": "Role \"{name}\" is assigned to {userCount, plural, =1{1 user} other{{userCount} users}}. Deleting it will remove the role from {userCount, plural, =1{that user} other{those users}} and clear its permissions.",
+  "accessAdminDeleteRoleAssignedBody": "Role \"{name}\" is assigned to {userCount, plural, =1{1 user} other{{userCount} users}}. Deleting removes it from {userCount, plural, =1{that user} other{those users}}.",
   "@accessAdminDeleteRoleAssignedBody": {
     "description": "Confirmation body when deleting a role that is assigned to users.",
     "placeholders": {

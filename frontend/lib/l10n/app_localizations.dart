@@ -115,7 +115,7 @@ abstract class AppLocalizations {
   /// Body text shown while startup dependencies initialize.
   ///
   /// In en, this message translates to:
-  /// **'Preparing your workspace…'**
+  /// **'Preparing your workspace...'**
   String get startupLoadingBody;
 
   /// Title shown when startup initialization fails.
@@ -253,7 +253,7 @@ abstract class AppLocalizations {
   /// Loading body for the ICU workspace.
   ///
   /// In en, this message translates to:
-  /// **'Loading ICU patients and alerts…'**
+  /// **'Loading ICU patients and alerts...'**
   String get icuLoadingBoardBody;
 
   /// Status label when the ICU workspace is live syncing.
@@ -421,7 +421,7 @@ abstract class AppLocalizations {
   /// Loading body for the ICU detail panel.
   ///
   /// In en, this message translates to:
-  /// **'Loading observations and transfer state…'**
+  /// **'Loading observations and transfer state...'**
   String get icuDetailLoadingBody;
 
   /// Field label for the IPD admission number.
@@ -1477,7 +1477,7 @@ abstract class AppLocalizations {
   /// Loading body for the billing workspace.
   ///
   /// In en, this message translates to:
-  /// **'Loading invoices and payment queues…'**
+  /// **'Loading invoices and payment queues...'**
   String get billingLoadingBody;
 
   /// Live status label for billing workspace.
@@ -3169,7 +3169,7 @@ abstract class AppLocalizations {
   /// Loading body for the theater workspace.
   ///
   /// In en, this message translates to:
-  /// **'Loading theater cases…'**
+  /// **'Loading theater cases...'**
   String get theaterLoadingBody;
 
   /// Status label when theater data is synced.
@@ -4099,7 +4099,7 @@ abstract class AppLocalizations {
   /// Body while OPD data loads.
   ///
   /// In en, this message translates to:
-  /// **'Loading OPD queue and encounters…'**
+  /// **'Loading OPD queue and encounters...'**
   String get opdLoadingBody;
 
   /// Status badge shown when OPD data is syncing.
@@ -6619,7 +6619,7 @@ abstract class AppLocalizations {
   /// Patient detail loading state body.
   ///
   /// In en, this message translates to:
-  /// **'Loading demographics and related records…'**
+  /// **'Loading demographics and related records...'**
   String get patientsDetailLoadingBody;
 
   /// Patient detail empty selection title.
@@ -8077,7 +8077,7 @@ abstract class AppLocalizations {
   /// Patient merge preview loading body.
   ///
   /// In en, this message translates to:
-  /// **'Checking records for the retained patient…'**
+  /// **'Checking records for the retained patient...'**
   String get patientsMergePreviewLoadingBody;
 
   /// Patient duplicate match score label.
@@ -8593,7 +8593,7 @@ abstract class AppLocalizations {
   /// Profile screen body while profile data loads.
   ///
   /// In en, this message translates to:
-  /// **'Refreshing account and permissions…'**
+  /// **'Refreshing account and permissions...'**
   String get profileLoadingBody;
 
   /// Profile section title for assigned roles.
@@ -9007,7 +9007,7 @@ abstract class AppLocalizations {
   /// Body while tenant and facility setup loads.
   ///
   /// In en, this message translates to:
-  /// **'Loading organization and facility setup…'**
+  /// **'Loading organization and facility setup...'**
   String get tenantFacilitySetupLoadingBody;
 
   /// HR-scoped facility setup screen title.
@@ -11293,7 +11293,7 @@ abstract class AppLocalizations {
   /// Clinical workspace loading body.
   ///
   /// In en, this message translates to:
-  /// **'Loading clinical worklist…'**
+  /// **'Loading clinical worklist...'**
   String get clinicalLoadingBody;
 
   /// Clinical workspace live synchronization status.
@@ -12445,7 +12445,7 @@ abstract class AppLocalizations {
   /// Inpatient workspace loading body.
   ///
   /// In en, this message translates to:
-  /// **'Loading admissions, beds, and wards…'**
+  /// **'Loading admissions, beds, and wards...'**
   String get ipdLoadingBody;
 
   /// Inpatient workspace live synchronization status.
@@ -13765,7 +13765,7 @@ abstract class AppLocalizations {
   /// Nursing workspace loading body.
   ///
   /// In en, this message translates to:
-  /// **'Loading ward patients and handovers…'**
+  /// **'Loading ward patients and handovers...'**
   String get nursingLoadingBody;
 
   /// Nursing workspace live synchronization status.
@@ -15043,7 +15043,7 @@ abstract class AppLocalizations {
   /// Discharge detail loading body.
   ///
   /// In en, this message translates to:
-  /// **'Loading clearance, meds, and billing…'**
+  /// **'Loading clearance, meds, and billing...'**
   String get dischargeDetailLoadingBody;
 
   /// Discharge detail empty selection title.
@@ -15739,7 +15739,7 @@ abstract class AppLocalizations {
   /// Discharge workspace loading body.
   ///
   /// In en, this message translates to:
-  /// **'Loading discharge queue…'**
+  /// **'Loading discharge queue...'**
   String get dischargeLoadingBody;
 
   /// Discharge workspace load error title.
@@ -15775,7 +15775,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Loading imaging orders and reports…'**
+  /// **'Loading imaging orders and reports...'**
   String get radiologyLoadingBody;
 
   /// Localized text for radiologyLiveStatus.
@@ -16897,7 +16897,7 @@ abstract class AppLocalizations {
   /// Pharmacy workspace loading body.
   ///
   /// In en, this message translates to:
-  /// **'Loading pharmacy orders and stock…'**
+  /// **'Loading pharmacy orders and stock...'**
   String get pharmacyLoadingBody;
 
   /// Pharmacy workspace title.
@@ -17041,7 +17041,7 @@ abstract class AppLocalizations {
   /// Pharmacy prescription detail loading body.
   ///
   /// In en, this message translates to:
-  /// **'Loading medicines and dispense history…'**
+  /// **'Loading medicines and dispense history...'**
   String get pharmacyDetailLoadingBody;
 
   /// Title for the pharmacy prescription detail dialog.
@@ -18487,7 +18487,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Loading authorization and claim queues…'**
+  /// **'Loading authorization and claim queues...'**
   String get claimsLoadingBody;
 
   /// Localized text for claimsLoadErrorTitle.
@@ -18667,7 +18667,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsDetailLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Loading payer and coverage context…'**
+  /// **'Loading payer and coverage context...'**
   String get claimsDetailLoadingBody;
 
   /// Localized text for claimsNoSelectionTitle.
@@ -19375,7 +19375,7 @@ abstract class AppLocalizations {
   /// Localized text for labLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Loading lab queues and results…'**
+  /// **'Loading lab queues and results...'**
   String get labLoadingBody;
 
   /// Localized text for labLiveStatus.
@@ -19627,7 +19627,7 @@ abstract class AppLocalizations {
   /// Localized text for labDetailLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Loading order details and results…'**
+  /// **'Loading order details and results...'**
   String get labDetailLoadingBody;
 
   /// Title for the lab result entry workspace dialog.
@@ -19741,7 +19741,7 @@ abstract class AppLocalizations {
   /// Inline status shown while lab result entry saves and refreshes affected rows.
   ///
   /// In en, this message translates to:
-  /// **'Updating results…'**
+  /// **'Updating results...'**
   String get labApplyingResultChangesMessage;
 
   /// Badge label for lab results saved locally but not yet submitted.
@@ -20731,7 +20731,7 @@ abstract class AppLocalizations {
   /// Loading body for the operations workspace.
   ///
   /// In en, this message translates to:
-  /// **'Loading maintenance requests…'**
+  /// **'Loading maintenance requests...'**
   String get operationsLoadingBody;
 
   /// Status label when operations data is synced.
@@ -21390,7 +21390,7 @@ abstract class AppLocalizations {
   /// Loading body for the biomedical workspace.
   ///
   /// In en, this message translates to:
-  /// **'Loading equipment and work orders…'**
+  /// **'Loading equipment and work orders...'**
   String get biomedicalLoadingBody;
 
   /// Status label when biomedical data is synced.
@@ -22212,7 +22212,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Loading integrations and logs…'**
+  /// **'Loading integrations and logs...'**
   String get integrationsLoadingBody;
 
   /// Localized text for integrationsFailedStatusLabel.
@@ -23316,7 +23316,7 @@ abstract class AppLocalizations {
   /// Loading body for the reports workspace.
   ///
   /// In en, this message translates to:
-  /// **'Loading reports, schedules, and dashboards…'**
+  /// **'Loading reports, schedules, and dashboards...'**
   String get reportsLoadingBody;
 
   /// Status label when the reports workspace is live.
@@ -23958,7 +23958,7 @@ abstract class AppLocalizations {
   /// Loading body for the communications workspace.
   ///
   /// In en, this message translates to:
-  /// **'Loading notifications and threads…'**
+  /// **'Loading notifications and threads...'**
   String get communicationsLoadingBody;
 
   /// Title for the communications workspace.
@@ -24846,7 +24846,7 @@ abstract class AppLocalizations {
   /// Localized text for housekeepingLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Loading cleaning tasks and schedules…'**
+  /// **'Loading cleaning tasks and schedules...'**
   String get housekeepingLoadingBody;
 
   /// Localized text for housekeepingLiveStatus.
@@ -25710,7 +25710,7 @@ abstract class AppLocalizations {
   /// Localized text for physiotherapyLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Loading referrals and sessions…'**
+  /// **'Loading referrals and sessions...'**
   String get physiotherapyLoadingBody;
 
   /// Localized text for physiotherapyLiveStatus.
@@ -25998,7 +25998,7 @@ abstract class AppLocalizations {
   /// Localized text for physiotherapyDetailLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Loading session, plan, and notes…'**
+  /// **'Loading session, plan, and notes...'**
   String get physiotherapyDetailLoadingBody;
 
   /// Localized text for physiotherapyNoSelectionTitle.
@@ -26580,7 +26580,7 @@ abstract class AppLocalizations {
   /// Body shown while loading the mortuary workspace.
   ///
   /// In en, this message translates to:
-  /// **'Loading cases, storage, and release…'**
+  /// **'Loading cases, storage, and release...'**
   String get mortuaryLoadingBody;
 
   /// Operational status label for the mortuary workspace.
@@ -27420,7 +27420,7 @@ abstract class AppLocalizations {
   /// Body shown while loading the rooms and beds workspace.
   ///
   /// In en, this message translates to:
-  /// **'Loading wards, rooms, and beds…'**
+  /// **'Loading wards, rooms, and beds...'**
   String get roomsBedsLoadingBody;
 
   /// Workspace status label while a rooms and beds mutation is saving.
@@ -28272,7 +28272,7 @@ abstract class AppLocalizations {
   /// Shared weekly schedule editor action to copy slots to other days.
   ///
   /// In en, this message translates to:
-  /// **'Duplicate to…'**
+  /// **'Duplicate to...'**
   String get hrDuplicateScheduleToAction;
 
   /// Title for the shared weekly schedule duplicate-to dialog.
@@ -28344,7 +28344,7 @@ abstract class AppLocalizations {
   /// Action to copy one day's time slots to other days of the week.
   ///
   /// In en, this message translates to:
-  /// **'Duplicate to…'**
+  /// **'Duplicate to...'**
   String get hrAvailabilityDuplicateToAction;
 
   /// Title for the dialog that selects target days when duplicating availability slots.
@@ -28716,7 +28716,7 @@ abstract class AppLocalizations {
   /// Human resources workspace text for hrLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Loading staff and rosters…'**
+  /// **'Loading staff and rosters...'**
   String get hrLoadingBody;
 
   /// Human resources workspace text for hrLoadingTitle.
@@ -30936,7 +30936,7 @@ abstract class AppLocalizations {
   /// Settings workspace LoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Loading setup readiness…'**
+  /// **'Loading setup readiness...'**
   String get settingsWorkspaceLoadingBody;
 
   /// Settings workspace ErrorTitle.
@@ -33774,7 +33774,7 @@ abstract class AppLocalizations {
   /// Access admin loading body.
   ///
   /// In en, this message translates to:
-  /// **'Loading users, roles, and permissions…'**
+  /// **'Loading users, roles, and permissions...'**
   String get accessAdminLoadingBody;
 
   /// Access admin saving status.
@@ -34098,7 +34098,7 @@ abstract class AppLocalizations {
   /// Loading label while facilities are fetched for the selected tenant.
   ///
   /// In en, this message translates to:
-  /// **'Loading facilities…'**
+  /// **'Loading facilities...'**
   String get accessAdminCreateUserLoadingFacilities;
 
   /// Title shown when user form fields are disabled pending scope selection.
@@ -34350,19 +34350,19 @@ abstract class AppLocalizations {
   /// Loading label while permission catalog is fetched.
   ///
   /// In en, this message translates to:
-  /// **'Loading permissions…'**
+  /// **'Loading permissions...'**
   String get accessAdminCreateRoleLoadingPermissions;
 
   /// Loading label while tenant options are fetched.
   ///
   /// In en, this message translates to:
-  /// **'Loading tenants…'**
+  /// **'Loading tenants...'**
   String get accessAdminCreateRoleLoadingTenants;
 
   /// Loading label while facility options are fetched for role scope.
   ///
   /// In en, this message translates to:
-  /// **'Loading facilities…'**
+  /// **'Loading facilities...'**
   String get accessAdminCreateRoleLoadingFacilities;
 
   /// Label for role scope (tenant-wide vs facility) control.

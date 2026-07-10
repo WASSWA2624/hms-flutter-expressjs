@@ -18,7 +18,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get startupLoadingTitle => 'Starting HOSSPI';
 
   @override
-  String get startupLoadingBody => 'Preparing your workspace…';
+  String get startupLoadingBody => 'Preparing your workspace...';
 
   @override
   String get startupErrorTitle => 'The app could not start';
@@ -90,7 +90,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get icuLoadingBoardTitle => 'Loading ICU board';
 
   @override
-  String get icuLoadingBoardBody => 'Loading ICU patients and alerts…';
+  String get icuLoadingBoardBody => 'Loading ICU patients and alerts...';
 
   @override
   String get icuLiveSyncLabel => 'Live sync';
@@ -176,7 +176,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get icuDetailLoadingTitle => 'Loading ICU stay';
 
   @override
-  String get icuDetailLoadingBody => 'Loading observations and transfer state…';
+  String get icuDetailLoadingBody =>
+      'Loading observations and transfer state...';
 
   @override
   String get icuAdmissionLabel => 'Admission';
@@ -734,7 +735,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingLoadingTitle => 'Loading billing workspace';
 
   @override
-  String get billingLoadingBody => 'Loading invoices and payment queues…';
+  String get billingLoadingBody => 'Loading invoices and payment queues...';
 
   @override
   String get billingStatusLive => 'Live';
@@ -1622,7 +1623,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get theaterLoadingTitle => 'Loading theater';
 
   @override
-  String get theaterLoadingBody => 'Loading theater cases…';
+  String get theaterLoadingBody => 'Loading theater cases...';
 
   @override
   String get theaterLiveStatus => 'Live sync';
@@ -2105,7 +2106,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdLoadingTitle => 'Loading OPD flow';
 
   @override
-  String get opdLoadingBody => 'Loading OPD queue and encounters…';
+  String get opdLoadingBody => 'Loading OPD queue and encounters...';
 
   @override
   String get opdLiveStatus => 'Live sync';
@@ -3411,7 +3412,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get patientsDetailLoadingBody =>
-      'Loading demographics and related records…';
+      'Loading demographics and related records...';
 
   @override
   String get patientsNoSelectionTitle => 'Select a patient';
@@ -4190,7 +4191,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get patientsMergePreviewLoadingBody =>
-      'Checking records for the retained patient…';
+      'Checking records for the retained patient...';
 
   @override
   String patientsDuplicateScoreLabel(int score) {
@@ -4502,7 +4503,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profileLoadingTitle => 'Loading profile';
 
   @override
-  String get profileLoadingBody => 'Refreshing account and permissions…';
+  String get profileLoadingBody => 'Refreshing account and permissions...';
 
   @override
   String get profileRolesSectionTitle => 'Assigned roles';
@@ -4737,7 +4738,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilitySetupLoadingBody =>
-      'Loading organization and facility setup…';
+      'Loading organization and facility setup...';
 
   @override
   String get tenantFacilityHrSetupTitle => 'Facility structure for HR';
@@ -6070,7 +6071,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalLoadingTitle => 'Loading clinical workspace';
 
   @override
-  String get clinicalLoadingBody => 'Loading clinical worklist…';
+  String get clinicalLoadingBody => 'Loading clinical worklist...';
 
   @override
   String get clinicalLiveStatus => 'Live sync';
@@ -6711,7 +6712,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ipdLoadingTitle => 'Loading inpatient workspace';
 
   @override
-  String get ipdLoadingBody => 'Loading admissions, beds, and wards…';
+  String get ipdLoadingBody => 'Loading admissions, beds, and wards...';
 
   @override
   String get ipdLiveStatus => 'Live sync';
@@ -7397,7 +7398,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nursingLoadingTitle => 'Loading nursing workspace';
 
   @override
-  String get nursingLoadingBody => 'Loading ward patients and handovers…';
+  String get nursingLoadingBody => 'Loading ward patients and handovers...';
 
   @override
   String get nursingLiveStatus => 'Live sync';
@@ -8079,7 +8080,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dischargeDetailLoadingBody =>
-      'Loading clearance, meds, and billing…';
+      'Loading clearance, meds, and billing...';
 
   @override
   String get dischargeNoSelectionTitle => 'Select a discharge';
@@ -8457,7 +8458,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dischargeLoadingTitle => 'Loading discharge workspace';
 
   @override
-  String get dischargeLoadingBody => 'Loading discharge queue…';
+  String get dischargeLoadingBody => 'Loading discharge queue...';
 
   @override
   String get dischargeLoadErrorTitle => 'Discharge workspace unavailable';
@@ -8477,7 +8478,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyLoadingTitle => 'Loading radiology workspace';
 
   @override
-  String get radiologyLoadingBody => 'Loading imaging orders and reports…';
+  String get radiologyLoadingBody => 'Loading imaging orders and reports...';
 
   @override
   String get radiologyLiveStatus => 'Live sync';
@@ -9063,7 +9064,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyLoadingTitle => 'Loading pharmacy workspace';
 
   @override
-  String get pharmacyLoadingBody => 'Loading pharmacy orders and stock…';
+  String get pharmacyLoadingBody => 'Loading pharmacy orders and stock...';
 
   @override
   String get pharmacyTitle => 'Pharmacy';
@@ -9140,7 +9141,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pharmacyDetailLoadingBody =>
-      'Loading medicines and dispense history…';
+      'Loading medicines and dispense history...';
 
   @override
   String get pharmacyPrescriptionDetailTitle => 'Prescription detail';
@@ -9943,7 +9944,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get claimsLoadingTitle => 'Loading claims';
 
   @override
-  String get claimsLoadingBody => 'Loading authorization and claim queues…';
+  String get claimsLoadingBody => 'Loading authorization and claim queues...';
 
   @override
   String get claimsLoadErrorTitle => 'Claims unavailable';
@@ -10040,7 +10041,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get claimsDetailLoadingTitle => 'Loading detail';
 
   @override
-  String get claimsDetailLoadingBody => 'Loading payer and coverage context…';
+  String get claimsDetailLoadingBody => 'Loading payer and coverage context...';
 
   @override
   String get claimsNoSelectionTitle => 'Select a record';
@@ -10421,7 +10422,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labLoadingTitle => 'Loading laboratory';
 
   @override
-  String get labLoadingBody => 'Loading lab queues and results…';
+  String get labLoadingBody => 'Loading lab queues and results...';
 
   @override
   String get labLiveStatus => 'Live sync';
@@ -10551,7 +10552,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labDetailLoadingTitle => 'Loading lab detail';
 
   @override
-  String get labDetailLoadingBody => 'Loading order details and results…';
+  String get labDetailLoadingBody => 'Loading order details and results...';
 
   @override
   String get labResultEntryDialogTitle => 'Lab Result Entry';
@@ -10636,7 +10637,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Lab order not found. Close, reopen the order, and try again.';
 
   @override
-  String get labApplyingResultChangesMessage => 'Updating results…';
+  String get labApplyingResultChangesMessage => 'Updating results...';
 
   @override
   String get labResultLifecycleDraft => 'Draft';
@@ -11152,7 +11153,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get operationsLoadingTitle => 'Loading operations';
 
   @override
-  String get operationsLoadingBody => 'Loading maintenance requests…';
+  String get operationsLoadingBody => 'Loading maintenance requests...';
 
   @override
   String get operationsLiveStatus => 'Live sync';
@@ -11495,7 +11496,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get biomedicalLoadingTitle => 'Loading biomedical';
 
   @override
-  String get biomedicalLoadingBody => 'Loading equipment and work orders…';
+  String get biomedicalLoadingBody => 'Loading equipment and work orders...';
 
   @override
   String get biomedicalLiveStatus => 'Live sync';
@@ -11918,7 +11919,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get integrationsLoadingTitle => 'Loading integrations';
 
   @override
-  String get integrationsLoadingBody => 'Loading integrations and logs…';
+  String get integrationsLoadingBody => 'Loading integrations and logs...';
 
   @override
   String get integrationsFailedStatusLabel => 'Failed';
@@ -12504,7 +12505,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsLoadingBody =>
-      'Loading reports, schedules, and dashboards…';
+      'Loading reports, schedules, and dashboards...';
 
   @override
   String get reportsLiveStatus => 'Live';
@@ -12843,7 +12844,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get communicationsLoadingTitle => 'Loading communications';
 
   @override
-  String get communicationsLoadingBody => 'Loading notifications and threads…';
+  String get communicationsLoadingBody =>
+      'Loading notifications and threads...';
 
   @override
   String get communicationsWorkspaceTitle => 'Communications';
@@ -13324,7 +13326,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get housekeepingLoadingTitle => 'Loading housekeeping';
 
   @override
-  String get housekeepingLoadingBody => 'Loading cleaning tasks and schedules…';
+  String get housekeepingLoadingBody =>
+      'Loading cleaning tasks and schedules...';
 
   @override
   String get housekeepingLiveStatus => 'Live sync';
@@ -13777,7 +13780,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get physiotherapyLoadingTitle => 'Loading physiotherapy workspace';
 
   @override
-  String get physiotherapyLoadingBody => 'Loading referrals and sessions…';
+  String get physiotherapyLoadingBody => 'Loading referrals and sessions...';
 
   @override
   String get physiotherapyLiveStatus => 'Live';
@@ -13925,7 +13928,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get physiotherapyDetailLoadingBody =>
-      'Loading session, plan, and notes…';
+      'Loading session, plan, and notes...';
 
   @override
   String get physiotherapyNoSelectionTitle => 'Select a therapy item';
@@ -14231,7 +14234,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mortuaryLoadingTitle => 'Loading mortuary workspace';
 
   @override
-  String get mortuaryLoadingBody => 'Loading cases, storage, and release…';
+  String get mortuaryLoadingBody => 'Loading cases, storage, and release...';
 
   @override
   String get mortuaryOperationalStatusLabel => 'Operational';
@@ -14666,7 +14669,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roomsBedsLoadingTitle => 'Loading rooms and beds';
 
   @override
-  String get roomsBedsLoadingBody => 'Loading wards, rooms, and beds…';
+  String get roomsBedsLoadingBody => 'Loading wards, rooms, and beds...';
 
   @override
   String get roomsBedsSavingStatus => 'Saving';
@@ -15115,7 +15118,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrRemoveScheduleSlotAction => 'Remove slot';
 
   @override
-  String get hrDuplicateScheduleToAction => 'Duplicate to…';
+  String get hrDuplicateScheduleToAction => 'Duplicate to...';
 
   @override
   String get hrScheduleDuplicateToDialogTitle => 'Duplicate schedule';
@@ -15153,7 +15156,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrAvailabilityCopyFromTemplateLabel => 'Schedule template';
 
   @override
-  String get hrAvailabilityDuplicateToAction => 'Duplicate to…';
+  String get hrAvailabilityDuplicateToAction => 'Duplicate to...';
 
   @override
   String get hrAvailabilityDuplicateToDialogTitle => 'Duplicate schedule';
@@ -15354,7 +15357,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrLiveStatus => 'Live';
 
   @override
-  String get hrLoadingBody => 'Loading staff and rosters…';
+  String get hrLoadingBody => 'Loading staff and rosters...';
 
   @override
   String get hrLoadingTitle => 'Loading HR workspace';
@@ -16541,7 +16544,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsWorkspaceLoadingTitle => 'Loading settings workspace';
 
   @override
-  String get settingsWorkspaceLoadingBody => 'Loading setup readiness…';
+  String get settingsWorkspaceLoadingBody => 'Loading setup readiness...';
 
   @override
   String get settingsWorkspaceErrorTitle => 'Settings workspace unavailable';
@@ -18143,7 +18146,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminLoadingTitle => 'Loading access workspace';
 
   @override
-  String get accessAdminLoadingBody => 'Loading users, roles, and permissions…';
+  String get accessAdminLoadingBody =>
+      'Loading users, roles, and permissions...';
 
   @override
   String get accessAdminSavingStatus => 'Saving access changes';
@@ -18312,7 +18316,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Grant extra permissions beyond assigned roles.';
 
   @override
-  String get accessAdminCreateUserLoadingFacilities => 'Loading facilities…';
+  String get accessAdminCreateUserLoadingFacilities => 'Loading facilities...';
 
   @override
   String get accessAdminCreateUserSelectScopeTitle =>
@@ -18474,13 +18478,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Select the permissions this role grants.';
 
   @override
-  String get accessAdminCreateRoleLoadingPermissions => 'Loading permissions…';
+  String get accessAdminCreateRoleLoadingPermissions =>
+      'Loading permissions...';
 
   @override
-  String get accessAdminCreateRoleLoadingTenants => 'Loading tenants…';
+  String get accessAdminCreateRoleLoadingTenants => 'Loading tenants...';
 
   @override
-  String get accessAdminCreateRoleLoadingFacilities => 'Loading facilities…';
+  String get accessAdminCreateRoleLoadingFacilities => 'Loading facilities...';
 
   @override
   String get accessAdminRoleScopeLabel => 'Scope';
