@@ -726,18 +726,23 @@ class _DetailContent extends ConsumerWidget {
     final ThemeData theme = Theme.of(context);
     final bool isRole = item.resource == AccessAdminResource.roles;
 
-    final List<AccessAdminRolePermissionAssignment> sortedRolePermissions =
-        List<AccessAdminRolePermissionAssignment>.from(rolePermissions)
-          ..sort((
-            AccessAdminRolePermissionAssignment a,
-            AccessAdminRolePermissionAssignment b,
-          ) {
-            final String left = (a.permissionName ?? a.permissionId ?? '')
-                .toLowerCase();
-            final String right = (b.permissionName ?? b.permissionId ?? '')
-                .toLowerCase();
-            return left.compareTo(right);
-          });
+    final List<AppPermissionAssignmentOption> rolePermissionOptions =
+        rolePermissions
+            .map((AccessAdminRolePermissionAssignment assignment) {
+              final String code =
+                  assignment.permissionName ?? assignment.permissionId ?? '';
+              if (code.isEmpty) {
+                return null;
+              }
+              return AppPermissionAssignmentOption(
+                id: assignment.permissionId ?? assignment.id,
+                code: code,
+                label: l10n.permissionCatalogLabelForCode(code),
+                description: code,
+              );
+            })
+            .whereType<AppPermissionAssignmentOption>()
+            .toList(growable: false);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -763,7 +768,7 @@ class _DetailContent extends ConsumerWidget {
           _DetailRow(
             label: l10n.accessAdminRolePermissionsLabel,
             value: l10n.hrAccessPermissionCountLabel(
-              sortedRolePermissions.length,
+              rolePermissionOptions.length,
             ),
           ),
           _DetailRow(
@@ -776,31 +781,11 @@ class _DetailContent extends ConsumerWidget {
             style: theme.textTheme.titleSmall,
           ),
           SizedBox(height: theme.spacing.sm),
-          if (sortedRolePermissions.isEmpty)
-            Text(
-              l10n.accessAdminRoleDetailNoPermissionsMessage,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            )
-          else
-            ...sortedRolePermissions.map((
-              AccessAdminRolePermissionAssignment assignment,
-            ) {
-              final String code =
-                  assignment.permissionName ?? assignment.permissionId ?? '—';
-              final String label = l10n.permissionCatalogLabelForCode(code);
-              return ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(
-                  Icons.check_circle_outline,
-                  color: theme.colorScheme.primary,
-                ),
-                title: Text(label),
-                subtitle: label == code ? null : Text(code),
-              );
-            }),
+          AppPermissionGroupedView(
+            permissions: rolePermissionOptions,
+            initiallyExpandAll: rolePermissionOptions.length <= 24,
+            emptyMessage: l10n.accessAdminRoleDetailNoPermissionsMessage,
+          ),
         ] else ...<Widget>[
           if (item.email != null)
             _DetailRow(

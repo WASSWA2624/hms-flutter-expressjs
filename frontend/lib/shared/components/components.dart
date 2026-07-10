@@ -28,6 +28,7 @@ export 'app_nursing_components.dart';
 export 'app_patient_detail_dialog.dart';
 export 'app_permission_action.dart';
 export 'app_permission_assignment_picker.dart';
+export 'app_permission_grouped_view.dart';
 export 'app_phone_field.dart';
 export 'app_radio_group.dart';
 export 'app_record_section.dart';

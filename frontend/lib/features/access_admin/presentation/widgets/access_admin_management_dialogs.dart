@@ -911,67 +911,65 @@ class _AccessAdminRoleDetailDialog extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
+  List<AppPermissionAssignmentOption> _permissionOptions(
+    AppLocalizations l10n,
+  ) {
+    return permissions
+        .map((AccessAdminRolePermissionAssignment assignment) {
+          final String code =
+              assignment.permissionName ?? assignment.permissionId ?? '';
+          if (code.isEmpty) {
+            return null;
+          }
+          return AppPermissionAssignmentOption(
+            id: assignment.permissionId ?? assignment.id,
+            code: code,
+            label: l10n.permissionCatalogLabelForCode(code),
+            description: code,
+          );
+        })
+        .whereType<AppPermissionAssignmentOption>()
+        .toList(growable: false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
-
-    final List<AccessAdminRolePermissionAssignment> sortedPermissions =
-        List<AccessAdminRolePermissionAssignment>.from(permissions)
-          ..sort((
-            AccessAdminRolePermissionAssignment a,
-            AccessAdminRolePermissionAssignment b,
-          ) {
-            final String left = (a.permissionName ?? a.permissionId ?? '')
-                .toLowerCase();
-            final String right = (b.permissionName ?? b.permissionId ?? '')
-                .toLowerCase();
-            return left.compareTo(right);
-          });
+    final List<AppPermissionAssignmentOption> permissionOptions =
+        _permissionOptions(l10n);
 
     return AppDialog(
-      title: Text(role.title),
+      title: Text(l10n.accessAdminCreateRoleDetailsSectionTitle),
       icon: const Icon(Icons.badge_outlined),
       scrollable: true,
       pinActionsToBottom: true,
-      maxWidth: 760,
+      maxWidth: 920,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _RoleDetailSummaryCard(role: role, permissionCount: permissions.length),
+          _RoleDetailSummaryCard(
+            role: role,
+            permissionCount: permissionOptions.length,
+          ),
           SizedBox(height: theme.spacing.md),
           AppSectionPanel(
             title: l10n.accessAdminRolePermissionsLabel,
             description: l10n.accessAdminRoleDetailPermissionsDescription,
             leadingIcon: Icons.lock_outline,
+            trailing: Text(
+              l10n.hrAccessPermissionCountLabel(permissionOptions.length),
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
             children: <Widget>[
-              if (sortedPermissions.isEmpty)
-                AppFormInformationBanner(
-                  title: l10n.accessAdminRolePermissionsLabel,
-                  message: l10n.accessAdminRoleDetailNoPermissionsMessage,
-                  icon: Icons.info_outline,
-                )
-              else
-                ...sortedPermissions.map((
-                  AccessAdminRolePermissionAssignment assignment,
-                ) {
-                  final String code =
-                      assignment.permissionName ??
-                      assignment.permissionId ??
-                      '—';
-                  final String label = l10n.permissionCatalogLabelForCode(code);
-                  return ListTile(
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                    leading: Icon(
-                      Icons.check_circle_outline,
-                      color: colors.primary,
-                    ),
-                    title: Text(label),
-                    subtitle: label == code ? null : Text(code),
-                  );
-                }),
+              AppPermissionGroupedView(
+                permissions: permissionOptions,
+                initiallyExpandAll: permissionOptions.length <= 24,
+                emptyMessage: l10n.accessAdminRoleDetailNoPermissionsMessage,
+              ),
             ],
           ),
         ],

@@ -36,6 +36,19 @@ final class AppPermissionAssignmentOption {
     }
     return modulePrefix;
   }
+
+  /// Action portion of [label] (e.g. "Read" from "Billing — Read").
+  String get actionLabel {
+    final int separator = label.indexOf(' — ');
+    if (separator > 0 && separator + 3 < label.length) {
+      return label.substring(separator + 3).trim();
+    }
+    final int codeSeparator = code.indexOf(':');
+    if (codeSeparator > 0 && codeSeparator + 1 < code.length) {
+      return code.substring(codeSeparator + 1);
+    }
+    return label;
+  }
 }
 
 /// Reusable permission multi-select with search, grouped checkboxes, and bulk actions.
