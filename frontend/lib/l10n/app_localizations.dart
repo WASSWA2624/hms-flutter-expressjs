@@ -8074,10 +8074,10 @@ abstract class AppLocalizations {
   /// **'Manage roles and permissions'**
   String get homeManageRolesPermissionsTitle;
 
-  /// Confirmation body when deleting a tenant from management dialog.
+  /// Confirmation body when soft-deleting a tenant from management dialog.
   ///
   /// In en, this message translates to:
-  /// **'Delete tenant \"{name}\"? This cannot be undone.'**
+  /// **'Soft-delete tenant \"{name}\"? All of its facilities will also be soft-deleted. You can restore the tenant later.'**
   String tenantFacilityDeleteTenantConfirmationBody(String name);
 
   /// Confirmation body when deleting a facility from management dialog.
@@ -9463,19 +9463,25 @@ abstract class AppLocalizations {
   /// Permanent delete tenant confirmation dialog title.
   ///
   /// In en, this message translates to:
-  /// **'Permanent delete'**
+  /// **'Permanent delete — irreversible'**
   String get tenantFacilityPermanentDeleteConfirmationTitle;
+
+  /// Strong irreversible warning shown before typing confirmation for permanent tenant delete.
+  ///
+  /// In en, this message translates to:
+  /// **'WARNING: Permanently deleting \"{name}\" will erase this tenant, all of its facilities, and all related data forever. This cannot be recovered.'**
+  String tenantFacilityPermanentDeleteWarningBody(String name);
 
   /// Permanent delete tenant confirmation body.
   ///
   /// In en, this message translates to:
-  /// **'Permanently delete tenant \"{name}\" and all related data? This cannot be undone.'**
+  /// **'Final confirmation: permanently delete tenant \"{name}\", all facilities under it, and all related data? This action is irreversible and the data can never be recovered.'**
   String tenantFacilityPermanentDeleteConfirmationBody(String name);
 
   /// Permanent delete typed confirmation field label.
   ///
   /// In en, this message translates to:
-  /// **'Type \"{name}\" to confirm'**
+  /// **'Type \"{name}\" to confirm permanent delete'**
   String tenantFacilityPermanentDeleteConfirmFieldLabel(String name);
 
   /// Permanent delete confirmation submit label.

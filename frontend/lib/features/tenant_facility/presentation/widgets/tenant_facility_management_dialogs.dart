@@ -365,12 +365,16 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
       context: context,
       builder: (BuildContext dialogContext) => AppTextInputActionDialog(
         title: l10n.tenantFacilityPermanentDeleteConfirmationTitle,
+        description: l10n.tenantFacilityPermanentDeleteWarningBody(tenant.name),
         fieldLabel: l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(
           tenant.name,
         ),
         submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
         cancelLabel: l10n.commonCancelActionLabel,
         requiredMessage: l10n.validationRequired,
+        destructive: true,
+        minLines: 1,
+        maxLines: 1,
         icon: const Icon(Icons.delete_forever_outlined),
       ),
     );

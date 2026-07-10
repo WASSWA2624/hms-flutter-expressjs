@@ -292,11 +292,11 @@ const update = async (id, data) => {
 };
 
 /**
- * Soft delete tenant
- * Per prisma.mdc: Only soft deletes allowed
+ * Soft delete tenant and cascade soft-delete to all active facilities.
+ * Facilities already soft-deleted are left unchanged.
  *
  * @param {string} id - Tenant ID
- * @returns {Promise<Object>} Deleted tenant
+ * @returns {Promise<{ tenant: Object, facilities: Object[] }>}
  */
 const softDelete = async (id) => {
   try {
@@ -314,13 +314,44 @@ const softDelete = async (id) => {
     }
 
     const releasedSlug = buildReleasedSlug(existing.slug, id);
+    const deletedAt = new Date();
 
-    return await prisma.tenant.update({
-      where: { id },
-      data: {
-        deleted_at: new Date(),
-        ...(releasedSlug ? { slug: releasedSlug } : {})
+    return await prisma.$transaction(async (tx) => {
+      const facilities = await tx.facility.findMany({
+        where: {
+          tenant_id: id,
+          deleted_at: null,
+        },
+        select: {
+          id: true,
+          tenant_id: true,
+          name: true,
+          facility_type: true,
+          is_active: true,
+        },
+      });
+
+      if (facilities.length > 0) {
+        await tx.facility.updateMany({
+          where: {
+            tenant_id: id,
+            deleted_at: null,
+          },
+          data: {
+            deleted_at: deletedAt,
+          },
+        });
       }
+
+      const tenant = await tx.tenant.update({
+        where: { id },
+        data: {
+          deleted_at: deletedAt,
+          ...(releasedSlug ? { slug: releasedSlug } : {}),
+        },
+      });
+
+      return { tenant, facilities };
     });
   } catch (error) {
     if (error.code === 'P2025') {
@@ -331,10 +362,11 @@ const softDelete = async (id) => {
 };
 
 /**
- * Restore a soft-deleted tenant.
+ * Restore a soft-deleted tenant and cascade-restore facilities soft-deleted
+ * in the same tenant soft-delete (matching deleted_at).
  *
  * @param {string} id - Tenant ID
- * @returns {Promise<Object>} Restored tenant
+ * @returns {Promise<{ tenant: Object, facilities: Object[] }>}
  */
 const restore = async (id) => {
   try {
@@ -367,13 +399,43 @@ const restore = async (id) => {
       }
     }
 
-    return await prisma.tenant.update({
-      where: { id },
-      data: {
-        deleted_at: null,
-        ...(restoredSlug ? { slug: restoredSlug } : {}),
-      },
-      include: TENANT_ADMIN_RELATION_INCLUDE,
+    return await prisma.$transaction(async (tx) => {
+      const facilities = await tx.facility.findMany({
+        where: {
+          tenant_id: id,
+          deleted_at: existing.deleted_at,
+        },
+        select: {
+          id: true,
+          tenant_id: true,
+          name: true,
+          facility_type: true,
+          is_active: true,
+        },
+      });
+
+      if (facilities.length > 0) {
+        await tx.facility.updateMany({
+          where: {
+            tenant_id: id,
+            deleted_at: existing.deleted_at,
+          },
+          data: {
+            deleted_at: null,
+          },
+        });
+      }
+
+      const tenant = await tx.tenant.update({
+        where: { id },
+        data: {
+          deleted_at: null,
+          ...(restoredSlug ? { slug: restoredSlug } : {}),
+        },
+        include: TENANT_ADMIN_RELATION_INCLUDE,
+      });
+
+      return { tenant, facilities };
     });
   } catch (error) {
     if (error instanceof HttpError) {
@@ -390,11 +452,29 @@ const restore = async (id) => {
   }
 };
 
+const listSchemaTablesWithColumn = async (tx, columnName, { excludeTables = [] } = {}) => {
+  const rows = await tx.$queryRaw`
+    SELECT DISTINCT TABLE_NAME AS table_name
+    FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND COLUMN_NAME = ${columnName}
+  `;
+
+  const excluded = new Set(
+    excludeTables.map((name) => String(name || '').trim().toLowerCase()).filter(Boolean)
+  );
+
+  return rows
+    .map((row) => String(row.table_name || row.TABLE_NAME || '').replace(/`/g, '').trim())
+    .filter((tableName) => tableName && !excluded.has(tableName.toLowerCase()));
+};
+
 /**
- * Permanently delete a soft-deleted tenant and scoped tenant data.
+ * Permanently delete a soft-deleted tenant, its facilities, and related data.
+ * Purges facility-scoped rows first, then tenant-scoped rows, then the tenant.
  *
  * @param {string} id - Tenant ID
- * @returns {Promise<void>}
+ * @returns {Promise<{ facilityIds: string[] }>}
  */
 const permanentDelete = async (id) => {
   try {
@@ -407,30 +487,40 @@ const permanentDelete = async (id) => {
     });
 
     if (!existing) {
-      return;
+      return { facilityIds: [] };
     }
     if (!existing.deleted_at) {
       throw new HttpError('errors.tenant.permanent_delete_requires_soft_delete', 400);
     }
 
-    await prisma.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx) => {
       await tx.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 0');
       try {
-        const rows = await tx.$queryRaw`
-          SELECT DISTINCT TABLE_NAME AS table_name
-          FROM information_schema.COLUMNS
-          WHERE TABLE_SCHEMA = DATABASE()
-            AND COLUMN_NAME = 'tenant_id'
-            AND TABLE_NAME <> 'tenant'
-        `;
+        const facilityRows = await tx.facility.findMany({
+          where: { tenant_id: id },
+          select: { id: true },
+        });
+        const facilityIds = facilityRows.map((row) => row.id);
 
-        for (const row of rows) {
-          const tableName = String(row.table_name || row.TABLE_NAME || '')
-            .replace(/`/g, '')
-            .trim();
-          if (!tableName) {
-            continue;
+        if (facilityIds.length > 0) {
+          const facilityTables = await listSchemaTablesWithColumn(tx, 'facility_id', {
+            excludeTables: ['facility'],
+          });
+          const placeholders = facilityIds.map(() => '?').join(', ');
+
+          for (const tableName of facilityTables) {
+            await tx.$executeRawUnsafe(
+              `DELETE FROM \`${tableName}\` WHERE facility_id IN (${placeholders})`,
+              ...facilityIds
+            );
           }
+        }
+
+        const tenantTables = await listSchemaTablesWithColumn(tx, 'tenant_id', {
+          excludeTables: ['tenant'],
+        });
+
+        for (const tableName of tenantTables) {
           await tx.$executeRawUnsafe(
             `DELETE FROM \`${tableName}\` WHERE tenant_id = ?`,
             id
@@ -438,6 +528,7 @@ const permanentDelete = async (id) => {
         }
 
         await tx.tenant.delete({ where: { id } });
+        return { facilityIds };
       } finally {
         await tx.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
       }

@@ -292,6 +292,7 @@ class AppTextInputActionDialog extends StatefulWidget {
     required this.submitLabel,
     required this.cancelLabel,
     required this.requiredMessage,
+    this.description,
     this.icon = const Icon(Icons.edit_note_outlined),
     this.initialValue,
     this.prefixIcon,
@@ -300,6 +301,7 @@ class AppTextInputActionDialog extends StatefulWidget {
     this.maxWidth = 600,
     this.isRequired = true,
     this.scrollable = false,
+    this.destructive = false,
     super.key,
   });
 
@@ -308,6 +310,7 @@ class AppTextInputActionDialog extends StatefulWidget {
   final String submitLabel;
   final String cancelLabel;
   final String requiredMessage;
+  final String? description;
   final Widget icon;
   final Widget? prefixIcon;
   final String? initialValue;
@@ -316,6 +319,7 @@ class AppTextInputActionDialog extends StatefulWidget {
   final double maxWidth;
   final bool isRequired;
   final bool scrollable;
+  final bool destructive;
 
   @override
   State<AppTextInputActionDialog> createState() =>
@@ -340,15 +344,37 @@ class _AppTextInputActionDialogState extends State<AppTextInputActionDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
     return AppDialog(
       title: Text(widget.title),
-      icon: widget.icon,
+      icon: widget.destructive
+          ? Icon(
+              (widget.icon is Icon)
+                  ? (widget.icon as Icon).icon ?? Icons.delete_forever_outlined
+                  : Icons.delete_forever_outlined,
+              color: colorScheme.error,
+            )
+          : widget.icon,
       scrollable: widget.scrollable,
       maxWidth: widget.maxWidth,
       initialMaximized: false,
       content: AppFormShell(
         formKey: _formKey,
         children: <Widget>[
+          if (widget.description != null && widget.description!.trim().isNotEmpty)
+            Text(
+              widget.description!,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: widget.destructive
+                    ? colorScheme.error
+                    : colorScheme.onSurfaceVariant,
+                height: 1.45,
+                fontWeight:
+                    widget.destructive ? FontWeight.w600 : FontWeight.w400,
+              ),
+            ),
           AppTextField(
             controller: _controller,
             labelText: widget.fieldLabel,
@@ -368,7 +394,10 @@ class _AppTextInputActionDialogState extends State<AppTextInputActionDialog> {
         ),
         AppButton.primary(
           label: widget.submitLabel,
-          leadingIcon: Icons.check_circle_outline,
+          leadingIcon: widget.destructive
+              ? Icons.delete_forever_outlined
+              : Icons.check_circle_outline,
+          color: widget.destructive ? colorScheme.error : null,
           onPressed: _submit,
         ),
       ],

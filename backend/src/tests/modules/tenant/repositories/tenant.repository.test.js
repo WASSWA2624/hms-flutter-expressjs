@@ -15,8 +15,14 @@ jest.mock('@prisma/client', () => ({
     findMany: jest.fn(),
     count: jest.fn(),
     create: jest.fn(),
-    update: jest.fn()
-  }
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  facility: {
+    findMany: jest.fn(),
+    updateMany: jest.fn(),
+  },
+  $transaction: jest.fn(),
 }));
 
 const {
@@ -330,7 +336,8 @@ describe('Tenant Repository', () => {
   });
 
   describe('softDelete', () => {
-    it('should soft delete a tenant and release its slug', async () => {
+    it('should soft delete a tenant, cascade facilities, and release its slug', async () => {
+      const deletedAt = new Date('2026-07-10T12:00:00.000Z');
       const mockDeletedTenant = {
         id: 'tenant-123',
         name: 'Test Hospital',
@@ -338,19 +345,42 @@ describe('Tenant Repository', () => {
         is_active: true,
         created_at: new Date('2026-01-19'),
         updated_at: new Date(),
-        deleted_at: new Date(),
+        deleted_at: deletedAt,
         version: 1
       };
+      const mockFacilities = [
+        {
+          id: 'facility-1',
+          tenant_id: 'tenant-123',
+          name: 'Main',
+          facility_type: 'HOSPITAL',
+          is_active: true,
+        },
+      ];
       prisma.tenant.findUnique.mockResolvedValue({
         id: 'tenant-123',
         slug: 'test-hospital',
         deleted_at: null
       });
-      prisma.tenant.update.mockResolvedValue(mockDeletedTenant);
+      prisma.$transaction.mockImplementation(async (callback) => {
+        const tx = {
+          facility: {
+            findMany: jest.fn().mockResolvedValue(mockFacilities),
+            updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+          },
+          tenant: {
+            update: jest.fn().mockResolvedValue(mockDeletedTenant),
+          },
+        };
+        return callback(tx);
+      });
 
       const result = await softDelete('tenant-123');
 
-      expect(result).toEqual(mockDeletedTenant);
+      expect(result).toEqual({
+        tenant: mockDeletedTenant,
+        facilities: mockFacilities,
+      });
       expect(prisma.tenant.findUnique).toHaveBeenCalledWith({
         where: { id: 'tenant-123' },
         select: {
@@ -359,13 +389,7 @@ describe('Tenant Repository', () => {
           deleted_at: true
         }
       });
-      expect(prisma.tenant.update).toHaveBeenCalledWith({
-        where: { id: 'tenant-123' },
-        data: {
-          deleted_at: expect.any(Date),
-          slug: 'test-hospital__deleted__tenant12'
-        }
-      });
+      expect(prisma.$transaction).toHaveBeenCalled();
     });
 
     it('should throw HttpError when tenant is already deleted', async () => {
@@ -379,7 +403,7 @@ describe('Tenant Repository', () => {
         .rejects
         .toThrow(HttpError);
 
-      expect(prisma.tenant.update).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
 
     it('should throw HttpError when tenant not found', async () => {
@@ -389,7 +413,7 @@ describe('Tenant Repository', () => {
         .rejects
         .toThrow(HttpError);
 
-      expect(prisma.tenant.update).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
 
     it('should throw HttpError on other database errors', async () => {
@@ -398,7 +422,7 @@ describe('Tenant Repository', () => {
         slug: 'test-hospital',
         deleted_at: null
       });
-      prisma.tenant.update.mockRejectedValue(new Error('DB error'));
+      prisma.$transaction.mockRejectedValue(new Error('DB error'));
 
       await expect(softDelete('tenant-123'))
         .rejects

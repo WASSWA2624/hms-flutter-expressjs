@@ -597,13 +597,22 @@ describe('Tenant Service', () => {
   });
 
   describe('deleteTenant', () => {
-    it('should delete tenant successfully', async () => {
+    it('should delete tenant successfully and cascade facilities', async () => {
       const mockTenant = {
         id: 'tenant-123',
         name: 'Test Hospital',
         slug: 'test-hospital',
         is_active: true
       };
+      const mockFacilities = [
+        {
+          id: 'facility-1',
+          tenant_id: 'tenant-123',
+          name: 'Main Facility',
+          facility_type: 'HOSPITAL',
+          is_active: true,
+        },
+      ];
       const context = {
         user_id: 'user-123',
         tenant_id: 'tenant-123',
@@ -611,7 +620,10 @@ describe('Tenant Service', () => {
       };
 
       tenantRepository.findById.mockResolvedValue(mockTenant);
-      tenantRepository.softDelete.mockResolvedValue(mockTenant);
+      tenantRepository.softDelete.mockResolvedValue({
+        tenant: { ...mockTenant, deleted_at: new Date() },
+        facilities: mockFacilities,
+      });
       createAuditLog.mockResolvedValue(undefined);
 
       await deleteTenant('tenant-123', context);
@@ -629,9 +641,23 @@ describe('Tenant Service', () => {
         user_agent: undefined,
         details: {
           name: mockTenant.name,
-          slug: mockTenant.slug
+          slug: mockTenant.slug,
+          cascaded_facility_ids: ['facility-1'],
         }
       });
+      expect(createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'FACILITY_DELETED',
+          entity: 'facility',
+          entity_id: 'facility-1',
+        }),
+      );
+      expect(publishPlatformRealtimeEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'facility.deleted',
+          resource_id: 'facility-1',
+        }),
+      );
     });
 
     it('should throw HttpError if tenant not found', async () => {
@@ -672,7 +698,7 @@ describe('Tenant Service', () => {
   });
 
   describe('restoreTenant', () => {
-    it('should restore tenant successfully', async () => {
+    it('should restore tenant successfully and cascade facilities', async () => {
       const mockTenant = {
         id: 'tenant-123',
         name: 'Test Hospital',
@@ -680,7 +706,19 @@ describe('Tenant Service', () => {
         is_active: true,
         deleted_at: null,
       };
-      tenantRepository.restore.mockResolvedValue(mockTenant);
+      const mockFacilities = [
+        {
+          id: 'facility-1',
+          tenant_id: 'tenant-123',
+          name: 'Main Facility',
+          facility_type: 'HOSPITAL',
+          is_active: true,
+        },
+      ];
+      tenantRepository.restore.mockResolvedValue({
+        tenant: mockTenant,
+        facilities: mockFacilities,
+      });
 
       const result = await restoreTenant('tenant-123', { user_id: 'user-1' });
 
@@ -693,7 +731,19 @@ describe('Tenant Service', () => {
       );
       expect(tenantRepository.restore).toHaveBeenCalledWith('tenant-123');
       expect(createAuditLog).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'TENANT_RESTORED', entity_id: 'tenant-123' }),
+        expect.objectContaining({
+          action: 'TENANT_RESTORED',
+          entity_id: 'tenant-123',
+          details: expect.objectContaining({
+            cascaded_facility_ids: ['facility-1'],
+          }),
+        }),
+      );
+      expect(createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'FACILITY_RESTORED',
+          entity_id: 'facility-1',
+        }),
       );
     });
   });
@@ -707,7 +757,9 @@ describe('Tenant Service', () => {
         deleted_at: new Date(),
       };
       tenantRepository.findById.mockResolvedValue(mockTenant);
-      tenantRepository.permanentDelete.mockResolvedValue(undefined);
+      tenantRepository.permanentDelete.mockResolvedValue({
+        facilityIds: ['facility-1'],
+      });
 
       await permanentDeleteTenant('tenant-123', { user_id: 'user-1' });
 
@@ -715,9 +767,18 @@ describe('Tenant Service', () => {
         expect.objectContaining({
           action: 'TENANT_PERMANENTLY_DELETED',
           entity_id: 'tenant-123',
+          details: expect.objectContaining({ irreversible: true }),
         }),
       );
       expect(tenantRepository.permanentDelete).toHaveBeenCalledWith('tenant-123');
+      expect(publishPlatformRealtimeEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'tenant.permanently_deleted',
+          payload: expect.objectContaining({
+            cascaded_facility_ids: ['facility-1'],
+          }),
+        }),
+      );
     });
 
     it('should reject permanent delete for active tenant', async () => {

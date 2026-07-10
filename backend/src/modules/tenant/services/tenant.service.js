@@ -384,7 +384,7 @@ const updateTenant = async (id, data, context = {}) => {
 };
 
 /**
- * Delete tenant (soft delete)
+ * Delete tenant (soft delete) and cascade soft-delete to all active facilities.
  *
  * @param {string} id - Tenant ID
  * @param {Object} context - Request context for audit
@@ -419,10 +419,8 @@ const deleteTenant = async (id, context = {}) => {
     throw new HttpError('errors.tenant.not_found', 404);
   }
 
-  // Soft delete tenant
-  await tenantRepository.softDelete(tenantId);
+  const { tenant: deletedTenant, facilities } = await tenantRepository.softDelete(tenantId);
 
-  // Create audit log
   await createAuditLog({
     action: 'TENANT_DELETED',
     entity: 'tenant',
@@ -434,13 +432,47 @@ const deleteTenant = async (id, context = {}) => {
     user_agent: context.user_agent,
     details: {
       name: tenant.name,
-      slug: tenant.slug
+      slug: tenant.slug,
+      cascaded_facility_ids: facilities.map((facility) => facility.id),
     }
   });
 
+  for (const facility of facilities) {
+    await createAuditLog({
+      action: 'FACILITY_DELETED',
+      entity: 'facility',
+      entity_id: facility.id,
+      user_id: context.user_id,
+      tenant_id: tenantId,
+      facility_id: facility.id,
+      ip_address: context.ip_address,
+      user_agent: context.user_agent,
+      details: {
+        name: facility.name,
+        facility_type: facility.facility_type,
+        cascaded_from_tenant: true,
+      }
+    });
+
+    await publishPlatformRealtimeEvent({
+      event: PLATFORM_ADMIN_EVENTS.FACILITY_DELETED,
+      resource_type: 'facility',
+      resource_id: facility.id,
+      actor_user_id: context.user_id || null,
+      tenant_id: facility.tenant_id || tenantId,
+      facility_id: facility.id,
+      dashboard_deltas: buildFacilityDashboardDeltas(facility, 'delete'),
+      payload: {
+        is_active: facility.is_active !== false,
+        name: facility.name || null,
+        cascaded_from_tenant: true,
+      }
+    });
+  }
+
   await publishTenantRealtimeEvent(
     PLATFORM_ADMIN_EVENTS.TENANT_DELETED,
-    tenant,
+    deletedTenant || tenant,
     context.user_id,
     'delete'
   );
@@ -481,12 +513,12 @@ const assertNoActiveSubscriptions = async (tenantId) => {
 };
 
 /**
- * Restore soft-deleted tenant
+ * Restore soft-deleted tenant and cascade-restore facilities soft-deleted with it.
  */
 const restoreTenant = async (id, context = {}) => {
   const normalizedId = String(id ?? '').trim();
   const tenantId = await resolveTenantIdIncludingDeleted(normalizedId);
-  const tenant = await tenantRepository.restore(tenantId);
+  const { tenant, facilities } = await tenantRepository.restore(tenantId);
 
   await createAuditLog({
     action: 'TENANT_RESTORED',
@@ -500,8 +532,42 @@ const restoreTenant = async (id, context = {}) => {
     details: {
       name: tenant.name,
       slug: tenant.slug,
+      cascaded_facility_ids: facilities.map((facility) => facility.id),
     },
   });
+
+  for (const facility of facilities) {
+    await createAuditLog({
+      action: 'FACILITY_RESTORED',
+      entity: 'facility',
+      entity_id: facility.id,
+      user_id: context.user_id,
+      tenant_id: tenantId,
+      facility_id: facility.id,
+      ip_address: context.ip_address,
+      user_agent: context.user_agent,
+      details: {
+        name: facility.name,
+        facility_type: facility.facility_type,
+        cascaded_from_tenant: true,
+      },
+    });
+
+    await publishPlatformRealtimeEvent({
+      event: PLATFORM_ADMIN_EVENTS.FACILITY_CREATED,
+      resource_type: 'facility',
+      resource_id: facility.id,
+      actor_user_id: context.user_id || null,
+      tenant_id: facility.tenant_id || tenantId,
+      facility_id: facility.id,
+      dashboard_deltas: buildFacilityDashboardDeltas(facility, 'create'),
+      payload: {
+        is_active: facility.is_active !== false,
+        name: facility.name || null,
+        cascaded_from_tenant_restore: true,
+      },
+    });
+  }
 
   await publishTenantRealtimeEvent(
     PLATFORM_ADMIN_EVENTS.TENANT_RESTORED,
@@ -514,7 +580,7 @@ const restoreTenant = async (id, context = {}) => {
 };
 
 /**
- * Permanently delete a soft-deleted tenant
+ * Permanently delete a soft-deleted tenant, its facilities, and related data.
  */
 const permanentDeleteTenant = async (id, context = {}) => {
   const normalizedId = String(id ?? '').trim();
@@ -543,10 +609,11 @@ const permanentDeleteTenant = async (id, context = {}) => {
     details: {
       name: tenant.name,
       slug: tenant.slug,
+      irreversible: true,
     },
   });
 
-  await tenantRepository.permanentDelete(tenantId);
+  const { facilityIds } = await tenantRepository.permanentDelete(tenantId);
 
   await publishPlatformRealtimeEvent({
     event: PLATFORM_ADMIN_EVENTS.TENANT_PERMANENTLY_DELETED,
@@ -556,6 +623,7 @@ const permanentDeleteTenant = async (id, context = {}) => {
     payload: {
       name: tenant.name,
       permanent: true,
+      cascaded_facility_ids: facilityIds,
     },
   });
 };

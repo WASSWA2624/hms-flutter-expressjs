@@ -5532,9 +5532,9 @@
   "@homeManageRolesPermissionsTitle": {
     "description": "Title for the focused roles and permissions management dialog."
   },
-  "tenantFacilityDeleteTenantConfirmationBody": "Delete tenant \"{name}\"? This cannot be undone.",
+  "tenantFacilityDeleteTenantConfirmationBody": "Soft-delete tenant \"{name}\"? All of its facilities will also be soft-deleted. You can restore the tenant later.",
   "@tenantFacilityDeleteTenantConfirmationBody": {
-    "description": "Confirmation body when deleting a tenant from management dialog.",
+    "description": "Confirmation body when soft-deleting a tenant from management dialog.",
     "placeholders": {
       "name": {
         "type": "String"
@@ -6528,11 +6528,20 @@
   "@tenantFacilityPermanentDeleteAction": {
     "description": "Permanent delete tenant action label."
   },
-  "tenantFacilityPermanentDeleteConfirmationTitle": "Permanent delete",
+  "tenantFacilityPermanentDeleteConfirmationTitle": "Permanent delete — irreversible",
   "@tenantFacilityPermanentDeleteConfirmationTitle": {
     "description": "Permanent delete tenant confirmation dialog title."
   },
-  "tenantFacilityPermanentDeleteConfirmationBody": "Permanently delete tenant \"{name}\" and all related data? This cannot be undone.",
+  "tenantFacilityPermanentDeleteWarningBody": "WARNING: Permanently deleting \"{name}\" will erase this tenant, all of its facilities, and all related data forever. This cannot be recovered.",
+  "@tenantFacilityPermanentDeleteWarningBody": {
+    "description": "Strong irreversible warning shown before typing confirmation for permanent tenant delete.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantFacilityPermanentDeleteConfirmationBody": "Final confirmation: permanently delete tenant \"{name}\", all facilities under it, and all related data? This action is irreversible and the data can never be recovered.",
   "@tenantFacilityPermanentDeleteConfirmationBody": {
     "description": "Permanent delete tenant confirmation body.",
     "placeholders": {
@@ -6541,7 +6550,7 @@
       }
     }
   },
-  "tenantFacilityPermanentDeleteConfirmFieldLabel": "Type \"{name}\" to confirm",
+  "tenantFacilityPermanentDeleteConfirmFieldLabel": "Type \"{name}\" to confirm permanent delete",
   "@tenantFacilityPermanentDeleteConfirmFieldLabel": {
     "description": "Permanent delete typed confirmation field label.",
     "placeholders": {

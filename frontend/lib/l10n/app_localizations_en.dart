@@ -4222,7 +4222,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String tenantFacilityDeleteTenantConfirmationBody(String name) {
-    return 'Delete tenant \"$name\"? This cannot be undone.';
+    return 'Soft-delete tenant \"$name\"? All of its facilities will also be soft-deleted. You can restore the tenant later.';
   }
 
   @override
@@ -5071,16 +5071,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityPermanentDeleteConfirmationTitle =>
-      'Permanent delete';
+      'Permanent delete — irreversible';
+
+  @override
+  String tenantFacilityPermanentDeleteWarningBody(String name) {
+    return 'WARNING: Permanently deleting \"$name\" will erase this tenant, all of its facilities, and all related data forever. This cannot be recovered.';
+  }
 
   @override
   String tenantFacilityPermanentDeleteConfirmationBody(String name) {
-    return 'Permanently delete tenant \"$name\" and all related data? This cannot be undone.';
+    return 'Final confirmation: permanently delete tenant \"$name\", all facilities under it, and all related data? This action is irreversible and the data can never be recovered.';
   }
 
   @override
   String tenantFacilityPermanentDeleteConfirmFieldLabel(String name) {
-    return 'Type \"$name\" to confirm';
+    return 'Type \"$name\" to confirm permanent delete';
   }
 
   @override
