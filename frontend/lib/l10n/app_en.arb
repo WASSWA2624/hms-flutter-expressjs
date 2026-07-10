@@ -6495,6 +6495,30 @@
   "@tenantFacilityManageTenantsTitle": {
     "description": "Platform admin dialog title for tenant management."
   },
+  "tenantFacilityTenantDetailsTitle": "Tenant details",
+  "@tenantFacilityTenantDetailsTitle": {
+    "description": "Title for tenant details modal opened from Manage Tenants."
+  },
+  "tenantFacilityTenantDetailsFacilitiesHeading": "Facilities",
+  "@tenantFacilityTenantDetailsFacilitiesHeading": {
+    "description": "Facilities section heading in tenant details modal."
+  },
+  "tenantFacilityTenantDetailsNoFacilities": "No facilities under this tenant.",
+  "@tenantFacilityTenantDetailsNoFacilities": {
+    "description": "Empty facilities list body in tenant details modal."
+  },
+  "tenantFacilityEditTenantAction": "Edit tenant",
+  "@tenantFacilityEditTenantAction": {
+    "description": "Edit tenant action label in tenant details modal."
+  },
+  "tenantFacilityDeleteTenantAction": "Delete tenant",
+  "@tenantFacilityDeleteTenantAction": {
+    "description": "Delete tenant action label in tenant details modal."
+  },
+  "tenantFacilityTenantDetailsIdLabel": "ID",
+  "@tenantFacilityTenantDetailsIdLabel": {
+    "description": "Display ID label in tenant details summary."
+  },
   "tenantFacilityTenantStatusLabel": "Status",
   "@tenantFacilityTenantStatusLabel": {
     "description": "Tenant status column label in manage tenants dialog."

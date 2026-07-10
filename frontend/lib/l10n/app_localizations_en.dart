@@ -5047,6 +5047,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityManageTenantsTitle => 'Manage tenants';
 
   @override
+  String get tenantFacilityTenantDetailsTitle => 'Tenant details';
+
+  @override
+  String get tenantFacilityTenantDetailsFacilitiesHeading => 'Facilities';
+
+  @override
+  String get tenantFacilityTenantDetailsNoFacilities =>
+      'No facilities under this tenant.';
+
+  @override
+  String get tenantFacilityEditTenantAction => 'Edit tenant';
+
+  @override
+  String get tenantFacilityDeleteTenantAction => 'Delete tenant';
+
+  @override
+  String get tenantFacilityTenantDetailsIdLabel => 'ID';
+
+  @override
   String get tenantFacilityTenantStatusLabel => 'Status';
 
   @override

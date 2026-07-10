@@ -9418,6 +9418,42 @@ abstract class AppLocalizations {
   /// **'Manage tenants'**
   String get tenantFacilityManageTenantsTitle;
 
+  /// Title for tenant details modal opened from Manage Tenants.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant details'**
+  String get tenantFacilityTenantDetailsTitle;
+
+  /// Facilities section heading in tenant details modal.
+  ///
+  /// In en, this message translates to:
+  /// **'Facilities'**
+  String get tenantFacilityTenantDetailsFacilitiesHeading;
+
+  /// Empty facilities list body in tenant details modal.
+  ///
+  /// In en, this message translates to:
+  /// **'No facilities under this tenant.'**
+  String get tenantFacilityTenantDetailsNoFacilities;
+
+  /// Edit tenant action label in tenant details modal.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit tenant'**
+  String get tenantFacilityEditTenantAction;
+
+  /// Delete tenant action label in tenant details modal.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete tenant'**
+  String get tenantFacilityDeleteTenantAction;
+
+  /// Display ID label in tenant details summary.
+  ///
+  /// In en, this message translates to:
+  /// **'ID'**
+  String get tenantFacilityTenantDetailsIdLabel;
+
   /// Tenant status column label in manage tenants dialog.
   ///
   /// In en, this message translates to:
