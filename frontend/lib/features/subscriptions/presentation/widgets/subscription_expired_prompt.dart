@@ -110,17 +110,27 @@ class _SubscriptionExpiredPromptHostState
         return AppDialog(
           title: Text(l10n.subscriptionExpiredPromptTitle),
           icon: const Icon(Icons.warning_amber_rounded),
-          content: Text(l10n.subscriptionExpiredPromptBody),
-          actions: <Widget>[
-            AppButton.primary(
-              label: l10n.subscriptionExpiredPromptRenewAction,
-              leadingIcon: Icons.workspace_premium_outlined,
-              onPressed: () => Navigator.of(dialogContext).pop(true),
+          maxWidth: 440,
+          initialMaximized: false,
+          showMaximizeButton: false,
+          resizable: false,
+          content: Text(
+            l10n.subscriptionExpiredPromptBody,
+            style: Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
+              height: 1.35,
+              fontWeight: FontWeight.w600,
             ),
+          ),
+          actions: <Widget>[
             AppButton.secondary(
               label: l10n.subscriptionExpiredPromptLaterAction,
               leadingIcon: Icons.schedule,
               onPressed: () => Navigator.of(dialogContext).pop(false),
+            ),
+            AppButton.primary(
+              label: l10n.subscriptionExpiredPromptRenewAction,
+              leadingIcon: Icons.workspace_premium_outlined,
+              onPressed: () => Navigator.of(dialogContext).pop(true),
             ),
           ],
         );

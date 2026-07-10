@@ -115,7 +115,7 @@ abstract class AppLocalizations {
   /// Body text shown while startup dependencies initialize.
   ///
   /// In en, this message translates to:
-  /// **'Preparing your workspace. This only takes a moment.'**
+  /// **'Preparing your workspace…'**
   String get startupLoadingBody;
 
   /// Title shown when startup initialization fails.
@@ -157,7 +157,7 @@ abstract class AppLocalizations {
   /// Accessibility label for the workspace overflow menu when notification counts are pending.
   ///
   /// In en, this message translates to:
-  /// **'More actions — {count} items need attention'**
+  /// **'More actions — {count} need attention'**
   String workspaceToolbarOverflowAttentionTooltip(int count);
 
   /// Overflow menu section header for staffing and access administration actions.
@@ -169,19 +169,19 @@ abstract class AppLocalizations {
   /// Overflow menu section header for roster and schedule template actions.
   ///
   /// In en, this message translates to:
-  /// **'Scheduling & roster'**
+  /// **'Scheduling'**
   String get workspaceToolbarSectionScheduling;
 
   /// Overflow menu section header for notification shortcuts and approval queues.
   ///
   /// In en, this message translates to:
-  /// **'Approvals & alerts'**
+  /// **'Approvals'**
   String get workspaceToolbarSectionApprovals;
 
   /// Overflow menu section header for HR activity and audit trail actions.
   ///
   /// In en, this message translates to:
-  /// **'Activity & audit'**
+  /// **'Activity'**
   String get workspaceToolbarSectionActivity;
 
   /// Overflow menu section header for workspace utility actions such as refresh.
@@ -199,7 +199,7 @@ abstract class AppLocalizations {
   /// Tooltip clarifying that notifications are badge-driven queue shortcuts.
   ///
   /// In en, this message translates to:
-  /// **'Jump directly to queues that need your attention.'**
+  /// **'Open queues that need attention.'**
   String get workspaceNotificationsToolbarTooltip;
 
   /// Label for entering full-screen mode from the app shell.
@@ -253,7 +253,7 @@ abstract class AppLocalizations {
   /// Loading body for the ICU workspace.
   ///
   /// In en, this message translates to:
-  /// **'Loading intensive care patients and alert state.'**
+  /// **'Loading ICU patients and alerts…'**
   String get icuLoadingBoardBody;
 
   /// Status label when the ICU workspace is live syncing.
@@ -409,7 +409,7 @@ abstract class AppLocalizations {
   /// Empty state body for the ICU detail panel.
   ///
   /// In en, this message translates to:
-  /// **'Select an ICU patient to review observations, orders, alerts, and transfer readiness.'**
+  /// **'Select an ICU patient for observations and alerts.'**
   String get icuDetailEmptyBody;
 
   /// Loading title for the ICU detail panel.
@@ -421,7 +421,7 @@ abstract class AppLocalizations {
   /// Loading body for the ICU detail panel.
   ///
   /// In en, this message translates to:
-  /// **'Loading observations, alerts, and transfer state.'**
+  /// **'Loading observations and transfer state…'**
   String get icuDetailLoadingBody;
 
   /// Field label for the IPD admission number.
@@ -499,7 +499,7 @@ abstract class AppLocalizations {
   /// Description for the ICU observations panel.
   ///
   /// In en, this message translates to:
-  /// **'Recent intensive observations for this ICU stay.'**
+  /// **'Recent intensive observations for this stay.'**
   String get icuObservationsPanelDescription;
 
   /// Empty label for the ICU observations list.
@@ -517,7 +517,7 @@ abstract class AppLocalizations {
   /// Description for the ICU vitals trend panel.
   ///
   /// In en, this message translates to:
-  /// **'Latest recorded vital values for the admission encounter.'**
+  /// **'Latest vitals for this admission.'**
   String get icuVitalsTrendDescription;
 
   /// Empty label for the ICU vitals list.
@@ -535,7 +535,7 @@ abstract class AppLocalizations {
   /// Description for the ICU care panel.
   ///
   /// In en, this message translates to:
-  /// **'Recent care notes and medication tasks linked to IPD.'**
+  /// **'Care notes and medication tasks linked to IPD.'**
   String get icuCarePanelDescription;
 
   /// Empty label for the ICU care list.
@@ -553,7 +553,7 @@ abstract class AppLocalizations {
   /// Description for the ICU transfer panel.
   ///
   /// In en, this message translates to:
-  /// **'ICU stay movement, planned discharge, and handoff state.'**
+  /// **'Stay movement, planned discharge, and handoff.'**
   String get icuTransferPanelDescription;
 
   /// Empty label for the ICU transfer list.
@@ -841,7 +841,7 @@ abstract class AppLocalizations {
   /// Description for the ICU discharge readiness dialog.
   ///
   /// In en, this message translates to:
-  /// **'This records a planned discharge readiness note and keeps the patient in the IPD discharge workflow.'**
+  /// **'Records discharge readiness; patient stays in IPD discharge.'**
   String get icuReadinessDescription;
 
   /// Submit label for marking discharge readiness.
@@ -859,7 +859,7 @@ abstract class AppLocalizations {
   /// Body for the start ICU stay confirmation.
   ///
   /// In en, this message translates to:
-  /// **'This opens an active ICU stay on the IPD admission so critical-care documentation can begin.'**
+  /// **'Opens an ICU stay on this IPD admission for critical-care notes.'**
   String get icuStartStayBody;
 
   /// Confirm label to start an ICU stay.
@@ -889,7 +889,7 @@ abstract class AppLocalizations {
   /// Body for the end ICU stay confirmation.
   ///
   /// In en, this message translates to:
-  /// **'This ends the active ICU stay. Continue only after the receiving ward or discharge workflow is ready.'**
+  /// **'Ends the ICU stay. Confirm receiving ward or discharge is ready.'**
   String get icuEndStayBody;
 
   /// Title for the assign ICU bed dialog.
@@ -949,7 +949,7 @@ abstract class AppLocalizations {
   /// Body prompting to end the ICU stay after a step-down.
   ///
   /// In en, this message translates to:
-  /// **'The transfer is complete. End the active ICU stay now that the patient has stepped down to ward care.'**
+  /// **'Transfer complete. End the ICU stay — patient is on the ward.'**
   String get icuStepDownPromptBody;
 
   /// Snackbar message after a successful ICU action.
@@ -967,7 +967,7 @@ abstract class AppLocalizations {
   /// Description for the ICU bed board.
   ///
   /// In en, this message translates to:
-  /// **'ICU ward bed occupancy and bed operations.'**
+  /// **'ICU bed occupancy and operations.'**
   String get icuBedBoardDescription;
 
   /// Bed board filter: all ICU wards.
@@ -1093,7 +1093,7 @@ abstract class AppLocalizations {
   /// Confirmation body for starting an ICU stay from IPD.
   ///
   /// In en, this message translates to:
-  /// **'This opens an active ICU stay on this admission so the ICU team can begin critical-care documentation.'**
+  /// **'Opens an ICU stay so critical-care documentation can begin.'**
   String get ipdStartIcuStayBody;
 
   /// Label for actions that navigate back to the dashboard route.
@@ -1123,13 +1123,13 @@ abstract class AppLocalizations {
   /// Helper text shown in the image crop dialog when an aspect ratio is locked.
   ///
   /// In en, this message translates to:
-  /// **'The full image stays fixed. Drag and resize the crop box to choose what to keep, then apply.'**
+  /// **'Drag and resize the crop box, then apply.'**
   String get appImageCropBody;
 
   /// Helper text for free-form (unlocked aspect ratio) image cropping.
   ///
   /// In en, this message translates to:
-  /// **'The full image stays fixed. Drag and resize the crop box to any size or aspect ratio, then apply.'**
+  /// **'Drag and resize freely to any aspect ratio, then apply.'**
   String get appImageCropFreeformBody;
 
   /// Crop aspect preset: unlocked free-form ratio.
@@ -1171,7 +1171,7 @@ abstract class AppLocalizations {
   /// Helper text on the cropped-image preview step.
   ///
   /// In en, this message translates to:
-  /// **'Review the cropped image. Confirm to use it, or go back to adjust the crop.'**
+  /// **'Confirm the crop, or go back to adjust.'**
   String get appImageCropPreviewBody;
 
   /// Action that returns from preview to the crop editor.
@@ -1477,7 +1477,7 @@ abstract class AppLocalizations {
   /// Loading body for the billing workspace.
   ///
   /// In en, this message translates to:
-  /// **'Fetching invoices, payments, refunds, and closeout queues.'**
+  /// **'Loading invoices and payment queues…'**
   String get billingLoadingBody;
 
   /// Live status label for billing workspace.
@@ -1495,7 +1495,7 @@ abstract class AppLocalizations {
   /// Description for the billing worklist panel.
   ///
   /// In en, this message translates to:
-  /// **'Cashier worklist for invoices, payments, claims, and approvals.'**
+  /// **'Invoices, payments, claims, and approvals.'**
   String get billingWorklistDescription;
 
   /// Label for all billing work items queue.
@@ -1693,7 +1693,7 @@ abstract class AppLocalizations {
   /// Empty state body for billing worklist.
   ///
   /// In en, this message translates to:
-  /// **'This queue has no invoices or billing actions right now.'**
+  /// **'No invoices or billing actions in this queue.'**
   String get billingEmptyBody;
 
   /// Patient column label in billing table.
@@ -1993,7 +1993,7 @@ abstract class AppLocalizations {
   /// Tooltip for invoice print action.
   ///
   /// In en, this message translates to:
-  /// **'Print invoice with line items and payment details'**
+  /// **'Print invoice with line items and payments'**
   String get billingPrintInvoiceTooltip;
 
   /// Footer note on printed billing invoices.
@@ -2077,7 +2077,7 @@ abstract class AppLocalizations {
   /// Body for finalize encounter billing confirmation.
   ///
   /// In en, this message translates to:
-  /// **'All linked charges are issued and settled. Confirm financial clearance for this encounter.'**
+  /// **'Linked charges are settled. Confirm financial clearance for this encounter.'**
   String get billingFinalizeEncounterBody;
 
   /// Encounter field label in billing detail.
@@ -2416,10 +2416,10 @@ abstract class AppLocalizations {
   /// **'Expires in {days} days'**
   String subscriptionHeaderExpiresInDaysLabel(int days);
 
-  /// Shell header label when the tenant subscription is expired or past due.
+  /// Shell header label when the tenant subscription is expired; access is limited, not fully cut off.
   ///
   /// In en, this message translates to:
-  /// **'Subscription expired'**
+  /// **'Limited access'**
   String get subscriptionHeaderExpiredLabel;
 
   /// Shell header action label to open the subscription upgrade dialog.
@@ -2452,10 +2452,10 @@ abstract class AppLocalizations {
   /// **'Subscription expired'**
   String get subscriptionExpiredPromptTitle;
 
-  /// Body for the shell prompt when the tenant subscription has expired.
+  /// Body for billing users when the tenant subscription has expired.
   ///
   /// In en, this message translates to:
-  /// **'Your organization\'s subscription has expired. Renew now to restore full module access. Tap the red Subscription expired badge anytime to renew or upgrade.'**
+  /// **'Some features are limited — not fully blocked. Renew to restore full access.'**
   String get subscriptionExpiredPromptBody;
 
   /// Primary action on the expired-subscription prompt that opens renewal.
@@ -2467,14 +2467,26 @@ abstract class AppLocalizations {
   /// Dismiss action on the expired-subscription prompt.
   ///
   /// In en, this message translates to:
-  /// **'Remind me later'**
+  /// **'Later'**
   String get subscriptionExpiredPromptLaterAction;
 
   /// Expired subscription message for users who cannot renew.
   ///
   /// In en, this message translates to:
-  /// **'Access is paused until renewal. Contact a facility or tenant admin below — or platform support if none are listed.'**
+  /// **'Some features are limited — not fully blocked. Ask an admin below to renew.'**
   String get subscriptionExpiredPromptContactAdminBody;
+
+  /// High-risk banner title on the expired subscription contact dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Action needed'**
+  String get subscriptionExpiredRiskTitle;
+
+  /// High-risk banner title when subscription is expiring and staff must contact admins.
+  ///
+  /// In en, this message translates to:
+  /// **'Renewal needed'**
+  String get subscriptionReportRiskTitle;
 
   /// Dismiss action for non-billing users on the expired prompt.
   ///
@@ -2485,13 +2497,13 @@ abstract class AppLocalizations {
   /// Title for the dialog that shows org admins to contact about subscription renewal.
   ///
   /// In en, this message translates to:
-  /// **'Who can renew this?'**
+  /// **'Who can renew?'**
   String get subscriptionReportAdminsDialogTitle;
 
   /// Body for the report-to-admins dialog when subscription is expiring soon.
   ///
   /// In en, this message translates to:
-  /// **'Ask an admin below to renew or upgrade. Use platform support if your org contacts are missing.'**
+  /// **'Some features are limited. Ask an admin below to renew or upgrade.'**
   String get subscriptionReportAdminsDialogBody;
 
   /// Section title for facility admin contacts.
@@ -2539,13 +2551,13 @@ abstract class AppLocalizations {
   /// Shown when neither org admins nor platform support contacts could be loaded.
   ///
   /// In en, this message translates to:
-  /// **'No admin contacts are available yet. Ask your supervisor who manages subscriptions for this organization.'**
+  /// **'No admin contacts listed. Ask who manages renewals.'**
   String get subscriptionReportAdminsEmptyMessage;
 
   /// Shown when a user without subscription billing rights opens the upgrade dialog.
   ///
   /// In en, this message translates to:
-  /// **'Only tenant administrators, facility administrators, super administrators, or users with subscription access can manage billing.'**
+  /// **'Only admins or users with subscription access can manage billing.'**
   String get subscriptionUpgradeAccessDeniedMessage;
 
   /// Title for the subscription upgrade and payment dialog.
@@ -2563,7 +2575,7 @@ abstract class AppLocalizations {
   /// Body text for the subscription upgrade and payment dialog.
   ///
   /// In en, this message translates to:
-  /// **'Choose a plan and submit payment to keep full access after your trial or renewal date.'**
+  /// **'Choose a plan and submit payment to keep full access.'**
   String get subscriptionUpgradeDialogBody;
 
   /// Body text when renewing the current subscription plan.
@@ -2623,7 +2635,7 @@ abstract class AppLocalizations {
   /// Body when the upgrade dialog has no selectable plans.
   ///
   /// In en, this message translates to:
-  /// **'Commercial plans could not be loaded. Refresh and try again, or contact your platform administrator.'**
+  /// **'Plans could not be loaded. Refresh or contact support.'**
   String get subscriptionUpgradePlansEmptyMessage;
 
   /// Title above the monthly/annual toggle on the upgrade plan step.
@@ -2659,7 +2671,7 @@ abstract class AppLocalizations {
   /// Helper text for the invoice email field.
   ///
   /// In en, this message translates to:
-  /// **'We will send the invoice to this email address.'**
+  /// **'Invoice will be sent to this email.'**
   String get subscriptionUpgradeInvoiceEmailHelper;
 
   /// Guidance text on the proof-of-payment upgrade step.
@@ -2731,7 +2743,7 @@ abstract class AppLocalizations {
   /// Helper text for platform admin contact details in the upgrade dialog.
   ///
   /// In en, this message translates to:
-  /// **'If your account is not activated after payment, contact our platform administrators using the details below. Support is available at any time.'**
+  /// **'If access is not restored after payment, contact platform admins below.'**
   String get subscriptionUpgradeAdminContactBody;
 
   /// Label for platform admin email in the upgrade dialog.
@@ -3145,7 +3157,7 @@ abstract class AppLocalizations {
   /// Description for the theater workspace.
   ///
   /// In en, this message translates to:
-  /// **'Manage daily cases, readiness, room and team allocation, anesthesia, post-op notes, and handover.'**
+  /// **'Cases, readiness, room/team, anesthesia, and post-op handover.'**
   String get theaterDescription;
 
   /// Loading title for the theater workspace.
@@ -3157,7 +3169,7 @@ abstract class AppLocalizations {
   /// Loading body for the theater workspace.
   ///
   /// In en, this message translates to:
-  /// **'Loading theater cases and clinical records.'**
+  /// **'Loading theater cases…'**
   String get theaterLoadingBody;
 
   /// Status label when theater data is synced.
@@ -3385,7 +3397,7 @@ abstract class AppLocalizations {
   /// Description for theater case board.
   ///
   /// In en, this message translates to:
-  /// **'Select a case to review readiness, records, resources, and handover.'**
+  /// **'Case readiness, records, resources, and handover.'**
   String get theaterCasesDescription;
 
   /// Empty-state title when no theater cases match filters.
@@ -3517,7 +3529,7 @@ abstract class AppLocalizations {
   /// Helper text shown when scheduling theater cases from emergency context.
   ///
   /// In en, this message translates to:
-  /// **'Emergency cases require linking the active ED case so theater billing and handoff context stay connected.'**
+  /// **'Link the active ED case for billing and handoff context.'**
   String get theaterScheduleEmergencyHint;
 
   /// Title for emergency scheduling helper panel in theater schedule form.
@@ -3751,7 +3763,7 @@ abstract class AppLocalizations {
   /// Introductory help text for the schedule theater case dialog.
   ///
   /// In en, this message translates to:
-  /// **'Search for the patient and their active encounter, then set the schedule, team, procedures, and billing.'**
+  /// **'Select patient and encounter, then set schedule, team, and procedures.'**
   String get theaterScheduleCaseDialogBody;
 
   /// Section title for patient and encounter selection in schedule case dialog.
@@ -3775,7 +3787,7 @@ abstract class AppLocalizations {
   /// Help text for procedure billing in schedule case dialog.
   ///
   /// In en, this message translates to:
-  /// **'Add catalog procedures to build line items. Bill later sends charges to the Billing workspace.'**
+  /// **'Add procedures for line items. Bill later sends charges to Billing.'**
   String get theaterScheduleBillingSectionBody;
 
   /// Hint shown on encounter field before a patient is selected.
@@ -4075,7 +4087,7 @@ abstract class AppLocalizations {
   /// OPD workspace description.
   ///
   /// In en, this message translates to:
-  /// **'Manage arrivals, queues, staff readiness, and outpatient clinical handoffs.'**
+  /// **'Arrivals, queues, and OPD clinical handoffs.'**
   String get opdDescription;
 
   /// Title while OPD data loads.
@@ -4087,7 +4099,7 @@ abstract class AppLocalizations {
   /// Body while OPD data loads.
   ///
   /// In en, this message translates to:
-  /// **'Loading outpatient queue and encounter data.'**
+  /// **'Loading OPD queue and encounters…'**
   String get opdLoadingBody;
 
   /// Status badge shown when OPD data is syncing.
@@ -4123,7 +4135,7 @@ abstract class AppLocalizations {
   /// Tooltip for the shared OPD encounter start action.
   ///
   /// In en, this message translates to:
-  /// **'Create or continue an OPD encounter for this patient'**
+  /// **'Create or continue an OPD encounter'**
   String get opdStartEncounterTooltip;
 
   /// Snackbar shown after an OPD operation succeeds.
@@ -4621,7 +4633,7 @@ abstract class AppLocalizations {
   /// Explanation shown when an OPD patient is admitted and can be handed off to the IPD workspace.
   ///
   /// In en, this message translates to:
-  /// **'This outpatient visit has been admitted to inpatient care. Open the inpatient workspace to allocate a bed and continue the admission. The OPD encounter stays linked as the source visit.'**
+  /// **'Admitted to IPD. Open inpatient care to assign a bed. OPD visit stays linked.'**
   String get opdAdmissionHandoffBody;
 
   /// Secondary action to remain in the OPD workspace instead of opening the inpatient workspace.
@@ -4639,7 +4651,7 @@ abstract class AppLocalizations {
   /// Body copy for the post-referral physiotherapy handoff dialog.
   ///
   /// In en, this message translates to:
-  /// **'The patient has been referred to physiotherapy on this visit. Open the physiotherapy workspace to accept the referral and begin assessment.'**
+  /// **'Referred to physiotherapy. Open that workspace to accept and assess.'**
   String get opdPhysiotherapyHandoffBody;
 
   /// Navigates from OPD to the physiotherapy workspace for the referred encounter.
@@ -4711,7 +4723,7 @@ abstract class AppLocalizations {
   /// OPD main table description.
   ///
   /// In en, this message translates to:
-  /// **'Track arrivals, queue status, billing state, assigned staff, and next steps.'**
+  /// **'Arrivals, queue status, billing, and next steps.'**
   String get opdTableDescription;
 
   /// OPD provider readiness panel title.
@@ -5221,7 +5233,7 @@ abstract class AppLocalizations {
   /// Helper text for selecting appointment patients in OPD.
   ///
   /// In en, this message translates to:
-  /// **'Select a scheduled appointment to check the patient into OPD.'**
+  /// **'Select an appointment to check the patient into OPD.'**
   String get opdAppointmentPatientHelper;
 
   /// Message shown while checking whether the selected OPD patient already has an active encounter.
@@ -5239,7 +5251,7 @@ abstract class AppLocalizations {
   /// Body text shown when an OPD encounter selection matches an already active encounter.
   ///
   /// In en, this message translates to:
-  /// **'This patient already has an active OPD encounter. Update the active encounter instead of creating a duplicate.'**
+  /// **'Active OPD encounter exists. Update it instead of creating a duplicate.'**
   String get opdActiveEncounterFoundBody;
 
   /// Action that opens the active OPD workflow from the encounter dialog.
@@ -5329,7 +5341,7 @@ abstract class AppLocalizations {
   /// Helper text when arrival mode is locked during active encounter update.
   ///
   /// In en, this message translates to:
-  /// **'Arrival mode is fixed while updating an active encounter.'**
+  /// **'Arrival mode is fixed on an active encounter.'**
   String get opdEncounterArrivalModeLockedHelper;
 
   /// Tooltip shown when OPD actions need an active encounter before they can run.
@@ -5353,7 +5365,7 @@ abstract class AppLocalizations {
   /// Helper text shown when no OPD providers can be loaded.
   ///
   /// In en, this message translates to:
-  /// **'No registered doctors were found. Check doctor setup or staff permissions.'**
+  /// **'No doctors found. Check doctor setup or permissions.'**
   String get opdNoProvidersHelper;
 
   /// Toggle label for new patient registration in OPD.
@@ -6127,7 +6139,7 @@ abstract class AppLocalizations {
   /// Patient registry table description.
   ///
   /// In en, this message translates to:
-  /// **'Browse registered patients, visit context, alerts, status, and available next actions.'**
+  /// **'Registered patients, visit context, alerts, and actions.'**
   String get patientsTableDescription;
 
   /// Title while the patient registry loads.
@@ -6589,7 +6601,7 @@ abstract class AppLocalizations {
   /// Patient list empty state body.
   ///
   /// In en, this message translates to:
-  /// **'Adjust the filters or register a patient.'**
+  /// **'Adjust filters or register a patient.'**
   String get patientsEmptyBody;
 
   /// Patient detail panel title.
@@ -6607,7 +6619,7 @@ abstract class AppLocalizations {
   /// Patient detail loading state body.
   ///
   /// In en, this message translates to:
-  /// **'Loading demographics and related records.'**
+  /// **'Loading demographics and related records…'**
   String get patientsDetailLoadingBody;
 
   /// Patient detail empty selection title.
@@ -6619,7 +6631,7 @@ abstract class AppLocalizations {
   /// Patient detail empty selection body.
   ///
   /// In en, this message translates to:
-  /// **'Open a patient to review demographics, contacts, clinical flags, documents, and visits.'**
+  /// **'Open a patient for demographics and visits.'**
   String get patientsNoSelectionBody;
 
   /// Patient name detail label.
@@ -6781,7 +6793,7 @@ abstract class AppLocalizations {
   /// Emergency patient registration dialog body.
   ///
   /// In en, this message translates to:
-  /// **'Create a minimal patient record now; demographics and documents can be completed after urgent care starts.'**
+  /// **'Create a minimal record now; complete demographics after urgent care.'**
   String get patientsEmergencyRegisterBody;
 
   /// Emergency patient first name field label.
@@ -7057,49 +7069,49 @@ abstract class AppLocalizations {
   /// Tooltip for the patient quick action to schedule an appointment.
   ///
   /// In en, this message translates to:
-  /// **'Schedule a new appointment for this patient.'**
+  /// **'Schedule an appointment'**
   String get patientsQuickAppointmentTooltip;
 
   /// Tooltip for the patient quick action to start an OPD encounter.
   ///
   /// In en, this message translates to:
-  /// **'Start a new outpatient encounter for this patient.'**
+  /// **'Start a new OPD encounter'**
   String get patientsQuickOpdCheckInTooltip;
 
   /// Tooltip for the patient quick action to continue an active OPD encounter.
   ///
   /// In en, this message translates to:
-  /// **'Continue the active outpatient encounter workflow.'**
+  /// **'Continue the active OPD encounter'**
   String get patientsQuickViewActiveOpdTooltip;
 
   /// Tooltip for the patient quick action to request admission.
   ///
   /// In en, this message translates to:
-  /// **'Submit an inpatient admission request for this patient.'**
+  /// **'Request IPD admission'**
   String get patientsQuickAdmitPatientTooltip;
 
   /// Tooltip for the patient quick action to manage discharge.
   ///
   /// In en, this message translates to:
-  /// **'Continue discharge planning for the active admission.'**
+  /// **'Continue discharge for the active admission'**
   String get patientsQuickDischargeTooltip;
 
   /// Tooltip for the patient quick action to request a lab order.
   ///
   /// In en, this message translates to:
-  /// **'Request a new laboratory order for this patient.'**
+  /// **'Request a lab order'**
   String get patientsQuickLabOrderTooltip;
 
   /// Tooltip for the patient quick action to request radiology imaging.
   ///
   /// In en, this message translates to:
-  /// **'Request a new radiology imaging order for this patient.'**
+  /// **'Request an imaging order'**
   String get patientsQuickRadiologyOrderTooltip;
 
   /// Tooltip for the patient quick action to schedule theater.
   ///
   /// In en, this message translates to:
-  /// **'Schedule a theater procedure for this patient.'**
+  /// **'Schedule a theater procedure'**
   String get patientsQuickTheaterScheduleTooltip;
 
   /// Tooltip for the patient quick action to request physiotherapy.
@@ -7111,7 +7123,7 @@ abstract class AppLocalizations {
   /// Tooltip for the patient quick action to open the patient report.
   ///
   /// In en, this message translates to:
-  /// **'Open the printable patient summary report.'**
+  /// **'Open patient summary report'**
   String get patientsQuickReportTooltip;
 
   /// Tooltip shown when a permission-gated action is denied.
@@ -7975,7 +7987,7 @@ abstract class AppLocalizations {
   /// Helper text for patient document storage key.
   ///
   /// In en, this message translates to:
-  /// **'Upload a file instead. Only enter this when referencing an existing stored document.'**
+  /// **'Prefer file upload. Use only for an existing stored document.'**
   String get patientsStorageKeyAdvancedHelper;
 
   /// Patient document upload panel title.
@@ -7987,7 +7999,7 @@ abstract class AppLocalizations {
   /// Patient document upload empty selection text.
   ///
   /// In en, this message translates to:
-  /// **'No file selected. PDF, JPG, and PNG files up to 10 MB are supported.'**
+  /// **'No file selected. PDF, JPG, or PNG up to 10 MB.'**
   String get patientsDocumentUploadEmpty;
 
   /// Patient document file picker action label.
@@ -8035,7 +8047,7 @@ abstract class AppLocalizations {
   /// Patient registration duplicate warning body.
   ///
   /// In en, this message translates to:
-  /// **'Review the matches before creating another patient record. Continue only when this is a different patient.'**
+  /// **'Review matches before creating another record.'**
   String get patientsDuplicateWarningBody;
 
   /// Patient duplicate review dialog title.
@@ -8065,7 +8077,7 @@ abstract class AppLocalizations {
   /// Patient merge preview loading body.
   ///
   /// In en, this message translates to:
-  /// **'Checking which records will move to the retained patient.'**
+  /// **'Checking records for the retained patient…'**
   String get patientsMergePreviewLoadingBody;
 
   /// Patient duplicate match score label.
@@ -8125,7 +8137,7 @@ abstract class AppLocalizations {
   /// Patient registry activity empty body.
   ///
   /// In en, this message translates to:
-  /// **'No duplicate, consent, or document alerts are visible.'**
+  /// **'No duplicate, consent, or document alerts.'**
   String get patientsActivityEmptyBody;
 
   /// Patient duplicate activity title.
@@ -8173,7 +8185,7 @@ abstract class AppLocalizations {
   /// Home page body for the HMS overview state.
   ///
   /// In en, this message translates to:
-  /// **'Coordinate patient registration, clinical care, pharmacy, billing, diagnostics, operations, and compliance from one responsive HMS shell.'**
+  /// **'Patient care, pharmacy, billing, diagnostics, and operations in one place.'**
   String get homeReadyBody;
 
   /// Heading for the HMS module entry point summary.
@@ -8353,13 +8365,13 @@ abstract class AppLocalizations {
   /// Confirmation body when soft-deleting a tenant from management dialog.
   ///
   /// In en, this message translates to:
-  /// **'Soft-delete tenant \"{name}\"? All of its facilities will also be soft-deleted. You can restore the tenant later.'**
+  /// **'Soft-delete tenant \"{name}\"? Its facilities are soft-deleted too. You can restore later.'**
   String tenantFacilityDeleteTenantConfirmationBody(String name);
 
   /// Confirmation body when soft-deleting a facility from management dialog.
   ///
   /// In en, this message translates to:
-  /// **'Soft-delete facility \"{name}\"? Its data will become inaccessible in the app. You can restore it later.'**
+  /// **'Soft-delete facility \"{name}\"? Data is hidden in the app. You can restore later.'**
   String tenantFacilityDeleteFacilityConfirmationBody(String name);
 
   /// Subtitle for HR staffing trend chart on the home dashboard.
@@ -8377,7 +8389,7 @@ abstract class AppLocalizations {
   /// Empty state message when a home dashboard trend chart has no data.
   ///
   /// In en, this message translates to:
-  /// **'No trend data is available yet.'**
+  /// **'No trend data yet.'**
   String get homeTrendEmptyMessage;
 
   /// Subtitle for HR workforce mix donut on the home dashboard.
@@ -8395,7 +8407,7 @@ abstract class AppLocalizations {
   /// Empty state message when a home dashboard distribution chart has no data.
   ///
   /// In en, this message translates to:
-  /// **'No distribution data is available yet.'**
+  /// **'No distribution data yet.'**
   String get homeDistributionEmptyMessage;
 
   /// Title shown when the home feature controller fails.
@@ -8581,7 +8593,7 @@ abstract class AppLocalizations {
   /// Profile screen body while profile data loads.
   ///
   /// In en, this message translates to:
-  /// **'Refreshing account, role, and permission details.'**
+  /// **'Refreshing account and permissions…'**
   String get profileLoadingBody;
 
   /// Profile section title for assigned roles.
@@ -8845,7 +8857,7 @@ abstract class AppLocalizations {
   /// Accessibility option description for reducing motion.
   ///
   /// In en, this message translates to:
-  /// **'Use simpler transitions and fewer animations.'**
+  /// **'Simpler transitions and fewer animations.'**
   String get settingsReduceMotionDescription;
 
   /// Accessibility option label for bold text.
@@ -8995,7 +9007,7 @@ abstract class AppLocalizations {
   /// Body while tenant and facility setup loads.
   ///
   /// In en, this message translates to:
-  /// **'Loading organization and facility configuration.'**
+  /// **'Loading organization and facility setup…'**
   String get tenantFacilitySetupLoadingBody;
 
   /// HR-scoped facility setup screen title.
@@ -9007,7 +9019,7 @@ abstract class AppLocalizations {
   /// HR-scoped facility setup screen body.
   ///
   /// In en, this message translates to:
-  /// **'Maintain departments and units for the current facility so staff onboarding and assignments stay accurate.'**
+  /// **'Maintain departments and units for staff onboarding and assignments.'**
   String get tenantFacilityHrSetupBody;
 
   /// HR setup section body for departments.
@@ -9217,7 +9229,7 @@ abstract class AppLocalizations {
   /// Guidance for the optional branches setup step.
   ///
   /// In en, this message translates to:
-  /// **'Branches are optional for single-site facilities. Skip this step when the facility acts as the only site.'**
+  /// **'Optional for single-site facilities. Skip when there is only one site.'**
   String get tenantFacilityBranchesOptionalHint;
 
   /// Prerequisite message when departments require a facility.
@@ -9433,7 +9445,7 @@ abstract class AppLocalizations {
   /// Body for similar tenant confirmation dialog.
   ///
   /// In en, this message translates to:
-  /// **'The tenant you are creating looks similar to existing organizations. Review the matches below before continuing.'**
+  /// **'Similar organizations exist. Review matches before continuing.'**
   String get tenantFacilitySimilarTenantDialogBody;
 
   /// Warning banner title for similar tenant matches.
@@ -9535,7 +9547,7 @@ abstract class AppLocalizations {
   /// Dialog body when creating a facility similar to an existing one.
   ///
   /// In en, this message translates to:
-  /// **'The facility you are creating looks similar to existing facilities for this tenant. Review the matches below before continuing.'**
+  /// **'Similar facilities exist for this tenant. Review matches before continuing.'**
   String get tenantFacilitySimilarFacilityDialogBody;
 
   /// Inline warning title for similar facility matches.
@@ -9589,7 +9601,7 @@ abstract class AppLocalizations {
   /// Facility logo upload helper text.
   ///
   /// In en, this message translates to:
-  /// **'Upload a JPG, PNG, or WebP image (up to 5 MB). Crop freely to any size, then save.'**
+  /// **'JPG, PNG, or WebP up to 5 MB. Crop, then save.'**
   String get tenantFacilityLogoHelper;
 
   /// Facility logo file picker action label.
@@ -9907,7 +9919,7 @@ abstract class AppLocalizations {
   /// Soft-delete facility structure confirmation body.
   ///
   /// In en, this message translates to:
-  /// **'Soft-delete \"{name}\"? Related child records will also be marked deleted and hidden from operational pickers. They will remain visible here for restore.'**
+  /// **'Soft-delete \"{name}\"? Child records are hidden from pickers; still visible here to restore.'**
   String tenantFacilitySoftDeleteStructureBody(String name);
 
   /// Soft-delete user confirmation dialog title.
@@ -9919,7 +9931,7 @@ abstract class AppLocalizations {
   /// Soft-delete user confirmation body.
   ///
   /// In en, this message translates to:
-  /// **'Soft-delete user \"{name}\"? The user will be marked deleted and hidden from operational pickers, but remain visible here for restore.'**
+  /// **'Soft-delete user \"{name}\"? Hidden from pickers; still visible here to restore.'**
   String tenantFacilitySoftDeleteUserBody(String name);
 
   /// Restore soft-deleted user confirmation dialog title.
@@ -10309,7 +10321,7 @@ abstract class AppLocalizations {
   /// Rooms wards and beds section body.
   ///
   /// In en, this message translates to:
-  /// **'Use the location setup entry points after facility identity and departments are in place.'**
+  /// **'Set up locations after facility identity and departments.'**
   String get tenantFacilityLocationsSectionBody;
 
   /// Rooms count label.
@@ -10741,7 +10753,7 @@ abstract class AppLocalizations {
   /// Email verification page body after login is attempted with an unverified registered email.
   ///
   /// In en, this message translates to:
-  /// **'This email is already registered but has not been verified. Enter the verification code sent to {email}.'**
+  /// **'Email registered but not verified. Enter the code sent to {email}.'**
   String authPendingVerificationBody(String email);
 
   /// Email verification page body when no email is available.
@@ -10759,13 +10771,13 @@ abstract class AppLocalizations {
   /// Email verification success body when platform approval is still required.
   ///
   /// In en, this message translates to:
-  /// **'Your email is verified. A platform administrator will review your registration before you can sign in.'**
+  /// **'Email verified. A platform admin will approve before you can sign in.'**
   String get authEmailVerifiedAwaitingApprovalBody;
 
   /// Login failure message when email is verified but platform approval is pending.
   ///
   /// In en, this message translates to:
-  /// **'Your email is verified. Your account is awaiting platform approval before you can sign in.'**
+  /// **'Email verified. Awaiting platform approval before sign-in.'**
   String get authAccountPendingApprovalMessage;
 
   /// Tenant display name collected during self-registration.
@@ -10801,7 +10813,7 @@ abstract class AppLocalizations {
   /// Login failure message when an email account exists but has not been verified.
   ///
   /// In en, this message translates to:
-  /// **'This email is already registered but has not been verified. Enter the email verification code we sent to continue.'**
+  /// **'Email registered but not verified. Enter the verification code to continue.'**
   String get authAccountPendingMessage;
 
   /// Facility administrator name field label.
@@ -10921,7 +10933,7 @@ abstract class AppLocalizations {
   /// Login failure message when the entered email or phone does not match an account.
   ///
   /// In en, this message translates to:
-  /// **'No account exists for that email or phone. Check the details or create an account.'**
+  /// **'No account for that email or phone. Check details or register.'**
   String get authAccountNotFoundMessage;
 
   /// Login failure message when the account exists but the password is wrong.
@@ -10969,7 +10981,7 @@ abstract class AppLocalizations {
   /// Forgot password page body.
   ///
   /// In en, this message translates to:
-  /// **'Enter the email on your facility account. If it matches an account, we will send reset instructions.'**
+  /// **'Enter your facility account email. We send reset instructions if it matches.'**
   String get authForgotPasswordBody;
 
   /// Link and action label to start password reset.
@@ -10999,7 +11011,7 @@ abstract class AppLocalizations {
   /// Body after forgot password request succeeds.
   ///
   /// In en, this message translates to:
-  /// **'If an account exists for that email, reset instructions with a secure link and a six-digit code have been sent.'**
+  /// **'If an account exists, we sent a reset link and six-digit code.'**
   String get authForgotPasswordSubmittedBody;
 
   /// Action to open reset password page in code entry mode.
@@ -11023,7 +11035,7 @@ abstract class AppLocalizations {
   /// Reset password page body when using code entry.
   ///
   /// In en, this message translates to:
-  /// **'Enter your email, the six-digit reset code from your email, and a new password.'**
+  /// **'Enter email, the six-digit code, and a new password.'**
   String get authResetPasswordCodeModeBody;
 
   /// Label for password reset code field.
@@ -11047,7 +11059,7 @@ abstract class AppLocalizations {
   /// Shown when reset password page has no token.
   ///
   /// In en, this message translates to:
-  /// **'This reset link is missing or invalid. Request a new password reset from the sign-in page.'**
+  /// **'Reset link missing or invalid. Request a new one from sign-in.'**
   String get authResetPasswordMissingTokenMessage;
 
   /// Title after password reset succeeds.
@@ -11065,7 +11077,7 @@ abstract class AppLocalizations {
   /// Reset password failure for invalid or expired token.
   ///
   /// In en, this message translates to:
-  /// **'This reset link has expired or is invalid. Request a new password reset.'**
+  /// **'Reset link expired or invalid. Request a new one.'**
   String get authResetPasswordInvalidTokenMessage;
 
   /// OPD form field label pattern for required fields.
@@ -11269,7 +11281,7 @@ abstract class AppLocalizations {
   /// Clinical workspace page description.
   ///
   /// In en, this message translates to:
-  /// **'Review clinical queues, document care, order services, prescribe, refer, admit, and complete encounters.'**
+  /// **'Document care, order services, prescribe, refer, and admit.'**
   String get clinicalDescription;
 
   /// Clinical workspace loading title.
@@ -11281,7 +11293,7 @@ abstract class AppLocalizations {
   /// Clinical workspace loading body.
   ///
   /// In en, this message translates to:
-  /// **'Loading provider worklist and encounter context.'**
+  /// **'Loading clinical worklist…'**
   String get clinicalLoadingBody;
 
   /// Clinical workspace live synchronization status.
@@ -11383,7 +11395,7 @@ abstract class AppLocalizations {
   /// Clinical provider worklist description.
   ///
   /// In en, this message translates to:
-  /// **'Open consultations, admissions, triage handoffs, and result-review queues.'**
+  /// **'Consultations, admissions, triage, and result review.'**
   String get clinicalWorklistDescription;
 
   /// Clinical worklist column label for the active workflow step.
@@ -11419,7 +11431,7 @@ abstract class AppLocalizations {
   /// Clinical no selection body.
   ///
   /// In en, this message translates to:
-  /// **'Open a patient from the worklist to review context, document care, and place orders.'**
+  /// **'Open a patient to document care and place orders.'**
   String get clinicalNoSelectionBody;
 
   /// Clinical source queue label.
@@ -11539,7 +11551,7 @@ abstract class AppLocalizations {
   /// Body text for facility clinical catalog configuration section.
   ///
   /// In en, this message translates to:
-  /// **'Choose which diagnoses, procedures, lab tests, radiology tests, and prescriptions this facility offers.'**
+  /// **'Choose diagnoses, procedures, lab, imaging, and prescriptions for this facility.'**
   String get clinicalCatalogConfigurationBody;
 
   /// Clinical diagnosis selected items section title.
@@ -11959,7 +11971,7 @@ abstract class AppLocalizations {
   /// Clinical radiology searchable catalog selector body.
   ///
   /// In en, this message translates to:
-  /// **'Search and select one matching imaging test, then add it to the request list.'**
+  /// **'Select an imaging test, then add it to the request.'**
   String get clinicalRadiologyCatalogSelectBody;
 
   /// Clinical radiology searchable catalog selector label.
@@ -12031,7 +12043,7 @@ abstract class AppLocalizations {
   /// Clinical prescription item helper text before a drug is selected.
   ///
   /// In en, this message translates to:
-  /// **'Select a drug and complete the prescription details.'**
+  /// **'Select a drug and complete prescription details.'**
   String get clinicalPrescriptionItemDescription;
 
   /// Clinical prescription quantity unit field label.
@@ -12061,7 +12073,7 @@ abstract class AppLocalizations {
   /// Clinical procedure dialog helper text.
   ///
   /// In en, this message translates to:
-  /// **'Search the procedure catalog, add one or more procedures to the review list, then save them together.'**
+  /// **'Search the catalog, add procedures, then save together.'**
   String get clinicalProcedureDialogHelp;
 
   /// Clinical procedure searchable select label.
@@ -12367,7 +12379,7 @@ abstract class AppLocalizations {
   /// Helper shown when the ward field is inactive because no wards have available beds.
   ///
   /// In en, this message translates to:
-  /// **'No wards with available beds match the selected facility.'**
+  /// **'No wards with available beds for this facility.'**
   String get clinicalAdmissionNoWardsHelper;
 
   /// Helper shown when the room field is inactive until a ward is selected.
@@ -12421,7 +12433,7 @@ abstract class AppLocalizations {
   /// Inpatient workspace page description.
   ///
   /// In en, this message translates to:
-  /// **'Manage admission queues, beds, transfers, ward rounds, nursing handoffs, medication records, and discharge readiness.'**
+  /// **'Admissions, beds, transfers, rounds, and discharge readiness.'**
   String get ipdDescription;
 
   /// Inpatient workspace loading title.
@@ -12433,7 +12445,7 @@ abstract class AppLocalizations {
   /// Inpatient workspace loading body.
   ///
   /// In en, this message translates to:
-  /// **'Loading admissions, beds, and ward context.'**
+  /// **'Loading admissions, beds, and wards…'**
   String get ipdLoadingBody;
 
   /// Inpatient workspace live synchronization status.
@@ -12529,7 +12541,7 @@ abstract class AppLocalizations {
   /// IPD admissions board description.
   ///
   /// In en, this message translates to:
-  /// **'Track waiting admissions, bedded patients, transfers, ward activity, and discharge plans.'**
+  /// **'Waiting admissions, bedded patients, transfers, and discharge.'**
   String get ipdBoardDescription;
 
   /// IPD admissions board empty title.
@@ -12571,7 +12583,7 @@ abstract class AppLocalizations {
   /// IPD admission detail panel description.
   ///
   /// In en, this message translates to:
-  /// **'Review bed status, transfers, ward rounds, medication records, nursing notes, and discharge state.'**
+  /// **'Bed, transfers, rounds, meds, nursing notes, and discharge.'**
   String get ipdAdmissionDetailDescription;
 
   /// IPD no selection title.
@@ -12583,7 +12595,7 @@ abstract class AppLocalizations {
   /// IPD no selection body.
   ///
   /// In en, this message translates to:
-  /// **'Open an admission from the board to manage inpatient care.'**
+  /// **'Open an admission to manage IPD care.'**
   String get ipdNoSelectionBody;
 
   /// IPD patient context heading label.
@@ -12637,7 +12649,7 @@ abstract class AppLocalizations {
   /// Confirmation body for approving a pending admission request.
   ///
   /// In en, this message translates to:
-  /// **'Approve this admission request? The patient will move to inpatient care and you can assign a bed next.'**
+  /// **'Approve admission? Patient moves to IPD; assign a bed next.'**
   String get ipdApproveAdmissionBody;
 
   /// IPD action label to release a bed.
@@ -13135,7 +13147,7 @@ abstract class AppLocalizations {
   /// Description of the IPD bed board panel.
   ///
   /// In en, this message translates to:
-  /// **'Live ward bed occupancy and bed operations.'**
+  /// **'Live ward bed occupancy and operations.'**
   String get ipdBedBoardDescription;
 
   /// Accessible label for the bed board search field.
@@ -13159,7 +13171,7 @@ abstract class AppLocalizations {
   /// Empty state body for the bed board.
   ///
   /// In en, this message translates to:
-  /// **'Adjust the ward or status filter to see more beds.'**
+  /// **'Adjust ward or status filters to see beds.'**
   String get ipdBedBoardEmptyBody;
 
   /// Bed board column header for the bed label.
@@ -13741,7 +13753,7 @@ abstract class AppLocalizations {
   /// Nursing workspace page description.
   ///
   /// In en, this message translates to:
-  /// **'Monitor ward queues, observations, medication administration, handovers, transfers, and escalation.'**
+  /// **'Ward queues, observations, MAR, handovers, and escalation.'**
   String get nursingDescription;
 
   /// Nursing workspace loading title.
@@ -13753,7 +13765,7 @@ abstract class AppLocalizations {
   /// Nursing workspace loading body.
   ///
   /// In en, this message translates to:
-  /// **'Loading ward patients, observations, medications, and handovers.'**
+  /// **'Loading ward patients and handovers…'**
   String get nursingLoadingBody;
 
   /// Nursing workspace live synchronization status.
@@ -13897,7 +13909,7 @@ abstract class AppLocalizations {
   /// Nursing ward worklist panel description.
   ///
   /// In en, this message translates to:
-  /// **'Patients needing observations, medication, handover, transfer, or discharge coordination.'**
+  /// **'Observations, medication, handover, transfer, or discharge.'**
   String get nursingWorklistDescription;
 
   /// Nursing empty worklist title.
@@ -13921,7 +13933,7 @@ abstract class AppLocalizations {
   /// Nursing detail empty state body.
   ///
   /// In en, this message translates to:
-  /// **'Open a patient from the worklist to review observations, medications, handovers, and ward activity.'**
+  /// **'Open a patient for observations, MAR, and handovers.'**
   String get nursingNoSelectionBody;
 
   /// Accessibility label for the selected nursing patient context header.
@@ -14215,7 +14227,7 @@ abstract class AppLocalizations {
   /// Nursing medication administration confirmation checkbox helper text.
   ///
   /// In en, this message translates to:
-  /// **'Verify the patient, medication, dose, route, and time before saving.'**
+  /// **'Verify patient, medication, dose, route, and time.'**
   String get nursingConfirmMedicationSubtitle;
 
   /// Nursing handover recipient searchable user field label.
@@ -14473,7 +14485,7 @@ abstract class AppLocalizations {
   /// Localized text for nursingWardAdmissionChecklistDescription.
   ///
   /// In en, this message translates to:
-  /// **'Checks tied to bed location, admission handover, observations, care plan, medication, and discharge readiness.'**
+  /// **'Bed, handover, observations, care plan, meds, and discharge.'**
   String get nursingWardAdmissionChecklistDescription;
 
   /// Localized text for nursingChecklistCompleteStatus.
@@ -14743,7 +14755,7 @@ abstract class AppLocalizations {
   /// Dialog description for nursing discharge clearance.
   ///
   /// In en, this message translates to:
-  /// **'Complete ward checks and patient education before IPD finalizes discharge.'**
+  /// **'Ward checks and patient education before discharge.'**
   String get nursingDischargeClearanceDescription;
 
   /// Notes field label in the discharge clearance dialog.
@@ -14797,7 +14809,7 @@ abstract class AppLocalizations {
   /// Localized text for nursingShiftContextDescription.
   ///
   /// In en, this message translates to:
-  /// **'Current roster and handover items stay visible without opening another module.'**
+  /// **'Roster and handover items for this shift.'**
   String get nursingShiftContextDescription;
 
   /// Localized text for nursingRosterTitle.
@@ -14839,7 +14851,7 @@ abstract class AppLocalizations {
   /// Discharge workspace page description.
   ///
   /// In en, this message translates to:
-  /// **'Coordinate discharge plans, clearances, medicines, final billing, documents, and bed release.'**
+  /// **'Plans, clearances, meds, billing, documents, and bed release.'**
   String get dischargeWorkspaceDescription;
 
   /// Discharge workspace operational status label.
@@ -14953,7 +14965,7 @@ abstract class AppLocalizations {
   /// Discharge queue panel description.
   ///
   /// In en, this message translates to:
-  /// **'Patients with a discharge plan, pending clearance, or recent completion.'**
+  /// **'Planned, pending clearance, or recently completed discharges.'**
   String get dischargeWorklistDescription;
 
   /// Discharge queue previous page button label.
@@ -14983,7 +14995,7 @@ abstract class AppLocalizations {
   /// Empty state body for discharge queue.
   ///
   /// In en, this message translates to:
-  /// **'Adjust the status filter or search term to find discharge work.'**
+  /// **'Adjust filters to find discharge work.'**
   String get dischargeEmptyQueueBody;
 
   /// Discharge queue patient column label.
@@ -15031,7 +15043,7 @@ abstract class AppLocalizations {
   /// Discharge detail loading body.
   ///
   /// In en, this message translates to:
-  /// **'Loading patient context, clearance, medicines, billing, and documents.'**
+  /// **'Loading clearance, meds, and billing…'**
   String get dischargeDetailLoadingBody;
 
   /// Discharge detail empty selection title.
@@ -15043,7 +15055,7 @@ abstract class AppLocalizations {
   /// Discharge detail empty selection body.
   ///
   /// In en, this message translates to:
-  /// **'Choose a patient from the worklist to coordinate discharge.'**
+  /// **'Select a patient to coordinate discharge.'**
   String get dischargeNoSelectionBody;
 
   /// Discharge summary print action label.
@@ -15217,7 +15229,7 @@ abstract class AppLocalizations {
   /// Empty state body for missing discharge summary.
   ///
   /// In en, this message translates to:
-  /// **'Start a discharge plan to prepare the printable summary.'**
+  /// **'Start a discharge plan for the summary.'**
   String get dischargeEmptySummaryBody;
 
   /// Discharge generated document preview title.
@@ -15295,7 +15307,7 @@ abstract class AppLocalizations {
   /// Discharge unavailable workflows empty body.
   ///
   /// In en, this message translates to:
-  /// **'These workflow actions are unavailable until system support is enabled for this facility.'**
+  /// **'These actions are unavailable until enabled for this facility.'**
   String get dischargeBackendGapsBody;
 
   /// Subtitle for discharge workflow unavailable workflow items.
@@ -15313,7 +15325,7 @@ abstract class AppLocalizations {
   /// Discharge unavailable workflow body for checklist persistence.
   ///
   /// In en, this message translates to:
-  /// **'Individual doctor, nursing, pharmacy, billing, document, and exit checklist decisions are not available in this workflow yet.'**
+  /// **'Per-role checklist decisions are not available in this workflow yet.'**
   String get dischargeGapChecklistBody;
 
   /// Discharge unavailable workflow title for insurance clearance.
@@ -15337,7 +15349,7 @@ abstract class AppLocalizations {
   /// Discharge unavailable workflow body for document readiness.
   ///
   /// In en, this message translates to:
-  /// **'Discharge documents can be generated from the summary. Handover readiness is not available yet.'**
+  /// **'Documents can be generated. Handover readiness is not available yet.'**
   String get dischargeGapDocumentsBody;
 
   /// Discharge unavailable workflow title for housekeeping task creation.
@@ -15373,7 +15385,7 @@ abstract class AppLocalizations {
   /// Discharge summary field helper text.
   ///
   /// In en, this message translates to:
-  /// **'Include diagnosis, treatment, medicines, advice, follow-up, warning signs, and signature context.'**
+  /// **'Include diagnosis, treatment, meds, advice, follow-up, and warnings.'**
   String get dischargeSummaryHelperText;
 
   /// Validation message for required discharge summary.
@@ -15529,7 +15541,7 @@ abstract class AppLocalizations {
   /// Complete discharge dialog body.
   ///
   /// In en, this message translates to:
-  /// **'Confirm the patient exit only after required clinical, nursing, pharmacy, billing, and document checks are complete.'**
+  /// **'Confirm exit after clinical, nursing, pharmacy, billing, and document checks.'**
   String get dischargeCompleteDialogBody;
 
   /// Complete discharge blocker state title.
@@ -15727,7 +15739,7 @@ abstract class AppLocalizations {
   /// Discharge workspace loading body.
   ///
   /// In en, this message translates to:
-  /// **'Loading discharge queue and reference data.'**
+  /// **'Loading discharge queue…'**
   String get dischargeLoadingBody;
 
   /// Discharge workspace load error title.
@@ -15751,7 +15763,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyDescription.
   ///
   /// In en, this message translates to:
-  /// **'Manage imaging requests, modality worklists, study capture, PACS links, reporting, and release.'**
+  /// **'Imaging requests, studies, PACS, reporting, and release.'**
   String get radiologyDescription;
 
   /// Localized text for radiologyLoadingTitle.
@@ -15763,7 +15775,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Loading imaging orders, reports, studies, and reference data.'**
+  /// **'Loading imaging orders and reports…'**
   String get radiologyLoadingBody;
 
   /// Localized text for radiologyLiveStatus.
@@ -15919,7 +15931,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyWorklistDescription.
   ///
   /// In en, this message translates to:
-  /// **'System imaging orders with modality workflow and report status.'**
+  /// **'Imaging orders by modality and report status.'**
   String get radiologyWorklistDescription;
 
   /// Localized text for radiologyPreviousPageLabel.
@@ -16021,7 +16033,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyNoSelectionBody.
   ///
   /// In en, this message translates to:
-  /// **'Choose an imaging request to view study, report, and release details.'**
+  /// **'Select an imaging request for study and report.'**
   String get radiologyNoSelectionBody;
 
   /// Localized text for radiologyPatientContextLabel.
@@ -16213,7 +16225,7 @@ abstract class AppLocalizations {
   /// Helper text for the radiology body region chip picker.
   ///
   /// In en, this message translates to:
-  /// **'Select a body region to filter the imaging catalog.'**
+  /// **'Select a body region to filter imaging tests.'**
   String get clinicalRadiologyBodyRegionPickerHint;
 
   /// Title for radiology workflow step progress section.
@@ -16429,7 +16441,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyDoctorReviewReleasedBody.
   ///
   /// In en, this message translates to:
-  /// **'The final radiology report is ready for the requesting clinician or doctor to review.'**
+  /// **'Final report ready for the requesting clinician.'**
   String get radiologyDoctorReviewReleasedBody;
 
   /// Localized text for radiologyDoctorReviewPendingBody.
@@ -16885,7 +16897,7 @@ abstract class AppLocalizations {
   /// Pharmacy workspace loading body.
   ///
   /// In en, this message translates to:
-  /// **'Loading pharmacy orders, dispense state, and stock visibility.'**
+  /// **'Loading pharmacy orders and stock…'**
   String get pharmacyLoadingBody;
 
   /// Pharmacy workspace title.
@@ -16897,7 +16909,7 @@ abstract class AppLocalizations {
   /// Pharmacy workspace header description.
   ///
   /// In en, this message translates to:
-  /// **'Manage prescriptions, dispense handoff, returns, and drug stock visibility from one queue.'**
+  /// **'Prescriptions, dispense, returns, and stock visibility.'**
   String get pharmacyDescription;
 
   /// Pharmacy workspace saving status.
@@ -16969,7 +16981,7 @@ abstract class AppLocalizations {
   /// Pharmacy order queue panel description.
   ///
   /// In en, this message translates to:
-  /// **'System pharmacy orders with dispense and return actions.'**
+  /// **'Pharmacy orders with dispense and return actions.'**
   String get pharmacyQueuePanelDescription;
 
   /// Empty pharmacy order queue title.
@@ -17029,7 +17041,7 @@ abstract class AppLocalizations {
   /// Pharmacy prescription detail loading body.
   ///
   /// In en, this message translates to:
-  /// **'Loading medicines, dispense history, and workflow actions.'**
+  /// **'Loading medicines and dispense history…'**
   String get pharmacyDetailLoadingBody;
 
   /// Title for the pharmacy prescription detail dialog.
@@ -17047,7 +17059,7 @@ abstract class AppLocalizations {
   /// Pharmacy detail empty body.
   ///
   /// In en, this message translates to:
-  /// **'Select an order to review medicines, stock mapping, billing gate visibility, and dispense history.'**
+  /// **'Select an order to review meds and dispense.'**
   String get pharmacyNoSelectionBody;
 
   /// Pharmacy label for unavailable billing gate data.
@@ -17131,7 +17143,7 @@ abstract class AppLocalizations {
   /// Pharmacy medication panel description.
   ///
   /// In en, this message translates to:
-  /// **'Drug, dose, route, frequency, duration, quantity, instructions, and dispense state.'**
+  /// **'Drug, dose, route, frequency, quantity, and status.'**
   String get pharmacyMedicationPanelDescription;
 
   /// Empty pharmacy medicines title.
@@ -17269,7 +17281,7 @@ abstract class AppLocalizations {
   /// Pharmacy timeline panel description.
   ///
   /// In en, this message translates to:
-  /// **'Order placement, prepare, attest, dispense, and return events from the workflow.'**
+  /// **'Prepare, attest, dispense, and return events.'**
   String get pharmacyTimelinePanelDescription;
 
   /// Pharmacy empty timeline body.
@@ -17287,7 +17299,7 @@ abstract class AppLocalizations {
   /// Pharmacy drug and stock panel description.
   ///
   /// In en, this message translates to:
-  /// **'Search configured drugs and review aggregate stock visibility.'**
+  /// **'Configured drugs and aggregate stock.'**
   String get pharmacyDrugPanelDescription;
 
   /// Semantic label for pharmacy drug stock filters.
@@ -17575,19 +17587,19 @@ abstract class AppLocalizations {
   /// Helper text for pharmacy expiry alert lead field.
   ///
   /// In en, this message translates to:
-  /// **'Alerts appear when a batch is within this window of its expiry date.'**
+  /// **'Alert when a batch is within this window of expiry.'**
   String get pharmacyExpiryAlertLeadHelper;
 
   /// Helper text for pharmacy reorder threshold field.
   ///
   /// In en, this message translates to:
-  /// **'Alerts fire when on-hand quantity falls at or below this value.'**
+  /// **'Alert when on-hand quantity is at or below this level.'**
   String get pharmacyReorderLevelHelper;
 
   /// Helper text for pharmacy reorder threshold when inventory unit is selected.
   ///
   /// In en, this message translates to:
-  /// **'Enter the threshold in the selected inventory unit. Alerts fire when on-hand quantity falls at or below this value.'**
+  /// **'Threshold in the selected unit. Alerts at or below this level.'**
   String get pharmacyReorderLevelHelperWithUnit;
 
   /// Placeholder helper for pharmacy reorder threshold before inventory unit is chosen.
@@ -17677,7 +17689,7 @@ abstract class AppLocalizations {
   /// Pharmacy storage layout panel description.
   ///
   /// In en, this message translates to:
-  /// **'Maintain storage rooms and shelf codes for locating medication stock.'**
+  /// **'Storage rooms and shelf codes for medication stock.'**
   String get pharmacyStoragePanelDescription;
 
   /// Pharmacy add storage room action.
@@ -17725,7 +17737,7 @@ abstract class AppLocalizations {
   /// Pharmacy delete storage room confirmation body.
   ///
   /// In en, this message translates to:
-  /// **'Remove this storage room and all its shelves? Drugs stored here will lose this location.'**
+  /// **'Remove this storage room and shelves? Drugs will lose this location.'**
   String get pharmacyDeleteStorageRoomDialogBody;
 
   /// Pharmacy delete storage shelf confirmation title.
@@ -17791,7 +17803,7 @@ abstract class AppLocalizations {
   /// Pharmacy add drug dialog storage section helper.
   ///
   /// In en, this message translates to:
-  /// **'Optional—helps staff find this drug on the floor.'**
+  /// **'Optional — helps staff locate this drug.'**
   String get pharmacyDrugStorageSectionHelper;
 
   /// Empty pharmacy storage rooms title.
@@ -17839,7 +17851,7 @@ abstract class AppLocalizations {
   /// Pharmacy inventory panel description.
   ///
   /// In en, this message translates to:
-  /// **'Review on-hand quantities and post controlled adjustments.'**
+  /// **'On-hand quantities and controlled adjustments.'**
   String get pharmacyInventoryPanelDescription;
 
   /// Empty pharmacy inventory list title.
@@ -18451,7 +18463,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsWorkspaceDescription.
   ///
   /// In en, this message translates to:
-  /// **'Manage authorizations, payer responses, claim submission, resubmission, and invoice follow-up.'**
+  /// **'Authorizations, submissions, payer responses, and invoices.'**
   String get claimsWorkspaceDescription;
 
   /// Localized text for claimsOperationalStatusLabel.
@@ -18475,7 +18487,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Fetching authorization and claim queues.'**
+  /// **'Loading authorization and claim queues…'**
   String get claimsLoadingBody;
 
   /// Localized text for claimsLoadErrorTitle.
@@ -18565,7 +18577,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsWorklistDescription.
   ///
   /// In en, this message translates to:
-  /// **'Review pre-authorizations and claim records backed by billing data.'**
+  /// **'Pre-authorizations and claims linked to billing.'**
   String get claimsWorklistDescription;
 
   /// Localized text for claimsPreviousPageLabel.
@@ -18595,7 +18607,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsEmptyQueueBody.
   ///
   /// In en, this message translates to:
-  /// **'No authorization or claim records match the current queue.'**
+  /// **'No authorizations or claims in this queue.'**
   String get claimsEmptyQueueBody;
 
   /// Localized text for claimsTypeColumnLabel.
@@ -18655,7 +18667,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsDetailLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Fetching payer, invoice, and coverage context.'**
+  /// **'Loading payer and coverage context…'**
   String get claimsDetailLoadingBody;
 
   /// Localized text for claimsNoSelectionTitle.
@@ -18667,7 +18679,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsNoSelectionBody.
   ///
   /// In en, this message translates to:
-  /// **'Choose a row to review coverage, billing impact, and next actions.'**
+  /// **'Select a row for coverage and next actions.'**
   String get claimsNoSelectionBody;
 
   /// Localized text for claimsPrintStatementAction.
@@ -18751,7 +18763,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsBillingInvoiceUnavailableBody.
   ///
   /// In en, this message translates to:
-  /// **'Invoice details are not available, so the patient balance cannot be confirmed here.'**
+  /// **'Invoice details unavailable; patient balance cannot be confirmed here.'**
   String get claimsBillingInvoiceUnavailableBody;
 
   /// Localized text for claimsBillingAuthorizedBody.
@@ -18763,7 +18775,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsBillingPaidBody.
   ///
   /// In en, this message translates to:
-  /// **'Claim is paid or closed. Billing can use the latest invoice status for follow-up.'**
+  /// **'Claim paid or closed. Use latest invoice status for follow-up.'**
   String get claimsBillingPaidBody;
 
   /// Localized text for claimsBillingRejectedBody.
@@ -18823,7 +18835,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsTimelineDescription.
   ///
   /// In en, this message translates to:
-  /// **'Authorization, submission, and response timestamps from the claims workflow.'**
+  /// **'Authorization, submission, and response timestamps.'**
   String get claimsTimelineDescription;
 
   /// Localized text for claimsTimelineAuthorizationRequested.
@@ -18859,7 +18871,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsBackendGapDescription.
   ///
   /// In en, this message translates to:
-  /// **'These items are unavailable in the current claims workflow.'**
+  /// **'Unavailable in the current claims workflow.'**
   String get claimsBackendGapDescription;
 
   /// Localized text for claimsBackendGapDraftTitle.
@@ -18967,7 +18979,7 @@ abstract class AppLocalizations {
   /// Localized text for claimsPrepareClaimUnavailableBody.
   ///
   /// In en, this message translates to:
-  /// **'A coverage plan and invoice are required before a claim can be prepared.'**
+  /// **'Coverage plan and invoice are required before preparing a claim.'**
   String get claimsPrepareClaimUnavailableBody;
 
   /// Localized text for claimsAuthorizationStatusFieldLabel.
@@ -19093,7 +19105,7 @@ abstract class AppLocalizations {
   /// Empty state when no pre-authorization is linked.
   ///
   /// In en, this message translates to:
-  /// **'No authorization on file. Request pre-authorization before high-cost orders or elective admission.'**
+  /// **'No authorization on file. Request pre-auth before high-cost orders or elective admission.'**
   String get claimsInsuranceAuthorizationEmpty;
 
   /// Approved insurance authorization amount label.
@@ -19351,7 +19363,7 @@ abstract class AppLocalizations {
   /// Localized text for labDescription.
   ///
   /// In en, this message translates to:
-  /// **'Manage lab requests, result entry, backend interpretation, verification, reference ranges, reports, and clinician handoff.'**
+  /// **'Lab requests, results, verification, ranges, and reports.'**
   String get labDescription;
 
   /// Localized text for labLoadingTitle.
@@ -19363,7 +19375,7 @@ abstract class AppLocalizations {
   /// Localized text for labLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Loading lab queues, catalog configuration, results, and QC logs.'**
+  /// **'Loading lab queues and results…'**
   String get labLoadingBody;
 
   /// Localized text for labLiveStatus.
@@ -19507,7 +19519,7 @@ abstract class AppLocalizations {
   /// Localized text for labWorklistDescription.
   ///
   /// In en, this message translates to:
-  /// **'Actionable lab orders with requested tests, result entry state, verification state, and report readiness.'**
+  /// **'Orders awaiting entry, verification, or report release.'**
   String get labWorklistDescription;
 
   /// Localized text for labNoOrdersTitle.
@@ -19615,7 +19627,7 @@ abstract class AppLocalizations {
   /// Localized text for labDetailLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Loading order details, ordered tests, results, timeline, and available actions.'**
+  /// **'Loading order details and results…'**
   String get labDetailLoadingBody;
 
   /// Title for the lab result entry workspace dialog.
@@ -19681,7 +19693,7 @@ abstract class AppLocalizations {
   /// Summary shown when batch lab result actions fail validation.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 selected test needs attention before this action can continue.} other{{count} selected tests need attention before this action can continue.}}'**
+  /// **'{count, plural, =1{1 selected test needs attention before continuing.} other{{count} selected tests need attention before continuing.}}'**
   String labBatchValidationSummaryMessage(int count);
 
   /// Hint shown under the batch lab validation summary banner.
@@ -19711,19 +19723,19 @@ abstract class AppLocalizations {
   /// Shown when lab workflow transition fails during batch verify or submit.
   ///
   /// In en, this message translates to:
-  /// **'Some selected tests cannot be verified yet. Enter and submit results for the highlighted tests first, or remove rejected tests from the selection.'**
+  /// **'Some tests cannot be verified yet. Submit results first, or remove rejected tests.'**
   String get labBatchInvalidTransitionMessage;
 
   /// Shown when a selected lab test cannot be resolved during batch actions.
   ///
   /// In en, this message translates to:
-  /// **'One or more selected tests are no longer available. Refresh the order and try again.'**
+  /// **'Selected tests are no longer available. Refresh and try again.'**
   String get labBatchItemNotFoundMessage;
 
   /// Shown when batch lab actions cannot resolve the selected order workflow.
   ///
   /// In en, this message translates to:
-  /// **'The lab order could not be found. Close this dialog, reopen the order, and try again.'**
+  /// **'Lab order not found. Close, reopen the order, and try again.'**
   String get labBatchOrderNotSelectedMessage;
 
   /// Inline status shown while lab result entry saves and refreshes affected rows.
@@ -19933,7 +19945,7 @@ abstract class AppLocalizations {
   /// Body for bulk remove draft lab results confirmation.
   ///
   /// In en, this message translates to:
-  /// **'This will remove all saved or entered draft results that have not been verified.'**
+  /// **'Remove all unverified draft results?'**
   String get labRemoveAllDraftsDialogBody;
 
   /// Field label for lab order status in the result entry dialog.
@@ -19981,7 +19993,7 @@ abstract class AppLocalizations {
   /// Localized text for labNoSelectionBody.
   ///
   /// In en, this message translates to:
-  /// **'Choose a lab order from the queue to enter, verify, and report results.'**
+  /// **'Select a lab order to enter, verify, or report.'**
   String get labNoSelectionBody;
 
   /// Localized text for labPatientContextLabel.
@@ -20185,7 +20197,7 @@ abstract class AppLocalizations {
   /// Body text for the lab order context selection dialog.
   ///
   /// In en, this message translates to:
-  /// **'Search and select an existing patient. Encounter and existing order context are optional where available.'**
+  /// **'Select a patient. Encounter and existing order are optional.'**
   String get labOrderContextDialogBody;
 
   /// Label for the patient search field in lab order creation.
@@ -20677,7 +20689,7 @@ abstract class AppLocalizations {
   /// Localized text for labGapVerificationBody.
   ///
   /// In en, this message translates to:
-  /// **'Order item results can be released. A separate verified-before-release state is not available.'**
+  /// **'Results can be released. Separate verified-before-release is not available.'**
   String get labGapVerificationBody;
 
   /// Localized text for labGapReportGenerationTitle.
@@ -20689,7 +20701,7 @@ abstract class AppLocalizations {
   /// Localized text for labGapReportGenerationBody.
   ///
   /// In en, this message translates to:
-  /// **'The shared report preview is available. A lab-specific generated document is not available yet.'**
+  /// **'Shared report preview available. Lab-specific document not yet.'**
   String get labGapReportGenerationBody;
 
   /// Navigation label for the operations workspace.
@@ -20719,7 +20731,7 @@ abstract class AppLocalizations {
   /// Loading body for the operations workspace.
   ///
   /// In en, this message translates to:
-  /// **'Loading maintenance requests, assets, and service logs.'**
+  /// **'Loading maintenance requests…'**
   String get operationsLoadingBody;
 
   /// Status label when operations data is synced.
@@ -20797,7 +20809,7 @@ abstract class AppLocalizations {
   /// Description for the operations maintenance queue.
   ///
   /// In en, this message translates to:
-  /// **'Track facility repairs, assets, safety notes, and readiness work.'**
+  /// **'Facility repairs, assets, safety, and readiness.'**
   String get operationsQueueDescription;
 
   /// Accessibility label for operations search.
@@ -20917,7 +20929,7 @@ abstract class AppLocalizations {
   /// Empty detail body when no operations request is selected.
   ///
   /// In en, this message translates to:
-  /// **'Choose a queue row to review assignments, service logs, and readiness notes.'**
+  /// **'Select a request for assignment and service logs.'**
   String get operationsNoSelectionBody;
 
   /// Column label for operations request reference.
@@ -21378,7 +21390,7 @@ abstract class AppLocalizations {
   /// Loading body for the biomedical workspace.
   ///
   /// In en, this message translates to:
-  /// **'Loading equipment registry, work orders, and compliance records.'**
+  /// **'Loading equipment and work orders…'**
   String get biomedicalLoadingBody;
 
   /// Status label when biomedical data is synced.
@@ -21450,7 +21462,7 @@ abstract class AppLocalizations {
   /// Description for the biomedical equipment list.
   ///
   /// In en, this message translates to:
-  /// **'Search equipment, schedules, work orders, downtime, recalls, and lifecycle records.'**
+  /// **'Equipment, schedules, work orders, downtime, and recalls.'**
   String get biomedicalAssetListDescription;
 
   /// Search field label for the biomedical workspace.
@@ -21594,7 +21606,7 @@ abstract class AppLocalizations {
   /// Empty body when no biomedical record is selected.
   ///
   /// In en, this message translates to:
-  /// **'Choose equipment or a related record to review readiness, work orders, compliance, and lifecycle actions.'**
+  /// **'Select equipment to review work orders and status.'**
   String get biomedicalNoSelectionBody;
 
   /// Biomedical detail registry section title.
@@ -22200,7 +22212,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Preparing integrations, API keys, webhooks, and logs.'**
+  /// **'Loading integrations and logs…'**
   String get integrationsLoadingBody;
 
   /// Localized text for integrationsFailedStatusLabel.
@@ -22290,7 +22302,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsWorklistDescription.
   ///
   /// In en, this message translates to:
-  /// **'Review integrations, API keys, webhooks, sanitized logs, and interoperability readiness.'**
+  /// **'Integrations, API keys, webhooks, and logs.'**
   String get integrationsWorklistDescription;
 
   /// Localized text for integrationsSearchLabel.
@@ -22350,7 +22362,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'Create an integration, API key, or webhook to populate this workspace.'**
+  /// **'Create an integration, API key, or webhook.'**
   String get integrationsEmptyBody;
 
   /// Localized text for integrationsTypeColumnLabel.
@@ -22410,7 +22422,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsNoSelectionBody.
   ///
   /// In en, this message translates to:
-  /// **'Choose a row to review configuration, keys, webhooks, logs, and available actions.'**
+  /// **'Select a row for config, keys, and logs.'**
   String get integrationsNoSelectionBody;
 
   /// Localized text for integrationsConfigureAction.
@@ -22500,7 +22512,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsRotationGapBody.
   ///
   /// In en, this message translates to:
-  /// **'Create a replacement key, update downstream systems, then revoke the old key.'**
+  /// **'Create a new key, update systems, then revoke the old key.'**
   String get integrationsRotationGapBody;
 
   /// Localized text for integrationsEventLabel.
@@ -22548,7 +22560,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsConfigurationEmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'No configuration values are available for this integration.'**
+  /// **'No configuration values for this integration.'**
   String get integrationsConfigurationEmptyBody;
 
   /// Localized text for integrationsNoConfigurationRows.
@@ -22638,13 +22650,13 @@ abstract class AppLocalizations {
   /// Localized text for integrationsConfigCreateHelper.
   ///
   /// In en, this message translates to:
-  /// **'Enter one key=value setting per line. Sensitive keys are accepted but are not shown again.'**
+  /// **'One key=value per line. Sensitive keys are not shown again.'**
   String get integrationsConfigCreateHelper;
 
   /// Localized text for integrationsConfigUpdateHelper.
   ///
   /// In en, this message translates to:
-  /// **'Enter only settings to change. Existing sensitive values are not shown here.'**
+  /// **'Enter only settings to change. Sensitive values stay hidden.'**
   String get integrationsConfigUpdateHelper;
 
   /// Localized text for integrationsCreateIntegrationSubmitAction.
@@ -23280,7 +23292,7 @@ abstract class AppLocalizations {
   /// Localized text for integrationsInteropReadinessGapBody.
   ///
   /// In en, this message translates to:
-  /// **'No dedicated interoperability readiness signal is available. Use integration status and sanitized logs.'**
+  /// **'No dedicated readiness signal. Use integration status and logs.'**
   String get integrationsInteropReadinessGapBody;
 
   /// Localized text for integrationsSavedMessage.
@@ -23304,7 +23316,7 @@ abstract class AppLocalizations {
   /// Loading body for the reports workspace.
   ///
   /// In en, this message translates to:
-  /// **'Fetching report definitions, runs, schedules, dashboards, and audit evidence.'**
+  /// **'Loading reports, schedules, and dashboards…'**
   String get reportsLoadingBody;
 
   /// Status label when the reports workspace is live.
@@ -23526,13 +23538,13 @@ abstract class AppLocalizations {
   /// Description for the report worklist panel.
   ///
   /// In en, this message translates to:
-  /// **'Search, filter, preview, run, schedule, print, and export report records.'**
+  /// **'Search, run, schedule, print, and export reports.'**
   String get reportsWorklistDescription;
 
   /// Description for compliance log worklists.
   ///
   /// In en, this message translates to:
-  /// **'Search and review audit, PHI access, and data processing logs within permitted scope.'**
+  /// **'Audit, PHI access, and data-processing logs.'**
   String get reportsComplianceDescription;
 
   /// Title for report schedule list.
@@ -23544,7 +23556,7 @@ abstract class AppLocalizations {
   /// Description for report schedule list.
   ///
   /// In en, this message translates to:
-  /// **'Saved schedules refresh independently from report runs.'**
+  /// **'Saved schedules refresh independently of runs.'**
   String get reportsSchedulesDescription;
 
   /// Empty state title for report records.
@@ -23604,13 +23616,13 @@ abstract class AppLocalizations {
   /// No selection body in reports workspace.
   ///
   /// In en, this message translates to:
-  /// **'Choose a report definition, run, widget, KPI, event, or schedule to preview generated details.'**
+  /// **'Select a report, run, KPI, or schedule.'**
   String get reportsNoSelectionBody;
 
   /// No selection body for compliance detail.
   ///
   /// In en, this message translates to:
-  /// **'Choose an audit, PHI access, or processing log to review evidence details.'**
+  /// **'Select an audit, PHI access, or processing log.'**
   String get reportsNoComplianceSelectionBody;
 
   /// Report table name column label.
@@ -23778,7 +23790,7 @@ abstract class AppLocalizations {
   /// Description for recent report activity panel.
   ///
   /// In en, this message translates to:
-  /// **'Latest report runs, schedules, KPI snapshots, and analytics events.'**
+  /// **'Recent runs, schedules, KPIs, and analytics events.'**
   String get reportsTimelineDescription;
 
   /// Dialog title for running a report.
@@ -23868,7 +23880,7 @@ abstract class AppLocalizations {
   /// Dialog body for canceling a report run.
   ///
   /// In en, this message translates to:
-  /// **'Cancel this queued or processing report run? The run row will refresh after the system confirms the change.'**
+  /// **'Cancel this queued or processing report run?'**
   String get reportsCancelRunDialogBody;
 
   /// Dialog title for exporting evidence.
@@ -23946,7 +23958,7 @@ abstract class AppLocalizations {
   /// Loading body for the communications workspace.
   ///
   /// In en, this message translates to:
-  /// **'Loading notifications, conversations, delivery state, and templates.'**
+  /// **'Loading notifications and threads…'**
   String get communicationsLoadingBody;
 
   /// Title for the communications workspace.
@@ -24036,7 +24048,7 @@ abstract class AppLocalizations {
   /// Description for the communications worklist.
   ///
   /// In en, this message translates to:
-  /// **'Find alerts, threads, delivery state, and message templates.'**
+  /// **'Alerts, threads, delivery state, and templates.'**
   String get communicationsListDescription;
 
   /// Accessibility label for communications search.
@@ -24834,7 +24846,7 @@ abstract class AppLocalizations {
   /// Localized text for housekeepingLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Preparing cleaning tasks, schedules, bed turnover, and readiness.'**
+  /// **'Loading cleaning tasks and schedules…'**
   String get housekeepingLoadingBody;
 
   /// Localized text for housekeepingLiveStatus.
@@ -24912,7 +24924,7 @@ abstract class AppLocalizations {
   /// Localized text for housekeepingWorklistDescription.
   ///
   /// In en, this message translates to:
-  /// **'Track cleaning tasks, schedules, bed turnover, and maintenance handoffs.'**
+  /// **'Cleaning, schedules, bed turnover, and maintenance.'**
   String get housekeepingWorklistDescription;
 
   /// Localized text for housekeepingSearchLabel.
@@ -24984,7 +24996,7 @@ abstract class AppLocalizations {
   /// Localized text for housekeepingEmptyQueueBody.
   ///
   /// In en, this message translates to:
-  /// **'No tasks, schedules, or maintenance handoffs match the current filters.'**
+  /// **'No tasks match the current filters.'**
   String get housekeepingEmptyQueueBody;
 
   /// Localized text for housekeepingTaskColumnLabel.
@@ -25032,7 +25044,7 @@ abstract class AppLocalizations {
   /// Localized text for housekeepingNoSelectionBody.
   ///
   /// In en, this message translates to:
-  /// **'Choose a task, schedule, or maintenance handoff to review readiness and available actions.'**
+  /// **'Select a task or schedule to review actions.'**
   String get housekeepingNoSelectionBody;
 
   /// Localized text for housekeepingDetailTitle.
@@ -25140,7 +25152,7 @@ abstract class AppLocalizations {
   /// Localized text for housekeepingBackendGapTooltip.
   ///
   /// In en, this message translates to:
-  /// **'This workflow is not available yet.'**
+  /// **'Workflow not available yet'**
   String get housekeepingBackendGapTooltip;
 
   /// Localized text for housekeepingTriageAction.
@@ -25698,7 +25710,7 @@ abstract class AppLocalizations {
   /// Localized text for physiotherapyLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Preparing referrals, sessions, care plans, notes, and follow-ups.'**
+  /// **'Loading referrals and sessions…'**
   String get physiotherapyLoadingBody;
 
   /// Localized text for physiotherapyLiveStatus.
@@ -25764,7 +25776,7 @@ abstract class AppLocalizations {
   /// Localized text for physiotherapyWorklistDescription.
   ///
   /// In en, this message translates to:
-  /// **'Referrals, therapy sessions, plans, notes, and follow-up work from available clinical records.'**
+  /// **'Referrals, sessions, plans, notes, and follow-up.'**
   String get physiotherapyWorklistDescription;
 
   /// Localized text for physiotherapySearchLabel.
@@ -25986,7 +25998,7 @@ abstract class AppLocalizations {
   /// Localized text for physiotherapyDetailLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Fetching session history, plan, notes, and follow-up details.'**
+  /// **'Loading session, plan, and notes…'**
   String get physiotherapyDetailLoadingBody;
 
   /// Localized text for physiotherapyNoSelectionTitle.
@@ -25998,7 +26010,7 @@ abstract class AppLocalizations {
   /// Localized text for physiotherapyNoSelectionBody.
   ///
   /// In en, this message translates to:
-  /// **'Choose a referral or session to review assessment, plan, attendance, and follow-up actions.'**
+  /// **'Select a referral or session to continue.'**
   String get physiotherapyNoSelectionBody;
 
   /// Localized text for physiotherapyPatientNumberLabel.
@@ -26112,7 +26124,7 @@ abstract class AppLocalizations {
   /// Localized text for physiotherapyBackendGapBody.
   ///
   /// In en, this message translates to:
-  /// **'This workspace uses available shared clinical records and lists unavailable dedicated physiotherapy workflows here.'**
+  /// **'Uses shared clinical records. Dedicated physio workflows are listed as unavailable.'**
   String get physiotherapyBackendGapBody;
 
   /// Localized text for physiotherapyNoRecordsLabel.
@@ -26478,7 +26490,7 @@ abstract class AppLocalizations {
   /// Localized text for physiotherapyBackendGapStatusEndpoint.
   ///
   /// In en, this message translates to:
-  /// **'Dedicated physiotherapy episode and therapy status are not available. Status is derived from procedures, care plans, appointments, and follow-ups.'**
+  /// **'Episode status unavailable. Derived from procedures, plans, and follow-ups.'**
   String get physiotherapyBackendGapStatusEndpoint;
 
   /// Localized text for physiotherapyBackendGapBillingEndpoint.
@@ -26556,7 +26568,7 @@ abstract class AppLocalizations {
   /// Body shown when the mortuary workspace cannot load.
   ///
   /// In en, this message translates to:
-  /// **'The mortuary workspace could not be loaded. Try again or contact an administrator if the issue continues.'**
+  /// **'Mortuary workspace could not load. Try again or contact an admin.'**
   String get mortuaryLoadErrorBody;
 
   /// Title shown while loading the mortuary workspace.
@@ -26568,7 +26580,7 @@ abstract class AppLocalizations {
   /// Body shown while loading the mortuary workspace.
   ///
   /// In en, this message translates to:
-  /// **'Retrieving cases, storage, custody, release, and billing information.'**
+  /// **'Loading cases, storage, and release…'**
   String get mortuaryLoadingBody;
 
   /// Operational status label for the mortuary workspace.
@@ -26640,7 +26652,7 @@ abstract class AppLocalizations {
   /// Tooltip for mortuary actions that are not available yet.
   ///
   /// In en, this message translates to:
-  /// **'This action is not available yet.'**
+  /// **'Action not available yet'**
   String get mortuaryActionsUnavailableTooltip;
 
   /// Title for the mortuary worklist.
@@ -26658,7 +26670,7 @@ abstract class AppLocalizations {
   /// Empty state body for the mortuary worklist.
   ///
   /// In en, this message translates to:
-  /// **'Adjust the filters or search terms to view matching mortuary records.'**
+  /// **'Adjust filters to view matching records.'**
   String get mortuaryWorklistEmptyBody;
 
   /// Column label for mortuary case reference.
@@ -27036,7 +27048,7 @@ abstract class AppLocalizations {
   /// Empty state body when no mortuary case is selected.
   ///
   /// In en, this message translates to:
-  /// **'Choose a record from the worklist to review identity, storage, custody, release, billing, and documents.'**
+  /// **'Select a case for identity, storage, and release.'**
   String get mortuaryNoSelectionBody;
 
   /// Fallback label when deceased name is unavailable.
@@ -27096,7 +27108,7 @@ abstract class AppLocalizations {
   /// Body for unsupported mortuary action notice.
   ///
   /// In en, this message translates to:
-  /// **'Mortuary lookup data is available. Action buttons remain disabled until the workflow is enabled for this facility.'**
+  /// **'Lookups available. Actions disabled until this workflow is enabled.'**
   String get mortuaryActionGapBody;
 
   /// Section title for mortuary identity and source details.
@@ -27312,7 +27324,7 @@ abstract class AppLocalizations {
   /// Body text for the mortuary documents section.
   ///
   /// In en, this message translates to:
-  /// **'Generated intake, custody, release, and billing documents are available from the print action when case data is selected.'**
+  /// **'Intake, custody, release, and billing docs are available from Print.'**
   String get mortuaryNoDocumentsBody;
 
   /// Document label for mortuary intake form.
@@ -27408,7 +27420,7 @@ abstract class AppLocalizations {
   /// Body shown while loading the rooms and beds workspace.
   ///
   /// In en, this message translates to:
-  /// **'Retrieving wards, rooms, beds, assignments, and facility context.'**
+  /// **'Loading wards, rooms, and beds…'**
   String get roomsBedsLoadingBody;
 
   /// Workspace status label while a rooms and beds mutation is saving.
@@ -27438,7 +27450,7 @@ abstract class AppLocalizations {
   /// Body for the rooms and beds unavailable workflow notice.
   ///
   /// In en, this message translates to:
-  /// **'Cleaning, maintenance, block, isolation, and detailed readiness states are not available for this facility. Current actions use available ward, room, bed, bed assignment, and IPD flow workflows only.'**
+  /// **'Cleaning, block, isolation, and full readiness states are limited for this facility.'**
   String get roomsBedsBackendGapsBody;
 
   /// Action label to open tenant facility setup for ward, room, and bed catalog maintenance.
@@ -27552,7 +27564,7 @@ abstract class AppLocalizations {
   /// Description for the rooms and beds board panel.
   ///
   /// In en, this message translates to:
-  /// **'Track availability, occupancy, reservations, and bed readiness by facility location.'**
+  /// **'Availability, occupancy, reservations, and readiness.'**
   String get roomsBedsBoardDescription;
 
   /// Semantic label for rooms and beds search.
@@ -27654,7 +27666,7 @@ abstract class AppLocalizations {
   /// Empty state body for rooms and beds.
   ///
   /// In en, this message translates to:
-  /// **'Adjust the filters or add beds from facility setup to start using the operational board.'**
+  /// **'Adjust filters or add beds in facility setup.'**
   String get roomsBedsEmptyBody;
 
   /// Column label for bed identity.
@@ -27816,7 +27828,7 @@ abstract class AppLocalizations {
   /// Body text for the transfer request dialog.
   ///
   /// In en, this message translates to:
-  /// **'Choose the destination ward. Bed selection is completed by the IPD transfer workflow after approval.'**
+  /// **'Choose destination ward. Bed assignment follows in the IPD transfer workflow.'**
   String get roomsBedsTransferDialogBody;
 
   /// Display label for a bed assignment linked to an admission.
@@ -27888,7 +27900,7 @@ abstract class AppLocalizations {
   /// Human resources workspace text for hrActivityDescription.
   ///
   /// In en, this message translates to:
-  /// **'Audit-style feed of recent HR updates, roster publishes, and shift changes.'**
+  /// **'Recent HR updates, roster publishes, and shift changes.'**
   String get hrActivityDescription;
 
   /// Human resources workspace text for hrActivityTitle.
@@ -27990,7 +28002,7 @@ abstract class AppLocalizations {
   /// Helper text for compensation section when editing an existing staff profile.
   ///
   /// In en, this message translates to:
-  /// **'Update compensation for this staff member. New staff can set pay later from staff detail.'**
+  /// **'Update pay. New staff can set compensation later from staff detail.'**
   String get hrStaffOnboardingCompensationEditHint;
 
   /// Search field label in the reusable role assignment picker.
@@ -28272,7 +28284,7 @@ abstract class AppLocalizations {
   /// Explains that duplicating replaces target day slots in the shared weekly schedule editor.
   ///
   /// In en, this message translates to:
-  /// **'Replace the selected days with {dayName}\'s time slots.'**
+  /// **'Replace selected days with {dayName}\'s slots.'**
   String hrScheduleDuplicateToDialogDescription(String dayName);
 
   /// Shared section title for the weekly schedule editor in HR flows.
@@ -28344,7 +28356,7 @@ abstract class AppLocalizations {
   /// Explains that duplicating replaces target day slots.
   ///
   /// In en, this message translates to:
-  /// **'Replace the selected days with {dayName}\'s time slots.'**
+  /// **'Replace selected days with {dayName}\'s slots.'**
   String hrAvailabilityDuplicateToDialogDescription(String dayName);
 
   /// Validation error when an availability slot end time is not after the start time.
@@ -28530,7 +28542,7 @@ abstract class AppLocalizations {
   /// Human resources workspace text for hrLeaveHalfDayHelper.
   ///
   /// In en, this message translates to:
-  /// **'Use for a single morning or afternoon away from work.'**
+  /// **'For a single morning or afternoon absence.'**
   String get hrLeaveHalfDayHelper;
 
   /// Human resources workspace text for hrLeaveHalfDayPeriodLabel.
@@ -28572,7 +28584,7 @@ abstract class AppLocalizations {
   /// Human resources workspace text for hrHandoverNotesHelper.
   ///
   /// In en, this message translates to:
-  /// **'Tasks, patients, or shift details the covering colleague should know.'**
+  /// **'Tasks or patients the covering colleague should know.'**
   String get hrHandoverNotesHelper;
 
   /// Human resources workspace text for hrAddNewPositionLabel.
@@ -28704,7 +28716,7 @@ abstract class AppLocalizations {
   /// Human resources workspace text for hrLoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Loading staff records and rosters.'**
+  /// **'Loading staff and rosters…'**
   String get hrLoadingBody;
 
   /// Human resources workspace text for hrLoadingTitle.
@@ -28812,7 +28824,7 @@ abstract class AppLocalizations {
   /// Human resources workspace text for hrNoStaffSelectedBody.
   ///
   /// In en, this message translates to:
-  /// **'Select a staff member to review assignments, availability, leave, shifts, and payroll links.'**
+  /// **'Select a staff member for assignments, leave, shifts, and payroll.'**
   String get hrNoStaffSelectedBody;
 
   /// Human resources workspace text for hrNoStaffSelectedTitle.
@@ -29208,7 +29220,7 @@ abstract class AppLocalizations {
   /// Description for the schedule templates manage dialog.
   ///
   /// In en, this message translates to:
-  /// **'Reusable shift patterns for roster generation and staff scheduling.'**
+  /// **'Reusable shift patterns for roster generation.'**
   String get hrManageScheduleTemplatesDescription;
 
   /// Empty state when no shift templates exist.
@@ -29232,7 +29244,7 @@ abstract class AppLocalizations {
   /// Human resources workspace text for hrStaffDirectoryDescription.
   ///
   /// In en, this message translates to:
-  /// **'Search staff by name, department, position, role, and status.'**
+  /// **'Search staff by name, department, position, or status.'**
   String get hrStaffDirectoryDescription;
 
   /// Human resources workspace text for hrStaffDirectoryTitle.
@@ -29502,7 +29514,7 @@ abstract class AppLocalizations {
   /// Body text for the HR access management dialog.
   ///
   /// In en, this message translates to:
-  /// **'Manage staff user accounts, roles, and permissions for your organization.'**
+  /// **'Staff accounts, roles, and permissions.'**
   String get hrAccessWorkspaceDescription;
 
   /// Users tab in HR access workspace.
@@ -30144,7 +30156,7 @@ abstract class AppLocalizations {
   /// Body when HR staff access cannot resolve a tenant UUID.
   ///
   /// In en, this message translates to:
-  /// **'Select a staff member or sign in with a tenant account before managing users, roles, and permissions.'**
+  /// **'Select a staff member or sign in with a tenant account first.'**
   String get hrAccessTenantContextRequiredBody;
 
   /// Snack bar after syncing role permissions.
@@ -30312,13 +30324,13 @@ abstract class AppLocalizations {
   /// Tooltip for compensation action.
   ///
   /// In en, this message translates to:
-  /// **'Define or update pay structure for this staff member.'**
+  /// **'Define or update pay structure'**
   String get hrCompensationActionTooltip;
 
   /// Tooltip for run payroll action.
   ///
   /// In en, this message translates to:
-  /// **'Calculate and process pay for a pay period. Requires Financial Approve permission.'**
+  /// **'Process pay for a period (Financial Approve required)'**
   String get hrRunPayrollActionTooltip;
 
   /// Tooltip when payroll is disabled due to missing compensation.
@@ -30576,7 +30588,7 @@ abstract class AppLocalizations {
   /// Tooltip for offboard staff action.
   ///
   /// In en, this message translates to:
-  /// **'Record separation and optionally end assignments and revoke access.'**
+  /// **'Record separation; optionally end access'**
   String get hrOffboardStaffActionTooltip;
 
   /// Dialog title for staff offboarding.
@@ -30588,7 +30600,7 @@ abstract class AppLocalizations {
   /// Hint text in offboarding dialog.
   ///
   /// In en, this message translates to:
-  /// **'This ends employment for the staff member. Active assignments can be closed on the last working day.'**
+  /// **'Ends employment. Active assignments can close on the last working day.'**
   String get hrOffboardStaffDialogHint;
 
   /// Label for separation type selector.
@@ -30864,7 +30876,7 @@ abstract class AppLocalizations {
   /// Tooltip clarifying that work queues opens the full multi-queue dialog.
   ///
   /// In en, this message translates to:
-  /// **'Browse and act on all queue types in one dialog.'**
+  /// **'Browse and act on all queue types'**
   String get hrWorkQueuesToolbarTooltip;
 
   /// Tooltip and action label for copying an admission identifier.
@@ -30924,7 +30936,7 @@ abstract class AppLocalizations {
   /// Settings workspace LoadingBody.
   ///
   /// In en, this message translates to:
-  /// **'Loading setup readiness, actions, and reference data.'**
+  /// **'Loading setup readiness…'**
   String get settingsWorkspaceLoadingBody;
 
   /// Settings workspace ErrorTitle.
@@ -30942,7 +30954,7 @@ abstract class AppLocalizations {
   /// Settings workspace EmptyBody.
   ///
   /// In en, this message translates to:
-  /// **'No setup modules match the current filters.'**
+  /// **'No setup modules match the filters.'**
   String get settingsWorkspaceEmptyBody;
 
   /// Settings workspace ContextTitle.
@@ -31494,7 +31506,7 @@ abstract class AppLocalizations {
   /// Localized text for labPatientsWorklistDescription.
   ///
   /// In en, this message translates to:
-  /// **'Patients with active lab orders and result-entry work.'**
+  /// **'Patients with active lab orders.'**
   String get labPatientsWorklistDescription;
 
   /// Localized text for labNoPatientsTitle.
@@ -31506,7 +31518,7 @@ abstract class AppLocalizations {
   /// Localized text for labNoPatientsBody.
   ///
   /// In en, this message translates to:
-  /// **'Adjust the queue filter or search term to find patient lab work.'**
+  /// **'Patients with matching lab orders will appear here.'**
   String get labNoPatientsBody;
 
   /// Localized text for labOrdersColumnLabel.
@@ -31584,7 +31596,7 @@ abstract class AppLocalizations {
   /// Body text for the verified result reopen dialog.
   ///
   /// In en, this message translates to:
-  /// **'Update the result value and provide a reason for changing a verified result. The corrected value is re-verified when you save.'**
+  /// **'Update the value and reason. Saving re-verifies the corrected result.'**
   String get labReopenVerifiedResultDialogBody;
 
   /// Label for the required reason when reopening a verified lab result.
@@ -31614,7 +31626,7 @@ abstract class AppLocalizations {
   /// Body confirming restoration of a cancelled lab test.
   ///
   /// In en, this message translates to:
-  /// **'Restore \"{testName}\"? It was cancelled and will return to the active worklist for processing.'**
+  /// **'Restore \"{testName}\"? It returns to the active worklist.'**
   String labRestoreOrderItemDialogBody(String testName);
 
   /// Action label to delete an individual lab test request from an order.
@@ -31632,7 +31644,7 @@ abstract class AppLocalizations {
   /// Body confirming deletion of an individual lab test request.
   ///
   /// In en, this message translates to:
-  /// **'Delete \"{testName}\" from this order? This removes the requested test entirely and cannot be undone.'**
+  /// **'Delete \"{testName}\" from this order? This cannot be undone.'**
   String labDeleteOrderItemDialogBody(String testName);
 
   /// Action label for deleting a lab panel.
@@ -31650,7 +31662,7 @@ abstract class AppLocalizations {
   /// Confirmation body for deleting a lab panel.
   ///
   /// In en, this message translates to:
-  /// **'This will remove {panelName} from the configurable lab catalog. A reason is required for the audit trail.'**
+  /// **'Remove {panelName} from the lab catalog? A reason is required for audit.'**
   String labDeletePanelDialogBody(String panelName);
 
   /// Localized text for labRejectOrderItemAction.
@@ -31728,7 +31740,7 @@ abstract class AppLocalizations {
   /// Localized text for labReferenceRangesDialogBody.
   ///
   /// In en, this message translates to:
-  /// **'Enable platform lab tests and panels for this facility, set prices, and customize reference ranges and result options.'**
+  /// **'Enable tests and panels, set prices, and customize ranges and result options.'**
   String get labReferenceRangesDialogBody;
 
   /// Title shown while the lab configuration catalog is loading.
@@ -31764,7 +31776,7 @@ abstract class AppLocalizations {
   /// Body for the dialog that enables a platform lab test or panel at the facility.
   ///
   /// In en, this message translates to:
-  /// **'Select a platform catalog item and set the facility price clinicians will use when ordering.'**
+  /// **'Select a catalog item and set the facility price for ordering.'**
   String get labEnableOfferingDialogBody;
 
   /// Label for selecting a platform lab catalog item to enable at the facility.
@@ -32262,7 +32274,7 @@ abstract class AppLocalizations {
   /// Confirmation body for deleting a lab order.
   ///
   /// In en, this message translates to:
-  /// **'This will remove lab order {orderId} from the active laboratory queue. A reason is required for the audit trail.'**
+  /// **'Remove lab order {orderId} from the queue? A reason is required for audit.'**
   String labDeleteOrderDialogBody(String orderId);
 
   /// Dialog title for deleting a lab test.
@@ -32274,7 +32286,7 @@ abstract class AppLocalizations {
   /// Confirmation body for deleting a lab test.
   ///
   /// In en, this message translates to:
-  /// **'This will remove {testName} from the configurable lab catalog. A reason is required for the audit trail.'**
+  /// **'Remove {testName} from the lab catalog? A reason is required for audit.'**
   String labDeleteTestDialogBody(String testName);
 
   /// Snackbar shown after a lab record is deleted.
@@ -32424,7 +32436,7 @@ abstract class AppLocalizations {
   /// Hint explaining how to select lab report content.
   ///
   /// In en, this message translates to:
-  /// **'Use the checkboxes on each result row below to choose what to print.'**
+  /// **'Use checkboxes on each result row to choose what to print.'**
   String get labReportSelectionHint;
 
   /// Toggle label for including order metadata in a lab report preview.
@@ -32586,13 +32598,13 @@ abstract class AppLocalizations {
   /// Radiology configuration scope prompt for platform admins.
   ///
   /// In en, this message translates to:
-  /// **'Select a tenant and facility to load and configure the radiology catalog.'**
+  /// **'Select tenant and facility to configure the radiology catalog.'**
   String get radiologyConfigurationsSelectScopeBody;
 
   /// Radiology configuration scope prompt for tenant admins.
   ///
   /// In en, this message translates to:
-  /// **'Select a facility for {tenantName} to load and configure the radiology catalog.'**
+  /// **'Select a facility for {tenantName} to configure the radiology catalog.'**
   String radiologyConfigurationsSelectFacilityOnlyBody(String tenantName);
 
   /// Tooltip when facility selector is disabled until tenant is chosen.
@@ -32616,7 +32628,7 @@ abstract class AppLocalizations {
   /// Radiology enable offering catalog picker dialog body.
   ///
   /// In en, this message translates to:
-  /// **'Select a platform catalog procedure and set the facility price clinicians will use when ordering.'**
+  /// **'Select a catalog procedure and set the facility price.'**
   String get radiologyEnableOfferingDialogBody;
 
   /// Radiology enable offering empty state when all items are offered.
@@ -32658,7 +32670,7 @@ abstract class AppLocalizations {
   /// Body for batch removal of radiology facility offerings.
   ///
   /// In en, this message translates to:
-  /// **'Remove {count, plural, =1{1 procedure} other{{count} procedures}} from this facility catalog? Clinicians will no longer be able to order them here.'**
+  /// **'Remove {count, plural, =1{1 procedure} other{{count} procedures}} from this catalog? Clinicians cannot order them here.'**
   String radiologyDeleteSelectedOfferingsDialogBody(int count);
 
   /// Snack bar shown after a radiology facility offering is disabled.
@@ -32676,7 +32688,7 @@ abstract class AppLocalizations {
   /// Body for disabling a single radiology facility offering.
   ///
   /// In en, this message translates to:
-  /// **'Remove {name} from this facility catalog? Clinicians will no longer be able to order it here.'**
+  /// **'Remove {name} from this catalog? Clinicians cannot order it here.'**
   String radiologyDisableOfferingDialogBody(String name);
 
   /// Radiology action to enable a facility procedure offering.
@@ -32712,7 +32724,7 @@ abstract class AppLocalizations {
   /// Radiology patients worklist description.
   ///
   /// In en, this message translates to:
-  /// **'Patients grouped by active imaging orders, reporting status, and next action.'**
+  /// **'Patients with active imaging orders.'**
   String get radiologyPatientsWorklistDescription;
 
   /// Radiology patients empty state title.
@@ -32724,7 +32736,7 @@ abstract class AppLocalizations {
   /// Radiology patients empty state body.
   ///
   /// In en, this message translates to:
-  /// **'Patients with imaging requests matching this search and filter will appear here.'**
+  /// **'Patients with matching imaging requests will appear here.'**
   String get radiologyNoPatientsBody;
 
   /// Radiology table column settings title.
@@ -32922,7 +32934,7 @@ abstract class AppLocalizations {
   /// Radiology standard catalog read-only body.
   ///
   /// In en, this message translates to:
-  /// **'Standard catalog rows cannot be edited directly. Copy one to save a custom test.'**
+  /// **'Standard catalog rows are read-only. Copy one to create a custom test.'**
   String get radiologyReadOnlyStandardTestMessage;
 
   /// Radiology delete imaging test dialog title.
@@ -32934,7 +32946,7 @@ abstract class AppLocalizations {
   /// Radiology tenant required validation message.
   ///
   /// In en, this message translates to:
-  /// **'Tenant context is required before a custom imaging test can be saved.'**
+  /// **'Tenant context is required to save a custom imaging test.'**
   String get radiologyTenantRequiredForConfigMessage;
 
   /// Radiology equipment records title.
@@ -33006,7 +33018,7 @@ abstract class AppLocalizations {
   /// Radiology equipment-test mapping gap body.
   ///
   /// In en, this message translates to:
-  /// **'The current backend schema does not persist a direct imaging-test-to-equipment relationship, so this workspace does not save local-only mappings.'**
+  /// **'Imaging-to-equipment links are not persisted; local mappings are not saved.'**
   String get radiologyEquipmentLinkGapBody;
 
   /// Radiology save configuration action.
@@ -33024,7 +33036,7 @@ abstract class AppLocalizations {
   /// Radiology image attachment helper body.
   ///
   /// In en, this message translates to:
-  /// **'Choose one or more images, add captions, then upload to attach them to this study.'**
+  /// **'Select images, add captions, then upload to this study.'**
   String get radiologyAttachImagesBody;
 
   /// Radiology upload selected images action.
@@ -33108,7 +33120,7 @@ abstract class AppLocalizations {
   /// Radiology print dialog body.
   ///
   /// In en, this message translates to:
-  /// **'Choose clinical report sections to include. Patient context, test details, findings, impression, and signer are selected by default; metadata is optional.'**
+  /// **'Choose report sections. Patient, findings, impression, and signer are included by default.'**
   String get radiologyPrintReportDialogBody;
 
   /// Radiology print preview title.
@@ -33252,7 +33264,7 @@ abstract class AppLocalizations {
   /// Radiology delete imaging test dialog body.
   ///
   /// In en, this message translates to:
-  /// **'Delete {name}? This custom imaging test will no longer be available for new requests.'**
+  /// **'Delete {name}? It will no longer be available for new requests.'**
   String radiologyDeleteImagingTestDialogBody(String name);
 
   /// Radiology insert asset reference action.
@@ -33300,7 +33312,7 @@ abstract class AppLocalizations {
   /// Help text on modular clinical request main dialog.
   ///
   /// In en, this message translates to:
-  /// **'Review your selection below. Use Add items to browse the catalog, then review billing before submitting.'**
+  /// **'Review selection, add catalog items, then confirm billing.'**
   String get clinicalRequestMainPanelHelp;
 
   /// Remove checked items from a clinical request selection table.
@@ -33384,7 +33396,7 @@ abstract class AppLocalizations {
   /// Empty state for selected lab requests table.
   ///
   /// In en, this message translates to:
-  /// **'No lab requests selected. Use Add items to choose tests or panels.'**
+  /// **'No lab requests selected. Use Add items.'**
   String get clinicalLabRequestSelectedTableEmptyLabel;
 
   /// Selected item count on request flow summary bar.
@@ -33426,7 +33438,7 @@ abstract class AppLocalizations {
   /// Empty state for the selected radiology requests table.
   ///
   /// In en, this message translates to:
-  /// **'No radiology requests selected. Use Add study to choose imaging tests.'**
+  /// **'No imaging requests selected. Use Add study.'**
   String get clinicalRadiologyRequestSelectedTableEmptyLabel;
 
   /// Primary action that applies staged radiology catalog selections.
@@ -33612,13 +33624,13 @@ abstract class AppLocalizations {
   /// Workflow step description.
   ///
   /// In en, this message translates to:
-  /// **'Review study details and clinical notes'**
+  /// **'Review study details and clinical notes.'**
   String get radiologyWorkflowStepReviewDescription;
 
   /// Workflow step description.
   ///
   /// In en, this message translates to:
-  /// **'Mark the imaging study as performed'**
+  /// **'Mark the imaging study as performed.'**
   String get radiologyWorkflowStepPerformDescription;
 
   /// Workflow step description.
@@ -33630,7 +33642,7 @@ abstract class AppLocalizations {
   /// Workflow step description.
   ///
   /// In en, this message translates to:
-  /// **'Draft and edit the radiology report'**
+  /// **'Draft and edit the radiology report.'**
   String get radiologyWorkflowStepReportDescription;
 
   /// Workflow step description.
@@ -33762,7 +33774,7 @@ abstract class AppLocalizations {
   /// Access admin loading body.
   ///
   /// In en, this message translates to:
-  /// **'Fetching users, roles, permissions, and entitlements.'**
+  /// **'Loading users, roles, and permissions…'**
   String get accessAdminLoadingBody;
 
   /// Access admin saving status.
@@ -33894,7 +33906,7 @@ abstract class AppLocalizations {
   /// Access admin empty state body.
   ///
   /// In en, this message translates to:
-  /// **'Adjust filters or create users and roles to populate this workspace.'**
+  /// **'Adjust filters or create users and roles.'**
   String get accessAdminEmptyBody;
 
   /// Access admin table ID column.
@@ -34050,13 +34062,13 @@ abstract class AppLocalizations {
   /// Introductory helper text at the top of the create user dialog.
   ///
   /// In en, this message translates to:
-  /// **'Create an account for a staff member. Select the tenant and facility first, then complete the profile, roles, and permissions.'**
+  /// **'Create a staff account. Select tenant and facility, then profile and roles.'**
   String get accessAdminCreateUserIntro;
 
   /// Section description for tenant and facility selection in the user form.
   ///
   /// In en, this message translates to:
-  /// **'Select the tenant and facility this user belongs to. Roles and permissions load from that organization.'**
+  /// **'Select tenant and facility. Roles load from that org.'**
   String get accessAdminCreateUserScopeSectionDescription;
 
   /// Section title for user profile fields.
@@ -34068,19 +34080,19 @@ abstract class AppLocalizations {
   /// Section description for user profile fields.
   ///
   /// In en, this message translates to:
-  /// **'Provide contact details, position title, and account status.'**
+  /// **'Contact details, position, and account status.'**
   String get accessAdminCreateUserDetailsSectionDescription;
 
   /// Section description for role assignment in the user form.
   ///
   /// In en, this message translates to:
-  /// **'Assign one or more roles. Effective permissions include both role grants and direct assignments below.'**
+  /// **'Assign roles. Effective access includes role and direct grants.'**
   String get accessAdminCreateUserRolesSectionDescription;
 
   /// Section description for direct permission assignment in the user form.
   ///
   /// In en, this message translates to:
-  /// **'Grant additional permissions directly to this user, on top of any role assignments.'**
+  /// **'Grant extra permissions beyond assigned roles.'**
   String get accessAdminCreateUserPermissionsSectionDescription;
 
   /// Loading label while facilities are fetched for the selected tenant.
@@ -34098,7 +34110,7 @@ abstract class AppLocalizations {
   /// Message shown when user form fields are disabled pending scope selection.
   ///
   /// In en, this message translates to:
-  /// **'Choose a tenant and facility above to enable the rest of this form.'**
+  /// **'Choose tenant and facility above to continue.'**
   String get accessAdminCreateUserSelectScopeMessage;
 
   /// Title when no facilities exist for the selected tenant.
@@ -34146,19 +34158,19 @@ abstract class AppLocalizations {
   /// Section description for user account details in the user detail dialog.
   ///
   /// In en, this message translates to:
-  /// **'Identifiers and contact information for this account.'**
+  /// **'Identifiers and contact information.'**
   String get accessAdminUserDetailProfileSectionDescription;
 
   /// Section description for assigned roles in the user detail dialog.
   ///
   /// In en, this message translates to:
-  /// **'Roles determine the baseline permissions granted to this user.'**
+  /// **'Roles set the baseline permissions for this user.'**
   String get accessAdminUserDetailRolesSectionDescription;
 
   /// Section description for permissions in the user detail dialog.
   ///
   /// In en, this message translates to:
-  /// **'Effective permissions include role grants and any direct assignments.'**
+  /// **'Effective access from roles plus direct grants.'**
   String get accessAdminUserDetailPermissionsSectionDescription;
 
   /// Label for permissions inherited from assigned roles.
@@ -34200,7 +34212,7 @@ abstract class AppLocalizations {
   /// Confirmation body when removing a role from a user.
   ///
   /// In en, this message translates to:
-  /// **'Removing {roleName} also removes all permissions granted by that role. Direct permissions are not affected.'**
+  /// **'Removing {roleName} also removes its permissions. Direct grants stay.'**
   String accessAdminUserAccessRemoveRoleConfirmMessage(String roleName);
 
   /// Title for the dialog that assigns a role to a user.
@@ -34212,7 +34224,7 @@ abstract class AppLocalizations {
   /// Description for the assign-role dialog.
   ///
   /// In en, this message translates to:
-  /// **'Select one or more roles. Expand a role to review the permissions it grants before assigning.'**
+  /// **'Select roles. Expand to review granted permissions.'**
   String get accessAdminUserAccessAddRoleDialogDescription;
 
   /// Empty state when every assignable role is already on the user.
@@ -34224,13 +34236,13 @@ abstract class AppLocalizations {
   /// Hint that role-inherited permissions are not individually deletable.
   ///
   /// In en, this message translates to:
-  /// **'These permissions come from the role and cannot be removed individually. Remove the role to revoke them.'**
+  /// **'Role permissions cannot be removed individually. Remove the role to revoke.'**
   String get accessAdminUserAccessRolePermissionsHint;
 
   /// Section description for direct user permissions.
   ///
   /// In en, this message translates to:
-  /// **'Direct permissions are assigned to this user individually and can be removed one at a time.'**
+  /// **'Direct permissions can be removed one at a time.'**
   String get accessAdminUserAccessDirectPermissionsDescription;
 
   /// Action to add a direct permission to a user.
@@ -34254,13 +34266,13 @@ abstract class AppLocalizations {
   /// Description for the add-direct-permission dialog.
   ///
   /// In en, this message translates to:
-  /// **'Prefer assigning a role when possible. Use direct permissions only for one-off exceptions.'**
+  /// **'Prefer roles; use direct grants for one-off exceptions.'**
   String get accessAdminUserAccessAddDirectPermissionDialogDescription;
 
   /// Empty state when a user has no direct permissions.
   ///
   /// In en, this message translates to:
-  /// **'No direct permissions. Prefer assigning a role, or create a custom role and assign it.'**
+  /// **'No direct permissions. Prefer assigning a role.'**
   String get accessAdminUserAccessNoDirectPermissionsMessage;
 
   /// Count label for permissions under a role group.
@@ -34434,7 +34446,7 @@ abstract class AppLocalizations {
   /// Message when tenant permission catalog is empty.
   ///
   /// In en, this message translates to:
-  /// **'Permissions could not be loaded for this tenant. Contact your administrator or try again after refreshing.'**
+  /// **'Permissions could not load. Contact an admin or refresh.'**
   String get accessAdminPermissionCatalogUnavailableMessage;
 
   /// Title when role permissions require tenant selection first.
@@ -34548,7 +34560,7 @@ abstract class AppLocalizations {
   /// Confirmation body when deleting a role that is assigned to users.
   ///
   /// In en, this message translates to:
-  /// **'Role \"{name}\" is assigned to {userCount, plural, =1{1 user} other{{userCount} users}}. Deleting it will remove the role from {userCount, plural, =1{that user} other{those users}} and clear its permissions.'**
+  /// **'Role \"{name}\" is assigned to {userCount, plural, =1{1 user} other{{userCount} users}}. Deleting removes it from {userCount, plural, =1{that user} other{those users}}.'**
   String accessAdminDeleteRoleAssignedBody(String name, int userCount);
 
   /// Access admin tenant context required title.

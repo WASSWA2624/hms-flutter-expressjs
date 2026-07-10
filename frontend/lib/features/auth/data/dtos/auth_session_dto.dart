@@ -28,9 +28,9 @@ final class AuthSessionDto {
   }
 
   factory AuthSessionDto.fromJson(Map<String, Object?> json) {
-    final user = json['user'];
-    final Map<String, Object?>? userMap = user is Map<String, Object?>
-        ? user
+    final Object? user = json['user'];
+    final Map<String, Object?>? userMap = user is Map
+        ? Map<String, Object?>.from(user)
         : null;
     return AuthSessionDto(
       accessToken: _requiredString(json, 'access_token'),
@@ -180,17 +180,22 @@ final class AuthSessionDto {
   static PlatformAdminContact? platformAdminContactFromResponseData(
     Object? data,
   ) {
-    if (data is! Map<String, Object?>) {
+    final Map<String, Object?>? map = _asStringKeyedMap(data);
+    if (map == null) {
       return null;
     }
 
-    final contact =
-        data['platform_admin_contact'] ?? data['platformAdminContact'];
-    if (contact is! Map<String, Object?>) {
+    final Object? contact =
+        map['platform_admin_contact'] ?? map['platformAdminContact'];
+    final Map<String, Object?>? contactMap = _asStringKeyedMap(contact);
+    if (contactMap == null) {
       return null;
     }
 
-    return PlatformAdminContact.fromJson(contact);
+    final PlatformAdminContact parsed = PlatformAdminContact.fromJson(
+      contactMap,
+    );
+    return parsed.hasContact ? parsed : null;
   }
 
   static List<OrgAdminContact> orgAdminContactsFromResponseData(
@@ -198,10 +203,24 @@ final class AuthSessionDto {
     String snakeKey,
     String camelKey,
   ) {
-    if (data is! Map<String, Object?>) {
+    final Map<String, Object?>? map = _asStringKeyedMap(data);
+    if (map == null) {
       return const <OrgAdminContact>[];
     }
-    return OrgAdminContact.listFromJson(data[snakeKey] ?? data[camelKey]);
+    return OrgAdminContact.listFromJson(map[snakeKey] ?? map[camelKey]);
+  }
+
+  static Map<String, Object?>? _asStringKeyedMap(Object? value) {
+    if (value is Map<String, Object?>) {
+      return value;
+    }
+    if (value is Map) {
+      return value.map<String, Object?>(
+        (Object? key, Object? entry) =>
+            MapEntry<String, Object?>(key.toString(), entry),
+      );
+    }
+    return null;
   }
 
   static List<AppModuleEntitlement> moduleEntitlementsFromResponseData(

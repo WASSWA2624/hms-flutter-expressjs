@@ -1,10 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
+import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 Future<void> showSubscriptionReportAdminsDialog(
@@ -27,7 +32,7 @@ Future<void> showSubscriptionReportAdminsDialog(
   );
 }
 
-class SubscriptionReportAdminsDialog extends StatelessWidget {
+class SubscriptionReportAdminsDialog extends ConsumerStatefulWidget {
   const SubscriptionReportAdminsDialog({
     required this.headerState,
     required this.tenantAdmins,
@@ -42,16 +47,71 @@ class SubscriptionReportAdminsDialog extends StatelessWidget {
   final PlatformAdminContact? platformAdminContact;
 
   @override
+  ConsumerState<SubscriptionReportAdminsDialog> createState() =>
+      _SubscriptionReportAdminsDialogState();
+}
+
+class _SubscriptionReportAdminsDialogState
+    extends ConsumerState<SubscriptionReportAdminsDialog> {
+  late List<OrgAdminContact> _tenantAdmins;
+  late List<OrgAdminContact> _facilityAdmins;
+  PlatformAdminContact? _platformAdminContact;
+  bool _refreshing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tenantAdmins = widget.tenantAdmins;
+    _facilityAdmins = widget.facilityAdmins;
+    _platformAdminContact = widget.platformAdminContact;
+    if (_platformAdminContact?.hasContact != true) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        unawaited(_refreshContacts());
+      });
+    }
+  }
+
+  Future<void> _refreshContacts() async {
+    final AuthSession? session = ref.read(sessionStateProvider).session;
+    if (session == null || _refreshing) {
+      return;
+    }
+    setState(() => _refreshing = true);
+    final result = await ref
+        .read(authRepositoryProvider)
+        .fetchCurrentUser(session);
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (AuthSession refreshed) {
+        ref.read(sessionStateProvider.notifier).persistSession(refreshed);
+        setState(() {
+          _tenantAdmins = refreshed.tenantAdminContacts;
+          _facilityAdmins = refreshed.facilityAdminContacts;
+          _platformAdminContact = refreshed.platformAdminContact;
+          _refreshing = false;
+        });
+      },
+      failure: (_) {
+        setState(() => _refreshing = false);
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final bool expired = headerState == TenantSubscriptionHeaderState.expired;
-    final PlatformAdminContact? platform = platformAdminContact?.hasContact == true
-        ? platformAdminContact
+    final ColorScheme colorScheme = theme.colorScheme;
+    final bool expired =
+        widget.headerState == TenantSubscriptionHeaderState.expired;
+    final PlatformAdminContact? platform =
+        _platformAdminContact?.hasContact == true
+        ? _platformAdminContact
         : null;
     final bool hasOrgContacts =
-        tenantAdmins.isNotEmpty || facilityAdmins.isNotEmpty;
-    final bool hasAnyContacts = hasOrgContacts || platform != null;
+        _tenantAdmins.isNotEmpty || _facilityAdmins.isNotEmpty;
 
     return AppDialog(
       title: Text(
@@ -60,7 +120,8 @@ class SubscriptionReportAdminsDialog extends StatelessWidget {
             : l10n.subscriptionReportAdminsDialogTitle,
       ),
       icon: Icon(
-        expired ? Icons.warning_amber_rounded : Icons.support_agent_outlined,
+        expired ? Icons.error_outline : Icons.support_agent_outlined,
+        color: expired ? colorScheme.error : null,
       ),
       maxWidth: 520,
       initialMaximized: false,
@@ -71,37 +132,49 @@ class SubscriptionReportAdminsDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text(
-            expired
+          AppMessagePanel(
+            title: expired
+                ? l10n.subscriptionExpiredRiskTitle
+                : l10n.subscriptionReportRiskTitle,
+            message: expired
                 ? l10n.subscriptionExpiredPromptContactAdminBody
                 : l10n.subscriptionReportAdminsDialogBody,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              height: 1.35,
-              fontWeight: FontWeight.w600,
-            ),
+            icon: Icons.priority_high_rounded,
+            tone: AppWorkspaceStatusTone.error,
+            density: AppContentPanelDensity.compact,
           ),
           SizedBox(height: theme.spacing.md),
-          if (facilityAdmins.isNotEmpty) ...<Widget>[
+          if (_refreshing)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 12),
+              child: LinearProgressIndicator(minHeight: 2),
+            ),
+          if (_facilityAdmins.isNotEmpty) ...<Widget>[
             _AdminContactGroup(
               title: l10n.subscriptionReportFacilityAdminsLabel,
-              contacts: facilityAdmins,
+              contacts: _facilityAdmins,
               roleFallback: l10n.subscriptionReportFacilityAdminRoleLabel,
               leadingIcon: Icons.apartment_outlined,
+              tone: AppWorkspaceStatusTone.error,
             ),
             SizedBox(height: theme.spacing.sm),
           ],
-          if (tenantAdmins.isNotEmpty) ...<Widget>[
+          if (_tenantAdmins.isNotEmpty) ...<Widget>[
             _AdminContactGroup(
               title: l10n.subscriptionReportTenantAdminsLabel,
-              contacts: tenantAdmins,
+              contacts: _tenantAdmins,
               roleFallback: l10n.subscriptionReportTenantAdminRoleLabel,
               leadingIcon: Icons.business_outlined,
+              tone: AppWorkspaceStatusTone.error,
             ),
             SizedBox(height: theme.spacing.sm),
           ],
           if (platform != null)
-            _PlatformContactPanel(contact: platform)
-          else if (!hasAnyContacts)
+            _PlatformContactPanel(
+              contact: platform,
+              tone: AppWorkspaceStatusTone.error,
+            )
+          else if (!_refreshing && !hasOrgContacts)
             AppMessagePanel(
               message: l10n.subscriptionReportAdminsEmptyMessage,
               icon: Icons.info_outline,
@@ -110,21 +183,29 @@ class SubscriptionReportAdminsDialog extends StatelessWidget {
             ),
         ],
       ),
-      actions: buildAppDialogWizardActions(
-        cancelLabel: l10n.commonCloseActionLabel,
-        primaryLabel: l10n.subscriptionExpiredPromptContactAdminAction,
-        onCancel: () => Navigator.of(context).maybePop(),
-        onPrimary: () => Navigator.of(context).maybePop(),
-        primaryIcon: Icons.check,
-      ),
+      actions: <Widget>[
+        FilledButton.icon(
+          style: FilledButton.styleFrom(
+            backgroundColor: colorScheme.error,
+            foregroundColor: colorScheme.onError,
+          ),
+          onPressed: () => Navigator.of(context).maybePop(),
+          icon: const Icon(Icons.check, size: 18),
+          label: Text(l10n.subscriptionExpiredPromptContactAdminAction),
+        ),
+      ],
     );
   }
 }
 
 class _PlatformContactPanel extends StatelessWidget {
-  const _PlatformContactPanel({required this.contact});
+  const _PlatformContactPanel({
+    required this.contact,
+    required this.tone,
+  });
 
   final PlatformAdminContact contact;
+  final AppWorkspaceStatusTone tone;
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +214,7 @@ class _PlatformContactPanel extends StatelessWidget {
     return AppSectionPanel(
       title: l10n.subscriptionReportPlatformSupportLabel,
       leadingIcon: Icons.support_agent_outlined,
-      tone: AppWorkspaceStatusTone.info,
+      tone: tone,
       density: AppContentPanelDensity.compact,
       children: <Widget>[
         _AdminContactCard(
@@ -156,12 +237,14 @@ class _AdminContactGroup extends StatelessWidget {
     required this.contacts,
     required this.roleFallback,
     required this.leadingIcon,
+    required this.tone,
   });
 
   final String title;
   final List<OrgAdminContact> contacts;
   final String roleFallback;
   final IconData leadingIcon;
+  final AppWorkspaceStatusTone tone;
 
   @override
   Widget build(BuildContext context) {
@@ -170,7 +253,7 @@ class _AdminContactGroup extends StatelessWidget {
     return AppSectionPanel(
       title: title,
       leadingIcon: leadingIcon,
-      tone: AppWorkspaceStatusTone.info,
+      tone: tone,
       density: AppContentPanelDensity.compact,
       children: <Widget>[
         for (int index = 0; index < contacts.length; index += 1) ...<Widget>[
@@ -208,8 +291,8 @@ class _AdminContactCard extends StatelessWidget {
       children: <Widget>[
         CircleAvatar(
           radius: 18,
-          backgroundColor: colorScheme.primaryContainer,
-          foregroundColor: colorScheme.onPrimaryContainer,
+          backgroundColor: colorScheme.errorContainer,
+          foregroundColor: colorScheme.onErrorContainer,
           child: Text(
             _initials(contact.displayName),
             style: theme.textTheme.labelMedium?.copyWith(
@@ -295,7 +378,7 @@ class _ContactLine extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Icon(icon, size: 16, color: colorScheme.primary),
+        Icon(icon, size: 16, color: colorScheme.error),
         SizedBox(width: theme.spacing.xs),
         Expanded(
           child: Column(
@@ -311,7 +394,7 @@ class _ContactLine extends StatelessWidget {
                 value,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: colorScheme.primary,
+                  color: colorScheme.error,
                 ),
               ),
             ],
