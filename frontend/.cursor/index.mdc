@@ -19,6 +19,7 @@ Purpose: define Flutter technical standards for HOSSPI HMS (`frontend/`).
 |---|---|
 | [`scope.mdc`](./scope.mdc) | Product frontend scope and invariants |
 | [`architecture.mdc`](./architecture.mdc) | Layer boundaries and dependency direction |
+| [`instant_ui_sync.mdc`](./instant_ui_sync.mdc) | Riverpod single source of truth, optimistic mutations, instant UI |
 | [`coding_conventions.mdc`](./coding_conventions.mdc) | Naming, imports, file focus |
 
 ## Owner map

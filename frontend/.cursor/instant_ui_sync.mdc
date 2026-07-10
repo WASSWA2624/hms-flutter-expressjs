@@ -1,0 +1,59 @@
+---
+description: Instant UI updates via Riverpod as single source of truth with optimistic mutations
+alwaysApply: true
+---
+# Instant UI Sync
+
+Purpose: eliminate perceptible delay between user mutations and visible UI changes across all workspaces.
+
+## Single source of truth
+
+- **UI reads only from Riverpod state** — widgets `watch`/`select` controllers and providers; never hold authoritative copies of server data in local widget state, `setState`, or side channels.
+- **Controllers own mutation flow** — presentation logic calls repositories over HTTP, then updates Riverpod state; widgets never call APIs or patch lists directly.
+- **WebSockets synchronize Riverpod** — realtime handlers update controller/provider state; they must not navigate, show snackbars, or rebuild widgets outside the provider graph.
+
+## Mutation flow (mandatory)
+
+1. User action → controller/repository HTTP mutation.
+2. **On success** → patch affected Riverpod state **immediately** (optimistic or from mutation response) before any full refetch.
+3. Backend persists and publishes domain events.
+4. WebSocket events reconcile Riverpod state (targeted patch or smallest necessary refresh).
+5. Full workspace invalidation is a last resort — prefer patching the affected slice (counts, list item, badge, alert).
+
+## Mandatory rules
+
+- Perceived UI update after a successful mutation must be **≤ 1 second**; aim for instant (same frame when possible).
+- Apply optimistic or response-driven patches **only on mutation success** (`saved == true`); cancel/dismiss must not trigger refresh.
+- Do not wait for a slow full `GET` when the mutation response (or a local delta) already carries enough data to update the UI.
+- Avoid blanket `ref.invalidate` when a targeted state patch suffices.
+- Reuse `WorkspaceSyncEngine`, `RealtimeDelta`, and `listenForRealtimeRefresh` — do not invent parallel sync paths.
+- Multi-user consistency: backend must emit websocket events for shared views; controllers subscribe via `RealtimeEventGroups`.
+
+## Anti-patterns (reject in review)
+
+```dart
+// ❌ Widget calls API and updates local state
+onPressed: () async {
+  final result = await api.createTenant(...);
+  setState(() => _tenants.add(result));
+}
+
+// ❌ WebSocket handler navigates or shows UI directly
+onMessage: (msg) => ScaffoldMessenger.of(context).showSnackBar(...);
+
+// ❌ Invalidate entire workspace after every dialog close
+dialog.then((_) => ref.invalidate(homeControllerProvider));
+
+// ✅ Controller patches Riverpod on success; UI watches provider
+final saved = await ref.read(tenantControllerProvider.notifier).createTenant(...);
+if (saved) {
+  ref.read(homeControllerProvider.notifier).applyTenantCreatedDelta(...);
+}
+```
+
+## See also
+
+- [`state_management.mdc`](./state_management.mdc)
+- [`realtime_sync.mdc`](./realtime_sync.mdc)
+- [`architecture.mdc`](./architecture.mdc)
+- [`ui-feedback.mdc`](./ui-feedback.mdc)

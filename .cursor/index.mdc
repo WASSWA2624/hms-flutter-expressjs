@@ -78,3 +78,4 @@ Numbered implementation prompts live in [`prompts/`](../prompts/) at the repo ro
 - Backend authorization (RBAC, ABAC, entitlements, break-glass) is the source of truth; frontend mirrors it in guards and UI visibility.
 - Offline-capable mutations are idempotent; auth, payments, break-glass, and mortuary release are online-only (see `api-contract.mdc`).
 - CRUD mutations use HTTP; WebSocket delivers post-persistence domain events for multi-client UI refresh (see `api-contract.mdc`, `frontend/.cursor/realtime_sync.mdc`).
+- UI reads only from Riverpod; mutations patch provider state optimistically on success; WebSockets reconcile Riverpod — never update widgets directly (see `frontend/.cursor/instant_ui_sync.mdc`).

@@ -17,6 +17,7 @@ presentation -> domain -> data contracts
 ## Mandatory rules
 
 - Widgets must not call APIs, databases, secure storage, or sync services directly.
+- Widgets must read display data only from Riverpod providers/controllers — no authoritative `setState` or local caches of server data (see [`instant_ui_sync.mdc`](./instant_ui_sync.mdc)).
 - Widgets must not store tokens or secrets.
 - Repositories must not show dialogs, snackbars, or navigate.
 - Data sources must not contain UI state.

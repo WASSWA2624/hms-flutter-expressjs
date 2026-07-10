@@ -9,10 +9,12 @@ Defines how app state, feature state, and dependencies are created, read, tested
 
 ## Mandatory rules
 - Use Riverpod as the single state management and dependency injection solution.
+- **Riverpod is the single source of truth for UI data** — widgets read only from providers/controllers; see [`instant_ui_sync.mdc`](./instant_ui_sync.mdc).
 - Do not mix Riverpod with another global state management package in the starter.
 - Keep providers close to the layer they own.
 - Use generated providers where it improves safety and consistency.
 - Controllers own presentation state and user actions.
+- Controllers patch provider state **optimistically on mutation success** before waiting for full refetches or websocket events.
 - Repositories own data coordination, not UI state.
 - Providers must be override-friendly for tests.
 - Do not perform heavy initialization inside widget `build` methods.
@@ -30,9 +32,11 @@ Defines how app state, feature state, and dependencies are created, read, tested
 - Features can be tested with provider overrides.
 - UI does not instantiate repositories, API clients, or databases directly.
 - Loading, empty, error, and success states are handled consistently.
+- Successful mutations update visible UI through Riverpod within ≤ 1 s perceived latency.
 
 ## Related rules
-- [`architecture.md`](./architecture.mdc)
-- [`startup_flow.md`](./startup_flow.mdc)
-- [`testing.md`](./testing.mdc)
-- [`error_handling.md`](./error_handling.mdc)
+- [`instant_ui_sync.mdc`](./instant_ui_sync.mdc)
+- [`architecture.mdc`](./architecture.mdc)
+- [`startup_flow.mdc`](./startup_flow.mdc)
+- [`testing.mdc`](./testing.mdc)
+- [`error_handling.mdc`](./error_handling.mdc)

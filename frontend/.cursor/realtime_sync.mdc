@@ -9,18 +9,19 @@ Purpose: keep visible UI state aligned with backend persistence through authenti
 
 ## Sync model
 
-1. **Writes** — UI controllers call repositories over HTTP (`dio`). Repositories persist through REST endpoints.
-2. **Local patch** — mutation responses update in-memory workspace state immediately (no full refetch).
+1. **Writes** — controllers call repositories over HTTP (`dio`); widgets never write to the backend directly.
+2. **Optimistic Riverpod patch** — on mutation success, controllers update provider state immediately from the response or a computed delta (no full refetch, no widget-local state).
 3. **Persistence** — backend services commit mutations, audit, then publish domain events.
 4. **Broadcast** — connected clients receive `{ "event": "...", "payload": {} }` envelopes.
-5. **Targeted refresh** — controllers map each event to the smallest `WorkspaceRefreshPlan` slice set and re-fetch only those HTTP endpoints. Full refetch is reserved for manual refresh and websocket-offline fallback polling.
+5. **Riverpod reconcile** — websocket handlers patch or minimally refresh provider state via `WorkspaceRefreshPlan`; they never update the UI outside Riverpod.
 
-WebSockets are for **server → client** change notification. CRUD mutations must not be sent over WebSockets.
+WebSockets are for **server → client** synchronization into Riverpod. CRUD mutations must not be sent over WebSockets.
 
 ## Mandatory rules
 
 - Connect only when authenticated; token travels in the `/ws?token=` query per session lifecycle.
-- Never parse websocket payloads in widgets; controllers own refresh logic.
+- Never parse websocket payloads in widgets; controllers own refresh logic and write results into Riverpod only.
+- Local mutation success must update Riverpod before websocket round-trip; websocket events reconcile, not replace, the optimistic patch.
 - Every workspace that displays shared, multi-user data must register realtime listeners in `build()`.
 - Use `RealtimeEventGroups` for event sets; do not duplicate long event lists per module.
 - Filter events with `RealtimeScope` when the workspace is tenant/facility scoped.
@@ -63,6 +64,7 @@ listenForRealtimeRefresh(
 
 ## See also
 
+- [`instant_ui_sync.mdc`](./instant_ui_sync.mdc)
 - [`network_api.mdc`](./network_api.mdc)
 - [`state_management.mdc`](./state_management.mdc)
 - [`offline_sync.mdc`](./offline_sync.mdc)
