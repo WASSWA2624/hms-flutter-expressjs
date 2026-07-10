@@ -1215,6 +1215,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionHeaderActiveLabel => 'Subscribed';
 
   @override
+  String get subscriptionHeaderFreeLabel => 'Free';
+
+  @override
   String get subscriptionHeaderExpiringSoonLabel => 'Renew soon';
 
   @override

@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/subscriptions/subscription_plan_theme.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/controllers/subscriptions_workspace_controller.dart';
@@ -468,7 +469,7 @@ class _SubscriptionOverviewPanel extends ConsumerWidget {
   }
 }
 
-class _SubscriptionMetricCard extends StatelessWidget {
+class _SubscriptionMetricCard extends StatefulWidget {
   const _SubscriptionMetricCard({
     required this.label,
     required this.value,
@@ -484,52 +485,92 @@ class _SubscriptionMetricCard extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_SubscriptionMetricCard> createState() =>
+      _SubscriptionMetricCardState();
+}
+
+class _SubscriptionMetricCardState extends State<_SubscriptionMetricCard> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final Color accent = workspaceStatusToneAccentColor(theme, tone);
+    final Color accent = workspaceStatusToneAccentColor(theme, widget.tone);
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(theme.radius.md),
-        child: AppContentPanel(
-          tone: tone,
-          density: AppContentPanelDensity.compact,
-          child: Row(
-            children: <Widget>[
-              Container(
-                width: 40,
-                height: 40,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(theme.radius.sm),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: AnimatedScale(
+        scale: _hovered ? 1.02 : 1,
+        duration: const Duration(milliseconds: 140),
+        curve: Curves.easeOut,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOut,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(theme.radius.md),
+            boxShadow: _hovered
+                ? <BoxShadow>[
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.22),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : const <BoxShadow>[],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.onTap,
+              borderRadius: BorderRadius.circular(theme.radius.md),
+              hoverColor: accent.withValues(alpha: 0.08),
+              child: AppContentPanel(
+                tone: widget.tone,
+                density: AppContentPanelDensity.compact,
+                borderColor: Colors.transparent,
+                backgroundColor: Color.alphaBlend(
+                  accent.withValues(alpha: _hovered ? 0.16 : 0.10),
+                  theme.colorScheme.surface,
                 ),
-                child: Icon(icon, color: accent, size: 22),
-              ),
-              SizedBox(width: theme.spacing.sm),
-              Text(
-                value,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  color: accent,
-                  fontWeight: FontWeight.w800,
-                  height: 1,
+                child: Row(
+                  children: <Widget>[
+                    Container(
+                      width: 40,
+                      height: 40,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: accent.withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(theme.radius.sm),
+                      ),
+                      child: Icon(widget.icon, color: accent, size: 22),
+                    ),
+                    SizedBox(width: theme.spacing.sm),
+                    Text(
+                      widget.value,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: accent,
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                      ),
+                    ),
+                    SizedBox(width: theme.spacing.sm),
+                    Expanded(
+                      child: Text(
+                        widget.label,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(width: theme.spacing.sm),
-              Expanded(
-                child: Text(
-                  label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -767,6 +808,26 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
               title: _SubscriptionsText.emptyTitle,
               body: _SubscriptionsText.emptyBody,
             ),
+            initialSortColumnKey:
+                state.query.resource == SubscriptionResource.subscriptionPlans
+                ? _PlanColumnIds.monthlyPrice
+                : null,
+            rowColorBuilder: state.query.resource ==
+                    SubscriptionResource.subscriptionPlans
+                ? (BuildContext context, SubscriptionItem item) {
+                    return SubscriptionPlanTheme.of(
+                      context,
+                      item.tierCode ?? item.name ?? item.code,
+                    ).rowTint;
+                  }
+                : state.query.resource == SubscriptionResource.subscriptions
+                ? (BuildContext context, SubscriptionItem item) {
+                    return SubscriptionPlanTheme.of(
+                      context,
+                      item.tierCode ?? item.planCode ?? item.planLabel,
+                    ).rowTint;
+                  }
+                : null,
             columns: _worklistColumns(state.query.resource),
             mobileItemBuilder: (BuildContext context, SubscriptionItem item) {
               return Padding(
@@ -790,47 +851,69 @@ List<AppListTableColumn<SubscriptionItem>> _worklistColumns(
     SubscriptionResource.subscriptionPlans =>
       <AppListTableColumn<SubscriptionItem>>[
         AppListTableColumn<SubscriptionItem>(
+          id: _PlanColumnIds.planName,
           label: _SubscriptionsText.plan,
           sortComparator: (SubscriptionItem left, SubscriptionItem right) {
             return appListTableCompareText(left.name, right.name);
           },
           cellBuilder: (BuildContext context, SubscriptionItem item) {
-            return _CopyableRecordCell(
-              title: item.name ?? item.title,
-              identifier: item.effectiveDisplayId,
-              dense: true,
+            return Text(
+              item.name ?? item.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
             );
           },
         ),
         AppListTableColumn<SubscriptionItem>(
-          label: _SubscriptionsText.tier,
-          sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-            return appListTableCompareText(left.tierCode, right.tierCode);
-          },
-          cellBuilder: (BuildContext context, SubscriptionItem item) {
-            return _PlanBadge(label: item.tierCode ?? item.code, code: item.tierCode);
-          },
-        ),
-        AppListTableColumn<SubscriptionItem>(
-          label: _SubscriptionsText.priceUsd,
-          numeric: true,
-          sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-            return appListTableCompareNumber(left.price, right.price);
-          },
-          cellBuilder: (BuildContext context, SubscriptionItem item) {
-            return Text(_money(context, item.price, item.currency));
-          },
-        ),
-        AppListTableColumn<SubscriptionItem>(
-          label: _SubscriptionsText.billingCycle,
+          id: _PlanColumnIds.planId,
+          label: _SubscriptionsText.planId,
           sortComparator: (SubscriptionItem left, SubscriptionItem right) {
             return appListTableCompareText(
-              left.billingCycle,
-              right.billingCycle,
+              left.effectiveDisplayId,
+              right.effectiveDisplayId,
             );
           },
           cellBuilder: (BuildContext context, SubscriptionItem item) {
-            return Text(_statusLabel(item.billingCycle));
+            return AppCopyableIdentifier(
+              value: item.effectiveDisplayId,
+              textStyle: Theme.of(context).textTheme.bodySmall,
+              showCopyIcon: false,
+            );
+          },
+        ),
+        AppListTableColumn<SubscriptionItem>(
+          id: _PlanColumnIds.monthlyPrice,
+          label: _SubscriptionsText.monthlyPriceUsd,
+          numeric: true,
+          sortComparator: (SubscriptionItem left, SubscriptionItem right) {
+            return appListTableCompareNumber(
+              left.resolvedMonthlyPrice,
+              right.resolvedMonthlyPrice,
+            );
+          },
+          cellBuilder: (BuildContext context, SubscriptionItem item) {
+            return Text(
+              _money(context, item.resolvedMonthlyPrice, item.currency),
+            );
+          },
+        ),
+        AppListTableColumn<SubscriptionItem>(
+          id: _PlanColumnIds.annualPrice,
+          label: _SubscriptionsText.annualPriceUsd,
+          numeric: true,
+          sortComparator: (SubscriptionItem left, SubscriptionItem right) {
+            return appListTableCompareNumber(
+              left.resolvedAnnualPrice,
+              right.resolvedAnnualPrice,
+            );
+          },
+          cellBuilder: (BuildContext context, SubscriptionItem item) {
+            return Text(
+              _money(context, item.resolvedAnnualPrice, item.currency),
+            );
           },
         ),
       ],
@@ -854,9 +937,13 @@ List<AppListTableColumn<SubscriptionItem>> _worklistColumns(
           return appListTableCompareText(left.planLabel, right.planLabel);
         },
         cellBuilder: (BuildContext context, SubscriptionItem item) {
-          return _PlanBadge(
-            label: item.planLabel,
-            code: item.tierCode ?? item.planCode,
+          return Text(
+            item.planLabel ?? _SubscriptionsText.notRecorded,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           );
         },
       ),
@@ -1179,16 +1266,31 @@ class _DetailFields extends StatelessWidget {
           value: item.moduleLabel ?? item.moduleSlug,
           icon: Icons.extension_outlined,
         ),
-        AppInfoTileData(
-          label: _SubscriptionsText.billingCycle,
-          value: _statusLabel(item.billingCycle),
-          icon: Icons.calendar_month_outlined,
-        ),
-        AppInfoTileData(
-          label: _SubscriptionsText.amount,
-          value: _amountOrLimit(context, item),
-          icon: Icons.payments_outlined,
-        ),
+        if (item.resource == SubscriptionResource.subscriptionPlans) ...<
+          AppInfoTileData
+        >[
+          AppInfoTileData(
+            label: _SubscriptionsText.monthlyPriceUsd,
+            value: _money(context, item.resolvedMonthlyPrice, item.currency),
+            icon: Icons.payments_outlined,
+          ),
+          AppInfoTileData(
+            label: _SubscriptionsText.annualPriceUsd,
+            value: _money(context, item.resolvedAnnualPrice, item.currency),
+            icon: Icons.calendar_month_outlined,
+          ),
+        ] else ...<AppInfoTileData>[
+          AppInfoTileData(
+            label: _SubscriptionsText.billingCycle,
+            value: _statusLabel(item.billingCycle),
+            icon: Icons.calendar_month_outlined,
+          ),
+          AppInfoTileData(
+            label: _SubscriptionsText.amount,
+            value: _amountOrLimit(context, item),
+            icon: Icons.payments_outlined,
+          ),
+        ],
         AppInfoTileData(
           label: _SubscriptionsText.fitStatus,
           value: _statusLabel(item.fitStatus),
@@ -1414,27 +1516,18 @@ class _PlanBadge extends StatelessWidget {
     final String display = (label ?? code)?.trim().isNotEmpty == true
         ? (label ?? code)!.trim()
         : _SubscriptionsText.notRecorded;
-    final AppWorkspaceStatusTone tone = _planTone(code ?? label);
-    final Color accent = workspaceStatusToneAccentColor(theme, tone);
+    final SubscriptionPlanTheme planTheme = SubscriptionPlanTheme.of(
+      context,
+      code ?? label,
+    );
 
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(theme.radius.sm),
-        border: Border.all(color: accent.withValues(alpha: 0.35)),
-      ),
-      child: Text(
-        display,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: accent,
-          fontWeight: FontWeight.w700,
-        ),
+    return Text(
+      display,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: theme.textTheme.labelLarge?.copyWith(
+        color: planTheme.foreground,
+        fontWeight: FontWeight.w700,
       ),
     );
   }
@@ -1463,7 +1556,8 @@ class _PlanFormState extends State<_PlanForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _codeController;
-  late final TextEditingController _priceController;
+  late final TextEditingController _monthlyPriceController;
+  late final TextEditingController _annualPriceController;
   late final TextEditingController _usersController;
   late final TextEditingController _facilitiesController;
   late final TextEditingController _storageController;
@@ -1478,8 +1572,15 @@ class _PlanFormState extends State<_PlanForm> {
     final SubscriptionItem? initial = widget.initial;
     _nameController = TextEditingController(text: initial?.name ?? '');
     _codeController = TextEditingController(text: initial?.code ?? '');
-    _priceController = TextEditingController(
-      text: initial?.price == null ? '' : initial!.price.toString(),
+    _monthlyPriceController = TextEditingController(
+      text: initial?.resolvedMonthlyPrice == null
+          ? ''
+          : initial!.resolvedMonthlyPrice.toString(),
+    );
+    _annualPriceController = TextEditingController(
+      text: initial?.resolvedAnnualPrice == null
+          ? ''
+          : initial!.resolvedAnnualPrice.toString(),
     );
     _usersController = TextEditingController(
       text: initial?.maxUsers?.toString() ?? '',
@@ -1504,7 +1605,8 @@ class _PlanFormState extends State<_PlanForm> {
   void dispose() {
     _nameController.dispose();
     _codeController.dispose();
-    _priceController.dispose();
+    _monthlyPriceController.dispose();
+    _annualPriceController.dispose();
     _usersController.dispose();
     _facilitiesController.dispose();
     _storageController.dispose();
@@ -1542,7 +1644,7 @@ class _PlanFormState extends State<_PlanForm> {
           ),
           AppSelectField<String>(
             value: _billingCycle,
-            labelText: _SubscriptionsText.billingCycle,
+            labelText: _SubscriptionsText.defaultBillingCycle,
             isRequired: true,
             allowClear: false,
             options: _billingCycleOptions(),
@@ -1553,8 +1655,19 @@ class _PlanFormState extends State<_PlanForm> {
             },
           ),
           AppTextField(
-            controller: _priceController,
-            labelText: _SubscriptionsText.priceUsd,
+            controller: _monthlyPriceController,
+            labelText: _SubscriptionsText.monthlyPriceUsd,
+            isRequired: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            validator: AppValidators.pattern(
+              RegExp(r'^\d+(\.\d{1,2})?$'),
+              _SubscriptionsText.amountInvalid,
+              allowEmpty: false,
+            ),
+          ),
+          AppTextField(
+            controller: _annualPriceController,
+            labelText: _SubscriptionsText.annualPriceUsd,
             isRequired: true,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             validator: AppValidators.pattern(
@@ -1637,7 +1750,8 @@ class _PlanFormState extends State<_PlanForm> {
               name: _nameController.text.trim(),
               code: _emptyToNull(_codeController.text),
               tierCode: _tierCode,
-              price: _priceController.text.trim(),
+              monthlyPrice: _monthlyPriceController.text.trim(),
+              annualPrice: _annualPriceController.text.trim(),
               billingCycle: _billingCycle,
               maxUsers: _emptyToNull(_usersController.text),
               maxFacilities: _emptyToNull(_facilitiesController.text),
@@ -2547,8 +2661,14 @@ class _CohortAccountCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final SubscriptionPlanTheme planTheme = SubscriptionPlanTheme.of(
+      context,
+      account.planCode ?? account.planLabel,
+    );
     return AppContentPanel(
       density: AppContentPanelDensity.compact,
+      borderColor: Colors.transparent,
+      backgroundColor: planTheme.rowTint,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -3347,27 +3467,6 @@ String _uniquePlanLabel(SubscriptionItem item) {
   };
 }
 
-AppWorkspaceStatusTone _planTone(String? value) {
-  final String normalized = value?.trim().toUpperCase() ?? '';
-  if (normalized.isEmpty ||
-      normalized == 'NOT_SUBSCRIBED' ||
-      normalized == 'NOT RECORDED') {
-    return AppWorkspaceStatusTone.neutral;
-  }
-  return switch (normalized) {
-    'FREE' => AppWorkspaceStatusTone.neutral,
-    'BASIC' => AppWorkspaceStatusTone.info,
-    'PRO' || 'STANDARD' || 'PREMIUM' => AppWorkspaceStatusTone.success,
-    'ADVANCED' || 'ENTERPRISE' => AppWorkspaceStatusTone.info,
-    'CUSTOM' => AppWorkspaceStatusTone.warning,
-    _ when normalized.contains('ADVANCED') => AppWorkspaceStatusTone.info,
-    _ when normalized.contains('PRO') => AppWorkspaceStatusTone.success,
-    _ when normalized.contains('BASIC') => AppWorkspaceStatusTone.info,
-    _ when normalized.contains('FREE') => AppWorkspaceStatusTone.neutral,
-    _ => AppWorkspaceStatusTone.info,
-  };
-}
-
 String _amountOrLimit(BuildContext context, SubscriptionItem item) {
   final num? amount = item.totalAmount ?? item.price;
   if (amount != null) {
@@ -3569,6 +3668,13 @@ final class _LimitRow {
   final int? limit;
 }
 
+abstract final class _PlanColumnIds {
+  static const String planName = 'plan_name';
+  static const String planId = 'plan_id';
+  static const String monthlyPrice = 'monthly_price';
+  static const String annualPrice = 'annual_price';
+}
+
 abstract final class _FilterKeys {
   static const String resource = 'resource';
   static const String status = 'status';
@@ -3724,8 +3830,10 @@ abstract final class _SubscriptionsText {
       'Generated subscription invoice reports are not available yet.';
   static const String tenant = 'Tenant';
   static const String plan = 'Plan';
+  static const String planId = 'Plan ID';
   static const String module = 'Module';
   static const String billingCycle = 'Billing cycle';
+  static const String defaultBillingCycle = 'Default billing cycle';
   static const String amount = 'Amount';
   static const String fitStatus = 'Fit status';
   static const String allFitStatuses = 'All fit statuses';
@@ -3739,7 +3847,8 @@ abstract final class _SubscriptionsText {
   static const String planName = 'Plan name';
   static const String planCode = 'Plan code';
   static const String tier = 'Tier';
-  static const String priceUsd = 'Price (USD)';
+  static const String monthlyPriceUsd = 'Monthly (USD)';
+  static const String annualPriceUsd = 'Annual (USD)';
   static const String maxUsers = 'Max users';
   static const String maxFacilities = 'Max facilities';
   static const String maxStorage = 'Max storage MB';

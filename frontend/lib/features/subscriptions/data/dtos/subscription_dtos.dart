@@ -374,6 +374,12 @@ final class SubscriptionItemDto {
       billingStatus: _string(json['billing_status']),
       currency: _string(json['currency']),
       price: _num(json['price']) ?? _num(json['add_on_price']),
+      monthlyPrice:
+          _num(json['monthly_price']) ??
+          _extensionMonthlyPrice(json['extension_json']),
+      annualPrice:
+          _num(json['annual_price']) ??
+          _extensionAnnualPrice(json['extension_json']),
       totalAmount: _num(json['total_amount']),
       maxUsers: _int(json['max_users']),
       maxFacilities: _int(json['max_facilities']),
@@ -421,6 +427,23 @@ List<String> _includedModuleIds(Object? extensionJson) {
     ids.add(value);
   }
   return ids;
+}
+
+num? _extensionMonthlyPrice(Object? extensionJson) {
+  final SubscriptionJsonMap extension = _map(extensionJson);
+  final SubscriptionJsonMap pricing = _map(extension['pricing']);
+  return _num(pricing['monthly_price']) ??
+      _num(pricing['monthly']) ??
+      _num(extension['monthly_price']);
+}
+
+num? _extensionAnnualPrice(Object? extensionJson) {
+  final SubscriptionJsonMap extension = _map(extensionJson);
+  final SubscriptionJsonMap pricing = _map(extension['pricing']);
+  return _num(pricing['annual_price']) ??
+      _num(pricing['annual']) ??
+      _num(pricing['yearly_price']) ??
+      _num(extension['annual_price']);
 }
 
 List<String> _stringList(Object? value) {

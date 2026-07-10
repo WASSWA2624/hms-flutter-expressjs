@@ -354,12 +354,18 @@ Map<String, Object?> _planPayload(
   SubscriptionPlanDraft draft, {
   bool includeTenant = false,
 }) {
+  final num monthly = _decimal(draft.monthlyPrice);
+  final num annual = _decimal(draft.annualPrice);
+  final bool yearlyDefault = draft.billingCycle
+      .trim()
+      .toUpperCase()
+      .contains('YEAR');
   final Map<String, Object?> payload = _withoutEmpty(<String, Object?>{
     if (includeTenant) 'tenant_id': draft.tenantId,
     'name': draft.name.trim(),
     'code': draft.code,
     'tier_code': draft.tierCode,
-    'price': _decimal(draft.price),
+    'price': yearlyDefault ? annual : monthly,
     'billing_cycle': draft.billingCycle,
     'max_users': _intOrNull(draft.maxUsers),
     'max_facilities': _intOrNull(draft.maxFacilities),
@@ -369,6 +375,10 @@ Map<String, Object?> _planPayload(
   payload['extension_json'] = <String, Object?>{
     'allowed_modules': <String, Object?>{
       'included': draft.includedModuleIds,
+    },
+    'pricing': <String, Object?>{
+      'monthly_price': monthly,
+      'annual_price': annual,
     },
   };
   return payload;

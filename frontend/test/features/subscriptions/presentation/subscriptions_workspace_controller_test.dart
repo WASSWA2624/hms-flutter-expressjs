@@ -18,7 +18,8 @@ void main() {
     registerFallbackValue(
       const SubscriptionPlanDraft(
         name: 'Starter',
-        price: '0',
+        monthlyPrice: '0',
+        annualPrice: '0',
         billingCycle: 'MONTHLY',
       ),
     );

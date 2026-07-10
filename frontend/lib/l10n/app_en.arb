@@ -1575,6 +1575,10 @@
   "@subscriptionHeaderActiveLabel": {
     "description": "Shell header label when the tenant subscription is active."
   },
+  "subscriptionHeaderFreeLabel": "Free",
+  "@subscriptionHeaderFreeLabel": {
+    "description": "Shell header label when the tenant has no paid subscription or is on the Free plan."
+  },
   "subscriptionHeaderExpiringSoonLabel": "Renew soon",
   "@subscriptionHeaderExpiringSoonLabel": {
     "description": "Shell header label when the tenant subscription is expiring soon."

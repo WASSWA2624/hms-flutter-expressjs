@@ -574,6 +574,8 @@ final class SubscriptionItem {
     this.billingStatus,
     this.currency,
     this.price,
+    this.monthlyPrice,
+    this.annualPrice,
     this.totalAmount,
     this.maxUsers,
     this.maxFacilities,
@@ -623,6 +625,8 @@ final class SubscriptionItem {
   final String? billingStatus;
   final String? currency;
   final num? price;
+  final num? monthlyPrice;
+  final num? annualPrice;
   final num? totalAmount;
   final int? maxUsers;
   final int? maxFacilities;
@@ -648,6 +652,34 @@ final class SubscriptionItem {
 
   String get effectiveDisplayId =>
       _firstText(<String?>[displayId, invoiceDisplayId, code, id]);
+
+  num? get resolvedMonthlyPrice {
+    if (monthlyPrice != null) {
+      return monthlyPrice;
+    }
+    if (price == null) {
+      return null;
+    }
+    final String cycle = (billingCycle ?? '').trim().toUpperCase();
+    if (cycle.contains('YEAR') || cycle == 'ANNUAL') {
+      return num.parse((price! / 12).toStringAsFixed(2));
+    }
+    return price;
+  }
+
+  num? get resolvedAnnualPrice {
+    if (annualPrice != null) {
+      return annualPrice;
+    }
+    if (price == null) {
+      return null;
+    }
+    final String cycle = (billingCycle ?? '').trim().toUpperCase();
+    if (cycle.contains('YEAR') || cycle == 'ANNUAL') {
+      return price;
+    }
+    return num.parse((price! * 12).toStringAsFixed(2));
+  }
 
   String get title {
     return _firstText(<String?>[
@@ -832,7 +864,8 @@ final class SubscriptionsWorkspaceState {
 final class SubscriptionPlanDraft {
   const SubscriptionPlanDraft({
     required this.name,
-    required this.price,
+    required this.monthlyPrice,
+    required this.annualPrice,
     required this.billingCycle,
     this.code,
     this.tierCode,
@@ -845,7 +878,8 @@ final class SubscriptionPlanDraft {
   });
 
   final String name;
-  final String price;
+  final String monthlyPrice;
+  final String annualPrice;
   final String billingCycle;
   final String? code;
   final String? tierCode;
@@ -855,6 +889,9 @@ final class SubscriptionPlanDraft {
   final String? maxModules;
   final String? tenantId;
   final List<String> includedModuleIds;
+
+  /// Canonical billable amount kept for backend compatibility.
+  String get price => monthlyPrice;
 }
 
 @immutable

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/core/subscriptions/subscription_plan_theme.dart';
 import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -22,7 +23,7 @@ final class SubscriptionHeaderButton extends StatelessWidget {
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
     final bool compact = breakpoint.isMobile;
     final _SubscriptionHeaderPresentation presentation =
-        _SubscriptionHeaderPresentation.fromSummary(summary, l10n);
+        _SubscriptionHeaderPresentation.fromSummary(summary, l10n, theme);
 
     final Widget content = compact
         ? Icon(presentation.icon, size: theme.appTokens.listIconSize)
@@ -97,15 +98,35 @@ final class _SubscriptionHeaderPresentation {
   factory _SubscriptionHeaderPresentation.fromSummary(
     TenantSubscriptionSummary summary,
     AppLocalizations l10n,
+    ThemeData theme,
   ) {
+    final bool noPaidSubscription =
+        summary.headerState == TenantSubscriptionHeaderState.unknown ||
+        !_hasText(summary.subscriptionId) ||
+        !_hasText(summary.tierCode) ||
+        SubscriptionPlanTheme.isFreeTier(summary.tierCode);
+
+    final SubscriptionPlanTheme planTheme = noPaidSubscription
+        ? SubscriptionPlanTheme.resolve(theme, 'FREE')
+        : SubscriptionPlanTheme.resolve(theme, summary.tierCode);
+
     switch (summary.headerState) {
       case TenantSubscriptionHeaderState.active:
+        if (noPaidSubscription) {
+          return _SubscriptionHeaderPresentation(
+            label: l10n.subscriptionHeaderFreeLabel,
+            icon: Icons.workspace_premium_outlined,
+            foreground: planTheme.foreground,
+            background: planTheme.background,
+            border: planTheme.border,
+          );
+        }
         return _SubscriptionHeaderPresentation(
           label: l10n.subscriptionHeaderActiveLabel,
           icon: Icons.verified_outlined,
-          foreground: const Color(0xFF166534),
-          background: const Color(0xFFDCFCE7),
-          border: const Color(0xFF86EFAC),
+          foreground: planTheme.foreground,
+          background: planTheme.background,
+          border: planTheme.border,
         );
       case TenantSubscriptionHeaderState.expiringSoon:
         final int? days = summary.daysUntilExpiry;
@@ -114,26 +135,34 @@ final class _SubscriptionHeaderPresentation {
               ? l10n.subscriptionHeaderExpiringSoonLabel
               : l10n.subscriptionHeaderExpiresInDaysLabel(days),
           icon: Icons.schedule_outlined,
-          foreground: const Color(0xFFB45309),
-          background: const Color(0xFFFFEDD5),
-          border: const Color(0xFFFDBA74),
+          foreground: planTheme.foreground,
+          background: planTheme.background,
+          border: planTheme.border,
         );
       case TenantSubscriptionHeaderState.expired:
         return _SubscriptionHeaderPresentation(
           label: l10n.subscriptionHeaderExpiredLabel,
           icon: Icons.workspace_premium_outlined,
-          foreground: const Color(0xFFB91C1C),
-          background: const Color(0xFFFEE2E2),
-          border: const Color(0xFFFCA5A5),
+          foreground: theme.statusColors.error,
+          background: theme.statusColors.errorContainer,
+          border: theme.statusColors.error.withValues(alpha: 0.45),
         );
       case TenantSubscriptionHeaderState.unknown:
+        final SubscriptionPlanTheme freeTheme = SubscriptionPlanTheme.resolve(
+          theme,
+          'FREE',
+        );
         return _SubscriptionHeaderPresentation(
-          label: l10n.subscriptionHeaderActiveLabel,
-          icon: Icons.hourglass_empty_outlined,
-          foreground: const Color(0xFF475569),
-          background: const Color(0xFFF1F5F9),
-          border: const Color(0xFFCBD5E1),
+          label: l10n.subscriptionHeaderFreeLabel,
+          icon: Icons.workspace_premium_outlined,
+          foreground: freeTheme.foreground,
+          background: freeTheme.background,
+          border: freeTheme.border,
         );
     }
+  }
+
+  static bool _hasText(String? value) {
+    return value != null && value.trim().isNotEmpty;
   }
 }

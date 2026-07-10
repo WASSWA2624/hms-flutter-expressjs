@@ -2398,6 +2398,12 @@ abstract class AppLocalizations {
   /// **'Subscribed'**
   String get subscriptionHeaderActiveLabel;
 
+  /// Shell header label when the tenant has no paid subscription or is on the Free plan.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get subscriptionHeaderFreeLabel;
+
   /// Shell header label when the tenant subscription is expiring soon.
   ///
   /// In en, this message translates to:

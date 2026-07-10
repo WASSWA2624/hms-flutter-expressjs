@@ -31,8 +31,64 @@ const mapPendingPlan = (record) => ({
   pending_plan_label: safeString(record?.pending_plan?.name),
 });
 
+const isYearlyCycle = (value) => {
+  const normalized = String(value || '').trim().toUpperCase();
+  return normalized.includes('YEAR') || normalized === 'ANNUAL';
+};
+
+const resolvePlanPrices = (record) => {
+  const price = safeNumber(record?.price, 0) ?? 0;
+  const extension =
+    record?.extension_json && typeof record.extension_json === 'object'
+      ? record.extension_json
+      : {};
+  const pricing =
+    extension.pricing && typeof extension.pricing === 'object'
+      ? extension.pricing
+      : {};
+  const storedMonthly =
+    safeNumber(pricing.monthly_price) ??
+    safeNumber(pricing.monthly) ??
+    safeNumber(extension.monthly_price);
+  const storedAnnual =
+    safeNumber(pricing.annual_price) ??
+    safeNumber(pricing.annual) ??
+    safeNumber(pricing.yearly_price) ??
+    safeNumber(extension.annual_price);
+
+  if (storedMonthly != null || storedAnnual != null) {
+    const monthly =
+      storedMonthly != null
+        ? storedMonthly
+        : storedAnnual != null
+          ? Number((storedAnnual / 12).toFixed(2))
+          : price;
+    const annual =
+      storedAnnual != null
+        ? storedAnnual
+        : storedMonthly != null
+          ? Number((storedMonthly * 12).toFixed(2))
+          : Number((price * 12).toFixed(2));
+    return { monthly_price: monthly, annual_price: annual };
+  }
+
+  if (isYearlyCycle(record?.billing_cycle)) {
+    return {
+      monthly_price: Number((price / 12).toFixed(2)),
+      annual_price: price,
+    };
+  }
+
+  return {
+    monthly_price: price,
+    annual_price: Number((price * 12).toFixed(2)),
+  };
+};
+
 const serializeSubscriptionPlan = (record) => {
   if (!record) return null;
+
+  const prices = resolvePlanPrices(record);
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),
@@ -43,6 +99,8 @@ const serializeSubscriptionPlan = (record) => {
     name: safeString(record.name),
     tier_code: safeString(record.tier_code),
     price: safeNumber(record.price, 0),
+    monthly_price: prices.monthly_price,
+    annual_price: prices.annual_price,
     currency: 'USD',
     billing_cycle: safeString(record.billing_cycle),
     max_users: safeNumber(record.max_users),

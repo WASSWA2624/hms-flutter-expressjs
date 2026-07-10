@@ -517,6 +517,8 @@ class AppListTable<T> extends StatefulWidget {
     this.errorBuilder,
     this.footer,
     this.rowColorBuilder,
+    this.initialSortColumnKey,
+    this.initialSortAscending = true,
     this.maxVisibleItems,
     this.isLoading = false,
     this.error,
@@ -569,6 +571,8 @@ class AppListTable<T> extends StatefulWidget {
   final Widget Function(BuildContext context, Object error)? errorBuilder;
   final Widget? footer;
   final AppListTableRowColorBuilder<T>? rowColorBuilder;
+  final String? initialSortColumnKey;
+  final bool initialSortAscending;
   final int? maxVisibleItems;
   final bool isLoading;
   final Object? error;
@@ -627,7 +631,13 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     if (oldWidget.columns != widget.columns ||
         oldWidget.columnChoices != widget.columnChoices ||
         oldWidget.columnVisibilityController !=
-            widget.columnVisibilityController) {
+            widget.columnVisibilityController ||
+        oldWidget.initialSortColumnKey != widget.initialSortColumnKey ||
+        oldWidget.initialSortAscending != widget.initialSortAscending) {
+      if (oldWidget.initialSortColumnKey != widget.initialSortColumnKey ||
+          oldWidget.initialSortAscending != widget.initialSortAscending) {
+        _sortColumnKey = null;
+      }
       _syncVisibleColumns();
       _ensureDefaultSortColumn();
     }
@@ -1173,10 +1183,23 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       return;
     }
 
+    final String? preferredKey = widget.initialSortColumnKey;
+    if (preferredKey != null) {
+      final AppListTableColumn<T>? preferred = _columnByKey(
+        _visibleColumns,
+        preferredKey,
+      );
+      if (preferred != null && preferred.isSortable) {
+        _sortColumnKey = preferred.key;
+        _sortAscending = widget.initialSortAscending;
+        return;
+      }
+    }
+
     for (final AppListTableColumn<T> column in _visibleColumns) {
       if (column.isSortable) {
         _sortColumnKey = column.key;
-        _sortAscending = true;
+        _sortAscending = widget.initialSortAscending;
         return;
       }
     }
@@ -1550,7 +1573,6 @@ class _NumberedMobileListItem extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         SizedBox(
           width: _rowNumberColumnWidth,
@@ -1764,7 +1786,6 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
       cells: <DataCell>[
         DataCell(
           Align(
-            alignment: Alignment.topCenter,
             child: SizedBox(
               width: _rowNumberColumnWidth,
               child: Text((index + 1).toString(), textAlign: TextAlign.center),
