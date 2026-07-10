@@ -104,7 +104,13 @@ const updateUserRole = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  const userRole = await userRoleService.updateUserRole(id, req.body, userId, ipAddress);
+  const userRole = await userRoleService.updateUserRole(
+    id,
+    req.body,
+    userId,
+    ipAddress,
+    req.user
+  );
 
   sendSuccess(res, 200, 'messages.user_role.update.success', userRole);
 });

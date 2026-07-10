@@ -20,7 +20,12 @@ const {
   REALTIME_SYNC_ACTIONS
 } = require('@lib/realtime/entity-envelope');
 const { serializeAccessAdminRoleEntity } = require('@lib/realtime/access-admin-realtime');
-const { assertRoleScopeAllowed, assertPermissionIdsAssignable } = require('@lib/authorization/assignable-access');
+const {
+  assertActorCanManageRoleRecord,
+  assertRoleNotSystemProtected,
+  assertRoleScopeAllowed,
+  assertPermissionIdsAssignable,
+} = require('@lib/authorization/assignable-access');
 
 const ROLE_REALTIME_RECIPIENT_ROLES = Object.freeze([ROLES.TENANT_ADMIN]);
 
@@ -236,6 +241,10 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
       throw new HttpError('errors.role.not_found', 404);
     }
 
+    const actorUser = actor || { id: userId };
+    assertActorCanManageRoleRecord(before, actorUser);
+    assertRoleNotSystemProtected(before, 'update');
+
     const { permission_ids: permissionIdsInput, ...roleFields } = data || {};
     const payload = { ...roleFields };
     if (Object.prototype.hasOwnProperty.call(roleFields, 'facility_id')) {
@@ -255,7 +264,7 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
           tenant_id: before.tenant_id,
           facility_id: payload.facility_id,
         },
-        actor || { id: userId }
+        actorUser
       );
     }
 
@@ -266,7 +275,7 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
     const permissionIds = shouldSyncPermissions
       ? await assertPermissionIdsAssignable(
           permissionIdsInput,
-          actor || { id: userId },
+          actorUser,
           { tenantId: before.tenant_id || null }
         )
       : null;
@@ -316,7 +325,7 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
  * @param {string} ipAddress - User IP for audit
  * @returns {Promise<void>}
  */
-const deleteRole = async (id, userId, ipAddress) => {
+const deleteRole = async (id, userId, ipAddress, actor = null) => {
   try {
     const resolvedRoleId = await resolveRoleId(id);
     // Get current state for audit
@@ -325,6 +334,10 @@ const deleteRole = async (id, userId, ipAddress) => {
     if (!before) {
       throw new HttpError('errors.role.not_found', 404);
     }
+
+    const actorUser = actor || { id: userId };
+    assertActorCanManageRoleRecord(before, actorUser);
+    assertRoleNotSystemProtected(before, 'delete');
 
     const { role, detached_user_assignments: detachedUserAssignments } =
       await roleRepository.softDelete(resolvedRoleId);

@@ -116,7 +116,7 @@ const deleteRole = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  await roleService.deleteRole(id, userId, ipAddress);
+  await roleService.deleteRole(id, userId, ipAddress, req.user);
 
   sendNoContent(res);
 });

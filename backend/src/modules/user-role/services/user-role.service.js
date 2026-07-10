@@ -194,7 +194,7 @@ const createUserRole = async (data, userId, ipAddress, actor = null) => {
  * @param {string} ipAddress - User IP for audit
  * @returns {Promise<Object>} Updated user-role
  */
-const updateUserRole = async (id, data, userId, ipAddress) => {
+const updateUserRole = async (id, data, userId, ipAddress, actor = null) => {
   try {
     const resolvedId = await resolveUserRoleId(id);
     // Get current state for audit
@@ -205,6 +205,9 @@ const updateUserRole = async (id, data, userId, ipAddress) => {
     }
 
     const payload = await normalizeUserRolePayload(data);
+    if (actor && payload.role_id) {
+      await assertRoleIdAssignable(payload.role_id, actor);
+    }
     const userRole = await userRoleRepository.update(resolvedId, payload);
 
     // Create audit log (non-blocking)

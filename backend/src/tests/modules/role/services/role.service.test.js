@@ -134,7 +134,7 @@ describe('Role Service', () => {
         { name: 'New Role', tenant_id: 'tenant-1' },
         'user-123',
         '127.0.0.1',
-        { id: 'user-123', roles: ['TENANT_ADMIN'] }
+        { id: 'user-123', roles: ['TENANT_ADMIN'], tenant_id: 'tenant-1' }
       );
 
       expect(result).toEqual(mockRole);
@@ -161,13 +161,14 @@ describe('Role Service', () => {
         },
         'user-123',
         '127.0.0.1',
-        { id: 'user-123', roles: ['TENANT_ADMIN'] }
+        { id: 'user-123', roles: ['TENANT_ADMIN'], tenant_id: 'tenant-1' }
       );
 
       expect(result).toEqual(mockRole);
       expect(assertPermissionIdsAssignable).toHaveBeenCalledWith(
         ['perm-1', 'perm-2'],
-        expect.objectContaining({ id: 'user-123' })
+        expect.objectContaining({ id: 'user-123' }),
+        { tenantId: 'tenant-1' }
       );
       expect(roleRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'New Role', tenant_id: 'tenant-1' }),
@@ -190,12 +191,28 @@ describe('Role Service', () => {
 
   describe('updateRole', () => {
     it('should update role and audit log', async () => {
-      const before = { id: 'role-123', name: 'Old Name' };
-      const after = { id: 'role-123', name: 'New Name' };
+      const before = {
+        id: 'role-123',
+        name: 'Old Name',
+        tenant_id: 'tenant-1',
+        permissions: [],
+      };
+      const after = {
+        id: 'role-123',
+        name: 'New Name',
+        tenant_id: 'tenant-1',
+        permissions: [],
+      };
       roleRepository.findById.mockResolvedValue(before);
       roleRepository.update.mockResolvedValue(after);
 
-      const result = await updateRole('role-123', { name: 'New Name' }, 'user-123', '127.0.0.1');
+      const result = await updateRole(
+        'role-123',
+        { name: 'New Name' },
+        'user-123',
+        '127.0.0.1',
+        { id: 'user-123', roles: ['TENANT_ADMIN'], tenant_id: 'tenant-1' }
+      );
 
       expect(result).toEqual(after);
       expect(createAuditLog).toHaveBeenCalledWith({
@@ -218,15 +235,29 @@ describe('Role Service', () => {
 
   describe('deleteRole', () => {
     it('should soft delete role, detach assignments, and audit log', async () => {
-      const before = { id: 'role-123', name: 'Admin' };
-      const deleted = { id: 'role-123', name: 'Admin', deleted_at: new Date() };
+      const before = {
+        id: 'role-123',
+        name: 'Custom Clerk',
+        tenant_id: 'tenant-1',
+        permissions: [],
+      };
+      const deleted = {
+        id: 'role-123',
+        name: 'Custom Clerk',
+        tenant_id: 'tenant-1',
+        deleted_at: new Date(),
+      };
       roleRepository.findById.mockResolvedValue(before);
       roleRepository.softDelete.mockResolvedValue({
         role: deleted,
         detached_user_assignments: 3,
       });
 
-      await deleteRole('role-123', 'user-123', '127.0.0.1');
+      await deleteRole('role-123', 'user-123', '127.0.0.1', {
+        id: 'user-123',
+        roles: ['TENANT_ADMIN'],
+        tenant_id: 'tenant-1',
+      });
 
       expect(roleRepository.softDelete).toHaveBeenCalledWith('role-123');
       expect(createAuditLog).toHaveBeenCalledWith({

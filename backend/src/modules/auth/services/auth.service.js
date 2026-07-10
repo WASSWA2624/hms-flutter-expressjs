@@ -318,13 +318,15 @@ const getRoleNames = (user = {}) => uniqueValues(
     .flatMap((entry) => {
       if (!entry) return [];
       if (typeof entry === 'string') {
-        return [toNormalizedString(entry)];
+        return [toNormalizedString(entry).toUpperCase()];
       }
       return [
         toNormalizedString(entry?.role?.name),
         toNormalizedString(entry?.name),
         toNormalizedString(entry?.role_name),
-      ];
+      ]
+        .filter(Boolean)
+        .map((value) => value.toUpperCase());
     })
     .filter(Boolean)
 );

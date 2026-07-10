@@ -123,15 +123,13 @@ const resolveAssignablePlanModules = async (tenantId) => {
 };
 
 const collectRolePermissionNames = (role = {}) => {
-  const fromAssignments = Array.isArray(role.permissions)
-    ? role.permissions
-        .map((entry) => entry?.permission?.name || entry?.name || entry?.permission_name)
-        .map(text)
-        .filter(Boolean)
-    : [];
-
-  if (fromAssignments.length > 0) {
-    return fromAssignments;
+  // When permission joins were loaded (even if empty), trust the DB — do not
+  // invent built-in packs for custom roles that happen to share a name.
+  if (Array.isArray(role.permissions)) {
+    return role.permissions
+      .map((entry) => entry?.permission?.name || entry?.name || entry?.permission_name)
+      .map(text)
+      .filter(Boolean);
   }
 
   const roleName = normalizeRoleName(role.name);
@@ -342,6 +340,7 @@ const assertRoleScopeAllowed = async (payload = {}, user = {}) => {
   }
 
   if (!hasFacility) {
+    assertActorTenantMatches(payload.tenant_id, user);
     return payload;
   }
 
@@ -374,18 +373,113 @@ const assertRoleScopeAllowed = async (payload = {}, user = {}) => {
     !actorRoles.has(ROLES.SUPER_ADMIN)
   ) {
     const actorFacilityId = user.facility_id || user.facilityId || null;
-    if (actorFacilityId && actorFacilityId !== facility.id) {
+    if (!actorFacilityId) {
+      throw new HttpError('errors.auth.scope_mismatch', 403, [
+        { field: 'facility_id', reason: 'actor_facility_required' },
+      ]);
+    }
+    if (actorFacilityId !== facility.id) {
       throw new HttpError('errors.auth.scope_mismatch', 403, [
         { field: 'facility_id', reason: 'outside_actor_facility' },
       ]);
     }
   }
 
-  return {
+  const nextPayload = {
     ...payload,
     facility_id: facility.id,
     tenant_id: payload.tenant_id || facility.tenant_id,
   };
+  assertActorTenantMatches(nextPayload.tenant_id, user);
+  return nextPayload;
+};
+
+const assertActorTenantMatches = (tenantId, user = {}) => {
+  const actorRoles = new Set(resolveActorRoleNames(user));
+  if (actorRoles.has(ROLES.SUPER_ADMIN)) {
+    return;
+  }
+  const actorTenantId = user.tenant_id || user.tenantId || null;
+  if (!tenantId || !actorTenantId || tenantId !== actorTenantId) {
+    throw new HttpError('errors.auth.scope_mismatch', 403, [
+      { field: 'tenant_id', reason: 'outside_actor_tenant' },
+    ]);
+  }
+};
+
+/**
+ * Ensure the actor may mutate an existing role record (ceiling + tenant/facility).
+ * @param {Object} role
+ * @param {Object} user
+ */
+const assertActorCanManageRoleRecord = (role = {}, user = {}) => {
+  if (!role || !role.id) {
+    throw new HttpError('errors.role.not_found', 404);
+  }
+
+  const actorRoles = new Set(resolveActorRoleNames(user));
+  if (actorRoles.has(ROLES.SUPER_ADMIN)) {
+    if (!isRoleWithinActorCeiling(role, user)) {
+      throw new HttpError('errors.auth.insufficient_permissions', 403, [
+        { field: 'role_id', reason: 'above_actor_ceiling' },
+      ]);
+    }
+    return role;
+  }
+
+  const actorTenantId = user.tenant_id || user.tenantId || null;
+  if (!actorTenantId || role.tenant_id !== actorTenantId) {
+    throw new HttpError('errors.auth.scope_mismatch', 403, [
+      { field: 'tenant_id', reason: 'outside_actor_tenant' },
+    ]);
+  }
+
+  if (
+    actorRoles.has(ROLES.FACILITY_ADMIN) &&
+    !actorRoles.has(ROLES.TENANT_ADMIN)
+  ) {
+    const actorFacilityId = user.facility_id || user.facilityId || null;
+    if (!actorFacilityId) {
+      throw new HttpError('errors.auth.scope_mismatch', 403, [
+        { field: 'facility_id', reason: 'actor_facility_required' },
+      ]);
+    }
+    if (role.facility_id !== actorFacilityId) {
+      throw new HttpError('errors.auth.scope_mismatch', 403, [
+        { field: 'role_id', reason: 'outside_actor_facility' },
+      ]);
+    }
+  }
+
+  if (!isRoleWithinActorCeiling(role, user)) {
+    throw new HttpError('errors.auth.insufficient_permissions', 403, [
+      { field: 'role_id', reason: 'above_actor_ceiling' },
+    ]);
+  }
+
+  return role;
+};
+
+/**
+ * Block mutation of seeded/system roles that catalog sync owns.
+ * @param {Object} role
+ * @param {'update'|'delete'} [operation='delete']
+ */
+const assertRoleNotSystemProtected = (role = {}, operation = 'delete') => {
+  const roleName = normalizeRoleName(role.name);
+  if (!roleName || !ROLE_PERMISSIONS[roleName]) {
+    return;
+  }
+  if (operation === 'delete' || roleName === ROLES.SUPER_ADMIN) {
+    throw new HttpError('errors.auth.insufficient_permissions', 403, [
+      {
+        field: 'role_id',
+        reason: 'system_role_protected',
+        role: roleName,
+        operation,
+      },
+    ]);
+  }
 };
 
 /**
@@ -452,11 +546,14 @@ const buildRoleScopeWhere = (
 module.exports = {
   ACCESS_ADMIN_ROLES,
   ROLE_RANK,
+  assertActorCanManageRoleRecord,
   assertPermissionIdAssignable,
   assertPermissionIdsAssignable,
   assertPermissionNamesAssignable,
   assertRoleIdAssignable,
+  assertRoleNotSystemProtected,
   assertRoleScopeAllowed,
+  assertActorTenantMatches,
   buildRoleScopeWhere,
   canActorCreateTenantWideRole,
   collectRolePermissionNames,

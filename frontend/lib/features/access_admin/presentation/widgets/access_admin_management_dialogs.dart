@@ -842,14 +842,80 @@ class _ManageRolesPermissionsDialog extends ConsumerStatefulWidget {
 class _ManageRolesPermissionsDialogState
     extends _ScopedAccessAdminListDialogState<_ManageRolesPermissionsDialog> {
   String? roleScopeFilter;
+  String? tenantFilter;
+  String? facilityFilter;
+
+  /// Match Manage Users: widest list the actor is allowed to see.
+  bool allTenants = true;
+  bool allFacilities = true;
+
+  static const String _tenantFilterKey = 'tenant';
+  static const String _facilityFilterKey = 'facility';
+
+  bool get _canPickTenant {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    return policy.canCreateTenant();
+  }
+
+  bool get _canFilterAcrossFacilities {
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    return policy.canCreateTenant() || policy.canCreateTenantWideRole();
+  }
 
   @override
-  AccessAdminWorkspaceQuery get listQuery => AccessAdminWorkspaceQuery(
-    panel: AccessAdminPanel.roles,
-    resource: AccessAdminResource.roles,
-    roleScope: roleScopeFilter,
-    lean: true,
-  );
+  AccessAdminWorkspaceQuery get listQuery {
+    final bool crossTenant =
+        _canPickTenant && allTenants && tenantFilter == null;
+    final bool tenantWide =
+        _canFilterAcrossFacilities && allFacilities && facilityFilter == null;
+    return AccessAdminWorkspaceQuery(
+      panel: AccessAdminPanel.roles,
+      resource: AccessAdminResource.roles,
+      roleScope: roleScopeFilter,
+      lean: true,
+      tenantId: crossTenant ? null : tenantFilter,
+      facilityId: tenantWide ? null : facilityFilter,
+      allTenants: crossTenant,
+      allFacilities: tenantWide || crossTenant,
+    );
+  }
+
+  Future<void> _applyRoleListFilters(AppSearchBarFilterValue value) async {
+    final String? nextTenant = value.option(_tenantFilterKey);
+    final String? nextFacilityRaw = value.option(_facilityFilterKey);
+    final String? nextRoleScope = value.option(_roleScopeFilterKey);
+
+    final bool nextAllTenants = _canPickTenant && nextTenant == null;
+    final bool nextAllFacilities = nextAllTenants
+        ? true
+        : (_canFilterAcrossFacilities && nextFacilityRaw == null);
+    final String? nextFacility =
+        nextAllFacilities || nextAllTenants ? null : nextFacilityRaw;
+
+    if (tenantFilter == nextTenant &&
+        facilityFilter == nextFacility &&
+        allTenants == nextAllTenants &&
+        allFacilities == nextAllFacilities &&
+        roleScopeFilter == nextRoleScope) {
+      return;
+    }
+
+    final bool tenantScopeChanged =
+        tenantFilter != nextTenant || allTenants != nextAllTenants;
+
+    setState(() {
+      tenantFilter = nextTenant;
+      facilityFilter = nextFacility;
+      allTenants = nextAllTenants;
+      allFacilities = nextAllFacilities;
+      roleScopeFilter = nextRoleScope;
+    });
+    await reload(
+      resetPage: true,
+      silent: items.isNotEmpty,
+      refreshLookups: tenantScopeChanged,
+    );
+  }
 
   Future<void> _setRoleScopeFilter(String? scope) async {
     if (roleScopeFilter == scope) {

@@ -299,15 +299,11 @@ const serializeRegistrationFollowUp = (record = {}) => {
 };
 
 const collectAssignedRolePermissionNames = (role = {}) => {
-  const fromAssignments = Array.isArray(role.permissions)
-    ? role.permissions
-        .map((entry) => entry?.permission?.name || entry?.name || entry?.permission_name)
-        .map((value) => String(value || '').trim())
-        .filter(Boolean)
-    : [];
-
-  if (fromAssignments.length > 0) {
-    return fromAssignments;
+  if (Array.isArray(role.permissions)) {
+    return role.permissions
+      .map((entry) => entry?.permission?.name || entry?.name || entry?.permission_name)
+      .map((value) => String(value || '').trim())
+      .filter(Boolean);
   }
 
   const roleName = String(role.name || '').trim().toUpperCase();

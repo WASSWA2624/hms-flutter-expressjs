@@ -108,6 +108,18 @@ describe('assignable-access', () => {
       ).toBe(true);
     });
 
+    it('does not invent built-in packs for empty custom roles named like system roles', () => {
+      expect(
+        isRoleWithinActorCeiling(
+          {
+            name: 'DOCTOR',
+            permissions: [],
+          },
+          { roles: [ROLES.FACILITY_ADMIN] }
+        )
+      ).toBe(true);
+    });
+
     it('rejects custom roles that include above-ceiling permissions', () => {
       expect(
         isRoleWithinActorCeiling(

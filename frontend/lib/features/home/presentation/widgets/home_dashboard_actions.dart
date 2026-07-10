@@ -43,11 +43,18 @@ final class HomeActionDefinition {
 
   bool isAllowed(AppAccessPolicy policy) {
     // Authority order: Plan (modules) → Role → Rights, then route requirement.
+    // Custom roles: when permission requirements are present, they can satisfy
+    // the action even if the role name is not a canonical AppRole.
     if (!policy.hasAllActiveModules(requiredModules)) {
       return false;
     }
-    if (!_hasAllowedActionRole(policy)) {
-      return false;
+
+    final bool hasPermissionRequirements =
+        requiredPermissions.isNotEmpty || requiredAnyPermissions.isNotEmpty;
+    if (allowedRoles.isNotEmpty && !allowedRoles.any(policy.hasRole)) {
+      if (!hasPermissionRequirements) {
+        return false;
+      }
     }
     if (!policy.grantsAll(requiredPermissions)) {
       return false;
@@ -57,13 +64,6 @@ final class HomeActionDefinition {
       return false;
     }
     return route.accessRequirement.isAllowed(policy);
-  }
-
-  bool _hasAllowedActionRole(AppAccessPolicy policy) {
-    if (allowedRoles.isEmpty) {
-      return true;
-    }
-    return allowedRoles.any(policy.hasRole);
   }
 }
 

@@ -100,7 +100,13 @@ const updateRolePermission = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  const rolePermission = await rolePermissionService.updateRolePermission(id, req.body, userId, ipAddress);
+  const rolePermission = await rolePermissionService.updateRolePermission(
+    id,
+    req.body,
+    userId,
+    ipAddress,
+    req.user
+  );
 
   sendSuccess(res, 200, 'messages.role_permission.update.success', rolePermission);
 });
@@ -117,7 +123,7 @@ const deleteRolePermission = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  await rolePermissionService.deleteRolePermission(id, userId, ipAddress);
+  await rolePermissionService.deleteRolePermission(id, userId, ipAddress, req.user);
 
   sendNoContent(res);
 });
