@@ -20,7 +20,7 @@ const {
   REALTIME_SYNC_ACTIONS
 } = require('@lib/realtime/entity-envelope');
 const { serializeAccessAdminRoleEntity } = require('@lib/realtime/access-admin-realtime');
-const { assertRoleScopeAllowed } = require('@lib/authorization/assignable-access');
+const { assertRoleScopeAllowed, assertPermissionIdsAssignable } = require('@lib/authorization/assignable-access');
 
 const ROLE_REALTIME_RECIPIENT_ROLES = Object.freeze([ROLES.TENANT_ADMIN]);
 
@@ -182,9 +182,14 @@ const getRoleById = async (id, userId, ipAddress) => {
  */
 const createRole = async (data, userId, ipAddress, actor = null) => {
   try {
-    const payload = await normalizeCreateRolePayload(data);
+    const { permission_ids: permissionIdsInput, ...roleFields } = data || {};
+    const payload = await normalizeCreateRolePayload(roleFields);
     const scopedPayload = await assertRoleScopeAllowed(payload, actor || { id: userId });
-    const role = await roleRepository.create(scopedPayload);
+    const permissionIds = await assertPermissionIdsAssignable(
+      permissionIdsInput,
+      actor || { id: userId }
+    );
+    const role = await roleRepository.create(scopedPayload, permissionIds);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -192,7 +197,7 @@ const createRole = async (data, userId, ipAddress, actor = null) => {
       action: 'CREATE',
       entity: 'role',
       entity_id: role.id,
-      diff: { after: role },
+      diff: { after: role, permission_ids: permissionIds },
       ip_address: ipAddress
     }).catch(() => {});
 
@@ -229,11 +234,12 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
       throw new HttpError('errors.role.not_found', 404);
     }
 
-    const payload = { ...data };
-    if (Object.prototype.hasOwnProperty.call(data, 'facility_id')) {
-      if (data.facility_id != null && String(data.facility_id).trim() !== '') {
+    const { permission_ids: permissionIdsInput, ...roleFields } = data || {};
+    const payload = { ...roleFields };
+    if (Object.prototype.hasOwnProperty.call(roleFields, 'facility_id')) {
+      if (roleFields.facility_id != null && String(roleFields.facility_id).trim() !== '') {
         payload.facility_id = await resolveIdentifierForPayload({
-          value: data.facility_id,
+          value: roleFields.facility_id,
           model: 'facility',
           field: 'facility_id',
           nullable: true,
@@ -251,7 +257,25 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
       );
     }
 
-    const role = await roleRepository.update(resolvedRoleId, payload);
+    const shouldSyncPermissions = Object.prototype.hasOwnProperty.call(
+      data || {},
+      'permission_ids'
+    );
+    const permissionIds = shouldSyncPermissions
+      ? await assertPermissionIdsAssignable(
+          permissionIdsInput,
+          actor || { id: userId }
+        )
+      : null;
+
+    const role =
+      Object.keys(payload).length > 0
+        ? await roleRepository.update(resolvedRoleId, payload)
+        : before;
+
+    if (shouldSyncPermissions) {
+      await roleRepository.syncPermissions(resolvedRoleId, permissionIds);
+    }
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -259,7 +283,11 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
       action: 'UPDATE',
       entity: 'role',
       entity_id: role.id,
-      diff: { before, after: role },
+      diff: {
+        before,
+        after: role,
+        ...(shouldSyncPermissions ? { permission_ids: permissionIds } : {}),
+      },
       ip_address: ipAddress
     }).catch(() => {});
 

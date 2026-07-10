@@ -22,6 +22,7 @@ const workspaceQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional(),
   include_deleted: z.enum(['true', 'false']).optional(),
   includeDeleted: z.enum(['true', 'false']).optional(),
+  lean: z.enum(['true', 'false', '1', '0']).optional(),
 });
 
 const referenceDataQuerySchema = z.object({

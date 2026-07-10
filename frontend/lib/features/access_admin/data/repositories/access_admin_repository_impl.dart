@@ -70,6 +70,7 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         'userId': query.userId,
         'roleId': query.roleId,
         'include_deleted': query.includeDeleted ? 'true' : null,
+        'lean': query.lean ? 'true' : null,
       }),
       decoder: (Object? data) {
         return AccessAdminWorkspaceDto.fromResponse(data, query).toEntity();
@@ -258,76 +259,34 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
   }
 
   @override
-  Future<Result<void>> createRole(AccessAdminRoleDraft draft) async {
-    final Result<Object?> createResult = await _apiClient.post<Object?>(
+  Future<Result<void>> createRole(AccessAdminRoleDraft draft) {
+    return _apiClient.post<void>(
       ApiEndpoints.collection(HmsApiResource.roles),
       data: _withoutEmpty(<String, Object?>{
         'tenant_id': draft.tenantId,
         'facility_id': draft.facilityId,
         'name': draft.name,
         'description': draft.description,
+        'permission_ids': draft.permissionIds,
       }),
-      decoder: (Object? responseData) {
-        if (responseData is Map<String, dynamic>) {
-          final Object? payload = responseData['data'] ?? responseData;
-          if (payload is Map<String, dynamic>) {
-            return payload;
-          }
-        }
-        return responseData;
-      },
-    );
-
-    return createResult.when(
-      success: (Object? payload) async {
-        final String? roleId = _extractRecordId(payload);
-        if (roleId == null || roleId.isEmpty) {
-          return const Result<void>.failure(AppFailure.unexpected());
-        }
-
-        for (final String permissionId in draft.permissionIds) {
-          final Result<void> assignResult = await assignRolePermission(
-            AccessAdminRolePermissionDraft(
-              roleId: roleId,
-              permissionId: permissionId,
-            ),
-          );
-          if (assignResult case ResultFailure<void>(:final failure)) {
-            return Result<void>.failure(failure);
-          }
-        }
-
-        return const Result<void>.success(null);
-      },
-      failure: (AppFailure failure) => Result<void>.failure(failure),
+      decoder: (_) {},
     );
   }
 
   @override
-  Future<Result<void>> updateRole(String roleId, AccessAdminRoleDraft draft) async {
+  Future<Result<void>> updateRole(String roleId, AccessAdminRoleDraft draft) {
     final Map<String, Object?> payload = <String, Object?>{
       ..._withoutEmpty(<String, Object?>{
         'name': draft.name,
         'description': draft.description,
       }),
       'facility_id': draft.facilityId,
+      'permission_ids': draft.permissionIds,
     };
-    final Result<void> updateResult = await _apiClient.put<void>(
+    return _apiClient.put<void>(
       ApiEndpoints.byId(HmsApiResource.roles, roleId),
       data: payload,
       decoder: (_) {},
-    );
-    final AppFailure? updateFailure = updateResult.when(
-      success: (_) => null,
-      failure: (AppFailure failure) => failure,
-    );
-    if (updateFailure != null) {
-      return Result<void>.failure(updateFailure);
-    }
-
-    return syncRolePermissions(
-      roleId: roleId,
-      permissionIds: draft.permissionIds,
     );
   }
 

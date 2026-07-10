@@ -267,21 +267,10 @@ const findRoles = async ({
         take,
         orderBy,
         include: {
-          permissions: {
-            where: { deleted_at: null },
-            include: {
-              permission: {
-                select: {
-                  id: true,
-                  human_friendly_id: true,
-                  name: true,
-                },
-              },
-            },
-          },
           _count: {
             select: {
               users: { where: { deleted_at: null } },
+              permissions: { where: { deleted_at: null } },
             },
           },
         },

@@ -172,6 +172,10 @@ const serializeRole = (record) => {
     }));
 
   const roleName = String(record.name || '').trim().toUpperCase();
+  const permissionCount =
+    typeof record._count?.permissions === 'number'
+      ? record._count.permissions
+      : permissions.length;
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),
@@ -184,7 +188,8 @@ const serializeRole = (record) => {
     facility_id: safePublicId(record.facility_id),
     facility_name: record.facility_name || null,
     scope: record.facility_id ? 'facility' : 'tenant',
-    permission_count: permissions.length,
+    permission_count: permissionCount,
+    // List payloads stay lean; load permission rows on edit via role-permissions.
     permissions,
     user_count: record._count?.users || 0,
     is_clinical_flow_role: CLINICAL_FLOW_ROLES.has(roleName),
@@ -609,6 +614,12 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
   if (!isRegistrationQueue && !isPaymentRequestQueue) {
     await maybeSyncTenantAccessCatalog(scope);
   }
+
+  const lean =
+    query.lean === true ||
+    query.lean === 'true' ||
+    query.lean === '1';
+
   const [summary, lookups, itemsResult] = isRegistrationQueue
     ? [
         {},
@@ -616,10 +627,20 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
         await findItemsForResource(resource, scope, filters, skip, limit),
       ]
     : await Promise.all([
-        repository.findSummary(scope),
-        repository.findLookups(scope, includeAllTenants, {
-          includeTenantWide: includeTenantWideRoles,
-        }),
+        lean ? Promise.resolve({}) : repository.findSummary(scope),
+        lean
+          ? Promise.resolve({
+              tenants: [],
+              facilities: [],
+              roles: [],
+              permissions: [],
+            })
+          : repository.findLookups(scope, includeAllTenants, {
+              includeTenantWide: includeTenantWideRoles,
+              // Nested role→permission rows are expensive; ceiling checks fall
+              // back to ROLE_PERMISSIONS for system roles.
+              includeRolePermissions: false,
+            }),
         findItemsForResource(
           resource,
           scope,
@@ -631,7 +652,13 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, user = {}) => {
       ]);
 
   const subscription = itemsResult.subscription || null;
-  const overviewSubscription = isRegistrationQueue
+  const needsOverviewSubscription =
+    !lean &&
+    !isRegistrationQueue &&
+    (panel === 'overview' ||
+      panel === 'entitlements' ||
+      resource === 'module-entitlements');
+  const overviewSubscription = !needsOverviewSubscription
     ? null
     : resource === 'module-entitlements'
       ? subscription

@@ -24,9 +24,19 @@ jest.mock('@lib/websocket/crud-realtime', () => ({
 jest.mock('@lib/realtime/platform-realtime', () => ({
   publishPlatformRealtimeEvent: jest.fn().mockResolvedValue(undefined)
 }));
+jest.mock('@lib/authorization/assignable-access', () => {
+  const actual = jest.requireActual('@lib/authorization/assignable-access');
+  return {
+    ...actual,
+    assertPermissionIdsAssignable: jest.fn(async (ids = []) =>
+      Array.isArray(ids) ? [...ids] : []
+    ),
+  };
+});
 
 const roleRepository = require('@repositories/role/role.repository');
 const { createAuditLog } = require('@lib/audit');
+const { assertPermissionIdsAssignable } = require('@lib/authorization/assignable-access');
 const {
   listRoles,
   getRoleById,
@@ -133,9 +143,36 @@ describe('Role Service', () => {
         action: 'CREATE',
         entity: 'role',
         entity_id: 'role-123',
-        diff: { after: mockRole },
+        diff: { after: mockRole, permission_ids: [] },
         ip_address: '127.0.0.1'
       });
+    });
+
+    it('should create role with batched permission_ids', async () => {
+      const mockRole = { id: 'role-123', name: 'New Role' };
+      roleRepository.create.mockResolvedValue(mockRole);
+      assertPermissionIdsAssignable.mockResolvedValue(['perm-1', 'perm-2']);
+
+      const result = await createRole(
+        {
+          name: 'New Role',
+          tenant_id: 'tenant-1',
+          permission_ids: ['perm-1', 'perm-2'],
+        },
+        'user-123',
+        '127.0.0.1',
+        { id: 'user-123', roles: ['TENANT_ADMIN'] }
+      );
+
+      expect(result).toEqual(mockRole);
+      expect(assertPermissionIdsAssignable).toHaveBeenCalledWith(
+        ['perm-1', 'perm-2'],
+        expect.objectContaining({ id: 'user-123' })
+      );
+      expect(roleRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'New Role', tenant_id: 'tenant-1' }),
+        ['perm-1', 'perm-2']
+      );
     });
 
     it('should reject tenant-wide role create for facility admins', async () => {

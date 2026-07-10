@@ -11,6 +11,7 @@ const { ROLE_PERMISSIONS } = require('@config/permissions');
 const { HttpError } = require('@lib/errors');
 const { getUserPermissions } = require('@middlewares/auth.middleware');
 const { resolveIdentifierForPayload } = require('@lib/billing/identifiers');
+const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 
 const ACCESS_ADMIN_ROLES = new Set([
   ROLES.SUPER_ADMIN,
@@ -154,6 +155,72 @@ const assertPermissionIdAssignable = async (permissionId, user = {}) => {
   }
   assertPermissionNamesAssignable([permission.name], user);
   return permission;
+};
+
+/**
+ * Resolve and ceiling-check many permission identifiers in one query.
+ * @returns {Promise<string[]>} Deduped permission UUIDs
+ */
+const assertPermissionIdsAssignable = async (permissionIds = [], user = {}) => {
+  const unique = [
+    ...new Set(
+      (Array.isArray(permissionIds) ? permissionIds : [])
+        .map(text)
+        .filter(Boolean)
+    ),
+  ];
+  if (unique.length === 0) {
+    return [];
+  }
+
+  const uuidIds = unique.filter((id) => isUuidLike(id));
+  const friendlyIds = unique.filter((id) => !isUuidLike(id));
+  const orFilters = [];
+  if (uuidIds.length > 0) {
+    orFilters.push({ id: { in: uuidIds } });
+  }
+  if (friendlyIds.length > 0) {
+    orFilters.push({ human_friendly_id: { in: friendlyIds } });
+  }
+
+  const permissions = await prisma.permission.findMany({
+    where: {
+      deleted_at: null,
+      OR: orFilters,
+    },
+    select: { id: true, name: true, human_friendly_id: true },
+  });
+
+  const byId = new Map(permissions.map((entry) => [entry.id, entry]));
+  const byFriendly = new Map(
+    permissions
+      .filter((entry) => entry.human_friendly_id)
+      .map((entry) => [entry.human_friendly_id, entry])
+  );
+
+  const resolved = [];
+  const missing = [];
+  for (const identifier of unique) {
+    const match = byId.get(identifier) || byFriendly.get(identifier);
+    if (!match) {
+      missing.push(identifier);
+      continue;
+    }
+    resolved.push(match);
+  }
+
+  if (missing.length > 0) {
+    throw new HttpError('errors.permission.not_found', 404, [
+      { field: 'permission_ids', missing },
+    ]);
+  }
+
+  assertPermissionNamesAssignable(
+    resolved.map((entry) => entry.name),
+    user
+  );
+
+  return [...new Set(resolved.map((entry) => entry.id))];
 };
 
 const assertRoleIdAssignable = async (roleId, user = {}) => {
@@ -309,6 +376,7 @@ module.exports = {
   ACCESS_ADMIN_ROLES,
   ROLE_RANK,
   assertPermissionIdAssignable,
+  assertPermissionIdsAssignable,
   assertPermissionNamesAssignable,
   assertRoleIdAssignable,
   assertRoleScopeAllowed,

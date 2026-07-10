@@ -68,6 +68,7 @@ final class AccessAdminWorkspaceQuery {
     this.userId,
     this.roleId,
     this.includeDeleted = false,
+    this.lean = false,
     this.pageRequest = const AppPageRequest(pageSize: 12),
   });
 
@@ -87,6 +88,7 @@ final class AccessAdminWorkspaceQuery {
       includeDeleted:
           params['include_deleted'] == 'true' ||
           params['includeDeleted'] == 'true',
+      lean: params['lean'] == 'true' || params['lean'] == '1',
     );
   }
 
@@ -101,6 +103,7 @@ final class AccessAdminWorkspaceQuery {
   final String? userId;
   final String? roleId;
   final bool includeDeleted;
+  final bool lean;
   final AppPageRequest pageRequest;
 
   bool get hasRouteTargeting {
@@ -123,6 +126,7 @@ final class AccessAdminWorkspaceQuery {
     Object? userId = _unset,
     Object? roleId = _unset,
     bool? includeDeleted,
+    bool? lean,
     AppPageRequest? pageRequest,
   }) {
     return AccessAdminWorkspaceQuery(
@@ -145,6 +149,7 @@ final class AccessAdminWorkspaceQuery {
       userId: identical(userId, _unset) ? this.userId : userId as String?,
       roleId: identical(roleId, _unset) ? this.roleId : roleId as String?,
       includeDeleted: includeDeleted ?? this.includeDeleted,
+      lean: lean ?? this.lean,
       pageRequest: pageRequest ?? this.pageRequest,
     );
   }

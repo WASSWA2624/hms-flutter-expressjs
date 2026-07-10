@@ -80,12 +80,28 @@ const count = async (filters = {}) => {
  * Create new role
  *
  * @param {Object} data - Role data
+ * @param {string[]} [permissionIds] - Optional permission UUIDs to attach
  * @returns {Promise<Object>} Created role
  */
-const create = async (data) => {
+const create = async (data, permissionIds = []) => {
   try {
-    return await prisma.role.create({
-      data
+    const ids = Array.isArray(permissionIds)
+      ? [...new Set(permissionIds.filter(Boolean))]
+      : [];
+
+    if (ids.length === 0) {
+      return await prisma.role.create({ data });
+    }
+
+    return await prisma.$transaction(async (tx) => {
+      const role = await tx.role.create({ data });
+      await tx.role_permission.createMany({
+        data: ids.map((permission_id) => ({
+          role_id: role.id,
+          permission_id,
+        })),
+      });
+      return role;
     });
   } catch (error) {
     if (error.code === 'P2002') {
@@ -99,6 +115,75 @@ const create = async (data) => {
       throw new HttpError('errors.database.foreign_key_field', 400, [{ field: target }]);
     }
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
+ * Replace active role permissions with the given set (soft-delete aware).
+ *
+ * @param {string} roleId
+ * @param {string[]} permissionIds
+ * @returns {Promise<void>}
+ */
+const syncPermissions = async (roleId, permissionIds = []) => {
+  try {
+    const desired = [
+      ...new Set(
+        (Array.isArray(permissionIds) ? permissionIds : []).filter(Boolean)
+      ),
+    ];
+    const existing = await prisma.role_permission.findMany({
+      where: { role_id: roleId },
+      select: { id: true, permission_id: true, deleted_at: true },
+    });
+
+    const desiredSet = new Set(desired);
+    const existingByPermission = new Map(
+      existing.map((row) => [row.permission_id, row])
+    );
+    const now = new Date();
+    const ops = [];
+
+    for (const row of existing) {
+      if (desiredSet.has(row.permission_id)) {
+        if (row.deleted_at) {
+          ops.push(
+            prisma.role_permission.update({
+              where: { id: row.id },
+              data: { deleted_at: null },
+            })
+          );
+        }
+      } else if (!row.deleted_at) {
+        ops.push(
+          prisma.role_permission.update({
+            where: { id: row.id },
+            data: { deleted_at: now },
+          })
+        );
+      }
+    }
+
+    const toCreate = desired.filter((id) => !existingByPermission.has(id));
+    if (toCreate.length > 0) {
+      ops.push(
+        prisma.role_permission.createMany({
+          data: toCreate.map((permission_id) => ({
+            role_id: roleId,
+            permission_id,
+          })),
+        })
+      );
+    }
+
+    if (ops.length > 0) {
+      await prisma.$transaction(ops);
+    }
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.database.unexpected', 500, [
+      { originalError: error.message },
+    ]);
   }
 };
 
@@ -161,6 +246,7 @@ module.exports = {
   findMany,
   count,
   create,
+  syncPermissions,
   update,
   softDelete
 };

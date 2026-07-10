@@ -316,6 +316,29 @@ Future<bool?> openAccessAdminEditRoleDialog(
       ref.read(sessionStateProvider).session?.user?.tenantId;
   final String? facilityId = role.facilityId ?? state.query.facilityId;
 
+  final AccessAdminRepository repository = ref.read(
+    accessAdminRepositoryProvider,
+  );
+
+  Set<String> initialPermissionIds = role.permissions
+      .map((AccessAdminPermissionRef permission) => permission.id)
+      .toSet();
+  if (initialPermissionIds.isEmpty && role.permissionCount > 0) {
+    final Result<List<AccessAdminRolePermissionAssignment>>
+    permissionsResult = await repository.listRolePermissions(role.id);
+    initialPermissionIds = permissionsResult.when(
+      success: (List<AccessAdminRolePermissionAssignment> assignments) =>
+          assignments
+              .map(
+                (AccessAdminRolePermissionAssignment assignment) =>
+                    assignment.permissionId,
+              )
+              .whereType<String>()
+              .toSet(),
+      failure: (_) => initialPermissionIds,
+    );
+  }
+
   final AccessAdminLookups? prefetched;
   if ((tenantId ?? '').isEmpty) {
     prefetched = null;
@@ -354,9 +377,7 @@ Future<bool?> openAccessAdminEditRoleDialog(
         prefetched?.facilities ?? state.data.lookups.facilities,
     initialName: role.title,
     initialDescription: role.subtitle,
-    initialPermissionIds: role.permissions
-        .map((AccessAdminPermissionRef permission) => permission.id)
-        .toSet(),
+    initialPermissionIds: initialPermissionIds,
     tenantId: tenantId,
     facilityId: facilityId,
     allowTenantWideScope: allowTenantWideScope,

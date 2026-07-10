@@ -254,7 +254,7 @@ class _ManageUsersDialogState
     extends _ScopedAccessAdminListDialogState<_ManageUsersDialog> {
   @override
   AccessAdminWorkspaceQuery get listQuery =>
-      const AccessAdminWorkspaceQuery(includeDeleted: true);
+      const AccessAdminWorkspaceQuery(includeDeleted: true, lean: true);
 
   Future<void> _openCreateUserDialog() async {
     final AccessAdminWorkspaceState? state = buildWorkspaceState();
@@ -619,6 +619,7 @@ class _ManageRolesPermissionsDialogState
     panel: AccessAdminPanel.roles,
     resource: AccessAdminResource.roles,
     roleScope: roleScopeFilter,
+    lean: true,
   );
 
   Future<void> _setRoleScopeFilter(String? scope) async {
