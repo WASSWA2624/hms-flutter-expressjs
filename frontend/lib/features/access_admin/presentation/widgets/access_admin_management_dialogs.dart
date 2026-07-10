@@ -1504,60 +1504,96 @@ class _AccessAdminUserDetailDialogState
 
   Future<void> _addRole() async {
     final AppLocalizations l10n = context.l10n;
-    final String? tenantId = widget.tenantId ?? _item.tenantId;
+    final String? tenantId = (widget.tenantId ?? _item.tenantId)?.trim();
     if (tenantId == null || tenantId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.accessAdminTenantContextRequiredBody),
+        ),
+      );
       return;
     }
 
-    AccessAdminLookups lookups = widget.lookups;
-    if (lookups.roles.isEmpty) {
-      setState(() => _saving = true);
-      final Result<AccessAdminLookups> lookupResult = await widget.repository
-          .getReferenceData(
-            tenantId: tenantId,
-            facilityId: widget.facilityId ?? _item.facilityId,
-            include: const <String>['roles', 'permissions'],
-          );
-      if (!mounted) return;
-      final AccessAdminLookups? resolved = lookupResult.when(
-        success: (AccessAdminLookups value) => value,
-        failure: (_) => null,
-      );
-      setState(() => _saving = false);
-      if (resolved == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              lookupResult.when(
-                success: (_) => '',
-                failure: (AppFailure failure) =>
-                    context.l10n.failureMessage(failure),
-              ),
+    // Always load roles for this user's tenant/facility. Workspace list lookups
+    // may be empty (lean/skipLookups) or scoped to a different tenant.
+    setState(() => _saving = true);
+    final Result<AccessAdminLookups> lookupResult = await widget.repository
+        .getReferenceData(
+          tenantId: tenantId,
+          facilityId: widget.facilityId ?? _item.facilityId,
+          include: const <String>['roles'],
+          forceRefresh: true,
+        );
+    if (!mounted) return;
+    final AccessAdminLookups? resolved = lookupResult.when(
+      success: (AccessAdminLookups value) => value,
+      failure: (_) => null,
+    );
+    setState(() => _saving = false);
+    if (resolved == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            lookupResult.when(
+              success: (_) => l10n.accessAdminUserAccessNoAssignableRolesMessage,
+              failure: (AppFailure failure) =>
+                  context.l10n.failureMessage(failure),
             ),
           ),
-        );
-        return;
-      }
-      lookups = resolved;
+        ),
+      );
+      return;
     }
 
     final Set<String> assignedRoleIds = _roleGroups
         .map((AppUserAccessRoleGroup group) => group.roleId)
         .toSet();
-    final List<AccessAdminLookupOption> availableRoles = lookups.roles
+    final List<AccessAdminLookupOption> availableRoles = resolved.roles
         .where(
-          (AccessAdminLookupOption role) => !assignedRoleIds.contains(role.id),
+          (AccessAdminLookupOption role) =>
+              !assignedRoleIds.contains(role.id) &&
+              role.id.trim().isNotEmpty,
         )
         .toList(growable: false);
 
     if (availableRoles.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.accessAdminUserAccessNoAssignableRolesMessage)),
+        SnackBar(
+          content: Text(l10n.accessAdminUserAccessNoAssignableRolesMessage),
+        ),
       );
       return;
     }
 
-    String? selectedRoleId = availableRoles.first.id;
+    final List<AppRoleAssignmentOption> roleOptions = availableRoles
+        .map(
+          (AccessAdminLookupOption role) => AppRoleAssignmentOption(
+            id: role.id,
+            label: role.label,
+            description: role.meta,
+            permissionCount: role.permissionCount,
+          ),
+        )
+        .toList(growable: false);
+    final Set<String> selectedRoleIds = <String>{};
+
+    Future<Set<String>> loadRolePermissions(String roleId) async {
+      final Result<List<AccessAdminRolePermissionAssignment>> result =
+          await widget.repository.listRolePermissions(roleId);
+      return result.when(
+        success: (List<AccessAdminRolePermissionAssignment> assignments) {
+          return assignments
+              .map(
+                (AccessAdminRolePermissionAssignment assignment) =>
+                    (assignment.permissionName ?? '').trim(),
+              )
+              .where((String name) => name.isNotEmpty)
+              .toSet();
+        },
+        failure: (_) => <String>{},
+      );
+    }
+
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) {
@@ -1566,7 +1602,8 @@ class _AccessAdminUserDetailDialogState
             return AppDialog(
               title: Text(l10n.accessAdminUserAccessAddRoleDialogTitle),
               icon: const Icon(Icons.person_add_alt_1_outlined),
-              maxWidth: 520,
+              maxWidth: 720,
+              scrollable: true,
               content: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
@@ -1575,19 +1612,17 @@ class _AccessAdminUserDetailDialogState
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   SizedBox(height: Theme.of(context).spacing.md),
-                  AppSelectField<String>.searchable(
-                    labelText: l10n.accessAdminUserAccessAddRoleAction,
-                    value: selectedRoleId,
-                    options: <AppSelectOption<String>>[
-                      for (final AccessAdminLookupOption role in availableRoles)
-                        AppSelectOption<String>(
-                          value: role.id,
-                          label: role.label,
-                          searchText: role.label,
-                        ),
-                    ],
-                    onChanged: (String? value) {
-                      setDialogState(() => selectedRoleId = value);
+                  AppRoleAssignmentPicker(
+                    roles: roleOptions,
+                    selectedRoleIds: selectedRoleIds,
+                    loadRolePermissions: loadRolePermissions,
+                    maxListHeight: 460,
+                    onSelectionChanged: (Set<String> next) {
+                      setDialogState(() {
+                        selectedRoleIds
+                          ..clear()
+                          ..addAll(next);
+                      });
                     },
                   ),
                 ],
@@ -1596,7 +1631,7 @@ class _AccessAdminUserDetailDialogState
                 AppButton.primary(
                   label: l10n.accessAdminUserAccessAddRoleAction,
                   leadingIcon: Icons.check,
-                  onPressed: selectedRoleId == null
+                  onPressed: selectedRoleIds.isEmpty
                       ? null
                       : () => Navigator.of(dialogContext).pop(true),
                 ),
@@ -1612,28 +1647,34 @@ class _AccessAdminUserDetailDialogState
       },
     );
 
-    if (confirmed != true || selectedRoleId == null || !mounted) {
+    if (confirmed != true || selectedRoleIds.isEmpty || !mounted) {
       return;
     }
 
     setState(() => _saving = true);
-    final Result<void> result = await widget.repository.assignUserRole(
-      AccessAdminUserRoleDraft(
-        userId: _item.mutationId,
-        roleId: selectedRoleId!,
-        tenantId: tenantId,
-        facilityId: widget.facilityId ?? _item.facilityId,
+    AppFailure? lastFailure;
+    final List<Result<void>> results = await Future.wait(
+      selectedRoleIds.map(
+        (String roleId) => widget.repository.assignUserRole(
+          AccessAdminUserRoleDraft(
+            userId: _item.mutationId,
+            roleId: roleId,
+            tenantId: tenantId,
+            facilityId: widget.facilityId ?? _item.facilityId,
+          ),
+        ),
       ),
     );
+    for (final Result<void> result in results) {
+      if (result case ResultFailure<void>(:final failure)) {
+        lastFailure ??= failure;
+      }
+    }
     if (!mounted) return;
-    final AppFailure? failure = result.when(
-      success: (_) => null,
-      failure: (AppFailure value) => value,
-    );
-    if (failure != null) {
+    if (lastFailure != null) {
       setState(() => _saving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.failureMessage(failure))),
+        SnackBar(content: Text(context.l10n.failureMessage(lastFailure))),
       );
       return;
     }
@@ -1675,32 +1716,51 @@ class _AccessAdminUserDetailDialogState
 
   Future<void> _addDirectPermission() async {
     final AppLocalizations l10n = context.l10n;
-    AccessAdminLookups lookups = widget.lookups;
-    if (lookups.permissions.isEmpty) {
-      setState(() => _saving = true);
-      final Result<AccessAdminLookups> lookupResult = await widget.repository
-          .getReferenceData(
-            tenantId: widget.tenantId ?? _item.tenantId,
-            facilityId: widget.facilityId ?? _item.facilityId,
-            include: const <String>['roles', 'permissions'],
-          );
-      if (!mounted) return;
-      final AccessAdminLookups? resolved = lookupResult.when(
-        success: (AccessAdminLookups value) => value,
-        failure: (_) => null,
+    final String? tenantId = (widget.tenantId ?? _item.tenantId)?.trim();
+    if (tenantId == null || tenantId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(l10n.accessAdminTenantContextRequiredBody),
+        ),
       );
-      setState(() => _saving = false);
-      if (resolved == null) {
-        return;
-      }
-      lookups = resolved;
+      return;
+    }
+
+    setState(() => _saving = true);
+    final Result<AccessAdminLookups> lookupResult = await widget.repository
+        .getReferenceData(
+          tenantId: tenantId,
+          facilityId: widget.facilityId ?? _item.facilityId,
+          include: const <String>['permissions'],
+          forceRefresh: true,
+        );
+    if (!mounted) return;
+    final AccessAdminLookups? resolved = lookupResult.when(
+      success: (AccessAdminLookups value) => value,
+      failure: (_) => null,
+    );
+    setState(() => _saving = false);
+    if (resolved == null || resolved.permissions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            lookupResult.when(
+              success: (_) =>
+                  l10n.accessAdminPermissionCatalogUnavailableMessage,
+              failure: (AppFailure failure) =>
+                  context.l10n.failureMessage(failure),
+            ),
+          ),
+        ),
+      );
+      return;
     }
 
     final Set<String> selectedIds = _resolveDirectPermissionOptionIds(
       directs: _detail.directPermissions,
-      permissionLookups: lookups.permissions,
+      permissionLookups: resolved.permissions,
     );
-    final List<AppPermissionAssignmentOption> options = lookups.permissions
+    final List<AppPermissionAssignmentOption> options = resolved.permissions
         .map(
           (AccessAdminLookupOption permission) => AppPermissionAssignmentOption(
             id: permission.id,

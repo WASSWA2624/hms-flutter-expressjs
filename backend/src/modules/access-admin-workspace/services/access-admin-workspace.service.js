@@ -143,8 +143,8 @@ const serializeUser = (record) => {
     phone: record.phone || null,
     position_title: record.position_title,
     status: record.status,
-    tenant_id: safePublicId(record.tenant_id),
-    facility_id: safePublicId(record.facility_id),
+    tenant_id: record.tenant_id || null,
+    facility_id: record.facility_id || null,
     facility_name: record.facility?.name || null,
     profile_name: profile
       ? [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || null
@@ -185,8 +185,8 @@ const serializeRole = (record) => {
     name: record.name,
     display_name: record.display_name || record.name,
     description: record.description || null,
-    tenant_id: safePublicId(record.tenant_id),
-    facility_id: safePublicId(record.facility_id),
+    tenant_id: record.tenant_id || null,
+    facility_id: record.facility_id || null,
     facility_name: record.facility_name || null,
     scope: record.facility_id ? 'facility' : 'tenant',
     permission_count: permissionCount,
@@ -227,8 +227,8 @@ const serializeUserRole = (record) => {
     user_label: record.user?.email || record.user?.position_title || null,
     role_id: safePublicId(record.role?.human_friendly_id, record.role_id),
     role_name: record.role?.name || null,
-    tenant_id: safePublicId(record.tenant_id),
-    facility_id: safePublicId(record.facility_id),
+    tenant_id: record.tenant_id || null,
+    facility_id: record.facility_id || null,
     updated_at: record.updated_at,
   };
 };

@@ -18284,7 +18284,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessAdminUserAccessAddRoleDialogDescription =>
-      'Choose a role to grant its full permission pack to this user.';
+      'Select one or more roles. Expand a role to review the permissions it grants before assigning.';
 
   @override
   String get accessAdminUserAccessNoAssignableRolesMessage =>

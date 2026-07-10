@@ -13,76 +13,109 @@ Widget _wrap(Widget child) {
 
 void main() {
   group('AppRoleAssignmentPicker', () {
-    const List<AppRoleAssignmentOption> roles = <AppRoleAssignmentOption>[
-      AppRoleAssignmentOption(
-        id: 'role-nurse',
-        label: 'Nurse | ROL001',
-        permissionCount: 12,
-      ),
-      AppRoleAssignmentOption(
-        id: 'role-admin',
-        label: 'Administrator | ROL002',
-        permissionCount: 24,
-        isSystemCritical: true,
-      ),
-    ];
-
-    testWidgets('shows empty selected state without warning by default', (
+    testWidgets('lists roles with checkboxes and permission counts', (
       tester,
     ) async {
+      final Set<String> selected = <String>{};
+
       await tester.pumpWidget(
         _wrap(
           AppRoleAssignmentPicker(
-            roles: roles,
-            selectedRoleIds: const <String>{},
-            onSelectionChanged: (_) {},
+            roles: const <AppRoleAssignmentOption>[
+              AppRoleAssignmentOption(
+                id: 'role-nurse',
+                label: 'NURSE',
+                permissionCount: 4,
+              ),
+              AppRoleAssignmentOption(
+                id: 'role-doctor',
+                label: 'DOCTOR',
+                permissionCount: 8,
+              ),
+            ],
+            selectedRoleIds: selected,
+            onSelectionChanged: (Set<String> next) {
+              selected
+                ..clear()
+                ..addAll(next);
+            },
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('No roles assigned yet'), findsNothing);
-      expect(find.text('No roles selected yet.'), findsOneWidget);
-      expect(find.text('Search roles'), findsNothing);
-      expect(find.text('Add role'), findsOneWidget);
+      expect(find.text('NURSE'), findsOneWidget);
+      expect(find.text('DOCTOR'), findsOneWidget);
+      expect(find.textContaining('4 permissions'), findsOneWidget);
+      expect(find.byType(Checkbox), findsNWidgets(2));
     });
 
-    testWidgets('shows custom empty warning when provided', (tester) async {
+    testWidgets('toggles role selection via checkbox', (tester) async {
+      final Set<String> selected = <String>{};
+
       await tester.pumpWidget(
         _wrap(
-          AppRoleAssignmentPicker(
-            roles: roles,
-            selectedRoleIds: const <String>{},
-            onSelectionChanged: (_) {},
-            emptyWarning: 'Assign at least one role.',
+          StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return AppRoleAssignmentPicker(
+                roles: const <AppRoleAssignmentOption>[
+                  AppRoleAssignmentOption(
+                    id: 'role-nurse',
+                    label: 'NURSE',
+                    permissionCount: 2,
+                  ),
+                ],
+                selectedRoleIds: selected,
+                onSelectionChanged: (Set<String> next) {
+                  setState(() {
+                    selected
+                      ..clear()
+                      ..addAll(next);
+                  });
+                },
+              );
+            },
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Assign at least one role.'), findsOneWidget);
+      await tester.tap(find.byType(Checkbox));
+      await tester.pumpAndSettle();
+      expect(selected, <String>{'role-nurse'});
     });
 
-    testWidgets('filters roles via consolidated searchable select', (
+    testWidgets('loads permissions when a role card is expanded', (
       tester,
     ) async {
+      var loadedRoleId = '';
+
       await tester.pumpWidget(
         _wrap(
           AppRoleAssignmentPicker(
-            roles: roles,
+            roles: const <AppRoleAssignmentOption>[
+              AppRoleAssignmentOption(
+                id: 'role-nurse',
+                label: 'NURSE',
+                permissionCount: 1,
+              ),
+            ],
             selectedRoleIds: const <String>{},
             onSelectionChanged: (_) {},
+            loadRolePermissions: (String roleId) async {
+              loadedRoleId = roleId;
+              return <String>{'clinical:read'};
+            },
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(DropdownMenuFormField<String>));
+      await tester.tap(find.text('NURSE'));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'admin');
-      await tester.pump();
 
-      expect(find.text('admin'), findsOneWidget);
+      expect(loadedRoleId, 'role-nurse');
+      expect(find.textContaining('Clinical'), findsWidgets);
     });
   });
 }

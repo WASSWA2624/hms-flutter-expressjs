@@ -33960,7 +33960,7 @@ abstract class AppLocalizations {
   /// Description for the assign-role dialog.
   ///
   /// In en, this message translates to:
-  /// **'Choose a role to grant its full permission pack to this user.'**
+  /// **'Select one or more roles. Expand a role to review the permissions it grants before assigning.'**
   String get accessAdminUserAccessAddRoleDialogDescription;
 
   /// Empty state when every assignable role is already on the user.

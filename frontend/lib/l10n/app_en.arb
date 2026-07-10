@@ -23519,7 +23519,7 @@
   "@accessAdminUserAccessAddRoleDialogTitle": {
     "description": "Title for the dialog that assigns a role to a user."
   },
-  "accessAdminUserAccessAddRoleDialogDescription": "Choose a role to grant its full permission pack to this user.",
+  "accessAdminUserAccessAddRoleDialogDescription": "Select one or more roles. Expand a role to review the permissions it grants before assigning.",
   "@accessAdminUserAccessAddRoleDialogDescription": {
     "description": "Description for the assign-role dialog."
   },
