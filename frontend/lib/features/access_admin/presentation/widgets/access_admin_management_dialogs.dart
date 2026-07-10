@@ -18,18 +18,18 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
-Future<void> showManageUsersDialog(BuildContext context, WidgetRef ref) {
-  return showAppDialog<void>(
+Future<bool?> showManageUsersDialog(BuildContext context, WidgetRef ref) {
+  return showAppDialog<bool>(
     context: context,
     builder: (_) => const _ManageUsersDialog(),
   );
 }
 
-Future<void> showManageRolesPermissionsDialog(
+Future<bool?> showManageRolesPermissionsDialog(
   BuildContext context,
   WidgetRef ref,
 ) {
-  return showAppDialog<void>(
+  return showAppDialog<bool>(
     context: context,
     builder: (_) => const _ManageRolesPermissionsDialog(),
   );
@@ -43,6 +43,7 @@ abstract class _ScopedAccessAdminListDialogState<T extends ConsumerStatefulWidge
   Timer? searchDebounce;
   bool loading = true;
   bool mutating = false;
+  bool mutated = false;
   AppFailure? failure;
   AppPageRequest pageRequest = const AppPageRequest(pageSize: pageSize);
   int totalItemCount = 0;
@@ -195,8 +196,9 @@ class _ManageUsersDialogState extends _ScopedAccessAdminListDialogState<_ManageU
     if (state == null || !mounted) {
       return;
     }
-    await openAccessAdminCreateUserDialog(context, ref, state);
-    if (mounted) {
+    final bool? saved = await openAccessAdminCreateUserDialog(context, ref, state);
+    if (saved == true && mounted) {
+      mutated = true;
       unawaited(reload(resetPage: true, silent: true));
     }
   }
@@ -250,6 +252,7 @@ class _ManageUsersDialogState extends _ScopedAccessAdminListDialogState<_ManageU
       detail: resolvedDetail,
     );
     if (mounted) {
+      mutated = true;
       unawaited(reload(resetPage: false, silent: true));
     }
   }
@@ -276,6 +279,7 @@ class _ManageUsersDialogState extends _ScopedAccessAdminListDialogState<_ManageU
       ),
     );
     if (confirmed == true && mounted) {
+      mutated = true;
       setState(() {
         items = items
             .where((AccessAdminItem entry) => entry.id != user.id)
@@ -447,7 +451,7 @@ class _ManageUsersDialogState extends _ScopedAccessAdminListDialogState<_ManageU
         AppButton.secondary(
           label: l10n.commonCloseActionLabel,
           leadingIcon: Icons.close,
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(context).pop(mutated ? true : null),
         ),
       ],
     );
@@ -475,8 +479,9 @@ class _ManageRolesPermissionsDialogState
     if (state == null || !mounted) {
       return;
     }
-    await openAccessAdminCreateRoleDialog(context, ref, state);
-    if (mounted) {
+    final bool? saved = await openAccessAdminCreateRoleDialog(context, ref, state);
+    if (saved == true && mounted) {
+      mutated = true;
       unawaited(reload(resetPage: true, silent: true));
     }
   }
@@ -488,6 +493,7 @@ class _ManageRolesPermissionsDialogState
     }
     await openAccessAdminEditRoleDialog(context, ref, state, role);
     if (mounted) {
+      mutated = true;
       unawaited(reload(resetPage: false, silent: true));
     }
   }
@@ -514,6 +520,7 @@ class _ManageRolesPermissionsDialogState
       ),
     );
     if (confirmed == true && mounted) {
+      mutated = true;
       setState(() {
         items = items
             .where((AccessAdminItem entry) => entry.id != role.id)
@@ -621,7 +628,7 @@ class _ManageRolesPermissionsDialogState
         AppButton.secondary(
           label: l10n.commonCloseActionLabel,
           leadingIcon: Icons.close,
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(context).pop(mutated ? true : null),
         ),
       ],
     );

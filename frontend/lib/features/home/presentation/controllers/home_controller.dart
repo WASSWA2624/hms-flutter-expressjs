@@ -58,9 +58,8 @@ final homeControllerProvider =
                     )
                   : current.mergePatch(patch);
             }
-            if (!isSelfMutation) {
-              return;
-            }
+            // Dashboard deltas are enough for instant UI; skip a heavy reload.
+            return;
           } else if (!isSelfMutation) {
             ref
                     .read(
@@ -73,11 +72,6 @@ final homeControllerProvider =
           ref.invalidateSelf();
         },
       );
-
-      ref.onDispose(() {
-        ref.read(homeDashboardOptimisticPatchProvider(request).notifier).state =
-            null;
-      });
 
       return ref.read(homeRepositoryProvider).loadDashboard(request);
     });

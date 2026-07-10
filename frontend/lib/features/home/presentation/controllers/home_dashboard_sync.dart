@@ -5,7 +5,7 @@ import 'package:hosspi_hms/features/home/presentation/controllers/home_controlle
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
 
 HomeDashboard? readSuccessfulHomeDashboard(
-  Ref ref,
+  WidgetRef ref,
   HomeDashboardRequest request,
 ) {
   final AsyncValue<Result<HomeDashboard>> asyncValue = ref.read(
@@ -68,11 +68,13 @@ HomeDashboard homeDashboardWithOptimisticPatch(
   HomeDashboard dashboard,
   HomeDashboardOptimisticPatchState? state,
 ) {
-  final HomeDashboardOptimisticPatch? patch = state?.patch;
-  if (patch == null || patch.isEmpty) {
+  if (state == null || state.patch.isEmpty) {
     return dashboard;
   }
-  return patch.applyTo(dashboard);
+  if (state.isSatisfiedBy(dashboard)) {
+    return dashboard;
+  }
+  return state.patch.applyTo(state.baseline);
 }
 
 void homeApplyRealtimeDashboardPatch(

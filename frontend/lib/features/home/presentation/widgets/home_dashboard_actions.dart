@@ -1366,24 +1366,16 @@ void homeInvokeAction(
   }
   if (action.id == 'manage_roles_access') {
     unawaited(
-      showManageRolesPermissionsDialog(context, ref).then((_) {
-        homeRefreshDashboard(ref, request);
+      showManageRolesPermissionsDialog(context, ref).then((bool? saved) {
+        homeOnDashboardDialogClosed(ref, request, saved);
       }),
     );
     return;
   }
-  if (action.id == 'manage_users') {
+  if (action.id == 'manage_users' || action.id == 'manage_users_roles') {
     unawaited(
-      showManageUsersDialog(context, ref).then((_) {
-        homeRefreshDashboard(ref, request);
-      }),
-    );
-    return;
-  }
-  if (action.id == 'manage_users_roles') {
-    unawaited(
-      showManageUsersDialog(context, ref).then((_) {
-        homeRefreshDashboard(ref, request);
+      showManageUsersDialog(context, ref).then((bool? saved) {
+        homeOnDashboardDialogClosed(ref, request, saved);
       }),
     );
     return;
