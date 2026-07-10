@@ -11,11 +11,14 @@ Authentication:
 - MFA-capable flows must remain compatible with the auth module
 
 Authorization:
+- Authority order: **Plan (module entitlements) → Role → Rights (permissions) → ABAC scope**
+- Plan decides which modules a tenant may use; role decides who may operate in those modules; permissions decide fine-grained actions
 - `user_role` is the role-assignment source of truth
 - one user may hold multiple active roles simultaneously
 - role assignments are scoped and may be time-bound
 - RBAC grants baseline permissions; ABAC narrows access by scope, ownership, shift, patient relationship, and emergency state
-- module entitlements are enforced in middleware and again in services for sensitive workflows
+- module entitlements are enforced in middleware before route RBAC, and again in services for sensitive workflows
+- assignable permissions must stay within the actor ceiling and the tenant plan module set
 
 Management-role requirements:
 - support `UNIT_MANAGER`, `WARD_MANAGER`, `ICU_MANAGER`, and `THEATRE_MANAGER`

@@ -14,10 +14,14 @@ class StartupLoadingApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return _StartupShell(
       builder: (BuildContext context, AppLocalizations l10n) {
-        return AppStateScaffold(
-          variant: AppStateViewVariant.loading,
-          title: l10n.startupLoadingTitle,
-          body: l10n.startupLoadingBody,
+        return Scaffold(
+          body: AppLoadingSurface(
+            child: AppLoadingIndicator.startup(
+              title: l10n.startupLoadingTitle,
+              body: l10n.startupLoadingBody,
+              semanticLabel: l10n.startupLoadingTitle,
+            ),
+          ),
         );
       },
     );
@@ -39,6 +43,7 @@ class StartupErrorApp extends StatelessWidget {
           body: l10n.startupErrorBody,
           action: AppButton.primary(
             label: l10n.commonRetryActionLabel,
+            leadingIcon: Icons.refresh,
             onPressed: onRetry,
           ),
         );

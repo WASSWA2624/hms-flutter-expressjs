@@ -305,6 +305,10 @@ const sanitizeQuickAction = (action) => ({
 });
 
 const hiddenReasonForAction = (action, roles, permissions, user) => {
+  // Authority order: Plan (modules) → Role → Rights.
+  if (!modulesEnabled(user, action.required_modules)) {
+    return 'Module not enabled';
+  }
   if (!action.allowed_roles.some((role) => roles.includes(role))) {
     return `Requires ${action.allowed_roles.join(' or ')} role`;
   }
@@ -313,9 +317,6 @@ const hiddenReasonForAction = (action, roles, permissions, user) => {
   }
   if (!hasAnyPermission(permissions, action.required_any_permissions)) {
     return `Requires one of ${action.required_any_permissions.join(', ')}`;
-  }
-  if (!modulesEnabled(user, action.required_modules)) {
-    return 'Module not enabled';
   }
   return null;
 };

@@ -28,6 +28,11 @@ final class AccessRequirement {
   }
 
   bool isAllowed(AppAccessPolicy policy) {
+    // Authority order: Plan (modules) → Role → Rights (permissions) → scope.
+    if (!policy.hasAllActiveModules(activeModules)) {
+      return false;
+    }
+
     final bool hasPermissionRequirements =
         allPermissions.isNotEmpty || anyPermissions.isNotEmpty;
 
@@ -55,6 +60,6 @@ final class AccessRequirement {
       return false;
     }
 
-    return policy.hasAllActiveModules(activeModules);
+    return true;
   }
 }

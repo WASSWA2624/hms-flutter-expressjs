@@ -150,6 +150,64 @@ void main() {
     );
 
     test(
+      'denies access when plan modules are missing before role or rights',
+      () {
+        final session = AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['DOCTOR'],
+          ),
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+        final policy = AppAccessPolicy.fromSession(session);
+        const requirement = AccessRequirement(
+          anyRoles: <AppRole>[AppRole.doctor],
+          anyPermissions: <AppPermission>[AppPermissions.clinicalRead],
+          activeModules: <String>['lab-workflows'],
+        );
+
+        expect(policy.hasRole(AppRole.doctor), isTrue);
+        expect(policy.grants(AppPermissions.clinicalRead), isTrue);
+        expect(requirement.isAllowed(policy), isFalse);
+      },
+    );
+
+    test(
+      'allows access only when plan modules role and rights all pass',
+      () {
+        final session = AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['DOCTOR'],
+          ),
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'lab-workflows',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+        final policy = AppAccessPolicy.fromSession(session);
+        const requirement = AccessRequirement(
+          anyRoles: <AppRole>[AppRole.doctor],
+          anyPermissions: <AppPermission>[AppPermissions.labRead],
+          activeModules: <String>['lab-workflows'],
+        );
+
+        expect(requirement.isAllowed(policy), isTrue);
+      },
+    );
+
+    test(
       'allows custom roles when their permission pack matches the route',
       () {
         final session = AuthSession(
@@ -160,11 +218,18 @@ void main() {
             roles: <String>['TESTING'],
           ),
           permissions: const <AppPermission>[AppPermissions.patientRead],
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'patient-registry',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
         );
         final policy = AppAccessPolicy.fromSession(session);
         const requirement = AccessRequirement(
           anyRoles: <AppRole>[AppRole.doctor, AppRole.tenantAdmin],
           allPermissions: <AppPermission>[AppPermissions.patientRead],
+          activeModules: <String>['patient-registry'],
         );
 
         expect(policy.hasAnyRole(requirement.anyRoles), isFalse);

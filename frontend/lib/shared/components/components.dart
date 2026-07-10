@@ -22,6 +22,7 @@ export 'app_info_tile.dart';
 export 'app_list_item_text.dart';
 export 'app_list_table.dart';
 export 'app_list_table_column_visibility_memory.dart';
+export 'app_loading_indicator.dart';
 export 'app_logo.dart';
 export 'app_menu_item_label.dart';
 export 'app_nursing_components.dart';

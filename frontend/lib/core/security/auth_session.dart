@@ -294,6 +294,8 @@ final class AppModuleEntitlement {
       'THEATER' => 'THEATRE_ANESTHESIA',
       'PHYSIOTHERAPY' => 'PHYSIOTHERAPY',
       'EMERGENCY' => 'SCHEDULING_QUEUE',
+      'CLINICAL_CARE' => 'ENCOUNTERS_VITALS',
+      'HOUSEKEEPING' => 'FACILITIES_MAINTENANCE',
       _ => normalized,
     };
   }

@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/shared/components/app_loading_indicator.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 import 'package:hosspi_hms/shared/layout/shell_navigation_loading.dart';
 
@@ -36,6 +37,7 @@ class AppStateView extends StatelessWidget {
     this.semanticLabel,
     this.crossAxisAlignment = CrossAxisAlignment.start,
     this.textAlign = TextAlign.start,
+    this.loadingSize = AppLoadingIndicatorSize.regular,
     super.key,
   });
 
@@ -48,31 +50,76 @@ class AppStateView extends StatelessWidget {
   final String? semanticLabel;
   final CrossAxisAlignment crossAxisAlignment;
   final TextAlign textAlign;
+  final AppLoadingIndicatorSize loadingSize;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final TextTheme textTheme = theme.textTheme;
     final AppSpacingTokens spacing = theme.spacing;
+    final bool isLoading = variant == AppStateViewVariant.loading;
+    final CrossAxisAlignment resolvedAlignment = isLoading
+        ? CrossAxisAlignment.center
+        : crossAxisAlignment;
+    final TextAlign resolvedTextAlign = isLoading ? TextAlign.center : textAlign;
+
+    if (isLoading) {
+      return Semantics(
+        container: true,
+        liveRegion: true,
+        label: semanticLabel ?? title,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              AppLoadingIndicator(
+                size: loadingSize,
+                title: title,
+                body: body,
+                semanticLabel: semanticLabel ?? title,
+              ),
+              if (detail != null && detail!.isNotEmpty) ...<Widget>[
+                SizedBox(height: spacing.sm),
+                Text(
+                  detail!,
+                  style: textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+              if (action != null) ...<Widget>[
+                SizedBox(height: spacing.md),
+                action!,
+              ],
+            ],
+          ),
+        ),
+      );
+    }
 
     return Semantics(
       container: true,
-      liveRegion:
-          variant == AppStateViewVariant.loading ||
-          variant == AppStateViewVariant.error,
+      liveRegion: variant == AppStateViewVariant.error,
       label: semanticLabel ?? title,
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: crossAxisAlignment,
+        crossAxisAlignment: resolvedAlignment,
         children: <Widget>[
           _StateVisual(variant: variant, icon: icon),
           SizedBox(height: spacing.sm),
-          Text(title, style: textTheme.titleLarge, textAlign: textAlign),
+          Text(title, style: textTheme.titleLarge, textAlign: resolvedTextAlign),
           SizedBox(height: spacing.sm),
-          Text(body, style: textTheme.bodyMedium, textAlign: textAlign),
+          Text(
+            body,
+            style: textTheme.bodyMedium,
+            textAlign: resolvedTextAlign,
+          ),
           if (detail != null && detail!.isNotEmpty) ...<Widget>[
             SizedBox(height: spacing.sm),
-            Text(detail!, style: textTheme.bodyMedium, textAlign: textAlign),
+            Text(
+              detail!,
+              style: textTheme.bodyMedium,
+              textAlign: resolvedTextAlign,
+            ),
           ],
           if (action != null) ...<Widget>[
             SizedBox(height: spacing.md),
@@ -160,6 +207,20 @@ class AppStateScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (variant == AppStateViewVariant.loading) {
+      return Scaffold(
+        appBar: appBarTitle == null ? null : AppBar(title: Text(appBarTitle!)),
+        body: AppLoadingSurface(
+          child: AppLoadingIndicator.page(
+            title: title,
+            body: body,
+            semanticLabel: semanticLabel ?? title,
+            showBrandName: false,
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: appBarTitle == null ? null : AppBar(title: Text(appBarTitle!)),
       body: ResponsivePage(
@@ -420,13 +481,6 @@ class _StateVisual extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppDesignTokens appTokens = theme.appTokens;
-
-    if (variant == AppStateViewVariant.loading) {
-      return SizedBox.square(
-        dimension: appTokens.statusIconSize,
-        child: const CircularProgressIndicator(strokeWidth: 3),
-      );
-    }
 
     return Icon(
       icon ?? _defaultIcon(),

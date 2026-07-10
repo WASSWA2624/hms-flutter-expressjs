@@ -9,15 +9,46 @@ List<Widget> buildAppDialogFormActions({
   required String submitLabel,
   required VoidCallback? onSubmit,
   VoidCallback? onCancel,
+  IconData? cancelIcon,
   IconData? submitIcon,
   bool isSubmitting = false,
+  bool emphasized = false,
 }) {
+  if (emphasized) {
+    return <Widget>[
+      OutlinedButton.icon(
+        onPressed: isSubmitting ? null : onCancel,
+        icon: Icon(cancelIcon ?? Icons.close),
+        label: Text(cancelLabel),
+      ),
+      FilledButton.icon(
+        onPressed: isSubmitting ? null : onSubmit,
+        icon: isSubmitting
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Icon(submitIcon ?? Icons.check),
+        label: Text(submitLabel),
+      ),
+    ];
+  }
+
   return <Widget>[
-    AppButton.tertiary(
-      label: cancelLabel,
-      enabled: !isSubmitting,
-      onPressed: isSubmitting ? null : onCancel,
-    ),
+    if (cancelIcon != null)
+      AppButton.secondary(
+        label: cancelLabel,
+        leadingIcon: cancelIcon,
+        enabled: !isSubmitting,
+        onPressed: isSubmitting ? null : onCancel,
+      )
+    else
+      AppButton.tertiary(
+        label: cancelLabel,
+        enabled: !isSubmitting,
+        onPressed: isSubmitting ? null : onCancel,
+      ),
     AppButton.primary(
       label: submitLabel,
       leadingIcon: submitIcon,

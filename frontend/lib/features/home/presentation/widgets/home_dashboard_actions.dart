@@ -42,12 +42,21 @@ final class HomeActionDefinition {
   final List<String> requiredModules;
 
   bool isAllowed(AppAccessPolicy policy) {
-    return route.accessRequirement.isAllowed(policy) &&
-        _hasAllowedActionRole(policy) &&
-        policy.grantsAll(requiredPermissions) &&
-        (requiredAnyPermissions.isEmpty ||
-            policy.grantsAny(requiredAnyPermissions)) &&
-        policy.hasAllActiveModules(requiredModules);
+    // Authority order: Plan (modules) → Role → Rights, then route requirement.
+    if (!policy.hasAllActiveModules(requiredModules)) {
+      return false;
+    }
+    if (!_hasAllowedActionRole(policy)) {
+      return false;
+    }
+    if (!policy.grantsAll(requiredPermissions)) {
+      return false;
+    }
+    if (requiredAnyPermissions.isNotEmpty &&
+        !policy.grantsAny(requiredAnyPermissions)) {
+      return false;
+    }
+    return route.accessRequirement.isAllowed(policy);
   }
 
   bool _hasAllowedActionRole(AppAccessPolicy policy) {

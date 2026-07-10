@@ -5,22 +5,26 @@ class AppLogo extends StatelessWidget {
     this.size = 40,
     this.assetPath = _defaultLogoAssetPath,
     this.icon = Icons.local_hospital_outlined,
+    this.backgroundColor,
     super.key,
   });
 
   final double size;
   final String assetPath;
   final IconData icon;
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final Color resolvedBackground =
+        backgroundColor ?? colorScheme.surface;
 
     return SizedBox.square(
       dimension: size,
       child: ColoredBox(
-        color: colorScheme.surface,
+        color: resolvedBackground,
         child: Image.asset(
           assetPath,
           fit: BoxFit.contain,

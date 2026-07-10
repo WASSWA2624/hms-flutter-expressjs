@@ -8,6 +8,7 @@ import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_list_table_column_visibility_memory.dart';
+import 'package:hosspi_hms/shared/components/app_loading_indicator.dart';
 import 'package:hosspi_hms/shared/components/app_search_bar.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
@@ -1932,13 +1933,9 @@ class _DefaultListTableLoading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Center(
-      child: SizedBox.square(
-        dimension: theme.appTokens.statusIconSize,
-        child: const CircularProgressIndicator(strokeWidth: 3),
-      ),
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 48),
+      child: AppLoadingIndicator.compact(),
     );
   }
 }

@@ -8,6 +8,7 @@ const {
   filterPermissionRecordsByCeiling,
   filterRoleRecordsByCeiling,
   canActorCreateTenantWideRole,
+  resolveAssignablePlanModules,
 } = require('@lib/authorization/assignable-access');
 const { createAuditLog } = require('@lib/audit');
 const { provisionTrialSubscription } = require('@lib/subscriptions/tenant-onboarding');
@@ -366,12 +367,16 @@ const serializeUserDetail = (record) => {
   };
 };
 
-const buildLookups = (records = {}, user = null) => {
+const buildLookups = (records = {}, user = null, enabledModules = null) => {
   const roles = user
     ? filterRoleRecordsByCeiling(records.roles || [], user)
     : records.roles || [];
   const permissions = user
-    ? filterPermissionRecordsByCeiling(records.permissions || [], user)
+    ? filterPermissionRecordsByCeiling(
+        records.permissions || [],
+        user,
+        enabledModules
+      )
     : records.permissions || [];
 
   return {
@@ -757,8 +762,11 @@ const loadAssignablePermissionCatalog = async (tenantId, user = {}) => {
   if (!tenantId) {
     return [];
   }
-  const permissions = await ensureTenantPermissionCatalog(tenantId);
-  return filterPermissionRecordsByCeiling(permissions, user);
+  const [permissions, enabledModules] = await Promise.all([
+    ensureTenantPermissionCatalog(tenantId),
+    resolveAssignablePlanModules(tenantId),
+  ]);
+  return filterPermissionRecordsByCeiling(permissions, user, enabledModules);
 };
 
 const getReferenceData = async (query = {}, user = {}) => {

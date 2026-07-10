@@ -188,7 +188,8 @@ const createRole = async (data, userId, ipAddress, actor = null) => {
     const scopedPayload = await assertRoleScopeAllowed(payload, actor || { id: userId });
     const permissionIds = await assertPermissionIdsAssignable(
       permissionIdsInput,
-      actor || { id: userId }
+      actor || { id: userId },
+      { tenantId: scopedPayload.tenant_id || null }
     );
     const role = await roleRepository.create(scopedPayload, permissionIds);
 
@@ -265,7 +266,8 @@ const updateRole = async (id, data, userId, ipAddress, actor = null) => {
     const permissionIds = shouldSyncPermissions
       ? await assertPermissionIdsAssignable(
           permissionIdsInput,
-          actor || { id: userId }
+          actor || { id: userId },
+          { tenantId: before.tenant_id || null }
         )
       : null;
 

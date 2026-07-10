@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 
 const List<AppModuleEntitlement> _activeShellModules = <AppModuleEntitlement>[
+  AppModuleEntitlement(code: 'patient-registry', licenseStatus: 'ACTIVE'),
   AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
   AppModuleEntitlement(
     code: 'inpatient-bed-management',
@@ -31,6 +32,7 @@ const List<AppModuleEntitlement> _activeShellModules = <AppModuleEntitlement>[
   AppModuleEntitlement(code: 'theatre-anesthesia', licenseStatus: 'ACTIVE'),
   AppModuleEntitlement(code: 'reporting-analytics', licenseStatus: 'ACTIVE'),
   AppModuleEntitlement(code: 'billing-insurance', licenseStatus: 'ACTIVE'),
+  AppModuleEntitlement(code: 'mortuary', licenseStatus: 'ACTIVE'),
 ];
 
 void main() {

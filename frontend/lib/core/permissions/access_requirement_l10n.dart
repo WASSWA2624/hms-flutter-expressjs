@@ -12,6 +12,15 @@ String accessRequirementDenialMessage(
     return l10n.accessDeniedPermissionRequired;
   }
 
+  // Authority order: Plan (modules) → Role → Rights → scope.
+  for (final String moduleCode in requirement.activeModules) {
+    if (!policy.hasActiveModule(moduleCode)) {
+      return l10n.accessDeniedModuleRequired(
+        accessRequirementModuleLabel(l10n, moduleCode),
+      );
+    }
+  }
+
   if (requirement.anyRoles.isNotEmpty &&
       !policy.hasAnyRole(requirement.anyRoles)) {
     return l10n.accessDeniedRoleRequired;
@@ -37,14 +46,6 @@ String accessRequirementDenialMessage(
       !policy.hasFacilityContext &&
       !policy.isElevated) {
     return l10n.accessDeniedFacilityContextRequired;
-  }
-
-  for (final String moduleCode in requirement.activeModules) {
-    if (!policy.hasActiveModule(moduleCode)) {
-      return l10n.accessDeniedModuleRequired(
-        accessRequirementModuleLabel(l10n, moduleCode),
-      );
-    }
   }
 
   return l10n.accessDeniedPermissionRequired;

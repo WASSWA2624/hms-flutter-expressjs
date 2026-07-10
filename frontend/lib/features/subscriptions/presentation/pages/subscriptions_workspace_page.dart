@@ -2255,6 +2255,9 @@ class _PlanModulesCheckboxPanel extends StatelessWidget {
       );
     }
 
+    final bool allSelected =
+        modules.isNotEmpty && selectedIds.length >= modules.length;
+
     return AppContentPanel(
       density: AppContentPanelDensity.compact,
       child: Column(
@@ -2262,19 +2265,24 @@ class _PlanModulesCheckboxPanel extends StatelessWidget {
         children: <Widget>[
           Row(
             children: <Widget>[
-              TextButton(
+              AppButton.secondary(
+                label: allSelected
+                    ? _SubscriptionsText.clearAllModules
+                    : _SubscriptionsText.selectAllModules,
+                leadingIcon: allSelected
+                    ? Icons.deselect_outlined
+                    : Icons.select_all_outlined,
                 onPressed: () {
+                  if (allSelected) {
+                    onChanged(<String>{});
+                    return;
+                  }
                   onChanged(
                     modules
                         .map((SubscriptionLookupItem module) => module.id)
                         .toSet(),
                   );
                 },
-                child: const Text(_SubscriptionsText.selectAllModules),
-              ),
-              TextButton(
-                onPressed: () => onChanged(<String>{}),
-                child: const Text(_SubscriptionsText.clearAllModules),
               ),
               const Spacer(),
               Text(
@@ -2289,15 +2297,22 @@ class _PlanModulesCheckboxPanel extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: theme.spacing.xs),
-          LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              final bool twoColumns = constraints.maxWidth >= 560;
-              Widget checkboxFor(SubscriptionLookupItem module) {
-                return AppCheckboxField(
+          SizedBox(height: theme.spacing.sm),
+          AppResponsiveWrap(
+            minItemWidth: 220,
+            spacing: theme.spacing.sm,
+            runSpacing: theme.spacing.xs,
+            children: <Widget>[
+              for (final SubscriptionLookupItem module in modules)
+                AppCheckboxField(
                   title: module.label,
                   subtitle: module.subtitle,
                   value: selectedIds.contains(module.id),
+                  secondary: Icon(
+                    _moduleIconForLookup(module),
+                    size: theme.appTokens.listIconSize,
+                    color: theme.colorScheme.primary,
+                  ),
                   onChanged: (bool selected) {
                     final Set<String> next = Set<String>.of(selectedIds);
                     if (selected) {
@@ -2307,38 +2322,8 @@ class _PlanModulesCheckboxPanel extends StatelessWidget {
                     }
                     onChanged(next);
                   },
-                );
-              }
-
-              if (!twoColumns) {
-                return Column(
-                  children: <Widget>[
-                    for (final SubscriptionLookupItem module in modules)
-                      checkboxFor(module),
-                  ],
-                );
-              }
-
-              final List<Widget> left = <Widget>[];
-              final List<Widget> right = <Widget>[];
-              for (var index = 0; index < modules.length; index += 1) {
-                final Widget checkbox = checkboxFor(modules[index]);
-                if (index.isEven) {
-                  left.add(checkbox);
-                } else {
-                  right.add(checkbox);
-                }
-              }
-
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Expanded(child: Column(children: left)),
-                  SizedBox(width: theme.spacing.md),
-                  Expanded(child: Column(children: right)),
-                ],
-              );
-            },
+                ),
+            ],
           ),
         ],
       ),
@@ -2376,7 +2361,7 @@ class _PlanModulesFormState extends State<_PlanModulesForm> {
       icon: const Icon(Icons.extension_outlined),
       scrollable: true,
       pinActionsToBottom: true,
-      maxWidth: 760,
+      maxWidth: 1040,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -2402,8 +2387,10 @@ class _PlanModulesFormState extends State<_PlanModulesForm> {
       ),
       actions: buildAppDialogFormActions(
         cancelLabel: context.l10n.commonCancelActionLabel,
+        cancelIcon: Icons.close,
         submitLabel: _SubscriptionsText.saveModules,
         submitIcon: Icons.save_outlined,
+        emphasized: true,
         onCancel: () => Navigator.of(context).maybePop(),
         onSubmit: () {
           Navigator.of(context).pop(_selectedIds.toList(growable: false));
@@ -4116,6 +4103,139 @@ IconData _resourceIcon(SubscriptionResource resource) {
     SubscriptionResource.subscriptionInvoices => Icons.receipt_long_outlined,
     SubscriptionResource.licenses => Icons.key_outlined,
   };
+}
+
+IconData _moduleIconForLookup(SubscriptionLookupItem module) {
+  final String key =
+      '${module.subtitle ?? ''} ${module.id} ${module.label}'.toLowerCase();
+
+  if (_moduleKeyMatches(key, const <String>[
+    'patient',
+    'registry',
+    'consent',
+  ])) {
+    return AppRouteIcons.patients;
+  }
+  if (_moduleKeyMatches(key, const <String>[
+    'schedul',
+    'queue',
+    'opd',
+    'appointment',
+  ])) {
+    return AppRouteIcons.opd;
+  }
+  if (_moduleKeyMatches(key, const <String>['encounter', 'vital', 'clinical'])) {
+    return AppRouteIcons.clinical;
+  }
+  if (_moduleKeyMatches(key, const <String>['nurs'])) {
+    return AppRouteIcons.nursing;
+  }
+  if (_moduleKeyMatches(key, const <String>['ipd', 'bed', 'ward'])) {
+    return AppRouteIcons.ipd;
+  }
+  if (_moduleKeyMatches(key, const <String>['icu', 'critical'])) {
+    return AppRouteIcons.icu;
+  }
+  if (_moduleKeyMatches(key, const <String>['lab', 'patholog'])) {
+    return AppRouteIcons.lab;
+  }
+  if (_moduleKeyMatches(key, const <String>['radiolog', 'imaging'])) {
+    return AppRouteIcons.radiology;
+  }
+  if (_moduleKeyMatches(key, const <String>['pharmac', 'dispens'])) {
+    return AppRouteIcons.pharmacy;
+  }
+  if (_moduleKeyMatches(key, const <String>[
+    'billing',
+    'payment',
+    'insurance',
+    'claim',
+  ])) {
+    return AppRouteIcons.billing;
+  }
+  if (_moduleKeyMatches(key, const <String>['housekeep', 'cleaning'])) {
+    return AppRouteIcons.housekeeping;
+  }
+  if (_moduleKeyMatches(key, const <String>['biomed', 'equipment'])) {
+    return AppRouteIcons.biomedical;
+  }
+  if (_moduleKeyMatches(key, const <String>['hr', 'roster', 'staff'])) {
+    return AppRouteIcons.hr;
+  }
+  if (_moduleKeyMatches(key, const <String>['emergenc', 'triage'])) {
+    return AppRouteIcons.emergency;
+  }
+  if (_moduleKeyMatches(key, const <String>['mortuar'])) {
+    return AppRouteIcons.mortuary;
+  }
+  if (_moduleKeyMatches(key, const <String>[
+    'notif',
+    'sms',
+    'communicat',
+    'message',
+  ])) {
+    return AppRouteIcons.communications;
+  }
+  if (_moduleKeyMatches(key, const <String>[
+    'integrat',
+    'webhook',
+    'api',
+  ])) {
+    return AppRouteIcons.integrations;
+  }
+  if (_moduleKeyMatches(key, const <String>[
+    'report',
+    'analytic',
+    'insight',
+  ])) {
+    return AppRouteIcons.reports;
+  }
+  if (_moduleKeyMatches(key, const <String>[
+    'subscription',
+    'licens',
+    'plan',
+  ])) {
+    return AppRouteIcons.subscriptions;
+  }
+  if (_moduleKeyMatches(key, const <String>[
+    'facilit',
+    'maintenance',
+    'operation',
+  ])) {
+    return AppRouteIcons.operations;
+  }
+  if (_moduleKeyMatches(key, const <String>['theater', 'theatre', 'surgery'])) {
+    return AppRouteIcons.theater;
+  }
+  if (_moduleKeyMatches(key, const <String>['discharge'])) {
+    return AppRouteIcons.discharge;
+  }
+  if (_moduleKeyMatches(key, const <String>['auth', 'rbac', 'access', 'role'])) {
+    return AppRouteIcons.accessAdmin;
+  }
+  if (_moduleKeyMatches(key, const <String>['compliance', 'audit'])) {
+    return Icons.policy_outlined;
+  }
+  if (_moduleKeyMatches(key, const <String>['storage', 'disk'])) {
+    return Icons.sd_storage_outlined;
+  }
+  if (_moduleKeyMatches(key, const <String>['inventory', 'procure'])) {
+    return Icons.inventory_2_outlined;
+  }
+  if (_moduleKeyMatches(key, const <String>['setting', 'config'])) {
+    return AppRouteIcons.settings;
+  }
+
+  return Icons.extension_outlined;
+}
+
+bool _moduleKeyMatches(String key, List<String> tokens) {
+  for (final String token in tokens) {
+    if (key.contains(token)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 String _panelLabel(SubscriptionPanel panel) {

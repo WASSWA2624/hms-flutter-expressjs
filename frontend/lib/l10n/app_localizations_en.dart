@@ -15,10 +15,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appShortTitle => 'HOSSPI HMS';
 
   @override
-  String get startupLoadingTitle => 'Starting app';
+  String get startupLoadingTitle => 'Starting HOSSPI';
 
   @override
-  String get startupLoadingBody => 'Preparing local services.';
+  String get startupLoadingBody =>
+      'Preparing your workspace. This only takes a moment.';
 
   @override
   String get startupErrorTitle => 'The app could not start';

@@ -109,13 +109,13 @@ abstract class AppLocalizations {
   /// Title shown while startup dependencies initialize.
   ///
   /// In en, this message translates to:
-  /// **'Starting app'**
+  /// **'Starting HOSSPI'**
   String get startupLoadingTitle;
 
   /// Body text shown while startup dependencies initialize.
   ///
   /// In en, this message translates to:
-  /// **'Preparing local services.'**
+  /// **'Preparing your workspace. This only takes a moment.'**
   String get startupLoadingBody;
 
   /// Title shown when startup initialization fails.

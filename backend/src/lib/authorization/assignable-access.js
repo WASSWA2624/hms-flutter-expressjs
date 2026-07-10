@@ -12,6 +12,14 @@ const { HttpError } = require('@lib/errors');
 const { getUserPermissions } = require('@middlewares/auth.middleware');
 const { resolveIdentifierForPayload } = require('@lib/billing/identifiers');
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
+const {
+  filterPermissionRecordsByPlanModules,
+  isPermissionAllowedByPlan,
+  normalizeEnabledModuleSet,
+} = require('@lib/authorization/permission-module-map');
+const {
+  resolveTenantModuleEntitlements,
+} = require('@lib/subscriptions/tenant-entitlements');
 
 const ACCESS_ADMIN_ROLES = new Set([
   ROLES.SUPER_ADMIN,
@@ -79,14 +87,32 @@ const isPermissionNameAssignable = (permissionName, assignableSet) => {
   return assignableSet.has(name);
 };
 
-const filterPermissionRecordsByCeiling = (permissions = [], user = {}) => {
+const filterPermissionRecordsByCeiling = (
+  permissions = [],
+  user = {},
+  enabledModules = null
+) => {
   const assignable = resolveActorAssignablePermissionNames(user);
   if (assignable.size === 0) {
     return [];
   }
-  return permissions.filter((entry) =>
+  const withinCeiling = permissions.filter((entry) =>
     isPermissionNameAssignable(entry?.name || entry?.label, assignable)
   );
+  return filterPermissionRecordsByPlanModules(withinCeiling, enabledModules);
+};
+
+/**
+ * Resolve enabled module slugs for a tenant (Plan gate for assignable rights).
+ * @param {string|null|undefined} tenantId
+ * @returns {Promise<Set<string>|null>} null when tenant is unknown (skip plan filter)
+ */
+const resolveAssignablePlanModules = async (tenantId) => {
+  if (!tenantId) {
+    return null;
+  }
+  const entitlements = await resolveTenantModuleEntitlements(tenantId);
+  return normalizeEnabledModuleSet(entitlements);
 };
 
 const collectRolePermissionNames = (role = {}) => {
@@ -128,19 +154,45 @@ const isRoleWithinActorCeiling = (role = {}, user = {}) => {
 const filterRoleRecordsByCeiling = (roles = [], user = {}) =>
   roles.filter((role) => isRoleWithinActorCeiling(role, user));
 
-const assertPermissionNamesAssignable = (permissionNames = [], user = {}) => {
+const assertPermissionNamesAssignable = (
+  permissionNames = [],
+  user = {},
+  enabledModules = null
+) => {
   const assignable = resolveActorAssignablePermissionNames(user);
-  const denied = [...new Set(permissionNames.map(text).filter(Boolean))].filter(
-    (name) => !assignable.has(name)
-  );
-  if (denied.length > 0) {
+  const uniqueNames = [
+    ...new Set(permissionNames.map(text).filter(Boolean)),
+  ];
+  const aboveCeiling = uniqueNames.filter((name) => !assignable.has(name));
+  if (aboveCeiling.length > 0) {
     throw new HttpError('errors.auth.insufficient_permissions', 403, [
-      { field: 'permission_id', reason: 'above_actor_ceiling', denied },
+      {
+        field: 'permission_id',
+        reason: 'above_actor_ceiling',
+        denied: aboveCeiling,
+      },
+    ]);
+  }
+
+  const outsidePlan = uniqueNames.filter(
+    (name) => !isPermissionAllowedByPlan(name, enabledModules)
+  );
+  if (outsidePlan.length > 0) {
+    throw new HttpError('errors.auth.insufficient_permissions', 403, [
+      {
+        field: 'permission_id',
+        reason: 'module_not_entitled',
+        denied: outsidePlan,
+      },
     ]);
   }
 };
 
-const assertPermissionIdAssignable = async (permissionId, user = {}) => {
+const assertPermissionIdAssignable = async (
+  permissionId,
+  user = {},
+  { tenantId = null, enabledModules = null } = {}
+) => {
   const resolvedId = await resolveIdentifierForPayload({
     value: permissionId,
     model: 'permission',
@@ -148,12 +200,17 @@ const assertPermissionIdAssignable = async (permissionId, user = {}) => {
   });
   const permission = await prisma.permission.findFirst({
     where: { id: resolvedId, deleted_at: null },
-    select: { id: true, name: true },
+    select: { id: true, name: true, tenant_id: true },
   });
   if (!permission) {
     throw new HttpError('errors.permission.not_found', 404);
   }
-  assertPermissionNamesAssignable([permission.name], user);
+  const planModules =
+    enabledModules ??
+    (await resolveAssignablePlanModules(
+      tenantId || permission.tenant_id || user.tenant_id || user.tenantId || null
+    ));
+  assertPermissionNamesAssignable([permission.name], user, planModules);
   return permission;
 };
 
@@ -161,7 +218,11 @@ const assertPermissionIdAssignable = async (permissionId, user = {}) => {
  * Resolve and ceiling-check many permission identifiers in one query.
  * @returns {Promise<string[]>} Deduped permission UUIDs
  */
-const assertPermissionIdsAssignable = async (permissionIds = [], user = {}) => {
+const assertPermissionIdsAssignable = async (
+  permissionIds = [],
+  user = {},
+  { tenantId = null, enabledModules = null } = {}
+) => {
   const unique = [
     ...new Set(
       (Array.isArray(permissionIds) ? permissionIds : [])
@@ -188,7 +249,7 @@ const assertPermissionIdsAssignable = async (permissionIds = [], user = {}) => {
       deleted_at: null,
       OR: orFilters,
     },
-    select: { id: true, name: true, human_friendly_id: true },
+    select: { id: true, name: true, human_friendly_id: true, tenant_id: true },
   });
 
   const byId = new Map(permissions.map((entry) => [entry.id, entry]));
@@ -215,9 +276,18 @@ const assertPermissionIdsAssignable = async (permissionIds = [], user = {}) => {
     ]);
   }
 
+  const inferredTenantId =
+    tenantId ||
+    user.tenant_id ||
+    user.tenantId ||
+    resolved.find((entry) => entry.tenant_id)?.tenant_id ||
+    null;
+  const planModules =
+    enabledModules ?? (await resolveAssignablePlanModules(inferredTenantId));
   assertPermissionNamesAssignable(
     resolved.map((entry) => entry.name),
-    user
+    user,
+    planModules
   );
 
   return [...new Set(resolved.map((entry) => entry.id))];
@@ -389,4 +459,5 @@ module.exports = {
   resolveActorAssignablePermissionNames,
   resolveActorMaxRank,
   resolveActorRoleNames,
+  resolveAssignablePlanModules,
 };

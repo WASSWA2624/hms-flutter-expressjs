@@ -259,6 +259,7 @@ abstract final class AppRoutes {
     access: AppRouteAccess.authenticated,
     requiredPermissions: <AppPermission>[AppPermissions.patientRead],
     requiredAnyRoles: patientRegistryRoles,
+    requiredActiveModules: <String>['patient-registry'],
   );
   static const AppRouteData billing = AppRouteData(
     name: 'billing',
@@ -269,6 +270,7 @@ abstract final class AppRoutes {
       AppPermissions.billingWrite,
     ],
     requiredAnyRoles: billingWorkspaceRoles,
+    requiredActiveModules: <String>['billing-insurance'],
   );
   static const AppRouteData claims = AppRouteData(
     name: 'claims',
@@ -312,6 +314,7 @@ abstract final class AppRoutes {
       AppPermissions.operationsRead,
     ],
     requiredAnyRoles: emergencyWorkspaceRoles,
+    requiredActiveModules: <String>['scheduling-queue'],
     requiresTenantContext: true,
   );
   static const AppRouteData ipd = AppRouteData(
@@ -561,6 +564,7 @@ abstract final class AppRoutes {
       AppPermissions.mortuaryAudit,
     ],
     requiredAnyRoles: mortuaryWorkspaceRoles,
+    requiredActiveModules: <String>['mortuary'],
     requiresFacilityContext: true,
   );
   static const AppRouteData tenantFacilitySetup = AppRouteData(

@@ -55,6 +55,22 @@ describe('assignable-access', () => {
       );
       expect(filtered.map((entry) => entry.name)).toEqual([PERMISSIONS.FACILITY_ADMIN]);
     });
+
+    it('also drops module-scoped permissions outside the plan', () => {
+      const filtered = filterPermissionRecordsByCeiling(
+        [
+          { id: '1', name: PERMISSIONS.LAB_READ },
+          { id: '2', name: PERMISSIONS.PROFILE_READ },
+          { id: '3', name: PERMISSIONS.PHARMACY_READ },
+        ],
+        { roles: [ROLES.FACILITY_ADMIN] },
+        new Set(['lab-workflows'])
+      );
+      expect(filtered.map((entry) => entry.name)).toEqual([
+        PERMISSIONS.LAB_READ,
+        PERMISSIONS.PROFILE_READ,
+      ]);
+    });
   });
 
   describe('isRoleWithinActorCeiling', () => {

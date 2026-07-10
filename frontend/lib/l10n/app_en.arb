@@ -8,11 +8,11 @@
   "@appShortTitle": {
     "description": "Short application title shown in compact headers."
   },
-  "startupLoadingTitle": "Starting app",
+  "startupLoadingTitle": "Starting HOSSPI",
   "@startupLoadingTitle": {
     "description": "Title shown while startup dependencies initialize."
   },
-  "startupLoadingBody": "Preparing local services.",
+  "startupLoadingBody": "Preparing your workspace. This only takes a moment.",
   "@startupLoadingBody": {
     "description": "Body text shown while startup dependencies initialize."
   },
