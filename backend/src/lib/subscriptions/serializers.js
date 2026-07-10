@@ -43,6 +43,7 @@ const serializeSubscriptionPlan = (record) => {
     name: safeString(record.name),
     tier_code: safeString(record.tier_code),
     price: safeNumber(record.price, 0),
+    currency: 'USD',
     billing_cycle: safeString(record.billing_cycle),
     max_users: safeNumber(record.max_users),
     max_facilities: safeNumber(record.max_facilities),

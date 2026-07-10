@@ -19,6 +19,11 @@ abstract interface class SubscriptionsRepository {
 
   Future<Result<void>> createSubscription(SubscriptionDraft draft);
 
+  Future<Result<void>> updateSubscription(
+    String subscriptionId,
+    SubscriptionDraft draft,
+  );
+
   Future<Result<void>> activateSubscription(String subscriptionId);
 
   Future<Result<void>> cancelSubscription(String subscriptionId);

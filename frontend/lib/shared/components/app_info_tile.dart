@@ -85,6 +85,7 @@ class AppInfoTileGrid extends StatelessWidget {
             icon: item.icon,
             emptyValue: emptyValue,
             bordered: borderedTiles,
+            onTap: item.onTap,
             copyable: item.copyable,
             copyTooltip: item.copyTooltip,
             copiedMessage: item.copiedMessage,
@@ -103,6 +104,7 @@ final class AppInfoTileData {
     required this.label,
     this.value,
     this.icon,
+    this.onTap,
     this.copyable = false,
     this.copyTooltip,
     this.copiedMessage,
@@ -114,6 +116,7 @@ final class AppInfoTileData {
   final String label;
   final String? value;
   final IconData? icon;
+  final VoidCallback? onTap;
   final bool copyable;
   final String? copyTooltip;
   final String? copiedMessage;
@@ -130,6 +133,7 @@ class AppInfoTile extends StatelessWidget {
     this.emptyValue = '',
     this.bordered = true,
     this.maxLines = 2,
+    this.onTap,
     this.copyable = false,
     this.copyTooltip,
     this.copiedMessage,
@@ -145,6 +149,7 @@ class AppInfoTile extends StatelessWidget {
   final String emptyValue;
   final bool bordered;
   final int maxLines;
+  final VoidCallback? onTap;
   final bool copyable;
   final String? copyTooltip;
   final String? copiedMessage;
@@ -168,13 +173,26 @@ class AppInfoTile extends StatelessWidget {
       copyPlaceholderValues: copyPlaceholderValues,
     );
 
-    if (!bordered) {
-      return content;
+    final Widget tile = !bordered
+        ? content
+        : AppContentPanel(
+            density: AppContentPanelDensity.compact,
+            child: content,
+          );
+
+    if (onTap == null) {
+      return tile;
     }
 
-    return AppContentPanel(
-      density: AppContentPanelDensity.compact,
-      child: content,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(
+          Theme.of(context).radius.md,
+        ),
+        child: tile,
+      ),
     );
   }
 }

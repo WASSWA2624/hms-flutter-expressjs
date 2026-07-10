@@ -121,6 +121,108 @@ const applyDateWindow = (where, dateWindow = null) => {
   mergeNestedCondition(where, field.split('.'), condition);
 };
 
+const ACTIVE_SUBSCRIPTION_STATUSES = Object.freeze(['ACTIVE', 'TRIAL', 'PAST_DUE']);
+
+const mapTenantAccount = (tenant, subscription = null, statusOverride = null) => ({
+  id: subscription?.human_friendly_id || subscription?.id || tenant.human_friendly_id || tenant.id,
+  tenant_id: tenant.human_friendly_id || tenant.id,
+  tenant_label: tenant.name || null,
+  subscription_id: subscription
+    ? (subscription.human_friendly_id || subscription.id)
+    : null,
+  status: statusOverride
+    || subscription?.status
+    || 'NOT_SUBSCRIBED',
+  plan_id: subscription?.plan?.human_friendly_id || subscription?.plan_id || null,
+  plan_label: subscription?.plan?.name || null,
+  plan_code: subscription?.plan?.code || null,
+  start_date: subscription?.start_date || null,
+  end_date: subscription?.end_date || null,
+});
+
+const classifyTenantCohorts = (tenants = [], subscriptions = []) => {
+  const subscriptionsByTenant = new Map();
+  for (const subscription of subscriptions) {
+    const tenantKey = String(subscription.tenant_id || '');
+    if (!tenantKey) continue;
+    const existing = subscriptionsByTenant.get(tenantKey) || [];
+    existing.push(subscription);
+    subscriptionsByTenant.set(tenantKey, existing);
+  }
+
+  const active = [];
+  const notSubscribed = [];
+  const closed = [];
+
+  for (const tenant of tenants) {
+    const tenantKey = String(tenant.id || '');
+    const tenantSubscriptions = subscriptionsByTenant.get(tenantKey) || [];
+    if (tenantSubscriptions.length === 0) {
+      notSubscribed.push(mapTenantAccount(tenant, null, 'NOT_SUBSCRIBED'));
+      continue;
+    }
+
+    const sorted = [...tenantSubscriptions].sort((left, right) => {
+      const leftTime = new Date(left.updated_at || left.created_at || 0).getTime();
+      const rightTime = new Date(right.updated_at || right.created_at || 0).getTime();
+      return rightTime - leftTime;
+    });
+    const activeSubscription = sorted.find((entry) => (
+      ACTIVE_SUBSCRIPTION_STATUSES.includes(String(entry.status || '').toUpperCase())
+    ));
+
+    if (activeSubscription) {
+      active.push(mapTenantAccount(tenant, activeSubscription));
+      continue;
+    }
+
+    closed.push(mapTenantAccount(tenant, sorted[0], 'CANCELLED'));
+  }
+
+  return {
+    active: {
+      count: active.length,
+      accounts: active,
+    },
+    not_subscribed: {
+      count: notSubscribed.length,
+      accounts: notSubscribed,
+    },
+    closed: {
+      count: closed.length,
+      accounts: closed,
+    },
+  };
+};
+
+const findTenantCohorts = async ({ tenant_id: tenantId } = {}) => {
+  try {
+    const [tenants, subscriptions] = await Promise.all([
+      prisma.tenant.findMany({
+        where: {
+          deleted_at: null,
+          ...(tenantId ? { id: tenantId } : {}),
+        },
+        orderBy: { name: 'asc' },
+        take: 500,
+        select: tenantSelect,
+      }),
+      prisma.subscription.findMany({
+        where: tenantScopedWhere(tenantId),
+        orderBy: [{ updated_at: 'desc' }],
+        take: 2000,
+        include: {
+          plan: { select: subscriptionPlanSelect },
+        },
+      }),
+    ]);
+
+    return classifyTenantCohorts(tenants, subscriptions);
+  } catch (error) {
+    mapError(error);
+  }
+};
+
 const findSummary = async ({ tenant_id: tenantId } = {}) => {
   try {
     const now = new Date();
@@ -253,19 +355,22 @@ const findLookups = async ({ tenant_id: tenantId } = {}) => {
 
 const findOverview = async ({ tenant_id: tenantId } = {}) => {
   try {
+    const tenantCohorts = await findTenantCohorts({ tenant_id: tenantId });
+
     if (!tenantId) {
       return {
         current_subscription: null,
         next_invoice: null,
         licenses: [],
         denied_modules_count: 0,
+        tenant_cohorts: tenantCohorts,
       };
     }
 
     const currentSubscription = await prisma.subscription.findFirst({
       where: {
         ...tenantScopedWhere(tenantId),
-        status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] },
+        status: { in: ACTIVE_SUBSCRIPTION_STATUSES },
       },
       orderBy: [{ updated_at: 'desc' }],
       include: {
@@ -320,6 +425,7 @@ const findOverview = async ({ tenant_id: tenantId } = {}) => {
       next_invoice: nextInvoice,
       licenses,
       denied_modules_count: deniedModulesCount,
+      tenant_cohorts: tenantCohorts,
     };
   } catch (error) {
     mapError(error);
@@ -695,6 +801,7 @@ module.exports = {
   findLookups,
   findOverview,
   findSummary,
+  findTenantCohorts,
   findTimeline,
   resolveLegacyRecord,
 };

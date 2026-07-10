@@ -239,14 +239,36 @@ const buildPagination = (page, limit, total) => {
   };
 };
 
-const mapSummary = (summary = {}) => [
+const mapSummary = (summary = {}, cohorts = {}) => [
   { id: 'active_subscriptions', label: 'Active subscriptions', value: numberValue(summary.active_subscriptions) },
+  { id: 'active_plan_tenants', label: 'Active plans', value: numberValue(cohorts.active?.count ?? summary.active_plan_tenants) },
+  { id: 'not_subscribed_tenants', label: 'Not subscribed', value: numberValue(cohorts.not_subscribed?.count ?? summary.not_subscribed_tenants) },
+  { id: 'closed_subscription_tenants', label: 'Closed subscriptions', value: numberValue(cohorts.closed?.count ?? summary.closed_subscription_tenants) },
   { id: 'pending_changes', label: 'Pending changes', value: numberValue(summary.pending_changes) },
   { id: 'past_due_invoices', label: 'Past due invoices', value: numberValue(summary.past_due_invoices) },
   { id: 'denied_modules', label: 'Denied modules', value: numberValue(summary.denied_modules) },
   { id: 'expiring_licenses', label: 'Expiring licenses', value: numberValue(summary.expiring_licenses) },
   { id: 'approaching_limits', label: 'Approaching limits', value: numberValue(summary.approaching_limits) },
 ];
+
+const emptyTenantCohorts = () => ({
+  active: { count: 0, accounts: [] },
+  not_subscribed: { count: 0, accounts: [] },
+  closed: { count: 0, accounts: [] },
+});
+
+const mapTenantCohorts = (cohorts = {}) => {
+  const source = cohorts && typeof cohorts === 'object' ? cohorts : {};
+  const mapBucket = (bucket = {}) => ({
+    count: numberValue(bucket.count),
+    accounts: Array.isArray(bucket.accounts) ? bucket.accounts : [],
+  });
+  return {
+    active: mapBucket(source.active),
+    not_subscribed: mapBucket(source.not_subscribed),
+    closed: mapBucket(source.closed),
+  };
+};
 
 const mapQueueSummaries = (summary = {}) => [
   { id: 'renewals_due', label: 'Renewals due', count: numberValue(summary.expiring_licenses), panel: 'governance', resource: 'licenses', queue: 'EXPIRING_LICENSES' },
@@ -479,6 +501,7 @@ const buildOverview = (records = {}) => {
   const licenses = (records.licenses || []).map(serializeLicense);
   const primaryLicense = licenses[0] || null;
   const recommendations = [];
+  const tenantCohorts = mapTenantCohorts(records.tenant_cohorts || emptyTenantCohorts());
 
   if (currentSubscription?.plan_fit_status && currentSubscription.plan_fit_status !== 'HEALTHY') {
     recommendations.push({
@@ -560,6 +583,7 @@ const buildOverview = (records = {}) => {
       primary_license: primaryLicense,
       items: licenses,
     },
+    tenant_cohorts: tenantCohorts,
     recommendations,
   };
 };
@@ -582,7 +606,7 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, sortBy, order = 'd
       pagination: buildPagination(page, limit, 0),
       spotlight: [],
       timeline: [],
-      overview: buildOverview(),
+      overview: buildOverview({ tenant_cohorts: emptyTenantCohorts() }),
     };
   }
 
@@ -590,8 +614,9 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, sortBy, order = 'd
   if (resolvedFilters === null) {
     const lookups = await repository.findLookups(scope);
     const overviewRecords = await repository.findOverview(scope);
+    const overview = buildOverview(overviewRecords);
     return {
-      summary: mapSummary(),
+      summary: mapSummary({}, overview.tenant_cohorts),
       queue_summaries: [],
       panel_summaries: mapPanelSummaries(),
       filters: { panel, resource, tenantId: safePublicId(undefined, scope.tenant_id) },
@@ -600,7 +625,7 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, sortBy, order = 'd
       pagination: buildPagination(page, limit, 0),
       spotlight: [],
       timeline: [],
-      overview: buildOverview(overviewRecords),
+      overview,
     };
   }
 
@@ -621,10 +646,11 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, sortBy, order = 'd
     repository.findTimeline(scope),
   ]);
 
+  const overview = buildOverview(overviewRecords);
   const queueSummaries = mapQueueSummaries(summary);
 
   return {
-    summary: mapSummary(summary),
+    summary: mapSummary(summary, overview.tenant_cohorts),
     queue_summaries: queueSummaries,
     panel_summaries: mapPanelSummaries(summary),
     filters: {
@@ -655,7 +681,7 @@ const getWorkspace = async (query = {}, page = 1, limit = 20, sortBy, order = 'd
     pagination: buildPagination(page, limit, numberValue(itemsResult.total)),
     spotlight: queueSummaries.filter((entry) => entry.count > 0).sort((left, right) => right.count - left.count).slice(0, 5),
     timeline: mapTimeline(timeline),
-    overview: buildOverview(overviewRecords),
+    overview,
   };
 };
 

@@ -94,6 +94,27 @@ describe('subscriptions-workspace.service', () => {
         },
       ],
       denied_modules_count: 1,
+      tenant_cohorts: {
+        active: {
+          count: 1,
+          accounts: [
+            {
+              id: 'SUB0001',
+              tenant_id: 'TEN0001',
+              tenant_label: 'Acme',
+              subscription_id: 'SUB0001',
+              status: 'ACTIVE',
+              plan_id: 'PLAN0001',
+              plan_label: 'Pro',
+              plan_code: 'PRO',
+              start_date: '2026-01-01T00:00:00.000Z',
+              end_date: '2026-12-31T00:00:00.000Z',
+            },
+          ],
+        },
+        not_subscribed: { count: 0, accounts: [] },
+        closed: { count: 0, accounts: [] },
+      },
     });
     repository.findItems.mockResolvedValue({
       items: [
@@ -177,6 +198,18 @@ describe('subscriptions-workspace.service', () => {
         plan_label: 'Pro',
         tenant_label: 'Acme',
       })
+    );
+    expect(result.overview.tenant_cohorts.active).toEqual(
+      expect.objectContaining({
+        count: 1,
+      })
+    );
+    expect(result.summary).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'active_plan_tenants', value: 1 }),
+        expect.objectContaining({ id: 'not_subscribed_tenants', value: 0 }),
+        expect.objectContaining({ id: 'closed_subscription_tenants', value: 0 }),
+      ])
     );
     expect(result.queue_summaries).toEqual(
       expect.arrayContaining([

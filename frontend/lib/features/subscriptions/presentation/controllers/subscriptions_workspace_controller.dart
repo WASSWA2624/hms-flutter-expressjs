@@ -216,6 +216,26 @@ final class SubscriptionsWorkspaceController
     );
   }
 
+  Future<AppFailure?> updateSubscription(
+    String subscriptionId,
+    SubscriptionDraft draft,
+  ) {
+    return _submitAction(
+      () => _repository.updateSubscription(subscriptionId, draft),
+      refreshSession: true,
+    );
+  }
+
+  Future<AppFailure?> updateSelectedSubscription(SubscriptionDraft draft) {
+    final SubscriptionItem? selected = _requireSelected(
+      SubscriptionResource.subscriptions,
+    );
+    if (selected == null) {
+      return Future<AppFailure?>.value(_missingSelectionFailure());
+    }
+    return updateSubscription(selected.id, draft);
+  }
+
   Future<AppFailure?> activateSelectedSubscription() {
     final SubscriptionItem? selected = _requireSelected(
       SubscriptionResource.subscriptions,

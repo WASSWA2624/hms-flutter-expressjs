@@ -143,6 +143,7 @@ final class SubscriptionsOverviewDto {
 
   SubscriptionsOverview toEntity() {
     final SubscriptionJsonMap pendingChange = _map(json['pending_change']);
+    final SubscriptionJsonMap cohorts = _map(json['tenant_cohorts']);
     return SubscriptionsOverview(
       currentSubscription: _nullableItem(
         json['current_subscription'],
@@ -168,6 +169,65 @@ final class SubscriptionsOverviewDto {
           .toList(growable: false),
       pendingChangeStatus: _string(pendingChange['status']),
       pendingChangeEffectiveAt: _date(pendingChange['effective_at']),
+      activePlanTenants: SubscriptionTenantCohortSummaryDto(
+        _map(cohorts['active']),
+        cohort: SubscriptionTenantCohort.active,
+      ).toEntity(),
+      notSubscribedTenants: SubscriptionTenantCohortSummaryDto(
+        _map(cohorts['not_subscribed']),
+        cohort: SubscriptionTenantCohort.notSubscribed,
+      ).toEntity(),
+      closedSubscriptionTenants: SubscriptionTenantCohortSummaryDto(
+        _map(cohorts['closed']),
+        cohort: SubscriptionTenantCohort.closed,
+      ).toEntity(),
+    );
+  }
+}
+
+final class SubscriptionTenantCohortSummaryDto {
+  const SubscriptionTenantCohortSummaryDto(
+    this.json, {
+    required this.cohort,
+  });
+
+  final SubscriptionJsonMap json;
+  final SubscriptionTenantCohort cohort;
+
+  SubscriptionTenantCohortSummary toEntity() {
+    return SubscriptionTenantCohortSummary(
+      cohort: cohort,
+      count: _int(json['count']) ?? 0,
+      accounts: _list(json['accounts'])
+          .map(SubscriptionTenantAccountDto.new)
+          .map((SubscriptionTenantAccountDto dto) => dto.toEntity())
+          .where((SubscriptionTenantAccount item) => item.tenantId.isNotEmpty)
+          .toList(growable: false),
+    );
+  }
+}
+
+final class SubscriptionTenantAccountDto {
+  const SubscriptionTenantAccountDto(this.json);
+
+  final SubscriptionJsonMap json;
+
+  SubscriptionTenantAccount toEntity() {
+    return SubscriptionTenantAccount(
+      id: _firstString(<Object?>[
+        json['id'],
+        json['subscription_id'],
+        json['tenant_id'],
+      ]),
+      tenantId: _string(json['tenant_id']) ?? '',
+      tenantLabel: _string(json['tenant_label']),
+      subscriptionId: _string(json['subscription_id']),
+      status: _string(json['status']),
+      planId: _string(json['plan_id']),
+      planLabel: _string(json['plan_label']),
+      planCode: _string(json['plan_code']),
+      startDate: _date(json['start_date']),
+      endDate: _date(json['end_date']),
     );
   }
 }
@@ -329,6 +389,7 @@ final class SubscriptionItemDto {
       isAddOn: _bool(json['is_add_on']),
       entitlementDenied: _bool(json['entitlement_denied']) ?? false,
       entitlementDenialReason: _string(json['entitlement_denial_reason']),
+      includedModuleIds: _includedModuleIds(json['extension_json']),
       startDate: _date(json['start_date']),
       endDate: _date(json['end_date']),
       issuedAt: _date(json['issued_at']),
@@ -337,6 +398,43 @@ final class SubscriptionItemDto {
       updatedAt: _date(json['updated_at']) ?? _date(json['created_at']),
     );
   }
+}
+
+List<String> _includedModuleIds(Object? extensionJson) {
+  final SubscriptionJsonMap extension = _map(extensionJson);
+  if (extension.isEmpty) {
+    return const <String>[];
+  }
+  final SubscriptionJsonMap allowedModules = _map(extension['allowed_modules']);
+  final List<Object?> raw = <Object?>[
+    ..._stringList(allowedModules['included']),
+    ..._stringList(extension['included_module_ids']),
+    ..._stringList(extension['allowed_module_ids']),
+  ];
+  final Set<String> seen = <String>{};
+  final List<String> ids = <String>[];
+  for (final Object? entry in raw) {
+    final String? value = _string(entry);
+    if (value == null || value.isEmpty || !seen.add(value)) {
+      continue;
+    }
+    ids.add(value);
+  }
+  return ids;
+}
+
+List<String> _stringList(Object? value) {
+  if (value is! Iterable) {
+    return const <String>[];
+  }
+  final List<String> values = <String>[];
+  for (final Object? entry in value) {
+    final String? normalized = _string(entry);
+    if (normalized != null) {
+      values.add(normalized);
+    }
+  }
+  return values;
 }
 
 String decodeSubscriptionRecordId(Object? responseData) {

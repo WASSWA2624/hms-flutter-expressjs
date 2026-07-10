@@ -91,8 +91,8 @@ final class SubscriptionLegacyRouteResolution {
 final class SubscriptionsWorkspaceQuery {
   const SubscriptionsWorkspaceQuery({
     this.search = '',
-    this.panel = SubscriptionPanel.overview,
-    this.resource = SubscriptionResource.subscriptions,
+    this.panel = SubscriptionPanel.catalog,
+    this.resource = SubscriptionResource.subscriptionPlans,
     this.queue,
     this.tenantId,
     this.recordId,
@@ -168,8 +168,8 @@ final class SubscriptionsWorkspaceQuery {
   bool get hasRouteTargeting {
     return recordId != null ||
         action != null ||
-        panel != SubscriptionPanel.overview ||
-        resource != SubscriptionResource.subscriptions ||
+        panel != SubscriptionPanel.catalog ||
+        resource != SubscriptionResource.subscriptionPlans ||
         queue != null;
   }
 
@@ -424,6 +424,15 @@ final class SubscriptionsOverview {
     this.recommendations = const <SubscriptionRecommendation>[],
     this.pendingChangeStatus,
     this.pendingChangeEffectiveAt,
+    this.activePlanTenants = const SubscriptionTenantCohortSummary(
+      cohort: SubscriptionTenantCohort.active,
+    ),
+    this.notSubscribedTenants = const SubscriptionTenantCohortSummary(
+      cohort: SubscriptionTenantCohort.notSubscribed,
+    ),
+    this.closedSubscriptionTenants = const SubscriptionTenantCohortSummary(
+      cohort: SubscriptionTenantCohort.closed,
+    ),
   });
 
   final SubscriptionItem? currentSubscription;
@@ -434,6 +443,69 @@ final class SubscriptionsOverview {
   final List<SubscriptionRecommendation> recommendations;
   final String? pendingChangeStatus;
   final DateTime? pendingChangeEffectiveAt;
+  final SubscriptionTenantCohortSummary activePlanTenants;
+  final SubscriptionTenantCohortSummary notSubscribedTenants;
+  final SubscriptionTenantCohortSummary closedSubscriptionTenants;
+
+  SubscriptionTenantCohortSummary cohortSummary(
+    SubscriptionTenantCohort cohort,
+  ) {
+    return switch (cohort) {
+      SubscriptionTenantCohort.active => activePlanTenants,
+      SubscriptionTenantCohort.notSubscribed => notSubscribedTenants,
+      SubscriptionTenantCohort.closed => closedSubscriptionTenants,
+    };
+  }
+}
+
+enum SubscriptionTenantCohort {
+  active,
+  notSubscribed,
+  closed,
+}
+
+@immutable
+final class SubscriptionTenantAccount {
+  const SubscriptionTenantAccount({
+    required this.id,
+    required this.tenantId,
+    this.tenantLabel,
+    this.subscriptionId,
+    this.status,
+    this.planId,
+    this.planLabel,
+    this.planCode,
+    this.startDate,
+    this.endDate,
+  });
+
+  final String id;
+  final String tenantId;
+  final String? tenantLabel;
+  final String? subscriptionId;
+  final String? status;
+  final String? planId;
+  final String? planLabel;
+  final String? planCode;
+  final DateTime? startDate;
+  final DateTime? endDate;
+
+  String get title {
+    return _firstText(<String?>[tenantLabel, tenantId, id]);
+  }
+}
+
+@immutable
+final class SubscriptionTenantCohortSummary {
+  const SubscriptionTenantCohortSummary({
+    required this.cohort,
+    this.count = 0,
+    this.accounts = const <SubscriptionTenantAccount>[],
+  });
+
+  final SubscriptionTenantCohort cohort;
+  final int count;
+  final List<SubscriptionTenantAccount> accounts;
 }
 
 @immutable
@@ -517,6 +589,7 @@ final class SubscriptionItem {
     this.isAddOn,
     this.entitlementDenied = false,
     this.entitlementDenialReason,
+    this.includedModuleIds = const <String>[],
     this.startDate,
     this.endDate,
     this.issuedAt,
@@ -565,6 +638,7 @@ final class SubscriptionItem {
   final bool? isAddOn;
   final bool entitlementDenied;
   final String? entitlementDenialReason;
+  final List<String> includedModuleIds;
   final DateTime? startDate;
   final DateTime? endDate;
   final DateTime? issuedAt;
@@ -767,6 +841,7 @@ final class SubscriptionPlanDraft {
     this.maxStorageMb,
     this.maxModules,
     this.tenantId,
+    this.includedModuleIds = const <String>[],
   });
 
   final String name;
@@ -779,6 +854,7 @@ final class SubscriptionPlanDraft {
   final String? maxStorageMb;
   final String? maxModules;
   final String? tenantId;
+  final List<String> includedModuleIds;
 }
 
 @immutable

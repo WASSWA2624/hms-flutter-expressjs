@@ -75,6 +75,35 @@ void main() {
                   'modules_used': '4',
                   'fit_status': 'FIT',
                 },
+                'tenant_cohorts': <String, Object?>{
+                  'active': <String, Object?>{
+                    'count': 2,
+                    'accounts': <Object?>[
+                      <String, Object?>{
+                        'id': 'sub-1',
+                        'tenant_id': 'tenant-1',
+                        'tenant_label': 'IHK Hospital',
+                        'subscription_id': 'sub-1',
+                        'status': 'ACTIVE',
+                        'plan_label': 'Premium',
+                        'start_date': '2026-01-01T00:00:00.000Z',
+                        'end_date': '2026-12-31T00:00:00.000Z',
+                      },
+                    ],
+                  },
+                  'not_subscribed': <String, Object?>{
+                    'count': 1,
+                    'accounts': <Object?>[
+                      <String, Object?>{
+                        'id': 'tenant-2',
+                        'tenant_id': 'tenant-2',
+                        'tenant_label': 'Clinic B',
+                        'status': 'NOT_SUBSCRIBED',
+                      },
+                    ],
+                  },
+                  'closed': <String, Object?>{'count': 0, 'accounts': <Object?>[]},
+                },
                 'next_invoice': <String, Object?>{
                   'id': 'subinv-2',
                   'total_amount': 200000,
@@ -124,6 +153,8 @@ void main() {
       expect(data.items.items.single.totalAmount, 120000.50);
       expect(data.overview.currentSubscription?.planLabel, 'Premium');
       expect(data.overview.usageSummary?.modulesUsed, 4);
+      expect(data.overview.activePlanTenants.count, 2);
+      expect(data.overview.notSubscribedTenants.accounts.single.tenantLabel, 'Clinic B');
       expect(
         data.overview.licenseSummary.primaryLicense?.licenseType,
         'ENTERPRISE',

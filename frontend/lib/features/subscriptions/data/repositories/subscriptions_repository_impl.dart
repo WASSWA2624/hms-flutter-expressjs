@@ -130,6 +130,23 @@ final class SubscriptionsRepositoryImpl implements SubscriptionsRepository {
   }
 
   @override
+  Future<Result<void>> updateSubscription(
+    String subscriptionId,
+    SubscriptionDraft draft,
+  ) {
+    return _apiClient.put<void>(
+      ApiEndpoints.byId(HmsApiResource.subscriptions, subscriptionId),
+      data: _withoutEmpty(<String, Object?>{
+        'plan_id': draft.planId,
+        'status': draft.status,
+        'start_date': _isoDateTimeOrNull(draft.startDate),
+        'end_date': _isoDateTimeOrNull(draft.endDate),
+      }),
+      decoder: (_) {},
+    );
+  }
+
+  @override
   Future<Result<void>> activateSubscription(String subscriptionId) {
     return _apiClient.put<void>(
       ApiEndpoints.byId(HmsApiResource.subscriptions, subscriptionId),
@@ -337,7 +354,7 @@ Map<String, Object?> _planPayload(
   SubscriptionPlanDraft draft, {
   bool includeTenant = false,
 }) {
-  return _withoutEmpty(<String, Object?>{
+  final Map<String, Object?> payload = _withoutEmpty(<String, Object?>{
     if (includeTenant) 'tenant_id': draft.tenantId,
     'name': draft.name.trim(),
     'code': draft.code,
@@ -349,6 +366,12 @@ Map<String, Object?> _planPayload(
     'max_storage_mb': _intOrNull(draft.maxStorageMb),
     'max_modules': _intOrNull(draft.maxModules),
   });
+  payload['extension_json'] = <String, Object?>{
+    'allowed_modules': <String, Object?>{
+      'included': draft.includedModuleIds,
+    },
+  };
+  return payload;
 }
 
 Map<String, Object?> _licensePayload(
