@@ -10,6 +10,52 @@
 const contactRepository = require('@repositories/contact/contact.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { resolveEntityId } = require('@lib/billing/identifiers');
+
+const resolveTenantId = async (identifier) =>
+  resolveEntityId({ model: 'tenant', identifier });
+
+const resolveFacilityId = async (identifier) =>
+  resolveEntityId({ model: 'facility', identifier });
+
+const resolveOptionalEntityId = async (model, identifier) => {
+  if (identifier == null || identifier === '') {
+    return identifier;
+  }
+  return resolveEntityId({ model, identifier });
+};
+
+const resolveContactScopeIds = async (data = {}) => {
+  const payload = { ...data };
+  if (data.tenant_id) {
+    payload.tenant_id = await resolveTenantId(data.tenant_id);
+  }
+  if (data.facility_id) {
+    payload.facility_id = await resolveFacilityId(data.facility_id);
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'branch_id')) {
+    payload.branch_id = await resolveOptionalEntityId('branch', data.branch_id);
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'patient_id')) {
+    payload.patient_id = await resolveOptionalEntityId('patient', data.patient_id);
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'user_profile_id')) {
+    payload.user_profile_id = await resolveOptionalEntityId(
+      'user_profile',
+      data.user_profile_id
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'staff_profile_id')) {
+    payload.staff_profile_id = await resolveOptionalEntityId(
+      'staff_profile',
+      data.staff_profile_id
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'supplier_id')) {
+    payload.supplier_id = await resolveOptionalEntityId('supplier', data.supplier_id);
+  }
+  return payload;
+};
 
 /**
  * List contacts with pagination and filtering
@@ -28,17 +74,23 @@ const listContacts = async (filters, page, limit, sortBy, order, userId, ipAddre
     const skip = (page - 1) * limit;
     const orderBy = sortBy ? { [sortBy]: order } : { created_at: 'desc' };
 
+    const resolvedFilters = await resolveContactScopeIds(filters);
+
     // Build filter object
     const whereClause = {};
     
-    if (filters.tenant_id) whereClause.tenant_id = filters.tenant_id;
-    if (filters.contact_type) whereClause.contact_type = filters.contact_type;
-    if (filters.facility_id) whereClause.facility_id = filters.facility_id;
-    if (filters.branch_id) whereClause.branch_id = filters.branch_id;
-    if (filters.patient_id) whereClause.patient_id = filters.patient_id;
-    if (filters.user_profile_id) whereClause.user_profile_id = filters.user_profile_id;
-    if (filters.staff_profile_id) whereClause.staff_profile_id = filters.staff_profile_id;
-    if (filters.supplier_id) whereClause.supplier_id = filters.supplier_id;
+    if (resolvedFilters.tenant_id) whereClause.tenant_id = resolvedFilters.tenant_id;
+    if (resolvedFilters.contact_type) whereClause.contact_type = resolvedFilters.contact_type;
+    if (resolvedFilters.facility_id) whereClause.facility_id = resolvedFilters.facility_id;
+    if (resolvedFilters.branch_id) whereClause.branch_id = resolvedFilters.branch_id;
+    if (resolvedFilters.patient_id) whereClause.patient_id = resolvedFilters.patient_id;
+    if (resolvedFilters.user_profile_id) {
+      whereClause.user_profile_id = resolvedFilters.user_profile_id;
+    }
+    if (resolvedFilters.staff_profile_id) {
+      whereClause.staff_profile_id = resolvedFilters.staff_profile_id;
+    }
+    if (resolvedFilters.supplier_id) whereClause.supplier_id = resolvedFilters.supplier_id;
     if (filters.is_primary !== undefined) {
       whereClause.is_primary = filters.is_primary === 'true';
     }
@@ -104,7 +156,8 @@ const getContactById = async (id, userId, ipAddress) => {
  */
 const createContact = async (data, userId, ipAddress) => {
   try {
-    const contact = await contactRepository.create(data);
+    const payload = await resolveContactScopeIds(data);
+    const contact = await contactRepository.create(payload);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -142,7 +195,8 @@ const updateContact = async (id, data, userId, ipAddress) => {
       throw new HttpError('errors.contact.not_found', 404);
     }
 
-    const contact = await contactRepository.update(id, data);
+    const payload = await resolveContactScopeIds(data);
+    const contact = await contactRepository.update(id, payload);
 
     // Create audit log (non-blocking)
     createAuditLog({

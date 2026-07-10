@@ -1388,8 +1388,41 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
 
     return _selectedTenantId ??
         widget.tenantId ??
+        widget.snapshot.tenant?.mutationId ??
         widget.snapshot.tenant?.id ??
         _activeFacility?.tenantId;
+  }
+
+  /// Prefer a UUID mutation id when the selected tenant is known by public id.
+  String _resolveMutationTenantId(String tenantId) {
+    final String normalized = tenantId.trim();
+    if (normalized.isEmpty) {
+      return normalized;
+    }
+
+    final TenantProfile? fromOptions = _tenantOptions
+        .where(
+          (TenantProfile tenant) =>
+              tenant.id == normalized ||
+              tenant.mutationId == normalized ||
+              tenant.displayId == normalized ||
+              tenant.slug == normalized,
+        )
+        .firstOrNull;
+    if (fromOptions != null) {
+      return fromOptions.mutationId;
+    }
+
+    final TenantProfile? fromSnapshot = widget.snapshot.tenant;
+    if (fromSnapshot != null &&
+        (fromSnapshot.id == normalized ||
+            fromSnapshot.mutationId == normalized ||
+            fromSnapshot.displayId == normalized ||
+            fromSnapshot.slug == normalized)) {
+      return fromSnapshot.mutationId;
+    }
+
+    return normalized;
   }
 
   bool get _hasSelectedTenant => (_resolvedTenantId ?? '').trim().isNotEmpty;
@@ -1998,11 +2031,12 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     }
 
     final FacilityProfile? editingFacility = widget.facility ?? _activeFacility;
+    final String resolvedTenantId = _resolveMutationTenantId(tenantId);
     final bool saved = await ref
         .read(tenantFacilitySetupSubmissionProvider.notifier)
         .saveFacility(
           id: editingFacility?.mutationId ?? editingFacility?.id,
-          tenantId: tenantId,
+          tenantId: resolvedTenantId,
           name: resolvedName,
           type: _type,
           isActive: _isActive,

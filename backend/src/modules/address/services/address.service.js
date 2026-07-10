@@ -10,6 +10,52 @@
 const addressRepository = require('@repositories/address/address.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const { resolveEntityId } = require('@lib/billing/identifiers');
+
+const resolveTenantId = async (identifier) =>
+  resolveEntityId({ model: 'tenant', identifier });
+
+const resolveFacilityId = async (identifier) =>
+  resolveEntityId({ model: 'facility', identifier });
+
+const resolveOptionalEntityId = async (model, identifier) => {
+  if (identifier == null || identifier === '') {
+    return identifier;
+  }
+  return resolveEntityId({ model, identifier });
+};
+
+const resolveAddressScopeIds = async (data = {}) => {
+  const payload = { ...data };
+  if (data.tenant_id) {
+    payload.tenant_id = await resolveTenantId(data.tenant_id);
+  }
+  if (data.facility_id) {
+    payload.facility_id = await resolveFacilityId(data.facility_id);
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'branch_id')) {
+    payload.branch_id = await resolveOptionalEntityId('branch', data.branch_id);
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'patient_id')) {
+    payload.patient_id = await resolveOptionalEntityId('patient', data.patient_id);
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'user_profile_id')) {
+    payload.user_profile_id = await resolveOptionalEntityId(
+      'user_profile',
+      data.user_profile_id
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'staff_profile_id')) {
+    payload.staff_profile_id = await resolveOptionalEntityId(
+      'staff_profile',
+      data.staff_profile_id
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'supplier_id')) {
+    payload.supplier_id = await resolveOptionalEntityId('supplier', data.supplier_id);
+  }
+  return payload;
+};
 
 /**
  * List addresses with pagination and filtering
@@ -28,17 +74,23 @@ const listAddresses = async (filters, page, limit, sortBy, order, userId, ipAddr
     const skip = (page - 1) * limit;
     const orderBy = sortBy ? { [sortBy]: order } : { created_at: 'desc' };
 
+    const resolvedFilters = await resolveAddressScopeIds(filters);
+
     // Build filter object
     const whereClause = {};
     
-    if (filters.tenant_id) whereClause.tenant_id = filters.tenant_id;
+    if (resolvedFilters.tenant_id) whereClause.tenant_id = resolvedFilters.tenant_id;
     if (filters.address_type) whereClause.address_type = filters.address_type;
-    if (filters.facility_id) whereClause.facility_id = filters.facility_id;
-    if (filters.branch_id) whereClause.branch_id = filters.branch_id;
-    if (filters.patient_id) whereClause.patient_id = filters.patient_id;
-    if (filters.user_profile_id) whereClause.user_profile_id = filters.user_profile_id;
-    if (filters.staff_profile_id) whereClause.staff_profile_id = filters.staff_profile_id;
-    if (filters.supplier_id) whereClause.supplier_id = filters.supplier_id;
+    if (resolvedFilters.facility_id) whereClause.facility_id = resolvedFilters.facility_id;
+    if (resolvedFilters.branch_id) whereClause.branch_id = resolvedFilters.branch_id;
+    if (resolvedFilters.patient_id) whereClause.patient_id = resolvedFilters.patient_id;
+    if (resolvedFilters.user_profile_id) {
+      whereClause.user_profile_id = resolvedFilters.user_profile_id;
+    }
+    if (resolvedFilters.staff_profile_id) {
+      whereClause.staff_profile_id = resolvedFilters.staff_profile_id;
+    }
+    if (resolvedFilters.supplier_id) whereClause.supplier_id = resolvedFilters.supplier_id;
     if (filters.city) whereClause.city = { contains: filters.city };
     if (filters.state) whereClause.state = { contains: filters.state };
     if (filters.country) whereClause.country = { contains: filters.country };
@@ -111,7 +163,8 @@ const getAddressById = async (id, userId, ipAddress) => {
  */
 const createAddress = async (data, userId, ipAddress) => {
   try {
-    const address = await addressRepository.create(data);
+    const payload = await resolveAddressScopeIds(data);
+    const address = await addressRepository.create(payload);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -149,7 +202,8 @@ const updateAddress = async (id, data, userId, ipAddress) => {
       throw new HttpError('errors.address.not_found', 404);
     }
 
-    const address = await addressRepository.update(id, data);
+    const payload = await resolveAddressScopeIds(data);
+    const address = await addressRepository.update(id, payload);
 
     // Create audit log (non-blocking)
     createAuditLog({

@@ -118,6 +118,17 @@ describe('Contact Schema Validation', () => {
       expect(result.success).toBe(false);
     });
 
+    it('should accept friendly tenant identifiers', () => {
+      const validData = {
+        tenant_id: 'TEN0001',
+        contact_type: 'PHONE',
+        value: '+1234567890',
+        facility_id: 'FAC0001',
+      };
+      const result = createContactSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
     it('should reject invalid tenant_id UUID', () => {
       const invalidData = {
         tenant_id: 'not-a-uuid',
@@ -250,6 +261,14 @@ describe('Contact Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should accept friendly contact identifiers', () => {
+      const validData = {
+        id: 'CTC0001',
+      };
+      const result = contactIdParamsSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
     it('should reject invalid UUID', () => {
       const invalidData = {
         id: 'not-a-uuid'
@@ -322,6 +341,15 @@ describe('Contact Schema Validation', () => {
       };
       const result = listContactsQuerySchema.safeParse(invalidData);
       expect(result.success).toBe(false);
+    });
+
+    it('should accept friendly tenant filters', () => {
+      const validData = {
+        tenant_id: 'TEN0001',
+        facility_id: 'FAC0001',
+      };
+      const result = listContactsQuerySchema.safeParse(validData);
+      expect(result.success).toBe(true);
     });
 
     it('should reject invalid UUID filters', () => {

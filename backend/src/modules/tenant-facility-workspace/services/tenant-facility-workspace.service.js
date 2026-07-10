@@ -125,6 +125,8 @@ const serializeTenant = (record) => {
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),
+    resource_uuid: record.id,
+    display_id: safePublicId(record.human_friendly_id, record.id),
     name: record.name,
     slug: record.slug || null,
     is_active: Boolean(record.is_active),
@@ -141,9 +143,11 @@ const serializeFacility = (record, context = null) => {
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),
+    resource_uuid: record.id,
+    display_id: safePublicId(record.human_friendly_id, record.id),
     tenant_id: context
       ? resolveFk(record.tenant_id, context, 'tenant_id')
-      : safePublicId(record.tenant_id),
+      : safePublicId(record.tenant_id) || record.tenant_id || null,
     name: record.name,
     facility_type: record.facility_type,
     is_active: Boolean(record.is_active),

@@ -8,9 +8,10 @@
  */
 
 const { z } = require('zod');
-const { 
-  uuidSchema, 
-  listQuerySchema
+const {
+  uuidSchema,
+  uuidOrFriendlyIdentifierSchema,
+  listQuerySchema,
 } = require('@lib/validation/zod');
 
 const CONTACT_TYPE_VALUES = [
@@ -31,6 +32,8 @@ const CONTACT_TYPE_VALUES = [
   'OTHER',
 ];
 
+const optionalScopeId = uuidOrFriendlyIdentifierSchema.optional().nullable();
+
 // ==================== Body Schemas ====================
 
 /**
@@ -38,16 +41,16 @@ const CONTACT_TYPE_VALUES = [
  * Used for POST /contacts endpoint
  */
 const createContactSchema = z.object({
-  tenant_id: uuidSchema,
+  tenant_id: uuidOrFriendlyIdentifierSchema,
   contact_type: z.enum(CONTACT_TYPE_VALUES),
   value: z.string().trim().min(1).max(255),
   is_primary: z.boolean().optional().default(false),
-  facility_id: uuidSchema.optional().nullable(),
-  branch_id: uuidSchema.optional().nullable(),
-  patient_id: uuidSchema.optional().nullable(),
-  user_profile_id: uuidSchema.optional().nullable(),
-  staff_profile_id: uuidSchema.optional().nullable(),
-  supplier_id: uuidSchema.optional().nullable()
+  facility_id: optionalScopeId,
+  branch_id: optionalScopeId,
+  patient_id: optionalScopeId,
+  user_profile_id: optionalScopeId,
+  staff_profile_id: optionalScopeId,
+  supplier_id: optionalScopeId,
 });
 
 /**
@@ -59,12 +62,12 @@ const updateContactSchema = z.object({
   contact_type: z.enum(CONTACT_TYPE_VALUES).optional(),
   value: z.string().trim().min(1).max(255).optional(),
   is_primary: z.boolean().optional(),
-  facility_id: uuidSchema.optional().nullable(),
-  branch_id: uuidSchema.optional().nullable(),
-  patient_id: uuidSchema.optional().nullable(),
-  user_profile_id: uuidSchema.optional().nullable(),
-  staff_profile_id: uuidSchema.optional().nullable(),
-  supplier_id: uuidSchema.optional().nullable()
+  facility_id: optionalScopeId,
+  branch_id: optionalScopeId,
+  patient_id: optionalScopeId,
+  user_profile_id: optionalScopeId,
+  staff_profile_id: optionalScopeId,
+  supplier_id: optionalScopeId,
 });
 
 // ==================== URL Params ====================
@@ -74,7 +77,7 @@ const updateContactSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const contactIdParamsSchema = z.object({
-  id: uuidSchema
+  id: uuidOrFriendlyIdentifierSchema,
 });
 
 // ==================== Query Params ====================
@@ -85,21 +88,21 @@ const contactIdParamsSchema = z.object({
  * Extends base listQuerySchema with contact-specific filters
  */
 const listContactsQuerySchema = listQuerySchema.extend({
-  tenant_id: uuidSchema.optional(),
+  tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   contact_type: z.enum(CONTACT_TYPE_VALUES).optional(),
-  facility_id: uuidSchema.optional(),
-  branch_id: uuidSchema.optional(),
-  patient_id: uuidSchema.optional(),
-  user_profile_id: uuidSchema.optional(),
-  staff_profile_id: uuidSchema.optional(),
-  supplier_id: uuidSchema.optional(),
+  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
+  branch_id: uuidOrFriendlyIdentifierSchema.optional(),
+  patient_id: uuidOrFriendlyIdentifierSchema.optional(),
+  user_profile_id: uuidOrFriendlyIdentifierSchema.optional(),
+  staff_profile_id: uuidOrFriendlyIdentifierSchema.optional(),
+  supplier_id: uuidOrFriendlyIdentifierSchema.optional(),
   is_primary: z.enum(['true', 'false']).optional(),
-  search: z.string().trim().optional()
+  search: z.string().trim().optional(),
 });
 
 module.exports = {
   createContactSchema,
   updateContactSchema,
   contactIdParamsSchema,
-  listContactsQuerySchema
+  listContactsQuerySchema,
 };

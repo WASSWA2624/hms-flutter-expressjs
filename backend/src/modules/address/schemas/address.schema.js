@@ -8,10 +8,12 @@
  */
 
 const { z } = require('zod');
-const { 
-  uuidSchema, 
-  listQuerySchema
+const {
+  uuidOrFriendlyIdentifierSchema,
+  listQuerySchema,
 } = require('@lib/validation/zod');
+
+const optionalScopeId = uuidOrFriendlyIdentifierSchema.optional().nullable();
 
 // ==================== Body Schemas ====================
 
@@ -20,7 +22,7 @@ const {
  * Used for POST /addresses endpoint
  */
 const createAddressSchema = z.object({
-  tenant_id: uuidSchema,
+  tenant_id: uuidOrFriendlyIdentifierSchema,
   address_type: z.enum(['HOME', 'WORK', 'BILLING', 'SHIPPING', 'OTHER']),
   line1: z.string().trim().min(1).max(255),
   line2: z.string().trim().min(1).max(255).nullable().optional(),
@@ -30,12 +32,12 @@ const createAddressSchema = z.object({
   country: z.string().trim().min(1).max(120).nullable().optional(),
   latitude: z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
-  facility_id: uuidSchema.optional().nullable(),
-  branch_id: uuidSchema.optional().nullable(),
-  patient_id: uuidSchema.optional().nullable(),
-  user_profile_id: uuidSchema.optional().nullable(),
-  staff_profile_id: uuidSchema.optional().nullable(),
-  supplier_id: uuidSchema.optional().nullable()
+  facility_id: optionalScopeId,
+  branch_id: optionalScopeId,
+  patient_id: optionalScopeId,
+  user_profile_id: optionalScopeId,
+  staff_profile_id: optionalScopeId,
+  supplier_id: optionalScopeId,
 });
 
 /**
@@ -53,12 +55,12 @@ const updateAddressSchema = z.object({
   country: z.string().trim().min(1).max(120).nullable().optional(),
   latitude: z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
-  facility_id: uuidSchema.optional().nullable(),
-  branch_id: uuidSchema.optional().nullable(),
-  patient_id: uuidSchema.optional().nullable(),
-  user_profile_id: uuidSchema.optional().nullable(),
-  staff_profile_id: uuidSchema.optional().nullable(),
-  supplier_id: uuidSchema.optional().nullable()
+  facility_id: optionalScopeId,
+  branch_id: optionalScopeId,
+  patient_id: optionalScopeId,
+  user_profile_id: optionalScopeId,
+  staff_profile_id: optionalScopeId,
+  supplier_id: optionalScopeId,
 });
 
 // ==================== URL Params ====================
@@ -68,7 +70,7 @@ const updateAddressSchema = z.object({
  * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
  */
 const addressIdParamsSchema = z.object({
-  id: uuidSchema
+  id: uuidOrFriendlyIdentifierSchema,
 });
 
 // ==================== Query Params ====================
@@ -79,23 +81,23 @@ const addressIdParamsSchema = z.object({
  * Extends base listQuerySchema with address-specific filters
  */
 const listAddressesQuerySchema = listQuerySchema.extend({
-  tenant_id: uuidSchema.optional(),
+  tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   address_type: z.enum(['HOME', 'WORK', 'BILLING', 'SHIPPING', 'OTHER']).optional(),
-  facility_id: uuidSchema.optional(),
-  branch_id: uuidSchema.optional(),
-  patient_id: uuidSchema.optional(),
-  user_profile_id: uuidSchema.optional(),
-  staff_profile_id: uuidSchema.optional(),
-  supplier_id: uuidSchema.optional(),
+  facility_id: uuidOrFriendlyIdentifierSchema.optional(),
+  branch_id: uuidOrFriendlyIdentifierSchema.optional(),
+  patient_id: uuidOrFriendlyIdentifierSchema.optional(),
+  user_profile_id: uuidOrFriendlyIdentifierSchema.optional(),
+  staff_profile_id: uuidOrFriendlyIdentifierSchema.optional(),
+  supplier_id: uuidOrFriendlyIdentifierSchema.optional(),
   city: z.string().trim().optional(),
   state: z.string().trim().optional(),
   country: z.string().trim().optional(),
-  search: z.string().trim().optional()
+  search: z.string().trim().optional(),
 });
 
 module.exports = {
   createAddressSchema,
   updateAddressSchema,
   addressIdParamsSchema,
-  listAddressesQuerySchema
+  listAddressesQuerySchema,
 };

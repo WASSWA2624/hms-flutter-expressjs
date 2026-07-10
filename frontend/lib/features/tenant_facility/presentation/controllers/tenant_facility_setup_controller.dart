@@ -265,7 +265,7 @@ final class TenantFacilitySetupSubmissionController
 
         final contactResult = await _repository.saveFacilityContactAddress(
           tenantId: tenantId,
-          facilityId: facility.id,
+          facilityId: facility.mutationId,
           phone: phone,
           email: email,
           addressLine1: addressLine1,
