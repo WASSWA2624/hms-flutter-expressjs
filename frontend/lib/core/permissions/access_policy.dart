@@ -191,19 +191,38 @@ final class AppAccessPolicy {
     final rolePermissions = (user?.roles ?? const <String>[])
         .expand(_permissionsForRoleCode)
         .toSet();
+    final bool elevated = roles.contains(AppRole.superAdmin);
+    final Map<String, AppModuleEntitlement> entitlements =
+        session?.moduleEntitlements ?? const <String, AppModuleEntitlement>{};
+    final String? tenantId = _nonEmpty(user?.tenantId);
+
+    final Set<AppPermission> merged = <AppPermission>{
+      ...explicitPermissions,
+      ...rolePermissions,
+      if (elevated) ...AppPermissions.all,
+    };
+
+    // Plan modules take precedence: strip module-scoped rights the plan does
+    // not entitle (super admins keep the full set).
+    final Set<AppPermission> planGated = elevated
+        ? merged
+        : merged
+              .where(
+                (AppPermission permission) => _isPermissionAllowedByPlan(
+                  permission,
+                  entitlements,
+                  hasTenantContext: tenantId != null,
+                ),
+              )
+              .toSet();
 
     return AppAccessPolicy._(
       roles: roles,
-      permissions: Set<AppPermission>.unmodifiable(<AppPermission>{
-        ...explicitPermissions,
-        ...rolePermissions,
-        if (roles.contains(AppRole.superAdmin)) ...AppPermissions.all,
-      }),
-      tenantId: _nonEmpty(user?.tenantId),
+      permissions: Set<AppPermission>.unmodifiable(planGated),
+      tenantId: tenantId,
       facilityId: _nonEmpty(user?.facilityId),
       branchId: _nonEmpty(user?.branchId),
-      moduleEntitlements:
-          session?.moduleEntitlements ?? const <String, AppModuleEntitlement>{},
+      moduleEntitlements: entitlements,
     );
   }
 
@@ -246,10 +265,11 @@ final class AppAccessPolicy {
     if (isElevated) {
       return true;
     }
+    // Permissions are already plan-gated in fromSession; still re-check the
+    // module so callers stay correct if copyWithPermissions bypasses that.
     if (!permissions.contains(permission)) {
       return false;
     }
-    // Plan is the hard gate: module-scoped rights require an entitled module.
     final String? moduleCode = PermissionModuleMap.moduleForPermission(
       permission,
     );
@@ -326,6 +346,7 @@ final class AppAccessPolicy {
       return true;
     }
     if (moduleEntitlements.isEmpty) {
+      // No plan entitlements loaded: deny commercial modules for tenant users.
       return !hasTenantContext;
     }
 
@@ -343,6 +364,49 @@ final class AppAccessPolicy {
     // Match aliases (e.g. clinical-care ↔ encounters-vitals).
     for (final MapEntry<String, AppModuleEntitlement> entry
         in moduleEntitlements.entries) {
+      if (!entry.value.isAvailable) {
+        continue;
+      }
+      final String entitlementResolved = AppModuleEntitlement.resolveModuleCode(
+        entry.key,
+      );
+      if (entitlementResolved == resolvedCode ||
+          entitlementResolved == normalizedCode ||
+          entry.key == resolvedCode ||
+          entry.key == normalizedCode) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  static bool _isPermissionAllowedByPlan(
+    AppPermission permission,
+    Map<String, AppModuleEntitlement> entitlements, {
+    required bool hasTenantContext,
+  }) {
+    final String? moduleCode = PermissionModuleMap.moduleForPermission(
+      permission,
+    );
+    if (moduleCode == null) {
+      return true;
+    }
+    if (entitlements.isEmpty) {
+      return !hasTenantContext;
+    }
+
+    final String normalizedCode = AppModuleEntitlement.normalizeModuleCode(
+      moduleCode,
+    );
+    final String resolvedCode = AppModuleEntitlement.resolveModuleCode(
+      moduleCode,
+    );
+    if (entitlements[normalizedCode]?.isAvailable == true ||
+        entitlements[resolvedCode]?.isAvailable == true) {
+      return true;
+    }
+    for (final MapEntry<String, AppModuleEntitlement> entry
+        in entitlements.entries) {
       if (!entry.value.isAvailable) {
         continue;
       }

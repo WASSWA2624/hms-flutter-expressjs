@@ -282,8 +282,16 @@ const normalizeModuleEntitlements = (user = {}) => {
 
 const modulesEnabled = (user, modules = []) => {
   if (!modules.length) return true;
+  const roles = getUserRoles(user);
+  if (roles.includes(ROLES.SUPER_ADMIN)) return true;
+
   const enabled = normalizeModuleEntitlements(user);
-  if (!enabled) return true;
+  // Plan gate: missing entitlements means commercial modules are off for
+  // tenant-scoped users. Rights alone cannot unlock a module.
+  if (!enabled) {
+    const tenantId = user.tenant_id || user.tenantId || null;
+    return !tenantId;
+  }
   return modules.every((moduleCode) => enabled.has(normalizeModuleCode(moduleCode)));
 };
 

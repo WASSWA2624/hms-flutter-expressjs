@@ -276,5 +276,45 @@ void main() {
         expect(requirement.isAllowed(policy), isTrue);
       },
     );
+
+    test(
+      'strips module-scoped permissions that the plan does not entitle',
+      () {
+        final session = AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['TESTING'],
+          ),
+          permissions: const <AppPermission>[
+            AppPermissions.patientRead,
+            AppPermissions.labRead,
+            AppPermissions.mortuaryRead,
+            AppPermissions.profileRead,
+          ],
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'patient-registry',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'lab-workflows',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+        final policy = AppAccessPolicy.fromSession(session);
+
+        expect(policy.permissions.contains(AppPermissions.patientRead), isTrue);
+        expect(policy.permissions.contains(AppPermissions.labRead), isTrue);
+        expect(policy.permissions.contains(AppPermissions.profileRead), isTrue);
+        expect(
+          policy.permissions.contains(AppPermissions.mortuaryRead),
+          isFalse,
+        );
+        expect(policy.grants(AppPermissions.mortuaryRead), isFalse);
+      },
+    );
   });
 }

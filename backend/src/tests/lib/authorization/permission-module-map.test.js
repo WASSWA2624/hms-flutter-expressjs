@@ -58,4 +58,21 @@ describe('permission-module-map', () => {
       true
     );
   });
+
+  it('filters permission name lists by plan modules', () => {
+    const {
+      filterPermissionNamesByPlanModules,
+    } = require('@lib/authorization/permission-module-map');
+    const enabled = normalizeEnabledModuleSet(['lab-workflows']);
+    expect(
+      filterPermissionNamesByPlanModules(
+        [
+          PERMISSIONS.LAB_READ,
+          PERMISSIONS.PHARMACY_READ,
+          PERMISSIONS.PROFILE_READ,
+        ],
+        enabled
+      )
+    ).toEqual([PERMISSIONS.LAB_READ, PERMISSIONS.PROFILE_READ]);
+  });
 });

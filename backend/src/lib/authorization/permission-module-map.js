@@ -137,6 +137,28 @@ const filterPermissionRecordsByPlanModules = (
 };
 
 /**
+ * Keep permission name strings that are either core/platform or mapped to an
+ * enabled plan module. When [enabledModules] is null/undefined, no plan filter
+ * is applied.
+ *
+ * @param {Array<string>} permissionNames
+ * @param {Set<string>|null|undefined} enabledModules
+ * @returns {Array<string>}
+ */
+const filterPermissionNamesByPlanModules = (
+  permissionNames = [],
+  enabledModules = null
+) => {
+  if (enabledModules == null) {
+    return permissionNames;
+  }
+
+  return permissionNames.filter((name) =>
+    isPermissionAllowedByPlan(name, enabledModules)
+  );
+};
+
+/**
  * @param {string} permissionName
  * @param {Set<string>|null|undefined} enabledModules
  * @returns {boolean}
@@ -157,6 +179,7 @@ const isPermissionAllowedByPlan = (permissionName, enabledModules = null) => {
 
 module.exports = {
   DOMAIN_TO_MODULE,
+  filterPermissionNamesByPlanModules,
   filterPermissionRecordsByPlanModules,
   isModuleScopedPermission,
   isPermissionAllowedByPlan,

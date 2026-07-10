@@ -18,6 +18,11 @@ const {
   resolvePlatformAdminContact,
   resolveTenantSubscriptionSummary,
 } = require('@lib/subscriptions/tenant-subscription-summary');
+const {
+  filterPermissionNamesByPlanModules,
+  normalizeEnabledModuleSet,
+} = require('@lib/authorization/permission-module-map');
+const { ROLES } = require('@config/roles');
 const env = require('@config/env');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -144,6 +149,22 @@ const resolveEffectivePermissionNames = (user = {}) => uniqueValues([
   ...resolveRolePermissionNames(user),
 ]);
 
+const userHasSuperAdminRole = (user = {}) =>
+  getRoleNames(user).includes(ROLES.SUPER_ADMIN);
+
+/**
+ * Plan modules take precedence over assigned user/role rights.
+ * Module-scoped permissions outside the tenant plan are stripped from the
+ * effective session permission set (super admins are not plan-gated).
+ */
+const applyPlanGateToPermissionNames = (permissionNames, moduleEntitlements, user = {}) => {
+  if (userHasSuperAdminRole(user) || !user?.tenant_id) {
+    return permissionNames;
+  }
+  const enabledModules = normalizeEnabledModuleSet(moduleEntitlements);
+  return filterPermissionNamesByPlanModules(permissionNames, enabledModules);
+};
+
 const buildAuthUserPayload = (user = {}) => {
   const { password_hash, permissions, ...userData } = user;
   const directPermissions = resolveDirectPermissionNames(user);
@@ -173,8 +194,16 @@ const enrichAuthUserPayload = async (user = {}) => {
     resolveTenantSubscriptionSummary(user.tenant_id),
   ]);
 
+  const permissions = applyPlanGateToPermissionNames(
+    base.permissions,
+    module_entitlements,
+    user
+  );
+
   return {
     ...base,
+    permissions,
+    permission_names: permissions,
     module_entitlements,
     subscription_summary,
     platform_admin_contact: resolvePlatformAdminContact(),
@@ -1027,15 +1056,19 @@ const login = async (data) => {
     };
   }
 
-  // Generate tokens
+  // Generate tokens — plan modules gate effective rights in the JWT.
   const roleNames = getRoleNames(user);
+  const enrichedUser = await enrichAuthUserPayload({
+    ...user,
+    facility_id: selectedFacilityId || user.facility_id,
+  });
   const accessToken = generateToken({
     userId: user.id,
     tenantId: user.tenant_id,
     facilityId: selectedFacilityId,
     email: user.email,
     roles: roleNames,
-    permissions: resolveEffectivePermissionNames(user),
+    permissions: enrichedUser.permissions,
   });
 
   const refreshToken = generateRefreshToken();
@@ -1072,7 +1105,7 @@ const login = async (data) => {
   return {
     access_token: accessToken,
     refresh_token: refreshToken,
-    user: await enrichAuthUserPayload(user),
+    user: enrichedUser,
     requires_facility_selection: false
   };
 };
@@ -1293,14 +1326,15 @@ const refresh = async (data) => {
   // Revoke old session
   await authRepository.revokeSession(session.id);
 
-  // Generate new tokens
+  // Generate new tokens — plan modules gate effective rights in the JWT.
+  const enrichedUser = await enrichAuthUserPayload(session.user);
   const accessToken = generateToken({
     userId: session.user.id,
     tenantId: session.user.tenant_id,
     facilityId: session.user.facility_id,
     email: session.user.email,
     roles: session.user.roles?.map(ur => ur.role.name) || [],
-    permissions: resolveEffectivePermissionNames(session.user),
+    permissions: enrichedUser.permissions,
   });
 
   const newRefreshToken = generateRefreshToken();
@@ -1336,7 +1370,7 @@ const refresh = async (data) => {
   return {
     access_token: accessToken,
     refresh_token: newRefreshToken,
-    user: await enrichAuthUserPayload(session.user),
+    user: enrichedUser,
   };
 };
 
