@@ -123,6 +123,19 @@ final class HomeDashboardOptimisticPatch {
     );
   }
 
+  factory HomeDashboardOptimisticPatch.tenantRestored({bool isActive = true}) {
+    return HomeDashboardOptimisticPatch(
+      statusCardValueDeltas: isActive
+          ? const <String, int>{'tenants_active': 1}
+          : const <String, int>{},
+      statusCardSecondaryDeltas: const <String, int>{
+        'tenants_active': 1,
+        'subscriptions_health': 1,
+      },
+      alertCountDeltas: const <String, int>{'tenants_without_subscription': 1},
+    );
+  }
+
   factory HomeDashboardOptimisticPatch.tenantActiveChanged({
     required bool wasActive,
     required bool isActive,

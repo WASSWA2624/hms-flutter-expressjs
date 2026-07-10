@@ -7,8 +7,10 @@
  * Per module-creation.mdc: Use response helpers from @lib/response.
  */
 
+const { PERMISSIONS } = require('@config/permissions');
 const tenantService = require('@services/tenant/tenant.service');
 const { asyncHandler } = require('@lib/async');
+const { HttpError } = require('@lib/errors');
 const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
 
 /**
@@ -19,11 +21,18 @@ const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
  * @returns {Promise<void>}
  */
 const listTenants = asyncHandler(async (req, res) => {
-  const { page, limit, sort_by, order, is_active, search } = req.query;
+  const { page, limit, sort_by, order, is_active, search, include_deleted } = req.query;
 
   const filters = {};
   if (is_active) filters.is_active = is_active;
   if (search) filters.search = search;
+  if (include_deleted === 'true') {
+    const permissions = Array.isArray(req.user?.permissions) ? req.user.permissions : [];
+    if (!permissions.includes(PERMISSIONS.SYSTEM_ADMIN)) {
+      throw new HttpError('errors.auth.insufficient_permissions', 403);
+    }
+    filters.include_deleted = true;
+  }
 
   const result = await tenantService.listTenants(
     filters,
@@ -129,10 +138,42 @@ const deleteTenant = asyncHandler(async (req, res) => {
   return sendNoContent(res);
 });
 
+const restoreTenant = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const context = {
+    user_id: req.user?.id,
+    tenant_id: req.user?.tenant_id,
+    facility_id: req.user?.facility_id,
+    ip_address: req.ip,
+    user_agent: req.get('user-agent'),
+  };
+
+  const tenant = await tenantService.restoreTenant(id, context);
+
+  return sendSuccess(res, 200, 'messages.tenant.restore.success', tenant);
+});
+
+const permanentDeleteTenant = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const context = {
+    user_id: req.user?.id,
+    tenant_id: req.user?.tenant_id,
+    facility_id: req.user?.facility_id,
+    ip_address: req.ip,
+    user_agent: req.get('user-agent'),
+  };
+
+  await tenantService.permanentDeleteTenant(id, context);
+
+  return sendNoContent(res);
+});
+
 module.exports = {
   listTenants,
   getTenantById,
   createTenant,
   updateTenant,
-  deleteTenant
+  deleteTenant,
+  restoreTenant,
+  permanentDeleteTenant,
 };

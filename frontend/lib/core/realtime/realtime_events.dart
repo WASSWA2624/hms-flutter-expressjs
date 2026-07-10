@@ -115,6 +115,8 @@ abstract final class RealtimeEvents {
   static const String tenantCreated = 'tenant.created';
   static const String tenantUpdated = 'tenant.updated';
   static const String tenantDeleted = 'tenant.deleted';
+  static const String tenantRestored = 'tenant.restored';
+  static const String tenantPermanentlyDeleted = 'tenant.permanently_deleted';
 
   static const String facilityCreated = 'facility.created';
   static const String facilityUpdated = 'facility.updated';

@@ -9,6 +9,7 @@ final class TenantProfileDto {
     required this.isActive,
     this.resourceUuid,
     this.displayId,
+    this.deletedAt,
   });
 
   factory TenantProfileDto.fromJson(JsonMap json) {
@@ -19,6 +20,7 @@ final class TenantProfileDto {
       isActive: _optionalBool(json, 'is_active') ?? true,
       resourceUuid: _optionalString(json, 'resource_uuid') ?? _requiredString(json, 'id'),
       displayId: _optionalString(json, 'display_id'),
+      deletedAt: _optionalDateTime(json, 'deleted_at'),
     );
   }
 
@@ -28,6 +30,7 @@ final class TenantProfileDto {
   final bool isActive;
   final String? resourceUuid;
   final String? displayId;
+  final DateTime? deletedAt;
 
   TenantProfile toEntity() {
     return TenantProfile(
@@ -37,6 +40,7 @@ final class TenantProfileDto {
       isActive: isActive,
       resourceUuid: resourceUuid,
       displayId: displayId,
+      deletedAt: deletedAt,
     );
   }
 }
@@ -415,6 +419,14 @@ String? _optionalString(JsonMap json, String key) {
 bool? _optionalBool(JsonMap json, String key) {
   final Object? value = json[key];
   return value is bool ? value : null;
+}
+
+DateTime? _optionalDateTime(JsonMap json, String key) {
+  final Object? value = json[key];
+  if (value is! String || value.trim().isEmpty) {
+    return null;
+  }
+  return DateTime.tryParse(value.trim());
 }
 
 JsonMap _map(Object? value) {

@@ -29,6 +29,7 @@ const TENANT_ADMIN_SCOPES = [
   PERMISSIONS.TENANT_ADMIN,
   PERMISSIONS.SYSTEM_ADMIN,
 ];
+const PLATFORM_TENANT_SCOPES = [PERMISSIONS.SYSTEM_ADMIN];
 
 /**
  * @description List tenants with pagination and filters
@@ -48,11 +49,27 @@ const TENANT_ADMIN_SCOPES = [
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',  validateRequest({ query: listTenantsQuerySchema }),
-
+  '/',
+  validateRequest({ query: listTenantsQuerySchema }),
   authenticate(),
   authorize(TENANT_READ_SCOPES, 'permission'),
   tenantController.listTenants
+);
+
+router.post(
+  '/:id/restore',
+  validateRequest({ params: tenantIdParamsSchema }),
+  authenticate(),
+  authorize(PLATFORM_TENANT_SCOPES, 'permission'),
+  tenantController.restoreTenant
+);
+
+router.delete(
+  '/:id/permanent',
+  validateRequest({ params: tenantIdParamsSchema }),
+  authenticate(),
+  authorize(PLATFORM_TENANT_SCOPES, 'permission'),
+  tenantController.permanentDeleteTenant
 );
 
 /**
@@ -69,7 +86,8 @@ router.get(
  * @throws 404 Tenant not found
  */
 router.get(
-  '/:id',  validateRequest({ params: tenantIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: tenantIdParamsSchema }),
 
   authenticate(),
   authorize(TENANT_READ_SCOPES, 'permission'),
@@ -93,7 +111,8 @@ router.get(
  * @throws 409 Duplicate slug
  */
 router.post(
-  '/',  validateRequest({ body: createTenantSchema }),
+  '/',
+  validateRequest({ body: createTenantSchema }),
 
   authenticate(),
   authorize(TENANT_ADMIN_SCOPES, 'permission'),
@@ -118,7 +137,8 @@ router.post(
  * @throws 409 Duplicate slug
  */
 router.put(
-  '/:id',  validateRequest({ params: tenantIdParamsSchema, body: updateTenantSchema }),
+  '/:id',
+  validateRequest({ params: tenantIdParamsSchema, body: updateTenantSchema }),
 
   authenticate(),
   authorize(TENANT_ADMIN_SCOPES, 'permission'),
@@ -139,7 +159,8 @@ router.put(
  * @throws 404 Tenant not found
  */
 router.delete(
-  '/:id',  validateRequest({ params: tenantIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: tenantIdParamsSchema }),
 
   authenticate(),
   authorize(TENANT_ADMIN_SCOPES, 'permission'),

@@ -52,6 +52,7 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     required AppPageRequest request,
     String? search,
     bool? isActive,
+    bool includeDeleted = false,
   }) {
     return _apiClient.get<AppPage<TenantProfile>>(
       ApiEndpoints.collection(
@@ -61,6 +62,7 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
           'limit': '${request.pageSize}',
           'search': search,
           'is_active': isActive?.toString(),
+          'include_deleted': includeDeleted ? 'true' : null,
           'sort_by': 'name',
           'order': 'asc',
         }),
@@ -99,6 +101,26 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   @override
   Future<Result<void>> deleteTenant(String id) {
     return _deleteResource(HmsApiResource.tenants, id);
+  }
+
+  @override
+  Future<Result<TenantProfile>> restoreTenant(String id) {
+    return _apiClient.post<TenantProfile>(
+      ApiEndpoints.nested(HmsApiResource.tenants, id, const <String>['restore']),
+      decoder: _decodeTenant,
+    );
+  }
+
+  @override
+  Future<Result<void>> permanentDeleteTenant(String id) {
+    return _apiClient.delete<void>(
+      ApiEndpoints.nested(
+        HmsApiResource.tenants,
+        id,
+        const <String>['permanent'],
+      ),
+      decoder: _decodeVoid,
+    );
   }
 
   @override

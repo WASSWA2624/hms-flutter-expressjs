@@ -9418,6 +9418,72 @@ abstract class AppLocalizations {
   /// **'Manage tenants'**
   String get tenantFacilityManageTenantsTitle;
 
+  /// Tenant status column label in manage tenants dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get tenantFacilityTenantStatusLabel;
+
+  /// Active tenant status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get tenantFacilityTenantStatusActive;
+
+  /// Soft-deleted tenant status label.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted'**
+  String get tenantFacilityTenantStatusDeleted;
+
+  /// Restore soft-deleted tenant action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get tenantFacilityRestoreTenantAction;
+
+  /// Restore tenant confirmation dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore tenant'**
+  String get tenantFacilityRestoreConfirmationTitle;
+
+  /// Restore tenant confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore tenant \"{name}\"?'**
+  String tenantFacilityRestoreTenantConfirmationBody(String name);
+
+  /// Permanent delete tenant action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanent delete'**
+  String get tenantFacilityPermanentDeleteAction;
+
+  /// Permanent delete tenant confirmation dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanent delete'**
+  String get tenantFacilityPermanentDeleteConfirmationTitle;
+
+  /// Permanent delete tenant confirmation body.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanently delete tenant \"{name}\" and all related data? This cannot be undone.'**
+  String tenantFacilityPermanentDeleteConfirmationBody(String name);
+
+  /// Permanent delete typed confirmation field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Type \"{name}\" to confirm'**
+  String tenantFacilityPermanentDeleteConfirmFieldLabel(String name);
+
+  /// Permanent delete confirmation submit label.
+  ///
+  /// In en, this message translates to:
+  /// **'Permanent delete'**
+  String get tenantFacilityPermanentDeleteConfirmAction;
+
   /// Platform admin dialog title for facility management.
   ///
   /// In en, this message translates to:

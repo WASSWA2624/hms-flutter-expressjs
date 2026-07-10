@@ -45,6 +45,7 @@ final class TenantProfile {
     this.isActive = true,
     this.resourceUuid,
     this.displayId,
+    this.deletedAt,
   });
 
   final String id;
@@ -53,6 +54,9 @@ final class TenantProfile {
   final bool isActive;
   final String? resourceUuid;
   final String? displayId;
+  final DateTime? deletedAt;
+
+  bool get isDeleted => deletedAt != null;
 
   String get mutationId =>
       resourceUuid != null && resourceUuid!.isNotEmpty ? resourceUuid! : id;

@@ -79,6 +79,29 @@ const buildReleasedSlug = (slug, id) => {
     : released;
 };
 
+const parseRestoredSlug = (slug, id) => {
+  const value = String(slug || '').trim();
+  if (!value) {
+    return null;
+  }
+
+  const markerIndex = value.indexOf(RELEASED_SLUG_SUFFIX);
+  if (markerIndex < 0) {
+    return value;
+  }
+
+  const base = value.slice(0, markerIndex).trim();
+  return base || null;
+};
+
+const buildWhereClause = (filters = {}, { includeDeleted = false } = {}) => {
+  const where = { ...filters };
+  if (!includeDeleted) {
+    where.deleted_at = null;
+  }
+  return where;
+};
+
 /**
  * Free a slug held by soft-deleted tenants so it can be reused.
  *
@@ -126,12 +149,12 @@ const releaseSlugFromSoftDeletedTenants = async (slug, excludeId = null) => {
  * @param {string} id - Tenant ID
  * @returns {Promise<Object|null>} Tenant object or null
  */
-const findById = async (id) => {
+const findById = async (id, { includeDeleted = false } = {}) => {
   try {
     return await prisma.tenant.findFirst({
       where: {
         id,
-        deleted_at: null
+        ...(includeDeleted ? {} : { deleted_at: null }),
       },
       include: TENANT_ADMIN_RELATION_INCLUDE,
     });
@@ -149,13 +172,15 @@ const findById = async (id) => {
  * @param {Object} orderBy - Sort order
  * @returns {Promise<Array>} Array of tenants
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }) => {
+const findMany = async (
+  filters = {},
+  skip = 0,
+  take = 20,
+  orderBy = { created_at: 'desc' },
+  { includeDeleted = false } = {}
+) => {
   try {
-    // Build where clause
-    const where = {
-      deleted_at: null,
-      ...filters
-    };
+    const where = buildWhereClause(filters, { includeDeleted });
 
     return await prisma.tenant.findMany({
       where,
@@ -175,12 +200,9 @@ const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_a
  * @param {Object} filters - Filter criteria
  * @returns {Promise<number>} Count of tenants
  */
-const count = async (filters = {}) => {
+const count = async (filters = {}, { includeDeleted = false } = {}) => {
   try {
-    const where = {
-      deleted_at: null,
-      ...filters
-    };
+    const where = buildWhereClause(filters, { includeDeleted });
 
     return await prisma.tenant.count({ where });
   } catch (error) {
@@ -308,6 +330,126 @@ const softDelete = async (id) => {
   }
 };
 
+/**
+ * Restore a soft-deleted tenant.
+ *
+ * @param {string} id - Tenant ID
+ * @returns {Promise<Object>} Restored tenant
+ */
+const restore = async (id) => {
+  try {
+    const existing = await prisma.tenant.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        slug: true,
+        deleted_at: true,
+      },
+    });
+
+    if (!existing || !existing.deleted_at) {
+      throw Object.assign(new Error('Record not found'), { code: 'P2025' });
+    }
+
+    const restoredSlug = parseRestoredSlug(existing.slug, id);
+    if (restoredSlug) {
+      await releaseSlugFromSoftDeletedTenants(restoredSlug, id);
+      const conflict = await prisma.tenant.findFirst({
+        where: {
+          slug: restoredSlug,
+          deleted_at: null,
+          id: { not: id },
+        },
+        select: { id: true },
+      });
+      if (conflict) {
+        throw new HttpError('errors.database.unique_field', 409, [{ field: 'slug' }]);
+      }
+    }
+
+    return await prisma.tenant.update({
+      where: { id },
+      data: {
+        deleted_at: null,
+        ...(restoredSlug ? { slug: restoredSlug } : {}),
+      },
+      include: TENANT_ADMIN_RELATION_INCLUDE,
+    });
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    if (error.code === 'P2025') {
+      throw new HttpError('errors.tenant.not_found', 404);
+    }
+    if (error.code === 'P2002') {
+      const target = error.meta?.target?.[0] || 'field';
+      throw new HttpError('errors.database.unique_field', 409, [{ field: target }]);
+    }
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
+ * Permanently delete a soft-deleted tenant and scoped tenant data.
+ *
+ * @param {string} id - Tenant ID
+ * @returns {Promise<void>}
+ */
+const permanentDelete = async (id) => {
+  try {
+    const existing = await prisma.tenant.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        deleted_at: true,
+      },
+    });
+
+    if (!existing) {
+      throw new HttpError('errors.tenant.not_found', 404);
+    }
+    if (!existing.deleted_at) {
+      throw new HttpError('errors.tenant.permanent_delete_requires_soft_delete', 400);
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 0');
+      try {
+        const rows = await tx.$queryRaw`
+          SELECT DISTINCT TABLE_NAME AS table_name
+          FROM information_schema.COLUMNS
+          WHERE TABLE_SCHEMA = DATABASE()
+            AND COLUMN_NAME = 'tenant_id'
+            AND TABLE_NAME <> 'tenant'
+        `;
+
+        for (const row of rows) {
+          const tableName = String(row.table_name || row.TABLE_NAME || '')
+            .replace(/`/g, '')
+            .trim();
+          if (!tableName) {
+            continue;
+          }
+          await tx.$executeRawUnsafe(
+            `DELETE FROM \`${tableName}\` WHERE tenant_id = ?`,
+            id
+          );
+        }
+
+        await tx.tenant.delete({ where: { id } });
+      } finally {
+        await tx.$executeRawUnsafe('SET FOREIGN_KEY_CHECKS = 1');
+      }
+    }, { timeout: 120000 });
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 module.exports = {
   findById,
   findMany,
@@ -316,5 +458,8 @@ module.exports = {
   createWithDefaultFacility,
   update,
   softDelete,
-  releaseSlugFromSoftDeletedTenants
+  restore,
+  permanentDelete,
+  releaseSlugFromSoftDeletedTenants,
+  parseRestoredSlug,
 };

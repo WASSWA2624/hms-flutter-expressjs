@@ -235,6 +235,8 @@ const PLATFORM_ADMIN_EVENTS = {
   TENANT_CREATED: 'tenant.created',
   TENANT_UPDATED: 'tenant.updated',
   TENANT_DELETED: 'tenant.deleted',
+  TENANT_RESTORED: 'tenant.restored',
+  TENANT_PERMANENTLY_DELETED: 'tenant.permanently_deleted',
   FACILITY_CREATED: 'facility.created',
   FACILITY_UPDATED: 'facility.updated',
   FACILITY_DELETED: 'facility.deleted',

@@ -9,6 +9,7 @@ abstract interface class TenantFacilityRepository {
     required AppPageRequest request,
     String? search,
     bool? isActive,
+    bool includeDeleted = false,
   });
 
   Future<Result<AppPage<FacilityProfile>>> listFacilities({
@@ -20,6 +21,10 @@ abstract interface class TenantFacilityRepository {
   });
 
   Future<Result<void>> deleteTenant(String id);
+
+  Future<Result<TenantProfile>> restoreTenant(String id);
+
+  Future<Result<void>> permanentDeleteTenant(String id);
 
   Future<Result<void>> deleteFacility(String id);
 

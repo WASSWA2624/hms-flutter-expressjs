@@ -59,7 +59,8 @@ const tenantIdParamsSchema = z.object({
  */
 const listTenantsQuerySchema = listQuerySchema.extend({
   is_active: z.enum(['true', 'false']).optional(),
-  search: z.string().trim().optional()
+  search: z.string().trim().optional(),
+  include_deleted: z.enum(['true', 'false']).optional(),
 });
 
 module.exports = {

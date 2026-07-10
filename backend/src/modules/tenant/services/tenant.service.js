@@ -8,6 +8,7 @@
  */
 
 const tenantRepository = require('@repositories/tenant/tenant.repository');
+const prisma = require('@prisma/client');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
@@ -155,6 +156,8 @@ const listTenants = async (filters = {}, page = 1, limit = 20, sort_by = 'create
     ? sort_by.trim()
     : 'created_at';
   const resolvedOrder = normalizeSortOrder(order);
+  const includeDeleted =
+    filters.include_deleted === true || filters.include_deleted === 'true';
 
   // Build repository filters
   const repoFilters = {};
@@ -175,13 +178,19 @@ const listTenants = async (filters = {}, page = 1, limit = 20, sort_by = 'create
   const skip = (resolvedPage - 1) * resolvedLimit;
 
   // Build sort order
-  const orderBy = {};
-  orderBy[resolvedSortBy] = resolvedOrder;
+  const orderBy = includeDeleted
+    ? [
+        { deleted_at: 'asc' },
+        { [resolvedSortBy]: resolvedOrder },
+      ]
+    : { [resolvedSortBy]: resolvedOrder };
+
+  const listOptions = { includeDeleted };
 
   // Fetch tenants and count
   const [tenants, total] = await Promise.all([
-    tenantRepository.findMany(repoFilters, skip, resolvedLimit, orderBy),
-    tenantRepository.count(repoFilters)
+    tenantRepository.findMany(repoFilters, skip, resolvedLimit, orderBy, listOptions),
+    tenantRepository.count(repoFilters, listOptions)
   ]);
 
   // Calculate pagination metadata
@@ -437,10 +446,125 @@ const deleteTenant = async (id, context = {}) => {
   );
 };
 
+const resolveTenantIdIncludingDeleted = async (identifier) => {
+  const normalized = String(identifier ?? '').trim();
+  if (!normalized) {
+    return normalized;
+  }
+
+  const resolved = await resolveModelIdByIdentifier({
+    model: 'tenant',
+    identifier: normalized,
+    includeDeleted: true,
+    additionalFriendlyMatchers: [
+      (value) => ({ slug: value.toLowerCase() }),
+    ],
+  });
+
+  return resolved || normalized;
+};
+
+const assertNoActiveSubscriptions = async (tenantId) => {
+  const activeSubscriptions = await prisma.subscription.count({
+    where: {
+      tenant_id: tenantId,
+      deleted_at: null,
+      status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] },
+    },
+  });
+
+  if (activeSubscriptions > 0) {
+    throw new HttpError('errors.tenant.permanent_delete_blocked', 409, [
+      { reason: 'active_subscription' },
+    ]);
+  }
+};
+
+/**
+ * Restore soft-deleted tenant
+ */
+const restoreTenant = async (id, context = {}) => {
+  const normalizedId = String(id ?? '').trim();
+  const tenantId = await resolveTenantIdIncludingDeleted(normalizedId);
+  const tenant = await tenantRepository.restore(tenantId);
+
+  await createAuditLog({
+    action: 'TENANT_RESTORED',
+    entity: 'tenant',
+    entity_id: tenantId,
+    user_id: context.user_id,
+    tenant_id: context.tenant_id,
+    facility_id: context.facility_id,
+    ip_address: context.ip_address,
+    user_agent: context.user_agent,
+    details: {
+      name: tenant.name,
+      slug: tenant.slug,
+    },
+  });
+
+  await publishTenantRealtimeEvent(
+    PLATFORM_ADMIN_EVENTS.TENANT_RESTORED,
+    tenant,
+    context.user_id,
+    'create'
+  );
+
+  return normalizeTenantRecord(tenant);
+};
+
+/**
+ * Permanently delete a soft-deleted tenant
+ */
+const permanentDeleteTenant = async (id, context = {}) => {
+  const normalizedId = String(id ?? '').trim();
+  const tenantId = await resolveTenantIdIncludingDeleted(normalizedId);
+  const tenant = await tenantRepository.findById(tenantId, { includeDeleted: true });
+
+  if (!tenant) {
+    throw new HttpError('errors.tenant.not_found', 404);
+  }
+  if (!tenant.deleted_at) {
+    throw new HttpError('errors.tenant.permanent_delete_requires_soft_delete', 400);
+  }
+
+  await assertNoActiveSubscriptions(tenantId);
+
+  await createAuditLog({
+    action: 'TENANT_PERMANENTLY_DELETED',
+    entity: 'tenant',
+    entity_id: tenantId,
+    user_id: context.user_id,
+    tenant_id: context.tenant_id,
+    facility_id: context.facility_id,
+    ip_address: context.ip_address,
+    user_agent: context.user_agent,
+    details: {
+      name: tenant.name,
+      slug: tenant.slug,
+    },
+  });
+
+  await tenantRepository.permanentDelete(tenantId);
+
+  await publishPlatformRealtimeEvent({
+    event: PLATFORM_ADMIN_EVENTS.TENANT_PERMANENTLY_DELETED,
+    resource_type: 'tenant',
+    resource_id: tenantId,
+    actor_user_id: context.user_id || null,
+    payload: {
+      name: tenant.name,
+      permanent: true,
+    },
+  });
+};
+
 module.exports = {
   listTenants,
   getTenantById,
   createTenant,
   updateTenant,
-  deleteTenant
+  deleteTenant,
+  restoreTenant,
+  permanentDeleteTenant,
 };

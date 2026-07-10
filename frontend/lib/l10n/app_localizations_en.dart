@@ -5047,6 +5047,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityManageTenantsTitle => 'Manage tenants';
 
   @override
+  String get tenantFacilityTenantStatusLabel => 'Status';
+
+  @override
+  String get tenantFacilityTenantStatusActive => 'Active';
+
+  @override
+  String get tenantFacilityTenantStatusDeleted => 'Deleted';
+
+  @override
+  String get tenantFacilityRestoreTenantAction => 'Restore';
+
+  @override
+  String get tenantFacilityRestoreConfirmationTitle => 'Restore tenant';
+
+  @override
+  String tenantFacilityRestoreTenantConfirmationBody(String name) {
+    return 'Restore tenant \"$name\"?';
+  }
+
+  @override
+  String get tenantFacilityPermanentDeleteAction => 'Permanent delete';
+
+  @override
+  String get tenantFacilityPermanentDeleteConfirmationTitle =>
+      'Permanent delete';
+
+  @override
+  String tenantFacilityPermanentDeleteConfirmationBody(String name) {
+    return 'Permanently delete tenant \"$name\" and all related data? This cannot be undone.';
+  }
+
+  @override
+  String tenantFacilityPermanentDeleteConfirmFieldLabel(String name) {
+    return 'Type \"$name\" to confirm';
+  }
+
+  @override
+  String get tenantFacilityPermanentDeleteConfirmAction => 'Permanent delete';
+
+  @override
   String get tenantFacilityManageFacilitiesTitle => 'Manage facilities';
 
   @override

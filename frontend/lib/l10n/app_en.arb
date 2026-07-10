@@ -6495,6 +6495,65 @@
   "@tenantFacilityManageTenantsTitle": {
     "description": "Platform admin dialog title for tenant management."
   },
+  "tenantFacilityTenantStatusLabel": "Status",
+  "@tenantFacilityTenantStatusLabel": {
+    "description": "Tenant status column label in manage tenants dialog."
+  },
+  "tenantFacilityTenantStatusActive": "Active",
+  "@tenantFacilityTenantStatusActive": {
+    "description": "Active tenant status label."
+  },
+  "tenantFacilityTenantStatusDeleted": "Deleted",
+  "@tenantFacilityTenantStatusDeleted": {
+    "description": "Soft-deleted tenant status label."
+  },
+  "tenantFacilityRestoreTenantAction": "Restore",
+  "@tenantFacilityRestoreTenantAction": {
+    "description": "Restore soft-deleted tenant action label."
+  },
+  "tenantFacilityRestoreConfirmationTitle": "Restore tenant",
+  "@tenantFacilityRestoreConfirmationTitle": {
+    "description": "Restore tenant confirmation dialog title."
+  },
+  "tenantFacilityRestoreTenantConfirmationBody": "Restore tenant \"{name}\"?",
+  "@tenantFacilityRestoreTenantConfirmationBody": {
+    "description": "Restore tenant confirmation body.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantFacilityPermanentDeleteAction": "Permanent delete",
+  "@tenantFacilityPermanentDeleteAction": {
+    "description": "Permanent delete tenant action label."
+  },
+  "tenantFacilityPermanentDeleteConfirmationTitle": "Permanent delete",
+  "@tenantFacilityPermanentDeleteConfirmationTitle": {
+    "description": "Permanent delete tenant confirmation dialog title."
+  },
+  "tenantFacilityPermanentDeleteConfirmationBody": "Permanently delete tenant \"{name}\" and all related data? This cannot be undone.",
+  "@tenantFacilityPermanentDeleteConfirmationBody": {
+    "description": "Permanent delete tenant confirmation body.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantFacilityPermanentDeleteConfirmFieldLabel": "Type \"{name}\" to confirm",
+  "@tenantFacilityPermanentDeleteConfirmFieldLabel": {
+    "description": "Permanent delete typed confirmation field label.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantFacilityPermanentDeleteConfirmAction": "Permanent delete",
+  "@tenantFacilityPermanentDeleteConfirmAction": {
+    "description": "Permanent delete confirmation submit label."
+  },
   "tenantFacilityManageFacilitiesTitle": "Manage facilities",
   "@tenantFacilityManageFacilitiesTitle": {
     "description": "Platform admin dialog title for facility management."

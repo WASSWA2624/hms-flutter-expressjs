@@ -288,6 +288,8 @@ abstract final class RealtimeEventGroups {
     RealtimeEvents.tenantCreated,
     RealtimeEvents.tenantUpdated,
     RealtimeEvents.tenantDeleted,
+    RealtimeEvents.tenantRestored,
+    RealtimeEvents.tenantPermanentlyDeleted,
     RealtimeEvents.facilityCreated,
     RealtimeEvents.facilityUpdated,
     RealtimeEvents.facilityDeleted,

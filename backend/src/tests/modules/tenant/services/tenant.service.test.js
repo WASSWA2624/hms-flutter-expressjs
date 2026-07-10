@@ -20,6 +20,12 @@ jest.mock('@lib/realtime/platform-realtime', () => ({
   buildFacilityDashboardDeltas: jest.fn().mockReturnValue({}),
 }));
 
+jest.mock('@prisma/client', () => ({
+  subscription: {
+    count: jest.fn().mockResolvedValue(0),
+  },
+}));
+
 const tenantRepository = require('@repositories/tenant/tenant.repository');
 const { createAuditLog } = require('@lib/audit');
 const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
@@ -29,7 +35,9 @@ const {
   getTenantById,
   createTenant,
   updateTenant,
-  deleteTenant
+  deleteTenant,
+  restoreTenant,
+  permanentDeleteTenant,
 } = require('@services/tenant/tenant.service');
 
 describe('Tenant Service', () => {
@@ -67,7 +75,8 @@ describe('Tenant Service', () => {
         {},
         0,
         20,
-        { created_at: 'desc' }
+        { created_at: 'desc' },
+        { includeDeleted: false }
       );
     });
 
@@ -86,7 +95,8 @@ describe('Tenant Service', () => {
         { is_active: true },
         0,
         20,
-        { created_at: 'desc' }
+        { created_at: 'desc' },
+        { includeDeleted: false }
       );
     });
 
@@ -105,7 +115,8 @@ describe('Tenant Service', () => {
         { is_active: false },
         0,
         20,
-        { created_at: 'desc' }
+        { created_at: 'desc' },
+        { includeDeleted: false }
       );
     });
 
@@ -129,7 +140,8 @@ describe('Tenant Service', () => {
         }),
         0,
         20,
-        { created_at: 'desc' }
+        { created_at: 'desc' },
+        { includeDeleted: false }
       );
     });
 
@@ -144,8 +156,30 @@ describe('Tenant Service', () => {
         {},
         0,
         20,
-        { name: 'asc' }
+        { name: 'asc' },
+        { includeDeleted: false }
       );
+    });
+
+    it('should include deleted tenants when requested', async () => {
+      const mockTenants = [
+        { id: 'tenant-1', name: 'Active', deleted_at: null },
+        { id: 'tenant-2', name: 'Deleted', deleted_at: new Date() },
+      ];
+      tenantRepository.findMany.mockResolvedValue(mockTenants);
+      tenantRepository.count.mockResolvedValue(2);
+
+      const result = await listTenants({ include_deleted: true }, 1, 20, 'name', 'asc');
+
+      expect(result.tenants).toHaveLength(2);
+      expect(tenantRepository.findMany).toHaveBeenCalledWith(
+        {},
+        0,
+        20,
+        [{ deleted_at: 'asc' }, { name: 'asc' }],
+        { includeDeleted: true }
+      );
+      expect(tenantRepository.count).toHaveBeenCalledWith({}, { includeDeleted: true });
     });
 
     it('should calculate pagination correctly for multiple pages', async () => {
@@ -632,6 +666,68 @@ describe('Tenant Service', () => {
       tenantRepository.softDelete.mockRejectedValue(error);
 
       await expect(deleteTenant('tenant-123'))
+        .rejects
+        .toThrow(HttpError);
+    });
+  });
+
+  describe('restoreTenant', () => {
+    it('should restore tenant successfully', async () => {
+      const mockTenant = {
+        id: 'tenant-123',
+        name: 'Test Hospital',
+        slug: 'test-hospital',
+        is_active: true,
+        deleted_at: null,
+      };
+      tenantRepository.restore.mockResolvedValue(mockTenant);
+
+      const result = await restoreTenant('tenant-123', { user_id: 'user-1' });
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: 'tenant-123',
+          resource_uuid: 'tenant-123',
+          display_id: 'tenant-123',
+        }),
+      );
+      expect(tenantRepository.restore).toHaveBeenCalledWith('tenant-123');
+      expect(createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'TENANT_RESTORED', entity_id: 'tenant-123' }),
+      );
+    });
+  });
+
+  describe('permanentDeleteTenant', () => {
+    it('should permanently delete a soft-deleted tenant', async () => {
+      const mockTenant = {
+        id: 'tenant-123',
+        name: 'Test Hospital',
+        slug: 'test-hospital__deleted__tenant123',
+        deleted_at: new Date(),
+      };
+      tenantRepository.findById.mockResolvedValue(mockTenant);
+      tenantRepository.permanentDelete.mockResolvedValue(undefined);
+
+      await permanentDeleteTenant('tenant-123', { user_id: 'user-1' });
+
+      expect(createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'TENANT_PERMANENTLY_DELETED',
+          entity_id: 'tenant-123',
+        }),
+      );
+      expect(tenantRepository.permanentDelete).toHaveBeenCalledWith('tenant-123');
+    });
+
+    it('should reject permanent delete for active tenant', async () => {
+      tenantRepository.findById.mockResolvedValue({
+        id: 'tenant-123',
+        name: 'Test Hospital',
+        deleted_at: null,
+      });
+
+      await expect(permanentDeleteTenant('tenant-123'))
         .rejects
         .toThrow(HttpError);
     });

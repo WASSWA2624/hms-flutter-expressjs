@@ -1,169 +1,100 @@
-# Platform Admin Dashboard — Data Integrity & Sync Prompt
+# Platform Tenant Lifecycle — Implementation Prompt
 
 ## Objective
 
-Fix the **Super Admin platform dashboard** and its management dialogs so counts, lists, mutations, and deletes are accurate, consistent across frontend/backend/database, and update instantly via realtime sync.
+Fix **Super Admin tenant lifecycle** so dashboard metrics, Manage Tenants, and the database stay in sync. Super admins must see **active tenants only** on the dashboard, and **all tenants (active + soft-deleted)** in Manage Tenants—with clear status, **Restore**, and **Permanent delete** actions.
 
-**Observed issues (screenshots, `127.0.0.1:5201`):**
+**Observed state (screenshots + `hms_db.tenant`):**
 
-| Surface | Symptom |
-| ------- | ------- |
-| Platform dashboard | Summary cards (e.g. **4/4 Tenants**, **1 Facility**, **1/2 Subscriptions**, **0 Entitlements**) may not reflect actual records |
-| Manage Tenants | List shows 4 tenants; **Delete** on *C-Care* or *Testing* returns **"Not found — The item is not available."** inside the delete modal |
-| Manage Facilities | Only **1** facility listed while multiple tenants exist; tenants without a facility should not be possible |
-| Manage Roles & Permissions | Brief **loading spinner + "No records"** together, then only **1** role; incomplete vs expected seed data |
-| Manage Users | Pagination **1–12 / 18**; table should support larger page sizes (up to **100**) with smooth in-dialog scrolling |
+| Surface | Current | Expected |
+|--------|---------|----------|
+| Dashboard tenant card | Drifts between **3/3** and **2/2** | **2 / 2** (active only: Demo Care, Fairbanks) |
+| Manage Tenants list | Shows **C-Care** with active tenants | **5 rows** with a **Deleted** column; C-Care + 2× Testing marked deleted |
+| DB | 5 rows; 3 have `deleted_at` set (`slug` suffixed `__deleted__<id>`) | Unchanged soft-delete model; UI reflects truth |
+| Delete on stale row | **Not found** modal for already-deleted tenant | Idempotent soft delete or row removed; no false error |
 
-**Source of truth:**
-
-1. [app-write-up.mdc](.cursor/app-write-up.mdc) — platform admin scope, tenant/facility bootstrap
-2. [prompts/07-home-dashboard-module-prompt.md](prompts/07-home-dashboard-module-prompt.md) — dashboard workspace
-3. [prompts/03-tenant-facility-module-prompt.md](prompts/03-tenant-facility-module-prompt.md) — tenant/facility CRUD
-4. [prompts/04-access-admin-module-prompt.md](prompts/04-access-admin-module-prompt.md) — users/roles admin
-5. [prompts/02-subscriptions-module-prompt.md](prompts/02-subscriptions-module-prompt.md) — subscription health metrics
-
-**Central rule:** platform admin surfaces are the control plane. Every count on the dashboard must match list APIs; every row action must use the same identifier the backend delete/update endpoints resolve; mutations must patch UI immediately and reconcile through `RealtimeEventGroups.platformAdmin`.
+Subscriptions (**1 / 2**) and **Tenants Without Subscription: 1** are correct for 2 active tenants—do not regress.
 
 ---
 
 ## Global Implementation Standards
 
-Follow [prompts/00-global-implementation-standards.md](prompts/00-global-implementation-standards.md). Mandatory highlights for this work:
+Follow [`prompts/00-global-implementation-standards.md`](./prompts/00-global-implementation-standards.md) and:
 
-- [`instant_ui_sync.mdc`](frontend/.cursor/instant_ui_sync.mdc) — optimistic Riverpod patches + scoped realtime events; no full-page refetch when a local delta is correct
-- [`realtime_sync.mdc`](frontend/.cursor/realtime_sync.mdc) — `RealtimeEventGroups.platformAdmin`, `WorkspaceSyncEngine`, reconnect coverage
-- [`ui-patterns.mdc`](frontend/.cursor/ui-patterns.mdc) + [`ui-workspace.mdc`](frontend/.cursor/ui-workspace.mdc) — `AppListTable` pagination, loading/empty/error states
-- [`ui-feedback.mdc`](frontend/.cursor/ui-feedback.mdc) — never show contradictory loading + empty states
-- Modal-first management dialogs; responsive on mobile, tablet, desktop
-
----
-
-## Root-Cause Hypotheses (verify before fixing)
-
-1. **Delete 404 on users/roles** — access-admin list serializes **human-friendly IDs** (`USR-…`, `ROLE-…`) but `DELETE /users/:id` and `DELETE /roles/:id` resolve **UUID only** (tenant/facility already use `resolveEntityId`).
-2. **Delete 404 on tenants** — list `id` may be stale, slug/UUID mismatch, or optimistic/local list out of sync with backend soft-delete state.
-3. **Dashboard metric drift** — `GET /dashboard-workspace/workspace` super-admin metrics (`summary.js`) not reconciled after CRUD or realtime events; optimistic patches incomplete for facilities/subscriptions/entitlements.
-4. **Missing default facility** — tenant creation does not enforce a default facility; facility count lags tenant count.
-5. **Under-sized list pages** — platform management dialogs hard-code `pageSize = 12`; user expects up to `AppPageRequest.maxPageSize` (**100**) with scrollable table body.
-6. **Incomplete realtime on manage dialogs** — tenants/facilities have `PlatformManagementListSync`; users/roles manage dialogs do not.
+- [`backend/.cursor/prisma.mdc`](./backend/.cursor/prisma.mdc) — soft delete via `deleted_at`; repositories filter by default
+- [`backend/.cursor/module-creation.mdc`](./backend/.cursor/module-creation.mdc) — service → repository; audit on every mutation
+- [`frontend/.cursor/instant_ui_sync.mdc`](./frontend/.cursor/instant_ui_sync.mdc) — optimistic patch + realtime reconcile; no stale counts
+- [`frontend/.cursor/realtime_sync.mdc`](./frontend/.cursor/realtime_sync.mdc) — `RealtimeEventGroups.platformAdmin`
+- [`frontend/.cursor/scope.mdc`](./frontend/.cursor/scope.mdc) — Super Admin platform scope only
+- [`backend/.cursor/websockets.mdc`](./backend/.cursor/websockets.mdc) — publish scoped platform events
 
 ---
 
-## Scope — Required Changes
+## Required Behavior
 
-### 1. Identifier & delete consistency
+### Dashboard (Super Admin)
 
-- Align list DTOs, detail views, and delete/update calls on a single resolvable identifier per entity.
-- Backend: extend `user.service` / `role.service` delete (and update where needed) to use `resolveEntityId` like tenant/facility.
-- Frontend: pass UUID for mutations when available; never send display ID to endpoints that expect UUID unless backend resolves both.
-- `AppConfirmActionDialog`: on 404, distinguish stale list row (remove locally + refresh) from genuine not-found; do not leave error banner stacked with confirmation after successful retry.
+- Count **only** tenants where `deleted_at IS NULL`.
+- Never include soft-deleted tenants in totals, charts, or alerts.
+- After manage-dialog mutations, clear optimistic dashboard patches and refetch server metrics.
 
-### 2. Dashboard metric accuracy
+### Manage Tenants dialog
 
-- Ensure super-admin cards (`tenants_active`, `facilities_active`, `subscriptions_health`, `module_entitlement_issues`) match:
-  - Manage Tenants / Facilities / Users / Roles list totals
-  - Backend `dashboard-workspace` raw metrics
-- Extend `HomeDashboardOptimisticPatch` and `home_dashboard_sync.dart` to cover facility create/delete, subscription changes, and entitlement issues — not only tenant active/deleted.
-- Invalidate or patch `homeControllerProvider` after every platform management mutation.
+- List **all** tenants for Super Admin (`include_deleted=true` or dedicated query).
+- Columns: `#`, name, slug, **Status** (Active / Deleted), actions.
+- **Active row actions:** Edit, Soft delete (existing).
+- **Deleted row actions:** **Restore**, **Permanent delete** (destructive confirm).
+- Soft-deleted rows: visually distinct (muted row or badge); Edit disabled or read-only.
+- Pagination/search must include deleted rows; default sort: active first, then name.
+- No contradictory loading + empty states; `pageSize` per `platform_admin_list_config.dart`.
 
-### 3. Default facility on tenant creation
+### Backend API (`/api/v1/tenants`)
 
-- On tenant create (registration bootstrap and **Create tenant** dialog), auto-provision a **default facility** (e.g. `{tenantName} Main Facility`) unless the user explicitly adds one in the same flow.
-- Backend transaction: tenant + default facility + audit + realtime events atomically.
-- Backfill script or migration hook for existing tenants missing a facility (seed/demo data included).
+| Action | Behavior |
+|--------|----------|
+| `GET /` | Query `include_deleted` (Super Admin only). Default `false` for dashboard consumers. |
+| `DELETE /:id` | Soft delete (existing). **Idempotent** if already soft-deleted (`deleted_at` set). |
+| `POST /:id/restore` | Clear `deleted_at`; restore original slug when safe; audit + realtime event. |
+| `DELETE /:id/permanent` | Hard delete tenant graph (tenant, facilities, scoped data per FK/cascade rules) or documented cascade service; Super Admin only; audit before purge. |
 
-### 4. Management list UX (global for platform admin dialogs)
+- Resolve IDs by UUID, `human_friendly_id`, and slug (including deleted slug suffix).
+- API `id` remains UUID; expose `display_id` separately (do not replace `id`).
+- Publish `tenant.deleted`, `tenant.restored`, `tenant.permanently_deleted` (or extend existing platform events).
 
-Apply consistently to **Manage Tenants**, **Manage Facilities**, **Manage Roles & Permissions**, and **Manage Users**:
+### Permanent delete safeguards
 
-| Setting | Current | Target |
-| ------- | ------- | ------ |
-| Page size | `12` | `AppPageRequest.maxPageSize` (**100**) or shared `platformAdminListPageSize` constant |
-| Table body | Fixed height, paginate only | Bounded `Expanded` + vertical scroll within dialog; pagination footer pinned |
-| Loading vs empty | Can overlap | Show spinner **or** empty state, never both |
-| Search | Server-side debounced | Preserve; reset to page 0 on query change |
-
-Reuse `AppListTable` patterns from [`ui-patterns.mdc`](frontend/.cursor/ui-patterns.mdc); do not fork table behavior per dialog.
-
-### 5. Realtime & instant UI on all manage dialogs
-
-- Wire `PlatformManagementListSync` (or access-admin equivalent) for users and roles manage dialogs.
-- Subscribe to `RealtimeEventGroups.platformAdmin` events: `tenantCreated/Updated/Deleted`, `facilityCreated/Updated/Deleted`, user/role lifecycle events.
-- After delete success: remove row locally, patch dashboard cards, publish/consume realtime — same pattern as tenant delete in `tenant_facility_management_dialogs.dart`.
+- Second confirmation with tenant name typed or explicit “PERMANENT DELETE” label.
+- Block if active subscriptions or legal retention rules apply (return validation error with reason).
+- Log audit entry **before** destructive purge.
 
 ---
 
-## Current State (read before changing code)
+## Scope — Files to Touch
 
-| Area | Location | Notes |
-| ---- | -------- | ----- |
-| Dashboard UI | `frontend/lib/features/home/` | `home_page.dart`, `home_dashboard_profiles.dart`, `home_dashboard_mapper.dart` |
-| Dashboard sync | `home_dashboard_sync.dart`, `home_dashboard_optimistic_patch.dart` | Tenant-focused patches today |
-| Manage Tenants/Facilities | `frontend/lib/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart` | `pageSize = 12`, tenant realtime sync |
-| Manage Users/Roles | `frontend/lib/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart` | Friendly ID delete bug |
-| Delete modal | `frontend/lib/shared/actions/app_action_dialogs.dart` | `AppConfirmActionDialog` → `errorNotFoundMessage` |
-| Pagination | `frontend/lib/shared/data/app_pagination.dart` | `maxPageSize = 100` |
-| List table | `frontend/lib/shared/components/app_list_table.dart` | Scroll + pagination footer |
-| Realtime group | `frontend/lib/core/realtime/realtime_event_groups.dart` | `platformAdmin` |
-| Backend dashboard | `backend/src/modules/dashboard-workspace/`, `backend/src/lib/dashboard/summary.js` | Super-admin metric definitions |
-| Backend CRUD | `backend/src/modules/tenant/`, `facility/`, `user/`, `role/` | Tenant/facility use `resolveEntityId` |
-| Access-admin API | `backend/src/modules/access-admin-workspace/` | Serializes `human_friendly_id` as `id` |
+**Backend:** `tenant.service.js`, `tenant.repository.js`, `tenant.routes.js`, `tenant.controller.js`, validation schemas, `resolve-entity-id.js` (include-deleted lookups), platform realtime publishers, targeted tests.
+
+**Frontend:** `tenant_facility_management_dialogs.dart`, `tenant_facility_repository_impl.dart`, DTOs/entities, `home_controller.dart`, `home_dashboard_sync.dart`, `home_dashboard_optimistic_patch.dart`, `app_en.arb` strings.
+
+**Out of scope:** Non–Super Admin tenant lists; subscription billing changes beyond metric accuracy.
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] Platform dashboard cards match live list totals after create/edit/delete without manual refresh.
-- [ ] Delete tenant, facility, user, and role from manage dialogs succeeds for every visible row; no false **"Not found"** errors.
-- [ ] New tenant always has at least one default facility; facility count ≥ active tenant count (excluding explicitly deactivated).
-- [ ] Manage dialogs load up to **100** rows per page; table body scrolls inside the modal on all breakpoints.
-- [ ] Loading spinner and empty state are mutually exclusive.
-- [ ] Realtime events from another session update lists and dashboard cards within seconds.
-- [ ] Optimistic UI patches reconcile correctly on reconnect (`WorkspaceSyncEngine`).
-- [ ] All user-visible strings localized in `app_en.arb`; destructive deletes use `destructive: true` on confirm dialogs.
+- [ ] Dashboard shows **2 / 2** tenants matching DB active count (Demo Care, Fairbanks).
+- [ ] Manage Tenants shows **5** rows with correct **Deleted** status for C-Care and both Testing records.
+- [ ] Soft delete removes tenant from dashboard immediately; row remains in manage list as Deleted.
+- [ ] **Restore** clears `deleted_at`, restores slug, row returns to Active; dashboard increments.
+- [ ] **Permanent delete** removes tenant from DB and manage list; irreversible after confirm.
+- [ ] Delete on already-deleted tenant succeeds (idempotent) or row disappears—no **Not found** error for visible stale data.
+- [ ] Realtime/optimistic updates keep dashboard cards and manage list aligned without full-page reload.
+- [ ] Responsive UI on mobile, tablet, desktop; localized strings; destructive actions use `AppConfirmActionDialog`.
+- [ ] Backend tenant tests + `flutter analyze` on touched files pass.
 
 ---
 
-## Quality Gate
+## Verification
 
-From `frontend/`:
-
-```sh
-flutter pub get
-dart format --set-exit-if-changed .
-flutter analyze
-flutter test
-```
-
-From `backend/` (touched modules):
-
-```sh
-npm test -- --testPathPattern="tenant|facility|user|role|dashboard-workspace|access-admin"
-```
-
-Add targeted widget tests for delete-id resolution and dashboard metric reconciliation after CRUD.
-
----
-
-## Key File References
-
-```
-frontend/lib/features/home/
-frontend/lib/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart
-frontend/lib/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart
-frontend/lib/shared/actions/app_action_dialogs.dart
-frontend/lib/shared/data/app_pagination.dart
-frontend/lib/shared/components/app_list_table.dart
-frontend/lib/shared/management/platform_management_list_sync.dart
-frontend/lib/core/realtime/realtime_event_groups.dart
-
-backend/src/modules/dashboard-workspace/
-backend/src/lib/dashboard/summary.js
-backend/src/modules/tenant/
-backend/src/modules/facility/
-backend/src/modules/user/
-backend/src/modules/role/
-backend/src/modules/access-admin-workspace/
-```
-
-**Related prompts:** [07-home-dashboard](prompts/07-home-dashboard-module-prompt.md), [03-tenant-facility](prompts/03-tenant-facility-module-prompt.md), [04-access-admin](prompts/04-access-admin-module-prompt.md), [02-subscriptions](prompts/02-subscriptions-module-prompt.md), [33-demo-seed](prompts/33-demo-seed-module-prompt.md)
+1. Compare phpMyAdmin `tenant` table (`deleted_at`, `slug`) with Manage Tenants and dashboard cards.
+2. Soft delete → restore → permanent delete on a test tenant end-to-end.
+3. Hard refresh / hot restart after deploy; confirm C-Care does not appear as active anywhere.

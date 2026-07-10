@@ -30,6 +30,8 @@ const Set<String> _tenantManagementRealtimeEvents = <String>{
   RealtimeEvents.tenantCreated,
   RealtimeEvents.tenantUpdated,
   RealtimeEvents.tenantDeleted,
+  RealtimeEvents.tenantRestored,
+  RealtimeEvents.tenantPermanentlyDeleted,
 };
 
 const Set<String> _facilityManagementRealtimeEvents = <String>{
@@ -124,7 +126,6 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
   AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
   int _totalItemCount = 0;
   List<TenantProfile> _tenants = const <TenantProfile>[];
-  final Set<String> _pendingDeletedTenantIds = <String>{};
   bool _mutated = false;
   int _reloadGeneration = 0;
   PlatformManagementListSync? _realtimeSync;
@@ -132,7 +133,6 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
   @override
   void initState() {
     super.initState();
-    _pendingDeletedTenantIds.clear();
     _searchController.addListener(_onSearchChanged);
     unawaited(_reload(resetPage: true));
   }
@@ -184,30 +184,24 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
     final Result<AppPage<TenantProfile>> result = await repository.listTenants(
       request: _pageRequest,
       search: _searchController.text.trim(),
+      includeDeleted: true,
     );
 
     if (!mounted || generation != _reloadGeneration) return;
     result.when(
       success: (AppPage<TenantProfile> page) {
-        final List<TenantProfile> visibleTenants = _filterPendingDeletedTenants(
-          page.items,
-        );
-        _reconcilePendingDeletes(page.items);
-        final int totalItemCount = math.max(
-          0,
-          (page.totalItemCount ?? visibleTenants.length) -
-              (page.items.length - visibleTenants.length),
-        );
+        final List<TenantProfile> tenants = page.items;
+        final int totalItemCount = page.totalItemCount ?? tenants.length;
         homeClearDashboardOptimisticPatch(ref, HomeDashboardRequest.empty);
         homeReconcileTenantsMetricFromList(
           ref,
-          _countActiveTenants(visibleTenants),
-          totalCount: totalItemCount,
+          _countDashboardActiveTenants(tenants),
+          totalCount: _countDashboardTotalTenants(tenants),
         );
         ref.invalidate(homeControllerProvider(HomeDashboardRequest.empty));
         setState(() {
           _loading = false;
-          _tenants = visibleTenants;
+          _tenants = tenants;
           _totalItemCount = totalItemCount;
         });
       },
@@ -317,8 +311,6 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
 
     if (confirmed == true) {
       _mutated = true;
-      _rememberPendingDeletedTenant(tenant);
-      _removeTenantLocally(tenant.mutationId, slug: tenant.slug);
       _syncPlatformDashboard(
         ref,
         patch: HomeDashboardOptimisticPatch.tenantDeleted(
@@ -326,107 +318,121 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
         ),
       );
       ref.invalidate(homeControllerProvider(HomeDashboardRequest.empty));
+      await _reload(resetPage: false, silent: true);
     }
   }
 
-  void _rememberPendingDeletedTenant(TenantProfile tenant) {
-    _pendingDeletedTenantIds.add(tenant.mutationId);
-    _pendingDeletedTenantIds.add(tenant.id);
-    final String? slug = tenant.slug?.trim();
-    if (slug != null && slug.isNotEmpty) {
-      _pendingDeletedTenantIds.add(slug);
-    }
-  }
-
-  List<TenantProfile> _filterPendingDeletedTenants(
-    List<TenantProfile> tenants,
-  ) {
-    if (_pendingDeletedTenantIds.isEmpty) {
-      return tenants;
-    }
-
-    return tenants
-        .where((TenantProfile tenant) => !_isPendingDeletedTenant(tenant))
-        .toList(growable: false);
-  }
-
-  bool _isPendingDeletedTenant(TenantProfile tenant) {
-    if (_pendingDeletedTenantIds.contains(tenant.mutationId) ||
-        _pendingDeletedTenantIds.contains(tenant.id)) {
-      return true;
-    }
-    final String? slug = tenant.slug?.trim();
-    return slug != null &&
-        slug.isNotEmpty &&
-        _pendingDeletedTenantIds.contains(slug);
-  }
-
-  void _reconcilePendingDeletes(List<TenantProfile> serverTenants) {
-    if (_pendingDeletedTenantIds.isEmpty) {
-      return;
-    }
-
-    final Set<String> serverKeys = <String>{
-      for (final TenantProfile tenant in serverTenants) ...<String>{
-        tenant.id,
-        tenant.mutationId,
-        if (tenant.slug != null && tenant.slug!.trim().isNotEmpty)
-          tenant.slug!.trim(),
-      },
-    };
-    _pendingDeletedTenantIds.removeWhere(
-      (String id) => !serverKeys.contains(id),
+  Future<void> _confirmRestoreTenant(TenantProfile tenant) async {
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.tenantFacilityRestoreConfirmationTitle,
+        body: l10n.tenantFacilityRestoreTenantConfirmationBody(tenant.name),
+        highlightedText: tenant.name,
+        submitLabel: l10n.tenantFacilityRestoreTenantAction,
+        icon: const Icon(Icons.restore_outlined),
+        onConfirm: () async {
+          final Result<TenantProfile> result = await ref
+              .read(tenantFacilityRepositoryProvider)
+              .restoreTenant(tenant.mutationId);
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
     );
-  }
 
-  int _countActiveTenants(List<TenantProfile> tenants) {
-    return tenants.where((TenantProfile tenant) => tenant.isActive).length;
-  }
-
-  void _removeTenantLocally(String tenantId, {String? slug}) {
-    final int before = _tenants.length;
-    final List<TenantProfile> next = _tenants
-        .where(
-          (TenantProfile entry) =>
-              entry.id != tenantId &&
-              entry.mutationId != tenantId &&
-              entry.slug != tenantId &&
-              (slug == null || entry.slug != slug),
-        )
-        .toList(growable: false);
-    if (next.length == before) {
+    if (!mounted || confirmed != true) {
       return;
     }
-    setState(() {
-      _tenants = next;
-      _totalItemCount = math.max(0, _totalItemCount - (before - next.length));
-    });
-    homeReconcileTenantsMetricFromList(
+
+    _mutated = true;
+    _syncPlatformDashboard(
       ref,
-      _countActiveTenants(next),
-      totalCount: _totalItemCount,
+      patch: HomeDashboardOptimisticPatch.tenantRestored(
+        isActive: tenant.isActive,
+      ),
     );
+    ref.invalidate(homeControllerProvider(HomeDashboardRequest.empty));
+    await _reload(resetPage: false, silent: true);
   }
 
-  void _applyTenantRealtimeMessage(RealtimeMessage? message) {
-    if (message == null) {
+  Future<void> _confirmPermanentDeleteTenant(TenantProfile tenant) async {
+    final AppLocalizations l10n = context.l10n;
+    final String? typed = await showAppDialog<String>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppTextInputActionDialog(
+        title: l10n.tenantFacilityPermanentDeleteConfirmationTitle,
+        fieldLabel: l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(
+          tenant.name,
+        ),
+        submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
+        cancelLabel: l10n.commonCancelActionLabel,
+        requiredMessage: l10n.validationRequired,
+        icon: const Icon(Icons.delete_forever_outlined),
+      ),
+    );
+
+    if (!mounted || typed == null) {
       return;
     }
-    if (message.event == RealtimeEvents.tenantDeleted) {
-      final String? tenantId = _managementResourceIdFromMessage(
-        message,
-        keys: const <String>['resource_id', 'tenant_id', 'id'],
-      );
-      if (tenantId != null) {
-        _pendingDeletedTenantIds.add(tenantId);
-        _removeTenantLocally(tenantId);
-      }
+    if (typed.trim() != tenant.name.trim()) {
       return;
     }
 
-    if (message.event == RealtimeEvents.tenantCreated) {
-      _pendingDeletedTenantIds.clear();
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+        title: l10n.tenantFacilityPermanentDeleteConfirmationTitle,
+        body: l10n.tenantFacilityPermanentDeleteConfirmationBody(tenant.name),
+        highlightedText: tenant.name,
+        submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
+        destructive: true,
+        icon: const Icon(Icons.delete_forever_outlined),
+        onConfirm: () async {
+          final Result<void> result = await ref
+              .read(tenantFacilityRepositoryProvider)
+              .permanentDeleteTenant(tenant.mutationId);
+          return result.when(
+            success: (_) => null,
+            failure: (AppFailure failure) => failure,
+          );
+        },
+      ),
+    );
+
+    if (!mounted || confirmed != true) {
+      return;
     }
+
+    _mutated = true;
+    ref.invalidate(homeControllerProvider(HomeDashboardRequest.empty));
+    await _reload(resetPage: false, silent: true);
+  }
+
+  void _applyTenantRealtimeMessage(RealtimeMessage? message) {}
+
+  int _countDashboardActiveTenants(List<TenantProfile> tenants) {
+    return tenants
+        .where(
+          (TenantProfile tenant) => !tenant.isDeleted && tenant.isActive,
+        )
+        .length;
+  }
+
+  int _countDashboardTotalTenants(List<TenantProfile> tenants) {
+    return tenants.where((TenantProfile tenant) => !tenant.isDeleted).length;
+  }
+
+  String _tenantStatusLabel(AppLocalizations l10n, TenantProfile tenant) {
+    if (tenant.isDeleted) {
+      return l10n.tenantFacilityTenantStatusDeleted;
+    }
+    return tenant.isActive
+        ? l10n.tenantFacilityTenantStatusActive
+        : l10n.commonNoLabel;
   }
 
   bool get _canCreate => ref.read(appAccessPolicyProvider).canCreateTenant();
@@ -467,8 +473,12 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                       itemKeyBuilder: (TenantProfile item) =>
                           ValueKey<String>(item.id),
                       onRowSelected: _canCreate
-                          ? (TenantProfile tenant) =>
-                                unawaited(_openTenantForm(tenant: tenant))
+                          ? (TenantProfile tenant) {
+                              if (tenant.isDeleted) {
+                                return;
+                              }
+                              unawaited(_openTenantForm(tenant: tenant));
+                            }
                           : null,
                       previousPageLabel: l10n.hrPreviousPageLabel,
                       nextPageLabel: l10n.hrNextPageLabel,
@@ -487,8 +497,17 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                       columns: <AppListTableColumn<TenantProfile>>[
                         AppListTableColumn<TenantProfile>(
                           label: l10n.tenantFacilityTenantNameLabel,
-                          cellBuilder: (_, TenantProfile tenant) =>
-                              Text(tenant.name),
+                          cellBuilder: (_, TenantProfile tenant) => Text(
+                            tenant.name,
+                            style: tenant.isDeleted
+                                ? Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    )
+                                : null,
+                          ),
                         ),
                         AppListTableColumn<TenantProfile>(
                           label: l10n.tenantFacilityTenantSlugLabel,
@@ -496,11 +515,9 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                               Text(tenant.slug ?? '—'),
                         ),
                         AppListTableColumn<TenantProfile>(
-                          label: l10n.tenantFacilityActiveLabel,
+                          label: l10n.tenantFacilityTenantStatusLabel,
                           cellBuilder: (_, TenantProfile tenant) => Text(
-                            tenant.isActive
-                                ? l10n.commonYesLabel
-                                : l10n.commonNoLabel,
+                            _tenantStatusLabel(l10n, tenant),
                           ),
                         ),
                         if (_canCreate)
@@ -509,17 +526,29 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                             alwaysVisible: true,
                             cellBuilder:
                                 (BuildContext context, TenantProfile tenant) {
-                                  return _ManagementRowActions(
+                                  return _TenantManagementRowActions(
                                     enabled: !_loading,
+                                    tenant: tenant,
                                     editLabel:
                                         l10n.tenantFacilitySaveTenantAction,
                                     deleteLabel:
                                         l10n.tenantFacilityDeleteAction,
+                                    restoreLabel:
+                                        l10n.tenantFacilityRestoreTenantAction,
+                                    permanentDeleteLabel: l10n
+                                        .tenantFacilityPermanentDeleteAction,
                                     onEdit: () => unawaited(
                                       _openTenantForm(tenant: tenant),
                                     ),
-                                    onDelete: () =>
-                                        unawaited(_confirmDeleteTenant(tenant)),
+                                    onDelete: () => unawaited(
+                                      _confirmDeleteTenant(tenant),
+                                    ),
+                                    onRestore: () => unawaited(
+                                      _confirmRestoreTenant(tenant),
+                                    ),
+                                    onPermanentDelete: () => unawaited(
+                                      _confirmPermanentDeleteTenant(tenant),
+                                    ),
                                   );
                                 },
                           ),
@@ -532,27 +561,36 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                           (BuildContext context, TenantProfile tenant) {
                             return ListTile(
                               title: Text(tenant.name),
-                              subtitle: Text(tenant.slug ?? tenant.id),
+                              subtitle: Text(
+                                '${tenant.slug ?? tenant.id} · ${_tenantStatusLabel(l10n, tenant)}',
+                              ),
                               trailing: _canCreate
-                                  ? _ManagementRowActions(
+                                  ? _TenantManagementRowActions(
                                       enabled: !_loading,
+                                      tenant: tenant,
                                       editLabel:
                                           l10n.tenantFacilitySaveTenantAction,
                                       deleteLabel:
                                           l10n.tenantFacilityDeleteAction,
+                                      restoreLabel:
+                                          l10n.tenantFacilityRestoreTenantAction,
+                                      permanentDeleteLabel: l10n
+                                          .tenantFacilityPermanentDeleteAction,
                                       onEdit: () => unawaited(
                                         _openTenantForm(tenant: tenant),
                                       ),
                                       onDelete: () => unawaited(
                                         _confirmDeleteTenant(tenant),
                                       ),
+                                      onRestore: () => unawaited(
+                                        _confirmRestoreTenant(tenant),
+                                      ),
+                                      onPermanentDelete: () => unawaited(
+                                        _confirmPermanentDeleteTenant(tenant),
+                                      ),
                                     )
-                                  : Text(
-                                      tenant.isActive
-                                          ? l10n.commonYesLabel
-                                          : l10n.commonNoLabel,
-                                    ),
-                              onTap: _canCreate
+                                  : Text(_tenantStatusLabel(l10n, tenant)),
+                              onTap: _canCreate && !tenant.isDeleted
                                   ? () => unawaited(
                                       _openTenantForm(tenant: tenant),
                                     )
@@ -1021,6 +1059,85 @@ class _ManageFacilitiesDialogState
           label: l10n.commonCloseActionLabel,
           leadingIcon: Icons.close,
           onPressed: () => Navigator.of(context).pop(_mutated ? true : null),
+        ),
+      ],
+    );
+  }
+}
+
+class _TenantManagementRowActions extends StatelessWidget {
+  const _TenantManagementRowActions({
+    required this.enabled,
+    required this.tenant,
+    required this.editLabel,
+    required this.deleteLabel,
+    required this.restoreLabel,
+    required this.permanentDeleteLabel,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onRestore,
+    required this.onPermanentDelete,
+  });
+
+  final bool enabled;
+  final TenantProfile tenant;
+  final String editLabel;
+  final String deleteLabel;
+  final String restoreLabel;
+  final String permanentDeleteLabel;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  final VoidCallback onRestore;
+  final VoidCallback onPermanentDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    if (tenant.isDeleted) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          AppButton.tertiary(
+            leadingIcon: Icons.restore_outlined,
+            label: restoreLabel,
+            semanticLabel: restoreLabel,
+            tooltip: restoreLabel,
+            enabled: enabled,
+            onPressed: enabled ? onRestore : null,
+          ),
+          AppButton.tertiary(
+            leadingIcon: Icons.delete_forever_outlined,
+            label: permanentDeleteLabel,
+            semanticLabel: permanentDeleteLabel,
+            tooltip: permanentDeleteLabel,
+            color: colorScheme.error,
+            enabled: enabled,
+            onPressed: enabled ? onPermanentDelete : null,
+          ),
+        ],
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        AppButton.tertiary(
+          leadingIcon: Icons.edit_outlined,
+          label: editLabel,
+          semanticLabel: editLabel,
+          tooltip: editLabel,
+          enabled: enabled,
+          onPressed: enabled ? onEdit : null,
+        ),
+        AppButton.tertiary(
+          leadingIcon: Icons.delete_outline,
+          label: deleteLabel,
+          semanticLabel: deleteLabel,
+          tooltip: deleteLabel,
+          color: colorScheme.error,
+          enabled: enabled,
+          onPressed: enabled ? onDelete : null,
         ),
       ],
     );
