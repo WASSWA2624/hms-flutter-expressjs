@@ -41,6 +41,16 @@ describe('assignable-access', () => {
       expect(names.has(PERMISSIONS.TENANT_ADMIN)).toBe(true);
       expect(names.has(PERMISSIONS.SYSTEM_ADMIN)).toBe(false);
     });
+
+    it('keeps a full ceiling for super admins even when JWT permissions are plan-gated', () => {
+      const names = resolveActorAssignablePermissionNames({
+        roles: [ROLES.SUPER_ADMIN],
+        permissions: [PERMISSIONS.PROFILE_READ, PERMISSIONS.PATIENT_READ],
+      });
+      expect(names.has(PERMISSIONS.SYSTEM_ADMIN)).toBe(true);
+      expect(names.has(PERMISSIONS.MORTUARY_READ)).toBe(true);
+      expect(names.has(PERMISSIONS.LAB_WRITE)).toBe(true);
+    });
   });
 
   describe('filterPermissionRecordsByCeiling', () => {

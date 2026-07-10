@@ -315,11 +315,17 @@ const resolveExpiryDate = (value) => {
 
 const getRoleNames = (user = {}) => uniqueValues(
   (Array.isArray(user.roles) ? user.roles : [])
-    .flatMap((entry) => [
-      toNormalizedString(entry?.role?.name),
-      toNormalizedString(entry?.name),
-      toNormalizedString(entry?.role_name),
-    ])
+    .flatMap((entry) => {
+      if (!entry) return [];
+      if (typeof entry === 'string') {
+        return [toNormalizedString(entry)];
+      }
+      return [
+        toNormalizedString(entry?.role?.name),
+        toNormalizedString(entry?.name),
+        toNormalizedString(entry?.role_name),
+      ];
+    })
     .filter(Boolean)
 );
 

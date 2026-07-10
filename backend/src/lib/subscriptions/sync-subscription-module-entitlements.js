@@ -55,7 +55,6 @@ const syncSubscriptionModuleEntitlements = async (
     select: {
       id: true,
       slug: true,
-      code: true,
       extension_json: true,
       minimum_plan_tier_code: true,
     },

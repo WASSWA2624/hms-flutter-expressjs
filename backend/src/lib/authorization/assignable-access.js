@@ -60,13 +60,20 @@ const resolveActorMaxRank = (user = {}) => {
 };
 
 const resolveActorAssignablePermissionNames = (user = {}) => {
+  const roleNames = resolveActorRoleNames(user);
+  // Super admins keep a full assignment ceiling. Plan entitlements still gate
+  // which module-scoped rights can be granted to a specific tenant.
+  if (roleNames.includes(ROLES.SUPER_ADMIN)) {
+    return new Set(ROLE_PERMISSIONS[ROLES.SUPER_ADMIN] || []);
+  }
+
   const fromContext = getUserPermissions(user);
   if (fromContext.length > 0) {
     return new Set(fromContext);
   }
 
   return new Set(
-    resolveActorRoleNames(user).flatMap((role) => ROLE_PERMISSIONS[role] || [])
+    roleNames.flatMap((role) => ROLE_PERMISSIONS[role] || [])
   );
 };
 
