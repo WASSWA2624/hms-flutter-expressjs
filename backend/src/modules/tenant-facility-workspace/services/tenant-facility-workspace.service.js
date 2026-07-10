@@ -480,9 +480,32 @@ const normalizeUploadedLogo = (file = {}) => ({
   buffer: file?.buffer,
 });
 
-const buildFacilityLogoPath = (tenantId, facilityId, originalName) => {
+const MAX_FACILITY_LOGO_BASENAME = 64;
+
+const slugifyFacilityName = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+/** Short OS-safe logo basename: `{slug}-logo.ext` (≤ 64 chars). */
+const buildFacilityLogoBasename = (facilityName, originalName) => {
   const extension = path.extname(originalName || '').toLowerCase() || '.png';
-  const safeName = sanitizeFilename(`logo${extension}`);
+  const safeExt = /^\.(png|jpe?g|webp)$/.test(extension) ? extension : '.png';
+  const slug = slugifyFacilityName(facilityName) || 'facility';
+  const logoSuffix = '-logo';
+  const maxStem = MAX_FACILITY_LOGO_BASENAME - safeExt.length;
+  const maxSlug = Math.max(1, maxStem - logoSuffix.length);
+  const clippedSlug =
+    slug.length <= maxSlug ? slug : slug.slice(0, maxSlug).replace(/-$/, '');
+  const stem = `${clippedSlug || 'facility'}${logoSuffix}`;
+  return sanitizeFilename(`${stem}${safeExt}`);
+};
+
+const buildFacilityLogoPath = (tenantId, facilityId, originalName, facilityName) => {
+  const safeName = buildFacilityLogoBasename(facilityName, originalName);
   return `facilities/${tenantId}/${facilityId}/branding/${safeName}`;
 };
 
@@ -521,7 +544,8 @@ const uploadFacilityLogo = async (facilityIdentifier, file = {}, user = {}) => {
   const storageKey = buildFacilityLogoPath(
     facility.tenant_id,
     facility.id,
-    normalizedFile.originalname
+    normalizedFile.originalname,
+    facility.name
   );
   const uploaded = await storage.upload(normalizedFile.buffer, storageKey, {
     mimeType: normalizedFile.mimetype,
@@ -546,6 +570,7 @@ const uploadFacilityLogo = async (facilityIdentifier, file = {}, user = {}) => {
 };
 
 module.exports = {
+  buildFacilityLogoBasename,
   getSetup,
   uploadFacilityLogo,
 };

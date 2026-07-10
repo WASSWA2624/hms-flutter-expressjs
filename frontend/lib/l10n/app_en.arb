@@ -717,6 +717,26 @@
   "@appImageCropBody": {
     "description": "Helper text shown in the image crop dialog."
   },
+  "appImageCropFreeformBody": "Drag the handles to crop any size or aspect ratio. The full image is shown first—resize the box like a free crop tool, then apply.",
+  "@appImageCropFreeformBody": {
+    "description": "Helper text for free-form (unlocked aspect ratio) image cropping."
+  },
+  "appImageCropAspectFree": "Free",
+  "@appImageCropAspectFree": {
+    "description": "Crop aspect preset: unlocked free-form ratio."
+  },
+  "appImageCropAspectSquare": "1:1",
+  "@appImageCropAspectSquare": {
+    "description": "Crop aspect preset: square."
+  },
+  "appImageCropAspectFourThree": "4:3",
+  "@appImageCropAspectFourThree": {
+    "description": "Crop aspect preset: 4:3."
+  },
+  "appImageCropAspectSixteenNine": "16:9",
+  "@appImageCropAspectSixteenNine": {
+    "description": "Crop aspect preset: 16:9."
+  },
   "appImageCropApplyAction": "Apply crop",
   "@appImageCropApplyAction": {
     "description": "Primary action that confirms the image crop."
@@ -6423,7 +6443,7 @@
   "@tenantFacilityLogoLabel": {
     "description": "Facility logo upload field label."
   },
-  "tenantFacilityLogoHelper": "Upload a square image (JPG, PNG, or WebP, up to 5 MB). You can crop after choosing.",
+  "tenantFacilityLogoHelper": "Upload a JPG, PNG, or WebP image (up to 5 MB). Crop freely to any size, then save.",
   "@tenantFacilityLogoHelper": {
     "description": "Facility logo upload helper text."
   },

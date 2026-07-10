@@ -1,9 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/core/utils/app_slug.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 
 const String tenantFacilityNoneSelection = '__none__';
 
+/// Builds a short, OS-safe facility logo basename (≤ 64 chars incl. extension).
+///
+/// Example: `fairbanks-main-facility-logo.png`
+String buildFacilityLogoFileName(String facilityName, {String extension = 'png'}) {
+  const int maxBasename = 64;
+  const String logoSuffix = '-logo';
+  final String normalizedExt = extension.startsWith('.')
+      ? extension.toLowerCase()
+      : '.${extension.toLowerCase()}';
+  final String slug = slugify(facilityName);
+  final String stemBase = (slug.isEmpty ? 'facility' : slug)
+      .replaceFirst(RegExp(r'-logo$'), '');
+  final int maxSlug = maxBasename - normalizedExt.length - logoSuffix.length;
+  final String clippedSlug = stemBase.length <= maxSlug
+      ? stemBase
+      : stemBase.substring(0, maxSlug).replaceAll(RegExp(r'-$'), '');
+  final String safeSlug = clippedSlug.isEmpty ? 'facility' : clippedSlug;
+  return '$safeSlug$logoSuffix$normalizedExt';
+}
 String? tenantFacilityOptionalSelection(String? value) {
   if (value == null || value == tenantFacilityNoneSelection) {
     return null;

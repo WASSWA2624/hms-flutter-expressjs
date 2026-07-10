@@ -1126,6 +1126,36 @@ abstract class AppLocalizations {
   /// **'Drag and zoom to frame the image, then apply the crop.'**
   String get appImageCropBody;
 
+  /// Helper text for free-form (unlocked aspect ratio) image cropping.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag the handles to crop any size or aspect ratio. The full image is shown first—resize the box like a free crop tool, then apply.'**
+  String get appImageCropFreeformBody;
+
+  /// Crop aspect preset: unlocked free-form ratio.
+  ///
+  /// In en, this message translates to:
+  /// **'Free'**
+  String get appImageCropAspectFree;
+
+  /// Crop aspect preset: square.
+  ///
+  /// In en, this message translates to:
+  /// **'1:1'**
+  String get appImageCropAspectSquare;
+
+  /// Crop aspect preset: 4:3.
+  ///
+  /// In en, this message translates to:
+  /// **'4:3'**
+  String get appImageCropAspectFourThree;
+
+  /// Crop aspect preset: 16:9.
+  ///
+  /// In en, this message translates to:
+  /// **'16:9'**
+  String get appImageCropAspectSixteenNine;
+
   /// Primary action that confirms the image crop.
   ///
   /// In en, this message translates to:
@@ -9313,7 +9343,7 @@ abstract class AppLocalizations {
   /// Facility logo upload helper text.
   ///
   /// In en, this message translates to:
-  /// **'Upload a square image (JPG, PNG, or WebP, up to 5 MB). You can crop after choosing.'**
+  /// **'Upload a JPG, PNG, or WebP image (up to 5 MB). Crop freely to any size, then save.'**
   String get tenantFacilityLogoHelper;
 
   /// Facility logo file picker action label.

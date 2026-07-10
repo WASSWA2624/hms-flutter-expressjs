@@ -554,6 +554,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Drag and zoom to frame the image, then apply the crop.';
 
   @override
+  String get appImageCropFreeformBody =>
+      'Drag the handles to crop any size or aspect ratio. The full image is shown first—resize the box like a free crop tool, then apply.';
+
+  @override
+  String get appImageCropAspectFree => 'Free';
+
+  @override
+  String get appImageCropAspectSquare => '1:1';
+
+  @override
+  String get appImageCropAspectFourThree => '4:3';
+
+  @override
+  String get appImageCropAspectSixteenNine => '16:9';
+
+  @override
   String get appImageCropApplyAction => 'Apply crop';
 
   @override
@@ -4992,7 +5008,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityLogoHelper =>
-      'Upload a square image (JPG, PNG, or WebP, up to 5 MB). You can crop after choosing.';
+      'Upload a JPG, PNG, or WebP image (up to 5 MB). Crop freely to any size, then save.';
 
   @override
   String get tenantFacilityChooseLogoAction => 'Choose image';

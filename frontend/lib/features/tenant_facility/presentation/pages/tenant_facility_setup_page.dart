@@ -1629,10 +1629,16 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     if (!_hasSelectedTenant) {
       return;
     }
+    final String facilityName = _nameController.text.trim().isNotEmpty
+        ? _nameController.text.trim()
+        : (_activeFacility?.name ?? 'facility');
     final AppImageUploadPendingItem? picked = await pickAppImageFile(
       context.l10n,
       context: context,
       typeGroupLabel: 'facility-logo',
+      cropAspectRatio: null,
+      showCropAspectPresets: true,
+      preferredFileName: buildFacilityLogoFileName(facilityName),
     );
     if (picked == null || !mounted) {
       return;

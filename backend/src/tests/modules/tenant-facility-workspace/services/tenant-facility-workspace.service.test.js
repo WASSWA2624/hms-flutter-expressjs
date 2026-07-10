@@ -200,4 +200,24 @@ describe('tenant-facility-workspace service', () => {
     expect(result.lookups.tenants).toHaveLength(1);
     expect(repository.findFacilityRecords).not.toHaveBeenCalled();
   });
+
+  describe('buildFacilityLogoBasename', () => {
+    it('builds a short slug-logo basename from the facility name', () => {
+      expect(service.buildFacilityLogoBasename('Main Campus', 'photo.JPG')).toBe(
+        'main-campus-logo.jpg'
+      );
+      expect(service.buildFacilityLogoBasename('Fairbanks Main Facility', 'x.png')).toBe(
+        'fairbanks-main-facility-logo.png'
+      );
+    });
+
+    it('clips basename to 64 characters including extension', () => {
+      const longName =
+        'Very Long Hospital And Medical Center Name That Should Be Clipped For Filesystem Safety';
+      const basename = service.buildFacilityLogoBasename(longName, 'logo.webp');
+      expect(basename.length).toBeLessThanOrEqual(64);
+      expect(basename.endsWith('.webp')).toBe(true);
+      expect(basename).toContain('-logo');
+    });
+  });
 });

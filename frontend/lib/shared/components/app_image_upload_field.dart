@@ -234,6 +234,10 @@ class _ImagePreviewTile extends StatelessWidget {
 }
 
 /// Picks an image from disk and optionally opens the crop editor.
+///
+/// Pass [cropAspectRatio] as `null` for free-form cropping. When
+/// [showCropAspectPresets] is true (default for free-form), the crop dialog
+/// offers Free / 1:1 / 4:3 / 16:9 presets.
 Future<AppImageUploadPendingItem?> pickAppImageFile(
   AppLocalizations l10n, {
   required BuildContext context,
@@ -241,6 +245,8 @@ Future<AppImageUploadPendingItem?> pickAppImageFile(
   String typeGroupLabel = 'image',
   bool enableCrop = true,
   double? cropAspectRatio = 1,
+  bool? showCropAspectPresets,
+  String? preferredFileName,
 }) async {
   final XTypeGroup typeGroup = XTypeGroup(
     label: typeGroupLabel,
@@ -254,7 +260,9 @@ Future<AppImageUploadPendingItem?> pickAppImageFile(
   }
 
   List<int> bytes = await file.readAsBytes();
-  String fileName = file.name;
+  String fileName = preferredFileName?.trim().isNotEmpty == true
+      ? preferredFileName!.trim()
+      : file.name;
   String? mimeType = file.mimeType;
 
   if (enableCrop && context.mounted) {
@@ -262,6 +270,7 @@ Future<AppImageUploadPendingItem?> pickAppImageFile(
       context: context,
       imageBytes: Uint8List.fromList(bytes),
       aspectRatio: cropAspectRatio,
+      showAspectPresets: showCropAspectPresets ?? cropAspectRatio == null,
     );
     if (croppedBytes == null) {
       return null;
@@ -283,5 +292,21 @@ String _croppedFileName(String originalFileName) {
   final String baseName = dotIndex > 0
       ? originalFileName.substring(0, dotIndex)
       : originalFileName;
-  return '$baseName-cropped.png';
+  final String sanitized = baseName
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9._-]'), '-')
+      .replaceAll(RegExp(r'-+'), '-')
+      .replaceAll(RegExp(r'^-|-$'), '');
+  final String stem = sanitized.isEmpty ? 'image' : sanitized;
+  final String withSuffix = stem.endsWith('-logo') || stem.endsWith('-cropped')
+      ? stem
+      : '$stem-cropped';
+  // Keep basename short for cross-OS filesystem safety (≤ 64 incl. extension).
+  const int maxBasename = 64;
+  const String extension = '.png';
+  const int maxStem = maxBasename - extension.length;
+  final String clipped = withSuffix.length <= maxStem
+      ? withSuffix
+      : withSuffix.substring(0, maxStem).replaceAll(RegExp(r'-$'), '');
+  return '$clipped$extension';
 }
