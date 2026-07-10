@@ -52,8 +52,10 @@ Future<bool?> showRoleMutationDialog({
   );
   String? selectedTenantId = tenantId;
   final bool showTenantPicker =
-      requireTenantPicker || (mode == RoleMutationMode.create && tenantId == null);
-  List<AccessAdminLookupOption> tenantOptions = const <AccessAdminLookupOption>[];
+      requireTenantPicker ||
+      (mode == RoleMutationMode.create && tenantId == null);
+  List<AccessAdminLookupOption> tenantOptions =
+      const <AccessAdminLookupOption>[];
   bool isLoadingTenants = false;
   bool tenantLoadAttempted = false;
   bool scheduledInitialTenantLoad = false;
@@ -111,8 +113,9 @@ Future<bool?> showRoleMutationDialog({
       permissionLoadFailure = null;
     });
 
-    final Result<List<AccessAdminLookupOption>> loaded =
-        await loader(resolvedTenantId!);
+    final Result<List<AccessAdminLookupOption>> loaded = await loader(
+      resolvedTenantId!,
+    );
 
     setState(() {
       isLoadingPermissions = false;
@@ -177,9 +180,7 @@ Future<bool?> showRoleMutationDialog({
                   !isLoadingPermissions &&
                   !scheduledInitialPermissionLoad) {
                 scheduledInitialPermissionLoad = true;
-                unawaited(
-                  loadPermissionsForSelectedTenant(setState),
-                );
+                unawaited(loadPermissionsForSelectedTenant(setState));
               }
 
               return Column(
@@ -221,7 +222,9 @@ Future<bool?> showRoleMutationDialog({
                                           tenantLoadAttempted = false;
                                           scheduledInitialTenantLoad = false;
                                         });
-                                        unawaited(reloadTenantOptions(setState));
+                                        unawaited(
+                                          reloadTenantOptions(setState),
+                                        );
                                       },
                                     ),
                                   ]
@@ -271,7 +274,8 @@ Future<bool?> showRoleMutationDialog({
                     SizedBox(height: Theme.of(context).spacing.md),
                   AppSectionPanel(
                     title: l10n.accessAdminCreateRoleDetailsSectionTitle,
-                    description: l10n.accessAdminCreateRoleDetailsSectionDescription,
+                    description:
+                        l10n.accessAdminCreateRoleDetailsSectionDescription,
                     leadingIcon: Icons.badge_outlined,
                     children: <Widget>[
                       AppResponsiveFieldRow.two(
@@ -313,21 +317,23 @@ Future<bool?> showRoleMutationDialog({
                           !isLoadingTenants)
                         AppMessagePanel(
                           icon: Icons.touch_app_outlined,
-                          title: l10n.accessAdminPermissionCatalogSelectTenantTitle,
-                          message:
-                              l10n.accessAdminPermissionCatalogSelectTenantMessage,
+                          title: l10n
+                              .accessAdminPermissionCatalogSelectTenantTitle,
+                          message: l10n
+                              .accessAdminPermissionCatalogSelectTenantMessage,
                           density: AppContentPanelDensity.compact,
                         )
                       else if (isLoadingPermissions)
                         _RoleMutationLoadingIndicator(
                           label: l10n.accessAdminCreateRoleLoadingPermissions,
                         )
-                      else if (permissionOptions.isEmpty && permissionLoadFailure != null)
+                      else if (permissionOptions.isEmpty &&
+                          permissionLoadFailure != null)
                         AppFormInformationBanner.failure(
                           context: context,
                           failure: permissionLoadFailure!,
-                          children: loadPermissionsForTenant != null &&
-                                  tenantSelected
+                          children:
+                              loadPermissionsForTenant != null && tenantSelected
                               ? <Widget>[
                                   AppButton.secondary(
                                     label: l10n.commonRetryActionLabel,
@@ -339,7 +345,9 @@ Future<bool?> showRoleMutationDialog({
                                         permissionLoadFailure = null;
                                       });
                                       unawaited(
-                                        loadPermissionsForSelectedTenant(setState),
+                                        loadPermissionsForSelectedTenant(
+                                          setState,
+                                        ),
                                       );
                                     },
                                   ),
@@ -348,13 +356,14 @@ Future<bool?> showRoleMutationDialog({
                         )
                       else if (permissionOptions.isEmpty)
                         AppFormInformationBanner(
-                          title: l10n.accessAdminPermissionCatalogUnavailableTitle,
-                          message:
-                              l10n.accessAdminPermissionCatalogUnavailableMessage,
+                          title:
+                              l10n.accessAdminPermissionCatalogUnavailableTitle,
+                          message: l10n
+                              .accessAdminPermissionCatalogUnavailableMessage,
                           variant: AppFormInformationVariant.warning,
                           icon: Icons.security_outlined,
-                          children: loadPermissionsForTenant != null &&
-                                  tenantSelected
+                          children:
+                              loadPermissionsForTenant != null && tenantSelected
                               ? <Widget>[
                                   AppButton.secondary(
                                     label: l10n.commonRetryActionLabel,
@@ -365,7 +374,9 @@ Future<bool?> showRoleMutationDialog({
                                         scheduledInitialPermissionLoad = false;
                                       });
                                       unawaited(
-                                        loadPermissionsForSelectedTenant(setState),
+                                        loadPermissionsForSelectedTenant(
+                                          setState,
+                                        ),
                                       );
                                     },
                                   ),
@@ -482,7 +493,9 @@ class _RoleMutationSelectionChip extends StatelessWidget {
 
     return Chip(
       avatar: Icon(
-        hasSelection ? Icons.check_circle_outline : Icons.radio_button_unchecked,
+        hasSelection
+            ? Icons.check_circle_outline
+            : Icons.radio_button_unchecked,
         size: 16,
         color: hasSelection ? colors.primary : colors.onSurfaceVariant,
       ),
@@ -497,7 +510,9 @@ class _RoleMutationSelectionChip extends StatelessWidget {
           ? colors.primaryContainer
           : colors.surfaceContainerHighest,
       side: BorderSide(
-        color: hasSelection ? colors.primary.withValues(alpha: 0.24) : colors.outlineVariant,
+        color: hasSelection
+            ? colors.primary.withValues(alpha: 0.24)
+            : colors.outlineVariant,
       ),
       visualDensity: VisualDensity.compact,
       padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),

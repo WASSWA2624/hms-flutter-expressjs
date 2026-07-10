@@ -24,11 +24,17 @@ void main() {
           );
 
       expect(
-        homeDashboardWithOptimisticPatch(staleServer, state).statusCards.first.value,
+        homeDashboardWithOptimisticPatch(
+          staleServer,
+          state,
+        ).statusCards.first.value,
         4,
       );
       expect(
-        homeDashboardWithOptimisticPatch(freshServer, state).statusCards.first.value,
+        homeDashboardWithOptimisticPatch(
+          freshServer,
+          state,
+        ).statusCards.first.value,
         4,
       );
     });

@@ -17,6 +17,10 @@ import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
+import 'package:hosspi_hms/core/realtime/realtime_message.dart';
+import 'package:hosspi_hms/shared/management/platform_admin_list_config.dart';
+import 'package:hosspi_hms/shared/management/platform_management_list_sync.dart';
 
 Future<bool?> showManageUsersDialog(BuildContext context, WidgetRef ref) {
   return showAppDialog<bool>(
@@ -35,20 +39,21 @@ Future<bool?> showManageRolesPermissionsDialog(
   );
 }
 
-abstract class _ScopedAccessAdminListDialogState<T extends ConsumerStatefulWidget>
+abstract class _ScopedAccessAdminListDialogState<
+  T extends ConsumerStatefulWidget
+>
     extends ConsumerState<T> {
-  static const int pageSize = 12;
-
   final TextEditingController searchController = TextEditingController();
   Timer? searchDebounce;
   bool loading = true;
   bool mutating = false;
   bool mutated = false;
   AppFailure? failure;
-  AppPageRequest pageRequest = const AppPageRequest(pageSize: pageSize);
+  AppPageRequest pageRequest = PlatformAdminListConfig.initialPageRequest;
   int totalItemCount = 0;
   List<AccessAdminItem> items = const <AccessAdminItem>[];
   AccessAdminWorkspaceData? workspaceData;
+  PlatformManagementListSync? _realtimeSync;
 
   AccessAdminRepository get repository =>
       ref.read(accessAdminRepositoryProvider);
@@ -63,7 +68,21 @@ abstract class _ScopedAccessAdminListDialogState<T extends ConsumerStatefulWidge
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _realtimeSync ??= PlatformManagementListSync(
+      ref: ref,
+      events: RealtimeEventGroups.platformAdmin,
+      onMutated: () => mutated = true,
+      reload: ({bool silent = false, RealtimeMessage? message}) async {
+        await reload(resetPage: false, silent: silent);
+      },
+    )..attach();
+  }
+
+  @override
   void dispose() {
+    _realtimeSync?.dispose();
     searchDebounce?.cancel();
     searchController.dispose();
     super.dispose();
@@ -87,12 +106,13 @@ abstract class _ScopedAccessAdminListDialogState<T extends ConsumerStatefulWidge
       });
     }
 
-    final Result<AccessAdminWorkspaceData> result = await repository.getWorkspace(
-      listQuery.copyWith(
-        search: searchController.text.trim(),
-        pageRequest: pageRequest,
-      ),
-    );
+    final Result<AccessAdminWorkspaceData> result = await repository
+        .getWorkspace(
+          listQuery.copyWith(
+            search: searchController.text.trim(),
+            pageRequest: pageRequest,
+          ),
+        );
 
     if (!mounted) return;
     result.when(
@@ -157,6 +177,9 @@ abstract class _ScopedAccessAdminListDialogState<T extends ConsumerStatefulWidge
       previousPageLabel: l10n.hrPreviousPageLabel,
       nextPageLabel: l10n.hrNextPageLabel,
       pageLabelBuilder: (AppPage<AccessAdminItem> page) {
+        if (loading) {
+          return '';
+        }
         final int total = page.totalItemCount ?? page.items.length;
         if (total == 0) return l10n.commonTableEmptyLabel;
         final int start = page.pageIndex * page.pageSize + 1;
@@ -187,7 +210,8 @@ class _ManageUsersDialog extends ConsumerStatefulWidget {
   ConsumerState<_ManageUsersDialog> createState() => _ManageUsersDialogState();
 }
 
-class _ManageUsersDialogState extends _ScopedAccessAdminListDialogState<_ManageUsersDialog> {
+class _ManageUsersDialogState
+    extends _ScopedAccessAdminListDialogState<_ManageUsersDialog> {
   @override
   AccessAdminWorkspaceQuery get listQuery => const AccessAdminWorkspaceQuery();
 
@@ -196,7 +220,11 @@ class _ManageUsersDialogState extends _ScopedAccessAdminListDialogState<_ManageU
     if (state == null || !mounted) {
       return;
     }
-    final bool? saved = await openAccessAdminCreateUserDialog(context, ref, state);
+    final bool? saved = await openAccessAdminCreateUserDialog(
+      context,
+      ref,
+      state,
+    );
     if (saved == true && mounted) {
       mutated = true;
       unawaited(reload(resetPage: true, silent: true));
@@ -268,9 +296,12 @@ class _ManageUsersDialogState extends _ScopedAccessAdminListDialogState<_ManageU
         title: l10n.accessAdminDeleteUserAction,
         body: l10n.tenantFacilityDeleteConfirmationBody,
         submitLabel: l10n.tenantFacilityDeleteConfirmAction,
+        destructive: true,
         icon: const Icon(Icons.delete_outline),
         onConfirm: () async {
-          final Result<void> result = await repository.deleteUser(user.id);
+          final Result<void> result = await repository.deleteUser(
+            user.mutationId,
+          );
           return result.when(
             success: (_) => null,
             failure: (AppFailure failure) => failure,
@@ -282,7 +313,10 @@ class _ManageUsersDialogState extends _ScopedAccessAdminListDialogState<_ManageU
       mutated = true;
       setState(() {
         items = items
-            .where((AccessAdminItem entry) => entry.id != user.id)
+            .where(
+              (AccessAdminItem entry) =>
+                  entry.id != user.id && entry.mutationId != user.mutationId,
+            )
             .toList(growable: false);
         totalItemCount = math.max(0, totalItemCount - 1);
       });
@@ -405,33 +439,36 @@ class _ManageUsersDialogState extends _ScopedAccessAdminListDialogState<_ManageU
                       alwaysVisible: true,
                       cellBuilder:
                           (BuildContext context, AccessAdminItem user) {
-                        return Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            AppButton.tertiary(
-                              leadingIcon: Icons.edit_outlined,
-                              label: l10n.tenantFacilityEditAction,
-                              semanticLabel: l10n.tenantFacilityEditAction,
-                              tooltip: l10n.tenantFacilityEditAction,
-                              enabled: !loading && !mutating,
-                              onPressed: !loading && !mutating
-                                  ? () => unawaited(_openEditUserDialog(user))
-                                  : null,
-                            ),
-                            AppButton.tertiary(
-                              leadingIcon: Icons.delete_outline,
-                              label: l10n.tenantFacilityDeleteAction,
-                              semanticLabel: l10n.tenantFacilityDeleteAction,
-                              tooltip: l10n.tenantFacilityDeleteAction,
-                              color: colorScheme.error,
-                              enabled: !loading && !mutating,
-                              onPressed: !loading && !mutating
-                                  ? () => unawaited(_confirmDeleteUser(user))
-                                  : null,
-                            ),
-                          ],
-                        );
-                      },
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                AppButton.tertiary(
+                                  leadingIcon: Icons.edit_outlined,
+                                  label: l10n.tenantFacilityEditAction,
+                                  semanticLabel: l10n.tenantFacilityEditAction,
+                                  tooltip: l10n.tenantFacilityEditAction,
+                                  enabled: !loading && !mutating,
+                                  onPressed: !loading && !mutating
+                                      ? () =>
+                                            unawaited(_openEditUserDialog(user))
+                                      : null,
+                                ),
+                                AppButton.tertiary(
+                                  leadingIcon: Icons.delete_outline,
+                                  label: l10n.tenantFacilityDeleteAction,
+                                  semanticLabel:
+                                      l10n.tenantFacilityDeleteAction,
+                                  tooltip: l10n.tenantFacilityDeleteAction,
+                                  color: colorScheme.error,
+                                  enabled: !loading && !mutating,
+                                  onPressed: !loading && !mutating
+                                      ? () =>
+                                            unawaited(_confirmDeleteUser(user))
+                                      : null,
+                                ),
+                              ],
+                            );
+                          },
                     ),
                 ],
               ),
@@ -479,7 +516,11 @@ class _ManageRolesPermissionsDialogState
     if (state == null || !mounted) {
       return;
     }
-    final bool? saved = await openAccessAdminCreateRoleDialog(context, ref, state);
+    final bool? saved = await openAccessAdminCreateRoleDialog(
+      context,
+      ref,
+      state,
+    );
     if (saved == true && mounted) {
       mutated = true;
       unawaited(reload(resetPage: true, silent: true));
@@ -509,9 +550,12 @@ class _ManageRolesPermissionsDialogState
         title: l10n.accessAdminDeleteRoleAction,
         body: l10n.tenantFacilityDeleteConfirmationBody,
         submitLabel: l10n.tenantFacilityDeleteConfirmAction,
+        destructive: true,
         icon: const Icon(Icons.delete_outline),
         onConfirm: () async {
-          final Result<void> result = await repository.deleteRole(role.id);
+          final Result<void> result = await repository.deleteRole(
+            role.mutationId,
+          );
           return result.when(
             success: (_) => null,
             failure: (AppFailure failure) => failure,
@@ -523,7 +567,10 @@ class _ManageRolesPermissionsDialogState
       mutated = true;
       setState(() {
         items = items
-            .where((AccessAdminItem entry) => entry.id != role.id)
+            .where(
+              (AccessAdminItem entry) =>
+                  entry.id != role.id && entry.mutationId != role.mutationId,
+            )
             .toList(growable: false);
         totalItemCount = math.max(0, totalItemCount - 1);
       });
@@ -581,34 +628,38 @@ class _ManageRolesPermissionsDialogState
                       alwaysVisible: true,
                       cellBuilder:
                           (BuildContext context, AccessAdminItem role) {
-                        return Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            AppButton.tertiary(
-                              leadingIcon: Icons.edit_outlined,
-                              label: l10n.tenantFacilityEditAction,
-                              semanticLabel: l10n.tenantFacilityEditAction,
-                              tooltip: l10n.tenantFacilityEditAction,
-                              enabled: !loading && !mutating,
-                              onPressed: !loading && !mutating
-                                  ? () => unawaited(_openEditRoleDialog(role))
-                                  : null,
-                            ),
-                            if (!role.isSystemCritical)
-                              AppButton.tertiary(
-                                leadingIcon: Icons.delete_outline,
-                                label: l10n.tenantFacilityDeleteAction,
-                                semanticLabel: l10n.tenantFacilityDeleteAction,
-                                tooltip: l10n.tenantFacilityDeleteAction,
-                                color: colorScheme.error,
-                                enabled: !loading && !mutating,
-                                onPressed: !loading && !mutating
-                                    ? () => unawaited(_confirmDeleteRole(role))
-                                    : null,
-                              ),
-                          ],
-                        );
-                      },
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                AppButton.tertiary(
+                                  leadingIcon: Icons.edit_outlined,
+                                  label: l10n.tenantFacilityEditAction,
+                                  semanticLabel: l10n.tenantFacilityEditAction,
+                                  tooltip: l10n.tenantFacilityEditAction,
+                                  enabled: !loading && !mutating,
+                                  onPressed: !loading && !mutating
+                                      ? () =>
+                                            unawaited(_openEditRoleDialog(role))
+                                      : null,
+                                ),
+                                if (!role.isSystemCritical)
+                                  AppButton.tertiary(
+                                    leadingIcon: Icons.delete_outline,
+                                    label: l10n.tenantFacilityDeleteAction,
+                                    semanticLabel:
+                                        l10n.tenantFacilityDeleteAction,
+                                    tooltip: l10n.tenantFacilityDeleteAction,
+                                    color: colorScheme.error,
+                                    enabled: !loading && !mutating,
+                                    onPressed: !loading && !mutating
+                                        ? () => unawaited(
+                                            _confirmDeleteRole(role),
+                                          )
+                                        : null,
+                                  ),
+                              ],
+                            );
+                          },
                     ),
                 ],
               ),
@@ -819,7 +870,8 @@ class _AccessAdminUserDetailDialogState
           SizedBox(height: theme.spacing.md),
           AppSectionPanel(
             title: l10n.accessAdminEffectivePermissionsLabel,
-            description: l10n.accessAdminUserDetailPermissionsSectionDescription,
+            description:
+                l10n.accessAdminUserDetailPermissionsSectionDescription,
             leadingIcon: Icons.security_outlined,
             trailing: effectivePermissionCount > 0
                 ? _UserDetailCountChip(count: effectivePermissionCount)
@@ -886,7 +938,9 @@ class _AccessAdminUserDetailDialogState
                     children: detail.effectivePermissions
                         .map(
                           (String permission) => _UserDetailPermissionChip(
-                            label: l10n.permissionCatalogLabelForCode(permission),
+                            label: l10n.permissionCatalogLabelForCode(
+                              permission,
+                            ),
                           ),
                         )
                         .toList(growable: false),
@@ -1185,7 +1239,9 @@ class _UserDetailPermissionChip extends StatelessWidget {
         avatar: Icon(
           emphasized ? Icons.key_outlined : Icons.verified_user_outlined,
           size: 16,
-          color: emphasized ? colorScheme.secondary : colorScheme.onSurfaceVariant,
+          color: emphasized
+              ? colorScheme.secondary
+              : colorScheme.onSurfaceVariant,
         ),
         label: Text(
           source == null ? label : '$label · $source',

@@ -169,7 +169,9 @@ void main() {
       expect(selected, isEmpty);
     });
 
-    testWidgets('select all matching respects the search filter', (tester) async {
+    testWidgets('select all matching respects the search filter', (
+      tester,
+    ) async {
       final Set<String> selected = <String>{};
 
       await tester.pumpWidget(

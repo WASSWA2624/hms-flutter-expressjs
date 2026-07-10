@@ -7,6 +7,7 @@ final class TenantProfileDto {
     required this.name,
     this.slug,
     required this.isActive,
+    this.resourceUuid,
   });
 
   factory TenantProfileDto.fromJson(JsonMap json) {
@@ -15,6 +16,7 @@ final class TenantProfileDto {
       name: _requiredString(json, 'name'),
       slug: _optionalString(json, 'slug'),
       isActive: _optionalBool(json, 'is_active') ?? true,
+      resourceUuid: _optionalString(json, 'resource_uuid'),
     );
   }
 
@@ -22,9 +24,16 @@ final class TenantProfileDto {
   final String name;
   final String? slug;
   final bool isActive;
+  final String? resourceUuid;
 
   TenantProfile toEntity() {
-    return TenantProfile(id: id, name: name, slug: slug, isActive: isActive);
+    return TenantProfile(
+      id: id,
+      name: name,
+      slug: slug,
+      isActive: isActive,
+      resourceUuid: resourceUuid,
+    );
   }
 }
 
@@ -36,6 +45,7 @@ final class FacilityProfileDto {
     required this.type,
     required this.isActive,
     this.logoUrl,
+    this.resourceUuid,
   });
 
   factory FacilityProfileDto.fromJson(JsonMap json) {
@@ -50,6 +60,7 @@ final class FacilityProfileDto {
       ),
       isActive: _optionalBool(json, 'is_active') ?? true,
       logoUrl: _optionalString(extensionJson, 'logo_url'),
+      resourceUuid: _optionalString(json, 'resource_uuid'),
     );
   }
 
@@ -59,6 +70,7 @@ final class FacilityProfileDto {
   final FacilitySetupType type;
   final bool isActive;
   final String? logoUrl;
+  final String? resourceUuid;
 
   FacilityProfile toEntity() {
     return FacilityProfile(
@@ -68,6 +80,7 @@ final class FacilityProfileDto {
       type: type,
       isActive: isActive,
       logoUrl: logoUrl,
+      resourceUuid: resourceUuid,
     );
   }
 }

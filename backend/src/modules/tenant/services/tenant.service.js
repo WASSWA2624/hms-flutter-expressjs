@@ -10,13 +10,15 @@
 const tenantRepository = require('@repositories/tenant/tenant.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
-const { resolveEntityId } = require('@lib/billing/identifiers');
+const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } = require('@config/constants');
 const { PLATFORM_ADMIN_EVENTS } = require('@lib/websocket/events');
 const {
   publishPlatformRealtimeEvent,
-  buildTenantDashboardDeltas
+  buildTenantDashboardDeltas,
+  buildFacilityDashboardDeltas
 } = require('@lib/realtime/platform-realtime');
+const { resolveModelIdByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 
 const publishTenantRealtimeEvent = async (
   event,
@@ -38,8 +40,30 @@ const publishTenantRealtimeEvent = async (
   });
 };
 
-const resolveTenantId = async (identifier) =>
-  resolveEntityId({ model: 'tenant', identifier });
+const resolveTenantId = async (identifier) => {
+  const normalized = String(identifier ?? '').trim();
+  if (!normalized) {
+    return normalized;
+  }
+
+  const resolved = await resolveModelIdByIdentifier({
+    model: 'tenant',
+    identifier: normalized,
+    additionalFriendlyMatchers: [
+      (value) => ({ slug: value.toLowerCase() }),
+    ],
+  });
+
+  return resolved || normalized;
+};
+
+const buildDefaultFacilityName = (tenantName) => {
+  const normalized = String(tenantName || '').trim();
+  if (!normalized) {
+    return 'Main Facility';
+  }
+  return `${normalized} Main Facility`;
+};
 
 const normalizeString = (value) => {
   const normalized = String(value ?? '').trim();
@@ -93,9 +117,19 @@ const buildPrimaryTenantAdmin = (userRole = null) => {
 
 const normalizeTenantRecord = (tenant) => {
   if (!tenant || typeof tenant !== 'object') return tenant;
-  if (!Array.isArray(tenant.user_roles)) return tenant;
 
-  const { user_roles, ...tenantRecord } = tenant;
+  const normalized = {
+    ...tenant,
+    resource_uuid: tenant.id,
+    id:
+      resolvePublicIdentifier(tenant.human_friendly_id, tenant.id) || tenant.id,
+  };
+
+  if (!Array.isArray(tenant.user_roles)) {
+    return normalized;
+  }
+
+  const { user_roles, ...tenantRecord } = normalized;
   return {
     ...tenantRecord,
     primary_tenant_admin: buildPrimaryTenantAdmin(user_roles[0] || null),
@@ -205,8 +239,12 @@ const createTenant = async (data, context = {}) => {
     await tenantRepository.releaseSlugFromSoftDeletedTenants(data.slug);
   }
 
-  // Create tenant
-  const tenant = await tenantRepository.create(data);
+  const { tenant, facility } = await tenantRepository.createWithDefaultFacility(
+    data,
+    {
+      facilityName: buildDefaultFacilityName(data?.name),
+    },
+  );
 
   // Create audit log
   await createAuditLog({
@@ -221,7 +259,26 @@ const createTenant = async (data, context = {}) => {
     details: {
       name: tenant.name,
       slug: tenant.slug,
-      is_active: tenant.is_active
+      is_active: tenant.is_active,
+      default_facility_id: facility.id,
+    }
+  });
+
+  await createAuditLog({
+    action: 'FACILITY_CREATED',
+    entity: 'facility',
+    entity_id: facility.id,
+    user_id: context.user_id,
+    tenant_id: tenant.id,
+    facility_id: facility.id,
+    ip_address: context.ip_address,
+    user_agent: context.user_agent,
+    details: {
+      tenant_id: facility.tenant_id,
+      name: facility.name,
+      facility_type: facility.facility_type,
+      is_active: facility.is_active,
+      bootstrap: true,
     }
   });
 
@@ -232,7 +289,22 @@ const createTenant = async (data, context = {}) => {
     'create'
   );
 
-  return tenant;
+  await publishPlatformRealtimeEvent({
+    event: PLATFORM_ADMIN_EVENTS.FACILITY_CREATED,
+    resource_type: 'facility',
+    resource_id: facility.id,
+    actor_user_id: context.user_id || null,
+    tenant_id: facility.tenant_id,
+    facility_id: facility.id,
+    dashboard_deltas: buildFacilityDashboardDeltas(facility, 'create'),
+    payload: {
+      is_active: facility.is_active !== false,
+      name: facility.name || null,
+      bootstrap: true,
+    }
+  });
+
+  return normalizeTenantRecord(tenant);
 };
 
 /**

@@ -314,6 +314,7 @@ final class AccessAdminItem {
     required this.resource,
     required this.displayId,
     required this.title,
+    this.resourceUuid,
     this.subtitle,
     this.status,
     this.tenantId,
@@ -347,6 +348,7 @@ final class AccessAdminItem {
   final AccessAdminResource resource;
   final String displayId;
   final String title;
+  final String? resourceUuid;
   final String? subtitle;
   final String? status;
   final String? tenantId;
@@ -376,6 +378,9 @@ final class AccessAdminItem {
   final DateTime? updatedAt;
 
   String get effectiveDisplayId => displayId.isNotEmpty ? displayId : id;
+
+  String get mutationId =>
+      resourceUuid != null && resourceUuid!.isNotEmpty ? resourceUuid! : id;
 }
 
 @immutable
@@ -429,10 +434,7 @@ final class AccessAdminUserDraft {
 
 @immutable
 final class AccessAdminUserRoleAssignment {
-  const AccessAdminUserRoleAssignment({
-    required this.id,
-    this.roleId,
-  });
+  const AccessAdminUserRoleAssignment({required this.id, this.roleId});
 
   final String id;
   final String? roleId;

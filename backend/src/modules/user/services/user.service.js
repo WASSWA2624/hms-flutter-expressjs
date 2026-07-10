@@ -21,6 +21,10 @@ const {
   REALTIME_SYNC_ACTIONS
 } = require('@lib/realtime/entity-envelope');
 const { serializeAccessAdminUserEntity } = require('@lib/realtime/access-admin-realtime');
+const { resolveEntityId } = require('@lib/billing/identifiers');
+
+const resolveUserId = async (identifier) =>
+  resolveEntityId({ model: 'user', identifier });
 
 const USER_REALTIME_RECIPIENT_ROLES = Object.freeze([
   ROLES.FACILITY_ADMIN,
@@ -316,7 +320,8 @@ const listUsers = async (filters, page, limit, sortBy, order, userId, ipAddress)
  */
 const getUserById = async (id, userId, ipAddress) => {
   try {
-    const user = await userRepository.findById(id, USER_DETAIL_INCLUDE);
+    const resolvedUserId = await resolveUserId(id);
+    const user = await userRepository.findById(resolvedUserId, USER_DETAIL_INCLUDE);
 
     if (!user) {
       throw new HttpError('errors.user.not_found', 404);
@@ -383,8 +388,9 @@ const createUser = async (data, userId, ipAddress) => {
  */
 const updateUser = async (id, data, userId, ipAddress) => {
   try {
+    const resolvedUserId = await resolveUserId(id);
     // Get current state for audit
-    const before = await userRepository.findById(id, USER_DETAIL_INCLUDE);
+    const before = await userRepository.findById(resolvedUserId, USER_DETAIL_INCLUDE);
 
     if (!before) {
       throw new HttpError('errors.user.not_found', 404);
@@ -395,9 +401,9 @@ const updateUser = async (id, data, userId, ipAddress) => {
       tenantId: normalizedPayload.tenant_id ?? before.tenant_id,
       email: normalizedPayload.email ?? before.email,
       phone: normalizedPayload.phone ?? before.phone,
-      excludeUserId: id,
+      excludeUserId: resolvedUserId,
     });
-    const user = await userRepository.update(id, normalizedPayload);
+    const user = await userRepository.update(resolvedUserId, normalizedPayload);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -433,21 +439,22 @@ const updateUser = async (id, data, userId, ipAddress) => {
  */
 const deleteUser = async (id, userId, ipAddress) => {
   try {
+    const resolvedUserId = await resolveUserId(id);
     // Get current state for audit
-    const before = await userRepository.findById(id);
+    const before = await userRepository.findById(resolvedUserId);
 
     if (!before) {
       throw new HttpError('errors.user.not_found', 404);
     }
 
-    await userRepository.softDelete(id);
+    await userRepository.softDelete(resolvedUserId);
 
     // Create audit log (non-blocking)
     createAuditLog({
       user_id: userId,
       action: 'DELETE',
       entity: 'user',
-      entity_id: id,
+      entity_id: resolvedUserId,
       diff: { before },
       ip_address: ipAddress
     }).catch(() => {});

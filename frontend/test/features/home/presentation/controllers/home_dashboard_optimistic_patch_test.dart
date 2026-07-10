@@ -34,6 +34,12 @@ void main() {
             secondaryValue: 3,
             format: 'ratio',
           ),
+          HomeStatusCard(
+            id: 'facilities_active',
+            label: 'Facilities',
+            value: 1,
+            secondaryValue: 1,
+          ),
         ],
         trend: HomeDashboardTrend.empty,
         distribution: HomeDashboardDistribution.empty,
@@ -58,6 +64,8 @@ void main() {
       expect(patched.statusCards[0].value, 4);
       expect(patched.statusCards[0].secondaryValue, 4);
       expect(patched.statusCards[1].secondaryValue, 4);
+      expect(patched.statusCards[2].value, 2);
+      expect(patched.statusCards[2].secondaryValue, 2);
       expect(patched.alerts.first.count, 3);
     });
 

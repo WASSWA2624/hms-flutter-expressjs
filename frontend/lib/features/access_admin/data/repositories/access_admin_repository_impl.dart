@@ -329,7 +329,8 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         return rows
             .whereType<Map<String, Object?>>()
             .map((Map<String, Object?> json) {
-              final Map<String, Object?> role = json['role'] is Map<String, Object?>
+              final Map<String, Object?> role =
+                  json['role'] is Map<String, Object?>
                   ? json['role']! as Map<String, Object?>
                   : <String, Object?>{};
               final String assignmentId =
@@ -346,9 +347,7 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
                 roleId: roleId,
               );
             })
-            .where(
-              (AccessAdminUserRoleAssignment item) => item.id.isNotEmpty,
-            )
+            .where((AccessAdminUserRoleAssignment item) => item.id.isNotEmpty)
             .toList(growable: false);
       },
     );

@@ -55,12 +55,13 @@ abstract final class AccessAdminRealtimeDeltaApplier {
       return _adjustOverviewOnly(state, resource, delta.action);
     }
 
-    final AppPage<AccessAdminItem> page = PrimaryListPageSync.remove<AccessAdminItem>(
-      page: state.data.page,
-      id: id,
-      matchesId: (AccessAdminItem item, String targetId) =>
-          item.id == targetId || item.effectiveDisplayId == targetId,
-    );
+    final AppPage<AccessAdminItem> page =
+        PrimaryListPageSync.remove<AccessAdminItem>(
+          page: state.data.page,
+          id: id,
+          matchesId: (AccessAdminItem item, String targetId) =>
+              item.id == targetId || item.effectiveDisplayId == targetId,
+        );
     return _withPage(state, page, resource, delta.action);
   }
 
@@ -68,13 +69,20 @@ abstract final class AccessAdminRealtimeDeltaApplier {
     AccessAdminWorkspaceState state,
     AccessAdminItem item,
   ) {
-    final AppPage<AccessAdminItem> page = PrimaryListPageSync.upsert<AccessAdminItem>(
-      page: state.data.page,
-      item: item,
-      matches: (AccessAdminItem left, AccessAdminItem right) =>
-          left.id == right.id || left.effectiveDisplayId == right.effectiveDisplayId,
+    final AppPage<AccessAdminItem> page =
+        PrimaryListPageSync.upsert<AccessAdminItem>(
+          page: state.data.page,
+          item: item,
+          matches: (AccessAdminItem left, AccessAdminItem right) =>
+              left.id == right.id ||
+              left.effectiveDisplayId == right.effectiveDisplayId,
+        );
+    return _withPage(
+      state,
+      page,
+      state.query.resource,
+      RealtimeSyncAction.upsert,
     );
-    return _withPage(state, page, state.query.resource, RealtimeSyncAction.upsert);
   }
 
   static AccessAdminWorkspaceState _withPage(
@@ -90,9 +98,7 @@ abstract final class AccessAdminRealtimeDeltaApplier {
     );
     AccessAdminItem? selected = state.selectedItem;
     if (selected != null &&
-        !page.items.any(
-          (AccessAdminItem item) => item.id == selected!.id,
-        )) {
+        !page.items.any((AccessAdminItem item) => item.id == selected!.id)) {
       selected = null;
     } else if (action == RealtimeSyncAction.upsert) {
       for (final AccessAdminItem item in page.items) {
@@ -159,10 +165,15 @@ abstract final class AccessAdminRealtimeDeltaApplier {
     };
   }
 
-  static bool _matchesScope(AccessAdminWorkspaceState state, AccessAdminItem item) {
+  static bool _matchesScope(
+    AccessAdminWorkspaceState state,
+    AccessAdminItem item,
+  ) {
     final String? tenantId = state.query.tenantId;
     final String? facilityId = state.query.facilityId;
-    if (tenantId != null && item.tenantId != null && tenantId != item.tenantId) {
+    if (tenantId != null &&
+        item.tenantId != null &&
+        tenantId != item.tenantId) {
       return false;
     }
     if (facilityId != null &&

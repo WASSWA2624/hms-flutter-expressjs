@@ -12,7 +12,8 @@ jest.mock('@repositories/tenant/tenant.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/realtime/platform-realtime', () => ({
   publishPlatformRealtimeEvent: jest.fn().mockResolvedValue(1),
-  buildTenantDashboardDeltas: jest.fn().mockReturnValue({})
+  buildTenantDashboardDeltas: jest.fn().mockReturnValue({}),
+  buildFacilityDashboardDeltas: jest.fn().mockReturnValue({})
 }));
 
 const tenantRepository = require('@repositories/tenant/tenant.repository');
@@ -42,7 +43,13 @@ describe('Tenant Service', () => {
 
       const result = await listTenants({}, 1, 20);
 
-      expect(result.tenants).toEqual(mockTenants);
+      expect(result.tenants).toHaveLength(2);
+      expect(result.tenants[0]).toEqual(
+        expect.objectContaining({ id: 'tenant-1', resource_uuid: 'tenant-1' }),
+      );
+      expect(result.tenants[1]).toEqual(
+        expect.objectContaining({ id: 'tenant-2', resource_uuid: 'tenant-2' }),
+      );
       expect(result.pagination).toEqual({
         page: 1,
         limit: 20,
@@ -66,7 +73,10 @@ describe('Tenant Service', () => {
 
       const result = await listTenants({ is_active: 'true' }, 1, 20);
 
-      expect(result.tenants).toEqual(mockTenants);
+      expect(result.tenants).toHaveLength(1);
+      expect(result.tenants[0]).toEqual(
+        expect.objectContaining({ id: 'tenant-1', resource_uuid: 'tenant-1' }),
+      );
       expect(tenantRepository.findMany).toHaveBeenCalledWith(
         { is_active: true },
         0,
@@ -82,7 +92,10 @@ describe('Tenant Service', () => {
 
       const result = await listTenants({ is_active: 'false' }, 1, 20);
 
-      expect(result.tenants).toEqual(mockTenants);
+      expect(result.tenants).toHaveLength(1);
+      expect(result.tenants[0]).toEqual(
+        expect.objectContaining({ id: 'tenant-1', resource_uuid: 'tenant-1' }),
+      );
       expect(tenantRepository.findMany).toHaveBeenCalledWith(
         { is_active: false },
         0,
@@ -98,7 +111,10 @@ describe('Tenant Service', () => {
 
       const result = await listTenants({ search: 'hospital' }, 1, 20);
 
-      expect(result.tenants).toEqual(mockTenants);
+      expect(result.tenants).toHaveLength(1);
+      expect(result.tenants[0]).toEqual(
+        expect.objectContaining({ id: 'tenant-1', resource_uuid: 'tenant-1' }),
+      );
       expect(tenantRepository.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           OR: expect.arrayContaining([
@@ -189,6 +205,7 @@ describe('Tenant Service', () => {
       expect(result.tenants).toEqual([
         expect.objectContaining({
           id: 'tenant-1',
+          resource_uuid: 'tenant-1',
           name: 'Hospital A',
           primary_tenant_admin: {
             id: 'user-1',
@@ -225,7 +242,10 @@ describe('Tenant Service', () => {
 
       const result = await getTenantById('tenant-123');
 
-      expect(result).toEqual(mockTenant);
+      expect(result).toEqual({
+        ...mockTenant,
+        resource_uuid: 'tenant-123',
+      });
       expect(tenantRepository.findById).toHaveBeenCalledWith('tenant-123');
     });
 
@@ -280,6 +300,7 @@ describe('Tenant Service', () => {
 
       expect(result).toEqual({
         id: 'tenant-123',
+        resource_uuid: 'tenant-123',
         name: 'Test Hospital',
         slug: 'test-hospital',
         is_active: true,
@@ -320,21 +341,40 @@ describe('Tenant Service', () => {
         deleted_at: null,
         version: 1
       };
+      const mockCreatedFacility = {
+        id: 'facility-new',
+        tenant_id: mockCreatedTenant.id,
+        name: 'New Hospital Main Facility',
+        facility_type: 'HOSPITAL',
+        is_active: true
+      };
       const context = {
         user_id: 'user-123',
         tenant_id: 'tenant-123',
         ip_address: '192.168.1.1'
       };
 
-      tenantRepository.create.mockResolvedValue(mockCreatedTenant);
+      tenantRepository.createWithDefaultFacility.mockResolvedValue({
+        tenant: mockCreatedTenant,
+        facility: mockCreatedFacility
+      });
       tenantRepository.releaseSlugFromSoftDeletedTenants.mockResolvedValue(undefined);
       createAuditLog.mockResolvedValue(undefined);
 
       const result = await createTenant(tenantData, context);
 
-      expect(result).toEqual(mockCreatedTenant);
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: mockCreatedTenant.id,
+          resource_uuid: mockCreatedTenant.id,
+          name: mockCreatedTenant.name
+        })
+      );
       expect(tenantRepository.releaseSlugFromSoftDeletedTenants).toHaveBeenCalledWith('new-hospital');
-      expect(tenantRepository.create).toHaveBeenCalledWith(tenantData);
+      expect(tenantRepository.createWithDefaultFacility).toHaveBeenCalledWith(
+        tenantData,
+        { facilityName: 'New Hospital Main Facility' }
+      );
       expect(createAuditLog).toHaveBeenCalledWith({
         action: 'TENANT_CREATED',
         entity: 'tenant',
@@ -347,7 +387,25 @@ describe('Tenant Service', () => {
         details: {
           name: mockCreatedTenant.name,
           slug: mockCreatedTenant.slug,
-          is_active: mockCreatedTenant.is_active
+          is_active: mockCreatedTenant.is_active,
+          default_facility_id: mockCreatedFacility.id
+        }
+      });
+      expect(createAuditLog).toHaveBeenCalledWith({
+        action: 'FACILITY_CREATED',
+        entity: 'facility',
+        entity_id: mockCreatedFacility.id,
+        user_id: context.user_id,
+        tenant_id: mockCreatedTenant.id,
+        facility_id: mockCreatedFacility.id,
+        ip_address: context.ip_address,
+        user_agent: undefined,
+        details: {
+          tenant_id: mockCreatedFacility.tenant_id,
+          name: mockCreatedFacility.name,
+          facility_type: mockCreatedFacility.facility_type,
+          is_active: mockCreatedFacility.is_active,
+          bootstrap: true
         }
       });
       expect(publishPlatformRealtimeEvent).toHaveBeenCalledWith(
@@ -355,6 +413,14 @@ describe('Tenant Service', () => {
           event: 'tenant.created',
           resource_type: 'tenant',
           resource_id: mockCreatedTenant.id,
+          actor_user_id: context.user_id
+        })
+      );
+      expect(publishPlatformRealtimeEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          event: 'facility.created',
+          resource_type: 'facility',
+          resource_id: mockCreatedFacility.id,
           actor_user_id: context.user_id
         })
       );
@@ -374,19 +440,35 @@ describe('Tenant Service', () => {
         deleted_at: null,
         version: 1
       };
+      const mockCreatedFacility = {
+        id: 'facility-new',
+        tenant_id: mockCreatedTenant.id,
+        name: 'New Hospital Main Facility',
+        facility_type: 'HOSPITAL',
+        is_active: true
+      };
 
-      tenantRepository.create.mockResolvedValue(mockCreatedTenant);
+      tenantRepository.createWithDefaultFacility.mockResolvedValue({
+        tenant: mockCreatedTenant,
+        facility: mockCreatedFacility
+      });
       createAuditLog.mockResolvedValue(undefined);
 
       const result = await createTenant(tenantData);
 
-      expect(result).toEqual(mockCreatedTenant);
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: mockCreatedTenant.id,
+          resource_uuid: mockCreatedTenant.id,
+          name: mockCreatedTenant.name
+        })
+      );
       expect(createAuditLog).toHaveBeenCalled();
     });
 
     it('should propagate repository errors', async () => {
       const error = new HttpError('errors.database.unique_field', 409);
-      tenantRepository.create.mockRejectedValue(error);
+      tenantRepository.createWithDefaultFacility.mockRejectedValue(error);
 
       await expect(createTenant({ name: 'Test' }))
         .rejects

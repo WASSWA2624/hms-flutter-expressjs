@@ -41,13 +41,21 @@ Future<bool?> showUserMutationDialog({
   required UserMutationSubmitHandler onSubmit,
 }) async {
   final AppLocalizations l10n = context.l10n;
-  final AccessAdminRepository repository = ref.read(accessAdminRepositoryProvider);
+  final AccessAdminRepository repository = ref.read(
+    accessAdminRepositoryProvider,
+  );
   final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
   final bool isCrossTenantAdmin = accessPolicy.canCreateTenant();
-  final String? sessionTenantId =
-      ref.read(sessionStateProvider).session?.user?.tenantId;
-  final String? sessionFacilityId =
-      ref.read(sessionStateProvider).session?.user?.facilityId;
+  final String? sessionTenantId = ref
+      .read(sessionStateProvider)
+      .session
+      ?.user
+      ?.tenantId;
+  final String? sessionFacilityId = ref
+      .read(sessionStateProvider)
+      .session
+      ?.user
+      ?.facilityId;
 
   final TextEditingController emailController = TextEditingController(
     text: initialUser?.email,
@@ -70,11 +78,11 @@ Future<bool?> showUserMutationDialog({
       state.query.facilityId ??
       (isCrossTenantAdmin ? null : sessionFacilityId);
 
-  final Set<String> selectedRoleIds = initialUser?.roles
-          .map((AccessAdminRoleRef role) => role.id)
-          .toSet() ??
+  final Set<String> selectedRoleIds =
+      initialUser?.roles.map((AccessAdminRoleRef role) => role.id).toSet() ??
       <String>{};
-  final Set<String> selectedPermissionIds = initialDetail?.directPermissions
+  final Set<String> selectedPermissionIds =
+      initialDetail?.directPermissions
           .map((AccessAdminPermissionRef permission) => permission.id)
           .toSet() ??
       initialUser?.permissions
@@ -85,7 +93,8 @@ Future<bool?> showUserMutationDialog({
   final bool showTenantPicker =
       isCrossTenantAdmin || (selectedTenantId ?? '').isEmpty;
 
-  List<AccessAdminLookupOption> tenantOptions = const <AccessAdminLookupOption>[];
+  List<AccessAdminLookupOption> tenantOptions =
+      const <AccessAdminLookupOption>[];
   List<AccessAdminLookupOption> facilityOptions =
       const <AccessAdminLookupOption>[];
   List<AccessAdminLookupOption> roleLookups = const <AccessAdminLookupOption>[];
@@ -111,8 +120,11 @@ Future<bool?> showUserMutationDialog({
       tenantOptions = const <AccessAdminLookupOption>[];
     });
 
-    final List<AccessAdminLookupOption> loaded =
-        await _loadTenantOptions(ref, state, isCrossTenantAdmin);
+    final List<AccessAdminLookupOption> loaded = await _loadTenantOptions(
+      ref,
+      state,
+      isCrossTenantAdmin,
+    );
 
     setState(() {
       isLoadingTenants = false;
@@ -294,7 +306,8 @@ Future<bool?> showUserMutationDialog({
                   ],
                   AppSectionPanel(
                     title: l10n.accessAdminCreateRoleScopeSectionTitle,
-                    description: l10n.accessAdminCreateUserScopeSectionDescription,
+                    description:
+                        l10n.accessAdminCreateUserScopeSectionDescription,
                     leadingIcon: Icons.apartment_outlined,
                     tone: AppWorkspaceStatusTone.info,
                     children: <Widget>[
@@ -362,9 +375,10 @@ Future<bool?> showUserMutationDialog({
                       if (!tenantSelected && showTenantPicker)
                         AppMessagePanel(
                           icon: Icons.touch_app_outlined,
-                          title: l10n.accessAdminPermissionCatalogSelectTenantTitle,
-                          message:
-                              l10n.accessAdminPermissionCatalogSelectTenantMessage,
+                          title: l10n
+                              .accessAdminPermissionCatalogSelectTenantTitle,
+                          message: l10n
+                              .accessAdminPermissionCatalogSelectTenantMessage,
                           density: AppContentPanelDensity.compact,
                         )
                       else if (isLoadingFacilities)
@@ -374,7 +388,8 @@ Future<bool?> showUserMutationDialog({
                       else if (tenantSelected && facilityOptions.isEmpty)
                         AppFormInformationBanner(
                           title: l10n.accessAdminCreateUserNoFacilitiesTitle,
-                          message: l10n.accessAdminCreateUserNoFacilitiesMessage,
+                          message:
+                              l10n.accessAdminCreateUserNoFacilitiesMessage,
                           variant: AppFormInformationVariant.warning,
                           icon: Icons.local_hospital_outlined,
                           children: <Widget>[
@@ -453,7 +468,8 @@ Future<bool?> showUserMutationDialog({
                           enabled: fieldsEnabled,
                           labelText: l10n.accessAdminPhoneLabel,
                           countryLabelText: l10n.appPhoneCountryLabel,
-                          countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
+                          countrySearchLabelText:
+                              l10n.appPhoneCountrySearchLabel,
                           countryNoResultsText: l10n.appPhoneCountryNoResults,
                           numberLabelText: l10n.appPhoneNumberLabel,
                           numberHintText: l10n.appPhoneNumberHint,
@@ -512,7 +528,8 @@ Future<bool?> showUserMutationDialog({
                                     ? null
                                     : l10n.accessAdminPasswordHint
                               : (String? value) {
-                                  final String normalized = (value ?? '').trim();
+                                  final String normalized = (value ?? '')
+                                      .trim();
                                   if (normalized.isEmpty) {
                                     return null;
                                   }
@@ -527,7 +544,8 @@ Future<bool?> showUserMutationDialog({
                   SizedBox(height: Theme.of(context).spacing.md),
                   AppSectionPanel(
                     title: l10n.hrAccessAssignedRolesLabel,
-                    description: l10n.accessAdminCreateUserRolesSectionDescription,
+                    description:
+                        l10n.accessAdminCreateUserRolesSectionDescription,
                     leadingIcon: Icons.groups_outlined,
                     trailing: roleOptions.isNotEmpty
                         ? _UserMutationSelectionChip(
@@ -620,9 +638,10 @@ Future<bool?> showUserMutationDialog({
                         )
                       else if (permissionOptions.isEmpty)
                         AppFormInformationBanner(
-                          title: l10n.accessAdminPermissionCatalogUnavailableTitle,
-                          message:
-                              l10n.accessAdminPermissionCatalogUnavailableMessage,
+                          title:
+                              l10n.accessAdminPermissionCatalogUnavailableTitle,
+                          message: l10n
+                              .accessAdminPermissionCatalogUnavailableMessage,
                           variant: AppFormInformationVariant.warning,
                           icon: Icons.security_outlined,
                         )
@@ -740,7 +759,9 @@ class _UserMutationSelectionChip extends StatelessWidget {
 
     return Chip(
       avatar: Icon(
-        hasSelection ? Icons.check_circle_outline : Icons.radio_button_unchecked,
+        hasSelection
+            ? Icons.check_circle_outline
+            : Icons.radio_button_unchecked,
         size: 16,
         color: hasSelection ? colors.primary : colors.onSurfaceVariant,
       ),
@@ -782,10 +803,8 @@ Future<List<AccessAdminLookupOption>> _loadTenantOptions(
         tenantPageResult.when(
           success: (AppPage<TenantProfile> page) => page.items
               .map(
-                (TenantProfile tenant) => AccessAdminLookupOption(
-                  id: tenant.id,
-                  label: tenant.name,
-                ),
+                (TenantProfile tenant) =>
+                    AccessAdminLookupOption(id: tenant.id, label: tenant.name),
               )
               .toList(growable: false),
           failure: (_) => null,

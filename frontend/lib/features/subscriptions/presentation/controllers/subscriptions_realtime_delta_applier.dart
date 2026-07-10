@@ -101,7 +101,9 @@ abstract final class SubscriptionsRealtimeDeltaApplier {
     SubscriptionItem item,
   ) {
     final String? tenantId = state.query.tenantId;
-    if (tenantId != null && item.tenantId != null && tenantId != item.tenantId) {
+    if (tenantId != null &&
+        item.tenantId != null &&
+        tenantId != item.tenantId) {
       return false;
     }
     return true;
@@ -114,8 +116,8 @@ abstract final class SubscriptionsRealtimeDeltaApplier {
       'subscription_plan' || 'plan' => SubscriptionResource.subscriptionPlans,
       'module_subscription' => SubscriptionResource.moduleSubscriptions,
       'license' => SubscriptionResource.licenses,
-      'subscription_invoice' || 'invoice' =>
-        SubscriptionResource.subscriptionInvoices,
+      'subscription_invoice' ||
+      'invoice' => SubscriptionResource.subscriptionInvoices,
       _ => null,
     };
   }

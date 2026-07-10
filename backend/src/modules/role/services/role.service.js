@@ -10,7 +10,7 @@
 const roleRepository = require('@repositories/role/role.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
-const { resolveIdentifierForPayload } = require('@lib/billing/identifiers');
+const { resolveIdentifierForPayload, resolveEntityId } = require('@lib/billing/identifiers');
 const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
 const { PLATFORM_ADMIN_EVENTS } = require('@lib/websocket/events');
 const { ROLES } = require('@config/roles');
@@ -65,6 +65,9 @@ const publishRoleRealtimeEvent = async (event, role, actorUserId) => {
     })
   ]);
 };
+
+const resolveRoleId = async (identifier) =>
+  resolveEntityId({ model: 'role', identifier });
 
 const normalizeCreateRolePayload = async (data = {}) => {
   const payload = { ...data };
@@ -153,7 +156,8 @@ const listRoles = async (filters, page, limit, sortBy, order, userId, ipAddress)
  */
 const getRoleById = async (id, userId, ipAddress) => {
   try {
-    const role = await roleRepository.findById(id);
+    const resolvedRoleId = await resolveRoleId(id);
+    const role = await roleRepository.findById(resolvedRoleId);
 
     if (!role) {
       throw new HttpError('errors.role.not_found', 404);
@@ -215,14 +219,15 @@ const createRole = async (data, userId, ipAddress) => {
  */
 const updateRole = async (id, data, userId, ipAddress) => {
   try {
+    const resolvedRoleId = await resolveRoleId(id);
     // Get current state for audit
-    const before = await roleRepository.findById(id);
+    const before = await roleRepository.findById(resolvedRoleId);
 
     if (!before) {
       throw new HttpError('errors.role.not_found', 404);
     }
 
-    const role = await roleRepository.update(id, data);
+    const role = await roleRepository.update(resolvedRoleId, data);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -258,21 +263,22 @@ const updateRole = async (id, data, userId, ipAddress) => {
  */
 const deleteRole = async (id, userId, ipAddress) => {
   try {
+    const resolvedRoleId = await resolveRoleId(id);
     // Get current state for audit
-    const before = await roleRepository.findById(id);
+    const before = await roleRepository.findById(resolvedRoleId);
 
     if (!before) {
       throw new HttpError('errors.role.not_found', 404);
     }
 
-    await roleRepository.softDelete(id);
+    await roleRepository.softDelete(resolvedRoleId);
 
     // Create audit log (non-blocking)
     createAuditLog({
       user_id: userId,
       action: 'DELETE',
       entity: 'role',
-      entity_id: id,
+      entity_id: resolvedRoleId,
       diff: { before },
       ip_address: ipAddress
     }).catch(() => {});

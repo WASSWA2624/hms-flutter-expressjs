@@ -81,10 +81,7 @@ TenantDuplicateCheckResult checkTenantDuplicates({
         TenantSimilarityMatch(
           tenant: tenant,
           score: 100,
-          reasons: <String>[
-            if (nameExact) 'name',
-            if (slugExact) 'slug',
-          ],
+          reasons: <String>[if (nameExact) 'name', if (slugExact) 'slug'],
           isExact: true,
         ),
       );

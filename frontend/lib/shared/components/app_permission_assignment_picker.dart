@@ -131,9 +131,7 @@ class _AppPermissionAssignmentPickerState
   }
 
   List<AppPermissionAssignmentOption> get _filteredPermissions {
-    return widget.permissions
-        .where(_matchesSearch)
-        .toList(growable: false);
+    return widget.permissions.where(_matchesSearch).toList(growable: false);
   }
 
   List<AppPermissionAssignmentOption> get _scopePermissions {
@@ -146,7 +144,10 @@ class _AppPermissionAssignmentPickerState
     for (final AppPermissionAssignmentOption permission
         in _filteredPermissions) {
       grouped
-          .putIfAbsent(_groupKey(permission), () => <AppPermissionAssignmentOption>[])
+          .putIfAbsent(
+            _groupKey(permission),
+            () => <AppPermissionAssignmentOption>[],
+          )
           .add(permission);
     }
     for (final List<AppPermissionAssignmentOption> group in grouped.values) {
@@ -217,7 +218,9 @@ class _AppPermissionAssignmentPickerState
     }
   }
 
-  int _selectedCountInGroup(List<AppPermissionAssignmentOption> groupPermissions) {
+  int _selectedCountInGroup(
+    List<AppPermissionAssignmentOption> groupPermissions,
+  ) {
     return groupPermissions
         .where(
           (AppPermissionAssignmentOption permission) =>
@@ -226,7 +229,9 @@ class _AppPermissionAssignmentPickerState
         .length;
   }
 
-  int _selectedCountInScope(List<AppPermissionAssignmentOption> scopePermissions) {
+  int _selectedCountInScope(
+    List<AppPermissionAssignmentOption> scopePermissions,
+  ) {
     return scopePermissions
         .where(
           (AppPermissionAssignmentOption permission) =>
@@ -253,7 +258,8 @@ class _AppPermissionAssignmentPickerState
     final int totalCount = widget.permissions.length;
     final bool canChange = widget.enabled;
     final bool isFiltering = _searchQuery.isNotEmpty;
-    final List<AppPermissionAssignmentOption> scopePermissions = _scopePermissions;
+    final List<AppPermissionAssignmentOption> scopePermissions =
+        _scopePermissions;
     final int selectedInScope = _selectedCountInScope(scopePermissions);
     final int scopeTotal = scopePermissions.length;
     final bool allInScopeSelected =
@@ -457,7 +463,8 @@ class _PermissionGroupColumn extends StatelessWidget {
         for (final String groupKey in groupKeys)
           _PermissionGroupSection(
             groupKey: groupKey,
-            permissions: grouped[groupKey] ?? const <AppPermissionAssignmentOption>[],
+            permissions:
+                grouped[groupKey] ?? const <AppPermissionAssignmentOption>[],
             expanded: expandedGroupKeys.contains(groupKey),
             selectedPermissionIds: selectedPermissionIds,
             enabled: enabled,
@@ -536,9 +543,7 @@ class _PermissionGroupSection extends StatelessWidget {
                       : noneSelected
                       ? false
                       : null,
-                  onChanged: enabled
-                      ? (_) => onToggleGroup(permissions)
-                      : null,
+                  onChanged: enabled ? (_) => onToggleGroup(permissions) : null,
                 ),
                 Expanded(
                   child: InkWell(
@@ -572,9 +577,7 @@ class _PermissionGroupSection extends StatelessWidget {
                             ),
                           ),
                           Icon(
-                            expanded
-                                ? Icons.expand_less
-                                : Icons.expand_more,
+                            expanded ? Icons.expand_less : Icons.expand_more,
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
                         ],
@@ -595,15 +598,16 @@ class _PermissionGroupSection extends StatelessWidget {
               ),
               child: Column(
                 children: <Widget>[
-                  for (final AppPermissionAssignmentOption permission in permissions)
+                  for (final AppPermissionAssignmentOption permission
+                      in permissions)
                     CheckboxListTile(
                       key: ValueKey<String>('permission-${permission.id}'),
                       value: selectedPermissionIds.contains(permission.id),
                       onChanged: enabled
                           ? (bool? value) => onTogglePermission(
-                                permission.id,
-                                value ?? false,
-                              )
+                              permission.id,
+                              value ?? false,
+                            )
                           : null,
                       title: Text(permission.label),
                       subtitle: permission.code == permission.label

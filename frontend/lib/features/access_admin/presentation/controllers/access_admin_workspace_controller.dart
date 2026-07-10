@@ -243,7 +243,7 @@ final class AccessAdminWorkspaceController
       return Future<AppFailure?>.value(AppFailure.validation());
     }
     return _submitAction(
-      () => _repository.deleteRole(item.effectiveDisplayId),
+      () => _repository.deleteRole(item.mutationId),
       removeItemId: item.id,
     );
   }
@@ -444,7 +444,8 @@ final class AccessAdminWorkspaceController
 
   void _upsertCreatedUser(String id, AccessAdminUserDraft draft) {
     final AccessAdminWorkspaceState? current = _currentState;
-    if (current == null || current.query.resource != AccessAdminResource.users) {
+    if (current == null ||
+        current.query.resource != AccessAdminResource.users) {
       return;
     }
 
@@ -500,7 +501,9 @@ final class AccessAdminWorkspaceController
     if (plan.isEmpty) {
       return;
     }
-    await _refreshWorkspace(preferredSelectedId: _currentState?.selectedItem?.id);
+    await _refreshWorkspace(
+      preferredSelectedId: _currentState?.selectedItem?.id,
+    );
   }
 
   void _emitSaving({bool clearSelectedItem = false}) {

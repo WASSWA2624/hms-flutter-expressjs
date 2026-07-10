@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 
 final homeDashboardOptimisticPatchProvider =
-    StateProvider.family<HomeDashboardOptimisticPatchState?, HomeDashboardRequest>(
-      (Ref ref, HomeDashboardRequest request) => null,
-    );
+    StateProvider.family<
+      HomeDashboardOptimisticPatchState?,
+      HomeDashboardRequest
+    >((Ref ref, HomeDashboardRequest request) => null);
 
 /// Snapshot captured when a patch is first applied.
 final class HomeDashboardOptimisticPatchState {
@@ -99,11 +100,12 @@ final class HomeDashboardOptimisticPatch {
   factory HomeDashboardOptimisticPatch.tenantCreated({bool isActive = true}) {
     return HomeDashboardOptimisticPatch(
       statusCardValueDeltas: isActive
-          ? const <String, int>{'tenants_active': 1}
+          ? const <String, int>{'tenants_active': 1, 'facilities_active': 1}
           : const <String, int>{},
       statusCardSecondaryDeltas: const <String, int>{
         'tenants_active': 1,
         'subscriptions_health': 1,
+        'facilities_active': 1,
       },
       alertCountDeltas: const <String, int>{'tenants_without_subscription': 1},
     );

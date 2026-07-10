@@ -58,8 +58,9 @@ void homeApplyDashboardOptimisticPatch(
   final HomeDashboardOptimisticPatchState? current = ref.read(
     homeDashboardOptimisticPatchProvider(request),
   );
-  ref.read(homeDashboardOptimisticPatchProvider(request).notifier).state =
-      current == null
+  ref
+      .read(homeDashboardOptimisticPatchProvider(request).notifier)
+      .state = current == null
       ? HomeDashboardOptimisticPatchState(patch: patch, baseline: baseline)
       : current.mergePatch(patch);
 }
@@ -118,8 +119,8 @@ void homeReconcileTenantsMetricFromList(
     return;
   }
 
-  final int currentTotal =
-      (tenantsCard.secondaryValue ?? tenantsCard.value).round();
+  final int currentTotal = (tenantsCard.secondaryValue ?? tenantsCard.value)
+      .round();
   final int currentActive = tenantsCard.value.round();
   final int totalDelta = totalCount - currentTotal;
   final int activeDelta = activeCount - currentActive;
@@ -137,6 +138,60 @@ void homeReconcileTenantsMetricFromList(
       statusCardSecondaryDeltas: totalDelta == 0
           ? const <String, int>{}
           : <String, int>{'tenants_active': totalDelta},
+    ),
+  );
+}
+
+/// Aligns the platform facility metric card with a freshly loaded facility list.
+void homeReconcileFacilitiesMetricFromList(
+  WidgetRef ref,
+  int activeCount, {
+  required int totalCount,
+}) {
+  const HomeDashboardRequest request = HomeDashboardRequest.empty;
+  final HomeDashboard? server = readSuccessfulHomeDashboard(ref, request);
+  if (server == null) {
+    return;
+  }
+
+  final HomeDashboardOptimisticPatchState? patchState = ref.read(
+    homeDashboardOptimisticPatchProvider(request),
+  );
+  final HomeDashboard display = homeDashboardWithOptimisticPatch(
+    server,
+    patchState,
+  );
+
+  HomeStatusCard? facilitiesCard;
+  for (final HomeStatusCard card in display.statusCards) {
+    if (card.id == 'facilities_active') {
+      facilitiesCard = card;
+      break;
+    }
+  }
+  if (facilitiesCard == null) {
+    return;
+  }
+
+  final int currentTotal =
+      (facilitiesCard.secondaryValue ?? facilitiesCard.value).round();
+  final int currentActive = facilitiesCard.value.round();
+  final int totalDelta = totalCount - currentTotal;
+  final int activeDelta = activeCount - currentActive;
+  if (totalDelta == 0 && activeDelta == 0) {
+    return;
+  }
+
+  homeApplyDashboardOptimisticPatch(
+    ref,
+    request,
+    HomeDashboardOptimisticPatch(
+      statusCardValueDeltas: activeDelta == 0
+          ? const <String, int>{}
+          : <String, int>{'facilities_active': activeDelta},
+      statusCardSecondaryDeltas: totalDelta == 0
+          ? const <String, int>{}
+          : <String, int>{'facilities_active': totalDelta},
     ),
   );
 }

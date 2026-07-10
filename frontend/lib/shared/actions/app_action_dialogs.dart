@@ -495,7 +495,8 @@ List<Widget> _actionDialogButtons(
     ),
     AppButton.primary(
       label: submitLabel,
-      leadingIcon: submitLeadingIcon ?? (destructive ? Icons.delete_outline : null),
+      leadingIcon:
+          submitLeadingIcon ?? (destructive ? Icons.delete_outline : null),
       color: destructive ? colorScheme.error : null,
       isLoading: isSaving,
       onPressed: onSubmit,
@@ -592,7 +593,9 @@ class _HighlightedConfirmationText extends StatelessWidget {
       }
 
       if (index > start) {
-        spans.add(TextSpan(text: text.substring(start, index), style: baseStyle));
+        spans.add(
+          TextSpan(text: text.substring(start, index), style: baseStyle),
+        );
       }
       spans.add(TextSpan(text: highlight, style: emphasisStyle));
       start = index + highlight.length;

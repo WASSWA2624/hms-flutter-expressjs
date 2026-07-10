@@ -125,8 +125,9 @@ class AppImageUploadField extends StatelessWidget {
                             label: chooseLabel,
                             leadingIcon: Icons.image_outlined,
                             enabled: enabled && _canChooseMore,
-                            onPressed:
-                                enabled && _canChooseMore ? onChoose : null,
+                            onPressed: enabled && _canChooseMore
+                                ? onChoose
+                                : null,
                           ),
                           if (hasImage && onClear != null)
                             AppButton.tertiary(

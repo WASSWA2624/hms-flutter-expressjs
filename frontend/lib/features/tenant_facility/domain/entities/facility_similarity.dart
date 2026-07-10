@@ -56,11 +56,7 @@ FacilityDuplicateCheckResult checkFacilityDuplicates({
     if (nameExact) {
       exactNameConflict = true;
       matches.add(
-        FacilitySimilarityMatch(
-          facility: facility,
-          score: 100,
-          isExact: true,
-        ),
+        FacilitySimilarityMatch(facility: facility, score: 100, isExact: true),
       );
       continue;
     }

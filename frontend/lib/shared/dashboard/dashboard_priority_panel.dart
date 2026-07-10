@@ -120,9 +120,7 @@ class _DashboardQueuePanel extends StatelessWidget {
     final bool isEmpty = items.isEmpty;
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
-    final String? panelTitle = isEmpty
-        ? (emptySectionTitle ?? title)
-        : title;
+    final String? panelTitle = isEmpty ? (emptySectionTitle ?? title) : title;
     final String? panelDescription = isEmpty && emptyMessage.isNotEmpty
         ? emptyMessage
         : null;

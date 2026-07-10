@@ -47,11 +47,8 @@ final homeControllerProvider =
                 current?.baseline ?? _readSuccessfulHomeDashboard(ref, request);
             if (baseline != null) {
               ref
-                      .read(
-                        homeDashboardOptimisticPatchProvider(request).notifier,
-                      )
-                      .state =
-                  current == null
+                  .read(homeDashboardOptimisticPatchProvider(request).notifier)
+                  .state = current == null
                   ? HomeDashboardOptimisticPatchState(
                       patch: patch,
                       baseline: baseline,

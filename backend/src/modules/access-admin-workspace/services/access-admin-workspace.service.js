@@ -127,6 +127,7 @@ const serializeUser = (record) => {
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),
+    resource_uuid: record.id,
     display_id: safePublicId(record.human_friendly_id, record.id),
     email: record.email,
     phone: record.phone || null,
@@ -162,6 +163,7 @@ const serializeRole = (record) => {
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),
+    resource_uuid: record.id,
     display_id: safePublicId(record.human_friendly_id, record.id),
     name: record.name,
     display_name: record.display_name || record.name,
@@ -182,6 +184,7 @@ const serializePermission = (record) => {
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),
+    resource_uuid: record.id,
     display_id: safePublicId(record.human_friendly_id, record.id),
     name: record.name,
     display_name: record.display_name || record.name,
@@ -198,6 +201,7 @@ const serializeUserRole = (record) => {
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),
+    resource_uuid: record.id,
     display_id: safePublicId(record.human_friendly_id, record.id),
     user_id: safePublicId(record.user?.human_friendly_id, record.user_id),
     user_label: record.user?.email || record.user?.position_title || null,
@@ -214,6 +218,7 @@ const serializeRolePermission = (record) => {
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),
+    resource_uuid: record.id,
     display_id: safePublicId(record.human_friendly_id, record.id),
     role_id: safePublicId(record.role?.human_friendly_id, record.role_id),
     role_name: record.role?.name || null,
@@ -230,6 +235,7 @@ const serializeModuleEntitlement = (record, subscription = null) => {
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),
+    resource_uuid: record.id,
     display_id: safePublicId(record.human_friendly_id, record.id),
     module_id: safePublicId(module.human_friendly_id, record.module_id),
     module_label: module.name || null,

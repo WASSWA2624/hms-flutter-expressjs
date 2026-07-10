@@ -429,8 +429,9 @@ final class SubscriptionsWorkspaceController
         if (refreshSession) {
           await _refreshSession();
         }
-        final AppFailure? failure =
-            await _refreshWorkspace(preferredSelectedId: current.selectedItem?.id);
+        final AppFailure? failure = await _refreshWorkspace(
+          preferredSelectedId: current.selectedItem?.id,
+        );
         await _flushPendingRefresh();
         return failure;
       },
@@ -449,7 +450,9 @@ final class SubscriptionsWorkspaceController
     if (plan.isEmpty) {
       return;
     }
-    await _refreshWorkspace(preferredSelectedId: _currentState?.selectedItem?.id);
+    await _refreshWorkspace(
+      preferredSelectedId: _currentState?.selectedItem?.id,
+    );
   }
 
   Future<AppFailure?> _refreshWorkspace({String? preferredSelectedId}) async {

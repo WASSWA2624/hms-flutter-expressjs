@@ -10,7 +10,7 @@
 const facilityRepository = require('@repositories/facility/facility.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
-const { resolveEntityId } = require('@lib/billing/identifiers');
+const { resolveEntityId, resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } = require('@config/constants');
 const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
 const { PLATFORM_ADMIN_EVENTS } = require('@lib/websocket/events');
@@ -64,6 +64,20 @@ const resolveTenantId = async (identifier) =>
 
 const resolveFacilityId = async (identifier) =>
   resolveEntityId({ model: 'facility', identifier });
+
+const normalizeFacilityRecord = (facility) => {
+  if (!facility || typeof facility !== 'object') {
+    return facility;
+  }
+
+  return {
+    ...facility,
+    resource_uuid: facility.id,
+    id:
+      resolvePublicIdentifier(facility.human_friendly_id, facility.id) ||
+      facility.id,
+  };
+};
 
 const toPositiveInt = (value, fallback, max = Number.POSITIVE_INFINITY) => {
   const parsed = Number(value);
@@ -139,7 +153,7 @@ const listFacilities = async (filters = {}, page = 1, limit = 20, sort_by = 'cre
   const hasPreviousPage = resolvedPage > 1;
 
   return {
-    facilities,
+    facilities: facilities.map((facility) => normalizeFacilityRecord(facility)),
     pagination: {
       page: resolvedPage,
       limit: resolvedLimit,
@@ -165,7 +179,7 @@ const getFacilityById = async (id) => {
     throw new HttpError('errors.facility.not_found', 404);
   }
 
-  return facility;
+  return normalizeFacilityRecord(facility);
 };
 
 /**
@@ -231,7 +245,7 @@ const createFacility = async (data, context = {}) => {
     'create'
   );
 
-  return facility;
+  return normalizeFacilityRecord(facility);
 };
 
 /**

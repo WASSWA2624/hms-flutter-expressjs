@@ -151,26 +151,25 @@ void main() {
     expect(find.text('Loaded 0'), findsNothing);
   });
 
-  testWidgets(
-    'AsyncStateScaffold keeps previous data visible during refresh',
-    (WidgetTester tester) async {
-      await pumpComponent(
-        tester,
-        AsyncStateScaffold<String>(
-          value: const AsyncLoading<Result<String>>().copyWithPrevious(
-            const AsyncData<Result<String>>(
-              Result<String>.success('Organization'),
-            ),
+  testWidgets('AsyncStateScaffold keeps previous data visible during refresh', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AsyncStateScaffold<String>(
+        value: const AsyncLoading<Result<String>>().copyWithPrevious(
+          const AsyncData<Result<String>>(
+            Result<String>.success('Organization'),
           ),
-          keepPreviousDataDuringRefresh: true,
-          loadingTitle: 'Loading',
-          loadingBody: 'Preparing content.',
-          dataBuilder: (_, value) => Text('Dashboard: $value'),
         ),
-      );
+        keepPreviousDataDuringRefresh: true,
+        loadingTitle: 'Loading',
+        loadingBody: 'Preparing content.',
+        dataBuilder: (_, value) => Text('Dashboard: $value'),
+      ),
+    );
 
-      expect(find.text('Dashboard: Organization'), findsOneWidget);
-      expect(find.text('Loading'), findsNothing);
-    },
-  );
+    expect(find.text('Dashboard: Organization'), findsOneWidget);
+    expect(find.text('Loading'), findsNothing);
+  });
 }

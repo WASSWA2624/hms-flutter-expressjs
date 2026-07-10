@@ -43,12 +43,17 @@ final class TenantProfile {
     required this.name,
     this.slug,
     this.isActive = true,
+    this.resourceUuid,
   });
 
   final String id;
   final String name;
   final String? slug;
   final bool isActive;
+  final String? resourceUuid;
+
+  String get mutationId =>
+      resourceUuid != null && resourceUuid!.isNotEmpty ? resourceUuid! : id;
 }
 
 final class FacilityProfile {
@@ -59,6 +64,7 @@ final class FacilityProfile {
     required this.type,
     this.isActive = true,
     this.logoUrl,
+    this.resourceUuid,
   });
 
   final String id;
@@ -67,6 +73,10 @@ final class FacilityProfile {
   final FacilitySetupType type;
   final bool isActive;
   final String? logoUrl;
+  final String? resourceUuid;
+
+  String get mutationId =>
+      resourceUuid != null && resourceUuid!.isNotEmpty ? resourceUuid! : id;
 }
 
 final class BranchProfile {

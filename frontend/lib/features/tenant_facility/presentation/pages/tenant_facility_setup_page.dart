@@ -416,7 +416,9 @@ class _SetupProfileDialogState extends ConsumerState<_SetupProfileDialog> {
             error: (Object error, StackTrace stackTrace) => AppFailureStateView(
               failure: _setupFailure(error),
               onRetry: () {
-                ref.read(tenantFacilitySetupControllerProvider.notifier).refresh();
+                ref
+                    .read(tenantFacilitySetupControllerProvider.notifier)
+                    .refresh();
               },
             ),
             loading: () => AppStateView(
@@ -447,7 +449,8 @@ class _SetupProfileDialogState extends ConsumerState<_SetupProfileDialog> {
           label: widget.saveLabel,
           leadingIcon: Icons.save_outlined,
           isLoading: submission.isSubmitting,
-          onPressed: submission.isSubmitting || !(_canSaveChecker?.call() ?? true)
+          onPressed:
+              submission.isSubmitting || !(_canSaveChecker?.call() ?? true)
               ? null
               : _handleSave,
         ),
@@ -1371,8 +1374,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
         _activeFacility?.tenantId;
   }
 
-  bool get _hasSelectedTenant =>
-      (_resolvedTenantId ?? '').trim().isNotEmpty;
+  bool get _hasSelectedTenant => (_resolvedTenantId ?? '').trim().isNotEmpty;
 
   bool _canSave() => widget.canSubmit && _hasSelectedTenant;
 

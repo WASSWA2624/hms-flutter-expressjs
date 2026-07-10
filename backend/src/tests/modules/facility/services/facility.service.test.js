@@ -7,7 +7,8 @@ jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn().mockResolvedValue(undefined)
 }));
 jest.mock('@lib/billing/identifiers', () => ({
-  resolveEntityId: jest.fn(async ({ identifier }) => identifier)
+  resolveEntityId: jest.fn(async ({ identifier }) => identifier),
+  resolvePublicIdentifier: jest.fn((...values) => values.find((value) => value) || null),
 }));
 
 describe('facility.service duplicate name validation', () => {

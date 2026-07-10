@@ -23,6 +23,7 @@ import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/management/platform_admin_list_config.dart';
 import 'package:hosspi_hms/shared/management/platform_management_list_sync.dart';
 
 const Set<String> _tenantManagementRealtimeEvents = <String>{
@@ -61,8 +62,10 @@ String? _managementResourceIdFromMessage(
           nested.entries
               .where((MapEntry<Object?, Object?> entry) => entry.key != null)
               .map(
-                (MapEntry<Object?, Object?> entry) =>
-                    MapEntry<String, Object?>(entry.key.toString(), entry.value),
+                (MapEntry<Object?, Object?> entry) => MapEntry<String, Object?>(
+                  entry.key.toString(),
+                  entry.value,
+                ),
               ),
         )
       : null;
@@ -114,13 +117,11 @@ class _ManageTenantsDialog extends ConsumerStatefulWidget {
 }
 
 class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
-  static const int _pageSize = 12;
-
   final TextEditingController _searchController = TextEditingController();
   Timer? _searchDebounce;
   bool _loading = true;
   AppFailure? _failure;
-  AppPageRequest _pageRequest = const AppPageRequest(pageSize: _pageSize);
+  AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
   int _totalItemCount = 0;
   List<TenantProfile> _tenants = const <TenantProfile>[];
   final Set<String> _pendingDeletedTenantIds = <String>{};
@@ -224,7 +225,10 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
     await _reload(resetPage: false);
   }
 
-  Future<void> _openTenantForm({TenantProfile? tenant, bool forceCreate = false}) async {
+  Future<void> _openTenantForm({
+    TenantProfile? tenant,
+    bool forceCreate = false,
+  }) async {
     final bool? wasActive = tenant?.isActive;
     final bool? saved = await showTenantFacilityTenantFormDialog(
       context,
@@ -290,7 +294,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
         onConfirm: () async {
           final Result<void> result = await ref
               .read(tenantFacilityRepositoryProvider)
-              .deleteTenant(tenant.id);
+              .deleteTenant(tenant.mutationId);
           return result.when(
             success: (_) => null,
             failure: (AppFailure failure) => failure,
@@ -317,6 +321,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
   }
 
   void _rememberPendingDeletedTenant(TenantProfile tenant) {
+    _pendingDeletedTenantIds.add(tenant.mutationId);
     _pendingDeletedTenantIds.add(tenant.id);
     final String? slug = tenant.slug?.trim();
     if (slug != null && slug.isNotEmpty) {
@@ -337,11 +342,14 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
   }
 
   bool _isPendingDeletedTenant(TenantProfile tenant) {
-    if (_pendingDeletedTenantIds.contains(tenant.id)) {
+    if (_pendingDeletedTenantIds.contains(tenant.mutationId) ||
+        _pendingDeletedTenantIds.contains(tenant.id)) {
       return true;
     }
     final String? slug = tenant.slug?.trim();
-    return slug != null && slug.isNotEmpty && _pendingDeletedTenantIds.contains(slug);
+    return slug != null &&
+        slug.isNotEmpty &&
+        _pendingDeletedTenantIds.contains(slug);
   }
 
   void _reconcilePendingDeletes(List<TenantProfile> serverTenants) {
@@ -352,11 +360,14 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
     final Set<String> serverKeys = <String>{
       for (final TenantProfile tenant in serverTenants) ...<String>{
         tenant.id,
+        tenant.mutationId,
         if (tenant.slug != null && tenant.slug!.trim().isNotEmpty)
           tenant.slug!.trim(),
       },
     };
-    _pendingDeletedTenantIds.removeWhere((String id) => !serverKeys.contains(id));
+    _pendingDeletedTenantIds.removeWhere(
+      (String id) => !serverKeys.contains(id),
+    );
   }
 
   int _countActiveTenants(List<TenantProfile> tenants) {
@@ -391,7 +402,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
     if (message == null) {
       return;
     }
-  if (message.event == RealtimeEvents.tenantDeleted) {
+    if (message.event == RealtimeEvents.tenantDeleted) {
       final String? tenantId = _managementResourceIdFromMessage(
         message,
         keys: const <String>['resource_id', 'tenant_id', 'id'],
@@ -452,6 +463,9 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                       previousPageLabel: l10n.hrPreviousPageLabel,
                       nextPageLabel: l10n.hrNextPageLabel,
                       pageLabelBuilder: (AppPage<TenantProfile> page) {
+                        if (_loading) {
+                          return '';
+                        }
                         final int total =
                             page.totalItemCount ?? page.items.length;
                         if (total == 0) return l10n.commonTableEmptyLabel;
@@ -485,16 +499,19 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                             alwaysVisible: true,
                             cellBuilder:
                                 (BuildContext context, TenantProfile tenant) {
-                              return _ManagementRowActions(
-                                enabled: !_loading,
-                                editLabel: l10n.tenantFacilitySaveTenantAction,
-                                deleteLabel: l10n.tenantFacilityDeleteAction,
-                                onEdit: () =>
-                                    unawaited(_openTenantForm(tenant: tenant)),
-                                onDelete: () =>
-                                    unawaited(_confirmDeleteTenant(tenant)),
-                              );
-                            },
+                                  return _ManagementRowActions(
+                                    enabled: !_loading,
+                                    editLabel:
+                                        l10n.tenantFacilitySaveTenantAction,
+                                    deleteLabel:
+                                        l10n.tenantFacilityDeleteAction,
+                                    onEdit: () => unawaited(
+                                      _openTenantForm(tenant: tenant),
+                                    ),
+                                    onDelete: () =>
+                                        unawaited(_confirmDeleteTenant(tenant)),
+                                  );
+                                },
                           ),
                       ],
                       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
@@ -526,8 +543,9 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                                           : l10n.commonNoLabel,
                                     ),
                               onTap: _canCreate
-                                  ? () =>
-                                        unawaited(_openTenantForm(tenant: tenant))
+                                  ? () => unawaited(
+                                      _openTenantForm(tenant: tenant),
+                                    )
                                   : null,
                             );
                           },
@@ -565,13 +583,11 @@ class _ManageFacilitiesDialog extends ConsumerStatefulWidget {
 
 class _ManageFacilitiesDialogState
     extends ConsumerState<_ManageFacilitiesDialog> {
-  static const int _pageSize = 12;
-
   final TextEditingController _searchController = TextEditingController();
   Timer? _searchDebounce;
   bool _loading = true;
   AppFailure? _failure;
-  AppPageRequest _pageRequest = const AppPageRequest(pageSize: _pageSize);
+  AppPageRequest _pageRequest = PlatformAdminListConfig.initialPageRequest;
   int _totalItemCount = 0;
   List<FacilityProfile> _facilities = const <FacilityProfile>[];
   List<TenantProfile> _tenantOptions = const <TenantProfile>[];
@@ -618,7 +634,7 @@ class _ManageFacilitiesDialogState
       tenantFacilityRepositoryProvider,
     );
     final Result<AppPage<TenantProfile>> result = await repository.listTenants(
-      request: const AppPageRequest(pageSize: 100),
+      request: PlatformAdminListConfig.initialPageRequest,
     );
     if (!mounted) return;
     result.when(
@@ -663,10 +679,19 @@ class _ManageFacilitiesDialogState
     if (!mounted || generation != _reloadGeneration) return;
     result.when(
       success: (AppPage<FacilityProfile> page) {
+        final int activeCount = page.items
+            .where((FacilityProfile facility) => facility.isActive)
+            .length;
+        final int totalItemCount = page.totalItemCount ?? page.items.length;
+        homeReconcileFacilitiesMetricFromList(
+          ref,
+          activeCount,
+          totalCount: totalItemCount,
+        );
         setState(() {
           _loading = false;
           _facilities = page.items;
-          _totalItemCount = page.totalItemCount ?? page.items.length;
+          _totalItemCount = totalItemCount;
         });
       },
       failure: (AppFailure failure) {
@@ -730,7 +755,7 @@ class _ManageFacilitiesDialogState
         onConfirm: () async {
           final Result<void> result = await ref
               .read(tenantFacilityRepositoryProvider)
-              .deleteFacility(facility.id);
+              .deleteFacility(facility.mutationId);
           return result.when(
             success: (_) => null,
             failure: (AppFailure failure) => failure,
@@ -745,7 +770,7 @@ class _ManageFacilitiesDialogState
 
     if (confirmed == true) {
       _mutated = true;
-      _removeFacilityLocally(facility.id);
+      _removeFacilityLocally(facility.mutationId);
       _syncPlatformDashboard(
         ref,
         patch: HomeDashboardOptimisticPatch.facilityDeleted(
@@ -760,7 +785,10 @@ class _ManageFacilitiesDialogState
   void _removeFacilityLocally(String facilityId) {
     final int before = _facilities.length;
     final List<FacilityProfile> next = _facilities
-        .where((FacilityProfile entry) => entry.id != facilityId)
+        .where(
+          (FacilityProfile entry) =>
+              entry.id != facilityId && entry.mutationId != facilityId,
+        )
         .toList(growable: false);
     if (next.length == before) {
       return;
@@ -859,13 +887,15 @@ class _ManageFacilitiesDialogState
                       itemKeyBuilder: (FacilityProfile item) =>
                           ValueKey<String>(item.id),
                       onRowSelected: _canManage
-                          ? (FacilityProfile facility) => unawaited(
-                              _openFacilityForm(facility: facility),
-                            )
+                          ? (FacilityProfile facility) =>
+                                unawaited(_openFacilityForm(facility: facility))
                           : null,
                       previousPageLabel: l10n.hrPreviousPageLabel,
                       nextPageLabel: l10n.hrNextPageLabel,
                       pageLabelBuilder: (AppPage<FacilityProfile> page) {
+                        if (_loading) {
+                          return '';
+                        }
                         final int total =
                             page.totalItemCount ?? page.items.length;
                         if (total == 0) return l10n.commonTableEmptyLabel;
@@ -907,18 +937,20 @@ class _ManageFacilitiesDialogState
                                   BuildContext context,
                                   FacilityProfile facility,
                                 ) {
-                              return _ManagementRowActions(
-                                enabled: !_loading,
-                                editLabel: l10n.tenantFacilityEditFacilityAction,
-                                deleteLabel: l10n.tenantFacilityDeleteAction,
-                                onEdit: () => unawaited(
-                                  _openFacilityForm(facility: facility),
-                                ),
-                                onDelete: () => unawaited(
-                                  _confirmDeleteFacility(facility),
-                                ),
-                              );
-                            },
+                                  return _ManagementRowActions(
+                                    enabled: !_loading,
+                                    editLabel:
+                                        l10n.tenantFacilityEditFacilityAction,
+                                    deleteLabel:
+                                        l10n.tenantFacilityDeleteAction,
+                                    onEdit: () => unawaited(
+                                      _openFacilityForm(facility: facility),
+                                    ),
+                                    onDelete: () => unawaited(
+                                      _confirmDeleteFacility(facility),
+                                    ),
+                                  );
+                                },
                           ),
                       ],
                       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
@@ -933,7 +965,8 @@ class _ManageFacilitiesDialogState
                               trailing: _canManage
                                   ? _ManagementRowActions(
                                       enabled: !_loading,
-                                      editLabel: l10n.tenantFacilityEditFacilityAction,
+                                      editLabel:
+                                          l10n.tenantFacilityEditFacilityAction,
                                       deleteLabel:
                                           l10n.tenantFacilityDeleteAction,
                                       onEdit: () => unawaited(

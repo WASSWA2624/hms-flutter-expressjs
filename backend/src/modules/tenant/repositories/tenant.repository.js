@@ -210,6 +210,40 @@ const create = async (data) => {
 };
 
 /**
+ * Create tenant with a default facility in one transaction.
+ *
+ * @param {Object} data - Tenant data
+ * @param {Object} [options]
+ * @param {string} [options.facilityName]
+ * @returns {Promise<{ tenant: Object, facility: Object }>}
+ */
+const createWithDefaultFacility = async (data, options = {}) => {
+  const facilityName = String(options.facilityName || 'Main Facility').trim() || 'Main Facility';
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const tenant = await tx.tenant.create({ data });
+      const facility = await tx.facility.create({
+        data: {
+          tenant_id: tenant.id,
+          name: facilityName,
+          facility_type: 'HOSPITAL',
+          is_active: true,
+        },
+      });
+
+      return { tenant, facility };
+    });
+  } catch (error) {
+    if (error.code === 'P2002') {
+      const target = error.meta?.target?.[0] || 'field';
+      throw new HttpError('errors.database.unique_field', 409, [{ field: target }]);
+    }
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
  * Update tenant
  *
  * @param {string} id - Tenant ID
@@ -279,6 +313,7 @@ module.exports = {
   findMany,
   count,
   create,
+  createWithDefaultFacility,
   update,
   softDelete,
   releaseSlugFromSoftDeletedTenants
