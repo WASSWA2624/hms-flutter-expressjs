@@ -58,7 +58,7 @@ Future<bool?> showAccessAdminCreateUserDialog(
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.failureMessage(failure))),
       );
-      return Future<bool?>.value(null);
+      return null;
     },
   );
 }

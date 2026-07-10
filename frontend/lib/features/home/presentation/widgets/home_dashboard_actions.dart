@@ -6,13 +6,12 @@ import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
-import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
+import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_mutation.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
-import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_sync.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart';
@@ -1226,10 +1225,6 @@ List<HomeActionDefinition> homeVisibleEmptyActions(
       .whereType<HomeActionDefinition>()
       .where((HomeActionDefinition action) => action.isAllowed(policy))
       .toList(growable: false);
-}
-
-void homeRefreshDashboard(WidgetRef ref, HomeDashboardRequest request) {
-  homeOnDashboardMutationSuccess(ref, request);
 }
 
 HomeRouteTarget? homeFirstQueueTarget(List<HomeQueueItem> items) {

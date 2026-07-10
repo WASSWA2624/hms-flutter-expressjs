@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
+import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_sync.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_context_panel.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_actions.dart';
@@ -23,7 +24,7 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dashboard = ref.watch(homeControllerProvider(request));
-    final optimisticPatch = ref.watch(
+    final HomeDashboardOptimisticPatch? optimisticPatch = ref.watch(
       homeDashboardOptimisticPatchProvider(request),
     );
     final l10n = context.l10n;

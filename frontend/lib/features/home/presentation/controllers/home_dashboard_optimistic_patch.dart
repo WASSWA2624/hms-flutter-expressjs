@@ -1,4 +1,11 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
+
+final homeDashboardOptimisticPatchProvider =
+    StateProvider.family<HomeDashboardOptimisticPatch?, HomeDashboardRequest>(
+      (Ref ref, HomeDashboardRequest request) => null,
+    );
 
 /// Local count adjustments applied before HTTP refresh completes.
 final class HomeDashboardOptimisticPatch {

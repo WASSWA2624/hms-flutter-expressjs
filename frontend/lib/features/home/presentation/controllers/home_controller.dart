@@ -10,7 +10,6 @@ import 'package:hosspi_hms/features/home/data/repositories/home_repository_impl.
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
-import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_sync.dart';
 
 final homeControllerProvider =
     FutureProvider.family<Result<HomeDashboard>, HomeDashboardRequest>((
@@ -41,12 +40,15 @@ final homeControllerProvider =
               HomeDashboardOptimisticPatch.fromRealtimePayload(message.payload);
 
           if (patch != null && !isSelfMutation) {
-            homeApplyRealtimeDashboardPatch(
-              ref,
-              request,
-              patch,
-              invalidateAfterPatch: false,
+            final HomeDashboardOptimisticPatch? current = ref.read(
+              homeDashboardOptimisticPatchProvider(request),
             );
+            ref
+                    .read(
+                      homeDashboardOptimisticPatchProvider(request).notifier,
+                    )
+                    .state =
+                current == null ? patch : current.merge(patch);
             return;
           }
 
@@ -93,7 +95,6 @@ const Set<String> _homeDashboardRealtimeEvents = <String>{
   ...RealtimeEventGroups.biomedical,
   ...RealtimeEventGroups.communications,
   RealtimeEvents.facilityLayoutUpdated,
-  ...RealtimeEventGroups.subscriptions,
   ...RealtimeEventGroups.platformAdmin,
 };
 
