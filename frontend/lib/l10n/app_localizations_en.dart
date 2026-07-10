@@ -1332,6 +1332,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get subscriptionUpgradeStepContactTitle => 'Billing contact';
 
   @override
+  String get subscriptionUpgradePlansEmptyTitle => 'No plans available';
+
+  @override
+  String get subscriptionUpgradePlansEmptyMessage =>
+      'Commercial plans could not be loaded. Refresh and try again, or contact your platform administrator.';
+
+  @override
   String get subscriptionUpgradeBillingCycleHint => 'Billing cycle';
 
   @override

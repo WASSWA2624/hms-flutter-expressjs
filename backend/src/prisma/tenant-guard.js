@@ -66,13 +66,36 @@ const getGuardContext = () => {
   const context = getRequestContext();
   const tenantId = context?.scope?.tenant_id ? String(context.scope.tenant_id) : null;
   const actorRoles = context?.actor?.roles || [];
-  const bypass = !tenantId || hasElevatedRole(actorRoles);
+  const bypass =
+    Boolean(context?.bypassTenantGuard) ||
+    !tenantId ||
+    hasElevatedRole(actorRoles);
 
   return {
     context,
     tenantId,
     bypass
   };
+};
+
+/**
+ * Run a callback with tenant-guard bypass so platform-scoped catalog rows
+ * (tenant_id null) remain readable for tenant actors.
+ *
+ * @template T
+ * @param {() => T | Promise<T>} callback
+ * @returns {T | Promise<T>}
+ */
+const runWithoutTenantGuard = (callback) => {
+  const { runWithRequestContext } = loadRequestContextStore();
+  const parent = getRequestContext() || {};
+  return runWithRequestContext(
+    {
+      ...parent,
+      bypassTenantGuard: true,
+    },
+    callback
+  );
 };
 
 const mentionsField = (where, fieldName) => {
@@ -296,6 +319,7 @@ module.exports = {
   buildGuardedWhere,
   createTenantGuardQueryExtension,
   withTenantGuard,
+  runWithoutTenantGuard,
   injectTenantId,
   hasElevatedRole,
   mentionsField

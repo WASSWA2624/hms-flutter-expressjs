@@ -8,6 +8,7 @@ const prisma = require('@prisma/client');
 const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const env = require('@config/env');
 const { PLAN_TIER_RANK } = require('@lib/subscriptions/plan-module-matrix');
+const { runWithoutTenantGuard } = require('../../prisma/tenant-guard');
 
 const safePublicId = (...values) => resolvePublicIdentifier(...values) || null;
 
@@ -92,22 +93,24 @@ const resolveNextUpgradePlan = async (tierCode) => {
     return null;
   }
 
-  const plans = await prisma.subscription_plan.findMany({
-    where: {
-      deleted_at: null,
-      tenant_id: null,
-      tier_code: nextTier,
-    },
-    orderBy: [{ price: 'asc' }, { name: 'asc' }],
-    select: {
-      id: true,
-      human_friendly_id: true,
-      name: true,
-      tier_code: true,
-      code: true,
-      extension_json: true,
-    },
-  });
+  const plans = await runWithoutTenantGuard(() =>
+    prisma.subscription_plan.findMany({
+      where: {
+        deleted_at: null,
+        tenant_id: null,
+        tier_code: nextTier,
+      },
+      orderBy: [{ price: 'asc' }, { name: 'asc' }],
+      select: {
+        id: true,
+        human_friendly_id: true,
+        name: true,
+        tier_code: true,
+        code: true,
+        extension_json: true,
+      },
+    })
+  );
 
   const plan = plans.find((entry) => !isDeveloperPlanRecord(entry)) || null;
   if (!plan) {

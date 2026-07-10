@@ -2596,6 +2596,18 @@ abstract class AppLocalizations {
   /// **'Billing contact'**
   String get subscriptionUpgradeStepContactTitle;
 
+  /// Title when the upgrade dialog has no selectable plans.
+  ///
+  /// In en, this message translates to:
+  /// **'No plans available'**
+  String get subscriptionUpgradePlansEmptyTitle;
+
+  /// Body when the upgrade dialog has no selectable plans.
+  ///
+  /// In en, this message translates to:
+  /// **'Commercial plans could not be loaded. Refresh and try again, or contact your platform administrator.'**
+  String get subscriptionUpgradePlansEmptyMessage;
+
   /// Title above the monthly/annual toggle on the upgrade plan step.
   ///
   /// In en, this message translates to:

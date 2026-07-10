@@ -1730,6 +1730,14 @@
   "@subscriptionUpgradeStepContactTitle": {
     "description": "Upgrade wizard step title for platform billing contacts."
   },
+  "subscriptionUpgradePlansEmptyTitle": "No plans available",
+  "@subscriptionUpgradePlansEmptyTitle": {
+    "description": "Title when the upgrade dialog has no selectable plans."
+  },
+  "subscriptionUpgradePlansEmptyMessage": "Commercial plans could not be loaded. Refresh and try again, or contact your platform administrator.",
+  "@subscriptionUpgradePlansEmptyMessage": {
+    "description": "Body when the upgrade dialog has no selectable plans."
+  },
   "subscriptionUpgradeBillingCycleHint": "Billing cycle",
   "@subscriptionUpgradeBillingCycleHint": {
     "description": "Title above the monthly/annual toggle on the upgrade plan step."

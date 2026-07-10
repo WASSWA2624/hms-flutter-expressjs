@@ -13,6 +13,7 @@ const { sendEmail } = require('@lib/notifications');
 const { createStorageService, sanitizeFilename } = require('@lib/storage');
 const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-entity-id');
+const { runWithoutTenantGuard } = require('../../prisma/tenant-guard');
 const {
   resolvePlatformAdminContact,
   resolvePlatformBankTransferDetails,
@@ -75,17 +76,32 @@ const resolvePlanRecord = async (planIdentifier, tenantId) => {
     return null;
   }
 
-  const record = await resolveModelRecordByIdentifier({
-    model: 'subscription_plan',
-    identifier: planIdentifier,
-    where: {
-      deleted_at: null,
-      OR: [{ tenant_id: null }, { tenant_id: tenantId }],
-    },
-  });
+  // Platform catalog plans use tenant_id null; tenant guard would hide them.
+  const record = await runWithoutTenantGuard(() =>
+    resolveModelRecordByIdentifier({
+      model: 'subscription_plan',
+      identifier: planIdentifier,
+      where: {
+        deleted_at: null,
+        OR: [{ tenant_id: null }, { tenant_id: tenantId }],
+      },
+    })
+  );
 
   return record || null;
 };
+
+const loadUpgradePlans = async (tenantId) =>
+  runWithoutTenantGuard(() =>
+    prisma.subscription_plan.findMany({
+      where: {
+        deleted_at: null,
+        OR: [{ tenant_id: null }, { tenant_id: tenantId }],
+        tier_code: { not: 'FREE' },
+      },
+      orderBy: [{ price: 'asc' }],
+    })
+  );
 
 const uploadProofFile = async (file, tenantId) => {
   if (!file?.buffer?.length) {
@@ -151,14 +167,7 @@ const getUpgradeContext = async (user = {}) => {
   const tenantId = await resolveTenantScope(user);
   const [overviewSubscription, plans, summary] = await Promise.all([
     loadCurrentSubscription(tenantId).catch(() => null),
-    prisma.subscription_plan.findMany({
-      where: {
-        deleted_at: null,
-        OR: [{ tenant_id: null }, { tenant_id: tenantId }],
-        tier_code: { not: 'FREE' },
-      },
-      orderBy: [{ price: 'asc' }],
-    }),
+    loadUpgradePlans(tenantId),
     resolveTenantSubscriptionSummary(tenantId),
   ]);
 

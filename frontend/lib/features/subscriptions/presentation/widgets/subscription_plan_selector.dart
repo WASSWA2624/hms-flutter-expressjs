@@ -20,6 +20,8 @@ class SubscriptionPlanSelector extends StatelessWidget {
     required this.onBillingCycleChanged,
     required this.onSelected,
     this.billingCycleHint,
+    this.emptyTitle,
+    this.emptyMessage,
     super.key,
   });
 
@@ -34,13 +36,22 @@ class SubscriptionPlanSelector extends StatelessWidget {
   final ValueChanged<SubscriptionUpgradeBillingCycle> onBillingCycleChanged;
   final ValueChanged<String> onSelected;
   final String? billingCycleHint;
+  final String? emptyTitle;
+  final String? emptyMessage;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
     if (plans.isEmpty) {
-      return const SizedBox.shrink();
+      return AppMessagePanel(
+        title: emptyTitle ?? 'No plans available',
+        message:
+            emptyMessage ??
+            'Commercial plans could not be loaded. Refresh and try again.',
+        icon: Icons.inbox_outlined,
+        tone: AppWorkspaceStatusTone.warning,
+      );
     }
 
     final List<SubscriptionUpgradePlanOption> ordered = _sortedPlans();
@@ -81,10 +92,16 @@ class SubscriptionPlanSelector extends StatelessWidget {
         SizedBox(height: theme.spacing.md),
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            final int columns = _columnCount(constraints.maxWidth, ordered.length);
+            final double maxWidth = constraints.maxWidth.isFinite
+                ? constraints.maxWidth
+                : MediaQuery.sizeOf(context).width;
+            final int columns = _columnCount(maxWidth, ordered.length);
             final double gap = theme.spacing.sm;
             final double tileWidth =
-                (constraints.maxWidth - (gap * (columns - 1))) / columns;
+                ((maxWidth - (gap * (columns - 1))) / columns).clamp(
+                  160.0,
+                  maxWidth,
+                );
 
             return Wrap(
               spacing: gap,

@@ -59,6 +59,8 @@ class SubscriptionUpgradeDialog extends ConsumerStatefulWidget {
 class _SubscriptionUpgradeDialogState
     extends ConsumerState<SubscriptionUpgradeDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final GlobalKey<State<AppPhoneField>> _phoneFieldKey =
+      GlobalKey<State<AppPhoneField>>();
   final TextEditingController _amountController = TextEditingController();
   final TextEditingController _invoiceEmailController =
       TextEditingController();
@@ -192,11 +194,19 @@ class _SubscriptionUpgradeDialogState
             summary != null &&
             summary.headerState != TenantSubscriptionHeaderState.active;
 
-        final String? selectedPlanId = preferRenewal
+        final String? preferredPlanId = preferRenewal
             ? currentPlanId
             : (contextData.recommendedPlanId ??
                   currentPlanId ??
                   contextData.plans.firstOrNull?.id);
+
+        final bool preferredInCatalog = preferredPlanId != null &&
+            contextData.plans.any(
+              (SubscriptionUpgradePlanOption plan) => plan.id == preferredPlanId,
+            );
+        final String? selectedPlanId = preferredInCatalog
+            ? preferredPlanId
+            : contextData.plans.firstOrNull?.id;
 
         SubscriptionUpgradeBillingCycle billingCycle =
             SubscriptionUpgradeBillingCycle.monthly;
@@ -342,10 +352,11 @@ class _SubscriptionUpgradeDialogState
 
     switch (_step) {
       case _UpgradeStep.plan:
-        return _selectedPlanId != null && _selectedPlanId!.isNotEmpty;
+        return _selectedPlan != null;
       case _UpgradeStep.paymentMethod:
         return true;
       case _UpgradeStep.paymentDetails:
+        AppPhoneField.commitPhone(_phoneFieldKey);
         return validateAndSaveAppForm(_formKey);
       case _UpgradeStep.proof:
         if (_requiresProof && _proofBytes == null) {
@@ -393,6 +404,7 @@ class _SubscriptionUpgradeDialogState
   }
 
   Future<void> _submit() async {
+    AppPhoneField.commitPhone(_phoneFieldKey);
     if (!_validateCurrentStep()) {
       return;
     }
@@ -568,6 +580,7 @@ class _SubscriptionUpgradeDialogState
                 AppWizardStepItem(id: step, label: _stepTitle(l10n, step)),
             ],
             currentIndex: _stepIndex,
+            showCurrentTitle: false,
           ),
           SizedBox(height: theme.spacing.lg),
           for (final _UpgradeStep step in steps)
@@ -624,6 +637,8 @@ class _SubscriptionUpgradeDialogState
         annualLabel: l10n.subscriptionUpgradeBillingAnnualLabel,
         currentPlanLabel: l10n.subscriptionUpgradeCurrentPlanBadge,
         billingCycleHint: l10n.subscriptionUpgradeBillingCycleHint,
+        emptyTitle: l10n.subscriptionUpgradePlansEmptyTitle,
+        emptyMessage: l10n.subscriptionUpgradePlansEmptyMessage,
         planLabelBuilder: (SubscriptionUpgradePlanOption plan) =>
             _planLabel(l10n, plan),
         onBillingCycleChanged: (SubscriptionUpgradeBillingCycle cycle) {
@@ -733,7 +748,6 @@ class _SubscriptionUpgradeDialogState
     final Widget amountField = AppCurrencyAmountField(
       amountController: _amountController,
       currency: _currency,
-      amountReadOnly: true,
       isLoading: _isFxLoading,
       onCurrencyChanged: (String? value) {
         if (value != null) {
@@ -775,11 +789,20 @@ class _SubscriptionUpgradeDialogState
               textInputAction: TextInputAction.next,
             ),
             if (isMobileMoney)
-              AppTextField(
+              AppPhoneField(
+                key: _phoneFieldKey,
                 controller: _phoneController,
                 labelText: l10n.subscriptionMobileMoneyPhoneLabel,
-                keyboardType: TextInputType.phone,
+                countryLabelText: l10n.appPhoneCountryLabel,
+                countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
+                countryNoResultsText: l10n.appPhoneCountryNoResults,
+                numberLabelText: l10n.appPhoneNumberLabel,
+                numberHintText: l10n.appPhoneNumberHint,
+                invalidPhoneMessage: l10n.appPhoneInvalidMessage,
+                requiredMessage: l10n.validationRequired,
                 isRequired: true,
+                textInputAction: TextInputAction.next,
+                enabled: !_isSubmitting,
               ),
             amountField,
             if (_fxWarning != null)
