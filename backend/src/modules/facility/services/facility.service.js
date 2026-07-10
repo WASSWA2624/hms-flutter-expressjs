@@ -233,6 +233,9 @@ const createFacility = async (data, context = {}) => {
 
   return facility;
 };
+
+/**
+ * Update facility
  *
  * @param {string} id - Facility ID
  * @param {Object} data - Update data
