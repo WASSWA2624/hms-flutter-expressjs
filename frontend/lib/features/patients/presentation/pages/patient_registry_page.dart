@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/currency/effective_default_currency_provider.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
@@ -2402,6 +2403,7 @@ class _PatientFlowQuickDialogState
   void initState() {
     super.initState();
     _facilityId = widget.patient.facilityId;
+    _currency = ref.read(effectiveDefaultCurrencyProvider);
     unawaited(_loadProviders());
   }
 

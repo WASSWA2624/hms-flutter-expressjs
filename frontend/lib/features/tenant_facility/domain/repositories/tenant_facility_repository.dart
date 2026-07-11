@@ -44,6 +44,7 @@ abstract interface class TenantFacilityRepository {
     required String name,
     String? slug,
     required bool isActive,
+    String? currency,
   });
 
   Future<Result<FacilityProfile>> saveFacility({

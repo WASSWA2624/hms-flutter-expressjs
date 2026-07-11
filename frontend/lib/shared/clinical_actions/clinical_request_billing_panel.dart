@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/currency/effective_default_currency_provider.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -47,9 +48,16 @@ class _ClinicalRequestBillingPanelState
   @override
   void initState() {
     super.initState();
-    _currency =
-        widget.initialCurrency?.trim().toUpperCase() ??
-        resolveClinicalRequestBillingCurrency(widget.lineItems);
+    final String? initial = widget.initialCurrency?.trim();
+    if (initial != null && initial.isNotEmpty) {
+      _currency = initial.toUpperCase();
+    } else {
+      final String resolvedDefault = ref.read(effectiveDefaultCurrencyProvider);
+      _currency = resolveClinicalRequestBillingCurrency(
+        widget.lineItems,
+        facilityCurrency: resolvedDefault,
+      );
+    }
     _paymentMethod = clinicalRequestPaymentMethods.first;
     final ClinicalRequestPaymentStatus initialStatus =
         widget.initialPaymentStatus ?? ClinicalRequestPaymentStatus.unpaid;

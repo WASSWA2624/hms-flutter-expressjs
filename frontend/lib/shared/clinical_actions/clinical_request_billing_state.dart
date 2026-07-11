@@ -230,6 +230,8 @@ String clinicalRequestPaymentStatusDisplayLabel(
 
 ClinicalRequestBillingSubmit buildPendingClinicalRequestBillingSubmit({
   required List<ClinicalActionCatalogOption> options,
+  String? facilityCurrency,
+  String? tenantCurrency,
 }) {
   final List<ClinicalRequestBillingLineItem> lineItems =
       clinicalRequestBillingLineItems(options: options);
@@ -237,7 +239,11 @@ ClinicalRequestBillingSubmit buildPendingClinicalRequestBillingSubmit({
   return ClinicalRequestBillingSubmit(
     mode: ClinicalRequestPaymentMode.billLater,
     totalAmount: total,
-    currency: resolveClinicalRequestBillingCurrency(lineItems),
+    currency: resolveClinicalRequestBillingCurrency(
+      lineItems,
+      facilityCurrency: facilityCurrency,
+      tenantCurrency: tenantCurrency,
+    ),
     paymentStatus: ClinicalRequestPaymentStatus.unpaid,
     lineItems: lineItems,
   );
@@ -285,6 +291,7 @@ num? clinicalRequestBillingLineAmount(
 String resolveClinicalRequestBillingCurrency(
   List<ClinicalRequestBillingLineItem> lineItems, {
   String? facilityCurrency,
+  String? tenantCurrency,
 }) {
   for (final ClinicalRequestBillingLineItem item in lineItems) {
     final String? currency = item.currency?.trim().toUpperCase();
@@ -292,7 +299,10 @@ String resolveClinicalRequestBillingCurrency(
       return currency;
     }
   }
-  return resolveFacilityDefaultCurrency(facilityCurrency);
+  return resolveDefaultCurrency(
+    facilityCurrency: facilityCurrency,
+    tenantCurrency: tenantCurrency,
+  );
 }
 
 const List<String> clinicalRequestPaymentMethods = <String>[

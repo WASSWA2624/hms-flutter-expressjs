@@ -685,8 +685,9 @@ Future<void> _openFacilityCatalogModal(
       content: FacilityCatalogConfigPanel(
         facilityId: facilityId,
         tenantId: tenantId,
-        defaultCurrency: resolveFacilityDefaultCurrency(
-          snapshot.facility?.currency,
+        defaultCurrency: resolveDefaultCurrency(
+          facilityCurrency: snapshot.facility?.currency,
+          tenantCurrency: snapshot.tenant?.currency,
         ),
       ),
     ),
@@ -939,6 +940,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
   late final TextEditingController _nameController;
   late final TextEditingController _slugController;
   late bool _isActive;
+  late String _currency;
   bool _slugManuallyEdited = false;
   String? _nameErrorText;
   String? _slugErrorText;
@@ -951,6 +953,9 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
     _nameController = TextEditingController(text: widget.tenant?.name);
     _slugController = TextEditingController(text: widget.tenant?.slug);
     _isActive = widget.tenant?.isActive ?? true;
+    _currency = resolveDefaultCurrency(
+      tenantCurrency: widget.tenant?.currency,
+    );
     _slugManuallyEdited =
         widget.tenant?.slug != null && widget.tenant!.slug!.trim().isNotEmpty;
     _nameController.addListener(_handleNameChanged);
@@ -967,6 +972,9 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
       _nameController.text = widget.tenant?.name ?? '';
       _slugController.text = widget.tenant?.slug ?? '';
       _isActive = widget.tenant?.isActive ?? true;
+      _currency = resolveDefaultCurrency(
+        tenantCurrency: widget.tenant?.currency,
+      );
       _slugManuallyEdited =
           widget.tenant?.slug != null && widget.tenant!.slug!.trim().isNotEmpty;
       _clearDuplicateState();
@@ -1060,6 +1068,20 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
               });
             },
           ),
+          AppCurrencySelectField(
+            value: _currency,
+            enabled: widget.canSubmit && !submission.isSubmitting,
+            labelText: l10n.tenantFacilityDefaultCurrencyLabel,
+            helperText: l10n.tenantFacilityTenantDefaultCurrencyHelper,
+            onChanged: (String? value) {
+              if (value == null || value.trim().isEmpty) {
+                return;
+              }
+              setState(() {
+                _currency = value.trim().toUpperCase();
+              });
+            },
+          ),
           if (_similarMatches.isNotEmpty)
             TenantSimilarityWarningPanel(matches: _similarMatches),
           if (!widget.hideSubmitButton)
@@ -1126,6 +1148,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
           name: _nameController.text,
           slug: _slugController.text,
           isActive: _isActive,
+          currency: resolveDefaultCurrency(tenantCurrency: _currency),
           refreshSetup: widget.refreshSetupAfterSave,
         );
   }
@@ -1370,7 +1393,10 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     _selectedCountry = contact.country;
     _type = facility?.type ?? FacilitySetupType.hospital;
     _isActive = facility?.isActive ?? true;
-    _currency = resolveFacilityDefaultCurrency(facility?.currency);
+    _currency = resolveDefaultCurrency(
+      facilityCurrency: facility?.currency,
+      tenantCurrency: widget.snapshot.tenant?.currency,
+    );
     _captureBaseline();
     _nameController.addListener(_handleNameChanged);
     if (widget.requireTenantPicker) {
@@ -1388,7 +1414,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     _baselineName = _nameController.text.trim();
     _baselineType = _type;
     _baselineIsActive = _isActive;
-    _baselineCurrency = resolveFacilityDefaultCurrency(_currency);
+    _baselineCurrency = _currency.trim().toUpperCase();
     _baselinePhone = _normalizedOptional(_phoneController.text);
     _baselineEmail = _normalizedOptional(_emailController.text);
     _baselineAddressLine1 = _normalizedOptional(_addressLineController.text);
@@ -1466,7 +1492,11 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
           }
           _type = loadedFacility.type;
           _isActive = loadedFacility.isActive;
-          _currency = resolveFacilityDefaultCurrency(loadedFacility.currency);
+          _currency = resolveDefaultCurrency(
+            facilityCurrency: loadedFacility.currency,
+            tenantCurrency:
+                snapshot.tenant?.currency ?? widget.snapshot.tenant?.currency,
+          );
           if (logoMissing) {
             _existingLogoUrl = loadedFacility.logoUrl;
           }
@@ -1571,8 +1601,9 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       _selectedCountry = widget.snapshot.contactAddress.country;
       _type = widget.snapshot.facility?.type ?? FacilitySetupType.hospital;
       _isActive = widget.snapshot.facility?.isActive ?? true;
-      _currency = resolveFacilityDefaultCurrency(
-        widget.snapshot.facility?.currency,
+      _currency = resolveDefaultCurrency(
+        facilityCurrency: widget.snapshot.facility?.currency,
+        tenantCurrency: widget.snapshot.tenant?.currency,
       );
       _captureBaseline();
       _notifyDialogState();
@@ -1939,7 +1970,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
         name: resolvedName,
         type: _type,
         isActive: _isActive,
-        currency: resolveFacilityDefaultCurrency(_currency),
+        currency: _currency.trim().toUpperCase(),
         phone: resolvedPhone,
         email: resolvedEmail,
         addressLine1: resolvedAddress,
@@ -1988,7 +2019,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
           isActive: _isActive,
           logoUrl: resolvedLogoUrl,
           removeLogo: _logoCleared,
-          currency: resolveFacilityDefaultCurrency(_currency),
+          currency: _currency.trim().toUpperCase(),
           logoBytes: _logoBytes,
           logoFileName: _logoFileName,
           logoMimeType: _logoMimeType,

@@ -316,11 +316,18 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     required String name,
     String? slug,
     required bool isActive,
+    String? currency,
   }) {
+    final String? normalizedCurrency =
+        _normalizedOptional(currency)?.toUpperCase();
+    final Map<String, Object?>? extensionJson = normalizedCurrency == null
+        ? null
+        : <String, Object?>{'currency': normalizedCurrency};
     final payload = <String, Object?>{
       'name': name.trim(),
       'slug': _normalizedOptional(slug),
       'is_active': isActive,
+      'extension_json': ?extensionJson,
     };
     if (id == null) {
       return _apiClient.post<TenantProfile>(

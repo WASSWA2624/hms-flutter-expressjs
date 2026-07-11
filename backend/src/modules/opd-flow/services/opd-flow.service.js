@@ -1143,7 +1143,7 @@ const resolveDefaultCurrency = async (tx, tenantId, facilityId = null) => {
     if (tenantCurrency) return tenantCurrency;
   }
 
-  return 'USD';
+  return 'UGX';
 };
 
 const resolveStandardConsultationFeeFromExtension = (extensionJson) => {

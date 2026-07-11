@@ -118,6 +118,15 @@ const canViewSubscriptions = (user = {}) =>
 const serializeTenant = (record) => {
   if (!record) return null;
 
+  const extensionJson =
+    record.extension_json && typeof record.extension_json === 'object'
+      ? record.extension_json
+      : {};
+  const currency =
+    typeof extensionJson.currency === 'string' && extensionJson.currency.trim()
+      ? extensionJson.currency.trim().toUpperCase()
+      : null;
+
   return {
     id: safePublicId(record.human_friendly_id, record.id),
     resource_uuid: record.id,
@@ -125,6 +134,9 @@ const serializeTenant = (record) => {
     name: record.name,
     slug: record.slug || null,
     is_active: Boolean(record.is_active),
+    extension_json: {
+      currency,
+    },
   };
 };
 
@@ -135,6 +147,10 @@ const serializeFacility = (record, context = null) => {
     record.extension_json && typeof record.extension_json === 'object'
       ? record.extension_json
       : {};
+  const currency =
+    typeof extensionJson.currency === 'string' && extensionJson.currency.trim()
+      ? extensionJson.currency.trim().toUpperCase()
+      : null;
 
   return {
     id: safePublicId(record.human_friendly_id, record.id),
@@ -148,6 +164,7 @@ const serializeFacility = (record, context = null) => {
     is_active: Boolean(record.is_active),
     extension_json: {
       logo_url: extensionJson.logo_url || null,
+      currency,
     },
   };
 };

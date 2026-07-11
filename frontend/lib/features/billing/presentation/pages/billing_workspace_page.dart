@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/currency/effective_default_currency_provider.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
@@ -965,7 +966,7 @@ class _NotesFormState extends State<_NotesForm> {
   }
 }
 
-class _CloseForm extends StatefulWidget {
+class _CloseForm extends ConsumerStatefulWidget {
   const _CloseForm({
     required this.dialogTitle,
     this.dialogIcon,
@@ -979,10 +980,10 @@ class _CloseForm extends StatefulWidget {
   final bool shiftClose;
 
   @override
-  State<_CloseForm> createState() => _CloseFormState();
+  ConsumerState<_CloseForm> createState() => _CloseFormState();
 }
 
-class _CloseFormState extends State<_CloseForm> {
+class _CloseFormState extends ConsumerState<_CloseForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _expectedController = TextEditingController();
   final TextEditingController _actualController = TextEditingController();
@@ -1013,6 +1014,7 @@ class _CloseFormState extends State<_CloseForm> {
 
   @override
   Widget build(BuildContext context) {
+    final String defaultCurrency = ref.watch(effectiveDefaultCurrencyProvider);
     return AppDialog(
       title: widget.dialogTitle,
       icon: widget.dialogIcon,
@@ -1023,14 +1025,14 @@ class _CloseFormState extends State<_CloseForm> {
           if (widget.shiftClose) ...<Widget>[
             AppCurrencyAmountField(
               amountController: _expectedController,
-              currency: appDefaultCurrencyCode,
+              currency: defaultCurrency,
               onCurrencyChanged: (_) {},
               amountLabelText: context.l10n.billingExpectedAmountLabel,
               currencyLabelText: context.l10n.billingCurrencyLabel,
             ),
             AppCurrencyAmountField(
               amountController: _actualController,
-              currency: appDefaultCurrencyCode,
+              currency: defaultCurrency,
               onCurrencyChanged: (_) {},
               amountLabelText: context.l10n.billingActualAmountLabel,
               currencyLabelText: context.l10n.billingCurrencyLabel,

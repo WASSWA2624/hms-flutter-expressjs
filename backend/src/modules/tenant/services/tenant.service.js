@@ -345,6 +345,27 @@ const updateTenant = async (id, data, context = {}) => {
     await tenantRepository.releaseSlugFromSoftDeletedTenants(data.slug, tenantId);
   }
 
+  // Merge extension_json so partial updates (e.g. currency) do not wipe other keys.
+  if (data.extension_json && typeof data.extension_json === 'object') {
+    const previousExtension =
+      beforeTenant.extension_json && typeof beforeTenant.extension_json === 'object'
+        ? beforeTenant.extension_json
+        : {};
+    const mergedExtension = {
+      ...previousExtension,
+      ...data.extension_json,
+    };
+    for (const [key, value] of Object.entries(mergedExtension)) {
+      if (value === null || value === undefined) {
+        delete mergedExtension[key];
+      }
+    }
+    data = {
+      ...data,
+      extension_json: mergedExtension,
+    };
+  }
+
   // Update tenant
   const tenant = await tenantRepository.update(tenantId, data);
 

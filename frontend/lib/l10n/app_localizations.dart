@@ -9361,8 +9361,14 @@ abstract class AppLocalizations {
   /// Helper text for the facility default currency field.
   ///
   /// In en, this message translates to:
-  /// **'Used as the default for prices and amount fields at this facility.'**
+  /// **'Overrides the tenant default for prices and amount fields at this facility.'**
   String get tenantFacilityDefaultCurrencyHelper;
+
+  /// Helper text for the tenant default currency field.
+  ///
+  /// In en, this message translates to:
+  /// **'Used as the default for facilities that do not set their own currency.'**
+  String get tenantFacilityTenantDefaultCurrencyHelper;
 
   /// Prerequisite message when units require departments.
   ///

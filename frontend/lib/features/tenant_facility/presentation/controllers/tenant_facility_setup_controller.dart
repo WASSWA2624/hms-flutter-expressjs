@@ -180,6 +180,7 @@ final class TenantFacilitySetupSubmissionController
     required String name,
     String? slug,
     required bool isActive,
+    String? currency,
     bool refreshSetup = true,
   }) {
     return _submit(
@@ -188,6 +189,7 @@ final class TenantFacilitySetupSubmissionController
         name: name,
         slug: slug,
         isActive: isActive,
+        currency: currency,
       ),
       updateSnapshot: (FacilitySetupSnapshot snapshot, TenantProfile tenant) {
         return snapshot.copyWith(tenant: tenant);

@@ -7,17 +7,21 @@ final class TenantProfileDto {
     required this.name,
     this.slug,
     required this.isActive,
+    this.currency,
     this.resourceUuid,
     this.displayId,
     this.deletedAt,
   });
 
   factory TenantProfileDto.fromJson(JsonMap json) {
+    final JsonMap extensionJson = _map(json['extension_json']);
+
     return TenantProfileDto(
       id: _requiredString(json, 'id'),
       name: _requiredString(json, 'name'),
       slug: _optionalString(json, 'slug'),
       isActive: _optionalBool(json, 'is_active') ?? true,
+      currency: _optionalString(extensionJson, 'currency'),
       resourceUuid: _optionalString(json, 'resource_uuid') ?? _requiredString(json, 'id'),
       displayId: _optionalString(json, 'display_id'),
       deletedAt: _optionalDateTime(json, 'deleted_at'),
@@ -28,6 +32,7 @@ final class TenantProfileDto {
   final String name;
   final String? slug;
   final bool isActive;
+  final String? currency;
   final String? resourceUuid;
   final String? displayId;
   final DateTime? deletedAt;
@@ -38,6 +43,7 @@ final class TenantProfileDto {
       name: name,
       slug: slug,
       isActive: isActive,
+      currency: currency,
       resourceUuid: resourceUuid,
       displayId: displayId,
       deletedAt: deletedAt,

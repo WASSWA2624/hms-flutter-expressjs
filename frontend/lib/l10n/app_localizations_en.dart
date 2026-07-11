@@ -4979,7 +4979,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityDefaultCurrencyHelper =>
-      'Used as the default for prices and amount fields at this facility.';
+      'Overrides the tenant default for prices and amount fields at this facility.';
+
+  @override
+  String get tenantFacilityTenantDefaultCurrencyHelper =>
+      'Used as the default for facilities that do not set their own currency.';
 
   @override
   String get tenantFacilityGateNeedDepartmentForUnits =>

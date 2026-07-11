@@ -43,6 +43,7 @@ final class TenantProfile {
     required this.name,
     this.slug,
     this.isActive = true,
+    this.currency,
     this.resourceUuid,
     this.displayId,
     this.deletedAt,
@@ -52,6 +53,7 @@ final class TenantProfile {
   final String name;
   final String? slug;
   final bool isActive;
+  final String? currency;
   final String? resourceUuid;
   final String? displayId;
   final DateTime? deletedAt;
@@ -66,16 +68,19 @@ final class TenantProfile {
     String? name,
     String? slug,
     bool? isActive,
+    String? currency,
     String? resourceUuid,
     String? displayId,
     DateTime? deletedAt,
     bool clearDeletedAt = false,
+    bool clearCurrency = false,
   }) {
     return TenantProfile(
       id: id ?? this.id,
       name: name ?? this.name,
       slug: slug ?? this.slug,
       isActive: isActive ?? this.isActive,
+      currency: clearCurrency ? null : (currency ?? this.currency),
       resourceUuid: resourceUuid ?? this.resourceUuid,
       displayId: displayId ?? this.displayId,
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),

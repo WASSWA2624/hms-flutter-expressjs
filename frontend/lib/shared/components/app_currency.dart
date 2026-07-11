@@ -4,14 +4,31 @@ import 'package:flutter/services.dart';
 
 const String appDefaultCurrencyCode = 'UGX';
 
-/// Resolves the currency to use for amount fields.
-/// Prefers a facility default when set; otherwise falls back to [appDefaultCurrencyCode].
-String resolveFacilityDefaultCurrency(String? facilityCurrency) {
-  final String? normalized = facilityCurrency?.trim();
-  if (normalized == null || normalized.isEmpty) {
-    return appDefaultCurrencyCode;
+/// Resolves default currency with facility override over tenant, then app fallback.
+String resolveDefaultCurrency({
+  String? facilityCurrency,
+  String? tenantCurrency,
+}) {
+  final String? facility = facilityCurrency?.trim();
+  if (facility != null && facility.isNotEmpty) {
+    return facility.toUpperCase();
   }
-  return normalized.toUpperCase();
+  final String? tenant = tenantCurrency?.trim();
+  if (tenant != null && tenant.isNotEmpty) {
+    return tenant.toUpperCase();
+  }
+  return appDefaultCurrencyCode;
+}
+
+/// Prefer a facility default when set; otherwise tenant, then [appDefaultCurrencyCode].
+String resolveFacilityDefaultCurrency(
+  String? facilityCurrency, {
+  String? tenantCurrency,
+}) {
+  return resolveDefaultCurrency(
+    facilityCurrency: facilityCurrency,
+    tenantCurrency: tenantCurrency,
+  );
 }
 
 String normalizeCurrencyAmount(String value) {

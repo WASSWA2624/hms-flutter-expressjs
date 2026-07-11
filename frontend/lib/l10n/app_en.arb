@@ -6458,9 +6458,13 @@
   "@tenantFacilityDefaultCurrencyLabel": {
     "description": "Label for the facility default billing currency field."
   },
-  "tenantFacilityDefaultCurrencyHelper": "Used as the default for prices and amount fields at this facility.",
+  "tenantFacilityDefaultCurrencyHelper": "Overrides the tenant default for prices and amount fields at this facility.",
   "@tenantFacilityDefaultCurrencyHelper": {
     "description": "Helper text for the facility default currency field."
+  },
+  "tenantFacilityTenantDefaultCurrencyHelper": "Used as the default for facilities that do not set their own currency.",
+  "@tenantFacilityTenantDefaultCurrencyHelper": {
+    "description": "Helper text for the tenant default currency field."
   },
   "tenantFacilityGateNeedDepartmentForUnits": "Create at least one department before adding units.",
   "@tenantFacilityGateNeedDepartmentForUnits": {
