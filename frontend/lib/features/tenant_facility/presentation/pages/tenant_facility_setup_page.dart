@@ -398,12 +398,14 @@ Future<bool?> _openTenantProfileModal(
 }) {
   final AppLocalizations l10n = context.l10n;
   const FacilitySetupSnapshot managementSnapshot = FacilitySetupSnapshot();
+  ProviderScope.containerOf(context)
+      .read(tenantFacilitySetupSubmissionProvider.notifier)
+      .clearFailure();
 
   return showAppDialog<bool>(
     context: context,
     builder: (BuildContext dialogContext) => Consumer(
       builder: (BuildContext context, WidgetRef ref, _) {
-        ref.read(tenantFacilitySetupSubmissionProvider.notifier).clearFailure();
         final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
         final String dialogTitle = forceCreate
             ? l10n.tenantFacilityCreateTenantTitle
@@ -469,12 +471,14 @@ Future<bool?> _openFacilityProfileModal(
   final AppLocalizations l10n = context.l10n;
   final bool isCreate = facility == null;
   const FacilitySetupSnapshot managementSnapshot = FacilitySetupSnapshot();
+  ProviderScope.containerOf(context)
+      .read(tenantFacilitySetupSubmissionProvider.notifier)
+      .clearFailure();
 
   return showAppDialog<bool>(
     context: context,
     builder: (BuildContext dialogContext) => Consumer(
       builder: (BuildContext context, WidgetRef ref, _) {
-        ref.read(tenantFacilitySetupSubmissionProvider.notifier).clearFailure();
         return _SetupProfileDialog(
           title: isCreate
               ? l10n.tenantFacilityCreateFacilityTitle
