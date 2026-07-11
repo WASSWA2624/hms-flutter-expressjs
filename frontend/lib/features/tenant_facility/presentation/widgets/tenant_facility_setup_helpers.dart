@@ -492,3 +492,44 @@ String tenantFacilityWizardProgressCaption({
   final String base = 'Step ${currentIndex + 1} of $totalSteps · $stepLabel';
   return optional ? '$base · Optional' : base;
 }
+
+/// Explains why a locked wizard step cannot be opened yet.
+String tenantFacilityWizardStepBlockedHint(
+  AppLocalizations l10n,
+  FacilitySetupSnapshot snapshot,
+  TenantFacilitySetupWizardStep step,
+) {
+  return switch (step) {
+    TenantFacilitySetupWizardStep.tenant =>
+      l10n.tenantFacilityPermissionRequired,
+    TenantFacilitySetupWizardStep.branches => snapshot.hasTenant
+        ? l10n.tenantFacilityBranchesOptionalHint
+        : l10n.tenantFacilityGateNeedTenant,
+    TenantFacilitySetupWizardStep.facility => snapshot.hasTenant
+        ? l10n.tenantFacilityGateNeedFacility
+        : l10n.tenantFacilityGateNeedTenant,
+    TenantFacilitySetupWizardStep.departments =>
+      l10n.tenantFacilityGateNeedFacility,
+    TenantFacilitySetupWizardStep.units => snapshot.hasDepartments
+        ? l10n.tenantFacilityGateNeedDepartmentForUnits
+        : (snapshot.hasFacility
+              ? l10n.tenantFacilityGateNeedDepartmentForUnits
+              : l10n.tenantFacilityGateNeedFacility),
+    TenantFacilitySetupWizardStep.wards => snapshot.hasDepartments
+        ? l10n.tenantFacilityGateNeedDepartmentForWards
+        : (snapshot.hasFacility
+              ? l10n.tenantFacilityGateNeedDepartmentForWards
+              : l10n.tenantFacilityGateNeedFacility),
+    TenantFacilitySetupWizardStep.rooms =>
+      snapshot.hasDepartments || snapshot.hasWardsConfigured
+          ? l10n.tenantFacilityGateNeedWardOrDepartmentForRooms
+          : (snapshot.hasFacility
+                ? l10n.tenantFacilityGateNeedWardOrDepartmentForRooms
+                : l10n.tenantFacilityGateNeedFacility),
+    TenantFacilitySetupWizardStep.beds => snapshot.hasWardsConfigured
+        ? l10n.tenantFacilityGateNeedWardsForBeds
+        : (snapshot.hasFacility
+              ? l10n.tenantFacilityGateNeedWardsForBeds
+              : l10n.tenantFacilityGateNeedFacility),
+  };
+}

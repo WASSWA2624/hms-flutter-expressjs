@@ -9340,6 +9340,30 @@ abstract class AppLocalizations {
   /// **'Configure facility identity before adding departments.'**
   String get tenantFacilityGateNeedFacility;
 
+  /// Prerequisite message when later setup steps require a tenant.
+  ///
+  /// In en, this message translates to:
+  /// **'Create or select a tenant before continuing setup.'**
+  String get tenantFacilityGateNeedTenant;
+
+  /// Short label for opening the clinical service catalog from setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog'**
+  String get tenantFacilityCatalogShortAction;
+
+  /// Label for the facility default billing currency field.
+  ///
+  /// In en, this message translates to:
+  /// **'Default currency'**
+  String get tenantFacilityDefaultCurrencyLabel;
+
+  /// Helper text for the facility default currency field.
+  ///
+  /// In en, this message translates to:
+  /// **'Used as the default for prices and amount fields at this facility.'**
+  String get tenantFacilityDefaultCurrencyHelper;
+
   /// Prerequisite message when units require departments.
   ///
   /// In en, this message translates to:

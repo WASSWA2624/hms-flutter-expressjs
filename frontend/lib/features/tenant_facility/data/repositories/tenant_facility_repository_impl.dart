@@ -346,12 +346,18 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     required bool isActive,
     String? logoUrl,
     bool removeLogo = false,
+    String? currency,
   }) {
     final String? normalizedLogoUrl = _normalizedOptional(logoUrl);
-    final Map<String, Object?>? extensionJson = normalizedLogoUrl != null
-        ? <String, Object?>{'logo_url': normalizedLogoUrl}
-        : removeLogo
-        ? <String, Object?>{'logo_url': null}
+    final String? normalizedCurrency = _normalizedOptional(currency)?.toUpperCase();
+    final bool writeExtension =
+        normalizedLogoUrl != null || removeLogo || normalizedCurrency != null;
+    final Map<String, Object?>? extensionJson = writeExtension
+        ? <String, Object?>{
+            'logo_url': ?normalizedLogoUrl,
+            if (removeLogo) 'logo_url': null,
+            'currency': ?normalizedCurrency,
+          }
         : null;
     final payload = <String, Object?>{
       if (id == null) 'tenant_id': tenantId,

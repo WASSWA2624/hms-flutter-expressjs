@@ -667,7 +667,11 @@ Future<void> _openFacilityCatalogModal(
 ) {
   final AppLocalizations l10n = context.l10n;
   final String? facilityId = snapshot.facility?.id;
-  if (facilityId == null || facilityId.isEmpty) {
+  final String? tenantId = snapshot.facility?.tenantId ?? snapshot.tenant?.id;
+  if (facilityId == null ||
+      facilityId.isEmpty ||
+      tenantId == null ||
+      tenantId.isEmpty) {
     return Future<void>.value();
   }
 
@@ -678,7 +682,13 @@ Future<void> _openFacilityCatalogModal(
       icon: const Icon(Icons.medical_information_outlined),
       scrollable: true,
       maxWidth: 920,
-      content: FacilityCatalogConfigPanel(facilityId: facilityId),
+      content: FacilityCatalogConfigPanel(
+        facilityId: facilityId,
+        tenantId: tenantId,
+        defaultCurrency: resolveFacilityDefaultCurrency(
+          snapshot.facility?.currency,
+        ),
+      ),
     ),
   );
 }
@@ -1256,6 +1266,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   late final TextEditingController _cityController;
   late FacilitySetupType _type;
   late bool _isActive;
+  late String _currency;
   String? _existingLogoUrl;
   String? _logoFileName;
   List<int>? _logoBytes;
@@ -1276,6 +1287,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
   String _baselineName = '';
   FacilitySetupType _baselineType = FacilitySetupType.hospital;
   bool _baselineIsActive = true;
+  String _baselineCurrency = appDefaultCurrencyCode;
   String? _baselinePhone;
   String? _baselineEmail;
   String? _baselineAddressLine1;
@@ -1358,6 +1370,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     _selectedCountry = contact.country;
     _type = facility?.type ?? FacilitySetupType.hospital;
     _isActive = facility?.isActive ?? true;
+    _currency = resolveFacilityDefaultCurrency(facility?.currency);
     _captureBaseline();
     _nameController.addListener(_handleNameChanged);
     if (widget.requireTenantPicker) {
@@ -1375,6 +1388,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     _baselineName = _nameController.text.trim();
     _baselineType = _type;
     _baselineIsActive = _isActive;
+    _baselineCurrency = resolveFacilityDefaultCurrency(_currency);
     _baselinePhone = _normalizedOptional(_phoneController.text);
     _baselineEmail = _normalizedOptional(_emailController.text);
     _baselineAddressLine1 = _normalizedOptional(_addressLineController.text);
@@ -1452,6 +1466,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
           }
           _type = loadedFacility.type;
           _isActive = loadedFacility.isActive;
+          _currency = resolveFacilityDefaultCurrency(loadedFacility.currency);
           if (logoMissing) {
             _existingLogoUrl = loadedFacility.logoUrl;
           }
@@ -1556,6 +1571,9 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       _selectedCountry = widget.snapshot.contactAddress.country;
       _type = widget.snapshot.facility?.type ?? FacilitySetupType.hospital;
       _isActive = widget.snapshot.facility?.isActive ?? true;
+      _currency = resolveFacilityDefaultCurrency(
+        widget.snapshot.facility?.currency,
+      );
       _captureBaseline();
       _notifyDialogState();
     }
@@ -1740,6 +1758,30 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
               }
             },
           ),
+          AppSelectField<String>.searchable(
+            value: _currency,
+            enabled: fieldsEnabled,
+            labelText: l10n.tenantFacilityDefaultCurrencyLabel,
+            helperText: l10n.tenantFacilityDefaultCurrencyHelper,
+            allowClear: false,
+            menuHeight: 320,
+            options: <AppSelectOption<String>>[
+              for (final AppCurrencyOption option in appCurrencyOptions)
+                AppSelectOption<String>(
+                  value: option.normalizedCode,
+                  label: option.label,
+                  searchText: option.searchText,
+                ),
+            ],
+            onChanged: (String? value) {
+              if (value == null || value.trim().isEmpty) {
+                return;
+              }
+              setState(() {
+                _currency = value.trim().toUpperCase();
+              });
+            },
+          ),
           AppImageUploadField(
             label: l10n.tenantFacilityLogoLabel,
             helperText: l10n.tenantFacilityLogoHelper,
@@ -1907,6 +1949,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
         name: resolvedName,
         type: _type,
         isActive: _isActive,
+        currency: resolveFacilityDefaultCurrency(_currency),
         phone: resolvedPhone,
         email: resolvedEmail,
         addressLine1: resolvedAddress,
@@ -1955,6 +1998,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
           isActive: _isActive,
           logoUrl: resolvedLogoUrl,
           removeLogo: _logoCleared,
+          currency: resolveFacilityDefaultCurrency(_currency),
           logoBytes: _logoBytes,
           logoFileName: _logoFileName,
           logoMimeType: _logoMimeType,
@@ -1984,6 +2028,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
     required String name,
     required FacilitySetupType type,
     required bool isActive,
+    required String currency,
     required String? phone,
     required String? email,
     required String? addressLine1,
@@ -2025,6 +2070,11 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       isActive
           ? l10n.tenantFacilityStatusActive
           : l10n.tenantFacilityStatusInactive,
+    );
+    addChange(
+      l10n.tenantFacilityDefaultCurrencyLabel,
+      _baselineCurrency,
+      currency,
     );
     addChange(l10n.profilePhoneLabel, _baselinePhone, phone);
     addChange(l10n.profileEmailLabel, _baselineEmail, email);

@@ -9,6 +9,16 @@ import 'package:hosspi_hms/shared/components/app_text_field.dart';
 
 const String appDefaultCurrencyCode = 'UGX';
 
+/// Resolves the currency to use for amount fields.
+/// Prefers a facility default when set; otherwise falls back to [appDefaultCurrencyCode].
+String resolveFacilityDefaultCurrency(String? facilityCurrency) {
+  final String? normalized = facilityCurrency?.trim();
+  if (normalized == null || normalized.isEmpty) {
+    return appDefaultCurrencyCode;
+  }
+  return normalized.toUpperCase();
+}
+
 String normalizeCurrencyAmount(String value) {
   return value.replaceAll(',', '').trim();
 }

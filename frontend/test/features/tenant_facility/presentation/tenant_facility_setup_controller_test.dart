@@ -40,7 +40,11 @@ void main() {
         );
 
         when(
-          () => repository.loadSetup(facilityId: any(named: 'facilityId')),
+          () => repository.loadSetup(
+            facilityId: any(named: 'facilityId'),
+            tenantId: any(named: 'tenantId'),
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer(
           (_) async => const Result<FacilitySetupSnapshot>.success(snapshot),
         );
@@ -58,7 +62,11 @@ void main() {
             .selectFacility('FAC0001');
 
         verify(
-          () => repository.loadSetup(facilityId: any(named: 'facilityId')),
+          () => repository.loadSetup(
+            facilityId: any(named: 'facilityId'),
+            tenantId: any(named: 'tenantId'),
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).called(greaterThanOrEqualTo(2));
         final Result<FacilitySetupSnapshot>? result = container
             .read(tenantFacilitySetupControllerProvider)
@@ -89,7 +97,11 @@ void main() {
         );
 
         when(
-          () => repository.loadSetup(facilityId: any(named: 'facilityId')),
+          () => repository.loadSetup(
+            facilityId: any(named: 'facilityId'),
+            tenantId: any(named: 'tenantId'),
+            includeDeleted: any(named: 'includeDeleted'),
+          ),
         ).thenAnswer(
           (_) async => const Result<FacilitySetupSnapshot>.success(snapshot),
         );
@@ -101,6 +113,8 @@ void main() {
             type: any(named: 'type'),
             isActive: any(named: 'isActive'),
             logoUrl: any(named: 'logoUrl'),
+            removeLogo: any(named: 'removeLogo'),
+            currency: any(named: 'currency'),
           ),
         ).thenAnswer(
           (_) async => const Result<FacilityProfile>.success(facility),
@@ -168,6 +182,8 @@ void main() {
             type: facility.type,
             isActive: true,
             logoUrl: 'https://example.com/logo.png',
+            removeLogo: any(named: 'removeLogo'),
+            currency: any(named: 'currency'),
           ),
         ).called(1);
       },

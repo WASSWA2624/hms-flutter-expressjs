@@ -91,6 +91,7 @@ final class FacilityProfile {
     required this.type,
     this.isActive = true,
     this.logoUrl,
+    this.currency,
     this.resourceUuid,
     this.displayId,
     this.deletedAt,
@@ -102,6 +103,7 @@ final class FacilityProfile {
   final FacilitySetupType type;
   final bool isActive;
   final String? logoUrl;
+  final String? currency;
   final String? resourceUuid;
   final String? displayId;
   final DateTime? deletedAt;
@@ -118,11 +120,13 @@ final class FacilityProfile {
     FacilitySetupType? type,
     bool? isActive,
     String? logoUrl,
+    String? currency,
     String? resourceUuid,
     String? displayId,
     DateTime? deletedAt,
     bool clearDeletedAt = false,
     bool clearLogoUrl = false,
+    bool clearCurrency = false,
   }) {
     return FacilityProfile(
       id: id ?? this.id,
@@ -131,6 +135,7 @@ final class FacilityProfile {
       type: type ?? this.type,
       isActive: isActive ?? this.isActive,
       logoUrl: clearLogoUrl ? null : (logoUrl ?? this.logoUrl),
+      currency: clearCurrency ? null : (currency ?? this.currency),
       resourceUuid: resourceUuid ?? this.resourceUuid,
       displayId: displayId ?? this.displayId,
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),

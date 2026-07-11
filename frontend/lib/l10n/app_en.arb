@@ -6446,6 +6446,22 @@
   "@tenantFacilityGateNeedFacility": {
     "description": "Prerequisite message when departments require a facility."
   },
+  "tenantFacilityGateNeedTenant": "Create or select a tenant before continuing setup.",
+  "@tenantFacilityGateNeedTenant": {
+    "description": "Prerequisite message when later setup steps require a tenant."
+  },
+  "tenantFacilityCatalogShortAction": "Catalog",
+  "@tenantFacilityCatalogShortAction": {
+    "description": "Short label for opening the clinical service catalog from setup."
+  },
+  "tenantFacilityDefaultCurrencyLabel": "Default currency",
+  "@tenantFacilityDefaultCurrencyLabel": {
+    "description": "Label for the facility default billing currency field."
+  },
+  "tenantFacilityDefaultCurrencyHelper": "Used as the default for prices and amount fields at this facility.",
+  "@tenantFacilityDefaultCurrencyHelper": {
+    "description": "Helper text for the facility default currency field."
+  },
   "tenantFacilityGateNeedDepartmentForUnits": "Create at least one department before adding units.",
   "@tenantFacilityGateNeedDepartmentForUnits": {
     "description": "Prerequisite message when units require departments."

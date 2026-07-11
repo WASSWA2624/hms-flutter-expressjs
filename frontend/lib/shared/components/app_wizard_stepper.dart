@@ -26,6 +26,7 @@ class AppWizardStepper extends StatelessWidget {
     required this.steps,
     required this.currentIndex,
     this.onStepSelected,
+    this.onDisabledStepSelected,
     this.showCurrentTitle = true,
     this.progressCaption,
     this.optionalBadgeLabel = 'Optional',
@@ -36,6 +37,8 @@ class AppWizardStepper extends StatelessWidget {
   final List<AppWizardStepItem> steps;
   final int currentIndex;
   final ValueChanged<int>? onStepSelected;
+  /// Called when a locked/disabled step is tapped (e.g. show a prerequisite hint).
+  final ValueChanged<int>? onDisabledStepSelected;
   final bool showCurrentTitle;
   final String? progressCaption;
   final String optionalBadgeLabel;
@@ -103,9 +106,16 @@ class AppWizardStepper extends StatelessWidget {
                     enabled: steps[index].enabled,
                     nodeSize: nodeSize,
                     compact: compact,
-                    onTap: steps[index].enabled && onStepSelected != null
-                        ? () => onStepSelected!(index)
-                        : null,
+                    onTap: () {
+                      if (steps[index].enabled) {
+                        onStepSelected?.call(index);
+                        return;
+                      }
+                      onDisabledStepSelected?.call(index);
+                    },
+                    interactive: steps[index].enabled
+                        ? onStepSelected != null
+                        : onDisabledStepSelected != null,
                   ),
                 ],
               ],
@@ -190,6 +200,7 @@ class _StepNode extends StatefulWidget {
     required this.nodeSize,
     required this.compact,
     this.onTap,
+    this.interactive = false,
   });
 
   final int index;
@@ -202,6 +213,7 @@ class _StepNode extends StatefulWidget {
   final double nodeSize;
   final bool compact;
   final VoidCallback? onTap;
+  final bool interactive;
 
   @override
   State<_StepNode> createState() => _StepNodeState();
@@ -215,7 +227,7 @@ class _StepNodeState extends State<_StepNode> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final bool interactive = widget.onTap != null;
+    final bool interactive = widget.interactive && widget.onTap != null;
     final bool highlight = widget.active || _hovered || _focused;
 
     final Color circleFill;
@@ -252,11 +264,12 @@ class _StepNodeState extends State<_StepNode> {
 
     final Widget node = Semantics(
       button: interactive,
-      enabled: widget.enabled,
+      enabled: interactive,
       selected: widget.active,
       label: 'Step ${widget.index}: ${widget.label}'
           '${widget.optional ? ' (optional)' : ''}'
-          '${widget.completed ? ', completed' : ''}',
+          '${widget.completed ? ', completed' : ''}'
+          '${!widget.enabled ? ', locked' : ''}',
       child: ConstrainedBox(
         constraints: BoxConstraints(minWidth: widget.compact ? 68 : 96),
         child: Column(
@@ -352,7 +365,9 @@ class _StepNodeState extends State<_StepNode> {
     }
 
     return MouseRegion(
-      cursor: SystemMouseCursors.click,
+      cursor: widget.enabled
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
       onEnter: (_) => setState(() => _hovered = true),
       onExit: (_) => setState(() => _hovered = false),
       child: FocusableActionDetector(

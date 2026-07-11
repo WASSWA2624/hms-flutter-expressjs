@@ -54,6 +54,7 @@ abstract interface class TenantFacilityRepository {
     required bool isActive,
     String? logoUrl,
     bool removeLogo = false,
+    String? currency,
   });
 
   Future<Result<String>> uploadFacilityLogo({

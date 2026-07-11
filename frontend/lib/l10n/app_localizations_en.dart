@@ -4968,6 +4968,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Configure facility identity before adding departments.';
 
   @override
+  String get tenantFacilityGateNeedTenant =>
+      'Create or select a tenant before continuing setup.';
+
+  @override
+  String get tenantFacilityCatalogShortAction => 'Catalog';
+
+  @override
+  String get tenantFacilityDefaultCurrencyLabel => 'Default currency';
+
+  @override
+  String get tenantFacilityDefaultCurrencyHelper =>
+      'Used as the default for prices and amount fields at this facility.';
+
+  @override
   String get tenantFacilityGateNeedDepartmentForUnits =>
       'Create at least one department before adding units.';
 

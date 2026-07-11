@@ -227,6 +227,16 @@ class _TenantFacilitySetupWizardState extends State<TenantFacilitySetupWizard> {
                   optional: currentOptional,
                 ),
                 onStepSelected: (int index) => _selectStep(steps[index]),
+                onDisabledStepSelected: (int index) {
+                  final String hint = tenantFacilityWizardStepBlockedHint(
+                    l10n,
+                    widget.snapshot,
+                    steps[index],
+                  );
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(SnackBar(content: Text(hint)));
+                },
               ),
             ),
           ),
@@ -334,7 +344,7 @@ class _SetupStepPanel extends StatelessWidget {
           snapshot.facility?.id != null &&
           onOpenCatalog != null)
         AppButton.tertiary(
-          label: l10n.clinicalCatalogConfigurationTitle,
+          label: l10n.tenantFacilityCatalogShortAction,
           leadingIcon: Icons.medical_information_outlined,
           onPressed: onOpenCatalog,
         ),
@@ -345,6 +355,23 @@ class _SetupStepPanel extends StatelessWidget {
           onPressed: onNavigate,
         ),
     ];
+
+    final Widget actionRow = Align(
+      alignment: Alignment.centerRight,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        reverse: true,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            for (int index = 0; index < actions.length; index += 1) ...<Widget>[
+              if (index > 0) SizedBox(width: theme.spacing.sm),
+              actions[index],
+            ],
+          ],
+        ),
+      ),
+    );
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -373,60 +400,24 @@ class _SetupStepPanel extends StatelessWidget {
                 children: <Widget>[
                   Expanded(child: _headerIdentity(l10n, theme, colorScheme, title)),
                   SizedBox(width: theme.spacing.md),
-                  Flexible(
-                    child: Align(
-                      alignment: Alignment.topRight,
-                      child: Wrap(
-                        spacing: theme.spacing.sm,
-                        runSpacing: theme.spacing.sm,
-                        alignment: WrapAlignment.end,
-                        children: actions,
-                      ),
-                    ),
-                  ),
+                  Flexible(child: actionRow),
                 ],
               )
             else ...<Widget>[
               _headerIdentity(l10n, theme, colorScheme, title),
               SizedBox(height: theme.spacing.md),
-              Wrap(
-                spacing: theme.spacing.sm,
-                runSpacing: theme.spacing.sm,
-                children: actions,
-              ),
+              actionRow,
             ],
             if (step == TenantFacilitySetupWizardStep.tenant &&
                 canCreateTenant) ...<Widget>[
               SizedBox(height: theme.spacing.md),
               _SetupTenantContextPicker(selectedTenantId: snapshot.tenant?.id),
             ],
-            if (step == TenantFacilitySetupWizardStep.facility &&
-                snapshot.facilities.length > 1 &&
-                onSelectFacility != null) ...<Widget>[
-              SizedBox(height: theme.spacing.md),
-              AppSelectField<String>(
-                labelText: l10n.tenantFacilityFacilitySectionTitle,
-                value: snapshot.facility?.id,
-                allowClear: false,
-                options: <AppSelectOption<String>>[
-                  for (final FacilityProfile facility in snapshot.facilities)
-                    AppSelectOption<String>(
-                      value: facility.id,
-                      label: facility.name,
-                    ),
-                ],
-                onChanged: (String? value) {
-                  if (value != null) {
-                    onSelectFacility!(value);
-                  }
-                },
-              ),
-            ],
             SizedBox(height: theme.spacing.lg),
-            _SetupStepRecordsTable(
+            _SetupStepRecordSelector(
               step: step,
               snapshot: snapshot,
-              onOpenStep: onOpenStep,
+              onSelectFacility: onSelectFacility,
             ),
             if (!canManageTenant &&
                 step == TenantFacilitySetupWizardStep.tenant) ...<Widget>[
@@ -509,174 +500,206 @@ class _SetupStepPanel extends StatelessWidget {
   }
 }
 
-class _SetupStepRecordsTable extends StatelessWidget {
-  const _SetupStepRecordsTable({
+class _SetupStepRecordSelector extends StatefulWidget {
+  const _SetupStepRecordSelector({
     required this.step,
     required this.snapshot,
-    required this.onOpenStep,
+    this.onSelectFacility,
   });
 
   final TenantFacilitySetupWizardStep step;
   final FacilitySetupSnapshot snapshot;
-  final VoidCallback onOpenStep;
+  final ValueChanged<String>? onSelectFacility;
+
+  @override
+  State<_SetupStepRecordSelector> createState() =>
+      _SetupStepRecordSelectorState();
+}
+
+class _SetupStepRecordSelectorState extends State<_SetupStepRecordSelector> {
+  String? _localSelectedId;
+
+  @override
+  void didUpdateWidget(covariant _SetupStepRecordSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.step != widget.step ||
+        oldWidget.snapshot != widget.snapshot) {
+      _localSelectedId = null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final FacilitySetupSnapshot snapshot = widget.snapshot;
+    final TenantFacilitySetupWizardStep step = widget.step;
 
     return switch (step) {
-      TenantFacilitySetupWizardStep.tenant => _singleRecordTable(
+      TenantFacilitySetupWizardStep.tenant => _buildSelector(
           context,
-          l10n: l10n,
-          name: snapshot.tenant?.name,
-          status: snapshot.tenant == null
-              ? null
-              : tenantFacilityActiveStatusLabel(
-                  l10n,
-                  snapshot.tenant!.isActive,
-                ),
+          label: l10n.tenantFacilityWizardStepTenant,
           emptyMessage: tenantFacilityWizardStepEmptyMessage(l10n, step),
+          options: snapshot.tenant == null
+              ? const <AppSelectOption<String>>[]
+              : <AppSelectOption<String>>[
+                  AppSelectOption<String>(
+                    value: snapshot.tenant!.id,
+                    label:
+                        '${snapshot.tenant!.name} · ${tenantFacilityActiveStatusLabel(l10n, snapshot.tenant!.isActive)}',
+                    searchText: snapshot.tenant!.name,
+                  ),
+                ],
+          value: snapshot.tenant?.id,
+          onChanged: null,
         ),
-      TenantFacilitySetupWizardStep.facility => _singleRecordTable(
+      TenantFacilitySetupWizardStep.facility => _buildSelector(
           context,
-          l10n: l10n,
-          name: snapshot.facility?.name,
-          status: snapshot.facility == null
-              ? null
-              : tenantFacilityFacilityTypeLabel(l10n, snapshot.facility!.type),
+          label: l10n.tenantFacilityFacilitySelectLabel,
           emptyMessage: tenantFacilityWizardStepEmptyMessage(l10n, step),
+          options: <AppSelectOption<String>>[
+            for (final FacilityProfile facility in snapshot.facilities)
+              AppSelectOption<String>(
+                value: facility.id,
+                label:
+                    '${facility.name} · ${tenantFacilityFacilityTypeLabel(l10n, facility.type)}',
+                searchText: facility.name,
+              ),
+          ],
+          value: snapshot.facility?.id ??
+              (snapshot.facilities.length == 1
+                  ? snapshot.facilities.first.id
+                  : null),
+          onChanged: widget.onSelectFacility == null
+              ? null
+              : (String? value) {
+                  if (value == null || value == snapshot.facility?.id) {
+                    return;
+                  }
+                  widget.onSelectFacility!(value);
+                },
         ),
-      TenantFacilitySetupWizardStep.branches => _listTable<BranchProfile>(
+      TenantFacilitySetupWizardStep.branches => _buildListSelector(
           context,
-          l10n: l10n,
-          items: snapshot.branches,
-          nameOf: (BranchProfile item) => item.name,
-          statusOf: (BranchProfile item) =>
-              tenantFacilityActiveStatusLabel(l10n, item.isActive),
+          label: l10n.tenantFacilityWizardStepBranches,
           emptyMessage: l10n.tenantFacilityNoBranches,
+          items: snapshot.branches,
+          idOf: (BranchProfile item) => item.id,
+          labelOf: (BranchProfile item) =>
+              '${item.name} · ${tenantFacilityActiveStatusLabel(l10n, item.isActive)}',
+          searchOf: (BranchProfile item) => item.name,
         ),
-      TenantFacilitySetupWizardStep.departments =>
-        _listTable<DepartmentProfile>(
+      TenantFacilitySetupWizardStep.departments => _buildListSelector(
           context,
-          l10n: l10n,
-          items: snapshot.departments,
-          nameOf: (DepartmentProfile item) => item.name,
-          statusOf: (DepartmentProfile item) =>
-              tenantFacilityDepartmentTypeLabel(l10n, item.type),
+          label: l10n.tenantFacilityWizardStepDepartments,
           emptyMessage: l10n.tenantFacilityNoDepartments,
+          items: snapshot.departments,
+          idOf: (DepartmentProfile item) => item.id,
+          labelOf: (DepartmentProfile item) =>
+              '${item.name} · ${tenantFacilityDepartmentTypeLabel(l10n, item.type)}',
+          searchOf: (DepartmentProfile item) => item.name,
         ),
-      TenantFacilitySetupWizardStep.units => _listTable<UnitProfile>(
+      TenantFacilitySetupWizardStep.units => _buildListSelector(
           context,
-          l10n: l10n,
-          items: snapshot.units,
-          nameOf: (UnitProfile item) => item.name,
-          statusOf: (UnitProfile item) =>
-              tenantFacilityActiveStatusLabel(l10n, item.isActive),
+          label: l10n.tenantFacilityWizardStepUnits,
           emptyMessage: l10n.tenantFacilityNoUnits,
+          items: snapshot.units,
+          idOf: (UnitProfile item) => item.id,
+          labelOf: (UnitProfile item) =>
+              '${item.name} · ${tenantFacilityActiveStatusLabel(l10n, item.isActive)}',
+          searchOf: (UnitProfile item) => item.name,
         ),
-      TenantFacilitySetupWizardStep.wards => _listTable<WardProfile>(
+      TenantFacilitySetupWizardStep.wards => _buildListSelector(
           context,
-          l10n: l10n,
-          items: snapshot.wards,
-          nameOf: (WardProfile item) => item.name,
-          statusOf: (WardProfile item) =>
-              tenantFacilityWardTypeLabel(l10n, item.type),
+          label: l10n.tenantFacilityWizardStepWards,
           emptyMessage: l10n.tenantFacilityNoWards,
+          items: snapshot.wards,
+          idOf: (WardProfile item) => item.id,
+          labelOf: (WardProfile item) =>
+              '${item.name} · ${tenantFacilityWardTypeLabel(l10n, item.type)}',
+          searchOf: (WardProfile item) => item.name,
         ),
-      TenantFacilitySetupWizardStep.rooms => _listTable<RoomProfile>(
+      TenantFacilitySetupWizardStep.rooms => _buildListSelector(
           context,
-          l10n: l10n,
-          items: snapshot.rooms,
-          nameOf: (RoomProfile item) => item.name,
-          statusOf: (RoomProfile item) => item.floor?.trim().isNotEmpty == true
-              ? item.floor!
-              : '—',
+          label: l10n.tenantFacilityWizardStepRooms,
           emptyMessage: l10n.tenantFacilityNoRooms,
+          items: snapshot.rooms,
+          idOf: (RoomProfile item) => item.id,
+          labelOf: (RoomProfile item) =>
+              '${item.name} · ${item.floor?.trim().isNotEmpty == true ? item.floor! : '—'}',
+          searchOf: (RoomProfile item) => item.name,
         ),
-      TenantFacilitySetupWizardStep.beds => _listTable<BedProfile>(
+      TenantFacilitySetupWizardStep.beds => _buildListSelector(
           context,
-          l10n: l10n,
-          items: snapshot.beds,
-          nameOf: (BedProfile item) => item.label,
-          statusOf: (BedProfile item) =>
-              tenantFacilityBedStatusLabel(l10n, item.status),
+          label: l10n.tenantFacilityWizardStepBeds,
           emptyMessage: l10n.tenantFacilityNoBeds,
+          items: snapshot.beds,
+          idOf: (BedProfile item) => item.id,
+          labelOf: (BedProfile item) =>
+              '${item.label} · ${tenantFacilityBedStatusLabel(l10n, item.status)}',
+          searchOf: (BedProfile item) => item.label,
         ),
     };
   }
 
-  Widget _singleRecordTable(
+  Widget _buildListSelector<T>(
     BuildContext context, {
-    required AppLocalizations l10n,
-    required String? name,
-    required String? status,
+    required String label,
     required String emptyMessage,
+    required List<T> items,
+    required String Function(T item) idOf,
+    required String Function(T item) labelOf,
+    required String Function(T item) searchOf,
   }) {
-    if (name == null || name.trim().isEmpty) {
-      return _SetupEmptyRecords(message: emptyMessage);
-    }
+    final String? fallbackId = items.isEmpty ? null : idOf(items.first);
+    final String? selectedId = _localSelectedId != null &&
+            items.any((T item) => idOf(item) == _localSelectedId)
+        ? _localSelectedId
+        : fallbackId;
 
-    return _listTable<_NamedStatusRow>(
+    return _buildSelector(
       context,
-      l10n: l10n,
-      items: <_NamedStatusRow>[
-        _NamedStatusRow(name: name, status: status ?? '—'),
-      ],
-      nameOf: (_NamedStatusRow item) => item.name,
-      statusOf: (_NamedStatusRow item) => item.status,
+      label: label,
       emptyMessage: emptyMessage,
+      options: <AppSelectOption<String>>[
+        for (final T item in items)
+          AppSelectOption<String>(
+            value: idOf(item),
+            label: labelOf(item),
+            searchText: searchOf(item),
+          ),
+      ],
+      value: selectedId,
+      onChanged: items.isEmpty
+          ? null
+          : (String? value) {
+              if (value == null) {
+                return;
+              }
+              setState(() => _localSelectedId = value);
+            },
     );
   }
 
-  Widget _listTable<T>(
+  Widget _buildSelector(
     BuildContext context, {
-    required AppLocalizations l10n,
-    required List<T> items,
-    required String Function(T item) nameOf,
-    required String Function(T item) statusOf,
+    required String label,
     required String emptyMessage,
+    required List<AppSelectOption<String>> options,
+    required String? value,
+    required ValueChanged<String?>? onChanged,
   }) {
-    final ThemeData theme = Theme.of(context);
-    if (items.isEmpty) {
+    if (options.isEmpty) {
       return _SetupEmptyRecords(message: emptyMessage);
     }
 
-    return SizedBox(
-      height: items.length > 6 ? 320 : null,
-      child: AppListTable<T>(
-        items: items,
-        shrinkWrap: items.length <= 6,
-        physics: items.length <= 6
-            ? const NeverScrollableScrollPhysics()
-            : null,
-        maxVisibleItems: 8,
-        displayMode: AppListTableDisplayMode.table,
-        itemKeyBuilder: (T item) => ValueKey<String>(nameOf(item)),
-        onRowSelected: (_) => onOpenStep(),
-        emptyBuilder: (_) => _SetupEmptyRecords(message: emptyMessage),
-        columns: <AppListTableColumn<T>>[
-          AppListTableColumn<T>(
-            label: l10n.tenantFacilityTenantNameLabel,
-            cellBuilder: (_, T item) => Text(nameOf(item)),
-          ),
-          AppListTableColumn<T>(
-            label: l10n.tenantFacilityTenantStatusLabel,
-            cellBuilder: (_, T item) => Text(statusOf(item)),
-          ),
-        ],
-        mobileItemBuilder: (BuildContext context, T item) {
-          return ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(nameOf(item)),
-            subtitle: Text(statusOf(item)),
-            trailing: Icon(
-              Icons.chevron_right,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            onTap: onOpenStep,
-          );
-        },
-      ),
+    return AppSelectField<String>.searchable(
+      labelText: label,
+      value: value,
+      allowClear: false,
+      menuHeight: 320,
+      options: options,
+      onChanged: onChanged ?? (_) {},
+      enabled: onChanged != null,
     );
   }
 }
@@ -723,13 +746,6 @@ class _SetupEmptyRecords extends StatelessWidget {
       ),
     );
   }
-}
-
-final class _NamedStatusRow {
-  const _NamedStatusRow({required this.name, required this.status});
-
-  final String name;
-  final String status;
 }
 
 class _SetupTenantContextPicker extends ConsumerStatefulWidget {

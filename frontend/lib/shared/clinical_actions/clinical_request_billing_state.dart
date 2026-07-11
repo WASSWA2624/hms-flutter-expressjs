@@ -283,15 +283,16 @@ num? clinicalRequestBillingLineAmount(
 }
 
 String resolveClinicalRequestBillingCurrency(
-  List<ClinicalRequestBillingLineItem> lineItems,
-) {
+  List<ClinicalRequestBillingLineItem> lineItems, {
+  String? facilityCurrency,
+}) {
   for (final ClinicalRequestBillingLineItem item in lineItems) {
     final String? currency = item.currency?.trim().toUpperCase();
     if (currency != null && currency.isNotEmpty) {
       return currency;
     }
   }
-  return appDefaultCurrencyCode;
+  return resolveFacilityDefaultCurrency(facilityCurrency);
 }
 
 const List<String> clinicalRequestPaymentMethods = <String>[

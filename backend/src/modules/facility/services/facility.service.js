@@ -320,6 +320,26 @@ const updateFacility = async (id, data, context = {}) => {
   }
 
   // Update facility
+  if (data.extension_json && typeof data.extension_json === 'object') {
+    const previousExtension =
+      beforeFacility.extension_json && typeof beforeFacility.extension_json === 'object'
+        ? beforeFacility.extension_json
+        : {};
+    const mergedExtension = {
+      ...previousExtension,
+      ...data.extension_json,
+    };
+    for (const [key, value] of Object.entries(mergedExtension)) {
+      if (value === null || value === undefined) {
+        delete mergedExtension[key];
+      }
+    }
+    data = {
+      ...data,
+      extension_json: mergedExtension,
+    };
+  }
+
   const facility = await facilityRepository.update(facilityId, data);
 
   // Create audit log

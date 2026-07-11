@@ -53,6 +53,7 @@ final class FacilityProfileDto {
     required this.type,
     required this.isActive,
     this.logoUrl,
+    this.currency,
     this.resourceUuid,
     this.displayId,
     this.deletedAt,
@@ -70,6 +71,7 @@ final class FacilityProfileDto {
       ),
       isActive: _optionalBool(json, 'is_active') ?? true,
       logoUrl: _optionalString(extensionJson, 'logo_url'),
+      currency: _optionalString(extensionJson, 'currency'),
       resourceUuid: _optionalString(json, 'resource_uuid') ?? _requiredString(json, 'id'),
       displayId: _optionalString(json, 'display_id'),
       deletedAt: _optionalDateTime(json, 'deleted_at'),
@@ -82,6 +84,7 @@ final class FacilityProfileDto {
   final FacilitySetupType type;
   final bool isActive;
   final String? logoUrl;
+  final String? currency;
   final String? resourceUuid;
   final String? displayId;
   final DateTime? deletedAt;
@@ -94,6 +97,7 @@ final class FacilityProfileDto {
       type: type,
       isActive: isActive,
       logoUrl: logoUrl,
+      currency: currency,
       resourceUuid: resourceUuid,
       displayId: displayId,
       deletedAt: deletedAt,

@@ -204,6 +204,7 @@ final class TenantFacilitySetupSubmissionController
     required bool isActive,
     String? logoUrl,
     bool removeLogo = false,
+    String? currency,
     List<int>? logoBytes,
     String? logoFileName,
     String? logoMimeType,
@@ -220,6 +221,9 @@ final class TenantFacilitySetupSubmissionController
         if (resolvedLogoUrl != null && resolvedLogoUrl.isEmpty) {
           resolvedLogoUrl = null;
         }
+        final String? resolvedCurrency = currency?.trim().isNotEmpty == true
+            ? currency!.trim().toUpperCase()
+            : null;
 
         var facilityResult = await _repository.saveFacility(
           id: id,
@@ -229,6 +233,7 @@ final class TenantFacilitySetupSubmissionController
           isActive: isActive,
           logoUrl: resolvedLogoUrl,
           removeLogo: removeLogo,
+          currency: resolvedCurrency,
         );
 
         if (facilityResult case ResultFailure<FacilityProfile>(
@@ -268,6 +273,7 @@ final class TenantFacilitySetupSubmissionController
             type: type,
             isActive: isActive,
             logoUrl: uploadedLogoUrl,
+            currency: resolvedCurrency ?? facility.currency,
           );
           if (facilityResult case ResultFailure<FacilityProfile>(
             :final failure,
