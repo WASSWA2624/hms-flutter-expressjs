@@ -28,6 +28,14 @@ void main() {
           logoUrl: 'https://example.com/logo.png',
         ),
         contactAddress: FacilityContactAddress(phone: '+256700000000'),
+        branches: <BranchProfile>[
+          BranchProfile(
+            id: 'BRN0001',
+            tenantId: 'TEN0001',
+            name: 'Main',
+            facilityId: 'FAC0001',
+          ),
+        ],
         departments: <DepartmentProfile>[
           DepartmentProfile(
             id: 'DEP0001',
@@ -85,7 +93,7 @@ void main() {
     });
 
     test(
-      'returns wards as next step when departments exist but no care spaces',
+      'returns rooms as next required step when departments exist but no care spaces',
       () {
         const FacilitySetupSnapshot snapshot = FacilitySetupSnapshot(
           tenant: TenantProfile(id: 'TEN0001', name: 'Acme'),
@@ -109,12 +117,12 @@ void main() {
 
         expect(
           tenantFacilityNextIncompleteWizardStep(snapshot),
-          TenantFacilitySetupWizardStep.wards,
+          TenantFacilitySetupWizardStep.rooms,
         );
       },
     );
 
-    test('allows optional units when departments exist', () {
+    test('treats units as optional and incomplete until created', () {
       const FacilitySetupSnapshot snapshot = FacilitySetupSnapshot(
         tenant: TenantProfile(id: 'TEN0001', name: 'Acme'),
         facility: FacilityProfile(
@@ -136,12 +144,75 @@ void main() {
       );
 
       expect(
+        tenantFacilityWizardStepOptional(TenantFacilitySetupWizardStep.units),
+        isTrue,
+      );
+      expect(
         tenantFacilityWizardStepCompleted(
           snapshot,
           TenantFacilitySetupWizardStep.units,
         ),
+        isFalse,
+      );
+      expect(
+        tenantFacilityWizardStepBlocksProgress(
+          snapshot,
+          TenantFacilitySetupWizardStep.units,
+        ),
+        isFalse,
+      );
+    });
+
+    test('locks later steps until required prerequisites are complete', () {
+      const FacilitySetupSnapshot snapshot = FacilitySetupSnapshot(
+        tenant: TenantProfile(id: 'TEN0001', name: 'Acme'),
+        facility: FacilityProfile(
+          id: 'FAC0001',
+          tenantId: 'TEN0001',
+          name: 'Main Campus',
+          type: FacilitySetupType.hospital,
+        ),
+        contactAddress: FacilityContactAddress(phone: '+256700000000'),
+      );
+      final List<TenantFacilitySetupWizardStep> steps =
+          TenantFacilitySetupWizardStep.values;
+
+      expect(
+        tenantFacilityWizardStepReachable(
+          snapshot,
+          steps,
+          TenantFacilitySetupWizardStep.facility,
+        ),
         isTrue,
       );
+      expect(
+        tenantFacilityWizardStepReachable(
+          snapshot,
+          steps,
+          TenantFacilitySetupWizardStep.departments,
+        ),
+        isTrue,
+      );
+      expect(
+        tenantFacilityWizardStepReachable(
+          snapshot,
+          steps,
+          TenantFacilitySetupWizardStep.rooms,
+        ),
+        isFalse,
+      );
+    });
+
+    test('hides tenant steps for facility admins', () {
+      final List<TenantFacilitySetupWizardStep> steps =
+          tenantFacilityVisibleWizardSteps(
+            canManageTenant: false,
+            canManageFacility: true,
+          );
+
+      expect(steps.contains(TenantFacilitySetupWizardStep.tenant), isFalse);
+      expect(steps.contains(TenantFacilitySetupWizardStep.branches), isFalse);
+      expect(steps.first, TenantFacilitySetupWizardStep.facility);
     });
   });
 

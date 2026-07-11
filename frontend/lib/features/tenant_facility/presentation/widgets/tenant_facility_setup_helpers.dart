@@ -206,17 +206,127 @@ enum TenantFacilitySetupWizardStep {
   beds,
 }
 
-TenantFacilitySetupWizardStep? tenantFacilityNextIncompleteWizardStep(
+bool tenantFacilityWizardStepOptional(TenantFacilitySetupWizardStep step) {
+  return switch (step) {
+    TenantFacilitySetupWizardStep.branches ||
+    TenantFacilitySetupWizardStep.units ||
+    TenantFacilitySetupWizardStep.wards => true,
+    TenantFacilitySetupWizardStep.tenant ||
+    TenantFacilitySetupWizardStep.facility ||
+    TenantFacilitySetupWizardStep.departments ||
+    TenantFacilitySetupWizardStep.rooms ||
+    TenantFacilitySetupWizardStep.beds => false,
+  };
+}
+
+bool tenantFacilityWizardStepVisible({
+  required TenantFacilitySetupWizardStep step,
+  required bool canManageTenant,
+  required bool canManageFacility,
+}) {
+  return switch (step) {
+    TenantFacilitySetupWizardStep.tenant ||
+    TenantFacilitySetupWizardStep.branches => canManageTenant,
+    TenantFacilitySetupWizardStep.facility ||
+    TenantFacilitySetupWizardStep.departments ||
+    TenantFacilitySetupWizardStep.units ||
+    TenantFacilitySetupWizardStep.wards ||
+    TenantFacilitySetupWizardStep.rooms ||
+    TenantFacilitySetupWizardStep.beds => canManageFacility || canManageTenant,
+  };
+}
+
+List<TenantFacilitySetupWizardStep> tenantFacilityVisibleWizardSteps({
+  required bool canManageTenant,
+  required bool canManageFacility,
+}) {
+  return TenantFacilitySetupWizardStep.values
+      .where(
+        (TenantFacilitySetupWizardStep step) => tenantFacilityWizardStepVisible(
+          step: step,
+          canManageTenant: canManageTenant,
+          canManageFacility: canManageFacility,
+        ),
+      )
+      .toList(growable: false);
+}
+
+bool tenantFacilityWizardStepCompleted(
   FacilitySetupSnapshot snapshot,
+  TenantFacilitySetupWizardStep step,
 ) {
-  for (final TenantFacilitySetupWizardStep step
-      in TenantFacilitySetupWizardStep.values) {
+  return switch (step) {
+    TenantFacilitySetupWizardStep.tenant => snapshot.hasTenant,
+    TenantFacilitySetupWizardStep.branches => snapshot.hasBranchesConfigured,
+    TenantFacilitySetupWizardStep.facility => snapshot.hasFacilityIdentity,
+    TenantFacilitySetupWizardStep.departments => snapshot.hasDepartments,
+    TenantFacilitySetupWizardStep.units => snapshot.hasUnitsConfigured,
+    TenantFacilitySetupWizardStep.wards => snapshot.hasWardsConfigured,
+    TenantFacilitySetupWizardStep.rooms => snapshot.hasRoomsConfigured,
+    TenantFacilitySetupWizardStep.beds => snapshot.hasBedsConfigured,
+  };
+}
+
+/// Required steps block progress; optional steps never block the next required step.
+bool tenantFacilityWizardStepBlocksProgress(
+  FacilitySetupSnapshot snapshot,
+  TenantFacilitySetupWizardStep step,
+) {
+  if (tenantFacilityWizardStepOptional(step)) {
+    return false;
+  }
+  return !tenantFacilityWizardStepCompleted(snapshot, step);
+}
+
+TenantFacilitySetupWizardStep? tenantFacilityNextIncompleteWizardStep(
+  FacilitySetupSnapshot snapshot, {
+  List<TenantFacilitySetupWizardStep>? steps,
+}) {
+  final List<TenantFacilitySetupWizardStep> visible =
+      steps ?? TenantFacilitySetupWizardStep.values;
+  for (final TenantFacilitySetupWizardStep step in visible) {
+    if (tenantFacilityWizardStepBlocksProgress(snapshot, step)) {
+      return step;
+    }
+  }
+  for (final TenantFacilitySetupWizardStep step in visible) {
     if (!tenantFacilityWizardStepCompleted(snapshot, step)) {
       return step;
     }
   }
-
   return null;
+}
+
+/// Furthest step index (in [steps]) the user may open.
+int tenantFacilityFurthestReachableWizardIndex(
+  FacilitySetupSnapshot snapshot,
+  List<TenantFacilitySetupWizardStep> steps,
+) {
+  if (steps.isEmpty) {
+    return -1;
+  }
+
+  for (int index = 0; index < steps.length; index += 1) {
+    if (tenantFacilityWizardStepBlocksProgress(snapshot, steps[index])) {
+      return index;
+    }
+  }
+  return steps.length - 1;
+}
+
+bool tenantFacilityWizardStepReachable(
+  FacilitySetupSnapshot snapshot,
+  List<TenantFacilitySetupWizardStep> steps,
+  TenantFacilitySetupWizardStep step,
+) {
+  final int index = steps.indexOf(step);
+  if (index < 0) {
+    return false;
+  }
+  if (tenantFacilityWizardStepCompleted(snapshot, step)) {
+    return true;
+  }
+  return index <= tenantFacilityFurthestReachableWizardIndex(snapshot, steps);
 }
 
 String tenantFacilityWizardStepLabel(
@@ -238,18 +348,44 @@ String tenantFacilityWizardStepLabel(
   };
 }
 
-bool tenantFacilityWizardStepCompleted(
+IconData tenantFacilityWizardStepIcon(TenantFacilitySetupWizardStep step) {
+  return switch (step) {
+    TenantFacilitySetupWizardStep.tenant => Icons.apartment_outlined,
+    TenantFacilitySetupWizardStep.branches => Icons.account_tree_outlined,
+    TenantFacilitySetupWizardStep.facility => Icons.local_hospital_outlined,
+    TenantFacilitySetupWizardStep.departments => Icons.groups_2_outlined,
+    TenantFacilitySetupWizardStep.units => Icons.hub_outlined,
+    TenantFacilitySetupWizardStep.wards => Icons.local_hotel_outlined,
+    TenantFacilitySetupWizardStep.rooms => Icons.meeting_room_outlined,
+    TenantFacilitySetupWizardStep.beds => Icons.bed_outlined,
+  };
+}
+
+String tenantFacilityWizardStepSummary(
+  AppLocalizations l10n,
   FacilitySetupSnapshot snapshot,
   TenantFacilitySetupWizardStep step,
 ) {
   return switch (step) {
-    TenantFacilitySetupWizardStep.tenant => snapshot.hasTenant,
-    TenantFacilitySetupWizardStep.branches => snapshot.hasBranchesConfigured,
-    TenantFacilitySetupWizardStep.facility => snapshot.hasFacilityIdentity,
-    TenantFacilitySetupWizardStep.departments => snapshot.hasDepartments,
-    TenantFacilitySetupWizardStep.units => snapshot.hasUnitsConfigured,
-    TenantFacilitySetupWizardStep.wards => snapshot.hasWardsConfigured,
-    TenantFacilitySetupWizardStep.rooms => snapshot.hasRoomsConfigured,
-    TenantFacilitySetupWizardStep.beds => snapshot.hasBedsConfigured,
+    TenantFacilitySetupWizardStep.tenant =>
+      snapshot.tenant?.name.trim().isNotEmpty == true
+          ? snapshot.tenant!.name
+          : l10n.tenantFacilityChecklistTenant,
+    TenantFacilitySetupWizardStep.branches =>
+      l10n.tenantFacilitySummaryRecordCount(snapshot.branches.length),
+    TenantFacilitySetupWizardStep.facility =>
+      snapshot.facility?.name.trim().isNotEmpty == true
+          ? snapshot.facility!.name
+          : l10n.tenantFacilityChecklistIdentity,
+    TenantFacilitySetupWizardStep.departments =>
+      l10n.tenantFacilitySummaryRecordCount(snapshot.departments.length),
+    TenantFacilitySetupWizardStep.units =>
+      l10n.tenantFacilitySummaryRecordCount(snapshot.units.length),
+    TenantFacilitySetupWizardStep.wards =>
+      l10n.tenantFacilitySummaryRecordCount(snapshot.wards.length),
+    TenantFacilitySetupWizardStep.rooms =>
+      l10n.tenantFacilitySummaryRecordCount(snapshot.rooms.length),
+    TenantFacilitySetupWizardStep.beds =>
+      l10n.tenantFacilitySummaryRecordCount(snapshot.beds.length),
   };
 }

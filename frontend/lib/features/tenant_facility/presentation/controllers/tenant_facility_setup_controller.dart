@@ -49,6 +49,7 @@ final class TenantFacilitySetupRefreshController extends Notifier<bool> {
 final class TenantFacilitySetupController
     extends AsyncNotifier<Result<FacilitySetupSnapshot>> {
   String? _selectedFacilityId;
+  String? _selectedTenantId;
 
   @override
   Future<Result<FacilitySetupSnapshot>> build() {
@@ -68,7 +69,11 @@ final class TenantFacilitySetupController
     );
     return ref
         .read(tenantFacilityRepositoryProvider)
-        .loadSetup(facilityId: _selectedFacilityId, includeDeleted: true);
+        .loadSetup(
+          facilityId: _selectedFacilityId,
+          tenantId: _selectedTenantId,
+          includeDeleted: true,
+        );
   }
 
   Future<Result<FacilitySetupSnapshot>> refresh() async {
@@ -82,7 +87,11 @@ final class TenantFacilitySetupController
     try {
       final result = await ref
           .read(tenantFacilityRepositoryProvider)
-          .loadSetup(facilityId: _selectedFacilityId, includeDeleted: true);
+          .loadSetup(
+            facilityId: _selectedFacilityId,
+            tenantId: _selectedTenantId,
+            includeDeleted: true,
+          );
       state = AsyncValue<Result<FacilitySetupSnapshot>>.data(result);
       return result;
     } catch (error, stackTrace) {
@@ -103,6 +112,12 @@ final class TenantFacilitySetupController
 
   Future<void> selectFacility(String facilityId) async {
     _selectedFacilityId = facilityId;
+    await refresh();
+  }
+
+  Future<void> selectTenant(String tenantId) async {
+    _selectedTenantId = tenantId;
+    _selectedFacilityId = null;
     await refresh();
   }
 

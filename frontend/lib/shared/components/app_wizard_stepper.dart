@@ -7,11 +7,17 @@ final class AppWizardStepItem {
     required this.id,
     required this.label,
     this.shortLabel,
+    this.optional = false,
+    this.completed = false,
+    this.enabled = true,
   });
 
   final Object id;
   final String label;
   final String? shortLabel;
+  final bool optional;
+  final bool completed;
+  final bool enabled;
 }
 
 /// Horizontal progress stepper for multi-step dialogs and wizards.
@@ -19,20 +25,27 @@ class AppWizardStepper extends StatelessWidget {
   const AppWizardStepper({
     required this.steps,
     required this.currentIndex,
+    this.onStepSelected,
     this.showCurrentTitle = true,
+    this.optionalBadgeLabel = 'Optional',
     this.compactBreakpoint = 640,
     super.key,
   }) : assert(currentIndex >= 0);
 
   final List<AppWizardStepItem> steps;
   final int currentIndex;
+  final ValueChanged<int>? onStepSelected;
   final bool showCurrentTitle;
+  final String optionalBadgeLabel;
   final double compactBreakpoint;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    if (steps.isEmpty) {
+      return const SizedBox.shrink();
+    }
     final int safeIndex = currentIndex.clamp(0, steps.length - 1);
     final AppWizardStepItem current = steps[safeIndex];
 
@@ -59,7 +72,7 @@ class AppWizardStepper extends StatelessWidget {
                     Padding(
                       padding: EdgeInsets.only(top: (nodeSize / 2) - 1.5),
                       child: _StepConnector(
-                        completed: index <= safeIndex,
+                        completed: index <= safeIndex || steps[index - 1].completed,
                         colorScheme: colorScheme,
                         width: connectorWidth,
                       ),
@@ -70,9 +83,15 @@ class AppWizardStepper extends StatelessWidget {
                         ? (steps[index].shortLabel ?? steps[index].label)
                         : steps[index].label,
                     active: index == safeIndex,
-                    completed: index < safeIndex,
+                    completed: steps[index].completed,
+                    optional: steps[index].optional,
+                    optionalBadgeLabel: optionalBadgeLabel,
+                    enabled: steps[index].enabled,
                     nodeSize: nodeSize,
                     compact: compact,
+                    onTap: steps[index].enabled && onStepSelected != null
+                        ? () => onStepSelected!(index)
+                        : null,
                   ),
                 ],
               ],
@@ -99,6 +118,18 @@ class AppWizardStepper extends StatelessWidget {
               color: colorScheme.onSurface,
             ),
           ),
+          if (current.optional)
+            Padding(
+              padding: EdgeInsets.only(top: theme.spacing.xs),
+              child: Text(
+                optionalBadgeLabel,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
         ],
       ],
     );
@@ -133,95 +164,197 @@ class _StepConnector extends StatelessWidget {
   }
 }
 
-class _StepNode extends StatelessWidget {
+class _StepNode extends StatefulWidget {
   const _StepNode({
     required this.index,
     required this.label,
     required this.active,
     required this.completed,
+    required this.optional,
+    required this.optionalBadgeLabel,
+    required this.enabled,
     required this.nodeSize,
     required this.compact,
+    this.onTap,
   });
 
   final int index;
   final String label;
   final bool active;
   final bool completed;
+  final bool optional;
+  final String optionalBadgeLabel;
+  final bool enabled;
   final double nodeSize;
   final bool compact;
+  final VoidCallback? onTap;
+
+  @override
+  State<_StepNode> createState() => _StepNodeState();
+}
+
+class _StepNodeState extends State<_StepNode> {
+  bool _hovered = false;
+  bool _focused = false;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final Color circleFill = active || completed
-        ? colorScheme.primary
-        : colorScheme.surfaceContainerHighest;
-    final Color circleFg = active || completed
-        ? colorScheme.onPrimary
-        : colorScheme.onSurfaceVariant;
-    final Color labelColor = active
-        ? colorScheme.primary
-        : completed
-        ? colorScheme.onSurface
-        : colorScheme.onSurfaceVariant;
+    final bool interactive = widget.onTap != null;
+    final bool highlight = widget.active || _hovered || _focused;
 
-    return Semantics(
-      selected: active,
-      label: 'Step $index: $label',
+    final Color circleFill;
+    final Color circleFg;
+    final Color labelColor;
+    final Color borderColor;
+
+    if (!widget.enabled) {
+      circleFill = colorScheme.surfaceContainerHighest.withValues(alpha: 0.55);
+      circleFg = colorScheme.onSurfaceVariant.withValues(alpha: 0.45);
+      labelColor = colorScheme.onSurfaceVariant.withValues(alpha: 0.45);
+      borderColor = colorScheme.outlineVariant.withValues(alpha: 0.5);
+    } else if (widget.active || widget.completed) {
+      circleFill = colorScheme.primary;
+      circleFg = colorScheme.onPrimary;
+      labelColor = widget.active
+          ? colorScheme.primary
+          : colorScheme.onSurface;
+      borderColor = colorScheme.primary;
+    } else {
+      circleFill = highlight
+          ? colorScheme.primary.withValues(alpha: 0.12)
+          : colorScheme.surfaceContainerHighest;
+      circleFg = highlight
+          ? colorScheme.primary
+          : colorScheme.onSurfaceVariant;
+      labelColor = highlight
+          ? colorScheme.primary
+          : colorScheme.onSurfaceVariant;
+      borderColor = highlight
+          ? colorScheme.primary
+          : colorScheme.outlineVariant;
+    }
+
+    final Widget node = Semantics(
+      button: interactive,
+      enabled: widget.enabled,
+      selected: widget.active,
+      label: 'Step ${widget.index}: ${widget.label}'
+          '${widget.optional ? ' (optional)' : ''}'
+          '${widget.completed ? ', completed' : ''}',
       child: ConstrainedBox(
-        constraints: BoxConstraints(minWidth: compact ? 64 : 88),
+        constraints: BoxConstraints(minWidth: widget.compact ? 64 : 88),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: nodeSize,
-              height: nodeSize,
+              duration: const Duration(milliseconds: 180),
+              width: widget.nodeSize,
+              height: widget.nodeSize,
               alignment: Alignment.center,
+              transform: (_hovered || _focused) && widget.enabled
+                  ? (Matrix4.identity()..scaleByDouble(1.06, 1.06, 1.0, 1.0))
+                  : Matrix4.identity(),
+              transformAlignment: Alignment.center,
               decoration: BoxDecoration(
                 color: circleFill,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: active || completed
-                      ? colorScheme.primary
-                      : colorScheme.outlineVariant,
-                  width: active ? 2.5 : 1.5,
+                  color: borderColor,
+                  width: widget.active ? 2.5 : 1.5,
                 ),
+                boxShadow: highlight && widget.enabled
+                    ? <BoxShadow>[
+                        BoxShadow(
+                          color: colorScheme.primary.withValues(alpha: 0.18),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ]
+                    : null,
               ),
-              child: completed && !active
+              child: widget.completed && !widget.active
                   ? Icon(
                       Icons.check_rounded,
-                      size: nodeSize * 0.48,
+                      size: widget.nodeSize * 0.48,
+                      color: circleFg,
+                    )
+                  : !widget.enabled
+                  ? Icon(
+                      Icons.lock_outline,
+                      size: widget.nodeSize * 0.42,
                       color: circleFg,
                     )
                   : Text(
-                      '$index',
+                      '${widget.index}',
                       style: theme.textTheme.titleSmall?.copyWith(
                         color: circleFg,
                         fontWeight: FontWeight.w800,
-                        fontSize: compact ? 12 : 14,
+                        fontSize: widget.compact ? 12 : 14,
                         height: 1,
                       ),
                     ),
             ),
             SizedBox(height: theme.spacing.sm),
             SizedBox(
-              width: compact ? 72 : 100,
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: labelColor,
-                  fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-                  height: 1.15,
-                  fontSize: compact ? 11 : 12,
-                ),
+              width: widget.compact ? 72 : 100,
+              child: Column(
+                children: <Widget>[
+                  Text(
+                    widget.label,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: labelColor,
+                      fontWeight: widget.active
+                          ? FontWeight.w800
+                          : FontWeight.w600,
+                      height: 1.15,
+                      fontSize: widget.compact ? 11 : 12,
+                    ),
+                  ),
+                  if (widget.optional)
+                    Text(
+                      widget.optionalBadgeLabel,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: labelColor.withValues(alpha: 0.85),
+                        fontWeight: FontWeight.w600,
+                        fontSize: widget.compact ? 9 : 10,
+                      ),
+                    ),
+                ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+
+    if (!interactive) {
+      return node;
+    }
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: FocusableActionDetector(
+        onShowFocusHighlight: (bool value) => setState(() => _focused = value),
+        actions: <Type, Action<Intent>>{
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (ActivateIntent intent) {
+              widget.onTap?.call();
+              return null;
+            },
+          ),
+        },
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onTap,
+          child: node,
         ),
       ),
     );

@@ -16,6 +16,7 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_media_url.dart';
 import 'package:hosspi_hms/core/utils/app_slug.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/facility_similarity.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
@@ -24,6 +25,7 @@ import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_f
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_catalog_config_panel.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/facility_similarity_dialog.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_wizard.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_similarity_dialog.dart';
@@ -81,11 +83,18 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool isRefreshing = ref.watch(tenantFacilitySetupRefreshProvider);
     final bool canManageTenant = accessPolicy.canManageTenant();
     final bool canManageFacility = accessPolicy.canManageFacility();
+    final bool canCreateTenant = accessPolicy.canCreateTenant();
     final bool canManageHrSetup = accessPolicy.canManageHrFacilitySetup();
     final bool isHrSetupOnly = accessPolicy.isHrFacilitySetupOnlyUser();
+    final bool canManageAccess = accessPolicy.grantsAny(const <AppPermission>[
+      AppPermissions.systemAdmin,
+      AppPermissions.tenantAdmin,
+      AppPermissions.facilityAdmin,
+      AppPermissions.hrWrite,
+    ]);
+
     return AppWorkspace(
       title: isHrSetupOnly
           ? l10n.tenantFacilityHrSetupTitle
@@ -94,6 +103,50 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
       maxWidth: PageMaxWidth.dashboard,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
+        primary: canManageAccess
+            ? AppButton.primary(
+                label: l10n.homeManageRolesPermissionsTitle,
+                leadingIcon: Icons.admin_panel_settings_outlined,
+                onPressed: () {
+                  unawaited(
+                    showManageRolesPermissionsDialog(context, ref).then((
+                      bool? saved,
+                    ) {
+                      if (saved == true && context.mounted) {
+                        unawaited(
+                          ref
+                              .read(tenantFacilitySetupControllerProvider.notifier)
+                              .refresh(),
+                        );
+                      }
+                    }),
+                  );
+                },
+              )
+            : null,
+        secondary: <Widget>[
+          if (canManageAccess)
+            AppButton.secondary(
+              label: l10n.homeManageUsersTitle,
+              leadingIcon: Icons.people_outline,
+              onPressed: () {
+                unawaited(
+                  showManageUsersDialog(context, ref).then((bool? saved) {
+                    if (saved == true && context.mounted) {
+                      unawaited(
+                        ref
+                            .read(tenantFacilitySetupControllerProvider.notifier)
+                            .refresh(),
+                      );
+                    }
+                  }),
+                );
+              },
+            ),
+        ],
+        showGlobalActions: false,
+        showFaultReport: false,
+        showHousekeepingRequest: false,
         summaryNotifications: isHrSetupOnly
             ? _hrSetupSummaryNotifications(context, l10n, snapshot)
             : _setupSummaryNotifications(
@@ -104,17 +157,11 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
                   AppRole.superAdmin,
                 ]),
               ),
-        onRefresh: () async {
-          await ref
-              .read(tenantFacilitySetupControllerProvider.notifier)
-              .refresh();
-        },
-        isRefreshing: isRefreshing,
       ),
-
       body: _SetupBody(
         snapshot: snapshot,
         canManageTenant: canManageTenant,
+        canCreateTenant: canCreateTenant,
         canManageFacility: canManageFacility,
         canManageHrSetup: canManageHrSetup,
         isHrSetupOnly: isHrSetupOnly,
@@ -759,10 +806,11 @@ AppFailure _setupFailure(Object error) {
   return const AppFailure.unexpected();
 }
 
-class _SetupBody extends StatelessWidget {
+class _SetupBody extends ConsumerWidget {
   const _SetupBody({
     required this.snapshot,
     required this.canManageTenant,
+    required this.canCreateTenant,
     required this.canManageFacility,
     required this.canManageHrSetup,
     required this.isHrSetupOnly,
@@ -770,6 +818,7 @@ class _SetupBody extends StatelessWidget {
 
   final FacilitySetupSnapshot snapshot;
   final bool canManageTenant;
+  final bool canCreateTenant;
   final bool canManageFacility;
   final bool canManageHrSetup;
   final bool isHrSetupOnly;
@@ -777,7 +826,9 @@ class _SetupBody extends StatelessWidget {
   bool get _canEditStructure => canManageFacility || canManageHrSetup;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ThemeData theme = Theme.of(context);
+
     if (isHrSetupOnly) {
       return _HrFacilitySetupBody(
         snapshot: snapshot,
@@ -788,20 +839,62 @@ class _SetupBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        _SetupGrid(
-          children: <Widget>[
-            TenantFacilitySetupWizard(
-              snapshot: snapshot,
-              onStepSelected: (TenantFacilitySetupWizardStep step) {
-                _openWizardStep(context, step, snapshot);
-              },
-            ),
-            TenantFacilitySetupChecklist(snapshot: snapshot),
-            _PermissionGateSummary(
-              canManageTenant: canManageTenant,
-              canManageFacility: canManageFacility,
-            ),
-          ],
+        TenantFacilitySetupWizard(
+          snapshot: snapshot,
+          canManageTenant: canManageTenant,
+          canManageFacility: canManageFacility,
+          canCreateTenant: canCreateTenant,
+          onOpenStep: (TenantFacilitySetupWizardStep step) {
+            _openWizardStep(context, step, snapshot);
+          },
+          onManageTenants: canManageTenant
+              ? () {
+                  unawaited(
+                    showManageTenantsDialog(context, ref).then((bool? saved) {
+                      if (saved == true && context.mounted) {
+                        unawaited(
+                          ref
+                              .read(
+                                tenantFacilitySetupControllerProvider.notifier,
+                              )
+                              .refresh(),
+                        );
+                      }
+                    }),
+                  );
+                }
+              : null,
+          onManageFacilities: canManageFacility
+              ? () {
+                  unawaited(
+                    showManageFacilitiesDialog(context, ref).then((
+                      bool? saved,
+                    ) {
+                      if (saved == true && context.mounted) {
+                        unawaited(
+                          ref
+                              .read(
+                                tenantFacilitySetupControllerProvider.notifier,
+                              )
+                              .refresh(),
+                        );
+                      }
+                    }),
+                  );
+                }
+              : null,
+          onSelectFacility: (String facilityId) {
+            unawaited(
+              ref
+                  .read(tenantFacilitySetupControllerProvider.notifier)
+                  .selectFacility(facilityId),
+            );
+          },
+        ),
+        SizedBox(height: theme.spacing.md),
+        TenantFacilityPermissionStrip(
+          canManageTenant: canManageTenant,
+          canManageFacility: canManageFacility,
         ),
       ],
     );
@@ -907,86 +1000,6 @@ void _openWizardStep(
       unawaited(_openRoomsModal(context));
     case TenantFacilitySetupWizardStep.beds:
       unawaited(_openBedsModal(context));
-  }
-}
-
-class _PermissionGateSummary extends StatelessWidget {
-  const _PermissionGateSummary({
-    required this.canManageTenant,
-    required this.canManageFacility,
-  });
-
-  final bool canManageTenant;
-  final bool canManageFacility;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppScreenSection(
-      title: l10n.tenantFacilityPermissionsTitle,
-      body: l10n.tenantFacilityPermissionsBody,
-      child: Column(
-        children: <Widget>[
-          _PermissionRow(
-            allowed: canManageTenant,
-            label: l10n.tenantFacilityTenantAdminPermission,
-          ),
-          _PermissionRow(
-            allowed: canManageFacility,
-            label: l10n.tenantFacilityFacilityAdminPermission,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PermissionRow extends StatelessWidget {
-  const _PermissionRow({required this.allowed, required this.label});
-
-  final bool allowed;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final AppLocalizations l10n = context.l10n;
-    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final bool compact = breakpoint.isMobile;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: theme.spacing.xs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Padding(
-            padding: EdgeInsets.only(top: compact ? 2 : 0),
-            child: Icon(
-              allowed ? Icons.lock_open_outlined : Icons.lock_outline,
-              color: allowed
-                  ? theme.statusColors.success
-                  : theme.colorScheme.onSurfaceVariant,
-              size: theme.appTokens.listIconSize,
-            ),
-          ),
-          SizedBox(width: theme.spacing.xs),
-          Expanded(
-            child: Text(
-              label,
-              style: compact ? theme.textTheme.bodyMedium : null,
-            ),
-          ),
-          SizedBox(width: theme.spacing.sm),
-          Text(
-            allowed
-                ? l10n.tenantFacilityPermissionAllowed
-                : l10n.tenantFacilityPermissionDenied,
-            style: theme.textTheme.labelLarge,
-          ),
-        ],
-      ),
-    );
   }
 }
 

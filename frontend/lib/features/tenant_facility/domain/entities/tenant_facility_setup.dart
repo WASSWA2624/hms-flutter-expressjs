@@ -543,27 +543,25 @@ final class FacilitySetupSnapshot {
         contactAddress.phone?.trim().isNotEmpty == true;
   }
 
-  bool get hasBranchesConfigured => branches.isNotEmpty || hasFacilityIdentity;
+  bool get hasBranchesConfigured => branches.isNotEmpty;
 
-  bool get hasUnitsConfigured => units.isNotEmpty || departments.isNotEmpty;
+  bool get hasUnitsConfigured => units.isNotEmpty;
 
-  bool get hasWardsConfigured =>
-      wards.isNotEmpty || rooms.isNotEmpty || beds.isNotEmpty;
+  bool get hasWardsConfigured => wards.isNotEmpty;
 
-  bool get hasRoomsConfigured =>
-      rooms.isNotEmpty || beds.isNotEmpty || wards.isNotEmpty;
+  bool get hasRoomsConfigured => rooms.isNotEmpty;
 
-  bool get hasBedsConfigured => beds.isNotEmpty || wards.isNotEmpty;
+  bool get hasBedsConfigured => beds.isNotEmpty;
 
   int get completedChecklistItems {
     return <bool>[
       hasTenant,
-      hasBranchesConfigured,
+      hasBranchesConfigured || hasFacilityIdentity,
       hasFacilityIdentity,
       hasDepartments,
-      hasUnitsConfigured,
-      hasWardsConfigured,
-      hasRoomsConfigured,
+      hasUnitsConfigured || hasDepartments,
+      hasWardsConfigured || hasRoomsConfigured || hasBedsConfigured,
+      hasRoomsConfigured || hasBedsConfigured,
       hasBedsConfigured,
     ].where((bool completed) => completed).length;
   }

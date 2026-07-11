@@ -617,6 +617,10 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
 
   bool get _canCreate => ref.read(appAccessPolicyProvider).canCreateTenant();
 
+  bool get _canEdit => ref.read(appAccessPolicyProvider).canManageTenant();
+
+  bool get _canDelete => _canCreate;
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -698,7 +702,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                             _tenantStatusLabel(l10n, tenant),
                           ),
                         ),
-                        if (_canCreate)
+                        if (_canEdit)
                           AppListTableColumn<TenantProfile>(
                             label: '',
                             alwaysVisible: true,
@@ -707,6 +711,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                                   return _TenantManagementRowActions(
                                     enabled: !_loading,
                                     tenant: tenant,
+                                    canDelete: _canDelete,
                                     editLabel:
                                         l10n.tenantFacilitySaveTenantAction,
                                     deleteLabel:
@@ -742,10 +747,11 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                               subtitle: Text(
                                 '${tenant.slug ?? tenant.id} · ${_tenantStatusLabel(l10n, tenant)}',
                               ),
-                              trailing: _canCreate
+                              trailing: _canEdit
                                   ? _TenantManagementRowActions(
                                       enabled: !_loading,
                                       tenant: tenant,
+                                      canDelete: _canDelete,
                                       editLabel:
                                           l10n.tenantFacilitySaveTenantAction,
                                       deleteLabel:
@@ -837,6 +843,9 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
   }
 
   bool get _canManageTenant =>
+      ref.read(appAccessPolicyProvider).canManageTenant();
+
+  bool get _canDeleteTenant =>
       ref.read(appAccessPolicyProvider).canCreateTenant();
 
   bool get _canManageFacility =>
@@ -1097,6 +1106,7 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final bool canMutateTenant = _canManageTenant && !_tenant.isDeleted;
+    final bool canDeleteTenant = _canDeleteTenant && !_tenant.isDeleted;
     final bool canMutateFacility = _canManageFacility && !_tenant.isDeleted;
 
     return AppDialog(
@@ -1155,19 +1165,19 @@ class _TenantDetailsDialogState extends ConsumerState<_TenantDetailsDialog> {
         ),
       ),
       actions: <Widget>[
-        if (canMutateTenant) ...<Widget>[
+        if (canMutateTenant)
           AppButton.secondary(
             label: l10n.tenantFacilityEditTenantAction,
             leadingIcon: Icons.edit_outlined,
             onPressed: () => unawaited(_editTenant()),
           ),
+        if (canDeleteTenant)
           AppButton.primary(
             label: l10n.tenantFacilityDeleteTenantAction,
             leadingIcon: Icons.delete_outline,
             color: colorScheme.error,
             onPressed: () => unawaited(_deleteTenant()),
           ),
-        ],
         AppButton.secondary(
           label: l10n.commonCloseActionLabel,
           leadingIcon: Icons.close,
@@ -4127,6 +4137,7 @@ class _TenantManagementRowActions extends StatelessWidget {
   const _TenantManagementRowActions({
     required this.enabled,
     required this.tenant,
+    required this.canDelete,
     required this.editLabel,
     required this.deleteLabel,
     required this.restoreLabel,
@@ -4139,6 +4150,7 @@ class _TenantManagementRowActions extends StatelessWidget {
 
   final bool enabled;
   final TenantProfile tenant;
+  final bool canDelete;
   final String editLabel;
   final String deleteLabel;
   final String restoreLabel;
@@ -4153,6 +4165,9 @@ class _TenantManagementRowActions extends StatelessWidget {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
     if (tenant.isDeleted) {
+      if (!canDelete) {
+        return const SizedBox.shrink();
+      }
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
@@ -4188,15 +4203,16 @@ class _TenantManagementRowActions extends StatelessWidget {
           enabled: enabled,
           onPressed: enabled ? onEdit : null,
         ),
-        AppButton.tertiary(
-          leadingIcon: Icons.delete_outline,
-          label: deleteLabel,
-          semanticLabel: deleteLabel,
-          tooltip: deleteLabel,
-          color: colorScheme.error,
-          enabled: enabled,
-          onPressed: enabled ? onDelete : null,
-        ),
+        if (canDelete)
+          AppButton.tertiary(
+            leadingIcon: Icons.delete_outline,
+            label: deleteLabel,
+            semanticLabel: deleteLabel,
+            tooltip: deleteLabel,
+            color: colorScheme.error,
+            enabled: enabled,
+            onPressed: enabled ? onDelete : null,
+          ),
       ],
     );
   }

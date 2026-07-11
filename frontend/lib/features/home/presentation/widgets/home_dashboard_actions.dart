@@ -725,6 +725,7 @@ homeActionLibrary = <String, HomeActionDefinition>{
       AppRole.facilityAdmin,
     ],
     requiredAnyPermissions: <AppPermission>[
+      AppPermissions.systemAdmin,
       AppPermissions.tenantAdmin,
       AppPermissions.facilityAdmin,
     ],
