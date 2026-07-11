@@ -1758,21 +1758,11 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
               }
             },
           ),
-          AppSelectField<String>.searchable(
+          AppCurrencySelectField(
             value: _currency,
             enabled: fieldsEnabled,
             labelText: l10n.tenantFacilityDefaultCurrencyLabel,
             helperText: l10n.tenantFacilityDefaultCurrencyHelper,
-            allowClear: false,
-            menuHeight: 320,
-            options: <AppSelectOption<String>>[
-              for (final AppCurrencyOption option in appCurrencyOptions)
-                AppSelectOption<String>(
-                  value: option.normalizedCode,
-                  label: option.label,
-                  searchText: option.searchText,
-                ),
-            ],
             onChanged: (String? value) {
               if (value == null || value.trim().isEmpty) {
                 return;

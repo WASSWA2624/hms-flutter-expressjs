@@ -817,6 +817,7 @@ class _SubscriptionUpgradeDialogState
       amountController: _amountController,
       currency: _currency,
       isLoading: _isFxLoading,
+      convertOnCurrencyChange: false,
       onCurrencyChanged: (String? value) {
         if (value != null) {
           unawaited(_onCurrencyChanged(value));
