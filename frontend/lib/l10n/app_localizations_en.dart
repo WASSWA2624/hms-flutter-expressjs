@@ -4924,6 +4924,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String tenantFacilityNextStepAction(String step) {
+    return 'Next: $step';
+  }
+
+  @override
   String get tenantFacilityCreateBranchAction => 'Create branch';
 
   @override

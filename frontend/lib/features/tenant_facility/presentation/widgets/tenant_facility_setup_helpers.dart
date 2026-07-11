@@ -478,7 +478,7 @@ String tenantFacilityWizardContinueToStepLabel(
   AppLocalizations l10n,
   TenantFacilitySetupWizardStep step,
 ) {
-  return l10n.tenantFacilityContinueToStepAction(
+  return l10n.tenantFacilityNextStepAction(
     tenantFacilityWizardStepLabel(l10n, step),
   );
 }

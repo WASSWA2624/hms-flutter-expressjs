@@ -96,32 +96,6 @@ class _TenantFacilitySetupWizardState extends State<TenantFacilitySetupWizard> {
     setState(() => _selectedStep = step);
   }
 
-  void _advanceFrom(TenantFacilitySetupWizardStep current) {
-    final List<TenantFacilitySetupWizardStep> steps = _steps;
-    final int currentIndex = steps.indexOf(current);
-    if (currentIndex < 0) {
-      return;
-    }
-    final int nextIndex = currentIndex + 1;
-    if (nextIndex < steps.length &&
-        tenantFacilityWizardStepReachable(
-          widget.snapshot,
-          steps,
-          steps[nextIndex],
-        )) {
-      _selectStep(steps[nextIndex]);
-      return;
-    }
-    final TenantFacilitySetupWizardStep? nextIncomplete =
-        tenantFacilityNextIncompleteWizardStep(
-          widget.snapshot,
-          steps: steps,
-        );
-    if (nextIncomplete != null && nextIncomplete != current) {
-      _selectStep(nextIncomplete);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -150,34 +124,18 @@ class _TenantFacilitySetupWizardState extends State<TenantFacilitySetupWizard> {
     final TenantFacilitySetupWizardStep? nextStep = currentIndex + 1 < steps.length
         ? steps[currentIndex + 1]
         : null;
-    final bool nextReachable = nextStep != null &&
-        tenantFacilityWizardStepReachable(
-          widget.snapshot,
-          steps,
-          nextStep,
-        );
-
-    // Optional empty: Skip for now. Otherwise continue to next when reachable.
-    final VoidCallback? navigationAction;
-    final String? navigationLabel;
-    final IconData? navigationIcon;
-    if (currentOptional && !hasRecords) {
-      navigationAction = () => _advanceFrom(current);
-      navigationLabel = l10n.tenantFacilitySkipOptionalAction;
-      navigationIcon = Icons.skip_next_outlined;
-    } else if (nextStep != null && nextReachable) {
-      final TenantFacilitySetupWizardStep continueStep = nextStep;
-      navigationAction = () => _selectStep(continueStep);
-      navigationLabel = tenantFacilityWizardContinueToStepLabel(
-        l10n,
-        continueStep,
-      );
-      navigationIcon = Icons.arrow_forward;
-    } else {
-      navigationAction = null;
-      navigationLabel = null;
-      navigationIcon = null;
-    }
+    // Enabled only when the current step does not block progress (required
+    // steps must be fully configured; optional steps never block).
+    final bool canGoNext = nextStep != null &&
+        !tenantFacilityWizardStepBlocksProgress(widget.snapshot, current);
+    final String? navigationLabel = nextStep == null
+        ? null
+        : tenantFacilityWizardContinueToStepLabel(l10n, nextStep);
+    final TenantFacilitySetupWizardStep? navigateTarget =
+        canGoNext ? nextStep : null;
+    final VoidCallback? navigationAction = navigateTarget == null
+        ? null
+        : () => _selectStep(navigateTarget);
 
     return AppScreenSection(
       title: l10n.tenantFacilityWizardTitle,
@@ -256,7 +214,7 @@ class _TenantFacilitySetupWizardState extends State<TenantFacilitySetupWizard> {
             onSelectFacility: widget.onSelectFacility,
             onOpenCatalog: widget.onOpenCatalog,
             navigationLabel: navigationLabel,
-            navigationIcon: navigationIcon,
+            navigationEnabled: canGoNext,
             onNavigate: navigationAction,
           ),
         ],
@@ -281,7 +239,7 @@ class _SetupStepPanel extends StatelessWidget {
     this.onSelectFacility,
     this.onOpenCatalog,
     this.navigationLabel,
-    this.navigationIcon,
+    this.navigationEnabled = false,
     this.onNavigate,
   });
 
@@ -299,7 +257,7 @@ class _SetupStepPanel extends StatelessWidget {
   final ValueChanged<String>? onSelectFacility;
   final VoidCallback? onOpenCatalog;
   final String? navigationLabel;
-  final IconData? navigationIcon;
+  final bool navigationEnabled;
   final VoidCallback? onNavigate;
 
   @override
@@ -348,11 +306,12 @@ class _SetupStepPanel extends StatelessWidget {
           leadingIcon: Icons.medical_information_outlined,
           onPressed: onOpenCatalog,
         ),
-      if (onNavigate != null && navigationLabel != null)
-        AppButton.tertiary(
+      if (navigationLabel != null)
+        AppButton.secondary(
           label: navigationLabel!,
-          leadingIcon: navigationIcon ?? Icons.arrow_forward,
-          onPressed: onNavigate,
+          leadingIcon: Icons.arrow_forward,
+          enabled: navigationEnabled,
+          onPressed: navigationEnabled ? onNavigate : null,
         ),
     ];
 

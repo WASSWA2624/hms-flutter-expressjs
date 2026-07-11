@@ -9256,6 +9256,12 @@ abstract class AppLocalizations {
   /// **'Continue to {step}'**
   String tenantFacilityContinueToStepAction(String step);
 
+  /// Advance the setup wizard to the next named step.
+  ///
+  /// In en, this message translates to:
+  /// **'Next: {step}'**
+  String tenantFacilityNextStepAction(String step);
+
   /// Primary action to create the first branch in setup.
   ///
   /// In en, this message translates to:

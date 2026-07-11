@@ -6390,6 +6390,15 @@
       }
     }
   },
+  "tenantFacilityNextStepAction": "Next: {step}",
+  "@tenantFacilityNextStepAction": {
+    "description": "Advance the setup wizard to the next named step.",
+    "placeholders": {
+      "step": {
+        "type": "String"
+      }
+    }
+  },
   "tenantFacilityCreateBranchAction": "Create branch",
   "@tenantFacilityCreateBranchAction": {
     "description": "Primary action to create the first branch in setup."
