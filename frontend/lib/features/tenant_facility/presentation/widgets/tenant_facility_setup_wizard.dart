@@ -311,6 +311,14 @@ class _SetupStepPanel extends StatelessWidget {
           label: navigationLabel!,
           leadingIcon: Icons.arrow_forward,
           enabled: navigationEnabled,
+          tooltip: navigationEnabled
+              ? null
+              : tenantFacilityWizardStepPendingBannerMessage(
+                  l10n,
+                  snapshot: snapshot,
+                  step: step,
+                  nextActionLabel: navigationLabel,
+                ),
           onPressed: navigationEnabled ? onNavigate : null,
         ),
     ];
@@ -331,6 +339,17 @@ class _SetupStepPanel extends StatelessWidget {
         ),
       ),
     );
+
+    final String? pendingIntro = tenantFacilityWizardStepPendingIntro(
+      l10n,
+      snapshot: snapshot,
+      step: step,
+      nextActionLabel: navigationLabel,
+    );
+    final List<TenantFacilityWizardStepRequirement> requirements =
+        pendingIntro == null
+        ? const <TenantFacilityWizardStepRequirement>[]
+        : tenantFacilityWizardStepRequirements(l10n, snapshot, step);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -366,6 +385,25 @@ class _SetupStepPanel extends StatelessWidget {
               _headerIdentity(l10n, theme, colorScheme, title),
               SizedBox(height: theme.spacing.md),
               actionRow,
+            ],
+            if (pendingIntro != null && requirements.isNotEmpty) ...<Widget>[
+              SizedBox(height: theme.spacing.md),
+              AppFormInformationBanner(
+                title: l10n.tenantFacilityWizardPendingTitle,
+                message: pendingIntro,
+                variant: optional
+                    ? AppFormInformationVariant.info
+                    : AppFormInformationVariant.warning,
+                icon: optional
+                    ? Icons.info_outline
+                    : Icons.playlist_add_check_circle_outlined,
+                children: <Widget>[
+                  _SetupStepRequirementsChecklist(
+                    requirements: requirements,
+                    optional: optional,
+                  ),
+                ],
+              ),
             ],
             if (step == TenantFacilitySetupWizardStep.tenant &&
                 canCreateTenant) ...<Widget>[
@@ -454,6 +492,72 @@ class _SetupStepPanel extends StatelessWidget {
             ],
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _SetupStepRequirementsChecklist extends StatelessWidget {
+  const _SetupStepRequirementsChecklist({
+    required this.requirements,
+    required this.optional,
+  });
+
+  final List<TenantFacilityWizardStepRequirement> requirements;
+  final bool optional;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color pendingTone = optional
+        ? colorScheme.tertiary
+        : theme.statusColors.warning;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        for (final TenantFacilityWizardStepRequirement item in requirements)
+          Padding(
+            padding: EdgeInsets.only(top: theme.spacing.xs),
+            child: Semantics(
+              label: item.satisfied
+                  ? '${l10n.tenantFacilityWizardRequirementDoneLabel}: ${item.label}'
+                  : '${l10n.tenantFacilityWizardRequirementPendingLabel}: ${item.label}',
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Icon(
+                    item.satisfied
+                        ? Icons.check_circle_outline
+                        : Icons.radio_button_unchecked,
+                    size: theme.appTokens.listIconSize,
+                    color: item.satisfied
+                        ? theme.statusColors.success
+                        : pendingTone,
+                  ),
+                  SizedBox(width: theme.spacing.sm),
+                  Expanded(
+                    child: Text(
+                      item.label,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: item.satisfied
+                            ? colorScheme.onSurfaceVariant
+                            : colorScheme.onSurface,
+                        fontWeight: item.satisfied
+                            ? FontWeight.w500
+                            : FontWeight.w700,
+                        decoration: item.satisfied
+                            ? TextDecoration.lineThrough
+                            : null,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }

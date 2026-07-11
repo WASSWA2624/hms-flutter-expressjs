@@ -6459,6 +6459,93 @@
   "@tenantFacilityGateNeedTenant": {
     "description": "Prerequisite message when later setup steps require a tenant."
   },
+  "tenantFacilityWizardPendingTitle": "Still needed for this step",
+  "@tenantFacilityWizardPendingTitle": {
+    "description": "Title for the setup wizard banner listing missing requirements."
+  },
+  "tenantFacilityWizardRequirementDoneLabel": "Done",
+  "@tenantFacilityWizardRequirementDoneLabel": {
+    "description": "Accessibility label for a completed setup requirement."
+  },
+  "tenantFacilityWizardRequirementPendingLabel": "Pending",
+  "@tenantFacilityWizardRequirementPendingLabel": {
+    "description": "Accessibility label for an outstanding setup requirement."
+  },
+  "tenantFacilityWizardPendingUnlockNext": "Complete the items below to enable {nextAction}.",
+  "@tenantFacilityWizardPendingUnlockNext": {
+    "description": "Explains that missing setup items are blocking the next wizard action.",
+    "placeholders": {
+      "nextAction": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantFacilityWizardPendingCompleteStep": "Complete the items below to finish this step.",
+  "@tenantFacilityWizardPendingCompleteStep": {
+    "description": "Explains missing setup items when there is no next wizard step."
+  },
+  "tenantFacilityWizardOptionalPendingHint": "Optional. Add records below, or continue with {nextAction}.",
+  "@tenantFacilityWizardOptionalPendingHint": {
+    "description": "Guidance when an optional setup step has no records yet.",
+    "placeholders": {
+      "nextAction": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantFacilityWizardOptionalPendingStandalone": "Optional. Add records below, or skip this step for now.",
+  "@tenantFacilityWizardOptionalPendingStandalone": {
+    "description": "Guidance for an incomplete optional setup step with no next action."
+  },
+  "tenantFacilityWizardMissingTenant": "Select or create a tenant profile",
+  "@tenantFacilityWizardMissingTenant": {
+    "description": "Missing requirement for the tenant setup wizard step."
+  },
+  "tenantFacilityWizardMissingFacility": "Select or create a facility",
+  "@tenantFacilityWizardMissingFacility": {
+    "description": "Missing requirement when no facility is selected in setup."
+  },
+  "tenantFacilityWizardMissingFacilityName": "Add a facility name",
+  "@tenantFacilityWizardMissingFacilityName": {
+    "description": "Missing requirement when the selected facility has no name."
+  },
+  "tenantFacilityWizardMissingFacilityPhone": "Add a facility phone number",
+  "@tenantFacilityWizardMissingFacilityPhone": {
+    "description": "Missing requirement when facility identity has no phone contact."
+  },
+  "tenantFacilityWizardMissingDepartments": "Create at least one department",
+  "@tenantFacilityWizardMissingDepartments": {
+    "description": "Missing requirement for the departments setup wizard step."
+  },
+  "tenantFacilityWizardMissingBranches": "Create at least one branch",
+  "@tenantFacilityWizardMissingBranches": {
+    "description": "Missing requirement for the optional branches setup wizard step."
+  },
+  "tenantFacilityWizardMissingUnits": "Create at least one unit",
+  "@tenantFacilityWizardMissingUnits": {
+    "description": "Missing requirement for the optional units setup wizard step."
+  },
+  "tenantFacilityWizardMissingWards": "Create at least one ward",
+  "@tenantFacilityWizardMissingWards": {
+    "description": "Missing requirement for the optional wards setup wizard step."
+  },
+  "tenantFacilityWizardMissingRooms": "Create at least one room",
+  "@tenantFacilityWizardMissingRooms": {
+    "description": "Missing requirement for the rooms setup wizard step."
+  },
+  "tenantFacilityWizardMissingBeds": "Create at least one bed",
+  "@tenantFacilityWizardMissingBeds": {
+    "description": "Missing requirement for the beds setup wizard step."
+  },
+  "tenantFacilityWizardPendingBullet": "• {item}",
+  "@tenantFacilityWizardPendingBullet": {
+    "description": "Bullet line for a missing setup wizard requirement.",
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
   "tenantFacilityCatalogShortAction": "Catalog",
   "@tenantFacilityCatalogShortAction": {
     "description": "Short label for opening the clinical service catalog from setup."

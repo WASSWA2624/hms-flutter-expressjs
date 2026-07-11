@@ -203,6 +203,69 @@ void main() {
       );
     });
 
+    test('lists facility phone as missing when identity is incomplete', () {
+      final AppLocalizations l10n = AppLocalizationsEn();
+      const FacilitySetupSnapshot snapshot = FacilitySetupSnapshot(
+        tenant: TenantProfile(id: 'TEN0001', name: 'Acme'),
+        facility: FacilityProfile(
+          id: 'FAC0001',
+          tenantId: 'TEN0001',
+          name: 'Democare Hospital',
+          type: FacilitySetupType.hospital,
+        ),
+      );
+
+      expect(
+        tenantFacilityWizardStepMissingRequirements(
+          l10n,
+          snapshot,
+          TenantFacilitySetupWizardStep.facility,
+        ),
+        <String>[l10n.tenantFacilityWizardMissingFacilityPhone],
+      );
+
+      final String? banner = tenantFacilityWizardStepPendingBannerMessage(
+        l10n,
+        snapshot: snapshot,
+        step: TenantFacilitySetupWizardStep.facility,
+        nextActionLabel: 'Next: Departments',
+      );
+
+      expect(banner, isNotNull);
+      expect(banner, contains(l10n.tenantFacilityWizardMissingFacilityPhone));
+      expect(banner, contains('Next: Departments'));
+    });
+
+    test('exposes a pending checklist for every incomplete wizard step', () {
+      final AppLocalizations l10n = AppLocalizationsEn();
+      const FacilitySetupSnapshot empty = FacilitySetupSnapshot();
+
+      for (final TenantFacilitySetupWizardStep step
+          in TenantFacilitySetupWizardStep.values) {
+        final List<TenantFacilityWizardStepRequirement> requirements =
+            tenantFacilityWizardStepRequirements(l10n, empty, step);
+
+        expect(requirements, isNotEmpty, reason: step.name);
+        expect(
+          requirements.any(
+            (TenantFacilityWizardStepRequirement item) => !item.satisfied,
+          ),
+          isTrue,
+          reason: step.name,
+        );
+        expect(
+          tenantFacilityWizardStepPendingIntro(
+            l10n,
+            snapshot: empty,
+            step: step,
+            nextActionLabel: 'Next: Test',
+          ),
+          isNotNull,
+          reason: step.name,
+        );
+      }
+    });
+
     test('hides tenant steps for facility admins', () {
       final List<TenantFacilitySetupWizardStep> steps =
           tenantFacilityVisibleWizardSteps(

@@ -4977,6 +4977,73 @@ class AppLocalizationsEn extends AppLocalizations {
       'Create or select a tenant before continuing setup.';
 
   @override
+  String get tenantFacilityWizardPendingTitle => 'Still needed for this step';
+
+  @override
+  String get tenantFacilityWizardRequirementDoneLabel => 'Done';
+
+  @override
+  String get tenantFacilityWizardRequirementPendingLabel => 'Pending';
+
+  @override
+  String tenantFacilityWizardPendingUnlockNext(String nextAction) {
+    return 'Complete the items below to enable $nextAction.';
+  }
+
+  @override
+  String get tenantFacilityWizardPendingCompleteStep =>
+      'Complete the items below to finish this step.';
+
+  @override
+  String tenantFacilityWizardOptionalPendingHint(String nextAction) {
+    return 'Optional. Add records below, or continue with $nextAction.';
+  }
+
+  @override
+  String get tenantFacilityWizardOptionalPendingStandalone =>
+      'Optional. Add records below, or skip this step for now.';
+
+  @override
+  String get tenantFacilityWizardMissingTenant =>
+      'Select or create a tenant profile';
+
+  @override
+  String get tenantFacilityWizardMissingFacility =>
+      'Select or create a facility';
+
+  @override
+  String get tenantFacilityWizardMissingFacilityName => 'Add a facility name';
+
+  @override
+  String get tenantFacilityWizardMissingFacilityPhone =>
+      'Add a facility phone number';
+
+  @override
+  String get tenantFacilityWizardMissingDepartments =>
+      'Create at least one department';
+
+  @override
+  String get tenantFacilityWizardMissingBranches =>
+      'Create at least one branch';
+
+  @override
+  String get tenantFacilityWizardMissingUnits => 'Create at least one unit';
+
+  @override
+  String get tenantFacilityWizardMissingWards => 'Create at least one ward';
+
+  @override
+  String get tenantFacilityWizardMissingRooms => 'Create at least one room';
+
+  @override
+  String get tenantFacilityWizardMissingBeds => 'Create at least one bed';
+
+  @override
+  String tenantFacilityWizardPendingBullet(String item) {
+    return '• $item';
+  }
+
+  @override
   String get tenantFacilityCatalogShortAction => 'Catalog';
 
   @override

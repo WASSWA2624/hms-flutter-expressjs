@@ -9352,6 +9352,114 @@ abstract class AppLocalizations {
   /// **'Create or select a tenant before continuing setup.'**
   String get tenantFacilityGateNeedTenant;
 
+  /// Title for the setup wizard banner listing missing requirements.
+  ///
+  /// In en, this message translates to:
+  /// **'Still needed for this step'**
+  String get tenantFacilityWizardPendingTitle;
+
+  /// Accessibility label for a completed setup requirement.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get tenantFacilityWizardRequirementDoneLabel;
+
+  /// Accessibility label for an outstanding setup requirement.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get tenantFacilityWizardRequirementPendingLabel;
+
+  /// Explains that missing setup items are blocking the next wizard action.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the items below to enable {nextAction}.'**
+  String tenantFacilityWizardPendingUnlockNext(String nextAction);
+
+  /// Explains missing setup items when there is no next wizard step.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the items below to finish this step.'**
+  String get tenantFacilityWizardPendingCompleteStep;
+
+  /// Guidance when an optional setup step has no records yet.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Add records below, or continue with {nextAction}.'**
+  String tenantFacilityWizardOptionalPendingHint(String nextAction);
+
+  /// Guidance for an incomplete optional setup step with no next action.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Add records below, or skip this step for now.'**
+  String get tenantFacilityWizardOptionalPendingStandalone;
+
+  /// Missing requirement for the tenant setup wizard step.
+  ///
+  /// In en, this message translates to:
+  /// **'Select or create a tenant profile'**
+  String get tenantFacilityWizardMissingTenant;
+
+  /// Missing requirement when no facility is selected in setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Select or create a facility'**
+  String get tenantFacilityWizardMissingFacility;
+
+  /// Missing requirement when the selected facility has no name.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a facility name'**
+  String get tenantFacilityWizardMissingFacilityName;
+
+  /// Missing requirement when facility identity has no phone contact.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a facility phone number'**
+  String get tenantFacilityWizardMissingFacilityPhone;
+
+  /// Missing requirement for the departments setup wizard step.
+  ///
+  /// In en, this message translates to:
+  /// **'Create at least one department'**
+  String get tenantFacilityWizardMissingDepartments;
+
+  /// Missing requirement for the optional branches setup wizard step.
+  ///
+  /// In en, this message translates to:
+  /// **'Create at least one branch'**
+  String get tenantFacilityWizardMissingBranches;
+
+  /// Missing requirement for the optional units setup wizard step.
+  ///
+  /// In en, this message translates to:
+  /// **'Create at least one unit'**
+  String get tenantFacilityWizardMissingUnits;
+
+  /// Missing requirement for the optional wards setup wizard step.
+  ///
+  /// In en, this message translates to:
+  /// **'Create at least one ward'**
+  String get tenantFacilityWizardMissingWards;
+
+  /// Missing requirement for the rooms setup wizard step.
+  ///
+  /// In en, this message translates to:
+  /// **'Create at least one room'**
+  String get tenantFacilityWizardMissingRooms;
+
+  /// Missing requirement for the beds setup wizard step.
+  ///
+  /// In en, this message translates to:
+  /// **'Create at least one bed'**
+  String get tenantFacilityWizardMissingBeds;
+
+  /// Bullet line for a missing setup wizard requirement.
+  ///
+  /// In en, this message translates to:
+  /// **'• {item}'**
+  String tenantFacilityWizardPendingBullet(String item);
+
   /// Short label for opening the clinical service catalog from setup.
   ///
   /// In en, this message translates to:

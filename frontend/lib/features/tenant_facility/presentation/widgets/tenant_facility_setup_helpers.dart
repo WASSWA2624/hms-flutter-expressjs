@@ -267,6 +267,156 @@ bool tenantFacilityWizardStepCompleted(
   };
 }
 
+/// One completion criterion for a setup wizard step.
+class TenantFacilityWizardStepRequirement {
+  const TenantFacilityWizardStepRequirement({
+    required this.label,
+    required this.satisfied,
+  });
+
+  final String label;
+  final bool satisfied;
+}
+
+/// Full requirements checklist for [step] (satisfied and outstanding).
+List<TenantFacilityWizardStepRequirement> tenantFacilityWizardStepRequirements(
+  AppLocalizations l10n,
+  FacilitySetupSnapshot snapshot,
+  TenantFacilitySetupWizardStep step,
+) {
+  return switch (step) {
+    TenantFacilitySetupWizardStep.tenant => <TenantFacilityWizardStepRequirement>[
+      TenantFacilityWizardStepRequirement(
+        label: l10n.tenantFacilityWizardMissingTenant,
+        satisfied: snapshot.hasTenant,
+      ),
+    ],
+    TenantFacilitySetupWizardStep.branches =>
+      <TenantFacilityWizardStepRequirement>[
+        TenantFacilityWizardStepRequirement(
+          label: l10n.tenantFacilityWizardMissingBranches,
+          satisfied: snapshot.hasBranchesConfigured,
+        ),
+      ],
+    TenantFacilitySetupWizardStep.facility => () {
+      final FacilityProfile? facility = snapshot.facility;
+      final bool hasFacility = facility != null;
+      final bool hasName = facility?.name.trim().isNotEmpty == true;
+      final bool hasPhone =
+          snapshot.contactAddress.phone?.trim().isNotEmpty == true;
+      return <TenantFacilityWizardStepRequirement>[
+        TenantFacilityWizardStepRequirement(
+          label: l10n.tenantFacilityWizardMissingFacility,
+          satisfied: hasFacility,
+        ),
+        TenantFacilityWizardStepRequirement(
+          label: l10n.tenantFacilityWizardMissingFacilityName,
+          satisfied: hasName,
+        ),
+        TenantFacilityWizardStepRequirement(
+          label: l10n.tenantFacilityWizardMissingFacilityPhone,
+          satisfied: hasPhone,
+        ),
+      ];
+    }(),
+    TenantFacilitySetupWizardStep.departments =>
+      <TenantFacilityWizardStepRequirement>[
+        TenantFacilityWizardStepRequirement(
+          label: l10n.tenantFacilityWizardMissingDepartments,
+          satisfied: snapshot.hasDepartments,
+        ),
+      ],
+    TenantFacilitySetupWizardStep.units => <TenantFacilityWizardStepRequirement>[
+      TenantFacilityWizardStepRequirement(
+        label: l10n.tenantFacilityWizardMissingUnits,
+        satisfied: snapshot.hasUnitsConfigured,
+      ),
+    ],
+    TenantFacilitySetupWizardStep.wards => <TenantFacilityWizardStepRequirement>[
+      TenantFacilityWizardStepRequirement(
+        label: l10n.tenantFacilityWizardMissingWards,
+        satisfied: snapshot.hasWardsConfigured,
+      ),
+    ],
+    TenantFacilitySetupWizardStep.rooms => <TenantFacilityWizardStepRequirement>[
+      TenantFacilityWizardStepRequirement(
+        label: l10n.tenantFacilityWizardMissingRooms,
+        satisfied: snapshot.hasRoomsConfigured,
+      ),
+    ],
+    TenantFacilitySetupWizardStep.beds => <TenantFacilityWizardStepRequirement>[
+      TenantFacilityWizardStepRequirement(
+        label: l10n.tenantFacilityWizardMissingBeds,
+        satisfied: snapshot.hasBedsConfigured,
+      ),
+    ],
+  };
+}
+
+/// Concrete items still required before [step] is considered complete.
+List<String> tenantFacilityWizardStepMissingRequirements(
+  AppLocalizations l10n,
+  FacilitySetupSnapshot snapshot,
+  TenantFacilitySetupWizardStep step,
+) {
+  return tenantFacilityWizardStepRequirements(l10n, snapshot, step)
+      .where((TenantFacilityWizardStepRequirement item) => !item.satisfied)
+      .map((TenantFacilityWizardStepRequirement item) => item.label)
+      .toList(growable: false);
+}
+
+/// Intro line for an incomplete wizard step banner (without the checklist).
+String? tenantFacilityWizardStepPendingIntro(
+  AppLocalizations l10n, {
+  required FacilitySetupSnapshot snapshot,
+  required TenantFacilitySetupWizardStep step,
+  String? nextActionLabel,
+}) {
+  if (tenantFacilityWizardStepMissingRequirements(
+    l10n,
+    snapshot,
+    step,
+  ).isEmpty) {
+    return null;
+  }
+
+  final bool optional = tenantFacilityWizardStepOptional(step);
+  if (optional) {
+    return nextActionLabel == null
+        ? l10n.tenantFacilityWizardOptionalPendingStandalone
+        : l10n.tenantFacilityWizardOptionalPendingHint(nextActionLabel);
+  }
+
+  return nextActionLabel == null
+      ? l10n.tenantFacilityWizardPendingCompleteStep
+      : l10n.tenantFacilityWizardPendingUnlockNext(nextActionLabel);
+}
+
+/// Banner copy for an incomplete wizard step, including why Next may be inactive.
+String? tenantFacilityWizardStepPendingBannerMessage(
+  AppLocalizations l10n, {
+  required FacilitySetupSnapshot snapshot,
+  required TenantFacilitySetupWizardStep step,
+  String? nextActionLabel,
+}) {
+  final String? intro = tenantFacilityWizardStepPendingIntro(
+    l10n,
+    snapshot: snapshot,
+    step: step,
+    nextActionLabel: nextActionLabel,
+  );
+  if (intro == null) {
+    return null;
+  }
+
+  final String bullets = tenantFacilityWizardStepMissingRequirements(
+    l10n,
+    snapshot,
+    step,
+  ).map(l10n.tenantFacilityWizardPendingBullet).join('\n');
+  return '$intro\n$bullets';
+}
+
 /// Required steps block progress; optional steps never block the next required step.
 bool tenantFacilityWizardStepBlocksProgress(
   FacilitySetupSnapshot snapshot,
@@ -506,30 +656,78 @@ String tenantFacilityWizardStepBlockedHint(
         ? l10n.tenantFacilityBranchesOptionalHint
         : l10n.tenantFacilityGateNeedTenant,
     TenantFacilitySetupWizardStep.facility => snapshot.hasTenant
-        ? l10n.tenantFacilityGateNeedFacility
+        ? _tenantFacilityWizardMissingSummary(
+            l10n,
+            snapshot,
+            TenantFacilitySetupWizardStep.facility,
+            fallback: l10n.tenantFacilityGateNeedFacility,
+          )
         : l10n.tenantFacilityGateNeedTenant,
-    TenantFacilitySetupWizardStep.departments =>
-      l10n.tenantFacilityGateNeedFacility,
+    TenantFacilitySetupWizardStep.departments => snapshot.hasFacilityIdentity
+        ? l10n.tenantFacilityWizardMissingDepartments
+        : _tenantFacilityWizardMissingSummary(
+            l10n,
+            snapshot,
+            TenantFacilitySetupWizardStep.facility,
+            fallback: l10n.tenantFacilityGateNeedFacility,
+          ),
     TenantFacilitySetupWizardStep.units => snapshot.hasDepartments
         ? l10n.tenantFacilityGateNeedDepartmentForUnits
-        : (snapshot.hasFacility
+        : (snapshot.hasFacilityIdentity
               ? l10n.tenantFacilityGateNeedDepartmentForUnits
-              : l10n.tenantFacilityGateNeedFacility),
+              : _tenantFacilityWizardMissingSummary(
+                  l10n,
+                  snapshot,
+                  TenantFacilitySetupWizardStep.facility,
+                  fallback: l10n.tenantFacilityGateNeedFacility,
+                )),
     TenantFacilitySetupWizardStep.wards => snapshot.hasDepartments
         ? l10n.tenantFacilityGateNeedDepartmentForWards
-        : (snapshot.hasFacility
+        : (snapshot.hasFacilityIdentity
               ? l10n.tenantFacilityGateNeedDepartmentForWards
-              : l10n.tenantFacilityGateNeedFacility),
+              : _tenantFacilityWizardMissingSummary(
+                  l10n,
+                  snapshot,
+                  TenantFacilitySetupWizardStep.facility,
+                  fallback: l10n.tenantFacilityGateNeedFacility,
+                )),
     TenantFacilitySetupWizardStep.rooms =>
       snapshot.hasDepartments || snapshot.hasWardsConfigured
           ? l10n.tenantFacilityGateNeedWardOrDepartmentForRooms
-          : (snapshot.hasFacility
+          : (snapshot.hasFacilityIdentity
                 ? l10n.tenantFacilityGateNeedWardOrDepartmentForRooms
-                : l10n.tenantFacilityGateNeedFacility),
+                : _tenantFacilityWizardMissingSummary(
+                    l10n,
+                    snapshot,
+                    TenantFacilitySetupWizardStep.facility,
+                    fallback: l10n.tenantFacilityGateNeedFacility,
+                  )),
     TenantFacilitySetupWizardStep.beds => snapshot.hasWardsConfigured
         ? l10n.tenantFacilityGateNeedWardsForBeds
-        : (snapshot.hasFacility
+        : (snapshot.hasFacilityIdentity
               ? l10n.tenantFacilityGateNeedWardsForBeds
-              : l10n.tenantFacilityGateNeedFacility),
+              : _tenantFacilityWizardMissingSummary(
+                  l10n,
+                  snapshot,
+                  TenantFacilitySetupWizardStep.facility,
+                  fallback: l10n.tenantFacilityGateNeedFacility,
+                )),
   };
+}
+
+String _tenantFacilityWizardMissingSummary(
+  AppLocalizations l10n,
+  FacilitySetupSnapshot snapshot,
+  TenantFacilitySetupWizardStep step, {
+  required String fallback,
+}) {
+  final List<String> missing = tenantFacilityWizardStepMissingRequirements(
+    l10n,
+    snapshot,
+    step,
+  );
+  if (missing.isEmpty) {
+    return fallback;
+  }
+  return '$fallback ${missing.join('; ')}.';
 }
