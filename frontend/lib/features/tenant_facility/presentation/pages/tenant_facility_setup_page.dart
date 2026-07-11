@@ -3,9 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
-import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/config/app_config_provider.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -105,17 +103,17 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
         l10n,
         primary: canManageAccess
             ? AppButton.primary(
-                label: l10n.homeManageRolesPermissionsTitle,
-                leadingIcon: Icons.admin_panel_settings_outlined,
+                label: l10n.homeManageUsersTitle,
+                leadingIcon: Icons.people_outline,
                 onPressed: () {
                   unawaited(
-                    showManageRolesPermissionsDialog(context, ref).then((
-                      bool? saved,
-                    ) {
+                    showManageUsersDialog(context, ref).then((bool? saved) {
                       if (saved == true && context.mounted) {
                         unawaited(
                           ref
-                              .read(tenantFacilitySetupControllerProvider.notifier)
+                              .read(
+                                tenantFacilitySetupControllerProvider.notifier,
+                              )
                               .refresh(),
                         );
                       }
@@ -126,16 +124,20 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
             : null,
         secondary: <Widget>[
           if (canManageAccess)
-            AppButton.secondary(
-              label: l10n.homeManageUsersTitle,
-              leadingIcon: Icons.people_outline,
+            AppButton.tertiary(
+              label: l10n.homeManageRolesPermissionsTitle,
+              leadingIcon: Icons.admin_panel_settings_outlined,
               onPressed: () {
                 unawaited(
-                  showManageUsersDialog(context, ref).then((bool? saved) {
+                  showManageRolesPermissionsDialog(context, ref).then((
+                    bool? saved,
+                  ) {
                     if (saved == true && context.mounted) {
                       unawaited(
                         ref
-                            .read(tenantFacilitySetupControllerProvider.notifier)
+                            .read(
+                              tenantFacilitySetupControllerProvider.notifier,
+                            )
                             .refresh(),
                       );
                     }
@@ -144,19 +146,10 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
               },
             ),
         ],
+        maxVisibleScreenActions: 2,
         showGlobalActions: false,
         showFaultReport: false,
         showHousekeepingRequest: false,
-        summaryNotifications: isHrSetupOnly
-            ? _hrSetupSummaryNotifications(context, l10n, snapshot)
-            : _setupSummaryNotifications(
-                context,
-                l10n,
-                snapshot,
-                canViewSubscriptions: accessPolicy.hasAnyRole(const <AppRole>[
-                  AppRole.superAdmin,
-                ]),
-              ),
       ),
       body: _SetupBody(
         snapshot: snapshot,
@@ -168,118 +161,6 @@ class _TenantFacilitySetupContent extends ConsumerWidget {
       ),
     );
   }
-}
-
-List<AppWorkspaceSummaryNotification> _setupSummaryNotifications(
-  BuildContext context,
-  AppLocalizations l10n,
-  FacilitySetupSnapshot snapshot, {
-  required bool canViewSubscriptions,
-}) {
-  return <AppWorkspaceSummaryNotification>[
-    if (snapshot.hasTenant)
-      AppWorkspaceSummaryNotification(
-        label: l10n.tenantFacilityTenantSectionTitle,
-        count: 1,
-        icon: Icons.apartment_outlined,
-        onSelected: () => _openTenantProfileModal(context),
-      ),
-    if (snapshot.hasFacilityIdentity)
-      AppWorkspaceSummaryNotification(
-        label: l10n.tenantFacilityFacilitySectionTitle,
-        count: 1,
-        icon: Icons.local_hospital_outlined,
-        onSelected: () => _openFacilityProfileModal(
-          context,
-          facility: snapshot.facility,
-        ),
-      ),
-    if (snapshot.branches.isNotEmpty)
-      AppWorkspaceSummaryNotification(
-        label: l10n.tenantFacilityBranchesSectionTitle,
-        count: snapshot.branches.length,
-        icon: Icons.account_tree_outlined,
-        onSelected: () => _openBranchesModal(context),
-      ),
-    if (snapshot.departments.isNotEmpty)
-      AppWorkspaceSummaryNotification(
-        label: l10n.tenantFacilityDepartmentsListTitle,
-        count: snapshot.departments.length,
-        icon: Icons.groups_2_outlined,
-        onSelected: () => _openDepartmentsModal(context),
-      ),
-    if (snapshot.units.isNotEmpty)
-      AppWorkspaceSummaryNotification(
-        label: l10n.tenantFacilityUnitsListTitle,
-        count: snapshot.units.length,
-        icon: Icons.hub_outlined,
-        onSelected: () => _openUnitsModal(context),
-      ),
-    if (snapshot.wards.isNotEmpty)
-      AppWorkspaceSummaryNotification(
-        label: l10n.tenantFacilityWardsLabel,
-        count: snapshot.wards.length,
-        icon: Icons.local_hotel_outlined,
-        onSelected: () => _openWardsModal(context),
-      ),
-    if (snapshot.rooms.isNotEmpty)
-      AppWorkspaceSummaryNotification(
-        label: l10n.tenantFacilityRoomsLabel,
-        count: snapshot.rooms.length,
-        icon: Icons.meeting_room_outlined,
-        onSelected: () => _openRoomsModal(context),
-      ),
-    if (snapshot.beds.isNotEmpty)
-      AppWorkspaceSummaryNotification(
-        label: l10n.tenantFacilityBedsLabel,
-        count: snapshot.beds.length,
-        icon: Icons.bed_outlined,
-        onSelected: () => _openBedsModal(context),
-      ),
-    if (snapshot.facility?.id != null)
-      AppWorkspaceSummaryNotification(
-        label: l10n.clinicalCatalogConfigurationTitle,
-        count: 1,
-        icon: Icons.medical_information_outlined,
-        onSelected: () => _openFacilityCatalogModal(context, snapshot),
-      ),
-    if (canViewSubscriptions &&
-        snapshot.subscriptionSummary?.hasActivePlan == true)
-      AppWorkspaceSummaryNotification(
-        label: l10n.tenantFacilitySubscriptionSummaryTitle,
-        count: 1,
-        icon: Icons.workspace_premium_outlined,
-        onSelected: () => context.go(AppRoutes.subscriptions.location()),
-      ),
-  ];
-}
-
-List<AppWorkspaceSummaryNotification> _hrSetupSummaryNotifications(
-  BuildContext context,
-  AppLocalizations l10n,
-  FacilitySetupSnapshot snapshot,
-) {
-  return <AppWorkspaceSummaryNotification>[
-    if (snapshot.facility?.name != null)
-      AppWorkspaceSummaryNotification(
-        label: l10n.settingsWorkspaceFacilityLabel,
-        count: 1,
-        icon: Icons.local_hospital_outlined,
-        onSelected: () {},
-      ),
-    AppWorkspaceSummaryNotification(
-      label: l10n.tenantFacilityDepartmentsListTitle,
-      count: snapshot.departments.length,
-      icon: Icons.groups_2_outlined,
-      onSelected: () => unawaited(_openDepartmentsModal(context)),
-    ),
-    AppWorkspaceSummaryNotification(
-      label: l10n.tenantFacilityUnitsListTitle,
-      count: snapshot.units.length,
-      icon: Icons.hub_outlined,
-      onSelected: () => unawaited(_openUnitsModal(context)),
-    ),
-  ];
 }
 
 typedef _SetupDetailBuilder =
@@ -890,6 +771,9 @@ class _SetupBody extends ConsumerWidget {
                   .selectFacility(facilityId),
             );
           },
+          onOpenCatalog: snapshot.facility?.id == null
+              ? null
+              : () => unawaited(_openFacilityCatalogModal(context, snapshot)),
         ),
         SizedBox(height: theme.spacing.md),
         TenantFacilityPermissionStrip(

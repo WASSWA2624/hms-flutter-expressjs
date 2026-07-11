@@ -4916,6 +4916,50 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityWizardContinueAction => 'Continue setup';
 
   @override
+  String get tenantFacilitySkipOptionalAction => 'Skip for now';
+
+  @override
+  String tenantFacilityContinueToStepAction(String step) {
+    return 'Continue to $step';
+  }
+
+  @override
+  String get tenantFacilityCreateBranchAction => 'Create branch';
+
+  @override
+  String get tenantFacilityManageBranchesAction => 'Manage branches';
+
+  @override
+  String get tenantFacilityCreateDepartmentAction => 'Create department';
+
+  @override
+  String get tenantFacilityManageDepartmentsAction => 'Manage departments';
+
+  @override
+  String get tenantFacilityCreateUnitAction => 'Create unit';
+
+  @override
+  String get tenantFacilityManageUnitsAction => 'Manage units';
+
+  @override
+  String get tenantFacilityCreateWardAction => 'Create ward';
+
+  @override
+  String get tenantFacilityManageWardsAction => 'Manage wards';
+
+  @override
+  String get tenantFacilityCreateRoomAction => 'Create room';
+
+  @override
+  String get tenantFacilityManageRoomsAction => 'Manage rooms';
+
+  @override
+  String get tenantFacilityCreateBedAction => 'Create bed';
+
+  @override
+  String get tenantFacilityManageBedsAction => 'Manage beds';
+
+  @override
   String get tenantFacilityBranchesOptionalHint =>
       'Optional for single-site facilities. Skip when there is only one site.';
 

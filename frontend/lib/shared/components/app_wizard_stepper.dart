@@ -27,6 +27,7 @@ class AppWizardStepper extends StatelessWidget {
     required this.currentIndex,
     this.onStepSelected,
     this.showCurrentTitle = true,
+    this.progressCaption,
     this.optionalBadgeLabel = 'Optional',
     this.compactBreakpoint = 640,
     super.key,
@@ -36,6 +37,7 @@ class AppWizardStepper extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int>? onStepSelected;
   final bool showCurrentTitle;
+  final String? progressCaption;
   final String optionalBadgeLabel;
   final double compactBreakpoint;
 
@@ -52,13 +54,24 @@ class AppWizardStepper extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        if (progressCaption != null) ...<Widget>[
+          Text(
+            progressCaption!,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: theme.spacing.sm),
+        ],
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final double maxWidth = constraints.maxWidth.isFinite
                 ? constraints.maxWidth
                 : MediaQuery.sizeOf(context).width;
             final bool compact = maxWidth < compactBreakpoint;
-            final double nodeSize = compact ? 30 : 36;
+            final double nodeSize = compact ? 32 : 40;
             final double connectorWidth = compact
                 ? theme.spacing.sm
                 : theme.spacing.lg;
@@ -70,9 +83,10 @@ class AppWizardStepper extends StatelessWidget {
                 for (int index = 0; index < steps.length; index += 1) ...<Widget>[
                   if (index > 0)
                     Padding(
-                      padding: EdgeInsets.only(top: (nodeSize / 2) - 1.5),
+                      padding: EdgeInsets.only(top: (nodeSize / 2) - 2),
                       child: _StepConnector(
-                        completed: index <= safeIndex || steps[index - 1].completed,
+                        completed:
+                            index <= safeIndex || steps[index - 1].completed,
                         colorScheme: colorScheme,
                         width: connectorWidth,
                       ),
@@ -152,12 +166,12 @@ class _StepConnector extends StatelessWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       width: width,
-      height: 3,
+      height: 4,
       margin: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
         color: completed
             ? colorScheme.primary
-            : colorScheme.outlineVariant.withValues(alpha: 0.85),
+            : colorScheme.outlineVariant.withValues(alpha: 0.75),
         borderRadius: BorderRadius.circular(999),
       ),
     );
@@ -244,7 +258,7 @@ class _StepNodeState extends State<_StepNode> {
           '${widget.optional ? ' (optional)' : ''}'
           '${widget.completed ? ', completed' : ''}',
       child: ConstrainedBox(
-        constraints: BoxConstraints(minWidth: widget.compact ? 64 : 88),
+        constraints: BoxConstraints(minWidth: widget.compact ? 68 : 96),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
@@ -254,7 +268,7 @@ class _StepNodeState extends State<_StepNode> {
               height: widget.nodeSize,
               alignment: Alignment.center,
               transform: (_hovered || _focused) && widget.enabled
-                  ? (Matrix4.identity()..scaleByDouble(1.06, 1.06, 1.0, 1.0))
+                  ? (Matrix4.identity()..scaleByDouble(1.08, 1.08, 1.0, 1.0))
                   : Matrix4.identity(),
               transformAlignment: Alignment.center,
               decoration: BoxDecoration(
@@ -262,14 +276,14 @@ class _StepNodeState extends State<_StepNode> {
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: borderColor,
-                  width: widget.active ? 2.5 : 1.5,
+                  width: widget.active ? 3 : 1.5,
                 ),
                 boxShadow: highlight && widget.enabled
                     ? <BoxShadow>[
                         BoxShadow(
-                          color: colorScheme.primary.withValues(alpha: 0.18),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
+                          color: colorScheme.primary.withValues(alpha: 0.22),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
                         ),
                       ]
                     : null,
@@ -298,7 +312,7 @@ class _StepNodeState extends State<_StepNode> {
             ),
             SizedBox(height: theme.spacing.sm),
             SizedBox(
-              width: widget.compact ? 72 : 100,
+              width: widget.compact ? 76 : 108,
               child: Column(
                 children: <Widget>[
                   Text(

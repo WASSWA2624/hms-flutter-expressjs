@@ -6377,6 +6377,67 @@
   "@tenantFacilityWizardContinueAction": {
     "description": "Wizard action to open the next incomplete setup step."
   },
+  "tenantFacilitySkipOptionalAction": "Skip for now",
+  "@tenantFacilitySkipOptionalAction": {
+    "description": "Skip an optional tenant/facility setup wizard step."
+  },
+  "tenantFacilityContinueToStepAction": "Continue to {step}",
+  "@tenantFacilityContinueToStepAction": {
+    "description": "Continue the setup wizard to a named next step.",
+    "placeholders": {
+      "step": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantFacilityCreateBranchAction": "Create branch",
+  "@tenantFacilityCreateBranchAction": {
+    "description": "Primary action to create the first branch in setup."
+  },
+  "tenantFacilityManageBranchesAction": "Manage branches",
+  "@tenantFacilityManageBranchesAction": {
+    "description": "Primary action to manage existing branches in setup."
+  },
+  "tenantFacilityCreateDepartmentAction": "Create department",
+  "@tenantFacilityCreateDepartmentAction": {
+    "description": "Primary action to create the first department in setup."
+  },
+  "tenantFacilityManageDepartmentsAction": "Manage departments",
+  "@tenantFacilityManageDepartmentsAction": {
+    "description": "Primary action to manage existing departments in setup."
+  },
+  "tenantFacilityCreateUnitAction": "Create unit",
+  "@tenantFacilityCreateUnitAction": {
+    "description": "Primary action to create the first unit in setup."
+  },
+  "tenantFacilityManageUnitsAction": "Manage units",
+  "@tenantFacilityManageUnitsAction": {
+    "description": "Primary action to manage existing units in setup."
+  },
+  "tenantFacilityCreateWardAction": "Create ward",
+  "@tenantFacilityCreateWardAction": {
+    "description": "Primary action to create the first ward in setup."
+  },
+  "tenantFacilityManageWardsAction": "Manage wards",
+  "@tenantFacilityManageWardsAction": {
+    "description": "Primary action to manage existing wards in setup."
+  },
+  "tenantFacilityCreateRoomAction": "Create room",
+  "@tenantFacilityCreateRoomAction": {
+    "description": "Primary action to create the first room in setup."
+  },
+  "tenantFacilityManageRoomsAction": "Manage rooms",
+  "@tenantFacilityManageRoomsAction": {
+    "description": "Primary action to manage existing rooms in setup."
+  },
+  "tenantFacilityCreateBedAction": "Create bed",
+  "@tenantFacilityCreateBedAction": {
+    "description": "Primary action to create the first bed in setup."
+  },
+  "tenantFacilityManageBedsAction": "Manage beds",
+  "@tenantFacilityManageBedsAction": {
+    "description": "Primary action to manage existing beds in setup."
+  },
   "tenantFacilityBranchesOptionalHint": "Optional for single-site facilities. Skip when there is only one site.",
   "@tenantFacilityBranchesOptionalHint": {
     "description": "Guidance for the optional branches setup step."

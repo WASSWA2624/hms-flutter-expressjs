@@ -389,3 +389,106 @@ String tenantFacilityWizardStepSummary(
       l10n.tenantFacilitySummaryRecordCount(snapshot.beds.length),
   };
 }
+
+bool tenantFacilityWizardStepHasRecords(
+  FacilitySetupSnapshot snapshot,
+  TenantFacilitySetupWizardStep step,
+) {
+  return switch (step) {
+    TenantFacilitySetupWizardStep.tenant => snapshot.hasTenant,
+    TenantFacilitySetupWizardStep.branches => snapshot.branches.isNotEmpty,
+    TenantFacilitySetupWizardStep.facility => snapshot.hasFacility,
+    TenantFacilitySetupWizardStep.departments => snapshot.departments.isNotEmpty,
+    TenantFacilitySetupWizardStep.units => snapshot.units.isNotEmpty,
+    TenantFacilitySetupWizardStep.wards => snapshot.wards.isNotEmpty,
+    TenantFacilitySetupWizardStep.rooms => snapshot.rooms.isNotEmpty,
+    TenantFacilitySetupWizardStep.beds => snapshot.beds.isNotEmpty,
+  };
+}
+
+String tenantFacilityWizardStepEmptyMessage(
+  AppLocalizations l10n,
+  TenantFacilitySetupWizardStep step,
+) {
+  return switch (step) {
+    TenantFacilitySetupWizardStep.tenant => l10n.tenantFacilityChecklistTenant,
+    TenantFacilitySetupWizardStep.branches => l10n.tenantFacilityNoBranches,
+    TenantFacilitySetupWizardStep.facility => l10n.tenantFacilityNoFacilities,
+    TenantFacilitySetupWizardStep.departments => l10n.tenantFacilityNoDepartments,
+    TenantFacilitySetupWizardStep.units => l10n.tenantFacilityNoUnits,
+    TenantFacilitySetupWizardStep.wards => l10n.tenantFacilityNoWards,
+    TenantFacilitySetupWizardStep.rooms => l10n.tenantFacilityNoRooms,
+    TenantFacilitySetupWizardStep.beds => l10n.tenantFacilityNoBeds,
+  };
+}
+
+String tenantFacilityWizardPrimaryActionLabel(
+  AppLocalizations l10n, {
+  required TenantFacilitySetupWizardStep step,
+  required FacilitySetupSnapshot snapshot,
+  required bool canCreateTenant,
+}) {
+  final bool hasRecords = tenantFacilityWizardStepHasRecords(snapshot, step);
+  return switch (step) {
+    TenantFacilitySetupWizardStep.tenant => hasRecords
+        ? l10n.tenantFacilityEditTenantAction
+        : (canCreateTenant
+              ? l10n.tenantFacilityCreateTenantAction
+              : l10n.tenantFacilityEditTenantAction),
+    TenantFacilitySetupWizardStep.branches => hasRecords
+        ? l10n.tenantFacilityManageBranchesAction
+        : l10n.tenantFacilityCreateBranchAction,
+    TenantFacilitySetupWizardStep.facility => hasRecords
+        ? l10n.tenantFacilityEditFacilityAction
+        : l10n.tenantFacilityCreateFacilityTitle,
+    TenantFacilitySetupWizardStep.departments => hasRecords
+        ? l10n.tenantFacilityManageDepartmentsAction
+        : l10n.tenantFacilityCreateDepartmentAction,
+    TenantFacilitySetupWizardStep.units => hasRecords
+        ? l10n.tenantFacilityManageUnitsAction
+        : l10n.tenantFacilityCreateUnitAction,
+    TenantFacilitySetupWizardStep.wards => hasRecords
+        ? l10n.tenantFacilityManageWardsAction
+        : l10n.tenantFacilityCreateWardAction,
+    TenantFacilitySetupWizardStep.rooms => hasRecords
+        ? l10n.tenantFacilityManageRoomsAction
+        : l10n.tenantFacilityCreateRoomAction,
+    TenantFacilitySetupWizardStep.beds => hasRecords
+        ? l10n.tenantFacilityManageBedsAction
+        : l10n.tenantFacilityCreateBedAction,
+  };
+}
+
+IconData tenantFacilityWizardPrimaryActionIcon({
+  required TenantFacilitySetupWizardStep step,
+  required FacilitySetupSnapshot snapshot,
+}) {
+  final bool hasRecords = tenantFacilityWizardStepHasRecords(snapshot, step);
+  if (hasRecords) {
+    return switch (step) {
+      TenantFacilitySetupWizardStep.tenant ||
+      TenantFacilitySetupWizardStep.facility => Icons.edit_outlined,
+      _ => Icons.list_alt_outlined,
+    };
+  }
+  return Icons.add_circle_outline;
+}
+
+String tenantFacilityWizardContinueToStepLabel(
+  AppLocalizations l10n,
+  TenantFacilitySetupWizardStep step,
+) {
+  return l10n.tenantFacilityContinueToStepAction(
+    tenantFacilityWizardStepLabel(l10n, step),
+  );
+}
+
+String tenantFacilityWizardProgressCaption({
+  required int currentIndex,
+  required int totalSteps,
+  required String stepLabel,
+  required bool optional,
+}) {
+  final String base = 'Step ${currentIndex + 1} of $totalSteps · $stepLabel';
+  return optional ? '$base · Optional' : base;
+}

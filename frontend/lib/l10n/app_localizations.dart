@@ -9244,6 +9244,90 @@ abstract class AppLocalizations {
   /// **'Continue setup'**
   String get tenantFacilityWizardContinueAction;
 
+  /// Skip an optional tenant/facility setup wizard step.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip for now'**
+  String get tenantFacilitySkipOptionalAction;
+
+  /// Continue the setup wizard to a named next step.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue to {step}'**
+  String tenantFacilityContinueToStepAction(String step);
+
+  /// Primary action to create the first branch in setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Create branch'**
+  String get tenantFacilityCreateBranchAction;
+
+  /// Primary action to manage existing branches in setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage branches'**
+  String get tenantFacilityManageBranchesAction;
+
+  /// Primary action to create the first department in setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Create department'**
+  String get tenantFacilityCreateDepartmentAction;
+
+  /// Primary action to manage existing departments in setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage departments'**
+  String get tenantFacilityManageDepartmentsAction;
+
+  /// Primary action to create the first unit in setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Create unit'**
+  String get tenantFacilityCreateUnitAction;
+
+  /// Primary action to manage existing units in setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage units'**
+  String get tenantFacilityManageUnitsAction;
+
+  /// Primary action to create the first ward in setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Create ward'**
+  String get tenantFacilityCreateWardAction;
+
+  /// Primary action to manage existing wards in setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage wards'**
+  String get tenantFacilityManageWardsAction;
+
+  /// Primary action to create the first room in setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Create room'**
+  String get tenantFacilityCreateRoomAction;
+
+  /// Primary action to manage existing rooms in setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage rooms'**
+  String get tenantFacilityManageRoomsAction;
+
+  /// Primary action to create the first bed in setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Create bed'**
+  String get tenantFacilityCreateBedAction;
+
+  /// Primary action to manage existing beds in setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage beds'**
+  String get tenantFacilityManageBedsAction;
+
   /// Guidance for the optional branches setup step.
   ///
   /// In en, this message translates to:
