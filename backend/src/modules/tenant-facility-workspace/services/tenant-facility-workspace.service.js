@@ -263,8 +263,12 @@ const serializeBed = (record, context = null) => ({
 });
 
 const buildContactAddress = (contacts = [], addresses = []) => {
-  const phone = contacts.find((entry) => entry.contact_type === 'PHONE');
-  const email = contacts.find((entry) => entry.contact_type === 'EMAIL');
+  const phoneContacts = contacts.filter((entry) => entry.contact_type === 'PHONE');
+  const phone =
+    phoneContacts.find((entry) => entry.is_primary) || phoneContacts[0] || null;
+  const emailContacts = contacts.filter((entry) => entry.contact_type === 'EMAIL');
+  const email =
+    emailContacts.find((entry) => entry.is_primary) || emailContacts[0] || null;
   const address = addresses[0] || null;
 
   return {
@@ -372,8 +376,21 @@ const selectFacility = (facilities = [], facilityId = null) => {
   if (!facilities.length) return null;
   if (!facilityId) return facilities[0];
 
-  return facilities.find((entry) => safePublicId(entry.human_friendly_id, entry.id) === facilityId) ||
-    facilities[0];
+  const requested = String(facilityId).trim();
+  if (!requested) return facilities[0];
+
+  return (
+    facilities.find(
+      (entry) => safePublicId(entry.human_friendly_id, entry.id) === requested
+    ) ||
+    facilities.find((entry) => String(entry.id) === requested) ||
+    facilities.find(
+      (entry) =>
+        String(entry.human_friendly_id || '').toUpperCase() ===
+        requested.toUpperCase()
+    ) ||
+    facilities[0]
+  );
 };
 
 const getSetup = async (filters = {}, user = {}) => {
@@ -418,13 +435,9 @@ const getSetup = async (filters = {}, user = {}) => {
   const scope = scopeResult.scope;
   const requestedFacilityId = filters.facility_id || filters.facilityId || scope.facility_id;
 
-  const [tenants, facilities, facilityRecords, subscriptionSummary] = await Promise.all([
+  const [tenants, facilities, subscriptionSummary] = await Promise.all([
     repository.findTenants(scope, includeAllTenants),
     repository.findFacilities(scope.tenant_id),
-    repository.findFacilityRecords(scope, {
-      includeDeleted:
-        filters.include_deleted === true || filters.include_deleted === 'true',
-    }),
     canViewSubscriptions(user)
       ? repository.findSubscriptionSummary(scope.tenant_id)
       : Promise.resolve(null),
@@ -432,6 +445,19 @@ const getSetup = async (filters = {}, user = {}) => {
 
   const tenant = tenants[0] || null;
   const selectedFacility = selectFacility(facilities, requestedFacilityId);
+  // Load structure/contact rows for the facility shown in setup — not only the
+  // session-scoped facility. Tenant admins often have null facility scope while
+  // the UI still auto-selects the first facility.
+  const facilityRecords = await repository.findFacilityRecords(
+    {
+      tenant_id: scope.tenant_id,
+      facility_id: selectedFacility?.id || scope.facility_id || null,
+    },
+    {
+      includeDeleted:
+        filters.include_deleted === true || filters.include_deleted === 'true',
+    }
+  );
   const contactAddress = buildContactAddress(
     facilityRecords.contacts,
     facilityRecords.addresses

@@ -186,11 +186,29 @@ class _TenantFacilitySetupWizardState extends State<TenantFacilitySetupWizard> {
                 ),
                 onStepSelected: (int index) => _selectStep(steps[index]),
                 onDisabledStepSelected: (int index) {
-                  final String hint = tenantFacilityWizardStepBlockedHint(
-                    l10n,
-                    widget.snapshot,
-                    steps[index],
-                  );
+                  final TenantFacilitySetupWizardStep locked = steps[index];
+                  final String hint =
+                      tenantFacilityWizardLockedStepBlockersMessage(
+                        l10n,
+                        widget.snapshot,
+                        locked,
+                        steps: steps,
+                      );
+                  final TenantFacilitySetupWizardStep? fixStep =
+                      tenantFacilityWizardFirstBlockingStep(
+                        l10n,
+                        widget.snapshot,
+                        locked,
+                        steps: steps,
+                      );
+                  if (fixStep != null &&
+                      tenantFacilityWizardStepReachable(
+                        widget.snapshot,
+                        steps,
+                        fixStep,
+                      )) {
+                    _selectStep(fixStep);
+                  }
                   ScaffoldMessenger.of(context)
                     ..hideCurrentSnackBar()
                     ..showSnackBar(SnackBar(content: Text(hint)));
@@ -202,6 +220,7 @@ class _TenantFacilitySetupWizardState extends State<TenantFacilitySetupWizard> {
           _SetupStepPanel(
             step: current,
             snapshot: widget.snapshot,
+            steps: steps,
             optional: currentOptional,
             completed: currentCompleted,
             hasRecords: hasRecords,
@@ -209,6 +228,20 @@ class _TenantFacilitySetupWizardState extends State<TenantFacilitySetupWizard> {
             canCreateTenant: widget.canCreateTenant,
             canManageFacility: widget.canManageFacility,
             onOpenStep: () => widget.onOpenStep(current),
+            onOpenFixStep: (TenantFacilitySetupWizardStep fixStep) {
+              if (fixStep == current) {
+                widget.onOpenStep(current);
+                return;
+              }
+              if (tenantFacilityWizardStepReachable(
+                widget.snapshot,
+                steps,
+                fixStep,
+              )) {
+                _selectStep(fixStep);
+              }
+              widget.onOpenStep(fixStep);
+            },
             onManageTenants: widget.onManageTenants,
             onManageFacilities: widget.onManageFacilities,
             onSelectFacility: widget.onSelectFacility,
@@ -227,6 +260,7 @@ class _SetupStepPanel extends StatelessWidget {
   const _SetupStepPanel({
     required this.step,
     required this.snapshot,
+    required this.steps,
     required this.optional,
     required this.completed,
     required this.hasRecords,
@@ -234,6 +268,7 @@ class _SetupStepPanel extends StatelessWidget {
     required this.canCreateTenant,
     required this.canManageFacility,
     required this.onOpenStep,
+    required this.onOpenFixStep,
     this.onManageTenants,
     this.onManageFacilities,
     this.onSelectFacility,
@@ -245,6 +280,7 @@ class _SetupStepPanel extends StatelessWidget {
 
   final TenantFacilitySetupWizardStep step;
   final FacilitySetupSnapshot snapshot;
+  final List<TenantFacilitySetupWizardStep> steps;
   final bool optional;
   final bool completed;
   final bool hasRecords;
@@ -252,6 +288,7 @@ class _SetupStepPanel extends StatelessWidget {
   final bool canCreateTenant;
   final bool canManageFacility;
   final VoidCallback onOpenStep;
+  final ValueChanged<TenantFacilitySetupWizardStep> onOpenFixStep;
   final VoidCallback? onManageTenants;
   final VoidCallback? onManageFacilities;
   final ValueChanged<String>? onSelectFacility;
@@ -318,6 +355,7 @@ class _SetupStepPanel extends StatelessWidget {
                   snapshot: snapshot,
                   step: step,
                   nextActionLabel: navigationLabel,
+                  steps: steps,
                 ),
           onPressed: navigationEnabled ? onNavigate : null,
         ),
@@ -340,16 +378,30 @@ class _SetupStepPanel extends StatelessWidget {
       ),
     );
 
-    final String? pendingIntro = tenantFacilityWizardStepPendingIntro(
-      l10n,
-      snapshot: snapshot,
-      step: step,
-      nextActionLabel: navigationLabel,
+    final List<TenantFacilityWizardStepRequirement> blockers =
+        tenantFacilityWizardBlockersForStep(
+          l10n,
+          snapshot,
+          step,
+          steps: steps,
+        );
+    final List<TenantFacilityWizardStepRequirement> outstanding = blockers
+        .where((TenantFacilityWizardStepRequirement item) => !item.satisfied)
+        .toList(growable: false);
+    final String? pendingIntro = outstanding.isEmpty
+        ? null
+        : tenantFacilityWizardStepPendingIntro(
+            l10n,
+            snapshot: snapshot,
+            step: step,
+            nextActionLabel: navigationLabel,
+            steps: steps,
+          );
+    final bool hasPrerequisiteBlockers = outstanding.any(
+      (TenantFacilityWizardStepRequirement item) => item.isPrerequisite,
     );
-    final List<TenantFacilityWizardStepRequirement> requirements =
-        pendingIntro == null
-        ? const <TenantFacilityWizardStepRequirement>[]
-        : tenantFacilityWizardStepRequirements(l10n, snapshot, step);
+    final TenantFacilityWizardStepRequirement? primaryOutstanding =
+        outstanding.isEmpty ? null : outstanding.first;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -386,22 +438,43 @@ class _SetupStepPanel extends StatelessWidget {
               SizedBox(height: theme.spacing.md),
               actionRow,
             ],
-            if (pendingIntro != null && requirements.isNotEmpty) ...<Widget>[
+            if (pendingIntro != null && blockers.isNotEmpty) ...<Widget>[
               SizedBox(height: theme.spacing.md),
               AppFormInformationBanner(
-                title: l10n.tenantFacilityWizardPendingTitle,
+                title: hasPrerequisiteBlockers
+                    ? l10n.tenantFacilityWizardBlockersTitle
+                    : l10n.tenantFacilityWizardPendingTitle,
                 message: pendingIntro,
-                variant: optional
+                variant: optional && !hasPrerequisiteBlockers
                     ? AppFormInformationVariant.info
                     : AppFormInformationVariant.warning,
-                icon: optional
+                icon: optional && !hasPrerequisiteBlockers
                     ? Icons.info_outline
                     : Icons.playlist_add_check_circle_outlined,
                 children: <Widget>[
                   _SetupStepRequirementsChecklist(
-                    requirements: requirements,
-                    optional: optional,
+                    requirements: blockers,
+                    optional: optional && !hasPrerequisiteBlockers,
+                    onFixRequirement:
+                        (TenantFacilityWizardStepRequirement item) {
+                      onOpenFixStep(item.fixStep);
+                    },
                   ),
+                  if (primaryOutstanding != null)
+                    AppButton.secondary(
+                      label: tenantFacilityWizardPrimaryActionLabel(
+                        l10n,
+                        step: primaryOutstanding.fixStep,
+                        snapshot: snapshot,
+                        canCreateTenant: canCreateTenant,
+                      ),
+                      leadingIcon: tenantFacilityWizardPrimaryActionIcon(
+                        step: primaryOutstanding.fixStep,
+                        snapshot: snapshot,
+                      ),
+                      onPressed: () =>
+                          onOpenFixStep(primaryOutstanding.fixStep),
+                    ),
                 ],
               ),
             ],
@@ -501,10 +574,12 @@ class _SetupStepRequirementsChecklist extends StatelessWidget {
   const _SetupStepRequirementsChecklist({
     required this.requirements,
     required this.optional,
+    this.onFixRequirement,
   });
 
   final List<TenantFacilityWizardStepRequirement> requirements;
   final bool optional;
+  final ValueChanged<TenantFacilityWizardStepRequirement>? onFixRequirement;
 
   @override
   Widget build(BuildContext context) {
@@ -522,39 +597,75 @@ class _SetupStepRequirementsChecklist extends StatelessWidget {
           Padding(
             padding: EdgeInsets.only(top: theme.spacing.xs),
             child: Semantics(
+              button: !item.satisfied && onFixRequirement != null,
               label: item.satisfied
                   ? '${l10n.tenantFacilityWizardRequirementDoneLabel}: ${item.label}'
                   : '${l10n.tenantFacilityWizardRequirementPendingLabel}: ${item.label}',
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Icon(
-                    item.satisfied
-                        ? Icons.check_circle_outline
-                        : Icons.radio_button_unchecked,
-                    size: theme.appTokens.listIconSize,
-                    color: item.satisfied
-                        ? theme.statusColors.success
-                        : pendingTone,
-                  ),
-                  SizedBox(width: theme.spacing.sm),
-                  Expanded(
-                    child: Text(
-                      item.label,
-                      style: theme.textTheme.bodyMedium?.copyWith(
+              child: InkWell(
+                onTap: item.satisfied || onFixRequirement == null
+                    ? null
+                    : () => onFixRequirement!(item),
+                borderRadius: BorderRadius.circular(theme.radius.sm),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Icon(
+                        item.satisfied
+                            ? Icons.check_circle_outline
+                            : Icons.radio_button_unchecked,
+                        size: theme.appTokens.listIconSize,
                         color: item.satisfied
-                            ? colorScheme.onSurfaceVariant
-                            : colorScheme.onSurface,
-                        fontWeight: item.satisfied
-                            ? FontWeight.w500
-                            : FontWeight.w700,
-                        decoration: item.satisfied
-                            ? TextDecoration.lineThrough
-                            : null,
+                            ? theme.statusColors.success
+                            : pendingTone,
                       ),
-                    ),
+                      SizedBox(width: theme.spacing.sm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(
+                              item.label,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: item.satisfied
+                                    ? colorScheme.onSurfaceVariant
+                                    : colorScheme.onSurface,
+                                fontWeight: item.satisfied
+                                    ? FontWeight.w500
+                                    : FontWeight.w700,
+                                decoration: item.satisfied
+                                    ? TextDecoration.lineThrough
+                                    : null,
+                              ),
+                            ),
+                            if (!item.satisfied) ...<Widget>[
+                              const SizedBox(height: 2),
+                              Text(
+                                l10n.tenantFacilityWizardFixInStep(
+                                  tenantFacilityWizardStepLabel(
+                                    l10n,
+                                    item.fixStep,
+                                  ),
+                                ),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: pendingTone,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      if (!item.satisfied && onFixRequirement != null)
+                        Icon(
+                          Icons.chevron_right,
+                          size: theme.appTokens.listIconSize,
+                          color: pendingTone,
+                        ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),

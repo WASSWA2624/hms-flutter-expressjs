@@ -272,13 +272,21 @@ class TenantFacilityWizardStepRequirement {
   const TenantFacilityWizardStepRequirement({
     required this.label,
     required this.satisfied,
+    required this.fixStep,
+    this.isPrerequisite = false,
   });
 
   final String label;
   final bool satisfied;
+
+  /// Wizard step that can resolve this requirement.
+  final TenantFacilitySetupWizardStep fixStep;
+
+  /// True when this item belongs to an earlier prerequisite step.
+  final bool isPrerequisite;
 }
 
-/// Full requirements checklist for [step] (satisfied and outstanding).
+/// Local requirements for [step] only (no prerequisite chain).
 List<TenantFacilityWizardStepRequirement> tenantFacilityWizardStepRequirements(
   AppLocalizations l10n,
   FacilitySetupSnapshot snapshot,
@@ -289,6 +297,7 @@ List<TenantFacilityWizardStepRequirement> tenantFacilityWizardStepRequirements(
       TenantFacilityWizardStepRequirement(
         label: l10n.tenantFacilityWizardMissingTenant,
         satisfied: snapshot.hasTenant,
+        fixStep: TenantFacilitySetupWizardStep.tenant,
       ),
     ],
     TenantFacilitySetupWizardStep.branches =>
@@ -296,6 +305,7 @@ List<TenantFacilityWizardStepRequirement> tenantFacilityWizardStepRequirements(
         TenantFacilityWizardStepRequirement(
           label: l10n.tenantFacilityWizardMissingBranches,
           satisfied: snapshot.hasBranchesConfigured,
+          fixStep: TenantFacilitySetupWizardStep.branches,
         ),
       ],
     TenantFacilitySetupWizardStep.facility => () {
@@ -308,14 +318,17 @@ List<TenantFacilityWizardStepRequirement> tenantFacilityWizardStepRequirements(
         TenantFacilityWizardStepRequirement(
           label: l10n.tenantFacilityWizardMissingFacility,
           satisfied: hasFacility,
+          fixStep: TenantFacilitySetupWizardStep.facility,
         ),
         TenantFacilityWizardStepRequirement(
           label: l10n.tenantFacilityWizardMissingFacilityName,
           satisfied: hasName,
+          fixStep: TenantFacilitySetupWizardStep.facility,
         ),
         TenantFacilityWizardStepRequirement(
           label: l10n.tenantFacilityWizardMissingFacilityPhone,
           satisfied: hasPhone,
+          fixStep: TenantFacilitySetupWizardStep.facility,
         ),
       ];
     }(),
@@ -324,33 +337,149 @@ List<TenantFacilityWizardStepRequirement> tenantFacilityWizardStepRequirements(
         TenantFacilityWizardStepRequirement(
           label: l10n.tenantFacilityWizardMissingDepartments,
           satisfied: snapshot.hasDepartments,
+          fixStep: TenantFacilitySetupWizardStep.departments,
         ),
       ],
     TenantFacilitySetupWizardStep.units => <TenantFacilityWizardStepRequirement>[
       TenantFacilityWizardStepRequirement(
         label: l10n.tenantFacilityWizardMissingUnits,
         satisfied: snapshot.hasUnitsConfigured,
+        fixStep: TenantFacilitySetupWizardStep.units,
       ),
     ],
     TenantFacilitySetupWizardStep.wards => <TenantFacilityWizardStepRequirement>[
       TenantFacilityWizardStepRequirement(
         label: l10n.tenantFacilityWizardMissingWards,
         satisfied: snapshot.hasWardsConfigured,
+        fixStep: TenantFacilitySetupWizardStep.wards,
       ),
     ],
     TenantFacilitySetupWizardStep.rooms => <TenantFacilityWizardStepRequirement>[
       TenantFacilityWizardStepRequirement(
         label: l10n.tenantFacilityWizardMissingRooms,
         satisfied: snapshot.hasRoomsConfigured,
+        fixStep: TenantFacilitySetupWizardStep.rooms,
       ),
     ],
     TenantFacilitySetupWizardStep.beds => <TenantFacilityWizardStepRequirement>[
       TenantFacilityWizardStepRequirement(
         label: l10n.tenantFacilityWizardMissingBeds,
         satisfied: snapshot.hasBedsConfigured,
+        fixStep: TenantFacilitySetupWizardStep.beds,
       ),
     ],
   };
+}
+
+/// Extra gate requirements that must be true before [step] can be configured.
+List<TenantFacilityWizardStepRequirement> tenantFacilityWizardStepGateRequirements(
+  AppLocalizations l10n,
+  FacilitySetupSnapshot snapshot,
+  TenantFacilitySetupWizardStep step,
+) {
+  return switch (step) {
+    TenantFacilitySetupWizardStep.units => <TenantFacilityWizardStepRequirement>[
+      TenantFacilityWizardStepRequirement(
+        label: l10n.tenantFacilityWizardMissingDepartments,
+        satisfied: snapshot.hasDepartments,
+        fixStep: TenantFacilitySetupWizardStep.departments,
+        isPrerequisite: true,
+      ),
+    ],
+    TenantFacilitySetupWizardStep.wards => <TenantFacilityWizardStepRequirement>[
+      TenantFacilityWizardStepRequirement(
+        label: l10n.tenantFacilityWizardMissingDepartments,
+        satisfied: snapshot.hasDepartments,
+        fixStep: TenantFacilitySetupWizardStep.departments,
+        isPrerequisite: true,
+      ),
+    ],
+    TenantFacilitySetupWizardStep.rooms => <TenantFacilityWizardStepRequirement>[
+      TenantFacilityWizardStepRequirement(
+        label: l10n.tenantFacilityWizardMissingDepartmentOrWard,
+        satisfied: snapshot.hasDepartments || snapshot.hasWardsConfigured,
+        fixStep: snapshot.hasDepartments
+            ? TenantFacilitySetupWizardStep.wards
+            : TenantFacilitySetupWizardStep.departments,
+        isPrerequisite: true,
+      ),
+    ],
+    TenantFacilitySetupWizardStep.beds => <TenantFacilityWizardStepRequirement>[
+      TenantFacilityWizardStepRequirement(
+        label: l10n.tenantFacilityWizardMissingWards,
+        satisfied: snapshot.hasWardsConfigured,
+        fixStep: TenantFacilitySetupWizardStep.wards,
+        isPrerequisite: true,
+      ),
+    ],
+    _ => const <TenantFacilityWizardStepRequirement>[],
+  };
+}
+
+/// Full blocker chain for [step]: earlier required steps + gates + local items.
+List<TenantFacilityWizardStepRequirement> tenantFacilityWizardBlockersForStep(
+  AppLocalizations l10n,
+  FacilitySetupSnapshot snapshot,
+  TenantFacilitySetupWizardStep step, {
+  List<TenantFacilitySetupWizardStep>? steps,
+}) {
+  final List<TenantFacilitySetupWizardStep> visible =
+      steps ?? TenantFacilitySetupWizardStep.values;
+  final int targetIndex = visible.indexOf(step);
+  if (targetIndex < 0) {
+    return tenantFacilityWizardStepRequirements(l10n, snapshot, step);
+  }
+
+  final List<TenantFacilityWizardStepRequirement> blockers =
+      <TenantFacilityWizardStepRequirement>[];
+  final Set<String> seen = <String>{};
+
+  void addAll(Iterable<TenantFacilityWizardStepRequirement> items) {
+    for (final TenantFacilityWizardStepRequirement item in items) {
+      if (seen.add('${item.fixStep.name}:${item.label}')) {
+        blockers.add(item);
+      }
+    }
+  }
+
+  for (int index = 0; index < targetIndex; index += 1) {
+    final TenantFacilitySetupWizardStep prior = visible[index];
+    if (tenantFacilityWizardStepOptional(prior)) {
+      continue;
+    }
+    addAll(
+      tenantFacilityWizardStepRequirements(l10n, snapshot, prior).map(
+        (TenantFacilityWizardStepRequirement item) =>
+            TenantFacilityWizardStepRequirement(
+              label: item.label,
+              satisfied: item.satisfied,
+              fixStep: item.fixStep,
+              isPrerequisite: true,
+            ),
+      ),
+    );
+  }
+
+  addAll(tenantFacilityWizardStepGateRequirements(l10n, snapshot, step));
+  addAll(tenantFacilityWizardStepRequirements(l10n, snapshot, step));
+  return blockers;
+}
+
+/// Outstanding blockers only (unsatisfied).
+List<TenantFacilityWizardStepRequirement> tenantFacilityWizardOutstandingBlockers(
+  AppLocalizations l10n,
+  FacilitySetupSnapshot snapshot,
+  TenantFacilitySetupWizardStep step, {
+  List<TenantFacilitySetupWizardStep>? steps,
+}) {
+  return tenantFacilityWizardBlockersForStep(
+    l10n,
+    snapshot,
+    step,
+    steps: steps,
+  ).where((TenantFacilityWizardStepRequirement item) => !item.satisfied).toList(
+    growable: false,
+  );
 }
 
 /// Concrete items still required before [step] is considered complete.
@@ -365,22 +494,56 @@ List<String> tenantFacilityWizardStepMissingRequirements(
       .toList(growable: false);
 }
 
+/// First step that still has outstanding required blockers for [targetStep].
+TenantFacilitySetupWizardStep? tenantFacilityWizardFirstBlockingStep(
+  AppLocalizations l10n,
+  FacilitySetupSnapshot snapshot,
+  TenantFacilitySetupWizardStep targetStep, {
+  List<TenantFacilitySetupWizardStep>? steps,
+}) {
+  final List<TenantFacilityWizardStepRequirement> outstanding =
+      tenantFacilityWizardOutstandingBlockers(
+        l10n,
+        snapshot,
+        targetStep,
+        steps: steps,
+      );
+  if (outstanding.isEmpty) {
+    return null;
+  }
+  return outstanding.first.fixStep;
+}
+
 /// Intro line for an incomplete wizard step banner (without the checklist).
 String? tenantFacilityWizardStepPendingIntro(
   AppLocalizations l10n, {
   required FacilitySetupSnapshot snapshot,
   required TenantFacilitySetupWizardStep step,
   String? nextActionLabel,
+  List<TenantFacilitySetupWizardStep>? steps,
 }) {
-  if (tenantFacilityWizardStepMissingRequirements(
-    l10n,
-    snapshot,
-    step,
-  ).isEmpty) {
+  final List<TenantFacilityWizardStepRequirement> outstanding =
+      tenantFacilityWizardOutstandingBlockers(
+        l10n,
+        snapshot,
+        step,
+        steps: steps,
+      );
+  if (outstanding.isEmpty) {
     return null;
   }
 
   final bool optional = tenantFacilityWizardStepOptional(step);
+  final bool hasPrerequisiteBlockers = outstanding.any(
+    (TenantFacilityWizardStepRequirement item) => item.isPrerequisite,
+  );
+
+  if (hasPrerequisiteBlockers) {
+    return nextActionLabel == null
+        ? l10n.tenantFacilityWizardPendingCompleteStep
+        : l10n.tenantFacilityWizardPendingUnlockNext(nextActionLabel);
+  }
+
   if (optional) {
     return nextActionLabel == null
         ? l10n.tenantFacilityWizardOptionalPendingStandalone
@@ -398,23 +561,63 @@ String? tenantFacilityWizardStepPendingBannerMessage(
   required FacilitySetupSnapshot snapshot,
   required TenantFacilitySetupWizardStep step,
   String? nextActionLabel,
+  List<TenantFacilitySetupWizardStep>? steps,
 }) {
   final String? intro = tenantFacilityWizardStepPendingIntro(
     l10n,
     snapshot: snapshot,
     step: step,
     nextActionLabel: nextActionLabel,
+    steps: steps,
   );
   if (intro == null) {
     return null;
   }
 
-  final String bullets = tenantFacilityWizardStepMissingRequirements(
+  final String bullets = tenantFacilityWizardOutstandingBlockers(
     l10n,
     snapshot,
     step,
-  ).map(l10n.tenantFacilityWizardPendingBullet).join('\n');
+    steps: steps,
+  )
+      .map(
+        (TenantFacilityWizardStepRequirement item) =>
+            l10n.tenantFacilityWizardPendingBullet(item.label),
+      )
+      .join('\n');
   return '$intro\n$bullets';
+}
+
+/// Snackbar/detail copy listing every outstanding blocker for a locked step.
+String tenantFacilityWizardLockedStepBlockersMessage(
+  AppLocalizations l10n,
+  FacilitySetupSnapshot snapshot,
+  TenantFacilitySetupWizardStep step, {
+  List<TenantFacilitySetupWizardStep>? steps,
+}) {
+  final List<TenantFacilityWizardStepRequirement> outstanding =
+      tenantFacilityWizardOutstandingBlockers(
+        l10n,
+        snapshot,
+        step,
+        steps: steps,
+      );
+  if (outstanding.isEmpty) {
+    return tenantFacilityWizardStepBlockedHint(l10n, snapshot, step);
+  }
+
+  final String bullets = outstanding
+      .map(
+        (TenantFacilityWizardStepRequirement item) =>
+            l10n.tenantFacilityWizardPendingBullet(
+              l10n.tenantFacilityWizardBlockerOnStep(
+                item.label,
+                tenantFacilityWizardStepLabel(l10n, item.fixStep),
+              ),
+            ),
+      )
+      .join('\n');
+  return '${l10n.tenantFacilityWizardBlockersTitle}\n$bullets';
 }
 
 /// Required steps block progress; optional steps never block the next required step.

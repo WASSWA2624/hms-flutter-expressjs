@@ -9358,6 +9358,12 @@ abstract class AppLocalizations {
   /// **'Still needed for this step'**
   String get tenantFacilityWizardPendingTitle;
 
+  /// Title used when prerequisite blockers are listed in setup.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s blocking progress'**
+  String get tenantFacilityWizardBlockersTitle;
+
   /// Accessibility label for a completed setup requirement.
   ///
   /// In en, this message translates to:
@@ -9453,6 +9459,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create at least one bed'**
   String get tenantFacilityWizardMissingBeds;
+
+  /// Prerequisite before rooms can be configured in setup.
+  ///
+  /// In en, this message translates to:
+  /// **'Create at least one department or ward'**
+  String get tenantFacilityWizardMissingDepartmentOrWard;
+
+  /// Names a setup blocker and the wizard step that resolves it.
+  ///
+  /// In en, this message translates to:
+  /// **'{item} · Fix in {step}'**
+  String tenantFacilityWizardBlockerOnStep(String item, String step);
+
+  /// Points the user to the setup wizard step that clears a blocker.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix in {step}'**
+  String tenantFacilityWizardFixInStep(String step);
 
   /// Bullet line for a missing setup wizard requirement.
   ///

@@ -4980,6 +4980,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityWizardPendingTitle => 'Still needed for this step';
 
   @override
+  String get tenantFacilityWizardBlockersTitle => 'What\'s blocking progress';
+
+  @override
   String get tenantFacilityWizardRequirementDoneLabel => 'Done';
 
   @override
@@ -5037,6 +5040,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tenantFacilityWizardMissingBeds => 'Create at least one bed';
+
+  @override
+  String get tenantFacilityWizardMissingDepartmentOrWard =>
+      'Create at least one department or ward';
+
+  @override
+  String tenantFacilityWizardBlockerOnStep(String item, String step) {
+    return '$item · Fix in $step';
+  }
+
+  @override
+  String tenantFacilityWizardFixInStep(String step) {
+    return 'Fix in $step';
+  }
 
   @override
   String tenantFacilityWizardPendingBullet(String item) {

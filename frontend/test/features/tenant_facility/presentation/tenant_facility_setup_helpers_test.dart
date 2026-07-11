@@ -266,6 +266,77 @@ void main() {
       }
     });
 
+    test('aggregates prerequisite blockers for later wizard steps', () {
+      final AppLocalizations l10n = AppLocalizationsEn();
+      const FacilitySetupSnapshot snapshot = FacilitySetupSnapshot(
+        tenant: TenantProfile(id: 'TEN0001', name: 'Acme'),
+        facility: FacilityProfile(
+          id: 'FAC0001',
+          tenantId: 'TEN0001',
+          name: 'Democare Hospital',
+          type: FacilitySetupType.hospital,
+        ),
+      );
+
+      final List<TenantFacilityWizardStepRequirement> blockers =
+          tenantFacilityWizardOutstandingBlockers(
+            l10n,
+            snapshot,
+            TenantFacilitySetupWizardStep.departments,
+          );
+
+      expect(
+        blockers.map((TenantFacilityWizardStepRequirement item) => item.label),
+        containsAll(<String>[
+          l10n.tenantFacilityWizardMissingFacilityPhone,
+          l10n.tenantFacilityWizardMissingDepartments,
+        ]),
+      );
+      expect(
+        tenantFacilityWizardFirstBlockingStep(
+          l10n,
+          snapshot,
+          TenantFacilitySetupWizardStep.departments,
+        ),
+        TenantFacilitySetupWizardStep.facility,
+      );
+    });
+
+    test('includes department gate blockers for units rooms and beds', () {
+      final AppLocalizations l10n = AppLocalizationsEn();
+      const FacilitySetupSnapshot snapshot = FacilitySetupSnapshot(
+        tenant: TenantProfile(id: 'TEN0001', name: 'Acme'),
+        facility: FacilityProfile(
+          id: 'FAC0001',
+          tenantId: 'TEN0001',
+          name: 'Main',
+          type: FacilitySetupType.hospital,
+        ),
+        contactAddress: FacilityContactAddress(phone: '+256700000000'),
+      );
+
+      expect(
+        tenantFacilityWizardOutstandingBlockers(
+          l10n,
+          snapshot,
+          TenantFacilitySetupWizardStep.units,
+        ).map((TenantFacilityWizardStepRequirement item) => item.label),
+        contains(l10n.tenantFacilityWizardMissingDepartments),
+      );
+      expect(
+        tenantFacilityWizardOutstandingBlockers(
+          l10n,
+          snapshot,
+          TenantFacilitySetupWizardStep.beds,
+        ).map((TenantFacilityWizardStepRequirement item) => item.label),
+        containsAll(<String>[
+          l10n.tenantFacilityWizardMissingDepartments,
+          l10n.tenantFacilityWizardMissingWards,
+          l10n.tenantFacilityWizardMissingBeds,
+        ]),
+      );
+    });
+
     test('hides tenant steps for facility admins', () {
       final List<TenantFacilitySetupWizardStep> steps =
           tenantFacilityVisibleWizardSteps(

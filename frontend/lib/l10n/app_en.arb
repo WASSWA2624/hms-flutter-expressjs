@@ -6463,6 +6463,10 @@
   "@tenantFacilityWizardPendingTitle": {
     "description": "Title for the setup wizard banner listing missing requirements."
   },
+  "tenantFacilityWizardBlockersTitle": "What's blocking progress",
+  "@tenantFacilityWizardBlockersTitle": {
+    "description": "Title used when prerequisite blockers are listed in setup."
+  },
   "tenantFacilityWizardRequirementDoneLabel": "Done",
   "@tenantFacilityWizardRequirementDoneLabel": {
     "description": "Accessibility label for a completed setup requirement."
@@ -6536,6 +6540,31 @@
   "tenantFacilityWizardMissingBeds": "Create at least one bed",
   "@tenantFacilityWizardMissingBeds": {
     "description": "Missing requirement for the beds setup wizard step."
+  },
+  "tenantFacilityWizardMissingDepartmentOrWard": "Create at least one department or ward",
+  "@tenantFacilityWizardMissingDepartmentOrWard": {
+    "description": "Prerequisite before rooms can be configured in setup."
+  },
+  "tenantFacilityWizardBlockerOnStep": "{item} · Fix in {step}",
+  "@tenantFacilityWizardBlockerOnStep": {
+    "description": "Names a setup blocker and the wizard step that resolves it.",
+    "placeholders": {
+      "item": {
+        "type": "String"
+      },
+      "step": {
+        "type": "String"
+      }
+    }
+  },
+  "tenantFacilityWizardFixInStep": "Fix in {step}",
+  "@tenantFacilityWizardFixInStep": {
+    "description": "Points the user to the setup wizard step that clears a blocker.",
+    "placeholders": {
+      "step": {
+        "type": "String"
+      }
+    }
   },
   "tenantFacilityWizardPendingBullet": "• {item}",
   "@tenantFacilityWizardPendingBullet": {

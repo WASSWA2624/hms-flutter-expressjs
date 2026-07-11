@@ -73,7 +73,14 @@ final class TenantFacilitySetupController
           facilityId: _selectedFacilityId,
           tenantId: _selectedTenantId,
           includeDeleted: true,
-        );
+        )
+        .then((Result<FacilitySetupSnapshot> result) {
+          if (result case ResultSuccess<FacilitySetupSnapshot>(:final value)) {
+            _selectedFacilityId ??= value.facility?.id;
+            _selectedTenantId ??= value.tenant?.id;
+          }
+          return result;
+        });
   }
 
   Future<Result<FacilitySetupSnapshot>> refresh() async {
@@ -92,6 +99,10 @@ final class TenantFacilitySetupController
             tenantId: _selectedTenantId,
             includeDeleted: true,
           );
+      if (result case ResultSuccess<FacilitySetupSnapshot>(:final value)) {
+        _selectedFacilityId ??= value.facility?.id;
+        _selectedTenantId ??= value.tenant?.id;
+      }
       state = AsyncValue<Result<FacilitySetupSnapshot>>.data(result);
       return result;
     } catch (error, stackTrace) {

@@ -155,6 +155,16 @@ describe('tenant-facility-workspace service', () => {
       })
     );
     expect(result.checklist.completed_count).toBeGreaterThan(0);
+    expect(result.subscription_summary).toBeNull();
+    expect(result.permissions.can_manage_tenant).toBe(true);
+  });
+
+  it('includes subscription summary for super admins', async () => {
+    const result = await service.getSetup(
+      { tenant_id: 'TEN0001' },
+      { role: 'SUPER_ADMIN', permissions: ['subscriptions:read'] }
+    );
+
     expect(result.subscription_summary).toEqual(
       expect.objectContaining({
         plan_label: 'Premium',
@@ -162,7 +172,6 @@ describe('tenant-facility-workspace service', () => {
         active_modules_count: 2,
       })
     );
-    expect(result.permissions.can_manage_tenant).toBe(true);
   });
 
   it('resolves scoped foreign-key public ids from uuid storage', async () => {
@@ -177,6 +186,27 @@ describe('tenant-facility-workspace service', () => {
     expect(result.units[0].department_id).toBe('DEP0001');
     expect(result.wards[0].facility_id).toBe('FAC0001');
     expect(result.beds[0].ward_id).toBe('WRD0001');
+  });
+
+  it('loads contact records for the selected facility when scope has no facility', async () => {
+    repository.resolveWorkspaceScope.mockResolvedValue({
+      state: 'ready',
+      scope: { tenant_id: 'tenant-uuid', facility_id: null },
+    });
+
+    const result = await service.getSetup({}, { role: 'TENANT_ADMIN' });
+
+    expect(repository.findFacilityRecords).toHaveBeenCalledWith(
+      {
+        tenant_id: 'tenant-uuid',
+        facility_id: 'facility-uuid',
+      },
+      expect.objectContaining({ includeDeleted: false })
+    );
+    expect(result.contact_address.phone).toBe('+256700000000');
+    expect(result.facility).toEqual(
+      expect.objectContaining({ id: 'FAC0001', name: 'Main Campus' })
+    );
   });
 
   it('returns tenant context required payload without facility records', async () => {
