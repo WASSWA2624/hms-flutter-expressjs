@@ -343,6 +343,49 @@ final class AppAccessPolicy {
         !canManageTenant();
   }
 
+  /// Lab technologists and lab-only custom roles see a reduced application shell.
+  bool get isLabFocusedShellUser {
+    if (isElevated) {
+      return false;
+    }
+    if (hasAnyRole(const <AppRole>[
+      AppRole.tenantAdmin,
+      AppRole.facilityAdmin,
+      AppRole.doctor,
+      AppRole.nurse,
+      AppRole.pharmacist,
+      AppRole.radiologyTech,
+      AppRole.receptionist,
+      AppRole.billing,
+      AppRole.hr,
+      AppRole.operations,
+      AppRole.biomed,
+      AppRole.biomedManager,
+      AppRole.ambulanceOperator,
+      AppRole.wardManager,
+      AppRole.icuManager,
+      AppRole.theatreManager,
+      AppRole.housekeepingManager,
+      AppRole.houseKeeper,
+      AppRole.mortuaryStaff,
+      AppRole.mortuaryManager,
+      AppRole.unitManager,
+    ])) {
+      return false;
+    }
+    if (hasRole(AppRole.labTech)) {
+      return true;
+    }
+    return grants(AppPermissions.labRead) &&
+        !grantsAny(const <AppPermission>[
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+          AppPermissions.tenantAdmin,
+          AppPermissions.facilityAdmin,
+          AppPermissions.systemAdmin,
+        ]);
+  }
+
   bool canEditFacilitySetupStructure() {
     return canManageFacility() || canManageHrFacilitySetup();
   }

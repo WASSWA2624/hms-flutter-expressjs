@@ -1063,7 +1063,12 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
       const [ordersToday, inProcess, pending, critical, completed] = await Promise.all([
         prisma.lab_order.count({ where: { ...labOrderWhere, ordered_at: { gte: todayStart } } }),
         prisma.lab_order.count({ where: { ...labOrderWhere, status: 'IN_PROCESS' } }),
-        prisma.lab_result.count({ where: { ...labResultWhere, status: 'PENDING' } }),
+        prisma.lab_result.count({
+          where: {
+            ...labResultWhere,
+            status: { in: ['PENDING', 'ABNORMAL', 'CRITICAL'] }
+          }
+        }),
         prisma.lab_result.count({ where: { ...labResultWhere, status: 'CRITICAL' } }),
         prisma.lab_order.count({ where: { ...labOrderWhere, status: 'COMPLETED' } })
       ]);

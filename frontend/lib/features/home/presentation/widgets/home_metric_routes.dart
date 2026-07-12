@@ -113,6 +113,10 @@ AppRouteData? _clinicalMetricRoute({
     };
   }
 
+  if (profile.id == 'lab_tech' && policy.grants(AppPermissions.labRead)) {
+    return AppRoutes.lab;
+  }
+
   return null;
 }
 

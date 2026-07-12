@@ -1,4 +1,5 @@
 import 'package:hosspi_hms/app/router/app_routes.dart';
+import 'package:hosspi_hms/app/router/shell_route_access.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
@@ -85,6 +86,6 @@ final class AppRouteGuards {
       sessionState.session,
     ).copyWithPermissions(effectivePermissions.permissions);
 
-    return route.accessRequirement.isAllowed(effectivePolicy);
+    return canAccessShellRoute(route, effectivePolicy);
   }
 }

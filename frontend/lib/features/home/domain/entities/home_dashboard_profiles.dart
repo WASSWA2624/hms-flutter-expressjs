@@ -285,17 +285,42 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     roleLabel: 'Laboratory technologist',
     homeTitle: 'Laboratory',
     emptyMessage: 'No lab work is pending.',
-    maxStatusCards: 3,
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'orders_today', label: 'Orders'),
       HomeStatusCardTemplate(id: 'in_process', label: 'In process'),
-      HomeStatusCardTemplate(id: 'pending_results', label: 'Pending'),
+      HomeStatusCardTemplate(id: 'pending_results', label: 'Results queue'),
       HomeStatusCardTemplate(id: 'critical_results', label: 'Critical'),
       HomeStatusCardTemplate(id: 'completed_orders', label: 'Completed'),
     ],
-    quickActionIds: <String>['receive_sample', 'enter_lab_result'],
+    quickActionIds: <String>[
+      'receive_sample',
+      'enter_lab_result',
+      'flag_critical_lab',
+    ],
     shortcutIds: <String>['lab'],
-    emptyActionIds: <String>['receive_sample', 'enter_lab_result'],
+    emptyActionIds: <String>[
+      'receive_sample',
+      'enter_lab_result',
+      'flag_critical_lab',
+    ],
+    metricRouteTargets: <String, HomeMetricRouteTarget>{
+      'orders_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'scope': 'all'},
+      ),
+      'in_process': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'scope': 'processing'},
+      ),
+      'pending_results': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'scope': 'results'},
+      ),
+      'critical_results': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'scope': 'critical'},
+      ),
+      'completed_orders': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'scope': 'completed'},
+      ),
+    },
   ),
   AppRole.radiologyTech: HomeDashboardProfile(
     id: 'radiology_tech',

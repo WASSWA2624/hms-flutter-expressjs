@@ -377,5 +377,31 @@ void main() {
 
       expect(policy.canManageSubscriptionBilling(), isFalse);
     });
+
+    test('identifies lab-focused shell users', () {
+      final labPolicy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['LAB_TECH'],
+          ),
+        ),
+      );
+      final doctorPolicy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['DOCTOR'],
+          ),
+        ),
+      );
+
+      expect(labPolicy.isLabFocusedShellUser, isTrue);
+      expect(doctorPolicy.isLabFocusedShellUser, isFalse);
+    });
   });
 }

@@ -46,10 +46,17 @@ void main() {
       final profile = homeProfileForRole(AppRole.labTech);
 
       expect(profile.layoutTier, HomeDashboardLayoutTier.departmentQueue);
+      expect(profile.effectiveMaxStatusCards, 4);
+      expect(profile.maxQuickActions, 3);
       expect(profile.showActivityPanel(hasQueueItems: true), isFalse);
       expect(profile.showShortcutsSection(quickActionCount: 2), isTrue);
       expect(profile.maxShortcutTiles, 3);
       expect(profile.showQueuePanelFor(const []), isTrue);
+      expect(
+        profile.quickActionIds,
+        <String>['receive_sample', 'enter_lab_result', 'flag_critical_lab'],
+      );
+      expect(profile.metricRouteTargets.keys, contains('pending_results'));
     });
   });
 }

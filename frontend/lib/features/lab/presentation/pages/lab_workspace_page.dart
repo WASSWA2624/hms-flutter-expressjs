@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -83,6 +84,25 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<LabOrderSummary>();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _applyScopeFromRoute());
+  }
+
+  void _applyScopeFromRoute() {
+    if (!mounted) {
+      return;
+    }
+    final String? scopeParam =
+        GoRouterState.of(context).uri.queryParameters[_labScopeFilterKey];
+    if (scopeParam == null || scopeParam.isEmpty) {
+      return;
+    }
+    final LabQueueScope scope = _labScopeFromFilter(scopeParam);
+    if (scope == widget.state.query.scope) {
+      return;
+    }
+    unawaited(
+      ref.read(labWorkspaceControllerProvider.notifier).applyScope(scope),
+    );
   }
 
   @override

@@ -673,7 +673,7 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
     return [
       { id: 'orders_today', label: 'Lab orders today', value: metrics.ordersToday || 0 },
       { id: 'in_process', label: 'Orders in process', value: metrics.inProcess || 0 },
-      { id: 'pending_results', label: 'Pending results', value: metrics.pending || 0 },
+      { id: 'pending_results', label: 'Results queue', value: metrics.pending || 0 },
       { id: 'critical_results', label: 'Critical results', value: metrics.critical || 0 },
       { id: 'completed_orders', label: 'Completed orders', value: metrics.completed || 0 },
     ];

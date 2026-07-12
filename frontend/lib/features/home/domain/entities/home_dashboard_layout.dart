@@ -53,12 +53,17 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
 
   bool get isNurseClinicalDashboard => id == 'nurse';
 
+  bool get isLabDepartmentDashboard => id == 'lab_tech';
+
   int get effectiveMaxStatusCards {
     if (isDoctorClinicalDashboard) {
       return math.min(maxStatusCards, 4);
     }
     if (isNurseClinicalDashboard) {
       return math.min(maxStatusCards, 5);
+    }
+    if (isLabDepartmentDashboard) {
+      return math.min(maxStatusCards, 4);
     }
     final int tierCap = switch (layoutTier) {
       HomeDashboardLayoutTier.platform ||
@@ -79,6 +84,9 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     }
     if (isNurseClinicalDashboard) {
       return 8;
+    }
+    if (isLabDepartmentDashboard) {
+      return 3;
     }
     return switch (layoutTier) {
       HomeDashboardLayoutTier.workforce => 0,

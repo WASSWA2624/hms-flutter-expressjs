@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
+import 'package:hosspi_hms/app/router/shell_route_access.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
@@ -53,7 +54,7 @@ void main() {
     }
 
     bool canAccess(AppRouteData route, AppAccessPolicy policy) {
-      return route.accessRequirement.isAllowed(policy);
+      return canAccessShellRoute(route, policy);
     }
 
     test('doctor access follows clinical permission pack', () {
@@ -96,10 +97,15 @@ void main() {
     test('lab access follows lab permission pack', () {
       final policy = policyForRole('LAB_TECH');
 
+      expect(canAccess(AppRoutes.home, policy), isTrue);
       expect(canAccess(AppRoutes.patients, policy), isTrue);
       expect(canAccess(AppRoutes.lab, policy), isTrue);
-      // OPD accepts patient:read among its any-permissions.
-      expect(canAccess(AppRoutes.opd, policy), isTrue);
+      expect(canAccess(AppRoutes.communications, policy), isTrue);
+      expect(canAccess(AppRoutes.settings, policy), isTrue);
+      expect(canAccess(AppRoutes.opd, policy), isFalse);
+      expect(canAccess(AppRoutes.nursing, policy), isFalse);
+      expect(canAccess(AppRoutes.physiotherapy, policy), isFalse);
+      expect(canAccess(AppRoutes.theater, policy), isFalse);
       expect(canAccess(AppRoutes.reports, policy), isFalse);
     });
 

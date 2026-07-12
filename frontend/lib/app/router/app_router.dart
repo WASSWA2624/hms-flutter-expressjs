@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/router/route_guards.dart';
+import 'package:hosspi_hms/app/router/shell_route_access.dart';
 import 'package:hosspi_hms/app/router/route_refresh_listenable.dart';
 import 'package:hosspi_hms/app/router/route_status_pages.dart';
 import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
@@ -1333,7 +1334,7 @@ class _AppShell extends ConsumerWidget {
 }
 
 bool _canAccessShellRoute(AppRouteData route, AppAccessPolicy accessPolicy) {
-  return route.accessRequirement.isAllowed(accessPolicy);
+  return canAccessShellRoute(route, accessPolicy);
 }
 
 Widget? _subscriptionHeaderAction({

@@ -174,6 +174,28 @@ void main() {
       );
     });
 
+    test('lab technologist profile exposes lab operations surface', () {
+      final profile = homeProfileForRole(AppRole.labTech);
+
+      expect(profile.quickActionIds, <String>[
+        'receive_sample',
+        'enter_lab_result',
+        'flag_critical_lab',
+      ]);
+      expect(profile.shortcutIds, <String>['lab']);
+      expect(profile.maxStatusCards, 4);
+      expect(
+        profile.statusCards.map((template) => template.id),
+        containsAll(<String>[
+          'orders_today',
+          'in_process',
+          'pending_results',
+          'critical_results',
+        ]),
+      );
+      expect(profile.metricRouteTargets.keys, contains('in_process'));
+    });
+
     test('doctor profile still exposes quick actions', () {
       final profile = homeProfileForRole(AppRole.doctor);
 

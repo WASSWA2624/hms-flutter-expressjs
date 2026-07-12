@@ -724,4 +724,19 @@ abstract final class AppRoutes {
 
     return null;
   }
+
+  /// Routes visible to [AppAccessPolicy.isLabFocusedShellUser] in the shell.
+  static const List<AppRouteData> labFocusedShellRoutes = <AppRouteData>[
+    home,
+    patients,
+    lab,
+    communications,
+    settings,
+  ];
+
+  static bool isLabFocusedShellRoute(AppRouteData route) {
+    return labFocusedShellRoutes.any(
+      (AppRouteData candidate) => candidate.name == route.name,
+    );
+  }
 }
