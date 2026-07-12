@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 
 const prismaClientPackagePath = path.resolve(__dirname, '..', '..', 'node_modules', '@prisma', 'client');
 const generatedPrismaClientEntry = path.resolve(
@@ -59,8 +60,27 @@ const {
 
 const FRIENDLY_ID_PREFIX_LENGTH = 3;
 const DEFAULT_FRIENDLY_ID_PADDING = 7;
-const FRIENDLY_ID_COUNTER_RETRIES = 3;
+const FRIENDLY_ID_COUNTER_RETRIES = 8;
 const UNKNOWN_MODEL_PREFIX = 'XXX';
+
+const isUniqueConstraintError = (error) => {
+  if (!error) return false;
+  if (error.code === 'P2002') return true;
+
+  const haystack = [
+    error.message,
+    error.meta?.cause,
+    error.meta?.driverAdapterError?.message,
+    error.meta?.driverAdapterError?.cause?.message,
+    error.cause?.message,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return /unique constraint failed|duplicate entry/i.test(haystack);
+};
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const FRIENDLY_ID_REGEX = /^[A-Z]{3}\d{7}$/;
@@ -211,33 +231,35 @@ const buildScopeKey = (model, data, roleName, prefix) => {
 
 const reserveNextFriendlySequence = async (prismaClient, model, prefix, scopeKey, retryCount = 0) => {
   try {
-    const counter = await prismaClient.human_id_counter.upsert({
-      where: {
-        model_name_prefix_scope_key: {
-          model_name: model,
-          prefix,
-          scope_key: scopeKey,
-        },
-      },
-      create: {
-        model_name: model,
-        prefix,
-        scope_key: scopeKey,
-        last_value: 1,
-      },
-      update: {
-        last_value: {
-          increment: 1,
-        },
-      },
-      select: {
-        last_value: true,
-      },
+    // MySQL upsert is not race-safe under concurrency. Use LAST_INSERT_ID() so the
+    // reserved sequence is returned atomically on one pooled connection.
+    const lastValue = await prismaClient.$transaction(async (tx) => {
+      const id = crypto.randomUUID();
+      await tx.$executeRaw`
+        INSERT INTO human_id_counter
+          (id, model_name, prefix, scope_key, last_value, created_at, updated_at, version)
+        VALUES
+          (${id}, ${model}, ${prefix}, ${scopeKey}, LAST_INSERT_ID(1), NOW(3), NOW(3), 1)
+        ON DUPLICATE KEY UPDATE
+          last_value = LAST_INSERT_ID(last_value + 1),
+          updated_at = NOW(3)
+      `;
+
+      const rows = await tx.$queryRaw`SELECT LAST_INSERT_ID() AS last_value`;
+      const rawValue = rows?.[0]?.last_value;
+      return typeof rawValue === 'bigint' ? Number(rawValue) : Number(rawValue);
     });
 
-    return counter.last_value;
+    if (!Number.isFinite(lastValue) || lastValue < 1) {
+      throw new Error(
+        `Failed to reserve friendly id sequence for ${model}/${prefix}/${scopeKey}`
+      );
+    }
+
+    return lastValue;
   } catch (error) {
-    if (error?.code === 'P2002' && retryCount < FRIENDLY_ID_COUNTER_RETRIES) {
+    if (isUniqueConstraintError(error) && retryCount < FRIENDLY_ID_COUNTER_RETRIES) {
+      await delay(15 * (retryCount + 1));
       return reserveNextFriendlySequence(prismaClient, model, prefix, scopeKey, retryCount + 1);
     }
     throw error;
