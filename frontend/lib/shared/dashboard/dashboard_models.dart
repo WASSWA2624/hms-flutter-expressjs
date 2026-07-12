@@ -9,12 +9,14 @@ final class RoleDashboardLayout {
     this.showQuickActions = true,
     this.showPriority = true,
     this.showCharts = true,
+    this.alertsBeforeMetrics = false,
   });
 
   final bool showMetrics;
   final bool showQuickActions;
   final bool showPriority;
   final bool showCharts;
+  final bool alertsBeforeMetrics;
 }
 
 @immutable
@@ -146,14 +148,24 @@ final class DashboardPriorityPanelData {
     this.maxQueueItems = 3,
     this.alertsTitle,
     this.alertItems = const <DashboardWorklistItemData>[],
+    this.resultsTitle,
+    this.resultsItems = const <DashboardWorklistItemData>[],
+    this.maxResultsItems = 0,
+    this.followUpTitle,
+    this.followUpItems = const <DashboardWorklistItemData>[],
+    this.maxFollowUpItems = 0,
     this.shortcuts = const <DashboardShortcutData>[],
     this.maxShortcuts = 3,
     this.showQueue = true,
     this.showAlerts = true,
+    this.showResults = false,
+    this.showFollowUps = false,
     this.showShortcuts = false,
     this.shortcutsTitle = 'Quick links',
     this.viewAllLabel = 'View all',
     this.onViewAll,
+    this.onViewAllResults,
+    this.onViewAllFollowUps,
   });
 
   final String? queueTitle;
@@ -164,14 +176,24 @@ final class DashboardPriorityPanelData {
   final int maxQueueItems;
   final String? alertsTitle;
   final List<DashboardWorklistItemData> alertItems;
+  final String? resultsTitle;
+  final List<DashboardWorklistItemData> resultsItems;
+  final int maxResultsItems;
+  final String? followUpTitle;
+  final List<DashboardWorklistItemData> followUpItems;
+  final int maxFollowUpItems;
   final List<DashboardShortcutData> shortcuts;
   final int maxShortcuts;
   final bool showQueue;
   final bool showAlerts;
+  final bool showResults;
+  final bool showFollowUps;
   final bool showShortcuts;
   final String shortcutsTitle;
   final String viewAllLabel;
   final VoidCallback? onViewAll;
+  final VoidCallback? onViewAllResults;
+  final VoidCallback? onViewAllFollowUps;
 }
 
 @immutable

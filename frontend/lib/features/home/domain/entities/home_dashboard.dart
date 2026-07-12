@@ -56,6 +56,8 @@ final class HomeDashboard {
     required this.alerts,
     required this.activity,
     required this.tenantOptions,
+    this.resultsPreview = const <HomeQueueItem>[],
+    this.followUpPreview = const <HomeQueueItem>[],
     this.generatedAt,
     this.usesFallbackData = false,
   });
@@ -72,6 +74,8 @@ final class HomeDashboard {
   final List<HomeAlertItem> alerts;
   final List<HomeActivityItem> activity;
   final List<HomeTenantOption> tenantOptions;
+  final List<HomeQueueItem> resultsPreview;
+  final List<HomeQueueItem> followUpPreview;
   final DateTime? generatedAt;
   final bool usesFallbackData;
 
@@ -87,6 +91,8 @@ final class HomeDashboard {
     List<HomeAlertItem>? alerts,
     List<HomeActivityItem>? activity,
     List<HomeTenantOption>? tenantOptions,
+    List<HomeQueueItem>? resultsPreview,
+    List<HomeQueueItem>? followUpPreview,
     DateTime? generatedAt,
     bool? usesFallbackData,
   }) {
@@ -103,6 +109,8 @@ final class HomeDashboard {
       alerts: alerts ?? this.alerts,
       activity: activity ?? this.activity,
       tenantOptions: tenantOptions ?? this.tenantOptions,
+      resultsPreview: resultsPreview ?? this.resultsPreview,
+      followUpPreview: followUpPreview ?? this.followUpPreview,
       generatedAt: generatedAt ?? this.generatedAt,
       usesFallbackData: usesFallbackData ?? this.usesFallbackData,
     );
@@ -117,6 +125,8 @@ final class HomeDashboard {
         trend.hasData ||
         distribution.hasData ||
         queuePreview.isNotEmpty ||
+        resultsPreview.isNotEmpty ||
+        followUpPreview.isNotEmpty ||
         alerts.any((HomeAlertItem alert) => alert.count > 0) ||
         activity.isNotEmpty;
   }
@@ -126,7 +136,7 @@ final class HomeDashboard {
       0,
       (int sum, HomeAlertItem item) => sum + item.count,
     );
-    return alertTotal + queuePreview.length;
+    return alertTotal + queuePreview.length + resultsPreview.length + followUpPreview.length;
   }
 }
 

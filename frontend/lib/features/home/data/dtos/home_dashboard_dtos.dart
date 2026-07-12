@@ -31,6 +31,8 @@ final class HomeDashboardDto {
         queuePreview: const <HomeQueueItem>[],
         alerts: const <HomeAlertItem>[],
         activity: const <HomeActivityItem>[],
+        resultsPreview: const <HomeQueueItem>[],
+        followUpPreview: const <HomeQueueItem>[],
         tenantOptions: _list(json['tenant_options'])
             .map(HomeTenantOptionDto.new)
             .map((HomeTenantOptionDto dto) => dto.toEntity())
@@ -59,6 +61,16 @@ final class HomeDashboardDto {
         .where((HomeStatusCard card) => card.id.isNotEmpty)
         .toList(growable: false);
     final List<HomeQueueItem> queuePreview = _list(overview['queue_preview'])
+        .map(HomeQueueItemDto.new)
+        .map((HomeQueueItemDto dto) => dto.toEntity())
+        .where((HomeQueueItem item) => item.id.isNotEmpty)
+        .toList(growable: false);
+    final List<HomeQueueItem> resultsPreview = _list(overview['results_preview'])
+        .map(HomeQueueItemDto.new)
+        .map((HomeQueueItemDto dto) => dto.toEntity())
+        .where((HomeQueueItem item) => item.id.isNotEmpty)
+        .toList(growable: false);
+    final List<HomeQueueItem> followUpPreview = _list(overview['follow_up_preview'])
         .map(HomeQueueItemDto.new)
         .map((HomeQueueItemDto dto) => dto.toEntity())
         .where((HomeQueueItem item) => item.id.isNotEmpty)
@@ -101,6 +113,8 @@ final class HomeDashboardDto {
       quickActionIds: _quickActionIds(json, fallback: profile.quickActionIds),
       shortcutIds: profile.shortcutIds,
       queuePreview: queuePreview,
+      resultsPreview: resultsPreview,
+      followUpPreview: followUpPreview,
       alerts: alerts,
       activity: activity,
       tenantOptions: const <HomeTenantOption>[],
@@ -340,6 +354,7 @@ String _alertLabel(String value) {
   return switch (value) {
     'overdue_invoices' => 'Overdue invoices',
     'critical_labs' => 'Critical lab results',
+    'radiology_results_ready' => 'Imaging results ready',
     'bed_occupancy_pressure' => 'Bed occupancy pressure',
     'plan_limit_pressure' => 'Plan-limit pressure',
     'guide_signal' => 'Getting started',

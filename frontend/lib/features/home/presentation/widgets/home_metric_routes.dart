@@ -28,6 +28,21 @@ HomeMetricNavigation? homeMetricNavigation({
   if (profile.metricActionTargets.containsKey(card.id)) {
     return null;
   }
+  if (profile.metricRouteTargets.containsKey(card.id)) {
+    final AppRouteData? route = _clinicalMetricRoute(
+      cardId: card.id,
+      profile: profile,
+      policy: policy,
+    );
+    if (route != null) {
+      return HomeMetricNavigation(
+        route: route,
+        queryParameters:
+            profile.metricRouteTargets[card.id]?.queryParameters ??
+            const <String, String>{},
+      );
+    }
+  }
   final HomeMetricRouteTarget? target = profile.metricRouteTargets[card.id];
   if (target == null) {
     return null;
@@ -56,6 +71,26 @@ HomeMetricAction? homeMetricAction({
     return null;
   }
   return HomeMetricAction(target: target);
+}
+
+AppRouteData? _clinicalMetricRoute({
+  required String cardId,
+  required HomeDashboardProfile profile,
+  required AppAccessPolicy policy,
+}) {
+  if (profile.id != 'doctor') {
+    return null;
+  }
+
+  return switch (cardId) {
+    'assigned' ||
+    'in_progress' ||
+    'follow_ups_due' when policy.grants(AppPermissions.clinicalRead) =>
+      AppRoutes.clinical,
+    'results_pending_review' when policy.grants(AppPermissions.labRead) =>
+      AppRoutes.lab,
+    _ => null,
+  };
 }
 
 /// Opens the HR modal mapped to a workforce dashboard metric card.

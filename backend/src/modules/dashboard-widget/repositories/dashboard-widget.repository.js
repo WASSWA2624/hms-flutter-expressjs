@@ -852,32 +852,131 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
       };
     }
 
-    if (packId === ROLE_PACKS.DOCTOR) {
-      const providerWhere = { ...appointmentWhere, provider_user_id: userId || '' };
-      const [assigned, inProgress, completed, criticalLabs, activeAdmissions] = await Promise.all([
-        prisma.appointment.count({ where: providerWhere }),
-        prisma.appointment.count({ where: { ...providerWhere, status: 'IN_PROGRESS' } }),
-        prisma.appointment.count({ where: { ...providerWhere, status: 'COMPLETED' } }),
-        prisma.lab_result.count({ where: { ...labResultWhere, status: 'CRITICAL' } }),
-        prisma.admission.count({ where: { ...admissionWhere, status: 'ADMITTED' } })
-      ]);
-      return {
-        metrics: {
-          assigned,
-          inProgress,
-          completed,
-          criticalLabs,
-          activeAdmissions
-        },
-        trendDates: await selectDateSeries(prisma.appointment, { ...providerWhere, scheduled_start: { gte: trendStart } }, 'scheduled_start'),
-        statusCounts: await countByStatuses(prisma.appointment, providerWhere, ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'NO_SHOW', 'CANCELLED']),
-        activity: {
-          consultations: await prisma.appointment.count({ where: { ...providerWhere, updated_at: { gte: window24h } } }),
-          labs: await prisma.lab_result.count({ where: { ...labResultWhere, updated_at: { gte: window24h } } }),
-          admissions: await prisma.admission.count({ where: { ...admissionWhere, updated_at: { gte: window24h } } })
+  if (packId === ROLE_PACKS.DOCTOR) {
+    const providerUserId = userId || '';
+    const endOfToday = shiftDays(todayStart, 1);
+    const providerWhere = { ...appointmentWhere, provider_user_id: providerUserId };
+    const providerTodayWhere = {
+      ...providerWhere,
+      scheduled_start: { gte: todayStart, lt: endOfToday },
+      status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] },
+    };
+    const providerLabAuthorship = providerUserId
+      ? {
+          OR: [
+            {
+              lab_order_item: {
+                is: {
+                  lab_order: {
+                    is: { ordered_by_user_id: providerUserId, deleted_at: null },
+                  },
+                },
+              },
+            },
+            {
+              lab_order_item: {
+                is: {
+                  lab_order: {
+                    is: {
+                      encounter: {
+                        is: { provider_user_id: providerUserId, deleted_at: null },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          ],
         }
-      };
-    }
+      : {};
+    const providerRadiologyAuthorship = providerUserId
+      ? {
+          radiology_order: {
+            is: {
+              deleted_at: null,
+              encounter: {
+                is: { provider_user_id: providerUserId, deleted_at: null },
+              },
+            },
+          },
+        }
+      : {};
+    const providerReleasedLabWhere = {
+      ...labResultWhere,
+      status: { in: ['NORMAL', 'ABNORMAL', 'CRITICAL'] },
+      ...providerLabAuthorship,
+    };
+    const providerRadiologyReadyWhere = {
+      ...radiologyResultWhere,
+      status: { in: ['FINAL', 'AMENDED'] },
+      ...providerRadiologyAuthorship,
+    };
+    const followUpWhere = {
+      deleted_at: null,
+      status: 'SCHEDULED',
+      scheduled_at: { lte: endOfToday },
+      encounter: {
+        deleted_at: null,
+        provider_user_id: providerUserId,
+        ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
+        ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+      },
+    };
+
+    const [
+      assigned,
+      inProgress,
+      completed,
+      resultsPendingReview,
+      followUpsDue,
+    ] = await Promise.all([
+      prisma.appointment.count({ where: providerTodayWhere }),
+      prisma.appointment.count({ where: { ...providerWhere, status: 'IN_PROGRESS' } }),
+      prisma.appointment.count({
+        where: {
+          ...providerWhere,
+          status: 'COMPLETED',
+          scheduled_start: { gte: todayStart, lt: endOfToday },
+        },
+      }),
+      Promise.all([
+        prisma.lab_result.count({ where: providerReleasedLabWhere }),
+        prisma.radiology_result.count({ where: providerRadiologyReadyWhere }),
+      ]).then(([labCount, radiologyCount]) => labCount + radiologyCount),
+      prisma.follow_up.count({ where: followUpWhere }),
+    ]);
+
+    return {
+      metrics: {
+        assigned,
+        inProgress,
+        completed,
+        resultsPendingReview,
+        followUpsDue,
+      },
+      trendDates: await selectDateSeries(
+        prisma.appointment,
+        { ...providerWhere, scheduled_start: { gte: trendStart } },
+        'scheduled_start'
+      ),
+      statusCounts: await countByStatuses(
+        prisma.appointment,
+        providerWhere,
+        ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'NO_SHOW', 'CANCELLED']
+      ),
+      activity: {
+        consultations: await prisma.appointment.count({
+          where: { ...providerWhere, updated_at: { gte: window24h } },
+        }),
+        labs: await prisma.lab_result.count({
+          where: { ...providerReleasedLabWhere, updated_at: { gte: window24h } },
+        }),
+        followUps: await prisma.follow_up.count({
+          where: { ...followUpWhere, updated_at: { gte: window24h } },
+        }),
+      },
+    };
+  }
 
     if (packId === ROLE_PACKS.NURSE) {
       const [activeAdmissions, medAdminToday, transferQueue, criticalLabs] = await Promise.all([

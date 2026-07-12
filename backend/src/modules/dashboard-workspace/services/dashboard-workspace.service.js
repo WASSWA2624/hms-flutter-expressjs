@@ -582,6 +582,83 @@ const activeQueueDefinitions = Object.freeze({
     },
     activity_event_type: 'radiology_result_updated',
   },
+  lab_results_ready: {
+    id: 'lab_results_ready',
+    queue_key: 'lab_results_ready',
+    kind: 'lab_result',
+    module_slug: 'lab',
+    resource: 'results',
+    model: 'lab_result',
+    time_field: 'updated_at',
+    default_sort: 'updated_at',
+    select: { id: true, human_friendly_id: true, status: true, updated_at: true, created_at: true },
+    buildWhere: (scope) => ({
+      ...buildLabResultScopeWhere(scope),
+      status: { in: ['NORMAL', 'ABNORMAL', 'CRITICAL'] },
+    }),
+    buildSeverity: (row) => {
+      const status = String(row?.status || '').toUpperCase();
+      if (status === 'CRITICAL') return 'critical';
+      if (status === 'ABNORMAL') return 'high';
+      return 'medium';
+    },
+    activity_event_type: 'lab_result_updated',
+  },
+  radiology_reports_ready: {
+    id: 'radiology_reports_ready',
+    queue_key: 'radiology_reports_ready',
+    kind: 'radiology_result',
+    module_slug: 'radiology',
+    resource: 'results',
+    model: 'radiology_result',
+    time_field: 'updated_at',
+    default_sort: 'updated_at',
+    select: { id: true, human_friendly_id: true, status: true, updated_at: true, created_at: true },
+    buildWhere: (scope) => ({
+      ...buildRadiologyResultScopeWhere(scope),
+      status: { in: ['FINAL', 'AMENDED'] },
+    }),
+    buildSeverity: (row) => {
+      const status = String(row?.status || '').toUpperCase();
+      if (status === 'AMENDED') return 'high';
+      return 'medium';
+    },
+    activity_event_type: 'radiology_result_updated',
+  },
+  clinical_follow_ups: {
+    id: 'clinical_follow_ups',
+    queue_key: 'clinical_follow_ups',
+    kind: 'follow_up',
+    module_slug: 'clinical',
+    resource: 'consultations',
+    model: 'follow_up',
+    time_field: 'scheduled_at',
+    default_sort: 'scheduled_at',
+    select: {
+      id: true,
+      human_friendly_id: true,
+      status: true,
+      scheduled_at: true,
+      updated_at: true,
+      created_at: true,
+    },
+    buildWhere: (scope) => ({
+      deleted_at: null,
+      status: 'SCHEDULED',
+      encounter: {
+        deleted_at: null,
+        ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
+        ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+        ...(scope.provider_user_id ? { provider_user_id: scope.provider_user_id } : {}),
+      },
+    }),
+    buildSeverity: (row) => {
+      const scheduledAt = row?.scheduled_at ? new Date(row.scheduled_at) : null;
+      if (scheduledAt && scheduledAt.getTime() <= Date.now()) return 'high';
+      return 'medium';
+    },
+    activity_event_type: 'follow_up_updated',
+  },
   pharmacy_orders: {
     id: 'pharmacy_orders',
     queue_key: 'pharmacy_orders',
@@ -881,7 +958,12 @@ const ROLE_QUEUE_IDS = Object.freeze({
   [ROLE_PACKS.SUPER_ADMIN]: [],
   [ROLE_PACKS.TENANT_ADMIN]: [],
   [ROLE_PACKS.FACILITY_ADMIN]: ['appointments', 'admissions', 'billing_follow_up', 'maintenance_requests', 'housekeeping_tasks', 'staff_leaves'],
-  [ROLE_PACKS.DOCTOR]: ['appointments', 'admissions', 'lab_results', 'radiology_results'],
+  [ROLE_PACKS.DOCTOR]: [
+    'appointments',
+    'lab_results_ready',
+    'radiology_reports_ready',
+    'clinical_follow_ups',
+  ],
   [ROLE_PACKS.NURSE]: ['admissions', 'lab_results', 'radiology_results', 'appointments'],
   [ROLE_PACKS.LAB_TECH]: ['lab_results'],
   [ROLE_PACKS.RADIOLOGY_TECH]: ['radiology_results'],
@@ -1148,6 +1230,126 @@ const paginate = (items = [], page = 1, limit = DEFAULT_LIMIT) => {
   };
 };
 
+const resolveClinicalActorId = (user = {}) =>
+  user.id || user.user_id || user.userId || null;
+
+const buildDoctorLabAuthorshipFilter = (providerUserId) => {
+  if (!providerUserId) {
+    return { lab_order_item: { is: { lab_order: { is: { ordered_by_user_id: '__none__' } } } } };
+  }
+  return {
+    OR: [
+      {
+        lab_order_item: {
+          is: {
+            lab_order: {
+              is: { ordered_by_user_id: providerUserId, deleted_at: null },
+            },
+          },
+        },
+      },
+      {
+        lab_order_item: {
+          is: {
+            lab_order: {
+              is: {
+                encounter: {
+                  is: { provider_user_id: providerUserId, deleted_at: null },
+                },
+              },
+            },
+          },
+        },
+      },
+    ],
+  };
+};
+
+const buildDoctorRadiologyAuthorshipFilter = (providerUserId) => {
+  if (!providerUserId) {
+    return {
+      radiology_order: {
+        is: { encounter: { is: { provider_user_id: '__none__' } } },
+      },
+    };
+  }
+  return {
+    radiology_order: {
+      is: {
+        deleted_at: null,
+        encounter: {
+          is: { provider_user_id: providerUserId, deleted_at: null },
+        },
+      },
+    },
+  };
+};
+
+const applyDoctorQueueWhere = ({ definition, where, packId, user = {} }) => {
+  if (packId !== ROLE_PACKS.DOCTOR) {
+    return where;
+  }
+
+  const providerUserId = resolveClinicalActorId(user);
+  if (!providerUserId) {
+    return where;
+  }
+
+  if (definition.id === 'appointments') {
+    return { ...where, provider_user_id: providerUserId };
+  }
+
+  if (definition.id === 'lab_results_ready') {
+    return { ...where, ...buildDoctorLabAuthorshipFilter(providerUserId) };
+  }
+
+  if (definition.id === 'radiology_reports_ready') {
+    return { ...where, ...buildDoctorRadiologyAuthorshipFilter(providerUserId) };
+  }
+
+  if (definition.id === 'clinical_follow_ups') {
+    return {
+      ...where,
+      encounter: {
+        is: {
+          deleted_at: null,
+          provider_user_id: providerUserId,
+          ...(where.encounter?.is?.tenant_id
+            ? { tenant_id: where.encounter.is.tenant_id }
+            : {}),
+          ...(where.encounter?.is?.facility_id
+            ? { facility_id: where.encounter.is.facility_id }
+            : {}),
+        },
+      },
+    };
+  }
+
+  return where;
+};
+
+const splitDoctorWorkspaceQueues = (items = []) => {
+  const appointments = items.filter((item) => item.queue === 'appointments');
+  const results = items.filter((item) =>
+    ['lab_results_ready', 'radiology_reports_ready'].includes(item.queue)
+  );
+  const followUps = items.filter((item) => item.queue === 'clinical_follow_ups');
+
+  return {
+    queue_preview: appointments.slice(0, 5),
+    results_preview: results.slice(0, 3),
+    follow_up_preview: followUps.slice(0, 3),
+  };
+};
+
+const refineDoctorInsights = ({ packId, signals = [] }) => {
+  if (packId !== ROLE_PACKS.DOCTOR) {
+    return signals;
+  }
+
+  return signals.filter((signal) => signal.kind !== 'bed_occupancy_pressure');
+};
+
 const getQueueItems = async ({
   scope,
   packId,
@@ -1156,6 +1358,7 @@ const getQueueItems = async ({
   limit = DEFAULT_LIMIT,
   sortBy = 'occurred_at',
   order = 'desc',
+  user = {},
 }) => {
   const definitions = resolveQueueDefinitions(packId, filters);
   const range = getDateRange(filters);
@@ -1164,6 +1367,7 @@ const getQueueItems = async ({
   const rowsByDefinition = await Promise.all(
     definitions.map(async (definition) => {
       let where = definition.buildWhere(scope);
+      where = applyDoctorQueueWhere({ definition, where, packId, user });
       where = applyHumanFriendlySearch(where, filters.search);
       Object.assign(where, buildDateWindowFilter({ from: range.from, to: range.to, field: definition.time_field }));
       if (filters.status) {
@@ -1544,7 +1748,7 @@ const ALERT_MODULES_BY_PACK = Object.freeze({
   [ROLE_PACKS.SUPER_ADMIN]: ['subscriptions', 'billing', 'operations', 'biomedical'],
   [ROLE_PACKS.TENANT_ADMIN]: ['subscriptions', 'operations'],
   [ROLE_PACKS.FACILITY_ADMIN]: ['billing', 'lab', 'ipd', 'operations', 'subscriptions'],
-  [ROLE_PACKS.DOCTOR]: ['lab', 'ipd'],
+  [ROLE_PACKS.DOCTOR]: ['lab', 'radiology', 'ipd'],
   [ROLE_PACKS.NURSE]: ['lab', 'ipd'],
   [ROLE_PACKS.LAB_TECH]: ['lab'],
   [ROLE_PACKS.RADIOLOGY_TECH]: ['radiology'],
@@ -2140,7 +2344,7 @@ const getWorkspace = async (
   const [facilityContext, subscription, queueItems, activityItems, snapshot] = await Promise.all([
     dashboardWorkspaceRepository.findFacilityContext(scope),
     dashboardWorkspaceRepository.findCurrentSubscription(scope),
-    getQueueItems({ scope, packId, filters, page, limit, sortBy, order }),
+    getQueueItems({ scope, packId, filters, page, limit, sortBy, order, user }),
     getActivityItems({ scope, packId, filters, page, limit, sortBy, order }),
     buildSnapshot(scope),
   ]);
@@ -2156,7 +2360,34 @@ const getWorkspace = async (
   const valueProof = buildValueProof(snapshot);
   const panelSummaries = buildPanelSummaries({ queueItems, activityItems, insights, checklist });
 
-  const alerts = insights.signals.slice(0, 3).map((entry) => ({
+  let doctorQueueSplit = null;
+  if (packId === ROLE_PACKS.DOCTOR) {
+    doctorQueueSplit = splitDoctorWorkspaceQueues(queueItems.items || []);
+  }
+
+  const refinedSignals = refineDoctorInsights({ packId, signals: insights.signals || [] });
+  if (packId === ROLE_PACKS.DOCTOR) {
+    const resultsCard = (baseSummary.summaryCards || []).find(
+      (card) => card.id === 'results_pending_review'
+    );
+    const resultsCount = Number(resultsCard?.value || 0);
+    if (
+      resultsCount > 0 &&
+      packAllowsAlertModule(packId, 'radiology') &&
+      !refinedSignals.some((signal) => signal.kind === 'radiology_results_ready')
+    ) {
+      refinedSignals.unshift({
+        id: 'results_ready',
+        kind: 'radiology_results_ready',
+        module_slug: 'radiology',
+        severity: 'high',
+        count: resultsCount,
+        target: routeTarget('radiology', 'results', null, 'list'),
+      });
+    }
+  }
+
+  const alerts = refinedSignals.slice(0, 3).map((entry) => ({
     id: entry.id,
     kind: entry.kind,
     severity: entry.severity,
@@ -2195,9 +2426,11 @@ const getWorkspace = async (
       trend: baseSummary.trend,
       distribution: baseSummary.distribution,
       alerts,
-      queue_preview: (queueItems.items || []).slice(0, 5),
+      queue_preview: doctorQueueSplit?.queue_preview || (queueItems.items || []).slice(0, 5),
+      results_preview: doctorQueueSplit?.results_preview || [],
+      follow_up_preview: doctorQueueSplit?.follow_up_preview || [],
       value_proof: valueProof,
-      insights_preview: (insights.signals || []).slice(0, 4),
+      insights_preview: refinedSignals.slice(0, 4),
       module_recommendations: (insights.module_recommendations || []).slice(0, 3),
       plan_usage: insights.plan_usage,
       activity_preview: (activityItems.items || []).slice(0, 6),

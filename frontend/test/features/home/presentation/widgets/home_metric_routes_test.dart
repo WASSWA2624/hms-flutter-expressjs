@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
@@ -75,28 +76,49 @@ void main() {
       );
     });
 
-    test('doctor profile cards stay non-navigable', () {
+    test('doctor profile cards navigate to clinical and lab workspaces', () {
       final HomeDashboardProfile profile = homeProfileForRole(AppRole.doctor);
-      final AppAccessPolicy policy = _policyForRoles(<String>['DOCTOR']);
+      final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: AuthUserProfile(roles: <String>['DOCTOR']),
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(code: 'clinical'),
+            AppModuleEntitlement(code: 'lab'),
+          ],
+        ),
+      );
 
       expect(
         homeMetricNavigation(
           profile: profile,
           card: const HomeStatusCard(
             id: 'assigned',
-            label: 'Assigned consultations',
+            label: 'Assigned today',
             value: 3,
           ),
           policy: policy,
-        ),
-        isNull,
+        )?.route,
+        AppRoutes.clinical,
+      );
+      expect(
+        homeMetricNavigation(
+          profile: profile,
+          card: const HomeStatusCard(
+            id: 'results_pending_review',
+            label: 'Results to review',
+            value: 2,
+          ),
+          policy: policy,
+        )?.route,
+        AppRoutes.lab,
       );
       expect(
         homeMetricAction(
           profile: profile,
           card: const HomeStatusCard(
             id: 'assigned',
-            label: 'Assigned consultations',
+            label: 'Assigned today',
             value: 3,
           ),
           policy: policy,

@@ -1593,6 +1593,20 @@ String homeAlertsTitle(AppRole role) {
   };
 }
 
+String homeResultsTitle(AppRole role) {
+  return switch (role) {
+    AppRole.doctor => 'Results ready',
+    _ => 'Results',
+  };
+}
+
+String homeFollowUpTitle(AppRole role) {
+  return switch (role) {
+    AppRole.doctor => 'Follow-ups',
+    _ => 'Follow-ups',
+  };
+}
+
 Color homeToneColor(ThemeData theme, AppWorkspaceStatusTone tone) {
   final ColorScheme colorScheme = theme.colorScheme;
   return switch (tone) {

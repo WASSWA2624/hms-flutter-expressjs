@@ -20,12 +20,19 @@ class DashboardPriorityPanel extends StatelessWidget {
     final double gap = theme.spacing.lg;
     final bool hasQueue = data.showQueue;
     final bool hasAlerts = data.showAlerts && data.alertsTitle != null;
+    final bool hasResults = data.showResults && data.resultsTitle != null;
+    final bool hasFollowUps = data.showFollowUps && data.followUpTitle != null;
     final bool hasShortcuts = data.showShortcuts && data.shortcuts.isNotEmpty;
     final bool hasQueueContent = hasQueue && data.queueItems.isNotEmpty;
     final bool hasAlertContent = hasAlerts && data.alertItems.isNotEmpty;
-    final bool hasWorkContent = hasQueueContent || hasAlertContent;
+    final bool hasResultsContent = hasResults && data.resultsItems.isNotEmpty;
+    final bool hasFollowUpContent = hasFollowUps && data.followUpItems.isNotEmpty;
 
-    if (!hasQueue && !hasAlerts && !hasShortcuts) {
+    if (!hasQueue &&
+        !hasAlerts &&
+        !hasResults &&
+        !hasFollowUps &&
+        !hasShortcuts) {
       return const SizedBox.shrink();
     }
 
@@ -50,8 +57,31 @@ class DashboardPriorityPanel extends StatelessWidget {
                 items: data.alertItems,
               )
             : const SizedBox.shrink();
+        final Widget resultsPanel = hasResults
+            ? _DashboardSecondaryQueuePanel(
+                title: data.resultsTitle!,
+                icon: Icons.biotech_outlined,
+                items: data.resultsItems,
+                maxItems: data.maxResultsItems,
+                viewAllLabel: data.viewAllLabel,
+                onViewAll: data.onViewAllResults,
+              )
+            : const SizedBox.shrink();
+        final Widget followUpPanel = hasFollowUps
+            ? _DashboardSecondaryQueuePanel(
+                title: data.followUpTitle!,
+                icon: Icons.event_repeat_outlined,
+                items: data.followUpItems,
+                maxItems: data.maxFollowUpItems,
+                viewAllLabel: data.viewAllLabel,
+                onViewAll: data.onViewAllFollowUps,
+              )
+            : const SizedBox.shrink();
 
-        final Widget work = hasWorkContent
+        final Widget work = hasWorkContent(
+          hasQueueContent: hasQueueContent,
+          hasAlertContent: hasAlertContent,
+        )
             ? (wide && hasQueueContent && hasAlertContent
                   ? Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,9 +94,11 @@ class DashboardPriorityPanel extends StatelessWidget {
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
+                        if (hasAlerts && !hasQueueContent) alertsPanel,
                         if (hasQueue) queuePanel,
-                        if (hasQueue && hasAlerts) SizedBox(height: gap),
-                        if (hasAlerts) alertsPanel,
+                        if (hasQueue && hasAlerts && hasQueueContent)
+                          SizedBox(height: gap),
+                        if (hasAlerts && hasQueueContent) alertsPanel,
                       ],
                     ))
             : (hasQueue
@@ -79,8 +111,21 @@ class DashboardPriorityPanel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             work,
+            if (hasResults) ...<Widget>[
+              if (hasWorkContent(hasQueueContent: hasQueueContent, hasAlertContent: hasAlertContent) ||
+                  (hasQueue && !hasQueueContent) ||
+                  (hasAlerts && !hasAlertContent))
+                SizedBox(height: gap),
+              resultsPanel,
+            ],
+            if (hasFollowUps) ...<Widget>[
+              if (hasResults || hasWorkContent(hasQueueContent: hasQueueContent, hasAlertContent: hasAlertContent))
+                SizedBox(height: gap),
+              followUpPanel,
+            ],
             if (hasShortcuts) ...<Widget>[
-              if (hasQueue || hasAlerts) SizedBox(height: gap),
+              if (hasQueue || hasAlerts || hasResults || hasFollowUps)
+                SizedBox(height: gap),
               _DashboardShortcutsSection(
                 title: data.shortcutsTitle,
                 shortcuts: data.shortcuts,
@@ -90,6 +135,31 @@ class DashboardPriorityPanel extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  bool hasWorkContent({
+    required bool hasQueueContent,
+    required bool hasAlertContent,
+  }) {
+    return hasQueueContent || hasAlertContent;
+  }
+}
+
+class DashboardAlertsPanel extends StatelessWidget {
+  const DashboardAlertsPanel({required this.data, super.key});
+
+  final DashboardPriorityPanelData data;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!data.showAlerts || data.alertsTitle == null) {
+      return const SizedBox.shrink();
+    }
+
+    return _DashboardAlertsPanel(
+      title: data.alertsTitle!,
+      items: data.alertItems,
     );
   }
 }
@@ -143,6 +213,52 @@ class _DashboardQueuePanel extends StatelessWidget {
         if (isEmpty && emptyActions.isNotEmpty)
           _DashboardEmptyState(actions: emptyActions),
         if (!isEmpty)
+          for (final DashboardWorklistItemData item in items.take(maxItems))
+            _DashboardWorklistRow(item: item),
+      ],
+    );
+  }
+}
+
+class _DashboardSecondaryQueuePanel extends StatelessWidget {
+  const _DashboardSecondaryQueuePanel({
+    required this.title,
+    required this.icon,
+    required this.items,
+    required this.maxItems,
+    required this.viewAllLabel,
+    this.onViewAll,
+  });
+
+  final String title;
+  final IconData icon;
+  final List<DashboardWorklistItemData> items;
+  final int maxItems;
+  final String viewAllLabel;
+  final VoidCallback? onViewAll;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final bool isEmpty = items.isEmpty;
+
+    return AppSectionPanel(
+      title: title,
+      leadingIcon: icon,
+      density: AppContentPanelDensity.spacious,
+      backgroundColor: dashboardSectionBackgroundColor(colorScheme),
+      borderColor: dashboardSectionBorderColor(colorScheme),
+      trailing: isEmpty || onViewAll == null
+          ? null
+          : AppButton.tertiary(
+              label: viewAllLabel,
+              leadingIcon: Icons.open_in_new,
+              onPressed: onViewAll,
+            ),
+      children: <Widget>[
+        if (isEmpty)
+          const _DashboardQuietState(message: 'Nothing pending')
+        else
           for (final DashboardWorklistItemData item in items.take(maxItems))
             _DashboardWorklistRow(item: item),
       ],
@@ -375,7 +491,9 @@ class _DashboardEmptyState extends StatelessWidget {
 }
 
 class _DashboardQuietState extends StatelessWidget {
-  const _DashboardQuietState();
+  const _DashboardQuietState({this.message = 'All clear'});
+
+  final String message;
 
   @override
   Widget build(BuildContext context) {
@@ -389,7 +507,7 @@ class _DashboardQuietState extends StatelessWidget {
           Icon(Icons.check_circle_outline, size: 24, color: successColor),
           SizedBox(width: theme.spacing.sm),
           Text(
-            'All clear',
+            message,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: successColor,
               fontWeight: FontWeight.w600,

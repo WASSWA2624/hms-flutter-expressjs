@@ -49,7 +49,12 @@ HomeDashboardLayoutTier homeLayoutTierForRole(AppRole role) {
 extension HomeDashboardProfileLayout on HomeDashboardProfile {
   HomeDashboardLayoutTier get layoutTier => homeLayoutTierForRole(role);
 
+  bool get isDoctorClinicalDashboard => id == 'doctor';
+
   int get effectiveMaxStatusCards {
+    if (isDoctorClinicalDashboard) {
+      return math.min(maxStatusCards, 4);
+    }
     final int tierCap = switch (layoutTier) {
       HomeDashboardLayoutTier.platform ||
       HomeDashboardLayoutTier.organization ||
@@ -64,6 +69,9 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     if (suppressHomeQuickActions) {
       return 0;
     }
+    if (isDoctorClinicalDashboard) {
+      return 5;
+    }
     return switch (layoutTier) {
       HomeDashboardLayoutTier.workforce => 0,
       HomeDashboardLayoutTier.platform => 8,
@@ -73,14 +81,23 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     };
   }
 
-  int get maxQueueItems => 3;
+  int get maxQueueItems => isDoctorClinicalDashboard ? 5 : 3;
 
-  int get maxShortcutTiles => switch (layoutTier) {
-    HomeDashboardLayoutTier.platform ||
-    HomeDashboardLayoutTier.organization => 4,
-    HomeDashboardLayoutTier.facilityCommand => 2,
-    _ => 3,
-  };
+  int get maxResultsItems => isDoctorClinicalDashboard ? 3 : 0;
+
+  int get maxFollowUpItems => isDoctorClinicalDashboard ? 3 : 0;
+
+  int get maxShortcutTiles {
+    if (isDoctorClinicalDashboard) {
+      return 6;
+    }
+    return switch (layoutTier) {
+      HomeDashboardLayoutTier.platform ||
+      HomeDashboardLayoutTier.organization => 4,
+      HomeDashboardLayoutTier.facilityCommand => 2,
+      _ => 3,
+    };
+  }
 
   bool get compactMetrics {
     return layoutTier != HomeDashboardLayoutTier.workforce &&
@@ -91,14 +108,21 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
 
   bool get showCharts => true;
 
+  bool get queueBeforeMetrics => false;
+
+  bool get alertsBeforeMetrics => isDoctorClinicalDashboard;
+
+  bool get showAlertsInPriorityPanel => !alertsBeforeMetrics;
+
   bool showChartsWhenData({
     required HomeDashboardTrend trend,
     required HomeDashboardDistribution distribution,
   }) {
+    if (isDoctorClinicalDashboard && !trend.hasData && !distribution.hasData) {
+      return false;
+    }
     return showCharts;
   }
-
-  bool get queueBeforeMetrics => false;
 
   bool showActivityPanel({required bool hasQueueItems}) => false;
 

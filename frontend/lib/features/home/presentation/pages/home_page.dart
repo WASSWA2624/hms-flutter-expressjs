@@ -93,6 +93,16 @@ class _HomeDashboardContent extends ConsumerWidget {
       profile,
     );
     final l10n = context.l10n;
+    final DashboardPriorityPanelData priorityData = homeDashboardPriorityData(
+      context: context,
+      ref: ref,
+      dashboard: dashboard,
+      actions: actions,
+      shortcuts: shortcuts,
+      policy: policy,
+      l10n: l10n,
+      request: request,
+    );
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -108,8 +118,22 @@ class _HomeDashboardContent extends ConsumerWidget {
               )
             else
               RoleDashboardScaffold(
-                layout: homeRoleDashboardLayout(profile),
+                layout: homeRoleDashboardLayout(
+                  profile,
+                  trend: dashboard.trend,
+                  distribution: dashboard.distribution,
+                ),
                 spacing: spacing,
+                leadingPanel: profile.alertsBeforeMetrics
+                    ? DashboardAlertsPanel(
+                        data: homeDashboardAlertsPanelData(
+                          context: context,
+                          ref: ref,
+                          dashboard: dashboard,
+                          policy: policy,
+                        ),
+                      )
+                    : null,
                 summaryBadges: DashboardMetricStrip(
                   cards: homeDashboardMetrics(
                     context: context,
@@ -130,18 +154,7 @@ class _HomeDashboardContent extends ConsumerWidget {
                     request: request,
                   ),
                 ),
-                priorityPanel: DashboardPriorityPanel(
-                  data: homeDashboardPriorityData(
-                    context: context,
-                    ref: ref,
-                    dashboard: dashboard,
-                    actions: actions,
-                    shortcuts: shortcuts,
-                    policy: policy,
-                    l10n: l10n,
-                    request: request,
-                  ),
-                ),
+                priorityPanel: DashboardPriorityPanel(data: priorityData),
                 charts: LayoutBuilder(
                   builder: (BuildContext context, BoxConstraints constraints) {
                     return DashboardChartsRow(

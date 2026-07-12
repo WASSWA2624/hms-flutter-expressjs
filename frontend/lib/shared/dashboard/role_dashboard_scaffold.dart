@@ -13,6 +13,7 @@ class RoleDashboardScaffold extends StatelessWidget {
     required this.quickActions,
     required this.priorityPanel,
     required this.charts,
+    this.leadingPanel,
     super.key,
   });
 
@@ -22,6 +23,7 @@ class RoleDashboardScaffold extends StatelessWidget {
   final Widget quickActions;
   final Widget priorityPanel;
   final Widget charts;
+  final Widget? leadingPanel;
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +41,10 @@ class RoleDashboardScaffold extends StatelessWidget {
         sections.add(SizedBox(height: gap));
       }
       sections.add(section);
+    }
+
+    if (layout.alertsBeforeMetrics && leadingPanel != null && !_isShrink(leadingPanel!)) {
+      addSection(leadingPanel!);
     }
 
     if (layout.showMetrics && !_isShrink(summaryBadges)) {

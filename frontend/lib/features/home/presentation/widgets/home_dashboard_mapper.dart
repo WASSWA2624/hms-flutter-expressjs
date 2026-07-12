@@ -12,14 +12,22 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
-RoleDashboardLayout homeRoleDashboardLayout(HomeDashboardProfile profile) {
+RoleDashboardLayout homeRoleDashboardLayout(
+  HomeDashboardProfile profile, {
+  required HomeDashboardTrend trend,
+  required HomeDashboardDistribution distribution,
+}) {
   return RoleDashboardLayout(
     showMetrics: profile.showMetricsSection,
     showQuickActions: !profile.suppressHomeQuickActions,
     showPriority:
         profile.showQueuePanel ||
         profile.showShortcutsSection(quickActionCount: profile.maxQuickActions),
-    showCharts: profile.showCharts,
+    showCharts: profile.showChartsWhenData(
+      trend: trend,
+      distribution: distribution,
+    ),
+    alertsBeforeMetrics: profile.alertsBeforeMetrics,
   );
 }
 
@@ -101,6 +109,28 @@ List<DashboardQuickActionData> homeDashboardQuickActions({
       .toList(growable: false);
 }
 
+List<DashboardWorklistItemData> homeDashboardWorklistItems({
+  required BuildContext context,
+  required WidgetRef ref,
+  required AppAccessPolicy policy,
+  required List<HomeQueueItem> items,
+}) {
+  return items
+      .map(
+        (HomeQueueItem item) => DashboardWorklistItemData(
+          icon: homeModuleIcon(item.moduleSlug),
+          title: item.label,
+          subtitle: homeQueueItemSubtitle(item),
+          status: AppWorkspaceStatus(
+            label: homeStatusLabel(item.status),
+            tone: homeSeverityTone(item.severity ?? item.status),
+          ),
+          onTap: homeWorklistTap(context, ref, policy, item.target),
+        ),
+      )
+      .toList(growable: false);
+}
+
 DashboardPriorityPanelData homeDashboardPriorityData({
   required BuildContext context,
   required WidgetRef ref,
@@ -113,32 +143,31 @@ DashboardPriorityPanelData homeDashboardPriorityData({
 }) {
   final HomeDashboardProfile profile = dashboard.profile;
   final bool showQueue = profile.showQueuePanel;
-  final bool showAlerts = profile.showQueuePanel;
+  final bool showAlerts =
+      profile.showQueuePanel && profile.showAlertsInPriorityPanel;
+  final bool showResults =
+      profile.maxResultsItems > 0 && dashboard.resultsPreview.isNotEmpty;
+  final bool showFollowUps =
+      profile.maxFollowUpItems > 0 && dashboard.followUpPreview.isNotEmpty;
   final bool showShortcuts = profile.showShortcutsSection(
     quickActionCount: actions.length,
   );
+  final List<DashboardWorklistItemData> worklistItems = showQueue
+      ? homeDashboardWorklistItems(
+          context: context,
+          ref: ref,
+          policy: policy,
+          items: dashboard.queuePreview.take(profile.maxQueueItems).toList(
+            growable: false,
+          ),
+        )
+      : const <DashboardWorklistItemData>[];
 
   return DashboardPriorityPanelData(
     queueTitle: profile.showQueuePanelTitle
         ? homeQueueTitle(profile.role)
         : null,
-    queueItems: showQueue
-        ? dashboard.queuePreview
-              .take(profile.maxQueueItems)
-              .map(
-                (HomeQueueItem item) => DashboardWorklistItemData(
-                  icon: homeModuleIcon(item.moduleSlug),
-                  title: item.label,
-                  subtitle: homeQueueItemSubtitle(item),
-                  status: AppWorkspaceStatus(
-                    label: homeStatusLabel(item.status),
-                    tone: homeSeverityTone(item.severity ?? item.status),
-                  ),
-                  onTap: homeWorklistTap(context, ref, policy, item.target),
-                ),
-              )
-              .toList(growable: false)
-        : const <DashboardWorklistItemData>[],
+    queueItems: worklistItems,
     emptySectionTitle: profile.id == 'super_admin'
         ? l10n.homePlatformManagementTitle
         : null,
@@ -171,6 +200,34 @@ DashboardPriorityPanelData homeDashboardPriorityData({
               )
               .toList(growable: false)
         : const <DashboardWorklistItemData>[],
+    resultsTitle: profile.maxResultsItems > 0
+        ? homeResultsTitle(profile.role)
+        : null,
+    resultsItems: profile.maxResultsItems > 0
+        ? homeDashboardWorklistItems(
+            context: context,
+            ref: ref,
+            policy: policy,
+            items: dashboard.resultsPreview
+                .take(profile.maxResultsItems)
+                .toList(growable: false),
+          )
+        : const <DashboardWorklistItemData>[],
+    maxResultsItems: profile.maxResultsItems,
+    followUpTitle: profile.maxFollowUpItems > 0
+        ? homeFollowUpTitle(profile.role)
+        : null,
+    followUpItems: profile.maxFollowUpItems > 0
+        ? homeDashboardWorklistItems(
+            context: context,
+            ref: ref,
+            policy: policy,
+            items: dashboard.followUpPreview
+                .take(profile.maxFollowUpItems)
+                .toList(growable: false),
+          )
+        : const <DashboardWorklistItemData>[],
+    maxFollowUpItems: profile.maxFollowUpItems,
     shortcuts: showShortcuts
         ? shortcuts
               .take(profile.maxShortcutTiles)
@@ -188,6 +245,8 @@ DashboardPriorityPanelData homeDashboardPriorityData({
     shortcutsTitle: l10n.homeDashboardQuickLinksTitle,
     showQueue: showQueue,
     showAlerts: showAlerts,
+    showResults: showResults || profile.maxResultsItems > 0,
+    showFollowUps: showFollowUps || profile.maxFollowUpItems > 0,
     showShortcuts: showShortcuts,
     viewAllLabel: l10n.homeViewAllAction,
     onViewAll: homeFirstQueueTarget(dashboard.queuePreview) == null
@@ -200,6 +259,57 @@ DashboardPriorityPanelData homeDashboardPriorityData({
               target: homeFirstQueueTarget(dashboard.queuePreview),
             );
           },
+    onViewAllResults: homeFirstQueueTarget(dashboard.resultsPreview) == null
+        ? null
+        : () {
+            homeNavigateRouteTarget(
+              context,
+              ref,
+              policy,
+              target: homeFirstQueueTarget(dashboard.resultsPreview),
+            );
+          },
+    onViewAllFollowUps: homeFirstQueueTarget(dashboard.followUpPreview) == null
+        ? null
+        : () {
+            homeNavigateRouteTarget(
+              context,
+              ref,
+              policy,
+              target: homeFirstQueueTarget(dashboard.followUpPreview),
+            );
+          },
+  );
+}
+
+DashboardPriorityPanelData homeDashboardAlertsPanelData({
+  required BuildContext context,
+  required WidgetRef ref,
+  required HomeDashboard dashboard,
+  required AppAccessPolicy policy,
+}) {
+  final HomeDashboardProfile profile = dashboard.profile;
+
+  return DashboardPriorityPanelData(
+    alertsTitle: homeAlertsTitle(profile.role),
+    alertItems: dashboard.alerts
+        .take(3)
+        .map(
+          (HomeAlertItem alert) => DashboardWorklistItemData(
+            icon: Icons.warning_amber_outlined,
+            title: alert.label,
+            subtitle: '${alert.count}',
+            status: AppWorkspaceStatus(
+              label: homeStatusLabel(alert.severity),
+              tone: homeSeverityTone(alert.severity),
+            ),
+            onTap: homeWorklistTap(context, ref, policy, alert.target),
+          ),
+        )
+        .toList(growable: false),
+    showQueue: false,
+    showAlerts: true,
+    showShortcuts: false,
   );
 }
 

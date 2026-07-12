@@ -176,8 +176,22 @@ void main() {
     test('doctor profile still exposes quick actions', () {
       final profile = homeProfileForRole(AppRole.doctor);
 
-      expect(profile.quickActionIds, isNotEmpty);
-      expect(profile.shortcutIds, contains('clinical'));
+      expect(profile.quickActionIds, hasLength(5));
+      expect(profile.quickActionIds, containsAll(<String>[
+        'start_consultation',
+        'continue_consultation',
+        'order_lab',
+        'order_radiology',
+        'write_clinical_note',
+      ]));
+      expect(profile.shortcutIds, containsAll(<String>[
+        'clinical',
+        'opd',
+        'emergency',
+        'lab',
+        'radiology',
+        'ipd',
+      ]));
     });
 
     test('manager overlay roles do not override primary dashboard role', () {

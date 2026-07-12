@@ -643,11 +643,15 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
 
   if (packId === ROLE_PACKS.DOCTOR) {
     return [
-      { id: 'assigned', label: 'Assigned consultations', value: metrics.assigned || 0 },
+      { id: 'assigned', label: 'Assigned today', value: metrics.assigned || 0 },
       { id: 'in_progress', label: 'Consultations in progress', value: metrics.inProgress || 0 },
-      { id: 'completed', label: 'Completed consultations', value: metrics.completed || 0 },
-      { id: 'admissions', label: 'Active admissions', value: metrics.activeAdmissions || 0 },
-      { id: 'critical_labs', label: 'Critical lab signals', value: metrics.criticalLabs || 0 },
+      {
+        id: 'results_pending_review',
+        label: 'Results to review',
+        value: metrics.resultsPendingReview || 0,
+      },
+      { id: 'follow_ups_due', label: 'Follow-ups due', value: metrics.followUpsDue || 0 },
+      { id: 'completed', label: 'Completed today', value: metrics.completed || 0 },
     ];
   }
 

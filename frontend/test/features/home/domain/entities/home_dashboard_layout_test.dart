@@ -11,10 +11,13 @@ void main() {
       expect(profile.layoutTier, HomeDashboardLayoutTier.clinicalQueue);
       expect(profile.showCharts, isTrue);
       expect(profile.queueBeforeMetrics, isFalse);
-      expect(profile.effectiveMaxStatusCards, 3);
-      expect(profile.maxQuickActions, 2);
+      expect(profile.alertsBeforeMetrics, isTrue);
+      expect(profile.effectiveMaxStatusCards, 4);
+      expect(profile.maxQuickActions, 5);
       expect(profile.showShortcutsSection(quickActionCount: 2), isTrue);
-      expect(profile.maxShortcutTiles, 3);
+      expect(profile.maxShortcutTiles, 6);
+      expect(profile.maxResultsItems, 3);
+      expect(profile.maxFollowUpItems, 3);
     });
 
     test('HR profile caps status cards and enables shortcuts', () {
