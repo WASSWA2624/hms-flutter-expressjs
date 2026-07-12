@@ -67,7 +67,14 @@ void main() {
         theme.statusColors.danger,
         AppLightThemePalette.statusColors.danger,
       );
-      expect(theme.sidebarTokens.selectedBackgroundColor, theme.colorScheme.primary);
+      expect(
+        theme.sidebarTokens.selectedBackgroundColor,
+        theme.colorScheme.primaryContainer,
+      );
+      expect(
+        theme.sidebarTokens.selectedForegroundColor,
+        theme.colorScheme.primary,
+      );
       expect(theme.sidebarTokens.itemHeight, 40);
       expect(theme.sidebarTokens.itemBorderRadius, theme.radius.md);
       expect(
