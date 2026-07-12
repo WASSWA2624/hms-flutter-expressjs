@@ -17,5 +17,9 @@ bool canAccessShellRoute(AppRouteData route, AppAccessPolicy accessPolicy) {
       !AppRoutes.isReceptionistFocusedShellRoute(route)) {
     return false;
   }
+  if (accessPolicy.isBillingFocusedShellUser &&
+      !AppRoutes.isBillingFocusedShellRoute(route)) {
+    return false;
+  }
   return true;
 }

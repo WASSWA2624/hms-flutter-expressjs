@@ -24,6 +24,7 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
 import 'package:hosspi_hms/features/patients/presentation/patient_registry_access.dart';
+import 'package:hosspi_hms/features/patients/presentation/widgets/patient_billing_context_panel.dart';
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_pharmacy_context_panel.dart';
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_widgets.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -40,7 +41,9 @@ import 'package:hosspi_hms/shared/printing/printing.dart';
 part '../widgets/patient_detail_dialog_body.dart';
 
 class PatientRegistryPage extends ConsumerWidget {
-  const PatientRegistryPage({super.key});
+  const PatientRegistryPage({super.key, this.initialQuery});
+
+  final PatientListQuery? initialQuery;
 
   static const AccessRequirement _readRequirement = AccessRequirement(
     allPermissions: <AppPermission>[AppPermissions.patientRead],
@@ -70,7 +73,10 @@ class PatientRegistryPage extends ConsumerWidget {
           ref.read(patientRegistryControllerProvider.notifier).refresh();
         },
         dataBuilder: (BuildContext context, PatientRegistryState data) {
-          return _PatientRegistryContent(state: data);
+          return _PatientRegistryContent(
+            state: data,
+            initialQuery: initialQuery,
+          );
         },
       ),
     );
@@ -78,9 +84,10 @@ class PatientRegistryPage extends ConsumerWidget {
 }
 
 class _PatientRegistryContent extends ConsumerStatefulWidget {
-  const _PatientRegistryContent({required this.state});
+  const _PatientRegistryContent({required this.state, this.initialQuery});
 
   final PatientRegistryState state;
+  final PatientListQuery? initialQuery;
 
   static const AccessRequirement _writeRequirement = AccessRequirement(
     allPermissions: <AppPermission>[AppPermissions.patientWrite],
@@ -97,6 +104,7 @@ class _PatientRegistryContentState
   late final AppListTableColumnVisibilityController<Patient>
   _tableColumnController;
   Timer? _tableSearchDebounce;
+  bool _handledRouteQuery = false;
 
   @override
   void initState() {
@@ -106,11 +114,33 @@ class _PatientRegistryContentState
     );
     _tableColumnController = AppListTableColumnVisibilityController<Patient>();
     _tableSearchController.addListener(_handleTableSearchChanged);
+    _scheduleRouteQuery(widget.initialQuery);
+  }
+
+  void _scheduleRouteQuery(PatientListQuery? query) {
+    if (query == null || !query.hasRouteTargeting) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _handledRouteQuery) {
+        return;
+      }
+      _handledRouteQuery = true;
+      unawaited(
+        ref
+            .read(patientRegistryControllerProvider.notifier)
+            .applyQuery(query),
+      );
+    });
   }
 
   @override
   void didUpdateWidget(covariant _PatientRegistryContent oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialQuery?.signature != widget.initialQuery?.signature) {
+      _handledRouteQuery = false;
+      _scheduleRouteQuery(widget.initialQuery);
+    }
     final String nextSearch = widget.state.query.search;
     if (oldWidget.state.query.search != nextSearch &&
         _tableSearchController.text != nextSearch) {

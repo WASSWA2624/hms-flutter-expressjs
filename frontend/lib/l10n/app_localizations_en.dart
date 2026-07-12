@@ -4055,6 +4055,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsOpenPharmacyWorkbenchAction => 'Open pharmacy';
 
   @override
+  String get patientsPaymentsSectionTitle => 'Payments';
+
+  @override
+  String get patientsNoInvoices => 'No invoices recorded for this patient.';
+
+  @override
+  String get patientsNoPayments => 'No payments recorded for this patient.';
+
+  @override
+  String get patientsOpenBillingWorkbenchAction => 'Open billing';
+
+  @override
   String get patientsMedicalHistorySectionTitle => 'Medical history';
 
   @override

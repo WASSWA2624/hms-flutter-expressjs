@@ -121,6 +121,8 @@ class PatientDetailDialog extends ConsumerWidget {
     final Patient patient = detail.patient;
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final bool pharmacyReader = isPharmacyRegistryReader(accessPolicy);
+    final bool billingReader = isBillingRegistryReader(accessPolicy);
+    final bool hideClinicalSections = pharmacyReader || billingReader;
     return AppDialog(
       title: Text(patient.effectiveDisplayName),
       icon: const Icon(Icons.assignment_ind_outlined),
@@ -164,7 +166,7 @@ class PatientDetailDialog extends ConsumerWidget {
                   state?.referenceData ?? const PatientReferenceData(),
             ),
             const Divider(),
-            if (!pharmacyReader) ...<Widget>[
+            if (!hideClinicalSections) ...<Widget>[
               PatientDetailActiveWorkPanel(
                 detail: detail,
                 onContinue: (PatientActiveWorkItem item) =>
@@ -188,28 +190,33 @@ class PatientDetailDialog extends ConsumerWidget {
               PatientPharmacyContextPanel(detail: detail),
               const Divider(),
             ],
-            AppExpandableRecordSection<PatientAllergy>(
-              title: l10n.patientsAllergiesSectionTitle,
-              emptyLabel: l10n.patientsNoAllergies,
-              items: detail.allergies,
-              initiallyExpanded: true,
-              responsiveActionButtons: true,
-              itemTitle: (PatientAllergy item) =>
-                  '${l10n.patientsAllergiesSectionTitle}: ${item.allergen} (${_apiLabel(item.severity)})',
-              addLabel: l10n.patientsAddRelatedAction,
-              editLabel: l10n.patientsEditAction,
-              deleteLabel: l10n.patientsDeleteAction,
-              addRequirement: _writeRequirement,
-              editRequirement: _writeRequirement,
-              deleteRequirement: _deleteRequirement,
-              onAdd: () =>
-                  _openRelatedForm<PatientAllergy>(context, ref, detail),
-              onEdit: (PatientAllergy item) =>
-                  _openRelatedForm(context, ref, detail, item: item),
-              onDelete: (PatientAllergy item) =>
-                  _confirmDeleteRelated(context, ref, detail, item.id),
-            ),
-            if (!pharmacyReader) ...<Widget>[
+            if (billingReader) ...<Widget>[
+              PatientBillingContextPanel(detail: detail),
+              const Divider(),
+            ],
+            if (!billingReader)
+              AppExpandableRecordSection<PatientAllergy>(
+                title: l10n.patientsAllergiesSectionTitle,
+                emptyLabel: l10n.patientsNoAllergies,
+                items: detail.allergies,
+                initiallyExpanded: true,
+                responsiveActionButtons: true,
+                itemTitle: (PatientAllergy item) =>
+                    '${l10n.patientsAllergiesSectionTitle}: ${item.allergen} (${_apiLabel(item.severity)})',
+                addLabel: l10n.patientsAddRelatedAction,
+                editLabel: l10n.patientsEditAction,
+                deleteLabel: l10n.patientsDeleteAction,
+                addRequirement: _writeRequirement,
+                editRequirement: _writeRequirement,
+                deleteRequirement: _deleteRequirement,
+                onAdd: () =>
+                    _openRelatedForm<PatientAllergy>(context, ref, detail),
+                onEdit: (PatientAllergy item) =>
+                    _openRelatedForm(context, ref, detail, item: item),
+                onDelete: (PatientAllergy item) =>
+                    _confirmDeleteRelated(context, ref, detail, item.id),
+              ),
+            if (!hideClinicalSections) ...<Widget>[
               AppExpandableRecordSection<PatientIdentifier>(
                 title: l10n.patientsIdentifiersSectionTitle,
                 emptyLabel: l10n.patientsNoIdentifiers,
@@ -274,7 +281,7 @@ class PatientDetailDialog extends ConsumerWidget {
                     _confirmDeleteRelated(context, ref, detail, item.id),
               ),
             ],
-            if (!pharmacyReader)
+            if (!hideClinicalSections)
               AppExpandableRecordSection<PatientMedicalHistory>(
                 title: l10n.patientsMedicalHistorySectionTitle,
                 emptyLabel: l10n.patientsNoMedicalHistory,
@@ -305,7 +312,7 @@ class PatientDetailDialog extends ConsumerWidget {
                 onDelete: (PatientMedicalHistory item) =>
                     _confirmDeleteRelated(context, ref, detail, item.id),
               ),
-            if (!pharmacyReader)
+            if (!hideClinicalSections)
               AppExpandableRecordSection<PatientDocument>(
                 title: l10n.patientsDocumentsSectionTitle,
                 emptyLabel: l10n.patientsNoDocuments,
@@ -327,7 +334,7 @@ class PatientDetailDialog extends ConsumerWidget {
                 onDelete: (PatientDocument item) =>
                     _confirmDeleteRelated(context, ref, detail, item.id),
               ),
-            if (!pharmacyReader)
+            if (!hideClinicalSections)
               AppExpandableRecordSection<PatientConsent>(
                 title: l10n.patientsConsentsSectionTitle,
                 emptyLabel: l10n.patientsNoConsents,
@@ -349,7 +356,7 @@ class PatientDetailDialog extends ConsumerWidget {
                 onDelete: (PatientConsent item) =>
                     _confirmDeleteRelated(context, ref, detail, item.id),
               ),
-            if (!pharmacyReader) PatientTimelineList(items: detail.timeline),
+            if (!hideClinicalSections) PatientTimelineList(items: detail.timeline),
           ],
         ),
       ),

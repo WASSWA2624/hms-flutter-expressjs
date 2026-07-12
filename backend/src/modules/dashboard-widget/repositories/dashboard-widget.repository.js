@@ -1158,15 +1158,40 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
     }
 
     if (packId === ROLE_PACKS.BILLING) {
-      const [invoicesToday, overdueInvoices, openBalances, collectionsToday, refundsToday] = await Promise.all([
+      const openBalanceWhere = {
+        ...invoiceWhere,
+        OR: [
+          { status: { in: ['SENT', 'OVERDUE'] } },
+          { billing_status: { in: ['DRAFT', 'ISSUED', 'PARTIAL'] } }
+        ]
+      };
+      const [
+        invoicesToday,
+        overdueInvoices,
+        openBalances,
+        collectionsToday,
+        refundsToday,
+        overdueBalanceAmount,
+        pendingBalanceAmount
+      ] = await Promise.all([
         prisma.invoice.count({ where: { ...invoiceWhere, issued_at: { gte: todayStart } } }),
         prisma.invoice.count({ where: { ...invoiceWhere, status: 'OVERDUE' } }),
-        prisma.invoice.count({ where: { ...invoiceWhere, OR: [{ status: { in: ['SENT', 'OVERDUE'] } }, { billing_status: { in: ['DRAFT', 'ISSUED', 'PARTIAL'] } }] } }),
+        prisma.invoice.count({ where: openBalanceWhere }),
         sumField(prisma.payment, { ...paymentWhere, status: 'COMPLETED', paid_at: { gte: todayStart } }, 'amount'),
-        sumField(prisma.refund, { deleted_at: null, refunded_at: { gte: todayStart }, payment: paymentWhere }, 'amount')
+        sumField(prisma.refund, { deleted_at: null, refunded_at: { gte: todayStart }, payment: paymentWhere }, 'amount'),
+        sumField(prisma.invoice, { ...invoiceWhere, status: 'OVERDUE' }, 'total_amount'),
+        sumField(prisma.invoice, openBalanceWhere, 'total_amount')
       ]);
       return {
-        metrics: { invoicesToday, overdueInvoices, openBalances, collectionsToday, refundsToday },
+        metrics: {
+          invoicesToday,
+          overdueInvoices,
+          openBalances,
+          collectionsToday,
+          refundsToday,
+          overdueBalanceAmount,
+          pendingBalanceAmount
+        },
         trendDates: await selectDateSeries(prisma.payment, { ...paymentWhere, status: 'COMPLETED', paid_at: { gte: trendStart } }, 'paid_at'),
         statusCounts: await countByStatuses(prisma.invoice, invoiceWhere, ['DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED']),
         activity: {

@@ -5332,6 +5332,22 @@
   "@patientsOpenPharmacyWorkbenchAction": {
     "description": "Action that opens the pharmacy workbench from patient detail."
   },
+  "patientsPaymentsSectionTitle": "Payments",
+  "@patientsPaymentsSectionTitle": {
+    "description": "Patient payments section title on the billing-scoped patient detail panel."
+  },
+  "patientsNoInvoices": "No invoices recorded for this patient.",
+  "@patientsNoInvoices": {
+    "description": "Empty state when a patient has no invoices."
+  },
+  "patientsNoPayments": "No payments recorded for this patient.",
+  "@patientsNoPayments": {
+    "description": "Empty state when a patient has no payments."
+  },
+  "patientsOpenBillingWorkbenchAction": "Open billing",
+  "@patientsOpenBillingWorkbenchAction": {
+    "description": "Action that opens the billing workbench from patient detail."
+  },
   "patientsMedicalHistorySectionTitle": "Medical history",
   "@patientsMedicalHistorySectionTitle": {
     "description": "Patient medical history section title."

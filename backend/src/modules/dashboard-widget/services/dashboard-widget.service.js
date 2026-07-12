@@ -358,10 +358,12 @@ const metricsToRoleSummary = (packId, metrics = {}) => {
 
   if (packId === ROLE_PACKS.BILLING) {
     return [
+      { id: 'collections_today', label: 'Collections today', value: metrics.collectionsToday || 0, format: 'currency' },
+      { id: 'overdue_balance_amount', label: 'Overdue amount', value: metrics.overdueBalanceAmount || 0, format: 'currency' },
+      { id: 'pending_balance_amount', label: 'Pending balances', value: metrics.pendingBalanceAmount || 0, format: 'currency' },
       { id: 'invoices_today', label: 'Invoices issued today', value: metrics.invoicesToday || 0 },
       { id: 'overdue_invoices', label: 'Overdue invoices', value: metrics.overdueInvoices || 0 },
       { id: 'open_balances', label: 'Open balances', value: metrics.openBalances || 0 },
-      { id: 'collections_today', label: 'Collections today', value: metrics.collectionsToday || 0, format: 'currency' },
       { id: 'refunds_today', label: 'Refunds today', value: metrics.refundsToday || 0, format: 'currency' }
     ];
   }

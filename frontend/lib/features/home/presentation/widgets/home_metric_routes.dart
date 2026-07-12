@@ -143,6 +143,23 @@ AppRouteData? _clinicalMetricRoute({
     };
   }
 
+  if (profile.id == 'billing' &&
+      policy.grantsAny(const <AppPermission>[
+        AppPermissions.billingRead,
+        AppPermissions.billingWrite,
+      ])) {
+    return switch (cardId) {
+      'collections_today' ||
+      'overdue_balance_amount' ||
+      'pending_balance_amount' ||
+      'invoices_today' ||
+      'overdue_invoices' ||
+      'open_balances' ||
+      'refunds_today' => AppRoutes.billing,
+      _ => null,
+    };
+  }
+
   return null;
 }
 

@@ -26,7 +26,9 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
 class BillingWorkspacePage extends ConsumerWidget {
-  const BillingWorkspacePage({super.key});
+  const BillingWorkspacePage({super.key, this.initialQuery});
+
+  final BillingWorkspaceQuery? initialQuery;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,16 +47,20 @@ class BillingWorkspacePage extends ConsumerWidget {
         ref.read(billingWorkspaceControllerProvider.notifier).refresh();
       },
       dataBuilder: (BuildContext context, BillingWorkspaceState state) {
-        return _BillingWorkspaceContent(state: state);
+        return _BillingWorkspaceContent(
+          state: state,
+          initialQuery: initialQuery,
+        );
       },
     );
   }
 }
 
 class _BillingWorkspaceContent extends ConsumerStatefulWidget {
-  const _BillingWorkspaceContent({required this.state});
+  const _BillingWorkspaceContent({required this.state, this.initialQuery});
 
   final BillingWorkspaceState state;
+  final BillingWorkspaceQuery? initialQuery;
 
   @override
   ConsumerState<_BillingWorkspaceContent> createState() =>
@@ -67,6 +73,7 @@ class _BillingWorkspaceContentState
   late final AppListTableColumnVisibilityController<BillingWorkItem>
   _tableColumnController;
   Timer? _searchDebounce;
+  bool _handledRouteQuery = false;
 
   @override
   void initState() {
@@ -75,6 +82,52 @@ class _BillingWorkspaceContentState
     _tableColumnController =
         AppListTableColumnVisibilityController<BillingWorkItem>();
     _searchController.addListener(_onSearchChanged);
+    _scheduleRouteQuery(widget.initialQuery);
+  }
+
+  void _scheduleRouteQuery(BillingWorkspaceQuery? query) {
+    if (query == null || !query.hasRouteTargeting) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _handledRouteQuery) {
+        return;
+      }
+      _handledRouteQuery = true;
+      unawaited(_applyRouteQuery(query));
+    });
+  }
+
+  Future<void> _applyRouteQuery(BillingWorkspaceQuery query) async {
+    final BillingWorkspaceController controller = ref.read(
+      billingWorkspaceControllerProvider.notifier,
+    );
+    if (query.queue != BillingQueueType.all &&
+        query.search.trim().isEmpty &&
+        query.patientId.trim().isEmpty &&
+        query.invoiceNumber.trim().isEmpty &&
+        query.encounterId.trim().isEmpty &&
+        query.sourceModule.trim().isEmpty &&
+        query.billingStatus.trim().isEmpty) {
+      await controller.applyQueue(query.queue);
+      return;
+    }
+    if (query.hasRouteTargeting) {
+      await controller.applyFilters(query);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _BillingWorkspaceContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialQuery?.signature != widget.initialQuery?.signature) {
+      _handledRouteQuery = false;
+      _scheduleRouteQuery(widget.initialQuery);
+    }
+    if (oldWidget.state.query.search != widget.state.query.search &&
+        _searchController.text != widget.state.query.search) {
+      _searchController.text = widget.state.query.search;
+    }
   }
 
   void _onSearchChanged() {
@@ -86,15 +139,6 @@ class _BillingWorkspaceContentState
       }
       ref.read(billingWorkspaceControllerProvider.notifier).applySearch(query);
     });
-  }
-
-  @override
-  void didUpdateWidget(covariant _BillingWorkspaceContent oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.state.query.search != widget.state.query.search &&
-        _searchController.text != widget.state.query.search) {
-      _searchController.text = widget.state.query.search;
-    }
   }
 
   @override

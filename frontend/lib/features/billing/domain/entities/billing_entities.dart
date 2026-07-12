@@ -64,6 +64,41 @@ final class BillingWorkspaceQuery {
     this.to,
   });
 
+  factory BillingWorkspaceQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    String pick(List<String> keys) {
+      for (final String key in keys) {
+        final String value = (params[key] ?? '').trim();
+        if (value.isNotEmpty) {
+          return value;
+        }
+      }
+      return '';
+    }
+
+    final String queueRaw = pick(<String>['queue', 'filter']);
+    BillingQueueType queue = BillingQueueType.all;
+    if (queueRaw.isNotEmpty) {
+      for (final BillingQueueType candidate in BillingQueueType.values) {
+        if (candidate.name.toLowerCase() == queueRaw.toLowerCase() ||
+            candidate.serverValue.toLowerCase() == queueRaw.toLowerCase()) {
+          queue = candidate;
+          break;
+        }
+      }
+    }
+
+    return BillingWorkspaceQuery(
+      search: pick(<String>['search', 'q']),
+      queue: queue,
+      patientId: pick(<String>['patientId', 'patient_id', 'patient']),
+      invoiceNumber: pick(<String>['invoiceNumber', 'invoice_number', 'invoice']),
+      encounterId: pick(<String>['encounterId', 'encounter_id', 'encounter']),
+      sourceModule: pick(<String>['sourceModule', 'source_module', 'source']),
+      billingStatus: pick(<String>['billingStatus', 'billing_status', 'status']),
+    );
+  }
+
   final String search;
   final BillingQueueType queue;
   final AppPageRequest pageRequest;
@@ -74,6 +109,19 @@ final class BillingWorkspaceQuery {
   final String billingStatus;
   final DateTime? from;
   final DateTime? to;
+
+  bool get hasRouteTargeting {
+    return queue != BillingQueueType.all ||
+        search.trim().isNotEmpty ||
+        patientId.trim().isNotEmpty ||
+        invoiceNumber.trim().isNotEmpty ||
+        encounterId.trim().isNotEmpty ||
+        sourceModule.trim().isNotEmpty ||
+        billingStatus.trim().isNotEmpty;
+  }
+
+  String get signature =>
+      '$search|${queue.name}|$patientId|$invoiceNumber|$encounterId|$sourceModule|$billingStatus';
 
   bool get hasActiveFilters {
     return queue != BillingQueueType.all ||

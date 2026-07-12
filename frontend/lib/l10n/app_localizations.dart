@@ -7810,6 +7810,30 @@ abstract class AppLocalizations {
   /// **'Open pharmacy'**
   String get patientsOpenPharmacyWorkbenchAction;
 
+  /// Patient payments section title on the billing-scoped patient detail panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Payments'**
+  String get patientsPaymentsSectionTitle;
+
+  /// Empty state when a patient has no invoices.
+  ///
+  /// In en, this message translates to:
+  /// **'No invoices recorded for this patient.'**
+  String get patientsNoInvoices;
+
+  /// Empty state when a patient has no payments.
+  ///
+  /// In en, this message translates to:
+  /// **'No payments recorded for this patient.'**
+  String get patientsNoPayments;
+
+  /// Action that opens the billing workbench from patient detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Open billing'**
+  String get patientsOpenBillingWorkbenchAction;
+
   /// Patient medical history section title.
   ///
   /// In en, this message translates to:

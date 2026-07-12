@@ -59,6 +59,8 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
 
   bool get isReceptionistFrontDeskDashboard => id == 'receptionist';
 
+  bool get isBillingDepartmentDashboard => id == 'billing';
+
   int get effectiveMaxStatusCards {
     if (isDoctorClinicalDashboard) {
       return math.min(maxStatusCards, 4);
@@ -68,7 +70,8 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     }
     if (isLabDepartmentDashboard ||
         isPharmacistDepartmentDashboard ||
-        isReceptionistFrontDeskDashboard) {
+        isReceptionistFrontDeskDashboard ||
+        isBillingDepartmentDashboard) {
       return math.min(maxStatusCards, 4);
     }
     final int tierCap = switch (layoutTier) {
@@ -91,7 +94,9 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     if (isNurseClinicalDashboard) {
       return 8;
     }
-    if (isPharmacistDepartmentDashboard || isReceptionistFrontDeskDashboard) {
+    if (isPharmacistDepartmentDashboard ||
+        isReceptionistFrontDeskDashboard ||
+        isBillingDepartmentDashboard) {
       return 4;
     }
     if (isLabDepartmentDashboard) {
@@ -110,7 +115,8 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
       isDoctorClinicalDashboard ||
           isNurseClinicalDashboard ||
           isPharmacistDepartmentDashboard ||
-          isReceptionistFrontDeskDashboard
+          isReceptionistFrontDeskDashboard ||
+          isBillingDepartmentDashboard
       ? 5
       : 3;
 
@@ -123,7 +129,7 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     if (isDoctorClinicalDashboard || isNurseClinicalDashboard) {
       return 6;
     }
-    if (isReceptionistFrontDeskDashboard) {
+    if (isReceptionistFrontDeskDashboard || isBillingDepartmentDashboard) {
       return 5;
     }
     return switch (layoutTier) {

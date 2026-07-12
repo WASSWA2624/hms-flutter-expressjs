@@ -150,11 +150,22 @@ void main() {
     test('billing access follows billing permission pack', () {
       final policy = policyForRole('BILLING');
 
+      expect(canAccess(AppRoutes.home, policy), isTrue);
       expect(canAccess(AppRoutes.patients, policy), isTrue);
       expect(canAccess(AppRoutes.billing, policy), isTrue);
       expect(canAccess(AppRoutes.claims, policy), isTrue);
-      // OPD accepts billing:read / patient:read among its any-permissions.
-      expect(canAccess(AppRoutes.opd, policy), isTrue);
+      expect(canAccess(AppRoutes.communications, policy), isTrue);
+      expect(canAccess(AppRoutes.reports, policy), isTrue);
+      expect(canAccess(AppRoutes.settings, policy), isTrue);
+      expect(canAccess(AppRoutes.opd, policy), isFalse);
+      expect(canAccess(AppRoutes.ipd, policy), isFalse);
+      expect(canAccess(AppRoutes.nursing, policy), isFalse);
+      expect(canAccess(AppRoutes.theater, policy), isFalse);
+      expect(canAccess(AppRoutes.radiology, policy), isFalse);
+      expect(canAccess(AppRoutes.discharge, policy), isFalse);
+      expect(canAccess(AppRoutes.physiotherapy, policy), isFalse);
+      expect(canAccess(AppRoutes.pharmacy, policy), isFalse);
+      expect(canAccess(AppRoutes.emergency, policy), isFalse);
     });
 
     test('operations access follows operations permission pack', () {

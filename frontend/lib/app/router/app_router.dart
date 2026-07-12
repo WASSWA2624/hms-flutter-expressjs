@@ -79,6 +79,7 @@ import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.da
 import 'package:hosspi_hms/features/operations/domain/entities/operations_entities.dart';
 import 'package:hosspi_hms/features/operations/presentation/controllers/operations_workspace_controller.dart';
 import 'package:hosspi_hms/features/operations/presentation/pages/operations_workspace_page.dart';
+import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry_page.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
@@ -154,12 +155,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.patients.path,
             name: AppRoutes.patients.name,
-            builder: (_, _) => const PatientRegistryPage(),
+            builder: (_, GoRouterState state) => PatientRegistryPage(
+              initialQuery: PatientListQuery.fromUri(state.uri),
+            ),
           ),
           GoRoute(
             path: AppRoutes.billing.path,
             name: AppRoutes.billing.name,
-            builder: (_, _) => const BillingWorkspacePage(),
+            builder: (_, GoRouterState state) => BillingWorkspacePage(
+              initialQuery: BillingWorkspaceQuery.fromUri(state.uri),
+            ),
           ),
           GoRoute(
             path: AppRoutes.claims.path,

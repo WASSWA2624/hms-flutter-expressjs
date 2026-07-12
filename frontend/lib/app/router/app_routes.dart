@@ -772,4 +772,22 @@ abstract final class AppRoutes {
       (AppRouteData candidate) => candidate.name == route.name,
     );
   }
+
+  /// Routes visible to [AppAccessPolicy.isBillingFocusedShellUser] in the shell.
+  static const List<AppRouteData> billingFocusedShellRoutes = <AppRouteData>[
+    home,
+    patients,
+    billing,
+    claims,
+    communications,
+    reports,
+    settings,
+    profile,
+  ];
+
+  static bool isBillingFocusedShellRoute(AppRouteData route) {
+    return billingFocusedShellRoutes.any(
+      (AppRouteData candidate) => candidate.name == route.name,
+    );
+  }
 }

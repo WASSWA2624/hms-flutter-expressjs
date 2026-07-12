@@ -449,26 +449,74 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.billing,
     roleLabel: 'Billing / cashier',
     homeTitle: 'Billing',
-    emptyMessage: 'No billing items need action right now.',
-    maxStatusCards: 3,
+    emptyMessage:
+        'No billing queue items right now. Jump into overdue invoices, open balances, claims, or patient accounts.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(id: 'invoices_today', label: 'Invoices'),
-      HomeStatusCardTemplate(id: 'overdue_invoices', label: 'Overdue'),
-      HomeStatusCardTemplate(id: 'open_balances', label: 'Balances'),
       HomeStatusCardTemplate(
         id: 'collections_today',
-        label: 'Collections',
+        label: 'Collected today',
         format: 'currency',
       ),
+      HomeStatusCardTemplate(
+        id: 'overdue_balance_amount',
+        label: 'Overdue amount',
+        format: 'currency',
+      ),
+      HomeStatusCardTemplate(
+        id: 'pending_balance_amount',
+        label: 'Pending balances',
+        format: 'currency',
+      ),
+      HomeStatusCardTemplate(id: 'invoices_today', label: 'Invoices today'),
+      HomeStatusCardTemplate(id: 'overdue_invoices', label: 'Overdue'),
+      HomeStatusCardTemplate(id: 'open_balances', label: 'Open accounts'),
       HomeStatusCardTemplate(
         id: 'refunds_today',
         label: 'Refunds',
         format: 'currency',
       ),
     ],
-    quickActionIds: <String>['create_invoice', 'receive_payment'],
-    shortcutIds: <String>['billing', 'claims'],
-    emptyActionIds: <String>['create_invoice', 'receive_payment'],
+    quickActionIds: <String>[
+      'create_invoice',
+      'receive_payment',
+      'process_refund',
+      'close_shift',
+    ],
+    shortcutIds: <String>[
+      'patients',
+      'claims',
+      'communications',
+      'reports',
+      'settings',
+    ],
+    emptyActionIds: <String>[
+      'review_overdue_invoices',
+      'review_pending_payments',
+      'review_claims_pending',
+      'review_open_patient_balances',
+    ],
+    metricRouteTargets: <String, HomeMetricRouteTarget>{
+      'collections_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'pendingPayment'},
+      ),
+      'overdue_balance_amount': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'overdue'},
+      ),
+      'pending_balance_amount': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'pendingPayment'},
+      ),
+      'invoices_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'needsIssue'},
+      ),
+      'overdue_invoices': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'overdue'},
+      ),
+      'open_balances': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'queue': 'pendingPayment'},
+      ),
+      'refunds_today': const HomeMetricRouteTarget(),
+    },
   ),
   AppRole.operations: HomeDashboardProfile(
     id: 'operations',

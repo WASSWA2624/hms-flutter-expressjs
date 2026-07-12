@@ -24,6 +24,49 @@ final class PatientListQuery {
     this.pageRequest = const AppPageRequest(),
   });
 
+  factory PatientListQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    String pick(List<String> keys) {
+      for (final String key in keys) {
+        final String value = (params[key] ?? '').trim();
+        if (value.isNotEmpty) {
+          return value;
+        }
+      }
+      return '';
+    }
+
+    bool? parseBool(String raw) {
+      final String normalized = raw.trim().toLowerCase();
+      if (normalized.isEmpty) {
+        return null;
+      }
+      if (<String>{'1', 'true', 'yes', 'y'}.contains(normalized)) {
+        return true;
+      }
+      if (<String>{'0', 'false', 'no', 'n'}.contains(normalized)) {
+        return false;
+      }
+      return null;
+    }
+
+    return PatientListQuery(
+      search: pick(<String>['search', 'q']),
+      patientId: pick(<String>['patientId', 'patient_id', 'patient']),
+      contact: pick(<String>['contact', 'phone']),
+      hasOutstandingBalance: parseBool(
+        pick(<String>[
+          'has_outstanding_balance',
+          'hasOutstandingBalance',
+          'outstanding',
+        ]),
+      ),
+      hasActiveAdmission: parseBool(
+        pick(<String>['has_active_admission', 'hasActiveAdmission']),
+      ),
+    );
+  }
+
   final String search;
   final String patientId;
   final String contact;
@@ -42,6 +85,17 @@ final class PatientListQuery {
   final bool? hasActiveAdmission;
   final bool? hasOutstandingBalance;
   final AppPageRequest pageRequest;
+
+  bool get hasRouteTargeting {
+    return search.trim().isNotEmpty ||
+        patientId.trim().isNotEmpty ||
+        contact.trim().isNotEmpty ||
+        hasOutstandingBalance != null ||
+        hasActiveAdmission != null;
+  }
+
+  String get signature =>
+      '$search|$patientId|$contact|$hasOutstandingBalance|$hasActiveAdmission';
 
   PatientListQuery copyWith({
     String? search,
