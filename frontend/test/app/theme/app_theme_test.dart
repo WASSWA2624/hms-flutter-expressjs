@@ -67,6 +67,13 @@ void main() {
         theme.statusColors.danger,
         AppLightThemePalette.statusColors.danger,
       );
+      expect(theme.sidebarTokens.selectedBackgroundColor, theme.colorScheme.primary);
+      expect(theme.sidebarTokens.itemHeight, 40);
+      expect(theme.sidebarTokens.itemBorderRadius, theme.radius.md);
+      expect(
+        theme.sidebarTokens.badgeAccentBackgroundColor,
+        theme.colorScheme.tertiaryContainer,
+      );
     });
 
     test('builds dark theme with dark status colors', () {

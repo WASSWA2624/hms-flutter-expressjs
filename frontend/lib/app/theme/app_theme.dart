@@ -36,6 +36,11 @@ abstract final class AppTheme {
     // Soft, low-alpha shadow that reads as gentle depth rather than a hard
     // drop shadow on the light/dark surfaces.
     final Color softShadow = colorScheme.shadow.withValues(alpha: 0.12);
+    final AppSidebarTokens sidebarTokens = _sidebarTokens(
+      palette: palette,
+      radius: radius,
+      softShadow: softShadow,
+    );
 
     final EdgeInsets buttonPadding = EdgeInsets.symmetric(
       horizontal: spacing.lg,
@@ -99,6 +104,7 @@ abstract final class AppTheme {
         AppRadiusTokens.standard,
         statusColors,
         appTokens,
+        sidebarTokens,
       ],
       appBarTheme: AppBarTheme(
         backgroundColor: palette.appBarBackgroundColor,
@@ -326,6 +332,30 @@ abstract final class AppTheme {
       progressIndicatorTheme: ProgressIndicatorThemeData(
         borderRadius: BorderRadius.circular(radius.xs),
       ),
+    );
+  }
+
+  static AppSidebarTokens _sidebarTokens({
+    required AppThemePalette palette,
+    required AppRadiusTokens radius,
+    required Color softShadow,
+  }) {
+    final ColorScheme colors = palette.colorScheme;
+
+    return AppSidebarTokens(
+      backgroundColor: palette.drawerBackgroundColor,
+      shadowColor: softShadow,
+      elevation: 1,
+      itemHeight: 40,
+      itemBorderRadius: radius.md,
+      selectedBackgroundColor: colors.primary,
+      selectedForegroundColor: colors.onPrimary,
+      hoverBackgroundColor: colors.primaryContainer,
+      hoverForegroundColor: colors.primary,
+      defaultForegroundColor: colors.onSurfaceVariant,
+      focusBorderColor: colors.primary.withValues(alpha: 0.56),
+      badgeAccentBackgroundColor: colors.tertiaryContainer,
+      badgeAccentForegroundColor: colors.onTertiaryContainer,
     );
   }
 }

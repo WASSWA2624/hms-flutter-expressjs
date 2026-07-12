@@ -1171,7 +1171,7 @@ class _SideNavigationState extends State<SideNavigation> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    final AppSidebarTokens sidebar = theme.sidebarTokens;
     final String normalizedQuery = widget.collapsed
         ? ''
         : _normalizeNavigationSearchText(_searchQuery);
@@ -1196,7 +1196,16 @@ class _SideNavigationState extends State<SideNavigation> {
       duration: _sidebarAnimationDuration,
       curve: Curves.easeOutCubic,
       width: widget.width,
-      color: colorScheme.surfaceContainerLowest,
+      decoration: BoxDecoration(
+        color: sidebar.backgroundColor,
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: sidebar.shadowColor,
+            blurRadius: 12,
+            offset: const Offset(2, 0),
+          ),
+        ],
+      ),
       child: Column(
         children: <Widget>[
           if (!widget.collapsed)
@@ -1345,11 +1354,12 @@ class _ShellMenuGroupHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
         theme.spacing.md,
-        theme.spacing.md,
+        theme.spacing.lg,
         theme.spacing.md,
         theme.spacing.xs,
       ),
@@ -1358,9 +1368,9 @@ class _ShellMenuGroupHeader extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: theme.textTheme.labelSmall?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0,
+          color: colorScheme.onSurfaceVariant.withValues(alpha: 0.78),
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.4,
         ),
       ),
     );
@@ -1475,12 +1485,19 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppSidebarTokens sidebar = theme.sidebarTokens;
     final ColorScheme colorScheme = theme.colorScheme;
+    final bool isInteractive = _hovered || _focused;
+    final Color backgroundColor = widget.selected
+        ? sidebar.selectedBackgroundColor
+        : isInteractive
+        ? sidebar.hoverBackgroundColor
+        : Colors.transparent;
     final Color foregroundColor = widget.selected
-        ? colorScheme.primary
-        : _hovered || _focused
-        ? colorScheme.primary.withValues(alpha: 0.88)
-        : colorScheme.onSurfaceVariant;
+        ? sidebar.selectedForegroundColor
+        : isInteractive
+        ? sidebar.hoverForegroundColor
+        : sidebar.defaultForegroundColor;
     final int badgeCount = widget.destination.badgeCount ?? 0;
     final bool showIconBadge = badgeCount > 0 && !widget.showLabel;
     final String visibleLabel = widget.destination.displayLabel(
@@ -1493,9 +1510,12 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
       color: foregroundColor,
       size: theme.appTokens.listIconSize,
     );
+    final BorderRadius itemRadius = BorderRadius.circular(
+      sidebar.itemBorderRadius,
+    );
     final Widget content = AnimatedContainer(
       duration: _menuAnimationDuration,
-      height: _menuItemHeight,
+      height: sidebar.itemHeight,
       margin: EdgeInsets.symmetric(
         horizontal: theme.spacing.sm,
         vertical: theme.spacing.xs,
@@ -1504,32 +1524,16 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
         horizontal: widget.showLabel ? theme.spacing.sm : theme.spacing.none,
       ),
       decoration: BoxDecoration(
-        border: Border(
-          left: BorderSide(
-            color: widget.selected || _focused
-                ? colorScheme.primary
-                : Colors.transparent,
-            width: _selectedIndicatorWidth,
-          ),
-          top: _focused
-              ? BorderSide(
-                  color: colorScheme.primary.withValues(alpha: 0.72),
-                  width: _focusIndicatorWidth,
-                )
-              : BorderSide.none,
-          right: _focused
-              ? BorderSide(
-                  color: colorScheme.primary.withValues(alpha: 0.72),
-                  width: _focusIndicatorWidth,
-                )
-              : BorderSide.none,
-          bottom: _focused
-              ? BorderSide(
-                  color: colorScheme.primary.withValues(alpha: 0.72),
-                  width: _focusIndicatorWidth,
-                )
-              : BorderSide.none,
-        ),
+        color: backgroundColor,
+        borderRadius: itemRadius,
+        border: _focused
+            ? Border.all(
+                color: widget.selected
+                    ? sidebar.selectedForegroundColor.withValues(alpha: 0.48)
+                    : sidebar.focusBorderColor,
+                width: _focusIndicatorWidth,
+              )
+            : null,
       ),
       child: Row(
         mainAxisAlignment: widget.showLabel
@@ -1539,6 +1543,12 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
           showIconBadge
               ? Badge(
                   label: Text(_compactBadgeCount(badgeCount)),
+                  backgroundColor: widget.selected
+                      ? sidebar.selectedForegroundColor.withValues(alpha: 0.24)
+                      : sidebar.badgeAccentBackgroundColor,
+                  textColor: widget.selected
+                      ? sidebar.selectedForegroundColor
+                      : sidebar.badgeAccentForegroundColor,
                   smallSize: 7,
                   largeSize: 16,
                   padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
@@ -1553,13 +1563,17 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: foregroundColor,
-                  fontWeight: widget.selected ? FontWeight.w700 : null,
+                  fontWeight: widget.selected ? FontWeight.w600 : FontWeight.w500,
                 ),
               ),
             ),
             if (badgeCount > 0) ...<Widget>[
               SizedBox(width: theme.spacing.xs),
-              _MenuItemCountBadge(count: badgeCount, selected: widget.selected),
+              _MenuItemCountBadge(
+                count: badgeCount,
+                selected: widget.selected,
+                sidebar: sidebar,
+              ),
             ],
           ],
         ],
@@ -1608,9 +1622,11 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
                   child: InkWell(
                     canRequestFocus: false,
                     onTap: widget.onTap,
+                    borderRadius: itemRadius,
                     hoverColor: Colors.transparent,
                     focusColor: Colors.transparent,
-                    splashColor: colorScheme.primary.withValues(alpha: 0.08),
+                    splashColor: colorScheme.primary.withValues(alpha: 0.1),
+                    highlightColor: colorScheme.primary.withValues(alpha: 0.06),
                     child: content,
                   ),
                 ),
@@ -1624,33 +1640,38 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
 }
 
 class _MenuItemCountBadge extends StatelessWidget {
-  const _MenuItemCountBadge({required this.count, required this.selected});
+  const _MenuItemCountBadge({
+    required this.count,
+    required this.selected,
+    required this.sidebar,
+  });
 
   final int count;
   final bool selected;
+  final AppSidebarTokens sidebar;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: selected ? colorScheme.primary : colorScheme.secondaryContainer,
-        border: Border.all(
-          color: selected ? colorScheme.primary : colorScheme.outlineVariant,
-        ),
+        color: selected
+            ? sidebar.selectedForegroundColor.withValues(alpha: 0.22)
+            : sidebar.badgeAccentBackgroundColor,
+        borderRadius: BorderRadius.circular(theme.radius.full),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.xs,
-          vertical: 1,
+          horizontal: theme.spacing.sm,
+          vertical: 2,
         ),
         child: Text(
           _compactBadgeCount(count),
           style: theme.textTheme.labelSmall?.copyWith(
             color: selected
-                ? colorScheme.onPrimary
-                : colorScheme.onSecondaryContainer,
+                ? sidebar.selectedForegroundColor
+                : sidebar.badgeAccentForegroundColor,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -1708,8 +1729,6 @@ const double _collapsedSidebarWidth = 72;
 const double _resizeHandleWidth = 6;
 const double _dividerWidth = 1;
 const double _avatarRadius = 13;
-const double _selectedIndicatorWidth = 2;
 const double _focusIndicatorWidth = 2;
-const double _menuItemHeight = 36;
 const Duration _menuAnimationDuration = Duration(milliseconds: 120);
 const Duration _sidebarAnimationDuration = Duration(milliseconds: 180);

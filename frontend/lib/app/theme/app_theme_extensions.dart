@@ -480,6 +480,128 @@ final class AppDesignTokens extends ThemeExtension<AppDesignTokens> {
   }
 }
 
+@immutable
+final class AppSidebarTokens extends ThemeExtension<AppSidebarTokens> {
+  const AppSidebarTokens({
+    required this.backgroundColor,
+    required this.shadowColor,
+    required this.elevation,
+    required this.itemHeight,
+    required this.itemBorderRadius,
+    required this.selectedBackgroundColor,
+    required this.selectedForegroundColor,
+    required this.hoverBackgroundColor,
+    required this.hoverForegroundColor,
+    required this.defaultForegroundColor,
+    required this.focusBorderColor,
+    required this.badgeAccentBackgroundColor,
+    required this.badgeAccentForegroundColor,
+  });
+
+  final Color backgroundColor;
+  final Color shadowColor;
+  final double elevation;
+  final double itemHeight;
+  final double itemBorderRadius;
+  final Color selectedBackgroundColor;
+  final Color selectedForegroundColor;
+  final Color hoverBackgroundColor;
+  final Color hoverForegroundColor;
+  final Color defaultForegroundColor;
+  final Color focusBorderColor;
+  final Color badgeAccentBackgroundColor;
+  final Color badgeAccentForegroundColor;
+
+  @override
+  AppSidebarTokens copyWith({
+    Color? backgroundColor,
+    Color? shadowColor,
+    double? elevation,
+    double? itemHeight,
+    double? itemBorderRadius,
+    Color? selectedBackgroundColor,
+    Color? selectedForegroundColor,
+    Color? hoverBackgroundColor,
+    Color? hoverForegroundColor,
+    Color? defaultForegroundColor,
+    Color? focusBorderColor,
+    Color? badgeAccentBackgroundColor,
+    Color? badgeAccentForegroundColor,
+  }) {
+    return AppSidebarTokens(
+      backgroundColor: backgroundColor ?? this.backgroundColor,
+      shadowColor: shadowColor ?? this.shadowColor,
+      elevation: elevation ?? this.elevation,
+      itemHeight: itemHeight ?? this.itemHeight,
+      itemBorderRadius: itemBorderRadius ?? this.itemBorderRadius,
+      selectedBackgroundColor:
+          selectedBackgroundColor ?? this.selectedBackgroundColor,
+      selectedForegroundColor:
+          selectedForegroundColor ?? this.selectedForegroundColor,
+      hoverBackgroundColor: hoverBackgroundColor ?? this.hoverBackgroundColor,
+      hoverForegroundColor: hoverForegroundColor ?? this.hoverForegroundColor,
+      defaultForegroundColor:
+          defaultForegroundColor ?? this.defaultForegroundColor,
+      focusBorderColor: focusBorderColor ?? this.focusBorderColor,
+      badgeAccentBackgroundColor:
+          badgeAccentBackgroundColor ?? this.badgeAccentBackgroundColor,
+      badgeAccentForegroundColor:
+          badgeAccentForegroundColor ?? this.badgeAccentForegroundColor,
+    );
+  }
+
+  @override
+  AppSidebarTokens lerp(AppSidebarTokens? other, double t) {
+    if (other == null) {
+      return this;
+    }
+
+    return AppSidebarTokens(
+      backgroundColor: _lerpColor(backgroundColor, other.backgroundColor, t),
+      shadowColor: _lerpColor(shadowColor, other.shadowColor, t),
+      elevation: _lerpDouble(elevation, other.elevation, t),
+      itemHeight: _lerpDouble(itemHeight, other.itemHeight, t),
+      itemBorderRadius: _lerpDouble(itemBorderRadius, other.itemBorderRadius, t),
+      selectedBackgroundColor: _lerpColor(
+        selectedBackgroundColor,
+        other.selectedBackgroundColor,
+        t,
+      ),
+      selectedForegroundColor: _lerpColor(
+        selectedForegroundColor,
+        other.selectedForegroundColor,
+        t,
+      ),
+      hoverBackgroundColor: _lerpColor(
+        hoverBackgroundColor,
+        other.hoverBackgroundColor,
+        t,
+      ),
+      hoverForegroundColor: _lerpColor(
+        hoverForegroundColor,
+        other.hoverForegroundColor,
+        t,
+      ),
+      defaultForegroundColor: _lerpColor(
+        defaultForegroundColor,
+        other.defaultForegroundColor,
+        t,
+      ),
+      focusBorderColor: _lerpColor(focusBorderColor, other.focusBorderColor, t),
+      badgeAccentBackgroundColor: _lerpColor(
+        badgeAccentBackgroundColor,
+        other.badgeAccentBackgroundColor,
+        t,
+      ),
+      badgeAccentForegroundColor: _lerpColor(
+        badgeAccentForegroundColor,
+        other.badgeAccentForegroundColor,
+        t,
+      ),
+    );
+  }
+}
+
 extension AppThemeDataTokens on ThemeData {
   AppSpacingTokens get spacing {
     return extension<AppSpacingTokens>() ?? AppSpacingTokens.standard;
@@ -522,6 +644,30 @@ extension AppThemeDataTokens on ThemeData {
 
   AppDesignTokens get appTokens {
     return extension<AppDesignTokens>() ?? AppDesignTokens.standard;
+  }
+
+  AppSidebarTokens get sidebarTokens {
+    final AppSidebarTokens? tokens = extension<AppSidebarTokens>();
+    if (tokens != null) {
+      return tokens;
+    }
+
+    final ColorScheme colors = colorScheme;
+    return AppSidebarTokens(
+      backgroundColor: colors.surface,
+      shadowColor: colors.shadow.withValues(alpha: 0.08),
+      elevation: 1,
+      itemHeight: 40,
+      itemBorderRadius: AppRadiusTokens.standard.md,
+      selectedBackgroundColor: colors.primary,
+      selectedForegroundColor: colors.onPrimary,
+      hoverBackgroundColor: colors.primaryContainer,
+      hoverForegroundColor: colors.primary,
+      defaultForegroundColor: colors.onSurfaceVariant,
+      focusBorderColor: colors.primary.withValues(alpha: 0.56),
+      badgeAccentBackgroundColor: colors.tertiaryContainer,
+      badgeAccentForegroundColor: colors.onTertiaryContainer,
+    );
   }
 }
 
