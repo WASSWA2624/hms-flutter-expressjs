@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -76,6 +77,7 @@ class _PharmacyWorkspaceContentState
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<PharmacyOrder>
   _tableColumnController;
+  bool _handledSectionDeepLink = false;
 
   @override
   void initState() {
@@ -83,6 +85,27 @@ class _PharmacyWorkspaceContentState
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<PharmacyOrder>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_handleSectionDeepLink());
+    });
+  }
+
+  Future<void> _handleSectionDeepLink() async {
+    if (_handledSectionDeepLink || !mounted) {
+      return;
+    }
+    final String section =
+        GoRouterState.of(context).uri.queryParameters['section']?.trim().toLowerCase() ??
+        '';
+    if (section != 'inventory' && section != 'stock') {
+      return;
+    }
+    _handledSectionDeepLink = true;
+    await openPharmacyCatalogDialog(
+      context,
+      ref,
+      initialTab: PharmacyCatalogTab.inventory,
+    );
   }
 
   @override

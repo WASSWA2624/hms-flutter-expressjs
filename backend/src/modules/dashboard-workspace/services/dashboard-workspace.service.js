@@ -678,12 +678,35 @@ const activeQueueDefinitions = Object.freeze({
     model: 'pharmacy_order',
     time_field: 'ordered_at',
     default_sort: 'ordered_at',
-    select: { id: true, human_friendly_id: true, status: true, ordered_at: true, updated_at: true, created_at: true },
+    select: {
+      id: true,
+      human_friendly_id: true,
+      status: true,
+      ordered_at: true,
+      updated_at: true,
+      created_at: true,
+      patient: {
+        select: {
+          first_name: true,
+          last_name: true,
+          human_friendly_id: true,
+        },
+      },
+      _count: {
+        select: {
+          items: true,
+        },
+      },
+    },
     buildWhere: (scope) => ({
       ...buildPharmacyOrderScopeWhere(scope),
       status: { in: ['ORDERED', 'PARTIALLY_DISPENSED'] },
     }),
-    buildSeverity: () => 'medium',
+    buildSeverity: (row) => {
+      const status = normalizeString(row?.status).toUpperCase();
+      if (status === 'PARTIALLY_DISPENSED') return 'high';
+      return 'medium';
+    },
     activity_event_type: 'pharmacy_order_updated',
   },
   maintenance_requests: {
@@ -1194,12 +1217,43 @@ const buildQueueItem = (definition, row = {}) => {
   const publicId = dashboardWorkspaceRepository.safePublicId(row.human_friendly_id, row.id);
   if (!publicId) return null;
 
+  const patient = row.patient || null;
+  const patientName = [patient?.first_name, patient?.last_name]
+    .map((part) => normalizeString(part))
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  const patientMrn = normalizeString(patient?.human_friendly_id);
+  const itemCount = Number(row?._count?.items || 0);
+  const isPharmacyOrder = definition.id === 'pharmacy_orders';
+
+  let title = null;
+  let subtitle = null;
+  if (isPharmacyOrder) {
+    title = patientName || `Order ${publicId}`;
+    const subtitleParts = [];
+    if (patientMrn) subtitleParts.push(patientMrn);
+    subtitleParts.push(publicId);
+    if (itemCount > 0) {
+      subtitleParts.push(`${itemCount} item${itemCount === 1 ? '' : 's'}`);
+    }
+    const status = normalizeString(row.status).toUpperCase();
+    if (status === 'PARTIALLY_DISPENSED') {
+      subtitleParts.push('Partially dispensed');
+    } else if (status === 'ORDERED') {
+      subtitleParts.push('Awaiting dispense');
+    }
+    subtitle = subtitleParts.join(' · ');
+  }
+
   return {
     id: `${definition.id}:${publicId}`,
     kind: definition.kind,
     queue: definition.queue_key,
     module_slug: definition.module_slug,
     human_friendly_id: publicId,
+    title,
+    subtitle,
     status: normalizeString(row.status || row.billing_status).toUpperCase() || null,
     secondary_status: normalizeString(row.billing_status).toUpperCase() || null,
     priority: normalizeString(row.priority || row.severity).toUpperCase() || null,
@@ -1210,6 +1264,8 @@ const buildQueueItem = (definition, row = {}) => {
     meta: {
       total_amount: row.total_amount != null ? Number(row.total_amount) : null,
       currency: row.currency || null,
+      patient_name: patientName || null,
+      item_count: itemCount || null,
     },
   };
 };
@@ -1762,7 +1818,7 @@ const ALERT_MODULES_BY_PACK = Object.freeze({
   [ROLE_PACKS.NURSE]: ['lab', 'ipd', 'scheduling', 'emergency', 'theatre', 'radiology'],
   [ROLE_PACKS.LAB_TECH]: ['lab'],
   [ROLE_PACKS.RADIOLOGY_TECH]: ['radiology'],
-  [ROLE_PACKS.PHARMACIST]: ['pharmacy'],
+  [ROLE_PACKS.PHARMACIST]: ['pharmacy', 'patients'],
   [ROLE_PACKS.RECEPTIONIST]: ['scheduling'],
   [ROLE_PACKS.BILLING]: ['billing'],
   [ROLE_PACKS.OPERATIONS]: ['operations', 'ipd'],

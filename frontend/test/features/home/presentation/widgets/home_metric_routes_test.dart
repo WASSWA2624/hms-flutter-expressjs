@@ -127,6 +127,48 @@ void main() {
       );
     });
 
+    test('pharmacist profile cards navigate to pharmacy workspace', () {
+      final HomeDashboardProfile profile = homeProfileForRole(
+        AppRole.pharmacist,
+      );
+      final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: AuthUserProfile(roles: <String>['PHARMACIST']),
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(code: 'pharmacy'),
+            AppModuleEntitlement(code: 'pharmacy-dispensing'),
+          ],
+        ),
+      );
+
+      final HomeMetricNavigation? pending = homeMetricNavigation(
+        profile: profile,
+        card: const HomeStatusCard(
+          id: 'pending_dispense',
+          label: 'Pending',
+          value: 4,
+        ),
+        policy: policy,
+      );
+      final HomeMetricNavigation? lowStock = homeMetricNavigation(
+        profile: profile,
+        card: const HomeStatusCard(
+          id: 'low_stock',
+          label: 'Low stock',
+          value: 2,
+        ),
+        policy: policy,
+      );
+
+      expect(pending?.route, AppRoutes.pharmacy);
+      expect(pending?.queryParameters, <String, String>{'section': 'orders'});
+      expect(lowStock?.route, AppRoutes.pharmacy);
+      expect(lowStock?.queryParameters, <String, String>{
+        'section': 'inventory',
+      });
+    });
+
     test('homeHrMetricAccessAllowed gates HR modal actions', () {
       final AppAccessPolicy allowed = _policyForRoles(<String>['HR']);
       final AppAccessPolicy denied = AppAccessPolicy.fromSession(

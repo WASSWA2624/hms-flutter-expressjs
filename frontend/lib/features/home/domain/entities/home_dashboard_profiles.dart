@@ -353,8 +353,9 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.pharmacist,
     roleLabel: 'Pharmacist',
     homeTitle: 'Pharmacy',
-    emptyMessage: 'No medication orders are waiting.',
-    maxStatusCards: 3,
+    emptyMessage:
+        'No pending orders. Check stock levels or review today\'s dispensing activity.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
       HomeStatusCardTemplate(id: 'orders_today', label: 'Orders'),
       HomeStatusCardTemplate(id: 'pending_dispense', label: 'Pending'),
@@ -362,9 +363,31 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       HomeStatusCardTemplate(id: 'low_stock', label: 'Low stock'),
       HomeStatusCardTemplate(id: 'critical_stock', label: 'Critical stock'),
     ],
-    quickActionIds: <String>['dispense_medication', 'record_pharmacy_sale'],
-    shortcutIds: <String>['pharmacy'],
-    emptyActionIds: <String>['dispense_medication'],
+    quickActionIds: <String>[
+      'dispense_medication',
+      'record_pharmacy_sale',
+      'receive_pharmacy_stock',
+      'adjust_pharmacy_stock',
+    ],
+    shortcutIds: <String>['pharmacy', 'patients'],
+    emptyActionIds: const <String>[],
+    metricRouteTargets: <String, HomeMetricRouteTarget>{
+      'orders_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'orders'},
+      ),
+      'pending_dispense': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'orders'},
+      ),
+      'dispensed_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'orders'},
+      ),
+      'low_stock': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'inventory'},
+      ),
+      'critical_stock': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'inventory'},
+      ),
+    },
   ),
   AppRole.receptionist: HomeDashboardProfile(
     id: 'receptionist',

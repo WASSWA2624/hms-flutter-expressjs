@@ -117,6 +117,14 @@ AppRouteData? _clinicalMetricRoute({
     return AppRoutes.lab;
   }
 
+  if (profile.id == 'pharmacist' &&
+      policy.grantsAny(const <AppPermission>[
+        AppPermissions.pharmacyRead,
+        AppPermissions.pharmacyWrite,
+      ])) {
+    return AppRoutes.pharmacy;
+  }
+
   return null;
 }
 

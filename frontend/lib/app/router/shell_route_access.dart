@@ -9,5 +9,9 @@ bool canAccessShellRoute(AppRouteData route, AppAccessPolicy accessPolicy) {
       !AppRoutes.isLabFocusedShellRoute(route)) {
     return false;
   }
+  if (accessPolicy.isPharmacistFocusedShellUser &&
+      !AppRoutes.isPharmacistFocusedShellRoute(route)) {
+    return false;
+  }
   return true;
 }

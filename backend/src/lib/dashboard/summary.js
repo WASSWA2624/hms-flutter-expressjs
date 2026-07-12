@@ -291,13 +291,26 @@ const buildTrendPoints = (dateValues = [], days = 7) => {
 
 const buildDistribution = (statusCounts = {}) => {
   const colors = ['#2563eb', '#0ea5e9', '#14b8a6', '#f59e0b', '#ef4444', '#8b5cf6'];
+  const statusLabels = {
+    ORDERED: 'Ordered',
+    PARTIALLY_DISPENSED: 'Partially dispensed',
+    DISPENSED: 'Dispensed',
+    CANCELLED: 'Cancelled',
+  };
   const entries = Object.entries(statusCounts || {}).filter(([, value]) => Number(value || 0) > 0);
-  const segments = entries.map(([status, value], index) => ({
-    id: String(status).toLowerCase(),
-    label: String(status).replace(/_/g, ' '),
-    value: Number(value || 0),
-    color: colors[index % colors.length],
-  }));
+  const segments = entries.map(([status, value], index) => {
+    const key = String(status || '').toUpperCase();
+    const fallbackLabel = String(status)
+      .replace(/_/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+    return {
+      id: String(status).toLowerCase(),
+      label: statusLabels[key] || fallbackLabel,
+      value: Number(value || 0),
+      color: colors[index % colors.length],
+    };
+  });
   return {
     total: segments.reduce((sum, item) => sum + Number(item.value || 0), 0),
     segments,
@@ -691,11 +704,11 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
 
   if (packId === ROLE_PACKS.PHARMACIST) {
     return [
-      { id: 'orders_today', label: 'Medication orders today', value: metrics.ordersToday || 0 },
-      { id: 'pending_dispense', label: 'Pending dispense workload', value: metrics.pendingDispense || 0 },
-      { id: 'dispensed_today', label: 'Dispensed today', value: metrics.dispensedToday || 0 },
-      { id: 'low_stock', label: 'Low stock pressure', value: metrics.lowStock || 0 },
-      { id: 'critical_stock', label: 'Critical stock pressure', value: metrics.criticalStock || 0 },
+      { id: 'orders_today', label: 'Orders', value: metrics.ordersToday || 0 },
+      { id: 'pending_dispense', label: 'Pending', value: metrics.pendingDispense || 0 },
+      { id: 'dispensed_today', label: 'Dispensed', value: metrics.dispensedToday || 0 },
+      { id: 'low_stock', label: 'Low stock', value: metrics.lowStock || 0 },
+      { id: 'critical_stock', label: 'Critical stock', value: metrics.criticalStock || 0 },
     ];
   }
 
@@ -1043,17 +1056,34 @@ const buildDashboardSummary = async ({ query = {}, user = {}, repository }) => {
     }
 
     const isPlatformAdmin = packId === ROLE_PACKS.SUPER_ADMIN;
+    const isPharmacist = packId === ROLE_PACKS.PHARMACIST;
 
     const sanitized = sanitizeSummaryPayload({
       summaryCards,
       trend: {
-        title: isPlatformAdmin ? 'New tenant signups' : `${days}-day trend`,
-        subtitle: isPlatformAdmin ? 'Tenants registered per day' : 'Aggregate trend points',
+        title: isPlatformAdmin
+          ? 'New tenant signups'
+          : isPharmacist
+            ? 'Dispensing throughput trend'
+            : `${days}-day trend`,
+        subtitle: isPlatformAdmin
+          ? 'Tenants registered per day'
+          : isPharmacist
+            ? 'Dispenses logged per day'
+            : 'Aggregate trend points',
         points: trendPoints,
       },
       distribution: {
-        title: isPlatformAdmin ? 'Subscription mix' : 'Status distribution',
-        subtitle: isPlatformAdmin ? 'Tenants by subscription status' : 'Aggregate status mix',
+        title: isPlatformAdmin
+          ? 'Subscription mix'
+          : isPharmacist
+            ? 'Order status mix'
+            : 'Status distribution',
+        subtitle: isPlatformAdmin
+          ? 'Tenants by subscription status'
+          : isPharmacist
+            ? 'Pharmacy order pipeline'
+            : 'Aggregate status mix',
         total: distribution.total,
         segments: distribution.segments,
       },

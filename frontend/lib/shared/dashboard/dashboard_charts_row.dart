@@ -68,6 +68,19 @@ class _DashboardTrendPanel extends StatelessWidget {
         backgroundColor: Colors.transparent,
         borderColor: Colors.transparent,
         children: <Widget>[
+          if (chart.subtitle != null && chart.subtitle!.trim().isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(bottom: theme.spacing.sm),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  chart.subtitle!.trim(),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
           if (chart.points.isEmpty)
             _DashboardChartEmptyState(message: chart.emptyMessage)
           else

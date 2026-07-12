@@ -93,7 +93,7 @@ List<HomeAlertItem> guidedFallbackAlerts(HomeDashboardProfile profile) {
     AppRole.pharmacist => <HomeAlertItem>[
       const HomeAlertItem(
         id: 'guided_pharmacy_orders',
-        label: 'Pending dispense orders',
+        label: 'Pending dispense orders need attention',
         severity: 'MEDIUM',
         count: 0,
         target: HomeRouteTarget(
@@ -233,7 +233,7 @@ List<HomeQueueItem> guidedFallbackQueueHints(HomeDashboardProfile profile) {
     AppRole.pharmacist => <HomeQueueItem>[
       const HomeQueueItem(
         id: 'guided_pharmacy_orders',
-        label: 'Pharmacy orders queue',
+        label: 'Awaiting dispense — open Pharmacy to process orders',
         moduleSlug: 'pharmacy',
         status: 'ORDERED',
         severity: 'medium',

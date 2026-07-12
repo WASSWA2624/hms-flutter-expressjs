@@ -386,6 +386,51 @@ final class AppAccessPolicy {
         ]);
   }
 
+  /// Pharmacists and pharmacy-only custom roles see a reduced application shell.
+  bool get isPharmacistFocusedShellUser {
+    if (isElevated) {
+      return false;
+    }
+    if (hasAnyRole(const <AppRole>[
+      AppRole.tenantAdmin,
+      AppRole.facilityAdmin,
+      AppRole.doctor,
+      AppRole.nurse,
+      AppRole.labTech,
+      AppRole.radiologyTech,
+      AppRole.receptionist,
+      AppRole.billing,
+      AppRole.hr,
+      AppRole.operations,
+      AppRole.biomed,
+      AppRole.biomedManager,
+      AppRole.ambulanceOperator,
+      AppRole.wardManager,
+      AppRole.icuManager,
+      AppRole.theatreManager,
+      AppRole.housekeepingManager,
+      AppRole.houseKeeper,
+      AppRole.mortuaryStaff,
+      AppRole.mortuaryManager,
+      AppRole.unitManager,
+    ])) {
+      return false;
+    }
+    if (hasRole(AppRole.pharmacist)) {
+      return true;
+    }
+    return grants(AppPermissions.pharmacyRead) &&
+        !grantsAny(const <AppPermission>[
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+          AppPermissions.labRead,
+          AppPermissions.labWrite,
+          AppPermissions.tenantAdmin,
+          AppPermissions.facilityAdmin,
+          AppPermissions.systemAdmin,
+        ]);
+  }
+
   bool canEditFacilitySetupStructure() {
     return canManageFacility() || canManageHrFacilitySetup();
   }

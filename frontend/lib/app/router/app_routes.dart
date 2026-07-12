@@ -739,4 +739,19 @@ abstract final class AppRoutes {
       (AppRouteData candidate) => candidate.name == route.name,
     );
   }
+
+  /// Routes visible to [AppAccessPolicy.isPharmacistFocusedShellUser] in the shell.
+  static const List<AppRouteData> pharmacistFocusedShellRoutes = <AppRouteData>[
+    home,
+    patients,
+    pharmacy,
+    communications,
+    settings,
+  ];
+
+  static bool isPharmacistFocusedShellRoute(AppRouteData route) {
+    return pharmacistFocusedShellRoutes.any(
+      (AppRouteData candidate) => candidate.name == route.name,
+    );
+  }
 }

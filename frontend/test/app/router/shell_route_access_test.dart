@@ -109,6 +109,22 @@ void main() {
       expect(canAccess(AppRoutes.reports, policy), isFalse);
     });
 
+    test('pharmacist shell is limited to pharmacy-focused routes', () {
+      final policy = policyForRole('PHARMACIST');
+
+      expect(canAccess(AppRoutes.home, policy), isTrue);
+      expect(canAccess(AppRoutes.patients, policy), isTrue);
+      expect(canAccess(AppRoutes.pharmacy, policy), isTrue);
+      expect(canAccess(AppRoutes.communications, policy), isTrue);
+      expect(canAccess(AppRoutes.settings, policy), isTrue);
+      expect(canAccess(AppRoutes.reports, policy), isFalse);
+      expect(canAccess(AppRoutes.opd, policy), isFalse);
+      expect(canAccess(AppRoutes.nursing, policy), isFalse);
+      expect(canAccess(AppRoutes.lab, policy), isFalse);
+      expect(canAccess(AppRoutes.clinical, policy), isFalse);
+      expect(canAccess(AppRoutes.billing, policy), isFalse);
+    });
+
     test('billing access follows billing permission pack', () {
       final policy = policyForRole('BILLING');
 

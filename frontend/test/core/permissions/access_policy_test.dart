@@ -403,5 +403,31 @@ void main() {
       expect(labPolicy.isLabFocusedShellUser, isTrue);
       expect(doctorPolicy.isLabFocusedShellUser, isFalse);
     });
+
+    test('marks pharmacist-only users as pharmacist-focused shell', () {
+      final pharmacistPolicy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['PHARMACIST'],
+          ),
+        ),
+      );
+      final doctorPolicy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['DOCTOR'],
+          ),
+        ),
+      );
+
+      expect(pharmacistPolicy.isPharmacistFocusedShellUser, isTrue);
+      expect(doctorPolicy.isPharmacistFocusedShellUser, isFalse);
+    });
   });
 }

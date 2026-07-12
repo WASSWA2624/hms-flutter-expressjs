@@ -58,5 +58,39 @@ void main() {
       );
       expect(profile.metricRouteTargets.keys, contains('pending_results'));
     });
+
+    test('pharmacist dashboard shows four metrics and quick actions', () {
+      final profile = homeProfileForRole(AppRole.pharmacist);
+
+      expect(profile.layoutTier, HomeDashboardLayoutTier.departmentQueue);
+      expect(profile.isPharmacistDepartmentDashboard, isTrue);
+      expect(profile.effectiveMaxStatusCards, 4);
+      expect(profile.maxQuickActions, 4);
+      expect(profile.maxQueueItems, 5);
+      expect(profile.emptyActionIds, isEmpty);
+      expect(
+        profile.statusCards.take(4).map((template) => template.id),
+        <String>[
+          'orders_today',
+          'pending_dispense',
+          'dispensed_today',
+          'low_stock',
+        ],
+      );
+      expect(
+        profile.quickActionIds,
+        <String>[
+          'dispense_medication',
+          'record_pharmacy_sale',
+          'receive_pharmacy_stock',
+          'adjust_pharmacy_stock',
+        ],
+      );
+      expect(profile.metricRouteTargets.keys, contains('pending_dispense'));
+      expect(
+        profile.emptyMessage,
+        contains('No pending orders'),
+      );
+    });
   });
 }

@@ -100,9 +100,11 @@ final class DashboardTrendChartData {
     required this.title,
     required this.points,
     required this.emptyMessage,
+    this.subtitle,
   });
 
   final String title;
+  final String? subtitle;
   final List<DashboardTrendPointData> points;
   final String emptyMessage;
 }

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_nurse_dashboard_context.dart';
@@ -344,7 +343,12 @@ DashboardChartsData homeDashboardChartsData({
   return DashboardChartsData(
     trend: DashboardTrendChartData(
       title: homeTrendTitle(profile.role, dashboard.trend.title),
-      emptyMessage: l10n.homeTrendEmptyMessage,
+      emptyMessage: profile.id == 'pharmacist'
+          ? 'No dispensing activity in the last 7 days.'
+          : l10n.homeTrendEmptyMessage,
+      subtitle: profile.id == 'pharmacist' && dashboard.trend.points.isNotEmpty
+          ? _pharmacyTrendSubtitle(dashboard.trend.points)
+          : null,
       points: dashboard.trend.points
           .map(
             (HomeTrendPoint point) => DashboardTrendPointData(
@@ -362,8 +366,10 @@ DashboardChartsData homeDashboardChartsData({
             )
           : homeDistributionTitle(profile.role, dashboard.distribution.title),
       total: dashboard.distribution.total,
-      emptyMessage: l10n.homeDistributionEmptyMessage,
-      totalLabel: 'total',
+      emptyMessage: profile.id == 'pharmacist'
+          ? 'No pharmacy order status data yet.'
+          : l10n.homeDistributionEmptyMessage,
+      totalLabel: profile.id == 'pharmacist' ? 'orders' : 'total',
       segments: dashboard.distribution.segments
           .map(
             (HomeDistributionSegment segment) =>
@@ -376,4 +382,16 @@ DashboardChartsData homeDashboardChartsData({
           .toList(growable: false),
     ),
   );
+}
+
+String? _pharmacyTrendSubtitle(List<HomeTrendPoint> points) {
+  final num total = points.fold<num>(
+    0,
+    (num sum, HomeTrendPoint point) => sum + point.value,
+  );
+  if (total <= 0) {
+    return 'Dispenses logged over the last 7 days';
+  }
+  final String unit = total == 1 ? 'dispense' : 'dispenses';
+  return '$total $unit over the last 7 days';
 }
