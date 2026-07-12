@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
@@ -135,7 +134,7 @@ DashboardPriorityPanelData homeDashboardPriorityData({
                     label: homeStatusLabel(item.status),
                     tone: homeSeverityTone(item.severity ?? item.status),
                   ),
-                  onTap: _worklistTap(context, item.target),
+                  onTap: homeWorklistTap(context, ref, policy, item.target),
                 ),
               )
               .toList(growable: false)
@@ -167,7 +166,7 @@ DashboardPriorityPanelData homeDashboardPriorityData({
                     label: homeStatusLabel(alert.severity),
                     tone: homeSeverityTone(alert.severity),
                   ),
-                  onTap: _worklistTap(context, alert.target),
+                  onTap: homeWorklistTap(context, ref, policy, alert.target),
                 ),
               )
               .toList(growable: false)
@@ -179,7 +178,8 @@ DashboardPriorityPanelData homeDashboardPriorityData({
                 (HomeShortcutDefinition shortcut) => DashboardShortcutData(
                   label: shortcut.label,
                   icon: shortcut.icon,
-                  onTap: () => homeGoToRoute(context, shortcut.route),
+                  onTap: () =>
+                      homeNavigateShortcut(context, ref, policy, shortcut),
                 ),
               )
               .toList(growable: false)
@@ -193,17 +193,12 @@ DashboardPriorityPanelData homeDashboardPriorityData({
     onViewAll: homeFirstQueueTarget(dashboard.queuePreview) == null
         ? null
         : () {
-            final HomeRouteTarget? target = homeFirstQueueTarget(
-              dashboard.queuePreview,
+            homeNavigateRouteTarget(
+              context,
+              ref,
+              policy,
+              target: homeFirstQueueTarget(dashboard.queuePreview),
             );
-            final AppRouteData? route = homeRouteForTarget(target);
-            if (route != null) {
-              homeGoToRoute(
-                context,
-                route,
-                queryParameters: homeHrQueryForTarget(target),
-              );
-            }
           },
   );
 }
@@ -264,17 +259,5 @@ DashboardChartsData homeDashboardChartsData({
           )
           .toList(growable: false),
     ),
-  );
-}
-
-VoidCallback? _worklistTap(BuildContext context, HomeRouteTarget? target) {
-  final AppRouteData? route = homeRouteForTarget(target);
-  if (route == null) {
-    return null;
-  }
-  return () => homeGoToRoute(
-    context,
-    route,
-    queryParameters: homeHrQueryForTarget(target),
   );
 }

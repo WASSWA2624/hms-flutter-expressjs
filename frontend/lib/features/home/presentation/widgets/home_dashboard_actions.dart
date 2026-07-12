@@ -6,13 +6,19 @@ import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_mutation.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
+import 'package:hosspi_hms/features/home/presentation/widgets/home_metric_routes.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
+import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_report_admins_dialog.dart';
+import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_upgrade_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
@@ -1279,6 +1285,116 @@ void homeGoToRoute(
   Map<String, String> queryParameters = const <String, String>{},
 }) {
   context.go(route.location(queryParameters: queryParameters));
+}
+
+bool homeTargetUsesTenantSubscriptionFallback(
+  AppAccessPolicy policy, {
+  HomeRouteTarget? target,
+  AppRouteData? route,
+}) {
+  if (policy.isElevated) {
+    return false;
+  }
+
+  final String moduleSlug = (target?.moduleSlug ?? '').trim().toLowerCase();
+  if (moduleSlug == 'subscriptions') {
+    return true;
+  }
+
+  return route?.path == AppRoutes.subscriptions.path;
+}
+
+Future<void> homeOpenTenantSubscriptionSurface(
+  BuildContext context,
+  WidgetRef ref,
+  AppAccessPolicy policy,
+) async {
+  final AuthSession? session = ref.read(sessionStateProvider).session;
+
+  if (policy.canManageSubscriptionBilling()) {
+    await showSubscriptionUpgradeDialog(
+      context,
+      initialSummary: session?.subscriptionSummary,
+      initialAdminContact: session?.platformAdminContact,
+    );
+    return;
+  }
+
+  final TenantSubscriptionSummary? summary = session?.subscriptionSummary;
+  if (summary == null) {
+    homeGoToRoute(context, AppRoutes.tenantFacilitySetup);
+    return;
+  }
+
+  await showSubscriptionReportAdminsDialog(
+    context,
+    headerState: summary.headerState,
+    tenantAdmins: session?.tenantAdminContacts ?? const <OrgAdminContact>[],
+    facilityAdmins: session?.facilityAdminContacts ?? const <OrgAdminContact>[],
+    platformAdminContact: session?.platformAdminContact,
+  );
+}
+
+void homeNavigateRouteTarget(
+  BuildContext context,
+  WidgetRef ref,
+  AppAccessPolicy policy, {
+  HomeRouteTarget? target,
+}) {
+  final AppRouteData? route = homeRouteForTarget(target);
+  if (homeTargetUsesTenantSubscriptionFallback(policy, target: target, route: route)) {
+    unawaited(homeOpenTenantSubscriptionSurface(context, ref, policy));
+    return;
+  }
+
+  if (route == null) {
+    return;
+  }
+
+  homeGoToRoute(
+    context,
+    route,
+    queryParameters: homeHrQueryForTarget(target),
+  );
+}
+
+VoidCallback? homeWorklistTap(
+  BuildContext context,
+  WidgetRef ref,
+  AppAccessPolicy policy,
+  HomeRouteTarget? target,
+) {
+  if (target == null) {
+    return null;
+  }
+
+  final AppRouteData? route = homeRouteForTarget(target);
+  if (route == null &&
+      !homeTargetUsesTenantSubscriptionFallback(policy, target: target)) {
+    return null;
+  }
+
+  return () => homeNavigateRouteTarget(
+    context,
+    ref,
+    policy,
+    target: target,
+  );
+}
+
+void homeNavigateShortcut(
+  BuildContext context,
+  WidgetRef ref,
+  AppAccessPolicy policy,
+  HomeShortcutDefinition shortcut,
+) {
+  if (shortcut.id == 'subscriptions' &&
+      homeTargetUsesTenantSubscriptionFallback(policy)) {
+    unawaited(homeOpenTenantSubscriptionSurface(context, ref, policy));
+    return;
+  }
+
+  homeGoToRoute(context, shortcut.route);
 }
 
 void homeInvokeAction(

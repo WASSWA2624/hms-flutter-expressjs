@@ -338,11 +338,11 @@ const resolveHomeQuickActions = (user = {}, packId = null, limit = 8) => {
       'create_facility',
       'create_role',
       'create_user',
-      'manage_roles_access',
+      'add_staff_profile',
       'manage_facilities',
+      'manage_roles_access',
       'manage_users_roles',
       'manage_users',
-      'run_report',
     ], limit);
   }
   return resolveQuickActions(user, limit);

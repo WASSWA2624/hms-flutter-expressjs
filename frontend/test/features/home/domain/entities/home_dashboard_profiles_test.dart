@@ -70,11 +70,32 @@ void main() {
           'create_facility',
           'create_role',
           'create_user',
+          'add_staff_profile',
           'manage_facilities',
+          'manage_roles_access',
+          'manage_users_roles',
           'manage_users',
         ]),
       );
       expect(profile.quickActionIds, isNot(contains('manage_subscription')));
+      expect(
+        profile.quickActionIds.take(4),
+        <String>[
+          'create_facility',
+          'create_role',
+          'create_user',
+          'add_staff_profile',
+        ],
+      );
+      expect(
+        profile.emptyActionIds,
+        <String>[
+          'manage_facilities',
+          'manage_roles_access',
+          'manage_users_roles',
+          'manage_users',
+        ],
+      );
       expect(
         profile.shortcutIds,
         containsAll(<String>['tenant_facility_setup', 'settings', 'reports', 'subscriptions']),
