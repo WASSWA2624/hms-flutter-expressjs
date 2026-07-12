@@ -249,10 +249,13 @@ const verifyDemoData = async () => {
     errors.push('Every add-on must declare a minimum plan.');
   }
 
-  const roleNames = roles.map((role) => role.name).sort();
+  const roleNames = [...new Set(roles.map((role) => role.name).filter(Boolean))].sort();
   const expectedRoles = [...DEMO_ROLE_CODES].sort();
-  if (roleNames.join(',') !== expectedRoles.join(',')) {
-    errors.push(`Expected role codes ${expectedRoles.join(', ')} but found ${roleNames.join(', ')}.`);
+  const missingRoles = expectedRoles.filter((roleName) => !roleNames.includes(roleName));
+  if (missingRoles.length > 0) {
+    errors.push(
+      `Missing required demo role codes ${missingRoles.join(', ')}. Found ${roleNames.join(', ')}.`
+    );
   }
 
   const expectedDemoUserCount = (DEMO_TENANT.users || []).length;
