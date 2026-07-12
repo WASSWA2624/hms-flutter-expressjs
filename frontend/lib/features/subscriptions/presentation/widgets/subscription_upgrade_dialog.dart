@@ -8,6 +8,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/currency/fx_currency_utils.dart';
 import 'package:hosspi_hms/core/currency/fx_rate_service.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/validation_message_presenter.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
 import 'package:hosspi_hms/features/subscriptions/data/repositories/subscriptions_repository_impl.dart';
@@ -194,6 +195,11 @@ class _SubscriptionUpgradeDialogState
       setState(() => _isLoading = false);
       return;
     }
+
+    setState(() {
+      _isLoading = true;
+      _failure = null;
+    });
 
     final result = await ref
         .read(subscriptionsRepositoryProvider)
@@ -678,23 +684,46 @@ class _SubscriptionUpgradeDialogState
     required PlatformAdminContact? adminContact,
   }) {
     return switch (step) {
-      _UpgradeStep.plan => SubscriptionPlanSelector(
-        plans: contextData?.plans ?? const <SubscriptionUpgradePlanOption>[],
-        selectedPlanId: _selectedPlanId,
-        currentPlanId: contextData?.currentPlanId,
-        billingCycle: _billingCycle,
-        monthlyLabel: l10n.subscriptionUpgradeBillingMonthlyLabel,
-        annualLabel: l10n.subscriptionUpgradeBillingAnnualLabel,
-        currentPlanLabel: l10n.subscriptionUpgradeCurrentPlanBadge,
-        billingCycleHint: l10n.subscriptionUpgradeBillingCycleHint,
-        emptyTitle: l10n.subscriptionUpgradePlansEmptyTitle,
-        emptyMessage: l10n.subscriptionUpgradePlansEmptyMessage,
-        planLabelBuilder: (SubscriptionUpgradePlanOption plan) =>
-            _planLabel(l10n, plan),
-        onBillingCycleChanged: (SubscriptionUpgradeBillingCycle cycle) {
-          unawaited(_onBillingCycleChanged(cycle));
-        },
-        onSelected: (String planId) => unawaited(_onPlanChanged(planId)),
+      _UpgradeStep.plan => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          SubscriptionPlanSelector(
+            plans:
+                contextData?.plans ?? const <SubscriptionUpgradePlanOption>[],
+            selectedPlanId: _selectedPlanId,
+            currentPlanId: contextData?.currentPlanId,
+            billingCycle: _billingCycle,
+            monthlyLabel: l10n.subscriptionUpgradeBillingMonthlyLabel,
+            annualLabel: l10n.subscriptionUpgradeBillingAnnualLabel,
+            currentPlanLabel: l10n.subscriptionUpgradeCurrentPlanBadge,
+            billingCycleHint: l10n.subscriptionUpgradeBillingCycleHint,
+            emptyTitle: _failure != null
+                ? l10n.failureTitle(_failure!)
+                : l10n.subscriptionUpgradePlansEmptyTitle,
+            emptyMessage: _failure != null
+                ? ValidationMessagePresenter.displayMessage(_failure!, l10n)
+                : l10n.subscriptionUpgradePlansEmptyMessage,
+            planLabelBuilder: (SubscriptionUpgradePlanOption plan) =>
+                _planLabel(l10n, plan),
+            onBillingCycleChanged: (SubscriptionUpgradeBillingCycle cycle) {
+              unawaited(_onBillingCycleChanged(cycle));
+            },
+            onSelected: (String planId) => unawaited(_onPlanChanged(planId)),
+          ),
+          if (_failure != null &&
+              (contextData?.plans.isEmpty ?? true)) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: AppButton(
+                label: l10n.commonRetryActionLabel,
+                leadingIcon: Icons.refresh,
+                variant: AppButtonVariant.secondary,
+                onPressed: _isLoading ? null : _loadContext,
+              ),
+            ),
+          ],
+        ],
       ),
       _UpgradeStep.paymentMethod => AppSectionPanel(
         title: l10n.subscriptionUpgradePaymentMethodSectionTitle,

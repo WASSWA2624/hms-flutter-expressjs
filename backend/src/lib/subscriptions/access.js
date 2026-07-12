@@ -1,4 +1,6 @@
-const { ELEVATED_ROLES, normalizeRoleName } = require('@config/roles');
+const { ELEVATED_ROLES, ROLES, normalizeRoleName } = require('@config/roles');
+const { PERMISSIONS } = require('@config/permissions');
+const { getUserPermissions } = require('@middlewares/auth.middleware');
 
 const ELEVATED_ROLE_SET = new Set(ELEVATED_ROLES);
 
@@ -45,12 +47,54 @@ const canAccessTenantOrGlobal = (scope = {}, tenantId) => {
   return Boolean(scope.tenant_id && normalizedTenantId === scope.tenant_id);
 };
 
+const canManageSubscriptionBilling = (user = {}) => {
+  const roles = getUserRoles(user);
+  if (roles.some((role) => ELEVATED_ROLE_SET.has(role))) {
+    return true;
+  }
+  if (roles.includes(ROLES.TENANT_ADMIN) || roles.includes(ROLES.FACILITY_ADMIN)) {
+    return true;
+  }
+
+  const permissions = getUserPermissions(user);
+  return (
+    permissions.includes(PERMISSIONS.SUBSCRIPTIONS_READ) ||
+    permissions.includes(PERMISSIONS.SUBSCRIPTIONS_WRITE)
+  );
+};
+
+const resolveBillingTenantScope = (user = {}, payload = {}) => {
+  const actorTenantId = getUserTenantId(user);
+  if (!actorTenantId) {
+    const { HttpError } = require('@lib/errors');
+    throw new HttpError('errors.tenant.required', 400);
+  }
+
+  const roles = getUserRoles(user);
+  if (roles.includes(ROLES.SUPER_ADMIN)) {
+    const requestedTenantId = text(payload.tenant_id || payload.tenantId);
+    return requestedTenantId || actorTenantId;
+  }
+
+  const requestedTenantId = text(payload.tenant_id || payload.tenantId);
+  if (requestedTenantId && requestedTenantId !== actorTenantId) {
+    const { HttpError } = require('@lib/errors');
+    throw new HttpError('errors.auth.scope_mismatch', 403, [
+      { field: 'tenant_id', reason: 'outside_actor_tenant' },
+    ]);
+  }
+
+  return actorTenantId;
+};
+
 module.exports = {
   canAccessTenant,
   canAccessTenantOrGlobal,
+  canManageSubscriptionBilling,
   getUserRoles,
   getUserTenantId,
   hasElevatedRole,
+  resolveBillingTenantScope,
   resolveUserTenantScope,
   text,
 };

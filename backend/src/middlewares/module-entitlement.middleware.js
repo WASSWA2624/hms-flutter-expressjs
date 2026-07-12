@@ -17,6 +17,7 @@ const {
   evaluateModuleEntitlement,
 } = require('@lib/subscriptions/policies');
 const { PLAN_TIER_RANK } = require('@lib/subscriptions/plan-module-matrix');
+const { canManageSubscriptionBilling } = require('@lib/subscriptions/access');
 const { ROLES, normalizeRoleName } = require('@config/roles');
 
 const CACHE_TTL_MS = 60 * 1000;
@@ -518,6 +519,20 @@ const isSuperAdminUser = (user = {}) => {
   });
 };
 
+const isTenantSubscriptionBillingFlowPath = (reqPath = '') => {
+  const segments = String(reqPath || '')
+    .replace(/^\/+/, '')
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => segment.toLowerCase());
+
+  if (segments.length < 2 || segments[0] !== 'subscriptions-workspace') {
+    return false;
+  }
+
+  return segments[1] === 'upgrade-context' || segments[1] === 'payment-requests';
+};
+
 const enforceModuleEntitlement = () => async (req, res, next) => {
   try {
     const moduleSlug = resolveModuleSlugFromPath(req.path);
@@ -536,6 +551,13 @@ const enforceModuleEntitlement = () => async (req, res, next) => {
     // Platform operators manage catalog/subscriptions across tenants; commercial
     // plan packaging must not block SUPER_ADMIN ops tooling.
     if (isSuperAdminUser(user)) {
+      return next();
+    }
+
+    if (
+      isTenantSubscriptionBillingFlowPath(req.path) &&
+      canManageSubscriptionBilling(user)
+    ) {
       return next();
     }
 
@@ -616,4 +638,5 @@ module.exports = {
   resolveModuleSlugFromPath,
   loadPlatformInfrastructureSegments,
   clearModuleEntitlementCaches,
+  isTenantSubscriptionBillingFlowPath,
 };

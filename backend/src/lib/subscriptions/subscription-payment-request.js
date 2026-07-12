@@ -41,13 +41,9 @@ const parseExtensionJson = (value) => {
   return { ...value };
 };
 
-const resolveTenantScope = async (user = {}) => {
-  const tenantId = text(user.tenant_id);
-  if (!tenantId) {
-    throw new HttpError('errors.tenant.required', 400);
-  }
-  return tenantId;
-};
+const {
+  resolveBillingTenantScope,
+} = require('@lib/subscriptions/access');
 
 const loadCurrentSubscription = async (tenantId) => {
   const subscription = await prisma.subscription.findFirst({
@@ -163,7 +159,7 @@ const notifyPlatformAdmin = async ({
  * @returns {Promise<Object>}
  */
 const getUpgradeContext = async (user = {}) => {
-  const tenantId = await resolveTenantScope(user);
+  const tenantId = resolveBillingTenantScope(user);
   const [overviewSubscription, plans, summary] = await Promise.all([
     loadCurrentSubscription(tenantId).catch(() => null),
     loadUpgradePlans(tenantId),
@@ -213,8 +209,13 @@ const getUpgradeContext = async (user = {}) => {
  * @returns {Promise<Object>}
  */
 const submitPaymentRequest = async (payload = {}, files = [], user = {}, ip = null) => {
-  const tenantId = await resolveTenantScope(user);
+  const tenantId = resolveBillingTenantScope(user, payload);
   const subscription = await loadCurrentSubscription(tenantId);
+  if (subscription.tenant_id !== tenantId) {
+    throw new HttpError('errors.auth.scope_mismatch', 403, [
+      { field: 'tenant_id', reason: 'outside_actor_tenant' },
+    ]);
+  }
   const paymentMethod = text(payload.payment_method).toUpperCase() || 'BANK_TRANSFER';
 
   if (!PAYMENT_METHODS.includes(paymentMethod)) {

@@ -427,4 +427,41 @@ describe('module entitlement middleware', () => {
     expect(error.messageKey).toBe('errors.auth.module_not_entitled');
     expect(error.statusCode).toBe(403);
   });
+
+  test('allows tenant billing flows without subscription-controls entitlement', async () => {
+    const { enforceModuleEntitlement } = loadMiddleware();
+    const req = {
+      path: '/subscriptions-workspace/upgrade-context',
+      user: { tenant_id: 'tenant-advanced', roles: ['TENANT_ADMIN'] },
+    };
+
+    moduleRepository.count.mockResolvedValue(1);
+    moduleSubscriptionRepository.count.mockResolvedValue(0);
+
+    const error = await invokeMiddleware(enforceModuleEntitlement(), req);
+
+    expect(error).toBeUndefined();
+    expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
+  });
+
+  test('still blocks subscription workspace admin routes for tenant admins', async () => {
+    const { enforceModuleEntitlement } = loadMiddleware();
+    const req = {
+      path: '/subscriptions-workspace/workspace',
+      user: { tenant_id: 'tenant-advanced', roles: ['TENANT_ADMIN'] },
+    };
+
+    moduleRepository.count.mockResolvedValue(1);
+    moduleSubscriptionRepository.count.mockResolvedValue(0);
+    prismaMock.module.findFirst.mockResolvedValue({
+      id: 'mod-subscription-controls',
+      slug: 'subscription-controls',
+      minimum_plan_tier_code: 'ADVANCED',
+    });
+
+    const error = await invokeMiddleware(enforceModuleEntitlement(), req);
+
+    expect(error).toBeDefined();
+    expect(error.messageKey).toBe('errors.auth.module_not_entitled');
+  });
 });
