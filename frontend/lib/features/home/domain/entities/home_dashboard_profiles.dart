@@ -96,9 +96,14 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.tenantAdmin,
     roleLabel: 'Organization administrator',
     homeTitle: 'Organization',
-    emptyMessage: 'Start by setting up patients, staff, services, and billing.',
+    emptyMessage:
+        'Create facilities, assign roles, and onboard users across your organization.',
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(id: 'facilities_active', label: 'Facilities'),
+      HomeStatusCardTemplate(
+        id: 'facilities_active',
+        label: 'Facilities',
+        format: 'ratio',
+      ),
       HomeStatusCardTemplate(id: 'active_users', label: 'Users'),
       HomeStatusCardTemplate(
         id: 'module_adoption',
@@ -106,29 +111,32 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         format: 'percent',
       ),
       HomeStatusCardTemplate(
-        id: 'organization_patient_flow',
-        label: 'Patient flow',
+        id: 'subscription_health',
+        label: 'Subscription',
+        format: 'percent',
       ),
-      HomeStatusCardTemplate(
-        id: 'organization_revenue_summary',
-        label: 'Revenue',
-        format: 'currency',
-      ),
-      HomeStatusCardTemplate(id: 'staffing_exceptions', label: 'Staffing'),
-      HomeStatusCardTemplate(id: 'subscription_health', label: 'Subscription'),
     ],
     quickActionIds: <String>[
       'create_facility',
-      'manage_facilities',
+      'create_role',
+      'create_user',
       'manage_roles_access',
+      'manage_facilities',
+      'manage_users_roles',
       'manage_users',
-      'manage_subscription',
+      'run_report',
     ],
-    shortcutIds: <String>['tenant_facility_setup', 'settings', 'subscriptions'],
+    shortcutIds: <String>[
+      'tenant_facility_setup',
+      'settings',
+      'reports',
+      'subscriptions',
+    ],
     emptyActionIds: <String>[
       'create_facility',
-      'add_staff_profile',
-      'manage_subscription',
+      'create_role',
+      'manage_facilities',
+      'manage_users',
     ],
   ),
   AppRole.facilityAdmin: HomeDashboardProfile(

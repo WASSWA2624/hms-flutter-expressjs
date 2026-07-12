@@ -468,6 +468,268 @@ const findPlatformAlerts = async ({ limit = 3 } = {}) => {
   }
 };
 
+const findTenantFollowUps = async ({ tenantId, limit = 5 } = {}) => {
+  try {
+    if (!tenantId) return [];
+
+    const now = new Date();
+    const expiringWindow = new Date(now);
+    expiringWindow.setDate(expiringWindow.getDate() + 30);
+    const safeLimit = Math.max(1, Number(limit || 5));
+
+    const [facilities, subscription] = await Promise.all([
+      prisma.facility.findMany({
+        where: {
+          tenant_id: tenantId,
+          deleted_at: null,
+          OR: [
+            { is_active: false },
+            {
+              is_active: true,
+              users: { none: { deleted_at: null } },
+            },
+          ],
+        },
+        select: {
+          id: true,
+          human_friendly_id: true,
+          name: true,
+          is_active: true,
+          facility_type: true,
+          updated_at: true,
+          created_at: true,
+        },
+        orderBy: [{ is_active: 'asc' }, { updated_at: 'desc' }],
+        take: safeLimit,
+      }),
+      prisma.subscription.findFirst({
+        where: {
+          tenant_id: tenantId,
+          deleted_at: null,
+          OR: [
+            { status: { in: ['PAST_DUE', 'CANCELLED'] } },
+            {
+              status: { in: ['ACTIVE', 'TRIAL'] },
+              end_date: { lte: expiringWindow },
+            },
+          ],
+        },
+        select: {
+          id: true,
+          human_friendly_id: true,
+          status: true,
+          end_date: true,
+        },
+        orderBy: [{ end_date: 'asc' }, { updated_at: 'desc' }],
+      }),
+    ]);
+
+    const items = facilities
+      .map((facility) => {
+        const publicId = safePublicId(facility.human_friendly_id, facility.id);
+        if (!publicId) return null;
+
+        const isInactive = !facility.is_active;
+        return {
+          id: `facility_follow_up:${publicId}`,
+          kind: isInactive ? 'inactive_facility' : 'facility_setup_pending',
+          queue: 'facility_governance',
+          module_slug: 'settings',
+          human_friendly_id: publicId,
+          title: facility.name || publicId,
+          subtitle: isInactive ? 'Inactive facility' : 'No users assigned yet',
+          status: isInactive ? 'INACTIVE' : 'SETUP_PENDING',
+          severity: isInactive ? 'high' : 'medium',
+          occurred_at: facility.updated_at || facility.created_at || null,
+          target: {
+            module_slug: 'settings',
+            resource: 'facilities',
+            public_id: publicId,
+            action: 'view',
+          },
+        };
+      })
+      .filter(Boolean);
+
+    if (subscription) {
+      const publicId = safePublicId(subscription.human_friendly_id, subscription.id);
+      if (publicId) {
+        const status = String(subscription.status || '').toUpperCase();
+        items.unshift({
+          id: `subscription_follow_up:${publicId}`,
+          kind: 'subscription_follow_up',
+          queue: 'subscription_follow_ups',
+          module_slug: 'subscriptions',
+          human_friendly_id: publicId,
+          title: 'Subscription renewal',
+          subtitle: status === 'PAST_DUE' ? 'Payment overdue' : 'Renewal approaching',
+          status,
+          severity: status === 'PAST_DUE' ? 'high' : 'medium',
+          occurred_at: subscription.end_date || null,
+          target: {
+            module_slug: 'subscriptions',
+            resource: 'subscriptions',
+            public_id: publicId,
+            action: 'view',
+          },
+        });
+      }
+    }
+
+    return items.slice(0, safeLimit);
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+const findTenantAlerts = async ({ tenantId, limit = 3 } = {}) => {
+  try {
+    if (!tenantId) return [];
+
+    const facilityWhere = { tenant_id: tenantId, deleted_at: null };
+    const [
+      facilitiesTotal,
+      inactiveFacilities,
+      facilitiesWithoutUsers,
+      subscription,
+      entitlementDeniedModules,
+    ] = await Promise.all([
+      prisma.facility.count({ where: facilityWhere }),
+      prisma.facility.count({ where: { ...facilityWhere, is_active: false } }),
+      prisma.facility.count({
+        where: {
+          ...facilityWhere,
+          is_active: true,
+          users: { none: { deleted_at: null } },
+        },
+      }),
+      prisma.subscription.findFirst({
+        where: {
+          tenant_id: tenantId,
+          deleted_at: null,
+          status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] },
+        },
+        select: {
+          id: true,
+          human_friendly_id: true,
+          status: true,
+          plan_fit_status: true,
+          plan: {
+            select: {
+              max_facilities: true,
+            },
+          },
+        },
+        orderBy: { updated_at: 'desc' },
+      }),
+      prisma.module_subscription.count({
+        where: {
+          deleted_at: null,
+          entitlement_denied: true,
+          subscription: {
+            tenant_id: tenantId,
+            deleted_at: null,
+          },
+        },
+      }),
+    ]);
+
+    const alerts = [
+      {
+        id: 'no_facilities',
+        kind: 'no_facilities',
+        module_slug: 'settings',
+        severity: 'critical',
+        count: facilitiesTotal === 0 ? 1 : 0,
+        target: {
+          module_slug: 'settings',
+          resource: 'facilities',
+          public_id: null,
+          action: 'create',
+        },
+      },
+      {
+        id: 'inactive_facilities',
+        kind: 'inactive_facilities',
+        module_slug: 'settings',
+        severity: 'warning',
+        count: inactiveFacilities,
+        target: {
+          module_slug: 'settings',
+          resource: 'facilities',
+          public_id: null,
+          action: 'list',
+          query: { status: 'INACTIVE' },
+        },
+      },
+      {
+        id: 'facility_setup_pending',
+        kind: 'facility_setup_pending',
+        module_slug: 'settings',
+        severity: 'medium',
+        count: facilitiesWithoutUsers,
+        target: {
+          module_slug: 'settings',
+          resource: 'facilities',
+          public_id: null,
+          action: 'list',
+        },
+      },
+      {
+        id: 'subscription_past_due',
+        kind: 'subscription_past_due',
+        module_slug: 'subscriptions',
+        severity: 'high',
+        count: subscription?.status === 'PAST_DUE' ? 1 : 0,
+        target: {
+          module_slug: 'subscriptions',
+          resource: 'subscriptions',
+          public_id: safePublicId(subscription?.human_friendly_id, subscription?.id),
+          action: 'view',
+        },
+      },
+      {
+        id: 'plan_limit_pressure',
+        kind: 'plan_limit_pressure',
+        module_slug: 'subscriptions',
+        severity: 'high',
+        count: ['APPROACHING_LIMIT', 'EXCEEDED'].includes(
+          String(subscription?.plan_fit_status || '').toUpperCase()
+        )
+          ? 1
+          : 0,
+        target: {
+          module_slug: 'subscriptions',
+          resource: 'subscriptions',
+          public_id: safePublicId(subscription?.human_friendly_id, subscription?.id),
+          action: 'view',
+        },
+      },
+      {
+        id: 'entitlement_denied_modules',
+        kind: 'entitlement_denied_modules',
+        module_slug: 'subscriptions',
+        severity: 'warning',
+        count: entitlementDeniedModules,
+        target: {
+          module_slug: 'subscriptions',
+          resource: 'modules',
+          public_id: null,
+          action: 'list',
+        },
+      },
+    ];
+
+    return alerts
+      .filter((entry) => Number(entry.count || 0) > 0)
+      .slice(0, Math.max(1, Number(limit || 3)));
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 module.exports = {
   countRows,
   findCurrentSubscription,
@@ -475,6 +737,8 @@ module.exports = {
   findLookups,
   findPlatformAlerts,
   findPlatformFollowUps,
+  findTenantAlerts,
+  findTenantFollowUps,
   findRows,
   resolveWorkspaceScope,
   safePublicId,

@@ -300,7 +300,33 @@ List<HomeQueueItem> guidedFallbackQueueHints(HomeDashboardProfile profile) {
         ),
       ),
     ],
-    AppRole.superAdmin || AppRole.tenantAdmin => <HomeQueueItem>[
+    AppRole.tenantAdmin => <HomeQueueItem>[
+      const HomeQueueItem(
+        id: 'guided_create_facility',
+        label: 'Create your first facility',
+        moduleSlug: 'settings',
+        status: 'OPEN',
+        severity: 'info',
+        target: HomeRouteTarget(
+          moduleSlug: 'settings',
+          resource: 'facilities',
+          action: 'create',
+        ),
+      ),
+      const HomeQueueItem(
+        id: 'guided_tenant_setup',
+        label: 'Tenant and facility setup',
+        moduleSlug: 'settings',
+        status: 'OPEN',
+        severity: 'info',
+        target: HomeRouteTarget(
+          moduleSlug: 'settings',
+          resource: 'tenant-facility-context',
+          action: 'open',
+        ),
+      ),
+    ],
+    AppRole.superAdmin => <HomeQueueItem>[
       const HomeQueueItem(
         id: 'guided_tenant_setup',
         label: 'Tenant and facility setup',

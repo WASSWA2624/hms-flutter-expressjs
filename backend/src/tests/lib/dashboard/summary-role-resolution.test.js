@@ -69,3 +69,41 @@ describe('super admin dashboard summary cards', () => {
     );
   });
 });
+
+describe('tenant admin dashboard summary cards', () => {
+  it('maps tenant facility governance metrics with ratio and percent formats', () => {
+    const cards = metricsToRoleSummary(ROLE_PACKS.TENANT_ADMIN, {
+      facilitiesTotal: 3,
+      facilitiesActive: 2,
+      activeUsers: 18,
+      moduleAdoption: 75,
+      subscriptionHealth: 100,
+    });
+
+    expect(cards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'facilities_active',
+          value: 2,
+          secondary_value: 3,
+          format: 'ratio',
+        }),
+        expect.objectContaining({
+          id: 'active_users',
+          value: 18,
+        }),
+        expect.objectContaining({
+          id: 'module_adoption',
+          value: 75,
+          format: 'percent',
+        }),
+        expect.objectContaining({
+          id: 'subscription_health',
+          value: 100,
+          format: 'percent',
+        }),
+      ])
+    );
+    expect(cards).toHaveLength(4);
+  });
+});

@@ -641,6 +641,114 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
       };
     }
 
+    if (packId === ROLE_PACKS.TENANT_ADMIN) {
+      const tenantId = scope.tenant_id;
+      if (!tenantId) {
+        return {
+          metrics: {
+            facilitiesTotal: 0,
+            facilitiesActive: 0,
+            activeUsers: 0,
+            usersTotal: 0,
+            moduleAdoption: 0,
+            subscriptionHealth: 0,
+          },
+          trendDates: [],
+          statusCounts: { ACTIVE: 0, INACTIVE: 0, DENIED: 0 },
+          activity: { facilities: 0 },
+        };
+      }
+
+      const facilityWhere = { deleted_at: null, tenant_id: tenantId };
+      const userWhere = { deleted_at: null, tenant_id: tenantId };
+
+      const [
+        facilitiesTotal,
+        facilitiesActive,
+        activeUsers,
+        subscription,
+        trendDates,
+        facilitiesUpdated24h,
+      ] = await Promise.all([
+        prisma.facility.count({ where: facilityWhere }),
+        prisma.facility.count({ where: { ...facilityWhere, is_active: true } }),
+        prisma.user.count({ where: userWhere }),
+        prisma.subscription.findFirst({
+          where: {
+            tenant_id: tenantId,
+            deleted_at: null,
+            status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] },
+          },
+          include: {
+            plan: {
+              select: {
+                max_modules: true,
+              },
+            },
+            module_subscriptions: {
+              where: { deleted_at: null },
+              select: {
+                is_active: true,
+                entitlement_denied: true,
+              },
+            },
+          },
+          orderBy: { updated_at: 'desc' },
+        }),
+        selectDateSeries(
+          prisma.facility,
+          { ...facilityWhere, created_at: { gte: trendStart } },
+          'created_at'
+        ),
+        prisma.facility.count({
+          where: { ...facilityWhere, updated_at: { gte: window24h } },
+        }),
+      ]);
+
+      const moduleSubscriptions = subscription?.module_subscriptions || [];
+      const activeModules = moduleSubscriptions.filter(
+        (entry) => entry.is_active && !entry.entitlement_denied
+      ).length;
+      const inactiveModules = moduleSubscriptions.filter((entry) => !entry.is_active).length;
+      const deniedModules = moduleSubscriptions.filter((entry) => entry.entitlement_denied).length;
+      const entitledModules = toNumber(subscription?.plan?.max_modules);
+      const moduleDenominator =
+        entitledModules > 0 ? entitledModules : Math.max(moduleSubscriptions.length, 1);
+      const moduleAdoption = percentOf(activeModules, moduleDenominator);
+
+      const subscriptionStatus = String(subscription?.status || '').toUpperCase();
+      const planFitStatus = String(subscription?.plan_fit_status || '').toUpperCase();
+      let subscriptionHealth = 0;
+      if (subscription) {
+        if (planFitStatus === 'EXCEEDED') subscriptionHealth = 20;
+        else if (planFitStatus === 'APPROACHING_LIMIT') subscriptionHealth = 55;
+        else if (subscriptionStatus === 'ACTIVE') subscriptionHealth = 100;
+        else if (subscriptionStatus === 'TRIAL') subscriptionHealth = 85;
+        else if (subscriptionStatus === 'PAST_DUE') subscriptionHealth = 35;
+        else subscriptionHealth = 50;
+      }
+
+      return {
+        metrics: {
+          facilitiesTotal,
+          facilitiesActive,
+          activeUsers,
+          usersTotal: activeUsers,
+          moduleAdoption,
+          subscriptionHealth,
+        },
+        trendDates,
+        statusCounts: {
+          ACTIVE: activeModules,
+          INACTIVE: inactiveModules,
+          DENIED: deniedModules,
+        },
+        activity: {
+          facilities: facilitiesUpdated24h,
+        },
+      };
+    }
+
     if (packId === ROLE_PACKS.PATIENT_SAFE) {
       const portalPatient = await resolvePatientPortalPatient({ scope, userId, user });
       if (!portalPatient) return patientPortalZeroSummary();

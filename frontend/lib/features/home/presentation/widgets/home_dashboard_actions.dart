@@ -1450,7 +1450,7 @@ String homeDistributionTitle(AppRole role, String fallback) {
 String homeQueueTitle(AppRole role) {
   return switch (role) {
     AppRole.superAdmin => 'Follow-up',
-    AppRole.tenantAdmin => 'Actions',
+    AppRole.tenantAdmin => 'Facility follow-up',
     AppRole.facilityAdmin => 'Operations',
     AppRole.doctor => 'Worklist',
     AppRole.nurse => 'Tasks',
@@ -1472,6 +1472,7 @@ String homeQueueTitle(AppRole role) {
 String homeAlertsTitle(AppRole role) {
   return switch (role) {
     AppRole.doctor => 'Critical alerts',
+    AppRole.tenantAdmin => 'Facility alerts',
     _ => 'Alerts',
   };
 }

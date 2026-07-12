@@ -333,7 +333,42 @@ const resolveHomeQuickActions = (user = {}, packId = null, limit = 8) => {
   if (packId === ROLE_PACKS.HR) {
     return { quickActions: [], hiddenReasonMap: {} };
   }
+  if (packId === ROLE_PACKS.TENANT_ADMIN) {
+    return resolveQuickActionsByIds(user, [
+      'create_facility',
+      'create_role',
+      'create_user',
+      'manage_roles_access',
+      'manage_facilities',
+      'manage_users_roles',
+      'manage_users',
+      'run_report',
+    ], limit);
+  }
   return resolveQuickActions(user, limit);
+};
+
+const resolveQuickActionsByIds = (user = {}, preferredIds = [], limit = 8) => {
+  const resolved = resolveQuickActions(user, QUICK_ACTION_LIBRARY.length);
+  const byId = new Map(resolved.quickActions.map((action) => [action.id, action]));
+  const hiddenReasonMap = { ...resolved.hiddenReasonMap };
+  const quickActions = [];
+
+  for (const id of preferredIds) {
+    const action = byId.get(id);
+    if (action) {
+      quickActions.push(action);
+      continue;
+    }
+    if (!hiddenReasonMap[id]) {
+      hiddenReasonMap[id] = 'Unavailable for current permissions or modules';
+    }
+  }
+
+  return {
+    quickActions: quickActions.slice(0, limit),
+    hiddenReasonMap,
+  };
 };
 
 const resolveQuickActions = (user = {}, limit = 8) => {
@@ -844,7 +879,7 @@ const activeQueueDefinitions = Object.freeze({
 const ROLE_QUEUE_IDS = Object.freeze({
   [ROLE_PACKS.ADMIN]: ['appointments', 'admissions', 'billing_follow_up', 'maintenance_requests', 'housekeeping_tasks', 'staff_leaves'],
   [ROLE_PACKS.SUPER_ADMIN]: [],
-  [ROLE_PACKS.TENANT_ADMIN]: ['admissions', 'billing_follow_up', 'maintenance_requests', 'staff_leaves'],
+  [ROLE_PACKS.TENANT_ADMIN]: [],
   [ROLE_PACKS.FACILITY_ADMIN]: ['appointments', 'admissions', 'billing_follow_up', 'maintenance_requests', 'housekeeping_tasks', 'staff_leaves'],
   [ROLE_PACKS.DOCTOR]: ['appointments', 'admissions', 'lab_results', 'radiology_results'],
   [ROLE_PACKS.NURSE]: ['admissions', 'lab_results', 'radiology_results', 'appointments'],
@@ -1507,7 +1542,7 @@ const buildPlanUsage = (subscription = null, canManageSubscriptions = false) => 
 
 const ALERT_MODULES_BY_PACK = Object.freeze({
   [ROLE_PACKS.SUPER_ADMIN]: ['subscriptions', 'billing', 'operations', 'biomedical'],
-  [ROLE_PACKS.TENANT_ADMIN]: ['subscriptions', 'billing', 'operations', 'hr'],
+  [ROLE_PACKS.TENANT_ADMIN]: ['subscriptions', 'operations'],
   [ROLE_PACKS.FACILITY_ADMIN]: ['billing', 'lab', 'ipd', 'operations', 'subscriptions'],
   [ROLE_PACKS.DOCTOR]: ['lab', 'ipd'],
   [ROLE_PACKS.NURSE]: ['lab', 'ipd'],
@@ -1835,6 +1870,98 @@ const buildSuperAdminPlatformWorkspace = async ({
   };
 };
 
+const buildTenantAdminOrganizationWorkspace = async ({
+  filters = {},
+  page = 1,
+  limit = DEFAULT_LIMIT,
+  user = {},
+  effectiveRole,
+  effectiveProfileId,
+  effectivePackId,
+  scope,
+}) => {
+  const baseSummary = await buildDashboardSummary({
+    query: { ...scope, days: 7 },
+    user,
+    repository: dashboardWidgetRepository,
+  });
+  const quickActionResolution = resolveHomeQuickActions(user, effectivePackId, 8);
+  const [followUps, tenantAlerts, facilityContext] = await Promise.all([
+    dashboardWorkspaceRepository.findTenantFollowUps({
+      tenantId: scope.tenant_id,
+      limit: 5,
+    }),
+    dashboardWorkspaceRepository.findTenantAlerts({
+      tenantId: scope.tenant_id,
+      limit: 3,
+    }),
+    dashboardWorkspaceRepository.findFacilityContext(scope),
+  ]);
+  const statusStrip = buildStatusStrip(baseSummary);
+
+  return {
+    state: 'ready',
+    generated_at: new Date().toISOString(),
+    role_profile: baseSummary.roleProfile,
+    context: {
+      role: baseSummary.roleProfile,
+      tenant_id: dashboardWorkspaceRepository.safePublicId(scope.tenant_id),
+      facility_id: dashboardWorkspaceRepository.safePublicId(
+        facilityContext?.human_friendly_id,
+        scope.facility_id
+      ),
+      facility_name: facilityContext?.name || null,
+      facility_type: facilityContext?.facility_type || null,
+      branch_id: dashboardWorkspaceRepository.safePublicId(scope.branch_id),
+    },
+    panel_summaries: [
+      { id: 'follow_up', count: followUps.length },
+      { id: 'alerts', count: tenantAlerts.length },
+    ],
+    status_strip: statusStrip,
+    summary_cards: statusStrip,
+    trend: baseSummary.trend,
+    distribution: baseSummary.distribution,
+    quick_actions: quickActionResolution.quickActions,
+    quick_action_ids: quickActionResolution.quickActions.map((action) => action.id),
+    hidden_reason_map: quickActionResolution.hiddenReasonMap,
+    overview: {
+      hero: {
+        role_profile_id: effectiveProfileId,
+        role: effectiveRole,
+        facility_name: facilityContext?.name || null,
+        facility_type: facilityContext?.facility_type || null,
+      },
+      checklist: { completed_count: 0, total_count: 0, items: [] },
+      trend: baseSummary.trend,
+      distribution: baseSummary.distribution,
+      alerts: tenantAlerts,
+      queue_preview: followUps,
+      value_proof: [],
+      insights_preview: tenantAlerts,
+      module_recommendations: [],
+      plan_usage: { state: 'unavailable', metrics: [] },
+      activity_preview: [],
+      help_cards: [],
+    },
+    queue: {
+      items: followUps,
+      pagination: buildPagination(page, Number(limit || DEFAULT_LIMIT), followUps.length),
+    },
+    activity: {
+      items: [],
+      pagination: buildPagination(page, Number(limit || DEFAULT_LIMIT), 0),
+    },
+    insights: {
+      signals: tenantAlerts,
+      module_recommendations: [],
+      plan_usage: { state: 'unavailable', metrics: [] },
+      help_cards: [],
+    },
+    getting_started: { completed_count: 0, total_count: 0, items: [] },
+  };
+};
+
 const getWorkspace = async (
   filters = {},
   page = 1,
@@ -1912,6 +2039,19 @@ const getWorkspace = async (
         label: entry.name,
       })),
     };
+  }
+
+  if (effectiveRole === ROLES.TENANT_ADMIN) {
+    return buildTenantAdminOrganizationWorkspace({
+      filters,
+      page,
+      limit,
+      user,
+      effectiveRole,
+      effectiveProfileId,
+      effectivePackId,
+      scope: scopeResult.scope,
+    });
   }
 
   const scope = scopeResult.scope;

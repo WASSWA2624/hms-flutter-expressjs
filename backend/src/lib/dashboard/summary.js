@@ -594,14 +594,39 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
   }
 
   if (packId === ROLE_PACKS.TENANT_ADMIN) {
+    const facilitiesTotal = metrics.facilitiesTotal ?? metrics.facilitiesActive ?? 0;
+    const facilitiesActive = metrics.facilitiesActive ?? 0;
     return [
-      { id: 'facilities_active', label: 'Facilities active', value: metrics.facilitiesActive || 0 },
-      { id: 'active_users', label: 'Active users', value: metrics.activeUsers || metrics.usersTotal || 0 },
-      { id: 'module_adoption', label: 'Module adoption', value: metrics.moduleAdoption || 0, format: 'percent' },
-      { id: 'organization_patient_flow', label: 'Organization patient flow', value: metrics.patientFlow || metrics.appointmentsToday || 0 },
-      { id: 'organization_revenue_summary', label: 'Organization revenue', value: metrics.revenueSummary || metrics.paymentsToday || 0, format: 'currency' },
-      { id: 'staffing_exceptions', label: 'Staffing exceptions', value: metrics.staffingExceptions || metrics.pendingLeaves || 0 },
-      { id: 'subscription_health', label: 'Subscription health', value: metrics.subscriptionHealth || 0 },
+      {
+        id: 'facilities_active',
+        label: 'Facilities',
+        value: facilitiesActive,
+        secondary_value: facilitiesTotal,
+        format: 'ratio',
+        hint:
+          facilitiesTotal === 0
+            ? 'Create at least one facility to get started'
+            : facilitiesActive < facilitiesTotal
+              ? `${facilitiesTotal - facilitiesActive} inactive`
+              : null,
+      },
+      {
+        id: 'active_users',
+        label: 'Users',
+        value: metrics.activeUsers || metrics.usersTotal || 0,
+      },
+      {
+        id: 'module_adoption',
+        label: 'Adoption',
+        value: metrics.moduleAdoption || 0,
+        format: 'percent',
+      },
+      {
+        id: 'subscription_health',
+        label: 'Subscription',
+        value: metrics.subscriptionHealth || 0,
+        format: 'percent',
+      },
     ];
   }
 

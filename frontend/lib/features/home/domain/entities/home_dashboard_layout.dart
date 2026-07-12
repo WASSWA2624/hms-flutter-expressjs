@@ -67,7 +67,7 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     return switch (layoutTier) {
       HomeDashboardLayoutTier.workforce => 0,
       HomeDashboardLayoutTier.platform => 8,
-      HomeDashboardLayoutTier.organization => 5,
+      HomeDashboardLayoutTier.organization => 8,
       HomeDashboardLayoutTier.facilityCommand => 3,
       _ => 2,
     };

@@ -61,16 +61,32 @@ void main() {
       expect(profile.quickActionIds, isNot(contains('select_context')));
     });
 
-    test('tenant admin profile uses oversight actions only', () {
+    test('tenant admin profile uses facility governance actions only', () {
       final profile = homeProfileForRole(AppRole.tenantAdmin);
 
       expect(
         profile.quickActionIds,
         containsAll(<String>[
           'create_facility',
+          'create_role',
+          'create_user',
+          'manage_facilities',
           'manage_users',
-          'manage_subscription',
         ]),
+      );
+      expect(profile.quickActionIds, isNot(contains('manage_subscription')));
+      expect(
+        profile.shortcutIds,
+        containsAll(<String>['tenant_facility_setup', 'settings', 'reports', 'subscriptions']),
+      );
+      expect(
+        profile.statusCards.map((template) => template.id),
+        <String>[
+          'facilities_active',
+          'active_users',
+          'module_adoption',
+          'subscription_health',
+        ],
       );
       for (final actionId in <String>[
         'start_consultation',
