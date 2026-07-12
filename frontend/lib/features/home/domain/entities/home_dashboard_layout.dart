@@ -51,9 +51,14 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
 
   bool get isDoctorClinicalDashboard => id == 'doctor';
 
+  bool get isNurseClinicalDashboard => id == 'nurse';
+
   int get effectiveMaxStatusCards {
     if (isDoctorClinicalDashboard) {
       return math.min(maxStatusCards, 4);
+    }
+    if (isNurseClinicalDashboard) {
+      return math.min(maxStatusCards, 5);
     }
     final int tierCap = switch (layoutTier) {
       HomeDashboardLayoutTier.platform ||
@@ -72,6 +77,9 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     if (isDoctorClinicalDashboard) {
       return 5;
     }
+    if (isNurseClinicalDashboard) {
+      return 8;
+    }
     return switch (layoutTier) {
       HomeDashboardLayoutTier.workforce => 0,
       HomeDashboardLayoutTier.platform => 8,
@@ -81,14 +89,15 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     };
   }
 
-  int get maxQueueItems => isDoctorClinicalDashboard ? 5 : 3;
+  int get maxQueueItems =>
+      isDoctorClinicalDashboard || isNurseClinicalDashboard ? 5 : 3;
 
   int get maxResultsItems => isDoctorClinicalDashboard ? 3 : 0;
 
   int get maxFollowUpItems => isDoctorClinicalDashboard ? 3 : 0;
 
   int get maxShortcutTiles {
-    if (isDoctorClinicalDashboard) {
+    if (isDoctorClinicalDashboard || isNurseClinicalDashboard) {
       return 6;
     }
     return switch (layoutTier) {

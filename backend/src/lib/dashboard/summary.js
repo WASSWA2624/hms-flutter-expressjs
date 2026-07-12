@@ -662,6 +662,10 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
       { id: 'transfer_queue', label: 'Transfer queue', value: metrics.transferQueue || 0 },
       { id: 'critical_labs', label: 'Critical lab signals', value: metrics.criticalLabs || 0 },
       { id: 'discharge_pressure', label: 'Discharge pressure', value: metrics.activeAdmissions || 0 },
+      { id: 'appointments_today', label: 'OPD queue', value: metrics.appointmentsToday || 0 },
+      { id: 'emergency_cases_today', label: 'Emergency cases today', value: metrics.emergencyCasesToday || 0 },
+      { id: 'theatre_cases_today', label: 'Theatre cases in progress', value: metrics.theatreCasesToday || 0 },
+      { id: 'radiology_pending', label: 'Imaging results pending', value: metrics.radiologyPending || 0 },
     ];
   }
 
@@ -901,12 +905,22 @@ const buildDashboardSummary = async ({ query = {}, user = {}, repository }) => {
     const packId = resolvePackId(roleProfileId);
     const scope = await resolveScope(query, user, effectiveRole, repository);
     const resolvedUserId = user.id || user.user_id || user.userId || null;
+    let effectiveScope = scope;
+    if (packId === ROLE_PACKS.NURSE && resolvedUserId && repository.findNurseStaffContext) {
+      const nurseStaffContext = await repository.findNurseStaffContext(
+        resolvedUserId,
+        scope
+      );
+      if (nurseStaffContext) {
+        effectiveScope = { ...scope, ...nurseStaffContext };
+      }
+    }
     const includeOpdNotificationSignals = canSeeOpdNotificationSignals(user, effectiveRole);
 
     const [packData, unreadOpdNotifications] = await Promise.all([
       repository.getDashboardSummaryByPack({
         packId,
-        scope,
+        scope: effectiveScope,
         days,
         userId: resolvedUserId,
         user,
@@ -914,7 +928,7 @@ const buildDashboardSummary = async ({ query = {}, user = {}, repository }) => {
       includeOpdNotificationSignals
         ? repository
             .countUnreadOpdNotifications({
-              scope,
+              scope: effectiveScope,
               userId: resolvedUserId,
             })
             .catch(() => 0)
@@ -1062,9 +1076,11 @@ const buildDashboardSummary = async ({ query = {}, user = {}, repository }) => {
       hasLiveData,
       generatedAt: new Date().toISOString(),
       scope: {
-        tenant_id: scope.tenant_id || null,
-        facility_id: scope.facility_id || null,
-        branch_id: scope.branch_id || null,
+        tenant_id: effectiveScope.tenant_id || null,
+        facility_id: effectiveScope.facility_id || null,
+        branch_id: effectiveScope.branch_id || null,
+        nurse_context: effectiveScope.nurse_context || null,
+        department_name: effectiveScope.department_name || null,
         days,
       },
     };

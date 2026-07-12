@@ -116,7 +116,11 @@ homeActionLibrary = <String, HomeActionDefinition>{
     label: 'Check in patient',
     icon: Icons.fact_check_outlined,
     route: AppRoutes.opd,
-    allowedRoles: <AppRole>[AppRole.facilityAdmin, AppRole.receptionist],
+    allowedRoles: <AppRole>[
+      AppRole.facilityAdmin,
+      AppRole.receptionist,
+      AppRole.nurse,
+    ],
     requiredPermissions: <AppPermission>[AppPermissions.patientWrite],
     requiredModules: <String>['scheduling'],
   ),

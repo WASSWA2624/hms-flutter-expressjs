@@ -168,7 +168,7 @@ const QUICK_ACTION_LIBRARY = Object.freeze([
   actionDefinition({ id: 'review_audit', label: 'Review audit/compliance', allowedRoles: [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.OPERATIONS, ROLES.MORTUARY_MANAGER, ROLES.BIOMED_MANAGER], requiredAnyPermissions: ['compliance:review', 'evidence:export'], scope: 'assigned_scope', target: actionTarget('reports', 'audit') }),
   actionDefinition({ id: 'register_patient', label: 'Register patient', allowedRoles: [ROLES.FACILITY_ADMIN, ROLES.RECEPTIONIST], requiredPermissions: ['patient:write'], requiredModules: ['patients'], scope: 'facility', target: actionTarget('patients', 'patients', 'create') }),
   actionDefinition({ id: 'book_appointment', label: 'Book appointment', allowedRoles: [ROLES.FACILITY_ADMIN, ROLES.RECEPTIONIST], requiredPermissions: ['patient:write'], requiredModules: ['scheduling'], scope: 'facility', target: actionTarget('scheduling', 'appointments', 'create') }),
-  actionDefinition({ id: 'check_in_patient', label: 'Check in patient', allowedRoles: [ROLES.FACILITY_ADMIN, ROLES.RECEPTIONIST], requiredPermissions: ['patient:write'], requiredModules: ['scheduling'], scope: 'facility', target: actionTarget('scheduling', 'opd-flows') }),
+  actionDefinition({ id: 'check_in_patient', label: 'Check in patient', allowedRoles: [ROLES.FACILITY_ADMIN, ROLES.RECEPTIONIST, ROLES.NURSE], requiredPermissions: ['patient:write'], requiredModules: ['scheduling'], scope: 'facility', target: actionTarget('scheduling', 'opd-flows') }),
   actionDefinition({ id: 'route_patient', label: 'Route patient to service', allowedRoles: [ROLES.RECEPTIONIST, ROLES.NURSE], requiredPermissions: ['patient:write'], requiredModules: ['scheduling'], scope: 'patient_flow', target: actionTarget('scheduling', 'opd-flows') }),
   actionDefinition({ id: 'start_consultation', label: 'Start consultation', allowedRoles: [ROLES.DOCTOR], requiredPermissions: ['clinical:write'], requiredModules: ['clinical'], scope: 'assigned_clinical', target: actionTarget('clinical', 'consultations') }),
   actionDefinition({ id: 'continue_consultation', label: 'Continue consultation', allowedRoles: [ROLES.DOCTOR], requiredPermissions: ['clinical:write'], requiredModules: ['clinical'], scope: 'assigned_clinical', target: actionTarget('clinical', 'consultations') }),
@@ -343,6 +343,16 @@ const resolveHomeQuickActions = (user = {}, packId = null, limit = 8) => {
       'manage_roles_access',
       'manage_users_roles',
       'manage_users',
+    ], limit);
+  }
+  if (packId === ROLE_PACKS.NURSE) {
+    return resolveQuickActionsByIds(user, [
+      'record_vitals',
+      'mark_med_administered',
+      'create_handover',
+      'write_clinical_note',
+      'route_patient',
+      'check_in_patient',
     ], limit);
   }
   return resolveQuickActions(user, limit);
@@ -1749,7 +1759,7 @@ const ALERT_MODULES_BY_PACK = Object.freeze({
   [ROLE_PACKS.TENANT_ADMIN]: ['subscriptions', 'operations'],
   [ROLE_PACKS.FACILITY_ADMIN]: ['billing', 'lab', 'ipd', 'operations', 'subscriptions'],
   [ROLE_PACKS.DOCTOR]: ['lab', 'radiology', 'ipd'],
-  [ROLE_PACKS.NURSE]: ['lab', 'ipd'],
+  [ROLE_PACKS.NURSE]: ['lab', 'ipd', 'scheduling', 'emergency', 'theatre', 'radiology'],
   [ROLE_PACKS.LAB_TECH]: ['lab'],
   [ROLE_PACKS.RADIOLOGY_TECH]: ['radiology'],
   [ROLE_PACKS.PHARMACIST]: ['pharmacy'],
@@ -2406,6 +2416,8 @@ const getWorkspace = async (
       facility_name: facilityContext?.name || null,
       facility_type: facilityContext?.facility_type || null,
       branch_id: dashboardWorkspaceRepository.safePublicId(scope.branch_id),
+      nurse_context: baseSummary.scope?.nurse_context || null,
+      department_name: baseSummary.scope?.department_name || null,
     },
     panel_summaries: panelSummaries,
     status_strip: buildStatusStrip(baseSummary),

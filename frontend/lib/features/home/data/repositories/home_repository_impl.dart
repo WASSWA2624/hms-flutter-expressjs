@@ -12,6 +12,8 @@ import 'package:hosspi_hms/features/home/data/dtos/home_dashboard_dtos.dart';
 import 'package:hosspi_hms/features/home/data/dtos/home_dashboard_lookups_dtos.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_guided_content.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_nurse_dashboard_context.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_scope.dart';
 import 'package:hosspi_hms/features/home/domain/repositories/home_repository.dart';
@@ -124,8 +126,14 @@ final class HomeRepositoryImpl implements HomeRepository {
     HomeDashboardProfile localProfile,
     HomeDashboard dashboard,
   ) {
-    return mergeHomeDashboardForProfile(
+    final HomeDashboardProfile tailoredProfile = tailorNurseDashboardProfileIfNeeded(
       profile: localProfile,
+      policy: _accessPolicy,
+      context: dashboard.context,
+      user: _session?.user,
+    );
+    return mergeHomeDashboardForProfile(
+      profile: tailoredProfile,
       dashboard: dashboard,
     );
   }
@@ -167,29 +175,40 @@ final class HomeRepositoryImpl implements HomeRepository {
     required bool usesFallbackData,
   }) {
     final AuthUserProfile? user = _session?.user;
+    final HomeDashboardProfile tailoredProfile = tailorNurseDashboardProfileIfNeeded(
+      profile: profile,
+      policy: _accessPolicy,
+      user: user,
+    );
+    final List<HomeQueueItem> queuePreview = usesFallbackData
+        ? guidedFallbackQueueHints(tailoredProfile)
+        : const <HomeQueueItem>[];
+    final List<HomeAlertItem> alerts = usesFallbackData
+        ? guidedFallbackAlerts(tailoredProfile)
+        : const <HomeAlertItem>[];
 
     return HomeDashboard(
       state: HomeDashboardLoadState.ready,
-      profile: profile,
+      profile: tailoredProfile,
       context: HomeDashboardContext(
-        roleValue: profile.role.value,
+        roleValue: tailoredProfile.role.value,
         tenantId: _accessPolicy.tenantId,
         facilityId: _accessPolicy.facilityId,
         facilityName: user?.facilityName,
         facilityType: user?.facilityType,
         branchId: _accessPolicy.branchId,
       ),
-      statusCards: profile.fallbackStatusCards(),
+      statusCards: tailoredProfile.fallbackStatusCards(),
       trend: HomeDashboardTrend.empty,
       distribution: HomeDashboardDistribution.empty,
-      quickActionIds: profile.suppressHomeQuickActions
+      quickActionIds: tailoredProfile.suppressHomeQuickActions
           ? const <String>[]
-          : profile.quickActionIds,
-      shortcutIds: profile.suppressHomeShortcuts
+          : tailoredProfile.quickActionIds,
+      shortcutIds: tailoredProfile.suppressHomeShortcuts
           ? const <String>[]
-          : profile.shortcutIds,
-      queuePreview: const <HomeQueueItem>[],
-      alerts: const <HomeAlertItem>[],
+          : tailoredProfile.shortcutIds,
+      queuePreview: queuePreview,
+      alerts: alerts,
       activity: const <HomeActivityItem>[],
       tenantOptions: const <HomeTenantOption>[],
       generatedAt: DateTime.now().toUtc(),

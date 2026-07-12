@@ -979,21 +979,83 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
   }
 
     if (packId === ROLE_PACKS.NURSE) {
-      const [activeAdmissions, medAdminToday, transferQueue, criticalLabs] = await Promise.all([
+      const [
+        activeAdmissions,
+        medAdminToday,
+        transferQueue,
+        criticalLabs,
+        appointmentsToday,
+        emergencyCasesToday,
+        theatreCasesToday,
+        radiologyPending,
+      ] = await Promise.all([
         prisma.admission.count({ where: { ...admissionWhere, status: 'ADMITTED' } }),
-        prisma.medication_administration.count({ where: { deleted_at: null, admission: admissionWhere, administered_at: { gte: todayStart } } }),
-        prisma.transfer_request.count({ where: { deleted_at: null, admission: admissionWhere, status: { in: ['REQUESTED', 'IN_PROGRESS'] } } }),
-        prisma.lab_result.count({ where: { ...labResultWhere, status: 'CRITICAL' } })
+        prisma.medication_administration.count({
+          where: {
+            deleted_at: null,
+            admission: admissionWhere,
+            administered_at: { gte: todayStart },
+          },
+        }),
+        prisma.transfer_request.count({
+          where: {
+            deleted_at: null,
+            admission: admissionWhere,
+            status: { in: ['REQUESTED', 'IN_PROGRESS'] },
+          },
+        }),
+        prisma.lab_result.count({ where: { ...labResultWhere, status: 'CRITICAL' } }),
+        prisma.appointment.count({
+          where: {
+            ...appointmentWhere,
+            status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] },
+          },
+        }),
+        prisma.emergency_case.count({
+          where: { ...emergencyCaseWhere, created_at: { gte: todayStart } },
+        }),
+        prisma.theatre_case.count({
+          where: {
+            ...theatreCaseWhere,
+            status: { in: ['SCHEDULED', 'IN_PROGRESS'] },
+          },
+        }),
+        prisma.radiology_result.count({
+          where: { ...radiologyResultWhere, status: 'DRAFT' },
+        }),
       ]);
       return {
-        metrics: { activeAdmissions, medAdminToday, transferQueue, criticalLabs },
-        trendDates: await selectDateSeries(prisma.medication_administration, { deleted_at: null, admission: admissionWhere, administered_at: { gte: trendStart } }, 'administered_at'),
-        statusCounts: await countByStatuses(prisma.transfer_request, { deleted_at: null, admission: admissionWhere }, ['REQUESTED', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']),
+        metrics: {
+          activeAdmissions,
+          medAdminToday,
+          transferQueue,
+          criticalLabs,
+          appointmentsToday,
+          emergencyCasesToday,
+          theatreCasesToday,
+          radiologyPending,
+        },
+        trendDates: await selectDateSeries(
+          prisma.medication_administration,
+          { deleted_at: null, admission: admissionWhere, administered_at: { gte: trendStart } },
+          'administered_at'
+        ),
+        statusCounts: await countByStatuses(
+          prisma.transfer_request,
+          { deleted_at: null, admission: admissionWhere },
+          ['REQUESTED', 'APPROVED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']
+        ),
         activity: {
-          meds: await prisma.medication_administration.count({ where: { deleted_at: null, admission: admissionWhere, updated_at: { gte: window24h } } }),
-          transfers: await prisma.transfer_request.count({ where: { deleted_at: null, admission: admissionWhere, updated_at: { gte: window24h } } }),
-          admissions: await prisma.admission.count({ where: { ...admissionWhere, updated_at: { gte: window24h } } })
-        }
+          meds: await prisma.medication_administration.count({
+            where: { deleted_at: null, admission: admissionWhere, updated_at: { gte: window24h } },
+          }),
+          transfers: await prisma.transfer_request.count({
+            where: { deleted_at: null, admission: admissionWhere, updated_at: { gte: window24h } },
+          }),
+          admissions: await prisma.admission.count({
+            where: { ...admissionWhere, updated_at: { gte: window24h } },
+          }),
+        },
       };
     }
 
@@ -1536,6 +1598,92 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
   }
 };
 
+const inferNurseContext = (combined = '') => {
+  const value = String(combined || '').toLowerCase();
+  if (/theatre|theater|surg/.test(value)) return 'theatre';
+  if (/radiology|imaging|x-ray|xray/.test(value)) return 'radiology';
+  if (/opd|outpatient|clinic/.test(value)) return 'opd';
+  if (/icu|intensive/.test(value)) return 'icu';
+  if (/ward|inpatient|ipd/.test(value)) return 'ward';
+  return 'general';
+};
+
+const findNurseStaffContext = async (userId, scope = {}) => {
+  if (!userId) return null;
+
+  try {
+    const profile = await prisma.staff_profile.findFirst({
+      where: {
+        deleted_at: null,
+        user_id: userId,
+        ...(scope.tenant_id ? { tenant_id: scope.tenant_id } : {}),
+      },
+      select: {
+        department_id: true,
+        position: true,
+        practitioner_type: true,
+        department: {
+          select: {
+            name: true,
+            short_name: true,
+          },
+        },
+        assignments: {
+          where: {
+            deleted_at: null,
+            OR: [{ end_date: null }, { end_date: { gte: new Date() } }],
+          },
+          orderBy: { start_date: 'desc' },
+          take: 1,
+          select: {
+            department_id: true,
+            unit_id: true,
+            department: {
+              select: {
+                name: true,
+                short_name: true,
+              },
+            },
+            unit: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!profile) return null;
+
+    const assignment = profile.assignments?.[0] || null;
+    const departmentName =
+      assignment?.department?.name ||
+      profile.department?.name ||
+      null;
+    const unitName = assignment?.unit?.name || '';
+    const combined = [
+      departmentName,
+      assignment?.department?.short_name,
+      profile.department?.short_name,
+      unitName,
+      profile.position,
+      profile.practitioner_type,
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    return {
+      nurse_context: inferNurseContext(combined),
+      department_id: assignment?.department_id || profile.department_id || null,
+      unit_id: assignment?.unit_id || null,
+      department_name: departmentName,
+    };
+  } catch (error) {
+    return null;
+  }
+};
+
 module.exports = {
   findById,
   findMany,
@@ -1546,6 +1694,7 @@ module.exports = {
   getDashboardSummaryByPack,
   countUnreadOpdNotifications,
   resolveBranchFacilityScope,
+  findNurseStaffContext,
   __private__: {
     ROLE_PACKS,
     buildLabOrderScopeWhere,

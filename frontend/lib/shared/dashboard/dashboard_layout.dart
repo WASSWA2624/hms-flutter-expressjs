@@ -134,10 +134,10 @@ int dashboardMetricColumnCount(double maxWidth, int cardCount) {
   return 1;
 }
 
-/// Desktop & tablet (≥ md): all actions on one row (max 5).
+/// Desktop & tablet (≥ md): all actions on one row (max 8).
 /// Mobile (< md): one action per row.
 int dashboardQuickActionColumnCount(double maxWidth, int actionCount) {
-  final int count = math.max(1, math.min(actionCount, 5));
+  final int count = math.max(1, math.min(actionCount, 8));
   if (maxWidth >= AppBreakpoints.md) {
     return count;
   }

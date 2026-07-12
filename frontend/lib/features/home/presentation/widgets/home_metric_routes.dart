@@ -78,19 +78,42 @@ AppRouteData? _clinicalMetricRoute({
   required HomeDashboardProfile profile,
   required AppAccessPolicy policy,
 }) {
-  if (profile.id != 'doctor') {
-    return null;
+  if (profile.id == 'doctor') {
+    return switch (cardId) {
+      'assigned' ||
+      'in_progress' ||
+      'follow_ups_due' when policy.grants(AppPermissions.clinicalRead) =>
+        AppRoutes.clinical,
+      'results_pending_review' when policy.grants(AppPermissions.labRead) =>
+        AppRoutes.lab,
+      _ => null,
+    };
   }
 
-  return switch (cardId) {
-    'assigned' ||
-    'in_progress' ||
-    'follow_ups_due' when policy.grants(AppPermissions.clinicalRead) =>
-      AppRoutes.clinical,
-    'results_pending_review' when policy.grants(AppPermissions.labRead) =>
-      AppRoutes.lab,
-    _ => null,
-  };
+  if (profile.id == 'nurse') {
+    return switch (cardId) {
+      'inpatient_flow' ||
+      'transfer_queue' ||
+      'discharge_pressure' when policy.grants(AppPermissions.clinicalRead) =>
+        AppRoutes.ipd,
+      'med_admin_today' when policy.grants(AppPermissions.clinicalWrite) =>
+        AppRoutes.nursing,
+      'critical_labs' when policy.grants(AppPermissions.labRead) =>
+        AppRoutes.lab,
+      'opd_notifications_attention' ||
+      'appointments_today' when policy.grants(AppPermissions.patientRead) =>
+        AppRoutes.opd,
+      'emergency_cases_today' when policy.grants(AppPermissions.emergencyRead) =>
+        AppRoutes.emergency,
+      'theatre_cases_today' when policy.grants(AppPermissions.clinicalRead) =>
+        AppRoutes.theater,
+      'radiology_pending' when policy.grants(AppPermissions.radiologyRead) =>
+        AppRoutes.radiology,
+      _ => null,
+    };
+  }
+
+  return null;
 }
 
 /// Opens the HR modal mapped to a workforce dashboard metric card.

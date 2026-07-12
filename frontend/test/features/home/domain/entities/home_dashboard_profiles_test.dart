@@ -3,6 +3,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
 
 void main() {
@@ -192,6 +193,37 @@ void main() {
         'radiology',
         'ipd',
       ]));
+    });
+
+    test('nurse profile supports five metrics and permission-aware actions', () {
+      final profile = homeProfileForRole(AppRole.nurse);
+
+      expect(profile.maxStatusCards, 5);
+      expect(profile.effectiveMaxStatusCards, 5);
+      expect(profile.maxQuickActions, 8);
+      expect(profile.maxShortcutTiles, 6);
+      expect(profile.maxQueueItems, 5);
+      expect(
+        profile.statusCards.map((template) => template.id),
+        containsAll(<String>[
+          'appointments_today',
+          'emergency_cases_today',
+          'theatre_cases_today',
+          'radiology_pending',
+        ]),
+      );
+      expect(
+        profile.quickActionIds,
+        containsAll(<String>[
+          'record_vitals',
+          'mark_med_administered',
+          'create_handover',
+          'write_clinical_note',
+          'route_patient',
+          'check_in_patient',
+        ]),
+      );
+      expect(profile.metricRouteTargets, contains('critical_labs'));
     });
 
     test('manager overlay roles do not override primary dashboard role', () {

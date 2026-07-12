@@ -104,6 +104,8 @@ final class HomeDashboardDto {
         facilityType:
             _string(context['facility_type']) ?? _string(hero['facility_type']),
         branchId: _string(context['branch_id']),
+        nurseContext: _string(context['nurse_context']),
+        departmentName: _string(context['department_name']),
       ),
       statusCards: statusCards.isEmpty
           ? profile.fallbackStatusCards()

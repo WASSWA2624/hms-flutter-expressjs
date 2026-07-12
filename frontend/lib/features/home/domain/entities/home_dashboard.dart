@@ -245,6 +245,8 @@ final class HomeDashboardContext {
     this.facilityName,
     this.facilityType,
     this.branchId,
+    this.nurseContext,
+    this.departmentName,
   });
 
   final String? roleValue;
@@ -253,6 +255,8 @@ final class HomeDashboardContext {
   final String? facilityName;
   final String? facilityType;
   final String? branchId;
+  final String? nurseContext;
+  final String? departmentName;
 }
 
 final class HomeStatusCard {

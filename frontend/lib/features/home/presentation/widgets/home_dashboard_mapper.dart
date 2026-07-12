@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_layout.dart';
+import 'package:hosspi_hms/features/home/domain/entities/home_nurse_dashboard_context.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_actions.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_metric_routes.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -354,7 +356,11 @@ DashboardChartsData homeDashboardChartsData({
           .toList(growable: false),
     ),
     distribution: DashboardDistributionChartData(
-      title: homeDistributionTitle(profile.role, dashboard.distribution.title),
+      title: profile.role == AppRole.nurse
+          ? nurseDistributionTitleForKind(
+              nurseDepartmentKindFromValue(dashboard.context.nurseContext),
+            )
+          : homeDistributionTitle(profile.role, dashboard.distribution.title),
       total: dashboard.distribution.total,
       emptyMessage: l10n.homeDistributionEmptyMessage,
       totalLabel: 'total',
