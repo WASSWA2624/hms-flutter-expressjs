@@ -25,8 +25,6 @@ class DashboardPriorityPanel extends StatelessWidget {
     final bool hasShortcuts = data.showShortcuts && data.shortcuts.isNotEmpty;
     final bool hasQueueContent = hasQueue && data.queueItems.isNotEmpty;
     final bool hasAlertContent = hasAlerts && data.alertItems.isNotEmpty;
-    final bool hasResultsContent = hasResults && data.resultsItems.isNotEmpty;
-    final bool hasFollowUpContent = hasFollowUps && data.followUpItems.isNotEmpty;
 
     if (!hasQueue &&
         !hasAlerts &&
