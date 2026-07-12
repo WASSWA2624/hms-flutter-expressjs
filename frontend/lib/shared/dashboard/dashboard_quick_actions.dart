@@ -2,8 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/shared/components/app_button.dart';
-import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_layout.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
 
@@ -19,19 +17,42 @@ class DashboardQuickActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-
     if (actions.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    return AppSectionPanel(
-      title: title,
-      leadingIcon: Icons.play_arrow_rounded,
-      density: AppContentPanelDensity.spacious,
-      backgroundColor: dashboardSectionBackgroundColor(colorScheme),
-      borderColor: dashboardSectionBorderColor(colorScheme),
-      children: <Widget>[DashboardActionButtonRow(actions: actions)],
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: dashboardSurfaceCardDecoration(theme, colorScheme),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Icon(
+                  Icons.bolt_rounded,
+                  size: 20,
+                  color: colorScheme.primary,
+                ),
+                SizedBox(width: theme.spacing.sm),
+                Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: theme.spacing.md),
+            DashboardActionButtonRow(actions: actions),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -39,7 +60,7 @@ class DashboardQuickActions extends StatelessWidget {
 class DashboardActionButtonRow extends StatelessWidget {
   const DashboardActionButtonRow({
     required this.actions,
-    this.maxActions = 4,
+    this.maxActions = 5,
     super.key,
   });
 
@@ -60,49 +81,40 @@ class DashboardActionButtonRow extends StatelessWidget {
       builder: (BuildContext context, BoxConstraints constraints) {
         final ThemeData theme = Theme.of(context);
         final double gap = theme.spacing.sm;
-        final int columns = dashboardQuickActionColumnCount(
+        final double minTileWidth = dashboardQuickActionMinTileWidth(
           constraints.maxWidth,
-          visibleActions.length,
         );
-        final double tileWidth = columns <= 1
-            ? constraints.maxWidth
-            : (constraints.maxWidth - (gap * (columns - 1))) / columns;
-        final bool singleRow = columns == visibleActions.length;
-        final List<Widget> actionTiles = <Widget>[
-          for (final DashboardQuickActionData action in visibleActions)
-            SizedBox(
-              width: singleRow ? null : math.max(0, tileWidth),
-              child: _DashboardQuickActionTile(action: action),
-            ),
-        ];
+        final int columns = math.max(
+          1,
+          (constraints.maxWidth / (minTileWidth + gap)).floor(),
+        ).clamp(1, visibleActions.length);
 
-        if (singleRow) {
+        if (columns >= visibleActions.length) {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              for (
-                int index = 0;
-                index < actionTiles.length;
-                index += 1
-              ) ...<Widget>[
+              for (int index = 0; index < visibleActions.length; index += 1) ...<Widget>[
                 if (index > 0) SizedBox(width: gap),
-                Expanded(child: actionTiles[index]),
+                Expanded(
+                  child: _DashboardQuickActionTile(action: visibleActions[index]),
+                ),
               ],
             ],
           );
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        final double tileWidth =
+            (constraints.maxWidth - (gap * (columns - 1))) / columns;
+
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
           children: <Widget>[
-            for (
-              int index = 0;
-              index < actionTiles.length;
-              index += 1
-            ) ...<Widget>[
-              if (index > 0) SizedBox(height: gap),
-              actionTiles[index],
-            ],
+            for (final DashboardQuickActionData action in visibleActions)
+              SizedBox(
+                width: tileWidth,
+                child: _DashboardQuickActionTile(action: action),
+              ),
           ],
         );
       },
@@ -123,17 +135,55 @@ class _DashboardQuickActionTile extends StatelessWidget {
     return Semantics(
       button: true,
       label: action.semanticsLabel,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
+      child: Material(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(theme.radius.lg),
+        child: InkWell(
+          onTap: action.onPressed,
           borderRadius: BorderRadius.circular(theme.radius.lg),
-          border: Border.all(color: dashboardSectionBorderColor(colorScheme)),
-        ),
-        child: AppButton.primary(
-          label: action.label,
-          leadingIcon: action.icon,
-          onPressed: action.onPressed,
-          fullWidth: true,
-          semanticLabel: action.semanticsLabel,
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(theme.radius.lg),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+              ),
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: theme.spacing.md,
+                vertical: theme.spacing.md,
+              ),
+              child: Row(
+                children: <Widget>[
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: dashboardAccentIconDecoration(
+                      theme,
+                      colorScheme.primary,
+                    ),
+                    child: Icon(
+                      action.icon,
+                      size: 18,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  SizedBox(width: theme.spacing.sm),
+                  Expanded(
+                    child: Text(
+                      action.label,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

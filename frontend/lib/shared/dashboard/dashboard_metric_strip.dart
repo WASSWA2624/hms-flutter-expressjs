@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/shared/dashboard/dashboard_layout.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
 
 class DashboardMetricStrip extends StatelessWidget {
@@ -37,13 +38,9 @@ class DashboardMetricStrip extends StatelessWidget {
 
         if (wide) {
           return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
-              for (
-                int index = 0;
-                index < cardWidgets.length;
-                index += 1
-              ) ...<Widget>[
+              for (int index = 0; index < cardWidgets.length; index += 1) ...<Widget>[
                 if (index > 0) SizedBox(width: gap),
                 Expanded(child: cardWidgets[index]),
               ],
@@ -54,11 +51,7 @@ class DashboardMetricStrip extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            for (
-              int index = 0;
-              index < cardWidgets.length;
-              index += 1
-            ) ...<Widget>[
+            for (int index = 0; index < cardWidgets.length; index += 1) ...<Widget>[
               if (index > 0) SizedBox(height: gap),
               cardWidgets[index],
             ],
@@ -80,7 +73,8 @@ class _DashboardMetricCard extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final bool isActionable = card.onTap != null;
-    final double iconSize = compact ? 28 : 32;
+    final double iconBox = compact ? 28 : 32;
+    final double iconGlyph = compact ? 16 : 18;
 
     final Widget cardBody = Padding(
       padding: EdgeInsets.symmetric(
@@ -90,28 +84,24 @@ class _DashboardMetricCard extends StatelessWidget {
       child: Row(
         children: <Widget>[
           Container(
-            width: iconSize,
-            height: iconSize,
-            decoration: BoxDecoration(
-              color: card.accent.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(theme.radius.md),
-            ),
-            child: Icon(card.icon, color: card.accent, size: 18),
+            width: iconBox,
+            height: iconBox,
+            alignment: Alignment.center,
+            decoration: dashboardMetricIconDecoration(theme, card.accent),
+            child: Icon(card.icon, color: card.accent, size: iconGlyph),
           ),
           SizedBox(width: theme.spacing.sm),
           Text(
             card.value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style:
-                (compact
-                        ? theme.textTheme.titleLarge
-                        : theme.textTheme.headlineSmall)
-                    ?.copyWith(
-                      color: card.accent,
-                      fontWeight: FontWeight.w800,
-                      height: 1.1,
-                    ),
+            style: (compact ? theme.textTheme.titleLarge : theme.textTheme.headlineSmall)
+                ?.copyWith(
+                  color: card.accent,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                  letterSpacing: -0.3,
+                ),
           ),
           SizedBox(width: theme.spacing.xs),
           Expanded(
@@ -119,23 +109,29 @@ class _DashboardMetricCard extends StatelessWidget {
               card.label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: (theme.textTheme.labelMedium ?? theme.textTheme.bodySmall)
-                  ?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+                height: 1.1,
+              ),
             ),
           ),
           if (isActionable) ...<Widget>[
             SizedBox(width: theme.spacing.xs),
             Icon(
-              Icons.chevron_right,
-              size: 16,
-              color: colorScheme.onSurfaceVariant,
+              Icons.chevron_right_rounded,
+              size: 18,
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.65),
             ),
           ],
         ],
       ),
+    );
+
+    final BoxDecoration decoration = dashboardMetricCardDecoration(
+      theme,
+      colorScheme,
+      card.accent,
     );
 
     return Semantics(
@@ -143,31 +139,17 @@ class _DashboardMetricCard extends StatelessWidget {
       label: card.semanticsLabel,
       child: isActionable
           ? Material(
-              color: colorScheme.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(theme.radius.lg),
+              color: Colors.transparent,
               child: InkWell(
                 onTap: card.onTap,
                 borderRadius: BorderRadius.circular(theme.radius.lg),
-                child: DecoratedBox(
-                  decoration: _metricCardDecoration(theme, colorScheme),
+                child: Ink(
+                  decoration: decoration,
                   child: cardBody,
                 ),
               ),
             )
-          : DecoratedBox(
-              decoration: _metricCardDecoration(theme, colorScheme),
-              child: cardBody,
-            ),
+          : DecoratedBox(decoration: decoration, child: cardBody),
     );
   }
-}
-
-BoxDecoration _metricCardDecoration(ThemeData theme, ColorScheme colorScheme) {
-  return BoxDecoration(
-    color: colorScheme.surfaceContainerLowest,
-    borderRadius: BorderRadius.circular(theme.radius.lg),
-    border: Border.all(
-      color: colorScheme.outlineVariant.withValues(alpha: 0.55),
-    ),
-  );
 }

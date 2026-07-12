@@ -28,17 +28,13 @@ class RoleDashboardScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<Widget> sections = <Widget>[];
-    var metricsAdded = false;
 
     void addSection(Widget section) {
       if (_isShrink(section)) {
         return;
       }
       if (sections.isNotEmpty) {
-        final double gap = metricsAdded && sections.length == 1
-            ? spacing.xl
-            : spacing.lg;
-        sections.add(SizedBox(height: gap));
+        sections.add(SizedBox(height: spacing.xl));
       }
       sections.add(section);
     }
@@ -49,7 +45,6 @@ class RoleDashboardScaffold extends StatelessWidget {
 
     if (layout.showMetrics && !_isShrink(summaryBadges)) {
       addSection(summaryBadges);
-      metricsAdded = true;
     }
     if (layout.showQuickActions) {
       addSection(quickActions);

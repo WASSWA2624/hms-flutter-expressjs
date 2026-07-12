@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_priority_panel.dart';
 
@@ -35,6 +34,6 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Manage tenants'), findsOneWidget);
-    expect(find.byType(AppButton), findsWidgets);
+    expect(find.byIcon(Icons.corporate_fare_outlined), findsOneWidget);
   });
 }

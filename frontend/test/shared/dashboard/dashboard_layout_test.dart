@@ -26,7 +26,7 @@ void main() {
     test('desktop lays out all actions in one row', () {
       expect(dashboardQuickActionColumnCount(1200, 3), 3);
       expect(dashboardQuickActionColumnCount(1200, 2), 2);
-      expect(dashboardQuickActionColumnCount(1200, 5), 4);
+      expect(dashboardQuickActionColumnCount(1200, 5), 5);
     });
 
     test('tablet lays out all actions in one row', () {

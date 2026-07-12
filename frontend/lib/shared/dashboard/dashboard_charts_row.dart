@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_chart_painters.dart';
+import 'package:hosspi_hms/shared/dashboard/dashboard_layout.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
@@ -55,16 +56,24 @@ class _DashboardTrendPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppSectionPanel(
-      title: chart.title,
-      leadingIcon: Icons.show_chart_outlined,
-      density: AppContentPanelDensity.spacious,
-      children: <Widget>[
-        if (chart.points.isEmpty)
-          _DashboardChartEmptyState(message: chart.emptyMessage)
-        else
-          _DashboardTrendChart(points: chart.points),
-      ],
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: dashboardSurfaceCardDecoration(theme, colorScheme),
+      child: AppSectionPanel(
+        title: chart.title,
+        leadingIcon: Icons.show_chart_outlined,
+        density: AppContentPanelDensity.spacious,
+        backgroundColor: Colors.transparent,
+        borderColor: Colors.transparent,
+        children: <Widget>[
+          if (chart.points.isEmpty)
+            _DashboardChartEmptyState(message: chart.emptyMessage)
+          else
+            _DashboardTrendChart(points: chart.points),
+        ],
+      ),
     );
   }
 }
@@ -134,22 +143,29 @@ class _DashboardDistributionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final bool hasData =
         chart.total > 0 ||
         chart.segments.any(
           (DashboardDistributionSegmentData s) => s.value != 0,
         );
 
-    return AppSectionPanel(
-      title: chart.title,
-      leadingIcon: Icons.donut_large_outlined,
-      density: AppContentPanelDensity.spacious,
-      children: <Widget>[
-        if (!hasData)
-          _DashboardChartEmptyState(message: chart.emptyMessage)
-        else
-          _DashboardDistributionChart(chart: chart),
-      ],
+    return DecoratedBox(
+      decoration: dashboardSurfaceCardDecoration(theme, colorScheme),
+      child: AppSectionPanel(
+        title: chart.title,
+        leadingIcon: Icons.donut_large_outlined,
+        density: AppContentPanelDensity.spacious,
+        backgroundColor: Colors.transparent,
+        borderColor: Colors.transparent,
+        children: <Widget>[
+          if (!hasData)
+            _DashboardChartEmptyState(message: chart.emptyMessage)
+          else
+            _DashboardDistributionChart(chart: chart),
+        ],
+      ),
     );
   }
 }

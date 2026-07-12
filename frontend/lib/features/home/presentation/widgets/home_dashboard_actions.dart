@@ -1676,6 +1676,18 @@ AppWorkspaceStatusTone homeMetricTone(HomeStatusCard card) {
         ? AppWorkspaceStatusTone.error
         : AppWorkspaceStatusTone.success;
   }
+  if (id.contains('results') ||
+      id.contains('lab') ||
+      id.contains('radiology')) {
+    return card.numericValue > 0
+        ? AppWorkspaceStatusTone.warning
+        : AppWorkspaceStatusTone.neutral;
+  }
+  if (id.contains('follow_up')) {
+    return card.numericValue > 0
+        ? AppWorkspaceStatusTone.warning
+        : AppWorkspaceStatusTone.success;
+  }
   if (id.contains('pending') ||
       id.contains('queue') ||
       id.contains('open') ||
@@ -1689,6 +1701,9 @@ AppWorkspaceStatusTone homeMetricTone(HomeStatusCard card) {
       id.contains('ready') ||
       id.contains('active')) {
     return AppWorkspaceStatusTone.success;
+  }
+  if (id.contains('assigned') || id.contains('in_progress')) {
+    return AppWorkspaceStatusTone.info;
   }
   return AppWorkspaceStatusTone.info;
 }

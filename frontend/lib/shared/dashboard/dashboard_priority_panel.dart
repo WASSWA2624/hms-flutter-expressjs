@@ -155,9 +155,40 @@ class DashboardAlertsPanel extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return _DashboardAlertsPanel(
-      title: data.alertsTitle!,
-      items: data.alertItems,
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: dashboardAlertsPanelDecoration(theme, colorScheme),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.lg),
+        child: _DashboardAlertsPanelContent(
+          title: data.alertsTitle!,
+          items: data.alertItems,
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardSectionShell extends StatelessWidget {
+  const _DashboardSectionShell({
+    required this.child,
+    this.decoration,
+  });
+
+  final Widget child;
+  final BoxDecoration? decoration;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration:
+          decoration ?? dashboardSurfaceCardDecoration(theme, colorScheme),
+      child: child,
     );
   }
 }
@@ -186,34 +217,33 @@ class _DashboardQueuePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isEmpty = items.isEmpty;
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
 
     final String? panelTitle = isEmpty ? (emptySectionTitle ?? title) : title;
     final String? panelDescription = isEmpty && emptyMessage.isNotEmpty
         ? emptyMessage
         : null;
 
-    return AppSectionPanel(
-      title: panelTitle,
-      description: isEmpty ? panelDescription : null,
-      leadingIcon: Icons.format_list_bulleted,
-      density: AppContentPanelDensity.spacious,
-      backgroundColor: dashboardSectionBackgroundColor(colorScheme),
-      borderColor: dashboardSectionBorderColor(colorScheme),
-      trailing: isEmpty || onViewAll == null
-          ? null
-          : AppButton.tertiary(
-              label: viewAllLabel,
-              leadingIcon: Icons.open_in_new,
-              onPressed: onViewAll,
-            ),
-      children: <Widget>[
-        if (isEmpty && emptyActions.isNotEmpty)
-          _DashboardEmptyState(actions: emptyActions),
-        if (!isEmpty)
-          for (final DashboardWorklistItemData item in items.take(maxItems))
-            _DashboardWorklistRow(item: item),
-      ],
+    return _DashboardSectionShell(
+      child: AppSectionPanel(
+        title: panelTitle,
+        description: isEmpty ? panelDescription : null,
+        leadingIcon: Icons.format_list_bulleted,
+        density: AppContentPanelDensity.spacious,
+        backgroundColor: Colors.transparent,
+        borderColor: Colors.transparent,
+        trailing: isEmpty || onViewAll == null
+            ? null
+            : AppButton.tertiary(
+                label: viewAllLabel,
+                leadingIcon: Icons.open_in_new,
+                onPressed: onViewAll,
+              ),
+        children: <Widget>[
+          if (isEmpty && emptyActions.isNotEmpty)
+            _DashboardEmptyState(actions: emptyActions),
+          if (!isEmpty) _DashboardWorklistGroup(items: items.take(maxItems).toList()),
+        ],
+      ),
     );
   }
 }
@@ -237,29 +267,29 @@ class _DashboardSecondaryQueuePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final bool isEmpty = items.isEmpty;
 
-    return AppSectionPanel(
-      title: title,
-      leadingIcon: icon,
-      density: AppContentPanelDensity.spacious,
-      backgroundColor: dashboardSectionBackgroundColor(colorScheme),
-      borderColor: dashboardSectionBorderColor(colorScheme),
-      trailing: isEmpty || onViewAll == null
-          ? null
-          : AppButton.tertiary(
-              label: viewAllLabel,
-              leadingIcon: Icons.open_in_new,
-              onPressed: onViewAll,
-            ),
-      children: <Widget>[
-        if (isEmpty)
-          const _DashboardQuietState(message: 'Nothing pending')
-        else
-          for (final DashboardWorklistItemData item in items.take(maxItems))
-            _DashboardWorklistRow(item: item),
-      ],
+    return _DashboardSectionShell(
+      child: AppSectionPanel(
+        title: title,
+        leadingIcon: icon,
+        density: AppContentPanelDensity.spacious,
+        backgroundColor: Colors.transparent,
+        borderColor: Colors.transparent,
+        trailing: isEmpty || onViewAll == null
+            ? null
+            : AppButton.tertiary(
+                label: viewAllLabel,
+                leadingIcon: Icons.open_in_new,
+                onPressed: onViewAll,
+              ),
+        children: <Widget>[
+          if (isEmpty)
+            const _DashboardQuietState(message: 'Nothing pending')
+          else
+            _DashboardWorklistGroup(items: items.take(maxItems).toList()),
+        ],
+      ),
     );
   }
 }
@@ -272,17 +302,88 @@ class _DashboardAlertsPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppSectionPanel(
-      title: title,
-      leadingIcon: Icons.warning_amber_outlined,
-      density: AppContentPanelDensity.spacious,
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return _DashboardSectionShell(
+      decoration: dashboardAlertsPanelDecoration(theme, colorScheme),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.lg),
+        child: _DashboardAlertsPanelContent(title: title, items: items),
+      ),
+    );
+  }
+}
+
+class _DashboardAlertsPanelContent extends StatelessWidget {
+  const _DashboardAlertsPanelContent({
+    required this.title,
+    required this.items,
+  });
+
+  final String title;
+  final List<DashboardWorklistItemData> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
+        Row(
+          children: <Widget>[
+            Icon(
+              Icons.warning_amber_rounded,
+              size: 20,
+              color: theme.statusColors.warning,
+            ),
+            SizedBox(width: theme.spacing.sm),
+            Text(
+              title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: theme.spacing.md),
         if (items.isEmpty)
           const _DashboardQuietState()
         else
-          for (final DashboardWorklistItemData item in items.take(3))
-            _DashboardWorklistRow(item: item),
+          _DashboardWorklistGroup(items: items.take(3).toList()),
       ],
+    );
+  }
+}
+
+class _DashboardWorklistGroup extends StatelessWidget {
+  const _DashboardWorklistGroup({required this.items});
+
+  final List<DashboardWorklistItemData> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: dashboardWorklistGroupDecoration(theme, colorScheme),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(theme.radius.lg),
+        child: Column(
+          children: <Widget>[
+            for (int index = 0; index < items.length; index += 1) ...<Widget>[
+              if (index > 0)
+                Divider(
+                  height: 1,
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.25),
+                ),
+              _DashboardWorklistRow(item: items[index]),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -303,11 +404,14 @@ class _DashboardShortcutsSection extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final double gap = theme.spacing.sm;
 
-    return AppSectionPanel(
-      title: title,
-      leadingIcon: Icons.link_rounded,
-      density: AppContentPanelDensity.spacious,
-      children: <Widget>[
+    return _DashboardSectionShell(
+      child: AppSectionPanel(
+        title: title,
+        leadingIcon: Icons.link_rounded,
+        density: AppContentPanelDensity.spacious,
+        backgroundColor: Colors.transparent,
+        borderColor: Colors.transparent,
+        children: <Widget>[
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final bool wide = constraints.maxWidth >= 640;
@@ -333,6 +437,7 @@ class _DashboardShortcutsSection extends StatelessWidget {
           },
         ),
       ],
+      ),
     );
   }
 }
@@ -346,7 +451,6 @@ class _DashboardWorklistRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final double iconSize = theme.appTokens.listIconSize;
     final _WorklistTitleParts parts = _parseWorklistTitle(item.title);
     final String detailLine = _worklistDetailLine(
       reference: parts.reference,
@@ -361,45 +465,45 @@ class _DashboardWorklistRow extends StatelessWidget {
 
     final Widget row = Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.sm,
+        horizontal: theme.spacing.md,
+        vertical: theme.spacing.md,
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
-          Icon(item.icon, size: iconSize, color: colorScheme.primary),
-          SizedBox(width: theme.spacing.sm),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: dashboardAccentIconDecoration(
+              theme,
+              colorScheme.primary,
+            ),
+            child: Icon(item.icon, size: 18, color: colorScheme.primary),
+          ),
+          SizedBox(width: theme.spacing.md),
           Expanded(
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                Flexible(
-                  child: Text(
-                    parts.headline,
+                Text(
+                  parts.headline,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: headlineStyle,
+                ),
+                if (detailLine.isNotEmpty)
+                  Text(
+                    detailLine,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: headlineStyle,
+                    style: detailStyle,
                   ),
-                ),
-                if (detailLine.isNotEmpty) ...<Widget>[
-                  SizedBox(width: theme.spacing.xs),
-                  Flexible(
-                    child: Text(
-                      detailLine,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: detailStyle,
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
           if (item.status != null) ...<Widget>[
-            SizedBox(width: theme.spacing.md),
-            Padding(
-              padding: EdgeInsets.only(right: theme.spacing.xs),
-              child: AppWorkspaceStatusBadge(status: item.status!),
-            ),
+            SizedBox(width: theme.spacing.sm),
+            AppWorkspaceStatusBadge(status: item.status!),
           ],
         ],
       ),
@@ -409,10 +513,13 @@ class _DashboardWorklistRow extends StatelessWidget {
       return row;
     }
 
-    return InkWell(
-      onTap: item.onTap,
-      borderRadius: BorderRadius.circular(theme.radius.md),
-      child: row,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: item.onTap,
+        hoverColor: colorScheme.primary.withValues(alpha: 0.04),
+        child: row,
+      ),
     );
   }
 }
@@ -433,40 +540,44 @@ class _DashboardShortcutTile extends StatelessWidget {
       child: InkWell(
         onTap: shortcut.onTap,
         borderRadius: BorderRadius.circular(theme.radius.lg),
-        child: DecoratedBox(
+        child: Ink(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(theme.radius.lg),
             border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.7),
+              color: colorScheme.outlineVariant.withValues(alpha: 0.35),
             ),
           ),
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: theme.spacing.md,
-              vertical: theme.spacing.md,
+              vertical: theme.spacing.lg,
             ),
-            child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Icon(
-                  shortcut.icon,
-                  size: theme.appTokens.listIconSize,
-                  color: colorScheme.primary,
-                ),
-                SizedBox(width: theme.spacing.sm),
-                Expanded(
-                  child: Text(
-                    shortcut.label,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: dashboardAccentIconDecoration(
+                    theme,
+                    colorScheme.primary,
+                  ),
+                  child: Icon(
+                    shortcut.icon,
+                    size: 20,
+                    color: colorScheme.primary,
                   ),
                 ),
-                Icon(
-                  Icons.chevron_right,
-                  size: theme.appTokens.listIconSize,
-                  color: colorScheme.onSurfaceVariant,
+                SizedBox(height: theme.spacing.sm),
+                Text(
+                  shortcut.label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    height: 1.2,
+                  ),
                 ),
               ],
             ),
@@ -496,19 +607,31 @@ class _DashboardQuietState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final Color successColor = theme.statusColors.success;
 
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.md,
+        vertical: theme.spacing.md,
+      ),
       child: Row(
         children: <Widget>[
-          Icon(Icons.check_circle_outline, size: 24, color: successColor),
-          SizedBox(width: theme.spacing.sm),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: successColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.check_rounded, size: 20, color: successColor),
+          ),
+          SizedBox(width: theme.spacing.md),
           Text(
             message,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: successColor,
-              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
