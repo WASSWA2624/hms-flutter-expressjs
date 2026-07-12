@@ -116,6 +116,7 @@ abstract final class AppRoutes {
     ...adminShellRoles,
     AppRole.doctor,
     AppRole.nurse,
+    AppRole.receptionist,
     AppRole.ambulanceOperator,
   ];
   static const List<AppRole> roomsBedsWorkspaceRoles = <AppRole>[
@@ -751,6 +752,23 @@ abstract final class AppRoutes {
 
   static bool isPharmacistFocusedShellRoute(AppRouteData route) {
     return pharmacistFocusedShellRoutes.any(
+      (AppRouteData candidate) => candidate.name == route.name,
+    );
+  }
+
+  /// Routes visible to [AppAccessPolicy.isReceptionistFocusedShellUser] in the shell.
+  static const List<AppRouteData> receptionistFocusedShellRoutes =
+      <AppRouteData>[
+        home,
+        patients,
+        opd,
+        emergency,
+        communications,
+        settings,
+      ];
+
+  static bool isReceptionistFocusedShellRoute(AppRouteData route) {
+    return receptionistFocusedShellRoutes.any(
       (AppRouteData candidate) => candidate.name == route.name,
     );
   }

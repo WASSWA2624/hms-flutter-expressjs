@@ -26,7 +26,18 @@ void main() {
       );
 
       expect(hints, isNotEmpty);
-      expect(hints.first.moduleSlug, 'scheduling');
+      expect(
+        hints.map((item) => item.moduleSlug),
+        containsAll(<String>['scheduling', 'emergency']),
+      );
+      expect(
+        hints.map((item) => item.id),
+        containsAll(<String>[
+          'guided_appointments',
+          'guided_doctor_assignment',
+          'guided_emergency_intake',
+        ]),
+      );
     });
   });
 

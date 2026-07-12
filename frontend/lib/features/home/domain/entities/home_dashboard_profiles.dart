@@ -394,22 +394,55 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     role: AppRole.receptionist,
     roleLabel: 'Reception / front desk',
     homeTitle: 'Front desk',
-    emptyMessage: 'No front-desk queue items right now.',
-    maxStatusCards: 3,
+    emptyMessage:
+        'No desk queue items right now. Use quick links for registry, OPD, emergency, or follow-ups.',
+    maxStatusCards: 4,
     statusCards: <HomeStatusCardTemplate>[
-      HomeStatusCardTemplate(id: 'registrations_today', label: 'Registrations'),
+      HomeStatusCardTemplate(id: 'appointments_today', label: 'Meetings'),
       HomeStatusCardTemplate(id: 'desk_queue', label: 'Desk queue'),
-      HomeStatusCardTemplate(id: 'no_show_pressure', label: 'No-shows'),
-      HomeStatusCardTemplate(id: 'front_billing_queue', label: 'Billing queue'),
-      HomeStatusCardTemplate(id: 'appointments_today', label: 'Appointments'),
+      HomeStatusCardTemplate(id: 'turnaround_pressure', label: 'In progress'),
+      HomeStatusCardTemplate(id: 'no_show_pressure', label: 'Follow-ups'),
+      HomeStatusCardTemplate(id: 'registrations_today', label: 'Registrations'),
+      HomeStatusCardTemplate(
+        id: 'emergency_cases_today',
+        label: 'Emergency intake',
+      ),
       HomeStatusCardTemplate(
         id: 'opd_notifications_attention',
         label: 'OPD alerts',
       ),
     ],
-    quickActionIds: <String>['register_patient', 'book_appointment'],
-    shortcutIds: <String>['opd', 'patients'],
-    emptyActionIds: <String>['register_patient', 'book_appointment'],
+    quickActionIds: <String>[
+      'register_patient',
+      'book_appointment',
+      'check_in_patient',
+      'route_patient',
+    ],
+    shortcutIds: <String>[
+      'patients',
+      'opd',
+      'emergency',
+      'communications',
+      'settings',
+    ],
+    emptyActionIds: const <String>[],
+    metricRouteTargets: <String, HomeMetricRouteTarget>{
+      'appointments_today': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'appointments'},
+      ),
+      'desk_queue': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'queue'},
+      ),
+      'turnaround_pressure': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'in-progress'},
+      ),
+      'no_show_pressure': HomeMetricRouteTarget(
+        queryParameters: <String, String>{'section': 'follow-up'},
+      ),
+      'registrations_today': HomeMetricRouteTarget(),
+      'emergency_cases_today': HomeMetricRouteTarget(),
+      'opd_notifications_attention': HomeMetricRouteTarget(),
+    },
   ),
   AppRole.billing: HomeDashboardProfile(
     id: 'billing',

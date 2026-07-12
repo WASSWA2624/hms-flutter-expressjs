@@ -429,5 +429,48 @@ void main() {
       expect(pharmacistPolicy.isPharmacistFocusedShellUser, isTrue);
       expect(doctorPolicy.isPharmacistFocusedShellUser, isFalse);
     });
+
+    test('marks receptionist users as receptionist-focused shell', () {
+      final receptionistPolicy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['RECEPTIONIST'],
+          ),
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'patient-registry',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'scheduling-queue',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'notifications-communications',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        ),
+      );
+      final doctorPolicy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['DOCTOR'],
+          ),
+        ),
+      );
+
+      expect(receptionistPolicy.isReceptionistFocusedShellUser, isTrue);
+      expect(receptionistPolicy.grants(AppPermissions.patientWrite), isTrue);
+      expect(receptionistPolicy.grants(AppPermissions.emergencyWrite), isTrue);
+      expect(receptionistPolicy.grants(AppPermissions.operationsRead), isFalse);
+      expect(doctorPolicy.isReceptionistFocusedShellUser, isFalse);
+    });
   });
 }

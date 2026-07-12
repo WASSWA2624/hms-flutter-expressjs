@@ -125,6 +125,28 @@ void main() {
       expect(canAccess(AppRoutes.billing, policy), isFalse);
     });
 
+    test('receptionist shell is limited to front-desk routes', () {
+      final policy = policyForRole('RECEPTIONIST');
+
+      expect(canAccess(AppRoutes.home, policy), isTrue);
+      expect(canAccess(AppRoutes.patients, policy), isTrue);
+      expect(canAccess(AppRoutes.opd, policy), isTrue);
+      expect(canAccess(AppRoutes.emergency, policy), isTrue);
+      expect(canAccess(AppRoutes.communications, policy), isTrue);
+      expect(canAccess(AppRoutes.settings, policy), isTrue);
+      expect(canAccess(AppRoutes.ipd, policy), isFalse);
+      expect(canAccess(AppRoutes.roomsBeds, policy), isFalse);
+      expect(canAccess(AppRoutes.icu, policy), isFalse);
+      expect(canAccess(AppRoutes.nursing, policy), isFalse);
+      expect(canAccess(AppRoutes.theater, policy), isFalse);
+      expect(canAccess(AppRoutes.discharge, policy), isFalse);
+      expect(canAccess(AppRoutes.pharmacy, policy), isFalse);
+      expect(canAccess(AppRoutes.operations, policy), isFalse);
+      expect(canAccess(AppRoutes.housekeeping, policy), isFalse);
+      expect(canAccess(AppRoutes.biomedical, policy), isFalse);
+      expect(canAccess(AppRoutes.physiotherapy, policy), isFalse);
+    });
+
     test('billing access follows billing permission pack', () {
       final policy = policyForRole('BILLING');
 

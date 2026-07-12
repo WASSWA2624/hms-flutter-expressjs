@@ -63,6 +63,17 @@ List<HomeAlertItem> guidedFallbackAlerts(HomeDashboardProfile profile) {
           action: 'open',
         ),
       ),
+      const HomeAlertItem(
+        id: 'guided_no_show_follow_up',
+        label: 'No-show follow-ups',
+        severity: 'MEDIUM',
+        count: 0,
+        target: HomeRouteTarget(
+          moduleSlug: 'scheduling',
+          resource: 'appointments',
+          action: 'list',
+        ),
+      ),
     ],
     AppRole.billing => <HomeAlertItem>[
       const HomeAlertItem(
@@ -137,13 +148,37 @@ List<HomeQueueItem> guidedFallbackQueueHints(HomeDashboardProfile profile) {
       ),
       const HomeQueueItem(
         id: 'guided_appointments',
-        label: 'Appointments queue',
+        label: 'Today\'s meetings & appointments',
         moduleSlug: 'scheduling',
         status: 'SCHEDULED',
         severity: 'medium',
         target: HomeRouteTarget(
           moduleSlug: 'scheduling',
           resource: 'appointments',
+          action: 'list',
+        ),
+      ),
+      const HomeQueueItem(
+        id: 'guided_doctor_assignment',
+        label: 'Patients waiting for doctor assignment',
+        moduleSlug: 'scheduling',
+        status: 'WAITING_DOCTOR_ASSIGNMENT',
+        severity: 'high',
+        target: HomeRouteTarget(
+          moduleSlug: 'scheduling',
+          resource: 'opd-flows',
+          action: 'open',
+        ),
+      ),
+      const HomeQueueItem(
+        id: 'guided_emergency_intake',
+        label: 'Emergency intake & assignment',
+        moduleSlug: 'emergency',
+        status: 'OPEN',
+        severity: 'high',
+        target: HomeRouteTarget(
+          moduleSlug: 'emergency',
+          resource: 'cases',
           action: 'list',
         ),
       ),

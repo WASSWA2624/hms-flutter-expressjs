@@ -1584,7 +1584,7 @@ String homeQueueTitle(AppRole role) {
     AppRole.labTech => 'Lab queue',
     AppRole.radiologyTech => 'Imaging',
     AppRole.pharmacist => 'Pending orders',
-    AppRole.receptionist => 'Desk',
+    AppRole.receptionist => 'Desk / meetings',
     AppRole.billing => 'Billing',
     AppRole.operations => 'Ops queue',
     AppRole.hr => 'Workforce',
@@ -1614,6 +1614,7 @@ String homeResultsTitle(AppRole role) {
 String homeFollowUpTitle(AppRole role) {
   return switch (role) {
     AppRole.doctor => 'Follow-ups',
+    AppRole.receptionist => 'Patient follow-ups',
     _ => 'Follow-ups',
   };
 }

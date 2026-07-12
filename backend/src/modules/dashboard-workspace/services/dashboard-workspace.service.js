@@ -1001,7 +1001,7 @@ const ROLE_QUEUE_IDS = Object.freeze({
   [ROLE_PACKS.LAB_TECH]: ['lab_results'],
   [ROLE_PACKS.RADIOLOGY_TECH]: ['radiology_results'],
   [ROLE_PACKS.PHARMACIST]: ['pharmacy_orders'],
-  [ROLE_PACKS.RECEPTIONIST]: ['appointments', 'billing_follow_up'],
+  [ROLE_PACKS.RECEPTIONIST]: ['appointments', 'emergency_cases'],
   [ROLE_PACKS.BILLING]: ['billing_follow_up'],
   [ROLE_PACKS.OPERATIONS]: ['admissions', 'maintenance_requests', 'housekeeping_tasks', 'billing_follow_up'],
   [ROLE_PACKS.HR]: [
@@ -1404,6 +1404,24 @@ const splitDoctorWorkspaceQueues = (items = []) => {
   return {
     queue_preview: appointments.slice(0, 5),
     results_preview: results.slice(0, 3),
+    follow_up_preview: followUps.slice(0, 3),
+  };
+};
+
+const splitReceptionistWorkspaceQueues = (items = []) => {
+  const appointments = items.filter((item) => item.queue === 'appointments');
+  const emergencyCases = items.filter((item) => item.queue === 'emergency_cases');
+  const inProgress = appointments.filter(
+    (item) => String(item.status || '').toUpperCase() === 'IN_PROGRESS'
+  );
+  const followUps = [
+    ...inProgress,
+    ...emergencyCases,
+  ];
+
+  return {
+    queue_preview: appointments.slice(0, 5),
+    results_preview: [],
     follow_up_preview: followUps.slice(0, 3),
   };
 };
@@ -1819,7 +1837,7 @@ const ALERT_MODULES_BY_PACK = Object.freeze({
   [ROLE_PACKS.LAB_TECH]: ['lab'],
   [ROLE_PACKS.RADIOLOGY_TECH]: ['radiology'],
   [ROLE_PACKS.PHARMACIST]: ['pharmacy', 'patients'],
-  [ROLE_PACKS.RECEPTIONIST]: ['scheduling'],
+  [ROLE_PACKS.RECEPTIONIST]: ['scheduling', 'emergency', 'patients', 'communications'],
   [ROLE_PACKS.BILLING]: ['billing'],
   [ROLE_PACKS.OPERATIONS]: ['operations', 'ipd'],
   [ROLE_PACKS.HR]: ['hr'],
@@ -2427,8 +2445,12 @@ const getWorkspace = async (
   const panelSummaries = buildPanelSummaries({ queueItems, activityItems, insights, checklist });
 
   let doctorQueueSplit = null;
+  let receptionistQueueSplit = null;
   if (packId === ROLE_PACKS.DOCTOR) {
     doctorQueueSplit = splitDoctorWorkspaceQueues(queueItems.items || []);
+  }
+  if (packId === ROLE_PACKS.RECEPTIONIST) {
+    receptionistQueueSplit = splitReceptionistWorkspaceQueues(queueItems.items || []);
   }
 
   const refinedSignals = refineDoctorInsights({ packId, signals: insights.signals || [] });
@@ -2494,9 +2516,15 @@ const getWorkspace = async (
       trend: baseSummary.trend,
       distribution: baseSummary.distribution,
       alerts,
-      queue_preview: doctorQueueSplit?.queue_preview || (queueItems.items || []).slice(0, 5),
+      queue_preview:
+        doctorQueueSplit?.queue_preview ||
+        receptionistQueueSplit?.queue_preview ||
+        (queueItems.items || []).slice(0, 5),
       results_preview: doctorQueueSplit?.results_preview || [],
-      follow_up_preview: doctorQueueSplit?.follow_up_preview || [],
+      follow_up_preview:
+        doctorQueueSplit?.follow_up_preview ||
+        receptionistQueueSplit?.follow_up_preview ||
+        [],
       value_proof: valueProof,
       insights_preview: refinedSignals.slice(0, 4),
       module_recommendations: (insights.module_recommendations || []).slice(0, 3),

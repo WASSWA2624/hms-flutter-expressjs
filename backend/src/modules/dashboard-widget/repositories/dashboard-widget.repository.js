@@ -1123,21 +1123,36 @@ const getDashboardSummaryByPack = async ({ packId, scope, days = 7, userId = nul
     }
 
     if (packId === ROLE_PACKS.RECEPTIONIST) {
-      const [registrationsToday, appointmentDeskQueue, noShowPressure, frontBillingQueue, appointmentsToday] = await Promise.all([
+      const [
+        registrationsToday,
+        appointmentDeskQueue,
+        turnaroundPressure,
+        noShowPressure,
+        appointmentsToday,
+        emergencyCasesToday
+      ] = await Promise.all([
         prisma.patient.count({ where: { ...patientWhere, created_at: { gte: todayStart } } }),
         prisma.appointment.count({ where: { ...appointmentWhere, status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] } } }),
+        prisma.appointment.count({ where: { ...appointmentWhere, status: 'IN_PROGRESS' } }),
         prisma.appointment.count({ where: { ...appointmentWhere, status: 'NO_SHOW' } }),
-        prisma.invoice.count({ where: { ...invoiceWhere, OR: [{ status: { in: ['SENT', 'OVERDUE'] } }, { billing_status: { in: ['DRAFT', 'ISSUED', 'PARTIAL'] } }] } }),
-        prisma.appointment.count({ where: { ...appointmentWhere, scheduled_start: { gte: todayStart } } })
+        prisma.appointment.count({ where: { ...appointmentWhere, scheduled_start: { gte: todayStart } } }),
+        prisma.emergency_case.count({ where: { ...emergencyCaseWhere, created_at: { gte: todayStart } } })
       ]);
       return {
-        metrics: { registrationsToday, appointmentDeskQueue, noShowPressure, frontBillingQueue, appointmentsToday },
+        metrics: {
+          registrationsToday,
+          appointmentDeskQueue,
+          turnaroundPressure,
+          noShowPressure,
+          appointmentsToday,
+          emergencyCasesToday
+        },
         trendDates: await selectDateSeries(prisma.patient, { ...patientWhere, created_at: { gte: trendStart } }, 'created_at'),
         statusCounts: await countByStatuses(prisma.appointment, appointmentWhere, ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'NO_SHOW', 'CANCELLED']),
         activity: {
           registrations: await prisma.patient.count({ where: { ...patientWhere, updated_at: { gte: window24h } } }),
           appointments: await prisma.appointment.count({ where: { ...appointmentWhere, updated_at: { gte: window24h } } }),
-          invoices: await prisma.invoice.count({ where: { ...invoiceWhere, updated_at: { gte: window24h } } })
+          emergencies: await prisma.emergency_case.count({ where: { ...emergencyCaseWhere, updated_at: { gte: window24h } } })
         }
       };
     }

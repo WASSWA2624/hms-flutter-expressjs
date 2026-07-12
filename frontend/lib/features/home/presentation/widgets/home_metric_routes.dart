@@ -125,6 +125,24 @@ AppRouteData? _clinicalMetricRoute({
     return AppRoutes.pharmacy;
   }
 
+  if (profile.id == 'receptionist') {
+    return switch (cardId) {
+      'registrations_today' when policy.grants(AppPermissions.patientRead) =>
+        AppRoutes.patients,
+      'appointments_today' ||
+      'desk_queue' ||
+      'turnaround_pressure' ||
+      'no_show_pressure' ||
+      'opd_notifications_attention'
+          when policy.grants(AppPermissions.patientRead) =>
+        AppRoutes.opd,
+      'emergency_cases_today'
+          when policy.grants(AppPermissions.emergencyRead) =>
+        AppRoutes.emergency,
+      _ => null,
+    };
+  }
+
   return null;
 }
 

@@ -57,6 +57,8 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
 
   bool get isPharmacistDepartmentDashboard => id == 'pharmacist';
 
+  bool get isReceptionistFrontDeskDashboard => id == 'receptionist';
+
   int get effectiveMaxStatusCards {
     if (isDoctorClinicalDashboard) {
       return math.min(maxStatusCards, 4);
@@ -64,7 +66,9 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     if (isNurseClinicalDashboard) {
       return math.min(maxStatusCards, 5);
     }
-    if (isLabDepartmentDashboard || isPharmacistDepartmentDashboard) {
+    if (isLabDepartmentDashboard ||
+        isPharmacistDepartmentDashboard ||
+        isReceptionistFrontDeskDashboard) {
       return math.min(maxStatusCards, 4);
     }
     final int tierCap = switch (layoutTier) {
@@ -87,7 +91,7 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
     if (isNurseClinicalDashboard) {
       return 8;
     }
-    if (isPharmacistDepartmentDashboard) {
+    if (isPharmacistDepartmentDashboard || isReceptionistFrontDeskDashboard) {
       return 4;
     }
     if (isLabDepartmentDashboard) {
@@ -105,17 +109,22 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
   int get maxQueueItems =>
       isDoctorClinicalDashboard ||
           isNurseClinicalDashboard ||
-          isPharmacistDepartmentDashboard
+          isPharmacistDepartmentDashboard ||
+          isReceptionistFrontDeskDashboard
       ? 5
       : 3;
 
   int get maxResultsItems => isDoctorClinicalDashboard ? 3 : 0;
 
-  int get maxFollowUpItems => isDoctorClinicalDashboard ? 3 : 0;
+  int get maxFollowUpItems =>
+      isDoctorClinicalDashboard || isReceptionistFrontDeskDashboard ? 3 : 0;
 
   int get maxShortcutTiles {
     if (isDoctorClinicalDashboard || isNurseClinicalDashboard) {
       return 6;
+    }
+    if (isReceptionistFrontDeskDashboard) {
+      return 5;
     }
     return switch (layoutTier) {
       HomeDashboardLayoutTier.platform ||

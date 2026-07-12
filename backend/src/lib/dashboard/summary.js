@@ -399,7 +399,7 @@ const SUMMARY_METADATA_BY_PACK = Object.freeze({
   [ROLE_PACKS.RECEPTIONIST]: {
     allowed_roles: [ROLES.RECEPTIONIST],
     required_permissions: ['patient:read'],
-    required_modules: ['patients', 'scheduling'],
+    required_modules: ['patients', 'scheduling', 'emergency'],
     scope: 'front_desk',
   },
   [ROLE_PACKS.BILLING]: {
@@ -714,11 +714,12 @@ const rawMetricsToRoleSummary = (packId, metrics = {}) => {
 
   if (packId === ROLE_PACKS.RECEPTIONIST) {
     return [
-      { id: 'registrations_today', label: 'Registrations today', value: metrics.registrationsToday || 0 },
+      { id: 'appointments_today', label: 'Meetings today', value: metrics.appointmentsToday || 0 },
       { id: 'desk_queue', label: 'Appointment desk queue', value: metrics.appointmentDeskQueue || 0 },
-      { id: 'no_show_pressure', label: 'No-show pressure', value: metrics.noShowPressure || 0 },
-      { id: 'front_billing_queue', label: 'Front billing queue', value: metrics.frontBillingQueue || 0 },
-      { id: 'appointments_today', label: 'Appointments today', value: metrics.appointmentsToday || 0 },
+      { id: 'turnaround_pressure', label: 'In-progress turnaround', value: metrics.turnaroundPressure || 0 },
+      { id: 'no_show_pressure', label: 'No-show follow-ups', value: metrics.noShowPressure || 0 },
+      { id: 'registrations_today', label: 'Registrations today', value: metrics.registrationsToday || 0 },
+      { id: 'emergency_cases_today', label: 'Emergency intake today', value: metrics.emergencyCasesToday || 0 },
     ];
   }
 

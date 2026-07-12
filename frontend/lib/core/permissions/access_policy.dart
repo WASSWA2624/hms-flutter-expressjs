@@ -431,6 +431,51 @@ final class AppAccessPolicy {
         ]);
   }
 
+  /// Receptionists and front-desk-only custom roles see a reduced application shell.
+  bool get isReceptionistFocusedShellUser {
+    if (isElevated) {
+      return false;
+    }
+    if (hasAnyRole(const <AppRole>[
+      AppRole.tenantAdmin,
+      AppRole.facilityAdmin,
+      AppRole.doctor,
+      AppRole.nurse,
+      AppRole.labTech,
+      AppRole.radiologyTech,
+      AppRole.pharmacist,
+      AppRole.billing,
+      AppRole.hr,
+      AppRole.operations,
+      AppRole.biomed,
+      AppRole.biomedManager,
+      AppRole.ambulanceOperator,
+      AppRole.wardManager,
+      AppRole.icuManager,
+      AppRole.theatreManager,
+      AppRole.housekeepingManager,
+      AppRole.houseKeeper,
+      AppRole.mortuaryStaff,
+      AppRole.mortuaryManager,
+      AppRole.unitManager,
+    ])) {
+      return false;
+    }
+    if (hasRole(AppRole.receptionist)) {
+      return true;
+    }
+    return grants(AppPermissions.patientWrite) &&
+        grants(AppPermissions.lastOfficeRead) &&
+        !grantsAny(const <AppPermission>[
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+          AppPermissions.operationsWrite,
+          AppPermissions.tenantAdmin,
+          AppPermissions.facilityAdmin,
+          AppPermissions.systemAdmin,
+        ]);
+  }
+
   bool canEditFacilitySetupStructure() {
     return canManageFacility() || canManageHrFacilitySetup();
   }
@@ -691,11 +736,12 @@ final class AppAccessPolicy {
       AppRole.receptionist => const <AppPermission>[
         AppPermissions.profileRead,
         AppPermissions.profileUpdate,
-        AppPermissions.operationsRead,
         AppPermissions.communicationsRead,
         AppPermissions.communicationsWrite,
         AppPermissions.patientRead,
         AppPermissions.patientWrite,
+        AppPermissions.emergencyRead,
+        AppPermissions.emergencyWrite,
         AppPermissions.lastOfficeRead,
         AppPermissions.lastOfficeWrite,
       ],
