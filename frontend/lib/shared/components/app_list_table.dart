@@ -7,6 +7,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
+import 'package:hosspi_hms/shared/components/app_list_table_column_layout_memory.dart';
 import 'package:hosspi_hms/shared/components/app_list_table_column_visibility_memory.dart';
 import 'package:hosspi_hms/shared/components/app_loading_indicator.dart';
 import 'package:hosspi_hms/shared/components/app_search_bar.dart';
@@ -26,8 +27,19 @@ typedef AppListTableSortComparator<T> = int Function(T left, T right);
 
 enum AppListTableDisplayMode { adaptive, table, list }
 
+/// How [AppListTable] requests additional [AppPage] data.
+///
+/// [infinite] loads the next page when the user scrolls near the bottom and
+/// appends rows (preferred). [buttons] keeps classic previous/next controls.
+enum AppListTablePaginationMode { infinite, buttons }
+
 const int _maxVisibleTableColumns = 5;
 const double _rowNumberColumnWidth = 48;
+const double _minResizableColumnWidth = 72;
+const double _defaultColumnWidth = 160;
+const double _defaultCompactColumnWidth = 136;
+const double _columnResizeHandleWidth = 8;
+const double _infiniteScrollLoadExtent = 240;
 
 LocalKey appListTableUniqueRowKey<T>({
   required int index,
@@ -513,6 +525,7 @@ class AppListTable<T> extends StatefulWidget {
     this.pageLabelBuilder,
     this.previousPageLabel,
     this.nextPageLabel,
+    this.paginationMode = AppListTablePaginationMode.infinite,
     this.emptyBuilder,
     this.loadingBuilder,
     this.errorBuilder,
@@ -543,6 +556,8 @@ class AppListTable<T> extends StatefulWidget {
     this.columnVisibilityResetLabel,
     this.columnVisibilityController,
     this.columnVisibilityStorageKey,
+    this.columnWidthStorageKey,
+    this.enableColumnResize = true,
     this.tableHorizontalMargin,
     this.maxTrailingActions,
     this.trailingActionsOverflowLabel = 'More actions',
@@ -567,6 +582,7 @@ class AppListTable<T> extends StatefulWidget {
   final AppListTablePageLabelBuilder<T>? pageLabelBuilder;
   final String? previousPageLabel;
   final String? nextPageLabel;
+  final AppListTablePaginationMode paginationMode;
   final WidgetBuilder? emptyBuilder;
   final WidgetBuilder? loadingBuilder;
   final Widget Function(BuildContext context, Object error)? errorBuilder;
@@ -591,6 +607,8 @@ class AppListTable<T> extends StatefulWidget {
   final String? columnVisibilityResetLabel;
   final AppListTableColumnVisibilityController<T>? columnVisibilityController;
   final String? columnVisibilityStorageKey;
+  final String? columnWidthStorageKey;
+  final bool enableColumnResize;
   final double? tableHorizontalMargin;
   final int? maxTrailingActions;
   final String trailingActionsOverflowLabel;
@@ -601,11 +619,16 @@ class AppListTable<T> extends StatefulWidget {
 
 class _AppListTableState<T> extends State<AppListTable<T>> {
   Set<String> _visibleColumnKeys = <String>{};
+  Map<String, double> _columnWidths = <String, double>{};
   String? _sortColumnKey;
   bool _sortAscending = true;
   int? _renderLimit;
   String _trackedQuery = '';
   int _trackedSortedItemCount = 0;
+  List<T> _accumulatedItems = <T>[];
+  int _accumulatedPageIndex = -1;
+  bool _pendingLoadMore = false;
+  ScrollPosition? _ancestorScrollPosition;
 
   @override
   void initState() {
@@ -614,7 +637,15 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       _handleColumnVisibilityChanged,
     );
     _syncVisibleColumns();
+    _syncColumnWidths();
+    _syncAccumulatedPage(widget.page);
     _ensureDefaultSortColumn();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _reattachAncestorScrollListener();
   }
 
   @override
@@ -642,10 +673,28 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       _syncVisibleColumns();
       _ensureDefaultSortColumn();
     }
+    if (oldWidget.columnWidthStorageKey != widget.columnWidthStorageKey ||
+        oldWidget.columns != widget.columns ||
+        oldWidget.columnChoices != widget.columnChoices) {
+      _syncColumnWidths();
+    }
+    if (oldWidget.page != widget.page ||
+        oldWidget.paginationMode != widget.paginationMode) {
+      _syncAccumulatedPage(widget.page);
+    }
+    if (oldWidget.isLoading && !widget.isLoading) {
+      _pendingLoadMore = false;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _reattachAncestorScrollListener();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _detachAncestorScrollListener();
     widget.columnVisibilityController?.removeListener(
       _handleColumnVisibilityChanged,
     );
@@ -664,6 +713,192 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  bool get _usesInfinitePagination {
+    return widget.paginationMode == AppListTablePaginationMode.infinite &&
+        widget.page != null &&
+        widget.onPageChanged != null;
+  }
+
+  void _syncAccumulatedPage(AppPage<T>? page) {
+    if (!_usesInfinitePagination || page == null) {
+      _accumulatedItems = page?.items ?? widget.items ?? <T>[];
+      _accumulatedPageIndex = page?.pageIndex ?? -1;
+      _pendingLoadMore = false;
+      return;
+    }
+
+    if (page.pageIndex == 0) {
+      _accumulatedItems = List<T>.of(page.items);
+      _accumulatedPageIndex = 0;
+      _pendingLoadMore = false;
+      return;
+    }
+
+    if (page.pageIndex == _accumulatedPageIndex + 1) {
+      _accumulatedItems = <T>[..._accumulatedItems, ...page.items];
+      _accumulatedPageIndex = page.pageIndex;
+      _pendingLoadMore = false;
+      return;
+    }
+
+    if (page.pageIndex == _accumulatedPageIndex) {
+      // Same page re-emitted (refresh); keep accumulated prefix and replace
+      // the current page slice when possible.
+      final int offset = page.request.offset;
+      if (offset <= _accumulatedItems.length) {
+        _accumulatedItems = <T>[
+          ..._accumulatedItems.take(offset),
+          ...page.items,
+        ];
+      } else {
+        _accumulatedItems = List<T>.of(page.items);
+        _accumulatedPageIndex = page.pageIndex;
+      }
+      _pendingLoadMore = false;
+      return;
+    }
+
+    _accumulatedItems = List<T>.of(page.items);
+    _accumulatedPageIndex = page.pageIndex;
+    _pendingLoadMore = false;
+  }
+
+  void _syncColumnWidths() {
+    final String? storageKey = _resolvedColumnWidthStorageKey();
+    final Map<String, double> next = <String, double>{};
+    if (storageKey != null) {
+      final Map<String, double>? saved =
+          AppListTableColumnLayoutMemory.instance.read(storageKey);
+      if (saved != null) {
+        next.addAll(saved);
+      }
+    }
+    _columnWidths = next;
+  }
+
+  String? _resolvedColumnWidthStorageKey() {
+    return widget.columnWidthStorageKey ??
+        widget.columnVisibilityStorageKey ??
+        appListTableColumnVisibilityStorageKey(
+          widget.columns,
+          widget.columnChoices,
+        );
+  }
+
+  double _columnWidthFor(AppListTableColumn<T> column, {required bool compact}) {
+    final double? saved = _columnWidths[column.key];
+    if (saved != null) {
+      return saved.clamp(_minResizableColumnWidth, 640);
+    }
+    return compact ? _defaultCompactColumnWidth : _defaultColumnWidth;
+  }
+
+  void _updateColumnWidth(String columnKey, double width) {
+    final double nextWidth = width.clamp(_minResizableColumnWidth, 640);
+    if (_columnWidths[columnKey] == nextWidth) {
+      return;
+    }
+    setState(() {
+      _columnWidths = <String, double>{..._columnWidths, columnKey: nextWidth};
+    });
+    final String? storageKey = _resolvedColumnWidthStorageKey();
+    if (storageKey != null) {
+      AppListTableColumnLayoutMemory.instance.writeWidth(
+        storageKey,
+        columnKey,
+        nextWidth,
+      );
+    }
+  }
+
+  void _reattachAncestorScrollListener() {
+    if (!_usesInfinitePagination && widget.maxVisibleItems == null) {
+      _detachAncestorScrollListener();
+      return;
+    }
+
+    final ScrollableState? scrollable = Scrollable.maybeOf(context);
+    final ScrollPosition? position = scrollable?.position;
+    if (identical(position, _ancestorScrollPosition)) {
+      return;
+    }
+    _detachAncestorScrollListener();
+    _ancestorScrollPosition = position;
+    _ancestorScrollPosition?.addListener(_handleAncestorScroll);
+  }
+
+  void _detachAncestorScrollListener() {
+    _ancestorScrollPosition?.removeListener(_handleAncestorScroll);
+    _ancestorScrollPosition = null;
+  }
+
+  void _handleAncestorScroll() {
+    final ScrollPosition? position = _ancestorScrollPosition;
+    if (position == null || !position.hasContentDimensions) {
+      return;
+    }
+    _handleScrollMetrics(position);
+  }
+
+  void _handleScrollMetrics(ScrollMetrics metrics) {
+    if (metrics.maxScrollExtent <= 0) {
+      return;
+    }
+    if (metrics.pixels < metrics.maxScrollExtent - _infiniteScrollLoadExtent) {
+      return;
+    }
+    _onNearScrollEnd();
+  }
+
+  void _onNearScrollEnd() {
+    final String query = _currentQuery();
+    final AppPage<T>? sourcePage = widget.page;
+    final List<T> sourceItems = _usesInfinitePagination
+        ? _accumulatedItems
+        : sourcePage?.items ?? widget.items ?? <T>[];
+    final bool usesExternalSearchListenable = widget.searchListenable != null;
+    List<T> visibleItems = sourceItems;
+    if (query.trim().isNotEmpty) {
+      final AppListTableSearchMatcher<T>? matcher = usesExternalSearchListenable
+          ? widget.searchMatcher
+          : widget.search?.matcher ?? widget.searchMatcher;
+      if (matcher != null) {
+        visibleItems = _filteredItems(sourceItems, query, matcher);
+      }
+    }
+    final int totalSortedCount = _sortedItems(visibleItems).length;
+    if (_canRevealMoreItems(totalSortedCount)) {
+      _revealMoreItems(totalSortedCount);
+    }
+    _maybeRequestNextPage();
+  }
+
+  String _currentQuery() {
+    final AppListTableSearch<T>? search = widget.search;
+    if (search != null) {
+      return search.controller.text;
+    }
+    return widget.searchListenable?.value ?? '';
+  }
+
+  void _maybeRequestNextPage() {
+    if (!_usesInfinitePagination) {
+      return;
+    }
+    final AppPage<T>? page = widget.page;
+    if (page == null) {
+      return;
+    }
+    if (_pendingLoadMore || widget.isLoading) {
+      return;
+    }
+    if (!page.hasNextPage) {
+      return;
+    }
+    _pendingLoadMore = true;
+    widget.onPageChanged!(page.request.next());
   }
 
   @override
@@ -713,6 +948,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       List<T> items,
       int totalSortedCount,
       AppPage<T>? page,
+      int rowNumberOffset,
     })
     data = _visibleData(
       query,
@@ -721,12 +957,17 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     final Widget content = _wrapIncrementalScroll(
       context,
       totalSortedCount: data.totalSortedCount,
-      child: _buildForItems(context, data.items),
+      child: _buildForItems(
+        context,
+        data.items,
+        rowNumberOffset: data.rowNumberOffset,
+      ),
     );
     final Widget? footer = _footerForPage(
       context,
       data.page,
       disablePagination: data.disablePagination,
+      visibleItemCount: data.items.length,
     );
     final Widget? toolbar = _buildToolbar(context, searchBar);
     final ThemeData theme = Theme.of(context);
@@ -772,10 +1013,13 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     List<T> items,
     int totalSortedCount,
     AppPage<T>? page,
+    int rowNumberOffset,
   })
   _visibleData(String query, {required bool usesExternalSearchListenable}) {
-    final AppPage<T>? page = widget.page;
-    final List<T> sourceItems = page?.items ?? widget.items ?? <T>[];
+    final AppPage<T>? sourcePage = widget.page;
+    final List<T> sourceItems = _usesInfinitePagination
+        ? _accumulatedItems
+        : sourcePage?.items ?? widget.items ?? <T>[];
     final String normalizedQuery = query.trim();
     List<T> visibleItems = sourceItems;
 
@@ -793,24 +1037,40 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     final List<T> renderedItems = _limitedVisibleItems(sortedItems);
     if (usesExternalSearchListenable &&
         normalizedQuery.isNotEmpty &&
-        page != null) {
+        sourcePage != null) {
       return (
         disablePagination: true,
         items: renderedItems,
         totalSortedCount: sortedItems.length,
+        rowNumberOffset: 0,
         page: AppPage<T>(
           items: renderedItems,
-          request: page.request.first(),
+          request: sourcePage.request.first(),
           totalItemCount: sortedItems.length,
         ),
       );
     }
 
+    final AppPage<T>? visiblePage = _usesInfinitePagination && sourcePage != null
+        ? AppPage<T>(
+            items: renderedItems,
+            request: AppPageRequest(
+              pageSize: math.max(renderedItems.length, 1),
+            ),
+            totalItemCount: sourcePage.totalItemCount,
+          )
+        : sourcePage;
+
+    final int rowNumberOffset = _usesInfinitePagination
+        ? 0
+        : sourcePage?.request.offset ?? 0;
+
     return (
       disablePagination: false,
       items: renderedItems,
       totalSortedCount: sortedItems.length,
-      page: page,
+      page: visiblePage,
+      rowNumberOffset: rowNumberOffset,
     );
   }
 
@@ -863,34 +1123,35 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     required int totalSortedCount,
     required Widget child,
   }) {
-    if (!_canRevealMoreItems(totalSortedCount)) {
+    final bool canReveal = _canRevealMoreItems(totalSortedCount);
+    final bool canLoadPage =
+        _usesInfinitePagination && (widget.page?.hasNextPage ?? false);
+    if (!canReveal && !canLoadPage) {
       return child;
     }
 
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification notification) {
-        if (notification is! ScrollUpdateNotification) {
+        if (notification.metrics.axis != Axis.vertical) {
           return false;
         }
-        final double? delta = notification.scrollDelta;
-        if (delta == null || delta == 0) {
+        if (notification is! ScrollUpdateNotification &&
+            notification is! OverscrollNotification &&
+            notification is! ScrollEndNotification) {
           return false;
         }
-        final ScrollMetrics metrics = notification.metrics;
-        if (metrics.maxScrollExtent <= 0) {
-          return false;
-        }
-        if (metrics.pixels < metrics.maxScrollExtent - 240) {
-          return false;
-        }
-        _revealMoreItems(totalSortedCount);
+        _handleScrollMetrics(notification.metrics);
         return false;
       },
       child: child,
     );
   }
 
-  Widget _buildForItems(BuildContext context, List<T> visibleItems) {
+  Widget _buildForItems(
+    BuildContext context,
+    List<T> visibleItems, {
+    required int rowNumberOffset,
+  }) {
     final Object? resolvedError = widget.error;
     if (resolvedError != null && widget.errorBuilder != null) {
       return widget.errorBuilder!(context, resolvedError);
@@ -916,6 +1177,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
             ? widget.physics
             : widget.physics ?? const NeverScrollableScrollPhysics();
         final List<AppListTableColumn<T>> visibleColumns = _visibleColumns;
+        final bool compact = _usesCompactTableLayout(constraints);
 
         if (_usesListLayout(constraints)) {
           return _MobileListTable<T>(
@@ -926,6 +1188,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
             shrinkWrap: effectiveShrinkWrap,
             physics: effectivePhysics,
             rowColorBuilder: widget.rowColorBuilder,
+            rowNumberOffset: rowNumberOffset,
           );
         }
 
@@ -934,13 +1197,21 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           columns: visibleColumns,
           itemKeyBuilder: widget.itemKeyBuilder,
           onRowSelected: widget.onRowSelected,
-          minWidth: _tableMinWidth(constraints, visibleColumns),
+          minWidth: _tableMinWidth(constraints, visibleColumns, compact),
           rowColorBuilder: widget.rowColorBuilder,
-          compact: _usesCompactTableLayout(constraints),
+          compact: compact,
           horizontalMargin: widget.tableHorizontalMargin,
           sortColumnKey: _sortColumnKey,
           sortAscending: _sortAscending,
           onSort: _sortByColumn,
+          rowNumberOffset: rowNumberOffset,
+          enableColumnResize: widget.enableColumnResize,
+          columnWidthFor: (AppListTableColumn<T> column) {
+            return _columnWidthFor(column, compact: compact);
+          },
+          onColumnWidthChanged: widget.enableColumnResize
+              ? _updateColumnWidth
+              : null,
         );
 
         if (!hasBoundedHeight) {
@@ -959,31 +1230,64 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     BuildContext context,
     AppPage<T>? visiblePage, {
     required bool disablePagination,
+    required int visibleItemCount,
   }) {
     final Widget? resolvedFooter = widget.footer;
     if (resolvedFooter != null) {
       return resolvedFooter;
     }
 
+    if (visiblePage == null) {
+      return null;
+    }
+
+    final bool showButtons =
+        widget.paginationMode == AppListTablePaginationMode.buttons &&
+        !disablePagination;
     final AppListTablePageLabelBuilder<T>? pageLabelBuilder =
         widget.pageLabelBuilder;
     final String? previousPageLabel = widget.previousPageLabel;
     final String? nextPageLabel = widget.nextPageLabel;
-    if (visiblePage == null ||
-        pageLabelBuilder == null ||
-        previousPageLabel == null ||
-        nextPageLabel == null) {
+
+    if (showButtons) {
+      if (pageLabelBuilder == null ||
+          previousPageLabel == null ||
+          nextPageLabel == null) {
+        return null;
+      }
+      return _AppPaginationControls(
+        pageRequest: widget.page!.request,
+        hasPreviousPage: widget.page!.hasPreviousPage,
+        hasNextPage: widget.page!.hasNextPage,
+        pageLabel: pageLabelBuilder(widget.page!),
+        previousPageLabel: previousPageLabel,
+        nextPageLabel: nextPageLabel,
+        onPageChanged: widget.onPageChanged,
+      );
+    }
+
+    final bool showInfiniteChrome =
+        _usesInfinitePagination ||
+        (pageLabelBuilder != null && visibleItemCount > 0);
+    if (!showInfiniteChrome) {
       return null;
     }
 
-    return _AppPaginationControls(
-      pageRequest: visiblePage.request,
-      hasPreviousPage: visiblePage.hasPreviousPage,
-      hasNextPage: visiblePage.hasNextPage,
-      pageLabel: pageLabelBuilder(visiblePage),
-      previousPageLabel: previousPageLabel,
-      nextPageLabel: nextPageLabel,
-      onPageChanged: disablePagination ? null : widget.onPageChanged,
+    final bool loadingMore =
+        widget.isLoading && visibleItemCount > 0 && _usesInfinitePagination;
+    final bool hasMore = widget.page?.hasNextPage ?? false;
+    final String? statusLabel = pageLabelBuilder == null
+        ? null
+        : pageLabelBuilder(visiblePage);
+
+    if (!loadingMore && statusLabel == null && !hasMore) {
+      return null;
+    }
+
+    return _AppInfiniteScrollFooter(
+      statusLabel: statusLabel,
+      isLoadingMore: loadingMore,
+      reachedEnd: _usesInfinitePagination && !hasMore && visibleItemCount > 0,
     );
   }
 
@@ -1006,16 +1310,19 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   double _tableMinWidth(
     BoxConstraints constraints,
     List<AppListTableColumn<T>> visibleColumns,
+    bool compact,
   ) {
     if (visibleColumns.isEmpty) {
       return constraints.maxWidth;
     }
 
-    final bool compact = _usesCompactTableLayout(constraints);
-    final double minColumnWidth = compact ? 128 : 148;
+    double columnsWidth = 0;
+    for (final AppListTableColumn<T> column in visibleColumns) {
+      columnsWidth += _columnWidthFor(column, compact: compact);
+    }
     return math.max(
       constraints.maxWidth,
-      _rowNumberColumnWidth + visibleColumns.length * minColumnWidth,
+      _rowNumberColumnWidth + columnsWidth,
     );
   }
 
@@ -1501,6 +1808,55 @@ class _AppPaginationControls extends StatelessWidget {
   }
 }
 
+class _AppInfiniteScrollFooter extends StatelessWidget {
+  const _AppInfiniteScrollFooter({
+    required this.statusLabel,
+    required this.isLoadingMore,
+    required this.reachedEnd,
+  });
+
+  final String? statusLabel;
+  final bool isLoadingMore;
+  final bool reachedEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Padding(
+      padding: EdgeInsets.only(top: theme.spacing.xs, bottom: theme.spacing.sm),
+      child: Row(
+        children: <Widget>[
+          if (statusLabel != null)
+            Expanded(
+              child: Text(
+                statusLabel!,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            )
+          else
+            const Spacer(),
+          if (isLoadingMore) ...<Widget>[
+            SizedBox(width: theme.spacing.sm),
+            const AppLoadingIndicator.compact(),
+          ] else if (reachedEnd)
+            Text(
+              'All rows loaded',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class _MobileListTable<T> extends StatelessWidget {
   const _MobileListTable({
     required this.items,
@@ -1510,6 +1866,7 @@ class _MobileListTable<T> extends StatelessWidget {
     required this.shrinkWrap,
     required this.physics,
     required this.rowColorBuilder,
+    this.rowNumberOffset = 0,
   });
 
   final List<T> items;
@@ -1519,6 +1876,7 @@ class _MobileListTable<T> extends StatelessWidget {
   final bool shrinkWrap;
   final ScrollPhysics? physics;
   final AppListTableRowColorBuilder<T>? rowColorBuilder;
+  final int rowNumberOffset;
 
   @override
   Widget build(BuildContext context) {
@@ -1535,7 +1893,7 @@ class _MobileListTable<T> extends StatelessWidget {
             item: item,
           ),
           child: _NumberedMobileListItem(
-            number: index + 1,
+            number: rowNumberOffset + index + 1,
             child: itemBuilder(context, item),
           ),
         );
@@ -1657,6 +2015,10 @@ class _DesktopListTable<T> extends StatefulWidget {
     required this.sortColumnKey,
     required this.sortAscending,
     required this.onSort,
+    this.rowNumberOffset = 0,
+    this.enableColumnResize = true,
+    required this.columnWidthFor,
+    this.onColumnWidthChanged,
   });
 
   final List<T> items;
@@ -1670,6 +2032,10 @@ class _DesktopListTable<T> extends StatefulWidget {
   final String? sortColumnKey;
   final bool sortAscending;
   final ValueChanged<AppListTableColumn<T>> onSort;
+  final int rowNumberOffset;
+  final bool enableColumnResize;
+  final double Function(AppListTableColumn<T> column) columnWidthFor;
+  final void Function(String columnKey, double width)? onColumnWidthChanged;
 
   @override
   State<_DesktopListTable<T>> createState() => _DesktopListTableState<T>();
@@ -1698,10 +2064,11 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         widget.horizontalMargin ??
         (widget.compact ? theme.spacing.sm : theme.spacing.md);
     final double columnSpacing = widget.compact
-        ? theme.spacing.md
-        : theme.spacing.xl;
-    final double rowMinHeight = widget.compact ? 32 : 34;
-    final double rowMaxHeight = widget.compact ? 50 : 56;
+        ? theme.spacing.sm
+        : theme.spacing.lg;
+    final double rowMinHeight = widget.compact ? 34 : 38;
+    final double rowMaxHeight = widget.compact ? 52 : 56;
+    final BorderRadius radius = BorderRadius.circular(theme.radius.md);
 
     final Widget table = DataTable(
       showCheckboxColumn: false,
@@ -1710,9 +2077,14 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
       headingRowHeight: widget.compact ? 44 : 48,
       dataRowMinHeight: rowMinHeight,
       dataRowMaxHeight: rowMaxHeight,
+      headingRowColor: WidgetStatePropertyAll<Color>(
+        colorScheme.surfaceContainerHigh.withValues(alpha: 0.72),
+      ),
+      dividerThickness: theme.appTokens.dividerThickness,
       headingTextStyle: theme.textTheme.labelLarge?.copyWith(
         color: colorScheme.onSurfaceVariant,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.1,
       ),
       dataTextStyle: theme.textTheme.bodyMedium?.copyWith(
         color: colorScheme.onSurface,
@@ -1728,7 +2100,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
               textAlign: TextAlign.center,
               style: theme.textTheme.labelMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
@@ -1739,10 +2111,16 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
             tooltip: column.tooltip,
             label: _DataColumnHeader<T>(
               column: column,
-              compact: widget.compact,
               isSorted: widget.sortColumnKey == column.key,
               sortAscending: widget.sortAscending,
               onSort: widget.onSort,
+              width: widget.columnWidthFor(column),
+              enableResize: widget.enableColumnResize,
+              onWidthChanged: widget.onColumnWidthChanged == null
+                  ? null
+                  : (double width) {
+                      widget.onColumnWidthChanged!(column.key, width);
+                    },
             ),
           ),
       ],
@@ -1752,18 +2130,28 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
       ],
     );
 
-    return Scrollbar(
-      controller: _horizontalController,
-      thumbVisibility: true,
-      notificationPredicate: (ScrollNotification notification) {
-        return notification.metrics.axis == Axis.horizontal;
-      },
-      child: SingleChildScrollView(
+    return Material(
+      color: colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: radius,
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.55),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Scrollbar(
         controller: _horizontalController,
-        scrollDirection: Axis.horizontal,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minWidth: widget.minWidth),
-          child: table,
+        thumbVisibility: true,
+        notificationPredicate: (ScrollNotification notification) {
+          return notification.metrics.axis == Axis.horizontal;
+        },
+        child: SingleChildScrollView(
+          controller: _horizontalController,
+          scrollDirection: Axis.horizontal,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minWidth: widget.minWidth),
+            child: table,
+          ),
         ),
       ),
     );
@@ -1778,7 +2166,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         itemKeyBuilder: widget.itemKeyBuilder,
         item: item,
       ),
-      color: _rowColor(context, item),
+      color: _rowColor(context, item, index),
       onSelectChanged: widget.onRowSelected == null
           ? null
           : (_) {
@@ -1789,30 +2177,69 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
           Align(
             child: SizedBox(
               width: _rowNumberColumnWidth,
-              child: Text((index + 1).toString(), textAlign: TextAlign.center),
+              child: Text(
+                (widget.rowNumberOffset + index + 1).toString(),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ),
         ),
         for (final AppListTableColumn<T> column in widget.columns)
-          DataCell(column.cellBuilder(context, item)),
+          DataCell(
+            SizedBox(
+              width: widget.columnWidthFor(column),
+              child: Align(
+                alignment: column.numeric
+                    ? Alignment.centerRight
+                    : Alignment.centerLeft,
+                child: column.cellBuilder(context, item),
+              ),
+            ),
+          ),
       ],
     );
   }
 
-  WidgetStateProperty<Color?>? _rowColor(BuildContext context, T item) {
+  WidgetStateProperty<Color?>? _rowColor(
+    BuildContext context,
+    T item,
+    int index,
+  ) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final AppListTableRowColorBuilder<T>? builder = widget.rowColorBuilder;
-    if (builder == null) {
-      return null;
+    final Color? custom = builder?.call(context, item);
+    final Color? stripe = index.isOdd
+        ? colorScheme.surfaceContainerLowest.withValues(alpha: 0.65)
+        : null;
+    final Color? base = custom ?? stripe;
+    if (base == null) {
+      return WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
+        if (states.contains(WidgetState.hovered)) {
+          return colorScheme.primary.withValues(alpha: 0.05);
+        }
+        if (states.contains(WidgetState.selected)) {
+          return colorScheme.primary.withValues(alpha: 0.08);
+        }
+        return null;
+      });
     }
 
     return WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
-      final Color? color = builder(context, item);
-      if (color == null) {
-        return null;
-      }
+      Color color = base;
       if (states.contains(WidgetState.hovered)) {
-        return Color.alphaBlend(
-          Theme.of(context).colorScheme.primary.withValues(alpha: 0.06),
+        color = Color.alphaBlend(
+          colorScheme.primary.withValues(alpha: 0.06),
+          color,
+        );
+      }
+      if (states.contains(WidgetState.selected)) {
+        color = Color.alphaBlend(
+          colorScheme.primary.withValues(alpha: 0.08),
           color,
         );
       }
@@ -1824,60 +2251,59 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
 class _DataColumnHeader<T> extends StatelessWidget {
   const _DataColumnHeader({
     required this.column,
-    required this.compact,
     required this.isSorted,
     required this.sortAscending,
     required this.onSort,
+    required this.width,
+    required this.enableResize,
+    this.onWidthChanged,
   });
 
   final AppListTableColumn<T> column;
-  final bool compact;
   final bool isSorted;
   final bool sortAscending;
   final ValueChanged<AppListTableColumn<T>> onSort;
+  final double width;
+  final bool enableResize;
+  final ValueChanged<double>? onWidthChanged;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final double maxWidth = compact ? 132 : 164;
     final TextStyle? headerStyle = theme.textTheme.labelLarge?.copyWith(
       color: isSorted ? colorScheme.primary : colorScheme.onSurfaceVariant,
       fontWeight: isSorted ? FontWeight.w700 : FontWeight.w600,
     );
 
+    Widget label;
     if (!column.isSortable) {
       final AppListTableHeaderBuilder<T>? headerBuilder = column.headerBuilder;
       if (headerBuilder != null) {
-        return headerBuilder(context);
-      }
-      return ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth),
-        child: Text(
+        label = headerBuilder(context);
+      } else {
+        label = Text(
           column.label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: headerStyle,
-        ),
-      );
-    }
+        );
+      }
+    } else {
+      final IconData sortIcon = isSorted
+          ? sortAscending
+                ? Icons.arrow_upward
+                : Icons.arrow_downward
+          : Icons.swap_vert;
+      final Color foreground = isSorted
+          ? colorScheme.primary
+          : colorScheme.onSurfaceVariant;
+      final String direction = sortAscending ? 'ascending' : 'descending';
+      final String tooltip = isSorted
+          ? 'Sorted by ${column.label}, $direction'
+          : 'Sort by ${column.label}';
 
-    final IconData sortIcon = isSorted
-        ? sortAscending
-              ? Icons.arrow_upward
-              : Icons.arrow_downward
-        : Icons.swap_vert;
-    final Color foreground = isSorted
-        ? colorScheme.primary
-        : colorScheme.onSurfaceVariant;
-    final String direction = sortAscending ? 'ascending' : 'descending';
-    final String tooltip = isSorted
-        ? 'Sorted by ${column.label}, $direction'
-        : 'Sort by ${column.label}';
-
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: maxWidth),
-      child: Tooltip(
+      label = Tooltip(
         message: tooltip,
         child: Semantics(
           button: true,
@@ -1887,6 +2313,7 @@ class _DataColumnHeader<T> extends StatelessWidget {
             onTap: () {
               onSort(column);
             },
+            borderRadius: BorderRadius.circular(theme.radius.sm),
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
               child: DecoratedBox(
@@ -1901,9 +2328,8 @@ class _DataColumnHeader<T> extends StatelessWidget {
                   ),
                 ),
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Flexible(
+                    Expanded(
                       child: Text(
                         column.label,
                         maxLines: 1,
@@ -1918,6 +2344,81 @@ class _DataColumnHeader<T> extends StatelessWidget {
                       size: theme.appTokens.listIconSize * 0.82,
                     ),
                   ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: width,
+      child: Row(
+        children: <Widget>[
+          Expanded(child: label),
+          if (enableResize && onWidthChanged != null)
+            _ColumnResizeHandle(
+              width: width,
+              onWidthChanged: onWidthChanged!,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ColumnResizeHandle extends StatefulWidget {
+  const _ColumnResizeHandle({
+    required this.width,
+    required this.onWidthChanged,
+  });
+
+  final double width;
+  final ValueChanged<double> onWidthChanged;
+
+  @override
+  State<_ColumnResizeHandle> createState() => _ColumnResizeHandleState();
+}
+
+class _ColumnResizeHandleState extends State<_ColumnResizeHandle> {
+  double? _dragWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.resizeColumn,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onHorizontalDragStart: (_) {
+          _dragWidth = widget.width;
+        },
+        onHorizontalDragUpdate: (DragUpdateDetails details) {
+          final double next =
+              (_dragWidth ?? widget.width) + details.delta.dx;
+          _dragWidth = next;
+          widget.onWidthChanged(next);
+        },
+        onHorizontalDragEnd: (_) {
+          _dragWidth = null;
+        },
+        onHorizontalDragCancel: () {
+          _dragWidth = null;
+        },
+        child: Semantics(
+          label: 'Resize column',
+          slider: true,
+          child: SizedBox(
+            width: _columnResizeHandleWidth,
+            child: Center(
+              child: Container(
+                width: 2,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(1),
                 ),
               ),
             ),

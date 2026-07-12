@@ -9,6 +9,7 @@ import 'component_test_app.dart';
 void main() {
   setUp(() {
     AppListTableColumnVisibilityMemory.instance.clear();
+    AppListTableColumnLayoutMemory.instance.clear();
   });
 
   const items = <_RowItem>[
@@ -117,7 +118,7 @@ void main() {
     final DataTable table = tester.widget<DataTable>(find.byType(DataTable));
     expect(find.text('Title'), findsOneWidget);
     expect(table.horizontalMargin, 8);
-    expect(table.columnSpacing, 12);
+    expect(table.columnSpacing, 8);
   });
 
   testWidgets('AppListTable can force list rendering on wide screens', (
@@ -416,10 +417,11 @@ void main() {
     expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
     expect(find.byIcon(Icons.view_column_outlined), findsNothing);
 
-    await tester.tap(settingsInSearchBar);
+    await tester.tap(find.byIcon(Icons.settings_outlined));
     await tester.pumpAndSettle();
 
-    expect(find.text('Table columns'), findsOneWidget);
+    expect(find.byType(AppDialog), findsOneWidget);
+    expect(find.text('TABLE COLUMNS'), findsOneWidget);
   });
 
   testWidgets('AppListTable restores column visibility from memory', (
@@ -565,6 +567,7 @@ void main() {
       SizedBox(
         height: 360,
         child: AppListTable<_RowItem>(
+          paginationMode: AppListTablePaginationMode.buttons,
           page: const AppPage<_RowItem>(
             items: items,
             request: AppPageRequest(pageIndex: 1, pageSize: 2),
@@ -605,6 +608,7 @@ void main() {
       SizedBox(
         height: 360,
         child: AppListTable<_RowItem>(
+          paginationMode: AppListTablePaginationMode.buttons,
           page: const AppPage<_RowItem>(
             items: items,
             request: AppPageRequest(pageIndex: 1, pageSize: 2),
@@ -644,6 +648,7 @@ void main() {
       SizedBox(
         height: 360,
         child: AppListTable<_RowItem>(
+          paginationMode: AppListTablePaginationMode.buttons,
           page: const AppPage<_RowItem>(
             items: items,
             request: AppPageRequest(pageIndex: 1, pageSize: 2),
@@ -687,6 +692,177 @@ void main() {
     expect(find.text('Alpha'), findsOneWidget);
     expect(find.text('Beta'), findsOneWidget);
     expect(find.text('3-4 of 6'), findsOneWidget);
+  });
+
+  testWidgets('AppListTable infinite scroll requests the next page', (
+    WidgetTester tester,
+  ) async {
+    AppPageRequest? nextRequest;
+    final List<_RowItem> pageItems = List<_RowItem>.generate(12, (int index) {
+      return _RowItem(
+        id: '$index',
+        title: 'Item $index',
+        status: 'Active',
+      );
+    });
+    final AppPage<_RowItem> page = AppPage<_RowItem>(
+      items: pageItems,
+      request: const AppPageRequest(pageSize: 12),
+      totalItemCount: 24,
+    );
+
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 220,
+        width: 960,
+        child: AppListTable<_RowItem>(
+          page: page,
+          columns: _columns,
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return ListTile(title: Text(item.title));
+          },
+          pageLabelBuilder: (AppPage<_RowItem> value) {
+            return '${value.firstItemNumber}-${value.lastItemNumber} '
+                'of ${value.totalItemCount}';
+          },
+          onPageChanged: (AppPageRequest request) {
+            nextRequest = request;
+          },
+        ),
+      ),
+      size: const Size(960, 600),
+    );
+
+    expect(find.byTooltip('Next page'), findsNothing);
+    expect(find.text('1-12 of 24'), findsOneWidget);
+
+    final ScrollableState scrollable = tester.state<ScrollableState>(
+      find.byType(Scrollable).first,
+    );
+    scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
+    await tester.pump();
+
+    expect(nextRequest, const AppPageRequest(pageIndex: 1, pageSize: 12));
+  });
+
+  testWidgets('AppListTable accumulates infinite pages and continues numbering', (
+    WidgetTester tester,
+  ) async {
+    AppPage<_RowItem> page = AppPage<_RowItem>(
+      items: List<_RowItem>.generate(8, (int index) {
+        return _RowItem(
+          id: 'a-$index',
+          title: 'Alpha $index',
+          status: 'Active',
+        );
+      }),
+      request: const AppPageRequest(pageSize: 8),
+      totalItemCount: 12,
+    );
+
+    await pumpComponent(
+      tester,
+      StatefulBuilder(
+        builder: (BuildContext context, StateSetter setState) {
+          return SizedBox(
+            height: 240,
+            width: 960,
+            child: AppListTable<_RowItem>(
+              page: page,
+              columns: _columns,
+              mobileItemBuilder: (BuildContext context, _RowItem item) {
+                return ListTile(title: Text(item.title));
+              },
+              onPageChanged: (AppPageRequest request) {
+                setState(() {
+                  page = AppPage<_RowItem>(
+                    items: List<_RowItem>.generate(4, (int index) {
+                      return _RowItem(
+                        id: 'b-$index',
+                        title: 'Beta $index',
+                        status: 'Draft',
+                      );
+                    }),
+                    request: request,
+                    totalItemCount: 12,
+                  );
+                });
+              },
+            ),
+          );
+        },
+      ),
+      size: const Size(960, 600),
+    );
+
+    expect(find.text('Alpha 0'), findsOneWidget);
+    expect(find.text('Beta 0'), findsNothing);
+
+    final ScrollableState scrollable = tester.state<ScrollableState>(
+      find.byType(Scrollable).first,
+    );
+    scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Beta 0'), findsOneWidget);
+    expect(find.text('9'), findsOneWidget);
+    expect(find.text('12'), findsOneWidget);
+  });
+
+  testWidgets('AppListTable remembers resized column widths', (
+    WidgetTester tester,
+  ) async {
+    const String storageKey = 'test-table-widths';
+
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 360,
+        width: 960,
+        child: AppListTable<_RowItem>(
+          items: items,
+          columns: _columnsWithStableKeys,
+          columnWidthStorageKey: storageKey,
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return Text(item.title);
+          },
+        ),
+      ),
+      size: const Size(960, 600),
+    );
+
+    final Finder resizeHandle = find.bySemanticsLabel('Resize column').first;
+    await tester.drag(resizeHandle, const Offset(40, 0));
+    await tester.pump();
+
+    final Map<String, double>? saved =
+        AppListTableColumnLayoutMemory.instance.read(storageKey);
+    expect(saved, isNotNull);
+    expect(saved!['title'], greaterThan(160));
+
+    await pumpComponent(
+      tester,
+      SizedBox(
+        height: 360,
+        width: 960,
+        child: AppListTable<_RowItem>(
+          items: items,
+          columns: _columnsWithStableKeys,
+          columnWidthStorageKey: storageKey,
+          mobileItemBuilder: (BuildContext context, _RowItem item) {
+            return Text(item.title);
+          },
+        ),
+      ),
+      size: const Size(960, 600),
+    );
+
+    expect(
+      AppListTableColumnLayoutMemory.instance.read(storageKey)!['title'],
+      saved['title'],
+    );
   });
 
   testWidgets('AppListTable tolerates duplicate item keys', (
