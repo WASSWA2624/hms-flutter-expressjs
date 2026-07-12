@@ -515,7 +515,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'open_balances': HomeMetricRouteTarget(
         queryParameters: <String, String>{'queue': 'pendingPayment'},
       ),
-      'refunds_today': const HomeMetricRouteTarget(),
+      'refunds_today': HomeMetricRouteTarget(),
     },
   ),
   AppRole.operations: HomeDashboardProfile(

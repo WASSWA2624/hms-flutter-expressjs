@@ -118,7 +118,7 @@ class _BillingSummaryTile extends StatelessWidget {
           );
     final String subtitle = <String>[
       if ((record.status ?? '').trim().isNotEmpty) record.status!.trim(),
-      if (amount != null) amount,
+      ?amount,
       ?occurredAt,
     ].join(' · ');
 
