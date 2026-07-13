@@ -98,6 +98,7 @@ Mandatory platform rules for all work in this module.
 - **Department charge context** — line items render description/qty/amount but do not surface source module, encounter, or service area (OPD, IPD, lab, etc.) when API provides it.
 - **Non-invoice work items** — payments, refunds, claims, and approvals in the queue lack tailored detail layouts and action panels.
 - **Tests** — limited widget/page coverage compared with lab/radiology/pharmacy clinical-action tests.
+- **Multi-tier pricing engine** — see root [`prompt.md`](../prompt.md) for price book, co-pay splits, pharmacy/facility billing entities, and insurer adapters now landing across shared clinical billing.
 
 ---
 

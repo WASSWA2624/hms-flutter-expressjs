@@ -18154,6 +18154,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalRequestBillingTotalLabel => 'Total';
 
   @override
+  String get clinicalRequestPatientShareLabel => 'Patient share';
+
+  @override
+  String get clinicalRequestInsurerShareLabel => 'Insurer share';
+
+  @override
+  String get clinicalRequestCopayLabel => 'Co-pay';
+
+  @override
+  String get clinicalRequestSelfPayLabel => 'Self-pay';
+
+  @override
+  String get clinicalRequestBillingEntityFacilityLabel => 'Facility';
+
+  @override
+  String get clinicalRequestBillingEntityPharmacyLabel => 'Pharmacy';
+
+  @override
   String get clinicalRequestPriceNotSetLabel => 'Price not set';
 
   @override

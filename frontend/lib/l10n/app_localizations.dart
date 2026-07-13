@@ -33783,6 +33783,42 @@ abstract class AppLocalizations {
   /// **'Total'**
   String get clinicalRequestBillingTotalLabel;
 
+  /// Patient responsibility amount in clinical billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient share'**
+  String get clinicalRequestPatientShareLabel;
+
+  /// Insurer responsibility amount in clinical billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurer share'**
+  String get clinicalRequestInsurerShareLabel;
+
+  /// Co-pay amount in clinical billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Co-pay'**
+  String get clinicalRequestCopayLabel;
+
+  /// Self-pay payment mode label.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-pay'**
+  String get clinicalRequestSelfPayLabel;
+
+  /// Facility billing entity label.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get clinicalRequestBillingEntityFacilityLabel;
+
+  /// Pharmacy billing entity label.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy'**
+  String get clinicalRequestBillingEntityPharmacyLabel;
+
   /// Shown when catalog item has no price.
   ///
   /// In en, this message translates to:

@@ -1107,6 +1107,8 @@ class _ConsultationPaymentDialogState
   bool _isSaving = false;
   bool _coverageVerified = false;
   String? _selectedCoveragePlanId;
+  String? _selectedCoveragePlanName;
+  int? _selectedCoveragePercentage;
   AppFailure? _failure;
 
   OpdFlowSummary get _currentFlow {
@@ -1210,6 +1212,8 @@ class _ConsultationPaymentDialogState
                   _method = value ?? _method;
                   _coverageVerified = false;
                   _selectedCoveragePlanId = null;
+                  _selectedCoveragePlanName = null;
+                  _selectedCoveragePercentage = null;
                 });
               },
               options: _statusOptions(_paymentMethods),
@@ -1220,10 +1224,17 @@ class _ConsultationPaymentDialogState
                 encounterId: flow.apiId,
                 enabled: !_isSaving,
                 onVerifiedChanged:
-                    (({bool verified, String? coveragePlanId}) result) {
+                    (({
+                      bool verified,
+                      String? coveragePlanId,
+                      String? coveragePlanName,
+                      int? coveragePercentage,
+                    }) result) {
                       setState(() {
                         _coverageVerified = result.verified;
                         _selectedCoveragePlanId = result.coveragePlanId;
+                        _selectedCoveragePlanName = result.coveragePlanName;
+                        _selectedCoveragePercentage = result.coveragePercentage;
                       });
                     },
               ),
@@ -1304,8 +1315,12 @@ class _ConsultationPaymentDialogState
       return manualNotes;
     }
     final String coveragePlanId = (_selectedCoveragePlanId ?? '').trim();
+    final String coveragePlanName = (_selectedCoveragePlanName ?? '').trim();
     final List<String> parts = <String>[
       if (coveragePlanId.isNotEmpty) 'coverage_plan_id=$coveragePlanId',
+      if (coveragePlanName.isNotEmpty) 'coverage_plan=$coveragePlanName',
+      if (_selectedCoveragePercentage != null)
+        'coverage_percentage=$_selectedCoveragePercentage',
       if (manualNotes.isNotEmpty) manualNotes,
     ];
     return parts.join(' | ');

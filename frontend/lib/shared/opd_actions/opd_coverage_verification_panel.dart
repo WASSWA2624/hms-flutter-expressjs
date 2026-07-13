@@ -21,7 +21,14 @@ class OpdCoverageVerificationPanel extends ConsumerStatefulWidget {
   final String? patientId;
   final String? encounterId;
   final bool enabled;
-  final ValueChanged<({bool verified, String? coveragePlanId})>
+  final ValueChanged<
+    ({
+      bool verified,
+      String? coveragePlanId,
+      String? coveragePlanName,
+      int? coveragePercentage,
+    })
+  >
   onVerifiedChanged;
 
   @override
@@ -65,9 +72,18 @@ class _OpdCoverageVerificationPanelState
   }
 
   void _notifyVerified() {
+    CoveragePlanOption? selected;
+    for (final CoveragePlanOption plan in _plans) {
+      if (plan.apiId == _selectedPlanId) {
+        selected = plan;
+        break;
+      }
+    }
     widget.onVerifiedChanged((
       verified: _verified && (_selectedPlanId ?? '').trim().isNotEmpty,
       coveragePlanId: _selectedPlanId,
+      coveragePlanName: selected?.title,
+      coveragePercentage: selected?.coveragePercentage,
     ));
   }
 

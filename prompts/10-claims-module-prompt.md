@@ -97,6 +97,7 @@ Mandatory platform rules for all work in this module.
 - **OPD insured visit flow** — coverage check at registration or payment gate.
 - **Integration with Billing** — `CLAIMS_PENDING` queue with non-invoice detail layouts (billing prompt).
 - **Tests and localization** — full coverage for claim/pre-auth flows.
+- **Pricing engine / insurer adapters** — multi-tier tariffs, enrollment verify, and stub payer connectors are specified in root [`prompt.md`](../prompt.md).
 
 ---
 
