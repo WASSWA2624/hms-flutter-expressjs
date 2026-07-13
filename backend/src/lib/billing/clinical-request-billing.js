@@ -10,6 +10,14 @@ const {
   roundMoney,
   recalculateInvoiceStateTx,
 } = require('@lib/billing/financials');
+const {
+  normalizeBillingEntity,
+  normalizePaymentMode,
+} = require('@lib/billing/price-resolver');
+const {
+  applyCoverageSplitToLineItems,
+  summarizeCoverageShares,
+} = require('@lib/billing/coverage-split');
 
 const SKIPPED_PAYMENT_STATUSES = new Set(['NOT_BILLED', 'NOT_REQUIRED', 'NO_CHARGE']);
 
@@ -105,22 +113,49 @@ const buildInvoiceLineItems = (billing = {}, context = {}) => {
   const scopedAmount = resolveScopedBillingAmount(billing);
   const lineItems = Array.isArray(billing.line_items) ? billing.line_items : [];
   const catalogItemId = context.catalogItemId ? String(context.catalogItemId) : null;
+  const defaultEntity = normalizeBillingEntity(
+    billing.billing_entity || context.billingEntity || 'FACILITY'
+  );
+  const defaultPaymentMode = normalizePaymentMode(
+    billing.payment_mode || context.paymentMode || 'SELF_PAY'
+  );
+
+  const mapEngineFields = (entry = {}, quantity, unitPrice, totalPrice) => ({
+    description: String(entry.label || description).trim() || description,
+    quantity,
+    unit_price: unitPrice,
+    total_price: totalPrice,
+    catalog_type: entry.catalog_type || entry.catalogType || context.catalogType || null,
+    catalog_item_id: entry.id || entry.catalog_item_id || catalogItemId || null,
+    price_book_entry_id: entry.price_book_entry_id || entry.priceBookEntryId || null,
+    payment_mode: normalizePaymentMode(entry.payment_mode || defaultPaymentMode),
+    coverage_plan_id:
+      entry.coverage_plan_id ||
+      entry.coveragePlanId ||
+      billing.coverage_plan_id ||
+      context.coveragePlanId ||
+      null,
+    billing_entity: normalizeBillingEntity(
+      entry.billing_entity || entry.price_source || defaultEntity
+    ),
+    price_source:
+      entry.price_source ||
+      normalizeBillingEntity(entry.billing_entity || defaultEntity),
+    patient_share: entry.patient_share != null ? toMoneyString(entry.patient_share) : null,
+    insurer_share: entry.insurer_share != null ? toMoneyString(entry.insurer_share) : null,
+    copay_amount: entry.copay_amount != null ? toMoneyString(entry.copay_amount) : null,
+  });
 
   if (catalogItemId && lineItems.length) {
     const match =
       lineItems.find((entry) => String(entry?.id || '') === catalogItemId) || null;
     if (match) {
       const quantity = Math.max(1, Number(match.quantity) || 1);
-      const lineTotal = toMoneyString(billing.line_amount ?? match.line_total ?? match.unit_price ?? scopedAmount);
+      const lineTotal = toMoneyString(
+        billing.line_amount ?? match.line_total ?? match.unit_price ?? scopedAmount
+      );
       const unitPrice = toMoneyString(match.unit_price ?? lineTotal);
-      return [
-        {
-          description: String(match.label || description).trim() || description,
-          quantity,
-          unit_price: unitPrice,
-          total_price: lineTotal,
-        },
-      ];
+      return [mapEngineFields(match, quantity, unitPrice, lineTotal)];
     }
   }
 
@@ -129,22 +164,21 @@ const buildInvoiceLineItems = (billing = {}, context = {}) => {
       const quantity = Math.max(1, Number(entry.quantity) || 1);
       const unitPrice = toMoneyString(entry.unit_price ?? entry.line_total ?? '0');
       const totalPrice = toMoneyString(entry.line_total ?? entry.unit_price ?? unitPrice);
-      return {
-        description: String(entry.label || description).trim() || description,
-        quantity,
-        unit_price: unitPrice,
-        total_price: totalPrice,
-      };
+      return mapEngineFields(entry, quantity, unitPrice, totalPrice);
     });
   }
 
   return [
-    {
-      description,
-      quantity: 1,
-      unit_price: scopedAmount,
-      total_price: scopedAmount,
-    },
+    mapEngineFields(
+      {
+        label: description,
+        payment_mode: defaultPaymentMode,
+        billing_entity: defaultEntity,
+      },
+      1,
+      scopedAmount,
+      scopedAmount
+    ),
   ];
 };
 
@@ -176,6 +210,14 @@ const buildBillingSnapshot = (billing, { invoice, payment, paymentStatus, encoun
   payment_method: payment?.method || billing?.payment_method || null,
   payment_reference: payment?.transaction_ref || billing?.payment_reference || null,
   invoice_id: invoice?.id || null,
+  billing_entity: normalizeBillingEntity(
+    billing?.billing_entity || invoice?.billing_entity || 'FACILITY'
+  ),
+  payment_mode: normalizePaymentMode(billing?.payment_mode || 'SELF_PAY'),
+  coverage_plan_id: billing?.coverage_plan_id || null,
+  patient_share: billing?.patient_share ?? null,
+  insurer_share: billing?.insurer_share ?? null,
+  copay_amount: billing?.copay_amount ?? null,
   line_items: Array.isArray(billing?.line_items) ? billing.line_items : [],
   ...(billing?.line_amount !== undefined && billing?.line_amount !== null
     ? { line_amount: toMoneyString(billing.line_amount) }
@@ -193,6 +235,10 @@ const normalizeBillingLineItem = (entry = {}) => {
   const priceSource = String(entry.price_source || '')
     .trim()
     .toUpperCase();
+  const billingEntity = normalizeBillingEntity(
+    entry.billing_entity || priceSource || 'FACILITY'
+  );
+  const paymentMode = normalizePaymentMode(entry.payment_mode || 'SELF_PAY');
   return {
     id: String(entry.id || entry.lab_test_id || entry.lab_panel_id || '').trim(),
     label: String(entry.label || entry.name || 'Clinical service').trim() || 'Clinical service',
@@ -201,7 +247,21 @@ const normalizeBillingLineItem = (entry = {}) => {
     ...(toDecimalNumber(lineTotal) > 0 ? { line_total: lineTotal } : {}),
     ...(priceSource === 'PHARMACY' || priceSource === 'FACILITY'
       ? { price_source: priceSource }
+      : { price_source: billingEntity }),
+    billing_entity: billingEntity,
+    payment_mode: paymentMode,
+    ...(entry.catalog_type || entry.catalogType
+      ? { catalog_type: entry.catalog_type || entry.catalogType }
       : {}),
+    ...(entry.price_book_entry_id || entry.priceBookEntryId
+      ? { price_book_entry_id: entry.price_book_entry_id || entry.priceBookEntryId }
+      : {}),
+    ...(entry.coverage_plan_id || entry.coveragePlanId
+      ? { coverage_plan_id: entry.coverage_plan_id || entry.coveragePlanId }
+      : {}),
+    ...(entry.patient_share != null ? { patient_share: toMoneyString(entry.patient_share) } : {}),
+    ...(entry.insurer_share != null ? { insurer_share: toMoneyString(entry.insurer_share) } : {}),
+    ...(entry.copay_amount != null ? { copay_amount: toMoneyString(entry.copay_amount) } : {}),
   };
 };
 
@@ -735,7 +795,7 @@ const reverseClinicalRequestBilling = async (tx, { existingSnapshot } = {}) => {
 
 const recordRequestPayment = async (
   tx,
-  { invoiceId, billing, invoiceTotal, tenantId, patientId, facilityId, issuedAt }
+  { invoiceId, billing, invoiceTotal, tenantId, patientId, facilityId, issuedAt, billingEntity }
 ) => {
   const requestedStatus = normalizePaymentStatus(billing.payment_status);
   const shouldRecordPayment =
@@ -762,6 +822,9 @@ const recordRequestPayment = async (
       invoice_id: invoiceId,
       status: 'COMPLETED',
       method: normalizePaymentMethod(billing.payment_method),
+      billing_entity: normalizeBillingEntity(
+        billingEntity || billing.billing_entity || 'FACILITY'
+      ),
       amount: toMoneyString(paymentAmount),
       paid_at: issuedAt,
       transaction_ref: billing.payment_reference || null,
@@ -800,6 +863,10 @@ const applyClinicalRequestBilling = async (tx, options = {}) => {
   const invoiceItems = buildInvoiceLineItems(billing, {
     description: options.description,
     catalogItemId: options.catalogItemId,
+    catalogType: options.catalogType || billing.catalog_type,
+    billingEntity: options.billingEntity || billing.billing_entity,
+    paymentMode: options.paymentMode || billing.payment_mode,
+    coveragePlanId: options.coveragePlanId || billing.coverage_plan_id,
   });
   const invoiceTotal = roundMoney(
     invoiceItems.reduce((sum, item) => sum + toDecimalNumber(item.total_price), 0)
@@ -811,13 +878,63 @@ const applyClinicalRequestBilling = async (tx, options = {}) => {
     return null;
   }
 
-  const currency = resolveBillingCurrency(billing, options.currency || 'USD');
+  const billingEntity = normalizeBillingEntity(
+    options.billingEntity ||
+      billing.billing_entity ||
+      invoiceItems[0]?.billing_entity ||
+      'FACILITY'
+  );
+  const paymentMode = normalizePaymentMode(
+    options.paymentMode || billing.payment_mode || 'SELF_PAY'
+  );
+
+  // Ensure shares exist on billing snapshot when insured.
+  let enrichedBilling = {
+    ...billing,
+    billing_entity: billingEntity,
+    payment_mode: paymentMode,
+  };
+  if (
+    paymentMode === 'INSURANCE' &&
+    Array.isArray(billing.line_items) &&
+    billing.line_items.length &&
+    (billing.patient_share == null || billing.insurer_share == null)
+  ) {
+    const splitLines = applyCoverageSplitToLineItems(billing.line_items, {
+      insured: true,
+      paymentMode,
+      coveragePlanId: billing.coverage_plan_id || options.coveragePlanId,
+      coveragePercentage: billing.coverage_percentage ?? options.coveragePercentage,
+      copayType: billing.copay_type || options.copayType,
+      copayValue: billing.copay_value ?? options.copayValue,
+    });
+    const summary = summarizeCoverageShares(splitLines);
+    enrichedBilling = {
+      ...enrichedBilling,
+      line_items: splitLines,
+      patient_share: summary.patientShare,
+      insurer_share: summary.insurerShare,
+      copay_amount: summary.copayAmount,
+    };
+  }
+
+  const currency = resolveBillingCurrency(enrichedBilling, options.currency || 'USD');
   const issuedAt = options.issuedAt instanceof Date ? options.issuedAt : new Date();
   const itemCreateData = invoiceItems.map((item) => ({
     description: item.description,
     quantity: item.quantity,
     unit_price: item.unit_price,
     total_price: item.total_price,
+    catalog_type: item.catalog_type || null,
+    catalog_item_id: item.catalog_item_id || null,
+    price_book_entry_id: item.price_book_entry_id || null,
+    payment_mode: item.payment_mode || paymentMode,
+    coverage_plan_id: item.coverage_plan_id || null,
+    billing_entity: item.billing_entity || billingEntity,
+    price_source: item.price_source || billingEntity,
+    patient_share: item.patient_share,
+    insurer_share: item.insurer_share,
+    copay_amount: item.copay_amount,
   }));
 
   // Attempt in-place update of the existing invoice when it is still mutable.
@@ -840,6 +957,7 @@ const applyClinicalRequestBilling = async (tx, options = {}) => {
           patient_id: patientId,
           status: 'SENT',
           billing_status: 'ISSUED',
+          billing_entity: billingEntity,
           total_amount: toMoneyString(invoiceTotal),
           currency,
           issued_at: issuedAt,
@@ -862,6 +980,7 @@ const applyClinicalRequestBilling = async (tx, options = {}) => {
         patient_id: patientId,
         status: 'SENT',
         billing_status: 'ISSUED',
+        billing_entity: billingEntity,
         total_amount: toMoneyString(invoiceTotal),
         currency,
         issued_at: issuedAt,
@@ -872,20 +991,21 @@ const applyClinicalRequestBilling = async (tx, options = {}) => {
 
   const payment = await recordRequestPayment(tx, {
     invoiceId: invoice.id,
-    billing,
+    billing: enrichedBilling,
     invoiceTotal,
     tenantId,
     patientId,
     facilityId: options.facilityId,
     issuedAt,
+    billingEntity,
   });
 
   // Recalculate invoice status from authoritative payment/adjustment data.
   const recalculated = await recalculateInvoiceStateTx(tx, invoice.id);
   invoice = recalculated?.invoice || invoice;
 
-  const paymentStatus = resolvePaymentStatusAfterApply(billing, invoice, payment);
-  return buildBillingSnapshot(billing, {
+  const paymentStatus = resolvePaymentStatusAfterApply(enrichedBilling, invoice, payment);
+  return buildBillingSnapshot(enrichedBilling, {
     invoice,
     payment,
     paymentStatus,

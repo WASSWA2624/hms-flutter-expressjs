@@ -23436,6 +23436,30 @@
   "@clinicalRequestBillingTotalLabel": {
     "description": "Billing total row label."
   },
+  "clinicalRequestPatientShareLabel": "Patient share",
+  "@clinicalRequestPatientShareLabel": {
+    "description": "Patient responsibility amount in clinical billing."
+  },
+  "clinicalRequestInsurerShareLabel": "Insurer share",
+  "@clinicalRequestInsurerShareLabel": {
+    "description": "Insurer responsibility amount in clinical billing."
+  },
+  "clinicalRequestCopayLabel": "Co-pay",
+  "@clinicalRequestCopayLabel": {
+    "description": "Co-pay amount in clinical billing."
+  },
+  "clinicalRequestSelfPayLabel": "Self-pay",
+  "@clinicalRequestSelfPayLabel": {
+    "description": "Self-pay payment mode label."
+  },
+  "clinicalRequestBillingEntityFacilityLabel": "Facility",
+  "@clinicalRequestBillingEntityFacilityLabel": {
+    "description": "Facility billing entity label."
+  },
+  "clinicalRequestBillingEntityPharmacyLabel": "Pharmacy",
+  "@clinicalRequestBillingEntityPharmacyLabel": {
+    "description": "Pharmacy billing entity label."
+  },
   "clinicalRequestPriceNotSetLabel": "Price not set",
   "@clinicalRequestPriceNotSetLabel": {
     "description": "Shown when catalog item has no price."

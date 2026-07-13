@@ -534,6 +534,43 @@ enum BillingApprovalType {
   ADJUSTMENT
 }
 
+enum BillingEntityType {
+  FACILITY
+  PHARMACY
+}
+
+enum PriceBookPaymentMode {
+  SELF_PAY
+  INSURANCE
+}
+
+enum PriceBookCatalogType {
+  DRUG
+  LAB_TEST
+  LAB_PANEL
+  RADIOLOGY_TEST
+  CONSULTATION
+  SERVICE
+}
+
+enum PatientInsuranceEnrollmentStatus {
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  PENDING
+}
+
+enum CopayType {
+  NONE
+  FIXED
+  PERCENT
+}
+
+enum InsurerAdapterType {
+  STUB
+  GENERIC_REST
+}
+
 enum SubscriptionStatus {
   ACTIVE
   PAST_DUE
@@ -979,7 +1016,10 @@ model tenant {
   payments                        payment[]
   billing_approvals               billing_approval[]
   pricing_rules                   pricing_rule[]
+  price_book_entries              price_book_entry[]
   coverage_plans                  coverage_plan[]
+  patient_insurance_enrollments   patient_insurance_enrollment[]
+  insurer_integrations            insurer_integration[]
   consents                        consent[]
   terms_acceptances               terms_acceptance[]
   api_keys                        api_key[]
@@ -1057,6 +1097,9 @@ model facility {
   invoices                        invoice[]
   payments                        payment[]
   billing_approvals               billing_approval[]
+  price_book_entries              price_book_entry[]
+  patient_insurance_enrollments   patient_insurance_enrollment[]
+  insurer_integrations            insurer_integration[]
   inventory_stocks                inventory_stock[]
   stock_movements                 stock_movement[]
   stock_adjustments               stock_adjustment[]
@@ -1829,6 +1872,7 @@ model patient {
   break_glass_accesses       break_glass_access[]
   mortuary_cases             mortuary_case[]
   pre_authorizations         pre_authorization[]
+  insurance_enrollments      patient_insurance_enrollment[]
 
   @@unique([facility_id, human_friendly_id])
   @@unique([tenant_id, human_friendly_id])
@@ -4329,20 +4373,21 @@ model ambulance_trip {
 }
 
 model invoice {
-  id                String        @id @default(uuid()) @db.VarChar(36)
-  human_friendly_id String?       @db.VarChar(32)
-  tenant_id         String        @db.VarChar(36)
-  facility_id       String?       @db.VarChar(36)
-  patient_id        String?       @db.VarChar(36)
+  id                String            @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id String?           @db.VarChar(32)
+  tenant_id         String            @db.VarChar(36)
+  facility_id       String?           @db.VarChar(36)
+  patient_id        String?           @db.VarChar(36)
   status            InvoiceStatus
-  billing_status    BillingStatus @default(DRAFT)
-  total_amount      Decimal       @db.Decimal(12, 2)
-  currency          String        @db.VarChar(10)
-  issued_at         DateTime      @default(now())
-  created_at        DateTime      @default(now())
-  updated_at        DateTime      @updatedAt
+  billing_status    BillingStatus     @default(DRAFT)
+  billing_entity    BillingEntityType @default(FACILITY)
+  total_amount      Decimal           @db.Decimal(12, 2)
+  currency          String            @db.VarChar(10)
+  issued_at         DateTime          @default(now())
+  created_at        DateTime          @default(now())
+  updated_at        DateTime          @updatedAt
   deleted_at        DateTime?
-  version           Int           @default(1)
+  version           Int               @default(1)
 
   tenant                tenant                 @relation(fields: [tenant_id], references: [id])
   facility              facility?              @relation(fields: [facility_id], references: [id])
@@ -4358,27 +4403,43 @@ model invoice {
   @@index([patient_id])
   @@index([status])
   @@index([billing_status])
+  @@index([billing_entity])
   @@index([issued_at])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }
 
 model invoice_item {
-  id                String    @id @default(uuid()) @db.VarChar(36)
-  human_friendly_id String?   @db.VarChar(32)
-  invoice_id        String    @db.VarChar(36)
-  description       String    @db.VarChar(255)
-  quantity          Int       @default(1)
-  unit_price        Decimal   @db.Decimal(12, 2)
-  total_price       Decimal   @db.Decimal(12, 2)
-  created_at        DateTime  @default(now())
-  updated_at        DateTime  @updatedAt
-  deleted_at        DateTime?
-  version           Int       @default(1)
+  id                   String             @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id    String?            @db.VarChar(32)
+  invoice_id           String             @db.VarChar(36)
+  description          String             @db.VarChar(255)
+  quantity             Int                @default(1)
+  unit_price           Decimal            @db.Decimal(12, 2)
+  total_price          Decimal            @db.Decimal(12, 2)
+  catalog_type         PriceBookCatalogType?
+  catalog_item_id      String?            @db.VarChar(36)
+  price_book_entry_id  String?            @db.VarChar(36)
+  payment_mode         PriceBookPaymentMode?
+  coverage_plan_id     String?            @db.VarChar(36)
+  billing_entity       BillingEntityType?
+  price_source         String?            @db.VarChar(20)
+  patient_share        Decimal?           @db.Decimal(12, 2)
+  insurer_share        Decimal?           @db.Decimal(12, 2)
+  copay_amount         Decimal?           @db.Decimal(12, 2)
+  created_at           DateTime           @default(now())
+  updated_at           DateTime           @updatedAt
+  deleted_at           DateTime?
+  version              Int                @default(1)
 
-  invoice invoice @relation(fields: [invoice_id], references: [id])
+  invoice           invoice            @relation(fields: [invoice_id], references: [id])
+  price_book_entry  price_book_entry?  @relation(fields: [price_book_entry_id], references: [id])
+  coverage_plan     coverage_plan?     @relation(fields: [coverage_plan_id], references: [id])
 
   @@index([invoice_id])
+  @@index([catalog_type, catalog_item_id])
+  @@index([price_book_entry_id])
+  @@index([coverage_plan_id])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }
@@ -4392,6 +4453,7 @@ model payment {
   invoice_id        String            @db.VarChar(36)
   status            PaymentStatus
   method            PaymentMethodType
+  billing_entity    BillingEntityType @default(FACILITY)
   amount            Decimal           @db.Decimal(12, 2)
   paid_at           DateTime?
   transaction_ref   String?           @db.VarChar(120)
@@ -4412,6 +4474,7 @@ model payment {
   @@index([invoice_id])
   @@index([status])
   @@index([method])
+  @@index([billing_entity])
   @@index([paid_at])
   @@index([deleted_at])
   @@index([human_friendly_id])
@@ -4476,11 +4539,130 @@ model coverage_plan {
   deleted_at          DateTime?
   version             Int       @default(1)
 
-  tenant         tenant              @relation(fields: [tenant_id], references: [id])
-  claims         insurance_claim[]
-  authorizations pre_authorization[]
+  tenant                        tenant                         @relation(fields: [tenant_id], references: [id])
+  claims                        insurance_claim[]
+  authorizations                pre_authorization[]
+  price_book_entries            price_book_entry[]
+  patient_insurance_enrollments patient_insurance_enrollment[]
+  insurer_integrations          insurer_integration[]
+  invoice_items                 invoice_item[]
 
   @@index([tenant_id])
+  @@index([provider_name])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+model price_book_entry {
+  id                String               @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id String?              @db.VarChar(32)
+  tenant_id         String               @db.VarChar(36)
+  facility_id       String?              @db.VarChar(36)
+  catalog_type      PriceBookCatalogType
+  catalog_item_id   String               @db.VarChar(36)
+  payment_mode      PriceBookPaymentMode
+  coverage_plan_id  String?              @db.VarChar(36)
+  insurer_key       String?              @db.VarChar(120)
+  billing_entity    BillingEntityType    @default(FACILITY)
+  unit_price        Decimal              @db.Decimal(12, 2)
+  currency          String               @db.VarChar(10)
+  effective_from    DateTime?
+  effective_to      DateTime?
+  is_active         Boolean              @default(true)
+  notes             String?              @db.VarChar(255)
+  created_at        DateTime             @default(now())
+  updated_at        DateTime             @updatedAt
+  deleted_at        DateTime?
+  version           Int                  @default(1)
+
+  tenant           tenant         @relation(fields: [tenant_id], references: [id])
+  facility         facility?      @relation(fields: [facility_id], references: [id])
+  coverage_plan    coverage_plan? @relation(fields: [coverage_plan_id], references: [id])
+  invoice_items    invoice_item[]
+
+  @@index([tenant_id])
+  @@index([facility_id])
+  @@index([catalog_type, catalog_item_id])
+  @@index([payment_mode])
+  @@index([coverage_plan_id])
+  @@index([insurer_key])
+  @@index([billing_entity])
+  @@index([effective_from])
+  @@index([effective_to])
+  @@index([is_active])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+  @@index([tenant_id, facility_id, catalog_type, catalog_item_id, payment_mode, billing_entity], map: "price_book_entry_lookup_idx")
+}
+
+model patient_insurance_enrollment {
+  id                String                           @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id String?                          @db.VarChar(32)
+  tenant_id         String                           @db.VarChar(36)
+  facility_id       String?                          @db.VarChar(36)
+  patient_id        String                           @db.VarChar(36)
+  coverage_plan_id  String                           @db.VarChar(36)
+  member_id         String                           @db.VarChar(120)
+  status            PatientInsuranceEnrollmentStatus @default(PENDING)
+  valid_from        DateTime?
+  valid_to          DateTime?
+  copay_type        CopayType                        @default(NONE)
+  copay_value       Decimal?                         @db.Decimal(12, 2)
+  is_primary        Boolean                          @default(true)
+  notes             String?                          @db.Text
+  verified_at       DateTime?
+  last_verified_via String?                          @db.VarChar(40)
+  extension_json    Json?
+  created_at        DateTime                         @default(now())
+  updated_at        DateTime                         @updatedAt
+  deleted_at        DateTime?
+  version           Int                              @default(1)
+
+  tenant        tenant        @relation(fields: [tenant_id], references: [id])
+  facility      facility?     @relation(fields: [facility_id], references: [id])
+  patient       patient       @relation(fields: [patient_id], references: [id])
+  coverage_plan coverage_plan @relation(fields: [coverage_plan_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([facility_id])
+  @@index([patient_id])
+  @@index([coverage_plan_id])
+  @@index([member_id])
+  @@index([status])
+  @@index([valid_from])
+  @@index([valid_to])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+  @@index([tenant_id, patient_id, status])
+}
+
+model insurer_integration {
+  id                   String             @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id    String?            @db.VarChar(32)
+  tenant_id            String             @db.VarChar(36)
+  facility_id          String?            @db.VarChar(36)
+  coverage_plan_id     String?            @db.VarChar(36)
+  name                 String             @db.VarChar(120)
+  adapter_type         InsurerAdapterType @default(STUB)
+  base_url             String?            @db.VarChar(500)
+  is_enabled           Boolean            @default(false)
+  credentials_encrypted String?           @db.Text
+  config_json          Json?
+  webhook_secret_hash  String?            @db.VarChar(255)
+  created_at           DateTime           @default(now())
+  updated_at           DateTime           @updatedAt
+  deleted_at           DateTime?
+  version              Int                @default(1)
+
+  tenant        tenant         @relation(fields: [tenant_id], references: [id])
+  facility      facility?      @relation(fields: [facility_id], references: [id])
+  coverage_plan coverage_plan? @relation(fields: [coverage_plan_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([facility_id])
+  @@index([coverage_plan_id])
+  @@index([adapter_type])
+  @@index([is_enabled])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }
@@ -5051,30 +5233,31 @@ model office_context {
 }
 
 model shift_close {
-  id                   String           @id @default(uuid()) @db.VarChar(36)
-  human_friendly_id    String?          @db.VarChar(32)
-  tenant_id            String           @db.VarChar(36)
-  facility_id          String?          @db.VarChar(36)
-  branch_id            String?          @db.VarChar(36)
-  office_context_id    String           @db.VarChar(36)
-  shift_id             String           @db.VarChar(36)
-  closed_by_user_id    String           @db.VarChar(36)
-  approved_by_user_id  String?          @db.VarChar(36)
-  status               ShiftCloseStatus @default(DRAFT)
+  id                   String            @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id    String?           @db.VarChar(32)
+  tenant_id            String            @db.VarChar(36)
+  facility_id          String?           @db.VarChar(36)
+  branch_id            String?           @db.VarChar(36)
+  office_context_id    String            @db.VarChar(36)
+  shift_id             String            @db.VarChar(36)
+  closed_by_user_id    String            @db.VarChar(36)
+  approved_by_user_id  String?           @db.VarChar(36)
+  status               ShiftCloseStatus  @default(DRAFT)
+  billing_entity       BillingEntityType @default(FACILITY)
   totals_json          Json?
   reconciliation_json  Json?
-  expected_amount      Decimal?         @db.Decimal(12, 2)
-  actual_amount        Decimal?         @db.Decimal(12, 2)
-  variance_amount      Decimal?         @db.Decimal(12, 2)
+  expected_amount      Decimal?          @db.Decimal(12, 2)
+  actual_amount        Decimal?          @db.Decimal(12, 2)
+  variance_amount      Decimal?          @db.Decimal(12, 2)
   submitted_at         DateTime?
   approved_at          DateTime?
-  notes                String?          @db.Text
+  notes                String?           @db.Text
   evidence_json        Json?
-  etag                 String?          @db.VarChar(128)
-  created_at           DateTime         @default(now())
-  updated_at           DateTime         @updatedAt
+  etag                 String?           @db.VarChar(128)
+  created_at           DateTime          @default(now())
+  updated_at           DateTime          @updatedAt
   deleted_at           DateTime?
-  version              Int              @default(1)
+  version              Int               @default(1)
 
   tenant          tenant         @relation(fields: [tenant_id], references: [id])
   facility        facility?      @relation(fields: [facility_id], references: [id])
@@ -5093,6 +5276,7 @@ model shift_close {
   @@index([closed_by_user_id])
   @@index([approved_by_user_id])
   @@index([status])
+  @@index([billing_entity])
   @@index([submitted_at])
   @@index([approved_at])
   @@index([deleted_at])
@@ -5100,27 +5284,28 @@ model shift_close {
 }
 
 model day_close {
-  id                    String          @id @default(uuid()) @db.VarChar(36)
-  human_friendly_id     String?         @db.VarChar(32)
-  tenant_id             String          @db.VarChar(36)
-  facility_id           String?         @db.VarChar(36)
-  branch_id             String?         @db.VarChar(36)
-  office_context_id     String          @db.VarChar(36)
-  submitted_by_user_id  String          @db.VarChar(36)
-  approved_by_user_id   String?         @db.VarChar(36)
-  status                DayCloseStatus  @default(DRAFT)
+  id                    String            @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id     String?           @db.VarChar(32)
+  tenant_id             String            @db.VarChar(36)
+  facility_id           String?           @db.VarChar(36)
+  branch_id             String?           @db.VarChar(36)
+  office_context_id     String            @db.VarChar(36)
+  submitted_by_user_id  String            @db.VarChar(36)
+  approved_by_user_id   String?           @db.VarChar(36)
+  status                DayCloseStatus    @default(DRAFT)
+  billing_entity        BillingEntityType @default(FACILITY)
   checklist_json        Json?
   blockers_json         Json?
   unresolved_items_json Json?
   submitted_at          DateTime?
   approved_at           DateTime?
-  notes                 String?         @db.Text
+  notes                 String?           @db.Text
   evidence_json         Json?
-  etag                  String?         @db.VarChar(128)
-  created_at            DateTime        @default(now())
-  updated_at            DateTime        @updatedAt
+  etag                  String?           @db.VarChar(128)
+  created_at            DateTime          @default(now())
+  updated_at            DateTime          @updatedAt
   deleted_at            DateTime?
-  version               Int             @default(1)
+  version               Int               @default(1)
 
   tenant         tenant         @relation(fields: [tenant_id], references: [id])
   facility       facility?      @relation(fields: [facility_id], references: [id])
@@ -5137,6 +5322,7 @@ model day_close {
   @@index([submitted_by_user_id])
   @@index([approved_by_user_id])
   @@index([status])
+  @@index([billing_entity])
   @@index([submitted_at])
   @@index([approved_at])
   @@index([deleted_at])

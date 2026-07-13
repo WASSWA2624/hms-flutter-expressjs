@@ -19,6 +19,14 @@ final class ClinicalRequestBillingLineItem {
     this.unitPrice,
     this.currency,
     this.priceSource,
+    this.billingEntity,
+    this.paymentMode,
+    this.catalogType,
+    this.priceBookEntryId,
+    this.coveragePlanId,
+    this.patientShare,
+    this.insurerShare,
+    this.copayAmount,
   });
 
   final String id;
@@ -27,6 +35,14 @@ final class ClinicalRequestBillingLineItem {
   final num? unitPrice;
   final String? currency;
   final String? priceSource;
+  final String? billingEntity;
+  final String? paymentMode;
+  final String? catalogType;
+  final String? priceBookEntryId;
+  final String? coveragePlanId;
+  final num? patientShare;
+  final num? insurerShare;
+  final num? copayAmount;
 
   bool get hasPrice => unitPrice != null && unitPrice! > 0;
 
@@ -36,6 +52,65 @@ final class ClinicalRequestBillingLineItem {
     }
     return unitPrice! * quantity;
   }
+
+  ClinicalRequestBillingLineItem copyWith({
+    String? id,
+    String? label,
+    num? quantity,
+    num? unitPrice,
+    String? currency,
+    String? priceSource,
+    String? billingEntity,
+    String? paymentMode,
+    String? catalogType,
+    String? priceBookEntryId,
+    String? coveragePlanId,
+    num? patientShare,
+    num? insurerShare,
+    num? copayAmount,
+  }) {
+    return ClinicalRequestBillingLineItem(
+      id: id ?? this.id,
+      label: label ?? this.label,
+      quantity: quantity ?? this.quantity,
+      unitPrice: unitPrice ?? this.unitPrice,
+      currency: currency ?? this.currency,
+      priceSource: priceSource ?? this.priceSource,
+      billingEntity: billingEntity ?? this.billingEntity,
+      paymentMode: paymentMode ?? this.paymentMode,
+      catalogType: catalogType ?? this.catalogType,
+      priceBookEntryId: priceBookEntryId ?? this.priceBookEntryId,
+      coveragePlanId: coveragePlanId ?? this.coveragePlanId,
+      patientShare: patientShare ?? this.patientShare,
+      insurerShare: insurerShare ?? this.insurerShare,
+      copayAmount: copayAmount ?? this.copayAmount,
+    );
+  }
+}
+
+@immutable
+final class ClinicalRequestPayerContext {
+  const ClinicalRequestPayerContext({
+    this.insured = false,
+    this.coveragePlanId,
+    this.coveragePlanName,
+    this.insurerKey,
+    this.coveragePercentage,
+    this.copayType,
+    this.copayValue,
+    this.memberId,
+  });
+
+  final bool insured;
+  final String? coveragePlanId;
+  final String? coveragePlanName;
+  final String? insurerKey;
+  final num? coveragePercentage;
+  final String? copayType;
+  final num? copayValue;
+  final String? memberId;
+
+  String get paymentMode => insured ? 'INSURANCE' : 'SELF_PAY';
 }
 
 @immutable
@@ -49,6 +124,15 @@ final class ClinicalRequestBillingSubmit {
     this.paymentMethod,
     this.paymentReference,
     this.lineItems = const <ClinicalRequestBillingLineItem>[],
+    this.billingEntity,
+    this.paymentMode,
+    this.coveragePlanId,
+    this.coveragePercentage,
+    this.copayType,
+    this.copayValue,
+    this.patientShare,
+    this.insurerShare,
+    this.copayAmount,
   });
 
   final ClinicalRequestPaymentMode mode;
@@ -59,6 +143,15 @@ final class ClinicalRequestBillingSubmit {
   final String? paymentMethod;
   final String? paymentReference;
   final List<ClinicalRequestBillingLineItem> lineItems;
+  final String? billingEntity;
+  final String? paymentMode;
+  final String? coveragePlanId;
+  final num? coveragePercentage;
+  final String? copayType;
+  final num? copayValue;
+  final num? patientShare;
+  final num? insurerShare;
+  final num? copayAmount;
 
   Map<String, Object?> toPayloadMap() {
     return <String, Object?>{
@@ -70,6 +163,18 @@ final class ClinicalRequestBillingSubmit {
         'payment_method': paymentMethod,
       if (paymentReference != null && paymentReference!.trim().isNotEmpty)
         'payment_reference': paymentReference,
+      if (billingEntity != null && billingEntity!.isNotEmpty)
+        'billing_entity': billingEntity,
+      if (paymentMode != null && paymentMode!.isNotEmpty)
+        'payment_mode': paymentMode,
+      if (coveragePlanId != null && coveragePlanId!.isNotEmpty)
+        'coverage_plan_id': coveragePlanId,
+      if (coveragePercentage != null) 'coverage_percentage': coveragePercentage,
+      if (copayType != null && copayType!.isNotEmpty) 'copay_type': copayType,
+      if (copayValue != null) 'copay_value': copayValue,
+      if (patientShare != null) 'patient_share': patientShare,
+      if (insurerShare != null) 'insurer_share': insurerShare,
+      if (copayAmount != null) 'copay_amount': copayAmount,
       'line_items': lineItems
           .map(
             (ClinicalRequestBillingLineItem item) => <String, Object?>{
@@ -80,6 +185,20 @@ final class ClinicalRequestBillingSubmit {
               if (item.lineTotal != null) 'line_total': item.lineTotal,
               if (item.priceSource != null && item.priceSource!.isNotEmpty)
                 'price_source': item.priceSource,
+              if (item.billingEntity != null && item.billingEntity!.isNotEmpty)
+                'billing_entity': item.billingEntity,
+              if (item.paymentMode != null && item.paymentMode!.isNotEmpty)
+                'payment_mode': item.paymentMode,
+              if (item.catalogType != null && item.catalogType!.isNotEmpty)
+                'catalog_type': item.catalogType,
+              if (item.priceBookEntryId != null &&
+                  item.priceBookEntryId!.isNotEmpty)
+                'price_book_entry_id': item.priceBookEntryId,
+              if (item.coveragePlanId != null && item.coveragePlanId!.isNotEmpty)
+                'coverage_plan_id': item.coveragePlanId,
+              if (item.patientShare != null) 'patient_share': item.patientShare,
+              if (item.insurerShare != null) 'insurer_share': item.insurerShare,
+              if (item.copayAmount != null) 'copay_amount': item.copayAmount,
             },
           )
           .toList(growable: false),
@@ -154,6 +273,64 @@ num clinicalRequestBillingTotal(
     total += (item.lineTotal ?? 0).toDouble();
   }
   return total;
+}
+
+({num patientShare, num insurerShare, num copayAmount})
+clinicalRequestCoverageShares({
+  required num lineTotal,
+  ClinicalRequestPayerContext? payerContext,
+}) {
+  final ClinicalRequestPayerContext context =
+      payerContext ?? const ClinicalRequestPayerContext();
+  if (!context.insured || lineTotal <= 0) {
+    return (patientShare: lineTotal, insurerShare: 0, copayAmount: 0);
+  }
+
+  final num coveragePct = (context.coveragePercentage ?? 0).clamp(0, 100);
+  final num coveredBase = lineTotal * coveragePct / 100;
+  final num uncovered = lineTotal - coveredBase;
+  final String copayType = (context.copayType ?? 'NONE').trim().toUpperCase();
+  final num copayValue = context.copayValue ?? 0;
+  num copayAmount = 0;
+  if (copayType == 'FIXED') {
+    copayAmount = copayValue.clamp(0, coveredBase);
+  } else if (copayType == 'PERCENT') {
+    copayAmount = coveredBase * copayValue.clamp(0, 100) / 100;
+  }
+  final num insurerShare = (coveredBase - copayAmount).clamp(0, lineTotal);
+  final num patientShare = uncovered + copayAmount;
+  return (
+    patientShare: patientShare,
+    insurerShare: insurerShare,
+    copayAmount: copayAmount,
+  );
+}
+
+List<ClinicalRequestBillingLineItem> applyClinicalRequestPayerContext(
+  List<ClinicalRequestBillingLineItem> lineItems, {
+  ClinicalRequestPayerContext? payerContext,
+  String? billingEntity,
+}) {
+  final ClinicalRequestPayerContext context =
+      payerContext ?? const ClinicalRequestPayerContext();
+  return <ClinicalRequestBillingLineItem>[
+    for (final ClinicalRequestBillingLineItem item in lineItems)
+      () {
+        final num total = item.lineTotal ?? 0;
+        final shares = clinicalRequestCoverageShares(
+          lineTotal: total,
+          payerContext: context,
+        );
+        return item.copyWith(
+          billingEntity: item.billingEntity ?? billingEntity ?? item.priceSource,
+          paymentMode: context.paymentMode,
+          coveragePlanId: item.coveragePlanId ?? context.coveragePlanId,
+          patientShare: shares.patientShare,
+          insurerShare: shares.insurerShare,
+          copayAmount: shares.copayAmount,
+        );
+      }(),
+  ];
 }
 
 bool clinicalRequestBillingHasMissingPrices(

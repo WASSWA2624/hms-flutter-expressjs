@@ -872,6 +872,8 @@ Future<ClinicalRequestBillingSubmit?> showClinicalRequestBillingDialog({
   ClinicalRequestPaymentStatus? initialPaymentStatus,
   num? initialPaidAmount,
   String? initialCurrency,
+  ClinicalRequestPayerContext? payerContext,
+  String? billingEntity,
   bool enabled = true,
 }) {
   return showAppDialog<ClinicalRequestBillingSubmit>(
@@ -883,6 +885,8 @@ Future<ClinicalRequestBillingSubmit?> showClinicalRequestBillingDialog({
       initialPaymentStatus: initialPaymentStatus,
       initialPaidAmount: initialPaidAmount,
       initialCurrency: initialCurrency,
+      payerContext: payerContext,
+      billingEntity: billingEntity,
       enabled: enabled,
     ),
   );
@@ -895,6 +899,8 @@ class _ClinicalRequestBillingDialog extends StatefulWidget {
     this.initialPaymentStatus,
     this.initialPaidAmount,
     this.initialCurrency,
+    this.payerContext,
+    this.billingEntity,
     this.enabled = true,
   });
 
@@ -903,6 +909,8 @@ class _ClinicalRequestBillingDialog extends StatefulWidget {
   final ClinicalRequestPaymentStatus? initialPaymentStatus;
   final num? initialPaidAmount;
   final String? initialCurrency;
+  final ClinicalRequestPayerContext? payerContext;
+  final String? billingEntity;
   final bool enabled;
 
   @override
@@ -937,6 +945,14 @@ class _ClinicalRequestBillingDialogState
             quantity: prior.quantity,
             unitPrice: prior.unitPrice ?? item.unitPrice,
             currency: prior.currency ?? item.currency,
+            priceSource: prior.priceSource ?? item.priceSource,
+            billingEntity: prior.billingEntity ?? item.billingEntity,
+            catalogType: prior.catalogType ?? item.catalogType,
+            priceBookEntryId: prior.priceBookEntryId ?? item.priceBookEntryId,
+            coveragePlanId: prior.coveragePlanId ?? item.coveragePlanId,
+            patientShare: prior.patientShare ?? item.patientShare,
+            insurerShare: prior.insurerShare ?? item.insurerShare,
+            copayAmount: prior.copayAmount ?? item.copayAmount,
           )
         else
           item,
@@ -963,6 +979,8 @@ class _ClinicalRequestBillingDialogState
             widget.initialPaidAmount ?? widget.initialBilling?.paidAmount,
         initialCurrency:
             widget.initialCurrency ?? widget.initialBilling?.currency,
+        payerContext: widget.payerContext,
+        billingEntity: widget.billingEntity,
         enabled: widget.enabled,
         onChanged: (ClinicalRequestBillingSubmit value) {
           _billing = value;

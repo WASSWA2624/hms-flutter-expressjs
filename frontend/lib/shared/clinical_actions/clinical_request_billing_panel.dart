@@ -17,6 +17,8 @@ class ClinicalRequestBillingPanel extends ConsumerStatefulWidget {
     this.initialPaymentStatus,
     this.initialPaidAmount,
     this.initialCurrency,
+    this.payerContext,
+    this.billingEntity,
     this.enabled = true,
     this.onChanged,
     super.key,
@@ -26,6 +28,8 @@ class ClinicalRequestBillingPanel extends ConsumerStatefulWidget {
   final ClinicalRequestPaymentStatus? initialPaymentStatus;
   final num? initialPaidAmount;
   final String? initialCurrency;
+  final ClinicalRequestPayerContext? payerContext;
+  final String? billingEntity;
   final bool enabled;
   final ValueChanged<ClinicalRequestBillingSubmit>? onChanged;
 
@@ -136,23 +140,46 @@ class _ClinicalRequestBillingPanelState
       _lines.any((_EditableBillingLine line) => !line.hasPrice);
 
   List<ClinicalRequestBillingLineItem> _submitLineItems() {
-    return <ClinicalRequestBillingLineItem>[
-      for (final _EditableBillingLine line in _lines)
-        ClinicalRequestBillingLineItem(
-          id: line.id,
-          label: line.label,
-          quantity: line.quantity,
-          unitPrice: line.unitPrice,
-          currency: line.currency ?? _currency,
-        ),
-    ];
+    final List<ClinicalRequestBillingLineItem> items =
+        <ClinicalRequestBillingLineItem>[
+          for (final _EditableBillingLine line in _lines)
+            ClinicalRequestBillingLineItem(
+              id: line.id,
+              label: line.label,
+              quantity: line.quantity,
+              unitPrice: line.unitPrice,
+              currency: line.currency ?? _currency,
+              priceSource: line.priceSource,
+              billingEntity:
+                  line.billingEntity ??
+                  widget.billingEntity ??
+                  line.priceSource,
+              catalogType: line.catalogType,
+              priceBookEntryId: line.priceBookEntryId,
+              coveragePlanId: line.coveragePlanId,
+            ),
+        ];
+    return applyClinicalRequestPayerContext(
+      items,
+      payerContext: widget.payerContext,
+      billingEntity: widget.billingEntity,
+    );
   }
 
   void _maybeSyncAmountToTotal() {
     if (_amountTouched || _mode != ClinicalRequestPaymentMode.payNow) {
       return;
     }
-    _amountController.text = opdCurrencyAmountInput(_currentTotal());
+    final num due = _patientDueAmount(_currentTotal());
+    _amountController.text = opdCurrencyAmountInput(due);
+  }
+
+  num _patientDueAmount(num total) {
+    final shares = clinicalRequestCoverageShares(
+      lineTotal: total,
+      payerContext: widget.payerContext,
+    );
+    return shares.patientShare;
   }
 
   bool _lineItemsChanged(
@@ -315,6 +342,24 @@ class _ClinicalRequestBillingPanelState
                 ),
               ],
             ),
+            if (widget.payerContext?.insured == true) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              Builder(
+                builder: (BuildContext context) {
+                  final shares = clinicalRequestCoverageShares(
+                    lineTotal: total,
+                    payerContext: widget.payerContext,
+                  );
+                  return _PayerShareSummary(
+                    currency: _currency,
+                    patientShare: shares.patientShare,
+                    insurerShare: shares.insurerShare,
+                    copayAmount: shares.copayAmount,
+                    planLabel: widget.payerContext?.coveragePlanName,
+                  );
+                },
+              ),
+            ],
             SizedBox(height: theme.spacing.sm),
             AppWorkspaceStatusBadge(
               status: AppWorkspaceStatus(
@@ -402,12 +447,19 @@ class _ClinicalRequestBillingPanelState
       return;
     }
     final num total = _currentTotal();
+    final List<ClinicalRequestBillingLineItem> lineItems = _submitLineItems();
+    final shares = clinicalRequestCoverageShares(
+      lineTotal: total,
+      payerContext: widget.payerContext,
+    );
     final ClinicalRequestPaymentStatus paymentStatus = _resolvePaymentStatus(
-      total: total,
+      total: shares.patientShare > 0 ? shares.patientShare : total,
     );
     final num? paidAmount = _mode == ClinicalRequestPaymentMode.payNow
         ? num.tryParse(_amountController.text.trim())
         : null;
+    final ClinicalRequestPayerContext payer =
+        widget.payerContext ?? const ClinicalRequestPayerContext();
     widget.onChanged!(
       ClinicalRequestBillingSubmit(
         mode: _mode,
@@ -421,7 +473,17 @@ class _ClinicalRequestBillingPanelState
         paymentReference: _mode == ClinicalRequestPaymentMode.payNow
             ? _referenceController.text.trim()
             : null,
-        lineItems: _submitLineItems(),
+        lineItems: lineItems,
+        billingEntity: widget.billingEntity ??
+            (lineItems.isEmpty ? null : lineItems.first.billingEntity),
+        paymentMode: payer.paymentMode,
+        coveragePlanId: payer.coveragePlanId,
+        coveragePercentage: payer.coveragePercentage,
+        copayType: payer.copayType,
+        copayValue: payer.copayValue,
+        patientShare: shares.patientShare,
+        insurerShare: shares.insurerShare,
+        copayAmount: shares.copayAmount,
       ),
     );
   }
@@ -436,6 +498,11 @@ class _EditableBillingLine {
     required num quantity,
     required num? unitPrice,
     required VoidCallback onChanged,
+    this.priceSource,
+    this.billingEntity,
+    this.catalogType,
+    this.priceBookEntryId,
+    this.coveragePlanId,
   }) : _quantity = quantity < 1 ? 1 : quantity,
        _baseQuantity = quantity,
        _baseUnitPrice = unitPrice,
@@ -457,12 +524,22 @@ class _EditableBillingLine {
       quantity: item.quantity,
       unitPrice: item.unitPrice,
       onChanged: onChanged,
+      priceSource: item.priceSource,
+      billingEntity: item.billingEntity,
+      catalogType: item.catalogType,
+      priceBookEntryId: item.priceBookEntryId,
+      coveragePlanId: item.coveragePlanId,
     );
   }
 
   final String id;
   String label;
   String? currency;
+  String? priceSource;
+  String? billingEntity;
+  String? catalogType;
+  String? priceBookEntryId;
+  String? coveragePlanId;
   final TextEditingController priceController;
   late final VoidCallback _onChanged;
 
@@ -511,6 +588,11 @@ class _EditableBillingLine {
   void reconcileWithCatalog(ClinicalRequestBillingLineItem item) {
     label = item.label;
     currency = item.currency;
+    priceSource = item.priceSource ?? priceSource;
+    billingEntity = item.billingEntity ?? billingEntity;
+    catalogType = item.catalogType ?? catalogType;
+    priceBookEntryId = item.priceBookEntryId ?? priceBookEntryId;
+    coveragePlanId = item.coveragePlanId ?? coveragePlanId;
     if (_quantity == _baseQuantity) {
       _quantity = item.quantity < 1 ? 1 : item.quantity;
     }
@@ -530,6 +612,11 @@ class _EditableBillingLine {
       quantity: _quantity,
       unitPrice: unitPrice,
       currency: currency ?? fallbackCurrency,
+      priceSource: priceSource,
+      billingEntity: billingEntity,
+      catalogType: catalogType,
+      priceBookEntryId: priceBookEntryId,
+      coveragePlanId: coveragePlanId,
     );
   }
 
@@ -843,6 +930,89 @@ class _PaymentModeRadioOption extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _PayerShareSummary extends StatelessWidget {
+  const _PayerShareSummary({
+    required this.currency,
+    required this.patientShare,
+    required this.insurerShare,
+    required this.copayAmount,
+    this.planLabel,
+  });
+
+  final String currency;
+  final num patientShare;
+  final num insurerShare;
+  final num copayAmount;
+  final String? planLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String? plan = planLabel?.trim();
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(theme.spacing.sm),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(theme.spacing.xs),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (plan != null && plan.isNotEmpty) ...<Widget>[
+            Text(
+              plan,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: theme.spacing.xs),
+          ],
+          _shareRow(
+            context,
+            l10n.clinicalRequestPatientShareLabel,
+            patientShare,
+          ),
+          _shareRow(
+            context,
+            l10n.clinicalRequestInsurerShareLabel,
+            insurerShare,
+          ),
+          if (copayAmount > 0)
+            _shareRow(
+              context,
+              l10n.clinicalRequestCopayLabel,
+              copayAmount,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _shareRow(BuildContext context, String label, num amount) {
+    final ThemeData theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.only(top: theme.spacing.xs),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(label, style: theme.textTheme.bodySmall),
+          ),
+          Text(
+            clinicalRequestPriceLabel(context, amount, currency),
+            style: theme.textTheme.bodySmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }

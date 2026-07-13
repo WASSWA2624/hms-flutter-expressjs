@@ -16,13 +16,23 @@ const {
 } = require('@lib/billing/identifiers');
 
 const CLAIM_INCLUDE = {
-  coverage_plan: { select: { id: true, human_friendly_id: true, tenant_id: true } },
+  coverage_plan: {
+    select: {
+      id: true,
+      human_friendly_id: true,
+      tenant_id: true,
+      name: true,
+      provider_name: true,
+      coverage_percentage: true,
+    },
+  },
   invoice: {
     select: {
       id: true,
       human_friendly_id: true,
       tenant_id: true,
       patient_id: true,
+      billing_entity: true,
       patient: { select: { id: true, human_friendly_id: true } },
     },
   },
@@ -295,9 +305,49 @@ const submitInsuranceClaim = async (id, data = {}, userId, ipAddress) => {
       throw new HttpError('errors.insurance_claim.cannot_submit_cancelled', 400);
     }
 
+    const prisma = require('@prisma/client');
+    const { getInsurerAdapter } = require('@lib/insurer/adapter');
+    const tenantId = resolveTenantIdFromClaim(before);
+    let adapterResult = null;
+
+    if (tenantId) {
+      const integration = await prisma.insurer_integration.findFirst({
+        where: {
+          deleted_at: null,
+          is_enabled: true,
+          tenant_id: tenantId,
+          OR: [
+            { coverage_plan_id: before.coverage_plan_id },
+            { coverage_plan_id: null },
+          ],
+        },
+        orderBy: { updated_at: 'desc' },
+      });
+
+      if (integration) {
+        const adapter = getInsurerAdapter(integration);
+        adapterResult = await adapter.submitClaim({
+          claim: before,
+          invoice: before.invoice,
+          notes: data.notes || null,
+        });
+      }
+    }
+
+    const nextStatus =
+      adapterResult?.status === 'REJECTED'
+        ? 'REJECTED'
+        : adapterResult?.accepted === false
+          ? 'REJECTED'
+          : 'SUBMITTED';
+
     const insuranceClaim = await insuranceClaimRepository.update(before.id, {
-      status: 'SUBMITTED',
+      status: nextStatus,
       submitted_at: data.submitted_at ? new Date(data.submitted_at) : new Date(),
+      ...(adapterResult?.payerReference
+        ? { payer_reference: adapterResult.payerReference }
+        : {}),
+      ...(data.notes !== undefined ? { notes: data.notes } : {}),
     });
     const updatedRecord = await insuranceClaimRepository.findById(insuranceClaim.id, CLAIM_INCLUDE);
 
@@ -312,6 +362,7 @@ const submitInsuranceClaim = async (id, data = {}, userId, ipAddress) => {
         after: insuranceClaim,
         metadata: {
           notes: data.notes || null,
+          adapter: adapterResult || null,
         },
       },
       ip_address: ipAddress,

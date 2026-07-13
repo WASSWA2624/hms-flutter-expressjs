@@ -208,7 +208,10 @@ apiV1Router.use('/payments', require('../modules/payment/routes/payment.routes')
 apiV1Router.use('/refunds', require('../modules/refund/routes/refund.routes'));
 apiV1Router.use('/billing', require('../modules/billing/routes/billing.routes'));
 apiV1Router.use('/pricing-rules', require('../modules/pricing-rule/routes/pricing-rule.routes'));
+apiV1Router.use('/price-book-entries', require('../modules/price-book-entry/routes/price-book-entry.routes'));
 apiV1Router.use('/coverage-plans', require('../modules/coverage-plan/routes/coverage-plan.routes'));
+apiV1Router.use('/patient-insurance-enrollments', require('../modules/patient-insurance-enrollment/routes/patient-insurance-enrollment.routes'));
+apiV1Router.use('/insurer-integrations', require('../modules/insurer-integration/routes/insurer-integration.routes'));
 apiV1Router.use('/insurance-claims', require('../modules/insurance-claim/routes/insurance-claim.routes'));
 apiV1Router.use('/pre-authorizations', require('../modules/pre-authorization/routes/pre-authorization.routes'));
 apiV1Router.use('/claims-workspace', require('../modules/claims-workspace/routes/claims-workspace.routes'));

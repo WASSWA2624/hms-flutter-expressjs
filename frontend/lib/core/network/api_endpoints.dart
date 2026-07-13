@@ -214,8 +214,20 @@ enum HmsApiResource {
   refunds('refunds', HmsApiEndpointGroup.diagnosticsPharmacyBilling),
   billing('billing', HmsApiEndpointGroup.diagnosticsPharmacyBilling),
   pricingRules('pricing-rules', HmsApiEndpointGroup.diagnosticsPharmacyBilling),
+  priceBookEntries(
+    'price-book-entries',
+    HmsApiEndpointGroup.diagnosticsPharmacyBilling,
+  ),
   coveragePlans(
     'coverage-plans',
+    HmsApiEndpointGroup.diagnosticsPharmacyBilling,
+  ),
+  patientInsuranceEnrollments(
+    'patient-insurance-enrollments',
+    HmsApiEndpointGroup.diagnosticsPharmacyBilling,
+  ),
+  insurerIntegrations(
+    'insurer-integrations',
     HmsApiEndpointGroup.diagnosticsPharmacyBilling,
   ),
   insuranceClaims(
