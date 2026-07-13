@@ -19636,6 +19636,180 @@ abstract class AppLocalizations {
   /// **'Enroll patient'**
   String get claimsAddEnrollmentAction;
 
+  /// Claims workspace action to add a price-book tariff.
+  ///
+  /// In en, this message translates to:
+  /// **'Add price'**
+  String get claimsAddPriceBookAction;
+
+  /// Claims workspace action to configure insurer API credentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurer API'**
+  String get claimsAddInsurerIntegrationAction;
+
+  /// Dialog title for creating a price-book entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Add price book tariff'**
+  String get claimsAddPriceBookTitle;
+
+  /// Dialog title for insurer integration credentials.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure insurer API'**
+  String get claimsAddInsurerIntegrationTitle;
+
+  /// Price book payment mode field.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment mode'**
+  String get claimsPriceBookPaymentModeLabel;
+
+  /// Self-pay payment mode option.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-pay'**
+  String get claimsPriceBookSelfPayLabel;
+
+  /// Insurance payment mode option.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance'**
+  String get claimsPriceBookInsuranceLabel;
+
+  /// Facility vs pharmacy billing entity.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing entity'**
+  String get claimsPriceBookBillingEntityLabel;
+
+  /// Facility billing entity option.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get claimsPriceBookFacilityEntityLabel;
+
+  /// Pharmacy billing entity option.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy'**
+  String get claimsPriceBookPharmacyEntityLabel;
+
+  /// Price book currency field.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get claimsPriceBookCurrencyLabel;
+
+  /// Validation for price book currency.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the currency code.'**
+  String get claimsPriceBookCurrencyRequired;
+
+  /// Validation for price book unit price.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the unit price.'**
+  String get claimsPriceBookPriceRequired;
+
+  /// Submit action for price book create.
+  ///
+  /// In en, this message translates to:
+  /// **'Save tariff'**
+  String get claimsSavePriceBookAction;
+
+  /// Insurer integration display name.
+  ///
+  /// In en, this message translates to:
+  /// **'Integration name'**
+  String get claimsInsurerIntegrationNameLabel;
+
+  /// Validation for insurer integration name.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the integration name.'**
+  String get claimsInsurerIntegrationNameRequired;
+
+  /// Insurer adapter type field.
+  ///
+  /// In en, this message translates to:
+  /// **'Adapter type'**
+  String get claimsInsurerAdapterTypeLabel;
+
+  /// Stub adapter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Stub (manual / test)'**
+  String get claimsInsurerAdapterStubLabel;
+
+  /// Generic REST adapter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Generic REST'**
+  String get claimsInsurerAdapterRestLabel;
+
+  /// Insurer API base URL field.
+  ///
+  /// In en, this message translates to:
+  /// **'API base URL'**
+  String get claimsInsurerBaseUrlLabel;
+
+  /// Insurer API key field (stored encrypted server-side).
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get claimsInsurerApiKeyLabel;
+
+  /// Enable insurer integration checkbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable this connector'**
+  String get claimsInsurerEnabledLabel;
+
+  /// Submit action for insurer integration create.
+  ///
+  /// In en, this message translates to:
+  /// **'Save connector'**
+  String get claimsSaveInsurerIntegrationAction;
+
+  /// Poll insurer for claim status.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync insurer status'**
+  String get claimsSyncClaimStatusAction;
+
+  /// Pre-authorization approved amount when status is partial or approved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved amount'**
+  String get claimsApprovedAmountFieldLabel;
+
+  /// Patient share summary on receive payment.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient share'**
+  String get billingReceivePaymentPatientShareLabel;
+
+  /// Insurer share summary on receive payment.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurer share'**
+  String get billingReceivePaymentInsurerShareLabel;
+
+  /// Scheme summary on receive payment.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheme'**
+  String get billingReceivePaymentSchemeLabel;
+
+  /// Hint when OPD consultation fee is engine-resolved.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee resolved from the price book for this patient.'**
+  String get opdEngineResolvedFeeHint;
+
   /// Summary badge for enrollments awaiting eligibility.
   ///
   /// In en, this message translates to:

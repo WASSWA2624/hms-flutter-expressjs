@@ -5941,14 +5941,7 @@ List<AppSelectOption<String>> _consentTypeSelectOptions(
 }
 
 List<AppSelectOption<String>> _paymentMethodSelectOptions() {
-  return <AppSelectOption<String>>[
-    for (final String value in _paymentMethods)
-      AppSelectOption<String>(
-        value: value,
-        label: _apiLabel(value),
-        leadingIcon: Icon(_paymentMethodIcon(value)),
-      ),
-  ];
+  return buildAppPaymentMethodSelectOptions(methods: _paymentMethods);
 }
 
 List<AppSelectOption<bool>> _booleanFilterOptions(AppLocalizations l10n) {
@@ -6039,18 +6032,6 @@ IconData _consentTypeIcon(String value) {
     'RESEARCH' => Icons.science_outlined,
     'BILLING' => Icons.receipt_long_outlined,
     _ => Icons.verified_user_outlined,
-  };
-}
-
-IconData _paymentMethodIcon(String value) {
-  return switch (value.toUpperCase()) {
-    'CASH' => Icons.payments_outlined,
-    'CREDIT_CARD' || 'DEBIT_CARD' || 'PREPAID_CARD' => Icons.credit_card,
-    'MOBILE_MONEY' => Icons.phone_android_outlined,
-    'BANK_TRANSFER' || 'BANK_CHECK' => Icons.account_balance_outlined,
-    'INSURANCE' => Icons.health_and_safety_outlined,
-    'VOUCHER' || 'GIFT_CARD' => Icons.confirmation_number_outlined,
-    _ => Icons.receipt_long_outlined,
   };
 }
 

@@ -10578,6 +10578,95 @@ class AppLocalizationsEn extends AppLocalizations {
   String get claimsAddEnrollmentAction => 'Enroll patient';
 
   @override
+  String get claimsAddPriceBookAction => 'Add price';
+
+  @override
+  String get claimsAddInsurerIntegrationAction => 'Insurer API';
+
+  @override
+  String get claimsAddPriceBookTitle => 'Add price book tariff';
+
+  @override
+  String get claimsAddInsurerIntegrationTitle => 'Configure insurer API';
+
+  @override
+  String get claimsPriceBookPaymentModeLabel => 'Payment mode';
+
+  @override
+  String get claimsPriceBookSelfPayLabel => 'Self-pay';
+
+  @override
+  String get claimsPriceBookInsuranceLabel => 'Insurance';
+
+  @override
+  String get claimsPriceBookBillingEntityLabel => 'Billing entity';
+
+  @override
+  String get claimsPriceBookFacilityEntityLabel => 'Facility';
+
+  @override
+  String get claimsPriceBookPharmacyEntityLabel => 'Pharmacy';
+
+  @override
+  String get claimsPriceBookCurrencyLabel => 'Currency';
+
+  @override
+  String get claimsPriceBookCurrencyRequired => 'Enter the currency code.';
+
+  @override
+  String get claimsPriceBookPriceRequired => 'Enter the unit price.';
+
+  @override
+  String get claimsSavePriceBookAction => 'Save tariff';
+
+  @override
+  String get claimsInsurerIntegrationNameLabel => 'Integration name';
+
+  @override
+  String get claimsInsurerIntegrationNameRequired =>
+      'Enter the integration name.';
+
+  @override
+  String get claimsInsurerAdapterTypeLabel => 'Adapter type';
+
+  @override
+  String get claimsInsurerAdapterStubLabel => 'Stub (manual / test)';
+
+  @override
+  String get claimsInsurerAdapterRestLabel => 'Generic REST';
+
+  @override
+  String get claimsInsurerBaseUrlLabel => 'API base URL';
+
+  @override
+  String get claimsInsurerApiKeyLabel => 'API key';
+
+  @override
+  String get claimsInsurerEnabledLabel => 'Enable this connector';
+
+  @override
+  String get claimsSaveInsurerIntegrationAction => 'Save connector';
+
+  @override
+  String get claimsSyncClaimStatusAction => 'Sync insurer status';
+
+  @override
+  String get claimsApprovedAmountFieldLabel => 'Approved amount';
+
+  @override
+  String get billingReceivePaymentPatientShareLabel => 'Patient share';
+
+  @override
+  String get billingReceivePaymentInsurerShareLabel => 'Insurer share';
+
+  @override
+  String get billingReceivePaymentSchemeLabel => 'Scheme';
+
+  @override
+  String get opdEngineResolvedFeeHint =>
+      'Fee resolved from the price book for this patient.';
+
+  @override
   String get claimsEligibilityPendingSummaryLabel => 'Eligibility pending';
 
   @override

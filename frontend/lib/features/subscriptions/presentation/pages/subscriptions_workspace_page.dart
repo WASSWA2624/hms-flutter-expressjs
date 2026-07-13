@@ -4318,28 +4318,23 @@ List<AppSelectOption<String>> _licenseTypeOptions(
 }
 
 List<AppSelectOption<String>> _paymentMethodOptions() {
-  return const <AppSelectOption<String>>[
-    AppSelectOption<String>(
-      value: _PaymentMethods.cash,
-      label: _SubscriptionsText.cash,
-    ),
-    AppSelectOption<String>(
-      value: _PaymentMethods.mobileMoney,
-      label: _SubscriptionsText.mobileMoney,
-    ),
-    AppSelectOption<String>(
-      value: _PaymentMethods.bankTransfer,
-      label: _SubscriptionsText.bankTransfer,
-    ),
-    AppSelectOption<String>(
-      value: _PaymentMethods.card,
-      label: _SubscriptionsText.card,
-    ),
-    AppSelectOption<String>(
-      value: _PaymentMethods.other,
-      label: _SubscriptionsText.other,
-    ),
-  ];
+  return buildAppPaymentMethodSelectOptions(
+    methods: const <String>[
+      _PaymentMethods.cash,
+      _PaymentMethods.mobileMoney,
+      _PaymentMethods.bankTransfer,
+      _PaymentMethods.card,
+      _PaymentMethods.other,
+    ],
+    labelOf: (String method) => switch (method) {
+      _PaymentMethods.cash => _SubscriptionsText.cash,
+      _PaymentMethods.mobileMoney => _SubscriptionsText.mobileMoney,
+      _PaymentMethods.bankTransfer => _SubscriptionsText.bankTransfer,
+      _PaymentMethods.card => _SubscriptionsText.card,
+      _PaymentMethods.other => _SubscriptionsText.other,
+      _ => method,
+    },
+  );
 }
 
 String? _optionalIntegerValidator(String? value) {

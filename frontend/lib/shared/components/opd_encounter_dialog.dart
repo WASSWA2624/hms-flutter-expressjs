@@ -26,6 +26,7 @@ import 'package:hosspi_hms/shared/components/app_copyable_identifier.dart';
 import 'package:hosspi_hms/shared/components/app_currency_amount_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
+import 'package:hosspi_hms/shared/components/app_payment_method.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/components/app_switch_field.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
@@ -731,7 +732,9 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
                   _paymentMethod = value ?? 'CASH';
                 });
               },
-              options: _statusOptions(_opdStartPaymentMethods),
+              options: buildAppPaymentMethodSelectOptions(
+                methods: _opdStartPaymentMethods,
+              ),
               validator: (String? value) => _payNow && !_isNonEmpty(value)
                   ? l10n.validationRequired
                   : null,
@@ -1495,6 +1498,57 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     }
   }
 
+  Future<void> _refreshEngineConsultationFee(String? patientId) async {
+    if (!_isNonEmpty(patientId) || !mounted) {
+      return;
+    }
+    final ClinicalRequestPayerContext? payerContext = await ref
+        .read(insuranceCatalogRepositoryProvider)
+        .resolvePayerContextForPatient(patientId);
+    if (!mounted) {
+      return;
+    }
+    final num fallback =
+        num.tryParse(_feeController.text.trim()) ??
+        _billingDefaults?.standardConsultationFee ??
+        0;
+    final List<ClinicalRequestBillingLineItem> fallbackItems =
+        <ClinicalRequestBillingLineItem>[
+          ClinicalRequestBillingLineItem(
+            id: 'CONSULTATION',
+            label: context.l10n.opdConsultationFeeLabel,
+            quantity: 1,
+            unitPrice: fallback,
+            catalogType: 'CONSULTATION',
+            billingEntity: 'FACILITY',
+            currency: _currency,
+          ),
+        ];
+    final List<ClinicalRequestBillingLineItem> resolved =
+        await resolveClinicalRequestBillingLineItems(
+          context: context,
+          catalogFallbackItems: fallbackItems,
+          payerContext: payerContext,
+          billingEntity: 'FACILITY',
+          currency: _currency,
+        );
+    if (!mounted || resolved.isEmpty) {
+      return;
+    }
+    final ClinicalRequestBillingLineItem line = resolved.first;
+    setState(() {
+      _payerContext = payerContext;
+      _resolvedConsultationLine = line;
+      _engineFeeResolved = true;
+      if (line.unitPrice != null) {
+        _feeController.text = _currencyAmountInput(line.unitPrice);
+      }
+      if (_isNonEmpty(line.currency)) {
+        _currency = line.currency!.trim().toUpperCase();
+      }
+    });
+  }
+
   Map<String, Object?> _newPatientRegistrationPayload() {
     return _newPatientFormKey.currentState?.buildPayload() ??
         const <String, Object?>{};
@@ -1679,6 +1733,10 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         },
       'consultation_fee': consultationFee,
       'currency': _currency,
+      if ((_payerContext?.coveragePlanId ?? '').trim().isNotEmpty)
+        'coverage_plan_id': _payerContext!.coveragePlanId,
+      if ((_payerContext?.insuranceCompanyId ?? '').trim().isNotEmpty)
+        'insurance_company_id': _payerContext!.insuranceCompanyId,
       'require_consultation_payment': _requireConsultationPayment,
       if (canReuseOpenEncounter) 'reuse_open_encounter': true,
       'create_consultation_invoice':

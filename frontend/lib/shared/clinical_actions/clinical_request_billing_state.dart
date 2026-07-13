@@ -3,6 +3,7 @@ import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/components/app_currency_amount_field.dart';
+import 'package:hosspi_hms/shared/components/app_payment_method.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 
@@ -563,24 +564,11 @@ const List<String> clinicalRequestPaymentMethods = <String>[
 ];
 
 IconData clinicalRequestPaymentMethodIcon(String method) {
-  return switch (method.trim().toUpperCase()) {
-    'CASH' => Icons.payments_outlined,
-    'CARD' => Icons.credit_card_outlined,
-    'MOBILE_MONEY' => Icons.phone_android_outlined,
-    'BANK_TRANSFER' => Icons.account_balance_outlined,
-    'INSURANCE' => Icons.health_and_safety_outlined,
-    _ => Icons.more_horiz_outlined,
-  };
+  return appPaymentMethodIcon(method);
 }
 
 List<AppSelectOption<String>> clinicalRequestPaymentMethodOptions() {
-  return clinicalRequestPaymentMethods
-      .map(
-        (String method) => AppSelectOption<String>(
-          value: method,
-          label: AppDisplay.apiLabel(method),
-          leadingIcon: Icon(clinicalRequestPaymentMethodIcon(method)),
-        ),
-      )
-      .toList(growable: false);
+  return buildAppPaymentMethodSelectOptions(
+    methods: clinicalRequestPaymentMethods,
+  );
 }

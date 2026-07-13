@@ -1242,7 +1242,9 @@ class _ConsultationPaymentDialogState
                   _selectedCoveragePercentage = null;
                 });
               },
-              options: _statusOptions(_paymentMethods),
+              options: buildAppPaymentMethodSelectOptions(
+                methods: _paymentMethods,
+              ),
             ),
             if (_method == 'INSURANCE') ...<Widget>[
               OpdCoverageVerificationPanel(

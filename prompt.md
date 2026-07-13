@@ -254,9 +254,9 @@ Manual Claims desk remains fully usable when no API is configured.
 
 - [x] Claims workspace: company/scheme/offers admin, enrollment, pre-auth, claim lifecycle (§G)  
 - [x] Upgrade shared billing panel for company + scheme + shares  
-- [ ] Admin/catalog: maintain self-pay and **per-scheme** tariffs/offers  
+- [x] Admin/catalog: maintain self-pay and **per-scheme** tariffs/offers  
 - [x] OPD coverage: company + scheme selection / auto-resolve from member ID  
-- [ ] Wire every dialog in §F  
+- [x] Wire every dialog in §F  
 - [x] Billing workspace: show company, scheme, co-pay, insurer share, billing entity  
 - [x] Instant UI; all strings in `app_en.arb`  
 
@@ -264,8 +264,8 @@ Manual Claims desk remains fully usable when no API is configured.
 
 - [x] Adapter interface + stub/mock  
 - [x] Wire eligibility / auth / claim submit / status into Claims services  
-- [ ] Webhook/poll → settlement updates  
-- [ ] Super-admin settings for company API URL, keys, enable/disable  
+- [x] Webhook/poll → settlement updates  
+- [x] Super-admin settings for company API URL, keys, enable/disable  
 
 ### Step 5 — Verify & document
 
@@ -288,7 +288,7 @@ Manual Claims desk remains fully usable when no API is configured.
 - [x] Insurance companies support **multiple schemes**, each with **distinct offers**  
 - [x] Distinct self-pay and per-scheme prices configurable per billable item  
 - [x] Enrolled patient resolves to company + scheme; charge-time prices/co-pays follow that scheme’s offers  
-- [ ] All billing modals in §F use the shared engine panel — no private/hard-coded price paths  
+- [x] All billing modals in §F use the shared engine panel — no private/hard-coded price paths  
 - [x] Co-pay and insurer share visible in request dialogs and on invoices (with company + scheme labels)  
 - [x] Pharmacy vs facility prices, invoices, and closeouts work as separate entities  
 - [x] Claims workspace covers enrollment, eligibility, pre-auth, submit, partial/reject/resubmit, settlement  

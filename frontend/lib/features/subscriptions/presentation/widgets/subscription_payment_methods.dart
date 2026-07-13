@@ -82,7 +82,7 @@ const List<SubscriptionPaymentMethodDefinition> subscriptionPaymentMethods =
       ),
       SubscriptionPaymentMethodDefinition(
         id: SubscriptionPaymentMethodId.other,
-        icon: Icons.more_horiz,
+        icon: Icons.more_horiz_outlined,
         color: Color(0xFF64748B),
       ),
     ];

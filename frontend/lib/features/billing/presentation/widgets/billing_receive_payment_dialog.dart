@@ -178,13 +178,10 @@ class _BillingReceivePaymentDialogState
           AppSelectField<String>(
             value: _method,
             labelText: context.l10n.billingPaymentMethodLabel,
-            options: <AppSelectOption<String>>[
-              for (final String method in billingPaymentMethods)
-                AppSelectOption<String>(
-                  value: method,
-                  label: billingApiLabel(context, method),
-                ),
-            ],
+            options: buildAppPaymentMethodSelectOptions(
+              methods: billingPaymentMethods,
+              labelOf: (String method) => billingApiLabel(context, method),
+            ),
             onChanged: (String? value) {
               if (value != null) {
                 setState(() => _method = value);

@@ -30,6 +30,7 @@ export 'app_logo.dart';
 export 'app_menu_item_label.dart';
 export 'app_nursing_components.dart';
 export 'app_patient_detail_dialog.dart';
+export 'app_payment_method.dart';
 export 'app_permission_action.dart';
 export 'app_permission_assignment_picker.dart';
 export 'app_permission_grouped_view.dart';
