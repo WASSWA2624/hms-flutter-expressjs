@@ -24,6 +24,7 @@ const listInsurerIntegrations = asyncHandler(async (req, res) => {
     tenant_id,
     facility_id,
     coverage_plan_id,
+    insurance_company_id,
     adapter_type,
     is_enabled,
     search,
@@ -37,6 +38,7 @@ const listInsurerIntegrations = asyncHandler(async (req, res) => {
     tenant_id,
     facility_id,
     coverage_plan_id,
+    insurance_company_id,
     adapter_type,
     is_enabled,
     search

@@ -885,10 +885,12 @@ class _InfoTile extends StatelessWidget {
 
 class _CoveragePlanDialog extends StatefulWidget {
   const _CoveragePlanDialog({
+    required this.insuranceCompanies,
     required this.coveragePlans,
     required this.onSubmit,
   });
 
+  final List<InsuranceCompanyOption> insuranceCompanies;
   final List<CoveragePlanOption> coveragePlans;
   final Future<AppFailure?> Function(String coveragePlanId) onSubmit;
 
@@ -898,28 +900,68 @@ class _CoveragePlanDialog extends StatefulWidget {
 
 class _CoveragePlanDialogState extends State<_CoveragePlanDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  String? _insuranceCompanyId;
   String? _coveragePlanId;
   bool _isSubmitting = false;
   AppFailure? _failure;
 
+  List<CoveragePlanOption> get _schemes {
+    if (_insuranceCompanyId == null || _insuranceCompanyId!.isEmpty) {
+      return widget.coveragePlans;
+    }
+    return widget.coveragePlans
+        .where(
+          (CoveragePlanOption plan) =>
+              plan.insuranceCompanyId == _insuranceCompanyId,
+        )
+        .toList(growable: false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final List<CoveragePlanOption> schemes = _schemes;
 
     return AppFormShell(
       formKey: _formKey,
       formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
+        if (widget.insuranceCompanies.isNotEmpty)
+          AppSelectField<String>.searchable(
+            labelText: l10n.claimsInsuranceCompanyFieldLabel,
+            value: _insuranceCompanyId,
+            enabled: widget.insuranceCompanies.isNotEmpty,
+            options: <AppSelectOption<String>>[
+              for (final InsuranceCompanyOption company
+                  in widget.insuranceCompanies)
+                AppSelectOption<String>(
+                  value: company.id,
+                  label: company.title,
+                ),
+            ],
+            onChanged: (String? value) {
+              setState(() {
+                _insuranceCompanyId = value;
+                final List<CoveragePlanOption> next = widget.coveragePlans
+                    .where(
+                      (CoveragePlanOption plan) =>
+                          plan.insuranceCompanyId == value,
+                    )
+                    .toList(growable: false);
+                _coveragePlanId = next.isEmpty ? null : next.first.apiId;
+              });
+            },
+          ),
         AppSelectField<String>.searchable(
-          labelText: l10n.claimsCoveragePlanFieldLabel,
+          labelText: l10n.claimsCoverageSchemeFieldLabel,
           hintText: l10n.claimsCoveragePlanHint,
           value: _coveragePlanId,
           isRequired: true,
-          enabled: widget.coveragePlans.isNotEmpty,
+          enabled: schemes.isNotEmpty,
           validator: AppValidators.requiredValue<String>(
             l10n.claimsCoveragePlanRequiredMessage,
           ),
-          options: _coveragePlanOptions(widget.coveragePlans),
+          options: _coveragePlanOptions(schemes),
           onChanged: (String? value) {
             setState(() {
               _coveragePlanId = value;
@@ -938,7 +980,7 @@ class _CoveragePlanDialogState extends State<_CoveragePlanDialog> {
           submitLabel: l10n.claimsRequestAuthorizationSubmitAction,
           submitIcon: Icons.verified_user_outlined,
           isSubmitting: _isSubmitting,
-          enabled: widget.coveragePlans.isNotEmpty,
+          enabled: schemes.isNotEmpty,
           onCancel: () => Navigator.of(context).pop(false),
           onSubmit: _submit,
         ),
@@ -972,11 +1014,13 @@ class _CoveragePlanDialogState extends State<_CoveragePlanDialog> {
 
 class _PrepareClaimDialog extends StatefulWidget {
   const _PrepareClaimDialog({
+    required this.insuranceCompanies,
     required this.coveragePlans,
     required this.invoices,
     required this.onSubmit,
   });
 
+  final List<InsuranceCompanyOption> insuranceCompanies;
   final List<CoveragePlanOption> coveragePlans;
   final List<ClaimInvoiceOption> invoices;
   final Future<AppFailure?> Function({
@@ -991,31 +1035,71 @@ class _PrepareClaimDialog extends StatefulWidget {
 
 class _PrepareClaimDialogState extends State<_PrepareClaimDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  String? _insuranceCompanyId;
   String? _coveragePlanId;
   String? _invoiceId;
   bool _isSubmitting = false;
   AppFailure? _failure;
 
+  List<CoveragePlanOption> get _schemes {
+    if (_insuranceCompanyId == null || _insuranceCompanyId!.isEmpty) {
+      return widget.coveragePlans;
+    }
+    return widget.coveragePlans
+        .where(
+          (CoveragePlanOption plan) =>
+              plan.insuranceCompanyId == _insuranceCompanyId,
+        )
+        .toList(growable: false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final List<CoveragePlanOption> schemes = _schemes;
     final bool hasRequiredData =
-        widget.coveragePlans.isNotEmpty && widget.invoices.isNotEmpty;
+        schemes.isNotEmpty && widget.invoices.isNotEmpty;
 
     return AppFormShell(
       formKey: _formKey,
       formStatus: appFormFailureStatus(context, _failure),
       children: <Widget>[
+        if (widget.insuranceCompanies.isNotEmpty)
+          AppSelectField<String>.searchable(
+            labelText: l10n.claimsInsuranceCompanyFieldLabel,
+            value: _insuranceCompanyId,
+            enabled: widget.insuranceCompanies.isNotEmpty,
+            options: <AppSelectOption<String>>[
+              for (final InsuranceCompanyOption company
+                  in widget.insuranceCompanies)
+                AppSelectOption<String>(
+                  value: company.id,
+                  label: company.title,
+                ),
+            ],
+            onChanged: (String? value) {
+              setState(() {
+                _insuranceCompanyId = value;
+                final List<CoveragePlanOption> next = widget.coveragePlans
+                    .where(
+                      (CoveragePlanOption plan) =>
+                          plan.insuranceCompanyId == value,
+                    )
+                    .toList(growable: false);
+                _coveragePlanId = next.isEmpty ? null : next.first.apiId;
+              });
+            },
+          ),
         AppSelectField<String>.searchable(
-          labelText: l10n.claimsCoveragePlanFieldLabel,
+          labelText: l10n.claimsCoverageSchemeFieldLabel,
           hintText: l10n.claimsCoveragePlanHint,
           value: _coveragePlanId,
           isRequired: true,
-          enabled: widget.coveragePlans.isNotEmpty,
+          enabled: schemes.isNotEmpty,
           validator: AppValidators.requiredValue<String>(
             l10n.claimsCoveragePlanRequiredMessage,
           ),
-          options: _coveragePlanOptions(widget.coveragePlans),
+          options: _coveragePlanOptions(schemes),
           onChanged: (String? value) {
             setState(() {
               _coveragePlanId = value;
@@ -1357,6 +1441,7 @@ Future<void> _openRequestAuthorizationDialog(
     context: context,
     title: Text(l10n.claimsRequestAuthorizationDialogTitle),
     content: _CoveragePlanDialog(
+      insuranceCompanies: state.referenceData.insuranceCompanies,
       coveragePlans: state.referenceData.coveragePlans,
       onSubmit: (String coveragePlanId) {
         return controller.requestPreAuthorization(
@@ -1380,6 +1465,7 @@ Future<void> _openPrepareClaimDialog(
     context: context,
     title: Text(l10n.claimsPrepareClaimDialogTitle),
     content: _PrepareClaimDialog(
+      insuranceCompanies: state.referenceData.insuranceCompanies,
       coveragePlans: state.referenceData.coveragePlans,
       invoices: state.referenceData.invoices,
       onSubmit: controller.prepareClaim,
@@ -1591,6 +1677,7 @@ String _claimsFilterLabel(AppLocalizations l10n, ClaimsQueueFilter filter) {
       l10n.claimsFilterAuthorizationExpired,
     ClaimsQueueFilter.claimSubmitted => l10n.claimsFilterClaimSubmitted,
     ClaimsQueueFilter.claimApproved => l10n.claimsFilterClaimApproved,
+    ClaimsQueueFilter.claimPartial => l10n.claimsFilterClaimPartial,
     ClaimsQueueFilter.claimRejected => l10n.claimsFilterClaimRejected,
     ClaimsQueueFilter.claimPaid => l10n.claimsFilterClaimPaid,
     ClaimsQueueFilter.claimCancelled => l10n.claimsFilterClaimCancelled,

@@ -27,6 +27,7 @@ const createInsurerIntegrationSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema,
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   coverage_plan_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  insurance_company_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(120),
   adapter_type: InsurerAdapterTypeEnum.optional().default('STUB'),
   base_url: z.string().trim().max(500).optional().nullable(),
@@ -44,6 +45,7 @@ const createInsurerIntegrationSchema = z.object({
 const updateInsurerIntegrationSchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   coverage_plan_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  insurance_company_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(120).optional(),
   adapter_type: InsurerAdapterTypeEnum.optional(),
   base_url: z.string().trim().max(500).optional().nullable(),
@@ -74,6 +76,7 @@ const listInsurerIntegrationsQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
   facility_id: uuidOrFriendlyIdentifierSchema.optional(),
   coverage_plan_id: uuidOrFriendlyIdentifierSchema.optional(),
+  insurance_company_id: uuidOrFriendlyIdentifierSchema.optional(),
   adapter_type: InsurerAdapterTypeEnum.optional(),
   is_enabled: z.enum(['true', 'false']).optional(),
   search: z.string().trim().optional()

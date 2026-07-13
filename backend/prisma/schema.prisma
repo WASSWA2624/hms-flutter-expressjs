@@ -509,6 +509,7 @@ enum PaymentMethodType {
 enum InsuranceClaimStatus {
   SUBMITTED
   APPROVED
+  PARTIAL
   REJECTED
   PAID
   CANCELLED
@@ -517,8 +518,10 @@ enum InsuranceClaimStatus {
 enum AuthorizationStatus {
   PENDING
   APPROVED
+  PARTIAL
   DENIED
   EXPIRED
+  CANCELLED
 }
 
 enum BillingApprovalStatus {
@@ -4606,6 +4609,7 @@ model insurance_company {
   integrations   insurer_integration[]
   price_book_entries price_book_entry[]
   invoice_items  invoice_item[]
+  insurance_claims insurance_claim[]
 
   @@unique([tenant_id, code])
   @@index([tenant_id])
@@ -4780,25 +4784,29 @@ model insurer_integration {
 }
 
 model insurance_claim {
-  id                String               @id @default(uuid()) @db.VarChar(36)
-  human_friendly_id String?              @db.VarChar(32)
-  coverage_plan_id  String               @db.VarChar(36)
-  invoice_id        String               @db.VarChar(36)
-  status            InsuranceClaimStatus
-  submitted_at      DateTime             @default(now())
-  settlement_amount Decimal?             @db.Decimal(12, 2)
-  payer_reference   String?              @db.VarChar(120)
-  notes             String?              @db.Text
-  resubmitted_at    DateTime?
-  created_at        DateTime             @default(now())
-  updated_at        DateTime             @updatedAt
-  deleted_at        DateTime?
-  version           Int                  @default(1)
+  id                   String               @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id    String?              @db.VarChar(32)
+  coverage_plan_id     String               @db.VarChar(36)
+  insurance_company_id String?              @db.VarChar(36)
+  invoice_id           String               @db.VarChar(36)
+  status               InsuranceClaimStatus
+  submitted_at         DateTime             @default(now())
+  claim_amount         Decimal?             @db.Decimal(12, 2)
+  settlement_amount    Decimal?             @db.Decimal(12, 2)
+  payer_reference      String?              @db.VarChar(120)
+  notes                String?              @db.Text
+  resubmitted_at       DateTime?
+  created_at           DateTime             @default(now())
+  updated_at           DateTime             @updatedAt
+  deleted_at           DateTime?
+  version              Int                  @default(1)
 
-  coverage_plan coverage_plan @relation(fields: [coverage_plan_id], references: [id])
-  invoice       invoice       @relation(fields: [invoice_id], references: [id])
+  coverage_plan     coverage_plan      @relation(fields: [coverage_plan_id], references: [id])
+  insurance_company insurance_company? @relation(fields: [insurance_company_id], references: [id])
+  invoice           invoice            @relation(fields: [invoice_id], references: [id])
 
   @@index([coverage_plan_id])
+  @@index([insurance_company_id])
   @@index([invoice_id])
   @@index([status])
   @@index([submitted_at])
@@ -4817,6 +4825,7 @@ model pre_authorization {
   reason            String?             @db.VarChar(120)
   approved_amount   Decimal?            @db.Decimal(12, 2)
   consumed_amount   Decimal?            @db.Decimal(12, 2)
+  insurer_reference String?             @db.VarChar(120)
   notes             String?             @db.Text
   requested_at      DateTime            @default(now())
   approved_at       DateTime?

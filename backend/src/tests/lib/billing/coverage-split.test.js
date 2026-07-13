@@ -71,4 +71,69 @@ describe('coverage-split', () => {
       copayAmount: '10.00',
     });
   });
+
+  it('applies offer exclusion as full patient share', () => {
+    const lines = applyCoverageSplitToLineItems(
+      [
+        {
+          label: 'CBC',
+          quantity: 1,
+          unit_price: '25000.00',
+          line_total: '25000.00',
+          is_excluded: true,
+          scheme_offer_id: 'offer-1',
+          insurance_company_id: 'company-1',
+        },
+      ],
+      {
+        insured: true,
+        coveragePercentage: 90,
+        coveragePlanId: 'scheme-gold',
+        insuranceCompanyId: 'company-1',
+      }
+    );
+    expect(lines[0]).toMatchObject({
+      patient_share: '25000.00',
+      insurer_share: '0.00',
+      is_excluded: true,
+      scheme_offer_id: 'offer-1',
+      insurance_company_id: 'company-1',
+    });
+  });
+
+  it('lets per-line offer coverage override scheme defaults', () => {
+    const lines = applyCoverageSplitToLineItems(
+      [
+        {
+          label: 'CBC Gold',
+          quantity: 1,
+          unit_price: '25000.00',
+          line_total: '25000.00',
+          coverage_percentage: 90,
+          copay_type: 'PERCENT',
+          copay_value: 10,
+          scheme_offer_id: 'offer-gold',
+        },
+        {
+          label: 'CBC Silver',
+          quantity: 1,
+          unit_price: '30000.00',
+          line_total: '30000.00',
+          coverage_percentage: 70,
+          copay_type: 'FIXED',
+          copay_value: 5000,
+          scheme_offer_id: 'offer-silver',
+        },
+      ],
+      {
+        insured: true,
+        coveragePercentage: 50,
+        paymentMode: 'INSURANCE',
+      }
+    );
+    expect(lines[0].insurer_share).toBe('20250.00');
+    expect(lines[0].patient_share).toBe('4750.00');
+    expect(lines[1].insurer_share).toBe('16000.00');
+    expect(lines[1].patient_share).toBe('14000.00');
+  });
 });

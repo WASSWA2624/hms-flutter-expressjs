@@ -10473,11 +10473,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Coverage plans are unavailable. Verify insurance setup before proceeding.';
 
   @override
+  String get claimsInsuranceCompanyFieldLabel => 'Insurance company';
+
+  @override
+  String get claimsCoverageSchemeFieldLabel => 'Insurance scheme';
+
+  @override
   String get opdCoverageVerificationTitle => 'Coverage verification';
 
   @override
   String get opdCoverageVerificationBody =>
-      'Confirm the patient\'s active coverage plan before recording an insurance consultation payment.';
+      'Confirm the patient\'s insurance company and scheme before recording an insurance consultation payment.';
 
   @override
   String get opdCoverageVerifiedLabel => 'Coverage verified for this visit';

@@ -24,6 +24,15 @@ const CLAIM_INCLUDE = {
       name: true,
       provider_name: true,
       coverage_percentage: true,
+      insurance_company_id: true,
+    },
+  },
+  insurance_company: {
+    select: {
+      id: true,
+      human_friendly_id: true,
+      name: true,
+      code: true,
     },
   },
   invoice: {
@@ -33,9 +42,45 @@ const CLAIM_INCLUDE = {
       tenant_id: true,
       patient_id: true,
       billing_entity: true,
+      total_amount: true,
+      currency: true,
       patient: { select: { id: true, human_friendly_id: true } },
+      items: {
+        where: { deleted_at: null },
+        select: {
+          id: true,
+          insurer_share: true,
+          patient_share: true,
+          copay_amount: true,
+          coverage_plan_id: true,
+          insurance_company_id: true,
+          total_price: true,
+        },
+      },
     },
   },
+};
+
+const toMoney = (value) => {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return null;
+  return amount.toFixed(2);
+};
+
+const sumInvoiceInsurerShare = (invoice, coveragePlanId = null) => {
+  const items = Array.isArray(invoice?.items) ? invoice.items : [];
+  const total = items.reduce((sum, item) => {
+    if (
+      coveragePlanId &&
+      item.coverage_plan_id &&
+      item.coverage_plan_id !== coveragePlanId
+    ) {
+      return sum;
+    }
+    const share = Number(item.insurer_share);
+    return sum + (Number.isFinite(share) ? share : 0);
+  }, 0);
+  return toMoney(total);
 };
 
 const buildEmptyListResult = (page, limit) => ({
@@ -174,11 +219,47 @@ const createInsuranceClaim = async (data, userId, ipAddress) => {
       field: 'invoice_id',
       model: 'invoice',
     });
+    const insuranceCompanyId = await resolveIdentifierForPayload({
+      value: data?.insurance_company_id,
+      field: 'insurance_company_id',
+      model: 'insurance_company',
+      nullable: true,
+    });
+
+    const invoice = await require('@prisma/client').invoice.findFirst({
+      where: { id: invoiceId, deleted_at: null },
+      include: {
+        items: {
+          where: { deleted_at: null },
+          select: {
+            insurer_share: true,
+            coverage_plan_id: true,
+          },
+        },
+      },
+    });
+    if (!invoice) {
+      throw new HttpError('errors.invoice.not_found', 404);
+    }
+
+    const coveragePlan = await require('@prisma/client').coverage_plan.findFirst({
+      where: { id: coveragePlanId, deleted_at: null },
+      select: { id: true, insurance_company_id: true },
+    });
+
+    const claimAmount =
+      data?.claim_amount != null
+        ? toMoney(data.claim_amount)
+        : sumInvoiceInsurerShare(invoice, coveragePlanId);
 
     const insuranceClaim = await insuranceClaimRepository.create({
       ...data,
       coverage_plan_id: coveragePlanId,
       invoice_id: invoiceId,
+      insurance_company_id:
+        insuranceCompanyId || coveragePlan?.insurance_company_id || null,
+      claim_amount: claimAmount,
+      status: data?.status || 'SUBMITTED',
     });
 
     const createdRecord = await insuranceClaimRepository.findById(insuranceClaim.id, CLAIM_INCLUDE);

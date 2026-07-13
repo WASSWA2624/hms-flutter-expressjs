@@ -19432,6 +19432,18 @@ abstract class AppLocalizations {
   /// **'Coverage plans are unavailable. Verify insurance setup before proceeding.'**
   String get claimsCoveragePlansUnavailable;
 
+  /// Label for selecting an insurance company before a scheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance company'**
+  String get claimsInsuranceCompanyFieldLabel;
+
+  /// Label for selecting a scheme under an insurance company.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance scheme'**
+  String get claimsCoverageSchemeFieldLabel;
+
   /// OPD insurance coverage verification section title.
   ///
   /// In en, this message translates to:
@@ -19441,7 +19453,7 @@ abstract class AppLocalizations {
   /// OPD insurance coverage verification helper text.
   ///
   /// In en, this message translates to:
-  /// **'Confirm the patient\'s active coverage plan before recording an insurance consultation payment.'**
+  /// **'Confirm the patient\'s insurance company and scheme before recording an insurance consultation payment.'**
   String get opdCoverageVerificationBody;
 
   /// Checkbox label confirming OPD coverage verification.

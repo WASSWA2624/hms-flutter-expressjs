@@ -412,9 +412,9 @@ const deletePatientInsuranceEnrollment = async (id, userId, ipAddress) => {
 };
 
 /**
- * Verify enrollment eligibility via insurer adapter
+ * Verify enrollment eligibility via insurer adapter, with manual fallback.
  */
-const verifyPatientInsuranceEnrollment = async (id, userId, ipAddress) => {
+const verifyPatientInsuranceEnrollment = async (id, data = {}, userId, ipAddress) => {
   try {
     const resolvedId = await resolveEntityId({
       model: 'patient_insurance_enrollment',
@@ -430,36 +430,58 @@ const verifyPatientInsuranceEnrollment = async (id, userId, ipAddress) => {
       throw new HttpError('errors.patient_insurance_enrollment.not_found', 404);
     }
 
-    const integrations = await prisma.insurer_integration.findMany({
-      where: {
-        deleted_at: null,
-        is_enabled: true,
-        tenant_id: enrollment.tenant_id,
-      },
-      orderBy: { created_at: 'desc' },
-    });
+    const manual = Boolean(data?.manual || data?.verified_manually);
+    let eligibility = null;
+    let nextStatus = enrollment.status;
+    let verifiedVia = 'MANUAL';
+    let integrationId = null;
 
-    const integration = pickPreferredIntegration(integrations, enrollment);
+    if (manual) {
+      nextStatus =
+        data?.status === 'EXPIRED' || data?.eligible === false ? 'EXPIRED' : 'ACTIVE';
+      eligibility = {
+        eligible: nextStatus === 'ACTIVE',
+        source: 'MANUAL',
+        notes: data?.notes || null,
+      };
+    } else {
+      const integrations = await prisma.insurer_integration.findMany({
+        where: {
+          deleted_at: null,
+          is_enabled: true,
+          tenant_id: enrollment.tenant_id,
+        },
+        orderBy: { created_at: 'desc' },
+      });
 
-    if (!integration) {
-      throw new HttpError('errors.insurer_integration.not_found', 404, [
-        { reason: 'No enabled insurer integration for tenant' },
-      ]);
+      const integration = pickPreferredIntegration(integrations, enrollment);
+
+      if (!integration) {
+        nextStatus = 'ACTIVE';
+        verifiedVia = 'MANUAL';
+        eligibility = {
+          eligible: true,
+          source: 'MANUAL_FALLBACK',
+          notes: 'No enabled insurer integration; verified manually',
+        };
+      } else {
+        integrationId = integration.id;
+        const adapter = getInsurerAdapter(integration);
+        eligibility = await adapter.checkEligibility({
+          memberId: enrollment.member_id,
+          coveragePlan: enrollment.coverage_plan,
+        });
+        nextStatus = eligibility?.eligible ? 'ACTIVE' : 'EXPIRED';
+        verifiedVia = adapter.name || integration.adapter_type || 'STUB';
+      }
     }
 
-    const adapter = getInsurerAdapter(integration);
-    const eligibility = await adapter.checkEligibility({
-      memberId: enrollment.member_id,
-      coveragePlan: enrollment.coverage_plan,
-    });
-
-    const nextStatus = eligibility?.eligible ? 'ACTIVE' : 'EXPIRED';
     const verifiedAt = new Date();
 
     const updated = await patientInsuranceEnrollmentRepository.update(enrollment.id, {
       status: nextStatus,
       verified_at: verifiedAt,
-      last_verified_via: adapter.name || integration.adapter_type || 'STUB',
+      last_verified_via: verifiedVia,
     });
 
     const updatedRecord = await patientInsuranceEnrollmentRepository.findById(
@@ -477,7 +499,7 @@ const verifyPatientInsuranceEnrollment = async (id, userId, ipAddress) => {
         before: enrollment,
         after: updated,
         eligibility,
-        integration_id: integration.id,
+        integration_id: integrationId,
       },
       ip_address: ipAddress,
     }).catch(() => {});

@@ -32,6 +32,15 @@ const PRICE_BOOK_ENTRY_INCLUDE = {
       name: true,
       provider_name: true,
       coverage_percentage: true,
+      insurance_company_id: true,
+    },
+  },
+  insurance_company: {
+    select: {
+      id: true,
+      human_friendly_id: true,
+      name: true,
+      code: true,
     },
   },
 };
@@ -69,6 +78,11 @@ const mapPriceBookEntryForDisplay = (record) => {
       record?.coverage_plan?.human_friendly_id,
       record?.coverage_plan_id
     ),
+    insurance_company_display_id: resolvePublicIdentifier(
+      record?.insurance_company_display_id,
+      record?.insurance_company?.human_friendly_id,
+      record?.insurance_company_id
+    ),
     timeline_at: record?.timeline_at || record?.effective_from || record?.created_at || null,
   };
 };
@@ -91,6 +105,12 @@ const normalizeCreatePayload = async (data = {}) => {
       value: data.coverage_plan_id,
       model: 'coverage_plan',
       field: 'coverage_plan_id',
+      nullable: true,
+    }),
+    insurance_company_id: await resolveIdentifierForPayload({
+      value: data.insurance_company_id,
+      model: 'insurance_company',
+      field: 'insurance_company_id',
       nullable: true,
     }),
   };
@@ -118,6 +138,15 @@ const normalizeUpdatePayload = async (data = {}) => {
       value: data.coverage_plan_id,
       model: 'coverage_plan',
       field: 'coverage_plan_id',
+      nullable: true,
+    });
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, 'insurance_company_id')) {
+    payload.insurance_company_id = await resolveIdentifierForPayload({
+      value: data.insurance_company_id,
+      model: 'insurance_company',
+      field: 'insurance_company_id',
       nullable: true,
     });
   }
@@ -170,6 +199,18 @@ const listPriceBookEntries = async (filters, page, limit, sortBy, order) => {
       });
       if (coveragePlanId === null) return buildEmptyListResult(page, limit);
       if (coveragePlanId !== undefined) whereClause.coverage_plan_id = coveragePlanId;
+    }
+
+    if (filters.insurance_company_id !== undefined) {
+      const insuranceCompanyId = await resolveIdentifierForFilter({
+        value: filters.insurance_company_id,
+        model: 'insurance_company',
+        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {},
+      });
+      if (insuranceCompanyId === null) return buildEmptyListResult(page, limit);
+      if (insuranceCompanyId !== undefined) {
+        whereClause.insurance_company_id = insuranceCompanyId;
+      }
     }
 
     if (filters.catalog_type) whereClause.catalog_type = filters.catalog_type;
@@ -364,6 +405,13 @@ const resolvePriceBookEntries = async (data) => {
       nullable: true,
     });
 
+    const insuranceCompanyId = await resolveIdentifierForPayload({
+      value: data?.insurance_company_id,
+      field: 'insurance_company_id',
+      model: 'insurance_company',
+      nullable: true,
+    });
+
     const paymentMode = data?.payment_mode || 'SELF_PAY';
     const billingEntity = data?.billing_entity || 'FACILITY';
     const inputItems = Array.isArray(data?.items) ? data.items : [];
@@ -373,6 +421,7 @@ const resolvePriceBookEntries = async (data) => {
       facilityId: facilityId || null,
       paymentMode,
       coveragePlanId: coveragePlanId || null,
+      insuranceCompanyId: insuranceCompanyId || null,
       insurerKey: data?.insurer_key || null,
       billingEntity,
       currency: data?.currency || null,
@@ -397,10 +446,18 @@ const resolvePriceBookEntries = async (data) => {
         payment_mode: price.paymentMode || paymentMode,
         billing_entity: price.billingEntity || billingEntity,
         coverage_plan_id: price.coveragePlanId || coveragePlanId || null,
+        insurance_company_id:
+          price.insuranceCompanyId || insuranceCompanyId || null,
         insurer_key: price.insurerKey || data?.insurer_key || null,
         price_book_entry_id: price.priceBookEntryId || null,
+        scheme_offer_id: price.schemeOfferId || null,
         source: price.source || 'UNRESOLVED',
         price_source: price.priceSource || item.price_source || billingEntity,
+        coverage_percentage: price.coveragePercentage ?? null,
+        copay_type: price.copayType || null,
+        copay_value: price.copayValue ?? null,
+        is_excluded: Boolean(price.isExcluded),
+        requires_pre_auth: Boolean(price.requiresPreAuth),
       };
     });
 
@@ -413,6 +470,9 @@ const resolvePriceBookEntries = async (data) => {
           coverage_percentage: true,
           name: true,
           provider_name: true,
+          default_copay_type: true,
+          default_copay_value: true,
+          insurance_company_id: true,
         },
       });
     }
@@ -425,7 +485,11 @@ const resolvePriceBookEntries = async (data) => {
         insured: String(paymentMode).toUpperCase() === 'INSURANCE',
         coveragePercentage: coveragePlan?.coverage_percentage ?? 0,
         coveragePlanId: coveragePlanId || null,
+        insuranceCompanyId:
+          insuranceCompanyId || coveragePlan?.insurance_company_id || null,
         paymentMode,
+        copayType: coveragePlan?.default_copay_type || 'NONE',
+        copayValue: coveragePlan?.default_copay_value ?? null,
       });
     }
 

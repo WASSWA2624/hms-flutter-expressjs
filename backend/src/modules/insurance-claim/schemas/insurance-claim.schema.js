@@ -22,8 +22,13 @@ const {
 const createInsuranceClaimSchema = z.object({
   coverage_plan_id: uuidOrFriendlyIdentifierSchema,
   invoice_id: uuidOrFriendlyIdentifierSchema,
-  status: z.enum(['SUBMITTED', 'APPROVED', 'REJECTED', 'PAID', 'CANCELLED']).optional(),
-  submitted_at: z.string().datetime().optional()
+  insurance_company_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  status: z
+    .enum(['SUBMITTED', 'APPROVED', 'PARTIAL', 'REJECTED', 'PAID', 'CANCELLED'])
+    .optional(),
+  submitted_at: z.string().datetime().optional(),
+  claim_amount: z.number().min(0).finite().optional().nullable(),
+  notes: z.string().trim().max(10000).optional().nullable()
 });
 
 /**
@@ -34,8 +39,15 @@ const createInsuranceClaimSchema = z.object({
 const updateInsuranceClaimSchema = z.object({
   coverage_plan_id: uuidOrFriendlyIdentifierSchema.optional(),
   invoice_id: uuidOrFriendlyIdentifierSchema.optional(),
-  status: z.enum(['SUBMITTED', 'APPROVED', 'REJECTED', 'PAID', 'CANCELLED']).optional(),
-  submitted_at: z.string().datetime().optional()
+  insurance_company_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  status: z
+    .enum(['SUBMITTED', 'APPROVED', 'PARTIAL', 'REJECTED', 'PAID', 'CANCELLED'])
+    .optional(),
+  submitted_at: z.string().datetime().optional(),
+  claim_amount: z.number().min(0).finite().optional().nullable(),
+  settlement_amount: z.number().min(0).finite().optional().nullable(),
+  payer_reference: z.string().trim().max(120).optional().nullable(),
+  notes: z.string().trim().max(10000).optional().nullable()
 });
 
 /**

@@ -11,6 +11,7 @@ enum ClaimsQueueFilter {
   authorizationExpired,
   claimSubmitted,
   claimApproved,
+  claimPartial,
   claimRejected,
   claimPaid,
   claimCancelled,
@@ -492,6 +493,7 @@ String? insuranceClaimStatusForFilter(ClaimsQueueFilter filter) {
   return switch (filter) {
     ClaimsQueueFilter.claimSubmitted => 'SUBMITTED',
     ClaimsQueueFilter.claimApproved => 'APPROVED',
+    ClaimsQueueFilter.claimPartial => 'PARTIAL',
     ClaimsQueueFilter.claimRejected => 'REJECTED',
     ClaimsQueueFilter.claimPaid => 'PAID',
     ClaimsQueueFilter.claimCancelled => 'CANCELLED',

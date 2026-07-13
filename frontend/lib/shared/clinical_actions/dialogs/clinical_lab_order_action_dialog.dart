@@ -7,6 +7,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_resolve.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_lab_request_catalog_dialog.dart';
@@ -66,6 +67,7 @@ final class _PendingLabRequest {
 class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
   final List<_PendingLabRequest> _requests = <_PendingLabRequest>[];
   final Set<String> _selectedRequestKeys = <String>{};
+  ClinicalRequestBillingSubmit? _billingSubmit;
   bool _isSaving = false;
   AppFailure? _failure;
 
@@ -110,6 +112,9 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
             onRemoveSelected: _selectedRequestKeys.isEmpty
                 ? null
                 : () => unawaited(_confirmAndDeleteSelectedRequests()),
+            onReviewBilling: _requests.isEmpty
+                ? null
+                : () => unawaited(_openBillingDialog()),
           ),
           SizedBox(height: Theme.of(context).spacing.md),
           Expanded(child: _buildSelectedTable(context)),
@@ -376,6 +381,9 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
   }
 
   ClinicalRequestBillingSubmit? _pendingBillingSubmit() {
+    if (_billingSubmit != null) {
+      return _billingSubmit;
+    }
     if (_requests.isEmpty) {
       return null;
     }
@@ -384,6 +392,24 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
           .map((_PendingLabRequest request) => request.option)
           .toList(growable: false),
     );
+  }
+
+  Future<void> _openBillingDialog() async {
+    final ClinicalRequestBillingSubmit? billing =
+        await showResolvedClinicalRequestBillingDialog(
+          context: context,
+          options: _requests
+              .map((_PendingLabRequest request) => request.option)
+              .toList(growable: false),
+          initialBilling: _billingSubmit,
+          catalogType: 'LAB_TEST',
+          billingEntity: 'FACILITY',
+          enabled: !_isSaving,
+        );
+    if (!mounted || billing == null) {
+      return;
+    }
+    setState(() => _billingSubmit = billing);
   }
 
   Future<void> _submit() async {

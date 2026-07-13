@@ -18,14 +18,15 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_billing_helpers.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_resolve.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_catalog_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_instructions_print_helpers.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_order_item_pricing_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
-import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -629,10 +630,28 @@ Future<void> _openRecordPaymentDialog(
   WidgetRef ref,
   PharmacyOrder order,
 ) async {
+  final List<ClinicalRequestBillingLineItem> fallback =
+      pharmacyOrderBillingLineItems(order)
+          .map(
+            (ClinicalRequestBillingLineItem item) => item.copyWith(
+              catalogType: item.catalogType ?? 'DRUG',
+              billingEntity: item.billingEntity ?? item.priceSource ?? 'PHARMACY',
+            ),
+          )
+          .toList(growable: false);
+  final List<ClinicalRequestBillingLineItem> resolved =
+      await resolveClinicalRequestBillingLineItems(
+        context: context,
+        catalogFallbackItems: fallback,
+        billingEntity: 'PHARMACY',
+      );
+  if (!context.mounted) {
+    return;
+  }
   final ClinicalRequestBillingSubmit? billing =
       await showClinicalRequestBillingDialog(
         context: context,
-        lineItems: pharmacyOrderBillingLineItems(order),
+        lineItems: resolved,
         initialPaymentStatus: clinicalRequestPaymentStatusFromValue(
           order.effectivePaymentStatus,
         ),
@@ -640,6 +659,7 @@ Future<void> _openRecordPaymentDialog(
             ? order.billing['paid_amount'] as num
             : num.tryParse(order.billing['paid_amount']?.toString() ?? ''),
         initialCurrency: order.billingCurrency,
+        billingEntity: 'PHARMACY',
       );
   if (billing == null || !context.mounted) {
     return;

@@ -355,7 +355,7 @@ class _ClinicalRequestBillingPanelState
                     patientShare: shares.patientShare,
                     insurerShare: shares.insurerShare,
                     copayAmount: shares.copayAmount,
-                    planLabel: widget.payerContext?.coveragePlanName,
+                    planLabel: widget.payerContext?.payerLabel,
                   );
                 },
               ),
@@ -478,6 +478,7 @@ class _ClinicalRequestBillingPanelState
             (lineItems.isEmpty ? null : lineItems.first.billingEntity),
         paymentMode: payer.paymentMode,
         coveragePlanId: payer.coveragePlanId,
+        insuranceCompanyId: payer.insuranceCompanyId,
         coveragePercentage: payer.coveragePercentage,
         copayType: payer.copayType,
         copayValue: payer.copayValue,

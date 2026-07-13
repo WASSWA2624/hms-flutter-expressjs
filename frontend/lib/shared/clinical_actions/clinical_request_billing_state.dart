@@ -92,6 +92,8 @@ final class ClinicalRequestBillingLineItem {
 final class ClinicalRequestPayerContext {
   const ClinicalRequestPayerContext({
     this.insured = false,
+    this.insuranceCompanyId,
+    this.insuranceCompanyName,
     this.coveragePlanId,
     this.coveragePlanName,
     this.insurerKey,
@@ -102,6 +104,8 @@ final class ClinicalRequestPayerContext {
   });
 
   final bool insured;
+  final String? insuranceCompanyId;
+  final String? insuranceCompanyName;
   final String? coveragePlanId;
   final String? coveragePlanName;
   final String? insurerKey;
@@ -111,6 +115,44 @@ final class ClinicalRequestPayerContext {
   final String? memberId;
 
   String get paymentMode => insured ? 'INSURANCE' : 'SELF_PAY';
+
+  String? get payerLabel {
+    final String company = (insuranceCompanyName ?? '').trim();
+    final String scheme = (coveragePlanName ?? '').trim();
+    if (company.isNotEmpty && scheme.isNotEmpty) {
+      return '$company · $scheme';
+    }
+    if (scheme.isNotEmpty) return scheme;
+    if (company.isNotEmpty) return company;
+    return null;
+  }
+
+  ClinicalRequestPayerContext copyWith({
+    bool? insured,
+    String? insuranceCompanyId,
+    String? insuranceCompanyName,
+    String? coveragePlanId,
+    String? coveragePlanName,
+    String? insurerKey,
+    num? coveragePercentage,
+    String? copayType,
+    num? copayValue,
+    String? memberId,
+  }) {
+    return ClinicalRequestPayerContext(
+      insured: insured ?? this.insured,
+      insuranceCompanyId: insuranceCompanyId ?? this.insuranceCompanyId,
+      insuranceCompanyName:
+          insuranceCompanyName ?? this.insuranceCompanyName,
+      coveragePlanId: coveragePlanId ?? this.coveragePlanId,
+      coveragePlanName: coveragePlanName ?? this.coveragePlanName,
+      insurerKey: insurerKey ?? this.insurerKey,
+      coveragePercentage: coveragePercentage ?? this.coveragePercentage,
+      copayType: copayType ?? this.copayType,
+      copayValue: copayValue ?? this.copayValue,
+      memberId: memberId ?? this.memberId,
+    );
+  }
 }
 
 @immutable
@@ -127,6 +169,7 @@ final class ClinicalRequestBillingSubmit {
     this.billingEntity,
     this.paymentMode,
     this.coveragePlanId,
+    this.insuranceCompanyId,
     this.coveragePercentage,
     this.copayType,
     this.copayValue,
@@ -146,6 +189,7 @@ final class ClinicalRequestBillingSubmit {
   final String? billingEntity;
   final String? paymentMode;
   final String? coveragePlanId;
+  final String? insuranceCompanyId;
   final num? coveragePercentage;
   final String? copayType;
   final num? copayValue;
@@ -169,6 +213,8 @@ final class ClinicalRequestBillingSubmit {
         'payment_mode': paymentMode,
       if (coveragePlanId != null && coveragePlanId!.isNotEmpty)
         'coverage_plan_id': coveragePlanId,
+      if (insuranceCompanyId != null && insuranceCompanyId!.isNotEmpty)
+        'insurance_company_id': insuranceCompanyId,
       if (coveragePercentage != null) 'coverage_percentage': coveragePercentage,
       if (copayType != null && copayType!.isNotEmpty) 'copay_type': copayType,
       if (copayValue != null) 'copay_value': copayValue,
@@ -214,6 +260,8 @@ List<ClinicalRequestBillingLineItem> clinicalRequestBillingLineItems({
   required List<ClinicalActionCatalogOption> options,
   Map<String, num>? quantities,
   String? currency,
+  String? catalogType,
+  String? billingEntity,
 }) {
   return <ClinicalRequestBillingLineItem>[
     for (final ClinicalActionCatalogOption option in options)
@@ -223,8 +271,31 @@ List<ClinicalRequestBillingLineItem> clinicalRequestBillingLineItems({
         quantity: quantities?[option.apiId] ?? 1,
         unitPrice: clinicalCatalogOptionUnitPrice(option),
         currency: clinicalCatalogOptionCurrency(option) ?? currency,
+        catalogType:
+            catalogType ??
+            clinicalCatalogOptionCatalogType(option),
+        billingEntity: billingEntity,
+        priceSource: billingEntity,
       ),
   ];
+}
+
+String? clinicalCatalogOptionCatalogType(ClinicalActionCatalogOption option) {
+  final Object? raw =
+      option.metadata?['catalog_type'] ??
+      option.metadata?['catalogType'] ??
+      option.metadata?['term_type'] ??
+      option.metadata?['termType'];
+  if (raw == null) return null;
+  final String token = raw.toString().trim().toUpperCase();
+  if (token.isEmpty) return null;
+  if (token.contains('LAB_PANEL') || token == 'PANEL') return 'LAB_PANEL';
+  if (token.contains('LAB')) return 'LAB_TEST';
+  if (token.contains('RAD')) return 'RADIOLOGY_TEST';
+  if (token.contains('DRUG') || token.contains('PHARM')) return 'DRUG';
+  if (token.contains('CONSULT')) return 'CONSULTATION';
+  if (token.contains('SERVICE') || token.contains('PROC')) return 'SERVICE';
+  return token;
 }
 
 num? clinicalCatalogOptionUnitPrice(ClinicalActionCatalogOption option) {

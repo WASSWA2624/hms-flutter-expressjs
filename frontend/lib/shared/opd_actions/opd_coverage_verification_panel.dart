@@ -9,6 +9,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
 /// Coverage verification shown when OPD consultation payment uses insurance.
+/// Selects insurance company first, then scheme under that company.
 class OpdCoverageVerificationPanel extends ConsumerStatefulWidget {
   const OpdCoverageVerificationPanel({
     required this.patientId,
@@ -24,9 +25,13 @@ class OpdCoverageVerificationPanel extends ConsumerStatefulWidget {
   final ValueChanged<
     ({
       bool verified,
+      String? insuranceCompanyId,
+      String? insuranceCompanyName,
       String? coveragePlanId,
       String? coveragePlanName,
       int? coveragePercentage,
+      String? copayType,
+      num? copayValue,
     })
   >
   onVerifiedChanged;
@@ -39,9 +44,23 @@ class OpdCoverageVerificationPanel extends ConsumerStatefulWidget {
 class _OpdCoverageVerificationPanelState
     extends ConsumerState<OpdCoverageVerificationPanel> {
   bool _isLoading = true;
+  List<InsuranceCompanyOption> _companies = const <InsuranceCompanyOption>[];
   List<CoveragePlanOption> _plans = const <CoveragePlanOption>[];
+  String? _selectedCompanyId;
   String? _selectedPlanId;
   bool _verified = false;
+
+  List<CoveragePlanOption> get _schemesForCompany {
+    if (_selectedCompanyId == null || _selectedCompanyId!.isEmpty) {
+      return _plans;
+    }
+    return _plans
+        .where(
+          (CoveragePlanOption plan) =>
+              plan.insuranceCompanyId == _selectedCompanyId,
+        )
+        .toList(growable: false);
+  }
 
   @override
   void initState() {
@@ -57,15 +76,43 @@ class _OpdCoverageVerificationPanelState
     if (!mounted) {
       return;
     }
-    final List<CoveragePlanOption> plans = result.when(
-      success: (ClaimsReferenceData data) => data.coveragePlans,
-      failure: (_) => const <CoveragePlanOption>[],
+    final ClaimsReferenceData data = result.when(
+      success: (ClaimsReferenceData value) => value,
+      failure: (_) => const ClaimsReferenceData(),
     );
+    final List<CoveragePlanOption> plans = data.coveragePlans;
+    List<InsuranceCompanyOption> companies = data.insuranceCompanies;
+    if (companies.isEmpty) {
+      final Map<String, InsuranceCompanyOption> derived =
+          <String, InsuranceCompanyOption>{};
+      for (final CoveragePlanOption plan in plans) {
+        final String? companyId = plan.insuranceCompanyId;
+        if (companyId == null || companyId.isEmpty) {
+          continue;
+        }
+        derived.putIfAbsent(
+          companyId,
+          () => InsuranceCompanyOption(
+            id: companyId,
+            displayId: companyId,
+            name: plan.insuranceCompanyName ?? plan.providerName,
+            code: plan.insuranceCompanyCode,
+          ),
+        );
+      }
+      companies = derived.values.toList(growable: false);
+    }
+
     setState(() {
       _isLoading = false;
+      _companies = companies;
       _plans = plans;
-      if (_selectedPlanId == null && plans.isNotEmpty) {
-        _selectedPlanId = plans.first.apiId;
+      if (_selectedCompanyId == null && companies.isNotEmpty) {
+        _selectedCompanyId = companies.first.id;
+      }
+      final List<CoveragePlanOption> scoped = _schemesForCompany;
+      if (_selectedPlanId == null && scoped.isNotEmpty) {
+        _selectedPlanId = scoped.first.apiId;
       }
     });
     _notifyVerified();
@@ -79,11 +126,26 @@ class _OpdCoverageVerificationPanelState
         break;
       }
     }
+    InsuranceCompanyOption? company;
+    for (final InsuranceCompanyOption item in _companies) {
+      if (item.id == _selectedCompanyId || item.apiId == _selectedCompanyId) {
+        company = item;
+        break;
+      }
+    }
     widget.onVerifiedChanged((
       verified: _verified && (_selectedPlanId ?? '').trim().isNotEmpty,
+      insuranceCompanyId:
+          selected?.insuranceCompanyId ?? company?.id ?? _selectedCompanyId,
+      insuranceCompanyName:
+          selected?.insuranceCompanyName ??
+          company?.title ??
+          selected?.providerName,
       coveragePlanId: _selectedPlanId,
       coveragePlanName: selected?.title,
       coveragePercentage: selected?.coveragePercentage,
+      copayType: selected?.defaultCopayType,
+      copayValue: selected?.defaultCopayValue,
     ));
   }
 
@@ -105,6 +167,8 @@ class _OpdCoverageVerificationPanelState
       );
     }
 
+    final List<CoveragePlanOption> schemes = _schemesForCompany;
+
     return AppFormSection(
       title: l10n.opdCoverageVerificationTitle,
       children: <Widget>[
@@ -114,10 +178,37 @@ class _OpdCoverageVerificationPanelState
             color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
+        if (_companies.isNotEmpty)
+          AppSelectField<String>(
+            value: _selectedCompanyId,
+            labelText: l10n.claimsInsuranceCompanyFieldLabel,
+            enabled: widget.enabled,
+            onChanged: (String? value) {
+              setState(() {
+                _selectedCompanyId = value;
+                _verified = false;
+                final List<CoveragePlanOption> next = _plans
+                    .where(
+                      (CoveragePlanOption plan) =>
+                          plan.insuranceCompanyId == value,
+                    )
+                    .toList(growable: false);
+                _selectedPlanId = next.isEmpty ? null : next.first.apiId;
+              });
+              _notifyVerified();
+            },
+            options: <AppSelectOption<String>>[
+              for (final InsuranceCompanyOption company in _companies)
+                AppSelectOption<String>(
+                  value: company.id,
+                  label: company.title,
+                ),
+            ],
+          ),
         AppSelectField<String>(
           value: _selectedPlanId,
-          labelText: l10n.claimsCoveragePlanFieldLabel,
-          enabled: widget.enabled,
+          labelText: l10n.claimsCoverageSchemeFieldLabel,
+          enabled: widget.enabled && schemes.isNotEmpty,
           onChanged: (String? value) {
             setState(() {
               _selectedPlanId = value;
@@ -126,7 +217,7 @@ class _OpdCoverageVerificationPanelState
             _notifyVerified();
           },
           options: <AppSelectOption<String>>[
-            for (final CoveragePlanOption plan in _plans)
+            for (final CoveragePlanOption plan in schemes)
               AppSelectOption<String>(
                 value: plan.apiId,
                 label: plan.subtitle == null
@@ -149,6 +240,4 @@ class _OpdCoverageVerificationPanelState
       ],
     );
   }
-
-  String? get selectedCoveragePlanId => _selectedPlanId;
 }

@@ -27,6 +27,14 @@ const INSURER_INTEGRATION_INCLUDE = {
       provider_name: true,
     },
   },
+  insurance_company: {
+    select: {
+      id: true,
+      human_friendly_id: true,
+      name: true,
+      code: true,
+    },
+  },
 };
 
 const buildEmptyListResult = (page, limit) => ({
@@ -68,6 +76,11 @@ const mapInsurerIntegrationForDisplay = (record) => {
       record?.coverage_plan?.human_friendly_id,
       record?.coverage_plan_id
     ),
+    insurance_company_display_id: resolvePublicIdentifier(
+      record?.insurance_company_display_id,
+      record?.insurance_company?.human_friendly_id,
+      record?.insurance_company_id
+    ),
     timeline_at: record?.timeline_at || record?.updated_at || record?.created_at || null,
   };
 };
@@ -91,6 +104,12 @@ const normalizeCreatePayload = async (data = {}) => ({
     field: 'coverage_plan_id',
     nullable: true,
   }),
+  insurance_company_id: await resolveIdentifierForPayload({
+    value: data.insurance_company_id,
+    model: 'insurance_company',
+    field: 'insurance_company_id',
+    nullable: true,
+  }),
 });
 
 const normalizeUpdatePayload = async (data = {}) => {
@@ -110,6 +129,15 @@ const normalizeUpdatePayload = async (data = {}) => {
       value: data.coverage_plan_id,
       model: 'coverage_plan',
       field: 'coverage_plan_id',
+      nullable: true,
+    });
+  }
+
+  if (Object.prototype.hasOwnProperty.call(data, 'insurance_company_id')) {
+    payload.insurance_company_id = await resolveIdentifierForPayload({
+      value: data.insurance_company_id,
+      model: 'insurance_company',
+      field: 'insurance_company_id',
       nullable: true,
     });
   }
@@ -154,6 +182,18 @@ const listInsurerIntegrations = async (filters, page, limit, sortBy, order) => {
       });
       if (coveragePlanId === null) return buildEmptyListResult(page, limit);
       if (coveragePlanId !== undefined) whereClause.coverage_plan_id = coveragePlanId;
+    }
+
+    if (filters.insurance_company_id !== undefined) {
+      const insuranceCompanyId = await resolveIdentifierForFilter({
+        value: filters.insurance_company_id,
+        model: 'insurance_company',
+        where: whereClause.tenant_id ? { tenant_id: whereClause.tenant_id } : {},
+      });
+      if (insuranceCompanyId === null) return buildEmptyListResult(page, limit);
+      if (insuranceCompanyId !== undefined) {
+        whereClause.insurance_company_id = insuranceCompanyId;
+      }
     }
 
     if (filters.adapter_type) whereClause.adapter_type = filters.adapter_type;

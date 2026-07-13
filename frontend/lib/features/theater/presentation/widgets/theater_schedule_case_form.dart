@@ -476,7 +476,10 @@ class TheaterScheduleCaseFormState
               ClinicalRequestBillingPanel(
                 lineItems: clinicalRequestBillingLineItems(
                   options: _selectedProcedures,
+                  catalogType: 'SERVICE',
+                  billingEntity: 'FACILITY',
                 ),
+                billingEntity: 'FACILITY',
                 onChanged: (ClinicalRequestBillingSubmit value) {
                   _billing = value;
                 },

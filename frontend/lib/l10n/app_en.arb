@@ -13547,11 +13547,19 @@
   "@claimsCoveragePlansUnavailable": {
     "description": "Shown when coverage plan lookup fails during OPD verification."
   },
+  "claimsInsuranceCompanyFieldLabel": "Insurance company",
+  "@claimsInsuranceCompanyFieldLabel": {
+    "description": "Label for selecting an insurance company before a scheme."
+  },
+  "claimsCoverageSchemeFieldLabel": "Insurance scheme",
+  "@claimsCoverageSchemeFieldLabel": {
+    "description": "Label for selecting a scheme under an insurance company."
+  },
   "opdCoverageVerificationTitle": "Coverage verification",
   "@opdCoverageVerificationTitle": {
     "description": "OPD insurance coverage verification section title."
   },
-  "opdCoverageVerificationBody": "Confirm the patient's active coverage plan before recording an insurance consultation payment.",
+  "opdCoverageVerificationBody": "Confirm the patient's insurance company and scheme before recording an insurance consultation payment.",
   "@opdCoverageVerificationBody": {
     "description": "OPD insurance coverage verification helper text."
   },
@@ -13606,6 +13614,10 @@
   "claimsFilterClaimApproved": "Claim approved",
   "@claimsFilterClaimApproved": {
     "description": "Localized text for claimsFilterClaimApproved."
+  },
+  "claimsFilterClaimPartial": "Claim partial",
+  "@claimsFilterClaimPartial": {
+    "description": "Filter for partially approved insurance claims."
   },
   "claimsFilterClaimRejected": "Claim rejected",
   "@claimsFilterClaimRejected": {

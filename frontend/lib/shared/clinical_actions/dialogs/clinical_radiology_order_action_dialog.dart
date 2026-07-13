@@ -8,6 +8,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_radiology_catalog_helpers.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_resolve.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_radiology_request_catalog_dialog.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart';
@@ -264,14 +265,14 @@ class _RadiologyOrderDialogState
 
   Future<void> _openBillingDialog() async {
     final ClinicalRequestBillingSubmit? billing =
-        await showClinicalRequestBillingDialog(
+        await showResolvedClinicalRequestBillingDialog(
           context: context,
-          lineItems: clinicalRequestBillingLineItems(
-            options: _requests
-                .map((_PendingRadiologyRequest request) => request.option)
-                .toList(growable: false),
-          ),
+          options: _requests
+              .map((_PendingRadiologyRequest request) => request.option)
+              .toList(growable: false),
           initialBilling: _billingSubmit,
+          catalogType: 'RADIOLOGY_TEST',
+          billingEntity: 'FACILITY',
           enabled: !_isSaving,
         );
     if (!mounted || billing == null) {

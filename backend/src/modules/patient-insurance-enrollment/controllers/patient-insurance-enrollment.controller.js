@@ -159,6 +159,7 @@ const verifyPatientInsuranceEnrollment = asyncHandler(async (req, res) => {
 
   const result = await patientInsuranceEnrollmentService.verifyPatientInsuranceEnrollment(
     id,
+    req.body || {},
     userId,
     ipAddress
   );

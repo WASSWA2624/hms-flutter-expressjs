@@ -27,6 +27,7 @@ const listPriceBookEntries = asyncHandler(async (req, res) => {
     catalog_item_id,
     payment_mode,
     coverage_plan_id,
+    insurance_company_id,
     billing_entity,
     is_active,
     search,
@@ -43,6 +44,7 @@ const listPriceBookEntries = asyncHandler(async (req, res) => {
     catalog_item_id,
     payment_mode,
     coverage_plan_id,
+    insurance_company_id,
     billing_entity,
     is_active,
     search

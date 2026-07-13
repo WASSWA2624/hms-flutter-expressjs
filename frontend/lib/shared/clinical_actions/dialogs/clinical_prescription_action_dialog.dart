@@ -7,6 +7,7 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_catalog_select_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_prescription_display.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_resolve.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_helpers.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart';
@@ -317,11 +318,30 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
   }
 
   Future<void> _openBillingDialog() async {
+    final List<ClinicalRequestBillingLineItem> fallback =
+        _prescriptionBillingLineItems()
+            .map(
+              (ClinicalRequestBillingLineItem item) => item.copyWith(
+                catalogType: item.catalogType ?? 'DRUG',
+                billingEntity: item.billingEntity ?? 'FACILITY',
+              ),
+            )
+            .toList(growable: false);
+    final List<ClinicalRequestBillingLineItem> resolved =
+        await resolveClinicalRequestBillingLineItems(
+          context: context,
+          catalogFallbackItems: fallback,
+          billingEntity: 'FACILITY',
+        );
+    if (!mounted) {
+      return;
+    }
     final ClinicalRequestBillingSubmit? billing =
         await showClinicalRequestBillingDialog(
           context: context,
-          lineItems: _prescriptionBillingLineItems(),
+          lineItems: resolved,
           initialBilling: _billingSubmit,
+          billingEntity: 'FACILITY',
           enabled: !_isSaving,
         );
     if (!mounted || billing == null) {

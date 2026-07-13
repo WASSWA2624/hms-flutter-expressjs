@@ -13,6 +13,9 @@ const {
 const {
   normalizeBillingEntity,
   normalizePaymentMode,
+  resolveUnitPrices,
+  toMoneyString: priceToMoneyString,
+  toDecimalNumber: priceToDecimalNumber,
 } = require('@lib/billing/price-resolver');
 const {
   applyCoverageSplitToLineItems,
@@ -135,6 +138,13 @@ const buildInvoiceLineItems = (billing = {}, context = {}) => {
       billing.coverage_plan_id ||
       context.coveragePlanId ||
       null,
+    insurance_company_id:
+      entry.insurance_company_id ||
+      entry.insuranceCompanyId ||
+      billing.insurance_company_id ||
+      context.insuranceCompanyId ||
+      null,
+    scheme_offer_id: entry.scheme_offer_id || entry.schemeOfferId || null,
     billing_entity: normalizeBillingEntity(
       entry.billing_entity || entry.price_source || defaultEntity
     ),
@@ -259,9 +269,143 @@ const normalizeBillingLineItem = (entry = {}) => {
     ...(entry.coverage_plan_id || entry.coveragePlanId
       ? { coverage_plan_id: entry.coverage_plan_id || entry.coveragePlanId }
       : {}),
+    ...(entry.insurance_company_id || entry.insuranceCompanyId
+      ? {
+          insurance_company_id:
+            entry.insurance_company_id || entry.insuranceCompanyId,
+        }
+      : {}),
+    ...(entry.scheme_offer_id || entry.schemeOfferId
+      ? { scheme_offer_id: entry.scheme_offer_id || entry.schemeOfferId }
+      : {}),
     ...(entry.patient_share != null ? { patient_share: toMoneyString(entry.patient_share) } : {}),
     ...(entry.insurer_share != null ? { insurer_share: toMoneyString(entry.insurer_share) } : {}),
     ...(entry.copay_amount != null ? { copay_amount: toMoneyString(entry.copay_amount) } : {}),
+  };
+};
+
+/**
+ * Resolve missing/override line prices via the shared price engine.
+ * Keeps client-provided engine refs when present; fills gaps from scheme offers / price book.
+ */
+const enrichBillingWithPriceEngine = async (billing = {}, options = {}) => {
+  const lineItems = Array.isArray(billing.line_items) ? billing.line_items : [];
+  const tenantId = options.tenantId;
+  if (!tenantId || !lineItems.length) {
+    return billing;
+  }
+
+  const paymentMode = normalizePaymentMode(
+    billing.payment_mode || options.paymentMode || 'SELF_PAY'
+  );
+  const billingEntity = normalizeBillingEntity(
+    billing.billing_entity || options.billingEntity || 'FACILITY'
+  );
+  const coveragePlanId =
+    billing.coverage_plan_id || options.coveragePlanId || null;
+  const insuranceCompanyId =
+    billing.insurance_company_id || options.insuranceCompanyId || null;
+
+  const resolvable = lineItems.map((item) => ({
+    id: item.id || item.catalog_item_id || null,
+    catalog_type: item.catalog_type || item.catalogType || options.catalogType,
+    catalog_item_id:
+      item.catalog_item_id ||
+      item.catalogItemId ||
+      item.id ||
+      options.catalogItemId,
+    quantity: Math.max(1, Number(item.quantity) || 1),
+    price_source: item.price_source || item.billing_entity || billingEntity,
+  }));
+
+  const hasCatalogRefs = resolvable.some(
+    (item) => item.catalog_type && item.catalog_item_id
+  );
+  if (!hasCatalogRefs) {
+    return billing;
+  }
+
+  let resolved = [];
+  try {
+    resolved = await resolveUnitPrices({
+      tenantId,
+      facilityId: options.facilityId || null,
+      paymentMode,
+      coveragePlanId,
+      insuranceCompanyId,
+      insurerKey: billing.insurer_key || options.insurerKey || null,
+      billingEntity,
+      currency: billing.currency || options.currency || null,
+      items: resolvable,
+    });
+  } catch (_error) {
+    return billing;
+  }
+
+  let enrichedLines = lineItems.map((item, index) => {
+    const price = resolved[index] || {};
+    const quantity = Math.max(1, Number(item.quantity) || 1);
+    const unitPrice =
+      price.unitPrice != null
+        ? price.unitPrice
+        : item.unit_price ?? item.unitPrice ?? null;
+    const lineTotal =
+      unitPrice != null
+        ? priceToMoneyString(priceToDecimalNumber(unitPrice) * quantity)
+        : item.line_total ?? null;
+
+    return {
+      ...item,
+      quantity,
+      ...(unitPrice != null ? { unit_price: unitPrice } : {}),
+      ...(lineTotal != null ? { line_total: lineTotal } : {}),
+      payment_mode: price.paymentMode || paymentMode,
+      billing_entity: price.billingEntity || billingEntity,
+      price_source: price.priceSource || item.price_source || billingEntity,
+      coverage_plan_id: price.coveragePlanId || coveragePlanId || item.coverage_plan_id,
+      insurance_company_id:
+        price.insuranceCompanyId || insuranceCompanyId || item.insurance_company_id,
+      price_book_entry_id: price.priceBookEntryId || item.price_book_entry_id || null,
+      scheme_offer_id: price.schemeOfferId || item.scheme_offer_id || null,
+      coverage_percentage:
+        price.coveragePercentage ?? item.coverage_percentage ?? null,
+      copay_type: price.copayType || item.copay_type || null,
+      copay_value: price.copayValue ?? item.copay_value ?? null,
+      is_excluded: Boolean(price.isExcluded ?? item.is_excluded),
+      requires_pre_auth: Boolean(price.requiresPreAuth ?? item.requires_pre_auth),
+      catalog_type: resolvable[index]?.catalog_type || item.catalog_type,
+      catalog_item_id: resolvable[index]?.catalog_item_id || item.catalog_item_id,
+    };
+  });
+
+  if (paymentMode === 'INSURANCE') {
+    enrichedLines = applyCoverageSplitToLineItems(enrichedLines, {
+      insured: true,
+      paymentMode,
+      coveragePlanId,
+      insuranceCompanyId,
+      coveragePercentage:
+        billing.coverage_percentage ?? options.coveragePercentage ?? null,
+      copayType: billing.copay_type || options.copayType || null,
+      copayValue: billing.copay_value ?? options.copayValue ?? null,
+    });
+  }
+
+  const summary = summarizeCoverageShares(enrichedLines);
+  return {
+    ...billing,
+    payment_mode: paymentMode,
+    billing_entity: billingEntity,
+    coverage_plan_id: coveragePlanId,
+    insurance_company_id: insuranceCompanyId,
+    line_items: enrichedLines,
+    patient_share: summary.patientShare,
+    insurer_share: summary.insurerShare,
+    copay_amount: summary.copayAmount,
+    total_amount:
+      billing.total_amount != null
+        ? billing.total_amount
+        : summary.total,
   };
 };
 
@@ -844,7 +988,7 @@ const recordRequestPayment = async (
  * @returns {Promise<Object|null>} Persisted billing snapshot (null when nothing is billed)
  */
 const applyClinicalRequestBilling = async (tx, options = {}) => {
-  const billing = options.billing;
+  let billing = options.billing;
   const existingInvoiceId = extractInvoiceIdFromSnapshot(options.existingSnapshot);
 
   if (!shouldApplyClinicalRequestBilling(billing)) {
@@ -860,6 +1004,22 @@ const applyClinicalRequestBilling = async (tx, options = {}) => {
     return null;
   }
 
+  billing = await enrichBillingWithPriceEngine(billing, {
+    tenantId,
+    facilityId: options.facilityId,
+    paymentMode: options.paymentMode,
+    billingEntity: options.billingEntity,
+    coveragePlanId: options.coveragePlanId,
+    insuranceCompanyId: options.insuranceCompanyId,
+    insurerKey: options.insurerKey,
+    coveragePercentage: options.coveragePercentage,
+    copayType: options.copayType,
+    copayValue: options.copayValue,
+    catalogType: options.catalogType,
+    catalogItemId: options.catalogItemId,
+    currency: options.currency,
+  });
+
   const invoiceItems = buildInvoiceLineItems(billing, {
     description: options.description,
     catalogItemId: options.catalogItemId,
@@ -867,6 +1027,7 @@ const applyClinicalRequestBilling = async (tx, options = {}) => {
     billingEntity: options.billingEntity || billing.billing_entity,
     paymentMode: options.paymentMode || billing.payment_mode,
     coveragePlanId: options.coveragePlanId || billing.coverage_plan_id,
+    insuranceCompanyId: options.insuranceCompanyId || billing.insurance_company_id,
   });
   const invoiceTotal = roundMoney(
     invoiceItems.reduce((sum, item) => sum + toDecimalNumber(item.total_price), 0)
@@ -904,6 +1065,8 @@ const applyClinicalRequestBilling = async (tx, options = {}) => {
       insured: true,
       paymentMode,
       coveragePlanId: billing.coverage_plan_id || options.coveragePlanId,
+      insuranceCompanyId:
+        billing.insurance_company_id || options.insuranceCompanyId,
       coveragePercentage: billing.coverage_percentage ?? options.coveragePercentage,
       copayType: billing.copay_type || options.copayType,
       copayValue: billing.copay_value ?? options.copayValue,
@@ -930,6 +1093,8 @@ const applyClinicalRequestBilling = async (tx, options = {}) => {
     price_book_entry_id: item.price_book_entry_id || null,
     payment_mode: item.payment_mode || paymentMode,
     coverage_plan_id: item.coverage_plan_id || null,
+    insurance_company_id: item.insurance_company_id || null,
+    scheme_offer_id: item.scheme_offer_id || null,
     billing_entity: item.billing_entity || billingEntity,
     price_source: item.price_source || billingEntity,
     patient_share: item.patient_share,
@@ -1293,6 +1458,7 @@ module.exports = {
   persistTheatreCaseBilling,
   buildBillingSnapshot,
   buildPendingClinicalRequestBilling,
+  enrichBillingWithPriceEngine,
   normalizeBillingOfficeClinicalBilling,
   buildLabOrderBillingFromRequest,
   resolveClinicalInvoiceContexts,

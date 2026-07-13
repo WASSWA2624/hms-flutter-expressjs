@@ -1106,6 +1106,8 @@ class _ConsultationPaymentDialogState
   String _method = 'CASH';
   bool _isSaving = false;
   bool _coverageVerified = false;
+  String? _selectedInsuranceCompanyId;
+  String? _selectedInsuranceCompanyName;
   String? _selectedCoveragePlanId;
   String? _selectedCoveragePlanName;
   int? _selectedCoveragePercentage;
@@ -1211,6 +1213,8 @@ class _ConsultationPaymentDialogState
                 setState(() {
                   _method = value ?? _method;
                   _coverageVerified = false;
+                  _selectedInsuranceCompanyId = null;
+                  _selectedInsuranceCompanyName = null;
                   _selectedCoveragePlanId = null;
                   _selectedCoveragePlanName = null;
                   _selectedCoveragePercentage = null;
@@ -1226,12 +1230,20 @@ class _ConsultationPaymentDialogState
                 onVerifiedChanged:
                     (({
                       bool verified,
+                      String? insuranceCompanyId,
+                      String? insuranceCompanyName,
                       String? coveragePlanId,
                       String? coveragePlanName,
                       int? coveragePercentage,
+                      String? copayType,
+                      num? copayValue,
                     }) result) {
                       setState(() {
                         _coverageVerified = result.verified;
+                        _selectedInsuranceCompanyId =
+                            result.insuranceCompanyId;
+                        _selectedInsuranceCompanyName =
+                            result.insuranceCompanyName;
                         _selectedCoveragePlanId = result.coveragePlanId;
                         _selectedCoveragePlanName = result.coveragePlanName;
                         _selectedCoveragePercentage = result.coveragePercentage;
@@ -1316,7 +1328,11 @@ class _ConsultationPaymentDialogState
     }
     final String coveragePlanId = (_selectedCoveragePlanId ?? '').trim();
     final String coveragePlanName = (_selectedCoveragePlanName ?? '').trim();
+    final String companyId = (_selectedInsuranceCompanyId ?? '').trim();
+    final String companyName = (_selectedInsuranceCompanyName ?? '').trim();
     final List<String> parts = <String>[
+      if (companyId.isNotEmpty) 'insurance_company_id=$companyId',
+      if (companyName.isNotEmpty) 'insurance_company=$companyName',
       if (coveragePlanId.isNotEmpty) 'coverage_plan_id=$coveragePlanId',
       if (coveragePlanName.isNotEmpty) 'coverage_plan=$coveragePlanName',
       if (_selectedCoveragePercentage != null)
