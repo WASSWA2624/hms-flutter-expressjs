@@ -42,7 +42,7 @@ final class PriceBookResolveRepository {
         HmsApiResource.priceBookEntries.path,
         'resolve',
       ]),
-      body: <String, Object?>{
+      data: <String, Object?>{
         'tenant_id': tenantId,
         if (facilityId != null && facilityId.isNotEmpty)
           'facility_id': facilityId,

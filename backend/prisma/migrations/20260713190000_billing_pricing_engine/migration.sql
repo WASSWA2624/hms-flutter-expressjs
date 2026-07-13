@@ -1,9 +1,29 @@
--- Billing & pricing engine (idempotent completion after partial apply)
+-- Billing & pricing engine (idempotent; safe for fresh DBs and partial applies)
 
--- invoice.billing_entity already applied in failed run
--- invoice_item engine columns already applied
--- payment/shift_close/day_close billing_entity already applied
--- price_book_entry table already created (without long lookup index / maybe without all FKs)
+-- Ensure price_book_entry exists (may already exist from a prior partial apply)
+CREATE TABLE IF NOT EXISTS `price_book_entry` (
+  `id` VARCHAR(36) NOT NULL,
+  `human_friendly_id` VARCHAR(32) NULL,
+  `tenant_id` VARCHAR(36) NOT NULL,
+  `facility_id` VARCHAR(36) NULL,
+  `catalog_type` ENUM('DRUG', 'LAB_TEST', 'LAB_PANEL', 'RADIOLOGY_TEST', 'CONSULTATION', 'SERVICE') NOT NULL,
+  `catalog_item_id` VARCHAR(36) NOT NULL,
+  `payment_mode` ENUM('SELF_PAY', 'INSURANCE') NOT NULL,
+  `coverage_plan_id` VARCHAR(36) NULL,
+  `insurer_key` VARCHAR(120) NULL,
+  `billing_entity` ENUM('FACILITY', 'PHARMACY') NOT NULL DEFAULT 'FACILITY',
+  `unit_price` DECIMAL(12, 2) NOT NULL,
+  `currency` VARCHAR(10) NOT NULL,
+  `effective_from` DATETIME(3) NULL,
+  `effective_to` DATETIME(3) NULL,
+  `is_active` BOOLEAN NOT NULL DEFAULT true,
+  `notes` VARCHAR(255) NULL,
+  `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updated_at` DATETIME(3) NOT NULL,
+  `deleted_at` DATETIME(3) NULL,
+  `version` INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- Ensure coverage_plan provider index
 SET @idx_exists := (
@@ -380,6 +400,134 @@ SET @fk_exists := (
 );
 SET @sql := IF(@fk_exists = 0,
   'ALTER TABLE `insurer_integration` ADD CONSTRAINT `insurer_integration_coverage_plan_id_fkey` FOREIGN KEY (`coverage_plan_id`) REFERENCES `coverage_plan`(`id`) ON DELETE SET NULL ON UPDATE CASCADE',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- Ensure invoice / payment / closeout billing_entity columns
+SET @col_exists := (
+  SELECT COUNT(1) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'invoice' AND COLUMN_NAME = 'billing_entity'
+);
+SET @sql := IF(@col_exists = 0,
+  'ALTER TABLE `invoice` ADD COLUMN `billing_entity` ENUM(''FACILITY'', ''PHARMACY'') NOT NULL DEFAULT ''FACILITY''',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+  SELECT COUNT(1) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'payment' AND COLUMN_NAME = 'billing_entity'
+);
+SET @sql := IF(@col_exists = 0,
+  'ALTER TABLE `payment` ADD COLUMN `billing_entity` ENUM(''FACILITY'', ''PHARMACY'') NOT NULL DEFAULT ''FACILITY''',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+  SELECT COUNT(1) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'shift_close' AND COLUMN_NAME = 'billing_entity'
+);
+SET @sql := IF(@col_exists = 0,
+  'ALTER TABLE `shift_close` ADD COLUMN `billing_entity` ENUM(''FACILITY'', ''PHARMACY'') NOT NULL DEFAULT ''FACILITY''',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+  SELECT COUNT(1) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'day_close' AND COLUMN_NAME = 'billing_entity'
+);
+SET @sql := IF(@col_exists = 0,
+  'ALTER TABLE `day_close` ADD COLUMN `billing_entity` ENUM(''FACILITY'', ''PHARMACY'') NOT NULL DEFAULT ''FACILITY''',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- Ensure invoice_item engine columns exist before FKs
+SET @col_exists := (
+  SELECT COUNT(1) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'invoice_item' AND COLUMN_NAME = 'price_book_entry_id'
+);
+SET @sql := IF(@col_exists = 0,
+  'ALTER TABLE `invoice_item` ADD COLUMN `price_book_entry_id` VARCHAR(36) NULL',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+  SELECT COUNT(1) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'invoice_item' AND COLUMN_NAME = 'coverage_plan_id'
+);
+SET @sql := IF(@col_exists = 0,
+  'ALTER TABLE `invoice_item` ADD COLUMN `coverage_plan_id` VARCHAR(36) NULL',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+  SELECT COUNT(1) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'invoice_item' AND COLUMN_NAME = 'catalog_type'
+);
+SET @sql := IF(@col_exists = 0,
+  'ALTER TABLE `invoice_item` ADD COLUMN `catalog_type` ENUM(''DRUG'', ''LAB_TEST'', ''LAB_PANEL'', ''RADIOLOGY_TEST'', ''CONSULTATION'', ''SERVICE'') NULL',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+  SELECT COUNT(1) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'invoice_item' AND COLUMN_NAME = 'catalog_item_id'
+);
+SET @sql := IF(@col_exists = 0,
+  'ALTER TABLE `invoice_item` ADD COLUMN `catalog_item_id` VARCHAR(36) NULL',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+  SELECT COUNT(1) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'invoice_item' AND COLUMN_NAME = 'payment_mode'
+);
+SET @sql := IF(@col_exists = 0,
+  'ALTER TABLE `invoice_item` ADD COLUMN `payment_mode` ENUM(''SELF_PAY'', ''INSURANCE'') NULL',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+  SELECT COUNT(1) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'invoice_item' AND COLUMN_NAME = 'billing_entity'
+);
+SET @sql := IF(@col_exists = 0,
+  'ALTER TABLE `invoice_item` ADD COLUMN `billing_entity` ENUM(''FACILITY'', ''PHARMACY'') NULL',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+  SELECT COUNT(1) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'invoice_item' AND COLUMN_NAME = 'price_source'
+);
+SET @sql := IF(@col_exists = 0,
+  'ALTER TABLE `invoice_item` ADD COLUMN `price_source` VARCHAR(40) NULL',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+  SELECT COUNT(1) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'invoice_item' AND COLUMN_NAME = 'patient_share'
+);
+SET @sql := IF(@col_exists = 0,
+  'ALTER TABLE `invoice_item` ADD COLUMN `patient_share` DECIMAL(12, 2) NULL',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+  SELECT COUNT(1) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'invoice_item' AND COLUMN_NAME = 'insurer_share'
+);
+SET @sql := IF(@col_exists = 0,
+  'ALTER TABLE `invoice_item` ADD COLUMN `insurer_share` DECIMAL(12, 2) NULL',
+  'SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists := (
+  SELECT COUNT(1) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'invoice_item' AND COLUMN_NAME = 'copay_amount'
+);
+SET @sql := IF(@col_exists = 0,
+  'ALTER TABLE `invoice_item` ADD COLUMN `copay_amount` DECIMAL(12, 2) NULL',
   'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 

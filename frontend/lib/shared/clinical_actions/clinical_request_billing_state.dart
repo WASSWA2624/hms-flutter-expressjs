@@ -282,10 +282,10 @@ List<ClinicalRequestBillingLineItem> clinicalRequestBillingLineItems({
 
 String? clinicalCatalogOptionCatalogType(ClinicalActionCatalogOption option) {
   final Object? raw =
-      option.metadata?['catalog_type'] ??
-      option.metadata?['catalogType'] ??
-      option.metadata?['term_type'] ??
-      option.metadata?['termType'];
+      option.metadata['catalog_type'] ??
+      option.metadata['catalogType'] ??
+      option.metadata['term_type'] ??
+      option.metadata['termType'];
   if (raw == null) return null;
   final String token = raw.toString().trim().toUpperCase();
   if (token.isEmpty) return null;
