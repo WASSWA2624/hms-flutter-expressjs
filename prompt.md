@@ -18,8 +18,9 @@ This prompt extends — it does not replace — the existing Billing and Claims 
 - Price resolution is driven by **patient payer context** at the time of charge: self-pay vs insured, and which insurance company / plan.
 - **Pharmacy** may sell at a pharmacy retail price; **facility departments** (OPD, IPD, theatre, etc.) sell at the facility price. Pharmacy and facility may invoice and close bills independently.
 - Claims and Billing stay separated: Claims owns insurer workflow; Billing owns invoice balances and cashier actions. The pricing engine feeds both.
+- **Every UI that bills must use this engine** — not only the Billing workspace. Lab, radiology, pharmacy, theatre, OPD, IPD, nursing, patients, dental, physiotherapy, and any other request/order/charge dialog must resolve prices, show payer/co-pay splits, and submit billing payloads through the shared billing engine. No module may keep a private price or hard-coded amount path.
 
-Deliver: schema + migrations, backend price resolver and billing hooks, admin/config UI, point-of-care billing UX, and an insurer connector layer ready for real payer APIs.
+Deliver: schema + migrations, backend price resolver and billing hooks, admin/config UI, **updated billing modal dialogs across all clinical/department request flows**, and an insurer connector layer ready for real payer APIs.
 
 ---
 
@@ -154,6 +155,35 @@ When items/services are added to a bill (consultation, lab, radiology, pharmacy,
 
 `coverage_plan.coverage_percentage` (and any new co-pay fields) **must** participate in math — not display-only.
 
+### 4b. Mandatory UI incorporation — all billing modal dialogs
+
+The billing engine is **not** Billing-workspace-only. Every create/edit request or charge dialog that can produce a charge must incorporate it via the shared clinical billing surface (extend `ClinicalRequestBillingPanel` / `clinical_request_billing_state.dart` — do not fork per module).
+
+**Required touchpoints (update these dialogs / panels):**
+
+| Module / surface | Primary UI entry points |
+| ---------------- | ----------------------- |
+| Lab request | `clinical_lab_order_action_dialog.dart`, `clinical_lab_request_catalog_dialog.dart`, lab catalog billing UI |
+| Radiology request | `clinical_radiology_order_action_dialog.dart`, `clinical_radiology_request_catalog_dialog.dart` |
+| Pharmacy / prescription | `clinical_prescription_action_dialog.dart`, pharmacy order billing helpers / dispense billing |
+| Theatre / procedure | `theater_schedule_case_form.dart` and any procedure charge dialogs |
+| OPD | `opd_encounter_dialog.dart`, consultation payment / coverage panels |
+| IPD | IPD order/admission charge dialogs that use clinical actions |
+| Nursing | Nursing-launched lab / radiology / prescription dialogs |
+| Patients registry | Any patient-context charge or enrollment/billing dialogs on `patient_registry_page.dart` |
+| Dental / physiotherapy / other billable modules | Same shared panel wherever pay-now / bill-later exists or is planned |
+| Billing cashier | Receive-payment and add-charge dialogs must show engine-resolved amounts, co-pay, insurer share |
+
+**Each of those UIs must:**
+
+- Show engine-resolved line prices for the patient’s payer context (self-pay vs insurer/plan) — not a single static catalog price alone.
+- Show patient co-pay / balance and insurer share when insured.
+- Keep pay-now vs bill-later.
+- For pharmacy-originated sales, allow pharmacy vs facility price entity where already supported; facility-originated requests always use facility tariffs.
+- Submit the same billing payload shape the backend engine expects (price book ref, payment mode, payer/plan, shares, billing entity).
+- Instantly refresh amounts when payer context or selected items change.
+- Never hard-code amounts or bypass the shared panel / resolver.
+
 ### 5. Insurance API integration (connector layer)
 
 Facilities add an insurance company, then super-admins configure credentials (base URL, API key/secret, webhook secrets, environment) so HMS can automate the insurer flow.
@@ -204,13 +234,15 @@ Migrate carefully: existing single `unit_price` becomes the self-pay / default f
 - APIs to CRUD price books and enrollments; authorize by admin / billing / pharmacy roles as appropriate.
 - Entity-aware invoice creation and closeout aggregation.
 
-### WP3 — Frontend configuration & point-of-care UX
+### WP3 — Frontend configuration & point-of-care UX (all billing dialogs)
 
 - Admin / catalog UI to set self-pay + per-insurer prices when creating/editing billable items.
 - Enrollment + eligibility UX (extend OPD coverage verification; Claims coverage lookup).
+- **Upgrade shared `ClinicalRequestBillingPanel` + state** so every consumer inherits price-book resolution, payer context, co-pay / insurer share, and billing entity — one change that propagates to lab, radiology, pharmacy, theatre, OPD, IPD, nursing, patients, etc.
+- Audit and update every request/order/charge modal listed in §4b so it uses the upgraded shared panel (or thin wrappers around it). No orphan billing UIs.
 - Pharmacy billing: keep pharmacy vs facility price choice; show which entity owns the invoice.
 - Billing workspace: show payer, co-pay, insurer share, billing entity; support split payments.
-- Instant UI updates after price book and enrollment mutations.
+- Instant UI updates after price book, enrollment, item selection, and payer-context mutations.
 
 ### WP4 — Insurer connectors
 
@@ -232,7 +264,9 @@ Migrate carefully: existing single `unit_price` becomes the self-pay / default f
 
 - [ ] Facility can configure distinct prices for the same item for self-pay and for each insurance company/plan.
 - [ ] At billing time, the system picks the correct price from patient payer context without staff retyping amounts (override only with permission + audit).
-- [ ] Insured visits resolve membership validity, covered services, and co-pay; patient balance and insurer share are visible on the invoice.
+- [ ] **All billing modal dialogs** (lab, radiology, pharmacy/prescription, theatre, OPD consultation, IPD/nursing orders, patients, billing cashier, and other billable modules) show engine-resolved prices and co-pay / insurer share via the shared billing panel.
+- [ ] No request/order dialog still uses a private or hard-coded single-price path for chargeable items.
+- [ ] Insured visits resolve membership validity, covered services, and co-pay; patient balance and insurer share are visible on the invoice and in request dialogs.
 - [ ] Pharmacy can bill at pharmacy price; facility departments bill at facility price; invoices/closeouts can be separated by billing entity.
 - [ ] Pre-auth and claims use the same priced lines; claim amounts match insurer share.
 - [ ] With insurer API configured, eligibility / auth / claim submit / status update can run through the adapter; without it, manual Claims flow still works.
