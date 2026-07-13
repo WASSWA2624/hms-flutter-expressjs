@@ -206,8 +206,13 @@ final class ClaimsWorkspaceSummaryDto {
             _int(summary['authorization_approved']) ?? 0,
         submittedClaimsCount: _int(summary['claims_submitted']) ?? 0,
         approvedClaimsCount: _int(summary['claims_approved']) ?? 0,
+        partialClaimsCount: _int(summary['claims_partial']) ?? 0,
         rejectedResubmissionCount: _int(summary['denied_resubmission']) ?? 0,
         paidClosedCount: _int(summary['paid_closed']) ?? 0,
+        eligibilityPendingCount: _int(summary['eligibility_pending']) ?? 0,
+        claimsToSubmitCount: _int(summary['claims_to_submit']) ?? 0,
+        readyToSettleCount: _int(summary['ready_to_settle']) ?? 0,
+        settledCount: _int(summary['settled']) ?? 0,
         workloadCount: _int(summary['workload']) ?? 0,
       ),
     );

@@ -18,8 +18,22 @@ const { HttpError } = require('@lib/errors');
 const { resolvePublicIdentifier, resolveIdentifierForFilter } = require('@lib/billing/identifiers');
 const { toMoneyString, toDecimalNumber } = require('@lib/billing/financials');
 
-const AUTHORIZATION_STATUSES = ['PENDING', 'APPROVED', 'DENIED', 'EXPIRED'];
-const CLAIM_STATUSES = ['SUBMITTED', 'APPROVED', 'REJECTED', 'PAID', 'CANCELLED'];
+const AUTHORIZATION_STATUSES = [
+  'PENDING',
+  'APPROVED',
+  'PARTIAL',
+  'DENIED',
+  'EXPIRED',
+  'CANCELLED',
+];
+const CLAIM_STATUSES = [
+  'SUBMITTED',
+  'APPROVED',
+  'PARTIAL',
+  'REJECTED',
+  'PAID',
+  'CANCELLED',
+];
 
 const COVERAGE_SELECT = { id: true, human_friendly_id: true, name: true, provider_name: true, coverage_percentage: true, tenant_id: true };
 const CLAIM_INCLUDE = {
@@ -253,9 +267,12 @@ const getWorkspace = async (filters = {}, user = {}) => {
     authExpired,
     claimsSubmitted,
     claimsApproved,
+    claimsPartial,
     claimsRejected,
     claimsPaid,
     claimsCancelled,
+    eligibilityPending,
+    claimsToSubmit,
     recentPreAuths,
     recentClaims,
   ] = await Promise.all([
@@ -265,16 +282,37 @@ const getWorkspace = async (filters = {}, user = {}) => {
     preAuthStatusCount('EXPIRED'),
     claimStatusCount('SUBMITTED'),
     claimStatusCount('APPROVED'),
+    claimStatusCount('PARTIAL'),
     claimStatusCount('REJECTED'),
     claimStatusCount('PAID'),
     claimStatusCount('CANCELLED'),
+    claimsWorkspaceRepository.countEnrollments({
+      tenant_id: scope.tenant_id,
+      status: 'PENDING',
+      ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+      ...(scope.patient_id ? { patient_id: scope.patient_id } : {}),
+    }),
+    claimsWorkspaceRepository.countInvoicesReadyToClaim({
+      tenant_id: scope.tenant_id,
+      ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
+      ...(scope.patient_id ? { patient_id: scope.patient_id } : {}),
+    }),
     claimsWorkspaceRepository.findManyPreAuthorizations(preAuthBase, 0, 25, { requested_at: 'desc' }, PRE_AUTH_INCLUDE),
     claimsWorkspaceRepository.findManyClaims(claimBase, 0, 25, { submitted_at: 'desc' }, CLAIM_INCLUDE),
   ]);
 
   const deniedRejected = authDenied + claimsRejected;
   const paidClosed = claimsPaid + claimsCancelled;
-  const workload = authPending + authDenied + claimsSubmitted + claimsApproved + claimsRejected;
+  const readyToSettle = claimsApproved + claimsPartial;
+  const workload =
+    authPending +
+    authDenied +
+    claimsSubmitted +
+    claimsApproved +
+    claimsPartial +
+    claimsRejected +
+    eligibilityPending +
+    claimsToSubmit;
 
   const summary = {
     authorization_pending: authPending,
@@ -283,13 +321,18 @@ const getWorkspace = async (filters = {}, user = {}) => {
     authorization_expired: authExpired,
     claims_submitted: claimsSubmitted,
     claims_approved: claimsApproved,
+    claims_partial: claimsPartial,
     claims_rejected: claimsRejected,
     claims_paid: claimsPaid,
     claims_cancelled: claimsCancelled,
+    eligibility_pending: eligibilityPending,
+    claims_to_submit: claimsToSubmit,
     denied_resubmission: deniedRejected,
     paid_closed: paidClosed,
     awaiting_response: claimsSubmitted,
-    unsettled: claimsApproved,
+    unsettled: readyToSettle,
+    ready_to_settle: readyToSettle,
+    settled: claimsPaid,
     workload,
   };
 
@@ -301,10 +344,14 @@ const getWorkspace = async (filters = {}, user = {}) => {
   return {
     summary,
     queues: [
+      { queue: 'ELIGIBILITY_PENDING', label: 'Eligibility pending', count: eligibilityPending },
       { queue: 'AUTH_PENDING', label: 'Authorization pending', count: authPending },
+      { queue: 'CLAIMS_TO_SUBMIT', label: 'Claims to submit', count: claimsToSubmit },
       { queue: 'AWAITING_RESPONSE', label: 'Awaiting insurer response', count: claimsSubmitted },
+      { queue: 'PARTIAL', label: 'Partial', count: claimsPartial },
       { queue: 'DENIED_REJECTED', label: 'Denied / resubmit', count: deniedRejected },
-      { queue: 'UNSETTLED', label: 'Unsettled', count: claimsApproved },
+      { queue: 'READY_TO_SETTLE', label: 'Ready to settle', count: readyToSettle },
+      { queue: 'SETTLED', label: 'Settled', count: claimsPaid },
     ],
     timeline,
     generated_at: new Date().toISOString(),

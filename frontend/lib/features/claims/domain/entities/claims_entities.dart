@@ -337,8 +337,13 @@ final class ClaimsWorkspaceSummary {
     this.authorizationApprovedCount = 0,
     this.submittedClaimsCount = 0,
     this.approvedClaimsCount = 0,
+    this.partialClaimsCount = 0,
     this.rejectedResubmissionCount = 0,
     this.paidClosedCount = 0,
+    this.eligibilityPendingCount = 0,
+    this.claimsToSubmitCount = 0,
+    this.readyToSettleCount = 0,
+    this.settledCount = 0,
     this.workloadCount = 0,
   });
 
@@ -346,8 +351,13 @@ final class ClaimsWorkspaceSummary {
   final int authorizationApprovedCount;
   final int submittedClaimsCount;
   final int approvedClaimsCount;
+  final int partialClaimsCount;
   final int rejectedResubmissionCount;
   final int paidClosedCount;
+  final int eligibilityPendingCount;
+  final int claimsToSubmitCount;
+  final int readyToSettleCount;
+  final int settledCount;
   final int workloadCount;
 }
 

@@ -69,6 +69,28 @@ const findManyInvoices = async (where = {}, skip = 0, take = 50, orderBy = { iss
     prisma.invoice.findMany({ where: { deleted_at: null, ...where }, skip, take, orderBy, include })
   );
 
+const countEnrollments = async (where = {}) =>
+  withDbErrorHandling(() =>
+    prisma.patient_insurance_enrollment.count({ where: { deleted_at: null, ...where } })
+  );
+
+const countInvoicesReadyToClaim = async (where = {}) =>
+  withDbErrorHandling(() =>
+    prisma.invoice.count({
+      where: {
+        deleted_at: null,
+        ...where,
+        insurance_claims: { none: { deleted_at: null } },
+        items: {
+          some: {
+            deleted_at: null,
+            insurer_share: { gt: 0 },
+          },
+        },
+      },
+    })
+  );
+
 module.exports = {
   countClaims,
   findManyClaims,
@@ -78,4 +100,6 @@ module.exports = {
   findManyCoveragePlans,
   findManyInsuranceCompanies,
   findManyInvoices,
+  countEnrollments,
+  countInvoicesReadyToClaim,
 };
