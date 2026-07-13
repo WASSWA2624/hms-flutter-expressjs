@@ -157,6 +157,41 @@ const reconcileInsuranceClaim = asyncHandler(async (req, res) => {
   sendSuccess(res, 200, 'messages.insurance_claim.reconcile.success', insuranceClaim);
 });
 
+/**
+ * Sync claim status from insurer adapter
+ * POST /api/v1/insurance-claims/:id/sync-status
+ */
+const syncInsuranceClaimStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user?.id;
+  const ipAddress = req.ip;
+
+  const insuranceClaim = await insuranceClaimService.syncInsuranceClaimStatus(
+    id,
+    userId,
+    ipAddress
+  );
+
+  sendSuccess(res, 200, 'messages.insurance_claim.sync_status.success', insuranceClaim);
+});
+
+/**
+ * Apply insurer webhook payload
+ * POST /api/v1/insurance-claims/webhook
+ */
+const applyInsurerWebhook = asyncHandler(async (req, res) => {
+  const userId = req.user?.id || null;
+  const ipAddress = req.ip;
+
+  const insuranceClaim = await insuranceClaimService.applyInsurerWebhook(
+    req.body || {},
+    userId,
+    ipAddress
+  );
+
+  sendSuccess(res, 200, 'messages.insurance_claim.webhook.success', insuranceClaim);
+});
+
 module.exports = {
   listInsuranceClaims,
   getInsuranceClaimById,
@@ -164,5 +199,7 @@ module.exports = {
   updateInsuranceClaim,
   deleteInsuranceClaim,
   submitInsuranceClaim,
-  reconcileInsuranceClaim
+  reconcileInsuranceClaim,
+  syncInsuranceClaimStatus,
+  applyInsurerWebhook,
 };

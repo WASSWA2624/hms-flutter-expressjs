@@ -281,6 +281,7 @@ final class ClaimsWorkspaceController
 
   Future<AppFailure?> updateAuthorizationStatus({
     required String status,
+    num? approvedAmount,
   }) async {
     final ClaimsQueueDetail? detail = _currentState?.selectedDetail;
     final PreAuthorizationRecord? authorization = detail?.authorization;
@@ -294,7 +295,9 @@ final class ClaimsWorkspaceController
     final Result<PreAuthorizationRecord> result = await _repository
         .updatePreAuthorization(authorization.apiId, <String, Object?>{
           'status': status,
-          if (status == 'APPROVED') 'approved_at': _nowIso(),
+          if (status == 'APPROVED' || status == 'PARTIAL')
+            'approved_at': _nowIso(),
+          if (approvedAmount != null) 'approved_amount': approvedAmount,
         });
 
     return result.when<Future<AppFailure?>>(
@@ -377,6 +380,28 @@ final class ClaimsWorkspaceController
           'status': status,
           'notes': notes,
         });
+
+    return result.when<Future<AppFailure?>>(
+      success: (InsuranceClaimRecord updated) async {
+        return _afterMutation(ClaimsQueueItem.claim(updated));
+      },
+      failure: (AppFailure failure) async {
+        _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
+        return failure;
+      },
+    );
+  }
+
+  Future<AppFailure?> syncClaimStatus() async {
+    final ClaimsQueueDetail? detail = _currentState?.selectedDetail;
+    final InsuranceClaimRecord? claim = detail?.claim;
+    if (claim == null) {
+      return AppFailure.validation(validationFields: <String>{'claim_id'});
+    }
+
+    _emit(_currentState!.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<InsuranceClaimRecord> result = await _repository
+        .syncClaimStatus(claim.apiId);
 
     return result.when<Future<AppFailure?>>(
       success: (InsuranceClaimRecord updated) async {

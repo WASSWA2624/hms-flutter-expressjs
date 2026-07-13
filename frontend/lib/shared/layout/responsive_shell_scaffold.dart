@@ -1057,7 +1057,7 @@ class _MobileShellDrawer extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final List<_NavigationListEntry> entries = _navigationListEntries(
       _indexedDestinations(destinations),
-      showGroups: true,
+      showGroups: false,
     );
 
     return Drawer(
@@ -1189,7 +1189,7 @@ class _SideNavigationState extends State<SideNavigation> {
             .toList(growable: false);
     final List<_NavigationListEntry> entries = _navigationListEntries(
       visibleDestinations,
-      showGroups: !widget.collapsed,
+      showGroups: false,
     );
 
     return AnimatedContainer(

@@ -148,6 +148,18 @@ final class ClaimsRepositoryImpl implements ClaimsRepository {
   }
 
   @override
+  Future<Result<InsuranceClaimRecord>> syncClaimStatus(String claimId) {
+    return _apiClient.post<InsuranceClaimRecord>(
+      ApiEndpoints.nested(HmsApiResource.insuranceClaims, claimId, <String>[
+        'sync-status',
+      ]),
+      data: const <String, Object?>{},
+      decoder: (Object? data) =>
+          InsuranceClaimDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
   Future<Result<AppPage<PreAuthorizationRecord>>>
   listPreAuthorizationsForContext({
     String? patientId,

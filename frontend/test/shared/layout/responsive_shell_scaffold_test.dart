@@ -203,7 +203,7 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('filters grouped desktop side navigation items', (
+    testWidgets('filters desktop side navigation items by group label text', (
       WidgetTester tester,
     ) async {
       await pumpShellAtSize(
@@ -240,7 +240,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('Administration'), findsOneWidget);
+      expect(find.text('Administration'), findsNothing);
       expect(find.text('Settings'), findsOneWidget);
       expect(find.text('Home'), findsNothing);
       expect(find.text('Claims'), findsNothing);

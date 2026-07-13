@@ -6,7 +6,6 @@ import 'package:hosspi_hms/core/network/network_providers.dart';
 import 'package:hosspi_hms/features/claims/data/dtos/claims_dtos.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
-import 'package:hosspi_hms/shared/data/data.dart';
 
 final insuranceCatalogRepositoryProvider =
     Provider<InsuranceCatalogRepository>((Ref ref) {
@@ -58,6 +57,26 @@ final class InsuranceCatalogRepository {
   ) {
     return _apiClient.post<Map<String, Object?>>(
       ApiEndpoints.collection(HmsApiResource.patientInsuranceEnrollments),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) => _mapData(data),
+    );
+  }
+
+  Future<Result<Map<String, Object?>>> createPriceBookEntry(
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<Map<String, Object?>>(
+      ApiEndpoints.collection(HmsApiResource.priceBookEntries),
+      data: _withoutEmpty(payload),
+      decoder: (Object? data) => _mapData(data),
+    );
+  }
+
+  Future<Result<Map<String, Object?>>> createInsurerIntegration(
+    Map<String, Object?> payload,
+  ) {
+    return _apiClient.post<Map<String, Object?>>(
+      ApiEndpoints.collection(HmsApiResource.insurerIntegrations),
       data: _withoutEmpty(payload),
       decoder: (Object? data) => _mapData(data),
     );
@@ -200,7 +219,7 @@ Map<String, Object?> _withoutEmpty(Map<String, Object?> payload) {
   return <String, Object?>{
     for (final MapEntry<String, Object?> entry in payload.entries)
       if (entry.value != null &&
-          (!(entry.value is String) ||
+          (entry.value is! String ||
               (entry.value as String).trim().isNotEmpty))
         entry.key: entry.value is String
             ? (entry.value as String).trim()

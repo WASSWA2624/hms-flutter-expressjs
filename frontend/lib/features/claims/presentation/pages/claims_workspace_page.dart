@@ -403,6 +403,32 @@ class _ClaimsWorkspaceContentState
               );
             },
           ),
+          AppButton.secondary(
+            label: l10n.claimsAddPriceBookAction,
+            leadingIcon: Icons.menu_book_outlined,
+            onPressed: () {
+              unawaited(
+                openClaimsPriceBookEntryDialog(
+                  context: context,
+                  ref: ref,
+                  referenceData: state.referenceData,
+                ),
+              );
+            },
+          ),
+          AppButton.secondary(
+            label: l10n.claimsAddInsurerIntegrationAction,
+            leadingIcon: Icons.vpn_key_outlined,
+            onPressed: () {
+              unawaited(
+                openClaimsInsurerIntegrationDialog(
+                  context: context,
+                  ref: ref,
+                  referenceData: state.referenceData,
+                ),
+              );
+            },
+          ),
         ],
         onRefresh: () async {
           final AppFailure? failure = await controller.refresh();
@@ -1292,7 +1318,8 @@ class _AuthorizationStatusDialog extends StatefulWidget {
   });
 
   final String currentStatus;
-  final Future<AppFailure?> Function(String status) onSubmit;
+  final Future<AppFailure?> Function(String status, num? approvedAmount)
+  onSubmit;
 
   @override
   State<_AuthorizationStatusDialog> createState() {
@@ -1303,6 +1330,8 @@ class _AuthorizationStatusDialog extends StatefulWidget {
 class _AuthorizationStatusDialogState
     extends State<_AuthorizationStatusDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final TextEditingController _approvedAmountController =
+      TextEditingController();
   late String _status;
   bool _isSubmitting = false;
   AppFailure? _failure;
@@ -1312,6 +1341,14 @@ class _AuthorizationStatusDialogState
     super.initState();
     _status = widget.currentStatus.toUpperCase();
   }
+
+  @override
+  void dispose() {
+    _approvedAmountController.dispose();
+    super.dispose();
+  }
+
+  bool get _needsAmount => _status == 'APPROVED' || _status == 'PARTIAL';
 
   @override
   Widget build(BuildContext context) {
@@ -1335,6 +1372,12 @@ class _AuthorizationStatusDialogState
             });
           },
         ),
+        if (_needsAmount)
+          AppTextField(
+            controller: _approvedAmountController,
+            labelText: l10n.claimsApprovedAmountFieldLabel,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          ),
         AppFormActions(
           cancelLabel: l10n.commonCancelActionLabel,
           submitLabel: l10n.claimsUpdateStatusSubmitAction,
@@ -1356,7 +1399,10 @@ class _AuthorizationStatusDialogState
       _isSubmitting = true;
       _failure = null;
     });
-    final AppFailure? failure = await widget.onSubmit(_status);
+    final num? approvedAmount = num.tryParse(
+      _approvedAmountController.text.trim(),
+    );
+    final AppFailure? failure = await widget.onSubmit(_status, approvedAmount);
     if (!mounted) {
       return;
     }
@@ -1603,8 +1649,11 @@ Future<void> _openAuthorizationStatusDialog(
     title: Text(l10n.claimsUpdateAuthorizationDialogTitle),
     content: _AuthorizationStatusDialog(
       currentStatus: detail.item.status,
-      onSubmit: (String status) {
-        return controller.updateAuthorizationStatus(status: status);
+      onSubmit: (String status, num? approvedAmount) {
+        return controller.updateAuthorizationStatus(
+          status: status,
+          approvedAmount: approvedAmount,
+        );
       },
     ),
   );
@@ -1706,6 +1755,23 @@ List<Widget> _detailActions(
             submitLabel: l10n.claimsRecordResponseSubmitAction,
           ),
         );
+      },
+    ),
+    AppButton.secondary(
+      label: l10n.claimsSyncClaimStatusAction,
+      leadingIcon: Icons.sync_outlined,
+      isLoading: state.isSaving,
+      enabled: canRecord,
+      onPressed: () {
+        unawaited(() async {
+          final AppFailure? failure = await controller.syncClaimStatus();
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+            if (failure == null) {
+              _showSaved(context);
+            }
+          }
+        }());
       },
     ),
     AppButton.primary(

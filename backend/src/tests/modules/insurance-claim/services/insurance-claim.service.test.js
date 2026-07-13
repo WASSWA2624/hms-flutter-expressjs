@@ -14,6 +14,17 @@ const { HttpError } = require('@lib/errors');
 // Mock dependencies
 jest.mock('@repositories/insurance-claim/insurance-claim.repository');
 jest.mock('@lib/audit');
+jest.mock('@prisma/client', () => ({
+  invoice: {
+    findFirst: jest.fn(),
+  },
+  coverage_plan: {
+    findFirst: jest.fn(),
+  },
+  insurer_integration: {
+    findFirst: jest.fn(),
+  },
+}));
 jest.mock('@lib/billing/identifiers', () => ({
   resolvePublicIdentifier: (...values) => {
     for (const value of values) {
@@ -35,6 +46,8 @@ jest.mock('@lib/billing/identifiers', () => ({
   },
   resolveEntityId: async ({ identifier }) => identifier,
 }));
+
+const prisma = require('@prisma/client');
 
 describe('Insurance Claim Service', () => {
   const mockUserId = 'user-123';
@@ -108,14 +121,30 @@ describe('Insurance Claim Service', () => {
   describe('createInsuranceClaim', () => {
     it('should create insurance claim and log audit', async () => {
       const mockData = { coverage_plan_id: '123', invoice_id: '456', status: 'SUBMITTED' };
-      const mockClaim = { id: '789', ...mockData };
+      const mockClaim = { id: '789', ...mockData, claim_amount: '80000.00' };
+      prisma.invoice.findFirst.mockResolvedValue({
+        id: '456',
+        items: [{ insurer_share: '80000.00', coverage_plan_id: '123' }],
+      });
+      prisma.coverage_plan.findFirst.mockResolvedValue({
+        id: '123',
+        insurance_company_id: 'co-1',
+      });
       insuranceClaimRepository.create.mockResolvedValue(mockClaim);
       insuranceClaimRepository.findById.mockResolvedValue(mockClaim);
 
       const result = await insuranceClaimService.createInsuranceClaim(mockData, mockUserId, mockIpAddress);
 
       expect(result).toEqual(expect.objectContaining(mockClaim));
-      expect(insuranceClaimRepository.create).toHaveBeenCalledWith(mockData);
+      expect(insuranceClaimRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          coverage_plan_id: '123',
+          invoice_id: '456',
+          insurance_company_id: 'co-1',
+          claim_amount: '80000.00',
+          status: 'SUBMITTED',
+        })
+      );
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         user_id: mockUserId,
         action: 'CREATE',
@@ -125,10 +154,19 @@ describe('Insurance Claim Service', () => {
     });
 
     it('should handle repository errors', async () => {
+      prisma.invoice.findFirst.mockResolvedValue({
+        id: '456',
+        items: [],
+      });
+      prisma.coverage_plan.findFirst.mockResolvedValue({ id: '123' });
       insuranceClaimRepository.create.mockRejectedValue(new HttpError('errors.database.unique_field', 409));
 
       await expect(
-        insuranceClaimService.createInsuranceClaim({}, mockUserId, mockIpAddress)
+        insuranceClaimService.createInsuranceClaim(
+          { coverage_plan_id: '123', invoice_id: '456' },
+          mockUserId,
+          mockIpAddress
+        )
       ).rejects.toThrow(HttpError);
     });
   });

@@ -37,6 +37,8 @@ abstract interface class ClaimsRepository {
     Map<String, Object?> payload,
   );
 
+  Future<Result<InsuranceClaimRecord>> syncClaimStatus(String claimId);
+
   Future<Result<AppPage<PreAuthorizationRecord>>>
   listPreAuthorizationsForContext({
     String? patientId,

@@ -508,6 +508,139 @@ const reconcileInsuranceClaim = async (id, data = {}, userId, ipAddress) => {
   }
 };
 
+/**
+ * Poll insurer adapter for claim status and reconcile when settled/paid/partial.
+ */
+const syncInsuranceClaimStatus = async (id, userId, ipAddress) => {
+  try {
+    const resolvedId = await resolveEntityId({
+      model: 'insurance_claim',
+      identifier: id,
+    });
+    const before = await insuranceClaimRepository.findById(resolvedId, CLAIM_INCLUDE);
+    if (!before) {
+      throw new HttpError('errors.insurance_claim.not_found', 404);
+    }
+    if (before.status === 'CANCELLED') {
+      throw new HttpError('errors.insurance_claim.cannot_reconcile_cancelled', 400);
+    }
+
+    const prisma = require('@prisma/client');
+    const { getInsurerAdapter } = require('@lib/insurer/adapter');
+    const tenantId = resolveTenantIdFromClaim(before);
+    let adapterResult = null;
+
+    if (tenantId) {
+      const orFilters = [
+        { coverage_plan_id: before.coverage_plan_id },
+        { coverage_plan_id: null, insurance_company_id: null },
+      ];
+      if (before.insurance_company_id) {
+        orFilters.splice(1, 0, { insurance_company_id: before.insurance_company_id });
+      }
+      const integration = await prisma.insurer_integration.findFirst({
+        where: {
+          deleted_at: null,
+          is_enabled: true,
+          tenant_id: tenantId,
+          OR: orFilters,
+        },
+        orderBy: { updated_at: 'desc' },
+      });
+
+      if (integration) {
+        const adapter = getInsurerAdapter(integration);
+        adapterResult = await adapter.getClaimStatus({
+          payerReference: before.payer_reference,
+          claim: before,
+        });
+      }
+    }
+
+    if (!adapterResult) {
+      return mapInsuranceClaimForDisplay(before);
+    }
+
+    const nextStatus = String(adapterResult.status || before.status).toUpperCase();
+    const allowed = new Set(['SUBMITTED', 'APPROVED', 'PARTIAL', 'REJECTED', 'PAID', 'CANCELLED']);
+    const status = allowed.has(nextStatus) ? nextStatus : before.status;
+
+    return reconcileInsuranceClaim(
+      before.id,
+      {
+        status,
+        settlement_amount:
+          adapterResult.settlementAmount != null
+            ? adapterResult.settlementAmount
+            : undefined,
+        payer_reference:
+          adapterResult.payerReference || before.payer_reference || undefined,
+        notes: adapterResult.message || undefined,
+      },
+      userId,
+      ipAddress
+    );
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
+ * Apply insurer webhook payload → claim settlement update.
+ */
+const applyInsurerWebhook = async (payload = {}, userId = null, ipAddress = null) => {
+  try {
+    const prisma = require('@prisma/client');
+    const { getInsurerAdapter } = require('@lib/insurer/adapter');
+
+    const integrationId = payload.integration_id || payload.integrationId || null;
+    let integration = null;
+    if (integrationId) {
+      integration = await prisma.insurer_integration.findFirst({
+        where: { id: integrationId, deleted_at: null, is_enabled: true },
+      });
+    }
+    if (!integration) {
+      integration = await prisma.insurer_integration.findFirst({
+        where: { deleted_at: null, is_enabled: true },
+        orderBy: { updated_at: 'desc' },
+      });
+    }
+
+    const adapter = getInsurerAdapter(integration || { adapter_type: 'STUB' });
+    const parsed = await adapter.parseWebhook(payload);
+    const payerReference = parsed.payerReference || null;
+    if (!payerReference) {
+      throw new HttpError('errors.insurance_claim.webhook_missing_reference', 400);
+    }
+
+    const claim = await prisma.insurance_claim.findFirst({
+      where: { deleted_at: null, payer_reference: payerReference },
+      orderBy: { updated_at: 'desc' },
+    });
+    if (!claim) {
+      throw new HttpError('errors.insurance_claim.not_found', 404);
+    }
+
+    const nextStatus = String(parsed.status || claim.status).toUpperCase();
+    return reconcileInsuranceClaim(
+      claim.id,
+      {
+        status: nextStatus,
+        settlement_amount: parsed.settlementAmount,
+        payer_reference: payerReference,
+        notes: `Webhook: ${parsed.event || 'claim.status'}`,
+      },
+      userId,
+      ipAddress
+    );
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 module.exports = {
   listInsuranceClaims,
   getInsuranceClaimById,
@@ -516,4 +649,6 @@ module.exports = {
   deleteInsuranceClaim,
   submitInsuranceClaim,
   reconcileInsuranceClaim,
+  syncInsuranceClaimStatus,
+  applyInsurerWebhook,
 };

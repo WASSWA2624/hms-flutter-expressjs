@@ -194,4 +194,29 @@ router.post(
   insuranceClaimController.reconcileInsuranceClaim
 );
 
+/**
+ * @description Poll insurer adapter and update claim settlement status
+ * @method POST
+ * @route /api/v1/insurance-claims/:id/sync-status
+ */
+router.post(
+  '/:id/sync-status',
+  validateRequest({ params: insuranceClaimIdParamsSchema }),
+  authenticate(),
+  authorize(PERMISSIONS.BILLING_WRITE, 'permission'),
+  insuranceClaimController.syncInsuranceClaimStatus
+);
+
+/**
+ * @description Insurer webhook receiver (authenticated staff or service token)
+ * @method POST
+ * @route /api/v1/insurance-claims/webhook
+ */
+router.post(
+  '/webhook',
+  authenticate(),
+  authorize(PERMISSIONS.BILLING_WRITE, 'permission'),
+  insuranceClaimController.applyInsurerWebhook
+);
+
 module.exports = router;

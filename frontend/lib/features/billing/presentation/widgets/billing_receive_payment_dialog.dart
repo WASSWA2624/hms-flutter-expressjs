@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/core/currency/fx_currency_utils.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_support.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -38,9 +39,51 @@ class _BillingReceivePaymentDialogState
   @override
   void initState() {
     super.initState();
+    final String currency = widget.item.currency ?? appDefaultCurrencyCode;
+    final double due = widget.item.balanceDue
+        .clamp(0, double.infinity)
+        .toDouble();
     _amountController = TextEditingController(
-      text: widget.item.balanceDue.clamp(0, double.infinity).toStringAsFixed(2),
+      text: formatConvertedAmount(due, currency),
     );
+  }
+
+  String? get _schemeLabel {
+    for (final BillingInvoiceItem line in widget.item.items) {
+      final String? scheme = line.coveragePlanName?.trim();
+      if (scheme != null && scheme.isNotEmpty) {
+        return scheme;
+      }
+      final String? company = line.insuranceCompanyName?.trim();
+      if (company != null && company.isNotEmpty) {
+        return company;
+      }
+    }
+    return null;
+  }
+
+  num? get _patientShareTotal {
+    num total = 0;
+    var hasShare = false;
+    for (final BillingInvoiceItem line in widget.item.items) {
+      if (line.patientShare != null) {
+        total += line.patientShare!;
+        hasShare = true;
+      }
+    }
+    return hasShare ? total : null;
+  }
+
+  num? get _insurerShareTotal {
+    num total = 0;
+    var hasShare = false;
+    for (final BillingInvoiceItem line in widget.item.items) {
+      if (line.insurerShare != null) {
+        total += line.insurerShare!;
+        hasShare = true;
+      }
+    }
+    return hasShare ? total : null;
   }
 
   @override
@@ -91,6 +134,32 @@ class _BillingReceivePaymentDialogState
                 ),
                 icon: Icons.account_balance_wallet_outlined,
               ),
+              if (_schemeLabel != null)
+                AppReportSummaryItem(
+                  label: context.l10n.billingReceivePaymentSchemeLabel,
+                  value: _schemeLabel!,
+                  icon: Icons.verified_user_outlined,
+                ),
+              if (_patientShareTotal != null)
+                AppReportSummaryItem(
+                  label: context.l10n.billingReceivePaymentPatientShareLabel,
+                  value: billingMoney(
+                    context,
+                    _patientShareTotal!,
+                    widget.item.currency,
+                  ),
+                  icon: Icons.person_outline,
+                ),
+              if (_insurerShareTotal != null)
+                AppReportSummaryItem(
+                  label: context.l10n.billingReceivePaymentInsurerShareLabel,
+                  value: billingMoney(
+                    context,
+                    _insurerShareTotal!,
+                    widget.item.currency,
+                  ),
+                  icon: Icons.business_outlined,
+                ),
             ],
           ),
           AppCurrencyAmountField(
@@ -101,7 +170,10 @@ class _BillingReceivePaymentDialogState
             currencyLabelText: context.l10n.billingCurrencyLabel,
             isRequired: true,
             allowZero: false,
-            maxAmount: widget.item.balanceDue,
+            maxAmount: roundConvertedAmount(
+              widget.item.balanceDue.clamp(0, double.infinity).toDouble(),
+              widget.item.currency ?? appDefaultCurrencyCode,
+            ),
           ),
           AppSelectField<String>(
             value: _method,

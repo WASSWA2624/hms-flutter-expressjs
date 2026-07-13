@@ -13683,6 +13683,122 @@
   "@claimsAddEnrollmentAction": {
     "description": "Claims workspace secondary action to enroll a patient."
   },
+  "claimsAddPriceBookAction": "Add price",
+  "@claimsAddPriceBookAction": {
+    "description": "Claims workspace action to add a price-book tariff."
+  },
+  "claimsAddInsurerIntegrationAction": "Insurer API",
+  "@claimsAddInsurerIntegrationAction": {
+    "description": "Claims workspace action to configure insurer API credentials."
+  },
+  "claimsAddPriceBookTitle": "Add price book tariff",
+  "@claimsAddPriceBookTitle": {
+    "description": "Dialog title for creating a price-book entry."
+  },
+  "claimsAddInsurerIntegrationTitle": "Configure insurer API",
+  "@claimsAddInsurerIntegrationTitle": {
+    "description": "Dialog title for insurer integration credentials."
+  },
+  "claimsPriceBookPaymentModeLabel": "Payment mode",
+  "@claimsPriceBookPaymentModeLabel": {
+    "description": "Price book payment mode field."
+  },
+  "claimsPriceBookSelfPayLabel": "Self-pay",
+  "@claimsPriceBookSelfPayLabel": {
+    "description": "Self-pay payment mode option."
+  },
+  "claimsPriceBookInsuranceLabel": "Insurance",
+  "@claimsPriceBookInsuranceLabel": {
+    "description": "Insurance payment mode option."
+  },
+  "claimsPriceBookBillingEntityLabel": "Billing entity",
+  "@claimsPriceBookBillingEntityLabel": {
+    "description": "Facility vs pharmacy billing entity."
+  },
+  "claimsPriceBookFacilityEntityLabel": "Facility",
+  "@claimsPriceBookFacilityEntityLabel": {
+    "description": "Facility billing entity option."
+  },
+  "claimsPriceBookPharmacyEntityLabel": "Pharmacy",
+  "@claimsPriceBookPharmacyEntityLabel": {
+    "description": "Pharmacy billing entity option."
+  },
+  "claimsPriceBookCurrencyLabel": "Currency",
+  "@claimsPriceBookCurrencyLabel": {
+    "description": "Price book currency field."
+  },
+  "claimsPriceBookCurrencyRequired": "Enter the currency code.",
+  "@claimsPriceBookCurrencyRequired": {
+    "description": "Validation for price book currency."
+  },
+  "claimsPriceBookPriceRequired": "Enter the unit price.",
+  "@claimsPriceBookPriceRequired": {
+    "description": "Validation for price book unit price."
+  },
+  "claimsSavePriceBookAction": "Save tariff",
+  "@claimsSavePriceBookAction": {
+    "description": "Submit action for price book create."
+  },
+  "claimsInsurerIntegrationNameLabel": "Integration name",
+  "@claimsInsurerIntegrationNameLabel": {
+    "description": "Insurer integration display name."
+  },
+  "claimsInsurerIntegrationNameRequired": "Enter the integration name.",
+  "@claimsInsurerIntegrationNameRequired": {
+    "description": "Validation for insurer integration name."
+  },
+  "claimsInsurerAdapterTypeLabel": "Adapter type",
+  "@claimsInsurerAdapterTypeLabel": {
+    "description": "Insurer adapter type field."
+  },
+  "claimsInsurerAdapterStubLabel": "Stub (manual / test)",
+  "@claimsInsurerAdapterStubLabel": {
+    "description": "Stub adapter option."
+  },
+  "claimsInsurerAdapterRestLabel": "Generic REST",
+  "@claimsInsurerAdapterRestLabel": {
+    "description": "Generic REST adapter option."
+  },
+  "claimsInsurerBaseUrlLabel": "API base URL",
+  "@claimsInsurerBaseUrlLabel": {
+    "description": "Insurer API base URL field."
+  },
+  "claimsInsurerApiKeyLabel": "API key",
+  "@claimsInsurerApiKeyLabel": {
+    "description": "Insurer API key field (stored encrypted server-side)."
+  },
+  "claimsInsurerEnabledLabel": "Enable this connector",
+  "@claimsInsurerEnabledLabel": {
+    "description": "Enable insurer integration checkbox."
+  },
+  "claimsSaveInsurerIntegrationAction": "Save connector",
+  "@claimsSaveInsurerIntegrationAction": {
+    "description": "Submit action for insurer integration create."
+  },
+  "claimsSyncClaimStatusAction": "Sync insurer status",
+  "@claimsSyncClaimStatusAction": {
+    "description": "Poll insurer for claim status."
+  },
+  "claimsApprovedAmountFieldLabel": "Approved amount",
+  "@claimsApprovedAmountFieldLabel": {
+    "description": "Pre-authorization approved amount when status is partial or approved."
+  },
+  "billingReceivePaymentPatientShareLabel": "Patient share",
+  "@billingReceivePaymentPatientShareLabel": {
+    "description": "Patient share summary on receive payment."
+  },
+  "billingReceivePaymentInsurerShareLabel": "Insurer share",
+  "@billingReceivePaymentInsurerShareLabel": {
+    "description": "Insurer share summary on receive payment."
+  },
+  "billingReceivePaymentSchemeLabel": "Scheme",
+  "@billingReceivePaymentSchemeLabel": {
+    "description": "Scheme summary on receive payment."
+  },
+  "opdEngineResolvedFeeHint": "Fee resolved from the price book for this patient.",
+  "@opdEngineResolvedFeeHint": {
+    "description": "Hint when OPD consultation fee is engine-resolved."
+  },
   "claimsEligibilityPendingSummaryLabel": "Eligibility pending",
   "@claimsEligibilityPendingSummaryLabel": {
     "description": "Summary badge for enrollments awaiting eligibility."

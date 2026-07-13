@@ -15,6 +15,7 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_billing_helpers.dart';
@@ -630,6 +631,12 @@ Future<void> _openRecordPaymentDialog(
   WidgetRef ref,
   PharmacyOrder order,
 ) async {
+  final ClinicalRequestPayerContext? payerContext = await ref
+      .read(insuranceCatalogRepositoryProvider)
+      .resolvePayerContextForPatient(order.patientId);
+  if (!context.mounted) {
+    return;
+  }
   final List<ClinicalRequestBillingLineItem> fallback =
       pharmacyOrderBillingLineItems(order)
           .map(
@@ -644,6 +651,7 @@ Future<void> _openRecordPaymentDialog(
         context: context,
         catalogFallbackItems: fallback,
         billingEntity: 'PHARMACY',
+        payerContext: payerContext,
       );
   if (!context.mounted) {
     return;
@@ -660,6 +668,7 @@ Future<void> _openRecordPaymentDialog(
             : num.tryParse(order.billing['paid_amount']?.toString() ?? ''),
         initialCurrency: order.billingCurrency,
         billingEntity: 'PHARMACY',
+        payerContext: payerContext,
       );
   if (billing == null || !context.mounted) {
     return;

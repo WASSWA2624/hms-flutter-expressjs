@@ -336,8 +336,14 @@ class _AppCurrencyAmountFieldState
     }
 
     final List<String> parts = normalized.split('.');
-    if (parts.length == 2 && parts.last.length > _effectiveDecimalDigits) {
-      return widget.amountInvalidMessage;
+    if (parts.length == 2) {
+      final String significantFraction = parts.last.replaceFirst(
+        RegExp(r'0+$'),
+        '',
+      );
+      if (significantFraction.length > _effectiveDecimalDigits) {
+        return widget.amountInvalidMessage;
+      }
     }
 
     final double? parsed = double.tryParse(normalized);
@@ -347,8 +353,18 @@ class _AppCurrencyAmountFieldState
     if (!widget.allowZero && parsed == 0) {
       return widget.amountInvalidMessage;
     }
-    if (widget.maxAmount != null && parsed > widget.maxAmount!) {
-      return widget.amountInvalidMessage;
+    if (widget.maxAmount != null) {
+      final double maxAmount = roundConvertedAmount(
+        widget.maxAmount!.toDouble(),
+        widget.currency,
+      );
+      final double roundedParsed = roundConvertedAmount(
+        parsed,
+        widget.currency,
+      );
+      if (roundedParsed > maxAmount) {
+        return widget.amountInvalidMessage;
+      }
     }
     if (lookupAppCurrencyOption(
           widget.currency,

@@ -229,51 +229,51 @@ Manual Claims desk remains fully usable when no API is configured.
 
 ### Step 1 — Schema & migrations
 
-- [ ] `insurance_company` (or equivalent) + **schemes** under company (evolve/migrate `coverage_plan`)  
-- [ ] Scheme **offers** / benefit rows (catalog item or category + tariff/coverage/co-pay/auth/exclusion/limits + effective dates)  
-- [ ] Price-book rows keyed by payment mode + optional company + **scheme** + billing entity  
-- [ ] Patient enrollment → **scheme** (and company via scheme)  
-- [ ] Billing entity on invoices / payments / closeouts  
-- [ ] Line fields: company, scheme, offer/price-book ref, shares, co-pay  
-- [ ] Insurer integration config scoped to company (optional scheme)  
-- [ ] Migrate existing `unit_price` / `coverage_plan` without breaking live claims  
+- [x] `insurance_company` (or equivalent) + **schemes** under company (evolve/migrate `coverage_plan`)  
+- [x] Scheme **offers** / benefit rows (catalog item or category + tariff/coverage/co-pay/auth/exclusion/limits + effective dates)  
+- [x] Price-book rows keyed by payment mode + optional company + **scheme** + billing entity  
+- [x] Patient enrollment → **scheme** (and company via scheme)  
+- [x] Billing entity on invoices / payments / closeouts  
+- [x] Line fields: company, scheme, offer/price-book ref, shares, co-pay  
+- [x] Insurer integration config scoped to company (optional scheme)  
+- [x] Migrate existing `unit_price` / `coverage_plan` without breaking live claims  
 
 ### Step 2 — Backend pricing + claims engine
 
-- [ ] Price resolver respects scheme → company → self-pay order  
-- [ ] Coverage-split uses scheme defaults and offer overrides  
-- [ ] Hook into `clinical-request-billing.js` and cashier paths  
-- [ ] CRUD: companies, schemes, offers, price books, enrollments  
-- [ ] Enrollment verify + eligibility via adapter  
-- [ ] Pre-auth + claim services use scheme/offer context; claim amounts = insurer share  
-- [ ] Claims-workspace aggregator API (queues + lookups)  
-- [ ] Entity-aware invoice/closeout aggregation  
-- [ ] Targeted tests: scheme matrix, offer overrides, co-pay, claim/adapter paths  
+- [x] Price resolver respects scheme → company → self-pay order  
+- [x] Coverage-split uses scheme defaults and offer overrides  
+- [x] Hook into `clinical-request-billing.js` and cashier paths  
+- [x] CRUD: companies, schemes, offers, price books, enrollments  
+- [x] Enrollment verify + eligibility via adapter  
+- [x] Pre-auth + claim services use scheme/offer context; claim amounts = insurer share  
+- [x] Claims-workspace aggregator API (queues + lookups)  
+- [x] Entity-aware invoice/closeout aggregation  
+- [x] Targeted tests: scheme matrix, offer overrides, co-pay, claim/adapter paths  
 
 ### Step 3 — Flutter Claims + billing surfaces
 
-- [ ] Claims workspace: company/scheme/offers admin, enrollment, pre-auth, claim lifecycle (§G)  
-- [ ] Upgrade shared billing panel for company + scheme + shares  
+- [x] Claims workspace: company/scheme/offers admin, enrollment, pre-auth, claim lifecycle (§G)  
+- [x] Upgrade shared billing panel for company + scheme + shares  
 - [ ] Admin/catalog: maintain self-pay and **per-scheme** tariffs/offers  
-- [ ] OPD coverage: company + scheme selection / auto-resolve from member ID  
+- [x] OPD coverage: company + scheme selection / auto-resolve from member ID  
 - [ ] Wire every dialog in §F  
-- [ ] Billing workspace: show company, scheme, co-pay, insurer share, billing entity  
-- [ ] Instant UI; all strings in `app_en.arb`  
+- [x] Billing workspace: show company, scheme, co-pay, insurer share, billing entity  
+- [x] Instant UI; all strings in `app_en.arb`  
 
 ### Step 4 — Insurer adapter layer
 
-- [ ] Adapter interface + stub/mock  
-- [ ] Wire eligibility / auth / claim submit / status into Claims services  
+- [x] Adapter interface + stub/mock  
+- [x] Wire eligibility / auth / claim submit / status into Claims services  
 - [ ] Webhook/poll → settlement updates  
 - [ ] Super-admin settings for company API URL, keys, enable/disable  
 
 ### Step 5 — Verify & document
 
-- [ ] Flutter format / analyze / tests (panel + claims flows)  
-- [ ] Backend targeted module tests  
+- [x] Flutter format / analyze / tests (panel + claims flows)  
+- [x] Backend targeted module tests  
 - [ ] Smoke: two schemes under one company with different CBC prices and co-pays; lab/radiology/pharmacy/OPD  
 - [ ] Smoke: pre-auth → claim → partial → resubmit → settle  
-- [ ] Cross-link prompts 09 / 10 / 18  
+- [x] Cross-link prompts 09 / 10 / 18  
 
 ---
 
@@ -285,17 +285,17 @@ Manual Claims desk remains fully usable when no API is configured.
 
 ## Definition of done
 
-- [ ] Insurance companies support **multiple schemes**, each with **distinct offers**  
-- [ ] Distinct self-pay and per-scheme prices configurable per billable item  
-- [ ] Enrolled patient resolves to company + scheme; charge-time prices/co-pays follow that scheme’s offers  
+- [x] Insurance companies support **multiple schemes**, each with **distinct offers**  
+- [x] Distinct self-pay and per-scheme prices configurable per billable item  
+- [x] Enrolled patient resolves to company + scheme; charge-time prices/co-pays follow that scheme’s offers  
 - [ ] All billing modals in §F use the shared engine panel — no private/hard-coded price paths  
-- [ ] Co-pay and insurer share visible in request dialogs and on invoices (with company + scheme labels)  
-- [ ] Pharmacy vs facility prices, invoices, and closeouts work as separate entities  
-- [ ] Claims workspace covers enrollment, eligibility, pre-auth, submit, partial/reject/resubmit, settlement  
-- [ ] Claim amounts match insurer share from the same scheme-priced lines  
-- [ ] Adapter path works when configured; manual Claims path works when not  
-- [ ] Historical lines keep original resolved prices/shares/scheme refs  
-- [ ] Schema, APIs, DTOs, and Flutter models aligned; quality gates pass  
+- [x] Co-pay and insurer share visible in request dialogs and on invoices (with company + scheme labels)  
+- [x] Pharmacy vs facility prices, invoices, and closeouts work as separate entities  
+- [x] Claims workspace covers enrollment, eligibility, pre-auth, submit, partial/reject/resubmit, settlement  
+- [x] Claim amounts match insurer share from the same scheme-priced lines  
+- [x] Adapter path works when configured; manual Claims path works when not  
+- [x] Historical lines keep original resolved prices/shares/scheme refs  
+- [x] Schema, APIs, DTOs, and Flutter models aligned; quality gates pass  
 
 ## Constraints for the implementer
 

@@ -10,12 +10,15 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_resolve.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
@@ -237,6 +240,9 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   bool _appliedInitialContext = false;
   OpdBillingDefaults? _billingDefaults;
   bool _lockArrivalMode = false;
+  ClinicalRequestPayerContext? _payerContext;
+  ClinicalRequestBillingLineItem? _resolvedConsultationLine;
+  bool _engineFeeResolved = false;
 
   bool get _pinPatientContext =>
       widget.initialPatient != null || _isNonEmpty(widget.initialPatientId);
@@ -661,6 +667,18 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
             });
           },
         ),
+        if (_engineFeeResolved)
+          AppFormInformationBanner.message(
+            title: l10n.opdBillingSectionTitle,
+            message: _payerContext?.insured == true
+                ? '${l10n.opdEngineResolvedFeeHint} '
+                      '${_payerContext?.payerLabel ?? ''} · '
+                      '${l10n.billingReceivePaymentPatientShareLabel}: '
+                      '${_resolvedConsultationLine?.patientShare ?? '-'} · '
+                      '${l10n.billingReceivePaymentInsurerShareLabel}: '
+                      '${_resolvedConsultationLine?.insurerShare ?? '-'}'
+                : l10n.opdEngineResolvedFeeHint,
+          ),
         AppTextField(
           controller: _notesController,
           labelText: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
@@ -1204,6 +1222,11 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       patientPublicId: patient?.publicId ?? value,
       patientIdentifier: patient?.effectiveIdentifier,
       patientPhone: patient?.primaryPhone,
+    );
+    unawaited(
+      _refreshEngineConsultationFee(
+        patient?.publicId ?? patient?.id ?? value,
+      ),
     );
   }
 
