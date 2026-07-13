@@ -1517,7 +1517,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           ClinicalRequestBillingLineItem(
             id: 'CONSULTATION',
             label: context.l10n.opdConsultationFeeLabel,
-            quantity: 1,
             unitPrice: fallback,
             catalogType: 'CONSULTATION',
             billingEntity: 'FACILITY',
