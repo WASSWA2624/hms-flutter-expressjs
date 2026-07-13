@@ -19534,6 +19534,12 @@ abstract class AppLocalizations {
   /// **'Claim approved'**
   String get claimsFilterClaimApproved;
 
+  /// Filter for partially approved insurance claims.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim partial'**
+  String get claimsFilterClaimPartial;
+
   /// Localized text for claimsFilterClaimRejected.
   ///
   /// In en, this message translates to:

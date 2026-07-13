@@ -10526,6 +10526,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get claimsFilterClaimApproved => 'Claim approved';
 
   @override
+  String get claimsFilterClaimPartial => 'Claim partial';
+
+  @override
   String get claimsFilterClaimRejected => 'Claim rejected';
 
   @override
