@@ -1,69 +1,59 @@
 /**
- * Coverage Plan module validation schemas
+ * Coverage Plan (scheme) module validation schemas
  *
  * @module modules/coverage-plan/schemas
- * @description Zod validation schemas for coverage plan endpoints.
- * Per validation.mdc: Use Zod exclusively for all validation
- * Per module-creation.mdc: Define schemas for body, params, and query
  */
 
 const { z } = require('zod');
-const { 
-  uuidOrFriendlyIdentifierSchema, 
-  listQuerySchema
+const {
+  uuidOrFriendlyIdentifierSchema,
+  listQuerySchema,
 } = require('@lib/validation/zod');
 
-// ==================== Body Schemas ====================
-
-/**
- * Create coverage plan body validation
- * Used for POST /coverage-plans endpoint
- */
 const createCoveragePlanSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema,
+  insurance_company_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(255),
+  code: z.string().trim().min(1).max(64).optional().nullable(),
   provider_name: z.string().trim().min(1).max(255).optional().nullable(),
-  coverage_percentage: z.number().int().min(0).max(100).optional().nullable()
+  coverage_percentage: z.number().int().min(0).max(100).optional().nullable(),
+  status: z.enum(['ACTIVE', 'RETIRED']).optional().default('ACTIVE'),
+  effective_from: z.string().datetime().optional().nullable(),
+  effective_to: z.string().datetime().optional().nullable(),
+  default_copay_type: z.enum(['NONE', 'FIXED', 'PERCENT']).optional().default('NONE'),
+  default_copay_value: z.number().min(0).finite().optional().nullable(),
 });
 
-/**
- * Update coverage plan body validation
- * Used for PUT /coverage-plans/:id endpoint
- * All fields optional for partial updates
- */
 const updateCoveragePlanSchema = z.object({
+  insurance_company_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   name: z.string().trim().min(1).max(255).optional(),
+  code: z.string().trim().min(1).max(64).optional().nullable(),
   provider_name: z.string().trim().min(1).max(255).optional().nullable(),
-  coverage_percentage: z.number().int().min(0).max(100).optional().nullable()
+  coverage_percentage: z.number().int().min(0).max(100).optional().nullable(),
+  status: z.enum(['ACTIVE', 'RETIRED']).optional(),
+  effective_from: z.string().datetime().optional().nullable(),
+  effective_to: z.string().datetime().optional().nullable(),
+  default_copay_type: z.enum(['NONE', 'FIXED', 'PERCENT']).optional(),
+  default_copay_value: z.number().min(0).finite().optional().nullable(),
 });
 
-// ==================== URL Params ====================
-
-/**
- * Coverage Plan ID URL parameter validation
- * Used for GET /:id, PUT /:id, and DELETE /:id endpoints
- */
 const coveragePlanIdParamsSchema = z.object({
-  id: uuidOrFriendlyIdentifierSchema
+  id: uuidOrFriendlyIdentifierSchema,
 });
 
-// ==================== Query Params ====================
-
-/**
- * List coverage plans query parameter validation
- * Used for GET / endpoint
- * Extends base listQuerySchema with coverage plan-specific filters
- */
 const listCoveragePlansQuerySchema = listQuerySchema.extend({
   tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
+  insurance_company_id: uuidOrFriendlyIdentifierSchema.optional(),
   name: z.string().trim().optional(),
+  code: z.string().trim().optional(),
   provider_name: z.string().trim().optional(),
-  search: z.string().trim().optional()
+  status: z.enum(['ACTIVE', 'RETIRED']).optional(),
+  search: z.string().trim().optional(),
 });
 
 module.exports = {
   createCoveragePlanSchema,
   updateCoveragePlanSchema,
   coveragePlanIdParamsSchema,
-  listCoveragePlansQuerySchema
+  listCoveragePlansQuerySchema,
 };

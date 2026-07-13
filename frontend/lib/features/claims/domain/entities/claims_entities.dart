@@ -42,21 +42,58 @@ final class ClaimsQueueQuery {
 }
 
 @immutable
+final class InsuranceCompanyOption {
+  const InsuranceCompanyOption({
+    required this.id,
+    required this.displayId,
+    this.name,
+    this.code,
+    this.isActive = true,
+    this.schemeCount,
+  });
+
+  final String id;
+  final String displayId;
+  final String? name;
+  final String? code;
+  final bool isActive;
+  final int? schemeCount;
+
+  String get apiId => _firstNonEmpty(<String?>[displayId, id]) ?? id;
+
+  String get title => _firstNonEmpty(<String?>[name, code, displayId, id]) ?? id;
+}
+
+@immutable
 final class CoveragePlanOption {
   const CoveragePlanOption({
     required this.id,
     required this.displayId,
     this.name,
+    this.code,
     this.providerName,
     this.coveragePercentage,
+    this.defaultCopayType,
+    this.defaultCopayValue,
+    this.status,
+    this.insuranceCompanyId,
+    this.insuranceCompanyName,
+    this.insuranceCompanyCode,
     this.tenantDisplayId,
   });
 
   final String id;
   final String displayId;
   final String? name;
+  final String? code;
   final String? providerName;
   final int? coveragePercentage;
+  final String? defaultCopayType;
+  final num? defaultCopayValue;
+  final String? status;
+  final String? insuranceCompanyId;
+  final String? insuranceCompanyName;
+  final String? insuranceCompanyCode;
   final String? tenantDisplayId;
 
   String get apiId => _firstNonEmpty(<String?>[displayId, id]) ?? id;
@@ -65,7 +102,8 @@ final class CoveragePlanOption {
 
   String? get subtitle {
     return _joinDisplay(<String?>[
-      providerName,
+      insuranceCompanyName ?? providerName,
+      code,
       coveragePercentage == null ? null : '$coveragePercentage%',
       tenantDisplayId,
     ]);
@@ -277,12 +315,14 @@ final class ClaimsQueueDetail {
 @immutable
 final class ClaimsReferenceData {
   const ClaimsReferenceData({
+    this.insuranceCompanies = const <InsuranceCompanyOption>[],
     this.coveragePlans = const <CoveragePlanOption>[],
     this.invoices = const <ClaimInvoiceOption>[],
     this.coverageUnavailable = false,
     this.invoicesUnavailable = false,
   });
 
+  final List<InsuranceCompanyOption> insuranceCompanies;
   final List<CoveragePlanOption> coveragePlans;
   final List<ClaimInvoiceOption> invoices;
   final bool coverageUnavailable;

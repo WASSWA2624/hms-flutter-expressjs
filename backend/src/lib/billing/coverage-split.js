@@ -86,12 +86,24 @@ const applyCoverageSplitToLineItems = (lineItems = [], payerContext = {}) => {
     const lineTotal = roundMoney(
       toDecimalNumber(item.line_total ?? item.lineTotal ?? unitPrice * quantity)
     );
+
+    const isExcluded = Boolean(item.is_excluded ?? item.isExcluded);
+    const coveragePercentage = isExcluded
+      ? 0
+      : item.coverage_percentage ??
+        item.coveragePercentage ??
+        payerContext.coveragePercentage;
+    const copayType =
+      item.copay_type || item.copayType || payerContext.copayType || 'NONE';
+    const copayValue =
+      item.copay_value ?? item.copayValue ?? payerContext.copayValue;
+
     const split = splitLineCoverage({
       lineTotal,
-      insured,
-      coveragePercentage: payerContext.coveragePercentage,
-      copayType: payerContext.copayType,
-      copayValue: payerContext.copayValue,
+      insured: insured && !isExcluded,
+      coveragePercentage,
+      copayType,
+      copayValue,
     });
 
     return {
@@ -108,6 +120,16 @@ const applyCoverageSplitToLineItems = (lineItems = [], payerContext = {}) => {
         item.coveragePlanId ||
         payerContext.coveragePlanId ||
         null,
+      insurance_company_id:
+        item.insurance_company_id ||
+        item.insuranceCompanyId ||
+        payerContext.insuranceCompanyId ||
+        null,
+      scheme_offer_id: item.scheme_offer_id || item.schemeOfferId || null,
+      requires_pre_auth: Boolean(
+        item.requires_pre_auth ?? item.requiresPreAuth ?? false
+      ),
+      is_excluded: isExcluded,
     };
   });
 };

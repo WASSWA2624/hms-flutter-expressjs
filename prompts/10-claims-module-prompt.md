@@ -11,9 +11,9 @@ Complete the **Insurance and Claims Module** for HOSSPI HMS so insurance desk st
 3. [flows/opd-flow.mdc](../.cursor/flows/opd-flow.mdc) — consultation payment gate and payer context on OPD encounters
 4. [prompts/09-billing-module-prompt.md](./09-billing-module-prompt.md) — shared claims/pre-auth work items in billing workspace
 
-**Central rule:** coverage, pre-auth, and claims attach to **patient + payer + invoice/encounter** context. Claims module owns insurer workflow state — Billing owns invoice balances and cashier actions. Do not duplicate invoice line capture in Claims.
+**Central rule:** coverage, pre-auth, and claims attach to **patient + insurance company + scheme + invoice/encounter** context. An insurance company may have **multiple schemes**, each with **different offers** (tariffs, coverage %, co-pay, limits, exclusions, auth flags). Claims module owns insurer workflow state — Billing owns invoice balances and cashier actions. Do not duplicate invoice line capture in Claims. Pricing and claim amounts must follow the enrolled **scheme’s offers** (see root [`prompt.md`](../prompt.md)).
 
-Deliver an **audit-ready insurance workspace** (standalone or integrated with Billing): clear claim lifecycle, pre-auth tracking, and linkage to IPD authorization gates.
+Deliver an **audit-ready insurance workspace** (standalone or integrated with Billing): company/scheme/offers configuration, enrollment & eligibility, clear claim lifecycle, pre-auth tracking, and linkage to IPD authorization gates.
 
 ---
 
@@ -90,13 +90,14 @@ Mandatory platform rules for all work in this module.
 
 ### Known gaps to close
 
-- **Workspace orchestration** — frontend merges pre-auth + claim APIs client-side; no backend `claims-workspace` module.
-- **Pre-auth lifecycle UI** — create, submit, approve/deny, link to encounter/admission.
-- **Claim submission and tracking** — submit, record insurer response, resubmit, settlement.
+- **Company → scheme → offers hierarchy** — today `coverage_plan` is flat (`provider_name` + `%`); need insurance company with multiple schemes and per-scheme offers (see [`prompt.md`](../prompt.md) §A/G).
+- **Workspace orchestration** — frontend merges pre-auth + claim APIs client-side; strengthen backend `claims-workspace` aggregator.
+- **Pre-auth lifecycle UI** — create, submit, approve/deny/partial, link to encounter/admission and scheme.
+- **Claim submission and tracking** — submit, record insurer response (including partial), resubmit, settlement.
 - **IPD authorization panel** — approved amount, pending, consumed on admission detail.
-- **OPD insured visit flow** — coverage check at registration or payment gate.
+- **OPD insured visit flow** — coverage check resolves **company + scheme** at registration or payment gate.
 - **Integration with Billing** — `CLAIMS_PENDING` queue with non-invoice detail layouts (billing prompt).
-- **Tests and localization** — full coverage for claim/pre-auth flows.
+- **Tests and localization** — full coverage for claim/pre-auth/scheme-offer flows.
 - **Pricing engine / insurer adapters** — multi-tier tariffs, enrollment verify, and stub payer connectors are specified in root [`prompt.md`](../prompt.md).
 
 ---

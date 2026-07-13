@@ -18,6 +18,9 @@ const {
 
 const COVERAGE_PLAN_INCLUDE = {
   tenant: { select: { id: true, human_friendly_id: true } },
+  insurance_company: {
+    select: { id: true, human_friendly_id: true, name: true, code: true },
+  },
 };
 
 const buildEmptyListResult = (page, limit) => ({
@@ -43,6 +46,13 @@ const mapCoveragePlanForDisplay = (record) => {
       record?.tenant?.human_friendly_id,
       record?.tenant_id
     ),
+    insurance_company_display_id: resolvePublicIdentifier(
+      record?.insurance_company_display_id,
+      record?.insurance_company?.human_friendly_id,
+      record?.insurance_company_id
+    ),
+    insurance_company_name: record?.insurance_company?.name || record?.provider_name || null,
+    insurance_company_code: record?.insurance_company?.code || null,
     timeline_at: record?.timeline_at || record?.updated_at || record?.created_at || null,
   };
 };
@@ -68,12 +78,24 @@ const listCoveragePlans = async (filters, page, limit, sortBy, order) => {
 
     if (filters.provider_name) whereClause.provider_name = { contains: filters.provider_name };
     if (filters.name) whereClause.name = { contains: filters.name };
+    if (filters.code) whereClause.code = { contains: filters.code };
+    if (filters.status) whereClause.status = filters.status;
+
+    if (filters.insurance_company_id !== undefined) {
+      const companyId = await resolveIdentifierForFilter({
+        value: filters.insurance_company_id,
+        model: 'insurance_company',
+      });
+      if (companyId === null) return buildEmptyListResult(page, limit);
+      if (companyId !== undefined) whereClause.insurance_company_id = companyId;
+    }
 
     const search = sanitizeIdentifier(filters.search);
     if (search) {
       whereClause.OR = [
         { name: { contains: search } },
         { provider_name: { contains: search } },
+        { code: { contains: search } },
         { human_friendly_id: { contains: search.toUpperCase() } },
       ];
     }
@@ -134,9 +156,21 @@ const createCoveragePlan = async (data, userId, ipAddress) => {
       model: 'tenant',
     });
 
+    let insuranceCompanyId;
+    if (data?.insurance_company_id) {
+      insuranceCompanyId = await resolveIdentifierForPayload({
+        value: data.insurance_company_id,
+        field: 'insurance_company_id',
+        model: 'insurance_company',
+      });
+    }
+
     const coveragePlan = await coveragePlanRepository.create({
       ...data,
       tenant_id: tenantId,
+      ...(insuranceCompanyId !== undefined
+        ? { insurance_company_id: insuranceCompanyId }
+        : {}),
     });
 
     const createdRecord = await coveragePlanRepository.findById(coveragePlan.id, COVERAGE_PLAN_INCLUDE);
@@ -174,7 +208,18 @@ const updateCoveragePlan = async (id, data, userId, ipAddress) => {
       throw new HttpError('errors.coverage_plan.not_found', 404);
     }
 
-    const coveragePlan = await coveragePlanRepository.update(before.id, data);
+    const payload = { ...data };
+    if (Object.prototype.hasOwnProperty.call(payload, 'insurance_company_id')) {
+      payload.insurance_company_id = payload.insurance_company_id
+        ? await resolveIdentifierForPayload({
+            value: payload.insurance_company_id,
+            field: 'insurance_company_id',
+            model: 'insurance_company',
+          })
+        : null;
+    }
+
+    const coveragePlan = await coveragePlanRepository.update(before.id, payload);
     const updatedRecord = await coveragePlanRepository.findById(coveragePlan.id, COVERAGE_PLAN_INCLUDE);
 
     createAuditLog({

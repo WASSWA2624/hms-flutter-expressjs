@@ -1,11 +1,12 @@
 /**
- * Multi-tier price book resolver.
+ * Multi-tier price book resolver with scheme-offer overrides.
  *
  * Resolution order (highest wins):
- * 1. item + facility + payment mode + coverage plan
- * 2. item + facility + payment mode + insurer
- * 3. item + facility + payment mode (self-pay)
- * 4. catalog / facility offering fallback
+ * 1. scheme offer (tariff + benefit rules) for coverage_plan / scheme
+ * 2. item + facility + payment mode + scheme (price book)
+ * 3. item + facility + payment mode + insurance company / insurer_key
+ * 4. item + facility + payment mode (self-pay)
+ * 5. catalog / facility offering fallback
  *
  * @module lib/billing/price-resolver
  */
@@ -87,6 +88,21 @@ const scoreEntry = (entry, ctx) => {
     return -1;
   }
 
+  if (
+    ctx.insuranceCompanyId &&
+    entry.insurance_company_id &&
+    entry.insurance_company_id === ctx.insuranceCompanyId
+  ) {
+    score += 35;
+  } else if (entry.insurance_company_id && !ctx.coveragePlanId) {
+    if (!ctx.insuranceCompanyId || entry.insurance_company_id !== ctx.insuranceCompanyId) {
+      return -1;
+    }
+  } else if (entry.insurance_company_id && ctx.coveragePlanId) {
+    // Prefer scheme-specific rows; company-only rows still allowed as weaker matches.
+    score += 5;
+  }
+
   const insurerKey = String(ctx.insurerKey || '')
     .trim()
     .toLowerCase();
@@ -95,11 +111,50 @@ const scoreEntry = (entry, ctx) => {
     .toLowerCase();
   if (insurerKey && entryInsurer && entryInsurer === insurerKey) {
     score += 30;
-  } else if (entryInsurer) {
+  } else if (entryInsurer && !ctx.coveragePlanId) {
     return -1;
   }
 
   return score;
+};
+
+const loadSchemeOffer = async ({
+  coveragePlanId,
+  catalogType,
+  catalogItemId,
+  billingEntity,
+  at,
+}) => {
+  if (!coveragePlanId || !catalogType || !catalogItemId) {
+    return null;
+  }
+  const offers = await prisma.scheme_offer.findMany({
+    where: {
+      deleted_at: null,
+      is_active: true,
+      coverage_plan_id: coveragePlanId,
+      catalog_type: catalogType,
+      catalog_item_id: catalogItemId,
+      billing_entity: billingEntity,
+    },
+    orderBy: { updated_at: 'desc' },
+  });
+  return offers.find((offer) => isEffectiveAt(offer, at)) || null;
+};
+
+const loadSchemeDefaults = async (coveragePlanId) => {
+  if (!coveragePlanId) return null;
+  return prisma.coverage_plan.findFirst({
+    where: { id: coveragePlanId, deleted_at: null },
+    select: {
+      id: true,
+      coverage_percentage: true,
+      default_copay_type: true,
+      default_copay_value: true,
+      insurance_company_id: true,
+      insurance_company: { select: { id: true, code: true, name: true } },
+    },
+  });
 };
 
 const resolveCatalogFallback = async ({
@@ -264,19 +319,132 @@ const resolveUnitPrice = async (options = {}) => {
   const coveragePlanId = options.coveragePlanId
     ? String(options.coveragePlanId).trim()
     : null;
-  const insurerKey = options.insurerKey ? String(options.insurerKey).trim() : null;
+  let insuranceCompanyId = options.insuranceCompanyId
+    ? String(options.insuranceCompanyId).trim()
+    : null;
+  let insurerKey = options.insurerKey ? String(options.insurerKey).trim() : null;
   const at = options.at instanceof Date ? options.at : new Date();
 
+  const empty = {
+    unitPrice: null,
+    currency: options.currency || null,
+    priceBookEntryId: null,
+    schemeOfferId: null,
+    paymentMode,
+    billingEntity,
+    coveragePlanId,
+    insuranceCompanyId,
+    insurerKey,
+    source: 'UNRESOLVED',
+    isExcluded: false,
+    requiresPreAuth: false,
+    coveragePercentage: null,
+    copayType: null,
+    copayValue: null,
+  };
+
   if (!catalogType || !catalogItemId || !tenantId) {
-    return {
-      unitPrice: null,
-      currency: options.currency || null,
-      priceBookEntryId: null,
-      paymentMode,
-      billingEntity,
+    return empty;
+  }
+
+  const scheme = await loadSchemeDefaults(coveragePlanId);
+  if (scheme?.insurance_company_id && !insuranceCompanyId) {
+    insuranceCompanyId = scheme.insurance_company_id;
+  }
+  if (scheme?.insurance_company?.code && !insurerKey) {
+    insurerKey = scheme.insurance_company.code;
+  }
+
+  const schemeDefaults = {
+    coveragePercentage: scheme?.coverage_percentage ?? options.coveragePercentage ?? null,
+    copayType: scheme?.default_copay_type || options.copayType || null,
+    copayValue:
+      scheme?.default_copay_value != null
+        ? toDecimalNumber(scheme.default_copay_value)
+        : options.copayValue ?? null,
+  };
+
+  // 1) Scheme offer override
+  if (!options._skipSchemeOffer && paymentMode === 'INSURANCE' && coveragePlanId) {
+    const offer = await loadSchemeOffer({
       coveragePlanId,
-      source: 'UNRESOLVED',
-    };
+      catalogType,
+      catalogItemId,
+      billingEntity,
+      at,
+    });
+    if (offer) {
+      const offerCoverage =
+        offer.coverage_percentage != null
+          ? offer.coverage_percentage
+          : schemeDefaults.coveragePercentage;
+      const offerCopayType = offer.copay_type || schemeDefaults.copayType;
+      const offerCopayValue =
+        offer.copay_value != null
+          ? toDecimalNumber(offer.copay_value)
+          : schemeDefaults.copayValue;
+
+      if (offer.is_excluded) {
+        return {
+          ...empty,
+          unitPrice: offer.unit_price != null ? toMoneyString(offer.unit_price) : null,
+          currency: offer.currency || options.currency || null,
+          schemeOfferId: offer.id,
+          insuranceCompanyId,
+          insurerKey,
+          source: 'SCHEME_OFFER',
+          isExcluded: true,
+          requiresPreAuth: Boolean(offer.requires_pre_auth),
+          coveragePercentage: 0,
+          copayType: 'NONE',
+          copayValue: null,
+          catalogType,
+          catalogItemId,
+          priceSource: billingEntity,
+        };
+      }
+
+      let unitPrice =
+        offer.unit_price != null && toDecimalNumber(offer.unit_price) > 0
+          ? toMoneyString(offer.unit_price)
+          : null;
+
+      if (!unitPrice) {
+        // Inherit from price book / catalog while keeping offer benefit rules.
+        const inherited = await resolveUnitPrice({
+          ...options,
+          coveragePlanId,
+          insuranceCompanyId,
+          insurerKey,
+          paymentMode,
+          // Avoid recursion into offers by temporarily clearing plan after first hit:
+          // call price-book path only via internal flag.
+          _skipSchemeOffer: true,
+        });
+        unitPrice = inherited.unitPrice;
+      }
+
+      return {
+        unitPrice,
+        currency: offer.currency || options.currency || null,
+        priceBookEntryId: null,
+        schemeOfferId: offer.id,
+        paymentMode,
+        billingEntity,
+        coveragePlanId,
+        insuranceCompanyId,
+        insurerKey,
+        source: 'SCHEME_OFFER',
+        priceSource: billingEntity,
+        isExcluded: false,
+        requiresPreAuth: Boolean(offer.requires_pre_auth),
+        coveragePercentage: offerCoverage,
+        copayType: offerCopayType,
+        copayValue: offerCopayValue,
+        catalogType,
+        catalogItemId,
+      };
+    }
   }
 
   const facilityClause = facilityId
@@ -302,6 +470,7 @@ const resolveUnitPrice = async (options = {}) => {
     paymentMode,
     billingEntity,
     coveragePlanId,
+    insuranceCompanyId,
     insurerKey,
   };
 
@@ -320,12 +489,19 @@ const resolveUnitPrice = async (options = {}) => {
       unitPrice: toMoneyString(best.unit_price),
       currency: best.currency || options.currency || null,
       priceBookEntryId: best.id,
+      schemeOfferId: null,
       paymentMode,
       billingEntity,
       coveragePlanId: best.coverage_plan_id || coveragePlanId,
+      insuranceCompanyId: best.insurance_company_id || insuranceCompanyId,
       insurerKey: best.insurer_key || insurerKey,
       source: 'PRICE_BOOK',
       priceSource: billingEntity,
+      isExcluded: false,
+      requiresPreAuth: false,
+      coveragePercentage: schemeDefaults.coveragePercentage,
+      copayType: schemeDefaults.copayType,
+      copayValue: schemeDefaults.copayValue,
       catalogType,
       catalogItemId,
     };
@@ -344,29 +520,32 @@ const resolveUnitPrice = async (options = {}) => {
       unitPrice: fallback.unitPrice,
       currency: fallback.currency || options.currency || null,
       priceBookEntryId: null,
+      schemeOfferId: null,
       paymentMode,
       billingEntity,
       coveragePlanId,
+      insuranceCompanyId,
       insurerKey,
       source: fallback.source,
       priceSource: fallback.priceSource || billingEntity,
+      isExcluded: false,
+      requiresPreAuth: false,
+      coveragePercentage: schemeDefaults.coveragePercentage,
+      copayType: schemeDefaults.copayType,
+      copayValue: schemeDefaults.copayValue,
       catalogType,
       catalogItemId,
     };
   }
 
   return {
-    unitPrice: null,
-    currency: options.currency || null,
-    priceBookEntryId: null,
-    paymentMode,
-    billingEntity,
-    coveragePlanId,
-    insurerKey,
-    source: 'UNRESOLVED',
-    priceSource: billingEntity,
+    ...empty,
     catalogType,
     catalogItemId,
+    priceSource: billingEntity,
+    coveragePercentage: schemeDefaults.coveragePercentage,
+    copayType: schemeDefaults.copayType,
+    copayValue: schemeDefaults.copayValue,
   };
 };
 

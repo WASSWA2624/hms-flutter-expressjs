@@ -218,8 +218,16 @@ enum HmsApiResource {
     'price-book-entries',
     HmsApiEndpointGroup.diagnosticsPharmacyBilling,
   ),
+  insuranceCompanies(
+    'insurance-companies',
+    HmsApiEndpointGroup.diagnosticsPharmacyBilling,
+  ),
   coveragePlans(
     'coverage-plans',
+    HmsApiEndpointGroup.diagnosticsPharmacyBilling,
+  ),
+  schemeOffers(
+    'scheme-offers',
     HmsApiEndpointGroup.diagnosticsPharmacyBilling,
   ),
   patientInsuranceEnrollments(

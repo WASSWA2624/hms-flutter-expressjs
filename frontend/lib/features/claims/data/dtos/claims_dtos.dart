@@ -260,12 +260,49 @@ final class CoveragePlanDto {
       id: _string(json['id']) ?? displayId,
       displayId: displayId,
       name: _string(json['name']),
-      providerName: _string(json['provider_name']),
+      code: _string(json['code']),
+      providerName:
+          _string(json['provider_name']) ??
+          _string(json['insurance_company_name']),
       coveragePercentage: _int(json['coverage_percentage']),
+      defaultCopayType: _string(json['default_copay_type']),
+      defaultCopayValue: _number(json['default_copay_value']),
+      status: _string(json['status']),
+      insuranceCompanyId:
+          _string(json['insurance_company_id']) ??
+          _string(_map(json['insurance_company'])['id']),
+      insuranceCompanyName:
+          _string(json['insurance_company_name']) ??
+          _string(_map(json['insurance_company'])['name']),
+      insuranceCompanyCode:
+          _string(json['insurance_company_code']) ??
+          _string(_map(json['insurance_company'])['code']),
       tenantDisplayId:
           _string(json['tenant_display_id']) ??
           _string(_map(json['tenant'])['human_friendly_id']) ??
           _string(json['tenant_id']),
+    );
+  }
+}
+
+final class InsuranceCompanyDto {
+  const InsuranceCompanyDto(this.json);
+
+  final ClaimsJsonMap json;
+
+  InsuranceCompanyOption toEntity() {
+    final String displayId =
+        _string(json['display_id']) ??
+        _string(json['human_friendly_id']) ??
+        _string(json['id']) ??
+        '';
+    return InsuranceCompanyOption(
+      id: _string(json['id']) ?? displayId,
+      displayId: displayId,
+      name: _string(json['name']),
+      code: _string(json['code']),
+      isActive: json['is_active'] != false,
+      schemeCount: _int(json['scheme_count']),
     );
   }
 }
@@ -337,6 +374,12 @@ final class ClaimsLookupsDto {
     final ClaimsJsonMap response = _expectMap(responseData);
     final ClaimsJsonMap data = _map(response['data']);
 
+    final List<InsuranceCompanyOption> insuranceCompanies =
+        _list(data['insurance_companies'])
+            .map(InsuranceCompanyDto.new)
+            .map((InsuranceCompanyDto dto) => dto.toEntity())
+            .where((InsuranceCompanyOption item) => item.id.isNotEmpty)
+            .toList(growable: false);
     final List<CoveragePlanOption> coveragePlans = _list(data['coverage_plans'])
         .map(CoveragePlanDto.new)
         .map((CoveragePlanDto dto) => dto.toEntity())
@@ -350,6 +393,7 @@ final class ClaimsLookupsDto {
 
     return ClaimsLookupsDto(
       referenceData: ClaimsReferenceData(
+        insuranceCompanies: insuranceCompanies,
         coveragePlans: coveragePlans,
         invoices: invoices,
       ),

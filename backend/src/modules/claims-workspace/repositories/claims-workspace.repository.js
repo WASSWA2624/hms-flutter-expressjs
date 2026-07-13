@@ -53,6 +53,17 @@ const findManyCoveragePlans = async (where = {}, skip = 0, take = 50, orderBy = 
     prisma.coverage_plan.findMany({ where: { deleted_at: null, ...where }, skip, take, orderBy, include })
   );
 
+const findManyInsuranceCompanies = async (
+  where = {},
+  skip = 0,
+  take = 50,
+  orderBy = { name: 'asc' },
+  include = {}
+) =>
+  withDbErrorHandling(() =>
+    prisma.insurance_company.findMany({ where: { deleted_at: null, ...where }, skip, take, orderBy, include })
+  );
+
 const findManyInvoices = async (where = {}, skip = 0, take = 50, orderBy = { issued_at: 'desc' }, include = {}) =>
   withDbErrorHandling(() =>
     prisma.invoice.findMany({ where: { deleted_at: null, ...where }, skip, take, orderBy, include })
@@ -65,5 +76,6 @@ module.exports = {
   findManyPreAuthorizations,
   countCoveragePlans,
   findManyCoveragePlans,
+  findManyInsuranceCompanies,
   findManyInvoices,
 };

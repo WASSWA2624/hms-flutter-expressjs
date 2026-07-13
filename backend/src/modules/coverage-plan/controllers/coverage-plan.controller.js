@@ -22,8 +22,11 @@ const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT } = require('@config/constants');
 const listCoveragePlans = asyncHandler(async (req, res) => {
   const {
     tenant_id,
+    insurance_company_id,
     name,
+    code,
     provider_name,
+    status,
     search,
     page = DEFAULT_PAGE,
     limit = DEFAULT_PAGE_LIMIT,
@@ -33,8 +36,11 @@ const listCoveragePlans = asyncHandler(async (req, res) => {
 
   const filters = {
     tenant_id,
+    insurance_company_id,
     name,
+    code,
     provider_name,
+    status,
     search
   };
 

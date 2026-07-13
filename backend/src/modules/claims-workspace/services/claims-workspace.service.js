@@ -190,9 +190,29 @@ const mapCoverageOption = (plan = {}) => ({
   id: plan.id,
   display_id: displayId(plan),
   name: plan.name || null,
-  provider_name: plan.provider_name || null,
+  code: plan.code || null,
+  provider_name: plan.provider_name || plan.insurance_company?.name || null,
   coverage_percentage: plan.coverage_percentage ?? null,
+  default_copay_type: plan.default_copay_type || 'NONE',
+  default_copay_value: plan.default_copay_value ?? null,
+  status: plan.status || 'ACTIVE',
+  insurance_company_id: plan.insurance_company_id || plan.insurance_company?.id || null,
+  insurance_company_name: plan.insurance_company?.name || plan.provider_name || null,
+  insurance_company_code: plan.insurance_company?.code || null,
+  insurance_company_display_id: resolvePublicIdentifier(
+    plan.insurance_company?.human_friendly_id,
+    plan.insurance_company_id
+  ),
   tenant_display_id: resolvePublicIdentifier(plan.tenant_id),
+});
+
+const mapInsuranceCompanyOption = (company = {}) => ({
+  id: company.id,
+  display_id: displayId(company),
+  name: company.name || null,
+  code: company.code || null,
+  is_active: company.is_active !== false,
+  scheme_count: company._count?.schemes ?? null,
 });
 
 const matchesSearch = (item, token) => {
@@ -343,8 +363,26 @@ const getWorkItems = async (filters = {}, page = 1, limit = 20, user = {}) => {
  */
 const getLookups = async (filters = {}, user = {}) => {
   const scope = await resolveScope(filters, user);
-  const [coveragePlans, invoices] = await Promise.all([
-    claimsWorkspaceRepository.findManyCoveragePlans({ tenant_id: scope.tenant_id }, 0, 50, { name: 'asc' }),
+  const companyInclude = {
+    insurance_company: {
+      select: { id: true, human_friendly_id: true, name: true, code: true },
+    },
+  };
+  const [coveragePlans, companies, invoices] = await Promise.all([
+    claimsWorkspaceRepository.findManyCoveragePlans(
+      { tenant_id: scope.tenant_id, status: 'ACTIVE' },
+      0,
+      100,
+      { name: 'asc' },
+      companyInclude
+    ),
+    claimsWorkspaceRepository.findManyInsuranceCompanies(
+      { tenant_id: scope.tenant_id, is_active: true },
+      0,
+      50,
+      { name: 'asc' },
+      { _count: { select: { schemes: true } } }
+    ),
     claimsWorkspaceRepository.findManyInvoices(
       {
         tenant_id: scope.tenant_id,
@@ -359,7 +397,9 @@ const getLookups = async (filters = {}, user = {}) => {
   ]);
 
   return {
+    insurance_companies: companies.map(mapInsuranceCompanyOption),
     coverage_plans: coveragePlans.map(mapCoverageOption),
+    schemes: coveragePlans.map(mapCoverageOption),
     invoices: invoices.map(mapInvoiceOption),
   };
 };
