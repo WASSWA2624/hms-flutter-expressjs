@@ -13,6 +13,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
+import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
@@ -915,10 +916,17 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       return;
     }
     final ClinicalRepository repository = ref.read(clinicalRepositoryProvider);
+    final ClinicalRequestPayerContext? payerContext = await ref
+        .read(insuranceCatalogRepositoryProvider)
+        .resolvePayerContextForPatient(flow.patientDisplayId ?? flow.patientId);
+    if (!mounted || !context.mounted) {
+      return;
+    }
     await _openNested(
       context,
       ClinicalLabOrderActionDialog(
         referenceData: referenceData,
+        payerContext: payerContext,
         patientContext: ClinicalRequestPatientContext(
           patientName: flow.patientDisplayName ?? flow.displayTitle,
           patientId: flow.patientDisplayId,
@@ -996,10 +1004,17 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       return;
     }
     final ClinicalRepository repository = ref.read(clinicalRepositoryProvider);
+    final ClinicalRequestPayerContext? payerContext = await ref
+        .read(insuranceCatalogRepositoryProvider)
+        .resolvePayerContextForPatient(flow.patientDisplayId ?? flow.patientId);
+    if (!mounted || !context.mounted) {
+      return;
+    }
     await _openNested(
       context,
       ClinicalRadiologyOrderActionDialog(
         referenceData: referenceData,
+        payerContext: payerContext,
         patientContext: ClinicalRequestPatientContext(
           patientName: flow.patientDisplayName ?? flow.displayTitle,
           patientId: flow.patientDisplayId,
@@ -1062,10 +1077,17 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     if (!mounted || !context.mounted || referenceData == null) {
       return;
     }
+    final ClinicalRequestPayerContext? payerContext = await ref
+        .read(insuranceCatalogRepositoryProvider)
+        .resolvePayerContextForPatient(flow.patientDisplayId ?? flow.patientId);
+    if (!mounted || !context.mounted) {
+      return;
+    }
     await _openNested(
       context,
       ClinicalPrescriptionActionDialog(
         referenceData: referenceData,
+        payerContext: payerContext,
         onSubmit:
             ({
               required List<Map<String, Object?>> items,

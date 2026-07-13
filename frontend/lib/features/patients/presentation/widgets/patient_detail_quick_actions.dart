@@ -23,6 +23,7 @@ enum PatientQuickAction {
   radiologyOrder,
   theaterSchedule,
   physiotherapy,
+  enrollInsurance,
 }
 
 typedef PatientQuickActionHandler =
@@ -162,6 +163,19 @@ class PatientDetailQuickActions extends ConsumerWidget {
             activeModules: <String>['physiotherapy'],
           ),
         ),
+      AppPermissionActionItem(
+        label: l10n.patientsEnrollInsuranceAction,
+        icon: Icons.badge_outlined,
+        tooltip: l10n.patientsEnrollInsuranceAction,
+        onPressed: () => onAction(PatientQuickAction.enrollInsurance),
+        requirement: const AccessRequirement(
+          anyPermissions: <AppPermission>[
+            AppPermissions.billingWrite,
+            AppPermissions.clinicalWrite,
+          ],
+          activeModules: <String>['insurance-claims'],
+        ),
+      ),
       AppPermissionActionItem(
         label: l10n.patientsQuickReportAction,
         icon: Icons.summarize_outlined,

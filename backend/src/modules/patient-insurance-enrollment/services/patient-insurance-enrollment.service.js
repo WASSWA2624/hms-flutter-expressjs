@@ -36,6 +36,17 @@ const ENROLLMENT_INCLUDE = {
       name: true,
       provider_name: true,
       coverage_percentage: true,
+      default_copay_type: true,
+      default_copay_value: true,
+      insurance_company_id: true,
+      insurance_company: {
+        select: {
+          id: true,
+          human_friendly_id: true,
+          name: true,
+          code: true,
+        },
+      },
     },
   },
 };

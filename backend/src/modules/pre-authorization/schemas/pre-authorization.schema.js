@@ -28,9 +28,10 @@ const createPreAuthorizationSchema = z.object({
   approved_amount: z.coerce.number().nonnegative().optional().nullable(),
   consumed_amount: z.coerce.number().nonnegative().optional().nullable(),
   notes: z.string().trim().max(10000).optional().nullable(),
-  status: z.enum(['PENDING', 'APPROVED', 'DENIED', 'EXPIRED']).optional(),
+  status: z.enum(['PENDING', 'APPROVED', 'PARTIAL', 'DENIED', 'EXPIRED', 'CANCELLED']).optional(),
   requested_at: z.string().datetime().optional(),
-  approved_at: z.string().datetime().optional().nullable()
+  approved_at: z.string().datetime().optional().nullable(),
+  insurer_reference: z.string().trim().max(120).optional().nullable()
 });
 
 /**
@@ -47,9 +48,10 @@ const updatePreAuthorizationSchema = z.object({
   approved_amount: z.coerce.number().nonnegative().optional().nullable(),
   consumed_amount: z.coerce.number().nonnegative().optional().nullable(),
   notes: z.string().trim().max(10000).optional().nullable(),
-  status: z.enum(['PENDING', 'APPROVED', 'DENIED', 'EXPIRED']).optional(),
+  status: z.enum(['PENDING', 'APPROVED', 'PARTIAL', 'DENIED', 'EXPIRED', 'CANCELLED']).optional(),
   requested_at: z.string().datetime().optional(),
-  approved_at: z.string().datetime().optional().nullable()
+  approved_at: z.string().datetime().optional().nullable(),
+  insurer_reference: z.string().trim().max(120).optional().nullable()
 });
 
 // ==================== URL Params ====================
@@ -74,7 +76,7 @@ const listPreAuthorizationsQuerySchema = listQuerySchema.extend({
   patient_id: uuidOrFriendlyIdentifierSchema.optional(),
   encounter_id: uuidOrFriendlyIdentifierSchema.optional(),
   admission_id: uuidOrFriendlyIdentifierSchema.optional(),
-  status: z.enum(['PENDING', 'APPROVED', 'DENIED', 'EXPIRED']).optional(),
+  status: z.enum(['PENDING', 'APPROVED', 'PARTIAL', 'DENIED', 'EXPIRED', 'CANCELLED']).optional(),
   requested_at_from: z.string().datetime().optional(),
   requested_at_to: z.string().datetime().optional(),
   approved_at_from: z.string().datetime().optional(),

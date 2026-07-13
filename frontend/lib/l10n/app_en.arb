@@ -13555,6 +13555,174 @@
   "@claimsCoverageSchemeFieldLabel": {
     "description": "Label for selecting a scheme under an insurance company."
   },
+  "claimsAddInsuranceCompanyTitle": "Add insurance company",
+  "@claimsAddInsuranceCompanyTitle": {
+    "description": "Dialog title for creating an insurance company."
+  },
+  "claimsAddSchemeTitle": "Add insurance scheme",
+  "@claimsAddSchemeTitle": {
+    "description": "Dialog title for creating a scheme under a company."
+  },
+  "claimsAddSchemeOfferTitle": "Add scheme offer",
+  "@claimsAddSchemeOfferTitle": {
+    "description": "Dialog title for creating a scheme offer/tariff."
+  },
+  "claimsAddEnrollmentTitle": "Enroll patient on scheme",
+  "@claimsAddEnrollmentTitle": {
+    "description": "Dialog title for patient insurance enrollment."
+  },
+  "claimsConfigSavedMessage": "Insurance configuration saved.",
+  "@claimsConfigSavedMessage": {
+    "description": "Snack bar after insurance company/scheme/offer/enrollment save."
+  },
+  "claimsInsuranceCompanyNameLabel": "Company name",
+  "@claimsInsuranceCompanyNameLabel": {
+    "description": "Insurance company name field label."
+  },
+  "claimsInsuranceCompanyNameRequired": "Enter the insurance company name.",
+  "@claimsInsuranceCompanyNameRequired": {
+    "description": "Validation for insurance company name."
+  },
+  "claimsInsuranceCompanyCodeLabel": "Company code",
+  "@claimsInsuranceCompanyCodeLabel": {
+    "description": "Insurance company code field label."
+  },
+  "claimsInsuranceCompanyCodeRequired": "Enter the insurance company code.",
+  "@claimsInsuranceCompanyCodeRequired": {
+    "description": "Validation for insurance company code."
+  },
+  "claimsInsuranceCompanyRequiredMessage": "Select an insurance company.",
+  "@claimsInsuranceCompanyRequiredMessage": {
+    "description": "Validation when company is required before scheme."
+  },
+  "claimsSchemeNameLabel": "Scheme name",
+  "@claimsSchemeNameLabel": {
+    "description": "Insurance scheme name field label."
+  },
+  "claimsSchemeNameRequired": "Enter the scheme name.",
+  "@claimsSchemeNameRequired": {
+    "description": "Validation for scheme name."
+  },
+  "claimsSchemeCodeLabel": "Scheme code",
+  "@claimsSchemeCodeLabel": {
+    "description": "Insurance scheme code field label."
+  },
+  "claimsSchemeCoveragePercentLabel": "Coverage percent",
+  "@claimsSchemeCoveragePercentLabel": {
+    "description": "Default scheme coverage percentage field."
+  },
+  "claimsSaveCompanyAction": "Save company",
+  "@claimsSaveCompanyAction": {
+    "description": "Submit action for insurance company create."
+  },
+  "claimsSaveSchemeAction": "Save scheme",
+  "@claimsSaveSchemeAction": {
+    "description": "Submit action for scheme create."
+  },
+  "claimsSaveOfferAction": "Save offer",
+  "@claimsSaveOfferAction": {
+    "description": "Submit action for scheme offer create."
+  },
+  "claimsSaveEnrollmentAction": "Save enrollment",
+  "@claimsSaveEnrollmentAction": {
+    "description": "Submit action for patient enrollment."
+  },
+  "claimsOfferCatalogTypeLabel": "Catalog type",
+  "@claimsOfferCatalogTypeLabel": {
+    "description": "Scheme offer catalog type field."
+  },
+  "claimsOfferCatalogItemLabel": "Catalog item ID",
+  "@claimsOfferCatalogItemLabel": {
+    "description": "Scheme offer catalog item identifier field."
+  },
+  "claimsOfferCatalogItemRequired": "Enter the catalog item ID.",
+  "@claimsOfferCatalogItemRequired": {
+    "description": "Validation for scheme offer catalog item."
+  },
+  "claimsOfferTariffLabel": "Negotiated tariff",
+  "@claimsOfferTariffLabel": {
+    "description": "Scheme offer unit price/tariff field."
+  },
+  "claimsOfferRequiresAuthLabel": "Requires pre-authorization",
+  "@claimsOfferRequiresAuthLabel": {
+    "description": "Scheme offer requires pre-auth checkbox."
+  },
+  "claimsOfferExcludedLabel": "Excluded from coverage",
+  "@claimsOfferExcludedLabel": {
+    "description": "Scheme offer exclusion checkbox."
+  },
+  "claimsEnrollmentPatientLabel": "Patient ID",
+  "@claimsEnrollmentPatientLabel": {
+    "description": "Patient identifier for enrollment."
+  },
+  "claimsEnrollmentPatientRequired": "Enter the patient ID.",
+  "@claimsEnrollmentPatientRequired": {
+    "description": "Validation for enrollment patient ID."
+  },
+  "claimsEnrollmentMemberIdLabel": "Member ID",
+  "@claimsEnrollmentMemberIdLabel": {
+    "description": "Insurance member ID for enrollment."
+  },
+  "claimsEnrollmentMemberIdRequired": "Enter the member ID.",
+  "@claimsEnrollmentMemberIdRequired": {
+    "description": "Validation for enrollment member ID."
+  },
+  "claimsAddCompanyAction": "Add company",
+  "@claimsAddCompanyAction": {
+    "description": "Claims workspace secondary action to add insurance company."
+  },
+  "claimsAddSchemeAction": "Add scheme",
+  "@claimsAddSchemeAction": {
+    "description": "Claims workspace secondary action to add scheme."
+  },
+  "claimsAddOfferAction": "Add offer",
+  "@claimsAddOfferAction": {
+    "description": "Claims workspace secondary action to add scheme offer."
+  },
+  "claimsAddEnrollmentAction": "Enroll patient",
+  "@claimsAddEnrollmentAction": {
+    "description": "Claims workspace secondary action to enroll a patient."
+  },
+  "claimsEligibilityPendingSummaryLabel": "Eligibility pending",
+  "@claimsEligibilityPendingSummaryLabel": {
+    "description": "Summary badge for enrollments awaiting eligibility."
+  },
+  "claimsPartialSummaryLabel": "Partial claims",
+  "@claimsPartialSummaryLabel": {
+    "description": "Summary badge for partially approved claims."
+  },
+  "claimsToSubmitSummaryLabel": "Claims to submit",
+  "@claimsToSubmitSummaryLabel": {
+    "description": "Summary badge for claims ready to submit."
+  },
+  "claimsReadyToSettleSummaryLabel": "Ready to settle",
+  "@claimsReadyToSettleSummaryLabel": {
+    "description": "Summary badge for claims ready to settle."
+  },
+  "claimsClaimAmountFieldLabel": "Claim amount",
+  "@claimsClaimAmountFieldLabel": {
+    "description": "Insurer share claim amount on claims detail."
+  },
+  "claimsStatusPartial": "Partial",
+  "@claimsStatusPartial": {
+    "description": "Status label for partial approval."
+  },
+  "billingInvoicePatientShareColumn": "Patient share",
+  "@billingInvoicePatientShareColumn": {
+    "description": "Invoice line patient co-pay/share column."
+  },
+  "billingInvoiceInsurerShareColumn": "Insurer share",
+  "@billingInvoiceInsurerShareColumn": {
+    "description": "Invoice line insurer share column."
+  },
+  "billingInvoiceSchemeColumn": "Scheme",
+  "@billingInvoiceSchemeColumn": {
+    "description": "Invoice line insurance scheme column."
+  },
+  "patientsEnrollInsuranceAction": "Enroll insurance",
+  "@patientsEnrollInsuranceAction": {
+    "description": "Patient registry action to enroll on an insurance scheme."
+  },
   "opdCoverageVerificationTitle": "Coverage verification",
   "@opdCoverageVerificationTitle": {
     "description": "OPD insurance coverage verification section title."

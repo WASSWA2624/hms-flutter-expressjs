@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 import 'package:hosspi_hms/features/claims/presentation/controllers/claims_workspace_controller.dart';
+import 'package:hosspi_hms/features/claims/presentation/widgets/claims_insurance_config_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -203,6 +204,63 @@ class _ClaimsWorkspaceContentState
                 );
               },
             ),
+          if (state.eligibilityPendingCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.claimsEligibilityPendingSummaryLabel,
+              count: state.eligibilityPendingCount,
+              icon: Icons.badge_outlined,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () {
+                unawaited(
+                  _applySummaryFilter(controller, ClaimsQueueFilter.all),
+                );
+              },
+            ),
+          if (state.partialClaimsCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.claimsPartialSummaryLabel,
+              count: state.partialClaimsCount,
+              icon: Icons.pie_chart_outline,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () {
+                unawaited(
+                  _applySummaryFilter(
+                    controller,
+                    ClaimsQueueFilter.claimPartial,
+                  ),
+                );
+              },
+            ),
+          if (state.claimsToSubmitCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.claimsToSubmitSummaryLabel,
+              count: state.claimsToSubmitCount,
+              icon: Icons.send_outlined,
+              tone: AppWorkspaceStatusTone.info,
+              onSelected: () {
+                unawaited(
+                  _applySummaryFilter(
+                    controller,
+                    ClaimsQueueFilter.claimSubmitted,
+                  ),
+                );
+              },
+            ),
+          if (state.readyToSettleCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.claimsReadyToSettleSummaryLabel,
+              count: state.readyToSettleCount,
+              icon: Icons.account_balance_wallet_outlined,
+              tone: AppWorkspaceStatusTone.success,
+              onSelected: () {
+                unawaited(
+                  _applySummaryFilter(
+                    controller,
+                    ClaimsQueueFilter.claimApproved,
+                  ),
+                );
+              },
+            ),
           if (authorizationDeniedCount > 0)
             AppWorkspaceSummaryNotification(
               label: l10n.claimsFilterAuthorizationDenied,
@@ -291,6 +349,58 @@ class _ClaimsWorkspaceContentState
             isLoading: state.isSaving,
             onPressed: () {
               unawaited(_openPrepareClaimDialog(context, controller, state));
+            },
+          ),
+          AppButton.secondary(
+            label: l10n.claimsAddCompanyAction,
+            leadingIcon: Icons.business_outlined,
+            onPressed: () {
+              unawaited(
+                openClaimsInsuranceCompanyDialog(
+                  context: context,
+                  ref: ref,
+                  referenceData: state.referenceData,
+                ),
+              );
+            },
+          ),
+          AppButton.secondary(
+            label: l10n.claimsAddSchemeAction,
+            leadingIcon: Icons.account_balance_outlined,
+            onPressed: () {
+              unawaited(
+                openClaimsSchemeDialog(
+                  context: context,
+                  ref: ref,
+                  referenceData: state.referenceData,
+                ),
+              );
+            },
+          ),
+          AppButton.secondary(
+            label: l10n.claimsAddOfferAction,
+            leadingIcon: Icons.local_offer_outlined,
+            onPressed: () {
+              unawaited(
+                openClaimsSchemeOfferDialog(
+                  context: context,
+                  ref: ref,
+                  referenceData: state.referenceData,
+                ),
+              );
+            },
+          ),
+          AppButton.secondary(
+            label: l10n.claimsAddEnrollmentAction,
+            leadingIcon: Icons.badge_outlined,
+            onPressed: () {
+              unawaited(
+                openClaimsEnrollmentDialog(
+                  context: context,
+                  ref: ref,
+                  referenceData: state.referenceData,
+                ),
+              );
             },
           ),
         ],
@@ -650,8 +760,9 @@ class _ClaimsDetailContent extends ConsumerWidget {
               icon: Icons.verified_user_outlined,
             ),
             AppWorkspacePatientContextField(
-              label: l10n.claimsPayerFieldLabel,
+              label: l10n.claimsInsuranceCompanyFieldLabel,
               value:
+                  detail.coveragePlan?.insuranceCompanyName ??
                   detail.coveragePlan?.providerName ??
                   l10n.claimsUnknownPayerLabel,
               icon: Icons.business_outlined,
@@ -663,6 +774,11 @@ class _ClaimsDetailContent extends ConsumerWidget {
               copyable: true,
               copyTooltip: l10n.copyIdentifierAction,
               copiedMessage: l10n.identifierCopiedMessage,
+            ),
+            AppWorkspacePatientContextField(
+              label: l10n.claimsClaimAmountFieldLabel,
+              value: _claimAmountLabel(context, detail),
+              icon: Icons.request_quote_outlined,
             ),
             AppWorkspacePatientContextField(
               label: l10n.claimsAmountFieldLabel,
@@ -1693,6 +1809,10 @@ List<AppSelectOption<String>> _authorizationStatusOptions(
       value: 'APPROVED',
       label: l10n.claimsStatusApproved,
     ),
+    AppSelectOption<String>(
+      value: 'PARTIAL',
+      label: l10n.claimsStatusPartial,
+    ),
     AppSelectOption<String>(value: 'DENIED', label: l10n.claimsStatusDenied),
     AppSelectOption<String>(value: 'EXPIRED', label: l10n.claimsStatusExpired),
   ];
@@ -1703,6 +1823,10 @@ List<AppSelectOption<String>> _claimResponseOptions(AppLocalizations l10n) {
     AppSelectOption<String>(
       value: 'APPROVED',
       label: l10n.claimsStatusApproved,
+    ),
+    AppSelectOption<String>(
+      value: 'PARTIAL',
+      label: l10n.claimsStatusPartial,
     ),
     AppSelectOption<String>(
       value: 'REJECTED',
@@ -1757,6 +1881,7 @@ String _statusLabel(BuildContext context, ClaimsQueueItem item) {
     'DENIED' => l10n.claimsStatusDenied,
     'EXPIRED' => l10n.claimsStatusExpired,
     'SUBMITTED' => l10n.claimsStatusSubmitted,
+    'PARTIAL' => l10n.claimsStatusPartial,
     'REJECTED' => l10n.claimsStatusRejected,
     'PAID' => l10n.claimsStatusPaid,
     'CANCELLED' => l10n.claimsStatusCancelled,
@@ -1768,6 +1893,7 @@ AppWorkspaceStatusTone _statusTone(ClaimsQueueItem item) {
   return switch (item.status.toUpperCase()) {
     'APPROVED' || 'PAID' => AppWorkspaceStatusTone.success,
     'PENDING' || 'SUBMITTED' => AppWorkspaceStatusTone.info,
+    'PARTIAL' => AppWorkspaceStatusTone.warning,
     'DENIED' || 'REJECTED' || 'EXPIRED' => AppWorkspaceStatusTone.error,
     'CANCELLED' => AppWorkspaceStatusTone.neutral,
     _ => AppWorkspaceStatusTone.neutral,
@@ -1778,6 +1904,7 @@ IconData _statusIcon(ClaimsQueueItem item) {
   return switch (item.status.toUpperCase()) {
     'APPROVED' || 'PAID' => Icons.check_circle_outline,
     'PENDING' || 'SUBMITTED' => Icons.schedule_outlined,
+    'PARTIAL' => Icons.pie_chart_outline,
     'DENIED' || 'REJECTED' => Icons.report_gmailerrorred_outlined,
     'EXPIRED' || 'CANCELLED' => Icons.block_outlined,
     _ => Icons.info_outline,
@@ -1838,6 +1965,18 @@ String _amountLabel(BuildContext context, ClaimInvoiceOption? invoice) {
   );
 }
 
+String _claimAmountLabel(BuildContext context, ClaimsQueueDetail detail) {
+  final num? amount = detail.claim?.claimAmount;
+  if (amount == null) {
+    return context.l10n.profileUnknownValue;
+  }
+  return AppFormatters.currency(
+    amount,
+    Localizations.localeOf(context),
+    currencyCode: detail.invoice?.currency,
+  );
+}
+
 String _invoiceStatusLabel(BuildContext context, ClaimInvoiceOption? invoice) {
   final String? status = invoice?.billingStatus ?? invoice?.status;
   if (status == null || status.trim().isEmpty) {
@@ -1869,6 +2008,7 @@ String _claimBillingImpact(BuildContext context, ClaimsQueueDetail detail) {
   }
   return switch (status) {
     'APPROVED' => l10n.claimsBillingAuthorizedBody,
+    'PARTIAL' => l10n.claimsBillingNeutralBody,
     'PAID' => l10n.claimsBillingPaidBody,
     'REJECTED' => l10n.claimsBillingRejectedBody,
     'SUBMITTED' => l10n.claimsBillingPendingBody,
@@ -1878,7 +2018,7 @@ String _claimBillingImpact(BuildContext context, ClaimsQueueDetail detail) {
 
 bool _hasPayerResponse(ClaimsQueueDetail detail) {
   return switch (detail.item.status.toUpperCase()) {
-    'APPROVED' || 'DENIED' || 'REJECTED' || 'PAID' => true,
+    'APPROVED' || 'PARTIAL' || 'DENIED' || 'REJECTED' || 'PAID' => true,
     _ => false,
   };
 }

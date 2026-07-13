@@ -18,10 +18,12 @@ class ClinicalPrescriptionActionDialog extends StatefulWidget {
   const ClinicalPrescriptionActionDialog({
     required this.referenceData,
     required this.onSubmit,
+    this.payerContext,
     super.key,
   });
 
   final ClinicalActionReferenceData referenceData;
+  final ClinicalRequestPayerContext? payerContext;
   final Future<AppFailure?> Function({
     required List<Map<String, Object?>> items,
     ClinicalRequestBillingSubmit? billing,
@@ -332,6 +334,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
           context: context,
           catalogFallbackItems: fallback,
           billingEntity: 'FACILITY',
+          payerContext: widget.payerContext,
         );
     if (!mounted) {
       return;
@@ -342,6 +345,7 @@ class _PrescriptionDialogState extends State<ClinicalPrescriptionActionDialog> {
           lineItems: resolved,
           initialBilling: _billingSubmit,
           billingEntity: 'FACILITY',
+          payerContext: widget.payerContext,
           enabled: !_isSaving,
         );
     if (!mounted || billing == null) {

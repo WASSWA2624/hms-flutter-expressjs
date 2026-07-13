@@ -5,12 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
 import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dart';
 import 'package:hosspi_hms/features/theater/presentation/controllers/theater_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_panel.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_resolve.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_procedure_catalog_dialog.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart';
@@ -137,6 +139,9 @@ class TheaterScheduleCaseFormState
   AppFailure? _patientFailure;
   AppFailure? _encounterFailure;
   ClinicalRequestBillingSubmit? _billing;
+  ClinicalRequestPayerContext? _payerContext;
+  List<ClinicalRequestBillingLineItem> _billingLineItems =
+      const <ClinicalRequestBillingLineItem>[];
 
   @override
   void initState() {
@@ -474,12 +479,15 @@ class TheaterScheduleCaseFormState
                   ],
                 ),
               ClinicalRequestBillingPanel(
-                lineItems: clinicalRequestBillingLineItems(
-                  options: _selectedProcedures,
-                  catalogType: 'SERVICE',
-                  billingEntity: 'FACILITY',
-                ),
+                lineItems: _billingLineItems.isEmpty
+                    ? clinicalRequestBillingLineItems(
+                        options: _selectedProcedures,
+                        catalogType: 'SERVICE',
+                        billingEntity: 'FACILITY',
+                      )
+                    : _billingLineItems,
                 billingEntity: 'FACILITY',
+                payerContext: _payerContext,
                 onChanged: (ClinicalRequestBillingSubmit value) {
                   _billing = value;
                 },
@@ -779,6 +787,7 @@ class TheaterScheduleCaseFormState
       return;
     }
     unawaited(_loadPatientContext(normalizedPatientId));
+    unawaited(_refreshBillingLines());
   }
 
   void _selectEncounter(String? encounterId) {
@@ -887,6 +896,7 @@ class TheaterScheduleCaseFormState
           ),
       onAdd: (ClinicalActionCatalogOption procedure) {
         setState(() => _selectedProcedures.add(procedure));
+        unawaited(_refreshBillingLines());
       },
     );
   }
@@ -896,6 +906,46 @@ class TheaterScheduleCaseFormState
       _selectedProcedures.removeWhere(
         (ClinicalActionCatalogOption item) => item.apiId == procedure.apiId,
       );
+    });
+    unawaited(_refreshBillingLines());
+  }
+
+  Future<void> _refreshBillingLines() async {
+    if (_selectedProcedures.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _billingLineItems = const <ClinicalRequestBillingLineItem>[];
+        _billing = null;
+      });
+      return;
+    }
+    final ClinicalRequestPayerContext? payerContext = await ref
+        .read(insuranceCatalogRepositoryProvider)
+        .resolvePayerContextForPatient(_selectedPatientId);
+    final List<ClinicalRequestBillingLineItem> fallback =
+        clinicalRequestBillingLineItems(
+          options: _selectedProcedures,
+          catalogType: 'SERVICE',
+          billingEntity: 'FACILITY',
+        );
+    if (!mounted) {
+      return;
+    }
+    final List<ClinicalRequestBillingLineItem> resolved =
+        await resolveClinicalRequestBillingLineItems(
+          context: context,
+          catalogFallbackItems: fallback,
+          payerContext: payerContext,
+          billingEntity: 'FACILITY',
+        );
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _payerContext = payerContext;
+      _billingLineItems = resolved;
     });
   }
 

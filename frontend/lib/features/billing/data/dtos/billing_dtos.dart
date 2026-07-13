@@ -302,6 +302,18 @@ final class BillingInvoiceItemDto {
       encounterDisplayId:
           _string(metadata['encounter_display_id']) ??
           _string(json['encounter_display_id']),
+      patientShare:
+          _num(json['patient_share']) ?? _num(metadata['patient_share']),
+      insurerShare:
+          _num(json['insurer_share']) ?? _num(metadata['insurer_share']),
+      coveragePlanName:
+          _string(json['coverage_plan_name']) ??
+          _string(metadata['coverage_plan_name']) ??
+          _string(_map(json['coverage_plan'])['name']),
+      insuranceCompanyName:
+          _string(json['insurance_company_name']) ??
+          _string(metadata['insurance_company_name']) ??
+          _string(_map(json['insurance_company'])['name']),
     );
   }
 }

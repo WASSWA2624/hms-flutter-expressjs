@@ -213,6 +213,7 @@ final class InsuranceClaimRecord {
     required this.invoiceDisplayId,
     required this.status,
     this.patientDisplayId,
+    this.claimAmount,
     this.settlementAmount,
     this.payerReference,
     this.notes,
@@ -229,6 +230,7 @@ final class InsuranceClaimRecord {
   final String invoiceDisplayId;
   final String status;
   final String? patientDisplayId;
+  final num? claimAmount;
   final num? settlementAmount;
   final String? payerReference;
   final String? notes;
@@ -420,6 +422,26 @@ final class ClaimsWorkspaceState {
           kind: ClaimsQueueKind.claim,
           statuses: const <String>{'APPROVED'},
         );
+  }
+
+  int get partialClaimsCount {
+    return summary?.partialClaimsCount ??
+        _count(
+          kind: ClaimsQueueKind.claim,
+          statuses: const <String>{'PARTIAL'},
+        );
+  }
+
+  int get eligibilityPendingCount {
+    return summary?.eligibilityPendingCount ?? 0;
+  }
+
+  int get claimsToSubmitCount {
+    return summary?.claimsToSubmitCount ?? 0;
+  }
+
+  int get readyToSettleCount {
+    return summary?.readyToSettleCount ?? 0;
   }
 
   int get rejectedResubmissionCount {

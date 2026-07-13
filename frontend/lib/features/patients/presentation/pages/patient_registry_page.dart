@@ -17,6 +17,9 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/claims/data/repositories/claims_repository_impl.dart';
+import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
+import 'package:hosspi_hms/features/claims/presentation/widgets/claims_insurance_config_dialogs.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
@@ -1388,6 +1391,29 @@ Future<void> _openPatientQuickAction(
       await refreshIfChanged(
         await openPatientPhysiotherapyRequestDialog(context, ref, detail),
       );
+    case PatientQuickAction.enrollInsurance:
+      final Result<ClaimsReferenceData> lookups = await ref
+          .read(claimsRepositoryProvider)
+          .loadReferenceData();
+      if (!context.mounted) {
+        return;
+      }
+      final ClaimsReferenceData? referenceData = lookups.when(
+        success: (ClaimsReferenceData value) => value,
+        failure: (_) => null,
+      );
+      if (referenceData == null) {
+        return;
+      }
+      await openClaimsEnrollmentDialog(
+        context: context,
+        ref: ref,
+        referenceData: referenceData,
+        patientId: patient.publicId ?? patient.id,
+      );
+      if (context.mounted) {
+        await _refreshPatientAfterQuickAction(context, ref, patient.id);
+      }
     case PatientQuickAction.opdCheckIn:
       await openPatientOpdEncounterFlow(
         context,

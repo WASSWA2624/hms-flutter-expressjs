@@ -583,6 +583,46 @@ class _InvoiceLineItemsSection extends StatelessWidget {
             },
           ),
           AppListTableColumn<BillingInvoiceItem>(
+            label: l10n.billingInvoiceSchemeColumn,
+            cellBuilder: (BuildContext context, BillingInvoiceItem lineItem) {
+              return Text(
+                lineItem.coveragePlanName ??
+                    lineItem.insuranceCompanyName ??
+                    l10n.billingNotRecorded,
+              );
+            },
+          ),
+          AppListTableColumn<BillingInvoiceItem>(
+            label: l10n.billingInvoicePatientShareColumn,
+            numeric: true,
+            cellBuilder: (BuildContext context, BillingInvoiceItem lineItem) {
+              return Text(
+                lineItem.patientShare == null
+                    ? l10n.billingNotRecorded
+                    : billingMoney(
+                        context,
+                        lineItem.patientShare!,
+                        item.currency,
+                      ),
+              );
+            },
+          ),
+          AppListTableColumn<BillingInvoiceItem>(
+            label: l10n.billingInvoiceInsurerShareColumn,
+            numeric: true,
+            cellBuilder: (BuildContext context, BillingInvoiceItem lineItem) {
+              return Text(
+                lineItem.insurerShare == null
+                    ? l10n.billingNotRecorded
+                    : billingMoney(
+                        context,
+                        lineItem.insurerShare!,
+                        item.currency,
+                      ),
+              );
+            },
+          ),
+          AppListTableColumn<BillingInvoiceItem>(
             label: l10n.billingLineItemAmountColumn,
             numeric: true,
             cellBuilder: (BuildContext context, BillingInvoiceItem lineItem) {
@@ -599,6 +639,11 @@ class _InvoiceLineItemsSection extends StatelessWidget {
               l10n.billingQuantityLabel(lineItem.quantity),
               lineItem.sourceModule,
               lineItem.encounterDisplayId,
+              lineItem.coveragePlanName,
+              if (lineItem.patientShare != null)
+                '${l10n.billingInvoicePatientShareColumn}: ${billingMoney(context, lineItem.patientShare!, item.currency)}',
+              if (lineItem.insurerShare != null)
+                '${l10n.billingInvoiceInsurerShareColumn}: ${billingMoney(context, lineItem.insurerShare!, item.currency)}',
             ]),
             trailing: Text(
               billingMoney(context, lineItem.totalPrice, item.currency),

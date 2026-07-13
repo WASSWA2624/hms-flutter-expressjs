@@ -205,6 +205,89 @@ const createPreAuthorization = async (data, userId, ipAddress) => {
       model: 'admission',
     });
 
+    // When an insurer integration is configured, request authorization via adapter.
+    // Manual Claims desk still works without an integration (status stays PENDING).
+    let adapterResult = null;
+    try {
+      const prisma = require('@prisma/client');
+      const { getInsurerAdapter } = require('@lib/insurer/adapter');
+      const coveragePlan = await prisma.coverage_plan.findFirst({
+        where: { id: coveragePlanId, deleted_at: null },
+        include: { insurance_company: true },
+      });
+      const tenantId = coveragePlan?.tenant_id || null;
+      if (tenantId) {
+        const integrations = await prisma.insurer_integration.findMany({
+          where: {
+            deleted_at: null,
+            is_enabled: true,
+            tenant_id: tenantId,
+            OR: [
+              { coverage_plan_id: coveragePlanId },
+              { coverage_plan_id: null },
+              ...(coveragePlan?.insurance_company_id
+                ? [{ insurance_company_id: coveragePlan.insurance_company_id }]
+                : []),
+            ],
+          },
+          orderBy: { updated_at: 'desc' },
+        });
+        const integration =
+          integrations.find((row) => row.coverage_plan_id === coveragePlanId) ||
+          integrations.find(
+            (row) =>
+              coveragePlan?.insurance_company_id &&
+              row.insurance_company_id === coveragePlan.insurance_company_id
+          ) ||
+          integrations.find((row) => !row.coverage_plan_id && !row.insurance_company_id) ||
+          integrations[0] ||
+          null;
+
+        if (integration) {
+          const adapter = getInsurerAdapter(integration);
+          let memberId = null;
+          if (payload.patient_id) {
+            const enrollment = await prisma.patient_insurance_enrollment.findFirst({
+              where: {
+                deleted_at: null,
+                patient_id: payload.patient_id,
+                coverage_plan_id: coveragePlanId,
+              },
+              orderBy: [{ is_primary: 'desc' }, { updated_at: 'desc' }],
+            });
+            memberId = enrollment?.member_id || null;
+          }
+          adapterResult = await adapter.authorize({
+            memberId,
+            amount: payload.approved_amount ?? null,
+            reason: payload.reason || null,
+            coveragePlan,
+          });
+          if (adapterResult?.status === 'DENIED' || adapterResult?.approved === false) {
+            payload.status = 'DENIED';
+          } else if (adapterResult?.status === 'PARTIAL') {
+            payload.status = 'PARTIAL';
+          } else if (adapterResult?.approved) {
+            payload.status = payload.status || 'APPROVED';
+            if (!payload.approved_at) payload.approved_at = new Date();
+          }
+          if (adapterResult?.approvedAmount != null && payload.approved_amount == null) {
+            payload.approved_amount = adapterResult.approvedAmount;
+          }
+          if (adapterResult?.reference) {
+            payload.insurer_reference = adapterResult.reference;
+          }
+        }
+      }
+    } catch (_) {
+      // Adapter failures must not block manual pre-auth creation.
+      adapterResult = null;
+    }
+
+    if (!payload.status) {
+      payload.status = 'PENDING';
+    }
+
     const preAuthorization = await preAuthorizationRepository.create(payload);
 
     const createdRecord = await preAuthorizationRepository.findById(preAuthorization.id, PRE_AUTH_INCLUDE);
@@ -215,7 +298,7 @@ const createPreAuthorization = async (data, userId, ipAddress) => {
       action: 'CREATE',
       entity: 'pre_authorization',
       entity_id: preAuthorization.id,
-      diff: { after: preAuthorization },
+      diff: { after: preAuthorization, adapter: adapterResult },
       ip_address: ipAddress,
     }).catch(() => {});
 

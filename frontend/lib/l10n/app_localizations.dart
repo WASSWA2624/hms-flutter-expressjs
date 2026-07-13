@@ -19444,6 +19444,258 @@ abstract class AppLocalizations {
   /// **'Insurance scheme'**
   String get claimsCoverageSchemeFieldLabel;
 
+  /// Dialog title for creating an insurance company.
+  ///
+  /// In en, this message translates to:
+  /// **'Add insurance company'**
+  String get claimsAddInsuranceCompanyTitle;
+
+  /// Dialog title for creating a scheme under a company.
+  ///
+  /// In en, this message translates to:
+  /// **'Add insurance scheme'**
+  String get claimsAddSchemeTitle;
+
+  /// Dialog title for creating a scheme offer/tariff.
+  ///
+  /// In en, this message translates to:
+  /// **'Add scheme offer'**
+  String get claimsAddSchemeOfferTitle;
+
+  /// Dialog title for patient insurance enrollment.
+  ///
+  /// In en, this message translates to:
+  /// **'Enroll patient on scheme'**
+  String get claimsAddEnrollmentTitle;
+
+  /// Snack bar after insurance company/scheme/offer/enrollment save.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance configuration saved.'**
+  String get claimsConfigSavedMessage;
+
+  /// Insurance company name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Company name'**
+  String get claimsInsuranceCompanyNameLabel;
+
+  /// Validation for insurance company name.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the insurance company name.'**
+  String get claimsInsuranceCompanyNameRequired;
+
+  /// Insurance company code field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Company code'**
+  String get claimsInsuranceCompanyCodeLabel;
+
+  /// Validation for insurance company code.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the insurance company code.'**
+  String get claimsInsuranceCompanyCodeRequired;
+
+  /// Validation when company is required before scheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an insurance company.'**
+  String get claimsInsuranceCompanyRequiredMessage;
+
+  /// Insurance scheme name field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheme name'**
+  String get claimsSchemeNameLabel;
+
+  /// Validation for scheme name.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the scheme name.'**
+  String get claimsSchemeNameRequired;
+
+  /// Insurance scheme code field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheme code'**
+  String get claimsSchemeCodeLabel;
+
+  /// Default scheme coverage percentage field.
+  ///
+  /// In en, this message translates to:
+  /// **'Coverage percent'**
+  String get claimsSchemeCoveragePercentLabel;
+
+  /// Submit action for insurance company create.
+  ///
+  /// In en, this message translates to:
+  /// **'Save company'**
+  String get claimsSaveCompanyAction;
+
+  /// Submit action for scheme create.
+  ///
+  /// In en, this message translates to:
+  /// **'Save scheme'**
+  String get claimsSaveSchemeAction;
+
+  /// Submit action for scheme offer create.
+  ///
+  /// In en, this message translates to:
+  /// **'Save offer'**
+  String get claimsSaveOfferAction;
+
+  /// Submit action for patient enrollment.
+  ///
+  /// In en, this message translates to:
+  /// **'Save enrollment'**
+  String get claimsSaveEnrollmentAction;
+
+  /// Scheme offer catalog type field.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog type'**
+  String get claimsOfferCatalogTypeLabel;
+
+  /// Scheme offer catalog item identifier field.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog item ID'**
+  String get claimsOfferCatalogItemLabel;
+
+  /// Validation for scheme offer catalog item.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the catalog item ID.'**
+  String get claimsOfferCatalogItemRequired;
+
+  /// Scheme offer unit price/tariff field.
+  ///
+  /// In en, this message translates to:
+  /// **'Negotiated tariff'**
+  String get claimsOfferTariffLabel;
+
+  /// Scheme offer requires pre-auth checkbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Requires pre-authorization'**
+  String get claimsOfferRequiresAuthLabel;
+
+  /// Scheme offer exclusion checkbox.
+  ///
+  /// In en, this message translates to:
+  /// **'Excluded from coverage'**
+  String get claimsOfferExcludedLabel;
+
+  /// Patient identifier for enrollment.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient ID'**
+  String get claimsEnrollmentPatientLabel;
+
+  /// Validation for enrollment patient ID.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the patient ID.'**
+  String get claimsEnrollmentPatientRequired;
+
+  /// Insurance member ID for enrollment.
+  ///
+  /// In en, this message translates to:
+  /// **'Member ID'**
+  String get claimsEnrollmentMemberIdLabel;
+
+  /// Validation for enrollment member ID.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the member ID.'**
+  String get claimsEnrollmentMemberIdRequired;
+
+  /// Claims workspace secondary action to add insurance company.
+  ///
+  /// In en, this message translates to:
+  /// **'Add company'**
+  String get claimsAddCompanyAction;
+
+  /// Claims workspace secondary action to add scheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Add scheme'**
+  String get claimsAddSchemeAction;
+
+  /// Claims workspace secondary action to add scheme offer.
+  ///
+  /// In en, this message translates to:
+  /// **'Add offer'**
+  String get claimsAddOfferAction;
+
+  /// Claims workspace secondary action to enroll a patient.
+  ///
+  /// In en, this message translates to:
+  /// **'Enroll patient'**
+  String get claimsAddEnrollmentAction;
+
+  /// Summary badge for enrollments awaiting eligibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Eligibility pending'**
+  String get claimsEligibilityPendingSummaryLabel;
+
+  /// Summary badge for partially approved claims.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial claims'**
+  String get claimsPartialSummaryLabel;
+
+  /// Summary badge for claims ready to submit.
+  ///
+  /// In en, this message translates to:
+  /// **'Claims to submit'**
+  String get claimsToSubmitSummaryLabel;
+
+  /// Summary badge for claims ready to settle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to settle'**
+  String get claimsReadyToSettleSummaryLabel;
+
+  /// Insurer share claim amount on claims detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Claim amount'**
+  String get claimsClaimAmountFieldLabel;
+
+  /// Status label for partial approval.
+  ///
+  /// In en, this message translates to:
+  /// **'Partial'**
+  String get claimsStatusPartial;
+
+  /// Invoice line patient co-pay/share column.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient share'**
+  String get billingInvoicePatientShareColumn;
+
+  /// Invoice line insurer share column.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurer share'**
+  String get billingInvoiceInsurerShareColumn;
+
+  /// Invoice line insurance scheme column.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheme'**
+  String get billingInvoiceSchemeColumn;
+
+  /// Patient registry action to enroll on an insurance scheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Enroll insurance'**
+  String get patientsEnrollInsuranceAction;
+
   /// OPD insurance coverage verification section title.
   ///
   /// In en, this message translates to:

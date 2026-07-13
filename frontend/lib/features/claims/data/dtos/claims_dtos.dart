@@ -140,6 +140,7 @@ final class InsuranceClaimDto {
       invoiceDisplayId: invoiceDisplayId,
       patientDisplayId: _string(json['patient_display_id']),
       status: _string(json['status']) ?? 'SUBMITTED',
+      claimAmount: _number(json['claim_amount']),
       settlementAmount: _number(json['settlement_amount']),
       payerReference: _string(json['payer_reference']),
       notes: _string(json['notes']),

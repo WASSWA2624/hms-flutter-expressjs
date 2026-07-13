@@ -10479,6 +10479,135 @@ class AppLocalizationsEn extends AppLocalizations {
   String get claimsCoverageSchemeFieldLabel => 'Insurance scheme';
 
   @override
+  String get claimsAddInsuranceCompanyTitle => 'Add insurance company';
+
+  @override
+  String get claimsAddSchemeTitle => 'Add insurance scheme';
+
+  @override
+  String get claimsAddSchemeOfferTitle => 'Add scheme offer';
+
+  @override
+  String get claimsAddEnrollmentTitle => 'Enroll patient on scheme';
+
+  @override
+  String get claimsConfigSavedMessage => 'Insurance configuration saved.';
+
+  @override
+  String get claimsInsuranceCompanyNameLabel => 'Company name';
+
+  @override
+  String get claimsInsuranceCompanyNameRequired =>
+      'Enter the insurance company name.';
+
+  @override
+  String get claimsInsuranceCompanyCodeLabel => 'Company code';
+
+  @override
+  String get claimsInsuranceCompanyCodeRequired =>
+      'Enter the insurance company code.';
+
+  @override
+  String get claimsInsuranceCompanyRequiredMessage =>
+      'Select an insurance company.';
+
+  @override
+  String get claimsSchemeNameLabel => 'Scheme name';
+
+  @override
+  String get claimsSchemeNameRequired => 'Enter the scheme name.';
+
+  @override
+  String get claimsSchemeCodeLabel => 'Scheme code';
+
+  @override
+  String get claimsSchemeCoveragePercentLabel => 'Coverage percent';
+
+  @override
+  String get claimsSaveCompanyAction => 'Save company';
+
+  @override
+  String get claimsSaveSchemeAction => 'Save scheme';
+
+  @override
+  String get claimsSaveOfferAction => 'Save offer';
+
+  @override
+  String get claimsSaveEnrollmentAction => 'Save enrollment';
+
+  @override
+  String get claimsOfferCatalogTypeLabel => 'Catalog type';
+
+  @override
+  String get claimsOfferCatalogItemLabel => 'Catalog item ID';
+
+  @override
+  String get claimsOfferCatalogItemRequired => 'Enter the catalog item ID.';
+
+  @override
+  String get claimsOfferTariffLabel => 'Negotiated tariff';
+
+  @override
+  String get claimsOfferRequiresAuthLabel => 'Requires pre-authorization';
+
+  @override
+  String get claimsOfferExcludedLabel => 'Excluded from coverage';
+
+  @override
+  String get claimsEnrollmentPatientLabel => 'Patient ID';
+
+  @override
+  String get claimsEnrollmentPatientRequired => 'Enter the patient ID.';
+
+  @override
+  String get claimsEnrollmentMemberIdLabel => 'Member ID';
+
+  @override
+  String get claimsEnrollmentMemberIdRequired => 'Enter the member ID.';
+
+  @override
+  String get claimsAddCompanyAction => 'Add company';
+
+  @override
+  String get claimsAddSchemeAction => 'Add scheme';
+
+  @override
+  String get claimsAddOfferAction => 'Add offer';
+
+  @override
+  String get claimsAddEnrollmentAction => 'Enroll patient';
+
+  @override
+  String get claimsEligibilityPendingSummaryLabel => 'Eligibility pending';
+
+  @override
+  String get claimsPartialSummaryLabel => 'Partial claims';
+
+  @override
+  String get claimsToSubmitSummaryLabel => 'Claims to submit';
+
+  @override
+  String get claimsReadyToSettleSummaryLabel => 'Ready to settle';
+
+  @override
+  String get claimsClaimAmountFieldLabel => 'Claim amount';
+
+  @override
+  String get claimsStatusPartial => 'Partial';
+
+  @override
+  String get billingInvoicePatientShareColumn => 'Patient share';
+
+  @override
+  String get billingInvoiceInsurerShareColumn => 'Insurer share';
+
+  @override
+  String get billingInvoiceSchemeColumn => 'Scheme';
+
+  @override
+  String get patientsEnrollInsuranceAction => 'Enroll insurance';
+
+  @override
   String get opdCoverageVerificationTitle => 'Coverage verification';
 
   @override

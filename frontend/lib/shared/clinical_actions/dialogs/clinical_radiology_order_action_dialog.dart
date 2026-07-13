@@ -21,6 +21,7 @@ class ClinicalRadiologyOrderActionDialog extends StatefulWidget {
     required this.onSubmit,
     this.initialRequests = const <ClinicalActionRadiologyRequest>[],
     this.patientContext = const ClinicalRequestPatientContext(),
+    this.payerContext,
     super.key,
   });
 
@@ -34,6 +35,7 @@ class ClinicalRadiologyOrderActionDialog extends StatefulWidget {
   onSearchRadiologyTests;
   final List<ClinicalActionRadiologyRequest> initialRequests;
   final ClinicalRequestPatientContext patientContext;
+  final ClinicalRequestPayerContext? payerContext;
   final Future<AppFailure?> Function({
     required List<ClinicalActionRadiologyRequest> requests,
     ClinicalRequestBillingSubmit? billing,
@@ -273,6 +275,7 @@ class _RadiologyOrderDialogState
           initialBilling: _billingSubmit,
           catalogType: 'RADIOLOGY_TEST',
           billingEntity: 'FACILITY',
+          payerContext: widget.payerContext,
           enabled: !_isSaving,
         );
     if (!mounted || billing == null) {

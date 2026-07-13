@@ -22,12 +22,14 @@ class ClinicalLabOrderActionDialog extends StatefulWidget {
     required this.onSearchLabTests,
     this.existingOrder,
     this.patientContext = const ClinicalRequestPatientContext(),
+    this.payerContext,
     super.key,
   });
 
   final ClinicalActionReferenceData referenceData;
   final ClinicalActionLabOrderRecord? existingOrder;
   final ClinicalRequestPatientContext patientContext;
+  final ClinicalRequestPayerContext? payerContext;
   final Future<Result<List<ClinicalActionCatalogOption>>> Function({
     required String termType,
     String? query,
@@ -404,6 +406,7 @@ class _LabOrderDialogState extends State<ClinicalLabOrderActionDialog> {
           initialBilling: _billingSubmit,
           catalogType: 'LAB_TEST',
           billingEntity: 'FACILITY',
+          payerContext: widget.payerContext,
           enabled: !_isSaving,
         );
     if (!mounted || billing == null) {

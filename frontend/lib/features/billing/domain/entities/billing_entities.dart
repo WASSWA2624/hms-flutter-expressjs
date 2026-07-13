@@ -248,6 +248,10 @@ final class BillingInvoiceItem {
     this.sourceModule,
     this.sourceOrderDisplayId,
     this.encounterDisplayId,
+    this.patientShare,
+    this.insurerShare,
+    this.coveragePlanName,
+    this.insuranceCompanyName,
   });
 
   final String id;
@@ -258,6 +262,10 @@ final class BillingInvoiceItem {
   final String? sourceModule;
   final String? sourceOrderDisplayId;
   final String? encounterDisplayId;
+  final num? patientShare;
+  final num? insurerShare;
+  final String? coveragePlanName;
+  final String? insuranceCompanyName;
 
   String? get sourceContextLabel {
     final List<String> parts = <String>[
