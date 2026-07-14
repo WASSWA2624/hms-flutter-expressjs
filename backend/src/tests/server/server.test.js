@@ -46,6 +46,9 @@ describe('server bootstrap', () => {
     const stopNotificationDeliveryRuntime = jest.fn();
     const startBreakGlassExpiryRuntime = jest.fn();
     const stopBreakGlassExpiryRuntime = jest.fn();
+    const syncActiveSubscriptionModuleEntitlements = jest
+      .fn()
+      .mockResolvedValue({ subscriptions: 0 });
     const assertDatabaseConnection = jest.fn(async () => undefined);
     const cleanup = jest.fn();
 
@@ -75,6 +78,12 @@ describe('server bootstrap', () => {
       startBreakGlassExpiryRuntime,
       stopBreakGlassExpiryRuntime,
     }));
+    jest.doMock(
+      '@lib/subscriptions/sync-subscription-module-entitlements',
+      () => ({
+        syncActiveSubscriptionModuleEntitlements,
+      })
+    );
     jest.doMock('@websockets/server', () => ({
       initializeWebSocketServer,
       closeWebSocketServer
@@ -100,6 +109,7 @@ describe('server bootstrap', () => {
     expect(closeSpy).toHaveBeenCalledTimes(1);
     expect(startNotificationDeliveryRuntime).toHaveBeenCalledTimes(1);
     expect(startBreakGlassExpiryRuntime).toHaveBeenCalledTimes(1);
+    expect(syncActiveSubscriptionModuleEntitlements).toHaveBeenCalledTimes(1);
     expect(stopReportRunScheduler).toHaveBeenCalledTimes(1);
     expect(stopNotificationDeliveryRuntime).toHaveBeenCalledTimes(1);
     expect(stopBreakGlassExpiryRuntime).toHaveBeenCalledTimes(1);

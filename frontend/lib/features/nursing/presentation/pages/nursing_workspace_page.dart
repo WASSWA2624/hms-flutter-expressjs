@@ -521,7 +521,11 @@ List<AppListTableColumn<NursingWorkItem>> _nursingWorklistDefaultColumns(
       sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
           appListTableCompareText(left.locationLabel, right.locationLabel),
       cellBuilder: (BuildContext context, NursingWorkItem item) {
-        return Text(item.locationLabel ?? l10n.profileUnknownValue);
+        return Text(
+          item.locationLabel ?? l10n.profileUnknownValue,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
     AppListTableColumn<NursingWorkItem>(
@@ -913,9 +917,15 @@ class _NursingPatientCell extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Text(item.displayTitle, style: theme.textTheme.titleSmall),
+        Text(
+          item.displayTitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.titleSmall,
+        ),
         if (_joinDisplay(<String?>[
           item.patientDisplayId,
           item.encounterDisplayId,
@@ -928,6 +938,8 @@ class _NursingPatientCell extends StatelessWidget {
               item.encounterDisplayId,
               item.displayId,
             ]),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

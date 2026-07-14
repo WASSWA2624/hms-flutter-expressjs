@@ -8,13 +8,17 @@ const {
   isEligibleForTier,
   modulesForPlanTier,
 } = require('../../src/lib/subscriptions/plan-module-matrix');
+const {
+  PLAN_PERMISSION_CAPS,
+} = require('../../src/lib/subscriptions/subscription-permission-caps');
 
 const PLAN_RANK = Object.freeze({
   FREE: 1,
   BASIC: 2,
-  PRO: 3,
-  ADVANCED: 4,
+  ADVANCED: 3,
+  PRO: 4,
   CUSTOM: 5,
+  DEVELOPER: 6,
 });
 
 const DEMO_SUBSCRIPTION_PROFILE = Object.freeze({
@@ -142,6 +146,8 @@ const seedSubscriptionsPack = async (ctx, orgPack) => {
         add_on_eligibility_json: buildEligibilityMap(),
         extension_json: {
           ...(planDefinition.extension_json || {}),
+          allowed_permissions:
+            PLAN_PERMISSION_CAPS[planDefinition.tier_code] || [],
           allowed_modules: {
             included,
           },

@@ -106,6 +106,9 @@ const {
   startBreakGlassExpiryRuntime,
   stopBreakGlassExpiryRuntime
 } = require('@lib/authorization/break-glass-expiry');
+const {
+  syncActiveSubscriptionModuleEntitlements
+} = require('@lib/subscriptions/sync-subscription-module-entitlements');
 
 const getLanAddresses = () => {
   const interfaces = os.networkInterfaces();
@@ -204,6 +207,15 @@ const startServer = async () => {
         startReportRunScheduler();
         startNotificationDeliveryRuntime();
         startBreakGlassExpiryRuntime();
+        syncActiveSubscriptionModuleEntitlements()
+          .then((result) => {
+            logger.info('Active subscription entitlements synchronized', result);
+          })
+          .catch((error) => {
+            logger.error('Active subscription entitlement sync failed', {
+              error: error.message
+            });
+          });
         logger.info('WebSocket runtime initialized');
         logger.info('Reports runtime initialized');
         logger.info('Notification delivery runtime initialized');

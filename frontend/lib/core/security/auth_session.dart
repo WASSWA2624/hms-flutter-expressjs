@@ -204,6 +204,8 @@ final class AppModuleEntitlement {
     required this.code,
     this.isActive = true,
     this.licenseStatus,
+    this.planTierCode,
+    this.allowedPermissions = const <String>[],
   });
 
   static AppModuleEntitlement? tryFromPayload(Object? payload) {
@@ -259,12 +261,20 @@ final class AppModuleEntitlement {
             payload['evaluated_plan_fit_status'] ??
             payload['evaluatedPlanFitStatus'],
       )?.toUpperCase(),
+      planTierCode: _stringValue(
+        payload['plan_tier_code'] ?? payload['planTierCode'],
+      )?.toUpperCase(),
+      allowedPermissions: _stringList(
+        payload['allowed_permissions'] ?? payload['allowedPermissions'],
+      ),
     );
   }
 
   final String code;
   final bool isActive;
   final String? licenseStatus;
+  final String? planTierCode;
+  final List<String> allowedPermissions;
 
   String get normalizedCode => normalizeModuleCode(code);
 
@@ -283,11 +293,13 @@ final class AppModuleEntitlement {
     return other is AppModuleEntitlement &&
         normalizedCode == other.normalizedCode &&
         isActive == other.isActive &&
-        licenseStatus == other.licenseStatus;
+        licenseStatus == other.licenseStatus &&
+        planTierCode == other.planTierCode;
   }
 
   @override
-  int get hashCode => Object.hash(normalizedCode, isActive, licenseStatus);
+  int get hashCode =>
+      Object.hash(normalizedCode, isActive, licenseStatus, planTierCode);
 
   static String normalizeModuleCode(String value) {
     return value.trim().toUpperCase().replaceAll(RegExp(r'[\s-]+'), '_');
@@ -364,6 +376,16 @@ final class AppModuleEntitlement {
       'FALSE' || '0' || 'NO' || 'INACTIVE' || 'DISABLED' => false,
       _ => true,
     };
+  }
+
+  static List<String> _stringList(Object? value) {
+    if (value is! Iterable) {
+      return const <String>[];
+    }
+    return value
+        .map((Object? entry) => _stringValue(entry))
+        .whereType<String>()
+        .toList(growable: false);
   }
 }
 

@@ -461,12 +461,6 @@ abstract final class AppRoutes {
     requiredAnyPermissions: <AppPermission>[
       AppPermissions.hrRead,
       AppPermissions.hrWrite,
-      AppPermissions.unitRead,
-      AppPermissions.unitManage,
-      AppPermissions.rosterRead,
-      AppPermissions.rosterWrite,
-      AppPermissions.rosterApprove,
-      AppPermissions.rosterPublish,
     ],
     requiredAnyRoles: hrWorkspaceRoles,
     requiredActiveModules: <String>['hr-rosters'],
@@ -479,8 +473,6 @@ abstract final class AppRoutes {
     requiredAnyPermissions: <AppPermission>[
       AppPermissions.biomedRead,
       AppPermissions.biomedWrite,
-      AppPermissions.operationsRead,
-      AppPermissions.operationsWrite,
     ],
     requiredAnyRoles: biomedicalWorkspaceRoles,
     requiredActiveModules: <String>['biomedical-engineering-suite'],

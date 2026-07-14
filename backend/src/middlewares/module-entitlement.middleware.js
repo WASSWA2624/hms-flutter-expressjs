@@ -31,8 +31,8 @@ const platformInfrastructureCache = new Map();
 
 // Legacy fallbacks when a commercial module row is missing from older DBs.
 const CORE_MODULE_METADATA_FALLBACKS = Object.freeze({
-  mortuary: Object.freeze({ minimumPlanTierCode: 'ADVANCED' }),
-  physiotherapy: Object.freeze({ minimumPlanTierCode: 'PRO' }),
+  mortuary: Object.freeze({ minimumPlanTierCode: 'PRO' }),
+  physiotherapy: Object.freeze({ minimumPlanTierCode: 'ADVANCED' }),
 });
 
 const IRREGULAR_PATH_SEGMENTS = {

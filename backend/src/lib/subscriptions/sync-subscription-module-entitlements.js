@@ -46,9 +46,27 @@ const syncSubscriptionModuleEntitlements = async (
 
   const tierCode =
     options.tierCode || subscription.plan?.tier_code || 'FREE';
-  const includeAll =
+  const requestedIncludeAll =
     options.includeAllModules === true ||
     Boolean(subscription.plan?.extension_json?.includes_all_modules);
+  const isDeveloperPlan =
+    String(tierCode).toUpperCase() === 'DEVELOPER' ||
+    subscription.plan?.extension_json?.is_developer_plan === true;
+  const includeAll =
+    requestedIncludeAll &&
+    isDeveloperPlan &&
+    process.env.NODE_ENV !== 'production';
+  const eligibilityTierCode =
+    isDeveloperPlan && process.env.NODE_ENV === 'production'
+      ? 'FREE'
+      : tierCode;
+  const configuredModules =
+    subscription.plan?.extension_json?.allowed_modules?.included;
+  const configuredModuleSet = new Set(
+    (Array.isArray(configuredModules) ? configuredModules : [])
+      .map((value) => String(value || '').trim().toLowerCase())
+      .filter(Boolean)
+  );
 
   const modules = await prisma.module.findMany({
     where: { deleted_at: null },
@@ -74,10 +92,27 @@ const syncSubscriptionModuleEntitlements = async (
     const isPlatform = Boolean(
       definition.extension_json?.is_platform_infrastructure
     );
+    const persistedModule = bySlug.get(
+      String(definition.slug).trim().toLowerCase()
+    );
+    const customModuleAllowed =
+      configuredModuleSet.has(String(definition.slug).trim().toLowerCase()) ||
+      configuredModuleSet.has(String(persistedModule?.id || '').toLowerCase());
+    if (
+      String(tierCode).toUpperCase() === 'CUSTOM' &&
+      !includeAll &&
+      !isPlatform &&
+      !customModuleAllowed
+    ) {
+      continue;
+    }
     if (
       !includeAll &&
       !isPlatform &&
-      !isEligibleForTier(tierCode, definition.minimum_plan_tier_code)
+      !isEligibleForTier(
+        eligibilityTierCode,
+        definition.minimum_plan_tier_code
+      )
     ) {
       continue;
     }
@@ -172,6 +207,32 @@ const syncSubscriptionModuleEntitlements = async (
   return { activated, created, deactivated };
 };
 
+const syncActiveSubscriptionModuleEntitlements = async () => {
+  const subscriptions = await prisma.subscription.findMany({
+    where: {
+      deleted_at: null,
+      status: { in: ['ACTIVE', 'TRIAL'] },
+      OR: [{ end_date: null }, { end_date: { gte: new Date() } }],
+    },
+    select: { id: true },
+  });
+
+  const result = {
+    subscriptions: subscriptions.length,
+    activated: 0,
+    created: 0,
+    deactivated: 0,
+  };
+  for (const subscription of subscriptions) {
+    const synced = await syncSubscriptionModuleEntitlements(subscription.id);
+    result.activated += synced.activated;
+    result.created += synced.created;
+    result.deactivated += synced.deactivated;
+  }
+  return result;
+};
+
 module.exports = {
+  syncActiveSubscriptionModuleEntitlements,
   syncSubscriptionModuleEntitlements,
 };

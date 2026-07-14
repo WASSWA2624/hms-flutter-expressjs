@@ -13,14 +13,14 @@ describe('tenant-subscription-summary', () => {
       expect(COMMERCIAL_TIER_LADDER).toEqual([
         'FREE',
         'BASIC',
-        'PRO',
         'ADVANCED',
+        'PRO',
         'CUSTOM',
       ]);
       expect(resolveNextTierCode('FREE')).toBe('BASIC');
-      expect(resolveNextTierCode('basic')).toBe('PRO');
-      expect(resolveNextTierCode('PRO')).toBe('ADVANCED');
-      expect(resolveNextTierCode('ADVANCED')).toBe('CUSTOM');
+      expect(resolveNextTierCode('basic')).toBe('ADVANCED');
+      expect(resolveNextTierCode('ADVANCED')).toBe('PRO');
+      expect(resolveNextTierCode('PRO')).toBe('CUSTOM');
       expect(resolveNextTierCode('CUSTOM')).toBeNull();
       expect(resolveNextTierCode('DEVELOPER')).toBeNull();
     });

@@ -2067,8 +2067,8 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     final double columnSpacing = widget.compact
         ? theme.spacing.sm
         : theme.spacing.lg;
-    final double rowMinHeight = widget.compact ? 34 : 38;
-    final double rowMaxHeight = widget.compact ? 52 : 56;
+    final double rowMinHeight = widget.compact ? 40 : 48;
+    final double rowMaxHeight = widget.compact ? 64 : 72;
     final BorderRadius radius = BorderRadius.circular(theme.radius.md);
 
     final Widget table = DataTable(

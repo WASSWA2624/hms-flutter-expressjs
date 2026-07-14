@@ -319,9 +319,12 @@ final class AuthRepositoryImpl implements AuthRepository {
           if (profile != null) {
             enriched = enriched.enrichFromUserProfile(profile);
           }
-          if (permissions.isNotEmpty) {
-            enriched = enriched.copyWith(permissions: permissions);
-          }
+          // Always apply /me permissions (including empty) so revoked grants
+          // and plan caps take effect immediately.
+          enriched = enriched.copyWith(
+            permissions: permissions,
+            isAuthorizationHydrated: true,
+          );
           // Always apply /me entitlements (including empty) so plan changes
           // and backfills are reflected immediately.
           enriched = enriched.copyWith(moduleEntitlements: moduleEntitlements);

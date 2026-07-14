@@ -757,17 +757,23 @@ class _ClinicalStatusText extends StatelessWidget {
 
     return Semantics(
       label: status.label,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: theme.appTokens.listIconSize, color: color),
-          SizedBox(width: theme.spacing.xs),
-          Text(
-            status.label,
-            overflow: TextOverflow.ellipsis,
-            style: effectiveStyle,
-          ),
-        ],
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 220),
+        child: Row(
+          children: <Widget>[
+            Icon(icon, size: theme.appTokens.listIconSize, color: color),
+            SizedBox(width: theme.spacing.xs),
+            Expanded(
+              child: Text(
+                status.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: effectiveStyle,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

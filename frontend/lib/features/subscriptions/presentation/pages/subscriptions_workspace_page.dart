@@ -1523,8 +1523,8 @@ List<String> _includedModuleLabels(
 const Map<String, int> _planTierRank = <String, int>{
   'FREE': 0,
   'BASIC': 1,
-  'PRO': 2,
-  'ADVANCED': 3,
+  'ADVANCED': 2,
+  'PRO': 3,
   'CUSTOM': 4,
   'DEVELOPER': 5,
 };

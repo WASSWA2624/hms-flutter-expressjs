@@ -100,6 +100,9 @@ const resolveSubscriptionPermissionCap = ({
   if (tier === 'DEVELOPER' && node_env !== 'production') {
     return null;
   }
+  if (tier === 'DEVELOPER') {
+    return new Set(PLAN_PERMISSION_CAPS.FREE);
+  }
   return new Set(PLAN_PERMISSION_CAPS[tier] || []);
 };
 

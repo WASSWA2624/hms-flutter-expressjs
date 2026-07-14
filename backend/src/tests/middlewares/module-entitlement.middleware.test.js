@@ -267,7 +267,7 @@ describe('module entitlement middleware', () => {
         tenant_id: 'tenant-advanced-demo',
         plan: expect.objectContaining({
           tier_code: expect.objectContaining({
-            in: expect.arrayContaining(['ADVANCED', 'CUSTOM', 'DEVELOPER']),
+            in: expect.arrayContaining(['PRO', 'CUSTOM', 'DEVELOPER']),
           }),
         }),
       })

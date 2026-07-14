@@ -7,6 +7,7 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
 
 void main() {
   group('AppAccessPolicy', () {
@@ -538,5 +539,72 @@ void main() {
       expect(receptionistPolicy.grants(AppPermissions.operationsRead), isFalse);
       expect(doctorPolicy.isReceptionistFocusedShellUser, isFalse);
     });
+
+    test(
+      'Advanced plan hides Pro shell modules even when entitlement rows are stale',
+      () {
+        final session = AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['SUPER_ADMIN'],
+          ),
+          subscriptionSummary: const TenantSubscriptionSummary(
+            tierCode: 'ADVANCED',
+            headerState: TenantSubscriptionHeaderState.active,
+          ),
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'facilities-maintenance',
+              licenseStatus: 'ACTIVE',
+              planTierCode: 'ADVANCED',
+            ),
+            AppModuleEntitlement(
+              code: 'hr-rosters',
+              licenseStatus: 'ACTIVE',
+              planTierCode: 'ADVANCED',
+            ),
+            AppModuleEntitlement(
+              code: 'biomedical-engineering-suite',
+              licenseStatus: 'ACTIVE',
+              planTierCode: 'ADVANCED',
+            ),
+            AppModuleEntitlement(
+              code: 'mortuary',
+              licenseStatus: 'ACTIVE',
+              planTierCode: 'ADVANCED',
+            ),
+            AppModuleEntitlement(
+              code: 'theatre-anesthesia',
+              licenseStatus: 'ACTIVE',
+              planTierCode: 'ADVANCED',
+            ),
+            AppModuleEntitlement(
+              code: 'lab-workflows',
+              licenseStatus: 'ACTIVE',
+              planTierCode: 'ADVANCED',
+            ),
+          ],
+        );
+
+        final policy = AppAccessPolicy.fromSession(session);
+
+        expect(policy.hasActiveModule('lab-workflows'), isTrue);
+        expect(policy.hasActiveModule('facilities-maintenance'), isFalse);
+        expect(policy.hasActiveModule('hr-rosters'), isFalse);
+        expect(policy.hasActiveModule('biomedical-engineering-suite'), isFalse);
+        expect(policy.hasActiveModule('mortuary'), isFalse);
+        expect(policy.hasActiveModule('theatre-anesthesia'), isFalse);
+        expect(policy.grants(AppPermissions.operationsRead), isFalse);
+        expect(policy.grants(AppPermissions.hrRead), isFalse);
+        expect(policy.grants(AppPermissions.labRead), isTrue);
+        expect(AppRoutes.housekeeping.accessRequirement.isAllowed(policy), isFalse);
+        expect(AppRoutes.hr.accessRequirement.isAllowed(policy), isFalse);
+        expect(AppRoutes.biomedical.accessRequirement.isAllowed(policy), isFalse);
+        expect(AppRoutes.mortuary.accessRequirement.isAllowed(policy), isFalse);
+        expect(AppRoutes.theater.accessRequirement.isAllowed(policy), isFalse);
+      },
+    );
   });
 }

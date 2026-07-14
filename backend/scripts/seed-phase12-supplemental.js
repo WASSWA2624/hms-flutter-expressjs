@@ -13,7 +13,7 @@ const {
   SEED_FREE_CORE_MODULE_CATALOG
 } = require('@config/constants');
 
-const PLAN_TIER_ORDER = ['FREE', 'BASIC', 'PRO', 'ADVANCED', 'CUSTOM'];
+const PLAN_TIER_ORDER = ['FREE', 'BASIC', 'ADVANCED', 'PRO', 'CUSTOM'];
 const DETERMINISTIC_BASE_TIMESTAMP = Date.UTC(2026, 0, 1, 8, 0, 0);
 
 const defaultMissingTableCheck = (error) => error?.code === 'P2021';

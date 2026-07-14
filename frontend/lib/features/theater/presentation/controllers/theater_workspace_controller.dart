@@ -608,6 +608,7 @@ final class TheaterWorkspaceController
             latest.copyWith(
               cases: page,
               isRefreshing: false,
+              clearLastFailure: true,
               selectedCase: _selectedAfterRefresh(page, latest.selectedCase),
             ),
           );
@@ -617,7 +618,13 @@ final class TheaterWorkspaceController
       failure: (AppFailure failure) {
         final TheaterWorkspaceState? latest = _currentState;
         if (latest != null) {
-          _emit(latest.copyWith(isRefreshing: false, lastFailure: failure));
+          _emit(
+            latest.copyWith(
+              isRefreshing: false,
+              // Background polls must not sticky-banner over a loaded workspace.
+              lastFailure: showLoading ? failure : latest.lastFailure,
+            ),
+          );
         }
         return failure;
       },

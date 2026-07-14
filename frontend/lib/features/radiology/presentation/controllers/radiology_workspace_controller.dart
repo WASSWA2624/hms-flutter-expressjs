@@ -300,7 +300,13 @@ final class RadiologyWorkspaceController
       failure: (AppFailure failure) {
         final RadiologyWorkspaceState? latest = _currentState;
         if (latest != null) {
-          _emit(latest.copyWith(isRefreshing: false, lastFailure: failure));
+          _emit(
+            latest.copyWith(
+              isRefreshing: false,
+              // Keep secondary reference search failures off the page banner.
+              clearLastFailure: true,
+            ),
+          );
         }
         return failure;
       },
@@ -324,8 +330,7 @@ final class RadiologyWorkspaceController
       _emit(
         latest.copyWith(
           isRefreshing: false,
-          lastFailure: failure,
-          clearLastFailure: failure == null,
+          clearLastFailure: true,
         ),
       );
     }
@@ -927,10 +932,6 @@ final class RadiologyWorkspaceController
               failure: (_) => const <RadiologyEquipmentRecord>[],
             ),
             selectedWorkflow: selectedWorkflow,
-            lastFailure: referencesResult.when(
-              success: (_) => null,
-              failure: (AppFailure failure) => failure,
-            ),
           ),
         );
       },
@@ -1051,6 +1052,7 @@ final class RadiologyWorkspaceController
                 latest.selectedWorkflow,
               ),
               isRefreshing: false,
+              clearLastFailure: true,
             ),
           );
         }
@@ -1059,7 +1061,12 @@ final class RadiologyWorkspaceController
       failure: (AppFailure failure) {
         final RadiologyWorkspaceState? latest = _currentState;
         if (latest != null) {
-          _emit(latest.copyWith(isRefreshing: false, lastFailure: failure));
+          _emit(
+            latest.copyWith(
+              isRefreshing: false,
+              lastFailure: showLoading ? failure : latest.lastFailure,
+            ),
+          );
         }
         return failure;
       },
@@ -1082,8 +1089,11 @@ final class RadiologyWorkspaceController
       _emit(
         latest.copyWith(
           equipmentRecords: equipment ?? latest.equipmentRecords,
-          lastFailure: failure,
-          clearLastFailure: failure == null,
+          // Equipment is secondary; do not replace a healthy workbench banner.
+          clearLastFailure: failure == null || latest.orders.items.isNotEmpty,
+          lastFailure: failure != null && latest.orders.items.isEmpty
+              ? failure
+              : null,
         ),
       );
     }

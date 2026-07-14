@@ -1,6 +1,6 @@
 const { text } = require('@lib/subscriptions/access');
 
-const PLAN_TIER_ORDER = ['FREE', 'BASIC', 'PRO', 'ADVANCED', 'CUSTOM'];
+const PLAN_TIER_ORDER = ['FREE', 'BASIC', 'ADVANCED', 'PRO', 'CUSTOM'];
 
 const isObject = (value) =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);

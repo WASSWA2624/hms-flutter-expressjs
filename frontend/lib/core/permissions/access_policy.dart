@@ -1,5 +1,7 @@
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/commercial_module_tiers.dart';
 import 'package:hosspi_hms/core/permissions/permission_module_map.dart';
+import 'package:hosspi_hms/core/permissions/plan_permission_caps.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 
 enum AppRole {
@@ -183,6 +185,7 @@ final class AppAccessPolicy {
     required this.facilityId,
     required this.branchId,
     required this.moduleEntitlements,
+    this.planTierCode,
   });
 
   factory AppAccessPolicy.fromSession(AuthSession? session) {
@@ -196,6 +199,7 @@ final class AppAccessPolicy {
     final Map<String, AppModuleEntitlement> entitlements =
         session?.moduleEntitlements ?? const <String, AppModuleEntitlement>{};
     final String? tenantId = _nonEmpty(user?.tenantId);
+    final String? planTierCode = _resolvePlanTierCode(session);
 
     // Backend effective permissions are the ceiling. Only expand client role
     // packs when the session has not yet been enriched with an explicit set
@@ -211,8 +215,8 @@ final class AppAccessPolicy {
     };
 
     // Plan modules take precedence: strip module-scoped rights the plan does
-    // not entitle (super admins keep the full set).
-    final Set<AppPermission> planGated = elevated && tenantId == null
+    // not entitle (platform elevated super admins keep the full set).
+    final Set<AppPermission> moduleGated = elevated && tenantId == null
         ? merged
         : merged
               .where(
@@ -224,6 +228,15 @@ final class AppAccessPolicy {
               )
               .toSet();
 
+    // Mirror backend PLAN_PERMISSION_CAPS so Advanced tenants cannot see Pro
+    // shell destinations the API will forbid.
+    final Set<AppPermission> planGated = elevated && tenantId == null
+        ? moduleGated
+        : PlanPermissionCaps.apply(
+            moduleGated,
+            PlanPermissionCaps.resolveFromSession(session),
+          );
+
     return AppAccessPolicy._(
       roles: roles,
       permissions: Set<AppPermission>.unmodifiable(planGated),
@@ -231,6 +244,7 @@ final class AppAccessPolicy {
       facilityId: _nonEmpty(user?.facilityId),
       branchId: _nonEmpty(user?.branchId),
       moduleEntitlements: entitlements,
+      planTierCode: planTierCode,
     );
   }
 
@@ -240,6 +254,7 @@ final class AppAccessPolicy {
   final String? facilityId;
   final String? branchId;
   final Map<String, AppModuleEntitlement> moduleEntitlements;
+  final String? planTierCode;
 
   AppAccessPolicy copyWithPermissions(Iterable<AppPermission> permissions) {
     return AppAccessPolicy._(
@@ -249,6 +264,7 @@ final class AppAccessPolicy {
       facilityId: facilityId,
       branchId: branchId,
       moduleEntitlements: moduleEntitlements,
+      planTierCode: planTierCode,
     );
   }
 
@@ -559,28 +575,29 @@ final class AppAccessPolicy {
     final String resolvedCode = AppModuleEntitlement.resolveModuleCode(
       moduleCode,
     );
-    if (moduleEntitlements[normalizedCode]?.isAvailable == true ||
-        moduleEntitlements[resolvedCode]?.isAvailable == true) {
-      return true;
+    final bool entitled =
+        moduleEntitlements[normalizedCode]?.isAvailable == true ||
+        moduleEntitlements[resolvedCode]?.isAvailable == true ||
+        moduleEntitlements.entries.any((MapEntry<String, AppModuleEntitlement> entry) {
+          if (!entry.value.isAvailable) {
+            return false;
+          }
+          final String entitlementResolved =
+              AppModuleEntitlement.resolveModuleCode(entry.key);
+          return entitlementResolved == resolvedCode ||
+              entitlementResolved == normalizedCode ||
+              entry.key == resolvedCode ||
+              entry.key == normalizedCode;
+        });
+    if (!entitled) {
+      return false;
     }
 
-    // Match aliases (e.g. clinical-care ↔ encounters-vitals).
-    for (final MapEntry<String, AppModuleEntitlement> entry
-        in moduleEntitlements.entries) {
-      if (!entry.value.isAvailable) {
-        continue;
-      }
-      final String entitlementResolved = AppModuleEntitlement.resolveModuleCode(
-        entry.key,
-      );
-      if (entitlementResolved == resolvedCode ||
-          entitlementResolved == normalizedCode ||
-          entry.key == resolvedCode ||
-          entry.key == normalizedCode) {
-        return true;
-      }
-    }
-    return false;
+    // Fail closed for stale Pro (or higher) module rows on lower plan tiers.
+    return CommercialModuleTiers.planMeetsModuleMinimum(
+      planTierCode: planTierCode,
+      moduleCode: moduleCode,
+    );
   }
 
   static bool _isPermissionAllowedByPlan(
@@ -628,6 +645,24 @@ final class AppAccessPolicy {
 
   bool hasAllActiveModules(Iterable<String> moduleCodes) {
     return moduleCodes.every(hasActiveModule);
+  }
+
+  static String? _resolvePlanTierCode(AuthSession? session) {
+    if (session == null) {
+      return null;
+    }
+    for (final AppModuleEntitlement entry
+        in session.moduleEntitlements.values) {
+      final String? tier = entry.planTierCode?.trim();
+      if (tier != null && tier.isNotEmpty) {
+        return tier.toUpperCase();
+      }
+    }
+    final String? summaryTier = session.subscriptionSummary?.tierCode?.trim();
+    if (summaryTier != null && summaryTier.isNotEmpty) {
+      return summaryTier.toUpperCase();
+    }
+    return null;
   }
 
   static Set<AppRole> _rolesFrom(Iterable<String> values) {
