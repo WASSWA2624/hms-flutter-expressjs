@@ -2,9 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
-import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -13,12 +11,11 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
-import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.dart'
-    show AppointmentActionsDialog;
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
 import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
 import 'package:hosspi_hms/features/reception/presentation/reception_access.dart';
+import 'package:hosspi_hms/features/reception/presentation/widgets/reception_appointment_actions.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_billing_guidance.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_patient_actions.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -48,6 +45,9 @@ class ReceptionWorkspacePage extends ConsumerWidget {
       loadingBody: l10n.receptionLoadingBody,
       maxWidth: PageMaxWidth.dataHeavy,
       centerVertically: false,
+      // Show an in-page loading state; shell deferral renders a blank body.
+      deferLoadingToShell: false,
+      keepPreviousDataDuringRefresh: true,
       onRetry: () {
         ref.read(opdWorkspaceControllerProvider.notifier).refresh();
       },
@@ -252,16 +252,6 @@ class _ReceptionWorkspaceContentState
               );
             },
           ),
-          AppButton.secondary(
-            label: l10n.receptionOpenRegistryAction,
-            leadingIcon: AppRouteIcons.patients,
-            onPressed: () => context.go(AppRoutes.patients.location()),
-          ),
-          AppButton.secondary(
-            label: l10n.receptionOpenOpdAction,
-            leadingIcon: AppRouteIcons.opd,
-            onPressed: () => context.go(AppRoutes.opd.location()),
-          ),
         ],
         onRefresh: () async {
           final AppFailure? failure = await controller.refresh();
@@ -274,6 +264,7 @@ class _ReceptionWorkspaceContentState
             state.isRefreshingQueue ||
             state.isRefreshingFlows,
       ),
+      // AppWorkspace scrolls the page; do not nest Expanded/ListView flex.
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -305,42 +296,37 @@ class _ReceptionWorkspaceContentState
             },
           ),
           SizedBox(height: theme.spacing.md),
-          Expanded(
-            child: rows.isEmpty
-                ? AppStateView(
-                    title: l10n.receptionEmptyTitle,
-                    body: l10n.receptionEmptyBody,
-                    variant: AppStateViewVariant.empty,
-                  )
-                : ListView.separated(
-                    itemCount: rows.length,
-                    separatorBuilder: (_, _) =>
-                        SizedBox(height: theme.spacing.sm),
-                    itemBuilder: (BuildContext context, int index) {
-                      return _ReceptionDeskCard(
-                        row: rows[index],
-                        onOpenAppointment: (OpdAppointment appointment) =>
-                            unawaited(_openAppointmentActions(appointment)),
-                        onCheckIn: (OpdAppointment appointment) =>
-                            unawaited(_checkIn(appointment)),
-                        onStartFromQueue: (OpdQueueEntry entry) =>
-                            unawaited(_startFromQueue(entry)),
-                        onPrioritize: (OpdQueueEntry entry) =>
-                            unawaited(_prioritize(entry)),
-                        onOpenFlow: (OpdFlowSummary flow) =>
-                            unawaited(_openFlowActions(flow)),
-                        onAssignDoctor: (OpdFlowSummary flow) =>
-                            unawaited(_assignDoctor(flow)),
-                        onEditPatient: (String patientId) =>
-                            unawaited(_editPatient(patientId)),
-                        onCaptureInsurance: (String patientId) =>
-                            unawaited(_captureInsurance(patientId)),
-                        onScheduleForPatient: (String patientId) =>
-                            unawaited(_scheduleForPatient(patientId)),
-                      );
-                    },
-                  ),
-          ),
+          if (rows.isEmpty)
+            AppStateView(
+              title: l10n.receptionEmptyTitle,
+              body: l10n.receptionEmptyBody,
+              variant: AppStateViewVariant.empty,
+            )
+          else
+            for (int index = 0; index < rows.length; index++) ...<Widget>[
+              if (index > 0) SizedBox(height: theme.spacing.sm),
+              _ReceptionDeskCard(
+                row: rows[index],
+                onOpenAppointment: (OpdAppointment appointment) =>
+                    unawaited(_openAppointmentActions(appointment)),
+                onCheckIn: (OpdAppointment appointment) =>
+                    unawaited(_checkIn(appointment)),
+                onStartFromQueue: (OpdQueueEntry entry) =>
+                    unawaited(_startFromQueue(entry)),
+                onPrioritize: (OpdQueueEntry entry) =>
+                    unawaited(_prioritize(entry)),
+                onOpenFlow: (OpdFlowSummary flow) =>
+                    unawaited(_openFlowActions(flow)),
+                onAssignDoctor: (OpdFlowSummary flow) =>
+                    unawaited(_assignDoctor(flow)),
+                onEditPatient: (String patientId) =>
+                    unawaited(_editPatient(patientId)),
+                onCaptureInsurance: (String patientId) =>
+                    unawaited(_captureInsurance(patientId)),
+                onScheduleForPatient: (String patientId) =>
+                    unawaited(_scheduleForPatient(patientId)),
+              ),
+            ],
         ],
       ),
     );
@@ -632,13 +618,9 @@ class _ReceptionWorkspaceContentState
   }
 
   Future<void> _openAppointmentActions(OpdAppointment appointment) async {
-    final bool? changed = await showAppDialog<bool>(
+    final bool? changed = await showReceptionAppointmentActionsDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => AppointmentActionsDialog(
-        appointment: appointment,
-        state: widget.state,
-      ),
+      appointment: appointment,
     );
     if (changed == true && mounted) {
       ScaffoldMessenger.of(
