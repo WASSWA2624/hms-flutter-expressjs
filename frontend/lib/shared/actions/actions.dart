@@ -1,5 +1,6 @@
 export 'app_action_dialogs.dart';
 export 'app_action_item.dart';
+export 'app_action_lifecycle.dart';
 export 'app_action_panel.dart';
 export 'app_global_fault_report_action.dart';
 export 'app_global_housekeeping_request_action.dart';

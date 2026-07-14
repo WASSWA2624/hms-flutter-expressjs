@@ -37,6 +37,7 @@ Purpose: uniform reusable UI built on Flutter Material primitives.
 | `AppListTable`                       | `ListView` / table layout                   | paginated worklist with mobile adaptive mode                                                                     |
 | `AppWorkspaceDetailPanel`            | composition                                   | selected row detail sections                                                                                     |
 | `AppActionPanel` / `AppActionList` | composition                                   | grouped primary/secondary actions                                                                                |
+| `AppPermissionActionPanel` / list / button | composition + `AccessRequirement`       | RBAC/ABAC/entitlement-aware actions: hide vs disable, confirmation, overflow, `AppActionRunner` lifecycle        |
 | `AppWorkspaceMutationDialog`         | `AppDialog`                                 | consistent mutation forms from workspace                                                                         |
 | `AppButton`                          | `TextButton`                                | borderless primary, secondary, tertiary, and icon-only actions                                                   |
 | `AppTextField`                       | `TextFormField`                             | text, number, password, multiline                                                                                |
