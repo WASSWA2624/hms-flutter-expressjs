@@ -6,7 +6,6 @@ globs:
 description: >
   Subscription packages: module and permission limits, intersection, and audit.
 ---
-
 # Subscription Packages
 
 Subscription packages are the hard upper bound on module and permission access. Every permission check (UI and API) must validate against the active package. Defaults live in source control under `.cursor/access/` and must stay aligned with [modules.mdc](./modules.mdc) and [permissions.mdc](./permissions.mdc).
@@ -15,13 +14,14 @@ Subscription packages are the hard upper bound on module and permission access. 
 
 ### Free
 
-| module_key | Permissions |
-|---|---|
-| app_shell | view |
-| auth_session | view, manage (self) |
-| general_settings | view, update (self) |
-| patient_registry | view, create |
-| reports_audit | view (demo dashboards only) |
+
+| module_key       | Permissions                 |
+| -----------------| --------------------------- |
+| app_shell        | view                        |
+| auth_session     | view, manage (self)         |
+| general_settings | view, update (self)         |
+| patient_registry | view, create                |
+| reports_audit    | view (demo dashboards only) |
 
 No clinical write actions, billing mutations, or dispensing.
 
@@ -29,57 +29,60 @@ No clinical write actions, billing mutations, or dispensing.
 
 Includes Free, plus:
 
-| module_key | Permissions |
-|---|---|
-| tenant_settings | view, manage |
-| facility_settings | view, manage |
-| access_admin | view, create, edit, assign, manage |
-| subscriptions | view, manage |
-| rooms_beds | view, create, edit, assign |
-| patient_registry | view, create, update, export |
-| opd | view, create, edit, assign |
-| triage | view, create, edit |
-| clinical | view, create, edit |
-| ipd | view, create, edit, assign (limited beds/wards) |
-| pharmacy | view, dispense |
-| billing | view, create, edit |
-| communications | view, create |
-| reports_audit | view, export (minimal) |
+
+| module_key        | Permissions                                     |
+| ----------------- | ----------------------------------------------- |
+| tenant_settings   | view, manage                                    |
+| facility_settings | view, manage                                    |
+| access_admin      | view, create, edit, assign, manage              |
+| subscriptions     | view, manage                                    |
+| rooms_beds        | view, create, edit, assign                      |
+| patient_registry  | view, create, update, export                    |
+| opd               | view, create, edit, assign                      |
+| triage            | view, create, edit                              |
+| clinical          | view, create, edit                              |
+| ipd               | view, create, edit, assign (limited beds/wards) |
+| pharmacy          | view, dispense                                  |
+| billing           | view, create, edit                              |
+| communications    | view, create                                    |
+| reports_audit     | view, export (minimal)                          |
 
 ### Advanced
 
 Includes Basic, plus full clinical/operational set:
 
-| module_key | Permissions |
-|---|---|
-| ipd | view, create, edit, assign, manage |
-| nursing | view, create, update, manage |
-| discharge | view, create, edit, approve |
-| emergency | view, create, edit, assign, manage |
-| lab | view, request, report, edit, manage, export |
-| radiology | view, request, report, edit, manage, export |
-| physiotherapy | view, create, edit, assign |
-| pharmacy | view, request, prescribe, dispense, manage |
-| claims | view, create, edit, approve, export |
-| billing | view, create, edit, manage, export |
-| reports_audit | view, export, manage |
-| communications | view, create, manage |
+
+| module_key     | Permissions                                 |
+| -------------- | ------------------------------------------- |
+| ipd            | view, create, edit, assign, manage          |
+| nursing        | view, create, update, manage                |
+| discharge      | view, create, edit, approve                 |
+| emergency      | view, create, edit, assign, manage          |
+| lab            | view, request, report, edit, manage, export |
+| radiology      | view, request, report, edit, manage, export |
+| physiotherapy  | view, create, edit, assign                  |
+| pharmacy       | view, request, prescribe, dispense, manage  |
+| claims         | view, create, edit, approve, export         |
+| billing        | view, create, edit, manage, export          |
+| reports_audit  | view, export, manage                        |
+| communications | view, create, manage                        |
 
 ### Pro
 
 Includes Advanced, plus:
 
-| module_key | Permissions |
-|---|---|
-| icu | view, create, edit, assign, manage |
-| theater | view, create, edit, assign, manage |
-| hr | view, create, edit, manage, export |
-| biomedical | view, create, edit, manage |
-| operations | view, create, edit, manage |
-| housekeeping | view, create, manage |
-| mortuary | view, create, edit, manage |
-| integrations | view, manage |
-| dental | view, create, edit, manage (when enabled) |
+
+| module_key   | Permissions                               |
+| ------------ | ----------------------------------------- |
+| icu          | view, create, edit, assign, manage        |
+| theater      | view, create, edit, assign, manage        |
+| hr           | view, create, edit, manage, export        |
+| biomedical   | view, create, edit, manage                |
+| operations   | view, create, edit, manage                |
+| housekeeping | view, create, manage                      |
+| mortuary     | view, create, edit, manage                |
+| integrations | view, manage                              |
+| dental       | view, create, edit, manage (when enabled) |
 
 ### Custom
 
@@ -87,7 +90,7 @@ Organization-specific subset or extension of Pro. Must enumerate `module_key` + 
 
 ### Developer
 
-Unrestricted module/permission access for **non-production** development, testing, and integration only. Must **not** bypass subscription intersection in production tenants. Includes `demo_seed` manage.
+Unrestricted module/permission access for **non-production** development, testing, and integration only. Must **not** bypass subscription intersection in production tena	nts. Includes `demo_seed` manage.
 
 ## Enforcement
 
