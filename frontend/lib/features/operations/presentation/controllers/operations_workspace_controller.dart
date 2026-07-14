@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
@@ -35,6 +36,7 @@ final class OperationsWorkspaceController
 
   @override
   Future<Result<OperationsWorkspaceState>> build() async {
+    watchSessionEpoch(ref);
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.operations,

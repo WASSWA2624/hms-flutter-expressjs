@@ -7,6 +7,7 @@ import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/workspace/realtime_delta.dart';
 import 'package:hosspi_hms/core/workspace/realtime_sync_action.dart';
@@ -35,6 +36,7 @@ final class AccessAdminWorkspaceController
 
   @override
   Future<Result<AccessAdminWorkspaceState>> build() {
+    watchSessionEpoch(ref);
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.accessAdmin,

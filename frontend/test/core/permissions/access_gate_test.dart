@@ -14,9 +14,7 @@ import 'package:hosspi_hms/shared/components/app_permission_action.dart';
 void main() {
   Widget wrap(Widget child, AppAccessPolicy policy) {
     return ProviderScope(
-      overrides: [
-        appAccessPolicyProvider.overrideWithValue(policy),
-      ],
+      overrides: [appAccessPolicyProvider.overrideWithValue(policy)],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
@@ -170,7 +168,9 @@ void main() {
       expect(find.textContaining('Refund'), findsNothing);
     });
 
-    testWidgets('can explicitly render a denied non-action state', (tester) async {
+    testWidgets('can explicitly render a denied non-action state', (
+      tester,
+    ) async {
       final policy = AppAccessPolicy.fromSession(
         AuthSession(
           tokens: SessionTokens(accessToken: 'access-token'),

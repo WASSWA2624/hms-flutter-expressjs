@@ -61,7 +61,9 @@ final class SessionController extends Notifier<SessionState> {
     state = const SessionState.notReady();
 
     try {
-      await ref.read(sessionIsolationServiceProvider).disposeAuthenticatedState();
+      await ref
+          .read(sessionIsolationServiceProvider)
+          .disposeAuthenticatedState();
       await ref.read(sessionManagerProvider).logout();
       state = const SessionState.unauthenticated();
     } catch (_) {
@@ -71,6 +73,7 @@ final class SessionController extends Notifier<SessionState> {
   }
 
   Future<void> handleUnauthorizedResponse() async {
+    state = const SessionState.notReady();
     await ref.read(sessionIsolationServiceProvider).disposeAuthenticatedState();
     await ref.read(sessionManagerProvider).handleUnauthorizedResponse();
     state = const SessionState.expired();

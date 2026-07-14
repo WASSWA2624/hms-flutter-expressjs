@@ -164,7 +164,67 @@ void main() {
 
       expect(container.read(tenantFacilitySetupRefreshProvider), isFalse);
     });
+
+    test(
+      'epoch reload exposes neutral loading without previous data',
+      () async {
+        final Completer<String> nextValue = Completer<String>();
+        var loadCount = 0;
+        final container = ProviderContainer(
+          overrides: [
+            _sessionScopedLoaderProvider.overrideWithValue(() {
+              loadCount += 1;
+              return loadCount == 1
+                  ? Future<String>.value('previous-context')
+                  : nextValue.future;
+            }),
+          ],
+        );
+        addTearDown(container.dispose);
+        final subscription = container.listen(
+          _sessionScopedValueProvider,
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(subscription.close);
+
+        expect(
+          await container.read(_sessionScopedValueProvider.future),
+          'previous-context',
+        );
+
+        container.read(sessionEpochProvider.notifier).bump();
+        await Future<void>.delayed(Duration.zero);
+
+        final loading = container.read(_sessionScopedValueProvider);
+        expect(loading.isLoading, isTrue);
+        expect(loading.hasValue, isFalse);
+
+        nextValue.complete('next-context');
+        expect(
+          await container.read(_sessionScopedValueProvider.future),
+          'next-context',
+        );
+      },
+    );
   });
+}
+
+final _sessionScopedLoaderProvider = Provider<Future<String> Function()>(
+  (_) async => 'unused',
+);
+
+final _sessionScopedValueProvider =
+    AsyncNotifierProvider<_SessionScopedValueController, String>(
+      _SessionScopedValueController.new,
+    );
+
+final class _SessionScopedValueController extends AsyncNotifier<String> {
+  @override
+  Future<String> build() {
+    watchSessionEpoch(ref);
+    return ref.read(_sessionScopedLoaderProvider)();
+  }
 }
 
 final class _MemorySecureStorage implements AppSecureStorage {

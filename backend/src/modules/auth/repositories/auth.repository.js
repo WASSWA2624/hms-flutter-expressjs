@@ -27,6 +27,12 @@ const userInclude = {
       permission: true,
     },
   },
+  module_assignments: {
+    where: { deleted_at: null },
+    include: {
+      module: true,
+    },
+  },
   roles: {
     where: { deleted_at: null },
     include: {

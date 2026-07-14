@@ -384,9 +384,7 @@ final class TenantFacilitySetupSubmissionController
         return snapshot.copyWith(
           branches: <BranchProfile>[
             for (final BranchProfile branch in snapshot.branches)
-              branch.id == id
-                  ? branch.copyWith(deletedAt: deletedAt)
-                  : branch,
+              branch.id == id ? branch.copyWith(deletedAt: deletedAt) : branch,
           ],
           departments: departments,
           units: <UnitProfile>[

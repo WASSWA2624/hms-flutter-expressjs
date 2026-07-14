@@ -37,7 +37,9 @@ final class AccessRequirement {
         if (code.trim().isNotEmpty) code.trim(),
     };
     for (final AppPermission permission in allPermissions) {
-      final String? module = PermissionModuleMap.moduleForPermission(permission);
+      final String? module = PermissionModuleMap.moduleForPermission(
+        permission,
+      );
       if (module != null) {
         modules.add(module);
       }

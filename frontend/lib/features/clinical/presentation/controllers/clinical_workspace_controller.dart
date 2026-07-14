@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
@@ -45,6 +46,7 @@ final class ClinicalWorkspaceController
 
   @override
   Future<Result<ClinicalWorkspaceState>> build() async {
+    watchSessionEpoch(ref);
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.clinical,
