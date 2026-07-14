@@ -1,16 +1,30 @@
 Review all rule files in: [HMS rules](.cursor/**), [Backend rules](backend/.cursor/**), and [Frontend rules](frontend/.cursor/**).
 
-For each rule file, perform the following for only those rules where the requirement or change is applicable:
+For each rule file, apply the following steps where applicable:
 
-1. Confirm `alwaysApply: false` is present.
+1. Ensure `alwaysApply: false` is correctly set unless otherwise specified.
+
 2. In the `meta` section:
-  - Verify `globs` correctly represent the file's intended scope.
-  - Ensure the `description` is concise (≤21 words), clearly stating when and where the rule should be applied.
-3. Update or remove only those rules that are duplicates or produce conflicts, ensuring consistency across files.
-4. Check that all descriptions, where changes are needed, are clear and easy to understand.
-5. For rules mandating product or UI standards (such as for UI, sync, or workflow), update those applicable rules to explicitly require: high performance, uniform and consistent UI, reusable components/code, real-time UI-to-backend sync, complete responsiveness (mobile, tablet, desktop), simple UI design, and intuitive workflows.
-6. For rules governing entity references between frontend and backend, ensure only those relevant rules include: "The frontend must reference entities by human_friendly_id; the backend must map these to internal IDs. Never expose raw database table ids in frontend or API responses."
-7. For applicable rules, require that the theme is comprehensive and prohibits hard-coded tokens anywhere in the codebase.
-8. Ensure all text is fully localized, concise, and uses context-appropriate terminology.
-9. Only update rules and sections to which these requirements or clarifications apply; leave other rules unchanged.
-10. UI rules must require prioritizing reusability and consistency. Any component that may be reused should be implemented as a reusable component and placed in the appropriate subfolder under [Shared folder](frontend/lib/shared/).
+  - Confirm `globs` accurately match the rule file's intended scope.
+  - Verify the `description` is clear (≤21 words), concise, and states precise application conditions.
+
+3. Remove or update only duplicate or conflicting rules to maintain consistency across the codebase.
+
+4. Where needed, revise descriptions to be unambiguous and easily understandable.
+
+5. Where standards for product or UI are defined (e.g., UI, sync, workflow rules), explicitly require: high performance, uniform and consistent UI, reusable components/code, real-time sync from UI to backend, full responsiveness (mobile, tablet, desktop), simple UI design, and intuitive workflows.
+
+6. For entity reference rules between frontend and backend, where relevant, require: "Frontend must reference entities by human_friendly_id; backend maps to internal IDs. Do not expose raw table IDs in frontend or API responses."
+
+7. Where relevant, require that themes are comprehensive and prohibit hard-coded tokens throughout the codebase.
+
+8. Ensure all text is localized, concise, and uses appropriate terminology for its context.
+
+9. Make changes only in those rule files or sections to which these requirements apply; leave unrelated rules unchanged.
+
+10. For UI rules, require that reusability and consistency are prioritized. All components suitable for reuse must be implemented as reusable components and stored in the appropriate subfolder under [Shared folder](frontend/lib/shared/).
+
+11. Where relevant, require strict enforcement of Role-Based Access Control (RBAC) and Attribute-Based Access Control (ABAC) based on user roles and permissions. Menus, interface components, actions, and workflows must not be visible or accessible to unauthorized users.
+
+12. Define and store permissions at user, role, and module levels in the database. Individual permissions must be attachable to users, roles, modules, or directly to users as needed, granting all associated permissions. Modules and permissions may also connect to subscription packages. Prevent users from accessing permissions outside their assigned subscription package, regardless of direct, role, or module permissions. Rules on permissions must set `alwaysApply: true`.
+
