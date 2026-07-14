@@ -18,6 +18,11 @@ const NO_STORE_PREFIXES = Object.freeze([
   '/api/v1/medication-administrations',
   '/api/v1/clinical-alerts',
   '/api/v1/refunds',
+  '/api/v1/payments',
+  '/api/v1/billing',
+  '/api/v1/billing-adjustments',
+  '/api/v1/invoices',
+  '/api/v1/invoice-items',
   '/api/v1/audit-logs',
   '/api/v1/phi-access-logs',
   '/api/v1/data-processing-logs',
@@ -63,12 +68,30 @@ const IDEMPOTENCY_DISABLED_PREFIXES = Object.freeze([
   '/api/v1/closeout-packs',
 ]);
 
+/** Mutations that must never be queued for offline execution. */
+const ONLINE_ONLY_MUTATION_PREFIXES = Object.freeze([
+  '/api/v1/auth',
+  '/api/v1/refunds',
+  '/api/v1/payments',
+  '/api/v1/billing',
+  '/api/v1/billing-adjustments',
+  '/api/v1/invoices',
+  '/api/v1/invoice-items',
+  '/api/v1/break-glass-access',
+  '/api/v1/break-glass-reviews',
+  '/api/v1/shift-closes',
+  '/api/v1/day-closes',
+  '/api/v1/closeout-packs',
+  '/api/v1/office-contexts',
+]);
+
 const matchesAnyPrefix = (path, prefixes) =>
   prefixes.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 
 const resolveOfflinePolicy = (req) => {
   const path = normalizePath(req?.originalUrl || req?.url || req?.path);
   const method = String(req?.method || 'GET').toUpperCase();
+  const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
 
   const cache =
     matchesAnyPrefix(path, NO_STORE_PREFIXES)
@@ -79,15 +102,20 @@ const resolveOfflinePolicy = (req) => {
           : 'revalidate'
         : 'no-store';
 
+  const onlineOnly =
+    isMutation && matchesAnyPrefix(path, ONLINE_ONLY_MUTATION_PREFIXES);
+
   return {
     path,
     cache,
     allow_validators: cache === 'revalidate' || cache === 'sync',
     allow_sync_metadata: cache === 'sync',
     allow_idempotency: !matchesAnyPrefix(path, IDEMPOTENCY_DISABLED_PREFIXES),
+    online_only: onlineOnly,
+    // Online-only financial / closeout mutations must not be queued offline.
+    allow_offline_queue: isMutation ? !onlineOnly : true,
     require_conditional_mutation:
-      ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) &&
-      matchesAnyPrefix(path, CONDITIONAL_MUTATION_PREFIXES),
+      isMutation && matchesAnyPrefix(path, CONDITIONAL_MUTATION_PREFIXES),
   };
 };
 
@@ -96,6 +124,7 @@ module.exports = {
   SAFE_LIST_SYNC_PREFIXES,
   CONDITIONAL_MUTATION_PREFIXES,
   IDEMPOTENCY_DISABLED_PREFIXES,
+  ONLINE_ONLY_MUTATION_PREFIXES,
   normalizePath,
   resolveOfflinePolicy,
 };

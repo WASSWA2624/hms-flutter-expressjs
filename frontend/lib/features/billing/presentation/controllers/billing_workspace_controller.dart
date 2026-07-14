@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
-import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/billing/data/repositories/billing_repository_impl.dart';
@@ -228,11 +228,13 @@ final class BillingWorkspaceController
     if (selected == null) {
       return Future<AppFailure?>.value(_missingSelectionFailure());
     }
-    return _submitAction(() => _repository.receivePayment(selected, draft));
+    return _submitOnlineOnlyAction(
+      () => _repository.receivePayment(selected, draft),
+    );
   }
 
   Future<AppFailure?> requestRefund(BillingRefundDraft draft) {
-    return _submitAction(() => _repository.requestRefund(draft));
+    return _submitOnlineOnlyAction(() => _repository.requestRefund(draft));
   }
 
   Future<AppFailure?> requestAdjustment(BillingAdjustmentDraft draft) {
@@ -261,11 +263,13 @@ final class BillingWorkspaceController
   }
 
   Future<AppFailure?> closeShift(BillingCloseDraft draft) {
-    return _submitMaintenanceAction(() => _repository.closeShift(draft));
+    return _submitOnlineOnlyMaintenanceAction(
+      () => _repository.closeShift(draft),
+    );
   }
 
   Future<AppFailure?> closeDay(BillingCloseDraft draft) {
-    return _submitMaintenanceAction(() => _repository.closeDay(draft));
+    return _submitOnlineOnlyMaintenanceAction(() => _repository.closeDay(draft));
   }
 
   Future<Result<BillingPatientLedger>> fetchPatientLedger(
@@ -374,6 +378,17 @@ final class BillingWorkspaceController
     );
   }
 
+  /// Payments, refunds, and closeout must never queue offline.
+  Future<AppFailure?> _submitOnlineOnlyAction(
+    Future<Result<BillingMutationResult>> Function() submit,
+  ) async {
+    final AppFailure? offline = _rejectIfOffline();
+    if (offline != null) {
+      return offline;
+    }
+    return _submitAction(submit);
+  }
+
   Future<AppFailure?> _submitMaintenanceAction(
     Future<Result<void>> Function() submit,
   ) async {
@@ -403,6 +418,36 @@ final class BillingWorkspaceController
         return failure;
       },
     );
+  }
+
+  Future<AppFailure?> _submitOnlineOnlyMaintenanceAction(
+    Future<Result<void>> Function() submit,
+  ) async {
+    final AppFailure? offline = _rejectIfOffline();
+    if (offline != null) {
+      return offline;
+    }
+    return _submitMaintenanceAction(submit);
+  }
+
+  AppFailure? _rejectIfOffline() {
+    final AsyncValue<AppConnectivityStatus> status = ref.read(
+      appConnectivityStatusProvider,
+    );
+    final bool isOffline = status.maybeWhen(
+      data: (AppConnectivityStatus value) =>
+          value == AppConnectivityStatus.offline,
+      orElse: () => false,
+    );
+    if (!isOffline) {
+      return null;
+    }
+    final BillingWorkspaceState? current = _currentState;
+    const AppFailure offline = AppFailure.offline();
+    if (current != null) {
+      _emit(current.copyWith(lastFailure: offline));
+    }
+    return offline;
   }
 
   Future<AppFailure?> _refreshWorkspace({String? preferredSelectedId}) async {

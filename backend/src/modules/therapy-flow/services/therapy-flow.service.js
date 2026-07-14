@@ -378,7 +378,10 @@ const applySessionBilling = async (tx, { billing, episode, sessionId, existingSn
     facilityId: episode.encounter?.facility_id,
     patientId: episode.encounter?.patient_id,
     encounterId: episode.encounter_id,
-    userId: context.user_id,
+    actorUserId: context.user_id,
+    sourceModule: 'THERAPY',
+    sourceId: sessionId,
+    mutableUpdate: Boolean(existingSnapshot),
     description: 'Physiotherapy session',
   });
   if (sessionId && snapshot) {

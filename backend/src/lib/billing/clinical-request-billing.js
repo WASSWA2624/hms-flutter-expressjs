@@ -24,6 +24,54 @@ const {
 
 const SKIPPED_PAYMENT_STATUSES = new Set(['NOT_BILLED', 'NOT_REQUIRED', 'NO_CHARGE']);
 
+const BILLABLE_SOURCE_MODULES = Object.freeze({
+  CONSULTATION: 'CONSULTATION',
+  LABORATORY: 'LABORATORY',
+  RADIOLOGY: 'RADIOLOGY',
+  PHARMACY: 'PHARMACY',
+  PROCEDURE: 'PROCEDURE',
+  THEATRE: 'THEATRE',
+  ADMISSION: 'ADMISSION',
+  NURSING: 'NURSING',
+  WARD_ROUND: 'WARD_ROUND',
+  CONSUMABLE: 'CONSUMABLE',
+  THERAPY: 'THERAPY',
+  SERVICE: 'SERVICE',
+});
+
+const normalizeBillableSourceModule = (value) => {
+  const token = String(value || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, '_');
+  if (!token) {
+    return null;
+  }
+  if (BILLABLE_SOURCE_MODULES[token]) {
+    return BILLABLE_SOURCE_MODULES[token];
+  }
+  if (token.includes('LAB')) return BILLABLE_SOURCE_MODULES.LABORATORY;
+  if (token.includes('RADIO')) return BILLABLE_SOURCE_MODULES.RADIOLOGY;
+  if (token.includes('PHARM')) return BILLABLE_SOURCE_MODULES.PHARMACY;
+  if (token.includes('CONSULT')) return BILLABLE_SOURCE_MODULES.CONSULTATION;
+  if (token.includes('ADMISS')) return BILLABLE_SOURCE_MODULES.ADMISSION;
+  if (token.includes('NURS')) return BILLABLE_SOURCE_MODULES.NURSING;
+  if (token.includes('THEAT')) return BILLABLE_SOURCE_MODULES.THEATRE;
+  if (token.includes('PROC')) return BILLABLE_SOURCE_MODULES.PROCEDURE;
+  if (token.includes('CONSUM')) return BILLABLE_SOURCE_MODULES.CONSUMABLE;
+  if (token.includes('THERAP')) return BILLABLE_SOURCE_MODULES.THERAPY;
+  if (token.includes('WARD')) return BILLABLE_SOURCE_MODULES.WARD_ROUND;
+  return BILLABLE_SOURCE_MODULES.SERVICE;
+};
+
+const normalizeChargeKey = (value) => {
+  const token = String(value || 'PRIMARY')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '_');
+  return token.slice(0, 120) || 'PRIMARY';
+};
+
 const VALID_PAYMENT_METHODS = new Set([
   'CASH',
   'CREDIT_CARD',
@@ -572,6 +620,69 @@ const CLINICAL_INVOICE_SOURCES = Object.freeze([
       encounter: { select: { id: true, human_friendly_id: true } },
     },
   },
+  {
+    model: 'ward_round',
+    label: 'Ward Round',
+    invoiceFilterField: 'billing_snapshot',
+    invoiceFilterPath: '$.invoice_id',
+    orderSelect: {
+      billing_snapshot: true,
+      admission: {
+        select: {
+          encounter_id: true,
+          encounter: { select: { id: true, human_friendly_id: true } },
+        },
+      },
+    },
+  },
+  {
+    model: 'procedure',
+    label: 'Procedure',
+    invoiceFilterField: 'billing_snapshot',
+    invoiceFilterPath: '$.invoice_id',
+    orderSelect: {
+      billing_snapshot: true,
+      encounter_id: true,
+      encounter: { select: { id: true, human_friendly_id: true } },
+    },
+  },
+  {
+    model: 'theatre_case',
+    label: 'Theatre',
+    invoiceFilterField: 'billing_snapshot',
+    invoiceFilterPath: '$.invoice_id',
+    orderSelect: {
+      billing_snapshot: true,
+      encounter_id: true,
+      encounter: { select: { id: true, human_friendly_id: true } },
+    },
+  },
+  {
+    model: 'admission',
+    label: 'Admission',
+    invoiceFilterField: 'billing_snapshot',
+    invoiceFilterPath: '$.invoice_id',
+    orderSelect: {
+      billing_snapshot: true,
+      encounter_id: true,
+      encounter: { select: { id: true, human_friendly_id: true } },
+    },
+  },
+  {
+    model: 'nursing_note',
+    label: 'Nursing',
+    invoiceFilterField: 'billing_snapshot',
+    invoiceFilterPath: '$.invoice_id',
+    orderSelect: {
+      billing_snapshot: true,
+      admission: {
+        select: {
+          encounter_id: true,
+          encounter: { select: { id: true, human_friendly_id: true } },
+        },
+      },
+    },
+  },
 ]);
 
 const buildClinicalInvoiceIdFilter = (source, invoiceId) => ({
@@ -596,7 +707,37 @@ const normalizeSourceModuleLabel = (value) => {
   if (normalized.includes('pharm')) {
     return 'Pharmacy';
   }
+  if (normalized.includes('consult')) {
+    return 'Consultation';
+  }
+  if (normalized.includes('admiss')) {
+    return 'Admission';
+  }
+  if (normalized.includes('nurs')) {
+    return 'Nursing';
+  }
+  if (normalized.includes('theat')) {
+    return 'Theatre';
+  }
+  if (normalized.includes('proc')) {
+    return 'Procedure';
+  }
+  if (normalized.includes('consum')) {
+    return 'Consumable';
+  }
+  if (normalized.includes('ward')) {
+    return 'Ward Round';
+  }
   return token.charAt(0).toUpperCase() + token.slice(1);
+};
+
+const resolveOrderEncounterContext = (order = {}) => {
+  const nested = order.admission?.encounter || order.encounter || null;
+  return {
+    encounter_id:
+      order.encounter_id || order.admission?.encounter_id || nested?.id || null,
+    encounter_display_id: nested?.human_friendly_id || null,
+  };
 };
 
 const findClinicalOrdersForInvoices = async (invoiceIds = []) => {
@@ -625,6 +766,7 @@ const findClinicalOrdersForInvoices = async (invoiceIds = []) => {
       if (!invoiceId) {
         continue;
       }
+      const encounterContext = resolveOrderEncounterContext(order);
       const existing = contexts.get(invoiceId) || {
         encounter_id: null,
         encounter_display_id: null,
@@ -632,12 +774,49 @@ const findClinicalOrdersForInvoices = async (invoiceIds = []) => {
       };
       existing.source_modules.add(source.label);
       if (!existing.encounter_id) {
-        existing.encounter_id = order.encounter_id || snapshot?.encounter_id || null;
+        existing.encounter_id =
+          encounterContext.encounter_id || snapshot?.encounter_id || null;
         existing.encounter_display_id =
-          order.encounter?.human_friendly_id ||
+          encounterContext.encounter_display_id ||
           snapshot?.encounter_display_id ||
-          order.encounter_id ||
+          encounterContext.encounter_id ||
           null;
+      }
+      contexts.set(invoiceId, existing);
+    }
+  }
+
+  if (prisma?.billable_charge_event?.findMany) {
+    const events = await prisma.billable_charge_event.findMany({
+      where: {
+        deleted_at: null,
+        status: 'POSTED',
+        invoice_id: { in: uniqueIds },
+      },
+      select: {
+        invoice_id: true,
+        source_module: true,
+        encounter_id: true,
+        encounter: { select: { id: true, human_friendly_id: true } },
+      },
+    });
+    for (const event of events) {
+      const invoiceId = event.invoice_id ? String(event.invoice_id) : null;
+      if (!invoiceId) {
+        continue;
+      }
+      const existing = contexts.get(invoiceId) || {
+        encounter_id: null,
+        encounter_display_id: null,
+        source_modules: new Set(),
+      };
+      const label = normalizeSourceModuleLabel(event.source_module);
+      if (label) {
+        existing.source_modules.add(label);
+      }
+      if (!existing.encounter_id) {
+        existing.encounter_id = event.encounter_id || event.encounter?.id || null;
+        existing.encounter_display_id = event.encounter?.human_friendly_id || null;
       }
       contexts.set(invoiceId, existing);
     }
@@ -904,6 +1083,7 @@ const cancelInvoiceIfReversible = async (tx, invoiceId) => {
     return false;
   }
   if (String(invoice.status || '').toUpperCase() === 'CANCELLED') {
+    await reverseBillableChargeEventsForInvoice(tx, invoiceId);
     return true;
   }
   await tx.invoice_item.updateMany({
@@ -918,7 +1098,168 @@ const cancelInvoiceIfReversible = async (tx, invoiceId) => {
     where: { id: invoice.id },
     data: { status: 'CANCELLED', billing_status: 'CANCELLED' },
   });
+  await reverseBillableChargeEventsForInvoice(tx, invoiceId);
   return true;
+};
+
+/**
+ * Mark posted billable_charge_event rows as REVERSED and free the idempotency key.
+ */
+const reverseBillableChargeEventsForInvoice = async (tx, invoiceId) => {
+  if (!invoiceId || !tx?.billable_charge_event?.findMany) {
+    return;
+  }
+  const events = await tx.billable_charge_event.findMany({
+    where: {
+      invoice_id: invoiceId,
+      status: 'POSTED',
+      deleted_at: null,
+    },
+  });
+  const now = new Date();
+  for (const event of events) {
+    await tx.billable_charge_event.update({
+      where: { id: event.id },
+      data: {
+        status: 'REVERSED',
+        reversed_at: now,
+        deleted_at: now,
+        charge_key: `REV:${event.charge_key}:${event.id}`.slice(0, 120),
+      },
+    });
+  }
+};
+
+/**
+ * Look up an existing posted charge for the same source identity (retry / reprocess).
+ */
+const findPostedBillableChargeEvent = async (
+  tx,
+  { tenantId, sourceModule, sourceId, chargeKey }
+) => {
+  if (!tx?.billable_charge_event?.findFirst || !tenantId || !sourceModule || !sourceId) {
+    return null;
+  }
+  return tx.billable_charge_event.findFirst({
+    where: {
+      tenant_id: tenantId,
+      source_module: sourceModule,
+      source_id: sourceId,
+      charge_key: chargeKey,
+      status: 'POSTED',
+      deleted_at: null,
+    },
+  });
+};
+
+/**
+ * Upsert the idempotent billable charge event after a successful invoice post.
+ */
+const upsertBillableChargeEvent = async (
+  tx,
+  {
+    tenantId,
+    facilityId = null,
+    patientId = null,
+    encounterId = null,
+    sourceModule,
+    sourceId,
+    chargeKey = 'PRIMARY',
+    invoiceId = null,
+    catalogType = null,
+    catalogItemId = null,
+    actorUserId = null,
+    unitPriceSnapshot = null,
+    totalAmountSnapshot = null,
+    currency = null,
+    existingEventId = null,
+  } = {}
+) => {
+  if (!tx?.billable_charge_event || !tenantId || !sourceModule || !sourceId) {
+    return null;
+  }
+
+  const data = {
+    tenant_id: tenantId,
+    facility_id: facilityId || null,
+    patient_id: patientId || null,
+    encounter_id: encounterId || null,
+    source_module: sourceModule,
+    source_id: String(sourceId),
+    charge_key: normalizeChargeKey(chargeKey),
+    invoice_id: invoiceId || null,
+    catalog_type: catalogType || null,
+    catalog_item_id: catalogItemId || null,
+    actor_user_id: actorUserId || null,
+    unit_price_snapshot: unitPriceSnapshot != null ? toMoneyString(unitPriceSnapshot) : null,
+    total_amount_snapshot:
+      totalAmountSnapshot != null ? toMoneyString(totalAmountSnapshot) : null,
+    currency: currency || null,
+    status: 'POSTED',
+    posted_at: new Date(),
+    reversed_at: null,
+    deleted_at: null,
+  };
+
+  if (existingEventId) {
+    return tx.billable_charge_event.update({
+      where: { id: existingEventId },
+      data,
+    });
+  }
+
+  try {
+    return await tx.billable_charge_event.create({ data });
+  } catch (error) {
+    // Unique collision under concurrent retry: load and update the winner.
+    if (error?.code === 'P2002') {
+      const existing = await findPostedBillableChargeEvent(tx, {
+        tenantId,
+        sourceModule,
+        sourceId,
+        chargeKey: data.charge_key,
+      });
+      if (existing) {
+        return tx.billable_charge_event.update({
+          where: { id: existing.id },
+          data,
+        });
+      }
+    }
+    throw error;
+  }
+};
+
+/**
+ * Rebuild a billing snapshot from an already-posted invoice (idempotent retry path).
+ */
+const buildSnapshotFromExistingInvoice = async (
+  tx,
+  { invoiceId, billing, encounterId, encounterDisplayId }
+) => {
+  const invoice = await tx.invoice.findFirst({
+    where: { id: invoiceId, deleted_at: null },
+    include: {
+      payments: { where: { deleted_at: null }, orderBy: { created_at: 'desc' } },
+    },
+  });
+  if (!invoice) {
+    return null;
+  }
+  const payment =
+    (invoice.payments || []).find((entry) =>
+      COMPLETED_PAYMENT_STATUSES.has(String(entry.status || '').toUpperCase())
+    ) ||
+    invoice.payments?.[0] ||
+    null;
+  const paymentStatus = resolvePaymentStatusAfterApply(billing, invoice, payment);
+  return buildBillingSnapshot(billing || {}, {
+    invoice,
+    payment,
+    paymentStatus,
+    encounterId,
+    encounterDisplayId,
+  });
 };
 
 /**
@@ -983,13 +1324,68 @@ const recordRequestPayment = async (
  * the invoice is updated in place so editing an order keeps a single dynamic invoice.
  * When billing is no longer chargeable, any prior invoice is reversed.
  *
+ * Pass `sourceModule` + `sourceId` (+ optional `chargeKey`) so retries and realtime
+ * reprocessing reuse the same billable_charge_event / invoice instead of posting again.
+ *
  * @param {import('@prisma/client').Prisma.TransactionClient} tx
  * @param {Object} options
  * @returns {Promise<Object|null>} Persisted billing snapshot (null when nothing is billed)
  */
 const applyClinicalRequestBilling = async (tx, options = {}) => {
   let billing = options.billing;
-  const existingInvoiceId = extractInvoiceIdFromSnapshot(options.existingSnapshot);
+  let existingInvoiceId = extractInvoiceIdFromSnapshot(options.existingSnapshot);
+  const sourceModule = normalizeBillableSourceModule(options.sourceModule);
+  const sourceId = options.sourceId ? String(options.sourceId).trim() : null;
+  const chargeKey = normalizeChargeKey(options.chargeKey || 'PRIMARY');
+  const allowRepeat = Boolean(options.allowRepeat);
+
+  const postedEvent = await findPostedBillableChargeEvent(tx, {
+    tenantId: options.tenantId,
+    sourceModule,
+    sourceId,
+    chargeKey,
+  });
+
+  // Idempotent retry: same source already posted and caller is not mutating lines.
+  // Callers that pass existingSnapshot (order edits) continue into the mutable path.
+  if (
+    postedEvent?.invoice_id &&
+    !options.existingSnapshot &&
+    options.mutableUpdate !== true
+  ) {
+    const reused = await buildSnapshotFromExistingInvoice(tx, {
+      invoiceId: postedEvent.invoice_id,
+      billing,
+      encounterId: options.encounterId || postedEvent.encounter_id,
+      encounterDisplayId: options.encounterDisplayId,
+    });
+    if (reused) {
+      return reused;
+    }
+  }
+
+  // Consultation (and other non-repeatable charges): refuse a second distinct post.
+  if (
+    postedEvent?.invoice_id &&
+    existingInvoiceId &&
+    existingInvoiceId !== postedEvent.invoice_id &&
+    !allowRepeat &&
+    sourceModule === BILLABLE_SOURCE_MODULES.CONSULTATION
+  ) {
+    const reused = await buildSnapshotFromExistingInvoice(tx, {
+      invoiceId: postedEvent.invoice_id,
+      billing,
+      encounterId: options.encounterId || postedEvent.encounter_id,
+      encounterDisplayId: options.encounterDisplayId,
+    });
+    if (reused) {
+      return reused;
+    }
+  }
+
+  if (!existingInvoiceId && postedEvent?.invoice_id) {
+    existingInvoiceId = postedEvent.invoice_id;
+  }
 
   if (!shouldApplyClinicalRequestBilling(billing)) {
     if (existingInvoiceId) {
@@ -1170,13 +1566,34 @@ const applyClinicalRequestBilling = async (tx, options = {}) => {
   invoice = recalculated?.invoice || invoice;
 
   const paymentStatus = resolvePaymentStatusAfterApply(enrichedBilling, invoice, payment);
-  return buildBillingSnapshot(enrichedBilling, {
+  const snapshot = buildBillingSnapshot(enrichedBilling, {
     invoice,
     payment,
     paymentStatus,
     encounterId: options.encounterId,
     encounterDisplayId: options.encounterDisplayId,
   });
+
+  const primaryLine = invoiceItems[0] || {};
+  await upsertBillableChargeEvent(tx, {
+    tenantId,
+    facilityId: options.facilityId || null,
+    patientId,
+    encounterId: options.encounterId || null,
+    sourceModule,
+    sourceId,
+    chargeKey,
+    invoiceId: invoice.id,
+    catalogType: primaryLine.catalog_type || options.catalogType || null,
+    catalogItemId: primaryLine.catalog_item_id || options.catalogItemId || null,
+    actorUserId: options.actorUserId || null,
+    unitPriceSnapshot: primaryLine.unit_price || null,
+    totalAmountSnapshot: invoice.total_amount,
+    currency,
+    existingEventId: postedEvent?.id || null,
+  });
+
+  return snapshot;
 };
 
 const syncClinicalRequestBilling = applyClinicalRequestBilling;
@@ -1190,6 +1607,9 @@ const persistLabOrderBilling = async (
     existingSnapshot,
     encounterId,
     encounterDisplayId,
+    sourceModule: BILLABLE_SOURCE_MODULES.LABORATORY,
+    sourceId: orderId,
+    mutableUpdate: Boolean(existingSnapshot),
     ...context,
   });
   await tx.lab_order.update({
@@ -1381,7 +1801,14 @@ const persistPharmacyOrderBilling = async (
   tx,
   { orderId, billing, existingSnapshot, ...context }
 ) => {
-  const snapshot = await applyClinicalRequestBilling(tx, { billing, existingSnapshot, ...context });
+  const snapshot = await applyClinicalRequestBilling(tx, {
+    billing,
+    existingSnapshot,
+    sourceModule: BILLABLE_SOURCE_MODULES.PHARMACY,
+    sourceId: orderId,
+    mutableUpdate: Boolean(existingSnapshot),
+    ...context,
+  });
   await tx.pharmacy_order.update({
     where: { id: orderId },
     data: { billing_snapshot: snapshot },
@@ -1393,7 +1820,14 @@ const persistRadiologyOrderBilling = async (
   tx,
   { orderId, requestDetails = {}, billing, existingSnapshot, ...context }
 ) => {
-  const snapshot = await applyClinicalRequestBilling(tx, { billing, existingSnapshot, ...context });
+  const snapshot = await applyClinicalRequestBilling(tx, {
+    billing,
+    existingSnapshot,
+    sourceModule: BILLABLE_SOURCE_MODULES.RADIOLOGY,
+    sourceId: orderId,
+    mutableUpdate: Boolean(existingSnapshot),
+    ...context,
+  });
   const nextDetails = { ...requestDetails };
   if (snapshot) {
     nextDetails.billing = snapshot;
@@ -1411,7 +1845,14 @@ const persistWardRoundBilling = async (
   tx,
   { wardRoundId, billing, existingSnapshot, ...context }
 ) => {
-  const snapshot = await applyClinicalRequestBilling(tx, { billing, existingSnapshot, ...context });
+  const snapshot = await applyClinicalRequestBilling(tx, {
+    billing,
+    existingSnapshot,
+    sourceModule: BILLABLE_SOURCE_MODULES.WARD_ROUND,
+    sourceId: wardRoundId,
+    mutableUpdate: Boolean(existingSnapshot),
+    ...context,
+  });
   await tx.ward_round.update({
     where: { id: wardRoundId },
     data: { billing_snapshot: snapshot },
@@ -1423,7 +1864,14 @@ const persistProcedureBilling = async (
   tx,
   { procedureId, billing, existingSnapshot, ...context }
 ) => {
-  const snapshot = await applyClinicalRequestBilling(tx, { billing, existingSnapshot, ...context });
+  const snapshot = await applyClinicalRequestBilling(tx, {
+    billing,
+    existingSnapshot,
+    sourceModule: BILLABLE_SOURCE_MODULES.PROCEDURE,
+    sourceId: procedureId,
+    mutableUpdate: Boolean(existingSnapshot),
+    ...context,
+  });
   await tx.procedure.update({
     where: { id: procedureId },
     data: { billing_snapshot: snapshot },
@@ -1435,7 +1883,14 @@ const persistTheatreCaseBilling = async (
   tx,
   { theatreCaseId, billing, existingSnapshot, ...context }
 ) => {
-  const snapshot = await applyClinicalRequestBilling(tx, { billing, existingSnapshot, ...context });
+  const snapshot = await applyClinicalRequestBilling(tx, {
+    billing,
+    existingSnapshot,
+    sourceModule: BILLABLE_SOURCE_MODULES.THEATRE,
+    sourceId: theatreCaseId,
+    mutableUpdate: Boolean(existingSnapshot),
+    ...context,
+  });
   await tx.theatre_case.update({
     where: { id: theatreCaseId },
     data: { billing_snapshot: snapshot },
@@ -1443,7 +1898,149 @@ const persistTheatreCaseBilling = async (
   return snapshot;
 };
 
+/**
+ * Build a catalogue-driven consultation billing payload from fee defaults.
+ * Prefer price-book CONSULTATION entries when catalog refs are present.
+ */
+const buildConsultationBillingPayload = ({
+  consultationFee,
+  currency = 'USD',
+  paymentStatus = 'PENDING',
+  catalogItemId = null,
+  label = 'Consultation fee',
+  payNow = null,
+  paymentMode = 'SELF_PAY',
+  billingEntity = 'FACILITY',
+} = {}) => {
+  const amount = toMoneyString(consultationFee);
+  if (toDecimalNumber(amount) <= 0) {
+    return null;
+  }
+
+  const lineItem = {
+    id: catalogItemId || 'consultation',
+    label,
+    quantity: 1,
+    unit_price: amount,
+    line_total: amount,
+    catalog_type: 'CONSULTATION',
+    ...(catalogItemId ? { catalog_item_id: catalogItemId } : {}),
+    billing_entity: billingEntity,
+    payment_mode: paymentMode,
+  };
+
+  const billing = {
+    payment_status: paymentStatus,
+    currency: resolveBillingCurrency({ currency }, 'USD'),
+    total_amount: amount,
+    line_amount: amount,
+    billing_entity: billingEntity,
+    payment_mode: paymentMode,
+    line_items: [lineItem],
+  };
+
+  if (payNow) {
+    const paidStatus = String(payNow.status || 'COMPLETED').toUpperCase();
+    if (paidStatus === 'COMPLETED' || paidStatus === 'PAID') {
+      billing.payment_status = 'PAID';
+      billing.paid_amount = toMoneyString(payNow.amount ?? amount);
+      billing.payment_method = payNow.method || 'CASH';
+      billing.payment_reference = payNow.transaction_ref || null;
+    }
+  }
+
+  return billing;
+};
+
+const persistConsultationBilling = async (
+  tx,
+  { encounterId, billing, existingSnapshot, ...context }
+) => {
+  return applyClinicalRequestBilling(tx, {
+    billing,
+    existingSnapshot,
+    sourceModule: BILLABLE_SOURCE_MODULES.CONSULTATION,
+    sourceId: encounterId,
+    encounterId,
+    chargeKey: 'PRIMARY',
+    catalogType: 'CONSULTATION',
+    description: context.description || 'Consultation fee',
+    mutableUpdate: Boolean(existingSnapshot),
+    ...context,
+  });
+};
+
+const persistAdmissionBilling = async (
+  tx,
+  { admissionId, billing, existingSnapshot, ...context }
+) => {
+  const snapshot = await applyClinicalRequestBilling(tx, {
+    billing,
+    existingSnapshot,
+    sourceModule: BILLABLE_SOURCE_MODULES.ADMISSION,
+    sourceId: admissionId,
+    catalogType: context.catalogType || 'SERVICE',
+    description: context.description || 'Admission fee',
+    mutableUpdate: Boolean(existingSnapshot),
+    ...context,
+  });
+  if (tx?.admission?.update) {
+    await tx.admission.update({
+      where: { id: admissionId },
+      data: { billing_snapshot: snapshot },
+    });
+  }
+  return snapshot;
+};
+
+const persistNursingServiceBilling = async (
+  tx,
+  { nursingNoteId, billing, existingSnapshot, ...context }
+) => {
+  const snapshot = await applyClinicalRequestBilling(tx, {
+    billing,
+    existingSnapshot,
+    sourceModule: BILLABLE_SOURCE_MODULES.NURSING,
+    sourceId: nursingNoteId,
+    catalogType: context.catalogType || 'SERVICE',
+    description: context.description || 'Nursing service',
+    mutableUpdate: Boolean(existingSnapshot),
+    allowRepeat: true,
+    ...context,
+  });
+  if (tx?.nursing_note?.update) {
+    await tx.nursing_note.update({
+      where: { id: nursingNoteId },
+      data: { billing_snapshot: snapshot },
+    });
+  }
+  return snapshot;
+};
+
+/**
+ * Catalogue-driven consumable / generic SERVICE charge with no parent clinical table.
+ * `sourceId` must be a stable unique identifier for the usage event.
+ */
+const persistConsumableBilling = async (
+  tx,
+  { consumableUsageId, billing, existingSnapshot, ...context }
+) => {
+  return applyClinicalRequestBilling(tx, {
+    billing,
+    existingSnapshot,
+    sourceModule: BILLABLE_SOURCE_MODULES.CONSUMABLE,
+    sourceId: consumableUsageId,
+    catalogType: context.catalogType || 'SERVICE',
+    description: context.description || 'Consumable',
+    mutableUpdate: Boolean(existingSnapshot),
+    allowRepeat: Boolean(context.allowRepeat),
+    chargeKey: context.chargeKey || 'PRIMARY',
+    ...context,
+  });
+};
+
 module.exports = {
+  BILLABLE_SOURCE_MODULES,
   shouldApplyClinicalRequestBilling,
   applyClinicalRequestBilling,
   syncClinicalRequestBilling,
@@ -1456,6 +2053,11 @@ module.exports = {
   persistWardRoundBilling,
   persistProcedureBilling,
   persistTheatreCaseBilling,
+  persistConsultationBilling,
+  persistAdmissionBilling,
+  persistNursingServiceBilling,
+  persistConsumableBilling,
+  buildConsultationBillingPayload,
   buildBillingSnapshot,
   buildPendingClinicalRequestBilling,
   enrichBillingWithPriceEngine,
@@ -1470,4 +2072,6 @@ module.exports = {
   mapClinicalOrderBillingFields,
   mapCatalogUnitPriceFields,
   resolveScopedBillingAmount,
+  findPostedBillableChargeEvent,
+  upsertBillableChargeEvent,
 };

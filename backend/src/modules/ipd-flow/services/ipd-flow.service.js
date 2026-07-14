@@ -22,6 +22,8 @@ const {
 } = require("@lib/clinical/ipdMedicationReminder");
 const {
   persistWardRoundBilling,
+  persistAdmissionBilling,
+  persistNursingServiceBilling,
   mapClinicalOrderBillingFields,
 } = require("@lib/billing/clinical-request-billing");
 
@@ -2887,6 +2889,20 @@ const startIpdFlow = async (data, context = {}) => {
       }
     }
 
+    if (data?.billing) {
+      await persistAdmissionBilling(tx, {
+        admissionId: admission.id,
+        billing: data.billing,
+        existingSnapshot: existingAdmission?.billing_snapshot || null,
+        tenantId,
+        facilityId: facilityId || null,
+        patientId: patient.id,
+        encounterId: encounterId || null,
+        description: "Admission fee",
+        actorUserId: context.user_id || null,
+      });
+    }
+
     return {
       admission_id: admission.id,
       tenant_id: tenantId,
@@ -3781,13 +3797,26 @@ const addNursingNote = async (id, data, context = {}) => {
       latestDischargeSummary: getLatestDischargeSummary(admission),
     });
 
-    await tx.nursing_note.create({
+    const nursingNote = await tx.nursing_note.create({
       data: {
         admission_id: admission.id,
         nurse_user_id: nurse.id,
         note,
       },
     });
+
+    if (data?.billing) {
+      await persistNursingServiceBilling(tx, {
+        nursingNoteId: nursingNote.id,
+        billing: data.billing,
+        tenantId: admission.tenant_id,
+        facilityId: admission.facility_id || null,
+        patientId: admission.patient_id,
+        encounterId: admission.encounter_id || null,
+        description: "Nursing service",
+        actorUserId: context.user_id || nurse.id || null,
+      });
+    }
 
     return {
       admission_id: admission.id,

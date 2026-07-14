@@ -346,6 +346,7 @@ const CURATED_MODELS = Object.freeze(new Set([
   'mortuary_post_mortem_request',
   'mortuary_release_authorisation',
   'mortuary_billable_event',
+  'billable_charge_event',
   'notification',
   'notification_delivery',
   'conversation',

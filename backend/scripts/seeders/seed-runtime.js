@@ -86,6 +86,7 @@ const PUBLIC_ID_PREFIXES = Object.freeze({
   mortuary_post_mortem_request: 'MPR',
   mortuary_release_authorisation: 'MRA',
   mortuary_billable_event: 'MBE',
+  billable_charge_event: 'BCE',
 });
 
 const stripInlineComment = (line) => {

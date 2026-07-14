@@ -419,6 +419,9 @@ const offlineSupportMiddleware = () => {
     if (!res.getHeader('X-Offline-Policy')) {
       res.setHeader('X-Offline-Policy', policy.cache);
     }
+    if (policy.online_only && !res.getHeader('X-Online-Only')) {
+      res.setHeader('X-Online-Only', '1');
+    }
 
     if (!res.getHeader('Cache-Control')) {
       if (policy.cache === 'no-store' || isAuthPath) {

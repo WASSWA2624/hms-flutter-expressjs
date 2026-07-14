@@ -1032,6 +1032,7 @@ model tenant {
   billing_approvals               billing_approval[]
   pricing_rules                   pricing_rule[]
   price_book_entries              price_book_entry[]
+  billable_charge_events          billable_charge_event[]
   insurance_companies             insurance_company[]
   coverage_plans                  coverage_plan[]
   scheme_offers                   scheme_offer[]
@@ -1115,6 +1116,7 @@ model facility {
   payments                        payment[]
   billing_approvals               billing_approval[]
   price_book_entries              price_book_entry[]
+  billable_charge_events          billable_charge_event[]
   patient_insurance_enrollments   patient_insurance_enrollment[]
   insurer_integrations            insurer_integration[]
   inventory_stocks                inventory_stock[]
@@ -1497,6 +1499,7 @@ model user {
   configuration_snapshots       configuration_snapshot[]  @relation("configuration_snapshot_created_by")
   billing_approval_requests     billing_approval[]        @relation("billing_approval_requested_by")
   billing_approval_decisions    billing_approval[]        @relation("billing_approval_approved_by")
+  billable_charge_events        billable_charge_event[]
   abac_policies_created         abac_policy[]             @relation("abac_policy_created_by")
   abac_policies_updated         abac_policy[]             @relation("abac_policy_updated_by")
   break_glass_requests          break_glass_access[]      @relation("break_glass_requested_by")
@@ -1907,6 +1910,7 @@ model patient {
   emergency_cases            emergency_case[]
   invoices                   invoice[]
   payments                   payment[]
+  billable_charge_events     billable_charge_event[]
   messages                   message[]
   phi_access_logs            phi_access_log[]
   addresses                  address[]                 @relation("patient_address")
@@ -2326,6 +2330,7 @@ model encounter {
   theatre_cases    theatre_case[]
   therapy_episodes therapy_episode[]
   pre_authorizations pre_authorization[]
+  billable_charge_events billable_charge_event[]
 
   @@unique([tenant_id, human_friendly_id])
   @@index([tenant_id])
@@ -2841,6 +2846,7 @@ model admission {
   status            AdmissionStatus
   admitted_at       DateTime        @default(now())
   discharged_at     DateTime?
+  billing_snapshot  Json?
   created_at        DateTime        @default(now())
   updated_at        DateTime        @updatedAt
   deleted_at        DateTime?
@@ -2918,6 +2924,7 @@ model nursing_note {
   admission_id      String    @db.VarChar(36)
   nurse_user_id     String    @db.VarChar(36)
   note              String    @db.Text
+  billing_snapshot  Json?
   created_at        DateTime  @default(now())
   updated_at        DateTime  @updatedAt
   deleted_at        DateTime?
@@ -4479,6 +4486,7 @@ model invoice {
   insurance_claims      insurance_claim[]
   billing_adjustments   billing_adjustment[]
   subscription_invoices subscription_invoice[]
+  billable_charge_events billable_charge_event[]
 
   @@index([tenant_id])
   @@index([facility_id])
@@ -4487,6 +4495,53 @@ model invoice {
   @@index([billing_status])
   @@index([billing_entity])
   @@index([issued_at])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+/// Idempotent ledger for catalogue-driven clinical/operational charges.
+/// Unique on (tenant, source_module, source_id, charge_key) so retries never
+/// create duplicate invoices; reversals free the key by rewriting charge_key.
+model billable_charge_event {
+  id                    String                @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id     String?               @db.VarChar(32)
+  tenant_id             String                @db.VarChar(36)
+  facility_id           String?               @db.VarChar(36)
+  patient_id            String?               @db.VarChar(36)
+  encounter_id          String?               @db.VarChar(36)
+  source_module         String                @db.VarChar(40)
+  source_id             String                @db.VarChar(36)
+  charge_key            String                @default("PRIMARY") @db.VarChar(120)
+  invoice_id            String?               @db.VarChar(36)
+  catalog_type          PriceBookCatalogType?
+  catalog_item_id       String?               @db.VarChar(36)
+  actor_user_id         String?               @db.VarChar(36)
+  unit_price_snapshot   Decimal?              @db.Decimal(12, 2)
+  total_amount_snapshot Decimal?              @db.Decimal(12, 2)
+  currency              String?               @db.VarChar(10)
+  status                String                @default("POSTED") @db.VarChar(20)
+  posted_at             DateTime              @default(now())
+  reversed_at           DateTime?
+  created_at            DateTime              @default(now())
+  updated_at            DateTime              @updatedAt
+  deleted_at            DateTime?
+  version               Int                   @default(1)
+
+  tenant     tenant     @relation(fields: [tenant_id], references: [id])
+  facility   facility?  @relation(fields: [facility_id], references: [id])
+  patient    patient?   @relation(fields: [patient_id], references: [id])
+  encounter  encounter? @relation(fields: [encounter_id], references: [id])
+  invoice    invoice?   @relation(fields: [invoice_id], references: [id])
+  actor      user?      @relation(fields: [actor_user_id], references: [id])
+
+  @@unique([tenant_id, source_module, source_id, charge_key], map: "billable_charge_event_idempotency_uidx")
+  @@index([tenant_id])
+  @@index([facility_id])
+  @@index([patient_id])
+  @@index([encounter_id])
+  @@index([invoice_id])
+  @@index([source_module, source_id])
+  @@index([status])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }

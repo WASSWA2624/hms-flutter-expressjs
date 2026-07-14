@@ -161,6 +161,7 @@ const startIpdFlowSchema = z.object({
   ward_id: optionalIdentifierSchema,
   room_id: optionalIdentifierSchema,
   bed_id: optionalIdentifierSchema,
+  billing: clinicalRequestBillingSchema.optional().nullable(),
 });
 
 const requestIpdAdmissionSchema = z.object({
@@ -228,6 +229,7 @@ const addWardRoundSchema = z.object({
 const addNursingNoteSchema = z.object({
   nurse_user_id: optionalIdentifierSchema,
   note: z.string().trim().min(1).max(65535),
+  billing: clinicalRequestBillingSchema.optional().nullable(),
 });
 
 const addMedicationAdministrationSchema = z.object({
