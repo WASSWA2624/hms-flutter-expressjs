@@ -54,12 +54,27 @@ const { generateToken, generateRefreshToken } = require('@lib/jwt');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { sendEmail } = require('@lib/notifications');
+const {
+  resolveTenantModuleEntitlements,
+} = require('@lib/subscriptions/tenant-entitlements');
 
 describe('Auth Service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     authRepository.getUserFacilities.mockResolvedValue([]);
     sendEmail.mockResolvedValue({ sent: true, provider: 'smtp' });
+    resolveTenantModuleEntitlements.mockResolvedValue([
+      {
+        module_slug: 'patient-registry',
+        is_active: true,
+        plan_tier_code: 'BASIC',
+      },
+      {
+        module_slug: 'encounters-vitals',
+        is_active: true,
+        plan_tier_code: 'BASIC',
+      },
+    ]);
   });
 
   const expectMinimalVerificationEmail = () => {
