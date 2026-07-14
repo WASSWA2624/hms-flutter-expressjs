@@ -7,7 +7,7 @@ class AppStatusText extends StatelessWidget {
     required this.label,
     this.tone = AppWorkspaceStatusTone.neutral,
     this.icon,
-    this.includeDefaultToneIcon = false,
+    this.includeDefaultToneIcon = true,
     this.fontWeight = FontWeight.w700,
     this.maxLines = 1,
     this.softWrap = false,
@@ -65,7 +65,7 @@ class AppStatusText extends StatelessWidget {
       AppWorkspaceStatusTone.warning => Icons.warning_amber_outlined,
       AppWorkspaceStatusTone.error => Icons.error_outline,
       AppWorkspaceStatusTone.info => Icons.info_outline,
-      AppWorkspaceStatusTone.neutral => null,
+      AppWorkspaceStatusTone.neutral => Icons.circle_outlined,
     };
   }
 

@@ -1039,21 +1039,24 @@ class _TimelineSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<TheaterTimelineItem> timeline = theaterCase.timeline;
 
     return _DetailSection(
       title: l10n.theaterTimelineTitle,
-      children: timeline.isEmpty
-          ? <Widget>[AppMutedText(l10n.theaterNoTimelineLabel)]
-          : <Widget>[
-              for (final TheaterTimelineItem item in timeline.take(8))
-                _StatusLine(
-                  icon: Icons.history_outlined,
-                  tone: AppWorkspaceStatusTone.neutral,
-                  title: item.label,
-                  subtitle: _formatDateTime(context, item.occurredAt),
-                ),
-            ],
+      children: <Widget>[
+        AppTimeline(
+          emptyTitle: l10n.theaterNoTimelineLabel,
+          emptyBody: '',
+          maxItems: 8,
+          items: <AppTimelineItem>[
+            for (final TheaterTimelineItem item in theaterCase.timeline)
+              AppTimelineItem(
+                title: item.label,
+                occurredAt: item.occurredAt,
+                icon: Icons.history_outlined,
+              ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -1269,11 +1272,9 @@ class _TheaterStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppWorkspaceStatusBadge(
-      status: AppWorkspaceStatus(
-        label: _caseStatusLabel(context.l10n, status),
-        tone: _statusTone(status),
-      ),
+    return AppStatusBadge(
+      label: _caseStatusLabel(context.l10n, status),
+      tone: _statusTone(status),
     );
   }
 }

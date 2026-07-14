@@ -32,6 +32,66 @@
   "@commonRefreshActionLabel": {
     "description": "Label for actions that refresh visible data without reloading the current screen."
   },
+  "commonShowMoreActionLabel": "Show more",
+  "@commonShowMoreActionLabel": {
+    "description": "Label for expanding a compact details panel to show additional fields."
+  },
+  "commonShowLessActionLabel": "Show less",
+  "@commonShowLessActionLabel": {
+    "description": "Label for collapsing an expanded details panel back to compact fields."
+  },
+  "clinicalResultsPreviewLoadingTitle": "Loading results",
+  "@clinicalResultsPreviewLoadingTitle": {
+    "description": "Title shown while clinical results preview content is loading."
+  },
+  "clinicalResultsPreviewLoadingBody": "Fetching authorized clinical results...",
+  "@clinicalResultsPreviewLoadingBody": {
+    "description": "Body text shown while clinical results preview content is loading."
+  },
+  "clinicalResultsPreviewEmptyTitle": "No results to preview",
+  "@clinicalResultsPreviewEmptyTitle": {
+    "description": "Title shown when a clinical results preview has no released content."
+  },
+  "clinicalResultsPreviewEmptyBody": "Results will appear here when they are available for this encounter.",
+  "@clinicalResultsPreviewEmptyBody": {
+    "description": "Body text shown when a clinical results preview has no released content."
+  },
+  "clinicalResultsPreviewErrorTitle": "Results could not be loaded",
+  "@clinicalResultsPreviewErrorTitle": {
+    "description": "Title shown when clinical results preview fails to load."
+  },
+  "clinicalResultsPreviewErrorBody": "Try again or contact support if the problem continues.",
+  "@clinicalResultsPreviewErrorBody": {
+    "description": "Safe body text shown when clinical results preview fails to load."
+  },
+  "clinicalResultsPreviewForbiddenTitle": "Results are not available",
+  "@clinicalResultsPreviewForbiddenTitle": {
+    "description": "Title shown when the user cannot access clinical results preview."
+  },
+  "clinicalResultsPreviewForbiddenBody": "You do not have permission to view these results in the current scope.",
+  "@clinicalResultsPreviewForbiddenBody": {
+    "description": "Body text shown when the user cannot access clinical results preview."
+  },
+  "clinicalResultsPreviewPrintAction": "Print",
+  "@clinicalResultsPreviewPrintAction": {
+    "description": "Action label to print eligible clinical results from the preview shell."
+  },
+  "clinicalResultsStatusPreliminaryLabel": "Preliminary",
+  "@clinicalResultsStatusPreliminaryLabel": {
+    "description": "Status label for preliminary clinical results."
+  },
+  "clinicalResultsStatusVerifiedLabel": "Verified",
+  "@clinicalResultsStatusVerifiedLabel": {
+    "description": "Status label for verified or final clinical results."
+  },
+  "clinicalResultsStatusCorrectedLabel": "Corrected",
+  "@clinicalResultsStatusCorrectedLabel": {
+    "description": "Status label for corrected clinical results."
+  },
+  "clinicalResultsStatusUnavailableLabel": "Unavailable",
+  "@clinicalResultsStatusUnavailableLabel": {
+    "description": "Status label when clinical results are unavailable."
+  },
   "workspaceToolbarOverflowLabel": "More actions",
   "@workspaceToolbarOverflowLabel": {
     "description": "Accessibility label for the workspace toolbar overflow menu."

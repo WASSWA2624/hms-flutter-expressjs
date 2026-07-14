@@ -33,6 +33,56 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonRefreshActionLabel => 'Refresh';
 
   @override
+  String get commonShowMoreActionLabel => 'Show more';
+
+  @override
+  String get commonShowLessActionLabel => 'Show less';
+
+  @override
+  String get clinicalResultsPreviewLoadingTitle => 'Loading results';
+
+  @override
+  String get clinicalResultsPreviewLoadingBody =>
+      'Fetching authorized clinical results...';
+
+  @override
+  String get clinicalResultsPreviewEmptyTitle => 'No results to preview';
+
+  @override
+  String get clinicalResultsPreviewEmptyBody =>
+      'Results will appear here when they are available for this encounter.';
+
+  @override
+  String get clinicalResultsPreviewErrorTitle => 'Results could not be loaded';
+
+  @override
+  String get clinicalResultsPreviewErrorBody =>
+      'Try again or contact support if the problem continues.';
+
+  @override
+  String get clinicalResultsPreviewForbiddenTitle =>
+      'Results are not available';
+
+  @override
+  String get clinicalResultsPreviewForbiddenBody =>
+      'You do not have permission to view these results in the current scope.';
+
+  @override
+  String get clinicalResultsPreviewPrintAction => 'Print';
+
+  @override
+  String get clinicalResultsStatusPreliminaryLabel => 'Preliminary';
+
+  @override
+  String get clinicalResultsStatusVerifiedLabel => 'Verified';
+
+  @override
+  String get clinicalResultsStatusCorrectedLabel => 'Corrected';
+
+  @override
+  String get clinicalResultsStatusUnavailableLabel => 'Unavailable';
+
+  @override
   String get workspaceToolbarOverflowLabel => 'More actions';
 
   @override

@@ -18,6 +18,8 @@ class AppPermissionActionButton extends ConsumerWidget {
     this.isLoading = false,
     this.fullWidth = false,
     this.hideWhenDenied = true,
+    this.capabilityAllowed = true,
+    this.blockedReason,
     this.semanticLabel,
     this.tooltip,
     super.key,
@@ -32,6 +34,8 @@ class AppPermissionActionButton extends ConsumerWidget {
   final bool isLoading;
   final bool fullWidth;
   final bool hideWhenDenied;
+  final bool capabilityAllowed;
+  final String? blockedReason;
   final String? semanticLabel;
   final String? tooltip;
 
@@ -45,12 +49,16 @@ class AppPermissionActionButton extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final bool canPress = enabled && isAllowed && onPressed != null;
+    final bool canPress =
+        enabled &&
+        isAllowed &&
+        capabilityAllowed &&
+        onPressed != null;
     final String resolvedTooltip = canPress
         ? (tooltip ?? label)
         : (!isAllowed
               ? accessRequirementDenialMessage(l10n, requirement, policy)
-              : (tooltip ?? label));
+              : (blockedReason ?? tooltip ?? label));
 
     return AppButton(
       label: label,

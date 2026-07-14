@@ -29,48 +29,17 @@ class ClaimsWorkspacePage extends ConsumerWidget {
     );
     final AppLocalizations l10n = context.l10n;
 
-    return value.when(
-      data: (Result<ClaimsWorkspaceState> result) {
-        return result.when(
-          success: (ClaimsWorkspaceState state) {
-            return _ClaimsWorkspaceContent(state: state);
-          },
-          failure: (AppFailure failure) {
-            return ResponsivePage(
-              maxWidth: PageMaxWidth.form,
-              centerVertically: true,
-              child: AppFailureStateView(
-                failure: failure,
-                title: l10n.claimsLoadErrorTitle,
-                body: l10n.claimsLoadErrorBody,
-                onRetry: () {
-                  ref.invalidate(claimsWorkspaceControllerProvider);
-                },
-              ),
-            );
-          },
-        );
+    return AsyncStateScaffold<ClaimsWorkspaceState>(
+      value: value,
+      loadingTitle: l10n.claimsLoadingTitle,
+      loadingBody: l10n.claimsLoadingBody,
+      maxWidth: PageMaxWidth.dataHeavy,
+      centerVertically: false,
+      onRetry: () {
+        ref.invalidate(claimsWorkspaceControllerProvider);
       },
-      error: (_, _) {
-        return ResponsivePage(
-          maxWidth: PageMaxWidth.form,
-          centerVertically: true,
-          child: AppStateView(
-            variant: AppStateViewVariant.error,
-            title: l10n.claimsLoadErrorTitle,
-            body: l10n.errorUnexpectedMessage,
-          ),
-        );
-      },
-      loading: () {
-        return ResponsivePage(
-          maxWidth: PageMaxWidth.form,
-          centerVertically: true,
-          child: AppWorkspaceStatePanel.loading(
-            title: l10n.claimsLoadingTitle,
-            body: l10n.claimsLoadingBody,
-          ),
-        );
+      dataBuilder: (BuildContext context, ClaimsWorkspaceState state) {
+        return _ClaimsWorkspaceContent(state: state);
       },
     );
   }

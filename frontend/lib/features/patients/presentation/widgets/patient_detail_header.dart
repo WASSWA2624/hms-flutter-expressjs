@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
-import 'package:hosspi_hms/shared/patient_actions/patient_age_formatter.dart';
-import 'package:hosspi_hms/shared/patient_actions/patient_registration_scope.dart';
 
 String patientIdentifierTypeLabel(AppLocalizations l10n, Patient patient) {
   final String? type = patient.primaryIdentifierType?.trim();
@@ -64,44 +62,16 @@ class PatientDetailHeader extends ConsumerWidget {
         : patientGenderLabel(l10n, patient.gender!);
     final IconData? genderIcon = patientGenderIcon(patient.gender);
     final PatientVisitContext? visit = patient.currentVisit;
-    final ThemeData theme = Theme.of(context);
 
-    return AppWorkspacePatientContextHeader(
+    return AppPatientDetails(
       patientName: patient.effectiveDisplayName,
       showPatientName: false,
       showAvatar: false,
       patientNumber: patient.effectiveIdentifier ?? '',
       patientNumberLabel: patientIdentifierTypeLabel(l10n, patient),
-      demographicsWidget: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            formatPatientAge(l10n, patient.dateOfBirth),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (genderIcon != null) ...<Widget>[
-            SizedBox(width: theme.spacing.xs),
-            Icon(
-              genderIcon,
-              size: theme.appTokens.listIconSize,
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ],
-          SizedBox(width: theme.spacing.xs),
-          Text(
-            gender,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
+      ageLabel: formatPatientAge(l10n, patient.dateOfBirth),
+      genderLabel: gender,
+      genderIcon: genderIcon,
       semanticLabel: l10n.patientsDetailTitle,
       status: AppWorkspaceStatus(
         label: patient.isActive
@@ -128,8 +98,7 @@ class PatientDetailHeader extends ConsumerWidget {
             icon: Icons.error_outline,
           ),
       ],
-      fieldStyle: AppWorkspacePatientContextFieldStyle.inline,
-      fields: <AppWorkspacePatientContextField>[
+      expandedFields: <AppWorkspacePatientContextField>[
         AppWorkspacePatientContextField(
           label: l10n.patientsDobLabel,
           value: formatPatientOptionalDate(context, patient.dateOfBirth),

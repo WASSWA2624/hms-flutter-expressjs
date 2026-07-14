@@ -90,48 +90,17 @@ class _DischargeWorkspacePageState
     );
     final AppLocalizations l10n = context.l10n;
 
-    return value.when(
-      data: (Result<DischargeWorkspaceState> result) {
-        return result.when(
-          success: (DischargeWorkspaceState state) {
-            return _DischargeWorkspaceContent(state: state);
-          },
-          failure: (AppFailure failure) {
-            return ResponsivePage(
-              maxWidth: PageMaxWidth.form,
-              centerVertically: true,
-              child: AppFailureStateView(
-                failure: failure,
-                title: l10n.dischargeLoadErrorTitle,
-                body: l10n.dischargeLoadErrorBody,
-                onRetry: () {
-                  ref.invalidate(dischargeWorkspaceControllerProvider);
-                },
-              ),
-            );
-          },
-        );
+    return AsyncStateScaffold<DischargeWorkspaceState>(
+      value: value,
+      loadingTitle: l10n.dischargeLoadingTitle,
+      loadingBody: l10n.dischargeLoadingBody,
+      maxWidth: PageMaxWidth.dataHeavy,
+      centerVertically: false,
+      onRetry: () {
+        ref.invalidate(dischargeWorkspaceControllerProvider);
       },
-      error: (Object error, StackTrace stackTrace) {
-        return ResponsivePage(
-          maxWidth: PageMaxWidth.form,
-          centerVertically: true,
-          child: AppStateView(
-            variant: AppStateViewVariant.error,
-            title: l10n.dischargeLoadErrorTitle,
-            body: l10n.errorUnexpectedMessage,
-          ),
-        );
-      },
-      loading: () {
-        return ResponsivePage(
-          maxWidth: PageMaxWidth.form,
-          centerVertically: true,
-          child: AppWorkspaceStatePanel.loading(
-            title: l10n.dischargeLoadingTitle,
-            body: l10n.dischargeLoadingBody,
-          ),
-        );
+      dataBuilder: (BuildContext context, DischargeWorkspaceState state) {
+        return _DischargeWorkspaceContent(state: state);
       },
     );
   }
@@ -890,17 +859,18 @@ class _TimelineSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<IpdTimelineItem> items = detail.ipd.timeline.take(6).toList();
 
-    return AppWorkspaceActivityList(
+    return AppTimeline(
       title: l10n.dischargeTimelineSectionTitle,
       emptyTitle: l10n.dischargeNoTimelineTitle,
       emptyBody: l10n.dischargeNoTimelineBody,
-      items: <AppWorkspaceActivityItem>[
-        for (final IpdTimelineItem item in items)
-          AppWorkspaceActivityItem(
+      asActivityList: true,
+      maxItems: 6,
+      items: <AppTimelineItem>[
+        for (final IpdTimelineItem item in detail.ipd.timeline)
+          AppTimelineItem(
             title: item.label ?? _apiLabel(item.type),
-            subtitle: _dateLabel(context, item.occurredAt),
+            occurredAt: item.occurredAt,
             icon: Icons.history_outlined,
           ),
       ],

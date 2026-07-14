@@ -15,6 +15,8 @@ final class AppPermissionActionItem {
     this.isLoading = false,
     this.fullWidth = false,
     this.hideWhenDenied = true,
+    this.capabilityAllowed = true,
+    this.blockedReason,
     this.tooltip,
     this.semanticLabel,
   });
@@ -28,6 +30,13 @@ final class AppPermissionActionItem {
   final bool isLoading;
   final bool fullWidth;
   final bool hideWhenDenied;
+
+  /// When false, the action stays visible (if permitted) but disabled because
+  /// backend workflow/resource capabilities disallow it.
+  final bool capabilityAllowed;
+
+  /// Localized prerequisite/capability reason shown when disabled.
+  final String? blockedReason;
   final String? tooltip;
   final String? semanticLabel;
 }

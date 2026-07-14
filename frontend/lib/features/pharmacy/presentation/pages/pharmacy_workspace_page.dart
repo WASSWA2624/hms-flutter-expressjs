@@ -1227,68 +1227,21 @@ class _TimelinePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final List<PharmacyTimelineItem> timeline = workflow.timeline;
     return AppWorkspaceDetailPanel(
       title: l10n.pharmacyTimelinePanelTitle,
       description: l10n.pharmacyTimelinePanelDescription,
-      child: timeline.isEmpty
-          ? Text(l10n.pharmacyNoTimelineBody)
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                for (
-                  var index = 0;
-                  index < timeline.length;
-                  index += 1
-                ) ...<Widget>[
-                  _TimelineRow(item: timeline[index]),
-                  if (index < timeline.length - 1)
-                    SizedBox(height: theme.spacing.sm),
-                ],
-              ],
+      child: AppTimeline(
+        emptyTitle: l10n.pharmacyNoTimelineBody,
+        emptyBody: '',
+        items: <AppTimelineItem>[
+          for (final PharmacyTimelineItem item in workflow.timeline)
+            AppTimelineItem(
+              title: _timelineLabel(context, item),
+              occurredAt: item.at,
+              icon: Icons.local_pharmacy_outlined,
             ),
-    );
-  }
-}
-
-class _TimelineRow extends StatelessWidget {
-  const _TimelineRow({required this.item});
-
-  final PharmacyTimelineItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Icon(
-          Icons.circle_outlined,
-          size: theme.appTokens.listIconSize,
-          color: theme.colorScheme.primary,
-        ),
-        SizedBox(width: theme.spacing.sm),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                _timelineLabel(context, item),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              Text(
-                _dateTimeLabel(context, item.at),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

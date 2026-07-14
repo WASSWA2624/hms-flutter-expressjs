@@ -127,6 +127,8 @@ class AppPermissionActionList extends StatelessWidget {
           isLoading: action.isLoading,
           fullWidth: action.fullWidth,
           hideWhenDenied: action.hideWhenDenied,
+          capabilityAllowed: action.capabilityAllowed,
+          blockedReason: action.blockedReason,
           semanticLabel: action.semanticLabel,
           tooltip: action.tooltip,
           onPressed: action.onPressed,

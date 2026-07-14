@@ -41,48 +41,17 @@ class IntegrationsWorkspacePage extends ConsumerWidget {
     );
     final AppLocalizations l10n = context.l10n;
 
-    return value.when(
-      data: (Result<IntegrationWorkspaceState> result) {
-        return result.when(
-          success: (IntegrationWorkspaceState state) {
-            return _IntegrationsWorkspaceContent(state: state);
-          },
-          failure: (AppFailure failure) {
-            return ResponsivePage(
-              maxWidth: PageMaxWidth.form,
-              centerVertically: true,
-              child: AppFailureStateView(
-                failure: failure,
-                title: l10n.integrationsLoadErrorTitle,
-                body: l10n.integrationsLoadErrorBody,
-                onRetry: () {
-                  ref.invalidate(integrationsWorkspaceControllerProvider);
-                },
-              ),
-            );
-          },
-        );
+    return AsyncStateScaffold<IntegrationWorkspaceState>(
+      value: value,
+      loadingTitle: l10n.integrationsLoadingTitle,
+      loadingBody: l10n.integrationsLoadingBody,
+      maxWidth: PageMaxWidth.dataHeavy,
+      centerVertically: false,
+      onRetry: () {
+        ref.invalidate(integrationsWorkspaceControllerProvider);
       },
-      error: (_, _) {
-        return ResponsivePage(
-          maxWidth: PageMaxWidth.form,
-          centerVertically: true,
-          child: AppStateView(
-            variant: AppStateViewVariant.error,
-            title: l10n.integrationsLoadErrorTitle,
-            body: l10n.errorUnexpectedMessage,
-          ),
-        );
-      },
-      loading: () {
-        return ResponsivePage(
-          maxWidth: PageMaxWidth.form,
-          centerVertically: true,
-          child: AppWorkspaceStatePanel.loading(
-            title: l10n.integrationsLoadingTitle,
-            body: l10n.integrationsLoadingBody,
-          ),
-        );
+      dataBuilder: (BuildContext context, IntegrationWorkspaceState state) {
+        return _IntegrationsWorkspaceContent(state: state);
       },
     );
   }

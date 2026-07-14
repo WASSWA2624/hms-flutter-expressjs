@@ -142,6 +142,96 @@ abstract class AppLocalizations {
   /// **'Refresh'**
   String get commonRefreshActionLabel;
 
+  /// Label for expanding a compact details panel to show additional fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Show more'**
+  String get commonShowMoreActionLabel;
+
+  /// Label for collapsing an expanded details panel back to compact fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get commonShowLessActionLabel;
+
+  /// Title shown while clinical results preview content is loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading results'**
+  String get clinicalResultsPreviewLoadingTitle;
+
+  /// Body text shown while clinical results preview content is loading.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetching authorized clinical results...'**
+  String get clinicalResultsPreviewLoadingBody;
+
+  /// Title shown when a clinical results preview has no released content.
+  ///
+  /// In en, this message translates to:
+  /// **'No results to preview'**
+  String get clinicalResultsPreviewEmptyTitle;
+
+  /// Body text shown when a clinical results preview has no released content.
+  ///
+  /// In en, this message translates to:
+  /// **'Results will appear here when they are available for this encounter.'**
+  String get clinicalResultsPreviewEmptyBody;
+
+  /// Title shown when clinical results preview fails to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Results could not be loaded'**
+  String get clinicalResultsPreviewErrorTitle;
+
+  /// Safe body text shown when clinical results preview fails to load.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again or contact support if the problem continues.'**
+  String get clinicalResultsPreviewErrorBody;
+
+  /// Title shown when the user cannot access clinical results preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Results are not available'**
+  String get clinicalResultsPreviewForbiddenTitle;
+
+  /// Body text shown when the user cannot access clinical results preview.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not have permission to view these results in the current scope.'**
+  String get clinicalResultsPreviewForbiddenBody;
+
+  /// Action label to print eligible clinical results from the preview shell.
+  ///
+  /// In en, this message translates to:
+  /// **'Print'**
+  String get clinicalResultsPreviewPrintAction;
+
+  /// Status label for preliminary clinical results.
+  ///
+  /// In en, this message translates to:
+  /// **'Preliminary'**
+  String get clinicalResultsStatusPreliminaryLabel;
+
+  /// Status label for verified or final clinical results.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get clinicalResultsStatusVerifiedLabel;
+
+  /// Status label for corrected clinical results.
+  ///
+  /// In en, this message translates to:
+  /// **'Corrected'**
+  String get clinicalResultsStatusCorrectedLabel;
+
+  /// Status label when clinical results are unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get clinicalResultsStatusUnavailableLabel;
+
   /// Accessibility label for the workspace toolbar overflow menu.
   ///
   /// In en, this message translates to:

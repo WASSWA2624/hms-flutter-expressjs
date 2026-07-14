@@ -10,6 +10,10 @@ abstract final class AppPreferenceKeys {
   static const String boldText = 'app.accessibility.bold_text';
   static const String textScaleLevel = 'app.accessibility.text_scale_level';
   static const String sidebarCollapsed = 'app.shell.sidebar_collapsed';
+
+  /// UI-only preference: patient details expanded. Never store PHI with this key.
+  static const String patientDetailsExpanded =
+      'app.ui.patient_details_expanded';
 }
 
 abstract final class AppPreferencesRestorer {

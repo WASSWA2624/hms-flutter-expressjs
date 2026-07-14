@@ -2967,14 +2967,17 @@ class _PatientReportPreviewControls extends StatelessWidget {
                         in _patientReportSections)
                       SizedBox(
                         width: math.max(tileWidth, 0),
-                        child: _PatientReportSectionTile(
-                          title: _patientReportSectionLabel(l10n, section),
-                          count: _patientReportSectionCount(
-                            detail,
-                            section,
-                            selection,
+                        child: AppReportSectionTile(
+                          section: AppReportSectionData(
+                            id: section,
+                            title: _patientReportSectionLabel(l10n, section),
+                            count: _patientReportSectionCount(
+                              detail,
+                              section,
+                              selection,
+                            ),
+                            icon: _patientReportSectionIcon(section),
                           ),
-                          icon: _patientReportSectionIcon(section),
                           selected: selection.sections.contains(section),
                           onChanged: (bool value) =>
                               onSectionChanged(section, value),
@@ -3045,89 +3048,6 @@ class _PatientReportPreviewControls extends StatelessWidget {
         ),
       ),
     };
-  }
-}
-
-class _PatientReportSectionTile extends StatelessWidget {
-  const _PatientReportSectionTile({
-    required this.title,
-    required this.count,
-    required this.icon,
-    required this.selected,
-    required this.onChanged,
-  });
-
-  final String title;
-  final int count;
-  final IconData icon;
-  final bool selected;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Semantics(
-      button: true,
-      checked: selected,
-      child: InkWell(
-        onTap: () => onChanged(!selected),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: selected
-                ? colorScheme.primaryContainer.withValues(alpha: 0.28)
-                : colorScheme.surface,
-            border: Border.all(
-              color: selected
-                  ? colorScheme.primary
-                  : colorScheme.outlineVariant,
-            ),
-          ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: theme.spacing.sm,
-              vertical: theme.spacing.xs,
-            ),
-            child: Row(
-              children: <Widget>[
-                Checkbox(
-                  value: selected,
-                  visualDensity: VisualDensity.compact,
-                  onChanged: (bool? value) => onChanged(value ?? false),
-                ),
-                Icon(
-                  icon,
-                  color: selected
-                      ? colorScheme.primary
-                      : colorScheme.onSurfaceVariant,
-                  size: theme.appTokens.listIconSize,
-                ),
-                SizedBox(width: theme.spacing.sm),
-                Expanded(
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                SizedBox(width: theme.spacing.sm),
-                Text(
-                  count.toString(),
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 

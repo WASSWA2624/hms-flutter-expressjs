@@ -123,9 +123,20 @@ class ClinicalWorkflowProgressStrip extends StatelessWidget {
             ),
           ),
           SizedBox(height: theme.spacing.sm),
-          _ClinicalWorkflowStepper(
-            stages: stages,
-            currentIndex: currentIndex.clamp(0, stages.length - 1),
+          AppWorkflowStepper(
+            steps: <AppWorkflowStepItem>[
+              for (var index = 0; index < stages.length; index += 1)
+                AppWorkflowStepItem(
+                  id: stages[index],
+                  label: opdStageDisplayLabel(l10n, stages[index]),
+                  state: index < currentIndex.clamp(0, stages.length - 1)
+                      ? AppWorkflowStepState.completed
+                      : index == currentIndex.clamp(0, stages.length - 1)
+                      ? AppWorkflowStepState.current
+                      : AppWorkflowStepState.upcoming,
+                ),
+            ],
+            showDescriptions: false,
           ),
           SizedBox(height: theme.spacing.md),
         ],
@@ -305,83 +316,6 @@ class ClinicalRadiologyOrdersTablePanel extends ConsumerWidget {
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class _ClinicalWorkflowStepper extends StatelessWidget {
-  const _ClinicalWorkflowStepper({
-    required this.stages,
-    required this.currentIndex,
-  });
-
-  final List<String> stages;
-  final int currentIndex;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: <Widget>[
-          for (var index = 0; index < stages.length; index += 1) ...<Widget>[
-            if (index > 0)
-              Container(
-                width: 24,
-                height: 2,
-                color: index <= currentIndex
-                    ? colorScheme.primary
-                    : colorScheme.outlineVariant,
-              ),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                CircleAvatar(
-                  radius: 12,
-                  backgroundColor: index < currentIndex
-                      ? colorScheme.primary
-                      : index == currentIndex
-                      ? colorScheme.primaryContainer
-                      : colorScheme.surfaceContainerHighest,
-                  child: Icon(
-                    index < currentIndex
-                        ? Icons.check
-                        : index == currentIndex
-                        ? Icons.radio_button_checked
-                        : Icons.radio_button_unchecked,
-                    size: 14,
-                    color: index <= currentIndex
-                        ? colorScheme.onPrimary
-                        : colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                SizedBox(height: theme.spacing.xs),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 120),
-                  child: Text(
-                    opdStageDisplayLabel(l10n, stages[index]),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: index == currentIndex
-                          ? FontWeight.w800
-                          : FontWeight.w500,
-                      color: index == currentIndex
-                          ? colorScheme.primary
-                          : colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
       ),
     );
   }
@@ -875,11 +809,9 @@ class _ClinicalStatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppWorkspaceStatusBadge(
-      status: AppWorkspaceStatus(
-        label: AppDisplay.apiLabel(status),
-        tone: _statusTone(status),
-      ),
+    return AppStatusBadge(
+      label: AppDisplay.apiLabel(status),
+      tone: _statusTone(status),
     );
   }
 }

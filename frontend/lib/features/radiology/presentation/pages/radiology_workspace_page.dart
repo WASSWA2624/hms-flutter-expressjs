@@ -2398,100 +2398,19 @@ class _TimelineSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<RadiologyTimelineItem> items =
-        List<RadiologyTimelineItem>.from(workflow.timeline)
-          ..sort((RadiologyTimelineItem a, RadiologyTimelineItem b) {
-            final DateTime left =
-                b.occurredAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-            final DateTime right =
-                a.occurredAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-            return left.compareTo(right);
-          });
 
     return AppWorkspaceDetailPanel(
       title: l10n.radiologyTimelineTitle,
-      child: items.isEmpty
-          ? AppWorkspaceStatePanel.empty(
-              title: l10n.radiologyNoTimelineTitle,
-              body: l10n.radiologyNoTimelineBody,
+      child: AppTimeline(
+        emptyTitle: l10n.radiologyNoTimelineTitle,
+        emptyBody: l10n.radiologyNoTimelineBody,
+        items: <AppTimelineItem>[
+          for (final RadiologyTimelineItem item in workflow.timeline)
+            AppTimelineItem(
+              title: item.label,
+              occurredAt: item.occurredAt,
               icon: Icons.timeline_outlined,
-              minHeight: 160,
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                for (int index = 0; index < items.length; index++)
-                  _TimelineNode(
-                    item: items[index],
-                    isLast: index == items.length - 1,
-                  ),
-              ],
             ),
-    );
-  }
-}
-
-class _TimelineNode extends StatelessWidget {
-  const _TimelineNode({required this.item, required this.isLast});
-
-  final RadiologyTimelineItem item;
-  final bool isLast;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          SizedBox(
-            width: 28,
-            child: Column(
-              children: <Widget>[
-                Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: colorScheme.surface),
-                  ),
-                ),
-                if (!isLast)
-                  Expanded(
-                    child: Container(
-                      width: 2,
-                      color: colorScheme.outlineVariant,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: theme.spacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    item.label,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Text(
-                    _formatDateTime(context, item.occurredAt),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
       ),
     );
