@@ -1,10 +1,11 @@
 ---
 alwaysApply: false
 globs:
-  - "frontend/lib/shared/input/**"
-  - "frontend/lib/core/input/**"
+  - "frontend/lib/shared/**"
+  - "frontend/lib/features/**/presentation/**"
+  - "frontend/lib/app/**"
 description: >
-  Apply when reviewing cross-platform touch, pointer, keyboard, and focus behavior.
+  Apply when implementing cross-platform touch, pointer, keyboard, focus, hover, or shortcuts.
 ---
 
 # Multi-Platform Input

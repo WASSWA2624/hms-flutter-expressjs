@@ -2,6 +2,8 @@
 alwaysApply: false
 globs:
   - ".cursor/**"
+  - "backend/**"
+  - "frontend/**"
 description: >
   Monorepo rules index: conflict order, stack indexes, flow and access pointers.
 ---
@@ -47,7 +49,7 @@ specialize the transport contract in `api-contract.mdc`.
 | [`access/subscriptions.mdc`](./access/subscriptions.mdc) | Package → module → permission enumeration |
 | [`access/default_user_roles.mdc`](./access/default_user_roles.mdc) | Default roles → module permissions |
 
-Effective access = intersection(role/module/user grants ∩ active subscription). Admins may customize; all changes are auditable and resettable to shipped defaults. No user may retain access beyond that intersection.
+Effective access = union(role/module/user grants) ∩ active subscription ∩ ABAC scope. Admins may customize; all changes are atomic, auditable, and resettable to shipped defaults. No user may retain access beyond that intersection.
 
 ## Stack indexes
 

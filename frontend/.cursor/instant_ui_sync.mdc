@@ -32,6 +32,7 @@ realtime pipeline.
 
 ## Responsiveness and efficiency
 
+- Sync-driven UI must remain high-performance, uniform, simple, and intuitive across mobile, tablet, and desktop, using reusable `frontend/lib/shared/` components.
 - A successful local mutation must be visible in the same frame or next provider
   rebuild whenever the response or a deterministic delta is available; never block
   that visible update on a full workspace `GET`.

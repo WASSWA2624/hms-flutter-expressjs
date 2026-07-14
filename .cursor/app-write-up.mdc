@@ -2,6 +2,8 @@
 alwaysApply: false
 globs:
   - ".cursor/app-write-up.mdc"
+  - "backend/src/modules/**"
+  - "frontend/lib/features/**"
 description: >
   Apply when adding, changing, or removing HOSSPI HMS product modules or features.
 ---
@@ -161,7 +163,7 @@ Seed data must be clearly marked as demo data, must not run in production by acc
 
 - Every screen, menu item, button, modal action, API call, report, export, and workflow transition must respect the logged-in user's role, permission, tenant scope, facility scope, and module entitlement.
 - Users may have more than one role and more than one module assignment.
-- Effective access is always the intersection of role/module/user grants and the active subscription package (see [`.cursor/access/`](./access/)).
+- Effective access is always union(role/module/user grants) ∩ active subscription package ∩ ABAC scope (see [`.cursor/access/`](./access/)).
 - Access checks must consider tenant, facility, department, unit, ward, room, bed, and action scope where applicable (strict RBAC + ABAC).
 - Users should only see actions they are allowed to perform; unauthorized menus, components, actions, and workflows must not be visible or accessible.
 - Frontend hiding or disabling is not enough; backend authorization remains mandatory.

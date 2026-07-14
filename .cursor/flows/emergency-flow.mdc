@@ -3,6 +3,9 @@ alwaysApply: false
 globs:
   - "frontend/lib/features/emergency/**"
   - "backend/src/modules/emergency-case/**"
+  - "backend/src/modules/triage-assessment/**"
+  - "backend/src/modules/emergency-response/**"
+  - "backend/src/modules/ambulance-dispatch/**"
 description: >
   Emergency intake, triage, and handoff rules for module changes.
 ---

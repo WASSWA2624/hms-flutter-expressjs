@@ -94,7 +94,7 @@ Cursor-based lists may use `next_cursor` / `has_more` instead when documented.
 - Frontend stores tokens in secure storage only (not `shared_preferences`).
 - `user_role` is the backend role-assignment source of truth; users may hold multiple roles and modules.
 - Authority order: **subscription package → module assignment → role → permission → ABAC scope**.
-- Effective permissions = intersection of subscription ∩ role/module/user grants ∩ ABAC; never exceed the package.
+- Effective permissions = union(role/module/user grants) ∩ subscription package ∩ ABAC scope; never exceed the package.
 - Strict RBAC+ABAC: menus, components, actions, and workflows must not be visible or accessible without effective permission.
 - Shipped defaults: [`.cursor/access/`](./access/). Break-glass access is explicit, time-limited, and audited.
 

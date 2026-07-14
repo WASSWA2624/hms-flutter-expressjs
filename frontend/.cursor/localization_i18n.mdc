@@ -22,6 +22,7 @@ Defines how user-facing text, formatting, and accessibility labels are handled.
 - Every future locale must have its own ARB file.
 - Use locale-aware formatting for dates, times, numbers, currency, and plural messages.
 - Keep localization keys descriptive and stable.
+- Keep localized copy concise and use context-appropriate clinical or operational terminology.
 - Include accessibility labels and error messages in localization files.
 - Do not concatenate translated strings when interpolation or pluralization is required.
 - Do not use private feature string holder classes (`_BillingText`, `_IcuText`, `_EmergencyText`, etc.) — add keys to `app_en.arb` and use `context.l10n` / `AppLocalizations`.

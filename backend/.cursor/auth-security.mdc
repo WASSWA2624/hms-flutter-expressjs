@@ -19,7 +19,7 @@ Authorization:
 - Subscription package is the hard gate: roles and permissions never unlock modules or actions outside the active package
 - Users may hold multiple active roles and multiple module assignments via `user_role` and module-access tables
 - Permissions attach at user, role, and module levels and link to subscription packages (see `.cursor/access/subscriptions.mdc`)
-- Effective permissions = intersection of subscription-included modules/permissions ∩ role grants ∩ module grants ∩ user grants ∩ ABAC scope
+- Effective permissions = `union(role, module, user grants) ∩ subscription-included modules/permissions ∩ assigned modules ∩ ABAC scope`
 - RBAC grants baseline actions; ABAC narrows by tenant, facility, department, ownership, shift, patient relationship, and emergency state
 - Enforce in middleware (entitlement → RBAC/ABAC) and again in services for sensitive workflows
 - Assignable permissions must stay within the actor ceiling and the tenant subscription module set
@@ -29,7 +29,7 @@ Access defaults and administration:
 - Shipped defaults live in `.cursor/access/` (`modules.mdc`, `permissions.mdc`, `subscriptions.mdc`, `default_user_roles.mdc`)
 - Authorized administrators may customize, extend, or reset module, role, or package permissions to shipped defaults at any time
 - All permission, role, module, and subscription changes must be atomic, versioned, auditable, and restorable
-- No user may retain access beyond the intersection of current roles and active subscription after any change
+- No user may retain access beyond their current grant union intersected with assigned modules, ABAC scope, and the active subscription
 
 Management-role requirements:
 - support `UNIT_MANAGER`, `WARD_MANAGER`, `ICU_MANAGER`, and `THEATRE_MANAGER`

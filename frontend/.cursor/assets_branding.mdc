@@ -1,10 +1,11 @@
 ---
 alwaysApply: false
 globs:
+  - "frontend/assets/**"
+  - "frontend/pubspec.yaml"
   - "frontend/lib/shared/assets/**"
-  - "frontend/lib/features/**/assets/**"
 description: >
-  Apply when adding, naming, or registering UI assets and branding in the frontend.
+  Apply when adding, naming, or registering frontend assets and shared asset references.
 ---
 
 # Asset and Branding Strategy

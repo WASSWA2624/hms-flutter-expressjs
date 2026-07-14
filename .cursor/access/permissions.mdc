@@ -30,6 +30,7 @@ Permissions attach at **user**, **role**, **module**, and **subscription package
 **Effective permissions** = union(role grants ∪ module grants ∪ user grants) ∩ subscription package ∩ ABAC scope.
 
 Never exceed the active subscription. Multiple roles expand the grant union, then subscription and ABAC still restrict.
+This source-controlled vocabulary and its shipped assignments must seed a complete core permission set out of the box.
 
 ## ABAC scoping
 
@@ -96,7 +97,8 @@ Full role → module map: [default_user_roles.mdc](./default_user_roles.mdc). Hi
 - Strict **RBAC + ABAC**: no UI, API, menu, component, action, or workflow may be visible or usable without effective permission.
 - Module/action access always intersects with assigned modules **and** subscription ([subscriptions.mdc](./subscriptions.mdc)).
 - Permission config is source-controlled, versioned, and fully auditable.
-- Admins may adjust or restore defaults at any time; restore is atomic and must not leave excess access.
+- Authorized admins may adjust or restore defaults at any time; every change and restore is atomic and must not leave partial or excess access.
+- Failed permission changes roll back completely, and audit history must identify actor, before/after state, reason, and version.
 - Frontend mirrors backend authorization via guards; backend remains mandatory.
 
 ## Related

@@ -15,7 +15,7 @@ Required coverage:
 - service tests
 - controller and route tests
 - auth, entitlement, ABAC, and break-glass regression tests
-- subscription ∩ role ∩ module ∩ user permission intersection regression tests
+- `union(role, module, user grants) ∩ subscription ∩ assigned modules ∩ ABAC scope` regression tests
 - API and websocket contract tests proving responses/events expose `human_friendly_id` only
 - admin customize/reset of access defaults produces auditable, atomic permission changes
 - seed and maintenance script tests where scripts change data or contracts

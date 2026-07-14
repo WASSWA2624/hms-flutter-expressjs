@@ -91,8 +91,9 @@ Unrestricted module/permission access for **non-production** development, testin
 
 ## Enforcement
 
-- Effective permissions = intersection of subscription-included modules/permissions ∩ role grants ∩ module grants ∩ user grants ∩ ABAC scope.
+- Effective permissions = union(role grants ∪ module grants ∪ user grants) ∩ subscription-included modules/permissions ∩ ABAC scope.
 - Roles, modules, or direct user grants never unlock capabilities outside the active package.
-- Package upgrades/downgrades take effect atomically; prior excess permissions must not persist.
-- All package definition and assignment changes are versioned, auditable, and restorable to shipped defaults.
+- Package creation, customization, assignment, upgrade, downgrade, and reset take effect atomically; prior excess permissions must not persist.
+- All package definitions and assignments are versioned, auditable, source-controlled by shipped defaults, and restorable to those defaults by authorized administrators.
+- A failed package change or reset must roll back completely; no intermediate state may grant access.
 - Source of truth: `.cursor/access/` (`modules.mdc`, `permissions.mdc`, `subscriptions.mdc`, `default_user_roles.mdc`).

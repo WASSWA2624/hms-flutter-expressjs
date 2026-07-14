@@ -13,9 +13,11 @@ Product module names and responsibilities align with [`.cursor/app-write-up.mdc`
 
 ## Rules
 
+- This file is the complete source-controlled catalog of shipped active modules; setup must seed it out of the box.
 - Every module **must** declare default permissions using the vocabulary in `permissions.mdc`.
 - Users may be assigned multiple modules; effective access is always intersected with the active subscription package.
-- Authorized administrators may customize, extend, or reset module permissions to shipped defaults; all changes are versioned and auditable.
+- Authorized administrators may customize, extend, or reset module permissions to shipped defaults; every change is atomic, versioned, and auditable.
+- Reset must restore the shipped module-permission mapping completely. Failure rolls back without leaving partial or excess access.
 - Planned modules (`status: planned`) are documented but excluded from default seed until implemented.
 - Frontend menus, routes, and actions for a module must not appear unless the module is in the user's effective set.
 

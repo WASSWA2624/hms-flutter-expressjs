@@ -3,6 +3,8 @@ alwaysApply: false
 globs:
   - "frontend/lib/**"
   - "frontend/test/**"
+  - "frontend/integration_test/**"
+  - "frontend/patrol_test/**"
 description: >
   Apply when implementing or reviewing unit, widget, integration, or Patrol E2E tests.
 ---

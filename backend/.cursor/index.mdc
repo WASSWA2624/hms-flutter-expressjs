@@ -20,7 +20,7 @@ Backend-wide invariants:
 - Express.js and CommonJS are mandatory.
 - Database objects, Prisma models, schema fields, and documented payload fields use lowercase `snake_case`.
 - Public APIs and realtime payloads expose `human_friendly_id` only; map to internal table IDs in repositories/services. Never return raw primary keys to clients.
-- Effective access is always the intersection of active subscription package, assigned modules, roles, user-level grants, and ABAC scope. No role, module, or direct grant may bypass subscription limits.
+- Effective access is `union(role, module, user grants) ∩ active subscription modules/permissions ∩ assigned modules ∩ ABAC scope`. No grant may bypass subscription limits.
 - Default modules, packages, roles, and permissions are source-controlled in `.cursor/access/` (`modules.mdc`, `permissions.mdc`, `subscriptions.mdc`, `default_user_roles.mdc`). Admins may customize or reset to shipped defaults; all changes are versioned and auditable.
 - Multi-role access is resolved through `user_role` plus RBAC, ABAC, subscription intersection, and audited break-glass access.
 - Every business module must stay standalone and entitlement-aware.

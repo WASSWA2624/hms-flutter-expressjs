@@ -19,7 +19,8 @@ Defines the repeatable process for adding a new feature to the template or an ap
 - Use shared components before creating feature-specific widgets.
 - Queue/workspace features must confirm layout against [`ui-workspace.mdc`](./ui-workspace.mdc) and a reference module before implementation.
 - Confirm subscription-gated module access and permission gates before exposing routes or actions ([`permissions.mdc`](./permissions.mdc)).
-- Verify responsive behavior on mobile, tablet, and desktop; reuse `frontend/lib/shared/` components first.
+- Deliver high-performance, uniform, simple, intuitive workflows; reuse `frontend/lib/shared/` components and verify mobile, tablet, and desktop layouts.
+- Shared-data mutations must update Riverpod immediately and reconcile with backend realtime events per [`instant_ui_sync.mdc`](./instant_ui_sync.mdc).
 - Add tests for controller logic, repository mapping, and important widgets.
 - Update docs when the feature changes app structure or conventions.
 

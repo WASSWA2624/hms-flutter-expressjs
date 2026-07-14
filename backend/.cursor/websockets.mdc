@@ -50,7 +50,7 @@ Rules:
 - Publish after commit with minimal payload surface for high-performance fan-out; avoid full entity snapshots when a typed delta suffices.
 - Scope recipients by tenant, facility, role, and module entitlements — same boundaries as HTTP authorization.
 - Name events `{domain}.{action}` (e.g. `patient.updated`, `facility.layout_updated`).
-- Include `resource_type`, `resource_id` (human_friendly_id), `tenant_id`, `facility_id`, `actor_user_id`, and `occurred_at` in the envelope.
+- Include `resource_type`, `resource_id`, `tenant_id`, `facility_id`, `actor_user_id`, and `occurred_at`; every entity-reference value uses its `human_friendly_id`, even where the canonical envelope retains an `_id` field name.
 - Use `publishCrudRealtimeEvent` for standard create/update/delete broadcasts when a module does not need a bespoke payload shape.
 - Add tests proving user-visible mutations emit the expected scoped event after
   persistence; bespoke publishers must also prove audit emission is skipped to

@@ -9,7 +9,7 @@ description: >
 
 # Default User Roles
 
-Every installation seeds the roles below. Authorized administrators may customize, extend, or reset role permissions to shipped defaults. All changes are versioned and auditable. Effective access is always limited by the active subscription package (see [subscriptions.mdc](./subscriptions.mdc)).
+Every installation seeds the complete source-controlled role set below. Authorized administrators may customize, extend, or reset role permissions to shipped defaults. Every change is atomic, versioned, and auditable. Effective access is always limited by the active subscription package (see [subscriptions.mdc](./subscriptions.mdc)).
 
 Users may hold **multiple roles** and **multiple module assignments**. Effective permissions = union of role/module/user grants ∩ subscription package ∩ ABAC scope.
 
@@ -48,5 +48,7 @@ Detailed attribute-scoped actions live in [permissions.mdc](./permissions.mdc). 
 
 - Roles are created automatically on system setup.
 - Admins may define additional roles mapped to the same permission vocabulary.
-- Reset-to-defaults restores this shipped matrix atomically and must leave no user with access beyond role ∩ subscription.
+- Authorized administrators alone may change or reset role mappings.
+- Reset-to-defaults restores this shipped matrix atomically and must leave no user beyond union(role/module/user grants) ∩ subscription ∩ ABAC.
+- Failed role changes or resets roll back completely; audit history records actor, reason, version, and before/after mappings.
 - Frontend and backend must hide/deny menus, components, actions, and workflows for unauthorized roles.

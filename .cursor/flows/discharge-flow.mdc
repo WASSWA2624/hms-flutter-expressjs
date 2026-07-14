@@ -2,6 +2,7 @@
 alwaysApply: false
 globs:
   - "frontend/lib/features/discharge/**"
+  - "backend/src/modules/ipd-flow/**"
   - "backend/src/modules/discharge-summary/**"
 description: >
   IPD multi-step discharge clearance and closure rules.

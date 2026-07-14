@@ -4,7 +4,7 @@ globs:
   - "frontend/lib/shared/**"
   - "frontend/lib/features/**/presentation/widgets/**"
 description: >
-  Apply when creating or reviewing reusable UI under frontend/lib/shared/.
+  Apply when creating shared UI or deciding whether feature widgets belong under frontend/lib/shared/.
 ---
 # Shared Components
 
@@ -21,6 +21,8 @@ Purpose: uniform reusable UI built on Flutter Material primitives.
 - Keep UI uniform: one catalog entry per interaction pattern; match design tokens on every variant ([`design-system.mdc`](./design-system.mdc)).
 - Components must adapt cleanly to mobile, tablet, and desktop layouts ([`layouts.mdc`](./layouts.mdc)).
 - All user-facing labels, hints, validation messages, and accessibility labels come from localization.
+- Keep component APIs and interactions simple, consistent, and intuitive for clinical and operational workflows.
+- Data-bound components must render Riverpod changes immediately and support targeted backend reconciliation without owning sync logic.
 - Components support enabled, disabled, loading, error, focused, and empty states where relevant.
 - Components use [`design-system.mdc`](./design-system.mdc) tokens for colors, spacing, typography, radius, and elevation.
 - Before creating new UI, check `lib/shared/` for an existing component; add reusable widgets there, one-off widgets in the feature.
