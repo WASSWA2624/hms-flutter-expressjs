@@ -5,12 +5,14 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/actions/app_action_item.dart';
+import 'package:hosspi_hms/shared/actions/app_action_lifecycle.dart';
 import 'package:hosspi_hms/shared/actions/app_permission_action_item.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_info_tile.dart';
 import 'package:hosspi_hms/shared/components/app_permission_action.dart';
+import 'package:hosspi_hms/shared/components/app_permission_async_action.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 /// Renders a consistent responsive row/wrap of app actions.
@@ -130,11 +132,16 @@ class AppPermissionActionList extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
+    // Async mutate actions stay inline so loading / retry feedback remain visible.
     final List<AppPermissionActionItem> inlineActions = actions
-        .where((AppPermissionActionItem a) => !a.isOverflow)
+        .where(
+          (AppPermissionActionItem a) => !a.isOverflow || a.isAsync,
+        )
         .toList(growable: false);
     final List<AppPermissionActionItem> overflowActions = actions
-        .where((AppPermissionActionItem a) => a.isOverflow)
+        .where(
+          (AppPermissionActionItem a) => a.isOverflow && !a.isAsync,
+        )
         .toList(growable: false);
 
     final List<Widget> children = <Widget>[
@@ -170,6 +177,31 @@ class AppPermissionActionList extends StatelessWidget {
   }
 
   Widget _permissionButton(AppPermissionActionItem action) {
+    final AppActionMutate? mutate = action.mutate;
+    if (mutate != null) {
+      return AppPermissionAsyncActionButton(
+        requirement: action.requirement,
+        label: action.label,
+        icon: action.icon,
+        mutate: mutate,
+        onSuccess: action.onSuccess,
+        variant: action.variant,
+        enabled: action.enabled,
+        fullWidth: action.fullWidth,
+        hideWhenDenied: action.hideWhenDenied,
+        capabilityAllowed: action.capabilityAllowed,
+        blockedReason: action.blockedReason,
+        semanticLabel: action.semanticLabel,
+        tooltip: action.tooltip,
+        confirmTitle: action.confirmTitle,
+        confirmBody: action.confirmBody,
+        confirmSubmitLabel: action.confirmSubmitLabel,
+        destructive: action.destructive,
+        onlineOnly: action.onlineOnly,
+        showFailureFeedback: action.showFailureFeedback,
+      );
+    }
+
     return AppPermissionActionButton(
       requirement: action.requirement,
       label: action.label,
@@ -331,7 +363,7 @@ class _PermissionOverflowMenuItem extends StatelessWidget {
         action.enabled &&
         action.capabilityAllowed &&
         !action.isLoading &&
-        action.onPressed != null;
+        (action.onPressed != null || action.mutate != null);
 
     return AppAccessActionGate(
       requirement: action.requirement,

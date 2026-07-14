@@ -35,6 +35,7 @@ export 'app_patient_detail_dialog.dart';
 export 'app_patient_details.dart';
 export 'app_payment_method.dart';
 export 'app_permission_action.dart';
+export 'app_permission_async_action.dart';
 export 'app_permission_assignment_picker.dart';
 export 'app_permission_grouped_view.dart';
 export 'app_phone_field.dart';

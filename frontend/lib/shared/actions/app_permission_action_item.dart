@@ -10,7 +10,9 @@ final class AppPermissionActionItem {
     required this.requirement,
     required this.label,
     required this.icon,
-    required this.onPressed,
+    this.onPressed,
+    this.mutate,
+    this.onSuccess,
     this.variant = AppButtonVariant.secondary,
     this.enabled = true,
     this.isLoading = false,
@@ -25,12 +27,25 @@ final class AppPermissionActionItem {
     this.confirmBody,
     this.confirmSubmitLabel,
     this.destructive = false,
-  });
+    this.onlineOnly = false,
+    this.showFailureFeedback = true,
+  }) : assert(
+         onPressed != null || mutate != null,
+         'AppPermissionActionItem requires onPressed or mutate.',
+       );
 
   final AccessRequirement requirement;
   final String label;
   final IconData icon;
+
+  /// Sync callback path. Ignored when [mutate] is set.
   final VoidCallback? onPressed;
+
+  /// Async mutation path with [AppActionRunner] (idempotent retries).
+  final AppActionMutate? mutate;
+
+  /// Invoked only after a successful [mutate]; patch Riverpod here.
+  final VoidCallback? onSuccess;
   final AppButtonVariant variant;
   final bool enabled;
   final bool isLoading;
@@ -50,13 +65,21 @@ final class AppPermissionActionItem {
   final AppActionPlacement placement;
 
   /// When set with [confirmBody], the action asks for confirmation before
-  /// invoking [onPressed]. Success/failure feedback remains caller-owned.
+  /// invoking [onPressed]/[mutate].
   final String? confirmTitle;
   final String? confirmBody;
   final String? confirmSubmitLabel;
 
   /// Destructive styling for critical confirmations; icons are never sole meaning.
   final bool destructive;
+
+  /// When true (with [mutate]), refuses while offline — never queues.
+  final bool onlineOnly;
+
+  /// Surfaces retryable [mutate] failures via snackbar when true.
+  final bool showFailureFeedback;
+
+  bool get isAsync => mutate != null;
 
   bool get requiresConfirmation {
     final String? title = confirmTitle?.trim();
