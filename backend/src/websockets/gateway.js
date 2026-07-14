@@ -100,6 +100,38 @@ const pendingPings = new Map();
  */
 let heartbeatInterval = null;
 
+const normalizedScopeValue = (value) => {
+  const normalized = String(value || '').trim();
+  return normalized || null;
+};
+
+/**
+ * Prevent tenant/facility-scoped events from crossing an authenticated
+ * connection's JWT context. Unscoped operational events remain deliverable.
+ */
+const canConnectionReceivePayload = (ws, payload = {}) => {
+  const tenantId = normalizedScopeValue(payload?.tenant_id);
+  const facilityId = normalizedScopeValue(payload?.facility_id);
+  if (!tenantId && !facilityId) {
+    return true;
+  }
+
+  const user = connectionUserData.get(ws);
+  if (!user) {
+    return false;
+  }
+
+  const userTenantId = normalizedScopeValue(user.tenant_id || user.tenantId);
+  const userFacilityId = normalizedScopeValue(user.facility_id || user.facilityId);
+  if (tenantId && userTenantId !== tenantId) {
+    return false;
+  }
+  if (facilityId && userFacilityId !== facilityId) {
+    return false;
+  }
+  return true;
+};
+
 /**
  * Send message to every active connection for a specific user
  * 
@@ -128,7 +160,10 @@ const sendToUser = (userId, event, payload = {}) => {
     });
 
     sockets.forEach((ws) => {
-      if (ws.readyState !== ws.OPEN) {
+      if (
+        ws.readyState !== ws.OPEN ||
+        !canConnectionReceivePayload(ws, payload)
+      ) {
         return;
       }
 
@@ -195,7 +230,10 @@ const broadcast = (event, payload = {}, excludeUserIds = []) => {
       }
 
       sockets.forEach((ws) => {
-        if (ws.readyState !== ws.OPEN) {
+        if (
+          ws.readyState !== ws.OPEN ||
+          !canConnectionReceivePayload(ws, payload)
+        ) {
           return;
         }
 
@@ -780,8 +818,7 @@ const handleConnection = async (ws, req) => {
     }
 
     // Register authenticated connection
-    registerUserConnection(user.id, ws);
-    connectionUserData.set(ws, user);
+    registerUserConnection(user.id, ws, user);
     authenticatedConnections.set(ws, true);
     
     // Initialize heartbeat tracking
@@ -1144,8 +1181,9 @@ const handleError = (ws, error) => {
  * 
  * @param {string} userId - User ID
  * @param {import('ws').WebSocket} ws - WebSocket connection
+ * @param {Object|null} [userData] - Authenticated JWT context
  */
-const registerUserConnection = (userId, ws) => {
+const registerUserConnection = (userId, ws, userData = null) => {
   try {
     const normalizedUserId = String(userId || '').trim();
     if (!normalizedUserId) {
@@ -1156,6 +1194,9 @@ const registerUserConnection = (userId, ws) => {
     sockets.add(ws);
     userConnections.set(normalizedUserId, sockets);
     connectionUsers.set(ws, normalizedUserId);
+    if (userData && typeof userData === 'object') {
+      connectionUserData.set(ws, userData);
+    }
 
     logger.info('User connection registered', {
       userId: normalizedUserId,

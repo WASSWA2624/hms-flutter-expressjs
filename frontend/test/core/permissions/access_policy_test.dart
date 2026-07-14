@@ -119,6 +119,34 @@ void main() {
       expect(requirement.isAllowed(policy), isTrue);
     });
 
+    test('tenant-context super admin remains bounded by the active plan', () {
+      final session = AuthSession(
+        tokens: SessionTokens(accessToken: 'access-token'),
+        user: const AuthUserProfile(
+          tenantId: 'tenant-1',
+          roles: <String>['SUPER_ADMIN'],
+        ),
+        permissions: const <AppPermission>[
+          AppPermissions.clinicalRead,
+          AppPermissions.billingWrite,
+        ],
+        moduleEntitlements: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'encounters-vitals',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+
+      final policy = AppAccessPolicy.fromSession(session);
+
+      expect(policy.isElevated, isTrue);
+      expect(policy.isPlatformElevated, isFalse);
+      expect(policy.grants(AppPermissions.clinicalRead), isTrue);
+      expect(policy.grants(AppPermissions.billingWrite), isFalse);
+      expect(policy.hasActiveModule('billing-payments'), isFalse);
+    });
+
     test('uses active module entitlements when they are present', () {
       final session = AuthSession(
         tokens: SessionTokens(accessToken: 'access-token'),

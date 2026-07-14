@@ -36,15 +36,21 @@ class AppAccessActionGate extends ConsumerWidget {
   const AppAccessActionGate({
     required this.requirement,
     required this.builder,
+    this.hideWhenDenied = true,
     super.key,
   });
 
   final AccessRequirement requirement;
   final AccessGateChildBuilder builder;
+  final bool hideWhenDenied;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final policy = ref.watch(appAccessPolicyProvider);
-    return builder(context, requirement.isAllowed(policy));
+    final bool isAllowed = requirement.isAllowed(policy);
+    if (!isAllowed && hideWhenDenied) {
+      return const SizedBox.shrink();
+    }
+    return builder(context, isAllowed);
   }
 }

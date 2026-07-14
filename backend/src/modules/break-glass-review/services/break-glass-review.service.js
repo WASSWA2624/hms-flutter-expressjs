@@ -1,6 +1,6 @@
 const breakGlassReviewRepository = require('@repositories/break-glass-review/break-glass-review.repository');
 const breakGlassAccessRepository = require('@repositories/break-glass-access/break-glass-access.repository');
-const { createAuditLog } = require('@lib/audit');
+const { createRequiredAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { resolveEntityId, resolveIdentifierForFilter } = require('@lib/billing/identifiers');
 const { buildPagination } = require('@lib/last-office/shared');
@@ -46,10 +46,13 @@ const listBreakGlassReviews = async (filters = {}, page = 1, limit = 20, context
   };
 };
 
-const getBreakGlassReviewById = async (id) => {
+const getBreakGlassReviewById = async (id, context = {}) => {
   const resolvedId = await resolveEntityId({ model: 'break_glass_review', identifier: id });
   const review = await breakGlassReviewRepository.findById(resolvedId);
   if (!review) {
+    throw new HttpError('errors.break_glass_review.not_found', 404);
+  }
+  if (review.tenant_id !== context.tenant_id) {
     throw new HttpError('errors.break_glass_review.not_found', 404);
   }
   return serializeBreakGlassReview(review);
@@ -66,6 +69,9 @@ const createBreakGlassReview = async (payload = {}, context = {}) => {
   });
   const access = await breakGlassAccessRepository.findById(accessId);
   if (!access) {
+    throw new HttpError('errors.break_glass_access.not_found', 404);
+  }
+  if (access.tenant_id !== context.tenant_id) {
     throw new HttpError('errors.break_glass_access.not_found', 404);
   }
   if (access.status !== 'REQUESTED') {
@@ -121,7 +127,7 @@ const createBreakGlassReview = async (payload = {}, context = {}) => {
 
   const nextAccess = await breakGlassAccessRepository.update(access.id, updateData);
 
-  createAuditLog({
+  await createRequiredAuditLog({
     tenant_id: access.tenant_id,
     user_id: context.user_id,
     action: 'UPDATE',
@@ -133,7 +139,7 @@ const createBreakGlassReview = async (payload = {}, context = {}) => {
       review: serializeBreakGlassReview(review),
     },
     ip_address: context.ip_address,
-  }).catch(() => {});
+  });
 
   recordWorkflowEvent('break_glass.reviewed', {
     'hms.review.status': payload.status,

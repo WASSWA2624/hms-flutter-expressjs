@@ -100,6 +100,36 @@ describe('WebSocket gateway', () => {
     gateway.cleanup();
   });
 
+  test('scoped events never cross tenant or facility connection context', () => {
+    const { gateway } = createGateway();
+    const allowed = socket();
+    const otherTenant = socket();
+    const otherFacility = socket();
+    gateway.registerUserConnection('user-1', allowed, {
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1',
+    });
+    gateway.registerUserConnection('user-2', otherTenant, {
+      tenant_id: 'tenant-2',
+      facility_id: 'facility-1',
+    });
+    gateway.registerUserConnection('user-3', otherFacility, {
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-2',
+    });
+
+    const count = gateway.broadcast('patient.updated', {
+      tenant_id: 'tenant-1',
+      facility_id: 'facility-1',
+    });
+
+    expect(count).toBe(1);
+    expect(allowed.send).toHaveBeenCalledTimes(1);
+    expect(otherTenant.send).not.toHaveBeenCalled();
+    expect(otherFacility.send).not.toHaveBeenCalled();
+    gateway.cleanup();
+  });
+
   test('unregistering one user closes only that user mapping', () => {
     const { gateway } = createGateway();
     const ws1 = socket();

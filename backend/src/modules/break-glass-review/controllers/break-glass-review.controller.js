@@ -16,7 +16,10 @@ const listBreakGlassReviews = asyncHandler(async (req, res) => {
 });
 
 const getBreakGlassReviewById = asyncHandler(async (req, res) => {
-  const result = await breakGlassReviewService.getBreakGlassReviewById(req.params.id);
+  const result = await breakGlassReviewService.getBreakGlassReviewById(
+    req.params.id,
+    buildContext(req)
+  );
   sendSuccess(res, 200, 'messages.break_glass_review.get_success', result);
 });
 

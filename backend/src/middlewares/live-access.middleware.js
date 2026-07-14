@@ -9,20 +9,23 @@ const {
   resolveTenantModuleEntitlements,
 } = require('@lib/subscriptions/tenant-entitlements');
 const {
-  filterPermissionNamesByPlanModules,
-  normalizeEnabledModuleSet,
-} = require('@lib/authorization/permission-module-map');
-const {
-  userHasSuperAdminRole,
+  resolveEffectiveAccess,
 } = require('@lib/authorization/effective-access');
+const authRepository = require('@repositories/auth/auth.repository');
+const { HttpError } = require('@lib/errors');
 
-const CACHE_TTL_MS = Number(process.env.LIVE_ACCESS_ENTITLEMENT_TTL_MS || 60 * 1000);
+// Authorization changes must take effect immediately by default. A deployment
+// may opt into a short cache only when every access mutation invalidates it.
+const CACHE_TTL_MS = Number(process.env.LIVE_ACCESS_ENTITLEMENT_TTL_MS || 0);
 const CACHE_MAX_ENTRIES = 5000;
 
 /** @type {Map<string, { at: number, entitlements: Object[] }>} */
 const entitlementCache = new Map();
 
 const getCachedEntitlements = (tenantId) => {
+  if (CACHE_TTL_MS <= 0) {
+    return null;
+  }
   const cached = entitlementCache.get(tenantId);
   if (!cached) {
     return null;
@@ -35,6 +38,9 @@ const getCachedEntitlements = (tenantId) => {
 };
 
 const setCachedEntitlements = (tenantId, entitlements) => {
+  if (CACHE_TTL_MS <= 0) {
+    return;
+  }
   if (entitlementCache.size >= CACHE_MAX_ENTRIES) {
     const oldestKey = entitlementCache.keys().next().value;
     if (oldestKey) {
@@ -67,13 +73,23 @@ const hydrateLiveAccess = () => async (req, res, next) => {
       return next();
     }
 
-    if (userHasSuperAdminRole(user)) {
-      return next();
-    }
-
     const tenantId = user.tenant_id || user.tenantId || null;
     if (!tenantId) {
       return next();
+    }
+
+    const userId = user.id || user.user_id || user.userId || null;
+    if (!userId) {
+      throw new HttpError('errors.auth.unauthorized', 401);
+    }
+
+    const liveUser = await authRepository.findUserById(userId);
+    if (
+      !liveUser ||
+      liveUser.status !== 'ACTIVE' ||
+      String(liveUser.tenant_id || '') !== String(tenantId)
+    ) {
+      throw new HttpError('errors.auth.unauthorized', 401);
     }
 
     let entitlements = getCachedEntitlements(tenantId);
@@ -82,34 +98,28 @@ const hydrateLiveAccess = () => async (req, res, next) => {
       setCachedEntitlements(tenantId, entitlements);
     }
 
+    const liveAccess = resolveEffectiveAccess(
+      {
+        ...liveUser,
+        tenant_id: tenantId,
+        facility_id: user.facility_id || user.facilityId || liveUser.facility_id,
+      },
+      {
+        moduleEntitlements: entitlements,
+        applyPlanGate: true,
+        applyAssignedModuleGate: true,
+      }
+    );
+
+    user.roles = liveUser.roles;
+    user.permissions = liveAccess.permissions;
+    user.permission_names = liveAccess.permissions;
+    user.direct_permissions = liveAccess.direct_permissions;
+    user.role_permissions = liveAccess.role_permissions;
+    user.module_permissions = liveAccess.module_permissions;
+    user.assigned_modules = liveAccess.assigned_modules;
     user.module_entitlements = entitlements;
     user.moduleEntitlements = entitlements;
-
-    const tokenPermissions = Array.isArray(user.permissions)
-      ? user.permissions
-          .map((entry) =>
-            typeof entry === 'string'
-              ? String(entry || '').trim()
-              : String(
-                  entry?.name ||
-                    entry?.code ||
-                    entry?.permission_name ||
-                    entry?.permission?.name ||
-                    ''
-                ).trim()
-          )
-          .filter(Boolean)
-      : [];
-
-    if (tokenPermissions.length > 0) {
-      const enabledModules = normalizeEnabledModuleSet(entitlements);
-      const gated = filterPermissionNamesByPlanModules(
-        tokenPermissions,
-        enabledModules
-      );
-      user.permissions = gated;
-      user.permission_names = gated;
-    }
 
     return next();
   } catch (error) {

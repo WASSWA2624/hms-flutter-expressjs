@@ -70,12 +70,12 @@ final class AccessRequirement {
     }
     if (requiresTenantContext &&
         !policy.hasTenantContext &&
-        !policy.isElevated) {
+        !policy.isPlatformElevated) {
       return false;
     }
     if (requiresFacilityContext &&
         !policy.hasFacilityContext &&
-        !policy.isElevated) {
+        !policy.isPlatformElevated) {
       return false;
     }
 

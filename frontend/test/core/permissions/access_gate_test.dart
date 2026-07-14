@@ -144,4 +144,55 @@ void main() {
       },
     );
   });
+
+  group('AppAccessActionGate', () {
+    testWidgets('hides an unauthorized action by default', (tester) async {
+      final policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['PATIENT']),
+          permissions: <AppPermission>{AppPermissions.profileRead},
+        ),
+      );
+
+      await tester.pumpWidget(
+        wrap(
+          AppAccessActionGate(
+            requirement: const AccessRequirement(
+              anyPermissions: <AppPermission>[AppPermissions.billingWrite],
+            ),
+            builder: (_, isAllowed) => Text('Refund: $isAllowed'),
+          ),
+          policy,
+        ),
+      );
+
+      expect(find.textContaining('Refund'), findsNothing);
+    });
+
+    testWidgets('can explicitly render a denied non-action state', (tester) async {
+      final policy = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['PATIENT']),
+          permissions: <AppPermission>{AppPermissions.profileRead},
+        ),
+      );
+
+      await tester.pumpWidget(
+        wrap(
+          AppAccessActionGate(
+            requirement: const AccessRequirement(
+              anyPermissions: <AppPermission>[AppPermissions.billingWrite],
+            ),
+            hideWhenDenied: false,
+            builder: (_, isAllowed) => Text('Status: $isAllowed'),
+          ),
+          policy,
+        ),
+      );
+
+      expect(find.text('Status: false'), findsOneWidget);
+    });
+  });
 }

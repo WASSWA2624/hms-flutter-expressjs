@@ -63,16 +63,26 @@ describe('effective-access', () => {
     expect(permissions).not.toContain('lab:read');
   });
 
-  test('super admin is not plan-gated at request time', () => {
+  test('super admin remains plan-gated in a tenant context', () => {
     const permissions = resolveRequestPermissionNames({
       roles: [ROLES.SUPER_ADMIN],
       permissions: ['clinical:read', 'billing:write'],
-      module_entitlements: [],
+      module_entitlements: [
+        { module_slug: 'encounters-vitals', is_active: true },
+      ],
       tenant_id: 'tenant-1',
     });
 
-    expect(permissions).toEqual(
-      expect.arrayContaining(['clinical:read', 'billing:write'])
-    );
+    expect(permissions).toContain('clinical:read');
+    expect(permissions).not.toContain('billing:write');
+  });
+
+  test('platform super admin without tenant context keeps platform grants', () => {
+    const permissions = resolveRequestPermissionNames({
+      roles: [ROLES.SUPER_ADMIN],
+      permissions: ['system:admin'],
+    });
+
+    expect(permissions).toEqual(['system:admin']);
   });
 });

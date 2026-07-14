@@ -1,5 +1,5 @@
 const breakGlassAccessRepository = require('@repositories/break-glass-access/break-glass-access.repository');
-const { createAuditLog } = require('@lib/audit');
+const { createRequiredAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const {
   resolveEntityId,
@@ -64,6 +64,9 @@ const getBreakGlassAccessById = async (id, context = {}) => {
   if (!record) {
     throw new HttpError('errors.break_glass_access.not_found', 404);
   }
+  if (record.tenant_id !== context.tenant_id) {
+    throw new HttpError('errors.break_glass_access.not_found', 404);
+  }
   if (!canReview(context) && record.requested_by_user_id !== context.user_id) {
     throw new HttpError('errors.auth.insufficient_permissions', 403);
   }
@@ -126,7 +129,7 @@ const createBreakGlassAccess = async (payload = {}, context = {}) => {
     etag: payload.etag || null,
   });
 
-  createAuditLog({
+  await createRequiredAuditLog({
     tenant_id: tenantId,
     user_id: context.user_id,
     action: 'CREATE',
@@ -134,7 +137,7 @@ const createBreakGlassAccess = async (payload = {}, context = {}) => {
     entity_id: record.id,
     diff: { after: serializeBreakGlassAccess(record) },
     ip_address: context.ip_address,
-  }).catch(() => {});
+  });
 
   recordWorkflowEvent('break_glass.requested', {
     'hms.resource.type': record.target_resource_type,
@@ -159,6 +162,9 @@ const revokeBreakGlassAccess = async (id, payload = {}, context = {}) => {
   if (!existing) {
     throw new HttpError('errors.break_glass_access.not_found', 404);
   }
+  if (existing.tenant_id !== context.tenant_id) {
+    throw new HttpError('errors.break_glass_access.not_found', 404);
+  }
   if (!canReview(context) && existing.requested_by_user_id !== context.user_id) {
     throw new HttpError('errors.auth.insufficient_permissions', 403);
   }
@@ -172,7 +178,7 @@ const revokeBreakGlassAccess = async (id, payload = {}, context = {}) => {
     version: Number(existing.version || 1) + 1,
   });
 
-  createAuditLog({
+  await createRequiredAuditLog({
     tenant_id: existing.tenant_id,
     user_id: context.user_id,
     action: 'UPDATE',
@@ -180,7 +186,7 @@ const revokeBreakGlassAccess = async (id, payload = {}, context = {}) => {
     entity_id: existing.id,
     diff: { before: serializeBreakGlassAccess(existing), after: serializeBreakGlassAccess(next) },
     ip_address: context.ip_address,
-  }).catch(() => {});
+  });
 
   recordWorkflowEvent('break_glass.revoked', {
     'hms.resource.type': existing.target_resource_type,

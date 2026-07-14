@@ -210,7 +210,7 @@ final class AppAccessPolicy {
 
     // Plan modules take precedence: strip module-scoped rights the plan does
     // not entitle (super admins keep the full set).
-    final Set<AppPermission> planGated = elevated
+    final Set<AppPermission> planGated = elevated && tenantId == null
         ? merged
         : merged
               .where(
@@ -251,6 +251,7 @@ final class AppAccessPolicy {
   }
 
   bool get isElevated => roles.contains(AppRole.superAdmin);
+  bool get isPlatformElevated => isElevated && !hasTenantContext;
   bool get hasTenantContext => tenantId != null;
   bool get hasFacilityContext => facilityId != null;
 
@@ -268,7 +269,7 @@ final class AppAccessPolicy {
   }
 
   bool grants(AppPermission permission) {
-    if (isElevated) {
+    if (isPlatformElevated) {
       return true;
     }
     // Permissions are already plan-gated in fromSession; still re-check the
@@ -542,7 +543,7 @@ final class AppAccessPolicy {
   }
 
   bool hasActiveModule(String moduleCode) {
-    if (isElevated) {
+    if (isPlatformElevated) {
       return true;
     }
     if (moduleEntitlements.isEmpty) {

@@ -40,13 +40,12 @@ final class SessionController extends Notifier<SessionState> {
       state = const SessionState.notReady();
       await ref
           .read(sessionIsolationServiceProvider)
-          .disposeAuthenticatedState(closeNetwork: false);
+          .disposeAuthenticatedState();
     }
-
-    state = SessionState.authenticated(session: session);
 
     try {
       await ref.read(sessionManagerProvider).persistSession(session);
+      state = SessionState.authenticated(session: session);
     } catch (_) {
       state = previousState;
       rethrow;

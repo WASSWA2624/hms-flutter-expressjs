@@ -2,6 +2,7 @@ jest.mock('@repositories/break-glass-review/break-glass-review.repository');
 jest.mock('@repositories/break-glass-access/break-glass-access.repository');
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn(() => Promise.resolve({})),
+  createRequiredAuditLog: jest.fn(() => Promise.resolve({})),
 }));
 jest.mock('@lib/billing/identifiers', () => ({
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
@@ -20,7 +21,7 @@ jest.mock('@lib/telemetry/metrics', () => ({
 
 const breakGlassReviewRepository = require('@repositories/break-glass-review/break-glass-review.repository');
 const breakGlassAccessRepository = require('@repositories/break-glass-access/break-glass-access.repository');
-const { createAuditLog } = require('@lib/audit');
+const { createRequiredAuditLog } = require('@lib/audit');
 const { emitAccessControlEvent } = require('@lib/last-office/events');
 const { HttpError } = require('@lib/errors');
 const breakGlassReviewService = require('@services/break-glass-review/break-glass-review.service');
@@ -144,7 +145,7 @@ describe('break-glass-review.service', () => {
         version: 2,
       })
     );
-    expect(createAuditLog).toHaveBeenCalled();
+    expect(createRequiredAuditLog).toHaveBeenCalled();
     expect(emitAccessControlEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         tenant_id: 'tenant-1',
@@ -174,5 +175,27 @@ describe('break-glass-review.service', () => {
         }
       )
     ).rejects.toThrow(HttpError);
+  });
+
+  it('does not reveal or approve access from another tenant', async () => {
+    breakGlassAccessRepository.findById.mockResolvedValue(
+      buildAccess({ tenant_id: 'tenant-2' })
+    );
+
+    await expect(
+      breakGlassReviewService.createBreakGlassReview(
+        {
+          break_glass_access_id: 'BGA-001',
+          status: 'REJECTED',
+        },
+        {
+          tenant_id: 'tenant-1',
+          user_id: 'user-ops',
+        }
+      )
+    ).rejects.toMatchObject({ statusCode: 404 });
+
+    expect(breakGlassReviewRepository.create).not.toHaveBeenCalled();
+    expect(breakGlassAccessRepository.update).not.toHaveBeenCalled();
   });
 });

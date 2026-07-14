@@ -263,6 +263,7 @@ const resolveEffectiveAccess = (user = {}, options = {}) => {
   ]);
 
   const elevated = userHasSuperAdminRole(user);
+  const hasTenantContext = Boolean(user?.tenant_id || user?.tenantId);
   const explicitAssigned = resolveAssignedModuleCodes(user);
   const assignedModules =
     explicitAssigned.length > 0
@@ -272,7 +273,7 @@ const resolveEffectiveAccess = (user = {}, options = {}) => {
   let permissions = grantUnion;
   let subscriptionModules = null;
 
-  if (applyPlanGate && !elevated && user?.tenant_id) {
+  if (applyPlanGate && hasTenantContext) {
     const enabledModules = normalizeEnabledModuleSet(moduleEntitlements || []);
     subscriptionModules = [...enabledModules];
     permissions = filterPermissionNamesByPlanModules(permissions, enabledModules);
@@ -335,7 +336,8 @@ const resolveRequestPermissionNames = (user = {}) => {
   );
 
   if (tokenPermissions.length > 0 && !tokenLooksLikeOrmJoin) {
-    if (userHasSuperAdminRole(user)) {
+    const hasTenantContext = Boolean(user.tenant_id || user.tenantId);
+    if (userHasSuperAdminRole(user) && !hasTenantContext) {
       return tokenPermissions;
     }
 

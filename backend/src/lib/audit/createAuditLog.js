@@ -10,7 +10,13 @@
  */
 
 const { logger } = require('@lib/logging');
-const { publishAuditRealtime } = require('@lib/realtime/audit-realtime');
+let publishAuditRealtime = null;
+const publishPersistedAudit = async (...args) => {
+  if (!publishAuditRealtime) {
+    ({ publishAuditRealtime } = require('@lib/realtime/audit-realtime'));
+  }
+  return publishAuditRealtime(...args);
+};
 const VALID_AUDIT_ACTIONS = new Set(['CREATE', 'UPDATE', 'DELETE', 'ACCESS', 'EXPORT', 'LOGIN', 'LOGOUT']);
 const INVALID_ID_LITERALS = new Set(['unknown', 'undefined', 'null', 'n/a', 'na']);
 const UPDATE_ACTION_ALIASES = new Set([
@@ -118,6 +124,66 @@ const resolveAuditAction = (value) => {
   return 'ACCESS';
 };
 
+const buildAuditRecord = async (auditData) => {
+  const rawAction = String(auditData.action || '').trim().toUpperCase();
+  const action = resolveAuditAction(rawAction);
+  const detailsPayload =
+    auditData.diff ||
+    auditData.details ||
+    (auditData.old_values || auditData.new_values
+      ? {
+          before: auditData.old_values || null,
+          after: auditData.new_values || null
+        }
+      : null);
+  const diffJson =
+    action === rawAction || !detailsPayload
+      ? detailsPayload
+      : {
+          ...(typeof detailsPayload === 'object'
+            ? detailsPayload
+            : { details: detailsPayload }),
+          original_action: rawAction
+        };
+  const tenantId =
+    resolveTenantIdFromAuditData(auditData) ||
+    (await resolveTenantIdFromUser(auditData.user_id));
+
+  return { action, diffJson, tenantId };
+};
+
+/**
+ * Persist compliance-critical audit evidence before returning success.
+ * Unlike createAuditLog, failures are surfaced to the caller.
+ */
+const createRequiredAuditLog = async (auditData) => {
+  if (!auditData?.action || !auditData?.entity || !auditData?.entity_id) {
+    throw new Error('Compliance audit data is incomplete');
+  }
+  if (!prisma?.audit_log?.create) {
+    throw new Error('Compliance audit persistence is unavailable');
+  }
+
+  const { action, diffJson, tenantId } = await buildAuditRecord(auditData);
+  if (!tenantId) {
+    throw new Error('Compliance audit tenant context is missing');
+  }
+
+  await prisma.audit_log.create({
+    data: {
+      tenant_id: tenantId,
+      user_id: auditData.user_id || null,
+      action,
+      entity: auditData.entity,
+      entity_id: auditData.entity_id,
+      diff_json: diffJson,
+      ip_address: auditData.ip_address || auditData.ip || null,
+      created_at: new Date()
+    }
+  });
+  await publishPersistedAudit(auditData, tenantId, action);
+};
+
 /**
  * Create audit log entry (non-blocking)
  * 
@@ -204,7 +270,7 @@ const createAuditLog = async (auditData) => {
           }
         });
 
-        await publishAuditRealtime(auditData, resolvedTenantId, action);
+        await publishPersistedAudit(auditData, resolvedTenantId, action);
       } catch (err) {
         // Log error but don't throw (non-blocking)
         logger.error('Failed to create audit log entry', {
@@ -226,5 +292,5 @@ const createAuditLog = async (auditData) => {
   }
 };
 
-module.exports = { createAuditLog };
+module.exports = { createAuditLog, createRequiredAuditLog };
 
