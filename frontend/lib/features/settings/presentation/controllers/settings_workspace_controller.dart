@@ -3,6 +3,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
+import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/settings/data/repositories/settings_workspace_repository_impl.dart';
 import 'package:hosspi_hms/features/settings/domain/entities/settings_workspace_entities.dart';
@@ -22,6 +23,7 @@ final class SettingsWorkspaceController
 
   @override
   Future<Result<SettingsWorkspaceState>> build() async {
+    watchSessionEpoch(ref);
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.settings,

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
@@ -48,6 +50,31 @@ void main() {
         expect(policy.grants(AppPermissions.billingWrite), isFalse);
       },
     );
+
+    test('does not flash role-pack access from an authoritative JWT', () {
+      final payload = base64Url
+          .encode(
+            utf8.encode(
+              jsonEncode(<String, Object?>{
+                'userId': 'user-1',
+                'tenantId': 'tenant-1',
+                'roles': <String>['DOCTOR'],
+                'permissions': <String>[],
+              }),
+            ),
+          )
+          .replaceAll('=', '');
+      final session = AuthSession.fromTokens(
+        SessionTokens(accessToken: 'header.$payload.signature'),
+      );
+
+      final policy = AppAccessPolicy.fromSession(session);
+
+      expect(session.isAuthorizationHydrated, isTrue);
+      expect(policy.hasRole(AppRole.doctor), isTrue);
+      expect(policy.grants(AppPermissions.clinicalRead), isFalse);
+      expect(policy.grants(AppPermissions.clinicalWrite), isFalse);
+    });
 
     test('normalizes legacy role aliases to canonical backend roles', () {
       final session = AuthSession(

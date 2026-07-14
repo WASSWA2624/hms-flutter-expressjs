@@ -202,7 +202,8 @@ final class AppAccessPolicy {
     // backend grants — that over-grants UI vs API.
     final Set<AppPermission> merged = <AppPermission>{
       if (elevated) ...AppPermissions.all,
-      if (explicitPermissions.isNotEmpty)
+      if (explicitPermissions.isNotEmpty ||
+          (session?.isAuthorizationHydrated ?? false))
         ...explicitPermissions
       else
         ...rolePermissions,

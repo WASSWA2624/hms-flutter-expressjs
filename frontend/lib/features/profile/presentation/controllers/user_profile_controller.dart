@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/features/profile/data/repositories/user_profile_repository_impl.dart';
 import 'package:hosspi_hms/features/profile/domain/entities/user_profile_entities.dart';
 import 'package:hosspi_hms/features/profile/domain/repositories/user_profile_repository.dart';
@@ -21,6 +22,7 @@ final class UserProfileController
 
   @override
   Future<Result<UserProfileState>> build() {
+    watchSessionEpoch(ref);
     return _loadProfile();
   }
 

@@ -236,8 +236,7 @@ const resolveObjectContext = async (classifier, req) => {
   if (!classifier) return null;
 
   if (req.params?.id && classifier.resolveById) {
-    const byId = await classifier.resolveById(req.params.id);
-    if (byId) return byId;
+    return classifier.resolveById(req.params.id);
   }
 
   return resolveContextFromBody(classifier, req);
@@ -352,6 +351,9 @@ const enforceAbacAccess = () => async (req, res, next) => {
     const action = toAction(req);
     const subject = await buildSubject(req, classifier);
     const object = await resolveObjectContext(classifier, req);
+    if (req.params?.id && classifier.resolveById && !object) {
+      return next(new HttpError('errors.not_found', 404));
+    }
     const policies = await findApplicablePolicies({
       tenant_id: subject.tenant_id,
       facility_id: subject.facility_id,

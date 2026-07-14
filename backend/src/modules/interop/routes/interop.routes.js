@@ -5,6 +5,8 @@
 const express = require('express');
 const router = express.Router();
 const interopController = require('@controllers/interop/interop.controller');
+const { PERMISSIONS } = require('@config/permissions');
+const { authenticate, authorize } = require('@middlewares/auth.middleware');
 const { validateRequest } = require('@middlewares/validate.middleware');
 const {
   interopResourceParamsSchema,
@@ -18,6 +20,8 @@ const {
 router.get(
   '/fhir/export/:resource',
   validateRequest({ params: interopResourceParamsSchema }),
+  authenticate(),
+  authorize(PERMISSIONS.EVIDENCE_EXPORT, 'permission'),
   interopController.exportFhirResource
 );
 
@@ -41,6 +45,8 @@ router.post(
 
 router.get(
   '/migrations/export',
+  authenticate(),
+  authorize(PERMISSIONS.EVIDENCE_EXPORT, 'permission'),
   interopController.exportMigrations
 );
 

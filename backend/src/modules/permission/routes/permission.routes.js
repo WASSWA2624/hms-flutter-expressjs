@@ -9,7 +9,8 @@ const express = require('express');
 const router = express.Router();
 const permissionController = require('@controllers/permission/permission.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
-const { requireAuth } = require('@middlewares/auth.middleware');
+const { authenticate, authorize } = require('@middlewares/auth.middleware');
+const { PERMISSIONS } = require('@config/permissions');
 const {
   createPermissionSchema,
   updatePermissionSchema,
@@ -17,40 +18,49 @@ const {
   listPermissionsQuerySchema
 } = require('@validations/permission/permission.schema');
 
-const ADMIN_ROLE_SET = ['TENANT_ADMIN', 'FACILITY_ADMIN', 'SUPER_ADMIN', 'OPERATIONS', 'HR'];
+const ACCESS_ADMIN_SCOPES = [
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
 
 router.get(
   '/',
   validateRequest({ query: listPermissionsQuerySchema }),
-  requireAuth(ADMIN_ROLE_SET),
+  authenticate(),
+  authorize(ACCESS_ADMIN_SCOPES, 'permission'),
   permissionController.listPermissions
 );
 
 router.get(
   '/:id',
   validateRequest({ params: permissionIdParamsSchema }),
-  requireAuth(ADMIN_ROLE_SET),
+  authenticate(),
+  authorize(ACCESS_ADMIN_SCOPES, 'permission'),
   permissionController.getPermissionById
 );
 
 router.post(
   '/',
   validateRequest({ body: createPermissionSchema }),
-  requireAuth(ADMIN_ROLE_SET),
+  authenticate(),
+  authorize(ACCESS_ADMIN_SCOPES, 'permission'),
   permissionController.createPermission
 );
 
 router.put(
   '/:id',
   validateRequest({ params: permissionIdParamsSchema, body: updatePermissionSchema }),
-  requireAuth(ADMIN_ROLE_SET),
+  authenticate(),
+  authorize(ACCESS_ADMIN_SCOPES, 'permission'),
   permissionController.updatePermission
 );
 
 router.delete(
   '/:id',
   validateRequest({ params: permissionIdParamsSchema }),
-  requireAuth(ADMIN_ROLE_SET),
+  authenticate(),
+  authorize(ACCESS_ADMIN_SCOPES, 'permission'),
   permissionController.deletePermission
 );
 

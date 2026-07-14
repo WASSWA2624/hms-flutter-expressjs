@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -9,6 +11,7 @@ import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/secure/app_secure_storage.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 
 void main() {
   group('SessionController', () {
@@ -97,6 +100,70 @@ void main() {
         expect(storage.values, isEmpty);
       },
     );
+
+    test('account context switch invokes session isolation', () async {
+      final storage = _MemorySecureStorage();
+      final previousSession = AuthSession(
+        tokens: SessionTokens(accessToken: 'previous-token'),
+        user: const AuthUserProfile(
+          id: 'user-1',
+          tenantId: 'tenant-1',
+          facilityId: 'facility-1',
+        ),
+      );
+      final nextSession = AuthSession(
+        tokens: SessionTokens(accessToken: 'next-token'),
+        user: const AuthUserProfile(
+          id: 'user-2',
+          tenantId: 'tenant-2',
+          facilityId: 'facility-2',
+        ),
+      );
+      late _RecordingSessionIsolation isolation;
+      final container = ProviderContainer(
+        overrides: [
+          initialSessionStateProvider.overrideWithValue(
+            SessionState.authenticated(session: previousSession),
+          ),
+          secureSessionStorageProvider.overrideWithValue(
+            SecureAppSessionStorage(storage),
+          ),
+          sessionIsolationServiceProvider.overrideWith((Ref ref) {
+            return isolation = _RecordingSessionIsolation(ref);
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final Future<void> switchFuture = container
+          .read(sessionStateProvider.notifier)
+          .persistSession(nextSession);
+
+      expect(isolation.disposeCalls, 1);
+      expect(container.read(sessionEpochProvider), 1);
+      expect(
+        container.read(sessionStateProvider).status,
+        SessionStatus.unknown,
+      );
+      expect(container.read(sessionStateProvider).session, isNull);
+
+      isolation.complete();
+      await switchFuture;
+
+      expect(container.read(sessionStateProvider).session, same(nextSession));
+    });
+
+    test('session-scoped controller state cannot survive an epoch bump', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container.read(tenantFacilitySetupRefreshProvider.notifier).start();
+      expect(container.read(tenantFacilitySetupRefreshProvider), isTrue);
+
+      container.read(sessionEpochProvider.notifier).bump();
+
+      expect(container.read(tenantFacilitySetupRefreshProvider), isFalse);
+    });
   });
 }
 
@@ -133,5 +200,26 @@ final class _NoopSessionIsolation extends SessionIsolationService {
     bool clearLocalCaches = true,
   }) async {
     ref.read(sessionEpochProvider.notifier).bump();
+  }
+}
+
+final class _RecordingSessionIsolation extends SessionIsolationService {
+  _RecordingSessionIsolation(super.ref);
+
+  final Completer<void> _release = Completer<void>();
+  int disposeCalls = 0;
+
+  void complete() {
+    _release.complete();
+  }
+
+  @override
+  Future<void> disposeAuthenticatedState({
+    bool closeNetwork = true,
+    bool clearLocalCaches = true,
+  }) async {
+    disposeCalls += 1;
+    ref.read(sessionEpochProvider.notifier).bump();
+    await _release.future;
   }
 }

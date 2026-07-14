@@ -21,6 +21,16 @@ final class SessionEpochController extends Notifier<int> {
   }
 }
 
+/// Registers session-scoped provider state for disposal on an epoch change.
+///
+/// Call this synchronously from a provider's build callback before starting
+/// authenticated work. An epoch bump then disposes the old provider instance
+/// and exposes a neutral initial/loading state while the next session becomes
+/// ready.
+int watchSessionEpoch(Ref ref) {
+  return ref.watch(sessionEpochProvider);
+}
+
 /// Tears down authenticated in-memory/network/local state for session isolation.
 class SessionIsolationService {
   const SessionIsolationService(this.ref);

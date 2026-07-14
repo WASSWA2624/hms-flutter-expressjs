@@ -11,7 +11,8 @@ const express = require('express');
 const router = express.Router();
 const encounterController = require('@controllers/encounter/encounter.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
-const { authenticate } = require('@middlewares/auth.middleware');
+const { authenticate, authorize } = require('@middlewares/auth.middleware');
+const { PERMISSIONS } = require('@config/permissions');
 const {
   createEncounterSchema,
   updateEncounterSchema,
@@ -41,9 +42,11 @@ const {
  * @throws 401 Unauthorized
  */
 router.get(
-  '/',  validateRequest({ query: listEncountersQuerySchema }),
+  '/',
+  validateRequest({ query: listEncountersQuerySchema }),
 
   authenticate(),
+  authorize(PERMISSIONS.CLINICAL_READ, 'permission'),
   encounterController.listEncounters
 );
 
@@ -61,9 +64,11 @@ router.get(
  * @throws 404 Encounter not found
  */
 router.get(
-  '/:id',  validateRequest({ params: encounterIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: encounterIdParamsSchema }),
 
   authenticate(),
+  authorize(PERMISSIONS.CLINICAL_READ, 'permission'),
   encounterController.getEncounterById
 );
 
@@ -90,9 +95,11 @@ router.get(
  * @throws 409 Unique constraint violation
  */
 router.post(
-  '/',  validateRequest({ body: createEncounterSchema }),
+  '/',
+  validateRequest({ body: createEncounterSchema }),
 
   authenticate(),
+  authorize(PERMISSIONS.CLINICAL_WRITE, 'permission'),
   encounterController.createEncounter
 );
 
@@ -118,9 +125,11 @@ router.post(
  * @throws 409 Unique constraint violation
  */
 router.put(
-  '/:id',  validateRequest({ params: encounterIdParamsSchema, body: updateEncounterSchema }),
+  '/:id',
+  validateRequest({ params: encounterIdParamsSchema, body: updateEncounterSchema }),
 
   authenticate(),
+  authorize(PERMISSIONS.CLINICAL_WRITE, 'permission'),
   encounterController.updateEncounter
 );
 
@@ -138,9 +147,11 @@ router.put(
  * @throws 404 Encounter not found
  */
 router.delete(
-  '/:id',  validateRequest({ params: encounterIdParamsSchema }),
+  '/:id',
+  validateRequest({ params: encounterIdParamsSchema }),
 
   authenticate(),
+  authorize(PERMISSIONS.CLINICAL_WRITE, 'permission'),
   encounterController.deleteEncounter
 );
 

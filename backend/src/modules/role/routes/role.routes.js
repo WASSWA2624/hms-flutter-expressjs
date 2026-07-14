@@ -11,7 +11,8 @@ const express = require('express');
 const router = express.Router();
 const roleController = require('@controllers/role/role.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
-const { authenticate, requireAuth } = require('@middlewares/auth.middleware');
+const { authenticate, authorize } = require('@middlewares/auth.middleware');
+const { PERMISSIONS } = require('@config/permissions');
 const {
   createRoleSchema,
   updateRoleSchema,
@@ -19,7 +20,11 @@ const {
   listRolesQuerySchema
 } = require('@validations/role/role.schema');
 
-const ADMIN_ROLE_SET = ['TENANT_ADMIN', 'FACILITY_ADMIN', 'SUPER_ADMIN', 'OPERATIONS', 'HR'];
+const ACCESS_ADMIN_SCOPES = [
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
 
 /**
  * @description List roles with pagination and filters
@@ -44,6 +49,7 @@ router.get(
   '/',
   validateRequest({ query: listRolesQuerySchema }),
   authenticate(),
+  authorize(ACCESS_ADMIN_SCOPES, 'permission'),
   roleController.listRoles
 );
 
@@ -64,6 +70,7 @@ router.get(
   '/:id',
   validateRequest({ params: roleIdParamsSchema }),
   authenticate(),
+  authorize(ACCESS_ADMIN_SCOPES, 'permission'),
   roleController.getRoleById
 );
 
@@ -87,7 +94,8 @@ router.get(
 router.post(
   '/',
   validateRequest({ body: createRoleSchema }),
-  requireAuth(ADMIN_ROLE_SET),
+  authenticate(),
+  authorize(ACCESS_ADMIN_SCOPES, 'permission'),
   roleController.createRole
 );
 
@@ -111,7 +119,8 @@ router.post(
 router.put(
   '/:id',
   validateRequest({ params: roleIdParamsSchema, body: updateRoleSchema }),
-  requireAuth(ADMIN_ROLE_SET),
+  authenticate(),
+  authorize(ACCESS_ADMIN_SCOPES, 'permission'),
   roleController.updateRole
 );
 
@@ -131,7 +140,8 @@ router.put(
 router.delete(
   '/:id',
   validateRequest({ params: roleIdParamsSchema }),
-  requireAuth(ADMIN_ROLE_SET),
+  authenticate(),
+  authorize(ACCESS_ADMIN_SCOPES, 'permission'),
   roleController.deleteRole
 );
 

@@ -9,6 +9,7 @@ import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_providers.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/realtime/realtime_service.dart';
+import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
 import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_bootstrap_helpers.dart';
@@ -39,6 +40,7 @@ final class OpdWorkspaceController
 
   @override
   Future<Result<OpdWorkspaceState>> build() async {
+    watchSessionEpoch(ref);
     ref.onDispose(() {
       _adaptivePolling.dispose();
     });

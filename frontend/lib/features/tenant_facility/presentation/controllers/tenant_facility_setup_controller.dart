@@ -7,6 +7,7 @@ import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/realtime/realtime_scope.dart';
+import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
@@ -34,6 +35,7 @@ typedef _SnapshotUpdate<T> =
 final class TenantFacilitySetupRefreshController extends Notifier<bool> {
   @override
   bool build() {
+    watchSessionEpoch(ref);
     return false;
   }
 
@@ -53,6 +55,7 @@ final class TenantFacilitySetupController
 
   @override
   Future<Result<FacilitySetupSnapshot>> build() {
+    watchSessionEpoch(ref);
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.tenantFacility,
@@ -179,6 +182,7 @@ final class TenantFacilitySetupSubmissionController
     extends Notifier<TenantFacilitySetupSubmissionState> {
   @override
   TenantFacilitySetupSubmissionState build() {
+    watchSessionEpoch(ref);
     return const TenantFacilitySetupSubmissionState();
   }
 

@@ -5,6 +5,9 @@
  * Permissions without a module mapping are core/platform and are not plan-gated
  * at the permission-assignment layer.
  */
+const {
+  resolveSubscriptionPermissionCap,
+} = require('@lib/subscriptions/subscription-permission-caps');
 
 const DOMAIN_TO_MODULE = Object.freeze({
   patient: 'patient-registry',
@@ -158,6 +161,34 @@ const filterPermissionNamesByPlanModules = (
   );
 };
 
+const filterPermissionNamesBySubscriptionPermissions = (
+  permissionNames = [],
+  entitlements = []
+) => {
+  const entries = Array.isArray(entitlements) ? entitlements : [];
+  const planTierCode = entries
+    .map((entry) => entry?.plan_tier_code || entry?.planTierCode)
+    .find(Boolean);
+  const allowedPermissions = entries.flatMap((entry) =>
+    Array.isArray(entry?.allowed_permissions)
+      ? entry.allowed_permissions
+      : Array.isArray(entry?.allowedPermissions)
+        ? entry.allowedPermissions
+        : []
+  );
+  const cap = resolveSubscriptionPermissionCap({
+    plan_tier_code: planTierCode,
+    allowed_permissions: allowedPermissions,
+  });
+  if (cap == null) {
+    return permissionNames;
+  }
+
+  return permissionNames.filter(
+    (name) => !isModuleScopedPermission(name) || cap.has(String(name || '').trim())
+  );
+};
+
 /**
  * @param {string} permissionName
  * @param {Set<string>|null|undefined} enabledModules
@@ -180,6 +211,7 @@ const isPermissionAllowedByPlan = (permissionName, enabledModules = null) => {
 module.exports = {
   DOMAIN_TO_MODULE,
   filterPermissionNamesByPlanModules,
+  filterPermissionNamesBySubscriptionPermissions,
   filterPermissionRecordsByPlanModules,
   isModuleScopedPermission,
   isPermissionAllowedByPlan,

@@ -63,6 +63,52 @@ describe('effective-access', () => {
     expect(permissions).not.toContain('lab:read');
   });
 
+  test('applies package permission caps inside an entitled module', () => {
+    const permissions = resolveRequestPermissionNames({
+      roles: [ROLES.DOCTOR],
+      permissions: ['patient:read', 'patient:write', 'patient:delete'],
+      module_entitlements: [
+        {
+          module_slug: 'patient-registry',
+          is_active: true,
+          plan_tier_code: 'FREE',
+        },
+      ],
+      tenant_id: 'tenant-1',
+    });
+
+    expect(permissions).toContain('patient:read');
+    expect(permissions).toContain('patient:write');
+    expect(permissions).not.toContain('patient:delete');
+  });
+
+  test('developer package is not unrestricted in production', () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      const access = resolveEffectiveAccess(
+        {
+          tenant_id: 'tenant-1',
+          role_permissions: ['patient:read', 'patient:delete'],
+        },
+        {
+          moduleEntitlements: [
+            {
+              module_slug: 'patient-registry',
+              is_active: true,
+              plan_tier_code: 'DEVELOPER',
+            },
+          ],
+        }
+      );
+
+      expect(access.permissions).toContain('patient:read');
+      expect(access.permissions).not.toContain('patient:delete');
+    } finally {
+      process.env.NODE_ENV = previousNodeEnv;
+    }
+  });
+
   test('super admin remains plan-gated in a tenant context', () => {
     const permissions = resolveRequestPermissionNames({
       roles: [ROLES.SUPER_ADMIN],

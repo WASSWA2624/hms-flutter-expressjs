@@ -73,7 +73,7 @@ router.get(
   '/:id/download',
   validateRequest({ params: reportRunIdParamsSchema }),
   authenticate(),
-  authorize(PERMISSIONS.REPORTS_WRITE, 'permission'),
+  authorize(PERMISSIONS.EVIDENCE_EXPORT, 'permission'),
   reportRunController.downloadReportRun
 );
 

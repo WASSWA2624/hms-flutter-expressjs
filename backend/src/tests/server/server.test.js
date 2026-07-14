@@ -44,6 +44,8 @@ describe('server bootstrap', () => {
     const stopReportRunScheduler = jest.fn();
     const startNotificationDeliveryRuntime = jest.fn();
     const stopNotificationDeliveryRuntime = jest.fn();
+    const startBreakGlassExpiryRuntime = jest.fn();
+    const stopBreakGlassExpiryRuntime = jest.fn();
     const assertDatabaseConnection = jest.fn(async () => undefined);
     const cleanup = jest.fn();
 
@@ -69,6 +71,10 @@ describe('server bootstrap', () => {
       startNotificationDeliveryRuntime,
       stopNotificationDeliveryRuntime,
     }));
+    jest.doMock('@lib/authorization/break-glass-expiry', () => ({
+      startBreakGlassExpiryRuntime,
+      stopBreakGlassExpiryRuntime,
+    }));
     jest.doMock('@websockets/server', () => ({
       initializeWebSocketServer,
       closeWebSocketServer
@@ -93,8 +99,10 @@ describe('server bootstrap', () => {
 
     expect(closeSpy).toHaveBeenCalledTimes(1);
     expect(startNotificationDeliveryRuntime).toHaveBeenCalledTimes(1);
+    expect(startBreakGlassExpiryRuntime).toHaveBeenCalledTimes(1);
     expect(stopReportRunScheduler).toHaveBeenCalledTimes(1);
     expect(stopNotificationDeliveryRuntime).toHaveBeenCalledTimes(1);
+    expect(stopBreakGlassExpiryRuntime).toHaveBeenCalledTimes(1);
     expect(closeWebSocketServer).toHaveBeenCalledTimes(1);
     expect(cleanup).toHaveBeenCalledTimes(1);
     expect(processExitSpy).toHaveBeenCalledWith(1);

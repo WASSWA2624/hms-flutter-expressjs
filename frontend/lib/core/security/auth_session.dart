@@ -14,6 +14,7 @@ final class AuthSession {
         const <AppModuleEntitlement>[],
     this.subscriptionSummary,
     this.platformAdminContact,
+    this.isAuthorizationHydrated = false,
     Iterable<OrgAdminContact> tenantAdminContacts = const <OrgAdminContact>[],
     Iterable<OrgAdminContact> facilityAdminContacts = const <OrgAdminContact>[],
   }) : subject =
@@ -44,6 +45,7 @@ final class AuthSession {
       user: profile,
       permissions: _permissionsFromPayload(payload),
       moduleEntitlements: _moduleEntitlementsFromPayload(payload),
+      isAuthorizationHydrated: payload?.containsKey('permissions') == true,
     );
   }
 
@@ -54,6 +56,7 @@ final class AuthSession {
   final Map<String, AppModuleEntitlement> moduleEntitlements;
   final TenantSubscriptionSummary? subscriptionSummary;
   final PlatformAdminContact? platformAdminContact;
+  final bool isAuthorizationHydrated;
   final List<OrgAdminContact> tenantAdminContacts;
   final List<OrgAdminContact> facilityAdminContacts;
 
@@ -73,6 +76,7 @@ final class AuthSession {
     Iterable<AppModuleEntitlement>? moduleEntitlements,
     TenantSubscriptionSummary? subscriptionSummary,
     PlatformAdminContact? platformAdminContact,
+    bool? isAuthorizationHydrated,
     Iterable<OrgAdminContact>? tenantAdminContacts,
     Iterable<OrgAdminContact>? facilityAdminContacts,
   }) {
@@ -84,6 +88,8 @@ final class AuthSession {
       moduleEntitlements: moduleEntitlements ?? this.moduleEntitlements.values,
       subscriptionSummary: subscriptionSummary ?? this.subscriptionSummary,
       platformAdminContact: platformAdminContact ?? this.platformAdminContact,
+      isAuthorizationHydrated:
+          isAuthorizationHydrated ?? this.isAuthorizationHydrated,
       tenantAdminContacts: tenantAdminContacts ?? this.tenantAdminContacts,
       facilityAdminContacts:
           facilityAdminContacts ?? this.facilityAdminContacts,

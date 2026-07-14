@@ -10,8 +10,8 @@
 const PLAN_TIER_RANK = Object.freeze({
   FREE: 0,
   BASIC: 1,
-  PRO: 2,
-  ADVANCED: 3,
+  ADVANCED: 2,
+  PRO: 3,
   CUSTOM: 4,
   DEVELOPER: 5,
 });
@@ -42,49 +42,49 @@ const COMMERCIAL_MODULE_MATRIX = Object.freeze([
     slug: 'scheduling-queue',
     name: 'Scheduling and Queue (OPD)',
     module_group: 3,
-    minimum_plan_tier_code: 'FREE',
+    minimum_plan_tier_code: 'BASIC',
   },
   {
     code: 'encounters_vitals',
     slug: 'encounters-vitals',
     name: 'Encounters and Vitals',
     module_group: 4,
-    minimum_plan_tier_code: 'FREE',
+    minimum_plan_tier_code: 'BASIC',
   },
   {
     code: 'lab_workflows',
     slug: 'lab-workflows',
     name: 'Lab Workflows',
     module_group: 8,
-    minimum_plan_tier_code: 'FREE',
+    minimum_plan_tier_code: 'ADVANCED',
   },
   {
     code: 'pharmacy_dispensing',
     slug: 'pharmacy-dispensing',
     name: 'Pharmacy Dispensing',
     module_group: 10,
-    minimum_plan_tier_code: 'FREE',
+    minimum_plan_tier_code: 'BASIC',
   },
   {
     code: 'billing_payments',
     slug: 'billing-payments',
     name: 'Billing, Payments, and Invoices',
     module_group: 13,
-    minimum_plan_tier_code: 'FREE',
+    minimum_plan_tier_code: 'BASIC',
   },
   {
     code: 'insurance_claims',
     slug: 'insurance-claims',
     name: 'Insurance and Claims',
     module_group: 13,
-    minimum_plan_tier_code: 'FREE',
+    minimum_plan_tier_code: 'ADVANCED',
   },
   {
     code: 'notifications_communications',
     slug: 'notifications-communications',
     name: 'Notifications and Communications',
     module_group: 16,
-    minimum_plan_tier_code: 'FREE',
+    minimum_plan_tier_code: 'BASIC',
   },
 
   // —— Basic ——
@@ -93,7 +93,7 @@ const COMMERCIAL_MODULE_MATRIX = Object.freeze([
     slug: 'radiology-workflows',
     name: 'Radiology Workflows',
     module_group: 9,
-    minimum_plan_tier_code: 'BASIC',
+    minimum_plan_tier_code: 'ADVANCED',
   },
 
   // —— Pro ——
@@ -102,7 +102,7 @@ const COMMERCIAL_MODULE_MATRIX = Object.freeze([
     slug: 'inpatient-bed-management',
     name: 'IPD and Bed Management',
     module_group: 5,
-    minimum_plan_tier_code: 'PRO',
+    minimum_plan_tier_code: 'BASIC',
   },
   {
     code: 'theatre_anesthesia',
@@ -116,7 +116,7 @@ const COMMERCIAL_MODULE_MATRIX = Object.freeze([
     slug: 'physiotherapy',
     name: 'Physiotherapy and Rehabilitation',
     module_group: 7,
-    minimum_plan_tier_code: 'PRO',
+    minimum_plan_tier_code: 'ADVANCED',
   },
   {
     code: 'facilities_maintenance',
@@ -130,7 +130,7 @@ const COMMERCIAL_MODULE_MATRIX = Object.freeze([
     slug: 'reporting-analytics',
     name: 'Reporting and Analytics',
     module_group: 17,
-    minimum_plan_tier_code: 'PRO',
+    minimum_plan_tier_code: 'FREE',
   },
 
   // —— Advanced ——
@@ -139,28 +139,28 @@ const COMMERCIAL_MODULE_MATRIX = Object.freeze([
     slug: 'icu-critical-care',
     name: 'ICU and Critical Care',
     module_group: 6,
-    minimum_plan_tier_code: 'ADVANCED',
+    minimum_plan_tier_code: 'PRO',
   },
   {
     code: 'inventory_procurement_lite',
     slug: 'inventory-procurement-lite',
     name: 'Inventory and Procurement',
     module_group: 11,
-    minimum_plan_tier_code: 'ADVANCED',
+    minimum_plan_tier_code: 'PRO',
   },
   {
     code: 'mortuary_operations',
     slug: 'mortuary',
     name: 'Mortuary',
     module_group: 12,
-    minimum_plan_tier_code: 'ADVANCED',
+    minimum_plan_tier_code: 'PRO',
   },
   {
     code: 'biomedical_engineering_suite',
     slug: 'biomedical-engineering-suite',
     name: 'Biomedical Engineering Suite',
     module_group: 15,
-    minimum_plan_tier_code: 'ADVANCED',
+    minimum_plan_tier_code: 'PRO',
   },
   {
     code: 'extra_storage',
@@ -174,7 +174,7 @@ const COMMERCIAL_MODULE_MATRIX = Object.freeze([
     slug: 'hr-rosters',
     name: 'HR and Rosters',
     module_group: 14,
-    minimum_plan_tier_code: 'ADVANCED',
+    minimum_plan_tier_code: 'PRO',
   },
 
   // —— Custom / Developer ——

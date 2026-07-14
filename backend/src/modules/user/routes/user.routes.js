@@ -11,7 +11,8 @@ const express = require('express');
 const router = express.Router();
 const userController = require('@controllers/user/user.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
-const { authenticate, requireAuth } = require('@middlewares/auth.middleware');
+const { authenticate, authorize } = require('@middlewares/auth.middleware');
+const { PERMISSIONS } = require('@config/permissions');
 const {
   createUserSchema,
   updateUserSchema,
@@ -19,7 +20,18 @@ const {
   listUsersQuerySchema
 } = require('@validations/user/user.schema');
 
-const ADMIN_ROLE_SET = ['TENANT_ADMIN', 'FACILITY_ADMIN', 'SUPER_ADMIN', 'OPERATIONS', 'HR'];
+const USER_READ_SCOPES = [
+  PERMISSIONS.HR_READ,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
+const USER_WRITE_SCOPES = [
+  PERMISSIONS.HR_WRITE,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+  PERMISSIONS.SYSTEM_ADMIN,
+];
 
 /**
  * @description List users with pagination and filters
@@ -45,12 +57,14 @@ router.get(
   '/',
   validateRequest({ query: listUsersQuerySchema }),
   authenticate(),
+  authorize(USER_READ_SCOPES, 'permission'),
   userController.listUsers
 );
 router.post(
   '/:id/restore',
   validateRequest({ params: userIdParamsSchema }),
-  requireAuth(ADMIN_ROLE_SET),
+  authenticate(),
+  authorize(USER_WRITE_SCOPES, 'permission'),
   userController.restoreUser
 );
 
@@ -72,6 +86,7 @@ router.get(
   '/:id',
   validateRequest({ params: userIdParamsSchema }),
   authenticate(),
+  authorize(USER_READ_SCOPES, 'permission'),
   userController.getUserById
 );
 
@@ -100,7 +115,8 @@ router.get(
 router.post(
   '/',
   validateRequest({ body: createUserSchema }),
-  requireAuth(ADMIN_ROLE_SET),
+  authenticate(),
+  authorize(USER_WRITE_SCOPES, 'permission'),
   userController.createUser
 );
 
@@ -128,7 +144,8 @@ router.post(
 router.put(
   '/:id',
   validateRequest({ params: userIdParamsSchema, body: updateUserSchema }),
-  requireAuth(ADMIN_ROLE_SET),
+  authenticate(),
+  authorize(USER_WRITE_SCOPES, 'permission'),
   userController.updateUser
 );
 
@@ -148,7 +165,8 @@ router.put(
 router.delete(
   '/:id',
   validateRequest({ params: userIdParamsSchema }),
-  requireAuth(ADMIN_ROLE_SET),
+  authenticate(),
+  authorize(USER_WRITE_SCOPES, 'permission'),
   userController.deleteUser
 );
 

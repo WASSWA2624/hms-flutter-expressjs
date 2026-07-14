@@ -1,12 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 
 final homeDashboardOptimisticPatchProvider =
     StateProvider.family<
       HomeDashboardOptimisticPatchState?,
       HomeDashboardRequest
-    >((Ref ref, HomeDashboardRequest request) => null);
+    >((Ref ref, HomeDashboardRequest request) {
+      watchSessionEpoch(ref);
+      return null;
+    });
 
 /// Snapshot captured when a patch is first applied.
 final class HomeDashboardOptimisticPatchState {

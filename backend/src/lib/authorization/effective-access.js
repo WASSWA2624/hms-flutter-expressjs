@@ -16,6 +16,7 @@ const { ROLE_PERMISSIONS } = require('@config/permissions');
 const { normalizeRoleName } = require('@config/roles');
 const {
   filterPermissionNamesByPlanModules,
+  filterPermissionNamesBySubscriptionPermissions,
   moduleForPermissionName,
   normalizeEnabledModuleSet,
   normalizeModuleCode,
@@ -290,6 +291,13 @@ const resolveEffectiveAccess = (user = {}, options = {}) => {
     );
   }
 
+  if (applyPlanGate && moduleEntitlements != null) {
+    permissions = filterPermissionNamesBySubscriptionPermissions(
+      permissions,
+      moduleEntitlements
+    );
+  }
+
   return {
     direct_permissions: directPermissions,
     role_permissions: rolePermissions,
@@ -342,9 +350,12 @@ const resolveRequestPermissionNames = (user = {}) => {
     }
 
     if (moduleEntitlements != null) {
-      return filterPermissionNamesByPlanModules(
-        tokenPermissions,
-        normalizeEnabledModuleSet(moduleEntitlements)
+      return filterPermissionNamesBySubscriptionPermissions(
+        filterPermissionNamesByPlanModules(
+          tokenPermissions,
+          normalizeEnabledModuleSet(moduleEntitlements)
+        ),
+        moduleEntitlements
       );
     }
 

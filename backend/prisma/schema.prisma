@@ -1458,6 +1458,7 @@ model user {
   verification_tokens           verification_token[]
   roles                         user_role[]
   permissions                   user_permission[]
+  module_assignments            user_module_assignment[]
   api_keys                      api_key[]
   mfa_methods                   user_mfa[]
   oauth_accounts                oauth_account[]
@@ -1748,6 +1749,30 @@ model user_permission {
   @@unique([user_id, permission_id])
   @@index([user_id])
   @@index([permission_id])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+model user_module_assignment {
+  id                String    @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id String?   @db.VarChar(32)
+  user_id           String    @db.VarChar(36)
+  module_id         String    @db.VarChar(36)
+  tenant_id         String    @db.VarChar(36)
+  facility_id       String?   @db.VarChar(36)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  deleted_at        DateTime?
+  version           Int       @default(1)
+
+  user   user   @relation(fields: [user_id], references: [id])
+  module module @relation(fields: [module_id], references: [id])
+
+  @@unique([user_id, module_id, tenant_id, facility_id])
+  @@index([user_id])
+  @@index([module_id])
+  @@index([tenant_id])
+  @@index([facility_id])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }
@@ -6967,6 +6992,7 @@ model module {
   version                  Int           @default(1)
 
   subscriptions module_subscription[]
+  user_assignments user_module_assignment[]
 
   @@unique([name])
   @@unique([slug])

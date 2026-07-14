@@ -102,6 +102,11 @@ try {
   throw err;
 }
 
+const {
+  startBreakGlassExpiryRuntime,
+  stopBreakGlassExpiryRuntime
+} = require('@lib/authorization/break-glass-expiry');
+
 const getLanAddresses = () => {
   const interfaces = os.networkInterfaces();
   const results = [];
@@ -198,9 +203,11 @@ const startServer = async () => {
         initializeGateway();
         startReportRunScheduler();
         startNotificationDeliveryRuntime();
+        startBreakGlassExpiryRuntime();
         logger.info('WebSocket runtime initialized');
         logger.info('Reports runtime initialized');
         logger.info('Notification delivery runtime initialized');
+        logger.info('Break-glass expiry runtime initialized');
       } catch (wsErr) {
         logger.error('Failed to initialize WebSocket runtime', {
           error: wsErr.message,
@@ -256,6 +263,14 @@ const startServer = async () => {
           stopNotificationDeliveryRuntime();
         } catch (err) {
           logger.warn('Notification delivery runtime shutdown encountered an error', {
+            error: err.message
+          });
+        }
+
+        try {
+          stopBreakGlassExpiryRuntime();
+        } catch (err) {
+          logger.warn('Break-glass expiry shutdown encountered an error', {
             error: err.message
           });
         }

@@ -9,6 +9,10 @@ const prisma = require('@prisma/client');
 const serializeEntitlement = (record = {}) => {
   const module = record.module || {};
   const subscription = record.subscription || {};
+  const plan = subscription.plan || {};
+  const allowedPermissions = Array.isArray(plan.extension_json?.allowed_permissions)
+    ? plan.extension_json.allowed_permissions
+    : [];
 
   return {
     code: module.code || module.slug || null,
@@ -19,6 +23,8 @@ const serializeEntitlement = (record = {}) => {
     entitlement_denied: Boolean(record.entitlement_denied),
     subscription_status: subscription.status || null,
     license_status: subscription.status || null,
+    plan_tier_code: plan.tier_code || null,
+    allowed_permissions: allowedPermissions,
   };
 };
 
@@ -47,7 +53,11 @@ const resolveTenantModuleEntitlements = async (tenantId) => {
     },
     include: {
       module: true,
-      subscription: true,
+      subscription: {
+        include: {
+          plan: true,
+        },
+      },
     },
     orderBy: [{ module: { slug: 'asc' } }],
   });
