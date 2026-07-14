@@ -21,17 +21,27 @@ const {
 } = require('@validations/patient-insurance-enrollment/patient-insurance-enrollment.schema');
 
 /**
+ * Reception may capture insurance demographics; Billing retains financial finalize.
+ * @type {string[]}
+ */
+const ENROLLMENT_READ_SCOPES = [PERMISSIONS.BILLING_READ, PERMISSIONS.PATIENT_READ];
+const ENROLLMENT_CAPTURE_SCOPES = [
+  PERMISSIONS.BILLING_WRITE,
+  PERMISSIONS.PATIENT_WRITE
+];
+
+/**
  * @description List patient insurance enrollments with pagination and filters
  * @method GET
  * @route /api/v1/patient-insurance-enrollments/
  * @authentication Required (JWT)
- * @permissions BILLING_READ
+ * @permissions BILLING_READ or PATIENT_READ
  */
 router.get(
   '/',
   validateRequest({ query: listPatientInsuranceEnrollmentsQuerySchema }),
   authenticate(),
-  authorize(PERMISSIONS.BILLING_READ, 'permission'),
+  authorize(ENROLLMENT_READ_SCOPES, 'permission'),
   patientInsuranceEnrollmentController.listPatientInsuranceEnrollments
 );
 
@@ -40,13 +50,13 @@ router.get(
  * @method GET
  * @route /api/v1/patient-insurance-enrollments/:id
  * @authentication Required (JWT)
- * @permissions BILLING_READ
+ * @permissions BILLING_READ or PATIENT_READ
  */
 router.get(
   '/:id',
   validateRequest({ params: patientInsuranceEnrollmentIdParamsSchema }),
   authenticate(),
-  authorize(PERMISSIONS.BILLING_READ, 'permission'),
+  authorize(ENROLLMENT_READ_SCOPES, 'permission'),
   patientInsuranceEnrollmentController.getPatientInsuranceEnrollmentById
 );
 
@@ -55,13 +65,13 @@ router.get(
  * @method POST
  * @route /api/v1/patient-insurance-enrollments/
  * @authentication Required (JWT)
- * @permissions BILLING_WRITE
+ * @permissions BILLING_WRITE or PATIENT_WRITE (front-desk capture)
  */
 router.post(
   '/',
   validateRequest({ body: createPatientInsuranceEnrollmentSchema }),
   authenticate(),
-  authorize(PERMISSIONS.BILLING_WRITE, 'permission'),
+  authorize(ENROLLMENT_CAPTURE_SCOPES, 'permission'),
   patientInsuranceEnrollmentController.createPatientInsuranceEnrollment
 );
 
@@ -70,13 +80,13 @@ router.post(
  * @method POST
  * @route /api/v1/patient-insurance-enrollments/:id/verify
  * @authentication Required (JWT)
- * @permissions BILLING_WRITE
+ * @permissions BILLING_WRITE or PATIENT_WRITE (front-desk capture)
  */
 router.post(
   '/:id/verify',
   validateRequest({ params: patientInsuranceEnrollmentIdParamsSchema }),
   authenticate(),
-  authorize(PERMISSIONS.BILLING_WRITE, 'permission'),
+  authorize(ENROLLMENT_CAPTURE_SCOPES, 'permission'),
   patientInsuranceEnrollmentController.verifyPatientInsuranceEnrollment
 );
 
@@ -85,7 +95,7 @@ router.post(
  * @method PUT
  * @route /api/v1/patient-insurance-enrollments/:id
  * @authentication Required (JWT)
- * @permissions BILLING_WRITE
+ * @permissions BILLING_WRITE or PATIENT_WRITE (front-desk capture)
  */
 router.put(
   '/:id',
@@ -94,7 +104,7 @@ router.put(
     body: updatePatientInsuranceEnrollmentSchema
   }),
   authenticate(),
-  authorize(PERMISSIONS.BILLING_WRITE, 'permission'),
+  authorize(ENROLLMENT_CAPTURE_SCOPES, 'permission'),
   patientInsuranceEnrollmentController.updatePatientInsuranceEnrollment
 );
 

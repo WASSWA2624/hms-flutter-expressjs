@@ -4432,6 +4432,60 @@ abstract class AppLocalizations {
   /// **'Payment capture, refunds, adjustments, and reconciliation require Billing permission.'**
   String get receptionBillingCashierRestrictedMessage;
 
+  /// Toolbar action to schedule an appointment from reception.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule appointment'**
+  String get receptionScheduleAppointmentAction;
+
+  /// Action to open check-in, reschedule, cancel, and queue for an appointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment actions'**
+  String get receptionAppointmentActionsAction;
+
+  /// Action to open patient details for editing from reception.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit patient'**
+  String get receptionEditPatientAction;
+
+  /// Action to enroll or update patient insurance from reception.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture insurance'**
+  String get receptionCaptureInsuranceAction;
+
+  /// Reception routing action to assign or change the doctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign doctor'**
+  String get receptionRoutePatientAction;
+
+  /// Search field for picking a patient before scheduling.
+  ///
+  /// In en, this message translates to:
+  /// **'Search patient to schedule'**
+  String get receptionPatientPickerSearchHint;
+
+  /// Empty state when reception patient picker finds no rows.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching patients. Register the patient first.'**
+  String get receptionPatientPickerEmpty;
+
+  /// Error when claims lookups fail during reception insurance capture.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load insurance lookups for enrollment.'**
+  String get receptionInsuranceLookupFailed;
+
+  /// Label for estimated consultation charge in reception billing guidance.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated consultation charge'**
+  String get receptionEstimatedChargeLabel;
+
   /// Workflow step label for consultation payment.
   ///
   /// In en, this message translates to:

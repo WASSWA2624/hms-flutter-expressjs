@@ -586,10 +586,13 @@ final class OpdWorkspaceController
   }
 
   Future<AppFailure?> assignDoctor(OpdFlowSummary flow, String providerUserId) {
+    final String key = createIdempotencyKey();
     return _mutateFlow(
-      () => _repository.assignDoctor(flow.apiId, <String, Object?>{
-        'provider_user_id': providerUserId,
-      }),
+      () => _repository.assignDoctor(
+        flow.apiId,
+        <String, Object?>{'provider_user_id': providerUserId},
+        idempotencyKey: key,
+      ),
     );
   }
 

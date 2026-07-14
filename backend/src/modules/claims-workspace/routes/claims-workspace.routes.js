@@ -26,6 +26,8 @@ const {
 } = require('@validations/claims-workspace/claims-workspace.schema');
 
 const CLAIMS_READ_SCOPES = [PERMISSIONS.BILLING_READ];
+/** Lookups needed for front-desk insurance capture without opening full claims queues. */
+const CLAIMS_LOOKUP_SCOPES = [PERMISSIONS.BILLING_READ, PERMISSIONS.PATIENT_READ];
 
 router.use(authenticate());
 
@@ -61,7 +63,7 @@ router.get(
 router.get(
   '/lookups',
   validateRequest({ query: lookupsQuerySchema }),
-  authorize(CLAIMS_READ_SCOPES, 'permission'),
+  authorize(CLAIMS_LOOKUP_SCOPES, 'permission'),
   claimsWorkspaceController.getLookups
 );
 

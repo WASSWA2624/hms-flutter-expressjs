@@ -107,8 +107,9 @@ abstract interface class OpdRepository {
 
   Future<Result<OpdFlowDetail>> assignDoctor(
     String flowId,
-    Map<String, Object?> payload,
-  );
+    Map<String, Object?> payload, {
+    String? idempotencyKey,
+  });
 
   Future<Result<OpdFlowDetail>> doctorReview(
     String flowId,

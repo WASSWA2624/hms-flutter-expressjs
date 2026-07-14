@@ -13,14 +13,18 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
+import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.dart'
+    show AppointmentActionsDialog;
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
 import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
 import 'package:hosspi_hms/features/reception/presentation/reception_access.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_billing_guidance.dart';
+import 'package:hosspi_hms/features/reception/presentation/widgets/reception_patient_actions.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
 /// High-volume front-desk workspace composing Patient Registry + OPD.
@@ -224,6 +228,19 @@ class _ReceptionWorkspaceContentState
             requirement: receptionFrontDeskWriteRequirement,
             builder: (BuildContext context, bool isAllowed) {
               return AppButton.secondary(
+                label: l10n.receptionScheduleAppointmentAction,
+                leadingIcon: Icons.event_available_outlined,
+                enabled: isAllowed,
+                onPressed: isAllowed
+                    ? () => unawaited(_scheduleAppointment())
+                    : null,
+              );
+            },
+          ),
+          AppAccessActionGate(
+            requirement: receptionFrontDeskWriteRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              return AppButton.secondary(
                 label: l10n.opdStartWalkInAction,
                 leadingIcon: Icons.directions_walk_outlined,
                 enabled: isAllowed,
@@ -302,6 +319,8 @@ class _ReceptionWorkspaceContentState
                     itemBuilder: (BuildContext context, int index) {
                       return _ReceptionDeskCard(
                         row: rows[index],
+                        onOpenAppointment: (OpdAppointment appointment) =>
+                            unawaited(_openAppointmentActions(appointment)),
                         onCheckIn: (OpdAppointment appointment) =>
                             unawaited(_checkIn(appointment)),
                         onStartFromQueue: (OpdQueueEntry entry) =>
@@ -310,6 +329,14 @@ class _ReceptionWorkspaceContentState
                             unawaited(_prioritize(entry)),
                         onOpenFlow: (OpdFlowSummary flow) =>
                             unawaited(_openFlowActions(flow)),
+                        onAssignDoctor: (OpdFlowSummary flow) =>
+                            unawaited(_assignDoctor(flow)),
+                        onEditPatient: (String patientId) =>
+                            unawaited(_editPatient(patientId)),
+                        onCaptureInsurance: (String patientId) =>
+                            unawaited(_captureInsurance(patientId)),
+                        onScheduleForPatient: (String patientId) =>
+                            unawaited(_scheduleForPatient(patientId)),
                       );
                     },
                   ),
@@ -540,6 +567,86 @@ class _ReceptionWorkspaceContentState
     );
   }
 
+  Future<void> _scheduleAppointment() async {
+    final bool saved = await openReceptionScheduleAppointment(
+      context: context,
+      ref: ref,
+    );
+    if (saved && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+      await ref.read(opdWorkspaceControllerProvider.notifier).refresh();
+    }
+  }
+
+  Future<void> _scheduleForPatient(String patientId) async {
+    final Patient? patient = await _resolvePatient(patientId);
+    if (patient == null || !mounted) {
+      return;
+    }
+    final bool saved = await openReceptionScheduleAppointment(
+      context: context,
+      ref: ref,
+      patient: patient,
+    );
+    if (saved && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+      await ref.read(opdWorkspaceControllerProvider.notifier).refresh();
+    }
+  }
+
+  Future<Patient?> _resolvePatient(String patientId) async {
+    final Result<AppPage<Patient>> result = await ref
+        .read(patientRegistryControllerProvider.notifier)
+        .loadPatientPage(
+          PatientListQuery(
+            patientId: patientId,
+            pageRequest: const AppPageRequest(pageSize: 1),
+          ),
+        );
+    return result.when(
+      success: (AppPage<Patient> page) =>
+          page.items.isEmpty ? null : page.items.first,
+      failure: (AppFailure failure) {
+        if (mounted) {
+          _showFailureIfNeeded(context, failure);
+        }
+        return null;
+      },
+    );
+  }
+
+  Future<void> _editPatient(String patientId) async {
+    await openReceptionPatientEditor(context, ref, patientId);
+  }
+
+  Future<void> _captureInsurance(String patientId) async {
+    await openReceptionInsuranceCapture(
+      context: context,
+      ref: ref,
+      patientId: patientId,
+    );
+  }
+
+  Future<void> _openAppointmentActions(OpdAppointment appointment) async {
+    final bool? changed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AppointmentActionsDialog(
+        appointment: appointment,
+        state: widget.state,
+      ),
+    );
+    if (changed == true && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+    }
+  }
+
   Future<void> _checkIn(OpdAppointment appointment) async {
     final AppFailure? failure = await ref
         .read(opdWorkspaceControllerProvider.notifier)
@@ -593,6 +700,19 @@ class _ReceptionWorkspaceContentState
       context: context,
       barrierDismissible: false,
       builder: (_) => FlowActionsDialog(flow: flow),
+    );
+    if (changed == true && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+    }
+  }
+
+  Future<void> _assignDoctor(OpdFlowSummary flow) async {
+    final bool? changed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AssignDoctorDialog(flow: flow),
     );
     if (changed == true && mounted) {
       ScaffoldMessenger.of(
@@ -662,17 +782,27 @@ final class _ReceptionDeskRow {
 class _ReceptionDeskCard extends ConsumerWidget {
   const _ReceptionDeskCard({
     required this.row,
+    required this.onOpenAppointment,
     required this.onCheckIn,
     required this.onStartFromQueue,
     required this.onPrioritize,
     required this.onOpenFlow,
+    required this.onAssignDoctor,
+    required this.onEditPatient,
+    required this.onCaptureInsurance,
+    required this.onScheduleForPatient,
   });
 
   final _ReceptionDeskRow row;
+  final ValueChanged<OpdAppointment> onOpenAppointment;
   final ValueChanged<OpdAppointment> onCheckIn;
   final ValueChanged<OpdQueueEntry> onStartFromQueue;
   final ValueChanged<OpdQueueEntry> onPrioritize;
   final ValueChanged<OpdFlowSummary> onOpenFlow;
+  final ValueChanged<OpdFlowSummary> onAssignDoctor;
+  final ValueChanged<String> onEditPatient;
+  final ValueChanged<String> onCaptureInsurance;
+  final ValueChanged<String> onScheduleForPatient;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -735,6 +865,9 @@ class _ReceptionDeskCard extends ConsumerWidget {
             if (flow != null) ...<Widget>[
               SizedBox(height: theme.spacing.sm),
               ReceptionBillingGuidancePanel(flow: flow),
+            ] else if (row.queueEntry != null) ...<Widget>[
+              SizedBox(height: theme.spacing.sm),
+              ReceptionBillingGuidancePanel(queueEntry: row.queueEntry),
             ],
             SizedBox(height: theme.spacing.sm),
             Wrap(
@@ -753,6 +886,7 @@ class _ReceptionDeskCard extends ConsumerWidget {
     final OpdAppointment? appointment = row.appointment;
     final OpdQueueEntry? queueEntry = row.queueEntry;
     final OpdFlowSummary? flow = row.flow;
+    final String? patientId = row.patientId;
 
     if (appointment != null) {
       actions.add(
@@ -760,6 +894,21 @@ class _ReceptionDeskCard extends ConsumerWidget {
           requirement: receptionFrontDeskWriteRequirement,
           builder: (BuildContext context, bool isAllowed) {
             return AppButton.primary(
+              label: l10n.receptionAppointmentActionsAction,
+              leadingIcon: Icons.event_available_outlined,
+              enabled: isAllowed,
+              onPressed: isAllowed
+                  ? () => onOpenAppointment(appointment)
+                  : null,
+            );
+          },
+        ),
+      );
+      actions.add(
+        AppAccessActionGate(
+          requirement: receptionFrontDeskWriteRequirement,
+          builder: (BuildContext context, bool isAllowed) {
+            return AppButton.secondary(
               label: l10n.opdCheckInAction,
               leadingIcon: Icons.login_outlined,
               enabled: isAllowed,
@@ -801,10 +950,69 @@ class _ReceptionDeskCard extends ConsumerWidget {
 
     if (flow != null) {
       actions.add(
+        AppAccessActionGate(
+          requirement: receptionFrontDeskWriteRequirement,
+          builder: (BuildContext context, bool isAllowed) {
+            return AppButton.primary(
+              label: l10n.receptionRoutePatientAction,
+              leadingIcon: Icons.assignment_ind_outlined,
+              enabled: isAllowed,
+              onPressed: isAllowed ? () => onAssignDoctor(flow) : null,
+            );
+          },
+        ),
+      );
+      actions.add(
         AppButton.secondary(
           label: l10n.receptionOpenEncounterAction,
           leadingIcon: Icons.medical_services_outlined,
           onPressed: () => onOpenFlow(flow),
+        ),
+      );
+    }
+
+    if (patientId != null && patientId.isNotEmpty) {
+      actions.add(
+        AppAccessActionGate(
+          requirement: receptionFrontDeskWriteRequirement,
+          builder: (BuildContext context, bool isAllowed) {
+            return AppButton.secondary(
+              label: l10n.receptionEditPatientAction,
+              leadingIcon: Icons.person_outline,
+              enabled: isAllowed,
+              onPressed: isAllowed ? () => onEditPatient(patientId) : null,
+            );
+          },
+        ),
+      );
+      actions.add(
+        AppAccessActionGate(
+          requirement: receptionFrontDeskWriteRequirement,
+          builder: (BuildContext context, bool isAllowed) {
+            return AppButton.secondary(
+              label: l10n.receptionScheduleAppointmentAction,
+              leadingIcon: Icons.calendar_month_outlined,
+              enabled: isAllowed,
+              onPressed: isAllowed
+                  ? () => onScheduleForPatient(patientId)
+                  : null,
+            );
+          },
+        ),
+      );
+      actions.add(
+        AppAccessActionGate(
+          requirement: receptionInsuranceCaptureRequirement,
+          builder: (BuildContext context, bool isAllowed) {
+            return AppButton.secondary(
+              label: l10n.receptionCaptureInsuranceAction,
+              leadingIcon: Icons.badge_outlined,
+              enabled: isAllowed,
+              onPressed: isAllowed
+                  ? () => onCaptureInsurance(patientId)
+                  : null,
+            );
+          },
         ),
       );
     }

@@ -17,11 +17,13 @@ class ReceptionBillingGuidancePanel extends StatelessWidget {
   const ReceptionBillingGuidancePanel({
     this.patientDetail,
     this.flow,
+    this.queueEntry,
     super.key,
   });
 
   final PatientDetail? patientDetail;
   final OpdFlowSummary? flow;
+  final OpdQueueEntry? queueEntry;
 
   @override
   Widget build(BuildContext context) {
@@ -32,9 +34,11 @@ class ReceptionBillingGuidancePanel extends StatelessWidget {
         patientDetail?.workspace.invoices ?? const <PatientSummaryRecord>[];
     final List<PatientSummaryRecord> payments =
         patientDetail?.workspace.payments ?? const <PatientSummaryRecord>[];
-    final OpdBillingDisplay? billing = flow == null
-        ? null
-        : opdFlowBillingDisplay(context, flow!);
+    final OpdBillingDisplay? billing = flow != null
+        ? opdFlowBillingDisplay(context, flow!)
+        : queueEntry != null
+        ? opdQueueBillingDisplay(context, queueEntry!)
+        : null;
 
     return AppAccessActionGate(
       requirement: receptionBillingGuidanceRequirement,
@@ -64,6 +68,12 @@ class ReceptionBillingGuidancePanel extends StatelessWidget {
                 value: billing.label,
                 icon: Icons.payments_outlined,
               ),
+              if ((billing.amountLabel ?? '').isNotEmpty)
+                AppInfoTile(
+                  label: l10n.receptionEstimatedChargeLabel,
+                  value: billing.amountLabel!,
+                  icon: Icons.receipt_long_outlined,
+                ),
             ],
             if (flow?.consultationPaymentRequired == true) ...<Widget>[
               SizedBox(height: theme.spacing.sm),
@@ -121,7 +131,10 @@ class ReceptionBillingGuidancePanel extends StatelessWidget {
                     ),
                   );
                 }
-                final String? patientId = patientDetail?.patient.id ?? flow?.patientId;
+                final String? patientId =
+                    patientDetail?.patient.id ??
+                    flow?.patientId ??
+                    queueEntry?.patientId;
                 return AppButton.secondary(
                   label: l10n.patientsOpenBillingWorkbenchAction,
                   leadingIcon: Icons.point_of_sale_outlined,

@@ -32,3 +32,13 @@ const AccessRequirement receptionBillingGuidanceRequirement =
         AppPermissions.billingRead,
       ],
     );
+
+/// Front-desk insurance enrollment capture (not claims finalize).
+const AccessRequirement receptionInsuranceCaptureRequirement =
+    AccessRequirement(
+      anyPermissions: <AppPermission>[
+        AppPermissions.patientWrite,
+        AppPermissions.billingWrite,
+      ],
+      activeModules: <String>['insurance-claims'],
+    );

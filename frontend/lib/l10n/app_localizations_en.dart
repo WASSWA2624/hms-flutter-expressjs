@@ -2294,6 +2294,35 @@ class AppLocalizationsEn extends AppLocalizations {
       'Payment capture, refunds, adjustments, and reconciliation require Billing permission.';
 
   @override
+  String get receptionScheduleAppointmentAction => 'Schedule appointment';
+
+  @override
+  String get receptionAppointmentActionsAction => 'Appointment actions';
+
+  @override
+  String get receptionEditPatientAction => 'Edit patient';
+
+  @override
+  String get receptionCaptureInsuranceAction => 'Capture insurance';
+
+  @override
+  String get receptionRoutePatientAction => 'Assign doctor';
+
+  @override
+  String get receptionPatientPickerSearchHint => 'Search patient to schedule';
+
+  @override
+  String get receptionPatientPickerEmpty =>
+      'No matching patients. Register the patient first.';
+
+  @override
+  String get receptionInsuranceLookupFailed =>
+      'Could not load insurance lookups for enrollment.';
+
+  @override
+  String get receptionEstimatedChargeLabel => 'Estimated consultation charge';
+
+  @override
   String get receptionStepPayment => 'Payment';
 
   @override

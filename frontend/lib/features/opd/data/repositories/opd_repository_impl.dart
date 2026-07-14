@@ -393,13 +393,15 @@ final class OpdRepositoryImpl implements OpdRepository {
   @override
   Future<Result<OpdFlowDetail>> assignDoctor(
     String flowId,
-    Map<String, Object?> payload,
-  ) {
+    Map<String, Object?> payload, {
+    String? idempotencyKey,
+  }) {
     return _apiClient.post<OpdFlowDetail>(
       ApiEndpoints.nested(HmsApiResource.opdFlows, flowId, <String>[
         'assign-doctor',
       ]),
       data: _withoutEmpty(payload),
+      options: _idempotentOptions(idempotencyKey),
       decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
     );
   }

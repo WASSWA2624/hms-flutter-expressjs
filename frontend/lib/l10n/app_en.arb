@@ -2986,6 +2986,42 @@
   "@receptionBillingCashierRestrictedMessage": {
     "description": "Message when reception cannot open cashier billing actions."
   },
+  "receptionScheduleAppointmentAction": "Schedule appointment",
+  "@receptionScheduleAppointmentAction": {
+    "description": "Toolbar action to schedule an appointment from reception."
+  },
+  "receptionAppointmentActionsAction": "Appointment actions",
+  "@receptionAppointmentActionsAction": {
+    "description": "Action to open check-in, reschedule, cancel, and queue for an appointment."
+  },
+  "receptionEditPatientAction": "Edit patient",
+  "@receptionEditPatientAction": {
+    "description": "Action to open patient details for editing from reception."
+  },
+  "receptionCaptureInsuranceAction": "Capture insurance",
+  "@receptionCaptureInsuranceAction": {
+    "description": "Action to enroll or update patient insurance from reception."
+  },
+  "receptionRoutePatientAction": "Assign doctor",
+  "@receptionRoutePatientAction": {
+    "description": "Reception routing action to assign or change the doctor."
+  },
+  "receptionPatientPickerSearchHint": "Search patient to schedule",
+  "@receptionPatientPickerSearchHint": {
+    "description": "Search field for picking a patient before scheduling."
+  },
+  "receptionPatientPickerEmpty": "No matching patients. Register the patient first.",
+  "@receptionPatientPickerEmpty": {
+    "description": "Empty state when reception patient picker finds no rows."
+  },
+  "receptionInsuranceLookupFailed": "Could not load insurance lookups for enrollment.",
+  "@receptionInsuranceLookupFailed": {
+    "description": "Error when claims lookups fail during reception insurance capture."
+  },
+  "receptionEstimatedChargeLabel": "Estimated consultation charge",
+  "@receptionEstimatedChargeLabel": {
+    "description": "Label for estimated consultation charge in reception billing guidance."
+  },
   "receptionStepPayment": "Payment",
   "@receptionStepPayment": {
     "description": "Workflow step label for consultation payment."

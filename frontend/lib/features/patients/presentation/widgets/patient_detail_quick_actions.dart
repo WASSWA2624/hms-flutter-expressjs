@@ -170,6 +170,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
         onPressed: () => onAction(PatientQuickAction.enrollInsurance),
         requirement: const AccessRequirement(
           anyPermissions: <AppPermission>[
+            AppPermissions.patientWrite,
             AppPermissions.billingWrite,
             AppPermissions.clinicalWrite,
           ],
