@@ -120,6 +120,7 @@ apiV1Router.use('/patient-guardians', require('../modules/patient-guardian/route
 apiV1Router.use('/patient-allergies', require('../modules/patient-allergy/routes/patient-allergy.routes'));
 apiV1Router.use('/patient-medical-histories', require('../modules/patient-medical-history/routes/patient-medical-history.routes'));
 apiV1Router.use('/patient-documents', require('../modules/patient-document/routes/patient-document.routes'));
+apiV1Router.use('/patient-reports', require('../modules/patient-report/routes/patient-report.routes'));
 apiV1Router.use('/consents', require('../modules/consent/routes/consent.routes'));
 apiV1Router.use('/terms-acceptances', require('../modules/terms-acceptance/routes/terms-acceptance.routes'));
 apiV1Router.use('/appointments', require('../modules/appointment/routes/appointment.routes'));

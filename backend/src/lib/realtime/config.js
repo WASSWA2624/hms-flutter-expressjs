@@ -95,7 +95,18 @@ const ENTITY_RECIPIENT_ROLES = Object.freeze({
   module_subscription: Object.freeze([ROLES.TENANT_ADMIN]),
   report_definition: Object.freeze([ROLES.FACILITY_ADMIN, ROLES.TENANT_ADMIN]),
   report_schedule: Object.freeze([ROLES.FACILITY_ADMIN, ROLES.TENANT_ADMIN]),
-  report_run: Object.freeze([ROLES.FACILITY_ADMIN, ROLES.TENANT_ADMIN])
+  report_run: Object.freeze([ROLES.FACILITY_ADMIN, ROLES.TENANT_ADMIN]),
+  patient_report_job: Object.freeze([
+    ROLES.RECEPTIONIST,
+    ROLES.DOCTOR,
+    ROLES.NURSE,
+    ROLES.LAB_TECH,
+    ROLES.RADIOLOGY_TECH,
+    ROLES.PHARMACIST,
+    ROLES.BILLING,
+    ROLES.FACILITY_ADMIN,
+    ROLES.TENANT_ADMIN,
+  ]),
 });
 
 const REALTIME_MUTATION_ACTIONS = new Set(['CREATE', 'UPDATE', 'DELETE']);

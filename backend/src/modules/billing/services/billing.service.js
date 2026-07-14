@@ -506,8 +506,9 @@ const buildInvoiceWhere = async (scope, filters = {}) => {
         OR: [
           { human_friendly_id: { contains: patientFilter.toUpperCase() } },
           { id: patientFilter },
-          { first_name: { contains: patientFilter, mode: 'insensitive' } },
-          { last_name: { contains: patientFilter, mode: 'insensitive' } },
+          // MySQL collation is case-insensitive; Prisma `mode: 'insensitive'` is unsupported.
+          { first_name: { contains: patientFilter } },
+          { last_name: { contains: patientFilter } },
         ],
       },
     };
@@ -551,13 +552,14 @@ const buildInvoiceWhere = async (scope, filters = {}) => {
             deleted_at: null,
             OR: [
               { human_friendly_id: { contains: search.toUpperCase() } },
-              { first_name: { contains: search, mode: 'insensitive' } },
-              { last_name: { contains: search, mode: 'insensitive' } },
+              // MySQL collation is case-insensitive; Prisma `mode: 'insensitive'` is unsupported.
+              { first_name: { contains: search } },
+              { last_name: { contains: search } },
               {
                 contacts: {
                   some: {
                     deleted_at: null,
-                    value: { contains: search, mode: 'insensitive' },
+                    value: { contains: search },
                   },
                 },
               },

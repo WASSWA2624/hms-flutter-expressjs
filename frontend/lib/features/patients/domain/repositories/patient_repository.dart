@@ -62,4 +62,13 @@ abstract interface class PatientRepository {
     PatientRelatedResource resource,
     String recordId,
   );
+
+  /// Records PHI audit for client-side print/export of authorized sections.
+  Future<Result<void>> recordPatientReportPrintEvent({
+    required String patientId,
+    required List<String> sections,
+    String? encounterId,
+    String reportType = 'patient_clinical',
+    String action = 'print',
+  });
 }

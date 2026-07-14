@@ -44,6 +44,8 @@ export 'app_record_section.dart';
 export 'app_record_vitals_dialog.dart';
 export 'app_report_actions.dart';
 export 'app_report_section.dart';
+export 'app_report_section_picker.dart';
+export '../reporting/report_section_selection.dart';
 export 'app_role_assignment_picker.dart';
 export 'app_search_bar.dart';
 export 'app_select_field.dart';

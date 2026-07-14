@@ -1,0 +1,55 @@
+-- Unified patient clinical reporting jobs: section selection audit,
+-- async generation status, and controlled storage metadata (no public paths).
+
+CREATE TABLE IF NOT EXISTS `patient_report_job` (
+  `id` VARCHAR(36) NOT NULL,
+  `human_friendly_id` VARCHAR(32) NULL,
+  `tenant_id` VARCHAR(36) NOT NULL,
+  `facility_id` VARCHAR(36) NULL,
+  `patient_id` VARCHAR(36) NOT NULL,
+  `encounter_id` VARCHAR(36) NULL,
+  `requested_by_user_id` VARCHAR(36) NULL,
+  `report_type` VARCHAR(80) NOT NULL,
+  `action` VARCHAR(40) NOT NULL,
+  `status` ENUM('QUEUED', 'PROCESSING', 'READY', 'FAILED', 'CANCELLED') NOT NULL DEFAULT 'QUEUED',
+  `format` VARCHAR(20) NOT NULL DEFAULT 'PDF',
+  `sections_json` JSON NOT NULL,
+  `period_json` JSON NULL,
+  `output_storage_path` VARCHAR(512) NULL,
+  `output_file_name` VARCHAR(255) NULL,
+  `output_mime_type` VARCHAR(120) NULL,
+  `output_size_bytes` INTEGER NULL,
+  `checksum` VARCHAR(128) NULL,
+  `error_message` TEXT NULL,
+  `queued_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `started_at` DATETIME(3) NULL,
+  `completed_at` DATETIME(3) NULL,
+  `expires_at` DATETIME(3) NULL,
+  `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  `updated_at` DATETIME(3) NOT NULL,
+  `deleted_at` DATETIME(3) NULL,
+  `version` INTEGER NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id`),
+  INDEX `patient_report_job_tenant_id_idx`(`tenant_id`),
+  INDEX `patient_report_job_facility_id_idx`(`facility_id`),
+  INDEX `patient_report_job_patient_id_idx`(`patient_id`),
+  INDEX `patient_report_job_encounter_id_idx`(`encounter_id`),
+  INDEX `patient_report_job_requested_by_user_id_idx`(`requested_by_user_id`),
+  INDEX `patient_report_job_report_type_idx`(`report_type`),
+  INDEX `patient_report_job_action_idx`(`action`),
+  INDEX `patient_report_job_status_idx`(`status`),
+  INDEX `patient_report_job_queued_at_idx`(`queued_at`),
+  INDEX `patient_report_job_expires_at_idx`(`expires_at`),
+  INDEX `patient_report_job_deleted_at_idx`(`deleted_at`),
+  INDEX `patient_report_job_human_friendly_id_idx`(`human_friendly_id`),
+  CONSTRAINT `patient_report_job_tenant_id_fkey`
+    FOREIGN KEY (`tenant_id`) REFERENCES `tenant`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `patient_report_job_facility_id_fkey`
+    FOREIGN KEY (`facility_id`) REFERENCES `facility`(`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `patient_report_job_patient_id_fkey`
+    FOREIGN KEY (`patient_id`) REFERENCES `patient`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `patient_report_job_encounter_id_fkey`
+    FOREIGN KEY (`encounter_id`) REFERENCES `encounter`(`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `patient_report_job_requested_by_user_id_fkey`
+    FOREIGN KEY (`requested_by_user_id`) REFERENCES `user`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

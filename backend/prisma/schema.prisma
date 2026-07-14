@@ -922,6 +922,14 @@ enum CloseoutPackStatus {
   FAILED
 }
 
+enum PatientReportJobStatus {
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
+  CANCELLED
+}
+
 model human_id_counter {
   id                String    @id @default(uuid()) @db.VarChar(36)
   human_friendly_id String?   @db.VarChar(32)
@@ -1005,6 +1013,7 @@ model tenant {
   report_definitions              report_definition[]
   report_runs                     report_run[]
   report_schedules                report_schedule[]
+  patient_report_jobs             patient_report_job[]
   dashboards                      dashboard_widget[]
   kpi_snapshots                   kpi_snapshot[]
   analytics_events                analytics_event[]
@@ -1160,6 +1169,7 @@ model facility {
   handovers                       handover[]
   custody_snapshots               custody_snapshot[]
   closeout_packs                  closeout_pack[]
+  patient_report_jobs             patient_report_job[]
   unit_management_assignments     unit_management_assignment[]
   mortuary_deceased_profiles      mortuary_deceased_profile[]
   mortuary_cases                  mortuary_case[]
@@ -1516,6 +1526,7 @@ model user {
   handovers_to                  handover[]                @relation("handover_to_user")
   custody_snapshots_captured    custody_snapshot[]        @relation("custody_snapshot_captured_by")
   closeout_packs_generated      closeout_pack[]           @relation("closeout_pack_generated_by")
+  patient_report_jobs_requested patient_report_job[]      @relation("patient_report_job_requested_by")
   unit_management_assignments   unit_management_assignment[]
   radiology_orders_assigned     radiology_order[]             @relation("radiology_order_assigned_user")
 
@@ -1920,6 +1931,7 @@ model patient {
   mortuary_cases             mortuary_case[]
   pre_authorizations         pre_authorization[]
   insurance_enrollments      patient_insurance_enrollment[]
+  patient_report_jobs        patient_report_job[]
 
   @@unique([facility_id, human_friendly_id])
   @@unique([tenant_id, human_friendly_id])
@@ -2331,6 +2343,7 @@ model encounter {
   therapy_episodes therapy_episode[]
   pre_authorizations pre_authorization[]
   billable_charge_events billable_charge_event[]
+  patient_report_jobs patient_report_job[]
 
   @@unique([tenant_id, human_friendly_id])
   @@index([tenant_id])
@@ -7223,6 +7236,55 @@ model audit_log {
   @@index([action])
   @@index([entity])
   @@index([created_at])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+model patient_report_job {
+  id                   String                 @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id    String?                @db.VarChar(32)
+  tenant_id            String                 @db.VarChar(36)
+  facility_id          String?                @db.VarChar(36)
+  patient_id           String                 @db.VarChar(36)
+  encounter_id         String?                @db.VarChar(36)
+  requested_by_user_id String?                @db.VarChar(36)
+  report_type          String                 @db.VarChar(80)
+  action               String                 @db.VarChar(40)
+  status               PatientReportJobStatus @default(QUEUED)
+  format               String                 @db.VarChar(20) @default("PDF")
+  sections_json        Json
+  period_json          Json?
+  output_storage_path  String?                @db.VarChar(512)
+  output_file_name     String?                @db.VarChar(255)
+  output_mime_type     String?                @db.VarChar(120)
+  output_size_bytes    Int?
+  checksum             String?                @db.VarChar(128)
+  error_message        String?                @db.Text
+  queued_at            DateTime               @default(now())
+  started_at           DateTime?
+  completed_at         DateTime?
+  expires_at           DateTime?
+  created_at           DateTime               @default(now())
+  updated_at           DateTime               @updatedAt
+  deleted_at           DateTime?
+  version              Int                    @default(1)
+
+  tenant       tenant     @relation(fields: [tenant_id], references: [id])
+  facility     facility?  @relation(fields: [facility_id], references: [id])
+  patient      patient    @relation(fields: [patient_id], references: [id])
+  encounter    encounter? @relation(fields: [encounter_id], references: [id])
+  requested_by user?      @relation("patient_report_job_requested_by", fields: [requested_by_user_id], references: [id])
+
+  @@index([tenant_id])
+  @@index([facility_id])
+  @@index([patient_id])
+  @@index([encounter_id])
+  @@index([requested_by_user_id])
+  @@index([report_type])
+  @@index([action])
+  @@index([status])
+  @@index([queued_at])
+  @@index([expires_at])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }

@@ -53,6 +53,7 @@ enum HmsApiResource {
     HmsApiEndpointGroup.patientFlow,
   ),
   patientDocuments('patient-documents', HmsApiEndpointGroup.patientFlow),
+  patientReports('patient-reports', HmsApiEndpointGroup.patientFlow),
   consents('consents', HmsApiEndpointGroup.patientFlow),
   termsAcceptances('terms-acceptances', HmsApiEndpointGroup.patientFlow),
   appointments('appointments', HmsApiEndpointGroup.patientFlow),

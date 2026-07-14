@@ -10,6 +10,8 @@ abstract final class RealtimeEvents {
   static const String patientCreated = 'patient.created';
   static const String patientUpdated = 'patient.updated';
   static const String patientDeleted = 'patient.deleted';
+  static const String patientReportJobCreated = 'patient_report_job.created';
+  static const String patientReportJobUpdated = 'patient_report_job.updated';
 
   static const String encounterCreated = 'encounter.created';
   static const String encounterUpdated = 'encounter.updated';

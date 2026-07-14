@@ -12,6 +12,7 @@ const NO_STORE_PREFIXES = Object.freeze([
   '/api/v1/patient-allergies',
   '/api/v1/patient-medical-histories',
   '/api/v1/patient-documents',
+  '/api/v1/patient-reports',
   '/api/v1/encounters',
   '/api/v1/clinical-notes',
   '/api/v1/nursing-notes',
@@ -82,6 +83,7 @@ const ONLINE_ONLY_MUTATION_PREFIXES = Object.freeze([
   '/api/v1/shift-closes',
   '/api/v1/day-closes',
   '/api/v1/closeout-packs',
+  '/api/v1/patient-reports',
   '/api/v1/office-contexts',
 ]);
 

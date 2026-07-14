@@ -68,14 +68,47 @@ class _RadiologyPrintDialog extends ConsumerStatefulWidget {
       _RadiologyPrintDialogState();
 }
 
+enum _RadiologyPrintSection {
+  header,
+  patient,
+  order,
+  studies,
+  report,
+  references,
+  signer,
+  images,
+}
+
 class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
-  _RadiologyPrintSettings _settings = const _RadiologyPrintSettings();
+  late Set<_RadiologyPrintSection> _selectedSections;
   bool _isPrinting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedSections = resolveDefaultReportSectionSelection(
+      _radiologyPrintAvailabilities(widget.workflow),
+    ).cast<_RadiologyPrintSection>().toSet();
+  }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final List<ReportSectionAvailability> availabilities =
+        _radiologyPrintAvailabilities(widget.workflow);
+    final _RadiologyPrintSettings settings = _settingsFromSelection(
+      _selectedSections,
+    );
+    final List<AppReportSectionData> tiles = buildReportSectionTiles(
+      sections: availabilities,
+      titleFor: (Object id) =>
+          _radiologyPrintSectionLabel(l10n, id as _RadiologyPrintSection),
+      iconFor: (Object id) =>
+          _radiologyPrintSectionIcon(id as _RadiologyPrintSection),
+      emptyDisabledReason: l10n.reportSectionEmptyDisabledReason,
+    );
+
     return AppDialog(
       title: Text(l10n.radiologyPrintReportDialogTitle),
       icon: const Icon(Icons.print_outlined),
@@ -92,77 +125,24 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
             ),
           ),
           SizedBox(height: theme.spacing.md),
-          Wrap(
-            spacing: theme.spacing.md,
-            runSpacing: theme.spacing.sm,
-            children: <Widget>[
-              _printSwitch(
-                context,
-                label: l10n.radiologyPrintIncludeHeaderLabel,
-                value: true,
-                enabled: false,
-                onChanged: null,
-              ),
-              _printSwitch(
-                context,
-                label: l10n.radiologyPrintIncludePatientLabel,
-                value: _settings.includePatient,
-                onChanged: (bool value) =>
-                    _update(_settings.copyWith(includePatient: value)),
-              ),
-              _printSwitch(
-                context,
-                label: l10n.radiologyPrintIncludeOrderLabel,
-                value: _settings.includeOrder,
-                onChanged: (bool value) =>
-                    _update(_settings.copyWith(includeOrder: value)),
-              ),
-              _printSwitch(
-                context,
-                label: l10n.radiologyPrintIncludeStudiesLabel,
-                value: _settings.includeStudies,
-                onChanged: (bool value) =>
-                    _update(_settings.copyWith(includeStudies: value)),
-              ),
-              _printSwitch(
-                context,
-                label: l10n.radiologyPrintIncludeReportLabel,
-                value: _settings.includeReport,
-                onChanged: (bool value) =>
-                    _update(_settings.copyWith(includeReport: value)),
-              ),
-              _printSwitch(
-                context,
-                label: l10n.radiologyPrintIncludeReferencesLabel,
-                value: _settings.includeReferences,
-                onChanged: (bool value) =>
-                    _update(_settings.copyWith(includeReferences: value)),
-              ),
-              _printSwitch(
-                context,
-                label: l10n.radiologyPrintIncludeSignerLabel,
-                value: _settings.includeSigner,
-                onChanged: (bool value) =>
-                    _update(_settings.copyWith(includeSigner: value)),
-              ),
-              if (widget.workflow.studies.any(
-                (ImagingStudy study) => study.assets.isNotEmpty,
-              ))
-                _printSwitch(
-                  context,
-                  label: l10n.radiologyPrintIncludeImagesLabel,
-                  value: _settings.includeImages,
-                  onChanged: (bool value) =>
-                      _update(_settings.copyWith(includeImages: value)),
-                ),
-            ],
+          AppReportSectionPicker(
+            sections: tiles,
+            selectedIds: _selectedSections,
+            onSelectionChanged: (Set<Object> next) {
+              setState(() {
+                _selectedSections = sanitizeReportSectionSelection(
+                  selectedIds: next,
+                  sections: availabilities,
+                ).cast<_RadiologyPrintSection>().toSet();
+              });
+            },
           ),
           SizedBox(height: theme.spacing.md),
           AppReportPreviewPanel(
             title: l10n.radiologyPrintPreviewTitle,
             selectable: true,
             child: Text(
-              _radiologyPrintPreviewText(context, widget.workflow, _settings),
+              _radiologyPrintPreviewText(context, widget.workflow, settings),
             ),
           ),
         ],
@@ -177,42 +157,23 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
           label: l10n.radiologyPrintAction,
           leadingIcon: Icons.print_outlined,
           isLoading: _isPrinting,
-          onPressed: _isPrinting ? null : _print,
+          enabled: !_isPrinting && _selectedSections.isNotEmpty,
+          onPressed: _isPrinting || _selectedSections.isEmpty ? null : _print,
         ),
       ],
     );
   }
 
-  Widget _printSwitch(
-    BuildContext context, {
-    required String label,
-    required bool value,
-    required ValueChanged<bool>? onChanged,
-    bool enabled = true,
-  }) {
-    return SizedBox(
-      width: 250,
-      child: SwitchListTile(
-        dense: true,
-        contentPadding: EdgeInsets.zero,
-        title: Text(label),
-        value: value,
-        onChanged: enabled ? onChanged : null,
-      ),
-    );
-  }
-
-  void _update(_RadiologyPrintSettings settings) {
-    setState(() => _settings = settings);
-  }
-
   Future<void> _print() async {
+    final _RadiologyPrintSettings settings = _settingsFromSelection(
+      _selectedSections,
+    );
     setState(() => _isPrinting = true);
     await printFormTemplateDocument(
       ref: ref,
       context: context,
       title: context.l10n.radiologyPrintReportTitle,
-      patientContext: _settings.includePatient
+      patientContext: settings.includePatient
           ? buildPrintFormPatientContext(
               context.l10n,
               patientName:
@@ -225,20 +186,124 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
               encounterIdLabel: context.l10n.radiologyEncounterLabel,
             )
           : null,
-      contextReference: _settings.includeOrder
+      contextReference: settings.includeOrder
           ? PrintFormContextReference(
               label: context.l10n.radiologyOrderColumnLabel,
               value: widget.workflow.order.effectiveDisplayId,
             )
           : null,
-      bodyHtml: _radiologyPrintBodyHtml(context, widget.workflow, _settings),
+      bodyHtml: _radiologyPrintBodyHtml(context, widget.workflow, settings),
       footerNote: context.l10n.radiologyPrintFooterNote,
-      includeSignatures: _settings.includeSigner,
+      includeSignatures: settings.includeSigner,
     );
     if (mounted) {
       setState(() => _isPrinting = false);
     }
   }
+}
+
+List<ReportSectionAvailability> _radiologyPrintAvailabilities(
+  RadiologyWorkflow workflow,
+) {
+  final int imageCount = workflow.studies.fold<int>(
+    0,
+    (int total, ImagingStudy study) => total + study.assets.length,
+  );
+  final int referenceCount = workflow.studies.fold<int>(0, (
+    int total,
+    ImagingStudy study,
+  ) {
+    return total + study.assets.length + study.pacsLinks.length;
+  });
+  final RadiologyResult? result = workflow.order.latestResult;
+  final bool hasReport =
+      (result?.reportText?.trim().isNotEmpty ?? false) || result != null;
+  final bool hasPatient =
+      (workflow.order.patientId?.trim().isNotEmpty ?? false) ||
+      (workflow.order.patientDisplayName?.trim().isNotEmpty ?? false);
+
+  return <ReportSectionAvailability>[
+    const ReportSectionAvailability(
+      id: _RadiologyPrintSection.header,
+      count: 1,
+      alwaysAvailable: true,
+    ),
+    ReportSectionAvailability(
+      id: _RadiologyPrintSection.patient,
+      count: hasPatient ? 1 : 0,
+    ),
+    const ReportSectionAvailability(
+      id: _RadiologyPrintSection.order,
+      count: 1,
+      alwaysAvailable: true,
+    ),
+    ReportSectionAvailability(
+      id: _RadiologyPrintSection.studies,
+      count: workflow.studies.isEmpty ? 1 : workflow.studies.length,
+      alwaysAvailable: true,
+    ),
+    ReportSectionAvailability(
+      id: _RadiologyPrintSection.report,
+      count: hasReport ? 1 : 0,
+    ),
+    ReportSectionAvailability(
+      id: _RadiologyPrintSection.references,
+      count: referenceCount,
+    ),
+    const ReportSectionAvailability(
+      id: _RadiologyPrintSection.signer,
+      count: 1,
+      alwaysAvailable: true,
+    ),
+    ReportSectionAvailability(
+      id: _RadiologyPrintSection.images,
+      count: imageCount,
+    ),
+  ];
+}
+
+_RadiologyPrintSettings _settingsFromSelection(
+  Set<_RadiologyPrintSection> selected,
+) {
+  return _RadiologyPrintSettings(
+    includePatient: selected.contains(_RadiologyPrintSection.patient),
+    includeOrder: selected.contains(_RadiologyPrintSection.order),
+    includeStudies: selected.contains(_RadiologyPrintSection.studies),
+    includeReport: selected.contains(_RadiologyPrintSection.report),
+    includeReferences: selected.contains(_RadiologyPrintSection.references),
+    includeSigner: selected.contains(_RadiologyPrintSection.signer),
+    includeImages: selected.contains(_RadiologyPrintSection.images),
+  );
+}
+
+String _radiologyPrintSectionLabel(
+  AppLocalizations l10n,
+  _RadiologyPrintSection section,
+) {
+  return switch (section) {
+    _RadiologyPrintSection.header => l10n.radiologyPrintIncludeHeaderLabel,
+    _RadiologyPrintSection.patient => l10n.radiologyPrintIncludePatientLabel,
+    _RadiologyPrintSection.order => l10n.radiologyPrintIncludeOrderLabel,
+    _RadiologyPrintSection.studies => l10n.radiologyPrintIncludeStudiesLabel,
+    _RadiologyPrintSection.report => l10n.radiologyPrintIncludeReportLabel,
+    _RadiologyPrintSection.references =>
+      l10n.radiologyPrintIncludeReferencesLabel,
+    _RadiologyPrintSection.signer => l10n.radiologyPrintIncludeSignerLabel,
+    _RadiologyPrintSection.images => l10n.radiologyPrintIncludeImagesLabel,
+  };
+}
+
+IconData _radiologyPrintSectionIcon(_RadiologyPrintSection section) {
+  return switch (section) {
+    _RadiologyPrintSection.header => Icons.apartment_outlined,
+    _RadiologyPrintSection.patient => Icons.person_outline,
+    _RadiologyPrintSection.order => Icons.receipt_long_outlined,
+    _RadiologyPrintSection.studies => Icons.biotech_outlined,
+    _RadiologyPrintSection.report => Icons.description_outlined,
+    _RadiologyPrintSection.references => Icons.link_outlined,
+    _RadiologyPrintSection.signer => Icons.draw_outlined,
+    _RadiologyPrintSection.images => Icons.image_outlined,
+  };
 }
 
 @immutable

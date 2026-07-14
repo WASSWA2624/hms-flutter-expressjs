@@ -4106,6 +4106,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get reportSectionEmptyDisabledReason => 'No data available';
+
+  @override
+  String get reportSectionUnauthorizedDisabledReason => 'Not authorized';
+
+  @override
   String get patientsReportNoRecordsForSection =>
       'No records available for the selected period.';
 

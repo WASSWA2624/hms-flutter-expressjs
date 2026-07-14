@@ -392,6 +392,31 @@ final class PatientRepositoryImpl implements PatientRepository {
     );
   }
 
+  @override
+  Future<Result<void>> recordPatientReportPrintEvent({
+    required String patientId,
+    required List<String> sections,
+    String? encounterId,
+    String reportType = 'patient_clinical',
+    String action = 'print',
+  }) {
+    return _apiClient.post<void>(
+      ApiEndpoints.apiV1(<String>[
+        HmsApiResource.patientReports.path,
+        'print-events',
+      ]),
+      data: <String, Object?>{
+        'patient_id': patientId,
+        if (encounterId != null && encounterId.isNotEmpty)
+          'encounter_id': encounterId,
+        'report_type': reportType,
+        'action': action,
+        'sections': sections,
+      },
+      decoder: (_) {},
+    );
+  }
+
   Future<Result<List<T>>> _fetchRelatedList<T>(
     HmsApiResource resource,
     String patientId,

@@ -7894,6 +7894,18 @@ abstract class AppLocalizations {
   /// **'Page {page} of {total}'**
   String patientsReportPageNumberLabel(int page, int total);
 
+  /// Disabled reason shown when a report section has no printable data.
+  ///
+  /// In en, this message translates to:
+  /// **'No data available'**
+  String get reportSectionEmptyDisabledReason;
+
+  /// Disabled reason shown when a report section is unauthorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Not authorized'**
+  String get reportSectionUnauthorizedDisabledReason;
+
   /// Patient report empty section label.
   ///
   /// In en, this message translates to:

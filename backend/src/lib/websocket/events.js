@@ -49,7 +49,9 @@ const APPOINTMENT_EVENTS = {
 const PATIENT_EVENTS = {
   PATIENT_CREATED: 'patient.created',
   PATIENT_UPDATED: 'patient.updated',
-  PATIENT_DELETED: 'patient.deleted'
+  PATIENT_DELETED: 'patient.deleted',
+  PATIENT_REPORT_JOB_CREATED: 'patient_report_job.created',
+  PATIENT_REPORT_JOB_UPDATED: 'patient_report_job.updated'
 };
 
 /**

@@ -24,6 +24,7 @@ import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.da
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
+import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
 import 'package:hosspi_hms/features/patients/presentation/patient_registry_access.dart';
@@ -2745,14 +2746,27 @@ class _PatientReportPrintPreviewDialogState
   DateTime? _singleDate;
   DateTime? _startDate;
   DateTime? _endDate;
-  final Set<_PatientReportSection> _selectedSections = <_PatientReportSection>{
-    ..._defaultPatientReportSections,
-  };
+  late Set<_PatientReportSection> _selectedSections;
+  bool _isPrinting = false;
 
   @override
   void initState() {
     super.initState();
     _generatedAt = DateTime.now();
+    final PatientDetail initialDetail = _effectivePatientDetail(
+      widget.patient,
+      widget.detail,
+    );
+    final _PatientReportSelection initialSelection = _PatientReportSelection(
+      periodMode: _periodMode,
+      singleDate: _singleDate,
+      startDate: _startDate,
+      endDate: _endDate,
+      sections: const <_PatientReportSection>{},
+    );
+    _selectedSections = resolveDefaultReportSectionSelection(
+      _patientReportAvailabilities(initialDetail, initialSelection),
+    ).cast<_PatientReportSection>().toSet();
   }
 
   @override
@@ -2772,6 +2786,8 @@ class _PatientReportPrintPreviewDialogState
       endDate: _endDate,
       sections: Set<_PatientReportSection>.unmodifiable(_selectedSections),
     );
+    final List<ReportSectionAvailability> availabilities =
+        _patientReportAvailabilities(effectiveDetail, selection);
     final _PatientReportDocument document = _buildPatientReportDocument(
       context,
       detail: effectiveDetail,
@@ -2779,34 +2795,53 @@ class _PatientReportPrintPreviewDialogState
       generatedAt: _generatedAt,
     );
     final bool periodIsValid = _periodRangeIsValid;
+    final bool canPrint = periodIsValid && selection.sections.isNotEmpty;
 
     return AppDialog(
       title: Text(l10n.patientsReportPreviewDialogTitle),
       icon: const Icon(Icons.preview_outlined),
       scrollable: true,
       maxWidth: 1080,
+      closeEnabled: !_isPrinting,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           _PatientReportPreviewControls(
-            detail: effectiveDetail,
             selection: selection,
+            availabilities: availabilities,
             periodIsValid: periodIsValid,
             onPeriodModeChanged: (_PatientReportPeriodMode? value) {
               setState(() {
                 _periodMode = value ?? _PatientReportPeriodMode.allDates;
+                _resyncSelection(effectiveDetail);
               });
             },
             onSingleDateChanged: (DateTime? value) {
-              setState(() => _singleDate = value);
+              setState(() {
+                _singleDate = value;
+                _resyncSelection(effectiveDetail);
+              });
             },
             onStartDateChanged: (DateTime? value) {
-              setState(() => _startDate = value);
+              setState(() {
+                _startDate = value;
+                _resyncSelection(effectiveDetail);
+              });
             },
             onEndDateChanged: (DateTime? value) {
-              setState(() => _endDate = value);
+              setState(() {
+                _endDate = value;
+                _resyncSelection(effectiveDetail);
+              });
             },
-            onSectionChanged: _toggleSection,
+            onSelectionChanged: (Set<Object> next) {
+              setState(() {
+                _selectedSections = sanitizeReportSectionSelection(
+                  selectedIds: next,
+                  sections: availabilities,
+                ).cast<_PatientReportSection>().toSet();
+              });
+            },
           ),
           SizedBox(height: theme.spacing.lg),
           Text(
@@ -2820,33 +2855,60 @@ class _PatientReportPrintPreviewDialogState
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCloseActionLabel,
-          onPressed: () => Navigator.of(context).maybePop(false),
+          enabled: !_isPrinting,
+          onPressed: _isPrinting
+              ? null
+              : () => Navigator.of(context).maybePop(false),
         ),
         AppReportActionButton.print(
           label: l10n.patientsReportPrintNowAction,
-          enabled: periodIsValid,
-          onPressed: periodIsValid
-              ? () async {
-                  await printFormTemplateDocument(
-                    ref: ref,
-                    context: context,
-                    title: document.title,
-                    subtitle: document.periodLabel,
-                    patientContext: buildPrintFormPatientContext(
-                      l10n,
-                      patientName: document.patientName,
-                      patientId: document.patientIdentifier,
-                      patientNameLabel: l10n.labReportPatientLabel,
-                      patientIdLabel: l10n.patientsIdentifierLabel,
-                    ),
-                    pages: _patientReportPrintPages(document),
-                    includeSignatures: true,
-                  );
-                }
+          enabled: canPrint && !_isPrinting,
+          isLoading: _isPrinting,
+          onPressed: canPrint && !_isPrinting
+              ? () => _printDocument(context, document, selection)
               : null,
         ),
       ],
     );
+  }
+
+  Future<void> _printDocument(
+    BuildContext context,
+    _PatientReportDocument document,
+    _PatientReportSelection selection,
+  ) async {
+    final l10n = context.l10n;
+    setState(() => _isPrinting = true);
+    try {
+      await ref.read(patientRepositoryProvider).recordPatientReportPrintEvent(
+            patientId: widget.patient.id,
+            sections: selection.sections
+                .map(_patientReportSectionApiId)
+                .toList(growable: false),
+          );
+      if (!context.mounted) {
+        return;
+      }
+      await printFormTemplateDocument(
+        ref: ref,
+        context: context,
+        title: document.title,
+        subtitle: document.periodLabel,
+        patientContext: buildPrintFormPatientContext(
+          l10n,
+          patientName: document.patientName,
+          patientId: document.patientIdentifier,
+          patientNameLabel: l10n.labReportPatientLabel,
+          patientIdLabel: l10n.patientsIdentifierLabel,
+        ),
+        pages: _patientReportPrintPages(document),
+        includeSignatures: true,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isPrinting = false);
+      }
+    }
   }
 
   bool get _periodRangeIsValid {
@@ -2858,45 +2920,54 @@ class _PatientReportPrintPreviewDialogState
     return !_dateOnly(_startDate!).isAfter(_dateOnly(_endDate!));
   }
 
-  void _toggleSection(_PatientReportSection section, bool selected) {
-    setState(() {
-      if (selected) {
-        _selectedSections.add(section);
-        return;
-      }
-      if (_selectedSections.length > 1) {
-        _selectedSections.remove(section);
-      }
-    });
+  void _resyncSelection(PatientDetail detail) {
+    final _PatientReportSelection draft = _PatientReportSelection(
+      periodMode: _periodMode,
+      singleDate: _singleDate,
+      startDate: _startDate,
+      endDate: _endDate,
+      sections: Set<_PatientReportSection>.unmodifiable(_selectedSections),
+    );
+    _selectedSections = sanitizeReportSectionSelection(
+      selectedIds: _selectedSections,
+      sections: _patientReportAvailabilities(detail, draft),
+    ).cast<_PatientReportSection>().toSet();
   }
 }
 
 class _PatientReportPreviewControls extends StatelessWidget {
   const _PatientReportPreviewControls({
-    required this.detail,
     required this.selection,
+    required this.availabilities,
     required this.periodIsValid,
     required this.onPeriodModeChanged,
     required this.onSingleDateChanged,
     required this.onStartDateChanged,
     required this.onEndDateChanged,
-    required this.onSectionChanged,
+    required this.onSelectionChanged,
   });
 
-  final PatientDetail detail;
   final _PatientReportSelection selection;
+  final List<ReportSectionAvailability> availabilities;
   final bool periodIsValid;
   final ValueChanged<_PatientReportPeriodMode?> onPeriodModeChanged;
   final ValueChanged<DateTime?> onSingleDateChanged;
   final ValueChanged<DateTime?> onStartDateChanged;
   final ValueChanged<DateTime?> onEndDateChanged;
-  final void Function(_PatientReportSection section, bool selected)
-  onSectionChanged;
+  final ValueChanged<Set<Object>> onSelectionChanged;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final l10n = context.l10n;
+    final List<AppReportSectionData> tiles = buildReportSectionTiles(
+      sections: availabilities,
+      titleFor: (Object id) =>
+          _patientReportSectionLabel(l10n, id as _PatientReportSection),
+      iconFor: (Object id) =>
+          _patientReportSectionIcon(id as _PatientReportSection),
+      emptyDisabledReason: l10n.reportSectionEmptyDisabledReason,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2949,43 +3020,10 @@ class _PatientReportPreviewControls extends StatelessWidget {
           title: l10n.patientsReportSectionsLabel,
           density: AppFormSectionDensity.compact,
           children: <Widget>[
-            LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final int columns = constraints.maxWidth >= 920
-                    ? 3
-                    : constraints.maxWidth >= 620
-                    ? 2
-                    : 1;
-                final double gap = theme.spacing.sm;
-                final double tileWidth =
-                    (constraints.maxWidth - (gap * (columns - 1))) / columns;
-                return Wrap(
-                  spacing: gap,
-                  runSpacing: gap,
-                  children: <Widget>[
-                    for (final _PatientReportSection section
-                        in _patientReportSections)
-                      SizedBox(
-                        width: math.max(tileWidth, 0),
-                        child: AppReportSectionTile(
-                          section: AppReportSectionData(
-                            id: section,
-                            title: _patientReportSectionLabel(l10n, section),
-                            count: _patientReportSectionCount(
-                              detail,
-                              section,
-                              selection,
-                            ),
-                            icon: _patientReportSectionIcon(section),
-                          ),
-                          selected: selection.sections.contains(section),
-                          onChanged: (bool value) =>
-                              onSectionChanged(section, value),
-                        ),
-                      ),
-                  ],
-                );
-              },
+            AppReportSectionPicker(
+              sections: tiles,
+              selectedIds: selection.sections,
+              onSelectionChanged: onSelectionChanged,
             ),
           ],
         ),
@@ -3436,19 +3474,6 @@ const List<_PatientReportSection> _patientReportSections =
       _PatientReportSection.documents,
       _PatientReportSection.consents,
     ];
-
-const Set<_PatientReportSection> _defaultPatientReportSections =
-    <_PatientReportSection>{
-      _PatientReportSection.summary,
-      _PatientReportSection.timeline,
-      _PatientReportSection.vitalSigns,
-      _PatientReportSection.appointments,
-      _PatientReportSection.encounters,
-      _PatientReportSection.admissions,
-      _PatientReportSection.identifiers,
-      _PatientReportSection.contacts,
-      _PatientReportSection.medicalHistory,
-    };
 
 @immutable
 final class _PatientReportSelection {
@@ -4043,6 +4068,40 @@ int _patientReportSectionCount(
     _PatientReportSection.medicalHistory => detail.medicalHistories.length,
     _PatientReportSection.documents => detail.documents.length,
     _PatientReportSection.consents => detail.consents.length,
+  };
+}
+
+List<ReportSectionAvailability> _patientReportAvailabilities(
+  PatientDetail detail,
+  _PatientReportSelection selection,
+) {
+  return <ReportSectionAvailability>[
+    for (final _PatientReportSection section in _patientReportSections)
+      ReportSectionAvailability(
+        id: section,
+        count: _patientReportSectionCount(detail, section, selection),
+        alwaysAvailable: section == _PatientReportSection.summary,
+      ),
+  ];
+}
+
+String _patientReportSectionApiId(_PatientReportSection section) {
+  return switch (section) {
+    _PatientReportSection.summary => 'patient_information',
+    _PatientReportSection.timeline => 'patient_information',
+    _PatientReportSection.vitalSigns => 'vitals',
+    _PatientReportSection.appointments => 'appointments',
+    _PatientReportSection.encounters => 'encounter_details',
+    _PatientReportSection.admissions => 'admissions',
+    _PatientReportSection.invoices => 'billing_information',
+    _PatientReportSection.payments => 'billing_information',
+    _PatientReportSection.identifiers => 'identifiers',
+    _PatientReportSection.contacts => 'contacts',
+    _PatientReportSection.guardians => 'guardians',
+    _PatientReportSection.allergies => 'allergies',
+    _PatientReportSection.medicalHistory => 'medical_history',
+    _PatientReportSection.documents => 'documents',
+    _PatientReportSection.consents => 'consents',
   };
 }
 

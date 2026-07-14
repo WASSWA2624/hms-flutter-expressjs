@@ -5408,6 +5408,14 @@
       }
     }
   },
+  "reportSectionEmptyDisabledReason": "No data available",
+  "@reportSectionEmptyDisabledReason": {
+    "description": "Disabled reason shown when a report section has no printable data."
+  },
+  "reportSectionUnauthorizedDisabledReason": "Not authorized",
+  "@reportSectionUnauthorizedDisabledReason": {
+    "description": "Disabled reason shown when a report section is unauthorized."
+  },
   "patientsReportNoRecordsForSection": "No records available for the selected period.",
   "@patientsReportNoRecordsForSection": {
     "description": "Patient report empty section label."

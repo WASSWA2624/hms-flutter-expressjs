@@ -592,6 +592,7 @@ const CLINICAL_INVOICE_SOURCES = Object.freeze([
     label: 'Laboratory',
     invoiceFilterField: 'billing_snapshot',
     invoiceFilterPath: '$.invoice_id',
+    orderBy: { ordered_at: 'desc' },
     orderSelect: {
       billing_snapshot: true,
       encounter_id: true,
@@ -603,6 +604,7 @@ const CLINICAL_INVOICE_SOURCES = Object.freeze([
     label: 'Pharmacy',
     invoiceFilterField: 'billing_snapshot',
     invoiceFilterPath: '$.invoice_id',
+    orderBy: { ordered_at: 'desc' },
     orderSelect: {
       billing_snapshot: true,
       encounter_id: true,
@@ -614,6 +616,7 @@ const CLINICAL_INVOICE_SOURCES = Object.freeze([
     label: 'Radiology',
     invoiceFilterField: 'request_details',
     invoiceFilterPath: '$.billing.invoice_id',
+    orderBy: { ordered_at: 'desc' },
     orderSelect: {
       request_details: true,
       encounter_id: true,
@@ -625,6 +628,8 @@ const CLINICAL_INVOICE_SOURCES = Object.freeze([
     label: 'Ward Round',
     invoiceFilterField: 'billing_snapshot',
     invoiceFilterPath: '$.invoice_id',
+    orderBy: { round_at: 'desc' },
+    viaAdmission: true,
     orderSelect: {
       billing_snapshot: true,
       admission: {
@@ -640,6 +645,7 @@ const CLINICAL_INVOICE_SOURCES = Object.freeze([
     label: 'Procedure',
     invoiceFilterField: 'billing_snapshot',
     invoiceFilterPath: '$.invoice_id',
+    orderBy: { created_at: 'desc' },
     orderSelect: {
       billing_snapshot: true,
       encounter_id: true,
@@ -651,6 +657,7 @@ const CLINICAL_INVOICE_SOURCES = Object.freeze([
     label: 'Theatre',
     invoiceFilterField: 'billing_snapshot',
     invoiceFilterPath: '$.invoice_id',
+    orderBy: { created_at: 'desc' },
     orderSelect: {
       billing_snapshot: true,
       encounter_id: true,
@@ -662,6 +669,7 @@ const CLINICAL_INVOICE_SOURCES = Object.freeze([
     label: 'Admission',
     invoiceFilterField: 'billing_snapshot',
     invoiceFilterPath: '$.invoice_id',
+    orderBy: { admitted_at: 'desc' },
     orderSelect: {
       billing_snapshot: true,
       encounter_id: true,
@@ -673,6 +681,8 @@ const CLINICAL_INVOICE_SOURCES = Object.freeze([
     label: 'Nursing',
     invoiceFilterField: 'billing_snapshot',
     invoiceFilterPath: '$.invoice_id',
+    orderBy: { created_at: 'desc' },
+    viaAdmission: true,
     orderSelect: {
       billing_snapshot: true,
       admission: {
@@ -691,6 +701,22 @@ const buildClinicalInvoiceIdFilter = (source, invoiceId) => ({
     equals: invoiceId,
   },
 });
+
+const buildClinicalEncounterIdFilter = (source, encounterIds) => {
+  if (source.viaAdmission) {
+    return {
+      admission: {
+        is: {
+          deleted_at: null,
+          encounter_id: { in: encounterIds },
+        },
+      },
+    };
+  }
+  return { encounter_id: { in: encounterIds } };
+};
+
+const resolveSourceOrderBy = (source) => source.orderBy || { created_at: 'desc' };
 
 const normalizeSourceModuleLabel = (value) => {
   const token = String(value || '').trim();
@@ -752,13 +778,18 @@ const findClinicalOrdersForInvoices = async (invoiceIds = []) => {
     if (!prisma?.[source.model]?.findMany) {
       continue;
     }
-    const orders = await prisma[source.model].findMany({
-      where: {
-        deleted_at: null,
-        OR: uniqueIds.map((invoiceId) => buildClinicalInvoiceIdFilter(source, invoiceId)),
-      },
-      select: source.orderSelect,
-    });
+    let orders = [];
+    try {
+      orders = await prisma[source.model].findMany({
+        where: {
+          deleted_at: null,
+          OR: uniqueIds.map((invoiceId) => buildClinicalInvoiceIdFilter(source, invoiceId)),
+        },
+        select: source.orderSelect,
+      });
+    } catch (_error) {
+      continue;
+    }
 
     for (const order of orders) {
       const snapshot = extractStoredClinicalBilling(order);
@@ -787,38 +818,42 @@ const findClinicalOrdersForInvoices = async (invoiceIds = []) => {
   }
 
   if (prisma?.billable_charge_event?.findMany) {
-    const events = await prisma.billable_charge_event.findMany({
-      where: {
-        deleted_at: null,
-        status: 'POSTED',
-        invoice_id: { in: uniqueIds },
-      },
-      select: {
-        invoice_id: true,
-        source_module: true,
-        encounter_id: true,
-        encounter: { select: { id: true, human_friendly_id: true } },
-      },
-    });
-    for (const event of events) {
-      const invoiceId = event.invoice_id ? String(event.invoice_id) : null;
-      if (!invoiceId) {
-        continue;
+    try {
+      const events = await prisma.billable_charge_event.findMany({
+        where: {
+          deleted_at: null,
+          status: 'POSTED',
+          invoice_id: { in: uniqueIds },
+        },
+        select: {
+          invoice_id: true,
+          source_module: true,
+          encounter_id: true,
+          encounter: { select: { id: true, human_friendly_id: true } },
+        },
+      });
+      for (const event of events) {
+        const invoiceId = event.invoice_id ? String(event.invoice_id) : null;
+        if (!invoiceId) {
+          continue;
+        }
+        const existing = contexts.get(invoiceId) || {
+          encounter_id: null,
+          encounter_display_id: null,
+          source_modules: new Set(),
+        };
+        const label = normalizeSourceModuleLabel(event.source_module);
+        if (label) {
+          existing.source_modules.add(label);
+        }
+        if (!existing.encounter_id) {
+          existing.encounter_id = event.encounter_id || event.encounter?.id || null;
+          existing.encounter_display_id = event.encounter?.human_friendly_id || null;
+        }
+        contexts.set(invoiceId, existing);
       }
-      const existing = contexts.get(invoiceId) || {
-        encounter_id: null,
-        encounter_display_id: null,
-        source_modules: new Set(),
-      };
-      const label = normalizeSourceModuleLabel(event.source_module);
-      if (label) {
-        existing.source_modules.add(label);
-      }
-      if (!existing.encounter_id) {
-        existing.encounter_id = event.encounter_id || event.encounter?.id || null;
-        existing.encounter_display_id = event.encounter?.human_friendly_id || null;
-      }
-      contexts.set(invoiceId, existing);
+    } catch (_error) {
+      // Table may not exist until migration is applied.
     }
   }
 
@@ -853,14 +888,19 @@ const resolveInvoiceIdsForEncounterToken = async (scope, token) => {
       if (!prisma?.[source.model]?.findMany) {
         continue;
       }
-      const orders = await prisma[source.model].findMany({
-        where: {
-          deleted_at: null,
-          encounter_id: { in: encounterIds },
-        },
-        select: source.orderSelect,
-        take: 500,
-      });
+      let orders = [];
+      try {
+        orders = await prisma[source.model].findMany({
+          where: {
+            deleted_at: null,
+            ...buildClinicalEncounterIdFilter(source, encounterIds),
+          },
+          select: source.orderSelect,
+          take: 500,
+        });
+      } catch (_error) {
+        continue;
+      }
       for (const order of orders) {
         const snapshot = extractStoredClinicalBilling(order);
         const invoiceId = extractInvoiceIdFromSnapshot(snapshot);
@@ -869,6 +909,29 @@ const resolveInvoiceIdsForEncounterToken = async (scope, token) => {
         }
       }
     }
+
+    if (prisma?.billable_charge_event?.findMany) {
+      try {
+        const events = await prisma.billable_charge_event.findMany({
+          where: {
+            deleted_at: null,
+            status: 'POSTED',
+            encounter_id: { in: encounterIds },
+            invoice_id: { not: null },
+          },
+          select: { invoice_id: true },
+          take: 500,
+        });
+        for (const event of events) {
+          if (event.invoice_id) {
+            invoiceIds.add(String(event.invoice_id));
+          }
+        }
+      } catch (_error) {
+        // Table may not exist until migration is applied.
+      }
+    }
+
     return [...invoiceIds];
   }
 
@@ -876,24 +939,60 @@ const resolveInvoiceIdsForEncounterToken = async (scope, token) => {
     if (!prisma?.[source.model]?.findMany) {
       continue;
     }
-    const orders = await prisma[source.model].findMany({
-      where: { deleted_at: null },
-      select: source.orderSelect,
-      take: 500,
-      orderBy: { ordered_at: 'desc' },
-    });
+    let orders = [];
+    try {
+      orders = await prisma[source.model].findMany({
+        where: { deleted_at: null },
+        select: source.orderSelect,
+        take: 500,
+        orderBy: resolveSourceOrderBy(source),
+      });
+    } catch (_error) {
+      continue;
+    }
     for (const order of orders) {
       const snapshot = extractStoredClinicalBilling(order);
       const invoiceId = extractInvoiceIdFromSnapshot(snapshot);
       if (!invoiceId) {
         continue;
       }
+      const encounterContext = resolveOrderEncounterContext(order);
       const encounterDisplayId = String(
-        order.encounter?.human_friendly_id || snapshot?.encounter_display_id || ''
+        encounterContext.encounter_display_id ||
+          snapshot?.encounter_display_id ||
+          ''
       ).toUpperCase();
       if (encounterDisplayId.includes(upper)) {
         invoiceIds.add(invoiceId);
       }
+    }
+  }
+
+  if (prisma?.billable_charge_event?.findMany) {
+    try {
+      const events = await prisma.billable_charge_event.findMany({
+        where: {
+          deleted_at: null,
+          status: 'POSTED',
+          invoice_id: { not: null },
+        },
+        select: {
+          invoice_id: true,
+          encounter: { select: { human_friendly_id: true } },
+        },
+        take: 500,
+        orderBy: { posted_at: 'desc' },
+      });
+      for (const event of events) {
+        const encounterDisplayId = String(
+          event.encounter?.human_friendly_id || ''
+        ).toUpperCase();
+        if (encounterDisplayId.includes(upper) && event.invoice_id) {
+          invoiceIds.add(String(event.invoice_id));
+        }
+      }
+    } catch (_error) {
+      // Table may not exist until migration is applied.
     }
   }
 
