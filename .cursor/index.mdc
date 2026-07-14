@@ -76,27 +76,19 @@ Effective access = union(role/module/user grants) ∩ active subscription ∩ AB
 
 Full patient-journey index: [app-write-up § Patient Flow Documents](./app-write-up.mdc).
 
-## Module implementation prompts
+## Application improvement prompts
 
-Numbered implementation prompts live in [`prompts/`](../prompts/) at the repo root (`01`–`33`) in **recommended implementation order** (foundation → patient registry → outpatient → diagnostics → inpatient → operations → platform closeout). Use them with the flow files and `app-write-up.mdc`.
-Shared standards are owned by
-[`prompts/00-global-implementation-standards.md`](../prompts/00-global-implementation-standards.md);
-numbered prompts add module-specific requirements. Any repeated standards summary
-inside an older numbered prompt is non-authoritative and cannot override that companion.
+Numbered implementation prompts live in [`prompts/`](../prompts/) at the repo root (`00`–`13`) in **recommended order**, derived from [`prompt.md`](../prompt.md). Use them with the flow files, access catalogs, and stack indexes. Shared delivery standards are owned by [`prompts/00-global-delivery-acceptance.md`](../prompts/00-global-delivery-acceptance.md); later prompts specialize it and must not weaken security, integrity, or sync rules.
 
-| # | Module | # | Module | # | Module |
-|---|--------|---|--------|---|--------|
-| 01 | Auth | 12 | OPD | 23 | Physiotherapy |
-| 02 | Subscriptions | 13 | Emergency | 24 | HR |
-| 03 | Tenant & facility | 14 | Clinical | 25 | Biomedical |
-| 04 | Access admin | 15 | Nursing | 26 | Operations |
-| 05 | Rooms & beds | 16 | Lab | 27 | Housekeeping |
-| 06 | Settings & profile | 17 | Radiology | 28 | Mortuary |
-| 07 | Home & dashboard | 18 | Pharmacy | 29 | Communications |
-| 08 | Patients | 19 | IPD | 30 | Reports & audit |
-| 09 | Billing | 20 | ICU | 31 | Integrations |
-| 10 | Claims | 21 | Theater | 32 | Dental (planned) |
-| 11 | Triage | 22 | Discharge | 33 | Demo & seed |
+| # | Prompt | # | Prompt |
+|---|--------|---|--------|
+| 00 | Global delivery & acceptance | 07 | Clinical results preview |
+| 01 | Authorization & security | 08 | Laboratory module improvements |
+| 02 | Responsive design & design system | 09 | Radiology module & workflow |
+| 03 | Shared reusable components | 10 | Billing engine integration |
+| 04 | Workflow step progress & actions | 11 | Patient reporting & printing |
+| 05 | Patient details component | 12 | Reception / front-desk workspace |
+| 06 | Permission-aware actions | 13 | General application consistency |
 
 ## Cross-stack invariants
 
