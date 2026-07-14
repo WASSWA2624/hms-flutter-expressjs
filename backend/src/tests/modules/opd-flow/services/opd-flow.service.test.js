@@ -2181,7 +2181,9 @@ describe('opd-flow.service', () => {
       expect.objectContaining({
         encounter_id: 'enc-1',
         stage_to: 'WAITING_DOCTOR_REVIEW',
-        actor_user_id: 'actor-1'
+        actor_user_id: 'actor-1',
+        action: 'ASSIGN_DOCTOR',
+        operation: 'upsert'
       })
     );
     const sentRecipients = emitToUsers.mock.calls[0][0];

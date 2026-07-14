@@ -677,7 +677,7 @@ const buildRealtimePayload = ({ snapshot, transition, context }) => {
     provider_internal_user_id: providerInternalId,
     actor_internal_user_id: actorInternalId,
     occurred_at: occurredAt,
-    action: 'upsert',
+    operation: 'upsert',
     list_entry: buildOpdFlowListEntry(snapshot),
     flow_summary: buildFlowSummary(snapshot),
     target_path: encounterPublicId ? `/scheduling/opd-flows/${encounterPublicId}` : '/scheduling/opd-flows'

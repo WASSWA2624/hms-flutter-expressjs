@@ -43,8 +43,18 @@ failure report locations.
 ## CI Workflow
 
 The workflow at `.github/workflows/ci.yml` runs the same quality gates on pull
-requests, pushes to `main`, and manual dispatches. It also runs release smoke
-builds for Web, Android APK, Linux, Windows, macOS, and unsigned iOS.
+requests, pushes to `main`, and manual dispatches. The backend job installs from
+`package-lock.json` and runs its lint, Jest, and OpenAPI validation gates:
+
+```sh
+cd backend
+npm ci
+npm run validate
+```
+
+Platform release builds are host-specific release checks and are not currently
+part of this workflow. Run the applicable commands below before publishing an
+artifact.
 
 CI uses the production-safe placeholder values in `env/production.json.example`:
 

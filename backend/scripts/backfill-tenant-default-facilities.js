@@ -43,17 +43,14 @@ const main = async () => {
       },
     });
     created += 1;
-    // eslint-disable-next-line no-console
     console.log(`Created default facility for tenant ${tenant.name} (${tenant.id})`);
   }
 
-  // eslint-disable-next-line no-console
   console.log(`Backfill complete. Created ${created} facilities.`);
 };
 
 main()
   .catch((error) => {
-    // eslint-disable-next-line no-console
     console.error('Backfill failed:', error);
     process.exitCode = 1;
   })

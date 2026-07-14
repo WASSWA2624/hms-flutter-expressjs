@@ -161,10 +161,13 @@ For more information, see `scripts/README.md`.
 
 ## Testing
 
-Run tests:
+Run the complete backend delivery gate (lint, tests, and OpenAPI contract
+validation):
 ```bash
-npm test
+npm run validate
 ```
+
+Use `npm test` when only the Jest suite is required during local iteration.
 
 ## Project Rules
 
