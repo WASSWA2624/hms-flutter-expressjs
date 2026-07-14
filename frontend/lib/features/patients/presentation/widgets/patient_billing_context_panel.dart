@@ -2,11 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+
+const AccessRequirement _patientBillingWorkbenchRequirement = AccessRequirement(
+  anyPermissions: <AppPermission>[AppPermissions.billingWrite],
+  activeModules: <String>['billing-payments'],
+);
 
 class PatientBillingContextPanel extends StatelessWidget {
   const PatientBillingContextPanel({required this.detail, super.key});
@@ -32,16 +41,24 @@ class PatientBillingContextPanel extends StatelessWidget {
                 style: theme.textTheme.titleSmall,
               ),
             ),
-            AppButton.secondary(
-              label: l10n.patientsOpenBillingWorkbenchAction,
-              leadingIcon: Icons.receipt_long_outlined,
-              onPressed: () => context.go(
-                AppRoutes.billing.location(
-                  queryParameters: <String, String>{
-                    'patientId': detail.patient.id,
-                  },
-                ),
-              ),
+            AppAccessActionGate(
+              requirement: _patientBillingWorkbenchRequirement,
+              builder: (BuildContext context, bool canCashier) {
+                if (!canCashier) {
+                  return const SizedBox.shrink();
+                }
+                return AppButton.secondary(
+                  label: l10n.patientsOpenBillingWorkbenchAction,
+                  leadingIcon: Icons.receipt_long_outlined,
+                  onPressed: () => context.go(
+                    AppRoutes.billing.location(
+                      queryParameters: <String, String>{
+                        'patientId': detail.patient.id,
+                      },
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),

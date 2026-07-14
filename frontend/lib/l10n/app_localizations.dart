@@ -1636,6 +1636,18 @@ abstract class AppLocalizations {
   /// **'Patients'**
   String get navigationPatientsShortLabel;
 
+  /// Navigation label for the reception front-desk workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Reception'**
+  String get navigationReceptionLabel;
+
+  /// Compact navigation label for the reception front-desk workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Reception'**
+  String get navigationReceptionShortLabel;
+
   /// Navigation label for the billing workspace.
   ///
   /// In en, this message translates to:
@@ -4305,6 +4317,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Loading OPD queue and encounters...'**
   String get opdLoadingBody;
+
+  /// Title for the reception front-desk workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Reception desk'**
+  String get receptionTitle;
+
+  /// Loading title for the reception workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading reception desk'**
+  String get receptionLoadingTitle;
+
+  /// Loading body for the reception workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading appointments, queues, and front-desk visits...'**
+  String get receptionLoadingBody;
+
+  /// Primary action to register a patient from reception.
+  ///
+  /// In en, this message translates to:
+  /// **'Register patient'**
+  String get receptionRegisterPatientAction;
+
+  /// Secondary action to open the full patient registry.
+  ///
+  /// In en, this message translates to:
+  /// **'Full registry'**
+  String get receptionOpenRegistryAction;
+
+  /// Secondary action to open the full OPD workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Full OPD'**
+  String get receptionOpenOpdAction;
+
+  /// Action to open the OPD encounter dialog from reception.
+  ///
+  /// In en, this message translates to:
+  /// **'Open encounter'**
+  String get receptionOpenEncounterAction;
+
+  /// Search field label for the reception desk worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Search patients, appointments, or queue'**
+  String get receptionSearchHint;
+
+  /// Empty state title for the reception worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'No desk items'**
+  String get receptionEmptyTitle;
+
+  /// Empty state body for the reception worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another filter, or register a patient and start an encounter.'**
+  String get receptionEmptyBody;
+
+  /// Reception desk section for today's appointments.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointments'**
+  String get receptionSectionAppointments;
+
+  /// Reception desk section for the visit queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Desk queue'**
+  String get receptionSectionQueue;
+
+  /// Reception desk section for active OPD visits.
+  ///
+  /// In en, this message translates to:
+  /// **'Active visits'**
+  String get receptionSectionActiveVisits;
+
+  /// Reception desk section for consultation payment gate visits.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment gate'**
+  String get receptionSectionPaymentGate;
+
+  /// Title for reception billing guidance panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing guidance'**
+  String get receptionBillingGuidanceTitle;
+
+  /// Body text explaining billing guidance vs cashier operations.
+  ///
+  /// In en, this message translates to:
+  /// **'Review requested services, estimated charges, and outstanding balances. Capture payments only through authorized billing cashier actions.'**
+  String get receptionBillingGuidanceBody;
+
+  /// Message shown when a visit is waiting on consultation payment.
+  ///
+  /// In en, this message translates to:
+  /// **'Consultation payment is due. Hand the patient to Billing for authorized payment capture.'**
+  String get receptionPaymentGateHandoffMessage;
+
+  /// Advice text for supported payment methods at reception.
+  ///
+  /// In en, this message translates to:
+  /// **'Advise cash, card, mobile money, or insurance as available for this facility.'**
+  String get receptionPaymentMethodsAdvice;
+
+  /// Message when reception cannot open cashier billing actions.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment capture, refunds, adjustments, and reconciliation require Billing permission.'**
+  String get receptionBillingCashierRestrictedMessage;
+
+  /// Workflow step label for consultation payment.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get receptionStepPayment;
+
+  /// Workflow step label for vitals.
+  ///
+  /// In en, this message translates to:
+  /// **'Vitals'**
+  String get receptionStepVitals;
+
+  /// Workflow step label for doctor assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign doctor'**
+  String get receptionStepAssignDoctor;
+
+  /// Workflow step label for doctor review.
+  ///
+  /// In en, this message translates to:
+  /// **'Consultation'**
+  String get receptionStepConsultation;
+
+  /// Workflow step label for visit disposition.
+  ///
+  /// In en, this message translates to:
+  /// **'Disposition'**
+  String get receptionStepDisposition;
 
   /// Status badge shown when OPD data is syncing.
   ///

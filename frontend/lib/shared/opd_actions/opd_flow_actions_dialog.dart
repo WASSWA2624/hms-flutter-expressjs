@@ -11,6 +11,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
@@ -66,12 +67,8 @@ const AccessRequirement opdDoctorActionRequirement = AccessRequirement(
 );
 
 const AccessRequirement opdBillingActionRequirement = AccessRequirement(
-  anyRoles: <AppRole>[
-    ..._opdAdminActionRoles,
-    AppRole.receptionist,
-    AppRole.billing,
-  ],
-  activeModules: <String>['scheduling-queue'],
+  anyPermissions: <AppPermission>[AppPermissions.billingWrite],
+  activeModules: <String>['billing-payments'],
 );
 
 const AccessRequirement opdStageCorrectionRequirement = AccessRequirement(

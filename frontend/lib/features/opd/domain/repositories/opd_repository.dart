@@ -23,17 +23,22 @@ abstract interface class OpdRepository {
 
   Future<Result<AppPage<OpdQueueEntry>>> listVisitQueues(OpdQueueQuery query);
 
-  Future<Result<OpdQueueEntry>> createVisitQueue(Map<String, Object?> payload);
+  Future<Result<OpdQueueEntry>> createVisitQueue(
+    Map<String, Object?> payload, {
+    String? idempotencyKey,
+  });
 
   Future<Result<OpdQueueEntry>> updateVisitQueue(
     String queueId,
-    Map<String, Object?> payload,
-  );
+    Map<String, Object?> payload, {
+    String? idempotencyKey,
+  });
 
   Future<Result<OpdQueueEntry>> prioritizeVisitQueue(
     String queueId,
-    Map<String, Object?> payload,
-  );
+    Map<String, Object?> payload, {
+    String? idempotencyKey,
+  });
 
   Future<Result<void>> deleteVisitQueue(String queueId);
 
@@ -49,14 +54,21 @@ abstract interface class OpdRepository {
 
   Future<Result<OpdFlowDetail>> getTriageCase(String flowId);
 
-  Future<Result<OpdFlowDetail>> startOpdFlow(Map<String, Object?> payload);
+  Future<Result<OpdFlowDetail>> startOpdFlow(
+    Map<String, Object?> payload, {
+    String? idempotencyKey,
+  });
 
   Future<Result<OpdFlowDetail>> updateActiveEncounter(
     String flowId,
-    Map<String, Object?> payload,
-  );
+    Map<String, Object?> payload, {
+    String? idempotencyKey,
+  });
 
-  Future<Result<OpdFlowDetail>> bootstrapOpdFlow(Map<String, Object?> payload);
+  Future<Result<OpdFlowDetail>> bootstrapOpdFlow(
+    Map<String, Object?> payload, {
+    String? idempotencyKey,
+  });
 
   Future<Result<OpdFlowDetail>> payConsultation(
     String flowId,

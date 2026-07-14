@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/network/idempotency.dart';
 import 'package:hosspi_hms/core/network/network_failure_mapper.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
@@ -470,15 +471,19 @@ final class OpdWorkspaceController
   }
 
   Future<AppFailure?> checkInAppointment(OpdAppointment appointment) {
+    final String key = createIdempotencyKey();
     return _mutateFlow(
-      () => _repository.startOpdFlow(<String, Object?>{
-        'arrival_mode': 'ONLINE_APPOINTMENT',
-        'appointment_id': appointment.apiId,
-        'facility_id': appointment.facilityId,
-        'provider_user_id': appointment.providerUserId,
-        'queued_at': DateTime.now().toUtc().toIso8601String(),
-        'reuse_open_encounter': true,
-      }),
+      () => _repository.startOpdFlow(
+        <String, Object?>{
+          'arrival_mode': 'ONLINE_APPOINTMENT',
+          'appointment_id': appointment.apiId,
+          'facility_id': appointment.facilityId,
+          'provider_user_id': appointment.providerUserId,
+          'queued_at': DateTime.now().toUtc().toIso8601String(),
+          'reuse_open_encounter': true,
+        },
+        idempotencyKey: key,
+      ),
     );
   }
 
@@ -516,16 +521,20 @@ final class OpdWorkspaceController
       return null;
     }
 
+    final String key = createIdempotencyKey();
     return _mutateQueue(
-      () => _repository.createVisitQueue(<String, Object?>{
-        'tenant_id': tenantId,
-        'facility_id': appointment.facilityId,
-        'patient_id': patientId,
-        'appointment_id': appointment.apiId,
-        'provider_user_id': appointment.providerUserId,
-        'status': 'CONFIRMED',
-        'queued_at': DateTime.now().toUtc().toIso8601String(),
-      }),
+      () => _repository.createVisitQueue(
+        <String, Object?>{
+          'tenant_id': tenantId,
+          'facility_id': appointment.facilityId,
+          'patient_id': patientId,
+          'appointment_id': appointment.apiId,
+          'provider_user_id': appointment.providerUserId,
+          'status': 'CONFIRMED',
+          'queued_at': DateTime.now().toUtc().toIso8601String(),
+        },
+        idempotencyKey: key,
+      ),
     );
   }
 
@@ -533,8 +542,13 @@ final class OpdWorkspaceController
     OpdQueueEntry entry,
     Map<String, Object?> payload,
   ) {
+    final String key = createIdempotencyKey();
     return _mutateQueue(
-      () => _repository.updateVisitQueue(entry.apiId, payload),
+      () => _repository.updateVisitQueue(
+        entry.apiId,
+        payload,
+        idempotencyKey: key,
+      ),
       refreshFlowsAfter: true,
     );
   }
@@ -543,22 +557,31 @@ final class OpdWorkspaceController
     OpdQueueEntry entry,
     String? reason,
   ) {
+    final String key = createIdempotencyKey();
     return _mutateQueue(
-      () => _repository.prioritizeVisitQueue(entry.apiId, <String, Object?>{
-        'reason': reason,
-        'status': 'CONFIRMED',
-      }),
+      () => _repository.prioritizeVisitQueue(
+        entry.apiId,
+        <String, Object?>{
+          'reason': reason,
+          'status': 'CONFIRMED',
+        },
+        idempotencyKey: key,
+      ),
     );
   }
 
   Future<AppFailure?> startOpdFromQueue(OpdQueueEntry entry) {
+    final String key = createIdempotencyKey();
     return _mutateFlow(
-      () => _repository.startOpdFlow(<String, Object?>{
-        'arrival_mode': 'WALK_IN',
-        'visit_queue_id': entry.apiId,
-        'provider_user_id': entry.providerUserId,
-        'reuse_open_encounter': true,
-      }),
+      () => _repository.startOpdFlow(
+        <String, Object?>{
+          'arrival_mode': 'WALK_IN',
+          'visit_queue_id': entry.apiId,
+          'provider_user_id': entry.providerUserId,
+          'reuse_open_encounter': true,
+        },
+        idempotencyKey: key,
+      ),
     );
   }
 
@@ -1200,6 +1223,7 @@ final class OpdWorkspaceController
   Future<Result<OpdFlowDetail>> submitOpdEncounter(
     Map<String, Object?> payload,
   ) async {
+    final String key = createIdempotencyKey();
     final Object? existingEncounterId = payload['existing_encounter_id'];
     if (existingEncounterId is String &&
         existingEncounterId.trim().isNotEmpty) {
@@ -1209,17 +1233,21 @@ final class OpdWorkspaceController
           Map<String, Object?>.from(payload)
             ..remove('existing_encounter_id')
             ..remove('reuse_open_encounter'),
+          idempotencyKey: key,
         ),
       );
     }
 
     return _mutateFlowDetail(
-      () => _repository.startOpdFlow(<String, Object?>{
-        'arrival_mode': 'WALK_IN',
-        'queued_at': DateTime.now().toUtc().toIso8601String(),
-        ...payload,
-        'reuse_open_encounter': true,
-      }),
+      () => _repository.startOpdFlow(
+        <String, Object?>{
+          'arrival_mode': 'WALK_IN',
+          'queued_at': DateTime.now().toUtc().toIso8601String(),
+          ...payload,
+          'reuse_open_encounter': true,
+        },
+        idempotencyKey: key,
+      ),
     );
   }
 

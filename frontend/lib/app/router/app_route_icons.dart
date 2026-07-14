@@ -5,6 +5,8 @@ abstract final class AppRouteIcons {
   static const IconData homeSelected = Icons.home;
   static const IconData patients = Icons.assignment_ind_outlined;
   static const IconData patientsSelected = Icons.assignment_ind;
+  static const IconData reception = Icons.support_agent_outlined;
+  static const IconData receptionSelected = Icons.support_agent;
   static const IconData billing = Icons.point_of_sale_outlined;
   static const IconData billingSelected = Icons.point_of_sale;
   static const IconData claims = Icons.policy_outlined;

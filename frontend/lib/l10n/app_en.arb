@@ -1082,6 +1082,14 @@
   "@navigationPatientsShortLabel": {
     "description": "Compact navigation label for the patient registry destination."
   },
+  "navigationReceptionLabel": "Reception",
+  "@navigationReceptionLabel": {
+    "description": "Navigation label for the reception front-desk workspace."
+  },
+  "navigationReceptionShortLabel": "Reception",
+  "@navigationReceptionShortLabel": {
+    "description": "Compact navigation label for the reception front-desk workspace."
+  },
   "navigationBillingLabel": "Billing",
   "@navigationBillingLabel": {
     "description": "Navigation label for the billing workspace."
@@ -2902,6 +2910,102 @@
   "opdDescription": "Arrivals, queues, and OPD clinical handoffs.",
   "opdLoadingTitle": "Loading OPD flow",
   "opdLoadingBody": "Loading OPD queue and encounters...",
+  "receptionTitle": "Reception desk",
+  "@receptionTitle": {
+    "description": "Title for the reception front-desk workspace."
+  },
+  "receptionLoadingTitle": "Loading reception desk",
+  "@receptionLoadingTitle": {
+    "description": "Loading title for the reception workspace."
+  },
+  "receptionLoadingBody": "Loading appointments, queues, and front-desk visits...",
+  "@receptionLoadingBody": {
+    "description": "Loading body for the reception workspace."
+  },
+  "receptionRegisterPatientAction": "Register patient",
+  "@receptionRegisterPatientAction": {
+    "description": "Primary action to register a patient from reception."
+  },
+  "receptionOpenRegistryAction": "Full registry",
+  "@receptionOpenRegistryAction": {
+    "description": "Secondary action to open the full patient registry."
+  },
+  "receptionOpenOpdAction": "Full OPD",
+  "@receptionOpenOpdAction": {
+    "description": "Secondary action to open the full OPD workspace."
+  },
+  "receptionOpenEncounterAction": "Open encounter",
+  "@receptionOpenEncounterAction": {
+    "description": "Action to open the OPD encounter dialog from reception."
+  },
+  "receptionSearchHint": "Search patients, appointments, or queue",
+  "@receptionSearchHint": {
+    "description": "Search field label for the reception desk worklist."
+  },
+  "receptionEmptyTitle": "No desk items",
+  "@receptionEmptyTitle": {
+    "description": "Empty state title for the reception worklist."
+  },
+  "receptionEmptyBody": "Try another filter, or register a patient and start an encounter.",
+  "@receptionEmptyBody": {
+    "description": "Empty state body for the reception worklist."
+  },
+  "receptionSectionAppointments": "Appointments",
+  "@receptionSectionAppointments": {
+    "description": "Reception desk section for today's appointments."
+  },
+  "receptionSectionQueue": "Desk queue",
+  "@receptionSectionQueue": {
+    "description": "Reception desk section for the visit queue."
+  },
+  "receptionSectionActiveVisits": "Active visits",
+  "@receptionSectionActiveVisits": {
+    "description": "Reception desk section for active OPD visits."
+  },
+  "receptionSectionPaymentGate": "Payment gate",
+  "@receptionSectionPaymentGate": {
+    "description": "Reception desk section for consultation payment gate visits."
+  },
+  "receptionBillingGuidanceTitle": "Billing guidance",
+  "@receptionBillingGuidanceTitle": {
+    "description": "Title for reception billing guidance panel."
+  },
+  "receptionBillingGuidanceBody": "Review requested services, estimated charges, and outstanding balances. Capture payments only through authorized billing cashier actions.",
+  "@receptionBillingGuidanceBody": {
+    "description": "Body text explaining billing guidance vs cashier operations."
+  },
+  "receptionPaymentGateHandoffMessage": "Consultation payment is due. Hand the patient to Billing for authorized payment capture.",
+  "@receptionPaymentGateHandoffMessage": {
+    "description": "Message shown when a visit is waiting on consultation payment."
+  },
+  "receptionPaymentMethodsAdvice": "Advise cash, card, mobile money, or insurance as available for this facility.",
+  "@receptionPaymentMethodsAdvice": {
+    "description": "Advice text for supported payment methods at reception."
+  },
+  "receptionBillingCashierRestrictedMessage": "Payment capture, refunds, adjustments, and reconciliation require Billing permission.",
+  "@receptionBillingCashierRestrictedMessage": {
+    "description": "Message when reception cannot open cashier billing actions."
+  },
+  "receptionStepPayment": "Payment",
+  "@receptionStepPayment": {
+    "description": "Workflow step label for consultation payment."
+  },
+  "receptionStepVitals": "Vitals",
+  "@receptionStepVitals": {
+    "description": "Workflow step label for vitals."
+  },
+  "receptionStepAssignDoctor": "Assign doctor",
+  "@receptionStepAssignDoctor": {
+    "description": "Workflow step label for doctor assignment."
+  },
+  "receptionStepConsultation": "Consultation",
+  "@receptionStepConsultation": {
+    "description": "Workflow step label for doctor review."
+  },
+  "receptionStepDisposition": "Disposition",
+  "@receptionStepDisposition": {
+    "description": "Workflow step label for visit disposition."
+  },
   "opdLiveStatus": "Live sync",
   "opdSavingStatus": "Saving",
   "opdStartWalkInAction": "Start OPD encounter",

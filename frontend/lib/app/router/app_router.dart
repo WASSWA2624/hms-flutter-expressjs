@@ -76,6 +76,8 @@ import 'package:hosspi_hms/features/nursing/presentation/pages/nursing_workspace
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.dart';
+import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
+import 'package:hosspi_hms/features/reception/presentation/pages/reception_workspace_page.dart';
 import 'package:hosspi_hms/features/operations/domain/entities/operations_entities.dart';
 import 'package:hosspi_hms/features/operations/presentation/controllers/operations_workspace_controller.dart';
 import 'package:hosspi_hms/features/operations/presentation/pages/operations_workspace_page.dart';
@@ -159,6 +161,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (_, GoRouterState state) => PatientRegistryPage(
               initialQuery: PatientListQuery.fromUri(state.uri),
             ),
+          ),
+          GoRoute(
+            path: AppRoutes.reception.path,
+            name: AppRoutes.reception.name,
+            builder: (_, GoRouterState state) {
+              return ReceptionWorkspacePage(
+                initialQuery: ReceptionWorkspaceQuery.fromUri(state.uri),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.billing.path,
@@ -485,6 +496,17 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
         groupLabel: overviewGroup,
         icon: AppRouteIcons.home,
         selectedIcon: AppRouteIcons.homeSelected,
+      ),
+    ),
+    _ShellDestinationRoute(
+      route: AppRoutes.reception,
+      destination: ResponsiveShellDestination(
+        label: l10n.navigationReceptionLabel,
+        shortLabel: l10n.navigationReceptionShortLabel,
+        groupLabel: patientIntakeGroup,
+        icon: AppRouteIcons.reception,
+        selectedIcon: AppRouteIcons.receptionSelected,
+        badgeCount: opdWorkloadCount,
       ),
     ),
     _ShellDestinationRoute(

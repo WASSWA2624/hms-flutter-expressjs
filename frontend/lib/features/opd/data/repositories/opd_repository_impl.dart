@@ -1,8 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/network/api_endpoints.dart';
+import 'package:hosspi_hms/core/network/idempotency.dart';
 import 'package:hosspi_hms/core/network/network_providers.dart';
 import 'package:hosspi_hms/features/opd/data/dtos/opd_dtos.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
@@ -98,10 +100,14 @@ final class OpdRepositoryImpl implements OpdRepository {
   }
 
   @override
-  Future<Result<OpdQueueEntry>> createVisitQueue(Map<String, Object?> payload) {
+  Future<Result<OpdQueueEntry>> createVisitQueue(
+    Map<String, Object?> payload, {
+    String? idempotencyKey,
+  }) {
     return _apiClient.post<OpdQueueEntry>(
       ApiEndpoints.collection(HmsApiResource.visitQueues),
       data: _withoutEmpty(payload),
+      options: _idempotentOptions(idempotencyKey),
       decoder: (Object? data) =>
           OpdQueueEntryDto(decodeDataMap(data)).toEntity(),
     );
@@ -110,11 +116,13 @@ final class OpdRepositoryImpl implements OpdRepository {
   @override
   Future<Result<OpdQueueEntry>> updateVisitQueue(
     String queueId,
-    Map<String, Object?> payload,
-  ) {
+    Map<String, Object?> payload, {
+    String? idempotencyKey,
+  }) {
     return _apiClient.put<OpdQueueEntry>(
       ApiEndpoints.byId(HmsApiResource.visitQueues, queueId),
       data: _withoutEmpty(payload),
+      options: _idempotentOptions(idempotencyKey),
       decoder: (Object? data) =>
           OpdQueueEntryDto(decodeDataMap(data)).toEntity(),
     );
@@ -123,13 +131,15 @@ final class OpdRepositoryImpl implements OpdRepository {
   @override
   Future<Result<OpdQueueEntry>> prioritizeVisitQueue(
     String queueId,
-    Map<String, Object?> payload,
-  ) {
+    Map<String, Object?> payload, {
+    String? idempotencyKey,
+  }) {
     return _apiClient.post<OpdQueueEntry>(
       ApiEndpoints.nested(HmsApiResource.visitQueues, queueId, <String>[
         'prioritize',
       ]),
       data: _withoutEmpty(payload),
+      options: _idempotentOptions(idempotencyKey),
       decoder: (Object? data) =>
           OpdQueueEntryDto(decodeDataMap(data)).toEntity(),
     );
@@ -213,10 +223,14 @@ final class OpdRepositoryImpl implements OpdRepository {
   }
 
   @override
-  Future<Result<OpdFlowDetail>> startOpdFlow(Map<String, Object?> payload) {
+  Future<Result<OpdFlowDetail>> startOpdFlow(
+    Map<String, Object?> payload, {
+    String? idempotencyKey,
+  }) {
     return _apiClient.post<OpdFlowDetail>(
       ApiEndpoints.apiV1(<String>[HmsApiResource.opdFlows.path, 'start']),
       data: _withoutEmpty(payload),
+      options: _idempotentOptions(idempotencyKey),
       decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
     );
   }
@@ -224,20 +238,26 @@ final class OpdRepositoryImpl implements OpdRepository {
   @override
   Future<Result<OpdFlowDetail>> updateActiveEncounter(
     String flowId,
-    Map<String, Object?> payload,
-  ) {
+    Map<String, Object?> payload, {
+    String? idempotencyKey,
+  }) {
     return _apiClient.patch<OpdFlowDetail>(
       ApiEndpoints.nested(HmsApiResource.opdFlows, flowId, <String>['context']),
       data: _withoutEmpty(payload),
+      options: _idempotentOptions(idempotencyKey),
       decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
     );
   }
 
   @override
-  Future<Result<OpdFlowDetail>> bootstrapOpdFlow(Map<String, Object?> payload) {
+  Future<Result<OpdFlowDetail>> bootstrapOpdFlow(
+    Map<String, Object?> payload, {
+    String? idempotencyKey,
+  }) {
     return _apiClient.post<OpdFlowDetail>(
       ApiEndpoints.apiV1(<String>[HmsApiResource.opdFlows.path, 'bootstrap']),
       data: _withoutEmpty(payload),
+      options: _idempotentOptions(idempotencyKey),
       decoder: (Object? data) => OpdFlowDetailDto.fromResponse(data).toEntity(),
     );
   }
@@ -591,6 +611,14 @@ final class OpdRepositoryImpl implements OpdRepository {
       }),
       decoder: decodeOpdDrugOptions,
     );
+  }
+
+  Options? _idempotentOptions(String? idempotencyKey) {
+    final String? key = idempotencyKey?.trim();
+    if (key == null || key.isEmpty) {
+      return null;
+    }
+    return idempotentRequestOptions(idempotencyKey: key);
   }
 
   Map<String, Object?> _withoutEmpty(Map<String, Object?> payload) {

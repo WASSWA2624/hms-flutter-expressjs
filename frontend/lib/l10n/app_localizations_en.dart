@@ -829,6 +829,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationPatientsShortLabel => 'Patients';
 
   @override
+  String get navigationReceptionLabel => 'Reception';
+
+  @override
+  String get navigationReceptionShortLabel => 'Reception';
+
+  @override
   String get navigationBillingLabel => 'Billing';
 
   @override
@@ -2223,6 +2229,84 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opdLoadingBody => 'Loading OPD queue and encounters...';
+
+  @override
+  String get receptionTitle => 'Reception desk';
+
+  @override
+  String get receptionLoadingTitle => 'Loading reception desk';
+
+  @override
+  String get receptionLoadingBody =>
+      'Loading appointments, queues, and front-desk visits...';
+
+  @override
+  String get receptionRegisterPatientAction => 'Register patient';
+
+  @override
+  String get receptionOpenRegistryAction => 'Full registry';
+
+  @override
+  String get receptionOpenOpdAction => 'Full OPD';
+
+  @override
+  String get receptionOpenEncounterAction => 'Open encounter';
+
+  @override
+  String get receptionSearchHint => 'Search patients, appointments, or queue';
+
+  @override
+  String get receptionEmptyTitle => 'No desk items';
+
+  @override
+  String get receptionEmptyBody =>
+      'Try another filter, or register a patient and start an encounter.';
+
+  @override
+  String get receptionSectionAppointments => 'Appointments';
+
+  @override
+  String get receptionSectionQueue => 'Desk queue';
+
+  @override
+  String get receptionSectionActiveVisits => 'Active visits';
+
+  @override
+  String get receptionSectionPaymentGate => 'Payment gate';
+
+  @override
+  String get receptionBillingGuidanceTitle => 'Billing guidance';
+
+  @override
+  String get receptionBillingGuidanceBody =>
+      'Review requested services, estimated charges, and outstanding balances. Capture payments only through authorized billing cashier actions.';
+
+  @override
+  String get receptionPaymentGateHandoffMessage =>
+      'Consultation payment is due. Hand the patient to Billing for authorized payment capture.';
+
+  @override
+  String get receptionPaymentMethodsAdvice =>
+      'Advise cash, card, mobile money, or insurance as available for this facility.';
+
+  @override
+  String get receptionBillingCashierRestrictedMessage =>
+      'Payment capture, refunds, adjustments, and reconciliation require Billing permission.';
+
+  @override
+  String get receptionStepPayment => 'Payment';
+
+  @override
+  String get receptionStepVitals => 'Vitals';
+
+  @override
+  String get receptionStepAssignDoctor => 'Assign doctor';
+
+  @override
+  String get receptionStepConsultation => 'Consultation';
+
+  @override
+  String get receptionStepDisposition => 'Disposition';
 
   @override
   String get opdLiveStatus => 'Live sync';

@@ -262,6 +262,17 @@ abstract final class AppRoutes {
     requiredAnyRoles: patientRegistryRoles,
     requiredActiveModules: <String>['patient-registry'],
   );
+  static const AppRouteData reception = AppRouteData(
+    name: 'reception',
+    path: '/reception',
+    access: AppRouteAccess.authenticated,
+    requiredAnyPermissions: <AppPermission>[
+      AppPermissions.patientRead,
+      AppPermissions.lastOfficeRead,
+    ],
+    requiredAnyRoles: patientFlowWorkspaceRoles,
+    requiredActiveModules: <String>['patient-registry', 'scheduling-queue'],
+  );
   static const AppRouteData billing = AppRouteData(
     name: 'billing',
     path: '/billing',
@@ -750,7 +761,15 @@ abstract final class AppRoutes {
 
   /// Routes visible to [AppAccessPolicy.isReceptionistFocusedShellUser] in the shell.
   static const List<AppRouteData> receptionistFocusedShellRoutes =
-      <AppRouteData>[home, patients, opd, emergency, communications, settings];
+      <AppRouteData>[
+        home,
+        reception,
+        patients,
+        opd,
+        emergency,
+        communications,
+        settings,
+      ];
 
   static bool isReceptionistFocusedShellRoute(AppRouteData route) {
     return receptionistFocusedShellRoutes.any(

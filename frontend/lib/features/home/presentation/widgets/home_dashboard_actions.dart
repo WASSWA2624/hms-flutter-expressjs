@@ -98,7 +98,7 @@ homeActionLibrary = <String, HomeActionDefinition>{
     id: 'register_patient',
     label: 'Register patient',
     icon: Icons.person_add_alt_1_outlined,
-    route: AppRoutes.patients,
+    route: AppRoutes.reception,
     allowedRoles: <AppRole>[AppRole.facilityAdmin, AppRole.receptionist],
     requiredPermissions: <AppPermission>[AppPermissions.patientWrite],
     requiredModules: <String>['patients'],
@@ -107,7 +107,8 @@ homeActionLibrary = <String, HomeActionDefinition>{
     id: 'book_appointment',
     label: 'Book appointment',
     icon: Icons.event_available_outlined,
-    route: AppRoutes.opd,
+    route: AppRoutes.reception,
+    routeQuery: <String, String>{'section': 'appointments'},
     allowedRoles: <AppRole>[AppRole.facilityAdmin, AppRole.receptionist],
     requiredPermissions: <AppPermission>[AppPermissions.patientWrite],
     requiredModules: <String>['scheduling'],
@@ -116,7 +117,8 @@ homeActionLibrary = <String, HomeActionDefinition>{
     id: 'check_in_patient',
     label: 'Check in patient',
     icon: Icons.fact_check_outlined,
-    route: AppRoutes.opd,
+    route: AppRoutes.reception,
+    routeQuery: <String, String>{'section': 'appointments'},
     allowedRoles: <AppRole>[
       AppRole.facilityAdmin,
       AppRole.receptionist,
@@ -129,7 +131,8 @@ homeActionLibrary = <String, HomeActionDefinition>{
     id: 'route_patient',
     label: 'Route patient',
     icon: Icons.alt_route_outlined,
-    route: AppRoutes.opd,
+    route: AppRoutes.reception,
+    routeQuery: <String, String>{'section': 'queue'},
     allowedRoles: <AppRole>[AppRole.receptionist, AppRole.nurse],
     requiredPermissions: <AppPermission>[AppPermissions.patientWrite],
     requiredModules: <String>['scheduling'],
@@ -1064,6 +1067,12 @@ homeActionLibrary = <String, HomeActionDefinition>{
 
 const Map<String, HomeShortcutDefinition> homeShortcutLibrary =
     <String, HomeShortcutDefinition>{
+      'reception': HomeShortcutDefinition(
+        id: 'reception',
+        label: 'Reception',
+        icon: Icons.support_agent_outlined,
+        route: AppRoutes.reception,
+      ),
       'patients': HomeShortcutDefinition(
         id: 'patients',
         label: 'Patients',

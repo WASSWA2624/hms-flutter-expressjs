@@ -413,6 +413,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'route_patient',
     ],
     shortcutIds: <String>[
+      'reception',
       'patients',
       'opd',
       'emergency',

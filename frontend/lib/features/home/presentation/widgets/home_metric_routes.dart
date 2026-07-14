@@ -135,7 +135,7 @@ AppRouteData? _clinicalMetricRoute({
       'no_show_pressure' ||
       'opd_notifications_attention'
           when policy.grants(AppPermissions.patientRead) =>
-        AppRoutes.opd,
+        AppRoutes.reception,
       'emergency_cases_today'
           when policy.grants(AppPermissions.emergencyRead) =>
         AppRoutes.emergency,

@@ -272,7 +272,7 @@ router.post(
     body: payConsultationSchema
   }),
   authenticate(),
-  authorize([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.RECEPTIONIST, ROLES.BILLING], 'role'),
+  authorize([PERMISSIONS.BILLING_WRITE], 'permission'),
   opdFlowController.payConsultation
 );
 
