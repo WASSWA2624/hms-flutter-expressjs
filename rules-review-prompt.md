@@ -13,3 +13,4 @@ For each rule file, perform the following for only those rules where the require
 7. For applicable rules, require that the theme is comprehensive and prohibits hard-coded tokens anywhere in the codebase.
 8. Ensure all text is fully localized, concise, and uses context-appropriate terminology.
 9. Only update rules and sections to which these requirements or clarifications apply; leave other rules unchanged.
+10. UI rules must require prioritizing reusability and consistency. Any component that may be reused should be implemented as a reusable component and placed in the appropriate subfolder under [Shared folder](frontend/lib/shared/).
