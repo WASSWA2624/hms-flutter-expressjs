@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "frontend/lib/**"
 description: >
-  Use when designing, implementing, or reviewing instant UI state updates and backend data synchronization involving Riverpod, optimistic updates, or real-time cross-session changes.
+  Apply when implementing optimistic UI updates, Riverpod patches, or reconciliation.
 ---
 # Instant UI and Backend Sync
 

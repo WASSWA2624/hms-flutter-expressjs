@@ -1,9 +1,12 @@
 ---
 alwaysApply: false
 globs:
-  - ".cursor/locale-development.mdc"
+  - "frontend/lib/l10n/**"
+  - "backend/src/locales/**"
+  - "frontend/lib/**"
+  - "backend/src/**"
 description: >
-  Use this rule file when editing, adding, or reviewing locale or translation files during standard development to ensure only English locale files are modified unless non-English locales are explicitly requested by the user.
+  Edit English locale files only unless user explicitly requests other locales.
 ---
 # Locale Development — Protective Rule
 
@@ -13,6 +16,7 @@ Purpose: keep token usage low during day-to-day development by treating English 
 
 - `en` is the **source of truth** for all new user-facing strings.
 - Add or change copy in English first; never bulk-sync non-English files proactively.
+- All user-facing text must be localized, concise, and use appropriate clinical/operational terminology for its context.
 
 ## Frontend (`frontend/lib/l10n/`)
 

@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "backend/**"
 description: >
-  Use this rule file when designing, implementing, or reviewing backend tests to ensure comprehensive and standardized test coverage.
+  Backend tests: schemas, authz, subscription intersection, and workflow regression.
 ---
 # Testing Rules
 
@@ -15,6 +15,9 @@ Required coverage:
 - service tests
 - controller and route tests
 - auth, entitlement, ABAC, and break-glass regression tests
+- subscription ∩ role ∩ module ∩ user permission intersection regression tests
+- API and websocket contract tests proving responses/events expose `human_friendly_id` only
+- admin customize/reset of access defaults produces auditable, atomic permission changes
 - seed and maintenance script tests where scripts change data or contracts
 
 Rules:

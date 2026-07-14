@@ -5,7 +5,7 @@ globs:
   - "frontend/lib/**/presentation/**"
   - "frontend/lib/**/widgets/**"
 description: >
-  Apply when adding, updating, or reviewing localization and internationalization in the HOSSPI HMS frontend to ensure all user-facing text, accessibility labels, and formatting are managed through Flutter localization files.
+  Apply when adding or reviewing localization, ARB keys, and locale-aware formatting.
 ---
 
 # Localization and Internationalization
@@ -55,7 +55,7 @@ Defines how user-facing text, formatting, and accessibility labels are handled.
 - Changing locale updates the app without changing business logic.
 
 ## Related rules
-- [`date_time_formatting.md`](./date_time_formatting.mdc)
+- [`date_time_formatting.mdc`](./date_time_formatting.mdc)
 - [`ui-patterns.mdc`](./ui-patterns.mdc)
-- [`error_handling.md`](./error_handling.mdc)
-- [`accessibility.md`](./accessibility.mdc)
+- [`error_handling.mdc`](./error_handling.mdc)
+- [`accessibility.mdc`](./accessibility.mdc)

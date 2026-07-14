@@ -4,7 +4,7 @@ globs:
   - "frontend/lib/shared/input/**"
   - "frontend/lib/core/input/**"
 description: >
-  Apply when designing, implementing, or reviewing cross-platform input (touch, pointer, keyboard, focus, shortcuts) in the HOSSPI HMS frontend to ensure consistent and accessible behavior on mobile, web, and desktop.
+  Apply when reviewing cross-platform touch, pointer, keyboard, and focus behavior.
 ---
 
 # Multi-Platform Input
@@ -31,7 +31,7 @@ Defines touch, mouse, keyboard, focus, hover, and shortcut behavior across platf
 - Touch targets are practical on mobile.
 
 ## Related rules
-- [`accessibility.md`](./accessibility.mdc)
+- [`accessibility.mdc`](./accessibility.mdc)
 - [`components.mdc`](./components.mdc)
 - [`layouts.mdc`](./layouts.mdc)
-- [`platform_guidelines.md`](./platform_guidelines.mdc)
+- [`platform_guidelines.mdc`](./platform_guidelines.mdc)

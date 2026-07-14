@@ -6,10 +6,8 @@ globs:
   - "frontend/scripts/ci/**"
   - "frontend/.cursor/ci_cd_quality_gates.mdc"
 description: >
-  Use this rule file when creating or updating CI/CD pipeline configurations or local quality automation for the HOSSPI HMS frontend. Apply to ensure minimum required automated build, test, and formatting gates are present before merges or releases.
+  Apply when creating or updating CI/CD pipelines and local quality gates.
 ---
-# End of Selection
-```
 
 # CI/CD and Quality Gates
 
@@ -68,7 +66,7 @@ flutter build linux    # Linux host only
 - Release artifacts and platform host requirements are documented.
 
 ## Related rules
-- [`testing.md`](./testing.mdc)
-- [`dependencies.md`](./dependencies.mdc)
-- [`security.md`](./security.mdc)
-- [`platform_guidelines.md`](./platform_guidelines.mdc)
+- [`testing.mdc`](./testing.mdc)
+- [`dependencies.mdc`](./dependencies.mdc)
+- [`security.mdc`](./security.mdc)
+- [`platform_guidelines.mdc`](./platform_guidelines.mdc)

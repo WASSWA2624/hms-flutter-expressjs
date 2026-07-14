@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "backend/**"
 description: >
-  Use this rule file as the index for backend technical standards, outlining rule ownership and conflict precedence when working in the backend codebase.
+  Backend rules index: ownership, conflict precedence, and backend-wide invariants.
 ---
 # Backend Rules Index
 
@@ -19,7 +19,10 @@ Conflict order:
 Backend-wide invariants:
 - Express.js and CommonJS are mandatory.
 - Database objects, Prisma models, schema fields, and documented payload fields use lowercase `snake_case`.
-- Multi-role access is resolved through `user_role` plus RBAC, ABAC, entitlements, and audited break-glass access.
+- Public APIs and realtime payloads expose `human_friendly_id` only; map to internal table IDs in repositories/services. Never return raw primary keys to clients.
+- Effective access is always the intersection of active subscription package, assigned modules, roles, user-level grants, and ABAC scope. No role, module, or direct grant may bypass subscription limits.
+- Default modules, packages, roles, and permissions are source-controlled in `.cursor/access/` (`modules.mdc`, `permissions.mdc`, `subscriptions.mdc`, `default_user_roles.mdc`). Admins may customize or reset to shipped defaults; all changes are versioned and auditable.
+- Multi-role access is resolved through `user_role` plus RBAC, ABAC, subscription intersection, and audited break-glass access.
 - Every business module must stay standalone and entitlement-aware.
 - Public APIs and complex logic require JSDoc-style documentation.
 - Only essential scripts may remain in `scripts/` and `prisma/scripts/`.
@@ -35,7 +38,8 @@ Owner map:
 - `api-versioning.mdc`: version lifecycle
 - `response-format.mdc`: success and error envelopes
 - `validation.mdc`: request validation rules
-- `auth-security.mdc`: authn, authz, roles, ABAC, entitlements, break-glass
+- `auth-security.mdc`: authn, authz, roles, ABAC, subscription intersection, break-glass
+- `.cursor/access/*.mdc`: default modules, subscription packages, roles, permissions (cross-stack)
 - `cors.mdc`, `rate-limiting.mdc`, `health-checks.mdc`, `error-logging.mdc`, `constants-env.mdc`: runtime safety and operations
 - `prisma.mdc`, `storage.mdc`, `websockets.mdc`, `performance.mdc`, `offline-support.mdc`, `internationalization.mdc`: platform behavior
 - `compliance.mdc`, `documentation.mdc`, `testing.mdc`: governance and quality gates

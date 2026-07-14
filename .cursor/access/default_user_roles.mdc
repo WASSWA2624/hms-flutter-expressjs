@@ -4,37 +4,49 @@ globs:
   - "backend/**"
   - "frontend/**"
 description: >
-  Defines and documents all default user roles for RBAC and access mapping.
+  Shipped default user roles and their module permission mappings.
 ---
 
+# Default User Roles
 
-**2. Default User Roles**
+Every installation seeds the roles below. Authorized administrators may customize, extend, or reset role permissions to shipped defaults. All changes are versioned and auditable. Effective access is always limited by the active subscription package (see [subscriptions.mdc](./subscriptions.mdc)).
 
-Every installation must provide a comprehensive set of default user roles spanning clinical, operational, and administrative functions. These roles must be created automatically on system setup, and may be extended, customized, or removed only by authorized administrators. Roles must be defined as centrally managed entities and mapped explicitly to default module permissions (see Default Permissions). The default roles include, at minimum:
+Users may hold **multiple roles** and **multiple module assignments**. Effective permissions = union of role/module/user grants ∩ subscription package ∩ ABAC scope.
 
-- **Super Admin**: Highest authority with unrestricted administrative privileges across all modules and tenants. Manages global settings, users, roles, subscriptions, integrations.
-- **Tenant Admin**: Full administrative control within a specific tenant/account. Can manage tenant users, modules, billing, configuration, roles, and permissions.
-- **Integration Admin**: Manages external systems integrations, API access, data synchronization, and partner connections. Has high-level authority on integrations only.
-- **Facility Admin**: Administrative privileges limited to assigned facility or facilities. Manages operations, staff, resource assignments, facility-specific config.
-- **Human Resources Staff**: Manages employee and staff records, onboarding/offboarding, attendance, payroll, and HR policies.
-- **Operations Staff**: Handles general facility operations such as logistics, materials, non-clinical processes (excluding surgical/theater roles).
-- **Housekeeper**: Responsible for hygiene, sanitation, and housekeeping operations within facilities.
-- **Biomedical Engineer**: Manages and maintains biomedical equipment and technology.
-- **Discharge Planner**: Coordinates and manages patient discharges, transitions, and follow-up processes.
-- **Doctor**: Clinical care provider. Diagnoses, manages, and treats patients across various departments.
-- **Dentist**: Specializes in dental care, treatments, and procedures for patients.
-- **Physiotherapist**: Manages and administers physical therapy and rehabilitation services to patients.
-- **Radiologist**: Specializes in interpretation and reporting of imaging studies; manages radiology workflows.
-- **Radiographer**: Performs imaging scans and supports radiology procedures under radiologist guidance.
-- **Sonographer**: Performs sonography/ultrasound procedure and assists in reporting.
-- **Pharmacist**: Manages medicines inventory, dispensing, e-prescription handling.
-- **Laboratory Technician**: Conducts laboratory tests, manages lab workflows, and produces test results.
-- **Nurse**: Provides nursing care, manages patient wards/beds, assists with medical tasks, and documents care.
-- **Receptionist**: Manages front desk operations, patient check-in/out, and appointments.
-- **Mortuary Attendant**: Manages mortuary records, services, and related operations.
-- **Accountant**: Handles billing, invoicing, payments, and financial record-keeping.
-- **Support Staff**: Provides general or department-specific support (non-clinical duties).
-- **Patient**: Accesses own records, schedules, and interacts with patient engagement modules.
-- **Visitor / Guest**: Limited access for visitors or guests; may check-in/out or view permitted visitor info.
+## Shipped roles
 
-Administrators may define additional roles as needed. All user roles, default or custom, must be explicitly mapped to a defined, auditable set of module-level permissions, consistent with RBAC/ABAC policies and limited by active subscription package constraints.
+| role_key | Label | Default modules (keys) | Default permissions (summary) |
+|---|---|---|---|
+| super_admin | Super Admin | all active modules | manage within platform scope; still bounded by subscription in tenant contexts |
+| tenant_admin | Tenant Admin | all entitled modules for tenant | manage tenant users, modules, config, roles |
+| integration_admin | Integration Admin | integrations, reports_audit | view, manage (integrations); view, export (audit) |
+| facility_admin | Facility Admin | facility-scoped operational modules | manage within assigned facility |
+| hr_staff | Human Resources Staff | hr, access_admin (limited) | view, create, edit, manage (HR scope) |
+| operations_staff | Operations Staff | operations | view, create, edit, manage |
+| housekeeper | Housekeeper | housekeeping | view, create, manage |
+| biomedical_engineer | Biomedical Engineer | biomedical | view, create, edit, manage |
+| discharge_planner | Discharge Planner | discharge, ipd, nursing (view) | view, create, edit, approve (discharge) |
+| doctor | Doctor | opd, ipd, clinical, triage, lab, radiology, pharmacy, nursing, billing, reports_audit, patient_registry | view/create/edit clinical; request/view lab & radiology; prescribe; view billing/reports |
+| dentist | Dentist | dental, opd, clinical, pharmacy, patient_registry | view, create, edit (dental/clinical); prescribe |
+| physiotherapist | Physiotherapist | physiotherapy, opd, ipd, patient_registry | view, create, edit, assign |
+| radiologist | Radiologist | radiology, opd, ipd | view, report, edit, manage (radiology) |
+| radiographer | Radiographer | radiology, opd | view, update, manage (scan performance) |
+| sonographer | Sonographer | radiology | view, create, report (ultrasound) |
+| pharmacist | Pharmacist | pharmacy, billing (view) | view, dispense, manage (pharmacy) |
+| laboratory_technician | Laboratory Technician | lab | view, report, edit, manage (lab) |
+| nurse | Nurse | opd, ipd, nursing, triage, lab, radiology, pharmacy, housekeeping, patient_registry | view/update clinical; request diagnostics; manage nursing; create/update registry |
+| receptionist | Receptionist | opd, ipd, billing, patient_registry, communications | create, view (queues/billing); manage registry |
+| mortuary_attendant | Mortuary Attendant | mortuary | view, create, edit, manage (mortuary) |
+| accountant | Accountant | billing, claims, reports_audit, opd, ipd | manage billing/claims; view/export reports |
+| support_staff | Support Staff | communications, operations (limited) | view, create (support tasks) |
+| patient | Patient | patient_registry, opd, ipd, lab, radiology, pharmacy, nursing, billing, reports_audit | view-own / update-own only |
+| visitor_guest | Visitor / Guest | communications (visitor info) | view limited visitor check-in info |
+
+Detailed attribute-scoped actions live in [permissions.mdc](./permissions.mdc). Module keys live in [modules.mdc](./modules.mdc).
+
+## Administration
+
+- Roles are created automatically on system setup.
+- Admins may define additional roles mapped to the same permission vocabulary.
+- Reset-to-defaults restores this shipped matrix atomically and must leave no user with access beyond role ∩ subscription.
+- Frontend and backend must hide/deny menus, components, actions, and workflows for unauthorized roles.

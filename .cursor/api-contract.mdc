@@ -4,7 +4,7 @@ globs:
   - "backend/**"
   - "frontend/**"
 description: >
-  Use this rule file when designing, implementing, or reviewing API contracts that define frontend-backend envelope formats, error shapes, pagination, and field naming conventions.
+  Cross-stack API contract: envelopes, errors, pagination, naming, entity IDs.
 ---
 # API Contract (Frontend ↔ Backend)
 
@@ -34,6 +34,13 @@ Purpose: single source of truth for shared API behavior between `hms-backend` an
 - Use `@JsonSerializable(fieldRename: FieldRename.snake)` or explicit `@JsonKey(name: 'snake_case')`.
 - Domain entities use Dart `camelCase`; mappers convert DTO ↔ entity explicitly.
 - Never pass DTOs into domain logic or widgets.
+
+## Entity identifiers
+
+- Frontend must reference entities by `human_friendly_id`; backend maps to internal IDs. Do not expose raw table IDs in frontend or API responses.
+- Public API path params, list/detail payloads, and nested references use `human_friendly_id` (or documented domain display IDs such as MRN / admission number mapped from it).
+- WebSocket `resource_id` and `affected` entries use the same public identifier contract — never internal primary keys.
+- Repositories and services resolve `human_friendly_id` ↔ internal ID at the data boundary only.
 
 ## Success envelope
 
@@ -85,10 +92,11 @@ Cursor-based lists may use `next_cursor` / `has_more` instead when documented.
 
 - JWT access tokens with finite-lifetime refresh or session records.
 - Frontend stores tokens in secure storage only (not `shared_preferences`).
-- `user_role` is the backend role-assignment source of truth.
-- RBAC grants baseline permissions; ABAC narrows by scope, ownership, shift, patient relationship, and emergency state.
-- Module entitlements are enforced in backend middleware **and** services; frontend route guards and action visibility must match entitlement keys.
-- Break-glass access is explicit, time-limited, and audited.
+- `user_role` is the backend role-assignment source of truth; users may hold multiple roles and modules.
+- Authority order: **subscription package → module assignment → role → permission → ABAC scope**.
+- Effective permissions = intersection of subscription ∩ role/module/user grants ∩ ABAC; never exceed the package.
+- Strict RBAC+ABAC: menus, components, actions, and workflows must not be visible or accessible without effective permission.
+- Shipped defaults: [`.cursor/access/`](./access/). Break-glass access is explicit, time-limited, and audited.
 
 ## Timestamps and locale
 
@@ -137,8 +145,8 @@ Realtime sync keeps multi-user UI state aligned with persisted data.
 | `facility_id` | Facility scope for UI filtering |
 | `actor_user_id` | User who triggered the change |
 | `resource_type` | Entity family (`patient`, `encounter`, `ward`, …) |
-| `resource_id` | Primary resource identifier |
-| `affected` | Related IDs for targeted refresh |
+| `resource_id` | Public resource identifier (`human_friendly_id`) |
+| `affected` | Related public IDs for targeted refresh |
 | `payload` | Module-specific refresh hints (`status`, `target_path`, `operation`, …) |
 | `occurred_at` | ISO-8601 UTC timestamp |
 

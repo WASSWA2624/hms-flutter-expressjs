@@ -4,76 +4,77 @@ globs:
   - "backend/**"
   - "frontend/**"
 description: >
-  Lists all modules with core functionalities for deployment, role assignment, and permission configuration.
+  Source-controlled module catalog with keys, defaults, and subscription alignment.
 ---
 
+# HMS Module Catalog (source-controlled defaults)
 
-**1. Modules & Functionalities**
+Product module names and responsibilities align with [`.cursor/app-write-up.mdc`](../app-write-up.mdc). This file is the entitlement catalog: each entry declares a stable `module_key`, default permissions (from [permissions.mdc](./permissions.mdc)), and which subscription packages include it (see [subscriptions.mdc](./subscriptions.mdc)).
 
-Each deployment must include the following core modules and additional required functionalities, forming the baseline for setup, role assignment, and permissions configuration:
+## Rules
 
-- **AI & Automation**: Machine learning, diagnostics, predictions, virtual assistants, workflow automation, clinical decision support.
-- **Admin**: Core administration functions.
-- **Ambulance**: Ambulance logistics and dispatch.
-- **Analytics**: Analyze system and clinical data.
-- **Appointment Scheduling**: Book, edit, and manage appointments.
-- **Beds Management**: Assign and monitor beds.
-- **Billing**: Handle invoices, payments, and billing rules.
-- **Biomedical**: Manage biomedical equipment and maintenance.
-- **Claims**: Process and track insurance claims.
-- **Communication**: Patient and staff messaging, notifications, telemedicine, chat, voice, and real-time comms.
-- **Configuration**: Manage settings (basic and advanced).
-- **Dental**: Dental department operations.
-- **Dashboard**: Provide system overviews and KPIs.
-- **Decision Support**: Clinical guidelines, reminders, protocols, order sets.
-- **Department Management**: Create, manage, and configure clinical or operational departments.
-- **Device Integration**: IoT, vitals monitors, laboratory equipment, bedside device connectivity.
-- **Diagnostics**: Diagnostic tests and reporting (lab, imaging, AI results integration).
-- **Discharge Planning**: Plan and process patient discharges.
-- **Emergency**: Emergency department workflows.
-- **Feedback & Survey**: Gather and manage user, staff, or patient feedback and surveys.
-- **Front Desk**: Reception and initial patient handling.
-- **Housekeeping**: Facility cleanliness and support operations.
-- **Human Resources**: Employee and staff management.
-- **ICU (Intensive Care Unit)**: ICU patient management.
-- **Integrations**: External systems and partner integrations (e.g., insurance, laboratory, LIS, external EMR/HIE, government/public health APIs).
-- **Insurance**: Insurance validation, claims, pre-authorizations.
-- **Inventory**: Supplies, stock, and equipment inventory.
-- **IPD (Inpatient Department)**: Inpatient management, admissions, transfers, discharges.
-- **Laboratory**: Lab workflows, tests, analyzer interface, results reporting.
-- **Letters & Certificates**: Generate, track, and manage medical letters, certificates, reports.
-- **Logs & Audit Trail**: Activity logs, change tracking, traceability for compliance.
-- **Marketplace**: App extension marketplace, plugins, certified module registry.
-- **Mobile**: Mobile device support, mobile app management, push notifications, and responsive UI extensions.
-- **Mortuary**: Mortuary services and records.
-- **Notifications**: Alerts, reminders, tasking, communications.
-- **Nursing**: Nursing tasks and patient care; handoff, care plans, assessment charting.
-- **OPD (Outpatient Department)**: Outpatient management, scheduling, consultation.
-- **Operations**: Facility operations (e.g., logistics, materials, security, parking, support functions).
-- **Order Management**: Orders for labs, drugs, imaging, supplies, procedures.
-- **Patient Engagement**: Patient portal, education, forms, Q&A, requests, remote monitoring integration.
-- **Patient Registry**: Patient record creation, lookup, demographics management, identity reconciliation.
-- **Pharmacy**: Medication inventory, dispensing, e-prescription, formulary management.
-- **Physiotherapy**: Physiotherapy department scheduling, management, and patient tracking.
-- **Privacy & Consent Management**: Consent forms, data access logs, privacy compliance, and policy controls.
-- **Queue Management**: Waitlists, digital queueing, ticketing, self-check-in.
-- **Radiographer**: Radiographer activities, scans performance.
-- **Radiologist**: Radiologist reporting, review, interpretation.
-- **Radiology**: Imaging, PACS workflow, DICOM viewer, order and report life cycle.
-- **Reception**: Manage visitor/patient entry (distinct from front desk where required).
-- **Reporting**: Generate clinical, operational, billing, compliance, and regulatory reports.
-- **Research**: Study, randomized controlled trial, observational tracking, registry, ethics workflow.
-- **Rooms Management**: Assign and monitor inpatient/outpatient rooms.
-- **Scheduling**: Shared resource, staff, room, equipment, and block booking schedule management (overarching scheduling, applies to all bookable items).
-- **Security**: RBAC, ABAC, authentication, SSO, auditing, permission enforcement.
-- **Sonographer**: Sonographer-specific workflows, scan logging, reporting.
-- **Support & Helpdesk**: Ticketing, FAQs, issue tracking for staff and patients.
-- **Task Management**: Assign, track, and complete administrative/clinical tasks.
-- **Tenant Setups**: Multi-tenant configuration, onboarding, and enterprise account management.
-- **Theater**: Operation theater management (surgery scheduling, records, instrument tracking, post-op).
-- **User Management**: User accounts, roles, delegations, permissions, access provisioning.
-- **Vitals**: Vitals recording, monitoring, thresholds, and alerts.
-- **Visitor Management**: Tracking, security, and check-in/out for guests, attendants.
-- **Workflow Engine**: Workflow automation, process modeling, configurable approvals/processes.
+- Every module **must** declare default permissions using the vocabulary in `permissions.mdc`.
+- Users may be assigned multiple modules; effective access is always intersected with the active subscription package.
+- Authorized administrators may customize, extend, or reset module permissions to shipped defaults; all changes are versioned and auditable.
+- Planned modules (`status: planned`) are documented but excluded from default seed until implemented.
+- Frontend menus, routes, and actions for a module must not appear unless the module is in the user's effective set.
 
-All modules must declare their default permissions, as described below.
+## Core HOSSPI modules
+
+| module_key | Label | Default permissions | Packages | Status |
+|---|---|---|---|---|
+| app_shell | App identity and shell | view | Free+ | active |
+| auth_session | Authentication and session | view, manage (self) | Free+ | active |
+| general_settings | General settings | view, update (self) | Free+ | active |
+| tenant_settings | Tenant settings | view, manage | Basic+ | active |
+| facility_settings | Facility settings | view, manage | Basic+ | active |
+| access_admin | Users, roles, and permissions | view, create, edit, assign, manage | Basic+ | active |
+| subscriptions | Subscription management | view, manage | Basic+ | active |
+| rooms_beds | Rooms, wards, and beds | view, create, edit, assign, manage | Basic+ | active |
+| patient_registry | Patient registry | view, create, update, export, manage | Free+ (view/create limited on Free) | active |
+| opd | Appointment and OPD flow | view, create, edit, assign | Basic+ | active |
+| triage | OPD triage | view, create, edit | Basic+ | active |
+| clinical | Clinical module | view, create, edit, approve | Basic+ | active |
+| nursing | Nursing module | view, create, update, manage | Advanced+ | active |
+| ipd | Inpatient management | view, create, edit, assign, manage | Basic (limited) / Advanced+ (full) | active |
+| icu | ICU module | view, create, edit, assign, manage | Pro+ | active |
+| theater | Theater module | view, create, edit, assign, manage | Pro+ | active |
+| discharge | Discharge | view, create, edit, approve | Advanced+ | active |
+| emergency | Emergency and ambulance | view, create, edit, assign, manage | Advanced+ | active |
+| lab | Laboratory | view, request, report, edit, manage, export | Advanced+ | active |
+| radiology | Radiology and imaging | view, request, report, edit, manage, export | Advanced+ | active |
+| physiotherapy | Physiotherapy | view, create, edit, assign | Advanced+ | active |
+| pharmacy | Pharmacy | view, request, prescribe, dispense, manage | Basic (dispense) / Advanced+ (full) | active |
+| billing | Billing and cashier | view, create, edit, manage, export | Basic+ | active |
+| claims | Insurance and claims | view, create, edit, approve, export | Advanced+ | active |
+| hr | Human resources | view, create, edit, manage, export | Pro+ | active |
+| biomedical | Biomedical | view, create, edit, manage | Pro+ | active |
+| operations | Operations | view, create, edit, manage | Pro+ | active |
+| housekeeping | Housekeeping | view, create, manage | Pro+ | active |
+| mortuary | Mortuary | view, create, edit, manage | Pro+ | active |
+| communications | Notifications and communications | view, create, manage | Basic+ | active |
+| reports_audit | Reports, dashboards, and audit | view, export, manage | Basic (minimal) / Advanced+ | active |
+| integrations | Integrations | view, manage | Pro+ | active |
+| demo_seed | Demo and seed data | manage (non-production) | Developer | active |
+| dental | Dental | view, create, edit, manage | Custom / Pro+ | planned |
+
+## Supporting / planned capabilities
+
+These may appear as sub-capabilities or future modules. Mark `planned` until productized; do not seed as standalone entitlements by default.
+
+| module_key | Label | Notes |
+|---|---|---|
+| analytics | Analytics | Planned enterprise analytics |
+| decision_support | Decision support | Planned clinical CDS |
+| device_integration | Device integration | Planned IoT / device connectivity |
+| marketplace | Marketplace | Planned extensions |
+| research | Research | Planned research workflows |
+| workflow_engine | Workflow engine | Planned configurable approvals |
+| ai_automation | AI and automation | Planned |
+
+## Related
+
+- [permissions.mdc](./permissions.mdc) — permission vocabulary and role matrix
+- [subscriptions.mdc](./subscriptions.mdc) — package → module → permission tables
+- [default_user_roles.mdc](./default_user_roles.mdc) — shipped role defaults
+- [app-write-up.mdc](../app-write-up.mdc) — product module responsibilities

@@ -4,7 +4,7 @@ globs:
   - "frontend/lib/**"
   - "frontend/test/**"
 description: >
-  Use this rule file when defining, reviewing, or enforcing the scope, invariants, and minimum runnable contract for the HOSSPI HMS Flutter frontend. Applies to project-level scoping, guarantees, and module boundaries.
+  Apply when reviewing frontend scope, invariants, and minimum runnable contract.
 ---
 # Project Scope
 
@@ -25,6 +25,9 @@ Product modules and boundaries: [`.cursor/app-write-up.mdc`](../../.cursor/app-w
 - Prefer Flutter SDK widgets, Material Design patterns, and shared `lib/shared/` abstractions before custom frameworks or extra packages.
 - Avoid duplicate dependencies, folders, components, rules, and competing design systems.
 - Module menus, routes, forms, actions, permissions, and visibility must match backend routes, permissions, entitlements, and APIs.
+- Deliver high-performance, uniform UI using reusable components in `frontend/lib/shared/`, with real-time sync, full mobile/tablet/desktop responsiveness, simple design, and intuitive clinical workflows.
+- Reference entities by `human_friendly_id` in UI and client contracts; backend maps internal IDs.
+- Enforce RBAC+ABAC and subscription-package permission intersection per [`.cursor/access/subscriptions.mdc`](../../.cursor/access/subscriptions.mdc) and [`permissions.mdc`](./permissions.mdc).
 
 ## Architecture invariants
 

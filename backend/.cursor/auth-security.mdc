@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "backend/**"
 description: >
-  Use this rule file when designing, implementing, or reviewing backend authentication, authorization, or security flows. Ensures consistent identity, RBAC/ABAC, and sensitive action handling.
+  Authn, authz, RBAC, ABAC, subscription intersection, and break-glass for backend.
 ---
 # Authentication And Security Rules
 
@@ -15,15 +15,21 @@ Authentication:
 - MFA-capable flows must remain compatible with the auth module
 
 Authorization:
-- Authority order: **Plan (module entitlements) → Role → Rights (permissions) → ABAC scope**
-- Plan is the hard gate for which modules can be accessed; role and permissions never unlock a module the plan does not include
-- Plan decides which modules a tenant may use; role decides who may operate in those modules; permissions decide fine-grained actions
-- `user_role` is the role-assignment source of truth
-- one user may hold multiple active roles simultaneously
-- role assignments are scoped and may be time-bound
-- RBAC grants baseline permissions; ABAC narrows access by scope, ownership, shift, patient relationship, and emergency state
-- module entitlements are enforced in middleware before route RBAC, and again in services for sensitive workflows
-- assignable permissions must stay within the actor ceiling and the tenant plan module set
+- Authority order: **Subscription package (module entitlements) → Module assignment → Role → Permission → ABAC scope**
+- Subscription package is the hard gate: roles and permissions never unlock modules or actions outside the active package
+- Users may hold multiple active roles and multiple module assignments via `user_role` and module-access tables
+- Permissions attach at user, role, and module levels and link to subscription packages (see `.cursor/access/subscriptions.mdc`)
+- Effective permissions = intersection of subscription-included modules/permissions ∩ role grants ∩ module grants ∩ user grants ∩ ABAC scope
+- RBAC grants baseline actions; ABAC narrows by tenant, facility, department, ownership, shift, patient relationship, and emergency state
+- Enforce in middleware (entitlement → RBAC/ABAC) and again in services for sensitive workflows
+- Assignable permissions must stay within the actor ceiling and the tenant subscription module set
+- Strict enforcement: no API may process resources the caller lacks intersectional access for
+
+Access defaults and administration:
+- Shipped defaults live in `.cursor/access/` (`modules.mdc`, `permissions.mdc`, `subscriptions.mdc`, `default_user_roles.mdc`)
+- Authorized administrators may customize, extend, or reset module, role, or package permissions to shipped defaults at any time
+- All permission, role, module, and subscription changes must be atomic, versioned, auditable, and restorable
+- No user may retain access beyond the intersection of current roles and active subscription after any change
 
 Management-role requirements:
 - support `UNIT_MANAGER`, `WARD_MANAGER`, `ICU_MANAGER`, and `THEATRE_MANAGER`

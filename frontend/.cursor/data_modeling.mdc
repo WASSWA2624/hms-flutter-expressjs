@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "frontend/lib/**"
 description: >
-  Use when creating, updating, or reviewing app data models (e.g., API DTOs, domain entities, value objects, database models, or UI state) in the HOSSPI HMS frontend. Ensures safe, consistent data representation, mapping, and separation between layers.
+  Apply when creating or reviewing entities, DTOs, mappers, and UI state models.
 ---
 
 # Data Modeling Strategy
@@ -21,6 +21,7 @@ Defines entities, DTOs, value objects, mappers, and database models.
 - Keep DTOs shaped around external API contracts (`snake_case` JSON per [api-contract](../../.cursor/api-contract.mdc)).
 - Keep entities shaped around business meaning.
 - Keep presentation-only formatting out of domain entities.
+- Entities and presentation models expose `human_friendly_id` for identity. Map from API `human_friendly_id`; never propagate raw table IDs to UI or domain contracts.
 
 ## Model types
 | Type | Location | Purpose |
@@ -37,7 +38,7 @@ Defines entities, DTOs, value objects, mappers, and database models.
 - Tests cover important mappers and value objects.
 
 ## Related rules
-- [`architecture.md`](./architecture.md)
-- [`code_generation.md`](./code_generation.md)
-- [`validation.md`](./validation.md)
-- [`database_strategy.md`](./database_strategy.md)
+- [`architecture.mdc`](./architecture.mdc)
+- [`code_generation.mdc`](./code_generation.mdc)
+- [`validation.mdc`](./validation.mdc)
+- [`database_strategy.mdc`](./database_strategy.mdc)

@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "backend/**"
 description: >
-  Use this rule file when designing, implementing, or reviewing backend websocket and realtime sync behavior to ensure consistent architecture, event publishing, and recipient scoping.
+  Realtime CRUD sync: post-commit events, scoped recipients, human_friendly_id envelopes.
 ---
 # WebSocket Rules
 
@@ -44,10 +44,13 @@ Rules:
 
 - Publish **after** the database transaction commits. Delivery failure must not roll back persistence.
 - Payloads use stable `snake_case` fields and the shared domain envelope from `publishDomainEvent`.
-- Do not send raw Prisma entities; sanitize IDs and include only fields needed for UI refresh routing.
+- Do not send raw Prisma entities; emit DTO fields needed for UI refresh routing only.
+- `resource_id` in the domain envelope must be `human_friendly_id`, not an internal table primary key.
+- Frontend must reference entities by `human_friendly_id`; backend maps to internal IDs. Do not expose raw table IDs in frontend or API responses.
+- Publish after commit with minimal payload surface for high-performance fan-out; avoid full entity snapshots when a typed delta suffices.
 - Scope recipients by tenant, facility, role, and module entitlements — same boundaries as HTTP authorization.
 - Name events `{domain}.{action}` (e.g. `patient.updated`, `facility.layout_updated`).
-- Include `resource_type`, `resource_id`, `tenant_id`, `facility_id`, `actor_user_id`, and `occurred_at` in the envelope.
+- Include `resource_type`, `resource_id` (human_friendly_id), `tenant_id`, `facility_id`, `actor_user_id`, and `occurred_at` in the envelope.
 - Use `publishCrudRealtimeEvent` for standard create/update/delete broadcasts when a module does not need a bespoke payload shape.
 - Add tests proving user-visible mutations emit the expected scoped event after
   persistence; bespoke publishers must also prove audit emission is skipped to

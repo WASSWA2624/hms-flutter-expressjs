@@ -1,9 +1,10 @@
 ---
 alwaysApply: false
 globs:
-  - frontend/**
-description: |
-  Use this rule file to guide and enforce frontend performance best practices, including UI responsiveness, list and image optimization, and efficient data handling. Apply when reviewing or contributing to any code in the 'frontend' directory.
+  - "frontend/lib/**"
+  - "frontend/test/**"
+description: >
+  Apply when reviewing frontend performance for rendering, lists, images, and networking.
 ---
 
 # Performance Strategy
@@ -21,6 +22,7 @@ Defines performance expectations for startup, rendering, lists, images, networki
 - Cache thoughtfully and invalidate explicitly.
 - Keep startup work minimal and visible through a startup state when needed.
 - Use release/profile builds for meaningful performance checks.
+- Performance optimizations must not break uniform UI or responsive layouts ([`layouts.mdc`](./layouts.mdc), [`design-system.mdc`](./design-system.mdc)).
 
 ## UI performance rules
 - Split large pages into focused widgets.
@@ -35,6 +37,6 @@ Defines performance expectations for startup, rendering, lists, images, networki
 
 ## Related rules
 - [`layouts.mdc`](./layouts.mdc)
-- [`database_strategy.md`](./database_strategy.mdc)
-- [`network_api.md`](./network_api.mdc)
-- [`scalability.md`](./scalability.mdc)
+- [`database_strategy.mdc`](./database_strategy.mdc)
+- [`network_api.mdc`](./network_api.mdc)
+- [`scalability.mdc`](./scalability.mdc)

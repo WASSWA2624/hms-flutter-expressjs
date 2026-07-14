@@ -5,7 +5,7 @@ globs:
   - "frontend/lib/shared/**"
   - "frontend/lib/features/**/presentation/**"
 description: >
-  Use when creating, updating, or reviewing theming, design tokens, colors, or typography for the HOSSPI HMS frontend. Ensures visual consistency across shared components, themes, and feature presentation code.
+  Apply when theming tokens, colors, or typography in shared components and features.
 ---
 # Design System
 
@@ -14,9 +14,11 @@ Purpose: single source of truth for the HOSSPI HMS visual system.
 ## Mandatory rules
 
 - Use Material 3 as the default foundation.
+- Themes must be comprehensive: light, dark, system mode, semantic status tones, spacing, radius, elevation, and typography — all via tokens/extensions.
 - Light theme is the default; support dark theme and system theme mode.
 - Light theme: clean blue-based palette; dark theme: clean, readable, Material-aligned.
-- Do not hard-code colors, spacing, radius, elevation, or typography in feature widgets.
+- Never hard-code color, spacing, radius, elevation, or typography tokens in feature or shared widget code.
+- All surfaces must remain readable and consistently styled on mobile, tablet, and desktop breakpoints ([`layouts.mdc`](./layouts.mdc)).
 - Store theme mode as a non-sensitive preference when persisted.
 - Theme changes must update the app reactively.
 - Shared components read colors, typography, shape, and spacing from the active theme or design tokens.

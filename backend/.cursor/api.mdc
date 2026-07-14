@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "backend/**"
 description: >
-  Use this rule file when designing, implementing, or reviewing any HTTP API surface or routing in the backend. Apply to ensure route consistency, scalable structure, and predictable contracts.
+  HTTP route shape, middleware order, and human_friendly_id contracts for backend APIs.
 ---
 # API Rules
 
@@ -13,17 +13,23 @@ Route rules:
 - versioned business endpoints live under `/api/v1/*`
 - health endpoints remain unversioned at `/health`, `/ready`, and `/live`
 - resource paths use plural kebab-case segments
-- path parameters use route-safe names such as `:id`
+- path parameters for business resources use `:human_friendly_id` or domain-specific names that still carry `human_friendly_id` values
 - query parameters and documented JSON fields use `snake_case`
 - list endpoints support pagination, filtering, and sorting consistently
-- action endpoints use `POST /resource/:id/<action>` only when CRUD is insufficient
+- action endpoints use `POST /resource/:human_friendly_id/<action>` only when CRUD is insufficient
 - workspace endpoints may aggregate module-owned summaries but must stay inside module scope
+
+Entity identifier rules:
+- Path parameters exposed to clients use `:human_friendly_id` (or documented alias such as `:patient_id`) and must reference `human_friendly_id`, not internal table primary keys
+- Services and repositories resolve `human_friendly_id` → internal ID before persistence; internal IDs stay server-side only
+- List, detail, and mutation responses return `human_friendly_id` as the canonical resource identifier
+- Frontend must reference entities by `human_friendly_id`; backend maps to internal IDs. Do not expose raw table IDs in frontend or API responses.
 
 Middleware order:
 1. request context
 2. validation
 3. authentication
-4. entitlement check
+4. entitlement check (subscription package)
 5. RBAC and ABAC authorization
 6. controller handler
 7. centralized error middleware

@@ -5,7 +5,7 @@ globs:
   - "frontend/lib/core/responsive/**"
   - "frontend/lib/app/router/**"
 description: >
-  Apply when creating or reviewing layout structure, breakpoint logic, or responsive/navigation containers in the HOSSPI HMS frontend to enforce unified screen width and layout standards.
+  Apply when reviewing layout structure, breakpoints, or responsive navigation containers.
 ---
 # Layouts and Responsive Design
 
@@ -32,6 +32,8 @@ Purpose: single source of truth for screen breakpoints, shell behavior, and cont
 - Make scroll behavior explicit on small screens and content-heavy pages.
 - Touch targets practical on mobile; pointer targets comfortable on desktop/web.
 - Icons/buttons per [`design-system.mdc`](./design-system.mdc).
+- Maintain uniform shell and content-width behavior across modules — no one-off breakpoint logic in features.
+- Layouts must support simple, intuitive navigation flows on mobile (drawer/bottom nav), tablet (rail), and desktop (menu bar + side nav).
 
 ## Navigation by width
 

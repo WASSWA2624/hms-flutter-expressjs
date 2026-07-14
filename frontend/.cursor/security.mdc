@@ -4,7 +4,7 @@ globs:
   - "frontend/lib/**"
   - "frontend/test/**"
 description: >
-  Use this rule file when implementing, reviewing, or refactoring code affecting security in the HOSSPI HMS Flutter frontend. Covers storage, networking, logging, configuration, and sensitive UI handling.
+  Apply when reviewing frontend security for storage, networking, logging, and sensitive UI.
 ---
 
 # Security Rules
@@ -36,7 +36,7 @@ Defines security expectations for storage, networking, logging, configuration, a
 - Security-sensitive dependencies are reviewed before release.
 
 ## Related rules
-- [`authentication_session.md`](./authentication_session.mdc)
-- [`storage_strategy.md`](./storage_strategy.mdc)
-- [`network_api.md`](./network_api.mdc)
-- [`environment_configuration.md`](./environment_configuration.mdc)
+- [`authentication_session.mdc`](./authentication_session.mdc)
+- [`storage_strategy.mdc`](./storage_strategy.mdc)
+- [`network_api.mdc`](./network_api.mdc)
+- [`environment_configuration.mdc`](./environment_configuration.mdc)

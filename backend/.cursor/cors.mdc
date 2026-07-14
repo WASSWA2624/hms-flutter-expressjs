@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "backend/**"
 description: >
-  Use this rule file when designing, implementing, or reviewing backend CORS (Cross-Origin Resource Sharing) configuration to ensure secure and controlled browser origin access.
+  CORS configuration for explicit origins, credentials safety, and deterministic preflight.
 ---
 # CORS Rules
 

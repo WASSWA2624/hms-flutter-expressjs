@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "backend/**"
 description: >
-  Use this rule file when designing, implementing, or reviewing backend database models or Prisma schema to ensure naming, migration, and data access follow project standards.
+  Prisma schema, migrations, human_friendly_id, tenancy, and repository-only access.
 ---
 # Prisma And Database Rules
 
@@ -18,6 +18,9 @@ Naming rules:
 Schema rules:
 - every tenant-scoped record carries `tenant_id`
 - facility-scoped records carry `facility_id` when required by the domain
+- every tenant-facing business entity includes a unique, immutable `human_friendly_id` (indexed, scoped by tenant when applicable)
+- APIs, audit payloads, and websocket envelopes use `human_friendly_id`; repositories perform ID translation at the data boundary
+- never select or serialize internal primary keys into public DTOs unless required for server-only joins inside repositories
 - auditable records include `created_at`, `updated_at`, and `deleted_at` when soft delete applies
 - frequently filtered scope, status, and `deleted_at` columns are indexed
 - soft delete is the default for business records unless law or storage design requires otherwise

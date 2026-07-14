@@ -4,7 +4,7 @@ globs:
   - "frontend/lib/core/errors/**"
   - "frontend/lib/features/**/data/**"
 description: >
-  Use when adding, updating, or reviewing core error types or error mapping logic for data or domain layers in the HOSSPI HMS frontend. Ensures all errors are represented as typed failures and correctly mapped at layer boundaries, excluding UI presentation.
+  Apply when adding typed failures or error mapping in core or feature data layers.
 ---
 # Error Handling
 

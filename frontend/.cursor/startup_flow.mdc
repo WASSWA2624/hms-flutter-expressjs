@@ -4,7 +4,7 @@ globs:
   - "frontend/lib/**"
   - "frontend/test/**"
 description: >
-  Use this rule file when implementing, reviewing, or refactoring the app startup logic in the Flutter frontend. Covers initialization sequence, configuration, platform binding, session restore, theme/locale setup, and routing entry.
+  Apply when implementing or reviewing app startup, bootstrap, and initialization order.
 ---
 
 # Startup Flow
@@ -38,7 +38,7 @@ Defines how the app initializes configuration, storage, session, localization, t
 - `main.dart` remains readable and does not contain feature logic.
 
 ## Related rules
-- [`environment_configuration.md`](./environment_configuration.mdc)
-- [`state_management.md`](./state_management.mdc)
-- [`authentication_session.md`](./authentication_session.mdc)
-- [`error_handling.md`](./error_handling.mdc)
+- [`environment_configuration.mdc`](./environment_configuration.mdc)
+- [`state_management.mdc`](./state_management.mdc)
+- [`authentication_session.mdc`](./authentication_session.mdc)
+- [`error_handling.mdc`](./error_handling.mdc)

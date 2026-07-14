@@ -4,7 +4,7 @@ globs:
   - "frontend/lib/shared/auth/**"
   - "frontend/lib/features/**/auth/**"
 description: >
-  Use this rule file for all code related to authentication flows, session token storage, refresh logic, and route/session protection in the Flutter frontend. Apply when implementing, refactoring, or reviewing authentication and session management code.
+  Apply when implementing auth flows, session storage, refresh, and route protection.
 ---
 
 # Authentication and Session Strategy
@@ -38,7 +38,7 @@ Defines sign-in, registration readiness, session restoration, secure token stora
 - Token values never appear in logs or UI.
 
 ## Related rules
-- [`navigation.md`](./navigation.mdc)
-- [`permissions.md`](./permissions.mdc)
-- [`security.md`](./security.mdc)
-- [`storage_strategy.md`](./storage_strategy.mdc)
+- [`navigation.mdc`](./navigation.mdc)
+- [`permissions.mdc`](./permissions.mdc)
+- [`security.mdc`](./security.mdc)
+- [`storage_strategy.mdc`](./storage_strategy.mdc)

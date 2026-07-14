@@ -4,7 +4,7 @@ globs:
   - "frontend/lib/core/sync/**"
   - "frontend/lib/features/**/data/**"
 description: >
-  Use this rule file when designing, implementing, or reviewing offline data queues, sync states, and conflict resolution in the HOSSPI HMS frontend.
+  Apply when implementing offline queues, conflict handling, or sync recovery in the frontend.
 ---
 # Offline and Sync
 

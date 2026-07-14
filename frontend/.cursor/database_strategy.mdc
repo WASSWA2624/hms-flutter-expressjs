@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "frontend/lib/core/storage/database/**"
 description: >
-  Use when creating, updating, or reviewing local database structure, Drift integration, migrations, or offline data storage in the HOSSPI HMS frontend. Ensures correct, safe, and maintainable database implementation.
+  Apply when creating or reviewing Drift database structure, migrations, or offline storage.
 ---
 
 # Database Strategy
@@ -42,7 +42,7 @@ core/storage/database/
 - Migration tests exist for non-trivial schema changes.
 
 ## Related rules
-- [`storage_strategy.md`](./storage_strategy.mdc)
-- [`offline_sync.md`](./offline_sync.mdc)
-- [`data_modeling.md`](./data_modeling.mdc)
-- [`testing.md`](./testing.mdc)
+- [`storage_strategy.mdc`](./storage_strategy.mdc)
+- [`offline_sync.mdc`](./offline_sync.mdc)
+- [`data_modeling.mdc`](./data_modeling.mdc)
+- [`testing.mdc`](./testing.mdc)

@@ -5,7 +5,7 @@ globs:
   - "frontend/lib/core/bootstrap/environment.dart"
   - "frontend/lib/core/bootstrap/app_config.dart"
 description: >
-  Use when adding, updating, or reviewing environment configuration sources, files, or utilities for the HOSSPI HMS frontend. Ensures correct handling of dev, staging, and production configs, enforces secrets policy, and proper setup of compile-time environment variables.
+  Apply when reviewing environment config, compile-time defines, and secrets policy.
 ---
 
 # Environment Configuration
@@ -37,7 +37,7 @@ Defines how development, staging, and production configuration is represented.
 - Tests can override environment config.
 
 ## Related rules
-- [`security.md`](./security.mdc)
-- [`network_api.md`](./network_api.mdc)
-- [`feature_flags.md`](./feature_flags.mdc)
-- [`ci_cd_quality_gates.md`](./ci_cd_quality_gates.mdc)
+- [`security.mdc`](./security.mdc)
+- [`network_api.mdc`](./network_api.mdc)
+- [`feature_flags.mdc`](./feature_flags.mdc)
+- [`ci_cd_quality_gates.mdc`](./ci_cd_quality_gates.mdc)

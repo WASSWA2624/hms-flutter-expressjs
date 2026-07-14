@@ -1,12 +1,16 @@
 ---
-description: Use this file whenever a change is made to a Radiology module/flow/action
 alwaysApply: false
+globs:
+  - "frontend/lib/features/radiology/**"
+  - "backend/src/modules/radiology-workspace/**"
+description: >
+  Radiology order execution flow for OPD and IPD encounters.
 ---
 # Radiology and Imaging Patient Flow
 
 ## 0. Overview
 
-This file is the direct Radiology flow source of truth for HOSSPI HMS. Radiology is an **executing department** — every order links to a **clinical encounter** (`encounter_id`). Radiology does not create OPD/IPD encounters or advance patient flow stages directly. Align with [`.cursor/flows/opd-flow.mdc`](./opd-flow.mdc), [`.cursor/flows/ipd-flow.mdc`](./ipd-flow.mdc), and [`.cursor/app-write-up.mdc`](../app-write-up.mdc).
+This file is the direct Radiology flow source of truth for HOSSPI HMS. Radiology is an **executing department** â" every order links to a **clinical encounter** (`encounter_id`). Radiology does not create OPD/IPD encounters or advance patient flow stages directly. Align with [`.cursor/flows/opd-flow.mdc`](./opd-flow.mdc), [`.cursor/flows/ipd-flow.mdc`](./ipd-flow.mdc), and [`.cursor/app-write-up.mdc`](../app-write-up.mdc).
 
 ## 1. Goal
 
@@ -23,19 +27,19 @@ Orders attach to OPD or IPD encounters. Radiology executes studies and reports; 
 ```mermaid
 flowchart LR
     OPD[OPD RADIOLOGY_REQUESTED] --> RAD[Radiology workbench]
-    IPD[IPD order — ipd-flow §7] --> RAD
+    IPD[IPD order â" ipd-flow Â§7] --> RAD
     CLIN[Clinical order dialog] --> RAD
     RAD --> REPORT[Report finalized]
     REPORT --> OPD_DONE[OPD stage updated by orchestrator]
-    REPORT --> IPD_TL[IPD timeline / care loop §8]
+    REPORT --> IPD_TL[IPD timeline / care loop Â§8]
 ```
 
 | Source | Flow reference | Radiology responsibility |
 | ------ | -------------- | ------------------------ |
-| OPD | [opd-flow §3](./opd-flow.mdc) `RADIOLOGY_REQUESTED`, `LAB_AND_RADIOLOGY_REQUESTED` | Workbench shows OPD orders |
-| IPD | [ipd-flow §7](./ipd-flow.mdc) imaging route | Scan → report on admission encounter |
-| Billing | [ipd-flow §4](./ipd-flow.mdc) | `ClinicalRequestBillingPanel` at order |
-| Biomedical | [app-write-up](../app-write-up.mdc) | Equipment **maintenance** is Biomedical — radiology consumes equipment for scheduling only |
+| OPD | [opd-flow Â§3](./opd-flow.mdc) `RADIOLOGY_REQUESTED`, `LAB_AND_RADIOLOGY_REQUESTED` | Workbench shows OPD orders |
+| IPD | [ipd-flow Â§7](./ipd-flow.mdc) imaging route | Scan â' report on admission encounter |
+| Billing | [ipd-flow Â§4](./ipd-flow.mdc) | `ClinicalRequestBillingPanel` at order |
+| Biomedical | [app-write-up](../app-write-up.mdc) | Equipment **maintenance** is Biomedical â" radiology consumes equipment for scheduling only |
 
 ---
 
@@ -56,7 +60,7 @@ flowchart LR
 
 ## 4. Backend Workbench Contract
 
-Use `/api/v1/radiology/*` workspace routes as canonical. Order pipeline: assign → start → complete → cancel; study workflow with asset upload and PACS; result draft → finalize → attestation → addendum.
+Use `/api/v1/radiology/*` workspace routes as canonical. Order pipeline: assign â' start â' complete â' cancel; study workflow with asset upload and PACS; result draft â' finalize â' attestation â' addendum.
 
 ---
 
@@ -64,7 +68,7 @@ Use `/api/v1/radiology/*` workspace routes as canonical. Order pipeline: assign 
 
 | Rule | Detail |
 | ---- | ------ |
-| [opd-flow §5](./opd-flow.mdc) | Radiology workspace only — no OPD stage mutations from radiology UI |
+| [opd-flow Â§5](./opd-flow.mdc) | Radiology workspace only â" no OPD stage mutations from radiology UI |
 | Clinical boundary | Orders via `clinical_radiology_order_action_dialog.dart` |
 | Biomedical boundary | Imaging equipment registry/PM is not radiology workflow ownership |
 
@@ -78,3 +82,14 @@ frontend/lib/features/radiology/
 backend/src/modules/radiology-workspace/
 frontend/lib/shared/clinical_actions/clinical_radiology_order_action_dialog.dart
 ```
+
+## UI, access, and quality standards
+
+- Reuse components from `frontend/lib/shared/` before creating module-specific UI; prioritize reusability and consistency.
+- Responsive layouts for mobile, tablet, and desktop; keep UI uniform, simple, and intuitive.
+- High performance worklists (pagination/lazy lists); localize all labels; no raw enum codes in production UI.
+- Theme tokens only (`frontend/.cursor/design-system.mdc`); no hard-coded style values.
+- Strict RBAC+ABAC: actions visible only when stage AND role AND subscription entitlement allow; hide unauthorized menus/components/workflows.
+- Mutations: optimistic Riverpod update on HTTP success; WebSocket reconciliation (`.cursor/api-contract.mdc`).
+- Reference entities by `human_friendly_id` / display IDs in UI and deep links — never raw table IDs.
+

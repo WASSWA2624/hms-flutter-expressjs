@@ -1,12 +1,16 @@
 ---
-description: Use this file whenever a change is made to a Pharmacy module/flow/action
 alwaysApply: false
+globs:
+  - "frontend/lib/features/pharmacy/**"
+  - "backend/src/modules/pharmacy-workspace/**"
+description: >
+  Pharmacy dispensing flow for OPD, IPD, and discharge meds.
 ---
 # Pharmacy Patient Flow
 
 ## 0. Overview
 
-This file is the direct Pharmacy flow source of truth for HOSSPI HMS. Pharmacy is an **executing department** — orders attach to **encounter_id**. Pharmacy dispenses; Nursing records administration (MAR) on IPD. Align with [`.cursor/flows/opd-flow.mdc`](./opd-flow.mdc), [`.cursor/flows/ipd-flow.mdc`](./ipd-flow.mdc), [`.cursor/flows/nursing-flow.mdc`](./nursing-flow.mdc), [`.cursor/flows/discharge-flow.mdc`](./discharge-flow.mdc), and [`.cursor/app-write-up.mdc`](../app-write-up.mdc).
+This file is the direct Pharmacy flow source of truth for HOSSPI HMS. Pharmacy is an **executing department** â" orders attach to **encounter_id**. Pharmacy dispenses; Nursing records administration (MAR) on IPD. Align with [`.cursor/flows/opd-flow.mdc`](./opd-flow.mdc), [`.cursor/flows/ipd-flow.mdc`](./ipd-flow.mdc), [`.cursor/flows/nursing-flow.mdc`](./nursing-flow.mdc), [`.cursor/flows/discharge-flow.mdc`](./discharge-flow.mdc), and [`.cursor/app-write-up.mdc`](../app-write-up.mdc).
 
 ## 1. Goal
 
@@ -23,20 +27,20 @@ Pharmacy executes dispensing on encounter-linked orders. It does not create enco
 ```mermaid
 flowchart LR
     OPD[OPD PHARMACY_REQUESTED] --> PHARM[Pharmacy workbench]
-    IPD[IPD medication order §7] --> PHARM
+    IPD[IPD medication order Â§7] --> PHARM
     CLIN[Prescription dialog] --> PHARM
     PHARM --> DISP[Dispense attested]
     DISP --> OPD_DONE[OPD stage updated]
-    DISP --> MAR[Nursing MAR — nursing-flow]
-    IPD_DISC[discharge-flow §3 step 5] --> PHARM
+    DISP --> MAR[Nursing MAR â" nursing-flow]
+    IPD_DISC[discharge-flow Â§3 step 5] --> PHARM
 ```
 
 | Source | Flow reference | Pharmacy responsibility |
 | ------ | -------------- | ----------------------- |
-| OPD | [opd-flow §3](./opd-flow.mdc) `PHARMACY_REQUESTED` | Outpatient dispense queue |
-| IPD ward | [ipd-flow §7](./ipd-flow.mdc) medication route | Dispense → ward MAR (Nursing) |
-| IPD discharge | [ipd-flow §10 step 5](./ipd-flow.mdc), [discharge-flow §3](./discharge-flow.mdc) | Take-home medicines; `Medication Pending` clearance |
-| Billing | [ipd-flow §4](./ipd-flow.mdc) | Billing gate on orders; deferred on urgent admits |
+| OPD | [opd-flow Â§3](./opd-flow.mdc) `PHARMACY_REQUESTED` | Outpatient dispense queue |
+| IPD ward | [ipd-flow Â§7](./ipd-flow.mdc) medication route | Dispense â' ward MAR (Nursing) |
+| IPD discharge | [ipd-flow Â§10 step 5](./ipd-flow.mdc), [discharge-flow Â§3](./discharge-flow.mdc) | Take-home medicines; `Medication Pending` clearance |
+| Billing | [ipd-flow Â§4](./ipd-flow.mdc) | Billing gate on orders; deferred on urgent admits |
 
 ---
 
@@ -81,3 +85,14 @@ frontend/lib/features/pharmacy/
 backend/src/modules/pharmacy-workspace/
 frontend/lib/shared/clinical_actions/clinical_prescription_action_dialog.dart
 ```
+
+## UI, access, and quality standards
+
+- Reuse components from `frontend/lib/shared/` before creating module-specific UI; prioritize reusability and consistency.
+- Responsive layouts for mobile, tablet, and desktop; keep UI uniform, simple, and intuitive.
+- High performance worklists (pagination/lazy lists); localize all labels; no raw enum codes in production UI.
+- Theme tokens only (`frontend/.cursor/design-system.mdc`); no hard-coded style values.
+- Strict RBAC+ABAC: actions visible only when stage AND role AND subscription entitlement allow; hide unauthorized menus/components/workflows.
+- Mutations: optimistic Riverpod update on HTTP success; WebSocket reconciliation (`.cursor/api-contract.mdc`).
+- Reference entities by `human_friendly_id` / display IDs in UI and deep links — never raw table IDs.
+

@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "frontend/lib/app/router/**"
 description: >
-  Apply when designing, implementing, or reviewing navigation, routing, route guards, or deep linking using `go_router` in the HOSSPI HMS frontend. Use for all code related to route configuration and navigation under `lib/app/router/`.
+  Apply when implementing go_router navigation, shell routes, guards, or deep links.
 ---
 # Navigation and Routing
 
@@ -14,7 +14,9 @@ Purpose: single navigation package and centralized route configuration.
 - Use `go_router` only; definitions under `lib/app/router/`.
 - Named routes or typed helpers; no scattered raw route strings.
 - Protect routes via guards using session and entitlements ([`permissions.mdc`](./permissions.mdc)).
-- Stable readable web URLs; deep-link support where required.
+- Build navigation trees from effective permissions: subscription package ∩ roles ∩ permissions. Omit unauthorized destinations from shell, drawer, rail, and menu bar.
+- Deep links to unauthorized routes must redirect to localized forbidden/not-found states ([`permissions.mdc`](./permissions.mdc)).
+- Stable readable web URLs using `human_friendly_id` where resource IDs appear; deep-link support where required.
 - No navigation in repositories or data sources.
 - Localized not-found page for unknown routes.
 - Responsive shell for persistent navigation ([`layouts.mdc`](./layouts.mdc)).

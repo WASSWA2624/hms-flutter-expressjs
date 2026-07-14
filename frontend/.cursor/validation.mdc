@@ -5,7 +5,7 @@ globs:
   - "frontend/lib/features/**/domain/**"
   - "frontend/lib/features/**/presentation/**"
 description: >
-  Use this rule file when implementing, reviewing, or refactoring input validation logic in the Flutter frontend. Applies to user input forms, API response mapping, value objects, and business/domain validation requirements across shared and feature layers.
+  Apply when implementing input, domain, or API response validation in the frontend.
 ---
 
 # Validation Strategy
@@ -38,5 +38,5 @@ Defines validation ownership for user input, API data, domain values, and local 
 
 ## Related rules
 - [`ui-patterns.mdc`](./ui-patterns.mdc)
-- [`data_modeling.md`](./data_modeling.mdc)
-- [`error_handling.md`](./error_handling.mdc)
+- [`data_modeling.mdc`](./data_modeling.mdc)
+- [`error_handling.mdc`](./error_handling.mdc)

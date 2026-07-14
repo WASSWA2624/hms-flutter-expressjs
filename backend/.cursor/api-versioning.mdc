@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "backend/**"
 description: >
-  Use this rule file when designing, documenting, or reviewing public API changes, endpoints, or contract versioning in the backend. Ensures safe evolution, stability, and explicit migration handling for API consumers.
+  Public API versioning, breaking-change policy, and stable human_friendly_id contracts.
 ---
 # API Versioning Rules
 
@@ -16,3 +16,4 @@ Rules:
 - deprecated endpoints must record replacement, start date, and removal target
 - field renames or response-shape changes may not ship silently
 - route family names and permission keys must stay stable once public
+- `human_friendly_id` values remain stable across API versions; breaking identifier changes require migration mapping and a new version

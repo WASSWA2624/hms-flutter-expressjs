@@ -5,10 +5,8 @@ globs:
   - "frontend/docs/**"
   - "frontend/.cursor/**"
 description: >
-  Apply when creating, updating, or reviewing documentation files in the HOSSPI HMS frontend. Use to ensure setup, architecture, decision records, and documentation for components and workflows are clear, up-to-date, and actionable.
+  Apply when creating or reviewing frontend docs for setup, architecture, and ADRs.
 ---
-# End of Selection
-```
 
 # Documentation Standards
 
@@ -32,6 +30,6 @@ Defines required documentation for setup, architecture, decisions, components, a
 - Architecture decisions can be traced to the relevant rules.
 
 ## Related rules
-- [`checklists.md`](./checklists.mdc)
-- [`feature_workflow.md`](./feature_workflow.mdc)
-- [`ci_cd_quality_gates.md`](./ci_cd_quality_gates.mdc)
+- [`checklists.mdc`](./checklists.mdc)
+- [`feature_workflow.mdc`](./feature_workflow.mdc)
+- [`ci_cd_quality_gates.mdc`](./ci_cd_quality_gates.mdc)

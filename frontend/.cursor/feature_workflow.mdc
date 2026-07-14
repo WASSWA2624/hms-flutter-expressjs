@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "frontend/lib/features/**"
 description: >
-  Apply when creating, updating, or reviewing new features in the HOSSPI HMS frontend to ensure adherence to workflow, folder structure, testing, and localization standards.
+  Apply when creating or reviewing features for structure, testing, and localization.
 ---
 
 # Feature Workflow
@@ -18,6 +18,8 @@ Defines the repeatable process for adding a new feature to the template or an ap
 - Add localization keys before adding user-facing text to widgets.
 - Use shared components before creating feature-specific widgets.
 - Queue/workspace features must confirm layout against [`ui-workspace.mdc`](./ui-workspace.mdc) and a reference module before implementation.
+- Confirm subscription-gated module access and permission gates before exposing routes or actions ([`permissions.mdc`](./permissions.mdc)).
+- Verify responsive behavior on mobile, tablet, and desktop; reuse `frontend/lib/shared/` components first.
 - Add tests for controller logic, repository mapping, and important widgets.
 - Update docs when the feature changes app structure or conventions.
 
@@ -33,8 +35,8 @@ Defines the repeatable process for adding a new feature to the template or an ap
 
 ## Related rules
 - [`ui-workspace.mdc`](./ui-workspace.mdc)
-- [`architecture.md`](./architecture.mdc)
-- [`project_structure.md`](./project_structure.mdc)
+- [`architecture.mdc`](./architecture.mdc)
+- [`project_structure.mdc`](./project_structure.mdc)
 - [`components.mdc`](./components.mdc)
-- [`testing.md`](./testing.mdc)
-- [`localization_i18n.md`](./localization_i18n.mdc)
+- [`testing.mdc`](./testing.mdc)
+- [`localization_i18n.mdc`](./localization_i18n.mdc)

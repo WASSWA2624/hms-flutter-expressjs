@@ -4,7 +4,7 @@ globs:
   - "frontend/lib/core/observability/**"
   - "frontend/lib/shared/logging/**"
 description: >
-  Apply when implementing or reviewing logging, diagnostics, analytics, or observability in the HOSSPI HMS frontend to ensure safe, structured, and environment-aware practices.
+  Apply when implementing logging, diagnostics, or analytics in the HOSSPI HMS frontend.
 ---
 
 # Observability Strategy
@@ -35,6 +35,6 @@ Defines logging, diagnostics, analytics readiness, and privacy constraints.
 - Logging can be disabled or adjusted per environment.
 
 ## Related rules
-- [`security.md`](./security.mdc)
-- [`error_handling.md`](./error_handling.mdc)
-- [`environment_configuration.md`](./environment_configuration.mdc)
+- [`security.mdc`](./security.mdc)
+- [`error_handling.mdc`](./error_handling.mdc)
+- [`environment_configuration.mdc`](./environment_configuration.mdc)

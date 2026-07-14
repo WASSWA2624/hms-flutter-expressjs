@@ -1,23 +1,27 @@
 ---
-description: Use this file whenever a change is made to an IPD module/flow/action
 alwaysApply: false
+globs:
+  - "frontend/lib/features/ipd/**"
+  - "backend/src/modules/ipd-flow/**"
+description: >
+  IPD admission hub, stages, overlays, and inpatient handoff rules.
 ---
 # Inpatient (IPD) Patient Flow
 
 ## 0. Overview
 
-This file is the direct IPD flow source of truth for HOSSPI HMS. The **IPD encounter / admission** is the central inpatient record. Departmental overlays and service execution attach to it — see dedicated flow files for detail:
+This file is the direct IPD flow source of truth for HOSSPI HMS. The **IPD encounter / admission** is the central inpatient record. Departmental overlays and service execution attach to it â" see dedicated flow files for detail:
 
 | Flow file | Relationship to IPD |
 | --------- | ------------------- |
 | [opd-flow.mdc](./opd-flow.mdc) | Upstream: OPD `ADMITTED` creates linked IPD admission |
-| [emergency-flow.mdc](./emergency-flow.mdc) | Upstream: emergency handoff to IPD (§2.1 deferred billing) |
+| [emergency-flow.mdc](./emergency-flow.mdc) | Upstream: emergency handoff to IPD (Â§2.1 deferred billing) |
 | [icu-flow.mdc](./icu-flow.mdc) | Overlay: critical care on same admission |
 | [theater-flow.mdc](./theater-flow.mdc) | Overlay: surgical episode; temporary `In Procedure / OT` |
 | [nursing-flow.mdc](./nursing-flow.mdc) | Ward execution: vitals, MAR, handover on admission |
-| [lab-flow.mdc](./lab-flow.mdc) | Service: lab orders from §7 route here |
-| [radiology-flow.mdc](./radiology-flow.mdc) | Service: imaging orders from §7 route here |
-| [pharmacy-flow.mdc](./pharmacy-flow.mdc) | Service: medication orders; discharge meds §10 |
+| [lab-flow.mdc](./lab-flow.mdc) | Service: lab orders from Â§7 route here |
+| [radiology-flow.mdc](./radiology-flow.mdc) | Service: imaging orders from Â§7 route here |
+| [pharmacy-flow.mdc](./pharmacy-flow.mdc) | Service: medication orders; discharge meds Â§10 |
 | [discharge-flow.mdc](./discharge-flow.mdc) | Downstream: multi-step clearance and encounter closure |
 | [app-write-up.mdc](../app-write-up.mdc) | Product module boundaries |
 
@@ -208,13 +212,13 @@ All orders should be linked to the IPD encounter and routed to the correct depar
 
 | Order Type         | Route                                                       | Flow reference | Completion Output                                    |
 | ------------------ | ----------------------------------------------------------- | -------------- | ---------------------------------------------------- |
-| Medication         | Pharmacy → ward medication administration                   | [pharmacy-flow](./pharmacy-flow.mdc), [nursing-flow](./nursing-flow.mdc) | Issued medicine and medication administration record |
-| Lab test           | Lab sample collection → processing → result upload          | [lab-flow](./lab-flow.mdc) | Lab result available for doctor review               |
-| Radiology          | Imaging queue → scan/report upload                          | [radiology-flow](./radiology-flow.mdc) | Radiology report and images if available             |
-| Procedure          | Procedure room / bedside procedure queue                    | — | Procedure note and charges                           |
-| Surgery            | OT scheduling → pre-op checklist → operation → post-op care | [theater-flow](./theater-flow.mdc) | Operative note, anesthesia note, post-op orders      |
-| Specialist consult | Consultant queue                                            | — | Consultation note and recommendations                |
-| Diet order         | Dietary/kitchen queue                                       | — | Diet plan and delivery status                        |
+| Medication         | Pharmacy â' ward medication administration                   | [pharmacy-flow](./pharmacy-flow.mdc), [nursing-flow](./nursing-flow.mdc) | Issued medicine and medication administration record |
+| Lab test           | Lab sample collection â' processing â' result upload          | [lab-flow](./lab-flow.mdc) | Lab result available for doctor review               |
+| Radiology          | Imaging queue â' scan/report upload                          | [radiology-flow](./radiology-flow.mdc) | Radiology report and images if available             |
+| Procedure          | Procedure room / bedside procedure queue                    | â" | Procedure note and charges                           |
+| Surgery            | OT scheduling â' pre-op checklist â' operation â' post-op care | [theater-flow](./theater-flow.mdc) | Operative note, anesthesia note, post-op orders      |
+| Specialist consult | Consultant queue                                            | â" | Consultation note and recommendations                |
+| Diet order         | Dietary/kitchen queue                                       | â" | Diet plan and delivery status                        |
 | Nursing task       | Ward nursing queue                                          | [nursing-flow](./nursing-flow.mdc) | Completed nursing intervention or observation        |
 
 
@@ -256,11 +260,11 @@ A patient may move during admission without closing the IPD encounter. ICU and t
 
 | Transfer Type         | Example                                      | Flow reference |
 | --------------------- | -------------------------------------------- | -------------- |
-| Bed transfer          | Same ward, different bed.                    | IPD bed board §14.2 |
+| Bed transfer          | Same ward, different bed.                    | IPD bed board Â§14.2 |
 | Ward transfer         | Medical ward to surgical ward.               | IPD `request-transfer` |
-| ICU transfer          | Ward to ICU or ICU to step-down ward.        | [icu-flow §11](./icu-flow.mdc) |
+| ICU transfer          | Ward to ICU or ICU to step-down ward.        | [icu-flow Â§11](./icu-flow.mdc) |
 | Isolation transfer    | Move due to infection control need.          | IPD transfer |
-| OT/procedure transfer | Temporary movement for surgery or procedure. | [theater-flow §7](./theater-flow.mdc) |
+| OT/procedure transfer | Temporary movement for surgery or procedure. | [theater-flow Â§7](./theater-flow.mdc) |
 | External transfer     | Referral or transfer to another hospital.    | IPD encounter outcome |
 
 
@@ -442,7 +446,7 @@ The IPD screen should have one active patient board and one bed board.
 | Bed Reserved                    | Confirm arrival, change bed, cancel reservation.                                          |
 | Pending Deposit / Authorization | Collect deposit, request insurance approval, mark billing deferred if allowed.            |
 | Admitted / In Ward              | Record vitals, nursing notes, doctor notes, orders, medication, transfer, discharge plan. |
-| In ICU                          | ICU notes, intensive monitoring, orders, transfer to ward, discharge plan.                | [icu-flow §16](./icu-flow.mdc) |
+| In ICU                          | ICU notes, intensive monitoring, orders, transfer to ward, discharge plan.                | [icu-flow Â§16](./icu-flow.mdc) |
 | Transfer Pending                | Approve transfer, assign target bed, complete handover.                                   |
 | Waiting Results / Review        | View pending results, notify doctor, continue care.                                       |
 | Discharge Planned               | Prepare summary, check pending items, start billing, prepare medicines.                   |
@@ -550,3 +554,14 @@ flowchart LR
     N --> O[Bed cleaning and encounter closure]
 ```
 A good IPD system should not force every patient through the same rigid path. It should manage the admission as one central encounter, allow billing at configurable gates, route work through queues, maintain accurate bed status, support continuous inpatient care, and complete discharge with minimum delay.
+
+## UI, access, and quality standards
+
+- Reuse components from `frontend/lib/shared/` before creating module-specific UI; prioritize reusability and consistency.
+- Responsive layouts for mobile, tablet, and desktop; keep UI uniform, simple, and intuitive.
+- High performance worklists (pagination/lazy lists); localize all labels; no raw enum codes in production UI.
+- Theme tokens only (`frontend/.cursor/design-system.mdc`); no hard-coded style values.
+- Strict RBAC+ABAC: actions visible only when stage AND role AND subscription entitlement allow; hide unauthorized menus/components/workflows.
+- Mutations: optimistic Riverpod update on HTTP success; WebSocket reconciliation (`.cursor/api-contract.mdc`).
+- Reference entities by `human_friendly_id` / display IDs in UI and deep links — never raw table IDs.
+

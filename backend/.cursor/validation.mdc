@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "backend/**"
 description: >
-  Use this rule file when designing, implementing, or reviewing backend validation logic to ensure deterministic request validation and standardized schema enforcement.
+  Zod validation for params, query, body; reject raw internal IDs in public inputs.
 ---
 # Validation Rules
 
@@ -13,7 +13,9 @@ Rules:
 - every route has explicit Zod schemas for params, query, and body as needed
 - schemas use documented `snake_case` field names
 - create and update payloads reject unknown keys unless an owner file explicitly allows passthrough metadata
-- IDs, enum values, date ranges, and scope inputs must be validated before service execution
+- public route params and body fields accept `human_friendly_id` (and documented business codes) only; reject numeric/uuid internal primary keys in client payloads unless explicitly documented as server-only admin tools
+- validate `human_friendly_id` format, tenant scope, and existence before service execution
+- enum values, date ranges, and scope inputs must be validated before service execution
 - cross-field business rules belong in services only when they need database context
 - validation failures return normalized problem-details responses
 - validation schemas are part of the required test surface

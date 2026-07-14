@@ -3,10 +3,8 @@ alwaysApply: false
 globs:
   - "frontend/.cursor/**"
 description: >
-  Reference or update this index file when navigating, establishing, or reviewing frontend technical standards and rule files in the HOSSPI HMS Flutter codebase. Use to resolve conflicts between frontend rule files or to locate rule ownership.
+  Navigate, resolve conflicts between, or update HOSSPI HMS frontend rule files.
 ---
-# End of Selection
-```
 # Frontend Rules Index
 
 Purpose: define Flutter technical standards for HOSSPI HMS (`frontend/`).
@@ -20,6 +18,27 @@ Purpose: define Flutter technical standards for HOSSPI HMS (`frontend/`).
 4. This index and the owner file named below
 5. Other frontend rule files
 6. [`dev-plan/`](../dev-plan/) steps (chronology only)
+
+## Product and UI invariants
+
+All frontend UI work must prioritize: high performance; uniform, consistent UI; reusable components in `frontend/lib/shared/`; real-time sync to backend; full responsiveness (mobile, tablet, desktop); simple design; intuitive workflows.
+
+## Entity identity
+
+Frontend references entities by `human_friendly_id` only. Backend maps to internal IDs. Never expose raw table IDs in UI, routes, or API consumer code. Owner: [`data_modeling.mdc`](./data_modeling.mdc), [`network_api.mdc`](./network_api.mdc).
+
+## Access control source of truth
+
+Default modules, subscription packages, roles, and permissions are defined in:
+
+| File | Owns |
+|---|---|
+| [`.cursor/access/modules.mdc`](../../.cursor/access/modules.mdc) | Module catalog and default permissions |
+| [`.cursor/access/permissions.mdc`](../../.cursor/access/permissions.mdc) | Permission vocabulary and ABAC scoping |
+| [`.cursor/access/subscriptions.mdc`](../../.cursor/access/subscriptions.mdc) | Package → module → permission intersection |
+| [`.cursor/access/default_user_roles.mdc`](../../.cursor/access/default_user_roles.mdc) | Shipped default role → module permissions |
+
+Effective access = **intersection(role/module/user permissions ∩ active subscription package)**. Owner: [`permissions.mdc`](./permissions.mdc).
 
 ## Always-applied core rules
 

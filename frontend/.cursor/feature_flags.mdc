@@ -4,7 +4,7 @@ globs:
   - "frontend/lib/core/config/feature_flags.dart"
   - "frontend/lib/core/config/**/feature_flags*.dart"
 description: >
-  Apply when adding, updating, or reviewing feature flag definitions, configuration, or usage in the HOSSPI HMS frontend to ensure flags are typed, centralized, and safely managed.
+  Apply when defining or reviewing typed, centralized feature flags in the frontend.
 ---
 
 # Feature Flags
@@ -16,6 +16,7 @@ Defines how optional or staged features are controlled.
 - Keep feature flags typed and centralized.
 - Use safe defaults for missing flag values.
 - Do not use feature flags to hide incomplete security rules.
+- Feature flags must not bypass subscription or permission gates ([`permissions.mdc`](./permissions.mdc)).
 - Do not leave dead flags permanently in the codebase.
 - Avoid scattering raw flag string names through widgets.
 
@@ -28,6 +29,6 @@ Defines how optional or staged features are controlled.
 - Flag behavior is documented for release builds.
 
 ## Related rules
-- [`environment_configuration.md`](./environment_configuration.mdc)
-- [`navigation.md`](./navigation.mdc)
-- [`testing.md`](./testing.mdc)
+- [`environment_configuration.mdc`](./environment_configuration.mdc)
+- [`navigation.mdc`](./navigation.mdc)
+- [`testing.mdc`](./testing.mdc)

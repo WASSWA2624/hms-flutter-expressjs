@@ -1,9 +1,9 @@
 ---
 alwaysApply: false
 globs:
-  - ".cursor/index.mdc"
+  - ".cursor/**"
 description: >
-  Use this rule file as the index for all Cursor rule files in this repository. Reference it for rule order, conflict handling, and file-specific guidance when developing or maintaining the HOSSPI HMS project.
+  Monorepo rules index: conflict order, stack indexes, flow and access pointers.
 ---
 # HOSSPI HMS — Monorepo Rules Index
 
@@ -16,9 +16,9 @@ Purpose: single entry point for all Cursor rules in this repository.
 - `backend/` — Express.js API (`hms-backend`)
 - Product scope and modules: [`app-write-up.mdc`](./app-write-up.mdc)
 
-## Always-applied locale rule
+## Locale rule (contextual)
 
-[`locale-development.mdc`](./locale-development.mdc) — during routine development, edit only English locale files (`app_en.arb`, `en.json`). Update French or other locale files only when the user explicitly requests it.
+[`locale-development.mdc`](./locale-development.mdc) — during routine development, edit only English locale files (`app_en.arb`, `en.json`). Update French or other locale files only when the user explicitly requests it. Not always-applied; attaches via its globs.
 
 ## Conflict order
 
@@ -27,15 +27,27 @@ When rules disagree, apply this order:
 1. Security, privacy, safety, and compliance
 2. [`.cursor/api-contract.mdc`](./api-contract.mdc) for cross-stack HTTP, errors, pagination, and naming
 3. Product scope in [`app-write-up.mdc`](./app-write-up.mdc)
-4. Contextual flow files in [`.cursor/flows/`](./flows/) when editing those domains (see table below)
-5. Stack owner index: [`frontend/.cursor/index.mdc`](../frontend/.cursor/index.mdc) or [`backend/.cursor/index.mdc`](../backend/.cursor/index.mdc)
-6. Other stack-specific rule files named in the stack index
-7. `dev-plan/` steps (chronology only — not a duplicate standards source)
+4. Access defaults in [`.cursor/access/`](./access/)
+5. Contextual flow files in [`.cursor/flows/`](./flows/) when editing those domains (see table below)
+6. Stack owner index: [`frontend/.cursor/index.mdc`](../frontend/.cursor/index.mdc) or [`backend/.cursor/index.mdc`](../backend/.cursor/index.mdc)
+7. Other stack-specific rule files named in the stack index
+8. `dev-plan/` steps (chronology only — not a duplicate standards source)
 
 For UI mutation and reconciliation behavior specifically,
 [`frontend/.cursor/instant_ui_sync.mdc`](../frontend/.cursor/instant_ui_sync.mdc)
 and [`frontend/.cursor/realtime_sync.mdc`](../frontend/.cursor/realtime_sync.mdc)
 specialize the transport contract in `api-contract.mdc`.
+
+## Access control defaults (source of truth)
+
+| File | Owns |
+|---|---|
+| [`access/modules.mdc`](./access/modules.mdc) | Module catalog + default permissions per module |
+| [`access/permissions.mdc`](./access/permissions.mdc) | Permission vocabulary, RBAC+ABAC matrix |
+| [`access/subscriptions.mdc`](./access/subscriptions.mdc) | Package → module → permission enumeration |
+| [`access/default_user_roles.mdc`](./access/default_user_roles.mdc) | Default roles → module permissions |
+
+Effective access = intersection(role/module/user grants ∩ active subscription). Admins may customize; all changes are auditable and resettable to shipped defaults. No user may retain access beyond that intersection.
 
 ## Stack indexes
 
@@ -88,7 +100,8 @@ inside an older numbered prompt is non-authoritative and cannot override that co
 
 - API JSON, query params, and documented payload fields use lowercase `snake_case` (backend owns; frontend DTOs map explicitly).
 - Success responses: `{ success: true, data, meta? }`; errors: normalized problem-details shape (see `api-contract.mdc`).
-- Backend authorization (RBAC, ABAC, entitlements, break-glass) is the source of truth; frontend mirrors it in guards and UI visibility.
+- Frontend must reference entities by `human_friendly_id`; backend maps to internal IDs. Do not expose raw table IDs in frontend or API responses.
+- Backend authorization (RBAC, ABAC, subscription intersection, break-glass) is the source of truth; frontend mirrors it in guards and UI visibility.
 - Offline-capable mutations are idempotent; auth, payments, break-glass, and mortuary release are online-only (see `api-contract.mdc`).
 - CRUD mutations use HTTP; WebSocket delivers post-persistence domain events for multi-client UI refresh (see `api-contract.mdc`, `frontend/.cursor/realtime_sync.mdc`).
 - UI reads only from Riverpod; mutations patch provider state optimistically on success; WebSockets reconcile Riverpod — never update widgets directly (see `frontend/.cursor/instant_ui_sync.mdc`).

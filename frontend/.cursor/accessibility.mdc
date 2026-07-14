@@ -4,7 +4,7 @@ globs:
   - "frontend/lib/shared/**"
   - "frontend/lib/features/**/presentation/**"
 description: >
-  Use this rule file when creating or updating screens, components, or flows in the frontend to ensure accessibility best practices (labels, focus, readable contrast, keyboard support) are followed.
+  Apply when creating screens or components to enforce accessibility labels and focus.
 ---
 
 # Accessibility Strategy
@@ -37,5 +37,5 @@ Defines baseline accessibility requirements for screens, components, forms, navi
 ## Related rules
 - [`design-system.mdc`](./design-system.mdc)
 - [`ui-patterns.mdc`](./ui-patterns.mdc)
-- [`localization_i18n.md`](./localization_i18n.mdc)
-- [`multi_platform_input.md`](./multi_platform_input.mdc)
+- [`localization_i18n.mdc`](./localization_i18n.mdc)
+- [`multi_platform_input.mdc`](./multi_platform_input.mdc)

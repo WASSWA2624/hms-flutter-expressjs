@@ -4,7 +4,7 @@ globs:
   - "frontend/lib/**"
   - "frontend/test/**"
 description: >
-  Use this rule file when designing, reviewing, or refactoring the project folder structure for the Flutter frontend. Ensures adherence to the canonical folder and file layout, promoting consistency and maintainability.
+  Apply when designing or refactoring the canonical Flutter frontend folder layout.
 ---
 # Project Structure
 
@@ -78,6 +78,7 @@ lib/
 - `features/<feature_name>` for product behavior and screens.
 - `core` for cross-cutting infrastructure used by multiple features.
 - `shared` for reusable UI, layouts, forms, and search helpers not tied to one feature.
+- `shared/` is the only home for cross-feature reusable UI; features must not fork parallel component libraries.
 - No feature-specific business logic in `core` or `shared`.
 - No duplicate folders/files for the same responsibility.
 - Tests mirror source structure.

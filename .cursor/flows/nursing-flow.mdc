@@ -1,20 +1,24 @@
 ---
-description: Use this file whenever a change is made to a Nursing module/flow/action
 alwaysApply: false
+globs:
+  - "frontend/lib/features/nursing/**"
+  - "backend/src/modules/ipd-flow/**"
+description: >
+  Ward nursing on IPD: vitals, MAR, tasks, and clearance rules.
 ---
 # Nursing (Ward) Patient Flow
 
 ## 0. Overview
 
-This file is the direct Nursing flow source of truth for HOSSPI HMS. Ward nursing is anchored to the **IPD admission / encounter**. Nursing executes vitals, observations, MAR, care tasks, handovers, and discharge nursing clearance — without owning admission lifecycle, ICU stays, or final discharge closure. Align with [`.cursor/flows/ipd-flow.mdc`](./ipd-flow.mdc), [`.cursor/flows/opd-flow.mdc`](./opd-flow.mdc), [`.cursor/flows/icu-flow.mdc`](./icu-flow.mdc), [`.cursor/flows/discharge-flow.mdc`](./discharge-flow.mdc), [`.cursor/flows/pharmacy-flow.mdc`](./pharmacy-flow.mdc), and [`.cursor/app-write-up.mdc`](../app-write-up.mdc).
+This file is the direct Nursing flow source of truth for HOSSPI HMS. Ward nursing is anchored to the **IPD admission / encounter**. Nursing executes vitals, observations, MAR, care tasks, handovers, and discharge nursing clearance â" without owning admission lifecycle, ICU stays, or final discharge closure. Align with [`.cursor/flows/ipd-flow.mdc`](./ipd-flow.mdc), [`.cursor/flows/opd-flow.mdc`](./opd-flow.mdc), [`.cursor/flows/icu-flow.mdc`](./icu-flow.mdc), [`.cursor/flows/discharge-flow.mdc`](./discharge-flow.mdc), [`.cursor/flows/pharmacy-flow.mdc`](./pharmacy-flow.mdc), and [`.cursor/app-write-up.mdc`](../app-write-up.mdc).
 
 ## 1. Goal
 
-Enable ward nurses, charge nurses, and nursing supervisors to run inpatient nursing care: admission checklist, vitals, MAR, nursing notes, handovers, transfer support, ICU escalation handoff, and discharge nursing clearance — on a calm, scannable workspace.
+Enable ward nurses, charge nurses, and nursing supervisors to run inpatient nursing care: admission checklist, vitals, MAR, nursing notes, handovers, transfer support, ICU escalation handoff, and discharge nursing clearance â" on a calm, scannable workspace.
 
 ### Central encounter rule
 
-The **IPD admission** is the parent record. Nursing notes, vitals, medication administration, care plans, and handovers attach to that admission. OPD vitals during outpatient stages attach to the **OPD encounter** only — do not duplicate encounters.
+The **IPD admission** is the parent record. Nursing notes, vitals, medication administration, care plans, and handovers attach to that admission. OPD vitals during outpatient stages attach to the **OPD encounter** only â" do not duplicate encounters.
 
 ---
 
@@ -35,11 +39,11 @@ flowchart LR
 
 | Related flow | Nursing responsibility |
 | ------------ | ---------------------- |
-| [opd-flow §3](./opd-flow.mdc) `WAITING_VITALS` | Capture triage vitals on OPD encounter (OPD queue or deep-link) |
-| [opd-flow §7](./opd-flow.mdc) `ADMITTED` | Ward work begins after IPD bed assignment |
-| [ipd-flow §5](./ipd-flow.mdc) | Nursing admission checklist on ward arrival |
-| [ipd-flow §8](./ipd-flow.mdc) | Care loop: vitals, MAR, notes, I/O |
-| [ipd-flow §9](./ipd-flow.mdc) | Transfer handover receive/send; ICU escalation → ICU module |
+| [opd-flow Â§3](./opd-flow.mdc) `WAITING_VITALS` | Capture triage vitals on OPD encounter (OPD queue or deep-link) |
+| [opd-flow Â§7](./opd-flow.mdc) `ADMITTED` | Ward work begins after IPD bed assignment |
+| [ipd-flow Â§5](./ipd-flow.mdc) | Nursing admission checklist on ward arrival |
+| [ipd-flow Â§8](./ipd-flow.mdc) | Care loop: vitals, MAR, notes, I/O |
+| [ipd-flow Â§9](./ipd-flow.mdc) | Transfer handover receive/send; ICU escalation â' ICU module |
 | [icu-flow](./icu-flow.mdc) | Read-only ICU status/alerts on board; **Open in ICU** for critical-care actions |
 | [discharge-flow](./discharge-flow.mdc) | Nursing clearance step before IPD finalize |
 | [pharmacy-flow](./pharmacy-flow.mdc) | Pharmacy dispenses; nursing administers (MAR) |
@@ -57,7 +61,7 @@ flowchart LR
 | 5 | Doctor coordination | Surface pending meds, alerts, vitals trend for ward round context. | Ward nurse / Doctor |
 | 6 | Transfer / escalation | Progress transfer; ICU escalation hands off to ICU module (do not start ICU stay here). | Charge nurse / Doctor |
 | 7 | Post-op / step-down receive | Accept handover from Theater or ICU with summary when API provides. | Ward nurse |
-| 8 | Discharge nursing clearance | Patient education, ward checklist — [discharge-flow §4](./discharge-flow.mdc). | Ward nurse |
+| 8 | Discharge nursing clearance | Patient education, ward checklist â" [discharge-flow Â§4](./discharge-flow.mdc). | Ward nurse |
 
 ---
 
@@ -70,7 +74,7 @@ Nursing board loads via `GET /ipd-flows?include_icu=true` with ward and scope fi
 | Ward filter | Patients in selected ward |
 | `ADMITTED_IN_BED` | Active ward patients |
 | Medication due / handover pending | Client or backend scope when supported |
-| `In ICU` badge | Patient in ICU — link to ICU workspace for ICU mutations |
+| `In ICU` badge | Patient in ICU â" link to ICU workspace for ICU mutations |
 | Exclude `DISCHARGED` / `CANCELLED` | Active queues only |
 
 Mutations prefer `POST /ipd-flows/:id/*` (`add-nursing-note`, `add-medication-administration`, `add-ward-round`, `request-transfer`, `plan-discharge`).
@@ -81,13 +85,13 @@ Mutations prefer `POST /ipd-flows/:id/*` (`add-nursing-note`, `add-medication-ad
 
 ### IPD ([ipd-flow.mdc](./ipd-flow.mdc))
 
-- Steps 5–9, 11–13, 16: nursing admission, care loop, service execution, discharge clearance support.
-- §16 encounter hub: all panels use `admissionId`.
+- Steps 5â"9, 11â"13, 16: nursing admission, care loop, service execution, discharge clearance support.
+- Â§16 encounter hub: all panels use `admissionId`.
 
 ### OPD ([opd-flow.mdc](./opd-flow.mdc))
 
-- §5 Nurse role: vitals and nursing-supported steps only.
-- §7: after `ADMITTED`, nursing inpatient work is on IPD board.
+- Â§5 Nurse role: vitals and nursing-supported steps only.
+- Â§7: after `ADMITTED`, nursing inpatient work is on IPD board.
 
 ### ICU ([icu-flow.mdc](./icu-flow.mdc))
 
@@ -122,3 +126,14 @@ Mutations prefer `POST /ipd-flows/:id/*` (`add-nursing-note`, `add-medication-ad
 frontend/lib/features/nursing/
 backend/src/modules/ipd-flow/
 ```
+
+## UI, access, and quality standards
+
+- Reuse components from `frontend/lib/shared/` before creating module-specific UI; prioritize reusability and consistency.
+- Responsive layouts for mobile, tablet, and desktop; keep UI uniform, simple, and intuitive.
+- High performance worklists (pagination/lazy lists); localize all labels; no raw enum codes in production UI.
+- Theme tokens only (`frontend/.cursor/design-system.mdc`); no hard-coded style values.
+- Strict RBAC+ABAC: actions visible only when stage AND role AND subscription entitlement allow; hide unauthorized menus/components/workflows.
+- Mutations: optimistic Riverpod update on HTTP success; WebSocket reconciliation (`.cursor/api-contract.mdc`).
+- Reference entities by `human_friendly_id` / display IDs in UI and deep links — never raw table IDs.
+

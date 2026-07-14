@@ -2,8 +2,10 @@
 alwaysApply: false
 globs:
   - "frontend/lib/features/**/presentation/**"
+  - "frontend/lib/shared/components/**"
+  - "frontend/lib/shared/layout/**"
 description: >
-  Use this rule file when designing or updating module workspace pages in clinical or operational features to ensure consistent layout and behavior. Applies to new implementations and major refactors.
+  Apply when designing or updating clinical or operational module workspace pages.
 ---
 # Module Workspace UI Contract
 
@@ -32,8 +34,10 @@ Import from `package:hosspi_hms/shared/layout/layout.dart`, `shared/components/c
 - **Notifications submenu (More actions) filters** the current worklist — it must not open modal lists of the same data.
 - **Hide zero-value notification rows** when the workspace pattern expects it.
 - **Hospital workflow language** in labels — never expose raw enum names, API stage codes, or internal IDs to users.
-- **Display IDs only** — use `displayId`, patient display name, human-friendly refs; never surface raw UUIDs in production UI.
-- **Role + state gating** — show actions only when backend stage and user permission both allow; disable with tooltip when helpful.
+- **Entity references** — surface `human_friendly_id` (and patient display name where applicable). Backend maps internal IDs; never show raw table IDs or UUIDs in production UI, URLs, or client-held identifiers.
+- **Role + state + subscription gating** — show actions only when backend stage, user permission, and subscription entitlement all allow; disable with tooltip when helpful.
+- **Performance and simplicity** — keep worklists paginated/lazy; minimize steps for common queue actions; preserve uniform spacing, tokens, and component usage across modules.
+- **Responsiveness** — workspace shell must adapt across mobile, tablet, and desktop per [`layouts.mdc`](./layouts.mdc).
 - **Row refresh** — after small modal mutations, refresh the affected row, detail panel, summary counts, and nav badges; avoid full-page reload when the controller supports targeted refresh.
 - **Realtime** — subscribe to the module's `RealtimeEventGroups` where the feature already defines one.
 

@@ -4,7 +4,7 @@ globs:
   - "frontend/lib/core/utils/**"
   - "frontend/lib/shared/formatters/**"
 description: >
-  Use when creating, updating, or reviewing any date, time, number, or unit formatting utilities and their usage across the HOSSPI HMS frontend. Apply to ensure formatting is consistent, localized, and separated from widget code.
+  Apply when creating locale-aware date, time, number, or currency formatting utilities.
 ---
 
 # Date, Time, and Formatting Strategy
@@ -30,6 +30,6 @@ Defines storage, transfer, and display formatting for dates, times, numbers, and
 - Localization changes update formatting correctly.
 
 ## Related rules
-- [`localization_i18n.md`](./localization_i18n.mdc)
-- [`data_modeling.md`](./data_modeling.mdc)
-- [`validation.md`](./validation.mdc)
+- [`localization_i18n.mdc`](./localization_i18n.mdc)
+- [`data_modeling.mdc`](./data_modeling.mdc)
+- [`validation.mdc`](./validation.mdc)

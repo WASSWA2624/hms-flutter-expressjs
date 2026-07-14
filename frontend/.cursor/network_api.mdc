@@ -21,6 +21,9 @@ Purpose: HTTP access against `hms-backend` per [`.cursor/api-contract.mdc`](../.
 - Handle `401` through session manager.
 - Environment-driven base URLs and timeouts.
 - HTTP owns CRUD mutations; WebSocket listeners refresh UI after server broadcasts (see [`realtime_sync.mdc`](./realtime_sync.mdc)).
+- DTOs and API paths exposed to presentation use `human_friendly_id` (or domain aliases like `displayId` mapped from it). Do not surface raw database primary keys in API responses consumed by the frontend.
+- Repositories map `human_friendly_id` on the wire; internal IDs stay in backend/data layer only.
+- Frontend must reference entities by `human_friendly_id`; backend maps to internal IDs. Do not expose raw table IDs in frontend or API responses.
 
 ## Client layout
 

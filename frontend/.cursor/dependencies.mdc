@@ -4,7 +4,7 @@ globs:
   - "frontend/pubspec.yaml"
   - "frontend/lib/**"
 description: >
-  Apply when adding, updating, or reviewing Dart and Flutter package dependencies in the HOSSPI HMS frontend. Use this rule file to ensure only approved, justified, and compatible dependencies are included.
+  Apply when adding or reviewing Dart/Flutter package dependencies in the frontend.
 ---
 
 # Dependency Strategy
@@ -54,7 +54,7 @@ Defines approved dependencies, when they may be added, and how to avoid unnecess
 - Dependency decisions are documented in README or an ADR when they affect architecture.
 
 ## Related rules
-- [`code_generation.md`](./code_generation.mdc)
-- [`platform_guidelines.md`](./platform_guidelines.mdc)
-- [`security.md`](./security.mdc)
-- [`ci_cd_quality_gates.md`](./ci_cd_quality_gates.mdc)
+- [`code_generation.mdc`](./code_generation.mdc)
+- [`platform_guidelines.mdc`](./platform_guidelines.mdc)
+- [`security.mdc`](./security.mdc)
+- [`ci_cd_quality_gates.mdc`](./ci_cd_quality_gates.mdc)

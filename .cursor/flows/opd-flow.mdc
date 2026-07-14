@@ -1,6 +1,10 @@
 ---
-description: Use this file whenever a change is made to an OPD module/flow/action
 alwaysApply: false
+globs:
+  - "frontend/lib/features/opd/**"
+  - "backend/src/modules/opd-flow/**"
+description: >
+  OPD patient flow, stages, worklist, and handoff rules for module changes.
 ---
 # OPD Patient Flow
 
@@ -20,10 +24,10 @@ Make outpatient movement simple and traceable from arrival to consultation, diag
 
 | Entry path               | Expected handling                                                                                                                                   | Flow reference |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| Walk-in / new patient    | Search existing patient first, register if needed, create or reuse active OPD encounter, capture visit type/payer, then route to the correct stage. | — |
-| Appointment check-in     | Verify appointment, check in, create or reuse active OPD encounter, confirm payer/provider, and route to vitals, doctor, or payment gate.           | — |
-| Follow-up / review       | Link to previous context where available, create or reuse active OPD encounter, then route to doctor or service queue.                              | — |
-| Emergency-to-OPD handoff | Accept only where backend flow supports it, preserve the emergency context, and avoid creating a duplicate OPD encounter.                           | [emergency-flow §4](./emergency-flow.mdc) |
+| Walk-in / new patient    | Search existing patient first, register if needed, create or reuse active OPD encounter, capture visit type/payer, then route to the correct stage. | â" |
+| Appointment check-in     | Verify appointment, check in, create or reuse active OPD encounter, confirm payer/provider, and route to vitals, doctor, or payment gate.           | â" |
+| Follow-up / review       | Link to previous context where available, create or reuse active OPD encounter, then route to doctor or service queue.                              | â" |
+| Emergency-to-OPD handoff | Accept only where backend flow supports it, preserve the emergency context, and avoid creating a duplicate OPD encounter.                           | [emergency-flow Â§4](./emergency-flow.mdc) |
 
 
 ## 3. Backend Stage Contract
@@ -33,17 +37,17 @@ Frontend labels, filters, summary cards, badges, dialogs, and actions must use t
 
 | Backend OPD stage              | User meaning                                                 | Primary owner        | Department flow |
 | ------------------------------ | ------------------------------------------------------------ | -------------------- | --------------- |
-| `WAITING_CONSULTATION_PAYMENT` | Patient must complete consultation/payment gate if required. | Reception / Billing  | — |
-| `WAITING_VITALS`               | Patient is ready for vitals.                                 | Nurse                | [nursing-flow §2](./nursing-flow.mdc) |
-| `WAITING_DOCTOR_ASSIGNMENT`    | Patient needs doctor/provider assignment.                    | Reception / Nurse    | — |
-| `WAITING_DOCTOR_REVIEW`        | Patient is waiting for consultation.                         | Doctor               | — |
+| `WAITING_CONSULTATION_PAYMENT` | Patient must complete consultation/payment gate if required. | Reception / Billing  | â" |
+| `WAITING_VITALS`               | Patient is ready for vitals.                                 | Nurse                | [nursing-flow Â§2](./nursing-flow.mdc) |
+| `WAITING_DOCTOR_ASSIGNMENT`    | Patient needs doctor/provider assignment.                    | Reception / Nurse    | â" |
+| `WAITING_DOCTOR_REVIEW`        | Patient is waiting for consultation.                         | Doctor               | â" |
 | `LAB_REQUESTED`                | Patient has pending lab work.                                | Lab                  | [lab-flow](./lab-flow.mdc) |
 | `RADIOLOGY_REQUESTED`          | Patient has pending imaging.                                 | Radiology            | [radiology-flow](./radiology-flow.mdc) |
 | `LAB_AND_RADIOLOGY_REQUESTED`  | Patient has pending diagnostics.                             | Lab / Radiology      | lab + radiology flows |
 | `PHARMACY_REQUESTED`           | Patient has pending pharmacy action.                         | Pharmacy             | [pharmacy-flow](./pharmacy-flow.mdc) |
-| `WAITING_DISPOSITION`          | Doctor must decide final outcome.                            | Doctor               | — |
-| `ADMITTED`                     | Patient has moved to IPD/admission flow.                     | OPD / IPD handoff    | [ipd-flow §2.2](./ipd-flow.mdc) |
-| `DISCHARGED`                   | OPD visit is complete.                                       | Reception / Clinical | Not [discharge-flow](./discharge-flow.mdc) — outpatient only |
+| `WAITING_DISPOSITION`          | Doctor must decide final outcome.                            | Doctor               | â" |
+| `ADMITTED`                     | Patient has moved to IPD/admission flow.                     | OPD / IPD handoff    | [ipd-flow Â§2.2](./ipd-flow.mdc) |
+| `DISCHARGED`                   | OPD visit is complete.                                       | Reception / Clinical | Not [discharge-flow](./discharge-flow.mdc) â" outpatient only |
 
 
 ## 4. Worklist Contract
@@ -99,3 +103,14 @@ When the doctor decides admission, OPD should clearly show that the outpatient v
 ## 8. Completion Rules
 
 An OPD visit is complete when the patient is discharged from OPD, admitted to IPD, referred out, or otherwise closed by a valid backend disposition. Completed rows should not remain mixed with active action queues unless the user deliberately filters for completed records.
+
+## UI, access, and quality standards
+
+- Reuse components from `frontend/lib/shared/` before creating module-specific UI; prioritize reusability and consistency.
+- Responsive layouts for mobile, tablet, and desktop; keep UI uniform, simple, and intuitive.
+- High performance worklists (pagination/lazy lists); localize all labels; no raw enum codes in production UI.
+- Theme tokens only (`frontend/.cursor/design-system.mdc`); no hard-coded style values.
+- Strict RBAC+ABAC: actions visible only when stage AND role AND subscription entitlement allow; hide unauthorized menus/components/workflows.
+- Mutations: optimistic Riverpod update on HTTP success; WebSocket reconciliation (`.cursor/api-contract.mdc`).
+- Reference entities by `human_friendly_id` / display IDs in UI and deep links — never raw table IDs.
+

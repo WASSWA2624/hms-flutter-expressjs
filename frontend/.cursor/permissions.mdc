@@ -5,39 +5,37 @@ globs:
   - "frontend/lib/app/router/**"
   - "frontend/lib/features/**"
 description: >
-  Use this rule file when implementing or reviewing frontend permission, authorization (RBAC/ABAC), or entitlement logic, especially for route guards, action visibility, and platform permission checks. Applies to all code under permissions core, app router, and feature modules.
+  Apply when implementing frontend RBAC, ABAC, subscription entitlements, or guards.
 ---
 # Permissions and Authorization
 
-Purpose: frontend RBAC, ABAC, entitlements, and platform permissions — aligned with `backend/.cursor/auth-security.mdc`.
+Purpose: frontend RBAC, ABAC, entitlements, and platform permissions — aligned with `backend/.cursor/auth-security.mdc` and [`.cursor/access/`](../../.cursor/access/).
 
 ## Backend source of truth
 
-- `user_role` is the role-assignment source of truth; users may hold multiple active scoped roles.
+- `user_role` is the role-assignment source of truth; users may hold multiple active scoped roles and module assignments.
 - RBAC grants baseline permissions; ABAC narrows by tenant, facility, scope, ownership, shift, patient relationship, and emergency state.
-- Module entitlements enforced in backend middleware **and** services; frontend must mirror entitlement keys in route guards and action visibility.
+- Subscription package is the hard gate; frontend must mirror entitlement keys in route guards and action visibility.
 - Break-glass access is explicit, time-limited, and audited.
 - Management roles: `UNIT_MANAGER`, `WARD_MANAGER`, `ICU_MANAGER`, `THEATRE_MANAGER` with scoped roster authority.
 - Sensitive workflows (patient, billing, payroll, mortuary release, security admin) require full audit evidence on the backend.
 
 ## Frontend rules
 
-- Authority order for every surface: **Plan (module entitlements) → Role → Rights (permissions) → tenant/facility scope**.
-- Plan is the hard gate for which modules can be accessed; role and permissions never unlock a module the plan does not include.
-- `AppAccessPolicy.grants` denies module-scoped permissions when the mapped plan module is not entitled.
-- Role decides who may operate inside entitled modules; permissions decide fine-grained actions.
-- Separate platform permissions from app authorization.
-- Hide UI actions the user cannot access; never rely on hidden UI alone for security.
-- Protect restricted routes through guards ([`navigation.mdc`](./navigation.mdc)).
+- **Source of truth:** shipped defaults live in [`.cursor/access/modules.mdc`](../../.cursor/access/modules.mdc), [`.cursor/access/permissions.mdc`](../../.cursor/access/permissions.mdc), [`.cursor/access/subscriptions.mdc`](../../.cursor/access/subscriptions.mdc), and [`.cursor/access/default_user_roles.mdc`](../../.cursor/access/default_user_roles.mdc). Authorized admins may customize; all changes must be versioned and auditable; shipped defaults must be restorable atomically.
+- **Authority order (strict):** active **subscription package** → assigned **roles/modules** → **permissions** → tenant/facility ABAC scope.
+- Users may hold **multiple roles and modules**; effective permissions = **intersection** of all grants **and** the active subscription package. Role or direct assignment must **never** unlock modules, menus, routes, actions, or workflows excluded by the subscription.
+- `AppAccessPolicy.grants` (and route/action gates) must enforce subscription ∩ role ∩ permission before rendering or enabling UI.
+- **RBAC + ABAC (strict):** hide/disable menus, components, actions, and workflows unauthorized users cannot access; backend authorization remains mandatory — hidden UI is not sufficient alone.
+- Separate platform permissions (camera, etc.) from app authorization.
+- Protect restricted routes via guards ([`navigation.mdc`](./navigation.mdc)).
 - Map `403` to localized forbidden state ([`ui-feedback.mdc`](./ui-feedback.mdc)).
-- Represent app permissions as typed values, not scattered strings.
-- Reuse permission checks through providers or guards.
-- Request platform permissions only when needed with localized rationale.
-- Assignable rights must stay within the actor ceiling **and** the tenant plan module set (`PermissionModuleMap` / backend `permission-module-map`).
+- Represent permissions as typed values; centralize checks in providers/guards (`AccessGate`, `AppAccessActionGate`).
+- Assignable rights stay within actor ceiling **and** tenant subscription module set (`PermissionModuleMap` / backend `permission-module-map`).
 
 ## See also
 
 - [`authentication_session.mdc`](./authentication_session.mdc)
 - [`security.mdc`](./security.mdc)
 - [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc)
-- [`backend/auth-security.mdc`](../../backend/.cursor/auth-security.mdc)
+- [`backend/.cursor/auth-security.mdc`](../../backend/.cursor/auth-security.mdc)

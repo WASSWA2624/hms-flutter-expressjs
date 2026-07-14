@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - ".cursor/app-write-up.mdc"
 description: >
-  Use this rule file when adding, modifying, or deleting any product module or feature documented in the scope of the HOSSPI HMS application.
+  Apply when adding, changing, or removing HOSSPI HMS product modules or features.
 ---
 
 # HOSSPI HMS App Write-Up
@@ -160,10 +160,12 @@ Seed data must be clearly marked as demo data, must not run in production by acc
 ## Access Control Expectations
 
 - Every screen, menu item, button, modal action, API call, report, export, and workflow transition must respect the logged-in user's role, permission, tenant scope, facility scope, and module entitlement.
-- Users may have more than one role.
-- Access checks must consider tenant, facility, department, unit, ward, room, bed, and action scope where applicable.
-- Users should only see actions they are allowed to perform.
+- Users may have more than one role and more than one module assignment.
+- Effective access is always the intersection of role/module/user grants and the active subscription package (see [`.cursor/access/`](./access/)).
+- Access checks must consider tenant, facility, department, unit, ward, room, bed, and action scope where applicable (strict RBAC + ABAC).
+- Users should only see actions they are allowed to perform; unauthorized menus, components, actions, and workflows must not be visible or accessible.
 - Frontend hiding or disabling is not enough; backend authorization remains mandatory.
+- Shipped defaults for modules, packages, roles, and permissions are source-controlled under `.cursor/access/`; admins may customize or reset to defaults with auditable, atomic changes.
 
 ## UX Expectations
 
@@ -174,6 +176,16 @@ Seed data must be clearly marked as demo data, must not run in production by acc
 - Screens should avoid congestion by separating lists, filters, details, and actions clearly.
 - Forms should be validated, grouped into logical sections, and kept short where possible.
 - Dashboards should show useful summaries and direct workflow entry points only.
+
+## UI and engineering standards
+
+- High performance, uniform and consistent UI, simple layouts, and intuitive workflows.
+- Full responsiveness: mobile, tablet, and desktop (see `frontend/.cursor/layouts.mdc`).
+- Reusable components live under `frontend/lib/shared/`; check the shared catalog before creating new UI.
+- Real-time sync: HTTP persists; WebSocket reconciles Riverpod (see `api-contract.mdc`, `frontend/.cursor/instant_ui_sync.mdc`).
+- Themes must be comprehensive; use design tokens only — no hard-coded colors, spacing, or typography (`frontend/.cursor/design-system.mdc`).
+- Entity references: `human_friendly_id` in UI and API; no raw database IDs (`api-contract.mdc`).
+- All user-facing text localized via locale files (`locale-development.mdc`).
 
 ## Product Completion Standard
 

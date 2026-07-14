@@ -4,7 +4,7 @@ globs:
   - "frontend/lib/core/realtime/**"
   - "frontend/lib/features/**/presentation/controllers/**"
 description: >
-  Use this rule file when implementing, integrating, or reviewing realtime sync, WebSocket transport, or controller-level event refresh logic in the Flutter frontend. Ensures best practices for authenticated WebSocket connections, event-driven state updates, and proper Riverpod/Controller decoupling.
+  Apply when implementing WebSocket transport, subscriptions, or controller realtime refresh.
 ---
 # Realtime Sync
 

@@ -1,31 +1,98 @@
-
 ---
 alwaysApply: false
 globs:
   - "backend/**"
   - "frontend/**"
 description: >
-  Rule for defining, enforcing, and documenting subscription packages and related access controls.
+  Subscription packages: module and permission limits, intersection, and audit.
 ---
 
-3. Subscription Packages**
+# Subscription Packages
 
-The system defines and strictly enforces the following subscription packages, each establishing clear limits for module and permission access. Subscription packages are centrally managed and must be referenced by all permission assignment, RBAC, and ABAC logic in both frontend and backend.
+Subscription packages are the hard upper bound on module and permission access. Every permission check (UI and API) must validate against the active package. Defaults live in source control under `.cursor/access/` and must stay aligned with [modules.mdc](./modules.mdc) and [permissions.mdc](./permissions.mdc).
 
-**Available Packages:**
+## Available packages
 
-- **Free** — Access to a very limited set of essential and read-only modules intended for initial onboarding, basic patient registrations, view-only dashboards, and demonstrations. No clinical or billing actions permitted.
-- **Basic** — Includes all vital modules required for everyday operations such as OPD, limited IPD, patient registration, basic billing, front desk, pharmacy (dispense only), simple inventory, and minimal reporting. Designed for small clinics and facilities with basic needs.
-- **Advanced** — Provides all Basic modules plus comprehensive clinical and operational capabilities, including full IPD, Pharmacy (full, including inventory), Laboratory, Nursing, Radiology, Room/Bed Management, Scheduling, multi-role support, standard analytics/reporting, and audit controls. Suitable for multi-department hospitals and specialized centers.
-- **Pro** — Grants access to all Advanced modules and unlocks premium, specialist, and enterprise features such as ICU management, Theater, Integrations, Human Resources, Mortuary, Dental, Discharge Planning, Biomedical, Housekeeping, advanced dashboards, facility operations, granular analytics, workflow automation, and full customization of modules, roles, and settings.
-- **Custom** — Tailored, organization-specific packages that may include custom or third-party modules not present in the core app. Features and permissions are defined per customer and must be explicitly documented and reviewed, with access limited to those modules/services defined in the custom package.
-- **Developer** — Reserved for development, testing, and integration roles. Users with this package have unrestricted access to all modules, features, and permissions within the app. No subscription controls or enforcement apply; this package is automatically granted and cannot be downgraded by regular UI or workflow.
+### Free
 
-**Subscription enforcement requirements:**
+| module_key | Permissions |
+|---|---|
+| app_shell | view |
+| auth_session | view, manage (self) |
+| general_settings | view, update (self) |
+| patient_registry | view, create |
+| reports_audit | view (demo dashboards only) |
 
-- Every subscription package must enumerate each included module and all permitted actions/permissions for that module.
-- If a user’s assigned roles or modules grant permissions beyond those included in the user’s current subscription, only permissions present in both are effective; the subscription always imposes the strict limit for access and UI/API visibility.
-- All permission checks (UI and backend APIs) must validate against the user’s currently active subscription package.
-- Upgrades, downgrades, or custom package changes must take effect atomically and immediately; prior permissions must never persist once a new package is assigned.
-- All changes to subscription definitions and effective permissions must be auditable and clearly presented in both admin UI and backend logs for compliance, support, and troubleshooting.
-- All packages and their contents (modules, permissions) must be defined in source control, versioned, and managed according to `.cursor/rules/` and related product documentation.
+No clinical write actions, billing mutations, or dispensing.
+
+### Basic
+
+Includes Free, plus:
+
+| module_key | Permissions |
+|---|---|
+| tenant_settings | view, manage |
+| facility_settings | view, manage |
+| access_admin | view, create, edit, assign, manage |
+| subscriptions | view, manage |
+| rooms_beds | view, create, edit, assign |
+| patient_registry | view, create, update, export |
+| opd | view, create, edit, assign |
+| triage | view, create, edit |
+| clinical | view, create, edit |
+| ipd | view, create, edit, assign (limited beds/wards) |
+| pharmacy | view, dispense |
+| billing | view, create, edit |
+| communications | view, create |
+| reports_audit | view, export (minimal) |
+
+### Advanced
+
+Includes Basic, plus full clinical/operational set:
+
+| module_key | Permissions |
+|---|---|
+| ipd | view, create, edit, assign, manage |
+| nursing | view, create, update, manage |
+| discharge | view, create, edit, approve |
+| emergency | view, create, edit, assign, manage |
+| lab | view, request, report, edit, manage, export |
+| radiology | view, request, report, edit, manage, export |
+| physiotherapy | view, create, edit, assign |
+| pharmacy | view, request, prescribe, dispense, manage |
+| claims | view, create, edit, approve, export |
+| billing | view, create, edit, manage, export |
+| reports_audit | view, export, manage |
+| communications | view, create, manage |
+
+### Pro
+
+Includes Advanced, plus:
+
+| module_key | Permissions |
+|---|---|
+| icu | view, create, edit, assign, manage |
+| theater | view, create, edit, assign, manage |
+| hr | view, create, edit, manage, export |
+| biomedical | view, create, edit, manage |
+| operations | view, create, edit, manage |
+| housekeeping | view, create, manage |
+| mortuary | view, create, edit, manage |
+| integrations | view, manage |
+| dental | view, create, edit, manage (when enabled) |
+
+### Custom
+
+Organization-specific subset or extension of Pro. Must enumerate `module_key` + permissions explicitly in tenant config and remain auditable. Never imply access beyond the documented custom set.
+
+### Developer
+
+Unrestricted module/permission access for **non-production** development, testing, and integration only. Must **not** bypass subscription intersection in production tenants. Includes `demo_seed` manage.
+
+## Enforcement
+
+- Effective permissions = intersection of subscription-included modules/permissions ∩ role grants ∩ module grants ∩ user grants ∩ ABAC scope.
+- Roles, modules, or direct user grants never unlock capabilities outside the active package.
+- Package upgrades/downgrades take effect atomically; prior excess permissions must not persist.
+- All package definition and assignment changes are versioned, auditable, and restorable to shipped defaults.
+- Source of truth: `.cursor/access/` (`modules.mdc`, `permissions.mdc`, `subscriptions.mdc`, `default_user_roles.mdc`).

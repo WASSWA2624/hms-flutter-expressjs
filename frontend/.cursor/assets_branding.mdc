@@ -4,7 +4,7 @@ globs:
   - "frontend/lib/shared/assets/**"
   - "frontend/lib/features/**/assets/**"
 description: >
-  Use this rule file when adding, naming, organizing, or registering UI assets (images, icons, logos, illustrations, fonts) in the HOSSPI HMS frontend, or when setting up splash/launcher branding. Applies during asset import, branding updates, and asset folder maintenance.
+  Apply when adding, naming, or registering UI assets and branding in the frontend.
 ---
 
 # Asset and Branding Strategy
@@ -34,6 +34,6 @@ Defines asset folders, naming, branding, icons, splash screens, and image qualit
 
 ## Related rules
 - [`design-system.mdc`](./design-system.mdc)
-- [`accessibility.md`](./accessibility.mdc)
-- [`dependencies.md`](./dependencies.mdc)
-- [`ci_cd_quality_gates.md`](./ci_cd_quality_gates.mdc)
+- [`accessibility.mdc`](./accessibility.mdc)
+- [`dependencies.mdc`](./dependencies.mdc)
+- [`ci_cd_quality_gates.mdc`](./ci_cd_quality_gates.mdc)
