@@ -197,10 +197,7 @@ class _SubscriptionReportAdminsDialogState
 }
 
 class _PlatformContactPanel extends StatelessWidget {
-  const _PlatformContactPanel({
-    required this.contact,
-    required this.tone,
-  });
+  const _PlatformContactPanel({required this.contact, required this.tone});
 
   final PlatformAdminContact contact;
   final AppWorkspaceStatusTone tone;
@@ -267,10 +264,7 @@ class _AdminContactGroup extends StatelessWidget {
 }
 
 class _AdminContactCard extends StatelessWidget {
-  const _AdminContactCard({
-    required this.contact,
-    required this.roleFallback,
-  });
+  const _AdminContactCard({required this.contact, required this.roleFallback});
 
   final OrgAdminContact contact;
   final String roleFallback;

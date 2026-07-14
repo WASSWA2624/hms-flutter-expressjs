@@ -6,7 +6,9 @@ void main() {
   group('PermissionModuleMap', () {
     test('maps module-scoped permission domains', () {
       expect(
-        PermissionModuleMap.moduleForPermission(const AppPermission('lab:read')),
+        PermissionModuleMap.moduleForPermission(
+          const AppPermission('lab:read'),
+        ),
         'lab-workflows',
       );
       expect(

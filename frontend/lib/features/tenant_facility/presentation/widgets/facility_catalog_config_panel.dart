@@ -59,9 +59,9 @@ class _FacilityCatalogConfigPanelState
   AppFailure? _failure;
 
   FacilityCatalogScope get _scope => FacilityCatalogScope(
-        tenantId: widget.tenantId,
-        facilityId: widget.facilityId,
-      );
+    tenantId: widget.tenantId,
+    facilityId: widget.facilityId,
+  );
 
   String get _resolvedCurrency =>
       resolveFacilityDefaultCurrency(widget.defaultCurrency);
@@ -120,7 +120,7 @@ class _FacilityCatalogConfigPanelState
               label: l10n.clinicalRequestRadiologyAction,
             ),
           ],
-          onChanged: ( _FacilityCatalogMode? value) {
+          onChanged: (_FacilityCatalogMode? value) {
             if (value == null) {
               return;
             }
@@ -138,7 +138,8 @@ class _FacilityCatalogConfigPanelState
           },
         ),
         SizedBox(height: theme.spacing.md),
-        if (_mode == _FacilityCatalogMode.clinical) ..._buildClinicalSection(l10n, theme),
+        if (_mode == _FacilityCatalogMode.clinical)
+          ..._buildClinicalSection(l10n, theme),
         if (_mode == _FacilityCatalogMode.lab) ..._buildLabSection(l10n, theme),
         if (_mode == _FacilityCatalogMode.radiology)
           ..._buildRadiologySection(l10n, theme),
@@ -259,17 +260,15 @@ class _FacilityCatalogConfigPanelState
             label: l10n.labEnableTestAction,
             leadingIcon: Icons.add_circle_outline,
             enabled: widget.enabled,
-            onPressed: () => unawaited(
-              _openLabEnableDialog(LabEnableOfferingKind.test),
-            ),
+            onPressed: () =>
+                unawaited(_openLabEnableDialog(LabEnableOfferingKind.test)),
           ),
           AppButton.secondary(
             label: l10n.labEnablePanelAction,
             leadingIcon: Icons.add_box_outlined,
             enabled: widget.enabled,
-            onPressed: () => unawaited(
-              _openLabEnableDialog(LabEnableOfferingKind.panel),
-            ),
+            onPressed: () =>
+                unawaited(_openLabEnableDialog(LabEnableOfferingKind.panel)),
           ),
         ],
       ),
@@ -409,7 +408,8 @@ class _FacilityCatalogConfigPanelState
               );
             },
         onEnable: (String id, Map<String, Object?> payload) async {
-          final Result<LabCatalogItem> result = kind == LabEnableOfferingKind.test
+          final Result<LabCatalogItem> result =
+              kind == LabEnableOfferingKind.test
               ? await repository.upsertFacilityLabTestOffering(
                   id,
                   payload,
@@ -432,13 +432,15 @@ class _FacilityCatalogConfigPanelState
     if (!mounted || saved != true) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.labSavedMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.labSavedMessage)));
   }
 
   Future<void> _openRadiologyEnableDialog() async {
-    final RadiologyRepository repository = ref.read(radiologyRepositoryProvider);
+    final RadiologyRepository repository = ref.read(
+      radiologyRepositoryProvider,
+    );
     final FacilityCatalogScope scope = _scope;
     final bool? saved = await showAppDialog<bool>(
       context: context,
@@ -571,8 +573,8 @@ class _FacilityCatalogConfigPanelState
         <RadiologyCatalogTest>[],
       );
     }
-    final Future<Result<List<RadiologyCatalogTest>>> platformFuture =
-        repository.listRadiologyCatalogTests(search: query, limit: limit);
+    final Future<Result<List<RadiologyCatalogTest>>> platformFuture = repository
+        .listRadiologyCatalogTests(search: query, limit: limit);
     final Future<Result<List<RadiologyCatalogTest>>> offeredFuture = repository
         .listFacilityRadiologyTests(
           tenantId: scope.tenantId,

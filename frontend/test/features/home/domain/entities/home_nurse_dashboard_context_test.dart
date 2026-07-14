@@ -29,50 +29,53 @@ void main() {
       );
     });
 
-    test('tailors nurse profile with five metric slots and expanded actions', () {
-      final HomeDashboardProfile base = homeProfileForRole(AppRole.nurse);
-      final AppAccessPolicy policy = AppAccessPolicy.fromSession(
-        AuthSession(
-          tokens: SessionTokens(accessToken: 'token'),
-          user: const AuthUserProfile(
-            tenantId: 'tenant-1',
-            facilityId: 'facility-1',
-            roles: <String>['NURSE'],
+    test(
+      'tailors nurse profile with five metric slots and expanded actions',
+      () {
+        final HomeDashboardProfile base = homeProfileForRole(AppRole.nurse);
+        final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'token'),
+            user: const AuthUserProfile(
+              tenantId: 'tenant-1',
+              facilityId: 'facility-1',
+              roles: <String>['NURSE'],
+            ),
+            permissions: const <AppPermission>[
+              AppPermissions.clinicalRead,
+              AppPermissions.clinicalWrite,
+              AppPermissions.patientRead,
+              AppPermissions.patientWrite,
+              AppPermissions.labRead,
+              AppPermissions.emergencyRead,
+            ],
+            moduleEntitlements: const <AppModuleEntitlement>[
+              AppModuleEntitlement(code: 'clinical'),
+              AppModuleEntitlement(code: 'nursing'),
+              AppModuleEntitlement(code: 'scheduling'),
+              AppModuleEntitlement(code: 'lab'),
+              AppModuleEntitlement(code: 'ipd'),
+            ],
           ),
-          permissions: const <AppPermission>[
-            AppPermissions.clinicalRead,
-            AppPermissions.clinicalWrite,
-            AppPermissions.patientRead,
-            AppPermissions.patientWrite,
-            AppPermissions.labRead,
-            AppPermissions.emergencyRead,
-          ],
-          moduleEntitlements: const <AppModuleEntitlement>[
-            AppModuleEntitlement(code: 'clinical'),
-            AppModuleEntitlement(code: 'nursing'),
-            AppModuleEntitlement(code: 'scheduling'),
-            AppModuleEntitlement(code: 'lab'),
-            AppModuleEntitlement(code: 'ipd'),
-          ],
-        ),
-      );
+        );
 
-      final HomeDashboardProfile tailored = tailorNurseDashboardProfile(
-        base: base,
-        departmentKind: NurseDepartmentKind.opd,
-        policy: policy,
-      );
+        final HomeDashboardProfile tailored = tailorNurseDashboardProfile(
+          base: base,
+          departmentKind: NurseDepartmentKind.opd,
+          policy: policy,
+        );
 
-      expect(tailored.maxStatusCards, 5);
-      expect(tailored.effectiveMaxStatusCards, 5);
-      expect(tailored.maxQuickActions, 8);
-      expect(tailored.homeTitle, 'OPD nursing');
-      expect(tailored.statusCards.first.id, 'appointments_today');
-      expect(
-        tailored.quickActionIds,
-        containsAll(<String>['route_patient', 'record_vitals']),
-      );
-      expect(tailored.metricRouteTargets, contains('inpatient_flow'));
-    });
+        expect(tailored.maxStatusCards, 5);
+        expect(tailored.effectiveMaxStatusCards, 5);
+        expect(tailored.maxQuickActions, 8);
+        expect(tailored.homeTitle, 'OPD nursing');
+        expect(tailored.statusCards.first.id, 'appointments_today');
+        expect(
+          tailored.quickActionIds,
+          containsAll(<String>['route_patient', 'record_vitals']),
+        );
+        expect(tailored.metricRouteTargets, contains('inpatient_flow'));
+      },
+    );
   });
 }

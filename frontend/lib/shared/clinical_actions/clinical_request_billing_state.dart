@@ -143,8 +143,7 @@ final class ClinicalRequestPayerContext {
     return ClinicalRequestPayerContext(
       insured: insured ?? this.insured,
       insuranceCompanyId: insuranceCompanyId ?? this.insuranceCompanyId,
-      insuranceCompanyName:
-          insuranceCompanyName ?? this.insuranceCompanyName,
+      insuranceCompanyName: insuranceCompanyName ?? this.insuranceCompanyName,
       coveragePlanId: coveragePlanId ?? this.coveragePlanId,
       coveragePlanName: coveragePlanName ?? this.coveragePlanName,
       insurerKey: insurerKey ?? this.insurerKey,
@@ -241,7 +240,8 @@ final class ClinicalRequestBillingSubmit {
               if (item.priceBookEntryId != null &&
                   item.priceBookEntryId!.isNotEmpty)
                 'price_book_entry_id': item.priceBookEntryId,
-              if (item.coveragePlanId != null && item.coveragePlanId!.isNotEmpty)
+              if (item.coveragePlanId != null &&
+                  item.coveragePlanId!.isNotEmpty)
                 'coverage_plan_id': item.coveragePlanId,
               if (item.patientShare != null) 'patient_share': item.patientShare,
               if (item.insurerShare != null) 'insurer_share': item.insurerShare,
@@ -272,9 +272,7 @@ List<ClinicalRequestBillingLineItem> clinicalRequestBillingLineItems({
         quantity: quantities?[option.apiId] ?? 1,
         unitPrice: clinicalCatalogOptionUnitPrice(option),
         currency: clinicalCatalogOptionCurrency(option) ?? currency,
-        catalogType:
-            catalogType ??
-            clinicalCatalogOptionCatalogType(option),
+        catalogType: catalogType ?? clinicalCatalogOptionCatalogType(option),
         billingEntity: billingEntity,
         priceSource: billingEntity,
       ),
@@ -394,7 +392,8 @@ List<ClinicalRequestBillingLineItem> applyClinicalRequestPayerContext(
           payerContext: context,
         );
         return item.copyWith(
-          billingEntity: item.billingEntity ?? billingEntity ?? item.priceSource,
+          billingEntity:
+              item.billingEntity ?? billingEntity ?? item.priceSource,
           paymentMode: context.paymentMode,
           coveragePlanId: item.coveragePlanId ?? context.coveragePlanId,
           patientShare: shares.patientShare,

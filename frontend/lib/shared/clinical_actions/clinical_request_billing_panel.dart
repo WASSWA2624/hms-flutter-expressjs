@@ -474,7 +474,8 @@ class _ClinicalRequestBillingPanelState
             ? _referenceController.text.trim()
             : null,
         lineItems: lineItems,
-        billingEntity: widget.billingEntity ??
+        billingEntity:
+            widget.billingEntity ??
             (lineItems.isEmpty ? null : lineItems.first.billingEntity),
         paymentMode: payer.paymentMode,
         coveragePlanId: payer.coveragePlanId,
@@ -988,11 +989,7 @@ class _PayerShareSummary extends StatelessWidget {
             insurerShare,
           ),
           if (copayAmount > 0)
-            _shareRow(
-              context,
-              l10n.clinicalRequestCopayLabel,
-              copayAmount,
-            ),
+            _shareRow(context, l10n.clinicalRequestCopayLabel, copayAmount),
         ],
       ),
     );
@@ -1004,9 +1001,7 @@ class _PayerShareSummary extends StatelessWidget {
       padding: EdgeInsets.only(top: theme.spacing.xs),
       child: Row(
         children: <Widget>[
-          Expanded(
-            child: Text(label, style: theme.textTheme.bodySmall),
-          ),
+          Expanded(child: Text(label, style: theme.textTheme.bodySmall)),
           Text(
             clinicalRequestPriceLabel(context, amount, currency),
             style: theme.textTheme.bodySmall?.copyWith(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/shared/components/app_search_bar.dart';
+import 'package:hosspi_hms/shared/layout/app_shell_layout.dart';
 import 'package:hosspi_hms/shared/layout/responsive_shell_scaffold.dart';
 
 void main() {
@@ -55,6 +56,20 @@ void main() {
       expect(find.byType(NavigationRail), findsNothing);
       expect(find.text('Online'), findsNothing);
       expect(find.byType(CircleAvatar), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('uses side navigation for md tablet widths', (
+      WidgetTester tester,
+    ) async {
+      await pumpShellAtSize(tester, const Size(600, 800));
+
+      final Scaffold scaffold = tester.widget<Scaffold>(find.byType(Scaffold));
+
+      expect(scaffold.drawer, isNull);
+      expect(find.byType(AppMenuBar), findsOneWidget);
+      expect(find.byType(SideNavigation), findsOneWidget);
+      expect(find.byType(NavigationBar), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -122,6 +137,61 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('honors initialSidebarCollapsed and reports toggles', (
+      WidgetTester tester,
+    ) async {
+      bool? reported;
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(1200, 900);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ResponsiveAppShell(
+            title: 'Template',
+            compactTitle: 'App',
+            destinations: const <ResponsiveShellDestination>[
+              ResponsiveShellDestination(
+                label: 'Home',
+                icon: Icons.home_outlined,
+                selectedIcon: Icons.home,
+              ),
+              ResponsiveShellDestination(
+                label: 'Settings',
+                icon: Icons.settings_outlined,
+                selectedIcon: Icons.settings,
+              ),
+            ],
+            selectedIndex: 0,
+            initialSidebarCollapsed: true,
+            onSidebarCollapsedChanged: (bool collapsed) {
+              reported = collapsed;
+            },
+            onDestinationSelected: (_) {},
+            child: const Text('Body'),
+          ),
+        ),
+      );
+
+      final SideNavigation collapsedNav = tester.widget<SideNavigation>(
+        find.byType(SideNavigation),
+      );
+      expect(collapsedNav.collapsed, isTrue);
+      expect(collapsedNav.width, AppShellLayout.collapsedSidebarWidth);
+
+      await tester.tap(find.byTooltip('Toggle sidebar'));
+      await tester.pumpAndSettle();
+
+      expect(reported, isFalse);
+      final SideNavigation expandedNav = tester.widget<SideNavigation>(
+        find.byType(SideNavigation),
+      );
+      expect(expandedNav.collapsed, isFalse);
+      expect(expandedNav.width, AppShellLayout.defaultSidebarWidth);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets(
       'shows notification control only when notifications are wired',
       (WidgetTester tester) async {
@@ -170,7 +240,7 @@ void main() {
       );
 
       expect(sideNavigation.collapsed, isTrue);
-      expect(sideNavigation.width, 72);
+      expect(sideNavigation.width, AppShellLayout.collapsedSidebarWidth);
       expect(find.text('Settings'), findsNothing);
       expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
       expect(tester.takeException(), isNull);

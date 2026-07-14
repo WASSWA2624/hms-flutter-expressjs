@@ -99,10 +99,10 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
 
   MouseCursor _cursorForCorner(EdgeAlignment alignment) {
     return switch (alignment) {
-      EdgeAlignment.topLeft || EdgeAlignment.bottomRight =>
-        SystemMouseCursors.resizeUpLeftDownRight,
-      EdgeAlignment.topRight || EdgeAlignment.bottomLeft =>
-        SystemMouseCursors.resizeUpRightDownLeft,
+      EdgeAlignment.topLeft ||
+      EdgeAlignment.bottomRight => SystemMouseCursors.resizeUpLeftDownRight,
+      EdgeAlignment.topRight ||
+      EdgeAlignment.bottomLeft => SystemMouseCursors.resizeUpRightDownLeft,
     };
   }
 
@@ -144,7 +144,10 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
           crop.left,
           crop.top,
           crop.right,
-          (crop.bottom + delta.dy).clamp(crop.top + _minCropSide, bounds.bottom),
+          (crop.bottom + delta.dy).clamp(
+            crop.top + _minCropSide,
+            bounds.bottom,
+          ),
         );
       case _CropEdge.left:
         next = Rect.fromLTRB(
@@ -265,9 +268,7 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
       title: Text(
         showingPreview ? l10n.appImageCropPreviewTitle : l10n.appImageCropTitle,
       ),
-      icon: Icon(
-        showingPreview ? Icons.image_outlined : Icons.crop_outlined,
-      ),
+      icon: Icon(showingPreview ? Icons.image_outlined : Icons.crop_outlined),
       scrollable: true,
       pinActionsToBottom: true,
       maxWidth: 800,
@@ -358,21 +359,19 @@ class _AppImageCropDialogState extends State<_AppImageCropDialog> {
                             onImageMoved: _onImageMoved,
                             cornerDotBuilder:
                                 (double size, EdgeAlignment alignment) {
-                              return MouseRegion(
-                                cursor: _cursorForCorner(alignment),
-                                child: DotControl(
-                                  color: colorScheme.surface,
-                                ),
-                              );
-                            },
+                                  return MouseRegion(
+                                    cursor: _cursorForCorner(alignment),
+                                    child: DotControl(
+                                      color: colorScheme.surface,
+                                    ),
+                                  );
+                                },
                             onCropped: (CropResult result) {
                               if (!mounted) {
                                 return;
                               }
                               switch (result) {
-                                case CropSuccess(
-                                  :final Uint8List croppedImage,
-                                ):
+                                case CropSuccess(:final Uint8List croppedImage):
                                   setState(() {
                                     _isCropping = false;
                                     _previewBytes = croppedImage;

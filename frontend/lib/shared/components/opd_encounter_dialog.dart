@@ -1227,9 +1227,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       patientPhone: patient?.primaryPhone,
     );
     unawaited(
-      _refreshEngineConsultationFee(
-        patient?.publicId ?? patient?.id ?? value,
-      ),
+      _refreshEngineConsultationFee(patient?.publicId ?? patient?.id ?? value),
     );
   }
 

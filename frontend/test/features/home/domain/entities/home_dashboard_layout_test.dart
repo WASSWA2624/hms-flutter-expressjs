@@ -52,10 +52,11 @@ void main() {
       expect(profile.showShortcutsSection(quickActionCount: 2), isTrue);
       expect(profile.maxShortcutTiles, 3);
       expect(profile.showQueuePanelFor(const []), isTrue);
-      expect(
-        profile.quickActionIds,
-        <String>['receive_sample', 'enter_lab_result', 'flag_critical_lab'],
-      );
+      expect(profile.quickActionIds, <String>[
+        'receive_sample',
+        'enter_lab_result',
+        'flag_critical_lab',
+      ]);
       expect(profile.metricRouteTargets.keys, contains('pending_results'));
     });
 
@@ -77,63 +78,54 @@ void main() {
           'low_stock',
         ],
       );
-      expect(
-        profile.quickActionIds,
-        <String>[
-          'dispense_medication',
-          'record_pharmacy_sale',
-          'receive_pharmacy_stock',
-          'adjust_pharmacy_stock',
-        ],
-      );
+      expect(profile.quickActionIds, <String>[
+        'dispense_medication',
+        'record_pharmacy_sale',
+        'receive_pharmacy_stock',
+        'adjust_pharmacy_stock',
+      ]);
       expect(profile.metricRouteTargets.keys, contains('pending_dispense'));
-      expect(
-        profile.emptyMessage,
-        contains('No pending orders'),
-      );
+      expect(profile.emptyMessage, contains('No pending orders'));
     });
 
-    test('receptionist dashboard emphasizes meetings follow-up and quick links', () {
-      final profile = homeProfileForRole(AppRole.receptionist);
+    test(
+      'receptionist dashboard emphasizes meetings follow-up and quick links',
+      () {
+        final profile = homeProfileForRole(AppRole.receptionist);
 
-      expect(profile.layoutTier, HomeDashboardLayoutTier.departmentQueue);
-      expect(profile.isReceptionistFrontDeskDashboard, isTrue);
-      expect(profile.effectiveMaxStatusCards, 4);
-      expect(profile.maxQuickActions, 4);
-      expect(profile.maxQueueItems, 5);
-      expect(profile.maxFollowUpItems, 3);
-      expect(profile.maxShortcutTiles, 5);
-      expect(profile.emptyActionIds, isEmpty);
-      expect(
-        profile.statusCards.take(4).map((template) => template.id),
-        <String>[
-          'appointments_today',
-          'desk_queue',
-          'turnaround_pressure',
-          'no_show_pressure',
-        ],
-      );
-      expect(
-        profile.quickActionIds,
-        <String>[
+        expect(profile.layoutTier, HomeDashboardLayoutTier.departmentQueue);
+        expect(profile.isReceptionistFrontDeskDashboard, isTrue);
+        expect(profile.effectiveMaxStatusCards, 4);
+        expect(profile.maxQuickActions, 4);
+        expect(profile.maxQueueItems, 5);
+        expect(profile.maxFollowUpItems, 3);
+        expect(profile.maxShortcutTiles, 5);
+        expect(profile.emptyActionIds, isEmpty);
+        expect(
+          profile.statusCards.take(4).map((template) => template.id),
+          <String>[
+            'appointments_today',
+            'desk_queue',
+            'turnaround_pressure',
+            'no_show_pressure',
+          ],
+        );
+        expect(profile.quickActionIds, <String>[
           'register_patient',
           'book_appointment',
           'check_in_patient',
           'route_patient',
-        ],
-      );
-      expect(
-        profile.shortcutIds,
-        <String>[
+        ]);
+        expect(profile.shortcutIds, <String>[
           'patients',
           'opd',
           'emergency',
           'communications',
           'settings',
-        ],
-      );
-      expect(profile.metricRouteTargets.keys, contains('appointments_today'));
-      expect(profile.emptyMessage, contains('quick links'));
-    });
+        ]);
+        expect(profile.metricRouteTargets.keys, contains('appointments_today'));
+        expect(profile.emptyMessage, contains('quick links'));
+      },
+    );
   });
 }

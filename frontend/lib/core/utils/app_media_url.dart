@@ -32,9 +32,6 @@ String? resolveAppMediaUrl(String? value, Uri apiBaseUrl) {
     pathPart = 'uploads/$pathPart';
   }
 
-  final Uri resolved = apiBaseUrl.replace(
-    path: '/$pathPart',
-    query: query,
-  );
+  final Uri resolved = apiBaseUrl.replace(path: '/$pathPart', query: query);
   return resolved.toString();
 }

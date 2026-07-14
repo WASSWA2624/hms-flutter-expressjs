@@ -699,11 +699,7 @@ void main() {
   ) async {
     AppPageRequest? nextRequest;
     final List<_RowItem> pageItems = List<_RowItem>.generate(12, (int index) {
-      return _RowItem(
-        id: '$index',
-        title: 'Item $index',
-        status: 'Active',
-      );
+      return _RowItem(id: '$index', title: 'Item $index', status: 'Active');
     });
     final AppPage<_RowItem> page = AppPage<_RowItem>(
       items: pageItems,
@@ -746,70 +742,71 @@ void main() {
     expect(nextRequest, const AppPageRequest(pageIndex: 1, pageSize: 12));
   });
 
-  testWidgets('AppListTable accumulates infinite pages and continues numbering', (
-    WidgetTester tester,
-  ) async {
-    AppPage<_RowItem> page = AppPage<_RowItem>(
-      items: List<_RowItem>.generate(8, (int index) {
-        return _RowItem(
-          id: 'a-$index',
-          title: 'Alpha $index',
-          status: 'Active',
-        );
-      }),
-      request: const AppPageRequest(pageSize: 8),
-      totalItemCount: 12,
-    );
-
-    await pumpComponent(
-      tester,
-      StatefulBuilder(
-        builder: (BuildContext context, StateSetter setState) {
-          return SizedBox(
-            height: 240,
-            width: 960,
-            child: AppListTable<_RowItem>(
-              page: page,
-              columns: _columns,
-              mobileItemBuilder: (BuildContext context, _RowItem item) {
-                return ListTile(title: Text(item.title));
-              },
-              onPageChanged: (AppPageRequest request) {
-                setState(() {
-                  page = AppPage<_RowItem>(
-                    items: List<_RowItem>.generate(4, (int index) {
-                      return _RowItem(
-                        id: 'b-$index',
-                        title: 'Beta $index',
-                        status: 'Draft',
-                      );
-                    }),
-                    request: request,
-                    totalItemCount: 12,
-                  );
-                });
-              },
-            ),
+  testWidgets(
+    'AppListTable accumulates infinite pages and continues numbering',
+    (WidgetTester tester) async {
+      AppPage<_RowItem> page = AppPage<_RowItem>(
+        items: List<_RowItem>.generate(8, (int index) {
+          return _RowItem(
+            id: 'a-$index',
+            title: 'Alpha $index',
+            status: 'Active',
           );
-        },
-      ),
-      size: const Size(960, 600),
-    );
+        }),
+        request: const AppPageRequest(pageSize: 8),
+        totalItemCount: 12,
+      );
 
-    expect(find.text('Alpha 0'), findsOneWidget);
-    expect(find.text('Beta 0'), findsNothing);
+      await pumpComponent(
+        tester,
+        StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return SizedBox(
+              height: 240,
+              width: 960,
+              child: AppListTable<_RowItem>(
+                page: page,
+                columns: _columns,
+                mobileItemBuilder: (BuildContext context, _RowItem item) {
+                  return ListTile(title: Text(item.title));
+                },
+                onPageChanged: (AppPageRequest request) {
+                  setState(() {
+                    page = AppPage<_RowItem>(
+                      items: List<_RowItem>.generate(4, (int index) {
+                        return _RowItem(
+                          id: 'b-$index',
+                          title: 'Beta $index',
+                          status: 'Draft',
+                        );
+                      }),
+                      request: request,
+                      totalItemCount: 12,
+                    );
+                  });
+                },
+              ),
+            );
+          },
+        ),
+        size: const Size(960, 600),
+      );
 
-    final ScrollableState scrollable = tester.state<ScrollableState>(
-      find.byType(Scrollable).first,
-    );
-    scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
-    await tester.pump();
-    await tester.pump();
+      expect(find.text('Alpha 0'), findsOneWidget);
+      expect(find.text('Beta 0'), findsNothing);
 
-    expect(find.text('Beta 0'), findsOneWidget);
-    expect(find.text('9'), findsOneWidget);
-    expect(find.text('12'), findsOneWidget);
-  });
+      final ScrollableState scrollable = tester.state<ScrollableState>(
+        find.byType(Scrollable).first,
+      );
+      scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.text('Beta 0'), findsOneWidget);
+      expect(find.text('9'), findsOneWidget);
+      expect(find.text('12'), findsOneWidget);
+    },
+  );
 
   testWidgets('AppListTable remembers resized column widths', (
     WidgetTester tester,
@@ -837,8 +834,8 @@ void main() {
     await tester.drag(resizeHandle, const Offset(40, 0));
     await tester.pump();
 
-    final Map<String, double>? saved =
-        AppListTableColumnLayoutMemory.instance.read(storageKey);
+    final Map<String, double>? saved = AppListTableColumnLayoutMemory.instance
+        .read(storageKey);
     expect(saved, isNotNull);
     expect(saved!['title'], greaterThan(160));
 

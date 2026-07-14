@@ -1391,7 +1391,11 @@ void homeNavigateRouteTarget(
   HomeRouteTarget? target,
 }) {
   final AppRouteData? route = homeRouteForTarget(target);
-  if (homeTargetUsesTenantSubscriptionFallback(policy, target: target, route: route)) {
+  if (homeTargetUsesTenantSubscriptionFallback(
+    policy,
+    target: target,
+    route: route,
+  )) {
     unawaited(homeOpenTenantSubscriptionSurface(context, ref, policy));
     return;
   }
@@ -1400,11 +1404,7 @@ void homeNavigateRouteTarget(
     return;
   }
 
-  homeGoToRoute(
-    context,
-    route,
-    queryParameters: homeHrQueryForTarget(target),
-  );
+  homeGoToRoute(context, route, queryParameters: homeHrQueryForTarget(target));
 }
 
 VoidCallback? homeWorklistTap(
@@ -1423,12 +1423,7 @@ VoidCallback? homeWorklistTap(
     return null;
   }
 
-  return () => homeNavigateRouteTarget(
-    context,
-    ref,
-    policy,
-    target: target,
-  );
+  return () => homeNavigateRouteTarget(context, ref, policy, target: target);
 }
 
 void homeNavigateShortcut(

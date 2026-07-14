@@ -20,6 +20,9 @@ void main() {
           .into(database.syncQueueEntries)
           .insert(
             SyncQueueEntriesCompanion.insert(
+              partitionKey: 'user-1::tenant-1::facility-1',
+              userId: 'user-1',
+              tenantId: 'tenant-1',
               localId: 'local-1',
               operation: SyncQueueOperation.create,
               payloadJson: '{"id":"local-1"}',

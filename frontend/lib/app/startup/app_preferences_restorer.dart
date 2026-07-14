@@ -9,6 +9,7 @@ abstract final class AppPreferenceKeys {
   static const String reduceMotion = 'app.accessibility.reduce_motion';
   static const String boldText = 'app.accessibility.bold_text';
   static const String textScaleLevel = 'app.accessibility.text_scale_level';
+  static const String sidebarCollapsed = 'app.shell.sidebar_collapsed';
 }
 
 abstract final class AppPreferencesRestorer {

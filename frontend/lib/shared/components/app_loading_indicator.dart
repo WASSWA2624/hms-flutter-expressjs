@@ -130,9 +130,8 @@ class _AppLoadingIndicatorState extends State<AppLoadingIndicator>
                   style: metrics.brandStyle(theme),
                 ),
               ],
-              if (widget.title != null && widget.title!.trim().isNotEmpty) ...<
-                Widget
-              >[
+              if (widget.title != null &&
+                  widget.title!.trim().isNotEmpty) ...<Widget>[
                 SizedBox(
                   height: widget.showBrandName
                       ? theme.spacing.sm
@@ -144,9 +143,8 @@ class _AppLoadingIndicatorState extends State<AppLoadingIndicator>
                   style: metrics.titleStyle(theme),
                 ),
               ],
-              if (widget.body != null && widget.body!.trim().isNotEmpty) ...<
-                Widget
-              >[
+              if (widget.body != null &&
+                  widget.body!.trim().isNotEmpty) ...<Widget>[
                 SizedBox(height: theme.spacing.xs),
                 ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: metrics.copyMaxWidth),
@@ -241,9 +239,8 @@ class _LoadingMetrics {
           fontWeight: FontWeight.w700,
           letterSpacing: 0.2,
         ),
-        titleStyle: (ThemeData theme) => theme.textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
+        titleStyle: (ThemeData theme) =>
+            theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
       ),
       AppLoadingIndicatorSize.regular => _LoadingMetrics(
         logoSize: compactViewport ? 48 : 56,
@@ -254,9 +251,8 @@ class _LoadingMetrics {
           fontWeight: FontWeight.w700,
           letterSpacing: 0.2,
         ),
-        titleStyle: (ThemeData theme) => theme.textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
+        titleStyle: (ThemeData theme) =>
+            theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
       ),
       AppLoadingIndicatorSize.large => _LoadingMetrics(
         logoSize: switch (breakpoint) {
@@ -271,13 +267,10 @@ class _LoadingMetrics {
           AppBreakpoint.md => 360,
           _ => 420,
         },
-        brandStyle: (ThemeData theme) => theme.textTheme.headlineSmall?.copyWith(
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.15,
-        ),
-        titleStyle: (ThemeData theme) => theme.textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w600,
-        ),
+        brandStyle: (ThemeData theme) => theme.textTheme.headlineSmall
+            ?.copyWith(fontWeight: FontWeight.w800, letterSpacing: 0.15),
+        titleStyle: (ThemeData theme) =>
+            theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
       ),
       AppLoadingIndicatorSize.hero => _LoadingMetrics(
         logoSize: switch (breakpoint) {
@@ -344,7 +337,9 @@ class _AnimatedLogoMark extends StatelessWidget {
               height: markSize + 12,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: colorScheme.primary.withValues(alpha: outerOpacity * 0.35),
+                color: colorScheme.primary.withValues(
+                  alpha: outerOpacity * 0.35,
+                ),
               ),
             ),
           ),
@@ -365,7 +360,9 @@ class _AnimatedLogoMark extends StatelessWidget {
                 color: colorScheme.surface.withValues(alpha: 0.92),
                 boxShadow: <BoxShadow>[
                   BoxShadow(
-                    color: colorScheme.primary.withValues(alpha: 0.12 + 0.1 * breath),
+                    color: colorScheme.primary.withValues(
+                      alpha: 0.12 + 0.1 * breath,
+                    ),
                     blurRadius: 18 + (8 * breath),
                     spreadRadius: 1,
                   ),

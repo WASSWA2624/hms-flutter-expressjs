@@ -83,7 +83,9 @@ final class OrgAdminContact {
     if (mail != null && mail.isNotEmpty) {
       return mail;
     }
-    return roleName?.trim().isNotEmpty == true ? roleName!.trim() : 'Administrator';
+    return roleName?.trim().isNotEmpty == true
+        ? roleName!.trim()
+        : 'Administrator';
   }
 
   factory OrgAdminContact.fromJson(Map<String, Object?>? json) {

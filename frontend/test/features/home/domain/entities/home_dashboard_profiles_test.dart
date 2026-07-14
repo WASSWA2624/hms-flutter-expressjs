@@ -79,37 +79,33 @@ void main() {
         ]),
       );
       expect(profile.quickActionIds, isNot(contains('manage_subscription')));
-      expect(
-        profile.quickActionIds.take(4),
-        <String>[
-          'create_facility',
-          'create_role',
-          'create_user',
-          'add_staff_profile',
-        ],
-      );
-      expect(
-        profile.emptyActionIds,
-        <String>[
-          'manage_facilities',
-          'manage_roles_access',
-          'manage_users_roles',
-          'manage_users',
-        ],
-      );
+      expect(profile.quickActionIds.take(4), <String>[
+        'create_facility',
+        'create_role',
+        'create_user',
+        'add_staff_profile',
+      ]);
+      expect(profile.emptyActionIds, <String>[
+        'manage_facilities',
+        'manage_roles_access',
+        'manage_users_roles',
+        'manage_users',
+      ]);
       expect(
         profile.shortcutIds,
-        containsAll(<String>['tenant_facility_setup', 'settings', 'reports', 'subscriptions']),
+        containsAll(<String>[
+          'tenant_facility_setup',
+          'settings',
+          'reports',
+          'subscriptions',
+        ]),
       );
-      expect(
-        profile.statusCards.map((template) => template.id),
-        <String>[
-          'facilities_active',
-          'active_users',
-          'module_adoption',
-          'subscription_health',
-        ],
-      );
+      expect(profile.statusCards.map((template) => template.id), <String>[
+        'facilities_active',
+        'active_users',
+        'module_adoption',
+        'subscription_health',
+      ]);
       for (final actionId in <String>[
         'start_consultation',
         'record_vitals',
@@ -200,53 +196,62 @@ void main() {
       final profile = homeProfileForRole(AppRole.doctor);
 
       expect(profile.quickActionIds, hasLength(5));
-      expect(profile.quickActionIds, containsAll(<String>[
-        'start_consultation',
-        'continue_consultation',
-        'order_lab',
-        'order_radiology',
-        'write_clinical_note',
-      ]));
-      expect(profile.shortcutIds, containsAll(<String>[
-        'clinical',
-        'opd',
-        'emergency',
-        'lab',
-        'radiology',
-        'ipd',
-      ]));
-    });
-
-    test('nurse profile supports five metrics and permission-aware actions', () {
-      final profile = homeProfileForRole(AppRole.nurse);
-
-      expect(profile.maxStatusCards, 5);
-      expect(profile.effectiveMaxStatusCards, 5);
-      expect(profile.maxQuickActions, 8);
-      expect(profile.maxShortcutTiles, 6);
-      expect(profile.maxQueueItems, 5);
-      expect(
-        profile.statusCards.map((template) => template.id),
-        containsAll(<String>[
-          'appointments_today',
-          'emergency_cases_today',
-          'theatre_cases_today',
-          'radiology_pending',
-        ]),
-      );
       expect(
         profile.quickActionIds,
         containsAll(<String>[
-          'record_vitals',
-          'mark_med_administered',
-          'create_handover',
+          'start_consultation',
+          'continue_consultation',
+          'order_lab',
+          'order_radiology',
           'write_clinical_note',
-          'route_patient',
-          'check_in_patient',
         ]),
       );
-      expect(profile.metricRouteTargets, contains('critical_labs'));
+      expect(
+        profile.shortcutIds,
+        containsAll(<String>[
+          'clinical',
+          'opd',
+          'emergency',
+          'lab',
+          'radiology',
+          'ipd',
+        ]),
+      );
     });
+
+    test(
+      'nurse profile supports five metrics and permission-aware actions',
+      () {
+        final profile = homeProfileForRole(AppRole.nurse);
+
+        expect(profile.maxStatusCards, 5);
+        expect(profile.effectiveMaxStatusCards, 5);
+        expect(profile.maxQuickActions, 8);
+        expect(profile.maxShortcutTiles, 6);
+        expect(profile.maxQueueItems, 5);
+        expect(
+          profile.statusCards.map((template) => template.id),
+          containsAll(<String>[
+            'appointments_today',
+            'emergency_cases_today',
+            'theatre_cases_today',
+            'radiology_pending',
+          ]),
+        );
+        expect(
+          profile.quickActionIds,
+          containsAll(<String>[
+            'record_vitals',
+            'mark_med_administered',
+            'create_handover',
+            'write_clinical_note',
+            'route_patient',
+            'check_in_patient',
+          ]),
+        );
+        expect(profile.metricRouteTargets, contains('critical_labs'));
+      },
+    );
 
     test('manager overlay roles do not override primary dashboard role', () {
       expect(

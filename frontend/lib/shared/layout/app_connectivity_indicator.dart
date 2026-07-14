@@ -3,6 +3,8 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
 
 /// Network-style online/offline indicator for the app shell header.
+///
+/// Status is never color-only: icon + localized semantic label + tooltip.
 class AppConnectivityIndicator extends StatelessWidget {
   const AppConnectivityIndicator({
     required this.status,
@@ -24,17 +26,20 @@ class AppConnectivityIndicator extends StatelessWidget {
         : theme.statusColors.error;
     final String label = isOnline ? onlineLabel : offlineLabel;
     final IconData icon = isOnline ? Icons.wifi : Icons.wifi_off_outlined;
+    final double target = theme.appTokens.minInteractiveDimension;
 
     return Tooltip(
       message: label,
       child: Semantics(
         label: label,
-        child: Padding(
-          padding: EdgeInsets.all(theme.spacing.xs),
-          child: Icon(
-            icon,
-            size: theme.appTokens.listIconSize,
-            color: iconColor,
+        child: SizedBox.square(
+          dimension: target,
+          child: Center(
+            child: Icon(
+              icon,
+              size: theme.appTokens.listIconSize,
+              color: iconColor,
+            ),
           ),
         ),
       ),

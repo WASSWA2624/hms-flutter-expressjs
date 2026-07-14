@@ -115,6 +115,8 @@ class ResponsiveAppShell extends ResponsiveShellScaffold {
     super.onSettingsSelected,
     super.onChangePasswordSelected,
     super.onLogoutSelected,
+    super.initialSidebarCollapsed = false,
+    super.onSidebarCollapsedChanged,
     super.isShellLoading = false,
     super.shellRouteKey,
     super.key,
@@ -158,6 +160,8 @@ class ResponsiveShellScaffold extends StatefulWidget {
     this.onSettingsSelected,
     this.onChangePasswordSelected,
     this.onLogoutSelected,
+    this.initialSidebarCollapsed = false,
+    this.onSidebarCollapsedChanged,
     this.isShellLoading = false,
     this.shellRouteKey,
     super.key,
@@ -197,6 +201,8 @@ class ResponsiveShellScaffold extends StatefulWidget {
   final VoidCallback? onSettingsSelected;
   final VoidCallback? onChangePasswordSelected;
   final VoidCallback? onLogoutSelected;
+  final bool initialSidebarCollapsed;
+  final ValueChanged<bool>? onSidebarCollapsedChanged;
   final bool isShellLoading;
   final String? shellRouteKey;
   final Widget child;
@@ -208,8 +214,23 @@ class ResponsiveShellScaffold extends StatefulWidget {
 
 class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  bool _sidebarCollapsed = false;
-  double _sidebarWidth = _defaultSidebarWidth;
+  late bool _sidebarCollapsed;
+  double _sidebarWidth = AppShellLayout.defaultSidebarWidth;
+
+  @override
+  void initState() {
+    super.initState();
+    _sidebarCollapsed = widget.initialSidebarCollapsed;
+  }
+
+  @override
+  void didUpdateWidget(ResponsiveShellScaffold oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialSidebarCollapsed != widget.initialSidebarCollapsed &&
+        widget.initialSidebarCollapsed != _sidebarCollapsed) {
+      _sidebarCollapsed = widget.initialSidebarCollapsed;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -218,7 +239,7 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
         final AppBreakpoint breakpoint = AppBreakpoints.fromConstraints(
           constraints,
         );
-        final bool isMobile = breakpoint.isMobile;
+        final bool useDrawer = breakpoint.usesDrawerNavigation;
         final bool canNavigate = widget.destinations.length > 1;
         final int effectiveSelectedIndex = widget.destinations.isEmpty
             ? 0
@@ -226,7 +247,7 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
 
         return Scaffold(
           key: _scaffoldKey,
-          drawer: isMobile && canNavigate
+          drawer: useDrawer && canNavigate
               ? _MobileShellDrawer(
                   title: widget.compactTitle ?? widget.title,
                   destinations: widget.destinations,
@@ -266,10 +287,10 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
                   onSettingsSelected: widget.onSettingsSelected,
                   onChangePasswordSelected: widget.onChangePasswordSelected,
                   onLogoutSelected: widget.onLogoutSelected,
-                  toggleTooltip: isMobile
+                  toggleTooltip: useDrawer
                       ? widget.openMenuTooltip
                       : widget.toggleSidebarTooltip,
-                  onToggleNavigation: isMobile
+                  onToggleNavigation: useDrawer
                       ? _openMobileDrawer
                       : _toggleDesktopSidebar,
                 ),
@@ -278,14 +299,14 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
                   child: ShellNavigationScope(
                     deferLoadingToShell: true,
                     child: _ShellBody(
-                      isMobile: isMobile,
+                      useDrawer: useDrawer,
                       shellRouteKey: widget.shellRouteKey,
                       isShellLoading: widget.isShellLoading,
                       destinations: widget.destinations,
                       selectedIndex: effectiveSelectedIndex,
                       sidebarCollapsed: _sidebarCollapsed,
                       sidebarWidth: _sidebarCollapsed
-                          ? _collapsedSidebarWidth
+                          ? AppShellLayout.collapsedSidebarWidth
                           : _sidebarWidth,
                       navigationSearchLabel: widget.navigationSearchLabel,
                       navigationSearchHint: widget.navigationSearchHint,
@@ -310,16 +331,18 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
   }
 
   void _toggleDesktopSidebar() {
+    final bool nextCollapsed = !_sidebarCollapsed;
     setState(() {
-      _sidebarCollapsed = !_sidebarCollapsed;
+      _sidebarCollapsed = nextCollapsed;
     });
+    widget.onSidebarCollapsedChanged?.call(nextCollapsed);
   }
 
   void _resizeSidebar(double delta) {
     setState(() {
       _sidebarWidth = (_sidebarWidth + delta).clamp(
-        _minSidebarWidth,
-        _maxSidebarWidth,
+        AppShellLayout.minSidebarWidth,
+        AppShellLayout.maxSidebarWidth,
       );
     });
   }
@@ -334,7 +357,7 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
 
 class _ShellBody extends StatelessWidget {
   const _ShellBody({
-    required this.isMobile,
+    required this.useDrawer,
     required this.shellRouteKey,
     required this.isShellLoading,
     required this.destinations,
@@ -349,7 +372,7 @@ class _ShellBody extends StatelessWidget {
     required this.child,
   });
 
-  final bool isMobile;
+  final bool useDrawer;
   final String? shellRouteKey;
   final bool isShellLoading;
   final List<ResponsiveShellDestination> destinations;
@@ -373,7 +396,7 @@ class _ShellBody extends StatelessWidget {
             child: child,
           );
 
-    if (isMobile) {
+    if (useDrawer) {
       return routeChild;
     }
 
@@ -390,7 +413,7 @@ class _ShellBody extends StatelessWidget {
           onDestinationSelected: onDestinationSelected,
         ),
         if (!sidebarCollapsed) _SidebarResizeHandle(onDrag: onResizeSidebar),
-        const VerticalDivider(width: _dividerWidth),
+        const VerticalDivider(width: AppShellLayout.dividerWidth),
         Expanded(child: routeChild),
       ],
     );
@@ -1101,7 +1124,7 @@ class _MobileShellDrawer extends StatelessWidget {
                 ),
               ),
             ),
-            const Divider(height: _dividerWidth),
+            const Divider(height: AppShellLayout.dividerWidth),
             Expanded(
               child: ListView.builder(
                 padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
@@ -1563,7 +1586,9 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: foregroundColor,
-                  fontWeight: widget.selected ? FontWeight.w600 : FontWeight.w500,
+                  fontWeight: widget.selected
+                      ? FontWeight.w600
+                      : FontWeight.w500,
                 ),
               ),
             ),
@@ -1704,10 +1729,10 @@ class _SidebarResizeHandle extends StatelessWidget {
           onDrag(details.delta.dx);
         },
         child: SizedBox(
-          width: _resizeHandleWidth,
+          width: AppShellLayout.resizeHandleWidth,
           child: Center(
             child: SizedBox(
-              width: _dividerWidth,
+              width: AppShellLayout.dividerWidth,
               height: double.infinity,
               child: ColoredBox(color: color),
             ),
@@ -1722,12 +1747,6 @@ const double _drawerHeaderHeight = AppShellLayout.headerHeight;
 const double _headerLogoSize = 24;
 const double _mobileHeaderLogoSize = 22;
 const double _drawerLogoSize = 24;
-const double _defaultSidebarWidth = 208;
-const double _minSidebarWidth = 160;
-const double _maxSidebarWidth = 272;
-const double _collapsedSidebarWidth = 72;
-const double _resizeHandleWidth = 6;
-const double _dividerWidth = 1;
 const double _avatarRadius = 13;
 const double _focusIndicatorWidth = 2;
 const Duration _menuAnimationDuration = Duration(milliseconds: 120);

@@ -10,14 +10,21 @@ const String tenantFacilityNoneSelection = '__none__';
 /// Builds a short, OS-safe facility logo basename (≤ 32 chars incl. extension).
 ///
 /// Example: `logo-4869585d.png`
-String buildFacilityLogoFileName(String facilityName, {String extension = 'png'}) {
+String buildFacilityLogoFileName(
+  String facilityName, {
+  String extension = 'png',
+}) {
   const int maxBasename = 32;
   final String normalizedExt = extension.startsWith('.')
       ? extension.toLowerCase()
       : '.${extension.toLowerCase()}';
-  final String slug = slugify(facilityName).replaceAll(RegExp(r'[^a-z0-9]'), '');
-  final String suffix = (slug.isEmpty ? 'facility' : slug)
-      .substring(0, math.min(8, (slug.isEmpty ? 'facility' : slug).length));
+  final String slug = slugify(
+    facilityName,
+  ).replaceAll(RegExp(r'[^a-z0-9]'), '');
+  final String suffix = (slug.isEmpty ? 'facility' : slug).substring(
+    0,
+    math.min(8, (slug.isEmpty ? 'facility' : slug).length),
+  );
   final String candidate = 'logo-$suffix$normalizedExt';
   if (candidate.length <= maxBasename) {
     return candidate;
@@ -25,6 +32,7 @@ String buildFacilityLogoFileName(String facilityName, {String extension = 'png'}
   final int maxStem = maxBasename - normalizedExt.length;
   return '${candidate.substring(0, maxStem)}$normalizedExt';
 }
+
 String? tenantFacilityOptionalSelection(String? value) {
   if (value == null || value == tenantFacilityNoneSelection) {
     return null;
@@ -293,13 +301,14 @@ List<TenantFacilityWizardStepRequirement> tenantFacilityWizardStepRequirements(
   TenantFacilitySetupWizardStep step,
 ) {
   return switch (step) {
-    TenantFacilitySetupWizardStep.tenant => <TenantFacilityWizardStepRequirement>[
-      TenantFacilityWizardStepRequirement(
-        label: l10n.tenantFacilityWizardMissingTenant,
-        satisfied: snapshot.hasTenant,
-        fixStep: TenantFacilitySetupWizardStep.tenant,
-      ),
-    ],
+    TenantFacilitySetupWizardStep.tenant =>
+      <TenantFacilityWizardStepRequirement>[
+        TenantFacilityWizardStepRequirement(
+          label: l10n.tenantFacilityWizardMissingTenant,
+          satisfied: snapshot.hasTenant,
+          fixStep: TenantFacilitySetupWizardStep.tenant,
+        ),
+      ],
     TenantFacilitySetupWizardStep.branches =>
       <TenantFacilityWizardStepRequirement>[
         TenantFacilityWizardStepRequirement(
@@ -340,27 +349,30 @@ List<TenantFacilityWizardStepRequirement> tenantFacilityWizardStepRequirements(
           fixStep: TenantFacilitySetupWizardStep.departments,
         ),
       ],
-    TenantFacilitySetupWizardStep.units => <TenantFacilityWizardStepRequirement>[
-      TenantFacilityWizardStepRequirement(
-        label: l10n.tenantFacilityWizardMissingUnits,
-        satisfied: snapshot.hasUnitsConfigured,
-        fixStep: TenantFacilitySetupWizardStep.units,
-      ),
-    ],
-    TenantFacilitySetupWizardStep.wards => <TenantFacilityWizardStepRequirement>[
-      TenantFacilityWizardStepRequirement(
-        label: l10n.tenantFacilityWizardMissingWards,
-        satisfied: snapshot.hasWardsConfigured,
-        fixStep: TenantFacilitySetupWizardStep.wards,
-      ),
-    ],
-    TenantFacilitySetupWizardStep.rooms => <TenantFacilityWizardStepRequirement>[
-      TenantFacilityWizardStepRequirement(
-        label: l10n.tenantFacilityWizardMissingRooms,
-        satisfied: snapshot.hasRoomsConfigured,
-        fixStep: TenantFacilitySetupWizardStep.rooms,
-      ),
-    ],
+    TenantFacilitySetupWizardStep.units =>
+      <TenantFacilityWizardStepRequirement>[
+        TenantFacilityWizardStepRequirement(
+          label: l10n.tenantFacilityWizardMissingUnits,
+          satisfied: snapshot.hasUnitsConfigured,
+          fixStep: TenantFacilitySetupWizardStep.units,
+        ),
+      ],
+    TenantFacilitySetupWizardStep.wards =>
+      <TenantFacilityWizardStepRequirement>[
+        TenantFacilityWizardStepRequirement(
+          label: l10n.tenantFacilityWizardMissingWards,
+          satisfied: snapshot.hasWardsConfigured,
+          fixStep: TenantFacilitySetupWizardStep.wards,
+        ),
+      ],
+    TenantFacilitySetupWizardStep.rooms =>
+      <TenantFacilityWizardStepRequirement>[
+        TenantFacilityWizardStepRequirement(
+          label: l10n.tenantFacilityWizardMissingRooms,
+          satisfied: snapshot.hasRoomsConfigured,
+          fixStep: TenantFacilitySetupWizardStep.rooms,
+        ),
+      ],
     TenantFacilitySetupWizardStep.beds => <TenantFacilityWizardStepRequirement>[
       TenantFacilityWizardStepRequirement(
         label: l10n.tenantFacilityWizardMissingBeds,
@@ -372,38 +384,42 @@ List<TenantFacilityWizardStepRequirement> tenantFacilityWizardStepRequirements(
 }
 
 /// Extra gate requirements that must be true before [step] can be configured.
-List<TenantFacilityWizardStepRequirement> tenantFacilityWizardStepGateRequirements(
+List<TenantFacilityWizardStepRequirement>
+tenantFacilityWizardStepGateRequirements(
   AppLocalizations l10n,
   FacilitySetupSnapshot snapshot,
   TenantFacilitySetupWizardStep step,
 ) {
   return switch (step) {
-    TenantFacilitySetupWizardStep.units => <TenantFacilityWizardStepRequirement>[
-      TenantFacilityWizardStepRequirement(
-        label: l10n.tenantFacilityWizardMissingDepartments,
-        satisfied: snapshot.hasDepartments,
-        fixStep: TenantFacilitySetupWizardStep.departments,
-        isPrerequisite: true,
-      ),
-    ],
-    TenantFacilitySetupWizardStep.wards => <TenantFacilityWizardStepRequirement>[
-      TenantFacilityWizardStepRequirement(
-        label: l10n.tenantFacilityWizardMissingDepartments,
-        satisfied: snapshot.hasDepartments,
-        fixStep: TenantFacilitySetupWizardStep.departments,
-        isPrerequisite: true,
-      ),
-    ],
-    TenantFacilitySetupWizardStep.rooms => <TenantFacilityWizardStepRequirement>[
-      TenantFacilityWizardStepRequirement(
-        label: l10n.tenantFacilityWizardMissingDepartmentOrWard,
-        satisfied: snapshot.hasDepartments || snapshot.hasWardsConfigured,
-        fixStep: snapshot.hasDepartments
-            ? TenantFacilitySetupWizardStep.wards
-            : TenantFacilitySetupWizardStep.departments,
-        isPrerequisite: true,
-      ),
-    ],
+    TenantFacilitySetupWizardStep.units =>
+      <TenantFacilityWizardStepRequirement>[
+        TenantFacilityWizardStepRequirement(
+          label: l10n.tenantFacilityWizardMissingDepartments,
+          satisfied: snapshot.hasDepartments,
+          fixStep: TenantFacilitySetupWizardStep.departments,
+          isPrerequisite: true,
+        ),
+      ],
+    TenantFacilitySetupWizardStep.wards =>
+      <TenantFacilityWizardStepRequirement>[
+        TenantFacilityWizardStepRequirement(
+          label: l10n.tenantFacilityWizardMissingDepartments,
+          satisfied: snapshot.hasDepartments,
+          fixStep: TenantFacilitySetupWizardStep.departments,
+          isPrerequisite: true,
+        ),
+      ],
+    TenantFacilitySetupWizardStep.rooms =>
+      <TenantFacilityWizardStepRequirement>[
+        TenantFacilityWizardStepRequirement(
+          label: l10n.tenantFacilityWizardMissingDepartmentOrWard,
+          satisfied: snapshot.hasDepartments || snapshot.hasWardsConfigured,
+          fixStep: snapshot.hasDepartments
+              ? TenantFacilitySetupWizardStep.wards
+              : TenantFacilitySetupWizardStep.departments,
+          isPrerequisite: true,
+        ),
+      ],
     TenantFacilitySetupWizardStep.beds => <TenantFacilityWizardStepRequirement>[
       TenantFacilityWizardStepRequirement(
         label: l10n.tenantFacilityWizardMissingWards,
@@ -466,20 +482,16 @@ List<TenantFacilityWizardStepRequirement> tenantFacilityWizardBlockersForStep(
 }
 
 /// Outstanding blockers only (unsatisfied).
-List<TenantFacilityWizardStepRequirement> tenantFacilityWizardOutstandingBlockers(
+List<TenantFacilityWizardStepRequirement>
+tenantFacilityWizardOutstandingBlockers(
   AppLocalizations l10n,
   FacilitySetupSnapshot snapshot,
   TenantFacilitySetupWizardStep step, {
   List<TenantFacilitySetupWizardStep>? steps,
 }) {
-  return tenantFacilityWizardBlockersForStep(
-    l10n,
-    snapshot,
-    step,
-    steps: steps,
-  ).where((TenantFacilityWizardStepRequirement item) => !item.satisfied).toList(
-    growable: false,
-  );
+  return tenantFacilityWizardBlockersForStep(l10n, snapshot, step, steps: steps)
+      .where((TenantFacilityWizardStepRequirement item) => !item.satisfied)
+      .toList(growable: false);
 }
 
 /// Concrete items still required before [step] is considered complete.
@@ -574,17 +586,18 @@ String? tenantFacilityWizardStepPendingBannerMessage(
     return null;
   }
 
-  final String bullets = tenantFacilityWizardOutstandingBlockers(
-    l10n,
-    snapshot,
-    step,
-    steps: steps,
-  )
-      .map(
-        (TenantFacilityWizardStepRequirement item) =>
-            l10n.tenantFacilityWizardPendingBullet(item.label),
-      )
-      .join('\n');
+  final String bullets =
+      tenantFacilityWizardOutstandingBlockers(
+            l10n,
+            snapshot,
+            step,
+            steps: steps,
+          )
+          .map(
+            (TenantFacilityWizardStepRequirement item) =>
+                l10n.tenantFacilityWizardPendingBullet(item.label),
+          )
+          .join('\n');
   return '$intro\n$bullets';
 }
 
@@ -738,8 +751,9 @@ String tenantFacilityWizardStepSummary(
       l10n.tenantFacilitySummaryRecordCount(snapshot.wards.length),
     TenantFacilitySetupWizardStep.rooms =>
       l10n.tenantFacilitySummaryRecordCount(snapshot.rooms.length),
-    TenantFacilitySetupWizardStep.beds =>
-      l10n.tenantFacilitySummaryRecordCount(snapshot.beds.length),
+    TenantFacilitySetupWizardStep.beds => l10n.tenantFacilitySummaryRecordCount(
+      snapshot.beds.length,
+    ),
   };
 }
 
@@ -751,7 +765,8 @@ bool tenantFacilityWizardStepHasRecords(
     TenantFacilitySetupWizardStep.tenant => snapshot.hasTenant,
     TenantFacilitySetupWizardStep.branches => snapshot.branches.isNotEmpty,
     TenantFacilitySetupWizardStep.facility => snapshot.hasFacility,
-    TenantFacilitySetupWizardStep.departments => snapshot.departments.isNotEmpty,
+    TenantFacilitySetupWizardStep.departments =>
+      snapshot.departments.isNotEmpty,
     TenantFacilitySetupWizardStep.units => snapshot.units.isNotEmpty,
     TenantFacilitySetupWizardStep.wards => snapshot.wards.isNotEmpty,
     TenantFacilitySetupWizardStep.rooms => snapshot.rooms.isNotEmpty,
@@ -767,7 +782,8 @@ String tenantFacilityWizardStepEmptyMessage(
     TenantFacilitySetupWizardStep.tenant => l10n.tenantFacilityChecklistTenant,
     TenantFacilitySetupWizardStep.branches => l10n.tenantFacilityNoBranches,
     TenantFacilitySetupWizardStep.facility => l10n.tenantFacilityNoFacilities,
-    TenantFacilitySetupWizardStep.departments => l10n.tenantFacilityNoDepartments,
+    TenantFacilitySetupWizardStep.departments =>
+      l10n.tenantFacilityNoDepartments,
     TenantFacilitySetupWizardStep.units => l10n.tenantFacilityNoUnits,
     TenantFacilitySetupWizardStep.wards => l10n.tenantFacilityNoWards,
     TenantFacilitySetupWizardStep.rooms => l10n.tenantFacilityNoRooms,
@@ -783,32 +799,40 @@ String tenantFacilityWizardPrimaryActionLabel(
 }) {
   final bool hasRecords = tenantFacilityWizardStepHasRecords(snapshot, step);
   return switch (step) {
-    TenantFacilitySetupWizardStep.tenant => hasRecords
-        ? l10n.tenantFacilityEditTenantAction
-        : (canCreateTenant
-              ? l10n.tenantFacilityCreateTenantAction
-              : l10n.tenantFacilityEditTenantAction),
-    TenantFacilitySetupWizardStep.branches => hasRecords
-        ? l10n.tenantFacilityManageBranchesAction
-        : l10n.tenantFacilityCreateBranchAction,
-    TenantFacilitySetupWizardStep.facility => hasRecords
-        ? l10n.tenantFacilityEditFacilityAction
-        : l10n.tenantFacilityCreateFacilityTitle,
-    TenantFacilitySetupWizardStep.departments => hasRecords
-        ? l10n.tenantFacilityManageDepartmentsAction
-        : l10n.tenantFacilityCreateDepartmentAction,
-    TenantFacilitySetupWizardStep.units => hasRecords
-        ? l10n.tenantFacilityManageUnitsAction
-        : l10n.tenantFacilityCreateUnitAction,
-    TenantFacilitySetupWizardStep.wards => hasRecords
-        ? l10n.tenantFacilityManageWardsAction
-        : l10n.tenantFacilityCreateWardAction,
-    TenantFacilitySetupWizardStep.rooms => hasRecords
-        ? l10n.tenantFacilityManageRoomsAction
-        : l10n.tenantFacilityCreateRoomAction,
-    TenantFacilitySetupWizardStep.beds => hasRecords
-        ? l10n.tenantFacilityManageBedsAction
-        : l10n.tenantFacilityCreateBedAction,
+    TenantFacilitySetupWizardStep.tenant =>
+      hasRecords
+          ? l10n.tenantFacilityEditTenantAction
+          : (canCreateTenant
+                ? l10n.tenantFacilityCreateTenantAction
+                : l10n.tenantFacilityEditTenantAction),
+    TenantFacilitySetupWizardStep.branches =>
+      hasRecords
+          ? l10n.tenantFacilityManageBranchesAction
+          : l10n.tenantFacilityCreateBranchAction,
+    TenantFacilitySetupWizardStep.facility =>
+      hasRecords
+          ? l10n.tenantFacilityEditFacilityAction
+          : l10n.tenantFacilityCreateFacilityTitle,
+    TenantFacilitySetupWizardStep.departments =>
+      hasRecords
+          ? l10n.tenantFacilityManageDepartmentsAction
+          : l10n.tenantFacilityCreateDepartmentAction,
+    TenantFacilitySetupWizardStep.units =>
+      hasRecords
+          ? l10n.tenantFacilityManageUnitsAction
+          : l10n.tenantFacilityCreateUnitAction,
+    TenantFacilitySetupWizardStep.wards =>
+      hasRecords
+          ? l10n.tenantFacilityManageWardsAction
+          : l10n.tenantFacilityCreateWardAction,
+    TenantFacilitySetupWizardStep.rooms =>
+      hasRecords
+          ? l10n.tenantFacilityManageRoomsAction
+          : l10n.tenantFacilityCreateRoomAction,
+    TenantFacilitySetupWizardStep.beds =>
+      hasRecords
+          ? l10n.tenantFacilityManageBedsAction
+          : l10n.tenantFacilityCreateBedAction,
   };
 }
 
@@ -855,45 +879,50 @@ String tenantFacilityWizardStepBlockedHint(
   return switch (step) {
     TenantFacilitySetupWizardStep.tenant =>
       l10n.tenantFacilityPermissionRequired,
-    TenantFacilitySetupWizardStep.branches => snapshot.hasTenant
-        ? l10n.tenantFacilityBranchesOptionalHint
-        : l10n.tenantFacilityGateNeedTenant,
-    TenantFacilitySetupWizardStep.facility => snapshot.hasTenant
-        ? _tenantFacilityWizardMissingSummary(
-            l10n,
-            snapshot,
-            TenantFacilitySetupWizardStep.facility,
-            fallback: l10n.tenantFacilityGateNeedFacility,
-          )
-        : l10n.tenantFacilityGateNeedTenant,
-    TenantFacilitySetupWizardStep.departments => snapshot.hasFacilityIdentity
-        ? l10n.tenantFacilityWizardMissingDepartments
-        : _tenantFacilityWizardMissingSummary(
-            l10n,
-            snapshot,
-            TenantFacilitySetupWizardStep.facility,
-            fallback: l10n.tenantFacilityGateNeedFacility,
-          ),
-    TenantFacilitySetupWizardStep.units => snapshot.hasDepartments
-        ? l10n.tenantFacilityGateNeedDepartmentForUnits
-        : (snapshot.hasFacilityIdentity
-              ? l10n.tenantFacilityGateNeedDepartmentForUnits
-              : _tenantFacilityWizardMissingSummary(
-                  l10n,
-                  snapshot,
-                  TenantFacilitySetupWizardStep.facility,
-                  fallback: l10n.tenantFacilityGateNeedFacility,
-                )),
-    TenantFacilitySetupWizardStep.wards => snapshot.hasDepartments
-        ? l10n.tenantFacilityGateNeedDepartmentForWards
-        : (snapshot.hasFacilityIdentity
-              ? l10n.tenantFacilityGateNeedDepartmentForWards
-              : _tenantFacilityWizardMissingSummary(
-                  l10n,
-                  snapshot,
-                  TenantFacilitySetupWizardStep.facility,
-                  fallback: l10n.tenantFacilityGateNeedFacility,
-                )),
+    TenantFacilitySetupWizardStep.branches =>
+      snapshot.hasTenant
+          ? l10n.tenantFacilityBranchesOptionalHint
+          : l10n.tenantFacilityGateNeedTenant,
+    TenantFacilitySetupWizardStep.facility =>
+      snapshot.hasTenant
+          ? _tenantFacilityWizardMissingSummary(
+              l10n,
+              snapshot,
+              TenantFacilitySetupWizardStep.facility,
+              fallback: l10n.tenantFacilityGateNeedFacility,
+            )
+          : l10n.tenantFacilityGateNeedTenant,
+    TenantFacilitySetupWizardStep.departments =>
+      snapshot.hasFacilityIdentity
+          ? l10n.tenantFacilityWizardMissingDepartments
+          : _tenantFacilityWizardMissingSummary(
+              l10n,
+              snapshot,
+              TenantFacilitySetupWizardStep.facility,
+              fallback: l10n.tenantFacilityGateNeedFacility,
+            ),
+    TenantFacilitySetupWizardStep.units =>
+      snapshot.hasDepartments
+          ? l10n.tenantFacilityGateNeedDepartmentForUnits
+          : (snapshot.hasFacilityIdentity
+                ? l10n.tenantFacilityGateNeedDepartmentForUnits
+                : _tenantFacilityWizardMissingSummary(
+                    l10n,
+                    snapshot,
+                    TenantFacilitySetupWizardStep.facility,
+                    fallback: l10n.tenantFacilityGateNeedFacility,
+                  )),
+    TenantFacilitySetupWizardStep.wards =>
+      snapshot.hasDepartments
+          ? l10n.tenantFacilityGateNeedDepartmentForWards
+          : (snapshot.hasFacilityIdentity
+                ? l10n.tenantFacilityGateNeedDepartmentForWards
+                : _tenantFacilityWizardMissingSummary(
+                    l10n,
+                    snapshot,
+                    TenantFacilitySetupWizardStep.facility,
+                    fallback: l10n.tenantFacilityGateNeedFacility,
+                  )),
     TenantFacilitySetupWizardStep.rooms =>
       snapshot.hasDepartments || snapshot.hasWardsConfigured
           ? l10n.tenantFacilityGateNeedWardOrDepartmentForRooms
@@ -905,16 +934,17 @@ String tenantFacilityWizardStepBlockedHint(
                     TenantFacilitySetupWizardStep.facility,
                     fallback: l10n.tenantFacilityGateNeedFacility,
                   )),
-    TenantFacilitySetupWizardStep.beds => snapshot.hasWardsConfigured
-        ? l10n.tenantFacilityGateNeedWardsForBeds
-        : (snapshot.hasFacilityIdentity
-              ? l10n.tenantFacilityGateNeedWardsForBeds
-              : _tenantFacilityWizardMissingSummary(
-                  l10n,
-                  snapshot,
-                  TenantFacilitySetupWizardStep.facility,
-                  fallback: l10n.tenantFacilityGateNeedFacility,
-                )),
+    TenantFacilitySetupWizardStep.beds =>
+      snapshot.hasWardsConfigured
+          ? l10n.tenantFacilityGateNeedWardsForBeds
+          : (snapshot.hasFacilityIdentity
+                ? l10n.tenantFacilityGateNeedWardsForBeds
+                : _tenantFacilityWizardMissingSummary(
+                    l10n,
+                    snapshot,
+                    TenantFacilitySetupWizardStep.facility,
+                    fallback: l10n.tenantFacilityGateNeedFacility,
+                  )),
   };
 }
 

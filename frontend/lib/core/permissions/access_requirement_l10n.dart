@@ -55,7 +55,8 @@ String accessRequirementModuleLabel(AppLocalizations l10n, String moduleCode) {
   return switch (moduleCode.trim().toLowerCase()) {
     'inpatient-bed-management' => l10n.accessDeniedModuleInpatientLabel,
     'lab' || 'lab-workflows' => l10n.accessDeniedModuleLabLabel,
-    'radiology' || 'radiology-workflows' => l10n.accessDeniedModuleRadiologyLabel,
+    'radiology' ||
+    'radiology-workflows' => l10n.accessDeniedModuleRadiologyLabel,
     'theater' || 'theatre-anesthesia' => l10n.accessDeniedModuleTheaterLabel,
     'physiotherapy' => l10n.accessDeniedModulePhysiotherapyLabel,
     _ => AppDisplay.apiLabel(moduleCode),

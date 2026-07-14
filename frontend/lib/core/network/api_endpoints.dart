@@ -226,10 +226,7 @@ enum HmsApiResource {
     'coverage-plans',
     HmsApiEndpointGroup.diagnosticsPharmacyBilling,
   ),
-  schemeOffers(
-    'scheme-offers',
-    HmsApiEndpointGroup.diagnosticsPharmacyBilling,
-  ),
+  schemeOffers('scheme-offers', HmsApiEndpointGroup.diagnosticsPharmacyBilling),
   patientInsuranceEnrollments(
     'patient-insurance-enrollments',
     HmsApiEndpointGroup.diagnosticsPharmacyBilling,

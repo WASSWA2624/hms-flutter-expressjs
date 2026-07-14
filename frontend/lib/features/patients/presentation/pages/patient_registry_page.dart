@@ -130,9 +130,7 @@ class _PatientRegistryContentState
       }
       _handledRouteQuery = true;
       unawaited(
-        ref
-            .read(patientRegistryControllerProvider.notifier)
-            .applyQuery(query),
+        ref.read(patientRegistryControllerProvider.notifier).applyQuery(query),
       );
     });
   }

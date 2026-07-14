@@ -373,10 +373,9 @@ Map<String, Object?> _planPayload(
 }) {
   final num monthly = _decimal(draft.monthlyPrice);
   final num annual = _decimal(draft.annualPrice);
-  final bool yearlyDefault = draft.billingCycle
-      .trim()
-      .toUpperCase()
-      .contains('YEAR');
+  final bool yearlyDefault = draft.billingCycle.trim().toUpperCase().contains(
+    'YEAR',
+  );
   final Map<String, Object?> payload = _withoutEmpty(<String, Object?>{
     if (includeTenant) 'tenant_id': draft.tenantId,
     'name': draft.name.trim(),
@@ -392,9 +391,7 @@ Map<String, Object?> _planPayload(
   payload['extension_json'] = <String, Object?>{
     if (draft.description != null && draft.description!.trim().isNotEmpty)
       'description': draft.description!.trim(),
-    'allowed_modules': <String, Object?>{
-      'included': draft.includedModuleIds,
-    },
+    'allowed_modules': <String, Object?>{'included': draft.includedModuleIds},
     'pricing': <String, Object?>{
       'monthly_price': monthly,
       'annual_price': annual,

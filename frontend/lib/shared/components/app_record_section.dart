@@ -194,8 +194,7 @@ class _GuardedRecordAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool compact =
-        !responsive || MediaQuery.sizeOf(context).width < AppBreakpoints.md;
+    final bool compact = !responsive || AppBreakpoints.of(context).isMobile;
     final AccessRequirement? resolvedRequirement = requirement;
     if (resolvedRequirement == null) {
       return _buildButton(context, iconOnly: compact);

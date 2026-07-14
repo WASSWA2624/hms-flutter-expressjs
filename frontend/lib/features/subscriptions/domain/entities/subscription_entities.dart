@@ -459,11 +459,7 @@ final class SubscriptionsOverview {
   }
 }
 
-enum SubscriptionTenantCohort {
-  active,
-  notSubscribed,
-  closed,
-}
+enum SubscriptionTenantCohort { active, notSubscribed, closed }
 
 @immutable
 final class SubscriptionTenantAccount {

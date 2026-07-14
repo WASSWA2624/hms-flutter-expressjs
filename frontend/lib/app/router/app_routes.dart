@@ -758,14 +758,7 @@ abstract final class AppRoutes {
 
   /// Routes visible to [AppAccessPolicy.isReceptionistFocusedShellUser] in the shell.
   static const List<AppRouteData> receptionistFocusedShellRoutes =
-      <AppRouteData>[
-        home,
-        patients,
-        opd,
-        emergency,
-        communications,
-        settings,
-      ];
+      <AppRouteData>[home, patients, opd, emergency, communications, settings];
 
   static bool isReceptionistFocusedShellRoute(AppRouteData route) {
     return receptionistFocusedShellRoutes.any(

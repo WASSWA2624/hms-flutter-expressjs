@@ -17,12 +17,15 @@ void main() {
       expect(AppBreakpoints.fromWidth(1600), AppBreakpoint.xxl);
     });
 
-    test('exposes adaptive navigation decisions', () {
+    test('exposes adaptive navigation decisions per layouts.mdc', () {
       expect(AppBreakpoint.xs.isMobile, isTrue);
       expect(AppBreakpoint.sm.isMobile, isTrue);
-      expect(AppBreakpoint.md.isMobile, isTrue);
-      expect(AppBreakpoint.md.supportsNavigationRail, isFalse);
-      expect(AppBreakpoint.md.supportsExtendedNavigationRail, isFalse);
+      expect(AppBreakpoint.md.isMobile, isFalse);
+      expect(AppBreakpoint.xs.usesDrawerNavigation, isTrue);
+      expect(AppBreakpoint.sm.usesDrawerNavigation, isTrue);
+      expect(AppBreakpoint.md.usesDrawerNavigation, isFalse);
+      expect(AppBreakpoint.md.supportsNavigationRail, isTrue);
+      expect(AppBreakpoint.md.supportsExtendedNavigationRail, isTrue);
       expect(AppBreakpoint.lg.supportsExtendedNavigationRail, isTrue);
       expect(AppBreakpoint.xl.supportsExtendedNavigationRail, isTrue);
       expect(AppBreakpoint.xxl.supportsExtendedNavigationRail, isTrue);

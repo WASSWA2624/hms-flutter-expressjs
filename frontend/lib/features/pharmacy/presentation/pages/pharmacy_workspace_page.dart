@@ -97,7 +97,9 @@ class _PharmacyWorkspaceContentState
       return;
     }
     final String section =
-        GoRouterState.of(context).uri.queryParameters['section']?.trim().toLowerCase() ??
+        GoRouterState.of(
+          context,
+        ).uri.queryParameters['section']?.trim().toLowerCase() ??
         '';
     if (section != 'inventory' && section != 'stock') {
       return;
@@ -642,7 +644,8 @@ Future<void> _openRecordPaymentDialog(
           .map(
             (ClinicalRequestBillingLineItem item) => item.copyWith(
               catalogType: item.catalogType ?? 'DRUG',
-              billingEntity: item.billingEntity ?? item.priceSource ?? 'PHARMACY',
+              billingEntity:
+                  item.billingEntity ?? item.priceSource ?? 'PHARMACY',
             ),
           )
           .toList(growable: false);

@@ -79,7 +79,8 @@ class AppChoiceTile extends StatelessWidget {
                           color: selected ? accent : colorScheme.onSurface,
                         ),
                       ),
-                      if (subtitle != null && subtitle!.trim().isNotEmpty) ...<Widget>[
+                      if (subtitle != null &&
+                          subtitle!.trim().isNotEmpty) ...<Widget>[
                         SizedBox(height: theme.spacing.xs),
                         Text(
                           subtitle!,
@@ -93,8 +94,7 @@ class AppChoiceTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (selected)
-                  Icon(Icons.check_circle, size: 18, color: accent),
+                if (selected) Icon(Icons.check_circle, size: 18, color: accent),
               ],
             ),
           ),

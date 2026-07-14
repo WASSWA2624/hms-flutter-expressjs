@@ -65,16 +65,18 @@ final class HomeDashboardDto {
         .map((HomeQueueItemDto dto) => dto.toEntity())
         .where((HomeQueueItem item) => item.id.isNotEmpty)
         .toList(growable: false);
-    final List<HomeQueueItem> resultsPreview = _list(overview['results_preview'])
-        .map(HomeQueueItemDto.new)
-        .map((HomeQueueItemDto dto) => dto.toEntity())
-        .where((HomeQueueItem item) => item.id.isNotEmpty)
-        .toList(growable: false);
-    final List<HomeQueueItem> followUpPreview = _list(overview['follow_up_preview'])
-        .map(HomeQueueItemDto.new)
-        .map((HomeQueueItemDto dto) => dto.toEntity())
-        .where((HomeQueueItem item) => item.id.isNotEmpty)
-        .toList(growable: false);
+    final List<HomeQueueItem> resultsPreview =
+        _list(overview['results_preview'])
+            .map(HomeQueueItemDto.new)
+            .map((HomeQueueItemDto dto) => dto.toEntity())
+            .where((HomeQueueItem item) => item.id.isNotEmpty)
+            .toList(growable: false);
+    final List<HomeQueueItem> followUpPreview =
+        _list(overview['follow_up_preview'])
+            .map(HomeQueueItemDto.new)
+            .map((HomeQueueItemDto dto) => dto.toEntity())
+            .where((HomeQueueItem item) => item.id.isNotEmpty)
+            .toList(growable: false);
     final List<HomeAlertItem> alerts = _list(overview['alerts'])
         .map(HomeAlertItemDto.new)
         .map((HomeAlertItemDto dto) => dto.toEntity())

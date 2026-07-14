@@ -1,6 +1,7 @@
 export '../patient_actions/patient_actions.dart';
 export 'app_action_label_scope.dart';
 export 'app_button.dart';
+export '../icons/app_action_icons.dart';
 export 'app_checkbox_field.dart';
 export 'app_content_panel.dart';
 export 'app_country_field.dart';

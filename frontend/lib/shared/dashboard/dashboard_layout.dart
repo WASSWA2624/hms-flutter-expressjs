@@ -51,7 +51,8 @@ BoxDecoration dashboardMetricCardDecoration(
   Color accent,
 ) {
   final Color blend = Color.lerp(accent, colorScheme.primary, 0.35) ?? accent;
-  final Color wash = Color.lerp(colorScheme.surface, accent, 0.05) ?? colorScheme.surface;
+  final Color wash =
+      Color.lerp(colorScheme.surface, accent, 0.05) ?? colorScheme.surface;
 
   return BoxDecoration(
     color: wash,

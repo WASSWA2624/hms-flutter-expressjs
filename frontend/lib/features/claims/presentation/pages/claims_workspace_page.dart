@@ -1875,10 +1875,7 @@ List<AppSelectOption<String>> _authorizationStatusOptions(
       value: 'APPROVED',
       label: l10n.claimsStatusApproved,
     ),
-    AppSelectOption<String>(
-      value: 'PARTIAL',
-      label: l10n.claimsStatusPartial,
-    ),
+    AppSelectOption<String>(value: 'PARTIAL', label: l10n.claimsStatusPartial),
     AppSelectOption<String>(value: 'DENIED', label: l10n.claimsStatusDenied),
     AppSelectOption<String>(value: 'EXPIRED', label: l10n.claimsStatusExpired),
   ];
@@ -1890,10 +1887,7 @@ List<AppSelectOption<String>> _claimResponseOptions(AppLocalizations l10n) {
       value: 'APPROVED',
       label: l10n.claimsStatusApproved,
     ),
-    AppSelectOption<String>(
-      value: 'PARTIAL',
-      label: l10n.claimsStatusPartial,
-    ),
+    AppSelectOption<String>(value: 'PARTIAL', label: l10n.claimsStatusPartial),
     AppSelectOption<String>(
       value: 'REJECTED',
       label: l10n.claimsStatusRejected,

@@ -39,7 +39,9 @@ class RoleDashboardScaffold extends StatelessWidget {
       sections.add(section);
     }
 
-    if (layout.alertsBeforeMetrics && leadingPanel != null && !_isShrink(leadingPanel!)) {
+    if (layout.alertsBeforeMetrics &&
+        leadingPanel != null &&
+        !_isShrink(leadingPanel!)) {
       addSection(leadingPanel!);
     }
 

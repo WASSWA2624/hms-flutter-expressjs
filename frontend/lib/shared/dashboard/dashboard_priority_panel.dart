@@ -76,10 +76,11 @@ class DashboardPriorityPanel extends StatelessWidget {
               )
             : const SizedBox.shrink();
 
-        final Widget work = hasWorkContent(
-          hasQueueContent: hasQueueContent,
-          hasAlertContent: hasAlertContent,
-        )
+        final Widget work =
+            hasWorkContent(
+              hasQueueContent: hasQueueContent,
+              hasAlertContent: hasAlertContent,
+            )
             ? (wide && hasQueueContent && hasAlertContent
                   ? Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,14 +111,21 @@ class DashboardPriorityPanel extends StatelessWidget {
           children: <Widget>[
             work,
             if (hasResults) ...<Widget>[
-              if (hasWorkContent(hasQueueContent: hasQueueContent, hasAlertContent: hasAlertContent) ||
+              if (hasWorkContent(
+                    hasQueueContent: hasQueueContent,
+                    hasAlertContent: hasAlertContent,
+                  ) ||
                   (hasQueue && !hasQueueContent) ||
                   (hasAlerts && !hasAlertContent))
                 SizedBox(height: gap),
               resultsPanel,
             ],
             if (hasFollowUps) ...<Widget>[
-              if (hasResults || hasWorkContent(hasQueueContent: hasQueueContent, hasAlertContent: hasAlertContent))
+              if (hasResults ||
+                  hasWorkContent(
+                    hasQueueContent: hasQueueContent,
+                    hasAlertContent: hasAlertContent,
+                  ))
                 SizedBox(height: gap),
               followUpPanel,
             ],
@@ -172,10 +180,7 @@ class DashboardAlertsPanel extends StatelessWidget {
 }
 
 class _DashboardSectionShell extends StatelessWidget {
-  const _DashboardSectionShell({
-    required this.child,
-    this.decoration,
-  });
+  const _DashboardSectionShell({required this.child, this.decoration});
 
   final Widget child;
   final BoxDecoration? decoration;
@@ -241,7 +246,8 @@ class _DashboardQueuePanel extends StatelessWidget {
         children: <Widget>[
           if (isEmpty && emptyActions.isNotEmpty)
             _DashboardEmptyState(actions: emptyActions),
-          if (!isEmpty) _DashboardWorklistGroup(items: items.take(maxItems).toList()),
+          if (!isEmpty)
+            _DashboardWorklistGroup(items: items.take(maxItems).toList()),
         ],
       ),
     );
@@ -412,31 +418,31 @@ class _DashboardShortcutsSection extends StatelessWidget {
         backgroundColor: Colors.transparent,
         borderColor: Colors.transparent,
         children: <Widget>[
-        LayoutBuilder(
-          builder: (BuildContext context, BoxConstraints constraints) {
-            final bool wide = constraints.maxWidth >= 640;
-            final int columns = wide ? math.min(3, shortcuts.length) : 1;
-            final double tileWidth = columns <= 1
-                ? constraints.maxWidth
-                : (constraints.maxWidth - (gap * (columns - 1))) / columns;
-            final List<DashboardShortcutData> visible = shortcuts
-                .take(maxTiles)
-                .toList(growable: false);
+          LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) {
+              final bool wide = constraints.maxWidth >= 640;
+              final int columns = wide ? math.min(3, shortcuts.length) : 1;
+              final double tileWidth = columns <= 1
+                  ? constraints.maxWidth
+                  : (constraints.maxWidth - (gap * (columns - 1))) / columns;
+              final List<DashboardShortcutData> visible = shortcuts
+                  .take(maxTiles)
+                  .toList(growable: false);
 
-            return Wrap(
-              spacing: gap,
-              runSpacing: gap,
-              children: <Widget>[
-                for (final DashboardShortcutData shortcut in visible)
-                  SizedBox(
-                    width: columns <= 1 ? constraints.maxWidth : tileWidth,
-                    child: _DashboardShortcutTile(shortcut: shortcut),
-                  ),
-              ],
-            );
-          },
-        ),
-      ],
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: <Widget>[
+                  for (final DashboardShortcutData shortcut in visible)
+                    SizedBox(
+                      width: columns <= 1 ? constraints.maxWidth : tileWidth,
+                      child: _DashboardShortcutTile(shortcut: shortcut),
+                    ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }

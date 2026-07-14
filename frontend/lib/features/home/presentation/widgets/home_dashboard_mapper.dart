@@ -158,9 +158,9 @@ DashboardPriorityPanelData homeDashboardPriorityData({
           context: context,
           ref: ref,
           policy: policy,
-          items: dashboard.queuePreview.take(profile.maxQueueItems).toList(
-            growable: false,
-          ),
+          items: dashboard.queuePreview
+              .take(profile.maxQueueItems)
+              .toList(growable: false),
         )
       : const <DashboardWorklistItemData>[];
 

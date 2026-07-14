@@ -18,8 +18,7 @@ class AppLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final Color resolvedBackground =
-        backgroundColor ?? colorScheme.surface;
+    final Color resolvedBackground = backgroundColor ?? colorScheme.surface;
 
     return SizedBox.square(
       dimension: size,

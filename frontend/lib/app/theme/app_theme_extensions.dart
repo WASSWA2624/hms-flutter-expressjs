@@ -331,9 +331,9 @@ final class AppDesignTokens extends ThemeExtension<AppDesignTokens> {
   });
 
   static const AppDesignTokens standard = AppDesignTokens(
-    pagePaddingMobile: 12,
-    pagePaddingTablet: 16,
-    pagePaddingDesktop: 24,
+    pagePaddingMobile: 16,
+    pagePaddingTablet: 24,
+    pagePaddingDesktop: 32,
     dialogInsetMobile: 12,
     dialogInsetTablet: 24,
     dialogInsetDesktop: 24,
@@ -561,7 +561,11 @@ final class AppSidebarTokens extends ThemeExtension<AppSidebarTokens> {
       shadowColor: _lerpColor(shadowColor, other.shadowColor, t),
       elevation: _lerpDouble(elevation, other.elevation, t),
       itemHeight: _lerpDouble(itemHeight, other.itemHeight, t),
-      itemBorderRadius: _lerpDouble(itemBorderRadius, other.itemBorderRadius, t),
+      itemBorderRadius: _lerpDouble(
+        itemBorderRadius,
+        other.itemBorderRadius,
+        t,
+      ),
       selectedBackgroundColor: _lerpColor(
         selectedBackgroundColor,
         other.selectedBackgroundColor,

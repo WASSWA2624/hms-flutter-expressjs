@@ -958,9 +958,7 @@ Future<void> showHrAccessRoleDetailDialog(
               ),
             _HrAccessDetailRow(
               label: l10n.hrAccessRoleNameLabel,
-              value: (role.name ?? '').trim().isNotEmpty
-                  ? role.name!
-                  : '—',
+              value: (role.name ?? '').trim().isNotEmpty ? role.name! : '—',
             ),
             _HrAccessDetailRow(
               label: l10n.hrAccessRoleDisplayNameLabel,
@@ -1148,7 +1146,9 @@ class _HrAccessUserDetailDialogState
       context: context,
       builder: (BuildContext dialogContext) => AppConfirmActionDialog(
         title: l10n.accessAdminUserAccessRemoveRoleConfirmTitle,
-        body: l10n.accessAdminUserAccessRemoveRoleConfirmMessage(group.roleName),
+        body: l10n.accessAdminUserAccessRemoveRoleConfirmMessage(
+          group.roleName,
+        ),
         highlightedText: group.roleName,
         submitLabel: l10n.accessAdminUserAccessRemoveRoleAction,
         destructive: true,
@@ -1352,10 +1352,11 @@ class _HrAccessUserDetailContent extends StatelessWidget {
               .toList(growable: false),
           directPermissions: detail.directPermissions
               .map(
-                (HrAccessPermission permission) => AppUserAccessDirectPermission(
-                  id: permission.effectiveId,
-                  name: permission.name ?? permission.effectiveId,
-                ),
+                (HrAccessPermission permission) =>
+                    AppUserAccessDirectPermission(
+                      id: permission.effectiveId,
+                      name: permission.name ?? permission.effectiveId,
+                    ),
               )
               .toList(growable: false),
           canWrite: canWrite,

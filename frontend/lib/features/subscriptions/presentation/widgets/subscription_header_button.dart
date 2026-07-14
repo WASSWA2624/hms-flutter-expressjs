@@ -192,7 +192,10 @@ final class _SubscriptionHeaderPresentation {
       return planLabel;
     }
 
-    return l10n.subscriptionHeaderPlanWithUpgradeLabel(planLabel, nextPlanLabel);
+    return l10n.subscriptionHeaderPlanWithUpgradeLabel(
+      planLabel,
+      nextPlanLabel,
+    );
   }
 
   static bool _hasText(String? value) {

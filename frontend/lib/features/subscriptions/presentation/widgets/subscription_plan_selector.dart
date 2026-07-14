@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/currency/fx_currency_utils.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/subscriptions/subscription_plan_theme.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
@@ -100,7 +101,11 @@ class SubscriptionPlanSelector extends StatelessWidget {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      for (int index = 0; index < columns; index += 1) ...<Widget>[
+                      for (
+                        int index = 0;
+                        index < columns;
+                        index += 1
+                      ) ...<Widget>[
                         if (index > 0) SizedBox(width: gap),
                         Expanded(
                           child: index < rowPlans.length
@@ -175,11 +180,11 @@ class SubscriptionPlanSelector extends StatelessWidget {
       return 1;
     }
     final int byMinWidth = math.max(1, (width / _minCardWidth).floor());
-    final int preferred = width >= 900
+    final int preferred = width >= AppBreakpoints.xl
         ? 4
-        : width >= 680
+        : width >= AppBreakpoints.lg
         ? 3
-        : width >= 420
+        : width >= AppBreakpoints.md
         ? 2
         : 1;
     return math.min(planCount, math.min(byMinWidth, preferred));
@@ -233,8 +238,7 @@ class _BillingCycleToggle extends StatelessWidget {
                 label: monthlyLabel,
                 icon: Icons.calendar_view_month_outlined,
                 selected: value == SubscriptionUpgradeBillingCycle.monthly,
-                onTap: () =>
-                    onChanged(SubscriptionUpgradeBillingCycle.monthly),
+                onTap: () => onChanged(SubscriptionUpgradeBillingCycle.monthly),
               ),
             ),
             SizedBox(width: theme.spacing.xs),

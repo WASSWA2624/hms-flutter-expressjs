@@ -37,6 +37,7 @@ class AppWizardStepper extends StatelessWidget {
   final List<AppWizardStepItem> steps;
   final int currentIndex;
   final ValueChanged<int>? onStepSelected;
+
   /// Called when a locked/disabled step is tapped (e.g. show a prerequisite hint).
   final ValueChanged<int>? onDisabledStepSelected;
   final bool showCurrentTitle;
@@ -83,7 +84,11 @@ class AppWizardStepper extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                for (int index = 0; index < steps.length; index += 1) ...<Widget>[
+                for (
+                  int index = 0;
+                  index < steps.length;
+                  index += 1
+                ) ...<Widget>[
                   if (index > 0)
                     Padding(
                       padding: EdgeInsets.only(top: (nodeSize / 2) - 2),
@@ -124,10 +129,7 @@ class AppWizardStepper extends StatelessWidget {
             return Padding(
               padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
               child: Align(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: track,
-                ),
+                child: FittedBox(fit: BoxFit.scaleDown, child: track),
               ),
             );
           },
@@ -243,17 +245,13 @@ class _StepNodeState extends State<_StepNode> {
     } else if (widget.active || widget.completed) {
       circleFill = colorScheme.primary;
       circleFg = colorScheme.onPrimary;
-      labelColor = widget.active
-          ? colorScheme.primary
-          : colorScheme.onSurface;
+      labelColor = widget.active ? colorScheme.primary : colorScheme.onSurface;
       borderColor = colorScheme.primary;
     } else {
       circleFill = highlight
           ? colorScheme.primary.withValues(alpha: 0.12)
           : colorScheme.surfaceContainerHighest;
-      circleFg = highlight
-          ? colorScheme.primary
-          : colorScheme.onSurfaceVariant;
+      circleFg = highlight ? colorScheme.primary : colorScheme.onSurfaceVariant;
       labelColor = highlight
           ? colorScheme.primary
           : colorScheme.onSurfaceVariant;
@@ -266,7 +264,8 @@ class _StepNodeState extends State<_StepNode> {
       button: interactive,
       enabled: interactive,
       selected: widget.active,
-      label: 'Step ${widget.index}: ${widget.label}'
+      label:
+          'Step ${widget.index}: ${widget.label}'
           '${widget.optional ? ' (optional)' : ''}'
           '${widget.completed ? ', completed' : ''}'
           '${!widget.enabled ? ', locked' : ''}',

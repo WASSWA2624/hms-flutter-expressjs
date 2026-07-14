@@ -33,11 +33,7 @@ class DashboardQuickActions extends StatelessWidget {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(
-                  Icons.bolt_rounded,
-                  size: 20,
-                  color: colorScheme.primary,
-                ),
+                Icon(Icons.bolt_rounded, size: 20, color: colorScheme.primary),
                 SizedBox(width: theme.spacing.sm),
                 Text(
                   title,
@@ -84,19 +80,24 @@ class DashboardActionButtonRow extends StatelessWidget {
         final double minTileWidth = dashboardQuickActionMinTileWidth(
           constraints.maxWidth,
         );
-        final int columns = math.max(
-          1,
-          (constraints.maxWidth / (minTileWidth + gap)).floor(),
-        ).clamp(1, visibleActions.length);
+        final int columns = math
+            .max(1, (constraints.maxWidth / (minTileWidth + gap)).floor())
+            .clamp(1, visibleActions.length);
 
         if (columns >= visibleActions.length) {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              for (int index = 0; index < visibleActions.length; index += 1) ...<Widget>[
+              for (
+                int index = 0;
+                index < visibleActions.length;
+                index += 1
+              ) ...<Widget>[
                 if (index > 0) SizedBox(width: gap),
                 Expanded(
-                  child: _DashboardQuickActionTile(action: visibleActions[index]),
+                  child: _DashboardQuickActionTile(
+                    action: visibleActions[index],
+                  ),
                 ),
               ],
             ],

@@ -9,12 +9,11 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart';
 
-final priceBookResolveRepositoryProvider =
-    Provider<PriceBookResolveRepository>((Ref ref) {
-      return PriceBookResolveRepository(
-        apiClient: ref.watch(apiClientProvider),
-      );
-    });
+final priceBookResolveRepositoryProvider = Provider<PriceBookResolveRepository>(
+  (Ref ref) {
+    return PriceBookResolveRepository(apiClient: ref.watch(apiClientProvider));
+  },
+);
 
 /// Client for POST /price-book-entries/resolve
 final class PriceBookResolveRepository {
@@ -89,8 +88,7 @@ final class PriceBookResolveRepository {
               return base.copyWith(
                 unitPrice: unitPrice ?? base.unitPrice,
                 currency: _string(json['currency']) ?? base.currency,
-                priceSource:
-                    _string(json['price_source']) ?? base.priceSource,
+                priceSource: _string(json['price_source']) ?? base.priceSource,
                 billingEntity:
                     _string(json['billing_entity']) ?? base.billingEntity,
                 paymentMode: _string(json['payment_mode']) ?? base.paymentMode,
@@ -137,7 +135,8 @@ ClinicalRequestPayerContext clinicalRequestPayerContextFromCoverage({
   );
 }
 
-Future<List<ClinicalRequestBillingLineItem>> resolveClinicalRequestBillingLineItems({
+Future<List<ClinicalRequestBillingLineItem>>
+resolveClinicalRequestBillingLineItems({
   required BuildContext context,
   required List<ClinicalRequestBillingLineItem> catalogFallbackItems,
   ClinicalRequestPayerContext? payerContext,

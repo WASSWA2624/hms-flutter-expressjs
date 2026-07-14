@@ -398,9 +398,9 @@ Future<bool?> _openTenantProfileModal(
 }) {
   final AppLocalizations l10n = context.l10n;
   const FacilitySetupSnapshot managementSnapshot = FacilitySetupSnapshot();
-  ProviderScope.containerOf(context)
-      .read(tenantFacilitySetupSubmissionProvider.notifier)
-      .clearFailure();
+  ProviderScope.containerOf(
+    context,
+  ).read(tenantFacilitySetupSubmissionProvider.notifier).clearFailure();
 
   return showAppDialog<bool>(
     context: context,
@@ -471,9 +471,9 @@ Future<bool?> _openFacilityProfileModal(
   final AppLocalizations l10n = context.l10n;
   final bool isCreate = facility == null;
   const FacilitySetupSnapshot managementSnapshot = FacilitySetupSnapshot();
-  ProviderScope.containerOf(context)
-      .read(tenantFacilitySetupSubmissionProvider.notifier)
-      .clearFailure();
+  ProviderScope.containerOf(
+    context,
+  ).read(tenantFacilitySetupSubmissionProvider.notifier).clearFailure();
 
   return showAppDialog<bool>(
     context: context,
@@ -483,9 +483,7 @@ Future<bool?> _openFacilityProfileModal(
           title: isCreate
               ? l10n.tenantFacilityCreateFacilityTitle
               : l10n.tenantFacilityEditFacilityTitle,
-          icon: isCreate
-              ? Icons.add_business_outlined
-              : Icons.edit_outlined,
+          icon: isCreate ? Icons.add_business_outlined : Icons.edit_outlined,
           saveLabel: isCreate
               ? l10n.tenantFacilitySaveFacilityAction
               : l10n.tenantFacilityEditFacilityAction,
@@ -953,9 +951,7 @@ class _TenantProfileFormState extends ConsumerState<_TenantProfileForm> {
     _nameController = TextEditingController(text: widget.tenant?.name);
     _slugController = TextEditingController(text: widget.tenant?.slug);
     _isActive = widget.tenant?.isActive ?? true;
-    _currency = resolveDefaultCurrency(
-      tenantCurrency: widget.tenant?.currency,
-    );
+    _currency = resolveDefaultCurrency(tenantCurrency: widget.tenant?.currency);
     _slugManuallyEdited =
         widget.tenant?.slug != null && widget.tenant!.slug!.trim().isNotEmpty;
     _nameController.addListener(_handleNameChanged);
@@ -1986,7 +1982,9 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
             ..hideCurrentSnackBar()
             ..showSnackBar(
               SnackBar(
-                content: Text(context.l10n.tenantFacilityNoFacilityChangesMessage),
+                content: Text(
+                  context.l10n.tenantFacilityNoFacilityChangesMessage,
+                ),
               ),
             );
         }
@@ -2250,8 +2248,7 @@ class _FacilityProfileFormState extends ConsumerState<_FacilityProfileForm> {
       name: name,
       existing: existing,
       excludeFacility: editingFacility,
-      excludeFacilityId:
-          editingFacility?.mutationId ?? editingFacility?.id,
+      excludeFacilityId: editingFacility?.mutationId ?? editingFacility?.id,
     );
 
     if (result.hasExactConflict) {
@@ -3231,11 +3228,7 @@ class _FacilityChangeDiffCard extends StatelessWidget {
 
                 if (stacked) {
                   return Column(
-                    children: <Widget>[
-                      previousPane,
-                      arrow,
-                      nextPane,
-                    ],
+                    children: <Widget>[previousPane, arrow, nextPane],
                   );
                 }
 
@@ -3377,9 +3370,10 @@ class _FacilityConfirmLogoPreview extends StatelessWidget {
     } else if (hasUrl && !cleared) {
       final String? resolvedUrl = resolveAppMediaUrl(
         url,
-        ProviderScope.containerOf(context, listen: false)
-            .read(appConfigProvider)
-            .apiBaseUrl,
+        ProviderScope.containerOf(
+          context,
+          listen: false,
+        ).read(appConfigProvider).apiBaseUrl,
       );
       image = Image.network(
         resolvedUrl ?? url!.trim(),
@@ -3394,7 +3388,9 @@ class _FacilityConfirmLogoPreview extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
           Icon(
-            cleared ? Icons.hide_image_outlined : Icons.image_not_supported_outlined,
+            cleared
+                ? Icons.hide_image_outlined
+                : Icons.image_not_supported_outlined,
             color: colorScheme.onSurfaceVariant,
             size: 28,
           ),
@@ -3427,10 +3423,7 @@ class _FacilityConfirmLogoPreview extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: <Widget>[
-              Padding(
-                padding: EdgeInsets.all(theme.spacing.sm),
-                child: image,
-              ),
+              Padding(padding: EdgeInsets.all(theme.spacing.sm), child: image),
               if (emphasizeRemoval && (hasUrl || cleared) && !hasBytes)
                 ColoredBox(
                   color: colorScheme.error.withValues(alpha: 0.12),

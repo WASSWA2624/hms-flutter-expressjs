@@ -91,8 +91,9 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
     if (!mounted) {
       return;
     }
-    final String? scopeParam =
-        GoRouterState.of(context).uri.queryParameters[_labScopeFilterKey];
+    final String? scopeParam = GoRouterState.of(
+      context,
+    ).uri.queryParameters[_labScopeFilterKey];
     if (scopeParam == null || scopeParam.isEmpty) {
       return;
     }

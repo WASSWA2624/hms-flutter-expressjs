@@ -5,15 +5,24 @@ enum AppBreakpoint { xs, sm, md, lg, xl, xxl }
 extension AppBreakpointProperties on AppBreakpoint {
   String get token => name;
 
+  /// Phone widths below the tablet threshold (`< 600`).
   bool get isMobile => switch (this) {
-    AppBreakpoint.xs || AppBreakpoint.sm || AppBreakpoint.md => true,
+    AppBreakpoint.xs || AppBreakpoint.sm => true,
     _ => false,
   };
 
+  /// Drawer / bottom-nav shell for widths below `600`.
+  bool get usesDrawerNavigation => isMobile;
+
+  /// Side navigation (rail or expanded) for widths `600+`.
   bool get supportsNavigationRail => !isMobile;
 
+  /// Expanded side-nav labels / denser chrome for tablet and up.
   bool get supportsExtendedNavigationRail => switch (this) {
-    AppBreakpoint.lg || AppBreakpoint.xl || AppBreakpoint.xxl => true,
+    AppBreakpoint.md ||
+    AppBreakpoint.lg ||
+    AppBreakpoint.xl ||
+    AppBreakpoint.xxl => true,
     _ => false,
   };
 

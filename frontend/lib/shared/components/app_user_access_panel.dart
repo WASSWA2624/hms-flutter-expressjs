@@ -31,10 +31,7 @@ final class AppUserAccessRoleGroup {
 /// Direct (individually assigned) permission shown in [AppUserAccessPanel].
 @immutable
 final class AppUserAccessDirectPermission {
-  const AppUserAccessDirectPermission({
-    required this.id,
-    required this.name,
-  });
+  const AppUserAccessDirectPermission({required this.id, required this.name});
 
   final String id;
   final String name;

@@ -54,46 +54,47 @@ void main() {
     expect(find.text('Enter a valid amount.'), findsNothing);
   });
 
-  testWidgets('AppCurrencyAmountField accepts full due for zero-decimal currency', (
-    WidgetTester tester,
-  ) async {
-    final formKey = GlobalKey<FormState>();
-    final controller = TextEditingController(text: '129041.00');
-    addTearDown(controller.dispose);
+  testWidgets(
+    'AppCurrencyAmountField accepts full due for zero-decimal currency',
+    (WidgetTester tester) async {
+      final formKey = GlobalKey<FormState>();
+      final controller = TextEditingController(text: '129041.00');
+      addTearDown(controller.dispose);
 
-    await pumpComponent(
-      tester,
-      Form(
-        key: formKey,
-        child: Column(
-          children: <Widget>[
-            AppCurrencyAmountField(
-              amountController: controller,
-              currency: 'UGX',
-              amountLabelText: 'Amount',
-              currencyLabelText: 'Currency',
-              isRequired: true,
-              allowZero: false,
-              maxAmount: 129041,
-              onCurrencyChanged: (_) {},
-            ),
-            AppButton.primary(
-              label: 'Submit',
-              onPressed: () {
-                formKey.currentState!.validate();
-              },
-            ),
-          ],
+      await pumpComponent(
+        tester,
+        Form(
+          key: formKey,
+          child: Column(
+            children: <Widget>[
+              AppCurrencyAmountField(
+                amountController: controller,
+                currency: 'UGX',
+                amountLabelText: 'Amount',
+                currencyLabelText: 'Currency',
+                isRequired: true,
+                allowZero: false,
+                maxAmount: 129041,
+                onCurrencyChanged: (_) {},
+              ),
+              AppButton.primary(
+                label: 'Submit',
+                onPressed: () {
+                  formKey.currentState!.validate();
+                },
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
 
-    await tester.tap(find.text('Submit'));
-    await tester.pump();
+      await tester.tap(find.text('Submit'));
+      await tester.pump();
 
-    expect(find.text('Enter a valid amount.'), findsNothing);
-    expect(find.text('This field is required.'), findsNothing);
-  });
+      expect(find.text('Enter a valid amount.'), findsNothing);
+      expect(find.text('This field is required.'), findsNothing);
+    },
+  );
 
   testWidgets('AppCurrencyAmountField rejects fractional UGX amounts', (
     WidgetTester tester,

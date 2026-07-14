@@ -48,6 +48,7 @@ class AppRoleAssignmentPicker extends StatefulWidget {
     required this.onSelectionChanged,
     this.loadRolePermissions,
     this.emptyWarning,
+
     /// When null, roles expand with the parent (no nested scroll).
     /// When set, the role list is capped and scrolls internally.
     this.maxListHeight,
@@ -79,7 +80,9 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
   void initState() {
     super.initState();
     _searchController.addListener(() {
-      setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
+      setState(
+        () => _searchQuery = _searchController.text.trim().toLowerCase(),
+      );
     });
     unawaited(_refreshPermissionPreview());
   }
@@ -226,11 +229,7 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Icon(
-                Icons.warning_amber_outlined,
-                color: colors.error,
-                size: 20,
-              ),
+              Icon(Icons.warning_amber_outlined, color: colors.error, size: 20),
               SizedBox(width: theme.spacing.sm),
               Expanded(
                 child: Text(
@@ -299,9 +298,7 @@ class _AppRoleAssignmentPickerState extends State<AppRoleAssignmentPicker> {
                 .take(48)
                 .map(
                   (String permission) => Chip(
-                    label: Text(
-                      l10n.permissionCatalogLabelForCode(permission),
-                    ),
+                    label: Text(l10n.permissionCatalogLabelForCode(permission)),
                   ),
                 )
                 .toList(growable: false),
@@ -519,8 +516,8 @@ int _columnCount(double maxWidth) {
 }
 
 _RoleLogicalGroup _classifyRole(AppRoleAssignmentOption role) {
-  final String haystack =
-      '${role.label} ${role.description ?? ''}'.toUpperCase();
+  final String haystack = '${role.label} ${role.description ?? ''}'
+      .toUpperCase();
   final String normalized = haystack.replaceAll(RegExp(r'[^A-Z0-9]+'), '_');
 
   if (_containsAny(normalized, const <String>[
@@ -605,10 +602,8 @@ String _groupLabel(AppLocalizations l10n, _RoleLogicalGroup group) {
     _RoleLogicalGroup.administration =>
       l10n.hrRoleAssignmentGroupAdministrationLabel,
     _RoleLogicalGroup.clinical => l10n.hrRoleAssignmentGroupClinicalLabel,
-    _RoleLogicalGroup.diagnostics =>
-      l10n.hrRoleAssignmentGroupDiagnosticsLabel,
-    _RoleLogicalGroup.frontOffice =>
-      l10n.hrRoleAssignmentGroupFrontOfficeLabel,
+    _RoleLogicalGroup.diagnostics => l10n.hrRoleAssignmentGroupDiagnosticsLabel,
+    _RoleLogicalGroup.frontOffice => l10n.hrRoleAssignmentGroupFrontOfficeLabel,
     _RoleLogicalGroup.operations => l10n.hrRoleAssignmentGroupOperationsLabel,
     _RoleLogicalGroup.custom => l10n.hrRoleAssignmentGroupCustomLabel,
   };

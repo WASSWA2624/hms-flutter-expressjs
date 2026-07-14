@@ -80,11 +80,7 @@ class _TenantFacilitySetupWizardState extends State<TenantFacilitySetupWizard> {
       return;
     }
     if (!_steps.contains(selected) ||
-        !tenantFacilityWizardStepReachable(
-          widget.snapshot,
-          _steps,
-          selected,
-        )) {
+        !tenantFacilityWizardStepReachable(widget.snapshot, _steps, selected)) {
       _selectedStep = null;
     }
   }
@@ -121,18 +117,19 @@ class _TenantFacilitySetupWizardState extends State<TenantFacilitySetupWizard> {
       widget.snapshot,
       current,
     );
-    final TenantFacilitySetupWizardStep? nextStep = currentIndex + 1 < steps.length
-        ? steps[currentIndex + 1]
-        : null;
+    final TenantFacilitySetupWizardStep? nextStep =
+        currentIndex + 1 < steps.length ? steps[currentIndex + 1] : null;
     // Enabled only when the current step does not block progress (required
     // steps must be fully configured; optional steps never block).
-    final bool canGoNext = nextStep != null &&
+    final bool canGoNext =
+        nextStep != null &&
         !tenantFacilityWizardStepBlocksProgress(widget.snapshot, current);
     final String? navigationLabel = nextStep == null
         ? null
         : tenantFacilityWizardContinueToStepLabel(l10n, nextStep);
-    final TenantFacilitySetupWizardStep? navigateTarget =
-        canGoNext ? nextStep : null;
+    final TenantFacilitySetupWizardStep? navigateTarget = canGoNext
+        ? nextStep
+        : null;
     final VoidCallback? navigationAction = navigateTarget == null
         ? null
         : () => _selectStep(navigateTarget);
@@ -303,7 +300,8 @@ class _SetupStepPanel extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final String title = tenantFacilityWizardStepLabel(l10n, step);
-    final bool wide = AppBreakpoints.of(context).index >= AppBreakpoint.md.index;
+    final bool wide =
+        AppBreakpoints.of(context).index >= AppBreakpoint.md.index;
 
     final List<Widget> actions = <Widget>[
       AppButton.primary(
@@ -379,12 +377,7 @@ class _SetupStepPanel extends StatelessWidget {
     );
 
     final List<TenantFacilityWizardStepRequirement> blockers =
-        tenantFacilityWizardBlockersForStep(
-          l10n,
-          snapshot,
-          step,
-          steps: steps,
-        );
+        tenantFacilityWizardBlockersForStep(l10n, snapshot, step, steps: steps);
     final List<TenantFacilityWizardStepRequirement> outstanding = blockers
         .where((TenantFacilityWizardStepRequirement item) => !item.satisfied)
         .toList(growable: false);
@@ -415,9 +408,7 @@ class _SetupStepPanel extends StatelessWidget {
           ],
         ),
         borderRadius: BorderRadius.circular(theme.radius.lg),
-        border: Border.all(
-          color: colorScheme.primary.withValues(alpha: 0.18),
-        ),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.18)),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.lg),
@@ -428,7 +419,9 @@ class _SetupStepPanel extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Expanded(child: _headerIdentity(l10n, theme, colorScheme, title)),
+                  Expanded(
+                    child: _headerIdentity(l10n, theme, colorScheme, title),
+                  ),
                   SizedBox(width: theme.spacing.md),
                   Flexible(child: actionRow),
                 ],
@@ -457,8 +450,8 @@ class _SetupStepPanel extends StatelessWidget {
                     optional: optional && !hasPrerequisiteBlockers,
                     onFixRequirement:
                         (TenantFacilityWizardStepRequirement item) {
-                      onOpenFixStep(item.fixStep);
-                    },
+                          onOpenFixStep(item.fixStep);
+                        },
                   ),
                   if (primaryOutstanding != null)
                     AppButton.secondary(
@@ -541,10 +534,7 @@ class _SetupStepPanel extends StatelessWidget {
                     ),
                   ),
                   if (optional)
-                    _StepBadge(
-                      label: 'Optional',
-                      tone: colorScheme.tertiary,
-                    ),
+                    _StepBadge(label: 'Optional', tone: colorScheme.tertiary),
                   _StepBadge(
                     label: completed
                         ? l10n.tenantFacilityStatusActive
@@ -710,108 +700,109 @@ class _SetupStepRecordSelectorState extends State<_SetupStepRecordSelector> {
 
     return switch (step) {
       TenantFacilitySetupWizardStep.tenant => _buildSelector(
-          context,
-          label: l10n.tenantFacilityWizardStepTenant,
-          emptyMessage: tenantFacilityWizardStepEmptyMessage(l10n, step),
-          options: snapshot.tenant == null
-              ? const <AppSelectOption<String>>[]
-              : <AppSelectOption<String>>[
-                  AppSelectOption<String>(
-                    value: snapshot.tenant!.id,
-                    label:
-                        '${snapshot.tenant!.name} · ${tenantFacilityActiveStatusLabel(l10n, snapshot.tenant!.isActive)}',
-                    searchText: snapshot.tenant!.name,
-                  ),
-                ],
-          value: snapshot.tenant?.id,
-          onChanged: null,
-        ),
+        context,
+        label: l10n.tenantFacilityWizardStepTenant,
+        emptyMessage: tenantFacilityWizardStepEmptyMessage(l10n, step),
+        options: snapshot.tenant == null
+            ? const <AppSelectOption<String>>[]
+            : <AppSelectOption<String>>[
+                AppSelectOption<String>(
+                  value: snapshot.tenant!.id,
+                  label:
+                      '${snapshot.tenant!.name} · ${tenantFacilityActiveStatusLabel(l10n, snapshot.tenant!.isActive)}',
+                  searchText: snapshot.tenant!.name,
+                ),
+              ],
+        value: snapshot.tenant?.id,
+        onChanged: null,
+      ),
       TenantFacilitySetupWizardStep.facility => _buildSelector(
-          context,
-          label: l10n.tenantFacilityFacilitySelectLabel,
-          emptyMessage: tenantFacilityWizardStepEmptyMessage(l10n, step),
-          options: <AppSelectOption<String>>[
-            for (final FacilityProfile facility in snapshot.facilities)
-              AppSelectOption<String>(
-                value: facility.id,
-                label:
-                    '${facility.name} · ${tenantFacilityFacilityTypeLabel(l10n, facility.type)}',
-                searchText: facility.name,
-              ),
-          ],
-          value: snapshot.facility?.id ??
-              (snapshot.facilities.length == 1
-                  ? snapshot.facilities.first.id
-                  : null),
-          onChanged: widget.onSelectFacility == null
-              ? null
-              : (String? value) {
-                  if (value == null || value == snapshot.facility?.id) {
-                    return;
-                  }
-                  widget.onSelectFacility!(value);
-                },
-        ),
+        context,
+        label: l10n.tenantFacilityFacilitySelectLabel,
+        emptyMessage: tenantFacilityWizardStepEmptyMessage(l10n, step),
+        options: <AppSelectOption<String>>[
+          for (final FacilityProfile facility in snapshot.facilities)
+            AppSelectOption<String>(
+              value: facility.id,
+              label:
+                  '${facility.name} · ${tenantFacilityFacilityTypeLabel(l10n, facility.type)}',
+              searchText: facility.name,
+            ),
+        ],
+        value:
+            snapshot.facility?.id ??
+            (snapshot.facilities.length == 1
+                ? snapshot.facilities.first.id
+                : null),
+        onChanged: widget.onSelectFacility == null
+            ? null
+            : (String? value) {
+                if (value == null || value == snapshot.facility?.id) {
+                  return;
+                }
+                widget.onSelectFacility!(value);
+              },
+      ),
       TenantFacilitySetupWizardStep.branches => _buildListSelector(
-          context,
-          label: l10n.tenantFacilityWizardStepBranches,
-          emptyMessage: l10n.tenantFacilityNoBranches,
-          items: snapshot.branches,
-          idOf: (BranchProfile item) => item.id,
-          labelOf: (BranchProfile item) =>
-              '${item.name} · ${tenantFacilityActiveStatusLabel(l10n, item.isActive)}',
-          searchOf: (BranchProfile item) => item.name,
-        ),
+        context,
+        label: l10n.tenantFacilityWizardStepBranches,
+        emptyMessage: l10n.tenantFacilityNoBranches,
+        items: snapshot.branches,
+        idOf: (BranchProfile item) => item.id,
+        labelOf: (BranchProfile item) =>
+            '${item.name} · ${tenantFacilityActiveStatusLabel(l10n, item.isActive)}',
+        searchOf: (BranchProfile item) => item.name,
+      ),
       TenantFacilitySetupWizardStep.departments => _buildListSelector(
-          context,
-          label: l10n.tenantFacilityWizardStepDepartments,
-          emptyMessage: l10n.tenantFacilityNoDepartments,
-          items: snapshot.departments,
-          idOf: (DepartmentProfile item) => item.id,
-          labelOf: (DepartmentProfile item) =>
-              '${item.name} · ${tenantFacilityDepartmentTypeLabel(l10n, item.type)}',
-          searchOf: (DepartmentProfile item) => item.name,
-        ),
+        context,
+        label: l10n.tenantFacilityWizardStepDepartments,
+        emptyMessage: l10n.tenantFacilityNoDepartments,
+        items: snapshot.departments,
+        idOf: (DepartmentProfile item) => item.id,
+        labelOf: (DepartmentProfile item) =>
+            '${item.name} · ${tenantFacilityDepartmentTypeLabel(l10n, item.type)}',
+        searchOf: (DepartmentProfile item) => item.name,
+      ),
       TenantFacilitySetupWizardStep.units => _buildListSelector(
-          context,
-          label: l10n.tenantFacilityWizardStepUnits,
-          emptyMessage: l10n.tenantFacilityNoUnits,
-          items: snapshot.units,
-          idOf: (UnitProfile item) => item.id,
-          labelOf: (UnitProfile item) =>
-              '${item.name} · ${tenantFacilityActiveStatusLabel(l10n, item.isActive)}',
-          searchOf: (UnitProfile item) => item.name,
-        ),
+        context,
+        label: l10n.tenantFacilityWizardStepUnits,
+        emptyMessage: l10n.tenantFacilityNoUnits,
+        items: snapshot.units,
+        idOf: (UnitProfile item) => item.id,
+        labelOf: (UnitProfile item) =>
+            '${item.name} · ${tenantFacilityActiveStatusLabel(l10n, item.isActive)}',
+        searchOf: (UnitProfile item) => item.name,
+      ),
       TenantFacilitySetupWizardStep.wards => _buildListSelector(
-          context,
-          label: l10n.tenantFacilityWizardStepWards,
-          emptyMessage: l10n.tenantFacilityNoWards,
-          items: snapshot.wards,
-          idOf: (WardProfile item) => item.id,
-          labelOf: (WardProfile item) =>
-              '${item.name} · ${tenantFacilityWardTypeLabel(l10n, item.type)}',
-          searchOf: (WardProfile item) => item.name,
-        ),
+        context,
+        label: l10n.tenantFacilityWizardStepWards,
+        emptyMessage: l10n.tenantFacilityNoWards,
+        items: snapshot.wards,
+        idOf: (WardProfile item) => item.id,
+        labelOf: (WardProfile item) =>
+            '${item.name} · ${tenantFacilityWardTypeLabel(l10n, item.type)}',
+        searchOf: (WardProfile item) => item.name,
+      ),
       TenantFacilitySetupWizardStep.rooms => _buildListSelector(
-          context,
-          label: l10n.tenantFacilityWizardStepRooms,
-          emptyMessage: l10n.tenantFacilityNoRooms,
-          items: snapshot.rooms,
-          idOf: (RoomProfile item) => item.id,
-          labelOf: (RoomProfile item) =>
-              '${item.name} · ${item.floor?.trim().isNotEmpty == true ? item.floor! : '—'}',
-          searchOf: (RoomProfile item) => item.name,
-        ),
+        context,
+        label: l10n.tenantFacilityWizardStepRooms,
+        emptyMessage: l10n.tenantFacilityNoRooms,
+        items: snapshot.rooms,
+        idOf: (RoomProfile item) => item.id,
+        labelOf: (RoomProfile item) =>
+            '${item.name} · ${item.floor?.trim().isNotEmpty == true ? item.floor! : '—'}',
+        searchOf: (RoomProfile item) => item.name,
+      ),
       TenantFacilitySetupWizardStep.beds => _buildListSelector(
-          context,
-          label: l10n.tenantFacilityWizardStepBeds,
-          emptyMessage: l10n.tenantFacilityNoBeds,
-          items: snapshot.beds,
-          idOf: (BedProfile item) => item.id,
-          labelOf: (BedProfile item) =>
-              '${item.label} · ${tenantFacilityBedStatusLabel(l10n, item.status)}',
-          searchOf: (BedProfile item) => item.label,
-        ),
+        context,
+        label: l10n.tenantFacilityWizardStepBeds,
+        emptyMessage: l10n.tenantFacilityNoBeds,
+        items: snapshot.beds,
+        idOf: (BedProfile item) => item.id,
+        labelOf: (BedProfile item) =>
+            '${item.label} · ${tenantFacilityBedStatusLabel(l10n, item.status)}',
+        searchOf: (BedProfile item) => item.label,
+      ),
     };
   }
 
@@ -825,7 +816,8 @@ class _SetupStepRecordSelectorState extends State<_SetupStepRecordSelector> {
     required String Function(T item) searchOf,
   }) {
     final String? fallbackId = items.isEmpty ? null : idOf(items.first);
-    final String? selectedId = _localSelectedId != null &&
+    final String? selectedId =
+        _localSelectedId != null &&
             items.any((T item) => idOf(item) == _localSelectedId)
         ? _localSelectedId
         : fallbackId;
@@ -902,10 +894,7 @@ class _SetupEmptyRecords extends StatelessWidget {
         ),
         child: Row(
           children: <Widget>[
-            Icon(
-              Icons.inbox_outlined,
-              color: colorScheme.onSurfaceVariant,
-            ),
+            Icon(Icons.inbox_outlined, color: colorScheme.onSurfaceVariant),
             SizedBox(width: theme.spacing.sm),
             Expanded(
               child: Text(
@@ -1004,10 +993,7 @@ class _StepBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: 4,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm, vertical: 4),
       decoration: BoxDecoration(
         color: tone.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),

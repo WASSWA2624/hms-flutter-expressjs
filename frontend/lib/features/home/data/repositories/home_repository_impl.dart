@@ -126,12 +126,13 @@ final class HomeRepositoryImpl implements HomeRepository {
     HomeDashboardProfile localProfile,
     HomeDashboard dashboard,
   ) {
-    final HomeDashboardProfile tailoredProfile = tailorNurseDashboardProfileIfNeeded(
-      profile: localProfile,
-      policy: _accessPolicy,
-      context: dashboard.context,
-      user: _session?.user,
-    );
+    final HomeDashboardProfile tailoredProfile =
+        tailorNurseDashboardProfileIfNeeded(
+          profile: localProfile,
+          policy: _accessPolicy,
+          context: dashboard.context,
+          user: _session?.user,
+        );
     return mergeHomeDashboardForProfile(
       profile: tailoredProfile,
       dashboard: dashboard,
@@ -151,8 +152,7 @@ final class HomeRepositoryImpl implements HomeRepository {
     HomeDashboardRequest request,
   ) {
     // Custom roles with real permission packs should hit the API dashboard.
-    if (profile.role == AppRole.other &&
-        _accessPolicy.permissions.length < 8) {
+    if (profile.role == AppRole.other && _accessPolicy.permissions.length < 8) {
       return true;
     }
     if (_session == null) {
@@ -175,11 +175,12 @@ final class HomeRepositoryImpl implements HomeRepository {
     required bool usesFallbackData,
   }) {
     final AuthUserProfile? user = _session?.user;
-    final HomeDashboardProfile tailoredProfile = tailorNurseDashboardProfileIfNeeded(
-      profile: profile,
-      policy: _accessPolicy,
-      user: user,
-    );
+    final HomeDashboardProfile tailoredProfile =
+        tailorNurseDashboardProfileIfNeeded(
+          profile: profile,
+          policy: _accessPolicy,
+          user: user,
+        );
     final List<HomeQueueItem> queuePreview = usesFallbackData
         ? guidedFallbackQueueHints(tailoredProfile)
         : const <HomeQueueItem>[];

@@ -363,7 +363,8 @@ class _AppTextInputActionDialogState extends State<AppTextInputActionDialog> {
       content: AppFormShell(
         formKey: _formKey,
         children: <Widget>[
-          if (widget.description != null && widget.description!.trim().isNotEmpty)
+          if (widget.description != null &&
+              widget.description!.trim().isNotEmpty)
             Text(
               widget.description!,
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -371,8 +372,9 @@ class _AppTextInputActionDialogState extends State<AppTextInputActionDialog> {
                     ? colorScheme.error
                     : colorScheme.onSurfaceVariant,
                 height: 1.45,
-                fontWeight:
-                    widget.destructive ? FontWeight.w600 : FontWeight.w400,
+                fontWeight: widget.destructive
+                    ? FontWeight.w600
+                    : FontWeight.w400,
               ),
             ),
           AppTextField(

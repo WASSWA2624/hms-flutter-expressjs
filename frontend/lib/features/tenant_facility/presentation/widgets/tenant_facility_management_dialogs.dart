@@ -137,10 +137,8 @@ Future<bool?> showFacilityDetailsDialog(
 }) {
   return showAppDialog<bool>(
     context: context,
-    builder: (_) => _FacilityDetailsDialog(
-      facility: facility,
-      tenantName: tenantName,
-    ),
+    builder: (_) =>
+        _FacilityDetailsDialog(facility: facility, tenantName: tenantName),
   );
 }
 
@@ -596,9 +594,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
 
   int _countDashboardActiveTenants(List<TenantProfile> tenants) {
     return tenants
-        .where(
-          (TenantProfile tenant) => !tenant.isDeleted && tenant.isActive,
-        )
+        .where((TenantProfile tenant) => !tenant.isDeleted && tenant.isActive)
         .length;
   }
 
@@ -682,12 +678,13 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                           cellBuilder: (_, TenantProfile tenant) => Text(
                             tenant.name,
                             style: tenant.isDeleted
-                                ? Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
-                                    )
+                                ? Theme.of(
+                                    context,
+                                  ).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  )
                                 : null,
                           ),
                         ),
@@ -698,9 +695,8 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                         ),
                         AppListTableColumn<TenantProfile>(
                           label: l10n.tenantFacilityTenantStatusLabel,
-                          cellBuilder: (_, TenantProfile tenant) => Text(
-                            _tenantStatusLabel(l10n, tenant),
-                          ),
+                          cellBuilder: (_, TenantProfile tenant) =>
+                              Text(_tenantStatusLabel(l10n, tenant)),
                         ),
                         if (_canEdit)
                           AppListTableColumn<TenantProfile>(
@@ -723,9 +719,8 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                                     onEdit: () => unawaited(
                                       _openTenantForm(tenant: tenant),
                                     ),
-                                    onDelete: () => unawaited(
-                                      _confirmDeleteTenant(tenant),
-                                    ),
+                                    onDelete: () =>
+                                        unawaited(_confirmDeleteTenant(tenant)),
                                     onRestore: () => unawaited(
                                       _confirmRestoreTenant(tenant),
                                     ),
@@ -756,8 +751,8 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                                           l10n.tenantFacilitySaveTenantAction,
                                       deleteLabel:
                                           l10n.tenantFacilityDeleteAction,
-                                      restoreLabel:
-                                          l10n.tenantFacilityRestoreTenantAction,
+                                      restoreLabel: l10n
+                                          .tenantFacilityRestoreTenantAction,
                                       permanentDeleteLabel: l10n
                                           .tenantFacilityPermanentDeleteAction,
                                       onEdit: () => unawaited(
@@ -776,9 +771,7 @@ class _ManageTenantsDialogState extends ConsumerState<_ManageTenantsDialog> {
                                   : Text(_tenantStatusLabel(l10n, tenant)),
                               onTap: tenant.isDeleted
                                   ? null
-                                  : () => unawaited(
-                                      _openTenantDetails(tenant),
-                                    ),
+                                  : () => unawaited(_openTenantDetails(tenant)),
                             );
                           },
                     ),
@@ -1443,9 +1436,8 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
                         ),
                         AppListTableColumn<FacilityProfile>(
                           label: l10n.tenantFacilityTenantStatusLabel,
-                          cellBuilder: (_, FacilityProfile facility) => Text(
-                            statusLabelBuilder(facility),
-                          ),
+                          cellBuilder: (_, FacilityProfile facility) =>
+                              Text(statusLabelBuilder(facility)),
                         ),
                         if (canManage)
                           AppListTableColumn<FacilityProfile>(
@@ -1486,8 +1478,8 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
                               trailing: canManage && !facility.isDeleted
                                   ? _ManagementRowActions(
                                       enabled: !loading,
-                                      editLabel: l10n
-                                          .tenantFacilityEditFacilityAction,
+                                      editLabel:
+                                          l10n.tenantFacilityEditFacilityAction,
                                       deleteLabel:
                                           l10n.tenantFacilityDeleteAction,
                                       onEdit: () => onEdit(facility),
@@ -1560,10 +1552,7 @@ enum _FacilityDetailsPanel {
 }
 
 class _FacilityDetailsDialog extends ConsumerStatefulWidget {
-  const _FacilityDetailsDialog({
-    required this.facility,
-    this.tenantName,
-  });
+  const _FacilityDetailsDialog({required this.facility, this.tenantName});
 
   final FacilityProfile facility;
   final String? tenantName;
@@ -1573,7 +1562,8 @@ class _FacilityDetailsDialog extends ConsumerStatefulWidget {
       _FacilityDetailsDialogState();
 }
 
-class _FacilityDetailsDialogState extends ConsumerState<_FacilityDetailsDialog> {
+class _FacilityDetailsDialogState
+    extends ConsumerState<_FacilityDetailsDialog> {
   late FacilityProfile _facility;
   FacilitySetupSnapshot? _snapshot;
   final TextEditingController _usersSearchController = TextEditingController();
@@ -1658,8 +1648,7 @@ class _FacilityDetailsDialogState extends ConsumerState<_FacilityDetailsDialog> 
         _snapshot ?? FacilitySetupSnapshot(facility: _facility);
     final FacilityProfile facility = base.facility ?? _facility;
     final TenantProfile tenant =
-        base.tenant ??
-        TenantProfile(id: facility.tenantId, name: _tenantLabel);
+        base.tenant ?? TenantProfile(id: facility.tenantId, name: _tenantLabel);
     if (identical(base.facility, facility) && identical(base.tenant, tenant)) {
       return base;
     }
@@ -1741,10 +1730,7 @@ class _FacilityDetailsDialogState extends ConsumerState<_FacilityDetailsDialog> 
     );
   }
 
-  Future<void> _loadUsers({
-    bool silent = false,
-    bool resetPage = false,
-  }) async {
+  Future<void> _loadUsers({bool silent = false, bool resetPage = false}) async {
     if (resetPage) {
       _pageRequest = _pageRequest.first();
     }
@@ -2171,7 +2157,9 @@ class _FacilityDetailsDialogState extends ConsumerState<_FacilityDetailsDialog> 
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
           ..showSnackBar(
-            SnackBar(content: Text(l10n.tenantFacilityDetailsLogoUpdatedMessage)),
+            SnackBar(
+              content: Text(l10n.tenantFacilityDetailsLogoUpdatedMessage),
+            ),
           );
       },
       failure: (AppFailure failure) {
@@ -2180,9 +2168,7 @@ class _FacilityDetailsDialogState extends ConsumerState<_FacilityDetailsDialog> 
         });
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(content: Text(l10n.failureMessage(failure))),
-          );
+          ..showSnackBar(SnackBar(content: Text(l10n.failureMessage(failure))));
       },
     );
   }
@@ -2468,7 +2454,8 @@ class _FacilityDetailsDialogState extends ConsumerState<_FacilityDetailsDialog> 
           emptyLabel: l10n.tenantFacilityNoBeds,
           addLabel: l10n.tenantFacilityAddBedAction,
           canManage: canMutateStructure && _canManageFacility,
-          canAdd: (canMutateStructure && _canManageFacility) &&
+          canAdd:
+              (canMutateStructure && _canManageFacility) &&
               snapshot.wards.isNotEmpty,
           blockedMessage:
               (canMutateStructure && _canManageFacility) &&
@@ -2638,15 +2625,12 @@ class _FacilityDetailsSummary extends StatelessWidget {
         snapshot?.contactAddress ?? const FacilityContactAddress();
     final String? phone = contact.phone?.trim();
     final String? email = contact.email?.trim();
-    final String address = <String?>[
-      contact.addressLine1,
-      contact.city,
-      contact.country,
-    ]
-        .whereType<String>()
-        .map((String value) => value.trim())
-        .where((String value) => value.isNotEmpty)
-        .join(', ');
+    final String address =
+        <String?>[contact.addressLine1, contact.city, contact.country]
+            .whereType<String>()
+            .map((String value) => value.trim())
+            .where((String value) => value.isNotEmpty)
+            .join(', ');
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -2676,10 +2660,7 @@ class _FacilityDetailsSummary extends StatelessWidget {
                         ),
                       ),
                       SizedBox(height: theme.spacing.xs),
-                      _TenantStatusBadge(
-                        label: statusLabel,
-                        tone: statusTone,
-                      ),
+                      _TenantStatusBadge(label: statusLabel, tone: statusTone),
                     ],
                   ),
                 ),
@@ -2716,10 +2697,7 @@ class _FacilityDetailsSummary extends StatelessWidget {
             SizedBox(height: theme.spacing.md),
             const Divider(height: 1),
             SizedBox(height: theme.spacing.md),
-            _TenantMetaRow(
-              label: l10n.profileTenantLabel,
-              value: tenantLabel,
-            ),
+            _TenantMetaRow(label: l10n.profileTenantLabel, value: tenantLabel),
             _TenantMetaRow(
               label: l10n.profileFacilityTypeLabel,
               value: facility.type.name,
@@ -2756,7 +2734,8 @@ class _FacilityDetailsSummary extends StatelessWidget {
                   ),
                   _FacilityMetricChip(
                     label: l10n.tenantFacilityBranchesSectionTitle,
-                    value: snapshot?.branches
+                    value:
+                        snapshot?.branches
                             .where((BranchProfile item) => !item.isDeleted)
                             .length ??
                         0,
@@ -2766,7 +2745,8 @@ class _FacilityDetailsSummary extends StatelessWidget {
                   ),
                   _FacilityMetricChip(
                     label: l10n.tenantFacilityDepartmentsListTitle,
-                    value: snapshot?.departments
+                    value:
+                        snapshot?.departments
                             .where((DepartmentProfile item) => !item.isDeleted)
                             .length ??
                         0,
@@ -2777,7 +2757,8 @@ class _FacilityDetailsSummary extends StatelessWidget {
                   ),
                   _FacilityMetricChip(
                     label: l10n.tenantFacilityUnitsListTitle,
-                    value: snapshot?.units
+                    value:
+                        snapshot?.units
                             .where((UnitProfile item) => !item.isDeleted)
                             .length ??
                         0,
@@ -2786,7 +2767,8 @@ class _FacilityDetailsSummary extends StatelessWidget {
                   ),
                   _FacilityMetricChip(
                     label: l10n.tenantFacilityWardsLabel,
-                    value: snapshot?.wards
+                    value:
+                        snapshot?.wards
                             .where((WardProfile item) => !item.isDeleted)
                             .length ??
                         0,
@@ -2795,7 +2777,8 @@ class _FacilityDetailsSummary extends StatelessWidget {
                   ),
                   _FacilityMetricChip(
                     label: l10n.tenantFacilityRoomsLabel,
-                    value: snapshot?.rooms
+                    value:
+                        snapshot?.rooms
                             .where((RoomProfile item) => !item.isDeleted)
                             .length ??
                         0,
@@ -2804,7 +2787,8 @@ class _FacilityDetailsSummary extends StatelessWidget {
                   ),
                   _FacilityMetricChip(
                     label: l10n.tenantFacilityBedsLabel,
-                    value: snapshot?.beds
+                    value:
+                        snapshot?.beds
                             .where((BedProfile item) => !item.isDeleted)
                             .length ??
                         0,
@@ -2825,15 +2809,9 @@ class _FacilityDetailsSummary extends StatelessWidget {
               ),
               SizedBox(height: theme.spacing.sm),
               if (phone != null && phone.isNotEmpty)
-                _TenantMetaRow(
-                  label: l10n.profilePhoneLabel,
-                  value: phone,
-                ),
+                _TenantMetaRow(label: l10n.profilePhoneLabel, value: phone),
               if (email != null && email.isNotEmpty)
-                _TenantMetaRow(
-                  label: l10n.profileEmailLabel,
-                  value: email,
-                ),
+                _TenantMetaRow(label: l10n.profileEmailLabel, value: email),
               if (address.isNotEmpty)
                 _TenantMetaRow(
                   label: l10n.tenantFacilityAddressLineLabel,
@@ -2863,9 +2841,7 @@ class _FacilityLogoAvatar extends ConsumerWidget {
     final bool hasLogo = url != null && url.isNotEmpty;
 
     return Semantics(
-      label: hasLogo
-          ? null
-          : context.l10n.tenantFacilityFacilityDetailsNoLogo,
+      label: hasLogo ? null : context.l10n.tenantFacilityFacilityDetailsNoLogo,
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: colorScheme.surfaceContainerHighest,
@@ -3033,8 +3009,9 @@ class _FacilityStructureCrudPanelState<T>
         : widget.items
               .where((T item) {
                 final String title = widget.titleBuilder(item).toLowerCase();
-                final String subtitle =
-                    widget.subtitleBuilder(item).toLowerCase();
+                final String subtitle = widget
+                    .subtitleBuilder(item)
+                    .toLowerCase();
                 final String status = widget.statusBuilder(item).toLowerCase();
                 return title.contains(query) ||
                     subtitle.contains(query) ||
@@ -3147,8 +3124,7 @@ class _FacilityStructureCrudPanelState<T>
                                             .tenantFacilityRestoreStructureAction,
                                         tooltip: l10n
                                             .tenantFacilityRestoreStructureAction,
-                                        onPressed: () =>
-                                            widget.onRestore(item),
+                                        onPressed: () => widget.onRestore(item),
                                       )
                                     : Row(
                                         mainAxisSize: MainAxisSize.min,
@@ -3166,12 +3142,12 @@ class _FacilityStructureCrudPanelState<T>
                                           ),
                                           AppButton.tertiary(
                                             leadingIcon: Icons.delete_outline,
-                                            label: l10n
-                                                .tenantFacilityDeleteAction,
-                                            semanticLabel: l10n
-                                                .tenantFacilityDeleteAction,
-                                            tooltip: l10n
-                                                .tenantFacilityDeleteAction,
+                                            label:
+                                                l10n.tenantFacilityDeleteAction,
+                                            semanticLabel:
+                                                l10n.tenantFacilityDeleteAction,
+                                            tooltip:
+                                                l10n.tenantFacilityDeleteAction,
                                             color: colorScheme.error,
                                             onPressed: () =>
                                                 widget.onDelete(item),
@@ -3374,10 +3350,11 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
                                         tooltip:
                                             l10n.accessAdminDeleteUserAction,
                                         color: colorScheme.error,
-                                        enabled: !user.isDemo &&
+                                        enabled:
+                                            !user.isDemo &&
                                             !user.isSystemCritical,
-                                        onPressed: user.isDemo ||
-                                                user.isSystemCritical
+                                        onPressed:
+                                            user.isDemo || user.isSystemCritical
                                             ? null
                                             : () => onDelete(user),
                                       ),
@@ -3427,7 +3404,8 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
                                                   Icons.delete_outline,
                                                   color: colorScheme.error,
                                                 ),
-                                                onPressed: user.isDemo ||
+                                                onPressed:
+                                                    user.isDemo ||
                                                         user.isSystemCritical
                                                     ? null
                                                     : () => onDelete(user),
@@ -3448,7 +3426,6 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
     );
   }
 }
-
 
 class _ManageFacilitiesDialog extends ConsumerStatefulWidget {
   const _ManageFacilitiesDialog();
@@ -3863,7 +3840,9 @@ class _ManageFacilitiesDialogState
         if (index < 0) {
           return;
         }
-        final List<FacilityProfile> next = List<FacilityProfile>.of(_facilities);
+        final List<FacilityProfile> next = List<FacilityProfile>.of(
+          _facilities,
+        );
         next[index] = next[index].copyWith(deletedAt: DateTime.now().toUtc());
         setState(() {
           _facilities = next;
@@ -4003,12 +3982,13 @@ class _ManageFacilitiesDialogState
                           cellBuilder: (_, FacilityProfile facility) => Text(
                             _facilityStatusLabel(l10n, facility),
                             style: facility.isDeleted
-                                ? Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                      )
+                                ? Theme.of(
+                                    context,
+                                  ).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  )
                                 : null,
                           ),
                         ),
@@ -4030,8 +4010,8 @@ class _ManageFacilitiesDialogState
                                           l10n.tenantFacilityEditFacilityAction,
                                       deleteLabel:
                                           l10n.tenantFacilityDeleteAction,
-                                      restoreLabel:
-                                          l10n.tenantFacilityRestoreTenantAction,
+                                      restoreLabel: l10n
+                                          .tenantFacilityRestoreTenantAction,
                                       permanentDeleteLabel: l10n
                                           .tenantFacilityPermanentDeleteAction,
                                       onEdit: () => unawaited(
@@ -4063,12 +4043,13 @@ class _ManageFacilitiesDialogState
                               title: Text(
                                 facility.name,
                                 style: facility.isDeleted
-                                    ? Theme.of(context).textTheme.titleMedium
-                                          ?.copyWith(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onSurfaceVariant,
-                                          )
+                                    ? Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      )
                                     : null,
                               ),
                               subtitle: Text(
@@ -4078,8 +4059,8 @@ class _ManageFacilitiesDialogState
                                   ? _FacilityManagementRowActions(
                                       enabled: !_loading,
                                       facility: facility,
-                                      editLabel: l10n
-                                          .tenantFacilityEditFacilityAction,
+                                      editLabel:
+                                          l10n.tenantFacilityEditFacilityAction,
                                       deleteLabel:
                                           l10n.tenantFacilityDeleteAction,
                                       restoreLabel: l10n

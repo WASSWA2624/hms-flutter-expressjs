@@ -434,10 +434,7 @@ Set<String> _resolveAttachedPermissionIds({
   }
 
   for (final AccessAdminRolePermissionAssignment assignment in assignments) {
-    addCandidate(
-      id: assignment.permissionId,
-      name: assignment.permissionName,
-    );
+    addCandidate(id: assignment.permissionId, name: assignment.permissionName);
   }
 
   if (resolved.isEmpty) {

@@ -108,6 +108,7 @@ import 'package:hosspi_hms/features/theater/presentation/pages/theater_workspace
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/app_shell_sidebar_preference.dart';
 import 'package:hosspi_hms/shared/layout/responsive_shell_scaffold.dart';
 import 'package:hosspi_hms/shared/layout/shell_navigation_loading.dart';
 
@@ -1234,6 +1235,14 @@ class _AppShell extends ConsumerWidget {
       child: ResponsiveAppShell(
         title: l10n.appTitle,
         compactTitle: l10n.appShortTitle,
+        initialSidebarCollapsed: ref.watch(appShellSidebarCollapsedProvider),
+        onSidebarCollapsedChanged: (bool collapsed) {
+          unawaited(
+            ref
+                .read(appShellSidebarCollapsedProvider.notifier)
+                .setCollapsed(collapsed: collapsed),
+          );
+        },
         connectivityStatus: connectivityStatus,
         onlineLabel: l10n.appStatusOnlineLabel,
         offlineLabel: l10n.appStatusOfflineLabel,

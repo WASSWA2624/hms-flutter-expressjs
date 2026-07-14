@@ -53,10 +53,7 @@ void main() {
           AppUserAccessPanel(
             roleGroups: const <AppUserAccessRoleGroup>[],
             directPermissions: const <AppUserAccessDirectPermission>[
-              AppUserAccessDirectPermission(
-                id: 'perm-1',
-                name: 'profile:read',
-              ),
+              AppUserAccessDirectPermission(id: 'perm-1', name: 'profile:read'),
             ],
             canWrite: true,
             onRemoveDirectPermission: (AppUserAccessDirectPermission value) {

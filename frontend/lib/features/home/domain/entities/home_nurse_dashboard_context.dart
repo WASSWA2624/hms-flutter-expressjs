@@ -5,14 +5,7 @@ import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 
 /// Nursing attachment inferred from HR assignment or staff profile signals.
-enum NurseDepartmentKind {
-  general,
-  opd,
-  theatre,
-  radiology,
-  icu,
-  ward,
-}
+enum NurseDepartmentKind { general, opd, theatre, radiology, icu, ward }
 
 const Map<String, NurseDepartmentKind> _nurseContextByValue =
     <String, NurseDepartmentKind>{
@@ -52,16 +45,35 @@ NurseDepartmentKind inferNurseDepartmentKind({
     practitionerType,
   ].whereType<String>().join(' ').toLowerCase();
 
-  if (_matchesAny(combined, <String>['theatre', 'theater', 'surgery', 'surgical'])) {
+  if (_matchesAny(combined, <String>[
+    'theatre',
+    'theater',
+    'surgery',
+    'surgical',
+  ])) {
     return NurseDepartmentKind.theatre;
   }
-  if (_matchesAny(combined, <String>['radiology', 'imaging', 'x-ray', 'xray'])) {
+  if (_matchesAny(combined, <String>[
+    'radiology',
+    'imaging',
+    'x-ray',
+    'xray',
+  ])) {
     return NurseDepartmentKind.radiology;
   }
-  if (_matchesAny(combined, <String>['opd', 'outpatient', 'out-patient', 'clinic'])) {
+  if (_matchesAny(combined, <String>[
+    'opd',
+    'outpatient',
+    'out-patient',
+    'clinic',
+  ])) {
     return NurseDepartmentKind.opd;
   }
-  if (_matchesAny(combined, <String>['icu', 'intensive care', 'critical care'])) {
+  if (_matchesAny(combined, <String>[
+    'icu',
+    'intensive care',
+    'critical care',
+  ])) {
     return NurseDepartmentKind.icu;
   }
   if (_matchesAny(combined, <String>['ward', 'inpatient', 'ipd'])) {
@@ -376,6 +388,7 @@ String nurseDistributionTitleForKind(NurseDepartmentKind kind) {
     NurseDepartmentKind.theatre => 'Theatre case mix',
     NurseDepartmentKind.radiology => 'Imaging workload mix',
     NurseDepartmentKind.icu => 'ICU workload mix',
-    NurseDepartmentKind.ward || NurseDepartmentKind.general => 'Ward distribution',
+    NurseDepartmentKind.ward ||
+    NurseDepartmentKind.general => 'Ward distribution',
   };
 }

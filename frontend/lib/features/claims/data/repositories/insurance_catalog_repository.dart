@@ -7,12 +7,11 @@ import 'package:hosspi_hms/features/claims/data/dtos/claims_dtos.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 
-final insuranceCatalogRepositoryProvider =
-    Provider<InsuranceCatalogRepository>((Ref ref) {
-      return InsuranceCatalogRepository(
-        apiClient: ref.watch(apiClientProvider),
-      );
-    });
+final insuranceCatalogRepositoryProvider = Provider<InsuranceCatalogRepository>(
+  (Ref ref) {
+    return InsuranceCatalogRepository(apiClient: ref.watch(apiClientProvider));
+  },
+);
 
 /// CRUD client for insurance companies, schemes, offers, and enrollments.
 final class InsuranceCatalogRepository {
@@ -27,8 +26,7 @@ final class InsuranceCatalogRepository {
     return _apiClient.post<InsuranceCompanyOption>(
       ApiEndpoints.collection(HmsApiResource.insuranceCompanies),
       data: _withoutEmpty(payload),
-      decoder: (Object? data) =>
-          InsuranceCompanyDto(_mapData(data)).toEntity(),
+      decoder: (Object? data) => InsuranceCompanyDto(_mapData(data)).toEntity(),
     );
   }
 
@@ -219,8 +217,7 @@ Map<String, Object?> _withoutEmpty(Map<String, Object?> payload) {
   return <String, Object?>{
     for (final MapEntry<String, Object?> entry in payload.entries)
       if (entry.value != null &&
-          (entry.value is! String ||
-              (entry.value as String).trim().isNotEmpty))
+          (entry.value is! String || (entry.value as String).trim().isNotEmpty))
         entry.key: entry.value is String
             ? (entry.value as String).trim()
             : entry.value,

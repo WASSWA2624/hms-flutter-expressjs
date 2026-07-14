@@ -61,7 +61,9 @@ class AppStateView extends StatelessWidget {
     final CrossAxisAlignment resolvedAlignment = isLoading
         ? CrossAxisAlignment.center
         : crossAxisAlignment;
-    final TextAlign resolvedTextAlign = isLoading ? TextAlign.center : textAlign;
+    final TextAlign resolvedTextAlign = isLoading
+        ? TextAlign.center
+        : textAlign;
 
     if (isLoading) {
       return Semantics(
@@ -106,13 +108,13 @@ class AppStateView extends StatelessWidget {
         children: <Widget>[
           _StateVisual(variant: variant, icon: icon),
           SizedBox(height: spacing.sm),
-          Text(title, style: textTheme.titleLarge, textAlign: resolvedTextAlign),
-          SizedBox(height: spacing.sm),
           Text(
-            body,
-            style: textTheme.bodyMedium,
+            title,
+            style: textTheme.titleLarge,
             textAlign: resolvedTextAlign,
           ),
+          SizedBox(height: spacing.sm),
+          Text(body, style: textTheme.bodyMedium, textAlign: resolvedTextAlign),
           if (detail != null && detail!.isNotEmpty) ...<Widget>[
             SizedBox(height: spacing.sm),
             Text(

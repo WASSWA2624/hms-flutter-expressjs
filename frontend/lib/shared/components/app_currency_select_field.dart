@@ -179,8 +179,8 @@ class _AppCurrencySelectFieldState extends State<AppCurrencySelectField> {
     final ColorScheme colorScheme = theme.colorScheme;
     final bool canEdit = widget.enabled && !widget.isLoading;
     final AppCurrencyOption? selected = _selected;
-    final String code = selected?.normalizedCode ??
-        (widget.value?.trim().toUpperCase() ?? '');
+    final String code =
+        selected?.normalizedCode ?? (widget.value?.trim().toUpperCase() ?? '');
 
     return InputDecorator(
       isFocused: _isPickerOpen,

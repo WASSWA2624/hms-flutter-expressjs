@@ -53,7 +53,10 @@ void main() {
       expect(detail.item.roles.single.userRoleId, 'UR-1');
       expect(detail.directPermissions.single.mutationId, 'perm-uuid');
       expect(detail.permissionsByRole, hasLength(1));
-      expect(detail.resolvedRoleGroups.single.permissions.single.name, 'clinical:read');
+      expect(
+        detail.resolvedRoleGroups.single.permissions.single.name,
+        'clinical:read',
+      );
       expect(detail.resolvedRoleGroups.single.userRoleId, 'UR-1');
     });
   });

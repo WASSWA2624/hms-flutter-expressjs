@@ -136,7 +136,10 @@ final class HomeDashboard {
       0,
       (int sum, HomeAlertItem item) => sum + item.count,
     );
-    return alertTotal + queuePreview.length + resultsPreview.length + followUpPreview.length;
+    return alertTotal +
+        queuePreview.length +
+        resultsPreview.length +
+        followUpPreview.length;
   }
 }
 

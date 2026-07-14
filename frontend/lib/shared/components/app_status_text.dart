@@ -7,6 +7,7 @@ class AppStatusText extends StatelessWidget {
     required this.label,
     this.tone = AppWorkspaceStatusTone.neutral,
     this.icon,
+    this.includeDefaultToneIcon = false,
     this.fontWeight = FontWeight.w700,
     this.maxLines = 1,
     this.softWrap = false,
@@ -16,6 +17,10 @@ class AppStatusText extends StatelessWidget {
   final String label;
   final AppWorkspaceStatusTone tone;
   final IconData? icon;
+
+  /// When true and [icon] is null, shows a tone-default icon so status is not
+  /// color-only.
+  final bool includeDefaultToneIcon;
   final FontWeight fontWeight;
   final int maxLines;
   final bool softWrap;
@@ -24,7 +29,8 @@ class AppStatusText extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final Color color = _textColor(theme);
-    final IconData? resolvedIcon = icon;
+    final IconData? resolvedIcon =
+        icon ?? (includeDefaultToneIcon ? _defaultToneIcon(tone) : null);
     final Text text = Text(
       label,
       maxLines: maxLines,
@@ -51,6 +57,16 @@ class AppStatusText extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  static IconData? _defaultToneIcon(AppWorkspaceStatusTone tone) {
+    return switch (tone) {
+      AppWorkspaceStatusTone.success => Icons.check_circle_outline,
+      AppWorkspaceStatusTone.warning => Icons.warning_amber_outlined,
+      AppWorkspaceStatusTone.error => Icons.error_outline,
+      AppWorkspaceStatusTone.info => Icons.info_outline,
+      AppWorkspaceStatusTone.neutral => null,
+    };
   }
 
   Color _textColor(ThemeData theme) {

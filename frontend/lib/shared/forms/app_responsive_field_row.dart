@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 
 enum AppResponsiveFieldRowGap { standard, form }
 
+/// Stacks children below [AppBreakpoints.md] and places them in a row above.
 class AppResponsiveFieldRow extends StatelessWidget {
   const AppResponsiveFieldRow({
     required this.children,
-    this.breakpoint = 560,
+    this.breakpoint = AppBreakpoints.md,
     this.gap = AppResponsiveFieldRowGap.standard,
     super.key,
   });
@@ -14,7 +16,7 @@ class AppResponsiveFieldRow extends StatelessWidget {
   AppResponsiveFieldRow.two({
     required Widget left,
     required Widget right,
-    double breakpoint = 560,
+    double breakpoint = AppBreakpoints.md,
     AppResponsiveFieldRowGap gap = AppResponsiveFieldRowGap.standard,
     Key? key,
   }) : this(

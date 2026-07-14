@@ -130,7 +130,9 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   @override
   Future<Result<TenantProfile>> restoreTenant(String id) {
     return _apiClient.post<TenantProfile>(
-      ApiEndpoints.nested(HmsApiResource.tenants, id, const <String>['restore']),
+      ApiEndpoints.nested(HmsApiResource.tenants, id, const <String>[
+        'restore',
+      ]),
       decoder: _decodeTenant,
     );
   }
@@ -138,11 +140,9 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   @override
   Future<Result<void>> permanentDeleteTenant(String id) {
     return _apiClient.delete<void>(
-      ApiEndpoints.nested(
-        HmsApiResource.tenants,
-        id,
-        const <String>['permanent'],
-      ),
+      ApiEndpoints.nested(HmsApiResource.tenants, id, const <String>[
+        'permanent',
+      ]),
       decoder: _decodeVoid,
     );
   }
@@ -155,11 +155,9 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   @override
   Future<Result<FacilityProfile>> restoreFacility(String id) {
     return _apiClient.post<FacilityProfile>(
-      ApiEndpoints.nested(
-        HmsApiResource.facilities,
-        id,
-        const <String>['restore'],
-      ),
+      ApiEndpoints.nested(HmsApiResource.facilities, id, const <String>[
+        'restore',
+      ]),
       decoder: _decodeFacility,
     );
   }
@@ -167,11 +165,9 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   @override
   Future<Result<void>> permanentDeleteFacility(String id) {
     return _apiClient.delete<void>(
-      ApiEndpoints.nested(
-        HmsApiResource.facilities,
-        id,
-        const <String>['permanent'],
-      ),
+      ApiEndpoints.nested(HmsApiResource.facilities, id, const <String>[
+        'permanent',
+      ]),
       decoder: _decodeVoid,
     );
   }
@@ -318,8 +314,9 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     required bool isActive,
     String? currency,
   }) {
-    final String? normalizedCurrency =
-        _normalizedOptional(currency)?.toUpperCase();
+    final String? normalizedCurrency = _normalizedOptional(
+      currency,
+    )?.toUpperCase();
     final Map<String, Object?>? extensionJson = normalizedCurrency == null
         ? null
         : <String, Object?>{'currency': normalizedCurrency};
@@ -356,7 +353,9 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     String? currency,
   }) {
     final String? normalizedLogoUrl = _normalizedOptional(logoUrl);
-    final String? normalizedCurrency = _normalizedOptional(currency)?.toUpperCase();
+    final String? normalizedCurrency = _normalizedOptional(
+      currency,
+    )?.toUpperCase();
     final bool writeExtension =
         normalizedLogoUrl != null || removeLogo || normalizedCurrency != null;
     final Map<String, Object?>? extensionJson = writeExtension
@@ -529,11 +528,9 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   @override
   Future<Result<BranchProfile>> restoreBranch(String id) {
     return _apiClient.post<BranchProfile>(
-      ApiEndpoints.nested(
-        HmsApiResource.branches,
-        id,
-        const <String>['restore'],
-      ),
+      ApiEndpoints.nested(HmsApiResource.branches, id, const <String>[
+        'restore',
+      ]),
       decoder: _decodeBranch,
     );
   }
@@ -584,11 +581,9 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
   @override
   Future<Result<DepartmentProfile>> restoreDepartment(String id) {
     return _apiClient.post<DepartmentProfile>(
-      ApiEndpoints.nested(
-        HmsApiResource.departments,
-        id,
-        const <String>['restore'],
-      ),
+      ApiEndpoints.nested(HmsApiResource.departments, id, const <String>[
+        'restore',
+      ]),
       decoder: _decodeDepartment,
     );
   }

@@ -188,9 +188,7 @@ class AppInfoTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(
-          Theme.of(context).radius.md,
-        ),
+        borderRadius: BorderRadius.circular(Theme.of(context).radius.md),
         child: tile,
       ),
     );

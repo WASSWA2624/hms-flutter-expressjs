@@ -237,7 +237,8 @@ abstract class _ScopedAccessAdminListDialogState<
 
   AppListTableSearch<AccessAdminItem> buildTableSearch({
     required AppLocalizations l10n,
-    List<AppSearchBarFilterGroup> filterGroups = const <AppSearchBarFilterGroup>[],
+    List<AppSearchBarFilterGroup> filterGroups =
+        const <AppSearchBarFilterGroup>[],
     AppSearchBarFilterValue filterValue = AppSearchBarFilterValue.empty,
     ValueChanged<AppSearchBarFilterValue>? onFilterChanged,
     bool hasActiveFilters = false,
@@ -302,7 +303,8 @@ class _ManageUsersDialogState
 
   @override
   AccessAdminWorkspaceQuery get listQuery {
-    final bool crossTenant = _canPickTenant && allTenants && tenantFilter == null;
+    final bool crossTenant =
+        _canPickTenant && allTenants && tenantFilter == null;
     final bool tenantWide =
         _canFilterAcrossFacilities && allFacilities && facilityFilter == null;
     return AccessAdminWorkspaceQuery(
@@ -327,8 +329,9 @@ class _ManageUsersDialogState
     final bool nextAllFacilities = nextAllTenants
         ? true
         : (_canFilterAcrossFacilities && nextFacilityRaw == null);
-    final String? nextFacility =
-        nextAllFacilities || nextAllTenants ? null : nextFacilityRaw;
+    final String? nextFacility = nextAllFacilities || nextAllTenants
+        ? null
+        : nextFacilityRaw;
 
     if (tenantFilter == nextTenant &&
         facilityFilter == nextFacility &&
@@ -589,7 +592,9 @@ class _ManageUsersDialogState
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final AccessAdminLookups lookups =
         workspaceData?.lookups ?? const AccessAdminLookups();
-    final bool canPickTenant = ref.watch(appAccessPolicyProvider).canCreateTenant();
+    final bool canPickTenant = ref
+        .watch(appAccessPolicyProvider)
+        .canCreateTenant();
     final bool canFilterFacilities = _canFilterAcrossFacilities;
     final bool showFacilityFilter =
         canFilterFacilities && (!canPickTenant || tenantFilter != null);
@@ -597,66 +602,69 @@ class _ManageUsersDialogState
         ? lookups.userStatuses
         : const <String>['ACTIVE', 'INACTIVE', 'SUSPENDED', 'PENDING'];
 
-    final List<AppSearchBarFilterGroup> filterGroups = <AppSearchBarFilterGroup>[
-      if (canPickTenant)
-        AppSearchBarFilterGroup(
-          key: _tenantFilterKey,
-          label: l10n.settingsWorkspaceTenantLabel,
-          allLabel: l10n.accessAdminAllTenantsFilterLabel,
-          choices: lookups.tenants
-              .map(
-                (AccessAdminLookupOption tenant) => AppSearchBarFilterChoice(
-                  value: tenant.id,
-                  label: tenant.label,
-                  icon: Icons.apartment_outlined,
-                ),
-              )
-              .toList(growable: false),
-        ),
-      if (showFacilityFilter)
-        AppSearchBarFilterGroup(
-          key: _facilityFilterKey,
-          label: l10n.settingsWorkspaceFacilityLabel,
-          allLabel: l10n.accessAdminAllFacilitiesFilterLabel,
-          choices: lookups.facilities
-              .map(
-                (AccessAdminLookupOption facility) => AppSearchBarFilterChoice(
-                  value: facility.id,
-                  label: facility.label,
-                  icon: Icons.local_hospital_outlined,
-                ),
-              )
-              .toList(growable: false),
-        ),
-      AppSearchBarFilterGroup(
-        key: _roleFilterKey,
-        label: l10n.accessAdminFilterRoleLabel,
-        allLabel: l10n.accessAdminAllRolesFilterLabel,
-        choices: lookups.roles
-            .map(
-              (AccessAdminLookupOption role) => AppSearchBarFilterChoice(
-                value: role.id,
-                label: role.label,
-                icon: Icons.badge_outlined,
-              ),
-            )
-            .toList(growable: false),
-      ),
-      AppSearchBarFilterGroup(
-        key: _statusFilterKey,
-        label: l10n.accessAdminStatusLabel,
-        allLabel: l10n.accessAdminAllStatusesLabel,
-        choices: statusOptions
-            .map(
-              (String status) => AppSearchBarFilterChoice(
-                value: status,
-                label: status,
-                icon: Icons.flag_outlined,
-              ),
-            )
-            .toList(growable: false),
-      ),
-    ];
+    final List<AppSearchBarFilterGroup> filterGroups =
+        <AppSearchBarFilterGroup>[
+          if (canPickTenant)
+            AppSearchBarFilterGroup(
+              key: _tenantFilterKey,
+              label: l10n.settingsWorkspaceTenantLabel,
+              allLabel: l10n.accessAdminAllTenantsFilterLabel,
+              choices: lookups.tenants
+                  .map(
+                    (AccessAdminLookupOption tenant) =>
+                        AppSearchBarFilterChoice(
+                          value: tenant.id,
+                          label: tenant.label,
+                          icon: Icons.apartment_outlined,
+                        ),
+                  )
+                  .toList(growable: false),
+            ),
+          if (showFacilityFilter)
+            AppSearchBarFilterGroup(
+              key: _facilityFilterKey,
+              label: l10n.settingsWorkspaceFacilityLabel,
+              allLabel: l10n.accessAdminAllFacilitiesFilterLabel,
+              choices: lookups.facilities
+                  .map(
+                    (AccessAdminLookupOption facility) =>
+                        AppSearchBarFilterChoice(
+                          value: facility.id,
+                          label: facility.label,
+                          icon: Icons.local_hospital_outlined,
+                        ),
+                  )
+                  .toList(growable: false),
+            ),
+          AppSearchBarFilterGroup(
+            key: _roleFilterKey,
+            label: l10n.accessAdminFilterRoleLabel,
+            allLabel: l10n.accessAdminAllRolesFilterLabel,
+            choices: lookups.roles
+                .map(
+                  (AccessAdminLookupOption role) => AppSearchBarFilterChoice(
+                    value: role.id,
+                    label: role.label,
+                    icon: Icons.badge_outlined,
+                  ),
+                )
+                .toList(growable: false),
+          ),
+          AppSearchBarFilterGroup(
+            key: _statusFilterKey,
+            label: l10n.accessAdminStatusLabel,
+            allLabel: l10n.accessAdminAllStatusesLabel,
+            choices: statusOptions
+                .map(
+                  (String status) => AppSearchBarFilterChoice(
+                    value: status,
+                    label: status,
+                    icon: Icons.flag_outlined,
+                  ),
+                )
+                .toList(growable: false),
+          ),
+        ];
 
     final Map<String, String> filterOptions = <String, String>{
       if (tenantFilter != null) _tenantFilterKey: tenantFilter!,
@@ -751,7 +759,9 @@ class _ManageUsersDialogState
                   final ThemeData theme = Theme.of(context);
                   if (user.isDeleted) {
                     return Padding(
-                      padding: EdgeInsetsDirectional.only(end: theme.spacing.sm),
+                      padding: EdgeInsetsDirectional.only(
+                        end: theme.spacing.sm,
+                      ),
                       child: AppButton.tertiary(
                         leadingIcon: Icons.restore_outlined,
                         label: l10n.accessAdminRestoreUserAction,
@@ -785,11 +795,13 @@ class _ManageUsersDialogState
                           semanticLabel: l10n.tenantFacilityDeleteAction,
                           tooltip: l10n.tenantFacilityDeleteAction,
                           color: colorScheme.error,
-                          enabled: !loading &&
+                          enabled:
+                              !loading &&
                               !mutating &&
                               !user.isDemo &&
                               !user.isSystemCritical,
-                          onPressed: !loading &&
+                          onPressed:
+                              !loading &&
                                   !mutating &&
                                   !user.isDemo &&
                                   !user.isSystemCritical
@@ -889,8 +901,9 @@ class _ManageRolesPermissionsDialogState
     final bool nextAllFacilities = nextAllTenants
         ? true
         : (_canFilterAcrossFacilities && nextFacilityRaw == null);
-    final String? nextFacility =
-        nextAllFacilities || nextAllTenants ? null : nextFacilityRaw;
+    final String? nextFacility = nextAllFacilities || nextAllTenants
+        ? null
+        : nextFacilityRaw;
 
     if (tenantFilter == nextTenant &&
         facilityFilter == nextFacility &&
@@ -1046,57 +1059,63 @@ class _ManageRolesPermissionsDialogState
     final bool showFacilityFilter =
         canFilterFacilities && (!canPickTenant || tenantFilter != null);
 
-    final List<AppSearchBarFilterGroup> filterGroups = <AppSearchBarFilterGroup>[
-      if (canPickTenant)
-        AppSearchBarFilterGroup(
-          key: _tenantFilterKey,
-          label: l10n.settingsWorkspaceTenantLabel,
-          allLabel: l10n.accessAdminAllTenantsFilterLabel,
-          choices: (workspaceData?.lookups.tenants ?? const <AccessAdminLookupOption>[])
-              .map(
-                (AccessAdminLookupOption tenant) => AppSearchBarFilterChoice(
-                  value: tenant.id,
-                  label: tenant.label,
-                  icon: Icons.apartment_outlined,
+    final List<AppSearchBarFilterGroup> filterGroups =
+        <AppSearchBarFilterGroup>[
+          if (canPickTenant)
+            AppSearchBarFilterGroup(
+              key: _tenantFilterKey,
+              label: l10n.settingsWorkspaceTenantLabel,
+              allLabel: l10n.accessAdminAllTenantsFilterLabel,
+              choices:
+                  (workspaceData?.lookups.tenants ??
+                          const <AccessAdminLookupOption>[])
+                      .map(
+                        (AccessAdminLookupOption tenant) =>
+                            AppSearchBarFilterChoice(
+                              value: tenant.id,
+                              label: tenant.label,
+                              icon: Icons.apartment_outlined,
+                            ),
+                      )
+                      .toList(growable: false),
+            ),
+          if (showFacilityFilter)
+            AppSearchBarFilterGroup(
+              key: _facilityFilterKey,
+              label: l10n.settingsWorkspaceFacilityLabel,
+              allLabel: l10n.accessAdminAllFacilitiesFilterLabel,
+              choices:
+                  (workspaceData?.lookups.facilities ??
+                          const <AccessAdminLookupOption>[])
+                      .map(
+                        (AccessAdminLookupOption facility) =>
+                            AppSearchBarFilterChoice(
+                              value: facility.id,
+                              label: facility.label,
+                              icon: Icons.local_hospital_outlined,
+                            ),
+                      )
+                      .toList(growable: false),
+            ),
+          if (canViewTenantRoles)
+            AppSearchBarFilterGroup(
+              key: _roleScopeFilterKey,
+              label: l10n.accessAdminColumnScope,
+              allLabel: l10n.accessAdminRoleScopeFilterAll,
+              choices: <AppSearchBarFilterChoice>[
+                AppSearchBarFilterChoice(
+                  value: 'tenant',
+                  label: l10n.accessAdminRoleScopeFilterTenant,
+                  icon: Icons.domain_outlined,
                 ),
-              )
-              .toList(growable: false),
-        ),
-      if (showFacilityFilter)
-        AppSearchBarFilterGroup(
-          key: _facilityFilterKey,
-          label: l10n.settingsWorkspaceFacilityLabel,
-          allLabel: l10n.accessAdminAllFacilitiesFilterLabel,
-          choices: (workspaceData?.lookups.facilities ??
-                  const <AccessAdminLookupOption>[])
-              .map(
-                (AccessAdminLookupOption facility) => AppSearchBarFilterChoice(
-                  value: facility.id,
-                  label: facility.label,
+                AppSearchBarFilterChoice(
+                  value: 'facility',
+                  label: l10n.accessAdminRoleScopeFilterFacility,
                   icon: Icons.local_hospital_outlined,
                 ),
-              )
-              .toList(growable: false),
-        ),
-      if (canViewTenantRoles)
-        AppSearchBarFilterGroup(
-          key: _roleScopeFilterKey,
-          label: l10n.accessAdminColumnScope,
-          allLabel: l10n.accessAdminRoleScopeFilterAll,
-          choices: <AppSearchBarFilterChoice>[
-            AppSearchBarFilterChoice(
-              value: 'tenant',
-              label: l10n.accessAdminRoleScopeFilterTenant,
-              icon: Icons.domain_outlined,
+              ],
             ),
-            AppSearchBarFilterChoice(
-              value: 'facility',
-              label: l10n.accessAdminRoleScopeFilterFacility,
-              icon: Icons.local_hospital_outlined,
-            ),
-          ],
-        ),
-    ];
+        ];
 
     final Map<String, String> activeOptions = <String, String>{
       if (tenantFilter != null) _tenantFilterKey: tenantFilter!,
@@ -1609,9 +1628,7 @@ class _AccessAdminUserDetailDialogState
     final String? tenantId = (widget.tenantId ?? _item.tenantId)?.trim();
     if (tenantId == null || tenantId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.accessAdminTenantContextRequiredBody),
-        ),
+        SnackBar(content: Text(l10n.accessAdminTenantContextRequiredBody)),
       );
       return;
     }
@@ -1637,7 +1654,8 @@ class _AccessAdminUserDetailDialogState
         SnackBar(
           content: Text(
             lookupResult.when(
-              success: (_) => l10n.accessAdminUserAccessNoAssignableRolesMessage,
+              success: (_) =>
+                  l10n.accessAdminUserAccessNoAssignableRolesMessage,
               failure: (AppFailure failure) =>
                   context.l10n.failureMessage(failure),
             ),
@@ -1657,8 +1675,7 @@ class _AccessAdminUserDetailDialogState
     final List<AccessAdminLookupOption> availableRoles = resolved.roles
         .where(
           (AccessAdminLookupOption role) =>
-              role.id.trim().isNotEmpty &&
-              !assignedRoleIds.contains(role.id),
+              role.id.trim().isNotEmpty && !assignedRoleIds.contains(role.id),
         )
         .toList(growable: false);
 
@@ -1740,9 +1757,9 @@ class _AccessAdminUserDetailDialogState
                   leadingIcon: Icons.check,
                   onPressed: selectedRoleIds.isEmpty
                       ? null
-                      : () => Navigator.of(dialogContext).pop(
-                            Set<String>.from(selectedRoleIds),
-                          ),
+                      : () => Navigator.of(
+                          dialogContext,
+                        ).pop(Set<String>.from(selectedRoleIds)),
                 ),
                 AppButton.secondary(
                   label: l10n.commonCancelActionLabel,
@@ -1802,7 +1819,9 @@ class _AccessAdminUserDetailDialogState
       context: context,
       builder: (BuildContext dialogContext) => AppConfirmActionDialog(
         title: l10n.accessAdminUserAccessRemoveRoleConfirmTitle,
-        body: l10n.accessAdminUserAccessRemoveRoleConfirmMessage(group.roleName),
+        body: l10n.accessAdminUserAccessRemoveRoleConfirmMessage(
+          group.roleName,
+        ),
         highlightedText: group.roleName,
         submitLabel: l10n.accessAdminUserAccessRemoveRoleAction,
         destructive: true,
@@ -1829,9 +1848,7 @@ class _AccessAdminUserDetailDialogState
     final String? tenantId = (widget.tenantId ?? _item.tenantId)?.trim();
     if (tenantId == null || tenantId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.accessAdminTenantContextRequiredBody),
-        ),
+        SnackBar(content: Text(l10n.accessAdminTenantContextRequiredBody)),
       );
       return;
     }
@@ -1897,8 +1914,7 @@ class _AccessAdminUserDetailDialogState
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: <Widget>[
                   Text(
-                    l10n
-                        .accessAdminUserAccessAddDirectPermissionDialogDescription,
+                    l10n.accessAdminUserAccessAddDirectPermissionDialogDescription,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   SizedBox(height: Theme.of(context).spacing.md),
@@ -2044,19 +2060,17 @@ class _AccessAdminUserDetailDialogState
                       _UserDetailInfoTile(
                         icon: Icons.apartment_outlined,
                         label: l10n.settingsWorkspaceTenantLabel,
-                        value:
-                            (item.tenantName?.trim().isNotEmpty == true
-                                ? item.tenantName!
-                                : item.tenantId!),
+                        value: (item.tenantName?.trim().isNotEmpty == true
+                            ? item.tenantName!
+                            : item.tenantId!),
                       ),
                     if (item.facilityId != null)
                       _UserDetailInfoTile(
                         icon: Icons.local_hospital_outlined,
                         label: l10n.settingsWorkspaceFacilityLabel,
-                        value:
-                            (item.facilityName?.trim().isNotEmpty == true
-                                ? item.facilityName!
-                                : item.facilityId!),
+                        value: (item.facilityName?.trim().isNotEmpty == true
+                            ? item.facilityName!
+                            : item.facilityId!),
                       ),
                   ];
 
@@ -2101,7 +2115,9 @@ class _AccessAdminUserDetailDialogState
             isBusy: _saving,
             onAddRole: widget.canWrite ? _addRole : null,
             onRemoveRole: widget.canWrite ? _removeRole : null,
-            onAddDirectPermission: widget.canWrite ? _addDirectPermission : null,
+            onAddDirectPermission: widget.canWrite
+                ? _addDirectPermission
+                : null,
             onRemoveDirectPermission: widget.canWrite
                 ? _removeDirectPermission
                 : null,

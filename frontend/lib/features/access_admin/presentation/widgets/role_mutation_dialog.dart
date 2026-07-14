@@ -150,7 +150,9 @@ Future<bool?> showRoleMutationDialog({
       facilityOptions = const <AccessAdminLookupOption>[];
     });
 
-    final List<AccessAdminLookupOption> loaded = await loader(resolvedTenantId!);
+    final List<AccessAdminLookupOption> loaded = await loader(
+      resolvedTenantId!,
+    );
 
     setState(() {
       isLoadingFacilities = false;
@@ -545,8 +547,7 @@ Future<bool?> showRoleMutationDialog({
                           icon: Icons.touch_app_outlined,
                           message: scopeKind == RoleScopeKind.facility
                               ? l10n.accessAdminRoleSelectFacilityMessage
-                              : l10n
-                                    .accessAdminPermissionCatalogSelectTenantMessage,
+                              : l10n.accessAdminPermissionCatalogSelectTenantMessage,
                           density: AppContentPanelDensity.compact,
                         )
                       else if (isLoadingPermissions)

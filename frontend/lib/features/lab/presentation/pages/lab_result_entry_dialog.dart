@@ -270,7 +270,7 @@ class _LabResultEntryDialogState extends ConsumerState<LabResultEntryDialog> {
 
     final List<_ResultDraft> drafts = _drafts ?? const <_ResultDraft>[];
     final bool canMutate = widget.canMutate && !_isSaving;
-    final bool compact = MediaQuery.sizeOf(context).width < 600;
+    final bool compact = AppBreakpoints.of(context).isMobile;
     final bool showActionLabels = AppBreakpoints.of(
       context,
     ).showsToolbarActionLabels;

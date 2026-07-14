@@ -237,14 +237,8 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         id: 'emergency_cases_today',
         label: 'Emergency cases',
       ),
-      HomeStatusCardTemplate(
-        id: 'theatre_cases_today',
-        label: 'Theatre cases',
-      ),
-      HomeStatusCardTemplate(
-        id: 'radiology_pending',
-        label: 'Imaging pending',
-      ),
+      HomeStatusCardTemplate(id: 'theatre_cases_today', label: 'Theatre cases'),
+      HomeStatusCardTemplate(id: 'radiology_pending', label: 'Imaging pending'),
     ],
     quickActionIds: <String>[
       'record_vitals',
@@ -1064,8 +1058,7 @@ HomeDashboardProfile homeProfileForAccessPolicy(AppAccessPolicy policy) {
   if (has(AppPermissions.pharmacyWrite) || has(AppPermissions.pharmacyRead)) {
     return homeDashboardProfiles[AppRole.pharmacist]!;
   }
-  if (has(AppPermissions.radiologyWrite) ||
-      has(AppPermissions.radiologyRead)) {
+  if (has(AppPermissions.radiologyWrite) || has(AppPermissions.radiologyRead)) {
     return homeDashboardProfiles[AppRole.radiologyTech]!;
   }
   if (has(AppPermissions.billingWrite) || has(AppPermissions.billingRead)) {

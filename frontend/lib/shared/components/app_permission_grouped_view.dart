@@ -66,8 +66,9 @@ class _AppPermissionGroupedViewState extends State<AppPermissionGroupedView> {
   }
 
   Set<String> _initialExpandedGroups() {
-    final Map<String, List<AppPermissionAssignmentOption>> grouped =
-        _groupAll(widget.permissions);
+    final Map<String, List<AppPermissionAssignmentOption>> grouped = _groupAll(
+      widget.permissions,
+    );
     if (grouped.isEmpty) {
       return <String>{};
     }
@@ -85,7 +86,10 @@ class _AppPermissionGroupedViewState extends State<AppPermissionGroupedView> {
         <String, List<AppPermissionAssignmentOption>>{};
     for (final AppPermissionAssignmentOption permission in permissions) {
       grouped
-          .putIfAbsent(permission.modulePrefix, () => <AppPermissionAssignmentOption>[])
+          .putIfAbsent(
+            permission.modulePrefix,
+            () => <AppPermissionAssignmentOption>[],
+          )
           .add(permission);
     }
     for (final List<AppPermissionAssignmentOption> entries in grouped.values) {
@@ -134,8 +138,7 @@ class _AppPermissionGroupedViewState extends State<AppPermissionGroupedView> {
       return Padding(
         padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
         child: Text(
-          widget.emptyMessage ??
-              l10n.accessAdminRoleDetailNoPermissionsMessage,
+          widget.emptyMessage ?? l10n.accessAdminRoleDetailNoPermissionsMessage,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),
@@ -362,10 +365,7 @@ class _PermissionActionChip extends StatelessWidget {
           children: <Widget>[
             Icon(Icons.check_circle, size: 16, color: colors.primary),
             SizedBox(width: theme.spacing.xs),
-            Text(
-              permission.actionLabel,
-              style: theme.textTheme.labelLarge,
-            ),
+            Text(permission.actionLabel, style: theme.textTheme.labelLarge),
           ],
         ),
       ),

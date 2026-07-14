@@ -77,6 +77,7 @@ class AppCurrencyAmountField extends ConsumerStatefulWidget {
   final bool isLoading;
   final bool isRequired;
   final bool allowZero;
+
   /// When true, changing currency converts the current amount via FX rates.
   final bool convertOnCurrencyChange;
   final int? decimalDigits;

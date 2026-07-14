@@ -92,10 +92,18 @@ final class BillingWorkspaceQuery {
       search: pick(<String>['search', 'q']),
       queue: queue,
       patientId: pick(<String>['patientId', 'patient_id', 'patient']),
-      invoiceNumber: pick(<String>['invoiceNumber', 'invoice_number', 'invoice']),
+      invoiceNumber: pick(<String>[
+        'invoiceNumber',
+        'invoice_number',
+        'invoice',
+      ]),
       encounterId: pick(<String>['encounterId', 'encounter_id', 'encounter']),
       sourceModule: pick(<String>['sourceModule', 'source_module', 'source']),
-      billingStatus: pick(<String>['billingStatus', 'billing_status', 'status']),
+      billingStatus: pick(<String>[
+        'billingStatus',
+        'billing_status',
+        'status',
+      ]),
     );
   }
 

@@ -63,8 +63,7 @@ class _SubscriptionUpgradeDialogState
   final GlobalKey<State<AppPhoneField>> _phoneFieldKey =
       GlobalKey<State<AppPhoneField>>();
   final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _invoiceEmailController =
-      TextEditingController();
+  final TextEditingController _invoiceEmailController = TextEditingController();
   final TextEditingController _referenceController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -225,9 +224,11 @@ class _SubscriptionUpgradeDialogState
                   currentPlanId ??
                   contextData.plans.firstOrNull?.id);
 
-        final bool preferredInCatalog = preferredPlanId != null &&
+        final bool preferredInCatalog =
+            preferredPlanId != null &&
             contextData.plans.any(
-              (SubscriptionUpgradePlanOption plan) => plan.id == preferredPlanId,
+              (SubscriptionUpgradePlanOption plan) =>
+                  plan.id == preferredPlanId,
             );
         final String? selectedPlanId = preferredInCatalog
             ? preferredPlanId
@@ -485,9 +486,7 @@ class _SubscriptionUpgradeDialogState
             amount: noPayment
                 ? '0'
                 : normalizeCurrencyAmount(_amountController.text),
-            currency: noPayment
-                ? subscriptionPlanBaseCurrencyCode
-                : _currency,
+            currency: noPayment ? subscriptionPlanBaseCurrencyCode : _currency,
             billingCycle: _billingCycleServerValue(),
             invoiceEmail: noPayment
                 ? null
@@ -497,12 +496,8 @@ class _SubscriptionUpgradeDialogState
                 : _emptyToNull(_referenceController.text),
             notes: _buildSubmissionNotes(noPayment: noPayment),
             paymentProvider: provider,
-            payerPhone: noPayment
-                ? null
-                : _emptyToNull(_phoneController.text),
-            bankName: noPayment
-                ? null
-                : _emptyToNull(_bankNameController.text),
+            payerPhone: noPayment ? null : _emptyToNull(_phoneController.text),
+            bankName: noPayment ? null : _emptyToNull(_bankNameController.text),
             cardHolderName: noPayment
                 ? null
                 : _emptyToNull(_cardHolderController.text),
@@ -552,9 +547,10 @@ class _SubscriptionUpgradeDialogState
       _UpgradeStep.paymentDetails =>
         l10n.subscriptionUpgradeStepPaymentDetailsTitle,
       _UpgradeStep.proof => l10n.subscriptionUpgradeStepProofTitle,
-      _UpgradeStep.contact => _isNoPaymentPlan
-          ? l10n.subscriptionUpgradeStepConfirmTitle
-          : l10n.subscriptionUpgradeStepContactTitle,
+      _UpgradeStep.contact =>
+        _isNoPaymentPlan
+            ? l10n.subscriptionUpgradeStepConfirmTitle
+            : l10n.subscriptionUpgradeStepContactTitle,
     };
   }
 

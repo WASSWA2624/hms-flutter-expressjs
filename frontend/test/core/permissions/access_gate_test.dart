@@ -39,7 +39,7 @@ void main() {
             requirement: AccessRequirement(
               anyPermissions: <AppPermission>[AppPermissions.billingWrite],
             ),
-            child: const Text('secret'),
+            child: Text('secret'),
           ),
           policy,
         ),
@@ -69,7 +69,7 @@ void main() {
             requirement: AccessRequirement(
               anyPermissions: <AppPermission>[AppPermissions.clinicalRead],
             ),
-            child: const Text('allowed'),
+            child: Text('allowed'),
           ),
           policy,
         ),

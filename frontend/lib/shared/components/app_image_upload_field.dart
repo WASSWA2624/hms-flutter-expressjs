@@ -171,8 +171,9 @@ class AppImageUploadField extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final AppLocalizations l10n = context.l10n;
     final List<String> existingUrls = _resolvedExistingUrls;
-    final String? singlePendingName =
-        pendingItems.length == 1 ? pendingItems.first.fileName : null;
+    final String? singlePendingName = pendingItems.length == 1
+        ? pendingItems.first.fileName
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,9 +218,7 @@ class AppImageUploadField extends StatelessWidget {
                           context,
                           imageUrl: _mediaUrl(context, existingUrls[i]),
                         ),
-                        onRemove: enabled
-                            ? () => _removeExisting(i)
-                            : null,
+                        onRemove: enabled ? () => _removeExisting(i) : null,
                       ),
                     for (int i = 0; i < pendingItems.length; i++)
                       _ImagePreviewTile(
@@ -231,9 +230,7 @@ class AppImageUploadField extends StatelessWidget {
                           context,
                           bytes: pendingItems[i].bytes,
                         ),
-                        onRemove: enabled
-                            ? () => _removePending(i)
-                            : null,
+                        onRemove: enabled ? () => _removePending(i) : null,
                       ),
                     if (enabled && _canChooseMore)
                       _ImagePreviewTile(
@@ -336,11 +333,7 @@ class _ImagePreviewTile extends StatelessWidget {
       content = Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          Icon(
-            placeholderIcon,
-            color: colorScheme.primary,
-            size: size * 0.34,
-          ),
+          Icon(placeholderIcon, color: colorScheme.primary, size: size * 0.34),
           if (isAddTile) ...<Widget>[
             SizedBox(height: theme.spacing.xs),
             Padding(

@@ -23,6 +23,7 @@ class FxRateService {
   static const Duration _cacheDuration = Duration(hours: 1);
 
   final Dio _client;
+
   /// Cache key: `BASE:QUOTE` → rate (1 BASE = rate QUOTE).
   final Map<String, double> _rateCache = <String, double>{};
   final Map<String, DateTime> _cacheLoadedAt = <String, DateTime>{};
@@ -32,10 +33,7 @@ class FxRateService {
   }
 
   Future<double?> convertUsdTo(String targetCurrency) {
-    return getRate(
-      from: subscriptionPlanBaseCurrencyCode,
-      to: targetCurrency,
-    );
+    return getRate(from: subscriptionPlanBaseCurrencyCode, to: targetCurrency);
   }
 
   /// Returns how many units of [to] equal 1 unit of [from].
@@ -135,10 +133,7 @@ class FxRateService {
     try {
       final Response<dynamic> response = await _client.get<dynamic>(
         '$_baseUrl/v1/latest',
-        queryParameters: <String, String>{
-          'base': base,
-          'symbols': quote,
-        },
+        queryParameters: <String, String>{'base': base, 'symbols': quote},
       );
       final Object? ratesRaw = (response.data as Map?)?['rates'];
       if (ratesRaw is! Map) {

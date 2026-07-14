@@ -1252,20 +1252,22 @@ class _ConsultationPaymentDialogState
                 encounterId: flow.apiId,
                 enabled: !_isSaving,
                 onVerifiedChanged:
-                    (({
-                      bool verified,
-                      String? insuranceCompanyId,
-                      String? insuranceCompanyName,
-                      String? coveragePlanId,
-                      String? coveragePlanName,
-                      int? coveragePercentage,
-                      String? copayType,
-                      num? copayValue,
-                    }) result) {
+                    (
+                      ({
+                        bool verified,
+                        String? insuranceCompanyId,
+                        String? insuranceCompanyName,
+                        String? coveragePlanId,
+                        String? coveragePlanName,
+                        int? coveragePercentage,
+                        String? copayType,
+                        num? copayValue,
+                      })
+                      result,
+                    ) {
                       setState(() {
                         _coverageVerified = result.verified;
-                        _selectedInsuranceCompanyId =
-                            result.insuranceCompanyId;
+                        _selectedInsuranceCompanyId = result.insuranceCompanyId;
                         _selectedInsuranceCompanyName =
                             result.insuranceCompanyName;
                         _selectedCoveragePlanId = result.coveragePlanId;

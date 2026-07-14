@@ -36,7 +36,10 @@ void main() {
                       ];
                     },
                     loadPermissionsForTenant:
-                        ({required String tenantId, String? facilityId}) async =>
+                        ({
+                          required String tenantId,
+                          String? facilityId,
+                        }) async =>
                             const Result<List<AccessAdminLookupOption>>.success(
                               <AccessAdminLookupOption>[],
                             ),
@@ -93,7 +96,10 @@ void main() {
                           ),
                         ],
                     loadPermissionsForTenant:
-                        ({required String tenantId, String? facilityId}) async =>
+                        ({
+                          required String tenantId,
+                          String? facilityId,
+                        }) async =>
                             const Result<List<AccessAdminLookupOption>>.success(
                               <AccessAdminLookupOption>[
                                 AccessAdminLookupOption(
@@ -120,54 +126,58 @@ void main() {
     expect(find.text('Main Campus'), findsOneWidget);
   });
 
-  testWidgets('edit mode keeps attached permissions selected after lookup load', (
-    WidgetTester tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Builder(
-          builder: (BuildContext context) {
-            return ElevatedButton(
-              onPressed: () {
-                unawaited(
-                  showRoleMutationDialog(
-                    context: context,
-                    mode: RoleMutationMode.edit,
-                    tenantId: 'tenant-1',
-                    initialName: 'All rights',
-                    initialDescription: 'Full access',
-                    initialPermissionIds: const <String>{'PRM0001', 'PRM0002'},
-                    permissionLookups: const <AccessAdminLookupOption>[
-                      AccessAdminLookupOption(
-                        id: 'PRM0001',
-                        label: 'patient:read',
-                      ),
-                      AccessAdminLookupOption(
-                        id: 'PRM0002',
-                        label: 'patient:write',
-                      ),
-                      AccessAdminLookupOption(
-                        id: 'PRM0003',
-                        label: 'billing:read',
-                      ),
-                    ],
-                    onSubmit: (_) async => null,
-                  ),
-                );
-              },
-              child: const Text('Open'),
-            );
-          },
+  testWidgets(
+    'edit mode keeps attached permissions selected after lookup load',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (BuildContext context) {
+              return ElevatedButton(
+                onPressed: () {
+                  unawaited(
+                    showRoleMutationDialog(
+                      context: context,
+                      mode: RoleMutationMode.edit,
+                      tenantId: 'tenant-1',
+                      initialName: 'All rights',
+                      initialDescription: 'Full access',
+                      initialPermissionIds: const <String>{
+                        'PRM0001',
+                        'PRM0002',
+                      },
+                      permissionLookups: const <AccessAdminLookupOption>[
+                        AccessAdminLookupOption(
+                          id: 'PRM0001',
+                          label: 'patient:read',
+                        ),
+                        AccessAdminLookupOption(
+                          id: 'PRM0002',
+                          label: 'patient:write',
+                        ),
+                        AccessAdminLookupOption(
+                          id: 'PRM0003',
+                          label: 'billing:read',
+                        ),
+                      ],
+                      onSubmit: (_) async => null,
+                    ),
+                  );
+                },
+                child: const Text('Open'),
+              );
+            },
+          ),
         ),
-      ),
-    );
+      );
 
-    await tester.tap(find.text('Open'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(find.text('Open'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
-    expect(find.textContaining('2 of 3 selected'), findsWidgets);
-  });
+      expect(find.textContaining('2 of 3 selected'), findsWidgets);
+    },
+  );
 }

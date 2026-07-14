@@ -62,7 +62,8 @@ final class InsuranceCompanyOption {
 
   String get apiId => _firstNonEmpty(<String?>[displayId, id]) ?? id;
 
-  String get title => _firstNonEmpty(<String?>[name, code, displayId, id]) ?? id;
+  String get title =>
+      _firstNonEmpty(<String?>[name, code, displayId, id]) ?? id;
 }
 
 @immutable

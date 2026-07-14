@@ -356,7 +356,8 @@ class PatientDetailDialog extends ConsumerWidget {
                 onDelete: (PatientConsent item) =>
                     _confirmDeleteRelated(context, ref, detail, item.id),
               ),
-            if (!hideClinicalSections) PatientTimelineList(items: detail.timeline),
+            if (!hideClinicalSections)
+              PatientTimelineList(items: detail.timeline),
           ],
         ),
       ),

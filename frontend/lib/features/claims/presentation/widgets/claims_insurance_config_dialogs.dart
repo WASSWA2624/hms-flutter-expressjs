@@ -39,9 +39,9 @@ Future<void> openClaimsInsuranceCompanyDialog({
     ),
   );
   if (context.mounted && saved == true) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.claimsConfigSavedMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.claimsConfigSavedMessage)));
   }
 }
 
@@ -73,9 +73,9 @@ Future<void> openClaimsSchemeDialog({
     ),
   );
   if (context.mounted && saved == true) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.claimsConfigSavedMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.claimsConfigSavedMessage)));
   }
 }
 
@@ -108,9 +108,9 @@ Future<void> openClaimsSchemeOfferDialog({
     ),
   );
   if (context.mounted && saved == true) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.claimsConfigSavedMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.claimsConfigSavedMessage)));
   }
 }
 
@@ -153,9 +153,9 @@ Future<void> openClaimsEnrollmentDialog({
     ),
   );
   if (context.mounted && saved == true) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.claimsConfigSavedMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.claimsConfigSavedMessage)));
   }
 }
 
@@ -203,13 +203,17 @@ class _CreateInsuranceCompanyDialogState
           controller: _nameController,
           labelText: l10n.claimsInsuranceCompanyNameLabel,
           isRequired: true,
-          validator: AppValidators.requiredText(l10n.claimsInsuranceCompanyNameRequired),
+          validator: AppValidators.requiredText(
+            l10n.claimsInsuranceCompanyNameRequired,
+          ),
         ),
         AppTextField(
           controller: _codeController,
           labelText: l10n.claimsInsuranceCompanyCodeLabel,
           isRequired: true,
-          validator: AppValidators.requiredText(l10n.claimsInsuranceCompanyCodeRequired),
+          validator: AppValidators.requiredText(
+            l10n.claimsInsuranceCompanyCodeRequired,
+          ),
         ),
         AppFormActions(
           cancelLabel: l10n.commonCancelActionLabel,
@@ -257,16 +261,14 @@ class _CreateInsuranceCompanyDialogState
 }
 
 class _CreateSchemeDialog extends ConsumerStatefulWidget {
-  const _CreateSchemeDialog({
-    required this.companies,
-    required this.onSubmit,
-  });
+  const _CreateSchemeDialog({required this.companies, required this.onSubmit});
 
   final List<InsuranceCompanyOption> companies;
   final Future<AppFailure?> Function(Map<String, Object?> payload) onSubmit;
 
   @override
-  ConsumerState<_CreateSchemeDialog> createState() => _CreateSchemeDialogState();
+  ConsumerState<_CreateSchemeDialog> createState() =>
+      _CreateSchemeDialogState();
 }
 
 class _CreateSchemeDialogState extends ConsumerState<_CreateSchemeDialog> {
@@ -515,7 +517,9 @@ class _CreateSchemeOfferDialogState
           controller: _catalogItemController,
           labelText: l10n.claimsOfferCatalogItemLabel,
           isRequired: true,
-          validator: AppValidators.requiredText(l10n.claimsOfferCatalogItemRequired),
+          validator: AppValidators.requiredText(
+            l10n.claimsOfferCatalogItemRequired,
+          ),
         ),
         AppTextField(
           controller: _unitPriceController,
@@ -671,7 +675,9 @@ class _CreateEnrollmentDialogState
           labelText: l10n.claimsEnrollmentPatientLabel,
           isRequired: true,
           enabled: (widget.initialPatientId ?? '').isEmpty,
-          validator: AppValidators.requiredText(l10n.claimsEnrollmentPatientRequired),
+          validator: AppValidators.requiredText(
+            l10n.claimsEnrollmentPatientRequired,
+          ),
         ),
         if (widget.companies.isNotEmpty)
           AppSelectField<String>(
@@ -715,7 +721,9 @@ class _CreateEnrollmentDialogState
           controller: _memberController,
           labelText: l10n.claimsEnrollmentMemberIdLabel,
           isRequired: true,
-          validator: AppValidators.requiredText(l10n.claimsEnrollmentMemberIdRequired),
+          validator: AppValidators.requiredText(
+            l10n.claimsEnrollmentMemberIdRequired,
+          ),
         ),
         AppFormActions(
           cancelLabel: l10n.commonCancelActionLabel,
@@ -795,9 +803,9 @@ Future<void> openClaimsPriceBookEntryDialog({
     ),
   );
   if (context.mounted && saved == true) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.claimsConfigSavedMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.claimsConfigSavedMessage)));
   }
 }
 
@@ -830,9 +838,9 @@ Future<void> openClaimsInsurerIntegrationDialog({
     ),
   );
   if (context.mounted && saved == true) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.claimsConfigSavedMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.claimsConfigSavedMessage)));
   }
 }
 

@@ -243,11 +243,9 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
   @override
   Future<Result<void>> restoreUser(String userId) {
     return _apiClient.post<void>(
-      ApiEndpoints.nested(
-        HmsApiResource.users,
-        userId,
-        const <String>['restore'],
-      ),
+      ApiEndpoints.nested(HmsApiResource.users, userId, const <String>[
+        'restore',
+      ]),
       decoder: (_) {},
     );
   }
@@ -402,8 +400,8 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
   }) async {
     final Result<List<AccessAdminRolePermissionAssignment>> currentResult =
         await listRolePermissions(roleId);
-    final List<AccessAdminRolePermissionAssignment> current =
-        currentResult.when(
+    final List<AccessAdminRolePermissionAssignment> current = currentResult
+        .when(
           success: (List<AccessAdminRolePermissionAssignment> value) => value,
           failure: (_) => const <AccessAdminRolePermissionAssignment>[],
         );

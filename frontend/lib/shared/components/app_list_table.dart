@@ -769,8 +769,8 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     final String? storageKey = _resolvedColumnWidthStorageKey();
     final Map<String, double> next = <String, double>{};
     if (storageKey != null) {
-      final Map<String, double>? saved =
-          AppListTableColumnLayoutMemory.instance.read(storageKey);
+      final Map<String, double>? saved = AppListTableColumnLayoutMemory.instance
+          .read(storageKey);
       if (saved != null) {
         next.addAll(saved);
       }
@@ -787,7 +787,10 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
         );
   }
 
-  double _columnWidthFor(AppListTableColumn<T> column, {required bool compact}) {
+  double _columnWidthFor(
+    AppListTableColumn<T> column, {
+    required bool compact,
+  }) {
     final double? saved = _columnWidths[column.key];
     if (saved != null) {
       return saved.clamp(_minResizableColumnWidth, 640);
@@ -1051,7 +1054,8 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       );
     }
 
-    final AppPage<T>? visiblePage = _usesInfinitePagination && sourcePage != null
+    final AppPage<T>? visiblePage =
+        _usesInfinitePagination && sourcePage != null
         ? AppPage<T>(
             items: renderedItems,
             request: AppPageRequest(
@@ -1320,10 +1324,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     for (final AppListTableColumn<T> column in visibleColumns) {
       columnsWidth += _columnWidthFor(column, compact: compact);
     }
-    return math.max(
-      constraints.maxWidth,
-      _rowNumberColumnWidth + columnsWidth,
-    );
+    return math.max(constraints.maxWidth, _rowNumberColumnWidth + columnsWidth);
   }
 
   List<T> _filteredItems(
@@ -2358,10 +2359,7 @@ class _DataColumnHeader<T> extends StatelessWidget {
         children: <Widget>[
           Expanded(child: label),
           if (enableResize && onWidthChanged != null)
-            _ColumnResizeHandle(
-              width: width,
-              onWidthChanged: onWidthChanged!,
-            ),
+            _ColumnResizeHandle(width: width, onWidthChanged: onWidthChanged!),
         ],
       ),
     );
@@ -2396,8 +2394,7 @@ class _ColumnResizeHandleState extends State<_ColumnResizeHandle> {
           _dragWidth = widget.width;
         },
         onHorizontalDragUpdate: (DragUpdateDetails details) {
-          final double next =
-              (_dragWidth ?? widget.width) + details.delta.dx;
+          final double next = (_dragWidth ?? widget.width) + details.delta.dx;
           _dragWidth = next;
           widget.onWidthChanged(next);
         },

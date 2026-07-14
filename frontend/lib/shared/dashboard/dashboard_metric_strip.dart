@@ -40,7 +40,11 @@ class DashboardMetricStrip extends StatelessWidget {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
-              for (int index = 0; index < cardWidgets.length; index += 1) ...<Widget>[
+              for (
+                int index = 0;
+                index < cardWidgets.length;
+                index += 1
+              ) ...<Widget>[
                 if (index > 0) SizedBox(width: gap),
                 Expanded(child: cardWidgets[index]),
               ],
@@ -51,7 +55,11 @@ class DashboardMetricStrip extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            for (int index = 0; index < cardWidgets.length; index += 1) ...<Widget>[
+            for (
+              int index = 0;
+              index < cardWidgets.length;
+              index += 1
+            ) ...<Widget>[
               if (index > 0) SizedBox(height: gap),
               cardWidgets[index],
             ],
@@ -95,13 +103,16 @@ class _DashboardMetricCard extends StatelessWidget {
             card.value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: (compact ? theme.textTheme.titleLarge : theme.textTheme.headlineSmall)
-                ?.copyWith(
-                  color: card.accent,
-                  fontWeight: FontWeight.w800,
-                  height: 1,
-                  letterSpacing: -0.3,
-                ),
+            style:
+                (compact
+                        ? theme.textTheme.titleLarge
+                        : theme.textTheme.headlineSmall)
+                    ?.copyWith(
+                      color: card.accent,
+                      fontWeight: FontWeight.w800,
+                      height: 1,
+                      letterSpacing: -0.3,
+                    ),
           ),
           SizedBox(width: theme.spacing.xs),
           Expanded(
@@ -143,10 +154,7 @@ class _DashboardMetricCard extends StatelessWidget {
               child: InkWell(
                 onTap: card.onTap,
                 borderRadius: BorderRadius.circular(theme.radius.lg),
-                child: Ink(
-                  decoration: decoration,
-                  child: cardBody,
-                ),
+                child: Ink(decoration: decoration, child: cardBody),
               ),
             )
           : DecoratedBox(decoration: decoration, child: cardBody),

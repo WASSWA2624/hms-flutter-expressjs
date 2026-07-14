@@ -231,10 +231,7 @@ class _SubscriptionsWorkspaceContentState
             ),
             SizedBox(height: Theme.of(context).spacing.md),
           ],
-          _SubscriptionOverviewPanel(
-            state: state,
-            canWrite: canWrite,
-          ),
+          _SubscriptionOverviewPanel(state: state, canWrite: canWrite),
           SizedBox(height: Theme.of(context).spacing.md),
           _SubscriptionsWorklistPanel(
             state: state,
@@ -812,8 +809,8 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
                 state.query.resource == SubscriptionResource.subscriptionPlans
                 ? _PlanColumnIds.monthlyPrice
                 : null,
-            rowColorBuilder: state.query.resource ==
-                    SubscriptionResource.subscriptionPlans
+            rowColorBuilder:
+                state.query.resource == SubscriptionResource.subscriptionPlans
                 ? (BuildContext context, SubscriptionItem item) {
                     return SubscriptionPlanTheme.of(
                       context,
@@ -861,9 +858,9 @@ List<AppListTableColumn<SubscriptionItem>> _worklistColumns(
               item.name ?? item.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
             );
           },
         ),
@@ -920,74 +917,75 @@ List<AppListTableColumn<SubscriptionItem>> _worklistColumns(
           },
         ),
       ],
-    SubscriptionResource.subscriptions => <AppListTableColumn<SubscriptionItem>>[
-      AppListTableColumn<SubscriptionItem>(
-        label: _SubscriptionsText.tenant,
-        sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-          return appListTableCompareText(left.tenantLabel, right.tenantLabel);
-        },
-        cellBuilder: (BuildContext context, SubscriptionItem item) {
-          return _CopyableRecordCell(
-            title: item.tenantLabel ?? _SubscriptionsText.notRecorded,
-            identifier: item.effectiveDisplayId,
-            dense: true,
-          );
-        },
-      ),
-      AppListTableColumn<SubscriptionItem>(
-        label: _SubscriptionsText.plan,
-        sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-          return appListTableCompareText(left.planLabel, right.planLabel);
-        },
-        cellBuilder: (BuildContext context, SubscriptionItem item) {
-          return Text(
-            item.planLabel ?? _SubscriptionsText.notRecorded,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          );
-        },
-      ),
-      AppListTableColumn<SubscriptionItem>(
-        label: _SubscriptionsText.status,
-        sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-          return appListTableCompareText(
-            left.primaryStatus,
-            right.primaryStatus,
-          );
-        },
-        cellBuilder: (BuildContext context, SubscriptionItem item) {
-          return _StatusBadge(status: item.primaryStatus);
-        },
-      ),
-      AppListTableColumn<SubscriptionItem>(
-        label: _SubscriptionsText.amount,
-        numeric: true,
-        sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-          return appListTableCompareNumber(
-            left.totalAmount ?? left.price,
-            right.totalAmount ?? right.price,
-          );
-        },
-        cellBuilder: (BuildContext context, SubscriptionItem item) {
-          return Text(_amountOrLimit(context, item));
-        },
-      ),
-      AppListTableColumn<SubscriptionItem>(
-        label: _SubscriptionsText.expiryDate,
-        sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-          return appListTableCompareDateTime(
-            _timelineDate(left),
-            _timelineDate(right),
-          );
-        },
-        cellBuilder: (BuildContext context, SubscriptionItem item) {
-          return Text(_date(context, _timelineDate(item)));
-        },
-      ),
-    ],
+    SubscriptionResource.subscriptions =>
+      <AppListTableColumn<SubscriptionItem>>[
+        AppListTableColumn<SubscriptionItem>(
+          label: _SubscriptionsText.tenant,
+          sortComparator: (SubscriptionItem left, SubscriptionItem right) {
+            return appListTableCompareText(left.tenantLabel, right.tenantLabel);
+          },
+          cellBuilder: (BuildContext context, SubscriptionItem item) {
+            return _CopyableRecordCell(
+              title: item.tenantLabel ?? _SubscriptionsText.notRecorded,
+              identifier: item.effectiveDisplayId,
+              dense: true,
+            );
+          },
+        ),
+        AppListTableColumn<SubscriptionItem>(
+          label: _SubscriptionsText.plan,
+          sortComparator: (SubscriptionItem left, SubscriptionItem right) {
+            return appListTableCompareText(left.planLabel, right.planLabel);
+          },
+          cellBuilder: (BuildContext context, SubscriptionItem item) {
+            return Text(
+              item.planLabel ?? _SubscriptionsText.notRecorded,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+            );
+          },
+        ),
+        AppListTableColumn<SubscriptionItem>(
+          label: _SubscriptionsText.status,
+          sortComparator: (SubscriptionItem left, SubscriptionItem right) {
+            return appListTableCompareText(
+              left.primaryStatus,
+              right.primaryStatus,
+            );
+          },
+          cellBuilder: (BuildContext context, SubscriptionItem item) {
+            return _StatusBadge(status: item.primaryStatus);
+          },
+        ),
+        AppListTableColumn<SubscriptionItem>(
+          label: _SubscriptionsText.amount,
+          numeric: true,
+          sortComparator: (SubscriptionItem left, SubscriptionItem right) {
+            return appListTableCompareNumber(
+              left.totalAmount ?? left.price,
+              right.totalAmount ?? right.price,
+            );
+          },
+          cellBuilder: (BuildContext context, SubscriptionItem item) {
+            return Text(_amountOrLimit(context, item));
+          },
+        ),
+        AppListTableColumn<SubscriptionItem>(
+          label: _SubscriptionsText.expiryDate,
+          sortComparator: (SubscriptionItem left, SubscriptionItem right) {
+            return appListTableCompareDateTime(
+              _timelineDate(left),
+              _timelineDate(right),
+            );
+          },
+          cellBuilder: (BuildContext context, SubscriptionItem item) {
+            return Text(_date(context, _timelineDate(item)));
+          },
+        ),
+      ],
     _ => <AppListTableColumn<SubscriptionItem>>[
       AppListTableColumn<SubscriptionItem>(
         label: _SubscriptionsText.record,
@@ -1227,17 +1225,14 @@ class _PlanDetailContent extends ConsumerWidget {
               _PlanMetricChip(
                 icon: Icons.calendar_month_outlined,
                 label: _SubscriptionsText.annualPriceUsd,
-                value: _money(
-                  context,
-                  item.resolvedAnnualPrice,
-                  item.currency,
-                ),
+                value: _money(context, item.resolvedAnnualPrice, item.currency),
               ),
             ],
             _PlanMetricChip(
               icon: Icons.group_outlined,
               label: _SubscriptionsText.maxUsers,
-              value: item.maxUsers?.toString() ?? _SubscriptionsText.notRecorded,
+              value:
+                  item.maxUsers?.toString() ?? _SubscriptionsText.notRecorded,
             ),
             _PlanMetricChip(
               icon: Icons.apartment_outlined,
@@ -1515,7 +1510,8 @@ List<String> _includedModuleLabels(
     return const <String>[];
   }
   final Map<String, String> labelsById = <String, String>{
-    for (final SubscriptionLookupItem module in modules) module.id: module.label,
+    for (final SubscriptionLookupItem module in modules)
+      module.id: module.label,
   };
   final List<String> labels = <String>[];
   for (final String id in moduleIds) {
@@ -1666,12 +1662,8 @@ class _DetailActions extends ConsumerWidget {
             label: _SubscriptionsText.editSubscription,
             leadingIcon: Icons.edit_outlined,
             enabled: !state.isSaving && state.lookups.plans.isNotEmpty,
-            onPressed: () => _showEditSubscriptionDialog(
-              context,
-              ref,
-              state,
-              item,
-            ),
+            onPressed: () =>
+                _showEditSubscriptionDialog(context, ref, state, item),
           ),
           AppButton.secondary(
             label: _SubscriptionsText.renew,
@@ -1778,9 +1770,8 @@ class _DetailFields extends StatelessWidget {
           value: item.moduleLabel ?? item.moduleSlug,
           icon: Icons.extension_outlined,
         ),
-        if (item.resource == SubscriptionResource.subscriptionPlans) ...<
-          AppInfoTileData
-        >[
+        if (item.resource ==
+            SubscriptionResource.subscriptionPlans) ...<AppInfoTileData>[
           AppInfoTileData(
             label: _SubscriptionsText.monthlyPriceUsd,
             value: _money(context, item.resolvedMonthlyPrice, item.currency),
@@ -2215,7 +2206,9 @@ class _PlanFormState extends State<_PlanForm> {
               labelText: _SubscriptionsText.monthlyPriceUsd,
               isRequired: !_isFreeTier,
               enabled: !_isFreeTier,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               validator: _isFreeTier
                   ? null
                   : AppValidators.pattern(
@@ -2229,7 +2222,9 @@ class _PlanFormState extends State<_PlanForm> {
               labelText: _SubscriptionsText.annualPriceUsd,
               isRequired: !_isFreeTier,
               enabled: !_isFreeTier,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               validator: _isFreeTier
                   ? null
                   : AppValidators.pattern(
@@ -3317,7 +3312,9 @@ Future<void> _openSubscriptionDetailDialog(
   SubscriptionItem item,
   bool canWrite,
 ) async {
-  final controller = ref.read(subscriptionsWorkspaceControllerProvider.notifier);
+  final controller = ref.read(
+    subscriptionsWorkspaceControllerProvider.notifier,
+  );
   controller.selectItem(item);
   if (item.resource == SubscriptionResource.subscriptionPlans) {
     unawaited(controller.loadPlanDetail(item.id));
@@ -3470,8 +3467,7 @@ SubscriptionPlanDraft _planDraftFromItem(
     maxFacilities: item.maxFacilities?.toString(),
     maxStorageMb: item.maxStorageMb?.toString(),
     maxModules: item.maxModules?.toString(),
-    includedModuleIds:
-        includedModuleIds ?? item.includedModuleIds,
+    includedModuleIds: includedModuleIds ?? item.includedModuleIds,
   );
 }
 
@@ -3585,33 +3581,32 @@ Future<void> _openTenantCohortDialog(
                   ),
                 ),
               )
-            else
-              ...<Widget>[
-                for (final SubscriptionTenantAccount account
-                    in summary.accounts) ...<Widget>[
-                  _CohortAccountCard(
-                    account: account,
-                    canWrite: canWrite,
-                    isSaving: state.isSaving,
-                    onAction: canWrite
-                        ? () async {
-                            await Navigator.of(dialogContext).maybePop();
-                            if (!context.mounted) {
-                              return;
-                            }
-                            await _handleCohortAccountAction(
-                              context,
-                              ref,
-                              state: state,
-                              account: account,
-                              canWrite: canWrite,
-                            );
+            else ...<Widget>[
+              for (final SubscriptionTenantAccount account
+                  in summary.accounts) ...<Widget>[
+                _CohortAccountCard(
+                  account: account,
+                  canWrite: canWrite,
+                  isSaving: state.isSaving,
+                  onAction: canWrite
+                      ? () async {
+                          await Navigator.of(dialogContext).maybePop();
+                          if (!context.mounted) {
+                            return;
                           }
-                        : null,
-                  ),
-                  SizedBox(height: theme.spacing.sm),
-                ],
+                          await _handleCohortAccountAction(
+                            context,
+                            ref,
+                            state: state,
+                            account: account,
+                            canWrite: canWrite,
+                          );
+                        }
+                      : null,
+                ),
+                SizedBox(height: theme.spacing.sm),
               ],
+            ],
           ],
         ),
         actions: <Widget>[
@@ -3671,10 +3666,7 @@ class _CohortAccountCard extends StatelessWidget {
             runSpacing: theme.spacing.xs,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: <Widget>[
-              _PlanBadge(
-                label: account.planLabel,
-                code: account.planCode,
-              ),
+              _PlanBadge(label: account.planLabel, code: account.planCode),
               _CohortMetaChip(
                 icon: Icons.play_arrow_outlined,
                 label: _date(context, account.startDate),
@@ -4371,8 +4363,8 @@ IconData _resourceIcon(SubscriptionResource resource) {
 }
 
 IconData _moduleIconForLookup(SubscriptionLookupItem module) {
-  final String key =
-      '${module.subtitle ?? ''} ${module.id} ${module.label}'.toLowerCase();
+  final String key = '${module.subtitle ?? ''} ${module.id} ${module.label}'
+      .toLowerCase();
 
   if (_moduleKeyMatches(key, const <String>[
     'patient',
@@ -4389,7 +4381,11 @@ IconData _moduleIconForLookup(SubscriptionLookupItem module) {
   ])) {
     return AppRouteIcons.opd;
   }
-  if (_moduleKeyMatches(key, const <String>['encounter', 'vital', 'clinical'])) {
+  if (_moduleKeyMatches(key, const <String>[
+    'encounter',
+    'vital',
+    'clinical',
+  ])) {
     return AppRouteIcons.clinical;
   }
   if (_moduleKeyMatches(key, const <String>['nurs'])) {
@@ -4441,18 +4437,10 @@ IconData _moduleIconForLookup(SubscriptionLookupItem module) {
   ])) {
     return AppRouteIcons.communications;
   }
-  if (_moduleKeyMatches(key, const <String>[
-    'integrat',
-    'webhook',
-    'api',
-  ])) {
+  if (_moduleKeyMatches(key, const <String>['integrat', 'webhook', 'api'])) {
     return AppRouteIcons.integrations;
   }
-  if (_moduleKeyMatches(key, const <String>[
-    'report',
-    'analytic',
-    'insight',
-  ])) {
+  if (_moduleKeyMatches(key, const <String>['report', 'analytic', 'insight'])) {
     return AppRouteIcons.reports;
   }
   if (_moduleKeyMatches(key, const <String>[
@@ -4475,7 +4463,12 @@ IconData _moduleIconForLookup(SubscriptionLookupItem module) {
   if (_moduleKeyMatches(key, const <String>['discharge'])) {
     return AppRouteIcons.discharge;
   }
-  if (_moduleKeyMatches(key, const <String>['auth', 'rbac', 'access', 'role'])) {
+  if (_moduleKeyMatches(key, const <String>[
+    'auth',
+    'rbac',
+    'access',
+    'role',
+  ])) {
     return AppRouteIcons.accessAdmin;
   }
   if (_moduleKeyMatches(key, const <String>['compliance', 'audit'])) {
@@ -4551,12 +4544,10 @@ String? _querySignature(SubscriptionsWorkspaceQuery? query) {
 
 String _primaryRecordLabel(SubscriptionItem item) {
   return switch (item.resource) {
-    SubscriptionResource.subscriptions =>
-      item.tenantLabel ?? item.title,
+    SubscriptionResource.subscriptions => item.tenantLabel ?? item.title,
     SubscriptionResource.subscriptionPlans => item.name ?? item.title,
     SubscriptionResource.modules => item.name ?? item.title,
-    SubscriptionResource.moduleSubscriptions =>
-      item.moduleLabel ?? item.title,
+    SubscriptionResource.moduleSubscriptions => item.moduleLabel ?? item.title,
     SubscriptionResource.subscriptionInvoices =>
       item.invoiceDisplayId ?? item.title,
     SubscriptionResource.licenses => item.licenseType ?? item.title,
@@ -4899,6 +4890,7 @@ abstract final class _SubscriptionsText {
   static String modulesSelectedCount(int selected, int total) {
     return '$selected of $total selected';
   }
+
   static const String noModulesIncluded = 'No modules included yet.';
   static const String planDescription = 'Short description';
   static const String freePlan = 'Free';
@@ -4937,6 +4929,7 @@ abstract final class _SubscriptionsText {
     }
     return '$planDetailTitle · $trimmed';
   }
+
   static const String noSelectionTitle = 'Select a record';
   static const String noSelectionBody =
       'Choose a subscription record to review plan limits, modules, invoices, licenses, and next actions.';

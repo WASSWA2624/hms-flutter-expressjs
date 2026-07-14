@@ -186,10 +186,7 @@ final class SubscriptionsOverviewDto {
 }
 
 final class SubscriptionTenantCohortSummaryDto {
-  const SubscriptionTenantCohortSummaryDto(
-    this.json, {
-    required this.cohort,
-  });
+  const SubscriptionTenantCohortSummaryDto(this.json, {required this.cohort});
 
   final SubscriptionJsonMap json;
   final SubscriptionTenantCohort cohort;
@@ -362,7 +359,8 @@ final class SubscriptionItemDto {
       moduleSlug: _string(json['module_slug']) ?? _string(json['slug']),
       name: _string(json['name']),
       code: _string(json['code']),
-      description: _plainTextString(json['description']) ??
+      description:
+          _plainTextString(json['description']) ??
           _extensionDescription(json['extension_json']),
       status: _string(json['status']),
       changeStatus: _string(json['change_status']),

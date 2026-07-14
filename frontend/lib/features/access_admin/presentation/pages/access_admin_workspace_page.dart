@@ -663,8 +663,7 @@ class _WorklistPanel extends StatelessWidget {
         onRowSelected: onItemSelected,
         onPageChanged: controller.changePage,
         mobileItemBuilder: (BuildContext context, AccessAdminItem item) {
-          final bool isRole =
-              state.query.resource == AccessAdminResource.roles;
+          final bool isRole = state.query.resource == AccessAdminResource.roles;
           return ListTile(
             title: Text(item.title),
             subtitle: Text(item.subtitle ?? item.effectiveDisplayId),
@@ -820,25 +819,16 @@ class _DetailContent extends ConsumerWidget {
           ),
         ] else ...<Widget>[
           if (item.email != null)
-            _DetailRow(
-              label: l10n.accessAdminEmailLabel,
-              value: item.email!,
-            ),
+            _DetailRow(label: l10n.accessAdminEmailLabel, value: item.email!),
           if (item.phone != null)
-            _DetailRow(
-              label: l10n.accessAdminPhoneLabel,
-              value: item.phone!,
-            ),
+            _DetailRow(label: l10n.accessAdminPhoneLabel, value: item.phone!),
           if (item.positionTitle != null)
             _DetailRow(
               label: l10n.accessAdminPositionLabel,
               value: item.positionTitle!,
             ),
           if (item.status != null)
-            _DetailRow(
-              label: l10n.accessAdminStatusLabel,
-              value: item.status!,
-            ),
+            _DetailRow(label: l10n.accessAdminStatusLabel, value: item.status!),
           SizedBox(height: theme.spacing.md),
           AppUserAccessPanel(
             roleGroups:
