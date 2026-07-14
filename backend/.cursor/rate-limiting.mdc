@@ -1,5 +1,9 @@
 ---
 alwaysApply: false
+globs:
+  - "backend/**"
+description: >
+  Use this rule file when implementing, designing, or reviewing backend rate limiting logic to ensure endpoints are protected from abuse and misuse.
 ---
 # Rate Limiting Rules
 

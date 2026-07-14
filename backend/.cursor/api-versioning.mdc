@@ -1,5 +1,9 @@
 ---
 alwaysApply: false
+globs:
+  - "backend/**"
+description: >
+  Use this rule file when designing, documenting, or reviewing public API changes, endpoints, or contract versioning in the backend. Ensures safe evolution, stability, and explicit migration handling for API consumers.
 ---
 # API Versioning Rules
 

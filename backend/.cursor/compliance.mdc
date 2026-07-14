@@ -1,5 +1,9 @@
 ---
 alwaysApply: false
+globs:
+  - "backend/**"
+description: >
+  Use this rule file when designing, implementing, or reviewing any backend flows where privacy, audit, evidence, or compliance logging is required. Ensures regulated obligations for traceability and actor attribution are fulfilled.
 ---
 # Compliance Rules
 

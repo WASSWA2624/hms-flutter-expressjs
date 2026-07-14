@@ -1,5 +1,9 @@
 ---
-alwaysApply: true
+alwaysApply: false
+globs:
+  - "backend/**"
+description: >
+  Use this rule file as the index for backend technical standards, outlining rule ownership and conflict precedence when working in the backend codebase.
 ---
 # Backend Rules Index
 

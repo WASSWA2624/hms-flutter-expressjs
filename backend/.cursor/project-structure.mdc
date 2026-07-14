@@ -1,5 +1,9 @@
 ---
 alwaysApply: false
+globs:
+  - "backend/**"
+description: >
+  Use this rule file when designing, creating, or reviewing backend project structure to ensure consistent and canonical file layout.
 ---
 # Project Structure Rules
 

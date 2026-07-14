@@ -1,5 +1,9 @@
 ---
 alwaysApply: false
+globs:
+  - "backend/**"
+description: >
+  Use this rule file when creating, designing, or reviewing backend modules to ensure each module follows the required build, validation, and documentation sequence.
 ---
 # Module Creation Rules
 

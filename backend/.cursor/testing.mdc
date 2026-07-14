@@ -1,5 +1,9 @@
 ---
 alwaysApply: false
+globs:
+  - "backend/**"
+description: >
+  Use this rule file when designing, implementing, or reviewing backend tests to ensure comprehensive and standardized test coverage.
 ---
 # Testing Rules
 

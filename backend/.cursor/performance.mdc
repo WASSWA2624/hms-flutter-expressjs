@@ -1,5 +1,9 @@
 ---
 alwaysApply: false
+globs:
+  - "backend/**"
+description: >
+  Use this rule file when implementing, designing, or reviewing backend features impacting system performance to ensure optimal responsiveness and efficiency.
 ---
 # Performance Rules
 

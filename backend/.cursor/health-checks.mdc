@@ -1,5 +1,9 @@
 ---
 alwaysApply: false
+globs:
+  - "backend/**"
+description: >
+  Use this rule file when defining, implementing, or reviewing backend health check endpoints and readiness probes to ensure safe and clear health reporting.
 ---
 # Health Check Rules
 

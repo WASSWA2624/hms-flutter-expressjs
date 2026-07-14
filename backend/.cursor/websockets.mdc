@@ -1,5 +1,9 @@
 ---
 alwaysApply: false
+globs:
+  - "backend/**"
+description: >
+  Use this rule file when designing, implementing, or reviewing backend websocket and realtime sync behavior to ensure consistent architecture, event publishing, and recipient scoping.
 ---
 # WebSocket Rules
 

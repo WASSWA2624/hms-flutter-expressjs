@@ -1,5 +1,9 @@
 ---
 alwaysApply: false
+globs:
+  - "backend/**"
+description: >
+  Use this rule file when writing, reviewing, or refactoring backend code to ensure consistency, clarity, and adherence to shared coding practices.
 ---
 # Coding Standards
 

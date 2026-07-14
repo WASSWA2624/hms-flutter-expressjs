@@ -1,5 +1,9 @@
 ---
-alwaysApply: true
+alwaysApply: false
+globs:
+  - ".cursor/locale-development.mdc"
+description: >
+  Use this rule file when editing, adding, or reviewing locale or translation files during standard development to ensure only English locale files are modified unless non-English locales are explicitly requested by the user.
 ---
 # Locale Development — Protective Rule
 

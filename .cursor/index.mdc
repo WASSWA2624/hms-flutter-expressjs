@@ -1,5 +1,9 @@
 ---
-alwaysApply: true
+alwaysApply: false
+globs:
+  - ".cursor/index.mdc"
+description: >
+  Use this rule file as the index for all Cursor rule files in this repository. Reference it for rule order, conflict handling, and file-specific guidance when developing or maintaining the HOSSPI HMS project.
 ---
 # HOSSPI HMS — Monorepo Rules Index
 

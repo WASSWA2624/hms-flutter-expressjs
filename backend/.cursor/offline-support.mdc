@@ -1,5 +1,9 @@
 ---
 alwaysApply: false
+globs:
+  - "backend/**"
+description: >
+  Use this rule file when implementing, designing, or reviewing backend offline support features to ensure sync-capable clients are handled correctly.
 ---
 # Offline Support Rules
 

@@ -1,6 +1,9 @@
 ---
-description: Use when adding, modifying, or deleting a product module or feature
 alwaysApply: false
+globs:
+  - ".cursor/app-write-up.mdc"
+description: >
+  Use this rule file when adding, modifying, or deleting any product module or feature documented in the scope of the HOSSPI HMS application.
 ---
 
 # HOSSPI HMS App Write-Up
