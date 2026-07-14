@@ -22,10 +22,8 @@ const {
   resolveOrgAdminContacts,
 } = require('@lib/authorization/org-admin-contacts');
 const {
-  filterPermissionNamesByPlanModules,
-  normalizeEnabledModuleSet,
-} = require('@lib/authorization/permission-module-map');
-const { ROLES } = require('@config/roles');
+  resolveEffectiveAccess,
+} = require('@lib/authorization/effective-access');
 const env = require('@config/env');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -105,91 +103,29 @@ const toNormalizedString = (value) => String(value || '').trim();
 
 const uniqueValues = (values = []) => Array.from(new Set(values.filter(Boolean)));
 
-const resolveDirectPermissionNames = (user = {}) => uniqueValues(
-  (Array.isArray(user.permissions) ? user.permissions : [])
-    .flatMap((entry) => {
-      if (!entry) return [];
-      if (typeof entry === 'string') return [toNormalizedString(entry)];
-      const permission = entry.permission && typeof entry.permission === 'object'
-        ? entry.permission
-        : entry;
-      return [
-        toNormalizedString(permission.name),
-        toNormalizedString(permission.code),
-        toNormalizedString(entry.permission_name),
-      ];
-    })
-    .filter(Boolean)
-);
-
-const resolveRolePermissionNames = (user = {}) => uniqueValues(
-  (Array.isArray(user.roles) ? user.roles : [])
-    .flatMap((roleEntry) => {
-      const permissions = Array.isArray(roleEntry?.role?.permissions)
-        ? roleEntry.role.permissions
-        : Array.isArray(roleEntry?.permissions)
-          ? roleEntry.permissions
-          : [];
-
-      return permissions.flatMap((permissionEntry) => {
-        if (!permissionEntry) return [];
-        if (typeof permissionEntry === 'string') return [toNormalizedString(permissionEntry)];
-        const permission = permissionEntry.permission && typeof permissionEntry.permission === 'object'
-          ? permissionEntry.permission
-          : permissionEntry;
-        return [
-          toNormalizedString(permission.name),
-          toNormalizedString(permission.code),
-          toNormalizedString(permissionEntry.permission_name),
-        ];
-      });
-    })
-    .filter(Boolean)
-);
-
-const resolveEffectivePermissionNames = (user = {}) => uniqueValues([
-  ...resolveDirectPermissionNames(user),
-  ...resolveRolePermissionNames(user),
-]);
-
-const userHasSuperAdminRole = (user = {}) =>
-  getRoleNames(user).includes(ROLES.SUPER_ADMIN);
-
-/**
- * Plan modules take precedence over assigned user/role rights.
- * Module-scoped permissions outside the tenant plan are stripped from the
- * effective session permission set (super admins are not plan-gated).
- */
-const applyPlanGateToPermissionNames = (permissionNames, moduleEntitlements, user = {}) => {
-  if (userHasSuperAdminRole(user) || !user?.tenant_id) {
-    return permissionNames;
-  }
-  const enabledModules = normalizeEnabledModuleSet(moduleEntitlements);
-  return filterPermissionNamesByPlanModules(permissionNames, enabledModules);
-};
-
-const buildAuthUserPayload = (user = {}) => {
+const buildAuthUserPayload = (user = {}, moduleEntitlements = null) => {
   const { password_hash, permissions, ...userData } = user;
-  const directPermissions = resolveDirectPermissionNames(user);
-  const rolePermissions = resolveRolePermissionNames(user);
-  const effectivePermissions = uniqueValues([
-    ...directPermissions,
-    ...rolePermissions,
-  ]);
+  const access = resolveEffectiveAccess(user, {
+    moduleEntitlements,
+    // Grant union only here; plan gate applied in enrich when entitlements load.
+    applyPlanGate: moduleEntitlements != null,
+    applyAssignedModuleGate: true,
+  });
 
   return {
     ...userData,
-    permissions: effectivePermissions,
-    permission_names: effectivePermissions,
-    direct_permissions: directPermissions,
-    role_permissions: rolePermissions,
+    permissions: access.permissions,
+    permission_names: access.permissions,
+    direct_permissions: access.direct_permissions,
+    role_permissions: access.role_permissions,
+    module_permissions: access.module_permissions,
+    assigned_modules: access.assigned_modules,
   };
 };
 
 const enrichAuthUserPayload = async (user = {}) => {
-  const base = buildAuthUserPayload(user);
   if (!user?.tenant_id) {
-    return base;
+    return buildAuthUserPayload(user);
   }
 
   const [module_entitlements, subscription_summary, orgAdminContacts] =
@@ -202,16 +138,10 @@ const enrichAuthUserPayload = async (user = {}) => {
       }),
     ]);
 
-  const permissions = applyPlanGateToPermissionNames(
-    base.permissions,
-    module_entitlements,
-    user
-  );
+  const base = buildAuthUserPayload(user, module_entitlements);
 
   return {
     ...base,
-    permissions,
-    permission_names: permissions,
     module_entitlements,
     subscription_summary,
     platform_admin_contact: resolvePlatformAdminContact(),

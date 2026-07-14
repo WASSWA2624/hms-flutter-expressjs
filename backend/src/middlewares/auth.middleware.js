@@ -16,7 +16,6 @@ const { verifyApiKey } = require('@lib/crypto');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { normalizeRoleName } = require('@config/roles');
-const { ROLE_PERMISSIONS } = require('@config/permissions');
 const { markSpanError, recordSecurityEvent } = require('@lib/telemetry/metrics');
 const apiKeyRepository = require('@repositories/api-key/api-key.repository');
 
@@ -93,20 +92,18 @@ const normalizeUserContext = (decoded = {}) => {
  * @returns {string[]} Effective permission list
  */
 const getUserPermissions = (user = {}) => {
-  const explicitPermissions = Array.isArray(user.permissions)
-    ? user.permissions.map((permission) => String(permission || '').trim()).filter(Boolean)
-    : [];
+  const {
+    resolveRequestPermissionNames,
+  } = require('@lib/authorization/effective-access');
 
   if (isApiKeyContext(user)) {
+    const explicitPermissions = Array.isArray(user.permissions)
+      ? user.permissions.map((permission) => String(permission || '').trim()).filter(Boolean)
+      : [];
     return Array.from(new Set(explicitPermissions));
   }
 
-  const rolePermissions = (Array.isArray(user.roles) ? user.roles : [user.role])
-    .map((role) => normalizeRoleName(role) || String(role || '').trim().toUpperCase())
-    .filter(Boolean)
-    .flatMap((normalizedRole) => ROLE_PERMISSIONS[normalizedRole] || []);
-
-  return Array.from(new Set([...explicitPermissions, ...rolePermissions]));
+  return resolveRequestPermissionNames(user);
 };
 
 /**
