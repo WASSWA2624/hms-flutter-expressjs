@@ -14,7 +14,7 @@ Purpose: single navigation package and centralized route configuration.
 - Use `go_router` only; definitions under `lib/app/router/`.
 - Named routes or typed helpers; no scattered raw route strings.
 - Protect routes via guards using session and entitlements ([`permissions.mdc`](./permissions.mdc)).
-- Build navigation trees from effective permissions: subscription package ∩ roles ∩ permissions. Omit unauthorized destinations from shell, drawer, rail, and menu bar.
+- Build navigation trees from union(role/module/user grants) ∩ subscription package ∩ assigned modules ∩ ABAC scope. Omit unauthorized destinations from shell, drawer, rail, and menu bar.
 - Deep links to unauthorized routes must redirect to localized forbidden/not-found states ([`permissions.mdc`](./permissions.mdc)).
 - Stable readable web URLs using `human_friendly_id` where resource IDs appear; deep-link support where required.
 - No navigation in repositories or data sources.

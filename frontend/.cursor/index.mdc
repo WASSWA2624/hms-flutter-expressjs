@@ -38,7 +38,7 @@ Default modules, subscription packages, roles, and permissions are defined in:
 | [`.cursor/access/subscriptions.mdc`](../../.cursor/access/subscriptions.mdc) | Package → module → permission intersection |
 | [`.cursor/access/default_user_roles.mdc`](../../.cursor/access/default_user_roles.mdc) | Shipped default role → module permissions |
 
-Effective access = **intersection(role/module/user permissions ∩ active subscription package)**. Owner: [`permissions.mdc`](./permissions.mdc).
+Effective access = union(role/module/user grants) ∩ active subscription package ∩ assigned modules ∩ ABAC scope. Owner: [`permissions.mdc`](./permissions.mdc).
 
 ## Always-applied core rules
 

@@ -1,6 +1,8 @@
 ---
-description: Reference example for repository layer boundaries
 alwaysApply: false
+globs:
+  - "frontend/.cursor/reference/repository-pattern-example.mdc"
+description: Reference example for repository layer boundaries.
 ---
 # Repository Pattern Example
 

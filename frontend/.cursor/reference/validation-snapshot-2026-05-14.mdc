@@ -1,6 +1,8 @@
 ---
-description: Historical validation snapshot from 2026-05-14 (not current policy)
 alwaysApply: false
+globs:
+  - "frontend/.cursor/reference/validation-snapshot-2026-05-14.mdc"
+description: Historical validation snapshot from 2026-05-14; not current policy.
 ---
 # Validation Snapshot (2026-05-14)
 

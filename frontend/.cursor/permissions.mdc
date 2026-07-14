@@ -24,8 +24,8 @@ Purpose: frontend RBAC, ABAC, entitlements, and platform permissions — aligned
 
 - **Source of truth:** shipped defaults live in [`.cursor/access/modules.mdc`](../../.cursor/access/modules.mdc), [`.cursor/access/permissions.mdc`](../../.cursor/access/permissions.mdc), [`.cursor/access/subscriptions.mdc`](../../.cursor/access/subscriptions.mdc), and [`.cursor/access/default_user_roles.mdc`](../../.cursor/access/default_user_roles.mdc). Authorized admins may customize; all changes must be versioned and auditable; shipped defaults must be restorable atomically.
 - **Authority order (strict):** active **subscription package** → assigned **roles/modules** → **permissions** → tenant/facility ABAC scope.
-- Users may hold **multiple roles and modules**; effective permissions = **intersection** of all grants **and** the active subscription package. Role or direct assignment must **never** unlock modules, menus, routes, actions, or workflows excluded by the subscription.
-- `AppAccessPolicy.grants` (and route/action gates) must enforce subscription ∩ role ∩ permission before rendering or enabling UI.
+- Users may hold **multiple roles and modules**; effective permissions = union(role/module/user grants) ∩ active subscription package ∩ assigned modules ∩ ABAC scope. No grant may unlock excluded modules, menus, routes, actions, or workflows.
+- `AppAccessPolicy.grants` (and route/action gates) must enforce the effective-permission formula before rendering or enabling UI.
 - **RBAC + ABAC (strict):** hide/disable menus, components, actions, and workflows unauthorized users cannot access; backend authorization remains mandatory — hidden UI is not sufficient alone.
 - Separate platform permissions (camera, etc.) from app authorization.
 - Protect restricted routes via guards ([`navigation.mdc`](./navigation.mdc)).

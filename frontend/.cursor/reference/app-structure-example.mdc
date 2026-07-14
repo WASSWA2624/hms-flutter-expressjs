@@ -1,6 +1,8 @@
 ---
-description: Reference example for the root App widget shape
 alwaysApply: false
+globs:
+  - "frontend/.cursor/reference/app-structure-example.mdc"
+description: Reference example for the root App widget shape.
 ---
 # Example App Structure
 
