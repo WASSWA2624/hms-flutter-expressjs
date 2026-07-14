@@ -86,6 +86,26 @@ Reconnect must recover missed events; do not promise fixed delivery latency.
 - No obsolete duplicate implementation remains.
 - Unauthorized, cross-scope, cancel, failure, conflict, reconnect, and retry paths are covered where relevant.
 
+### Executable delivery gate
+
+Run the repository gate from the project root:
+
+```powershell
+.\scripts\delivery-gate.ps1
+```
+
+```sh
+./scripts/delivery-gate.sh
+```
+
+The gate refreshes Flutter generated code and verifies formatting, analysis, and
+tests, then runs the backend delivery-contract lint, targeted tests, and OpenAPI
+validation. CI additionally rejects stale committed generated code. Run
+module-specific tests for every touched domain in addition to this baseline.
+Schema changes must follow the
+[`backend/docs/migrations/v1.md`](../backend/docs/migrations/v1.md) deployment
+and recovery runbook.
+
 ## Related prompts
 
 All numbered prompts in this folder inherit this contract. Specialize per domain; never weaken security, integrity, or sync rules.

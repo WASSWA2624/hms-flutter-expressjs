@@ -49,7 +49,7 @@ requests, pushes to `main`, and manual dispatches. The backend job installs from
 ```sh
 cd backend
 npm ci
-npm run validate
+npm run validate:delivery
 ```
 
 Platform release builds are host-specific release checks and are not currently

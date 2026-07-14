@@ -2148,7 +2148,10 @@ describe('opd-flow.service', () => {
         findFirst: jest.fn().mockResolvedValue(null)
       },
       user: {
-        findFirst: jest.fn().mockResolvedValue({ id: 'doc-assigned-1' })
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'doc-assigned-1',
+          staff_profile: { practitioner_type: 'DOCTOR' }
+        })
       },
       appointment: {
         findFirst: jest.fn().mockResolvedValue(null)

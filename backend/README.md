@@ -164,10 +164,13 @@ For more information, see `scripts/README.md`.
 Run the complete backend delivery gate (lint, tests, and OpenAPI contract
 validation):
 ```bash
-npm run validate
+npm run validate:delivery
 ```
 
-Use `npm test` when only the Jest suite is required during local iteration.
+This gate targets the cross-cutting response, scope, offline, realtime, public
+identifier, and health contracts used by CI. Run `npm run validate` for the full
+backend regression suite, or `npm test` when only Jest is required during local
+iteration.
 
 ## Project Rules
 
