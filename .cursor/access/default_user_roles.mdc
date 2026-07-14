@@ -1,0 +1,40 @@
+---
+alwaysApply: false
+globs:
+  - "backend/**"
+  - "frontend/**"
+description: >
+  Defines and documents all default user roles for RBAC and access mapping.
+---
+
+
+**2. Default User Roles**
+
+Every installation must provide a comprehensive set of default user roles spanning clinical, operational, and administrative functions. These roles must be created automatically on system setup, and may be extended, customized, or removed only by authorized administrators. Roles must be defined as centrally managed entities and mapped explicitly to default module permissions (see Default Permissions). The default roles include, at minimum:
+
+- **Super Admin**: Highest authority with unrestricted administrative privileges across all modules and tenants. Manages global settings, users, roles, subscriptions, integrations.
+- **Tenant Admin**: Full administrative control within a specific tenant/account. Can manage tenant users, modules, billing, configuration, roles, and permissions.
+- **Integration Admin**: Manages external systems integrations, API access, data synchronization, and partner connections. Has high-level authority on integrations only.
+- **Facility Admin**: Administrative privileges limited to assigned facility or facilities. Manages operations, staff, resource assignments, facility-specific config.
+- **Human Resources Staff**: Manages employee and staff records, onboarding/offboarding, attendance, payroll, and HR policies.
+- **Operations Staff**: Handles general facility operations such as logistics, materials, non-clinical processes (excluding surgical/theater roles).
+- **Housekeeper**: Responsible for hygiene, sanitation, and housekeeping operations within facilities.
+- **Biomedical Engineer**: Manages and maintains biomedical equipment and technology.
+- **Discharge Planner**: Coordinates and manages patient discharges, transitions, and follow-up processes.
+- **Doctor**: Clinical care provider. Diagnoses, manages, and treats patients across various departments.
+- **Dentist**: Specializes in dental care, treatments, and procedures for patients.
+- **Physiotherapist**: Manages and administers physical therapy and rehabilitation services to patients.
+- **Radiologist**: Specializes in interpretation and reporting of imaging studies; manages radiology workflows.
+- **Radiographer**: Performs imaging scans and supports radiology procedures under radiologist guidance.
+- **Sonographer**: Performs sonography/ultrasound procedure and assists in reporting.
+- **Pharmacist**: Manages medicines inventory, dispensing, e-prescription handling.
+- **Laboratory Technician**: Conducts laboratory tests, manages lab workflows, and produces test results.
+- **Nurse**: Provides nursing care, manages patient wards/beds, assists with medical tasks, and documents care.
+- **Receptionist**: Manages front desk operations, patient check-in/out, and appointments.
+- **Mortuary Attendant**: Manages mortuary records, services, and related operations.
+- **Accountant**: Handles billing, invoicing, payments, and financial record-keeping.
+- **Support Staff**: Provides general or department-specific support (non-clinical duties).
+- **Patient**: Accesses own records, schedules, and interacts with patient engagement modules.
+- **Visitor / Guest**: Limited access for visitors or guests; may check-in/out or view permitted visitor info.
+
+Administrators may define additional roles as needed. All user roles, default or custom, must be explicitly mapped to a defined, auditable set of module-level permissions, consistent with RBAC/ABAC policies and limited by active subscription package constraints.

@@ -1,0 +1,79 @@
+---
+alwaysApply: false
+globs:
+  - "backend/**"
+  - "frontend/**"
+description: >
+  Lists all modules with core functionalities for deployment, role assignment, and permission configuration.
+---
+
+
+**1. Modules & Functionalities**
+
+Each deployment must include the following core modules and additional required functionalities, forming the baseline for setup, role assignment, and permissions configuration:
+
+- **AI & Automation**: Machine learning, diagnostics, predictions, virtual assistants, workflow automation, clinical decision support.
+- **Admin**: Core administration functions.
+- **Ambulance**: Ambulance logistics and dispatch.
+- **Analytics**: Analyze system and clinical data.
+- **Appointment Scheduling**: Book, edit, and manage appointments.
+- **Beds Management**: Assign and monitor beds.
+- **Billing**: Handle invoices, payments, and billing rules.
+- **Biomedical**: Manage biomedical equipment and maintenance.
+- **Claims**: Process and track insurance claims.
+- **Communication**: Patient and staff messaging, notifications, telemedicine, chat, voice, and real-time comms.
+- **Configuration**: Manage settings (basic and advanced).
+- **Dental**: Dental department operations.
+- **Dashboard**: Provide system overviews and KPIs.
+- **Decision Support**: Clinical guidelines, reminders, protocols, order sets.
+- **Department Management**: Create, manage, and configure clinical or operational departments.
+- **Device Integration**: IoT, vitals monitors, laboratory equipment, bedside device connectivity.
+- **Diagnostics**: Diagnostic tests and reporting (lab, imaging, AI results integration).
+- **Discharge Planning**: Plan and process patient discharges.
+- **Emergency**: Emergency department workflows.
+- **Feedback & Survey**: Gather and manage user, staff, or patient feedback and surveys.
+- **Front Desk**: Reception and initial patient handling.
+- **Housekeeping**: Facility cleanliness and support operations.
+- **Human Resources**: Employee and staff management.
+- **ICU (Intensive Care Unit)**: ICU patient management.
+- **Integrations**: External systems and partner integrations (e.g., insurance, laboratory, LIS, external EMR/HIE, government/public health APIs).
+- **Insurance**: Insurance validation, claims, pre-authorizations.
+- **Inventory**: Supplies, stock, and equipment inventory.
+- **IPD (Inpatient Department)**: Inpatient management, admissions, transfers, discharges.
+- **Laboratory**: Lab workflows, tests, analyzer interface, results reporting.
+- **Letters & Certificates**: Generate, track, and manage medical letters, certificates, reports.
+- **Logs & Audit Trail**: Activity logs, change tracking, traceability for compliance.
+- **Marketplace**: App extension marketplace, plugins, certified module registry.
+- **Mobile**: Mobile device support, mobile app management, push notifications, and responsive UI extensions.
+- **Mortuary**: Mortuary services and records.
+- **Notifications**: Alerts, reminders, tasking, communications.
+- **Nursing**: Nursing tasks and patient care; handoff, care plans, assessment charting.
+- **OPD (Outpatient Department)**: Outpatient management, scheduling, consultation.
+- **Operations**: Facility operations (e.g., logistics, materials, security, parking, support functions).
+- **Order Management**: Orders for labs, drugs, imaging, supplies, procedures.
+- **Patient Engagement**: Patient portal, education, forms, Q&A, requests, remote monitoring integration.
+- **Patient Registry**: Patient record creation, lookup, demographics management, identity reconciliation.
+- **Pharmacy**: Medication inventory, dispensing, e-prescription, formulary management.
+- **Physiotherapy**: Physiotherapy department scheduling, management, and patient tracking.
+- **Privacy & Consent Management**: Consent forms, data access logs, privacy compliance, and policy controls.
+- **Queue Management**: Waitlists, digital queueing, ticketing, self-check-in.
+- **Radiographer**: Radiographer activities, scans performance.
+- **Radiologist**: Radiologist reporting, review, interpretation.
+- **Radiology**: Imaging, PACS workflow, DICOM viewer, order and report life cycle.
+- **Reception**: Manage visitor/patient entry (distinct from front desk where required).
+- **Reporting**: Generate clinical, operational, billing, compliance, and regulatory reports.
+- **Research**: Study, randomized controlled trial, observational tracking, registry, ethics workflow.
+- **Rooms Management**: Assign and monitor inpatient/outpatient rooms.
+- **Scheduling**: Shared resource, staff, room, equipment, and block booking schedule management (overarching scheduling, applies to all bookable items).
+- **Security**: RBAC, ABAC, authentication, SSO, auditing, permission enforcement.
+- **Sonographer**: Sonographer-specific workflows, scan logging, reporting.
+- **Support & Helpdesk**: Ticketing, FAQs, issue tracking for staff and patients.
+- **Task Management**: Assign, track, and complete administrative/clinical tasks.
+- **Tenant Setups**: Multi-tenant configuration, onboarding, and enterprise account management.
+- **Theater**: Operation theater management (surgery scheduling, records, instrument tracking, post-op).
+- **User Management**: User accounts, roles, delegations, permissions, access provisioning.
+- **Vitals**: Vitals recording, monitoring, thresholds, and alerts.
+- **Visitor Management**: Tracking, security, and check-in/out for guests, attendants.
+- **Workflow Engine**: Workflow automation, process modeling, configurable approvals/processes.
+
+All modules must declare their default permissions, as described below.

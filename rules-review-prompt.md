@@ -26,5 +26,11 @@ For each rule file, apply the following steps where applicable:
 
 11. Where relevant, require strict enforcement of Role-Based Access Control (RBAC) and Attribute-Based Access Control (ABAC) based on user roles and permissions. Menus, interface components, actions, and workflows must not be visible or accessible to unauthorized users.
 
-12. Define and store permissions at user, role, and module levels in the database. Individual permissions must be attachable to users, roles, modules, or directly to users as needed, granting all associated permissions. Modules and permissions may also connect to subscription packages. Prevent users from accessing permissions outside their assigned subscription package, regardless of direct, role, or module permissions. Rules on permissions must set `alwaysApply: true`.
+12. Allow assignment of multiple roles and modules to each user in the database, but all effective permissions must be intersected with those enabled by the user's subscription package—users cannot access any permission, module, or functionality not included in their current subscription, even if granted by role, module, or direct assignment. Store permissions at user, role, and module levels; allow permissions to be attached to users, roles, modules, and linked to subscription packages. Permission rules must set `alwaysApply: true`.
 
+13. (alwaysApply: true) Define a default set of modules, subscription packages, user roles, and their associated permissions. Each module must declare its default permissions; subscription packages must enumerate included modules and effective permissions for each. User roles should ship with default permissions, which may be extended, customized, or reset to defaults by authorized users only. The system must:
+    - Ship with a complete set of core modules, packages, and roles/permissions out-of-the-box.
+    - Allow authorized administrators to customize, extend, or reset module/role/package permissions to their shipped defaults at any time.
+    - Clearly document and enforce all permission assignments and relationships between modules, subscriptions, roles, and users.
+    - Ensure all defaults are modifiable but can always be restored to original values.
+    - Apply changes atomically so no user has more access than permitted by their roles and subscription at any point.

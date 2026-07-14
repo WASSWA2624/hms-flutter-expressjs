@@ -1,0 +1,127 @@
+---
+alwaysApply: false
+globs:
+  - "backend/**"
+  - "frontend/**"
+description: >
+  Defines access permissions structure for all modules and roles; applies to permission enforcement and auditing.
+---
+
+
+**Default Permissions (Modules & Roles)**
+
+Most modules expose a standard set of permissions (actual set may vary by module):
+
+- `view` — browse or access data
+- `create` — add new records/data
+- `edit` / `update` — modify existing records
+- `delete` — remove records/data
+- `manage` — configuration, settings, and role assignments within the module
+- `export` — export data or reports
+- `assign` — assign records (e.g., patient to bed, staff to case)
+- `approve` — workflow approvals; review actions
+- Module-specific actions (e.g., `dispense` in Pharmacy; `request`, `report` in Lab/Radiology, etc.)
+
+Default permissions for all modules and roles must be defined explicitly and expanded in system/module documentation.
+
+**Permissions Model (Attribute Scoping & Enforcement)**
+
+All permissions are enforced using Attribute-Based Access Control (ABAC), meaning every permission is filtered by user, record, department, facility, tenant, organizational scope, or other relevant context such as "own", "assigned", "department", "tenant", "status". Avoid generic `manage` or `view all` grants—define fine-grained actions and explicit attribute-based conditions wherever possible.
+
+
+| Module           | Permissions (Attribute-Scoped, with filters/conditions)                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| OPD              | view (own, assigned department, all-within-facility); create (role/department); edit (own, assigned); delete (own); manage (department, facility)       |
+| IPD              | view (own, assigned ward/bed, department, all if allowed); create (role/department); edit (own/assigned); delete (per policy); manage (ward/department) |
+| Radiology        | request (by referring role); view (own, assigned patient, department/all); report (assigned, department); edit (assigned only); manage, export          |
+| Lab              | request (eligible roles); view (own, assigned, department); report (specimen/assigned); edit (assigned); manage, export                                 |
+| Pharmacy         | request (prescription); view (own, assigned, department); prescribe (doctor/policy); dispense (pharmacy staff); edit (assigned); manage (department)    |
+| Nursing          | view (own patients, department, shift); update (own assignments); manage (shift/department); export (department)                                        |
+| Billing          | view (own, assigned accounts, department); create (own/assigned); edit (own/assigned); delete (per policy); manage, export (department/all)             |
+| Reporting        | view (role/department/facility, dataset access); export (by policy/role); manage (config/access)                                                        |
+| Admin/Config     | manage (scope, configuration, department/facility/domain)                                                                                               |
+| HR               | view (own, direct reports, department, all-employees if allowed); create (scope); edit (own/assigned); delete (policy); manage (department/facility)    |
+| Housekeeping     | view (own, assigned, area); manage (area/department)                                                                                                    |
+| Mortuary         | view (department, assigned cases); manage (cases, department)                                                                                           |
+| Patient Registry | view (own, assigned/department, all if superuser); create (role/department); update (own, assigned); delete (policy); manage; export (scope)            |
+| Operations       | view (department, assigned); manage (department/facility, per role)                                                                                     |
+| ...              | ...                                                                                                                                                     |
+
+
+**Key Points:**
+
+- Specify for every permission its attribute scope: "own", "assigned", "department", "facility", "tenant", "organization-wide".
+- All permissions are limited to user’s effective role(s) and current subscription.
+- Permission checks must always filter by relevant attributes—no broad `view all` or `manage` unless *explicitly* required and logged.
+- Additional/custom permissions must specify scope (e.g., `update-own`, `view-department`, `export-department-data`, etc.).
+- All permission definitions must be systematized in configuration/code and be fully auditable.
+
+**Permissions by Role**
+
+Role-based permissions are enforced using Role-Based Access Control (RBAC) filtered by ABAC, meaning a role only grants actions where attribute conditions are met. Defaults may be customized by authorized administrators, but always remain limited to the intersection of assigned roles, modules, and the active subscription. All effective permissions must be both explicit and auditable.
+
+
+| Role             | Modules                                                         | Permissions (Attribute-Scoped)                                                                       |
+| ---------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Super Admin      | All modules                                                     | manage (unrestricted system rights: config/data/settings/workflows)                                  |
+| Tenant Admin     | All modules (across all tenants/facilities)                     | manage (cross-tenant/facility: system/modules/tenants/users/data; except super-admin-only functions) |
+| Facility Admin   | Operational modules within assigned facility (see modules list) | manage (facility scope: assigned modules/department/module/facility)                                 |
+| Doctor           | OPD, IPD                                                        | view, create, edit                                                                                   |
+|                  | Radiology                                                       | request, view, report                                                                                |
+|                  | Lab                                                             | request, view                                                                                        |
+|                  | Pharmacy                                                        | request, prescribe                                                                                   |
+|                  | Nursing, Billing, Reporting, Patient Registry                   | view                                                                                                 |
+|                  | All other modules                                               | no access                                                                                            |
+| Nurse            | OPD, IPD                                                        | view, update                                                                                         |
+|                  | Radiology, Lab, Pharmacy                                        | request                                                                                              |
+|                  | Nursing, Housekeeping                                           | manage                                                                                               |
+|                  | Patient Registry                                                | create, update                                                                                       |
+|                  | All other modules                                               | no access                                                                                            |
+| Radiographer     | OPD                                                             | view, update                                                                                         |
+|                  | Radiology                                                       | manage                                                                                               |
+|                  | All other modules                                               | no access                                                                                            |
+| Physiotherapist  | OPD, IPD                                                        | view, update                                                                                         |
+|                  | All other modules                                               | no access                                                                                            |
+| Receptionist     | OPD, IPD, Billing                                               | create, view                                                                                         |
+|                  | Patient Registry                                                | manage                                                                                               |
+|                  | All other modules                                               | no access                                                                                            |
+| Accountant       | OPD                                                             | view, manage                                                                                         |
+|                  | IPD                                                             | view                                                                                                 |
+|                  | Billing                                                         | manage                                                                                               |
+|                  | Reporting                                                       | view, export                                                                                         |
+|                  | All other modules                                               | no access                                                                                            |
+| Patient          | OPD, IPD, Radiology, Lab, Pharmacy, Nursing, Billing, Reporting | view-own (own records only)                                                                          |
+|                  | Patient Registry                                                | update-own                                                                                           |
+|                  | All other modules                                               | no access                                                                                            |
+| Operations Staff | Operations                                                      | manage                                                                                               |
+|                  | All other modules                                               | no access                                                                                            |
+| Other Roles      | All modules                                                     | Must follow and map to the above matrix                                                              |
+
+
+**Matrix & Enforcement Principles:**
+
+- Permissions for all roles/modules are ABAC-scoped (e.g., `view-own`, `manage-department`).
+- Module/action access always intersects with assigned module(s) and subscription.
+- "manage" = full rights within assigned scope; "view-own" = strictly user’s own records.
+- Additional/custom roles/modules must be explicitly mapped to this structure.
+- All permission config must be version-controlled and fully auditable.
+- No UI, API, or backend process may render/expose resources to unauthorized users, ever.
+
+*Note: Effective permissions are always the intersection of the user's assigned roles, enabled modules, and active subscription tier. Defaults are fully modifiable but auditable and restorable at all times.*
+
+- `"manage"` = full rights within module/scope.
+- `"view-own"` = limited to own data or records.
+- Permissions are cumulative but always intersected with assigned roles, modules, and subscription.
+
+**RBAC & ABAC Enforcement**
+
+Every permission—role-, module-, and subscription-based—is strictly enforced. No system UI, API, or backend feature may suggest, display, or process resources for which the current user lacks intersectional access. Multiple roles default to the most restrictive effective set.
+
+**Modifiability/Restorability**
+
+Admins may adjust/restore default permissions at any time, but never allow rights to exceed the intersection of role(s), modules, and subscription. All assignments and permission structures must be tracked and auditable.
+
+For detailed specs, see `.cursor/index.mdc`, relevant module docs, and rule files.
+
+---
+
