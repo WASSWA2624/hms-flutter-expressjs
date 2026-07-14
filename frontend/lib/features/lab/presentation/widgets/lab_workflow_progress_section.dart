@@ -56,6 +56,17 @@ class LabWorkflowProgressSection extends ConsumerWidget {
           onPressed: isSaving ? null : () => _collect(context, ref),
         ),
       );
+    } else if (canMutate && next.billingGateBlocked) {
+      currentActions.add(
+        AppWorkflowStepAction(
+          id: 'billing_gate',
+          label: l10n.labBillingGateBlockedAction,
+          icon: Icons.payments_outlined,
+          requirement: _labWorkflowMutationRequirement,
+          capabilityAllowed: false,
+          onPressed: null,
+        ),
+      );
     }
     if (canMutate && next.canReceiveSample) {
       currentActions.add(
@@ -109,14 +120,21 @@ class LabWorkflowProgressSection extends ConsumerWidget {
           (
             id: 'ordered',
             label: l10n.labWorkflowStepOrdered,
-            help: l10n.labWorkflowNextCollectSample,
+            help: next.billingGateBlocked
+                ? l10n.labWorkflowNextAwaitPayment
+                : l10n.labWorkflowNextCollectSample,
           ),
           (
-            id: 'in_process',
-            label: l10n.labWorkflowStepInProcess,
+            id: 'sample',
+            label: l10n.labWorkflowStepSample,
             help: next.canReceiveSample
                 ? l10n.labWorkflowNextReceiveSample
                 : l10n.labWorkflowNextEnterResults,
+          ),
+          (
+            id: 'processing',
+            label: l10n.labWorkflowStepInProcess,
+            help: l10n.labWorkflowNextEnterResults,
           ),
           (
             id: 'results_entered',
@@ -226,7 +244,7 @@ class LabWorkflowProgressSection extends ConsumerWidget {
 int labWorkflowStepIndex(LabOrderWorkflow workflow) {
   final String status = (workflow.order.status ?? '').toUpperCase();
   if (status == 'COMPLETED') {
-    return 3;
+    return 4;
   }
   if (status == 'IN_PROCESS') {
     final bool allEntered = workflow.order.items.isNotEmpty &&
@@ -235,16 +253,16 @@ int labWorkflowStepIndex(LabOrderWorkflow workflow) {
               item.isCompleted ||
               (item.resultId != null && item.resultId!.trim().isNotEmpty),
         );
-    return allEntered ? 2 : 1;
+    return allEntered ? 3 : 2;
   }
-  if (status == 'COLLECTED' || status == 'ORDERED') {
-    return workflow.nextActions.canReceiveSample ||
-            workflow.nextActions.canCollect
-        ? 0
-        : 1;
+  if (status == 'COLLECTED') {
+    return workflow.nextActions.canReceiveSample ? 1 : 2;
+  }
+  if (status == 'ORDERED') {
+    return 0;
   }
   if (workflow.order.verifiableItemCount > 0) {
-    return 2;
+    return 3;
   }
   return 0;
 }

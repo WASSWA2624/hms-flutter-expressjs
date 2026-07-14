@@ -97,6 +97,74 @@ void main() {
       expect(item.resultFlagOverride, 'HIGH');
       expect(item.displayReferenceRange, '10 - 18 (manual)');
     });
+
+    test('prefers applied reference range snapshot over live catalog text', () {
+      const LabOrderItemDto dto = LabOrderItemDto(<String, Object?>{
+        'id': 'LIT0000003',
+        'reference_range': 'legacy free text',
+        'reference_range_summary': 'catalog summary',
+        'applied_reference_range': <String, Object?>{
+          'label': 'Adult ISE',
+          'summary': 'Adult ISE | Unit mg/dL | 3.6 - 5.2',
+          'normal_min_value': '3.6000',
+          'normal_max_value': '5.2000',
+          'source': 'APPLIED_RULE',
+        },
+        'reference_ranges': <Object?>[
+          <String, Object?>{
+            'id': 'range-1',
+            'label': 'Changed catalog',
+            'summary': 'Changed catalog | 1 - 2',
+          },
+        ],
+      });
+
+      final LabOrderItem item = dto.toEntity();
+
+      expect(item.appliedReferenceRange?['summary'], 'Adult ISE | Unit mg/dL | 3.6 - 5.2');
+      expect(item.displayReferenceRange, 'Adult ISE | Unit mg/dL | 3.6 - 5.2');
+    });
+  });
+
+  group('LabOrderSummary payment gate', () {
+    test('treats missing and bill-later statuses as satisfied', () {
+      expect(
+        const LabOrderSummary(id: 'LAB1').isPaymentSatisfied,
+        isTrue,
+      );
+      expect(
+        const LabOrderSummary(
+          id: 'LAB2',
+          paymentStatus: 'NOT_BILLED',
+        ).isPaymentSatisfied,
+        isTrue,
+      );
+      expect(
+        const LabOrderSummary(
+          id: 'LAB3',
+          paymentStatus: 'PENDING',
+        ).isPaymentSatisfied,
+        isFalse,
+      );
+    });
+  });
+
+  group('LabWorkflowNextActionsDto', () {
+    test('maps billing gate capabilities from workflow next_actions', () {
+      const LabWorkflowNextActionsDto dto = LabWorkflowNextActionsDto(
+        <String, Object?>{
+          'can_collect': false,
+          'billing_gate_blocked': true,
+          'payment_status': 'PENDING',
+          'can_receive_sample': false,
+        },
+      );
+
+      final LabWorkflowNextActions actions = dto.toEntity();
+      expect(actions.canCollect, isFalse);
+      expect(actions.billingGateBlocked, isTrue);
+      expect(actions.paymentStatus, 'PENDING');
+    });
   });
 
   group('decodeLabTests', () {

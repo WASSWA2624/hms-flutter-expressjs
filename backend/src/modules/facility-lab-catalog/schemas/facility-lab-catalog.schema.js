@@ -39,6 +39,7 @@ const labReferenceRangeSchema = z.object({
   id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   label: optionalTrimmedString(120),
   unit: optionalTrimmedString(40),
+  method: optionalTrimmedString(120),
   gender: genderSchema.optional().nullable(),
   age_min_value: z.coerce.number().int().min(0).max(150).optional().nullable(),
   age_min_unit: labReferenceAgeUnitSchema.optional().nullable(),
@@ -50,6 +51,9 @@ const labReferenceRangeSchema = z.object({
   critical_max_value: z.coerce.number().optional().nullable(),
   reference_text: optionalTrimmedString(255),
   notes: optionalTrimmedString(255),
+  effective_from: z.string().datetime().optional().nullable(),
+  effective_to: z.string().datetime().optional().nullable(),
+  version: z.coerce.number().int().min(1).max(9999).optional().nullable(),
 });
 
 const labUnitOptionSchema = z.object({

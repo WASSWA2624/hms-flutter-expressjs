@@ -46428,16 +46428,17 @@ const createLabOrder = async (data, userId, ipAddress) => {
     });
     payload.patient_id = patientRecord.id;
 
-    if (payload.encounter_id) {
-      payload.encounter_id = await resolveLabOrderEncounterId({
-        identifier: payload.encounter_id,
-        patientId: patientRecord.id,
-        tenantId: patientRecord.tenant_id,
-        facilityId: patientRecord.facility_id || null,
-      });
-    } else {
-      payload.encounter_id = null;
+    if (!payload.encounter_id) {
+      throw new HttpError('errors.lab_order.encounter_required', 400, [
+        { field: 'encounter_id' },
+      ]);
     }
+    payload.encounter_id = await resolveLabOrderEncounterId({
+      identifier: payload.encounter_id,
+      patientId: patientRecord.id,
+      tenantId: patientRecord.tenant_id,
+      facilityId: patientRecord.facility_id || null,
+    });
 
     payload.status = payload.status || 'ORDERED';
     delete payload.ordered_at;

@@ -268,6 +268,7 @@ describe('lab-order.service', () => {
           { lab_test_id: 'lab-test-2', sort_order: 10 },
         ],
       });
+    resolveLabOrderEncounterId.mockResolvedValueOnce('encounter-internal-1');
     labOrderRepository.create.mockResolvedValue({ id: 'order-internal-1' });
     labOrderRepository.findById.mockResolvedValue(
       buildOrderRecord({
@@ -281,6 +282,7 @@ describe('lab-order.service', () => {
     await labOrderService.createLabOrder(
       {
         patient_id: 'PAT0000001',
+        encounter_id: 'ENC0000001',
         requested_tests: [{ lab_test_id: 'LBT0000001' }],
         requested_panels: [{ lab_panel_id: 'LPN0000001' }],
       },
@@ -291,7 +293,7 @@ describe('lab-order.service', () => {
     expect(labOrderRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         patient_id: 'patient-internal-1',
-        encounter_id: null,
+        encounter_id: 'encounter-internal-1',
         status: 'ORDERED',
         items: {
           create: [
@@ -315,6 +317,27 @@ describe('lab-order.service', () => {
     );
   });
 
+  it('rejects lab order create without encounter_id', async () => {
+    resolveModelRecordOrThrow.mockResolvedValueOnce({
+      id: 'patient-internal-1',
+      tenant_id: 'tenant-1',
+    });
+
+    await expect(
+      labOrderService.createLabOrder(
+        {
+          patient_id: 'PAT0000001',
+          requested_tests: [{ lab_test_id: 'LBT0000001' }],
+        },
+        mockUserId,
+        mockIpAddress
+      )
+    ).rejects.toMatchObject({
+      message: 'errors.lab_order.encounter_required',
+      statusCode: 400,
+    });
+  });
+
   it('models the standard CBC offering as a multi-test panel', () => {
     expect(labOrderService.STANDARD_LAB_PANELS.CBC_PANEL).toEqual([
       'CBC_HGB',
@@ -336,11 +359,13 @@ describe('lab-order.service', () => {
       id: 'patient-internal-1',
       tenant_id: 'tenant-1',
     });
+    resolveLabOrderEncounterId.mockResolvedValueOnce('encounter-internal-1');
 
     await expect(
       labOrderService.createLabOrder(
         {
           patient_id: 'PAT0000001',
+          encounter_id: 'ENC0000001',
           requested_tests: [],
           requested_panels: [],
         },
@@ -364,11 +389,13 @@ describe('lab-order.service', () => {
         id: 'lab-panel-1',
         panel_items: [],
       });
+    resolveLabOrderEncounterId.mockResolvedValueOnce('encounter-internal-1');
 
     await expect(
       labOrderService.createLabOrder(
         {
           patient_id: 'PAT0000001',
+          encounter_id: 'ENC0000001',
           requested_panels: [{ lab_panel_id: 'LPN0000001' }],
         },
         mockUserId,
@@ -415,16 +442,16 @@ describe('lab-order.service', () => {
         tenant_id: 'tenant-1',
       })
       .mockResolvedValueOnce({ id: 'lab-test-1' });
+    resolveLabOrderEncounterId.mockResolvedValueOnce('encounter-internal-1');
     labOrderRepository.create.mockResolvedValue({ id: 'order-internal-1' });
-    labOrderRepository.findById.mockResolvedValue(
-      buildOrderRecord({ encounter: null, encounter_id: null })
-    );
+    labOrderRepository.findById.mockResolvedValue(buildOrderRecord());
     createAuditLog.mockImplementation(() => Promise.reject(new Error('audit failed')));
 
     await expect(
       labOrderService.createLabOrder(
         {
           patient_id: 'PAT0000001',
+          encounter_id: 'ENC0000001',
           status: 'ORDERED',
           requested_tests: [{ lab_test_id: 'LBT0000001' }],
         },

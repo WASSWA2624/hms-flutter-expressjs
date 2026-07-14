@@ -14488,6 +14488,10 @@
   "@labWorkflowStepOrdered": {
     "description": "Workflow step label when tests are ordered."
   },
+  "labWorkflowStepSample": "Sample",
+  "@labWorkflowStepSample": {
+    "description": "Workflow step label for sample collection and receipt."
+  },
   "labWorkflowStepInProcess": "In process",
   "@labWorkflowStepInProcess": {
     "description": "Workflow step label when samples are being processed."
@@ -14504,6 +14508,14 @@
   "@labWorkflowNextCollectSample": {
     "description": "Next workflow action to collect a sample."
   },
+  "labWorkflowNextAwaitPayment": "Await payment before collection",
+  "@labWorkflowNextAwaitPayment": {
+    "description": "Next workflow guidance when billing gate blocks sample collection."
+  },
+  "labBillingGateBlockedAction": "Payment required",
+  "@labBillingGateBlockedAction": {
+    "description": "Disabled action label when unpaid billing blocks lab collection."
+  },
   "labWorkflowNextReceiveSample": "Receive sample",
   "@labWorkflowNextReceiveSample": {
     "description": "Next workflow action to receive a sample."
@@ -14519,6 +14531,10 @@
   "labWorkflowNextReviewItems": "Review pending items",
   "@labWorkflowNextReviewItems": {
     "description": "Next workflow action to review pending lab order items."
+  },
+  "labEncounterRequiredValidation": "Select the clinical encounter for this lab order.",
+  "@labEncounterRequiredValidation": {
+    "description": "Validation message when creating a lab order without an encounter."
   },
   "labCollectConfirmBody": "Mark samples for this order as collected now?",
   "@labCollectConfirmBody": {

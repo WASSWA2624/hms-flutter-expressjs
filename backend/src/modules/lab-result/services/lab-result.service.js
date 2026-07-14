@@ -116,6 +116,8 @@ const applyInterpretationIfNeeded = ({
     if (!interpretationOverride) {
       nextPayload.reference_range_label = null;
       nextPayload.reference_range_summary = null;
+      nextPayload.applied_reference_range_id = null;
+      nextPayload.applied_reference_range_json = null;
     }
     return nextPayload;
   }
@@ -151,6 +153,9 @@ const applyInterpretationIfNeeded = ({
   nextPayload.is_positive = Boolean(interpretation.is_positive);
   nextPayload.reference_range_label = interpretation.reference_range_label || null;
   nextPayload.reference_range_summary = interpretation.reference_range_summary || null;
+  nextPayload.applied_reference_range_id = interpretation.applied_reference_range_id || null;
+  nextPayload.applied_reference_range_json =
+    interpretation.applied_reference_range_json || null;
   return nextPayload;
 };
 

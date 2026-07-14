@@ -20710,6 +20710,12 @@ abstract class AppLocalizations {
   /// **'Ordered'**
   String get labWorkflowStepOrdered;
 
+  /// Workflow step label for sample collection and receipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample'**
+  String get labWorkflowStepSample;
+
   /// Workflow step label when samples are being processed.
   ///
   /// In en, this message translates to:
@@ -20734,6 +20740,18 @@ abstract class AppLocalizations {
   /// **'Collect sample'**
   String get labWorkflowNextCollectSample;
 
+  /// Next workflow guidance when billing gate blocks sample collection.
+  ///
+  /// In en, this message translates to:
+  /// **'Await payment before collection'**
+  String get labWorkflowNextAwaitPayment;
+
+  /// Disabled action label when unpaid billing blocks lab collection.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment required'**
+  String get labBillingGateBlockedAction;
+
   /// Next workflow action to receive a sample.
   ///
   /// In en, this message translates to:
@@ -20757,6 +20775,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review pending items'**
   String get labWorkflowNextReviewItems;
+
+  /// Validation message when creating a lab order without an encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Select the clinical encounter for this lab order.'**
+  String get labEncounterRequiredValidation;
 
   /// Confirmation body before collecting lab samples from the workflow stepper.
   ///

@@ -66,6 +66,7 @@ const buildLabReferenceRangeRowSummary = (entry = {}) => {
   const fragments = [
     toText(entry.label),
     unit ? `Unit ${unit}` : '',
+    toText(entry.method) ? `Method ${toText(entry.method)}` : '',
     toText(entry.gender),
     ageSummary,
     textSummary || normalSummary,
@@ -83,6 +84,51 @@ const buildLabReferenceRangeSummary = (fallbackText, ranges = []) => {
   return summaries.slice(0, 2).join('; ');
 };
 
+const toIsoDateOrNull = (value) => {
+  if (!value) return null;
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+};
+
+const buildAppliedReferenceRangeSnapshot = (range = {}) => {
+  if (!range || typeof range !== 'object') return null;
+  const summary = buildLabReferenceRangeRowSummary(range) || null;
+  const label = toOptionalText(range.label);
+  const hasNumericBounds =
+    range.normal_min_value != null
+    || range.normal_max_value != null
+    || range.critical_min_value != null
+    || range.critical_max_value != null
+    || toOptionalText(range.reference_text);
+  if (!label && !summary && !hasNumericBounds && !toOptionalText(range.id)) {
+    return null;
+  }
+
+  return {
+    id: toOptionalText(range.id),
+    label,
+    unit: toOptionalText(range.unit),
+    method: toOptionalText(range.method),
+    gender: normalizeGenderValue(range.gender),
+    age_min_value: range.age_min_value == null ? null : Number(range.age_min_value),
+    age_min_unit: normalizeAgeUnitValue(range.age_min_unit),
+    age_max_value: range.age_max_value == null ? null : Number(range.age_max_value),
+    age_max_unit: normalizeAgeUnitValue(range.age_max_unit),
+    normal_min_value: toDecimalOrNull(range.normal_min_value),
+    normal_max_value: toDecimalOrNull(range.normal_max_value),
+    critical_min_value: toDecimalOrNull(range.critical_min_value),
+    critical_max_value: toDecimalOrNull(range.critical_max_value),
+    reference_text: toOptionalText(range.reference_text),
+    notes: toOptionalText(range.notes),
+    effective_from: toIsoDateOrNull(range.effective_from),
+    effective_to: toIsoDateOrNull(range.effective_to),
+    version: Number.isFinite(Number(range.version)) ? Number(range.version) : 1,
+    summary,
+    source: 'APPLIED_RULE',
+  };
+};
+
 const normalizeLabReferenceRanges = (value = []) => {
   if (!Array.isArray(value)) return [];
   return value
@@ -92,6 +138,7 @@ const normalizeLabReferenceRanges = (value = []) => {
         id: toOptionalText(entry.id),
         label: toOptionalText(entry.label),
         unit: toOptionalText(entry.unit),
+        method: toOptionalText(entry.method),
         gender: normalizeGenderValue(entry.gender),
         age_min_value: toIntegerOrNull(entry.age_min_value),
         age_min_unit: normalizeAgeUnitValue(entry.age_min_unit),
@@ -103,6 +150,9 @@ const normalizeLabReferenceRanges = (value = []) => {
         critical_max_value: toDecimalOrNull(entry.critical_max_value),
         reference_text: toOptionalText(entry.reference_text),
         notes: toOptionalText(entry.notes),
+        effective_from: toIsoDateOrNull(entry.effective_from),
+        effective_to: toIsoDateOrNull(entry.effective_to),
+        version: Number.isFinite(Number(entry.version)) ? Number(entry.version) : 1,
         sort_order: index,
       };
     })
@@ -196,6 +246,7 @@ const normalizeLabPanelItems = (value = []) => {
 };
 
 module.exports = {
+  buildAppliedReferenceRangeSnapshot,
   buildLabReferenceRangeRowSummary,
   buildLabReferenceRangeSummary,
   normalizeAgeUnitValue,
@@ -207,5 +258,6 @@ module.exports = {
   normalizeResultOptionAliases,
   toDecimalOrNull,
   toIntegerOrNull,
+  toIsoDateOrNull,
   toOptionalText,
 };

@@ -1,4 +1,5 @@
 const {
+  buildAppliedReferenceRangeSnapshot,
   buildLabReferenceRangeRowSummary,
   toOptionalText,
 } = require('@services/lab-workspace/lab.configuration');
@@ -134,9 +135,48 @@ const findHeuristicTextFlag = (resultValue, resultText) => {
   return null;
 };
 
-const matchesReferenceRange = (range = {}, patient = {}, resolvedUnit) => {
+const isRangeEffectiveAt = (range = {}, at = new Date()) => {
+  const reference = at instanceof Date ? at : new Date(at);
+  if (Number.isNaN(reference.getTime())) return true;
+
+  if (range.effective_from) {
+    const from = range.effective_from instanceof Date
+      ? range.effective_from
+      : new Date(range.effective_from);
+    if (!Number.isNaN(from.getTime()) && reference < from) return false;
+  }
+
+  if (range.effective_to) {
+    const to = range.effective_to instanceof Date
+      ? range.effective_to
+      : new Date(range.effective_to);
+    if (!Number.isNaN(to.getTime()) && reference > to) return false;
+  }
+
+  return true;
+};
+
+const matchesReferenceRange = (
+  range = {},
+  patient = {},
+  resolvedUnit,
+  { method = null, at = new Date() } = {}
+) => {
+  if (!isRangeEffectiveAt(range, at)) {
+    return false;
+  }
+
   const rangeUnit = toOptionalText(range?.unit);
   if (rangeUnit && resolvedUnit && normalizeToken(rangeUnit) !== normalizeToken(resolvedUnit)) {
+    return false;
+  }
+
+  const rangeMethod = toOptionalText(range?.method);
+  const resolvedMethod = toOptionalText(method);
+  if (rangeMethod && resolvedMethod && normalizeToken(rangeMethod) !== normalizeToken(resolvedMethod)) {
+    return false;
+  }
+  if (rangeMethod && !resolvedMethod) {
     return false;
   }
 
@@ -149,7 +189,7 @@ const matchesReferenceRange = (range = {}, patient = {}, resolvedUnit) => {
     return false;
   }
 
-  const patientAgeDays = resolvePatientAgeInDays(patient);
+  const patientAgeDays = resolvePatientAgeInDays(patient, at);
   const minAgeDays = ageUnitToDays(range?.age_min_value, range?.age_min_unit);
   const maxAgeDays = ageUnitToDays(range?.age_max_value, range?.age_max_unit);
   if (patientAgeDays != null) {
@@ -162,8 +202,9 @@ const matchesReferenceRange = (range = {}, patient = {}, resolvedUnit) => {
   return true;
 };
 
-const rankReferenceRange = (range = {}, resolvedUnit) => {
+const rankReferenceRange = (range = {}, resolvedUnit, resolvedMethod = null) => {
   const unitSpecified = Boolean(toOptionalText(range?.unit));
+  const methodSpecified = Boolean(toOptionalText(range?.method));
   const genderSpecified = Boolean(toOptionalText(range?.gender));
   const minSpecified = range?.age_min_value != null;
   const maxSpecified = range?.age_max_value != null;
@@ -171,22 +212,37 @@ const rankReferenceRange = (range = {}, resolvedUnit) => {
     unitSpecified
     && resolvedUnit
     && normalizeToken(range?.unit) === normalizeToken(resolvedUnit);
+  const exactMethodMatch =
+    methodSpecified
+    && resolvedMethod
+    && normalizeToken(range?.method) === normalizeToken(resolvedMethod);
 
   return (
     (exactUnitMatch ? 8 : unitSpecified ? 6 : 3)
+    + (exactMethodMatch ? 4 : methodSpecified ? 2 : 0)
     + (genderSpecified ? 2 : 1)
     + (minSpecified ? 1 : 0)
     + (maxSpecified ? 1 : 0)
+    + (Number.isFinite(Number(range?.version)) ? Math.min(Number(range.version), 5) : 0)
   );
 };
 
-const selectReferenceRange = (test = {}, patient = {}, resolvedUnit) => {
+const selectReferenceRange = (
+  test = {},
+  patient = {},
+  resolvedUnit,
+  { method = null, at = new Date() } = {}
+) => {
   const ranges = Array.isArray(test?.reference_ranges) ? test.reference_ranges : [];
-  const candidates = ranges.filter((range) => matchesReferenceRange(range, patient, resolvedUnit));
+  const candidates = ranges.filter((range) =>
+    matchesReferenceRange(range, patient, resolvedUnit, { method, at })
+  );
   if (!candidates.length) return null;
 
   return candidates.sort((left, right) => {
-    const scoreDelta = rankReferenceRange(right, resolvedUnit) - rankReferenceRange(left, resolvedUnit);
+    const scoreDelta =
+      rankReferenceRange(right, resolvedUnit, method)
+      - rankReferenceRange(left, resolvedUnit, method);
     if (scoreDelta !== 0) return scoreDelta;
     return Number(left?.sort_order || 0) - Number(right?.sort_order || 0);
   })[0];
@@ -221,15 +277,25 @@ const evaluateNumericRange = (range = {}, numericValue) => {
   return null;
 };
 
+const emptyAppliedRangeFields = () => ({
+  reference_range_label: null,
+  reference_range_summary: null,
+  applied_reference_range_id: null,
+  applied_reference_range_json: null,
+});
+
 const evaluateLabResult = ({
   test = {},
   patient = {},
   resultValue = null,
   resultText = null,
   resultUnit = null,
+  method = null,
+  at = new Date(),
   fallbackStatus = 'PENDING',
 } = {}) => {
   const resolvedUnit = toOptionalText(resultUnit) || resolveDefaultUnit(test);
+  const resolvedMethod = toOptionalText(method) || toOptionalText(test?.method);
   const qualitativeOption = findQualitativeOption(test, resultValue, resultText);
   if (qualitativeOption) {
     return {
@@ -237,24 +303,29 @@ const evaluateLabResult = ({
       result_flag: toOptionalText(qualitativeOption.result_flag) || normalizeToken(qualitativeOption.value),
       is_positive: Boolean(qualitativeOption.is_positive),
       result_unit: resolvedUnit,
-      reference_range_label: null,
-      reference_range_summary: null,
+      ...emptyAppliedRangeFields(),
       source: 'QUALITATIVE_OPTION',
     };
   }
 
   const numericValue = toNumberOrNull(resultValue);
   if (numericValue != null) {
-    const matchedRange = selectReferenceRange(test, patient, resolvedUnit);
+    const matchedRange = selectReferenceRange(test, patient, resolvedUnit, {
+      method: resolvedMethod,
+      at,
+    });
     const numericEvaluation = matchedRange
       ? evaluateNumericRange(matchedRange, numericValue)
       : null;
     if (numericEvaluation) {
+      const applied = buildAppliedReferenceRangeSnapshot(matchedRange);
       return {
         ...numericEvaluation,
         result_unit: resolvedUnit,
         reference_range_label: toOptionalText(matchedRange?.label),
         reference_range_summary: buildLabReferenceRangeRowSummary(matchedRange) || null,
+        applied_reference_range_id: toOptionalText(matchedRange?.id),
+        applied_reference_range_json: applied,
         source: 'NUMERIC_RANGE',
       };
     }
@@ -265,8 +336,7 @@ const evaluateLabResult = ({
     return {
       ...heuristicFlag,
       result_unit: resolvedUnit,
-      reference_range_label: null,
-      reference_range_summary: null,
+      ...emptyAppliedRangeFields(),
     };
   }
 
@@ -275,8 +345,7 @@ const evaluateLabResult = ({
     result_flag: null,
     is_positive: false,
     result_unit: resolvedUnit,
-    reference_range_label: null,
-    reference_range_summary: null,
+    ...emptyAppliedRangeFields(),
     source: 'FALLBACK',
   };
 };
@@ -285,6 +354,8 @@ module.exports = {
   evaluateLabResult,
   findHeuristicTextFlag,
   findQualitativeOption,
+  isRangeEffectiveAt,
+  matchesReferenceRange,
   resolveDefaultUnit,
   resolvePatientAgeInDays,
   selectReferenceRange,

@@ -4,6 +4,8 @@ import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
@@ -2580,8 +2582,12 @@ class _LabReportPreviewDialogState
     final List<LabOrderItem> printableItems = _printableReleasedReportItems(
       _allReportItems,
     );
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool printAuthorized =
+        policy.grants(AppPermissions.labRead) ||
+        policy.grants(AppPermissions.labWrite);
     final bool printEligible = appClinicalResultsPrintEligible(
-      authorized: true,
+      authorized: printAuthorized,
       hasPrintableReleasedContent: printableItems.isNotEmpty,
     );
     return AppDialog(
@@ -4023,51 +4029,20 @@ bool _isAbnormalEntry(LabOrderItem item, _ResultDraft draft) {
   if (!draft.hasChangedEntry && _isAbnormalStatus(item.effectiveResultStatus)) {
     return true;
   }
-  if (!item.isNumeric || item.referenceRanges.isEmpty) {
-    return false;
+  if (item.isQualitative) {
+    final String? optionFlag = _selectedResultOptionFlag(item, draft);
+    return _isAbnormalStatus(optionFlag);
   }
-  final num? parsed = num.tryParse(draft.valueController.text.trim());
-  if (parsed == null) {
-    return false;
-  }
-  final LabReferenceRange range = item.referenceRanges.first;
-  final num? min = num.tryParse(range.normalMinValue ?? '');
-  final num? max = num.tryParse(range.normalMaxValue ?? '');
-  if (min != null && parsed < min) {
-    return true;
-  }
-  if (max != null && parsed > max) {
-    return true;
-  }
+  // Numeric interpretation is backend-owned; do not re-match catalog ranges in UI.
   return false;
 }
 
 String? _computedNumericFlagToken(LabOrderItem item, String valueText) {
-  if (!item.isNumeric || item.referenceRanges.isEmpty) {
+  // Persisted/backend flags only — never invent flags from live catalog ranges.
+  if (valueText.trim().isEmpty) {
     return null;
   }
-  final num? parsed = num.tryParse(valueText.trim());
-  if (parsed == null) {
-    return null;
-  }
-  final LabReferenceRange range = item.referenceRanges.first;
-  final num? criticalMin = num.tryParse(range.criticalMinValue ?? '');
-  final num? criticalMax = num.tryParse(range.criticalMaxValue ?? '');
-  final num? normalMin = num.tryParse(range.normalMinValue ?? '');
-  final num? normalMax = num.tryParse(range.normalMaxValue ?? '');
-  if (criticalMin != null && parsed < criticalMin) {
-    return 'CRITICAL';
-  }
-  if (criticalMax != null && parsed > criticalMax) {
-    return 'CRITICAL';
-  }
-  if (normalMin != null && parsed < normalMin) {
-    return 'LOW';
-  }
-  if (normalMax != null && parsed > normalMax) {
-    return 'HIGH';
-  }
-  return 'NORMAL';
+  return null;
 }
 
 String? _storedQualitativeOptionFlag(LabOrderItem item) {
@@ -4276,27 +4251,9 @@ String _submittedResultStatus(LabOrderItem item, _ResultDraft draft) {
     }
   }
 
-  if (item.isNumeric && item.referenceRanges.isNotEmpty) {
-    final num? parsed = num.tryParse(draft.valueController.text.trim());
-    if (parsed != null) {
-      final LabReferenceRange range = item.referenceRanges.first;
-      final num? criticalMin = num.tryParse(range.criticalMinValue ?? '');
-      final num? criticalMax = num.tryParse(range.criticalMaxValue ?? '');
-      final num? normalMin = num.tryParse(range.normalMinValue ?? '');
-      final num? normalMax = num.tryParse(range.normalMaxValue ?? '');
-      if (criticalMin != null && parsed < criticalMin) {
-        return 'CRITICAL';
-      }
-      if (criticalMax != null && parsed > criticalMax) {
-        return 'CRITICAL';
-      }
-      if (normalMin != null && parsed < normalMin) {
-        return 'ABNORMAL';
-      }
-      if (normalMax != null && parsed > normalMax) {
-        return 'ABNORMAL';
-      }
-    }
+  // Numeric status is determined by the backend interpretation engine on release.
+  if (item.isNumeric) {
+    return 'PENDING';
   }
 
   if (_isAbnormalEntry(item, draft)) {

@@ -54,6 +54,7 @@ const labReferenceRangeSchema = z
     id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
     label: optionalTrimmedString(120),
     unit: optionalTrimmedString(40),
+    method: optionalTrimmedString(120),
     gender: labReferenceGenderSchema.optional().nullable(),
     age_min_value: optionalIntegerSchema,
     age_min_unit: labReferenceAgeUnitSchema.optional().nullable(),
@@ -64,10 +65,13 @@ const labReferenceRangeSchema = z
     critical_min_value: optionalDecimalSchema,
     critical_max_value: optionalDecimalSchema,
     reference_text: optionalTrimmedString(255),
-    notes: optionalTrimmedString(255)
+    notes: optionalTrimmedString(255),
+    effective_from: z.string().datetime().optional().nullable(),
+    effective_to: z.string().datetime().optional().nullable(),
+    version: z.coerce.number().int().min(1).max(9999).optional().nullable()
   })
   .superRefine((value, ctx) => {
-    const hasAnyValue = Object.entries(value).some(([key, entry]) => key !== 'id' && entry !== null && entry !== undefined && String(entry).trim() !== '');
+    const hasAnyValue = Object.entries(value).some(([key, entry]) => key !== 'id' && key !== 'version' && entry !== null && entry !== undefined && String(entry).trim() !== '');
     if (!hasAnyValue) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -119,6 +123,18 @@ const labReferenceRangeSchema = z
         message: 'Critical minimum value cannot exceed the critical maximum value.',
         path: ['critical_max_value']
       });
+    }
+
+    if (value.effective_from && value.effective_to) {
+      const from = Date.parse(value.effective_from);
+      const to = Date.parse(value.effective_to);
+      if (Number.isFinite(from) && Number.isFinite(to) && from > to) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'effective_from cannot be after effective_to.',
+          path: ['effective_to']
+        });
+      }
     }
   });
 

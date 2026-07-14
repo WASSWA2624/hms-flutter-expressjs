@@ -202,6 +202,7 @@ final class LabReferenceRangeDto {
       id: _string(json['id']) ?? _string(json['label']) ?? '',
       label: _string(json['label']),
       unit: _string(json['unit']),
+      method: _string(json['method']),
       gender: _string(json['gender']),
       ageMinValue: _num(json['age_min_value']),
       ageMinUnit: _string(json['age_min_unit']),
@@ -213,6 +214,12 @@ final class LabReferenceRangeDto {
       criticalMaxValue: _string(json['critical_max_value']),
       referenceText: _string(json['reference_text']),
       notes: _string(json['notes']),
+      effectiveFrom: _date(json['effective_from']),
+      effectiveTo: _date(json['effective_to']),
+      version: () {
+        final int parsed = _int(json['version']);
+        return parsed > 0 ? parsed : 1;
+      }(),
       sortOrder: _int(json['sort_order']),
       summary: _string(json['summary']),
     );
@@ -363,6 +370,10 @@ final class LabOrderItemDto {
       isPositive: _bool(json['is_positive']),
       referenceRangeLabel: _string(json['reference_range_label']),
       referenceRangeSummary: _string(json['reference_range_summary']),
+      appliedReferenceRangeId: _string(json['applied_reference_range_id']),
+      appliedReferenceRange: _nullableMap(
+        json['applied_reference_range'] ?? json['applied_reference_range_json'],
+      ),
       interpretationOverride: _bool(json['interpretation_override']),
       referenceRangeOverride: _string(json['reference_range_override']),
       resultFlagOverride: _string(json['result_flag_override']),
@@ -391,6 +402,9 @@ final class LabSampleDto {
       patientDisplayName: _string(json['patient_display_name']),
       collectedAt: _date(json['collected_at']),
       receivedAt: _date(json['received_at']),
+      rejectionReason: _string(json['rejection_reason']),
+      rejectionNotes: _string(json['rejection_notes']),
+      rejectedAt: _date(json['rejected_at']),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
     );
@@ -413,6 +427,10 @@ final class LabResultDto {
       isPositive: _bool(json['is_positive']),
       referenceRangeLabel: _string(json['reference_range_label']),
       referenceRangeSummary: _string(json['reference_range_summary']),
+      appliedReferenceRangeId: _string(json['applied_reference_range_id']),
+      appliedReferenceRange: _nullableMap(
+        json['applied_reference_range'] ?? json['applied_reference_range_json'],
+      ),
       resultText: _string(json['result_text']),
       reportedAt: _date(json['reported_at']),
       labOrderItemId: _string(json['lab_order_item_id']),
@@ -506,6 +524,8 @@ final class LabWorkflowNextActionsDto {
   LabWorkflowNextActions toEntity() {
     return LabWorkflowNextActions(
       canCollect: _bool(json['can_collect']),
+      billingGateBlocked: _bool(json['billing_gate_blocked']),
+      paymentStatus: _string(json['payment_status']),
       canReceiveSample: _bool(json['can_receive_sample']),
       canReleaseResult: _bool(json['can_release_result']),
       canVerifyResult: _bool(
@@ -674,4 +694,11 @@ bool _bool(Object? value, {bool fallback = false}) {
     }
   }
   return fallback;
+}
+
+Map<String, Object?>? _nullableMap(Object? value) {
+  if (value is LabJsonMap) {
+    return Map<String, Object?>.from(value);
+  }
+  return null;
 }

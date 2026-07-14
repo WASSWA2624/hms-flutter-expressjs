@@ -11167,6 +11167,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labWorkflowStepOrdered => 'Ordered';
 
   @override
+  String get labWorkflowStepSample => 'Sample';
+
+  @override
   String get labWorkflowStepInProcess => 'In process';
 
   @override
@@ -11179,6 +11182,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labWorkflowNextCollectSample => 'Collect sample';
 
   @override
+  String get labWorkflowNextAwaitPayment => 'Await payment before collection';
+
+  @override
+  String get labBillingGateBlockedAction => 'Payment required';
+
+  @override
   String get labWorkflowNextReceiveSample => 'Receive sample';
 
   @override
@@ -11189,6 +11198,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labWorkflowNextReviewItems => 'Review pending items';
+
+  @override
+  String get labEncounterRequiredValidation =>
+      'Select the clinical encounter for this lab order.';
 
   @override
   String get labCollectConfirmBody =>

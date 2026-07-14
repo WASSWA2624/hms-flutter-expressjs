@@ -163,11 +163,15 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
                 value: _selectedEncounterId,
                 labelText: l10n.labEncounterContextLabel,
                 hintText: l10n.labEncounterContextHint,
+                isRequired: true,
                 enabled:
                     _selectedPatientId != null &&
                     _selectedPatientId!.trim().isNotEmpty,
                 isLoading: _isLoadingPatientContext,
                 options: _toSelectOptions(_encounterOptions),
+                validator: AppValidators.requiredValue(
+                  l10n.labEncounterRequiredValidation,
+                ),
                 onChanged: (String? value) {
                   setState(() => _selectedEncounterId = value);
                 },

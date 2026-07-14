@@ -2,6 +2,7 @@ const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const {
   mapClinicalOrderBillingFields,
   mapCatalogUnitPriceFields,
+  extractStoredClinicalBilling,
 } = require('@lib/billing/clinical-request-billing');
 const {
   buildLabReferenceRangeRowSummary,
@@ -9,6 +10,28 @@ const {
 } = require('@services/lab-workspace/lab.configuration');
 
 const toText = (value) => (value == null ? '' : String(value).trim());
+
+/** Payment statuses that allow lab sample collection to proceed. */
+const LAB_PAYMENT_SATISFIED_STATUSES = new Set([
+  'PAID',
+  'NOT_REQUIRED',
+  'NO_CHARGE',
+  'NOT_BILLED',
+]);
+
+const resolveLabOrderPaymentStatus = (order = {}) => {
+  const billingFields = mapClinicalOrderBillingFields(order);
+  const direct = toText(billingFields.payment_status).toUpperCase();
+  if (direct) return direct;
+  const billing = extractStoredClinicalBilling(order);
+  return toText(billing?.payment_status).toUpperCase() || null;
+};
+
+const isLabOrderPaymentSatisfied = (order = {}) => {
+  const status = resolveLabOrderPaymentStatus(order);
+  if (!status) return true;
+  return LAB_PAYMENT_SATISFIED_STATUSES.has(status);
+};
 
 const toPublicIdentifier = (...candidates) => {
   for (const candidate of candidates) {
@@ -131,6 +154,7 @@ const mapLabReferenceRangeRecord = (record) => {
     id: toPublicIdentifier(record.human_friendly_id, record.id) || toText(record.id) || null,
     label: toText(record.label) || null,
     unit: toText(record.unit) || null,
+    method: toText(record.method) || null,
     gender: toText(record.gender) || null,
     age_min_value:
       Number.isFinite(Number(record.age_min_value)) ? Number(record.age_min_value) : null,
@@ -144,6 +168,9 @@ const mapLabReferenceRangeRecord = (record) => {
     critical_max_value: toNumericText(record.critical_max_value),
     reference_text: toText(record.reference_text) || null,
     notes: toText(record.notes) || null,
+    effective_from: toIsoDateTime(record.effective_from),
+    effective_to: toIsoDateTime(record.effective_to),
+    version: Number.isFinite(Number(record.version)) ? Number(record.version) : 1,
     sort_order:
       Number.isFinite(Number(record.sort_order)) ? Number(record.sort_order) : 0,
     summary: buildLabReferenceRangeRowSummary(record) || null,
@@ -312,6 +339,13 @@ const mapLabOrderItemRecord = (record) => {
     is_positive: Boolean(latestResult?.is_positive),
     reference_range_label: toText(latestResult?.reference_range_label) || null,
     reference_range_summary: toText(latestResult?.reference_range_summary) || null,
+    applied_reference_range_id: toText(latestResult?.applied_reference_range_id) || null,
+    applied_reference_range:
+      latestResult?.applied_reference_range_json
+      && typeof latestResult.applied_reference_range_json === 'object'
+      && !Array.isArray(latestResult.applied_reference_range_json)
+        ? latestResult.applied_reference_range_json
+        : null,
     interpretation_override: Boolean(latestResult?.interpretation_override),
     reference_range_override: toText(latestResult?.reference_range_override) || null,
     result_flag_override: toText(latestResult?.result_flag_override) || null,
@@ -338,6 +372,9 @@ const mapLabSampleRecord = (record) => {
     patient_display_name: toDisplayName(patient?.first_name, patient?.last_name),
     collected_at: toIsoDateTime(record.collected_at),
     received_at: toIsoDateTime(record.received_at),
+    rejection_reason: toText(record.rejection_reason) || null,
+    rejection_notes: toText(record.rejection_notes) || null,
+    rejected_at: toIsoDateTime(record.rejected_at),
     created_at: toIsoDateTime(record.created_at),
     updated_at: toIsoDateTime(record.updated_at),
   };
@@ -350,6 +387,12 @@ const mapLabResultRecord = (record) => {
   const patient = order?.patient;
   const test = item?.lab_test;
   const publicId = toPublicIdentifier(record.human_friendly_id, record.id);
+  const appliedRange =
+    record.applied_reference_range_json
+    && typeof record.applied_reference_range_json === 'object'
+    && !Array.isArray(record.applied_reference_range_json)
+      ? record.applied_reference_range_json
+      : null;
   return {
     id: publicId,
     display_id: publicId,
@@ -360,6 +403,8 @@ const mapLabResultRecord = (record) => {
     is_positive: Boolean(record.is_positive),
     reference_range_label: toText(record.reference_range_label) || null,
     reference_range_summary: toText(record.reference_range_summary) || null,
+    applied_reference_range_id: toText(record.applied_reference_range_id) || null,
+    applied_reference_range: appliedRange,
     interpretation_override: Boolean(record.interpretation_override),
     reference_range_override: toText(record.reference_range_override) || null,
     result_flag_override: toText(record.result_flag_override) || null,
@@ -561,7 +606,11 @@ const mapLabOrderWorkflowRecord = (record) => {
     results,
     timeline,
     next_actions: {
-      can_collect: ['ORDERED', 'COLLECTED'].includes(toText(order.status).toUpperCase()),
+      can_collect:
+        ['ORDERED', 'COLLECTED'].includes(toText(order.status).toUpperCase())
+        && isLabOrderPaymentSatisfied(record),
+      billing_gate_blocked: !isLabOrderPaymentSatisfied(record),
+      payment_status: resolveLabOrderPaymentStatus(record),
       can_receive_sample: order.samples.some((sample) => ['PENDING', 'COLLECTED'].includes(toText(sample.status).toUpperCase())),
       can_release_result: order.items.some((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())),
       can_verify_result: order.items.some((item) => ['ORDERED', 'COLLECTED', 'IN_PROCESS'].includes(toText(item.status).toUpperCase())),
@@ -575,6 +624,8 @@ const mapLabOrderWorkflowRecord = (record) => {
 module.exports = {
   toPublicIdentifier,
   toIsoDateTime,
+  isLabOrderPaymentSatisfied,
+  resolveLabOrderPaymentStatus,
   mapLabReferenceRangeRecord,
   mapLabUnitOptionRecord,
   mapLabResultOptionRecord,

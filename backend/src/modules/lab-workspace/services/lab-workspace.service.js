@@ -29,6 +29,7 @@ const {
   mapLabOrderRecord,
   mapLabOrderWorkflowRecord,
   mapLabResultRecord,
+  isLabOrderPaymentSatisfied,
 } = require('@services/lab-workspace/lab.serializer');
 
 const ORDER_COMPLETION_STATES = new Set(['COMPLETED', 'CANCELLED']);
@@ -851,6 +852,9 @@ const persistLabOrderItemResult = async (tx, item, payload = {}) => {
   resultData.is_positive = Boolean(interpretation.is_positive);
   resultData.reference_range_label = interpretation.reference_range_label || null;
   resultData.reference_range_summary = interpretation.reference_range_summary || null;
+  resultData.applied_reference_range_id = interpretation.applied_reference_range_id || null;
+  resultData.applied_reference_range_json =
+    interpretation.applied_reference_range_json || null;
 
   const releasedResult = targetResult
     ? await labWorkspaceRepository.txUpdateResult(tx, targetResult.id, resultData)
@@ -1329,6 +1333,15 @@ const collectLabOrder = async (identifier, payload = {}, userId, ipAddress) => {
         throw new HttpError('errors.lab_order.not_found', 404);
       }
 
+      if (!isLabOrderPaymentSatisfied(order)) {
+        throw new HttpError('errors.lab_order.payment_required', 402, [
+          {
+            field: 'payment_status',
+            payment_status: order?.billing_snapshot?.payment_status || null,
+          },
+        ]);
+      }
+
       assertTransition(!ORDER_COMPLETION_STATES.has(order.status), {
         from: order.status,
         to: 'COLLECTED',
@@ -1365,6 +1378,9 @@ const collectLabOrder = async (identifier, payload = {}, userId, ipAddress) => {
         targetSample = await labWorkspaceRepository.txUpdateSample(tx, targetSample.id, {
           status: 'COLLECTED',
           collected_at: collectedAt,
+          rejection_reason: null,
+          rejection_notes: null,
+          rejected_at: null,
         });
       } else {
         targetSample = await labWorkspaceRepository.txCreateSample(tx, {
@@ -1546,6 +1562,9 @@ const rejectLabSample = async (identifier, payload = {}, userId, ipAddress) => {
 
       await labWorkspaceRepository.txUpdateSample(tx, sample.id, {
         status: 'REJECTED',
+        rejection_reason: toText(payload.reason) || null,
+        rejection_notes: toText(payload.notes) || null,
+        rejected_at: toDateOrNull(payload.rejected_at, new Date()),
       });
 
       const order = await labWorkspaceRepository.txFindOrderById(

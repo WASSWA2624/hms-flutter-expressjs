@@ -381,6 +381,7 @@ final class LabReferenceRange {
     required this.id,
     this.label,
     this.unit,
+    this.method,
     this.gender,
     this.ageMinValue,
     this.ageMinUnit,
@@ -392,6 +393,9 @@ final class LabReferenceRange {
     this.criticalMaxValue,
     this.referenceText,
     this.notes,
+    this.effectiveFrom,
+    this.effectiveTo,
+    this.version = 1,
     this.sortOrder = 0,
     this.summary,
   });
@@ -399,6 +403,7 @@ final class LabReferenceRange {
   final String id;
   final String? label;
   final String? unit;
+  final String? method;
   final String? gender;
   final num? ageMinValue;
   final String? ageMinUnit;
@@ -410,11 +415,15 @@ final class LabReferenceRange {
   final String? criticalMaxValue;
   final String? referenceText;
   final String? notes;
+  final DateTime? effectiveFrom;
+  final DateTime? effectiveTo;
+  final int version;
   final int sortOrder;
   final String? summary;
 
   String get displayLabel =>
-      _joinDisplay(<String?>[label, summary, referenceText, unit]) ?? id;
+      _joinDisplay(<String?>[label, summary, referenceText, method, unit]) ??
+      id;
 }
 
 @immutable
@@ -620,8 +629,17 @@ final class LabOrderSummary {
   }
 
   bool get isPaymentSatisfied {
-    final String normalized = (effectivePaymentStatus ?? '').toUpperCase();
-    return <String>{'PAID', 'NOT_REQUIRED', 'NO_CHARGE'}.contains(normalized);
+    final String? status = effectivePaymentStatus;
+    if (status == null) {
+      return true;
+    }
+    final String normalized = status.toUpperCase();
+    return <String>{
+      'PAID',
+      'NOT_REQUIRED',
+      'NO_CHARGE',
+      'NOT_BILLED',
+    }.contains(normalized);
   }
 
   static String? _trimmedOrNull(String? value) {
@@ -714,6 +732,8 @@ final class LabOrderItem {
     this.isPositive = false,
     this.referenceRangeLabel,
     this.referenceRangeSummary,
+    this.appliedReferenceRangeId,
+    this.appliedReferenceRange,
     this.interpretationOverride = false,
     this.referenceRangeOverride,
     this.resultFlagOverride,
@@ -754,6 +774,8 @@ final class LabOrderItem {
   final bool isPositive;
   final String? referenceRangeLabel;
   final String? referenceRangeSummary;
+  final String? appliedReferenceRangeId;
+  final Map<String, Object?>? appliedReferenceRange;
   final bool interpretationOverride;
   final String? referenceRangeOverride;
   final String? resultFlagOverride;
@@ -807,10 +829,24 @@ final class LabOrderItem {
         _firstNonEmpty(<String?>[referenceRangeOverride]) != null) {
       return referenceRangeOverride;
     }
+    final String? appliedSummary = _appliedRangeDisplayLabel;
     return _firstNonEmpty(<String?>[
+      appliedSummary,
       referenceRangeSummary,
+      referenceRangeLabel,
       referenceRange,
-      if (referenceRanges.isNotEmpty) referenceRanges.first.displayLabel,
+    ]);
+  }
+
+  String? get _appliedRangeDisplayLabel {
+    final Map<String, Object?>? applied = appliedReferenceRange;
+    if (applied == null || applied.isEmpty) {
+      return null;
+    }
+    return _firstNonEmpty(<String?>[
+      applied['summary']?.toString(),
+      applied['label']?.toString(),
+      applied['reference_text']?.toString(),
     ]);
   }
 
@@ -867,6 +903,9 @@ final class LabSample {
     this.patientDisplayName,
     this.collectedAt,
     this.receivedAt,
+    this.rejectionReason,
+    this.rejectionNotes,
+    this.rejectedAt,
     this.createdAt,
     this.updatedAt,
   });
@@ -879,6 +918,9 @@ final class LabSample {
   final String? patientDisplayName;
   final DateTime? collectedAt;
   final DateTime? receivedAt;
+  final String? rejectionReason;
+  final String? rejectionNotes;
+  final DateTime? rejectedAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -911,6 +953,8 @@ final class LabResult {
     this.isPositive = false,
     this.referenceRangeLabel,
     this.referenceRangeSummary,
+    this.appliedReferenceRangeId,
+    this.appliedReferenceRange,
     this.resultText,
     this.reportedAt,
     this.labOrderItemId,
@@ -933,6 +977,8 @@ final class LabResult {
   final bool isPositive;
   final String? referenceRangeLabel;
   final String? referenceRangeSummary;
+  final String? appliedReferenceRangeId;
+  final Map<String, Object?>? appliedReferenceRange;
   final String? resultText;
   final DateTime? reportedAt;
   final String? labOrderItemId;
@@ -1011,6 +1057,8 @@ final class LabWorkflowTimelineItem {
 final class LabWorkflowNextActions {
   const LabWorkflowNextActions({
     this.canCollect = false,
+    this.billingGateBlocked = false,
+    this.paymentStatus,
     this.canReceiveSample = false,
     this.canReleaseResult = false,
     this.canVerifyResult = false,
@@ -1020,6 +1068,8 @@ final class LabWorkflowNextActions {
   });
 
   final bool canCollect;
+  final bool billingGateBlocked;
+  final String? paymentStatus;
   final bool canReceiveSample;
   final bool canReleaseResult;
   final bool canVerifyResult;

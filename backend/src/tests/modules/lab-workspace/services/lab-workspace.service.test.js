@@ -556,6 +556,49 @@ describe('lab-workspace.service', () => {
     );
   });
 
+  it('collectLabOrder blocks when pay-now billing is unpaid', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
+
+    const unpaidOrder = buildBaseOrder({
+      status: 'ORDERED',
+      billing_snapshot: {
+        payment_status: 'PENDING',
+        total_amount: '40.00',
+        currency: 'USD',
+      },
+      items: [
+        {
+          id: 'item-internal-1',
+          human_friendly_id: 'LIT0000001',
+          status: 'ORDERED',
+          created_at: now,
+          updated_at: now,
+          lab_test: {
+            id: 'lab-test-internal-1',
+            human_friendly_id: 'LBT0000001',
+            name: 'CBC',
+            code: 'CBC',
+            unit: null,
+          },
+          results: [],
+        },
+      ],
+      samples: [],
+    });
+
+    labWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    labWorkspaceRepository.txFindOrderById.mockResolvedValue(unpaidOrder);
+
+    await expect(
+      labWorkspaceService.collectLabOrder('LAB0000001', {}, 'actor-1', '127.0.0.1')
+    ).rejects.toMatchObject({
+      message: 'errors.lab_order.payment_required',
+      statusCode: 402,
+    });
+  });
+
   it('releaseLabOrderItem emits workflow and compatibility result realtime events', async () => {
     resolveModelIdOrThrow.mockResolvedValue('order-item-internal-1');
 
@@ -664,6 +707,19 @@ describe('lab-workspace.service', () => {
     );
 
     expect(result?.released_result?.id).toBe('LRS0000001');
+    expect(labWorkspaceRepository.txUpdateResult).toHaveBeenCalledWith(
+      {},
+      'result-internal-1',
+      expect.objectContaining({
+        status: 'CRITICAL',
+        result_flag: 'CRITICAL_HIGH',
+        applied_reference_range_json: expect.objectContaining({
+          label: 'Adult',
+          unit: 'mg/dL',
+          source: 'APPLIED_RULE',
+        }),
+      })
+    );
 
     await flushAsync();
 
