@@ -92,6 +92,82 @@
   "@clinicalResultsStatusUnavailableLabel": {
     "description": "Status label when clinical results are unavailable."
   },
+  "clinicalResultsModuleLaboratoryLabel": "Laboratory",
+  "@clinicalResultsModuleLaboratoryLabel": {
+    "description": "Module label for laboratory results in clinical results preview."
+  },
+  "clinicalResultsModuleRadiologyLabel": "Radiology",
+  "@clinicalResultsModuleRadiologyLabel": {
+    "description": "Module label for radiology reports in clinical results preview."
+  },
+  "clinicalResultsModuleProcedureLabel": "Procedure",
+  "@clinicalResultsModuleProcedureLabel": {
+    "description": "Module label for procedure results in clinical results preview."
+  },
+  "clinicalResultsModuleAssessmentLabel": "Assessment",
+  "@clinicalResultsModuleAssessmentLabel": {
+    "description": "Module label for clinical assessments in clinical results preview."
+  },
+  "clinicalResultsModuleOtherLabel": "Clinical",
+  "@clinicalResultsModuleOtherLabel": {
+    "description": "Module label for other clinical results in clinical results preview."
+  },
+  "clinicalResultsFlagNormalLabel": "Normal",
+  "@clinicalResultsFlagNormalLabel": {
+    "description": "Flag label for a normal clinical result value."
+  },
+  "clinicalResultsFlagAbnormalLabel": "Abnormal",
+  "@clinicalResultsFlagAbnormalLabel": {
+    "description": "Flag label for an abnormal clinical result value."
+  },
+  "clinicalResultsFlagCriticalLabel": "Critical",
+  "@clinicalResultsFlagCriticalLabel": {
+    "description": "Flag label for a critical clinical result value."
+  },
+  "clinicalResultsFlagUnknownLabel": "Unflagged",
+  "@clinicalResultsFlagUnknownLabel": {
+    "description": "Flag label when a clinical result has no abnormality flag."
+  },
+  "clinicalResultsReferenceRangeLabel": "Reference range: {range}",
+  "@clinicalResultsReferenceRangeLabel": {
+    "description": "Label showing the applicable laboratory reference range.",
+    "placeholders": {
+      "range": {
+        "type": "String"
+      }
+    }
+  },
+  "clinicalResultsPerformedByLabel": "Performed by {name}",
+  "@clinicalResultsPerformedByLabel": {
+    "description": "Attribution label for who performed a procedure.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "clinicalResultsAssessorLabel": "Assessed by {name}",
+  "@clinicalResultsAssessorLabel": {
+    "description": "Attribution label for who completed a clinical assessment.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "clinicalResultsEncounterScopeLabel": "Encounter {encounterId}",
+  "@clinicalResultsEncounterScopeLabel": {
+    "description": "Encounter scope label shown on clinical results preview.",
+    "placeholders": {
+      "encounterId": {
+        "type": "String"
+      }
+    }
+  },
+  "clinicalResultsChronologyTitle": "Results timeline",
+  "@clinicalResultsChronologyTitle": {
+    "description": "Title for chronological clinical results preview on encounter details."
+  },
   "workspaceToolbarOverflowLabel": "More actions",
   "@workspaceToolbarOverflowLabel": {
     "description": "Accessibility label for the workspace toolbar overflow menu."

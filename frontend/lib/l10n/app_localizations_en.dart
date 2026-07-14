@@ -83,6 +83,56 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalResultsStatusUnavailableLabel => 'Unavailable';
 
   @override
+  String get clinicalResultsModuleLaboratoryLabel => 'Laboratory';
+
+  @override
+  String get clinicalResultsModuleRadiologyLabel => 'Radiology';
+
+  @override
+  String get clinicalResultsModuleProcedureLabel => 'Procedure';
+
+  @override
+  String get clinicalResultsModuleAssessmentLabel => 'Assessment';
+
+  @override
+  String get clinicalResultsModuleOtherLabel => 'Clinical';
+
+  @override
+  String get clinicalResultsFlagNormalLabel => 'Normal';
+
+  @override
+  String get clinicalResultsFlagAbnormalLabel => 'Abnormal';
+
+  @override
+  String get clinicalResultsFlagCriticalLabel => 'Critical';
+
+  @override
+  String get clinicalResultsFlagUnknownLabel => 'Unflagged';
+
+  @override
+  String clinicalResultsReferenceRangeLabel(String range) {
+    return 'Reference range: $range';
+  }
+
+  @override
+  String clinicalResultsPerformedByLabel(String name) {
+    return 'Performed by $name';
+  }
+
+  @override
+  String clinicalResultsAssessorLabel(String name) {
+    return 'Assessed by $name';
+  }
+
+  @override
+  String clinicalResultsEncounterScopeLabel(String encounterId) {
+    return 'Encounter $encounterId';
+  }
+
+  @override
+  String get clinicalResultsChronologyTitle => 'Results timeline';
+
+  @override
   String get workspaceToolbarOverflowLabel => 'More actions';
 
   @override

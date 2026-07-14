@@ -980,6 +980,16 @@ class _ClinicalDetailPanel extends ConsumerWidget {
       if (triageHandoff?.hasContent ?? false)
         _ClinicalTriageHandoffPanel(handoff: triageHandoff!),
       _ClinicalActionBar(bundle: bundle, referenceData: state.referenceData),
+      if (_clinicalResultsPreviewEntries(bundle).isNotEmpty)
+        AppClinicalResultsPreview(
+          title: l10n.clinicalResultsChronologyTitle,
+          status: AppClinicalResultStatus.verified,
+          encounterPublicId: bundle.entry.encounterPublicId,
+          child: AppClinicalResultsPreviewList(
+            entries: _clinicalResultsPreviewEntries(bundle),
+            dense: true,
+          ),
+        ),
       if (bundle.labOrders.isNotEmpty)
         ClinicalLabOrdersTablePanel(
           orders: bundle.labOrders,
@@ -1076,8 +1086,8 @@ class _ClinicalEncounterContextPanel extends StatelessWidget {
           : formatPatientAge(l10n, entry.patientDateOfBirth),
       genderLabel: genderLabel.isEmpty ? null : genderLabel,
       genderIcon: patientGenderIcon(entry.patientGender),
-      compactSupportingText: entry.patientDateOfBirth == null &&
-              genderLabel.isEmpty
+      compactSupportingText:
+          entry.patientDateOfBirth == null && genderLabel.isEmpty
           ? entry.patientAgeSex?.trim()
           : null,
       showAvatar: false,
@@ -2893,6 +2903,144 @@ String _joinDisplay(Iterable<String?> values) {
 
 bool _hasText(String? value) {
   return value != null && value.trim().isNotEmpty;
+}
+
+List<AppClinicalResultPreviewEntry> _clinicalResultsPreviewEntries(
+  ClinicalEncounterBundle bundle,
+) {
+  final List<AppClinicalResultPreviewEntry> entries =
+      <AppClinicalResultPreviewEntry>[];
+
+  for (final ClinicalRelatedRecord order in bundle.labOrders) {
+    for (final ClinicalLabOrderItem item in order.labOrderItems) {
+      final String? value = _firstNonEmpty(<String?>[
+        item.resultValue,
+        item.resultText,
+      ]);
+      if (value == null) {
+        continue;
+      }
+      entries.add(
+        AppClinicalResultPreviewEntry(
+          id: item.id,
+          module: AppClinicalResultModule.laboratory,
+          title: item.displayTitle,
+          status: _clinicalResultStatusFromRecordStatus(
+            item.resultStatus ?? item.status ?? order.status,
+          ),
+          occurredAt: item.updatedAt ?? item.createdAt ?? order.occurredAt,
+          subtitle: item.displaySubtitle,
+          laboratory: AppClinicalLaboratoryResultContent(
+            value: value,
+            unit: item.unit,
+            flag: _clinicalResultFlagFromStatus(item.resultStatus),
+            flagLabel: item.resultStatus,
+          ),
+        ),
+      );
+    }
+  }
+
+  for (final ClinicalRelatedRecord order in bundle.radiologyOrders) {
+    final String status = (order.status ?? '').toUpperCase();
+    if (status != 'COMPLETED' && status != 'FINAL' && status != 'AMENDED') {
+      continue;
+    }
+    entries.add(
+      AppClinicalResultPreviewEntry(
+        id: order.id,
+        module: AppClinicalResultModule.radiology,
+        title: order.title ?? order.id,
+        status: _clinicalResultStatusFromRecordStatus(order.status),
+        occurredAt: order.occurredAt,
+        subtitle: order.subtitle,
+        radiology: AppClinicalRadiologyReportContent(
+          reportText: order.subtitle,
+          modality: order.radiologyOrderItems.isEmpty
+              ? null
+              : order.radiologyOrderItems.first.modality,
+          bodyRegion: order.radiologyOrderItems.isEmpty
+              ? null
+              : order.radiologyOrderItems.first.bodyRegion,
+        ),
+      ),
+    );
+  }
+
+  for (final ClinicalRelatedRecord procedure in bundle.procedures) {
+    entries.add(
+      AppClinicalResultPreviewEntry(
+        id: procedure.id,
+        module: AppClinicalResultModule.procedure,
+        title: procedure.title ?? procedure.id,
+        status: _clinicalResultStatusFromRecordStatus(procedure.status),
+        occurredAt: procedure.occurredAt,
+        subtitle: procedure.subtitle,
+        procedure: AppClinicalProcedureResultContent(
+          findings: procedure.subtitle,
+          notes: procedure.status,
+        ),
+      ),
+    );
+  }
+
+  for (final ClinicalRelatedRecord note in bundle.clinicalNotes) {
+    entries.add(
+      AppClinicalResultPreviewEntry(
+        id: note.id,
+        module: AppClinicalResultModule.clinicalAssessment,
+        title: note.title ?? note.id,
+        status: _clinicalResultStatusFromRecordStatus(note.status),
+        occurredAt: note.occurredAt,
+        subtitle: note.subtitle,
+        assessment: AppClinicalAssessmentResultContent(
+          summary: note.subtitle ?? note.title,
+        ),
+      ),
+    );
+  }
+
+  return entries;
+}
+
+AppClinicalResultStatus _clinicalResultStatusFromRecordStatus(String? status) {
+  return switch ((status ?? '').trim().toUpperCase()) {
+    'AMENDED' || 'CORRECTED' => AppClinicalResultStatus.corrected,
+    'COMPLETED' ||
+    'FINAL' ||
+    'VERIFIED' ||
+    'RELEASED' => AppClinicalResultStatus.verified,
+    'DRAFT' ||
+    'PRELIMINARY' ||
+    'PENDING' ||
+    'IN_PROCESS' => AppClinicalResultStatus.preliminary,
+    'CANCELLED' ||
+    'UNAVAILABLE' ||
+    'REJECTED' => AppClinicalResultStatus.unavailable,
+    _ => AppClinicalResultStatus.preliminary,
+  };
+}
+
+AppClinicalResultFlag _clinicalResultFlagFromStatus(String? status) {
+  return switch ((status ?? '').trim().toUpperCase()) {
+    'CRITICAL' => AppClinicalResultFlag.critical,
+    'ABNORMAL' || 'HIGH' || 'LOW' => AppClinicalResultFlag.abnormal,
+    'NORMAL' ||
+    'NEGATIVE' ||
+    'NON_REACTIVE' ||
+    'POSITIVE' => AppClinicalResultFlag.normal,
+    _ => AppClinicalResultFlag.unknown,
+  };
+}
+
+String? _firstNonEmpty(Iterable<String?> values) {
+  for (final String? value in values) {
+    final String trimmed = value?.trim() ?? '';
+    if (trimmed.isNotEmpty) {
+      return trimmed;
+    }
+  }
+  return null;
 }
 
 String _consultationSummaryHtml(

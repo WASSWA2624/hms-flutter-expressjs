@@ -232,6 +232,90 @@ abstract class AppLocalizations {
   /// **'Unavailable'**
   String get clinicalResultsStatusUnavailableLabel;
 
+  /// Module label for laboratory results in clinical results preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Laboratory'**
+  String get clinicalResultsModuleLaboratoryLabel;
+
+  /// Module label for radiology reports in clinical results preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology'**
+  String get clinicalResultsModuleRadiologyLabel;
+
+  /// Module label for procedure results in clinical results preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Procedure'**
+  String get clinicalResultsModuleProcedureLabel;
+
+  /// Module label for clinical assessments in clinical results preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Assessment'**
+  String get clinicalResultsModuleAssessmentLabel;
+
+  /// Module label for other clinical results in clinical results preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Clinical'**
+  String get clinicalResultsModuleOtherLabel;
+
+  /// Flag label for a normal clinical result value.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get clinicalResultsFlagNormalLabel;
+
+  /// Flag label for an abnormal clinical result value.
+  ///
+  /// In en, this message translates to:
+  /// **'Abnormal'**
+  String get clinicalResultsFlagAbnormalLabel;
+
+  /// Flag label for a critical clinical result value.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical'**
+  String get clinicalResultsFlagCriticalLabel;
+
+  /// Flag label when a clinical result has no abnormality flag.
+  ///
+  /// In en, this message translates to:
+  /// **'Unflagged'**
+  String get clinicalResultsFlagUnknownLabel;
+
+  /// Label showing the applicable laboratory reference range.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference range: {range}'**
+  String clinicalResultsReferenceRangeLabel(String range);
+
+  /// Attribution label for who performed a procedure.
+  ///
+  /// In en, this message translates to:
+  /// **'Performed by {name}'**
+  String clinicalResultsPerformedByLabel(String name);
+
+  /// Attribution label for who completed a clinical assessment.
+  ///
+  /// In en, this message translates to:
+  /// **'Assessed by {name}'**
+  String clinicalResultsAssessorLabel(String name);
+
+  /// Encounter scope label shown on clinical results preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Encounter {encounterId}'**
+  String clinicalResultsEncounterScopeLabel(String encounterId);
+
+  /// Title for chronological clinical results preview on encounter details.
+  ///
+  /// In en, this message translates to:
+  /// **'Results timeline'**
+  String get clinicalResultsChronologyTitle;
+
   /// Accessibility label for the workspace toolbar overflow menu.
   ///
   /// In en, this message translates to:

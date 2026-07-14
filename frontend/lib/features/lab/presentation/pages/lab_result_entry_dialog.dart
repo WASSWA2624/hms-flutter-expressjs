@@ -2577,9 +2577,13 @@ class _LabReportPreviewDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final bool hasSelectedItems = _selectedItemIds.isNotEmpty;
-    final bool canPrint =
-        hasSelectedItems && _visibleReportColumnKeys().isNotEmpty;
+    final List<LabOrderItem> printableItems = _printableReleasedReportItems(
+      _allReportItems,
+    );
+    final bool printEligible = appClinicalResultsPrintEligible(
+      authorized: true,
+      hasPrintableReleasedContent: printableItems.isNotEmpty,
+    );
     return AppDialog(
       title: Text(l10n.labReportPreviewTitle),
       icon: const Icon(Icons.print_outlined),
@@ -2589,12 +2593,13 @@ class _LabReportPreviewDialogState
       content: AppClinicalResultsPreview(
         mode: AppClinicalResultsPreviewMode.modal,
         title: l10n.labReportPreviewTitle,
-        status: _allReportItems.isEmpty
+        status: printableItems.isEmpty
             ? AppClinicalResultStatus.unavailable
             : AppClinicalResultStatus.verified,
         isEmpty: _allReportItems.isEmpty,
         emptyTitle: l10n.labNoOrderItemsEntryTitle,
         emptyBody: l10n.labNoOrderItemsEntryBody,
+        printEligible: printEligible,
         child: _LabReportPreview(
           workflows: widget.workflows,
           items: _allReportItems,
@@ -2622,8 +2627,8 @@ class _LabReportPreviewDialogState
         AppReportActionButton.print(
           label: l10n.labPrintReportAction,
           isLoading: _isPrinting,
-          enabled: canPrint,
-          onPressed: canPrint ? () => _printSelectedReport() : null,
+          enabled: printEligible && !_isPrinting,
+          onPressed: printEligible ? () => _printSelectedReport() : null,
         ),
       ],
     );
@@ -2867,13 +2872,16 @@ class _LabReportPreviewDialogState
   }
 
   void _resetSelection() {
-    _selectedOrderIds = widget.workflows
-        .map((LabOrderWorkflow workflow) => workflow.order.apiId)
-        .toSet();
-    _selectedItemIds = <String>{
+    final List<LabOrderItem> printableItems = _printableReleasedReportItems(
+      _reportItems(widget.workflows),
+    );
+    _selectedOrderIds = <String>{
       for (final LabOrderWorkflow workflow in widget.workflows)
-        for (final LabOrderItem item in workflow.order.items)
-          _itemSelectionKey(item),
+        if (workflow.order.items.any(_isPrintableReleasedReportItem))
+          workflow.order.apiId,
+    };
+    _selectedItemIds = <String>{
+      for (final LabOrderItem item in printableItems) _itemSelectionKey(item),
     };
   }
 
@@ -2886,7 +2894,31 @@ class _LabReportPreviewDialogState
 
   Future<void> _printSelectedReport() async {
     final AppLocalizations l10n = context.l10n;
-    final List<LabOrderWorkflow> workflows = _selectedWorkflowsForPreview();
+    final List<LabOrderItem> printableItems = _printableReleasedReportItems(
+      _allReportItems,
+    );
+    if (printableItems.isEmpty) {
+      return;
+    }
+
+    final Set<String> printableKeys = <String>{
+      for (final LabOrderItem item in printableItems) _itemSelectionKey(item),
+    };
+    final Set<String> selectedPrintableKeys = _selectedItemIds.intersection(
+      printableKeys,
+    );
+    final Set<String> itemIdsToPrint = selectedPrintableKeys.isEmpty
+        ? printableKeys
+        : selectedPrintableKeys;
+
+    final List<LabOrderWorkflow> workflows = widget.workflows
+        .where((LabOrderWorkflow workflow) {
+          return workflow.order.items.any(
+            (LabOrderItem item) =>
+                itemIdsToPrint.contains(_itemSelectionKey(item)),
+          );
+        })
+        .toList(growable: false);
     if (workflows.isEmpty) {
       return;
     }
@@ -2900,7 +2932,7 @@ class _LabReportPreviewDialogState
       pages: _reportPages(
         context,
         workflows,
-        _selectedItemIds,
+        itemIdsToPrint,
         _visibleReportColumnKeys(),
       ),
       footerNote: l10n.labReportFooter,
@@ -2909,18 +2941,6 @@ class _LabReportPreviewDialogState
     if (mounted) {
       setState(() => _isPrinting = false);
     }
-  }
-
-  List<LabOrderWorkflow> _selectedWorkflowsForPreview() {
-    return widget.workflows
-        .where((LabOrderWorkflow workflow) {
-          return _selectedOrderIds.contains(workflow.order.apiId) &&
-              workflow.order.items.any(
-                (LabOrderItem item) =>
-                    _selectedItemIds.contains(_itemSelectionKey(item)),
-              );
-        })
-        .toList(growable: false);
   }
 }
 
@@ -3111,15 +3131,15 @@ class _ReportPreviewFlagCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
     final String label = _resolveItemResultFlagLabel(context, item);
-    final bool abnormal = _isAbnormalReportItem(item);
-    return Text(
-      label,
-      style: theme.textTheme.bodyMedium?.copyWith(
-        color: abnormal ? theme.colorScheme.error : null,
-        fontWeight: abnormal ? FontWeight.w700 : null,
-      ),
+    final AppClinicalResultFlag flag = _clinicalResultFlagForLabItem(item);
+    final AppClinicalResultFlagDisplay display =
+        AppClinicalResultFlagDisplay.resolve(l10n, flag, customLabel: label);
+    return AppStatusBadge(
+      label: display.label,
+      tone: display.tone,
+      icon: display.icon,
     );
   }
 }
@@ -4644,6 +4664,33 @@ List<LabOrderItem> _reportItems(List<LabOrderWorkflow> workflows) {
     for (final LabOrderWorkflow workflow in workflows)
       for (final LabOrderItem item in workflow.order.items) item,
   ];
+}
+
+bool _isPrintableReleasedReportItem(LabOrderItem item) {
+  return item.isCompleted && item.hasResult && !item.isRejected;
+}
+
+List<LabOrderItem> _printableReleasedReportItems(List<LabOrderItem> items) {
+  return items.where(_isPrintableReleasedReportItem).toList(growable: false);
+}
+
+AppClinicalResultFlag _clinicalResultFlagForLabItem(LabOrderItem item) {
+  final String token =
+      (_computedNumericFlagToken(item, item.resultValue ?? '') ??
+              item.resultFlag ??
+              item.effectiveResultStatus ??
+              '')
+          .trim()
+          .toUpperCase();
+  return switch (token) {
+    'CRITICAL' => AppClinicalResultFlag.critical,
+    'ABNORMAL' || 'HIGH' || 'LOW' => AppClinicalResultFlag.abnormal,
+    'NORMAL' ||
+    'NEGATIVE' ||
+    'NON_REACTIVE' ||
+    'POSITIVE' => AppClinicalResultFlag.normal,
+    _ => AppClinicalResultFlag.unknown,
+  };
 }
 
 bool _matchesReportItemSearch(

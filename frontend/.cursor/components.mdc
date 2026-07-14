@@ -52,7 +52,7 @@ Purpose: uniform reusable UI built on Flutter Material primitives.
 | `AppTimeline`                        | composition                                   | chronological clinical/ops event rail                                                                            |
 | `AppPatientDetails`                  | composition                                   | compact patient context + Show more/less preference                                                              |
 | `AppWorkflowStepper`                 | composition                                   | workflow step progress + capability-aware actions                                                                |
-| `AppClinicalResultsPreview`          | composition                                   | clinical results preview shell (inline/modal)                                                                    |
+| `AppClinicalResultsPreview`          | composition                                   | clinical results preview shell (inline/modal/full-screen) + module content adapters                              |
 | `AppReportSectionTile` / list      | composition                                   | selectable report section picker tiles                                                                           |
 | `ResponsivePage`                     | layout                                        | page padding and max-width ([`layouts.mdc`](./layouts.mdc))                                                     |
 | `ResponsiveAppShell`                 | `Scaffold`, `NavigationRail`, `MenuBar` | mobile/tablet/desktop shell                                                                                      |

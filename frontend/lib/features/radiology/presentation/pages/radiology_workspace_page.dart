@@ -1656,7 +1656,17 @@ class _ReportingSectionState extends ConsumerState<_ReportingSection> {
                     status: AppClinicalResultStatus.preliminary,
                     isEmpty: _inlineReportController.text.trim().isEmpty,
                     emptyBody: l10n.radiologyEmptyReportBody,
-                    child: Text(_inlineReportController.text.trim()),
+                    child: AppClinicalResultEntryView(
+                      entry: AppClinicalResultPreviewEntry(
+                        id: 'inline-draft',
+                        module: AppClinicalResultModule.radiology,
+                        title: l10n.radiologyReportLivePreviewTitle,
+                        status: AppClinicalResultStatus.preliminary,
+                        radiology: AppClinicalRadiologyReportContent(
+                          reportText: _inlineReportController.text.trim(),
+                        ),
+                      ),
+                    ),
                   ),
                   SizedBox(height: theme.spacing.md),
                 ],
@@ -1665,7 +1675,18 @@ class _ReportingSectionState extends ConsumerState<_ReportingSection> {
                   status: _clinicalResultStatusForRadiology(latest),
                   isEmpty: (latest.reportText ?? '').trim().isEmpty,
                   emptyBody: l10n.radiologyEmptyReportBody,
-                  child: Text(latest.reportText ?? ''),
+                  printEligible: appClinicalResultsPrintEligible(
+                    authorized: true,
+                    hasPrintableReleasedContent:
+                        latest.isReleased &&
+                        (latest.reportText ?? '').trim().isNotEmpty,
+                  ),
+                  child: AppClinicalResultEntryView(
+                    entry: _radiologyPreviewEntry(
+                      result: latest,
+                      title: l10n.radiologyGeneratedReportPreviewTitle,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1746,9 +1767,24 @@ class _StudiesSection extends ConsumerWidget {
                           status: _clinicalResultStatusForRadiology(
                             latestReport,
                           ),
-                          isEmpty: (latestReport.reportText ?? '').trim().isEmpty,
+                          isEmpty: (latestReport.reportText ?? '')
+                              .trim()
+                              .isEmpty,
                           emptyBody: l10n.radiologyEmptyReportBody,
-                          child: Text(latestReport.reportText ?? ''),
+                          printEligible: appClinicalResultsPrintEligible(
+                            authorized: true,
+                            hasPrintableReleasedContent:
+                                latestReport.isReleased &&
+                                (latestReport.reportText ?? '')
+                                    .trim()
+                                    .isNotEmpty,
+                          ),
+                          child: AppClinicalResultEntryView(
+                            entry: _radiologyPreviewEntry(
+                              result: latestReport,
+                              title: l10n.radiologyGeneratedReportPreviewTitle,
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -3039,11 +3075,17 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
               narrative: _reportController.text.trim(),
             ).trim().isEmpty,
             emptyBody: l10n.radiologyEmptyReportBody,
-            child: Text(
-              _composeRadiologyReportText(
-                findings: _findingsController.text.trim(),
-                impression: _impressionController.text.trim(),
-                narrative: _reportController.text.trim(),
+            child: AppClinicalResultEntryView(
+              entry: AppClinicalResultPreviewEntry(
+                id: 'draft-composer',
+                module: AppClinicalResultModule.radiology,
+                title: l10n.radiologyReportLivePreviewTitle,
+                status: AppClinicalResultStatus.preliminary,
+                radiology: AppClinicalRadiologyReportContent(
+                  findings: _findingsController.text.trim(),
+                  impression: _impressionController.text.trim(),
+                  reportText: _reportController.text.trim(),
+                ),
               ),
             ),
           ),
@@ -3734,6 +3776,24 @@ AppClinicalResultStatus _clinicalResultStatusForRadiology(
     return AppClinicalResultStatus.preliminary;
   }
   return AppClinicalResultStatus.unavailable;
+}
+
+AppClinicalResultPreviewEntry _radiologyPreviewEntry({
+  required RadiologyResult result,
+  required String title,
+}) {
+  return AppClinicalResultPreviewEntry(
+    id: result.id,
+    module: AppClinicalResultModule.radiology,
+    title: title,
+    status: _clinicalResultStatusForRadiology(result),
+    occurredAt: result.reportedAt ?? result.updatedAt ?? result.createdAt,
+    subtitle: result.testDisplayName,
+    radiology: AppClinicalRadiologyReportContent(
+      reportText: result.reportText,
+      modality: result.modality,
+    ),
+  );
 }
 
 List<AppSelectOption<String>> _radiologyLateralityOptions(
