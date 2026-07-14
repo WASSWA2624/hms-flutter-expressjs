@@ -248,6 +248,7 @@ void main() {
       final session = AuthSession(
         tokens: SessionTokens(accessToken: 'access-token'),
         moduleEntitlements: const <AppModuleEntitlement>[
+          AppModuleEntitlement(code: 'patient-registry'),
           AppModuleEntitlement(code: 'scheduling-queue'),
         ],
         user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),

@@ -10,9 +10,10 @@ describe('seed-catalog', () => {
     expect(DEMO_PLAN_CATALOG.map((entry) => entry.code)).toEqual([
       'free',
       'basic',
-      'pro',
       'advanced',
+      'pro',
       'custom',
+      'developer',
     ]);
 
     const basicPlan = DEMO_PLAN_CATALOG.find((entry) => entry.code === 'basic');
@@ -23,14 +24,16 @@ describe('seed-catalog', () => {
     expect(proPlan.extension_json.price_notes.yearly).toBe(890);
   });
 
-  it('enforces add-on eligibility rules and usage-based pricing notes', () => {
-    const smsCredits = DEMO_ADD_ON_CATALOG.find((entry) => entry.code === 'sms_credits');
-    expect(smsCredits.minimum_plan_tier_code).toBe('BASIC');
-    expect(smsCredits.extension_json.billing_basis).toBe('usage_based');
-
-    const biomedical = DEMO_ADD_ON_CATALOG.find((entry) => entry.code === 'biomedical_engineering_suite');
-    expect(biomedical.minimum_plan_tier_code).toBe('PRO');
-    expect(biomedical.extension_json.price_range_usd_monthly).toEqual([49, 199]);
+  it('keeps optional suites explicitly scoped to custom plans', () => {
+    expect(DEMO_ADD_ON_CATALOG.map((entry) => entry.code)).toEqual([
+      'compliance_audit_suite',
+      'integrations_webhooks_pack',
+    ]);
+    expect(
+      DEMO_ADD_ON_CATALOG.every(
+        (entry) => entry.minimum_plan_tier_code === 'CUSTOM',
+      ),
+    ).toBe(true);
   });
 
   it('pins the default seeded login emails for the demo workspace', () => {
@@ -56,12 +59,28 @@ describe('seed-catalog', () => {
     ]);
   });
 
-  it('keeps every canonical seeded role assigned exactly once through primary or extra roles', () => {
+  it('keeps every demo user role inside the complete shipped role catalog', () => {
     const assignedRoles = DEMO_TENANT.users.flatMap((entry) => [
       entry.role,
       ...((Array.isArray(entry.extra_roles) ? entry.extra_roles : []).filter(Boolean)),
     ]);
 
-    expect([...assignedRoles].sort()).toEqual([...DEMO_ROLE_CODES].sort());
+    expect(new Set(assignedRoles).size).toBe(assignedRoles.length);
+    expect(
+      assignedRoles.every((role) => DEMO_ROLE_CODES.includes(role)),
+    ).toBe(true);
+    expect(DEMO_ROLE_CODES).toEqual(
+      expect.arrayContaining([
+        'INTEGRATION_ADMIN',
+        'HR_STAFF',
+        'DISCHARGE_PLANNER',
+        'DENTIST',
+        'RADIOLOGIST',
+        'SONOGRAPHER',
+        'ACCOUNTANT',
+        'SUPPORT_STAFF',
+        'VISITOR_GUEST',
+      ]),
+    );
   });
 });

@@ -4870,6 +4870,10 @@
   "@accessDeniedModulePhysiotherapyLabel": {
     "description": "Display name for the physiotherapy module in access denial tooltips."
   },
+  "accessDeniedModuleSchedulingLabel": "Scheduling and emergency",
+  "@accessDeniedModuleSchedulingLabel": {
+    "description": "Display name for the scheduling/emergency module in access denial messages."
+  },
   "patientsAgeYears": "{years} years",
   "@patientsAgeYears": {
     "description": "Patient age in whole years.",

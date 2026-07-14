@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
+import 'package:hosspi_hms/app/router/shell_route_access.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
@@ -69,7 +70,7 @@ final class HomeActionDefinition {
         !policy.grantsAny(requiredAnyPermissions)) {
       return false;
     }
-    return route.accessRequirement.isAllowed(policy);
+    return canAccessShellRoute(route, policy);
   }
 }
 
@@ -87,7 +88,7 @@ final class HomeShortcutDefinition {
   final AppRouteData route;
 
   bool isAllowed(AppAccessPolicy policy) {
-    return route.accessRequirement.isAllowed(policy);
+    return canAccessShellRoute(route, policy);
   }
 }
 
@@ -1404,6 +1405,10 @@ void homeNavigateRouteTarget(
     return;
   }
 
+  if (!canAccessShellRoute(route, policy)) {
+    return;
+  }
+
   homeGoToRoute(context, route, queryParameters: homeHrQueryForTarget(target));
 }
 
@@ -1418,8 +1423,10 @@ VoidCallback? homeWorklistTap(
   }
 
   final AppRouteData? route = homeRouteForTarget(target);
-  if (route == null &&
-      !homeTargetUsesTenantSubscriptionFallback(policy, target: target)) {
+  if (homeTargetUsesTenantSubscriptionFallback(policy, target: target)) {
+    return () => homeNavigateRouteTarget(context, ref, policy, target: target);
+  }
+  if (route == null || !canAccessShellRoute(route, policy)) {
     return null;
   }
 
@@ -1435,6 +1442,10 @@ void homeNavigateShortcut(
   if (shortcut.id == 'subscriptions' &&
       homeTargetUsesTenantSubscriptionFallback(policy)) {
     unawaited(homeOpenTenantSubscriptionSurface(context, ref, policy));
+    return;
+  }
+
+  if (!canAccessShellRoute(shortcut.route, policy)) {
     return;
   }
 

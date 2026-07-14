@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
+import 'package:hosspi_hms/core/workspace/realtime_delta.dart';
 import 'package:hosspi_hms/core/workspace/realtime_delta_decoder.dart';
 import 'package:hosspi_hms/core/workspace/realtime_sync_action.dart';
 

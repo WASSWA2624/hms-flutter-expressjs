@@ -59,8 +59,12 @@ final class AccessRequirement {
 
     // Role packs authorize through their permissions. Canonical role names are
     // only required when a route is role-gated with no permission requirements.
+    // Patient portal and housekeeping must not permission-bypass into staff
+    // clinical/patient-flow routes.
     if (anyRoles.isNotEmpty && !policy.hasAnyRole(anyRoles)) {
-      if (!hasPermissionRequirements) {
+      if (policy.hasRole(AppRole.patient) ||
+          policy.hasRole(AppRole.houseKeeper) ||
+          !hasPermissionRequirements) {
         return false;
       }
     }

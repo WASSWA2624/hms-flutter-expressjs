@@ -7204,6 +7204,12 @@ abstract class AppLocalizations {
   /// **'Physiotherapy'**
   String get accessDeniedModulePhysiotherapyLabel;
 
+  /// Display name for the scheduling/emergency module in access denial messages.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduling and emergency'**
+  String get accessDeniedModuleSchedulingLabel;
+
   /// Patient age in whole years.
   ///
   /// In en, this message translates to:

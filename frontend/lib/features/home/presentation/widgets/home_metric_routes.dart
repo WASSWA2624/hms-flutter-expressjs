@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
+import 'package:hosspi_hms/app/router/shell_route_access.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
@@ -34,7 +35,7 @@ HomeMetricNavigation? homeMetricNavigation({
       profile: profile,
       policy: policy,
     );
-    if (route != null) {
+    if (route != null && canAccessShellRoute(route, policy)) {
       return HomeMetricNavigation(
         route: route,
         queryParameters:

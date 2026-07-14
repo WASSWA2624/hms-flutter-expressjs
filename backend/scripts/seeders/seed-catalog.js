@@ -1,3 +1,12 @@
+const DEMO_PLAN_TIER_ORDER = Object.freeze({
+  free: 0,
+  basic: 1,
+  advanced: 2,
+  pro: 3,
+  custom: 4,
+  developer: 5,
+});
+
 const DEMO_PLAN_CATALOG = Object.freeze([
   {
     code: 'free',
@@ -75,7 +84,7 @@ const DEMO_PLAN_CATALOG = Object.freeze([
   {
     code: 'custom',
     name: 'Custom',
-    tier_code: 'CUSTOM',
+    tier_code: 'DEVELOPER',
     price: 10000,
     billing_cycle: 'YEARLY',
     max_users: null,
@@ -112,7 +121,10 @@ const DEMO_PLAN_CATALOG = Object.freeze([
       includes_all_modules: true,
     },
   },
-]);
+].sort(
+  (left, right) =>
+    DEMO_PLAN_TIER_ORDER[left.code] - DEMO_PLAN_TIER_ORDER[right.code]
+));
 
 // Optional paid add-ons beyond the included Advanced/Custom matrix.
 const DEMO_ADD_ON_CATALOG = Object.freeze([
@@ -158,6 +170,16 @@ const DEMO_ROLE_CODES = Object.freeze([
   'SUPER_ADMIN',
   'TENANT_ADMIN',
   'FACILITY_ADMIN',
+  'INTEGRATION_ADMIN',
+  'HR_STAFF',
+  'OPERATIONS_STAFF',
+  'DISCHARGE_PLANNER',
+  'DENTIST',
+  'RADIOLOGIST',
+  'SONOGRAPHER',
+  'ACCOUNTANT',
+  'SUPPORT_STAFF',
+  'VISITOR_GUEST',
   'DOCTOR',
   'NURSE',
   'LAB_TECH',
@@ -170,6 +192,7 @@ const DEMO_ROLE_CODES = Object.freeze([
   'BIOMED',
   'HOUSE_KEEPER',
   'AMBULANCE_OPERATOR',
+  'PHYSIOTHERAPIST',
   'UNIT_MANAGER',
   'WARD_MANAGER',
   'ICU_MANAGER',

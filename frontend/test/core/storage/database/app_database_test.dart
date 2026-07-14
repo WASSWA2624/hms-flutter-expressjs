@@ -37,7 +37,7 @@ void main() {
       );
       expect(
         database.allSchemaEntities.map((entity) => entity.entityName),
-        isNot(contains('example_resource_cache_entries')),
+        contains('sync_queue_entries_partition_status_updated_at_idx'),
       );
     });
   });

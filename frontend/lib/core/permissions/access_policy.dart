@@ -6,6 +6,7 @@ enum AppRole {
   superAdmin('SUPER_ADMIN'),
   tenantAdmin('TENANT_ADMIN'),
   facilityAdmin('FACILITY_ADMIN'),
+  integrationAdmin('INTEGRATION_ADMIN'),
   doctor('DOCTOR'),
   nurse('NURSE'),
   labTech('LAB_TECH'),
@@ -707,6 +708,13 @@ final class AppAccessPolicy {
       'MATRON' => AppRole.wardManager.value,
       'MORTUARY_OFFICER' || 'MORGUE_ATTENDANT' => AppRole.mortuaryStaff.value,
       'HOUSEKEEPING_SUPERVISOR' => AppRole.housekeepingManager.value,
+      'HR_STAFF' => AppRole.hr.value,
+      'OPERATIONS_STAFF' || 'SUPPORT_STAFF' => AppRole.operations.value,
+      'DISCHARGE_PLANNER' => AppRole.nurse.value,
+      'DENTIST' => AppRole.doctor.value,
+      'RADIOLOGIST' => AppRole.radiologyTech.value,
+      'ACCOUNTANT' => AppRole.billing.value,
+      'VISITOR_GUEST' => AppRole.other.value,
       'USER' || 'GUEST' => AppRole.other.value,
       _ => normalized,
     };
@@ -727,6 +735,14 @@ final class AppAccessPolicy {
       AppRole.facilityAdmin => AppPermissions.adminAccess.where(
         (permission) => permission != AppPermissions.tenantAdmin,
       ),
+      AppRole.integrationAdmin => const <AppPermission>[
+        AppPermissions.profileRead,
+        AppPermissions.integrationRead,
+        AppPermissions.integrationWrite,
+        AppPermissions.integrationDelete,
+        AppPermissions.reportsRead,
+        AppPermissions.evidenceExport,
+      ],
       AppRole.doctor => const <AppPermission>[
         AppPermissions.clinicalRead,
         AppPermissions.clinicalWrite,

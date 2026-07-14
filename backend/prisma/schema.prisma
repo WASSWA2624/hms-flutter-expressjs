@@ -601,9 +601,10 @@ enum BillingCycle {
 enum PlanTierCode {
   FREE
   BASIC
-  PRO
   ADVANCED
+  PRO
   CUSTOM
+  DEVELOPER
 }
 
 enum PlanFitStatus {

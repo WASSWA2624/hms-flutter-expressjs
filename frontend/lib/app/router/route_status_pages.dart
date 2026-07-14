@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement_l10n.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
@@ -36,20 +39,48 @@ class AuthRequiredPage extends StatelessWidget {
   }
 }
 
-class ForbiddenPage extends StatelessWidget {
+class ForbiddenPage extends ConsumerWidget {
   const ForbiddenPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final String? fromPath = GoRouterState.of(
+      context,
+    ).uri.queryParameters['from'];
+    final AppRouteData? deniedRoute = _matchRoute(fromPath);
+    final String body;
+    if (deniedRoute == null) {
+      body = l10n.routeForbiddenBody;
+    } else {
+      body = accessRequirementDenialMessage(
+        l10n,
+        deniedRoute.accessRequirement,
+        ref.watch(appAccessPolicyProvider),
+      );
+    }
 
     return _RouteStatusPage(
       icon: Icons.block_outlined,
       title: l10n.routeForbiddenTitle,
-      body: l10n.routeForbiddenBody,
+      body: body,
+      detail: fromPath,
       actionLabel: l10n.commonGoHomeActionLabel,
     );
   }
+}
+
+AppRouteData? _matchRoute(String? locationPath) {
+  if (locationPath == null || locationPath.trim().isEmpty) {
+    return null;
+  }
+  final String path = Uri.tryParse(locationPath)?.path ?? locationPath;
+  for (final AppRouteData route in AppRoutes.all) {
+    if (route.matchesPath(path)) {
+      return route;
+    }
+  }
+  return null;
 }
 
 class NotFoundPage extends StatelessWidget {

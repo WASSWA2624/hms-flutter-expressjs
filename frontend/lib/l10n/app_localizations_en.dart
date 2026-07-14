@@ -3730,6 +3730,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessDeniedModulePhysiotherapyLabel => 'Physiotherapy';
 
   @override
+  String get accessDeniedModuleSchedulingLabel => 'Scheduling and emergency';
+
+  @override
   String patientsAgeYears(int years) {
     return '$years years';
   }
