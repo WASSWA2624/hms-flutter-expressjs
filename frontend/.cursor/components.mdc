@@ -1,3 +1,4 @@
+
 ---
 alwaysApply: false
 globs:
@@ -30,26 +31,26 @@ Purpose: uniform reusable UI built on Flutter Material primitives.
 
 ## Standard catalog
 
-| Component | Built on | Purpose |
-|---|---|---|
-| `AppWorkspace` | composition | module work-queue shell: toolbar notifications submenu, list, detail ([`ui-workspace.mdc`](./ui-workspace.mdc)) |
-| `AppListTable` | `ListView` / table layout | paginated worklist with mobile adaptive mode |
-| `AppWorkspaceDetailPanel` | composition | selected row detail sections |
-| `AppActionPanel` / `AppActionList` | composition | grouped primary/secondary actions |
-| `AppWorkspaceMutationDialog` | `AppDialog` | consistent mutation forms from workspace |
-| `AppButton` | `TextButton` | borderless primary, secondary, tertiary, and icon-only actions |
-| `AppTextField` | `TextFormField` | text, number, password, multiline |
-| `AppSelectField<T>` | `DropdownMenu<T>` or Material menus | searchable selection |
-| `AppRadioGroup<T>` | `RadioGroup` / `RadioListTile` | exclusive options |
-| `AppCheckboxField` | `CheckboxListTile` | boolean option |
-| `AppSwitchField` | `SwitchListTile` | setting toggle |
-| `AppDateField` | date picker primitives | locale-aware date input |
-| `AppDialog` | `Dialog` / `AlertDialog` | consistent modals |
-| `AsyncStateScaffold` | composition | loading, empty, error, success ([`ui-feedback.mdc`](./ui-feedback.mdc)) |
-| `ResponsivePage` | layout | page padding and max-width ([`layouts.mdc`](./layouts.mdc)) |
-| `ResponsiveAppShell` | `Scaffold`, `NavigationRail`, `MenuBar` | mobile/tablet/desktop shell |
-| `AppMenuBar` | `MenuBar` | desktop/web app-level actions |
-| `SideNavigation` | `NavigationRail` or Material composition | collapsed/expanded side nav |
+| Component                              | Built on                                      | Purpose                                                                                                          |
+| -------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `AppWorkspace`                       | composition                                   | module work-queue shell: toolbar notifications submenu, list, detail ([`ui-workspace.mdc`](./ui-workspace.mdc)) |
+| `AppListTable`                       | `ListView` / table layout                   | paginated worklist with mobile adaptive mode                                                                     |
+| `AppWorkspaceDetailPanel`            | composition                                   | selected row detail sections                                                                                     |
+| `AppActionPanel` / `AppActionList` | composition                                   | grouped primary/secondary actions                                                                                |
+| `AppWorkspaceMutationDialog`         | `AppDialog`                                 | consistent mutation forms from workspace                                                                         |
+| `AppButton`                          | `TextButton`                                | borderless primary, secondary, tertiary, and icon-only actions                                                   |
+| `AppTextField`                       | `TextFormField`                             | text, number, password, multiline                                                                                |
+| `AppSelectField<T>`                  | `DropdownMenu<T>` or Material menus         | searchable selection                                                                                             |
+| `AppRadioGroup<T>`                   | `RadioGroup` / `RadioListTile`            | exclusive options                                                                                                |
+| `AppCheckboxField`                   | `CheckboxListTile`                          | boolean option                                                                                                   |
+| `AppSwitchField`                     | `SwitchListTile`                            | setting toggle                                                                                                   |
+| `AppDateField`                       | date picker primitives                        | locale-aware date input                                                                                          |
+| `AppDialog`                          | `Dialog` / `AlertDialog`                  | consistent modals                                                                                                |
+| `AsyncStateScaffold`                 | composition                                   | loading, empty, error, success ([`ui-feedback.mdc`](./ui-feedback.mdc))                                         |
+| `ResponsivePage`                     | layout                                        | page padding and max-width ([`layouts.mdc`](./layouts.mdc))                                                     |
+| `ResponsiveAppShell`                 | `Scaffold`, `NavigationRail`, `MenuBar` | mobile/tablet/desktop shell                                                                                      |
+| `AppMenuBar`                         | `MenuBar`                                   | desktop/web app-level actions                                                                                    |
+| `SideNavigation`                     | `NavigationRail` or Material composition    | collapsed/expanded side nav                                                                                      |
 
 **Naming:** public widget `ResponsiveAppShell` lives in `lib/shared/layout/responsive_shell_scaffold.dart`.
 
@@ -76,7 +77,6 @@ Purpose: uniform reusable UI built on Flutter Material primitives.
 ## See also
 
 - [`ui-workspace.mdc`](./ui-workspace.mdc) — module screen contract
-
 - [`ui-patterns.mdc`](./ui-patterns.mdc) — forms and tables
 - [`ui-feedback.mdc`](./ui-feedback.mdc) — async states
 - [`layouts.mdc`](./layouts.mdc) — shell and breakpoints
