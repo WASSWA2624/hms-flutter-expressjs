@@ -1,6 +1,9 @@
 ---
-description: Instant UI updates via Riverpod as single source of truth with optimistic mutations
-alwaysApply: true
+alwaysApply: false
+globs:
+  - "frontend/lib/**"
+description: >
+  Use when designing, implementing, or reviewing instant UI state updates and backend data synchronization involving Riverpod, optimistic updates, or real-time cross-session changes.
 ---
 # Instant UI and Backend Sync
 

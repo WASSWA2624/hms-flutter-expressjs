@@ -1,6 +1,15 @@
 ---
 alwaysApply: false
+globs:
+  - ".github/workflows/**"
+  - "frontend/.github/workflows/**"
+  - "frontend/scripts/ci/**"
+  - "frontend/.cursor/ci_cd_quality_gates.mdc"
+description: >
+  Use this rule file when creating or updating CI/CD pipeline configurations or local quality automation for the HOSSPI HMS frontend. Apply to ensure minimum required automated build, test, and formatting gates are present before merges or releases.
 ---
+# End of Selection
+```
 
 # CI/CD and Quality Gates
 

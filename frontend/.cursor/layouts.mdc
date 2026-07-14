@@ -1,7 +1,11 @@
 ---
-description: Breakpoints, responsive shell, navigation layout, and max widths
 alwaysApply: false
-globs: ["frontend/lib/shared/layout/**", "frontend/lib/core/responsive/**", "frontend/lib/app/router/**"]
+globs:
+  - "frontend/lib/shared/layout/**"
+  - "frontend/lib/core/responsive/**"
+  - "frontend/lib/app/router/**"
+description: >
+  Apply when creating or reviewing layout structure, breakpoint logic, or responsive/navigation containers in the HOSSPI HMS frontend to enforce unified screen width and layout standards.
 ---
 # Layouts and Responsive Design
 

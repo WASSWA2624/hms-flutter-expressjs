@@ -1,7 +1,9 @@
 ---
-description: go_router routing, shell routes, guards, and deep links
 alwaysApply: false
-globs: ["frontend/lib/app/router/**"]
+globs:
+  - "frontend/lib/app/router/**"
+description: >
+  Apply when designing, implementing, or reviewing navigation, routing, route guards, or deep linking using `go_router` in the HOSSPI HMS frontend. Use for all code related to route configuration and navigation under `lib/app/router/`.
 ---
 # Navigation and Routing
 

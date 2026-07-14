@@ -1,5 +1,9 @@
 ---
 alwaysApply: false
+globs:
+  - frontend/**
+description: |
+  Use this rule file to guide and enforce frontend performance best practices, including UI responsiveness, list and image optimization, and efficient data handling. Apply when reviewing or contributing to any code in the 'frontend' directory.
 ---
 
 # Performance Strategy

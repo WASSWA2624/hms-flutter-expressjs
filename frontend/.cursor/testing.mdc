@@ -1,5 +1,10 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/lib/**"
+  - "frontend/test/**"
+description: >
+  Use this rule file when implementing, reviewing, or refactoring tests in the HOSSPI HMS Flutter frontend. Covers unit, widget, integration, end-to-end, and structure/testing patterns for quality and maintainability.
 ---
 
 # Testing Strategy

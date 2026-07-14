@@ -1,5 +1,10 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/lib/shared/input/**"
+  - "frontend/lib/core/input/**"
+description: >
+  Apply when designing, implementing, or reviewing cross-platform input (touch, pointer, keyboard, focus, shortcuts) in the HOSSPI HMS frontend to ensure consistent and accessible behavior on mobile, web, and desktop.
 ---
 
 # Multi-Platform Input

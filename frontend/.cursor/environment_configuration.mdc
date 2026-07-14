@@ -1,5 +1,11 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/lib/core/config/**"
+  - "frontend/lib/core/bootstrap/environment.dart"
+  - "frontend/lib/core/bootstrap/app_config.dart"
+description: >
+  Use when adding, updating, or reviewing environment configuration sources, files, or utilities for the HOSSPI HMS frontend. Ensures correct handling of dev, staging, and production configs, enforces secrets policy, and proper setup of compile-time environment variables.
 ---
 
 # Environment Configuration

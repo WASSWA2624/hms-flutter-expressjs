@@ -1,5 +1,10 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/lib/**"
+  - "frontend/test/**"
+description: >
+  Use this rule file when implementing, reviewing, or refactoring local storage logic in the Flutter frontend. Covers selection, usage, and placement of preferences, secure storage, and offline data persistence.
 ---
 
 # Storage Strategy

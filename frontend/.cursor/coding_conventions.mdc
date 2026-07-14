@@ -1,5 +1,9 @@
 ---
-alwaysApply: true
+alwaysApply: false
+globs:
+  - "frontend/lib/**"
+description: >
+  Apply this rule when writing, reviewing, or refactoring Dart and Flutter code in the HOSSPI HMS frontend under "frontend/lib/". Use to ensure consistent naming, import order, code style, and file-level structure.
 ---
 # Coding Conventions
 

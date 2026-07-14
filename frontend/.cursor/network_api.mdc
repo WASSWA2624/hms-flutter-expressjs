@@ -1,7 +1,10 @@
 ---
-description: HTTP client, interceptors, and API error mapping
 alwaysApply: false
-globs: ["frontend/lib/core/network/**", "frontend/lib/features/**/data/**"]
+globs:
+  - "frontend/lib/core/network/**"
+  - "frontend/lib/features/**/data/**"
+description: >
+  Apply when implementing or reviewing HTTP clients, API data models, interceptors, or network error handling in the HOSSPI HMS frontend.
 ---
 # Network and API
 

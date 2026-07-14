@@ -1,7 +1,10 @@
 ---
-description: Loading, empty, error, success views and user-safe failure display
 alwaysApply: false
-globs: ["frontend/lib/features/**/presentation/**", "frontend/lib/shared/**"]
+globs:
+  - "frontend/lib/features/**/presentation/**"
+  - "frontend/lib/shared/**"
+description: >
+  Use this rule file when implementing, reviewing, or refactoring UI feedback state handling—such as loading, empty, error, and success views—in feature presentation or shared UI layers.
 ---
 # UI Feedback States
 

@@ -1,6 +1,14 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/README.md"
+  - "frontend/docs/**"
+  - "frontend/.cursor/**"
+description: >
+  Apply when creating, updating, or reviewing documentation files in the HOSSPI HMS frontend. Use to ensure setup, architecture, decision records, and documentation for components and workflows are clear, up-to-date, and actionable.
 ---
+# End of Selection
+```
 
 # Documentation Standards
 

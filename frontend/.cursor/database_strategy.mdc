@@ -1,5 +1,9 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/lib/core/storage/database/**"
+description: >
+  Use when creating, updating, or reviewing local database structure, Drift integration, migrations, or offline data storage in the HOSSPI HMS frontend. Ensures correct, safe, and maintainable database implementation.
 ---
 
 # Database Strategy

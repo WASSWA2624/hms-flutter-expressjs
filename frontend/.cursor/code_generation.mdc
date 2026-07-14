@@ -1,5 +1,9 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/lib/**"
+description: >
+  Use this rule file when adding, updating, or reviewing code generation (e.g., `freezed`, `json_serializable`, Riverpod, Drift) in the Flutter frontend. Apply before running analysis, tests, release builds, or changing generator versions to ensure generated code and related practices remain consistent and maintainable.
 ---
 
 # Code Generation Strategy

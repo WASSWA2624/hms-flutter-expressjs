@@ -1,5 +1,10 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/lib/core/utils/**"
+  - "frontend/lib/shared/formatters/**"
+description: >
+  Use when creating, updating, or reviewing any date, time, number, or unit formatting utilities and their usage across the HOSSPI HMS frontend. Apply to ensure formatting is consistent, localized, and separated from widget code.
 ---
 
 # Date, Time, and Formatting Strategy

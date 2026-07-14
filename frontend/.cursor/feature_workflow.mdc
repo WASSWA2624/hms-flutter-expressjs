@@ -1,5 +1,9 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/lib/features/**"
+description: >
+  Apply when creating, updating, or reviewing new features in the HOSSPI HMS frontend to ensure adherence to workflow, folder structure, testing, and localization standards.
 ---
 
 # Feature Workflow

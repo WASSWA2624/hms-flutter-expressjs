@@ -1,7 +1,10 @@
 ---
-description: Shared component catalog, states, and styling bounds
 alwaysApply: false
-globs: ["frontend/lib/shared/**", "frontend/lib/features/**/presentation/widgets/**"]
+globs:
+  - "frontend/lib/shared/**"
+  - "frontend/lib/features/**/presentation/widgets/**"
+description: >
+  Use this rule file when creating, updating, or reviewing shared UI components or widgets in the frontend. Apply to ensure catalog, consistency, and correct usage of reusable components and styling boundaries.
 ---
 # Shared Components
 

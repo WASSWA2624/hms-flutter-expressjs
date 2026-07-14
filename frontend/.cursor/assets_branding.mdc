@@ -1,5 +1,10 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/lib/shared/assets/**"
+  - "frontend/lib/features/**/assets/**"
+description: >
+  Use this rule file when adding, naming, organizing, or registering UI assets (images, icons, logos, illustrations, fonts) in the HOSSPI HMS frontend, or when setting up splash/launcher branding. Applies during asset import, branding updates, and asset folder maintenance.
 ---
 
 # Asset and Branding Strategy

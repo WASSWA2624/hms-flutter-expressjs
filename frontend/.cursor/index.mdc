@@ -1,6 +1,12 @@
 ---
-alwaysApply: true
+alwaysApply: false
+globs:
+  - "frontend/.cursor/**"
+description: >
+  Reference or update this index file when navigating, establishing, or reviewing frontend technical standards and rule files in the HOSSPI HMS Flutter codebase. Use to resolve conflicts between frontend rule files or to locate rule ownership.
 ---
+# End of Selection
+```
 # Frontend Rules Index
 
 Purpose: define Flutter technical standards for HOSSPI HMS (`frontend/`).

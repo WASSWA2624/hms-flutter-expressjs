@@ -1,5 +1,10 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/lib/core/config/feature_flags.dart"
+  - "frontend/lib/core/config/**/feature_flags*.dart"
+description: >
+  Apply when adding, updating, or reviewing feature flag definitions, configuration, or usage in the HOSSPI HMS frontend to ensure flags are typed, centralized, and safely managed.
 ---
 
 # Feature Flags

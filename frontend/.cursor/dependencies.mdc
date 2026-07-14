@@ -1,5 +1,10 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/pubspec.yaml"
+  - "frontend/lib/**"
+description: >
+  Apply when adding, updating, or reviewing Dart and Flutter package dependencies in the HOSSPI HMS frontend. Use this rule file to ensure only approved, justified, and compatible dependencies are included.
 ---
 
 # Dependency Strategy

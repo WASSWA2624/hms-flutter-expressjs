@@ -1,6 +1,9 @@
 ---
-description: Release readiness gates for HOSSPI HMS frontend
 alwaysApply: false
+globs:
+  - "frontend/lib/**"
+description: >
+  Use this rule file before release or QA to confirm project, architecture, and feature readiness for HOSSPI HMS frontend. Apply at release cut, during QA, or before merging major features.
 ---
 # Checklists
 

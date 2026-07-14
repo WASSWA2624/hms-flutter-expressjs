@@ -1,5 +1,10 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/lib/shared/**"
+  - "frontend/lib/features/**/presentation/**"
+description: >
+  Use this rule file when creating or updating screens, components, or flows in the frontend to ensure accessibility best practices (labels, focus, readable contrast, keyboard support) are followed.
 ---
 
 # Accessibility Strategy

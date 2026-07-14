@@ -1,7 +1,11 @@
 ---
-description: Colors, design tokens, typography, and Material 3 theme rules
 alwaysApply: false
-globs: ["frontend/lib/app/theme/**", "frontend/lib/shared/**", "frontend/lib/features/**/presentation/**"]
+globs:
+  - "frontend/lib/app/theme/**"
+  - "frontend/lib/shared/**"
+  - "frontend/lib/features/**/presentation/**"
+description: >
+  Use when creating, updating, or reviewing theming, design tokens, colors, or typography for the HOSSPI HMS frontend. Ensures visual consistency across shared components, themes, and feature presentation code.
 ---
 # Design System
 

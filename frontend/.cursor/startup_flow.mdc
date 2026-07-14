@@ -1,5 +1,10 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/lib/**"
+  - "frontend/test/**"
+description: >
+  Use this rule file when implementing, reviewing, or refactoring the app startup logic in the Flutter frontend. Covers initialization sequence, configuration, platform binding, session restore, theme/locale setup, and routing entry.
 ---
 
 # Startup Flow

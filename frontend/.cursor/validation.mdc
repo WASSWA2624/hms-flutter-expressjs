@@ -1,5 +1,11 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/lib/shared/validation/**"
+  - "frontend/lib/features/**/domain/**"
+  - "frontend/lib/features/**/presentation/**"
+description: >
+  Use this rule file when implementing, reviewing, or refactoring input validation logic in the Flutter frontend. Applies to user input forms, API response mapping, value objects, and business/domain validation requirements across shared and feature layers.
 ---
 
 # Validation Strategy

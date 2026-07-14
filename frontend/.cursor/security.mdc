@@ -1,5 +1,10 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/lib/**"
+  - "frontend/test/**"
+description: >
+  Use this rule file when implementing, reviewing, or refactoring code affecting security in the HOSSPI HMS Flutter frontend. Covers storage, networking, logging, configuration, and sensitive UI handling.
 ---
 
 # Security Rules

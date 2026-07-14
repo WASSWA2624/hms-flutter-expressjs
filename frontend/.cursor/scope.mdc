@@ -1,5 +1,10 @@
 ---
-alwaysApply: true
+alwaysApply: false
+globs:
+  - "frontend/lib/**"
+  - "frontend/test/**"
+description: >
+  Use this rule file when defining, reviewing, or enforcing the scope, invariants, and minimum runnable contract for the HOSSPI HMS Flutter frontend. Applies to project-level scoping, guarantees, and module boundaries.
 ---
 # Project Scope
 

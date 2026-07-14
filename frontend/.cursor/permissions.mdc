@@ -1,7 +1,11 @@
 ---
-description: App-level and module permission checks aligned with backend auth
 alwaysApply: false
-globs: ["frontend/lib/core/permissions/**", "frontend/lib/app/router/**", "frontend/lib/features/**"]
+globs:
+  - "frontend/lib/core/permissions/**"
+  - "frontend/lib/app/router/**"
+  - "frontend/lib/features/**"
+description: >
+  Use this rule file when implementing or reviewing frontend permission, authorization (RBAC/ABAC), or entitlement logic, especially for route guards, action visibility, and platform permission checks. Applies to all code under permissions core, app router, and feature modules.
 ---
 # Permissions and Authorization
 

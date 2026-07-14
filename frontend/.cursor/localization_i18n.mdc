@@ -1,5 +1,11 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/lib/l10n/**"
+  - "frontend/lib/**/presentation/**"
+  - "frontend/lib/**/widgets/**"
+description: >
+  Apply when adding, updating, or reviewing localization and internationalization in the HOSSPI HMS frontend to ensure all user-facing text, accessibility labels, and formatting are managed through Flutter localization files.
 ---
 
 # Localization and Internationalization

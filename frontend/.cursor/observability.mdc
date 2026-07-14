@@ -1,5 +1,10 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/lib/core/observability/**"
+  - "frontend/lib/shared/logging/**"
+description: >
+  Apply when implementing or reviewing logging, diagnostics, analytics, or observability in the HOSSPI HMS frontend to ensure safe, structured, and environment-aware practices.
 ---
 
 # Observability Strategy

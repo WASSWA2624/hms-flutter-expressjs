@@ -1,7 +1,10 @@
 ---
-description: Forms, data tables, lists, search, and filter UX patterns
 alwaysApply: false
-globs: ["frontend/lib/shared/forms/**", "frontend/lib/features/**/presentation/**"]
+globs:
+  - "frontend/lib/shared/forms/**"
+  - "frontend/lib/features/**/presentation/**"
+description: >
+  Use this rule file when implementing or reviewing form UI, data tables, search bars, filter menus, or list-based data presentation and entry patterns in shared or feature presentation layers.
 ---
 # UI Patterns (Forms, Tables, Search)
 

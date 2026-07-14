@@ -1,5 +1,9 @@
 ---
 alwaysApply: false
+globs:
+  - "frontend/lib/**"
+description: >
+  Use when creating, updating, or reviewing app data models (e.g., API DTOs, domain entities, value objects, database models, or UI state) in the HOSSPI HMS frontend. Ensures safe, consistent data representation, mapping, and separation between layers.
 ---
 
 # Data Modeling Strategy
