@@ -8,6 +8,7 @@ const accessAdminWorkspaceController = require('@controllers/access-admin-worksp
 const {
   referenceDataQuerySchema,
   resolveLegacyParamsSchema,
+  restoreAccessDefaultsSchema,
   userIdentifierParamsSchema,
   workspaceQuerySchema,
 } = require('@validations/access-admin-workspace/access-admin-workspace.schema');
@@ -79,6 +80,13 @@ router.get(
   validateRequest({ params: resolveLegacyParamsSchema }),
   authorize(ACCESS_ADMIN_ROLES, 'role'),
   accessAdminWorkspaceController.resolveLegacyRoute
+);
+
+router.post(
+  '/restore-defaults',
+  validateRequest({ body: restoreAccessDefaultsSchema }),
+  authorize(ACCESS_ADMIN_ROLES, 'role'),
+  accessAdminWorkspaceController.restoreAccessDefaults
 );
 
 module.exports = router;

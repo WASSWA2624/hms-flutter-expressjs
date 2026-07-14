@@ -72,8 +72,25 @@ const createBreakGlassReview = async (payload = {}, context = {}) => {
     throw new HttpError('errors.validation.invalid', 400, [{ field: 'break_glass_access_id' }]);
   }
 
-  if (payload.status === 'APPROVED' && !payload.expires_at && !access.expires_at) {
-    throw new HttpError('errors.validation.field.required', 400, [{ field: 'expires_at' }]);
+  if (payload.status === 'APPROVED') {
+    const expiresAtRaw = payload.expires_at || access.expires_at;
+    if (!expiresAtRaw) {
+      throw new HttpError('errors.validation.field.required', 400, [{ field: 'expires_at' }]);
+    }
+    const expiresAt = new Date(expiresAtRaw);
+    const now = new Date();
+    const startsAt = access.starts_at ? new Date(access.starts_at) : now;
+    const maxTtlMs = 24 * 60 * 60 * 1000;
+    const windowStartMs = Math.max(startsAt.getTime(), now.getTime());
+    if (
+      Number.isNaN(expiresAt.getTime()) ||
+      Number.isNaN(startsAt.getTime()) ||
+      expiresAt.getTime() <= now.getTime() ||
+      expiresAt.getTime() <= startsAt.getTime() ||
+      expiresAt.getTime() - windowStartMs > maxTtlMs
+    ) {
+      throw new HttpError('errors.validation.invalid', 400, [{ field: 'expires_at' }]);
+    }
   }
 
   const review = await breakGlassReviewRepository.create({

@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/secure_session_storage.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/secure/app_secure_storage.dart';
@@ -50,6 +51,9 @@ void main() {
           secureSessionStorageProvider.overrideWithValue(
             SecureAppSessionStorage(storage),
           ),
+          sessionIsolationServiceProvider.overrideWith(
+            (Ref ref) => _NoopSessionIsolation(ref),
+          ),
         ],
       );
       addTearDown(container.dispose);
@@ -61,6 +65,7 @@ void main() {
         SessionStatus.unauthenticated,
       );
       expect(storage.values, isEmpty);
+      expect(container.read(sessionEpochProvider), greaterThan(0));
     });
 
     test(
@@ -73,6 +78,9 @@ void main() {
           overrides: [
             secureSessionStorageProvider.overrideWithValue(
               SecureAppSessionStorage(storage),
+            ),
+            sessionIsolationServiceProvider.overrideWith(
+              (Ref ref) => _NoopSessionIsolation(ref),
             ),
           ],
         );
@@ -113,5 +121,17 @@ final class _MemorySecureStorage implements AppSecureStorage {
   @override
   Future<void> write({required String key, required String value}) async {
     values[key] = value;
+  }
+}
+
+final class _NoopSessionIsolation extends SessionIsolationService {
+  _NoopSessionIsolation(super.ref);
+
+  @override
+  Future<void> disposeAuthenticatedState({
+    bool closeNetwork = true,
+    bool clearLocalCaches = true,
+  }) async {
+    ref.read(sessionEpochProvider.notifier).bump();
   }
 }

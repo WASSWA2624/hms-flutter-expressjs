@@ -1,0 +1,78 @@
+const {
+  resolveEffectiveAccess,
+  resolveRequestPermissionNames,
+} = require('@lib/authorization/effective-access');
+const { ROLES } = require('@config/roles');
+
+describe('effective-access', () => {
+  test('intersects grant union with subscription modules', () => {
+    const access = resolveEffectiveAccess(
+      {
+        roles: [ROLES.DOCTOR],
+        role_permissions: ['clinical:read', 'clinical:write', 'billing:write'],
+        tenant_id: 'tenant-1',
+      },
+      {
+        moduleEntitlements: [
+          { module_slug: 'encounters-vitals', is_active: true },
+        ],
+      }
+    );
+
+    expect(access.grant_union).toEqual(
+      expect.arrayContaining(['clinical:read', 'clinical:write', 'billing:write'])
+    );
+    expect(access.permissions).toEqual(
+      expect.arrayContaining(['clinical:read', 'clinical:write'])
+    );
+    expect(access.permissions).not.toContain('billing:write');
+  });
+
+  test('intersects with explicit assigned modules when provided', () => {
+    const access = resolveEffectiveAccess(
+      {
+        roles: [ROLES.DOCTOR],
+        role_permissions: ['clinical:read', 'lab:read'],
+        module_assignments: ['encounters-vitals'],
+        tenant_id: 'tenant-1',
+      },
+      {
+        moduleEntitlements: [
+          { module_slug: 'encounters-vitals', is_active: true },
+          { module_slug: 'lab-workflows', is_active: true },
+        ],
+      }
+    );
+
+    expect(access.permissions).toContain('clinical:read');
+    expect(access.permissions).not.toContain('lab:read');
+  });
+
+  test('request permissions re-apply live plan gate to JWT grants', () => {
+    const permissions = resolveRequestPermissionNames({
+      roles: [ROLES.DOCTOR],
+      permissions: ['clinical:read', 'billing:write', 'lab:read'],
+      module_entitlements: [
+        { module_slug: 'encounters-vitals', is_active: true },
+      ],
+      tenant_id: 'tenant-1',
+    });
+
+    expect(permissions).toContain('clinical:read');
+    expect(permissions).not.toContain('billing:write');
+    expect(permissions).not.toContain('lab:read');
+  });
+
+  test('super admin is not plan-gated at request time', () => {
+    const permissions = resolveRequestPermissionNames({
+      roles: [ROLES.SUPER_ADMIN],
+      permissions: ['clinical:read', 'billing:write'],
+      module_entitlements: [],
+      tenant_id: 'tenant-1',
+    });
+
+    expect(permissions).toEqual(
+      expect.arrayContaining(['clinical:read', 'billing:write'])
+    );
+  });
+});

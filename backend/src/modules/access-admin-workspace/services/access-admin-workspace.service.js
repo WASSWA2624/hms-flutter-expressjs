@@ -3,7 +3,12 @@ const { hashPassword } = require('@lib/crypto/hashPassword');
 const { resolvePublicIdentifier, resolveIdentifierForFilter } = require('@lib/billing/identifiers');
 const { ROLES } = require('@config/roles');
 const { ROLE_PERMISSIONS } = require('@config/permissions');
-const { ensureTenantAccessCatalog, ensureTenantPermissionCatalog } = require('@lib/authorization/permission-catalog-sync');
+const {
+  ensureTenantAccessCatalog,
+  ensureTenantPermissionCatalog,
+  restoreTenantRolePermissionDefaults,
+} = require('@lib/authorization/permission-catalog-sync');
+const { clearLiveAccessCaches } = require('@middlewares/live-access.middleware');
 const {
   filterPermissionRecordsByCeiling,
   canActorCreateTenantWideRole,
@@ -1042,6 +1047,74 @@ const rejectRegistration = async (userIdentifier, actor = {}, ip = null) => {
   return { status: 'INACTIVE' };
 };
 
+const restoreAccessDefaults = async (payload = {}, actor = {}, ip = null) => {
+  const actorRoles = roleList(actor);
+  const canRestore = actorRoles.some((role) =>
+    [ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN, ROLES.FACILITY_ADMIN, ROLES.OPERATIONS].includes(role)
+  );
+  if (!canRestore) {
+    throw new HttpError('errors.auth.insufficient_permissions', 403);
+  }
+
+  const tenantId =
+    payload.tenant_id ||
+    payload.tenantId ||
+    actor.tenant_id ||
+    actor.tenantId ||
+    null;
+  if (!tenantId) {
+    throw new HttpError('errors.validation.field.required', 400, [{ field: 'tenant_id' }]);
+  }
+
+  if (
+    !actorRoles.includes(ROLES.SUPER_ADMIN) &&
+    String(actor.tenant_id || actor.tenantId || '') !== String(tenantId)
+  ) {
+    throw new HttpError('errors.auth.insufficient_permissions', 403);
+  }
+
+  const reason = text(payload.reason);
+  if (!reason) {
+    throw new HttpError('errors.validation.field.required', 400, [{ field: 'reason' }]);
+  }
+
+  const result = await restoreTenantRolePermissionDefaults(tenantId, {
+    roleNames: Array.isArray(payload.role_names)
+        ? payload.role_names
+        : Array.isArray(payload.roleNames)
+        ? payload.roleNames
+        : undefined,
+  });
+
+  clearLiveAccessCaches(tenantId);
+
+  await createAuditLog({
+    action: 'ACCESS_DEFAULTS_RESTORED',
+    entity: 'access_catalog',
+    entity_id: tenantId,
+    user_id: actor.id || actor.user_id || null,
+    tenant_id: tenantId,
+    facility_id: actor.facility_id || actor.facilityId || null,
+    ip_address: ip,
+    diff: {
+      before: result.before,
+      after: result.after,
+      reason,
+      role_permissions_added: result.role_permissions_added,
+      role_permissions_removed: result.role_permissions_removed,
+    },
+  }).catch(() => {});
+
+  return {
+    tenant_id: tenantId,
+    permissions: result.permissions,
+    roles: result.roles,
+    role_permissions_added: result.role_permissions_added,
+    role_permissions_removed: result.role_permissions_removed,
+    restored_at: new Date().toISOString(),
+  };
+};
+
 module.exports = {
   activateRegistration,
   getReferenceData,
@@ -1050,4 +1123,5 @@ module.exports = {
   rejectRegistration,
   resetDemoUserPassword,
   resolveLegacyRoute,
+  restoreAccessDefaults,
 };

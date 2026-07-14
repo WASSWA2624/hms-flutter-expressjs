@@ -14,7 +14,7 @@ final class AppPermissionActionItem {
     this.enabled = true,
     this.isLoading = false,
     this.fullWidth = false,
-    this.hideWhenDenied = false,
+    this.hideWhenDenied = true,
     this.tooltip,
     this.semanticLabel,
   });

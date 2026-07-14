@@ -76,6 +76,22 @@ const createBreakGlassAccess = async (payload = {}, context = {}) => {
     throw new HttpError('errors.auth.unauthorized', 401);
   }
 
+  if (!payload.expires_at) {
+    throw new HttpError('errors.validation.field.required', 400, [{ field: 'expires_at' }]);
+  }
+
+  const startsAt = payload.starts_at ? new Date(payload.starts_at) : new Date();
+  const expiresAt = new Date(payload.expires_at);
+  const maxTtlMs = 24 * 60 * 60 * 1000;
+  if (
+    Number.isNaN(expiresAt.getTime()) ||
+    Number.isNaN(startsAt.getTime()) ||
+    expiresAt <= startsAt ||
+    expiresAt.getTime() - startsAt.getTime() > maxTtlMs
+  ) {
+    throw new HttpError('errors.validation.invalid', 400, [{ field: 'expires_at' }]);
+  }
+
   const record = await breakGlassAccessRepository.create({
     tenant_id: tenantId,
     facility_id: await resolveIdentifierForPayload({
@@ -105,8 +121,8 @@ const createBreakGlassAccess = async (payload = {}, context = {}) => {
     reason: payload.reason,
     justification_json: payload.justification_json || null,
     requested_scope_json: payload.requested_scope_json || null,
-    starts_at: payload.starts_at ? new Date(payload.starts_at) : null,
-    expires_at: payload.expires_at ? new Date(payload.expires_at) : null,
+    starts_at: startsAt,
+    expires_at: expiresAt,
     etag: payload.etag || null,
   });
 

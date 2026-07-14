@@ -308,8 +308,11 @@ const resolveEffectivePermissionNames = (user = {}, options = {}) =>
 
 /**
  * Request-time permission resolution for middleware.
- * When the token already carries an effective `permissions` array, prefer it
- * (it was plan-gated at login/refresh). Otherwise fall back to role catalog.
+ *
+ * Prefer JWT/hydrated permission grants, then always re-apply the live
+ * subscription plan gate when entitlements are present so downgrades cannot
+ * outlive the token. Fall back to role-catalog resolution when the token has
+ * no permission array.
  */
 const resolveRequestPermissionNames = (user = {}) => {
   if (!user || typeof user !== 'object') {
@@ -322,18 +325,35 @@ const resolveRequestPermissionNames = (user = {}) => {
     );
   }
 
+  const moduleEntitlements =
+    user.module_entitlements || user.moduleEntitlements || null;
   const tokenPermissions = Array.isArray(user.permissions)
     ? uniqueValues(user.permissions.map(extractPermissionName))
     : [];
+  const tokenLooksLikeOrmJoin = Boolean(
+    user.permissions?.some?.((entry) => entry && typeof entry === 'object' && entry.permission)
+  );
 
-  // JWT / hydrated session: permissions are already the effective set.
-  if (tokenPermissions.length > 0 && !user.permissions.some?.((entry) => entry?.permission)) {
+  if (tokenPermissions.length > 0 && !tokenLooksLikeOrmJoin) {
+    if (userHasSuperAdminRole(user)) {
+      return tokenPermissions;
+    }
+
+    if (moduleEntitlements != null) {
+      return filterPermissionNamesByPlanModules(
+        tokenPermissions,
+        normalizeEnabledModuleSet(moduleEntitlements)
+      );
+    }
+
     return tokenPermissions;
   }
 
   return resolveEffectivePermissionNames(user, {
-    moduleEntitlements: user.module_entitlements || user.moduleEntitlements || null,
-    applyPlanGate: Boolean(user.tenant_id || user.module_entitlements || user.moduleEntitlements),
+    moduleEntitlements,
+    applyPlanGate: Boolean(
+      user.tenant_id || moduleEntitlements != null
+    ),
   });
 };
 

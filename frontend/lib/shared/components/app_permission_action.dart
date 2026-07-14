@@ -17,7 +17,7 @@ class AppPermissionActionButton extends ConsumerWidget {
     this.enabled = true,
     this.isLoading = false,
     this.fullWidth = false,
-    this.hideWhenDenied = false,
+    this.hideWhenDenied = true,
     this.semanticLabel,
     this.tooltip,
     super.key,

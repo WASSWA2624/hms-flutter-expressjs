@@ -19,7 +19,13 @@
  */
 
 const { logger } = require('@lib/logging');
-const { CONNECTION_EVENTS, AUTH_EVENTS } = require('@lib/websocket/events');
+const {
+  CONNECTION_EVENTS,
+  AUTH_EVENTS,
+  ACCESS_CONTROL_EVENTS,
+  LAST_OFFICE_EVENTS,
+  BILLING_EVENTS,
+} = require('@lib/websocket/events');
 const { getWebSocketServer } = require('@websockets/server');
 const { verifyToken } = require('@lib/jwt');
 const rolesConfig = require('@config/roles');
@@ -288,33 +294,37 @@ const checkWebSocketRBAC = (user, requiredRole, type = 'role') => {
       return false;
     }
 
-    const sourceRole = user.role || (Array.isArray(user.roles) ? user.roles[0] : null);
-    if (!sourceRole) {
+    const {
+      getRoleNames,
+      resolveRequestPermissionNames,
+      userHasSuperAdminRole,
+    } = require('@lib/authorization/effective-access');
+
+    if (userHasSuperAdminRole(user)) {
+      return true;
+    }
+
+    const requiredValues = (Array.isArray(requiredRole) ? requiredRole : [requiredRole])
+      .map((value) => String(value || '').trim())
+      .filter(Boolean);
+
+    if (requiredValues.length === 0) {
       return false;
     }
 
-    const userRole = normalizeRoleName(sourceRole) || String(sourceRole || '').toUpperCase();
-    const roles = rolesConfig?.ROLES || rolesConfig || {};
-    const rolePermissions = permissionsConfig?.ROLE_PERMISSIONS || permissionsConfig || {};
-    
-    // Convert single role to array
-    const requiredRoles = (Array.isArray(requiredRole) ? requiredRole : [requiredRole])
-      .map((role) => normalizeRoleName(role) || String(role || '').toUpperCase())
-      .filter(Boolean);
-    
     if (type === 'role') {
-      // Check if user has required role
-      const roleValues = Object.values(roles);
-      const hasRole = requiredRoles.includes(userRole) || 
-                     (roleValues.length > 0 && requiredRoles.some((r) => roles[r] === userRole));
-      return hasRole;
-    } else if (type === 'permission') {
-      // Check if user's role has required permission
-      const userPermissions = rolePermissions[userRole] || [];
-      const hasPermission = requiredRoles.some((perm) => userPermissions.includes(perm));
-      return hasPermission;
+      const userRoles = new Set(getRoleNames(user));
+      return requiredValues.some((role) => {
+        const normalized = normalizeRoleName(role) || String(role || '').toUpperCase();
+        return userRoles.has(normalized);
+      });
     }
-    
+
+    if (type === 'permission') {
+      const userPermissions = new Set(resolveRequestPermissionNames(user));
+      return requiredValues.some((permission) => userPermissions.has(permission));
+    }
+
     return false;
   } catch (err) {
     logger.error('Error checking WebSocket RBAC', {
@@ -327,13 +337,76 @@ const checkWebSocketRBAC = (user, requiredRole, type = 'role') => {
 
 /**
  * Get sensitive events that require RBAC
- * 
+ *
  * Per websockets.mdc: Role-based access enforced for sensitive events
- * 
+ *
  * @returns {Object} Map of event names to required roles/permissions
  */
 const getSensitiveEvents = () => {
-  return {};
+  const permissions = permissionsConfig?.PERMISSIONS || {};
+  const roles = rolesConfig?.ROLES || rolesConfig || {};
+
+  return {
+    [ACCESS_CONTROL_EVENTS.BREAK_GLASS_REQUESTED]: {
+      type: 'permission',
+      value: [
+        permissions.BREAK_GLASS_REQUEST || 'break_glass:request',
+        permissions.BREAK_GLASS_REVIEW || 'break_glass:review',
+        permissions.BREAK_GLASS_APPROVE || 'break_glass:approve',
+      ],
+    },
+    [ACCESS_CONTROL_EVENTS.BREAK_GLASS_REVIEWED]: {
+      type: 'permission',
+      value: [
+        permissions.BREAK_GLASS_REVIEW || 'break_glass:review',
+        permissions.BREAK_GLASS_APPROVE || 'break_glass:approve',
+      ],
+    },
+    [ACCESS_CONTROL_EVENTS.BREAK_GLASS_REVOKED]: {
+      type: 'permission',
+      value: [
+        permissions.BREAK_GLASS_REQUEST || 'break_glass:request',
+        permissions.BREAK_GLASS_REVIEW || 'break_glass:review',
+        permissions.BREAK_GLASS_APPROVE || 'break_glass:approve',
+      ],
+    },
+    [LAST_OFFICE_EVENTS.SHIFT_CLOSE_APPROVED]: {
+      type: 'permission',
+      value: [
+        permissions.LAST_OFFICE_APPROVE || 'last_office:approve',
+        permissions.LAST_OFFICE_READ || 'last_office:read',
+      ],
+    },
+    [LAST_OFFICE_EVENTS.DAY_CLOSE_APPROVED]: {
+      type: 'permission',
+      value: [
+        permissions.LAST_OFFICE_APPROVE || 'last_office:approve',
+        permissions.LAST_OFFICE_READ || 'last_office:read',
+      ],
+    },
+    [LAST_OFFICE_EVENTS.CLOSEOUT_PACK_READY]: {
+      type: 'role',
+      value: [
+        roles.TENANT_ADMIN || 'TENANT_ADMIN',
+        roles.FACILITY_ADMIN || 'FACILITY_ADMIN',
+        roles.SUPER_ADMIN || 'SUPER_ADMIN',
+      ],
+    },
+    [BILLING_EVENTS.BILLING_REFUND_PROCESSED]: {
+      type: 'permission',
+      value: [
+        permissions.BILLING_WRITE || 'billing:write',
+        permissions.FINANCIAL_APPROVE || 'financial:approve',
+      ],
+    },
+    'mortuary.release_approved': {
+      type: 'permission',
+      value: [
+        permissions.MORTUARY_RELEASE || 'mortuary:release',
+        permissions.MORTUARY_APPROVE || 'mortuary:approve',
+      ],
+    },
+  };
 };
 
 /**

@@ -333,6 +333,182 @@ const clearAccessCatalogCache = (tenantId = null) => {
   accessCatalogCache.clear();
 };
 
+/**
+ * Atomically restore shipped role→permission defaults for a tenant.
+ * Removes excess system-role grants and recreates missing catalog links.
+ *
+ * @param {string} tenantId
+ * @param {Object} [options]
+ * @param {string[]} [options.roleNames]
+ * @returns {Promise<{
+ *   permissions: number,
+ *   roles: number,
+ *   role_permissions_added: number,
+ *   role_permissions_removed: number,
+ *   before: Object,
+ *   after: Object,
+ * }>}
+ */
+const restoreTenantRolePermissionDefaults = async (tenantId, options = {}) => {
+  if (!tenantId) {
+    throw new Error('tenantId is required');
+  }
+
+  const roleNames = Array.isArray(options.roleNames) && options.roleNames.length > 0
+    ? options.roleNames.map((name) => String(name || '').trim().toUpperCase()).filter(Boolean)
+    : [...SYSTEM_ROLE_CODES];
+
+  return prisma.$transaction(async (tx) => {
+    const permissionMap = new Map();
+    for (const name of CANONICAL_PERMISSION_KEYS) {
+      const { displayName, description } = getPermissionMetadata(name);
+      let permission = await tx.permission.findFirst({
+        where: { tenant_id: tenantId, name, deleted_at: null },
+      });
+
+      if (!permission) {
+        permission = await tx.permission.create({
+          data: {
+            tenant_id: tenantId,
+            name,
+            display_name: displayName,
+            description,
+            human_friendly_id: friendlyId('PERM', `${tenantId}:${name}`),
+          },
+        });
+      } else {
+        permission = await tx.permission.update({
+          where: { id: permission.id },
+          data: {
+            display_name: displayName,
+            description,
+            version: Number(permission.version || 1) + 1,
+          },
+        });
+      }
+
+      permissionMap.set(name, permission);
+    }
+
+    let rolePermissionsAdded = 0;
+    let rolePermissionsRemoved = 0;
+    const before = {};
+    const after = {};
+
+    for (const roleName of roleNames) {
+      if (!ROLE_PERMISSIONS[roleName]) {
+        continue;
+      }
+
+      const { displayName, description } = getRoleMetadata(roleName);
+      let role = await tx.role.findFirst({
+        where: { tenant_id: tenantId, name: roleName, deleted_at: null },
+      });
+
+      if (!role) {
+        role = await tx.role.create({
+          data: {
+            tenant_id: tenantId,
+            name: roleName,
+            display_name: displayName,
+            description,
+            human_friendly_id: friendlyId('ROLE', `${tenantId}:${roleName}`),
+          },
+        });
+      } else {
+        role = await tx.role.update({
+          where: { id: role.id },
+          data: {
+            display_name: displayName,
+            description,
+            version: Number(role.version || 1) + 1,
+          },
+        });
+      }
+
+      const existingLinks = await tx.role_permission.findMany({
+        where: { role_id: role.id, deleted_at: null },
+        include: { permission: true },
+      });
+
+      const existingByPermissionId = new Map(
+        existingLinks.map((link) => [link.permission_id, link])
+      );
+      const desiredNames = new Set(ROLE_PERMISSIONS[roleName] || []);
+      before[roleName] = existingLinks
+        .map((link) => link.permission?.name)
+        .filter(Boolean)
+        .sort();
+
+      for (const link of existingLinks) {
+        const permissionName = link.permission?.name;
+        if (!permissionName || !desiredNames.has(permissionName)) {
+          await tx.role_permission.update({
+            where: { id: link.id },
+            data: {
+              deleted_at: new Date(),
+              version: Number(link.version || 1) + 1,
+            },
+          });
+          rolePermissionsRemoved += 1;
+          existingByPermissionId.delete(link.permission_id);
+        }
+      }
+
+      for (const permissionName of desiredNames) {
+        const permission = permissionMap.get(permissionName);
+        if (!permission) {
+          continue;
+        }
+        if (existingByPermissionId.has(permission.id)) {
+          continue;
+        }
+
+        const softDeleted = await tx.role_permission.findFirst({
+          where: {
+            role_id: role.id,
+            permission_id: permission.id,
+            deleted_at: { not: null },
+          },
+        });
+
+        if (softDeleted) {
+          await tx.role_permission.update({
+            where: { id: softDeleted.id },
+            data: {
+              deleted_at: null,
+              version: Number(softDeleted.version || 1) + 1,
+            },
+          });
+        } else {
+          await tx.role_permission.create({
+            data: {
+              role_id: role.id,
+              permission_id: permission.id,
+              human_friendly_id: friendlyId('RPERM', `${role.id}:${permission.id}`),
+            },
+          });
+        }
+        rolePermissionsAdded += 1;
+      }
+
+      after[roleName] = [...desiredNames].sort();
+    }
+
+    permissionCatalogCache.delete(tenantId);
+    accessCatalogCache.delete(tenantId);
+
+    return {
+      permissions: permissionMap.size,
+      roles: roleNames.length,
+      role_permissions_added: rolePermissionsAdded,
+      role_permissions_removed: rolePermissionsRemoved,
+      before,
+      after,
+    };
+  });
+};
+
 module.exports = {
   CANONICAL_PERMISSION_KEYS,
   SYSTEM_ROLE_CODES,
@@ -340,6 +516,7 @@ module.exports = {
   ensureTenantAccessCatalog,
   ensureTenantPermissionCatalog,
   refreshTenantAccessCatalog,
+  restoreTenantRolePermissionDefaults,
   syncPermissionsForTenant,
   syncSystemRolesForTenant,
 };

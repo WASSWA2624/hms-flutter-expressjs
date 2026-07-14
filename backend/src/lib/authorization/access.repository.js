@@ -100,10 +100,8 @@ const findActiveBreakGlassAccess = async ({
           ],
         },
         {
-          OR: [
-            { expires_at: null },
-            { expires_at: { gte: now } },
-          ],
+          // Break-glass must be time-limited; null expiry never grants access.
+          expires_at: { gte: now },
         },
       ],
     },

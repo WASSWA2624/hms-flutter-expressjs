@@ -96,14 +96,16 @@ describe('break-glass-review.service', () => {
   it('creates a review and activates the emergency access window when approved', async () => {
     const access = buildAccess();
     const review = buildReview();
+    const startsAt = new Date(Date.now() + 60 * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + 45 * 60 * 1000).toISOString();
     const nextAccess = buildAccess({
       status: 'ACTIVE',
       review_status: 'APPROVED',
       approved_by_user_id: 'user-ops',
-      approved_at: '2026-04-09T07:05:00.000Z',
-      starts_at: '2026-04-09T07:05:00.000Z',
-      expires_at: '2026-04-09T07:50:00.000Z',
-      reviewed_at: '2026-04-09T07:05:00.000Z',
+      approved_at: new Date().toISOString(),
+      starts_at: startsAt,
+      expires_at: expiresAt,
+      reviewed_at: new Date().toISOString(),
       version: 2,
     });
 
@@ -116,7 +118,7 @@ describe('break-glass-review.service', () => {
         break_glass_access_id: 'BGA-001',
         status: 'APPROVED',
         notes: 'Approved for emergency review',
-        expires_at: '2026-04-09T07:50:00.000Z',
+        expires_at: expiresAt,
       },
       {
         tenant_id: 'tenant-1',

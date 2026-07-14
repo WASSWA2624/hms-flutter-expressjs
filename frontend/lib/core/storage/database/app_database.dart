@@ -19,4 +19,12 @@ final class AppDatabase extends _$AppDatabase {
   MigrationStrategy get migration {
     return AppDatabaseMigrations.forDatabase(this);
   }
+
+  /// Clears locally persisted user/workspace caches on logout or context switch.
+  Future<void> clearUserScopedCaches() async {
+    await transaction(() async {
+      await delete(syncQueueEntries).go();
+      await delete(exampleResourceCacheEntries).go();
+    });
+  }
 }

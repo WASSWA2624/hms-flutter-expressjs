@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/security/session_manager.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
@@ -28,6 +29,20 @@ final class SessionController extends Notifier<SessionState> {
 
   Future<void> persistSession(AuthSession session) async {
     final previousState = state;
+    final AuthSession? previousSession = previousState.session;
+    final bool contextChanged =
+        previousSession != null &&
+        (previousSession.user?.id != session.user?.id ||
+            previousSession.user?.tenantId != session.user?.tenantId ||
+            previousSession.user?.facilityId != session.user?.facilityId);
+
+    if (contextChanged) {
+      state = const SessionState.notReady();
+      await ref
+          .read(sessionIsolationServiceProvider)
+          .disposeAuthenticatedState(closeNetwork: false);
+    }
+
     state = SessionState.authenticated(session: session);
 
     try {
@@ -44,10 +59,12 @@ final class SessionController extends Notifier<SessionState> {
 
   Future<void> logout() async {
     final previousState = state;
-    state = const SessionState.unauthenticated();
+    state = const SessionState.notReady();
 
     try {
+      await ref.read(sessionIsolationServiceProvider).disposeAuthenticatedState();
       await ref.read(sessionManagerProvider).logout();
+      state = const SessionState.unauthenticated();
     } catch (_) {
       state = previousState;
       rethrow;
@@ -55,6 +72,7 @@ final class SessionController extends Notifier<SessionState> {
   }
 
   Future<void> handleUnauthorizedResponse() async {
+    await ref.read(sessionIsolationServiceProvider).disposeAuthenticatedState();
     await ref.read(sessionManagerProvider).handleUnauthorizedResponse();
     state = const SessionState.expired();
   }

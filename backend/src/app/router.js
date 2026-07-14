@@ -87,6 +87,7 @@ apiV1Router.use(authenticate());
 apiV1Router.use(hydrateRequestScope());
 apiV1Router.use(enforceTenantScope());
 apiV1Router.use(hydrateRequestContext());
+apiV1Router.use(require('../middlewares/live-access.middleware').hydrateLiveAccess());
 apiV1Router.use(enforceModuleEntitlement());
 apiV1Router.use(enforceAbacAccess());
 

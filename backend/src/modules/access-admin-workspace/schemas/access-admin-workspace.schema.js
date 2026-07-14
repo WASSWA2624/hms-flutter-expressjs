@@ -53,9 +53,18 @@ const resolveLegacyParamsSchema = z.object({
   id: uuidOrFriendlyIdentifierSchema,
 });
 
+const restoreAccessDefaultsSchema = z.object({
+  tenant_id: uuidOrFriendlyIdentifierSchema.optional(),
+  tenantId: uuidOrFriendlyIdentifierSchema.optional(),
+  reason: z.string().trim().min(1).max(500),
+  role_names: z.array(z.string().trim().min(1).max(120)).max(100).optional(),
+  roleNames: z.array(z.string().trim().min(1).max(120)).max(100).optional(),
+});
+
 module.exports = {
   referenceDataQuerySchema,
   resolveLegacyParamsSchema,
+  restoreAccessDefaultsSchema,
   userIdentifierParamsSchema,
   workspaceQuerySchema,
 };

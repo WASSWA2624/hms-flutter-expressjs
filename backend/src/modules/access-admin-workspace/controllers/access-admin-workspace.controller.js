@@ -62,6 +62,15 @@ const resolveLegacyRoute = asyncHandler(async (req, res) => {
   return sendSuccess(res, 200, 'messages.access_admin_workspace.resolve_legacy.success', data);
 });
 
+const restoreAccessDefaults = asyncHandler(async (req, res) => {
+  const data = await accessAdminWorkspaceService.restoreAccessDefaults(
+    req.body,
+    req.user,
+    req.ip
+  );
+  return sendSuccess(res, 200, 'messages.access_admin_workspace.restore_defaults.success', data);
+});
+
 module.exports = {
   activateRegistration,
   getReferenceData,
@@ -70,4 +79,5 @@ module.exports = {
   rejectRegistration,
   resetDemoUserPassword,
   resolveLegacyRoute,
+  restoreAccessDefaults,
 };

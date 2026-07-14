@@ -19,6 +19,17 @@ jest.mock('@lib/authorization/permission-catalog-sync', () => ({
       display_name: 'Clinical Read',
     },
   ]),
+  restoreTenantRolePermissionDefaults: jest.fn().mockResolvedValue({
+    permissions: 62,
+    roles: 40,
+    role_permissions_added: 2,
+    role_permissions_removed: 1,
+    before: { DOCTOR: ['clinical:read', 'billing:write'] },
+    after: { DOCTOR: ['clinical:read'] },
+  }),
+}));
+jest.mock('@middlewares/live-access.middleware', () => ({
+  clearLiveAccessCaches: jest.fn(),
 }));
 
 const repository = require('@repositories/access-admin-workspace/access-admin-workspace.repository');

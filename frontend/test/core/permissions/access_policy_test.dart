@@ -22,6 +22,33 @@ void main() {
       expect(policy.grants(AppPermissions.systemAdmin), isFalse);
     });
 
+    test(
+      'uses backend explicit permissions as ceiling without role-pack expansion',
+      () {
+        final session = AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['DOCTOR', 'BILLING']),
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
+
+        final policy = AppAccessPolicy.fromSession(session);
+
+        expect(policy.grants(AppPermissions.clinicalRead), isTrue);
+        expect(policy.grants(AppPermissions.clinicalWrite), isFalse);
+        expect(policy.grants(AppPermissions.billingWrite), isFalse);
+      },
+    );
+
     test('normalizes legacy role aliases to canonical backend roles', () {
       final session = AuthSession(
         tokens: SessionTokens(accessToken: 'access-token'),

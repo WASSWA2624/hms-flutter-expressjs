@@ -196,10 +196,16 @@ final class AppAccessPolicy {
         session?.moduleEntitlements ?? const <String, AppModuleEntitlement>{};
     final String? tenantId = _nonEmpty(user?.tenantId);
 
+    // Backend effective permissions are the ceiling. Only expand client role
+    // packs when the session has not yet been enriched with an explicit set
+    // (JWT-only restore before /auth/me). Never union role packs on top of
+    // backend grants — that over-grants UI vs API.
     final Set<AppPermission> merged = <AppPermission>{
-      ...explicitPermissions,
-      ...rolePermissions,
       if (elevated) ...AppPermissions.all,
+      if (explicitPermissions.isNotEmpty)
+        ...explicitPermissions
+      else
+        ...rolePermissions,
     };
 
     // Plan modules take precedence: strip module-scoped rights the plan does
