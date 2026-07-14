@@ -591,6 +591,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonCancelActionLabel => 'Cancel';
 
   @override
+  String get workflowStepHelpActionLabel => 'Help';
+
+  @override
+  String get labWorkflowProgressTitle => 'Workflow progress';
+
+  @override
   String get commonCloseActionLabel => 'Close';
 
   @override
@@ -11133,6 +11139,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labWorkflowNextReviewItems => 'Review pending items';
+
+  @override
+  String get labCollectConfirmBody =>
+      'Mark samples for this order as collected now?';
+
+  @override
+  String get labReceiveConfirmBody =>
+      'Mark the next receivable sample as received now?';
+
+  @override
+  String get dischargeClearanceProgressTitle => 'Clearance progress';
 
   @override
   String get labReferenceRangeOverrideLabel => 'Reference range override';

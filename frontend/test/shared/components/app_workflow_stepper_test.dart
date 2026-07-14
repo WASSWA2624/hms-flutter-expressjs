@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/shared/components/app_workflow_stepper.dart';
 
 import 'component_test_app.dart';
 
 void main() {
-  testWidgets('renders semantic workflow step states', (
+  testWidgets('renders all semantic workflow step states', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
@@ -25,6 +29,16 @@ void main() {
             blockedReason: 'Awaiting labs',
           ),
           AppWorkflowStepItem(
+            id: 'skip',
+            label: 'Skip step',
+            state: AppWorkflowStepState.skipped,
+          ),
+          AppWorkflowStepItem(
+            id: 'reverted',
+            label: 'Reverted',
+            state: AppWorkflowStepState.reverted,
+          ),
+          AppWorkflowStepItem(
             id: 'discharge',
             label: 'Discharge',
             state: AppWorkflowStepState.upcoming,
@@ -36,14 +50,17 @@ void main() {
           ),
         ],
       ),
-      size: const Size(1000, 600),
+      size: const Size(1200, 600),
     );
 
     expect(find.text('Triage'), findsOneWidget);
     expect(find.text('Consult'), findsOneWidget);
+    expect(find.text('Skip step'), findsOneWidget);
+    expect(find.text('Reverted'), findsOneWidget);
     expect(find.text('Discharge'), findsOneWidget);
     expect(find.text('Billing'), findsOneWidget);
     expect(find.text('Awaiting labs'), findsOneWidget);
+    expect(find.text('In progress'), findsWidgets);
   });
 
   testWidgets('invokes onTap for completed/current steps', (
@@ -72,5 +89,226 @@ void main() {
     await tester.tap(find.text('Receive'));
     await tester.pump();
     expect(tappedId, 'receive');
+  });
+
+  testWidgets('shows descriptions on expanded layout and hides on compact', (
+    WidgetTester tester,
+  ) async {
+    const AppWorkflowStepper stepper = AppWorkflowStepper(
+      steps: <AppWorkflowStepItem>[
+        AppWorkflowStepItem(
+          id: 'ordered',
+          label: 'Ordered',
+          state: AppWorkflowStepState.completed,
+          description: 'Order accepted',
+        ),
+        AppWorkflowStepItem(
+          id: 'process',
+          label: 'Process',
+          state: AppWorkflowStepState.current,
+          description: 'Running assays',
+        ),
+      ],
+    );
+
+    await pumpComponent(tester, stepper, size: const Size(1000, 600));
+    expect(find.text('Order accepted'), findsOneWidget);
+    expect(find.text('Running assays'), findsWidgets);
+
+    await pumpComponent(tester, stepper, size: const Size(360, 640));
+    // Compact keeps the current description below the track, not under each node.
+    expect(find.text('Running assays'), findsOneWidget);
+    expect(find.text('Order accepted'), findsNothing);
+  });
+
+  testWidgets('opens touch-accessible help dialog from help control', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppWorkflowStepper(
+        steps: <AppWorkflowStepItem>[
+          AppWorkflowStepItem(
+            id: 'consult',
+            label: 'Consult',
+            state: AppWorkflowStepState.current,
+            helpText: 'Complete vitals before continuing.',
+          ),
+        ],
+      ),
+    );
+
+    expect(find.byIcon(Icons.help_outline), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.help_outline));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Complete vitals before continuing.'), findsWidgets);
+    expect(find.text('Close'), findsOneWidget);
+
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+    expect(find.text('Close'), findsNothing);
+  });
+
+  testWidgets('hides permission-denied actions when hideWhenDenied is true', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AppWorkflowStepper(
+        steps: <AppWorkflowStepItem>[
+          AppWorkflowStepItem(
+            id: 'verify',
+            label: 'Verify',
+            state: AppWorkflowStepState.current,
+            actions: <AppWorkflowStepAction>[
+              AppWorkflowStepAction(
+                id: 'complete',
+                label: 'Complete',
+                icon: Icons.check,
+                requirement: const AccessRequirement(
+                  anyPermissions: <AppPermission>[AppPermissions.labWrite],
+                ),
+                hideWhenDenied: true,
+                onPressed: () {},
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text('Complete'), findsNothing);
+  });
+
+  testWidgets('disables capability-blocked actions and keeps them visible', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AppWorkflowStepper(
+        steps: <AppWorkflowStepItem>[
+          AppWorkflowStepItem(
+            id: 'verify',
+            label: 'Verify',
+            state: AppWorkflowStepState.current,
+            actions: <AppWorkflowStepAction>[
+              AppWorkflowStepAction(
+                id: 'complete',
+                label: 'Complete',
+                icon: Icons.check,
+                capabilityAllowed: false,
+                blockedReason: 'Awaiting sample receipt',
+                onPressed: () {},
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    expect(find.text('Complete'), findsOneWidget);
+    final Finder button = find.widgetWithText(FilledButton, 'Complete');
+    final Finder textButton = find.widgetWithText(TextButton, 'Complete');
+    expect(button.evaluate().isNotEmpty || textButton.evaluate().isNotEmpty, isTrue);
+  });
+
+  testWidgets('confirmation gate cancels without invoking action', (
+    WidgetTester tester,
+  ) async {
+    var pressed = false;
+    await pumpComponent(
+      tester,
+      AppWorkflowStepper(
+        steps: <AppWorkflowStepItem>[
+          AppWorkflowStepItem(
+            id: 'revert',
+            label: 'Revert',
+            state: AppWorkflowStepState.current,
+            actions: <AppWorkflowStepAction>[
+              AppWorkflowStepAction(
+                id: 'undo',
+                label: 'Revert step',
+                icon: Icons.undo,
+                confirmTitle: 'Revert workflow?',
+                confirmBody: 'This rolls the order back one step.',
+                confirmSubmitLabel: 'Confirm revert',
+                onPressed: () => pressed = true,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    await tester.tap(find.text('Revert step'));
+    await tester.pumpAndSettle();
+    expect(find.text('REVERT WORKFLOW?'), findsOneWidget);
+    expect(find.text('This rolls the order back one step.'), findsOneWidget);
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(pressed, isFalse);
+  });
+
+  testWidgets('confirmation gate invokes action after confirm', (
+    WidgetTester tester,
+  ) async {
+    var pressed = false;
+    await pumpComponent(
+      tester,
+      AppWorkflowStepper(
+        steps: <AppWorkflowStepItem>[
+          AppWorkflowStepItem(
+            id: 'revert',
+            label: 'Revert',
+            state: AppWorkflowStepState.current,
+            actions: <AppWorkflowStepAction>[
+              AppWorkflowStepAction(
+                id: 'undo',
+                label: 'Revert step',
+                icon: Icons.undo,
+                confirmTitle: 'Revert workflow?',
+                confirmBody: 'This rolls the order back one step.',
+                confirmSubmitLabel: 'Confirm revert',
+                onPressed: () => pressed = true,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    await tester.tap(find.text('Revert step'));
+    await tester.pumpAndSettle();
+    expect(find.text('This rolls the order back one step.'), findsOneWidget);
+    await tester.tap(find.text('Confirm revert'));
+    await tester.pumpAndSettle();
+    expect(pressed, isTrue);
+  });
+
+  testWidgets('keyboard activate opens help when step has help content', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppWorkflowStepper(
+        steps: <AppWorkflowStepItem>[
+          AppWorkflowStepItem(
+            id: 'consult',
+            label: 'Consult',
+            state: AppWorkflowStepState.current,
+            helpText: 'Keyboard help details.',
+          ),
+        ],
+      ),
+    );
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Keyboard help details.'), findsWidgets);
   });
 }

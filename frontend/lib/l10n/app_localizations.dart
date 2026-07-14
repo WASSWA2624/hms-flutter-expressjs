@@ -1198,6 +1198,18 @@ abstract class AppLocalizations {
   /// **'Cancel'**
   String get commonCancelActionLabel;
 
+  /// Accessible label for workflow step help that works with keyboard and touch.
+  ///
+  /// In en, this message translates to:
+  /// **'Help'**
+  String get workflowStepHelpActionLabel;
+
+  /// Title for the lab order workflow step progress section.
+  ///
+  /// In en, this message translates to:
+  /// **'Workflow progress'**
+  String get labWorkflowProgressTitle;
+
   /// Label for actions that close the current dialog.
   ///
   /// In en, this message translates to:
@@ -20661,6 +20673,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Review pending items'**
   String get labWorkflowNextReviewItems;
+
+  /// Confirmation body before collecting lab samples from the workflow stepper.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark samples for this order as collected now?'**
+  String get labCollectConfirmBody;
+
+  /// Confirmation body before receiving a lab sample from the workflow stepper.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark the next receivable sample as received now?'**
+  String get labReceiveConfirmBody;
+
+  /// Title for discharge clearance workflow step progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Clearance progress'**
+  String get dischargeClearanceProgressTitle;
 
   /// Label for manually overriding the applied reference range.
   ///

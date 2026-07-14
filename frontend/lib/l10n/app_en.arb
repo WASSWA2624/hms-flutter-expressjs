@@ -765,6 +765,14 @@
   "@commonCancelActionLabel": {
     "description": "Label for actions that dismiss the current dialog or flow."
   },
+  "workflowStepHelpActionLabel": "Help",
+  "@workflowStepHelpActionLabel": {
+    "description": "Accessible label for workflow step help that works with keyboard and touch."
+  },
+  "labWorkflowProgressTitle": "Workflow progress",
+  "@labWorkflowProgressTitle": {
+    "description": "Title for the lab order workflow step progress section."
+  },
   "commonCloseActionLabel": "Close",
   "@commonCloseActionLabel": {
     "description": "Label for actions that close the current dialog."
@@ -14435,6 +14443,18 @@
   "labWorkflowNextReviewItems": "Review pending items",
   "@labWorkflowNextReviewItems": {
     "description": "Next workflow action to review pending lab order items."
+  },
+  "labCollectConfirmBody": "Mark samples for this order as collected now?",
+  "@labCollectConfirmBody": {
+    "description": "Confirmation body before collecting lab samples from the workflow stepper."
+  },
+  "labReceiveConfirmBody": "Mark the next receivable sample as received now?",
+  "@labReceiveConfirmBody": {
+    "description": "Confirmation body before receiving a lab sample from the workflow stepper."
+  },
+  "dischargeClearanceProgressTitle": "Clearance progress",
+  "@dischargeClearanceProgressTitle": {
+    "description": "Title for discharge clearance workflow step progress."
   },
   "labReferenceRangeOverrideLabel": "Reference range override",
   "@labReferenceRangeOverrideLabel": {

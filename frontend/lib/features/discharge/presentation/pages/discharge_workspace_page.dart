@@ -762,16 +762,57 @@ class _ClearanceChecklist extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final List<DischargeClearanceItem> items = detail.clearanceItems;
+    final int firstPendingIndex = items.indexWhere(
+      (DischargeClearanceItem item) =>
+          item.state == DischargeClearanceState.pending,
+    );
 
     return AppWorkspaceDetailPanel(
       title: l10n.dischargeChecklistTitle,
       description: l10n.dischargeChecklistBody,
-      child: Wrap(
-        spacing: theme.spacing.sm,
-        runSpacing: theme.spacing.sm,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          for (final DischargeClearanceItem item in detail.clearanceItems)
-            SizedBox(width: 230, child: DischargeClearanceTile(item: item)),
+          Text(
+            l10n.dischargeClearanceProgressTitle,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          SizedBox(height: theme.spacing.sm),
+          AppWorkflowStepper(
+            semanticLabel: l10n.dischargeClearanceProgressTitle,
+            showDescriptions: false,
+            steps: <AppWorkflowStepItem>[
+              for (var index = 0; index < items.length; index += 1)
+                AppWorkflowStepItem(
+                  id: items[index].code.name,
+                  label: dischargeClearanceLabel(context, items[index].code),
+                  icon: dischargeClearanceIcon(items[index].code),
+                  helpText: items[index].reference,
+                  state: switch (items[index].state) {
+                    DischargeClearanceState.complete =>
+                      AppWorkflowStepState.completed,
+                    DischargeClearanceState.unavailable =>
+                      AppWorkflowStepState.unavailable,
+                    DischargeClearanceState.pending =>
+                      index == firstPendingIndex
+                          ? AppWorkflowStepState.current
+                          : AppWorkflowStepState.upcoming,
+                  },
+                ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.md),
+          Wrap(
+            spacing: theme.spacing.sm,
+            runSpacing: theme.spacing.sm,
+            children: <Widget>[
+              for (final DischargeClearanceItem item in items)
+                SizedBox(width: 230, child: DischargeClearanceTile(item: item)),
+            ],
+          ),
         ],
       ),
     );
