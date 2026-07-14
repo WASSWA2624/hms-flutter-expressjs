@@ -1,6 +1,6 @@
 # Application Improvement Requirements
 
-The requirements below are arranged in a logical implementation sequence, starting with the foundational improvements (security, authorization, reusable components, responsiveness), followed by feature modules, workflows, billing, reporting, and department-specific functionality. Each section is self-contained so it can be implemented independently.
+The requirements are structured in a logical sequence, beginning with foundational improvements (security, authorization, reusable components, responsiveness), followed by feature modules, workflows, billing, reporting, and department-specific functionality. Each section can be implemented independently.
 
 ---
 
@@ -8,18 +8,18 @@ The requirements below are arranged in a logical implementation sequence, starti
 
 ### Objectives
 
-Implement a secure authorization model that consistently enforces access control throughout the application.
+Build a secure authorization model that enforces access control across all parts of the application.
 
 ### Requirements
 
-- Enforce both **RBAC (Role-Based Access Control)** and **ABAC (Attribute-Based Access Control)** across the entire application.
-- Authorization must be enforced in both the frontend and backend APIs.
-- Users must never see pages, buttons, menus, actions, workflows, or data they are not authorized to access.
-- Hide unauthorized functionality instead of simply disabling it.
-- Immediately clear all user-specific cached state during logout or account switching.
-- Ensure dashboards, cached pages, and all UI components load only data belonging to the currently authenticated user.
-- Prevent any previous user's information from being displayed, even momentarily, after another user signs in.
-- Eliminate any possibility of exposing sensitive patient or operational data through stale UI state or cached data.
+- Enforce both **RBAC (Role-Based Access Control)** and **ABAC (Attribute-Based Access Control)** throughout the app.
+- Ensure authorization checks exist in both frontend and backend APIs.
+- Users must never see, interact with, or even have visible any functionality (pages, buttons, menus, workflows, or data) unless authorized.
+- Hide, rather than merely disable, features for unauthorized users.
+- Immediately clear all user-specific cached state on logout or account switch.
+- All dashboards, pages, and UI components must load only the currently authenticated user’s data.
+- Prevent display of prior user information after switching users, even briefly.
+- Eliminate any risk of stale/cached UI exposing sensitive patient or operational data.
 
 ---
 
@@ -27,16 +27,16 @@ Implement a secure authorization model that consistently enforces access control
 
 ### Objectives
 
-Establish a consistent, responsive, reusable design system that will be used throughout the application.
+Establish a design system with consistent, reusable, responsive UI across the application.
 
 ### Requirements
 
-- Design specifically for **Mobile**, **Tablet**, and **Desktop** devices.
-- Optimize layouts for each screen size instead of scaling desktop layouts.
-- Standardize typography, spacing, colors, elevations, animations, and interaction patterns.
-- Minimize unnecessary text by using intuitive visual design.
-- Establish a unified icon system.
-- Use consistent icons for:
+- Design natively for **Mobile**, **Tablet**, and **Desktop** (not simple scaling).
+- Fully optimize layouts for each form factor.
+- Standardize typography, spacing, color, elevation, animation, and interaction paradigms.
+- Minimize extraneous text by maximizing intuitive visual communication.
+- Maintain a unified icon system.
+- Apply consistent icons to:
   - Buttons
   - Navigation
   - Menus
@@ -51,8 +51,8 @@ Establish a consistent, responsive, reusable design system that will be used thr
   - Alerts
   - Badges
   - Toolbars
-- Icons should improve usability while maintaining accessibility.
-- Ensure every reusable component is fully responsive.
+- Icons should enhance usability and uphold accessibility standards.
+- Every reusable component must be fully responsive.
 
 ---
 
@@ -60,11 +60,11 @@ Establish a consistent, responsive, reusable design system that will be used thr
 
 ### Objectives
 
-Create reusable UI components before implementing feature modules to maximize consistency and reduce duplication.
+Develop high-utility reusable components as a priority, to drive UI/UX consistency and minimize duplication before feature modules are built.
 
 ### Requirements
 
-Implement reusable components including, but not limited to:
+Must include the following reusable components (not exhaustive):
 
 - Patient Details
 - Actions
@@ -77,42 +77,42 @@ Implement reusable components including, but not limited to:
 - Detail Cards
 - Dialog Components
 
+#### Core Reusable Component: Step Progress & Actions
+
+Create a **reusable workflow/progress step component** that visualizes the current step, completed steps, upcoming steps, and available actions for all types of encounters, workflows, requests, and task progressions.  
+- The component must support customizable steps, each with:
+  - An appropriate icon and label.
+  - Dynamic action labels such as: “Perform”, “Complete”, “Skip”, “Revert”, “Resume”, etc., intelligently reflecting what is allowed in the current context.
+  - Action buttons for each actionable step.
+  - Tooltip support: On hover, each action button displays a tooltip clearly explaining what action will be performed at that step.
+  - If an action is disabled, the tooltip must explain the reason (e.g. permissions, prerequisites, or workflow constraints).
+- Support clear differentiation between completed/active/pending/disabled steps.
+- Make this component fully reusable throughout the application (e.g. for lab, radiology, admissions, appointments, billing, etc).
+
 ### General Requirements
 
-- Modern, elegant, and responsive design.
-- Context-aware.
-- Fully configurable.
-- Maximum reuse.
-- Eliminate duplicated implementations.
-- Remove obsolete code introduced by previous implementations.
+- Modern, visually appealing, and responsive.
+- Context-aware and fully configurable.
+- Design for maximum reuse and extensibility.
+- Remove duplicate code and legacy UI implementations.
 
 ### Patient Details Component
 
-- Display only relevant patient information for the current workflow.
-- Include a persistent **Show More / Show Less** toggle.
-
-**Show Less**
-
-- Patient Name
-- Patient ID
-- Age
-- Gender
-
-**Show More**
-
-- Display all applicable patient information.
-
-Persist the user's preference across sessions and devices.
+- Display only patient information relevant for the current workflow.
+- Provide a persistent **Show More / Show Less** toggle:
+  - **Show Less**: Patient Name, Patient ID, Age, Gender
+  - **Show More**: All applicable patient/encounter information
+- User’s toggle preference must persist across sessions and devices.
 
 ### Actions Component
 
-- RBAC/ABAC aware.
-- Support loading, disabled, confirmation, contextual, and asynchronous states.
-- Reuse across all forms, dialogs, detail pages, and workflows.
+- Must be RBAC and ABAC aware.
+- Support loading, disabled, confirmation, contextual, asynchronous states.
+- Used throughout all forms, dialogs, detail pages, and workflows.
 
 ### Clinical Results Preview
 
-Create reusable preview components for:
+Reusable preview components for:
 
 - Laboratory Results
 - Radiology Reports
@@ -120,13 +120,9 @@ Create reusable preview components for:
 - Clinical Assessments
 - Other clinical modules
 
-Support:
-
-- Inline preview
-- Modal preview
-- Full-screen preview
-
-Display information chronologically and consistently across the application.
+Requirements:
+- Support inline, modal, and full-screen previews.
+- Consistent, chronological display across the application.
 
 ---
 
@@ -134,10 +130,9 @@ Display information chronologically and consistently across the application.
 
 ### Requirements
 
-- Automatically determine laboratory reference ranges based on patient age and gender.
-- Display only the applicable reference ranges in previews and printed reports.
-- Enable the **Print Report** button by default whenever printable results exist.
-- The button must never depend on clicking **Reset Selection**.
+- Automatically determine appropriate reference ranges for lab results by patient age and gender.
+- Display only the relevant reference ranges in previews/printed reports.
+- **Print Report** button enabled by default if printable results exist (not dependent on “Reset Selection” or other triggers).
 
 ---
 
@@ -145,7 +140,7 @@ Display information chronologically and consistently across the application.
 
 ### Objectives
 
-Implement a dedicated Radiology module with an end-to-end workflow.
+Introduce a dedicated Radiology module with a full end-to-end workflow.
 
 ### Workflow
 
@@ -159,12 +154,12 @@ Implement a dedicated Radiology module with an end-to-end workflow.
 
 ### Requirements
 
-- Automatically add new requests to the Radiology work queue.
-- Provide a dedicated workspace for radiographers and radiologists.
-- Use reusable Patient Details and Radiology Request components.
-- Allow report creation, editing, review, and submission.
-- Synchronize workflow updates in real time.
-- Display workflow status to all authorized users throughout the application.
+- All new requests auto-populate the Radiology work queue.
+- Provide a specialized workspace for radiographers/radiologists.
+- Use the reusable Patient Details, Radiology Request, and Step Progress components.
+- Support creation, editing, review, and submission of radiology reports.
+- Workflow updates must synchronize in real-time.
+- Display up-to-date workflow status to all authorized users everywhere in the application.
 
 ---
 
@@ -172,11 +167,11 @@ Implement a dedicated Radiology module with an end-to-end workflow.
 
 ### Objectives
 
-Integrate billing seamlessly into every clinical workflow.
+Fully integrate billing into every clinical workflow.
 
 ### Requirements
 
-Automatically generate configured charges for every billable activity, including:
+Automatically generate charges for each billable activity:
 
 - Consultations
 - Laboratory
@@ -189,15 +184,14 @@ Automatically generate configured charges for every billable activity, including
 - Consumables
 - Future configurable services
 
-Additional requirements:
+Other requirements:
 
-- Use only configured billing catalogue prices.
-- Never hardcode charges.
-- Display every billable item to authorized billing users.
-- Support billing, settlement, auditing, reporting, and reconciliation.
-- Prevent duplicate billing.
-- Never bill consultation twice for one encounter.
-- Never generate duplicate service charges unless explicitly permitted.
+- Always use configured billing catalogue prices; never hardcode.
+- Display all billable items for authorized billing users.
+- Support billing, settlement, audit, reporting, and reconciliation.
+- Prevent duplicate billing:
+  - Never bill a consultation twice for a single encounter.
+  - Prevent duplicate service charges unless explicitly allowed.
 
 ---
 
@@ -205,9 +199,9 @@ Additional requirements:
 
 ### Objectives
 
-Implement a unified reporting and printing system for every department.
+Implement a unified reporting and printing solution for all departments.
 
-Supported departments include:
+Departments include (not limited to):
 
 - OPD
 - IPD
@@ -221,12 +215,12 @@ Supported departments include:
 
 ### Requirements
 
-- **Reuse the existing report template** as the foundation for all printable reports.
-- Reuse shared report components wherever possible to ensure consistency.
-- Reports must never duplicate content or display the same clinical information more than once.
-- Generate comprehensive patient reports using reusable report sections.
+- **Reuse the existing report template** for all printable reports.
+- Compose reports using shared, configurable sections and components for consistency.
+- Avoid duplicate information or content.
+- Generate comprehensive, sectioned patient reports.
 
-Support configurable sections including:
+Configurable sections may include:
 
 - Patient information
 - Encounter details
@@ -243,15 +237,14 @@ Support configurable sections including:
 - Billing information
 - Other clinical records
 
-Additional requirements:
+Other requirements:
 
-- Allow users to select which sections to print.
-- Sections with no available data should not be selected by default.
+- Allow user selection of sections to print (sections without data unselected by default).
 - Print only selected sections.
-- Display information chronologically.
-- Use clear section headings.
-- Produce printer-friendly, professional-quality reports.
-- Restrict printing to authorized RBAC/ABAC users only.
+- Chronological display.
+- Clear headings.
+- Printer-optimized, high-quality reports.
+- Limit report printing to authorized RBAC/ABAC users.
 
 ---
 
@@ -259,26 +252,21 @@ Additional requirements:
 
 ### Objectives
 
-Implement a dedicated Reception module optimized for front-desk operations.
+Create a dedicated Reception module tailored for front-desk operations.
 
 ### Reception Responsibilities
 
-Receptionists should be able to:
+Reception staff should be able to:
 
-- Register patients.
-- Update patient information.
-- Schedule appointments.
-- Reschedule appointments.
-- Cancel appointments.
-- Check in patients.
-- Start encounters.
-- Route patients.
-- View patient queues.
-- View appointments.
-- View requested services.
-- View estimated charges.
-- View outstanding balances.
-- Guide patients regarding payment methods.
+- Register patients
+- Edit patient information
+- Schedule/reschedule/cancel appointments
+- Check in patients
+- Start encounters
+- Route patients
+- View patient queues and appointments
+- Check requested services, estimated charges, outstanding balances
+- Advise on payment methods
 - Capture:
   - Insurance information
   - Payment method
@@ -291,25 +279,17 @@ Receptionists should be able to:
 
 Receptionists must **not**:
 
-- Finalize billing
-- Approve billing
-- Waive charges
-- Reverse charges
-- Adjust charges
-- Complete billing transactions
+- Finalize, approve, adjust, waive, reverse, or complete billing transactions  
+unless granted explicit billing permission.
 
-unless they explicitly possess billing permissions.
-
-Clearly separate billing guidance from billing operations.
-
-Hide all unauthorized billing actions.
+Clearly separate billing guidance from billing operations and conceal unauthorized actions.
 
 ### Design Requirements
 
-- Optimize for high-volume reception workflows.
-- Minimize navigation.
-- Display queues, appointments, encounters, routing, and waiting status in real time.
-- Reuse all shared components to ensure consistency.
+- Streamlined for high-volume workflows.
+- Minimized navigation.
+- Real-time display of queues, appointments, encounters, routing, and waiting status.
+- Reuse all shared components, including the new step/progress component, for visual consistency.
 
 ---
 
@@ -317,17 +297,14 @@ Hide all unauthorized billing actions.
 
 ### Objectives
 
-Ensure the entire application follows a unified architecture and user experience.
+Mandate that the application follows a unified, modular, and maintainable architecture and user experience.
 
 ### Requirements
 
-- Standardize reusable components throughout the application.
-- Eliminate duplicated UI implementations.
-- Eliminate duplicated business logic.
-- Improve maintainability through modular architecture.
-- Keep workflows consistent across all modules.
-- Synchronize UI updates, workflow changes, billing updates, and clinical results in real time.
-- Continuously remove obsolete code.
-- Prioritize reuse before introducing new implementations.
-- Ensure every newly implemented feature integrates seamlessly with the existing architecture, design system, authorization model, reusable components, and billing engine.
-
+- Use standardized, reusable components and business logic throughout.
+- Continuously remove duplicate code and UI.
+- Keep workflows and UI patterns consistent.
+- Modularize architecture for maintainability.
+- Synchronize UI, workflow, billing, and clinical results in real-time.
+- Always prioritize reuse—reuse first, new implementation second.
+- All new features must integrate with the overarching architecture, design system, authorization, reusable components, billing engine, and workflow step/progress components.
