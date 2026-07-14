@@ -32,6 +32,13 @@ const rolesConfig = require('@config/roles');
 const permissionsConfig = require('@config/permissions');
 const { normalizeRoleName } = require('@config/roles');
 const { WS_MAX_CONNECTIONS, WS_HEARTBEAT_INTERVAL, WS_HEARTBEAT_TIMEOUT } = require('@config/env');
+const authRepository = require('@repositories/auth/auth.repository');
+const {
+  resolveTenantModuleEntitlements,
+} = require('@lib/subscriptions/tenant-entitlements');
+const {
+  resolveEffectiveAccess,
+} = require('@lib/authorization/effective-access');
 
 /**
  * Map of UserID → Set<WebSocket> connections.
@@ -105,20 +112,74 @@ const normalizedScopeValue = (value) => {
   return normalized || null;
 };
 
+const EVENT_PERMISSION_PREFIXES = Object.freeze([
+  [['patient.'], 'patient:read'],
+  [
+    ['clinical.', 'encounter.', 'admission.', 'nursing.', 'medication.'],
+    'clinical:read',
+  ],
+  [['lab.'], 'lab:read'],
+  [['radiology.'], 'radiology:read'],
+  [['pharmacy.'], 'pharmacy:read'],
+  [['billing.', 'payment.', 'invoice.', 'refund.'], 'billing:read'],
+]);
+
+const permissionForEvent = (event) => {
+  const normalized = String(event || '').trim().toLowerCase();
+  const match = EVENT_PERMISSION_PREFIXES.find(([prefixes]) =>
+    prefixes.some((prefix) => normalized.startsWith(prefix))
+  );
+  return match?.[1] || null;
+};
+
 /**
  * Prevent tenant/facility-scoped events from crossing an authenticated
  * connection's JWT context. Unscoped operational events remain deliverable.
  */
-const canConnectionReceivePayload = (ws, payload = {}) => {
+const canConnectionReceivePayload = (ws, payload = {}, event = null) => {
+  const inferredPermission = permissionForEvent(event);
+  const requiredPermissions = [
+    ...(Array.isArray(payload?.required_permissions)
+      ? payload.required_permissions
+      : []),
+    ...(payload?.required_permission ? [payload.required_permission] : []),
+    ...(inferredPermission ? [inferredPermission] : []),
+  ]
+    .map((permission) => String(permission || '').trim())
+    .filter(Boolean);
   const tenantId = normalizedScopeValue(payload?.tenant_id);
   const facilityId = normalizedScopeValue(payload?.facility_id);
-  if (!tenantId && !facilityId) {
+  if (
+    requiredPermissions.length === 0 &&
+    !tenantId &&
+    !facilityId
+  ) {
     return true;
   }
 
   const user = connectionUserData.get(ws);
   if (!user) {
     return false;
+  }
+  if (requiredPermissions.length > 0) {
+    const grantedPermissions = new Set(
+      (Array.isArray(user.permissions) ? user.permissions : [])
+        .map((permission) =>
+          typeof permission === 'string'
+            ? permission
+            : permission?.name || permission?.permission?.name
+        )
+        .map((permission) => String(permission || '').trim())
+        .filter(Boolean)
+    );
+    if (
+      !grantedPermissions.has('system:admin') &&
+      !requiredPermissions.some((permission) =>
+        grantedPermissions.has(permission)
+      )
+    ) {
+      return false;
+    }
   }
 
   const userTenantId = normalizedScopeValue(user.tenant_id || user.tenantId);
@@ -162,7 +223,7 @@ const sendToUser = (userId, event, payload = {}) => {
     sockets.forEach((ws) => {
       if (
         ws.readyState !== ws.OPEN ||
-        !canConnectionReceivePayload(ws, payload)
+        !canConnectionReceivePayload(ws, payload, event)
       ) {
         return;
       }
@@ -232,7 +293,7 @@ const broadcast = (event, payload = {}, excludeUserIds = []) => {
       sockets.forEach((ws) => {
         if (
           ws.readyState !== ws.OPEN ||
-          !canConnectionReceivePayload(ws, payload)
+          !canConnectionReceivePayload(ws, payload, event)
         ) {
           return;
         }
@@ -734,12 +795,46 @@ const authenticateConnection = async (ws, token) => {
       throw new Error('Token does not contain user ID');
     }
     
-    // Return authenticated user data from token (no DB lookup at base phase)
-    return {
+    const tokenUser = {
       id: userId,
       email: decoded.email,
       role: decoded.role,
       ...decoded
+    };
+    const tenantId = decoded.tenant_id || decoded.tenantId || null;
+    if (!tenantId) {
+      return tokenUser;
+    }
+
+    const liveUser = await authRepository.findUserById(userId);
+    if (
+      !liveUser ||
+      liveUser.status !== 'ACTIVE' ||
+      String(liveUser.tenant_id || '') !== String(tenantId)
+    ) {
+      throw new Error('Authenticated user is no longer active');
+    }
+    const entitlements = await resolveTenantModuleEntitlements(tenantId);
+    const access = resolveEffectiveAccess(
+      {
+        ...liveUser,
+        tenant_id: tenantId,
+        facility_id:
+          decoded.facility_id || decoded.facilityId || liveUser.facility_id,
+      },
+      {
+        moduleEntitlements: entitlements,
+        applyPlanGate: true,
+        applyAssignedModuleGate: true,
+      }
+    );
+
+    return {
+      ...tokenUser,
+      roles: liveUser.roles,
+      permissions: access.permissions,
+      assigned_modules: access.assigned_modules,
+      module_entitlements: entitlements,
     };
   } catch (err) {
     // Log authentication failure (but don't expose sensitive details)

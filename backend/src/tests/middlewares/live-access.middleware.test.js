@@ -52,6 +52,45 @@ describe('live-access.middleware', () => {
     expect(req.user.module_entitlements).toHaveLength(1);
   });
 
+  it('normalizes Prisma user_role rows into role name strings', async () => {
+    authRepository.findUserById.mockResolvedValue({
+      id: 'user-1',
+      tenant_id: 'tenant-1',
+      status: 'ACTIVE',
+      roles: [
+        {
+          role_id: 'role-1',
+          role: {
+            name: ROLES.SUPER_ADMIN,
+            permissions: [
+              { permission: { name: 'system:admin' } },
+              { permission: { name: 'clinical:read' } },
+            ],
+          },
+        },
+      ],
+    });
+    resolveTenantModuleEntitlements.mockResolvedValue([
+      { module_slug: 'encounters-vitals', is_active: true },
+    ]);
+
+    const req = {
+      user: {
+        id: 'user-1',
+        tenant_id: 'tenant-1',
+        roles: [ROLES.SUPER_ADMIN],
+        permissions: ['system:admin', 'clinical:read'],
+      },
+    };
+    const next = jest.fn();
+
+    await hydrateLiveAccess()(req, {}, next);
+
+    expect(next).toHaveBeenCalledWith();
+    expect(req.user.roles).toEqual([ROLES.SUPER_ADMIN]);
+    expect(req.user.role).toBe(ROLES.SUPER_ADMIN);
+  });
+
   it('plan-gates super admins when operating in a tenant', async () => {
     authRepository.findUserById.mockResolvedValue({
       id: 'user-1',
@@ -106,6 +145,31 @@ describe('live-access.middleware', () => {
 
     expect(req.user.permissions).toEqual(['clinical:read']);
     expect(req.user.permissions).not.toContain('clinical:write');
+    expect(next).toHaveBeenCalledWith();
+  });
+
+  it('applies live package caps to API key permissions', async () => {
+    resolveTenantModuleEntitlements.mockResolvedValue([
+      {
+        module_slug: 'patient-registry',
+        is_active: true,
+        plan_tier_code: 'FREE',
+      },
+    ]);
+    const req = {
+      user: {
+        id: 'user-1',
+        tenant_id: 'tenant-1',
+        auth_type: 'api_key',
+        api_key_id: 'key-1',
+        permissions: ['patient:read', 'patient:delete', 'billing:write'],
+      },
+    };
+    const next = jest.fn();
+
+    await hydrateLiveAccess()(req, {}, next);
+
+    expect(req.user.permissions).toEqual(['patient:read']);
     expect(next).toHaveBeenCalledWith();
   });
 });

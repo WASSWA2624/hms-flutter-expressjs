@@ -9,11 +9,21 @@ void main() {
     late AppDatabase database;
     late DateTime now;
     late DriftSyncQueueService service;
+    late SessionDataPartition partition;
 
     setUp(() {
       database = AppDatabase(NativeDatabase.memory());
       now = DateTime.utc(2026, 5, 13, 10);
-      service = DriftSyncQueueService(database: database, clock: () => now);
+      partition = SessionDataPartition(
+        userId: 'user-1',
+        tenantId: 'tenant-1',
+        facilityId: 'facility-1',
+      );
+      service = DriftSyncQueueService(
+        database: database,
+        partition: partition,
+        clock: () => now,
+      );
     });
 
     tearDown(() async {
@@ -36,6 +46,7 @@ void main() {
       expect(batch.single.operation, SyncQueueOperation.create);
       expect(batch.single.status, SyncQueueStatus.pending);
       expect(batch.single.payload.value, '{"id":"local-1"}');
+      expect(batch.single.partition.key, partition.key);
     });
 
     test(
@@ -105,6 +116,41 @@ void main() {
       expect(batch, hasLength(100));
       expect(batch.first.localId, 'local-0');
       expect(batch.last.localId, 'local-99');
+    });
+
+    test('never exposes another account or facility queue', () async {
+      await service.enqueue(
+        SyncQueueEnqueueRequest(
+          localId: 'same-local-id',
+          operation: SyncQueueOperation.update,
+          payload: SyncQueuePayload.fromMap(<String, Object?>{'owner': 'one'}),
+        ),
+      );
+      final otherService = DriftSyncQueueService(
+        database: database,
+        partition: SessionDataPartition(
+          userId: 'user-2',
+          tenantId: 'tenant-1',
+          facilityId: 'facility-2',
+        ),
+        clock: () => now,
+      );
+      await otherService.enqueue(
+        SyncQueueEnqueueRequest(
+          localId: 'same-local-id',
+          operation: SyncQueueOperation.update,
+          payload: SyncQueuePayload.fromMap(<String, Object?>{'owner': 'two'}),
+        ),
+      );
+
+      expect(
+        (await service.nextBatch()).single.payload.value,
+        '{"owner":"one"}',
+      );
+      expect(
+        (await otherService.nextBatch()).single.payload.value,
+        '{"owner":"two"}',
+      );
     });
   });
 }

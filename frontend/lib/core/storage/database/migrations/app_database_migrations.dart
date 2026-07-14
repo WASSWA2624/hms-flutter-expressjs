@@ -1,7 +1,7 @@
 part of '../app_database.dart';
 
 abstract final class AppDatabaseMigrations {
-  static const int currentSchemaVersion = 2;
+  static const int currentSchemaVersion = 3;
 
   static MigrationStrategy forDatabase(AppDatabase database) {
     return MigrationStrategy(
@@ -20,6 +20,15 @@ abstract final class AppDatabaseMigrations {
           await database.customStatement(
             'DROP TABLE IF EXISTS example_resource_cache_entries',
           );
+        }
+
+        if (from < 3) {
+          // Legacy queue rows had no authenticated owner and cannot be safely
+          // attributed after an account or tenant switch.
+          await database.customStatement(
+            'DROP TABLE IF EXISTS sync_queue_entries',
+          );
+          await migrator.createTable(database.syncQueueEntries);
         }
 
         if (to > currentSchemaVersion) {

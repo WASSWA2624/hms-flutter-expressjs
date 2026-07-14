@@ -9,6 +9,48 @@ class $SyncQueueEntriesTable extends SyncQueueEntries
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $SyncQueueEntriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _partitionKeyMeta = const VerificationMeta(
+    'partitionKey',
+  );
+  @override
+  late final GeneratedColumn<String> partitionKey = GeneratedColumn<String>(
+    'partition_key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _tenantIdMeta = const VerificationMeta(
+    'tenantId',
+  );
+  @override
+  late final GeneratedColumn<String> tenantId = GeneratedColumn<String>(
+    'tenant_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _facilityIdMeta = const VerificationMeta(
+    'facilityId',
+  );
+  @override
+  late final GeneratedColumn<String> facilityId = GeneratedColumn<String>(
+    'facility_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _localIdMeta = const VerificationMeta(
     'localId',
   );
@@ -112,6 +154,10 @@ class $SyncQueueEntriesTable extends SyncQueueEntries
   );
   @override
   List<GeneratedColumn> get $columns => [
+    partitionKey,
+    userId,
+    tenantId,
+    facilityId,
     localId,
     operation,
     payloadJson,
@@ -134,6 +180,39 @@ class $SyncQueueEntriesTable extends SyncQueueEntries
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('partition_key')) {
+      context.handle(
+        _partitionKeyMeta,
+        partitionKey.isAcceptableOrUnknown(
+          data['partition_key']!,
+          _partitionKeyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_partitionKeyMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('tenant_id')) {
+      context.handle(
+        _tenantIdMeta,
+        tenantId.isAcceptableOrUnknown(data['tenant_id']!, _tenantIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tenantIdMeta);
+    }
+    if (data.containsKey('facility_id')) {
+      context.handle(
+        _facilityIdMeta,
+        facilityId.isAcceptableOrUnknown(data['facility_id']!, _facilityIdMeta),
+      );
+    }
     if (data.containsKey('local_id')) {
       context.handle(
         _localIdMeta,
@@ -197,11 +276,27 @@ class $SyncQueueEntriesTable extends SyncQueueEntries
   }
 
   @override
-  Set<GeneratedColumn> get $primaryKey => {localId};
+  Set<GeneratedColumn> get $primaryKey => {partitionKey, localId};
   @override
   SyncQueueEntryRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return SyncQueueEntryRow(
+      partitionKey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}partition_key'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      tenantId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}tenant_id'],
+      )!,
+      facilityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}facility_id'],
+      ),
       localId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}local_id'],
@@ -260,6 +355,10 @@ class $SyncQueueEntriesTable extends SyncQueueEntries
 
 class SyncQueueEntryRow extends DataClass
     implements Insertable<SyncQueueEntryRow> {
+  final String partitionKey;
+  final String userId;
+  final String tenantId;
+  final String? facilityId;
   final String localId;
   final SyncQueueOperation operation;
   final String payloadJson;
@@ -270,6 +369,10 @@ class SyncQueueEntryRow extends DataClass
   final DateTime? lastAttemptAt;
   final String? failureCode;
   const SyncQueueEntryRow({
+    required this.partitionKey,
+    required this.userId,
+    required this.tenantId,
+    this.facilityId,
     required this.localId,
     required this.operation,
     required this.payloadJson,
@@ -283,6 +386,12 @@ class SyncQueueEntryRow extends DataClass
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    map['partition_key'] = Variable<String>(partitionKey);
+    map['user_id'] = Variable<String>(userId);
+    map['tenant_id'] = Variable<String>(tenantId);
+    if (!nullToAbsent || facilityId != null) {
+      map['facility_id'] = Variable<String>(facilityId);
+    }
     map['local_id'] = Variable<String>(localId);
     {
       map['operation'] = Variable<String>(
@@ -309,6 +418,12 @@ class SyncQueueEntryRow extends DataClass
 
   SyncQueueEntriesCompanion toCompanion(bool nullToAbsent) {
     return SyncQueueEntriesCompanion(
+      partitionKey: Value(partitionKey),
+      userId: Value(userId),
+      tenantId: Value(tenantId),
+      facilityId: facilityId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(facilityId),
       localId: Value(localId),
       operation: Value(operation),
       payloadJson: Value(payloadJson),
@@ -331,6 +446,10 @@ class SyncQueueEntryRow extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return SyncQueueEntryRow(
+      partitionKey: serializer.fromJson<String>(json['partitionKey']),
+      userId: serializer.fromJson<String>(json['userId']),
+      tenantId: serializer.fromJson<String>(json['tenantId']),
+      facilityId: serializer.fromJson<String?>(json['facilityId']),
       localId: serializer.fromJson<String>(json['localId']),
       operation: $SyncQueueEntriesTable.$converteroperation.fromJson(
         serializer.fromJson<String>(json['operation']),
@@ -350,6 +469,10 @@ class SyncQueueEntryRow extends DataClass
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'partitionKey': serializer.toJson<String>(partitionKey),
+      'userId': serializer.toJson<String>(userId),
+      'tenantId': serializer.toJson<String>(tenantId),
+      'facilityId': serializer.toJson<String?>(facilityId),
       'localId': serializer.toJson<String>(localId),
       'operation': serializer.toJson<String>(
         $SyncQueueEntriesTable.$converteroperation.toJson(operation),
@@ -367,6 +490,10 @@ class SyncQueueEntryRow extends DataClass
   }
 
   SyncQueueEntryRow copyWith({
+    String? partitionKey,
+    String? userId,
+    String? tenantId,
+    Value<String?> facilityId = const Value.absent(),
     String? localId,
     SyncQueueOperation? operation,
     String? payloadJson,
@@ -377,6 +504,10 @@ class SyncQueueEntryRow extends DataClass
     Value<DateTime?> lastAttemptAt = const Value.absent(),
     Value<String?> failureCode = const Value.absent(),
   }) => SyncQueueEntryRow(
+    partitionKey: partitionKey ?? this.partitionKey,
+    userId: userId ?? this.userId,
+    tenantId: tenantId ?? this.tenantId,
+    facilityId: facilityId.present ? facilityId.value : this.facilityId,
     localId: localId ?? this.localId,
     operation: operation ?? this.operation,
     payloadJson: payloadJson ?? this.payloadJson,
@@ -391,6 +522,14 @@ class SyncQueueEntryRow extends DataClass
   );
   SyncQueueEntryRow copyWithCompanion(SyncQueueEntriesCompanion data) {
     return SyncQueueEntryRow(
+      partitionKey: data.partitionKey.present
+          ? data.partitionKey.value
+          : this.partitionKey,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      tenantId: data.tenantId.present ? data.tenantId.value : this.tenantId,
+      facilityId: data.facilityId.present
+          ? data.facilityId.value
+          : this.facilityId,
       localId: data.localId.present ? data.localId.value : this.localId,
       operation: data.operation.present ? data.operation.value : this.operation,
       payloadJson: data.payloadJson.present
@@ -414,6 +553,10 @@ class SyncQueueEntryRow extends DataClass
   @override
   String toString() {
     return (StringBuffer('SyncQueueEntryRow(')
+          ..write('partitionKey: $partitionKey, ')
+          ..write('userId: $userId, ')
+          ..write('tenantId: $tenantId, ')
+          ..write('facilityId: $facilityId, ')
           ..write('localId: $localId, ')
           ..write('operation: $operation, ')
           ..write('payloadJson: $payloadJson, ')
@@ -429,6 +572,10 @@ class SyncQueueEntryRow extends DataClass
 
   @override
   int get hashCode => Object.hash(
+    partitionKey,
+    userId,
+    tenantId,
+    facilityId,
     localId,
     operation,
     payloadJson,
@@ -443,6 +590,10 @@ class SyncQueueEntryRow extends DataClass
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is SyncQueueEntryRow &&
+          other.partitionKey == this.partitionKey &&
+          other.userId == this.userId &&
+          other.tenantId == this.tenantId &&
+          other.facilityId == this.facilityId &&
           other.localId == this.localId &&
           other.operation == this.operation &&
           other.payloadJson == this.payloadJson &&
@@ -455,6 +606,10 @@ class SyncQueueEntryRow extends DataClass
 }
 
 class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntryRow> {
+  final Value<String> partitionKey;
+  final Value<String> userId;
+  final Value<String> tenantId;
+  final Value<String?> facilityId;
   final Value<String> localId;
   final Value<SyncQueueOperation> operation;
   final Value<String> payloadJson;
@@ -466,6 +621,10 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntryRow> {
   final Value<String?> failureCode;
   final Value<int> rowid;
   const SyncQueueEntriesCompanion({
+    this.partitionKey = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.tenantId = const Value.absent(),
+    this.facilityId = const Value.absent(),
     this.localId = const Value.absent(),
     this.operation = const Value.absent(),
     this.payloadJson = const Value.absent(),
@@ -478,6 +637,10 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntryRow> {
     this.rowid = const Value.absent(),
   });
   SyncQueueEntriesCompanion.insert({
+    required String partitionKey,
+    required String userId,
+    required String tenantId,
+    this.facilityId = const Value.absent(),
     required String localId,
     required SyncQueueOperation operation,
     required String payloadJson,
@@ -488,12 +651,19 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntryRow> {
     this.lastAttemptAt = const Value.absent(),
     this.failureCode = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : localId = Value(localId),
+  }) : partitionKey = Value(partitionKey),
+       userId = Value(userId),
+       tenantId = Value(tenantId),
+       localId = Value(localId),
        operation = Value(operation),
        payloadJson = Value(payloadJson),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt);
   static Insertable<SyncQueueEntryRow> custom({
+    Expression<String>? partitionKey,
+    Expression<String>? userId,
+    Expression<String>? tenantId,
+    Expression<String>? facilityId,
     Expression<String>? localId,
     Expression<String>? operation,
     Expression<String>? payloadJson,
@@ -506,6 +676,10 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntryRow> {
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
+      if (partitionKey != null) 'partition_key': partitionKey,
+      if (userId != null) 'user_id': userId,
+      if (tenantId != null) 'tenant_id': tenantId,
+      if (facilityId != null) 'facility_id': facilityId,
       if (localId != null) 'local_id': localId,
       if (operation != null) 'operation': operation,
       if (payloadJson != null) 'payload_json': payloadJson,
@@ -520,6 +694,10 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntryRow> {
   }
 
   SyncQueueEntriesCompanion copyWith({
+    Value<String>? partitionKey,
+    Value<String>? userId,
+    Value<String>? tenantId,
+    Value<String?>? facilityId,
     Value<String>? localId,
     Value<SyncQueueOperation>? operation,
     Value<String>? payloadJson,
@@ -532,6 +710,10 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntryRow> {
     Value<int>? rowid,
   }) {
     return SyncQueueEntriesCompanion(
+      partitionKey: partitionKey ?? this.partitionKey,
+      userId: userId ?? this.userId,
+      tenantId: tenantId ?? this.tenantId,
+      facilityId: facilityId ?? this.facilityId,
       localId: localId ?? this.localId,
       operation: operation ?? this.operation,
       payloadJson: payloadJson ?? this.payloadJson,
@@ -548,6 +730,18 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntryRow> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (partitionKey.present) {
+      map['partition_key'] = Variable<String>(partitionKey.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (tenantId.present) {
+      map['tenant_id'] = Variable<String>(tenantId.value);
+    }
+    if (facilityId.present) {
+      map['facility_id'] = Variable<String>(facilityId.value);
+    }
     if (localId.present) {
       map['local_id'] = Variable<String>(localId.value);
     }
@@ -588,6 +782,10 @@ class SyncQueueEntriesCompanion extends UpdateCompanion<SyncQueueEntryRow> {
   @override
   String toString() {
     return (StringBuffer('SyncQueueEntriesCompanion(')
+          ..write('partitionKey: $partitionKey, ')
+          ..write('userId: $userId, ')
+          ..write('tenantId: $tenantId, ')
+          ..write('facilityId: $facilityId, ')
           ..write('localId: $localId, ')
           ..write('operation: $operation, ')
           ..write('payloadJson: $payloadJson, ')
@@ -930,9 +1128,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final $ExampleResourceCacheEntriesTable exampleResourceCacheEntries =
       $ExampleResourceCacheEntriesTable(this);
-  late final Index syncQueueEntriesStatusUpdatedAtIdx = Index(
-    'sync_queue_entries_status_updated_at_idx',
-    'CREATE INDEX sync_queue_entries_status_updated_at_idx ON sync_queue_entries (status, updated_at)',
+  late final Index syncQueueEntriesPartitionStatusUpdatedAtIdx = Index(
+    'sync_queue_entries_partition_status_updated_at_idx',
+    'CREATE INDEX sync_queue_entries_partition_status_updated_at_idx ON sync_queue_entries (partition_key, status, updated_at)',
   );
   late final Index syncQueueEntriesOperationIdx = Index(
     'sync_queue_entries_operation_idx',
@@ -949,7 +1147,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     syncQueueEntries,
     exampleResourceCacheEntries,
-    syncQueueEntriesStatusUpdatedAtIdx,
+    syncQueueEntriesPartitionStatusUpdatedAtIdx,
     syncQueueEntriesOperationIdx,
     exampleResourceCacheEntriesUpdatedAtIdx,
   ];
@@ -957,6 +1155,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 
 typedef $$SyncQueueEntriesTableCreateCompanionBuilder =
     SyncQueueEntriesCompanion Function({
+      required String partitionKey,
+      required String userId,
+      required String tenantId,
+      Value<String?> facilityId,
       required String localId,
       required SyncQueueOperation operation,
       required String payloadJson,
@@ -970,6 +1172,10 @@ typedef $$SyncQueueEntriesTableCreateCompanionBuilder =
     });
 typedef $$SyncQueueEntriesTableUpdateCompanionBuilder =
     SyncQueueEntriesCompanion Function({
+      Value<String> partitionKey,
+      Value<String> userId,
+      Value<String> tenantId,
+      Value<String?> facilityId,
       Value<String> localId,
       Value<SyncQueueOperation> operation,
       Value<String> payloadJson,
@@ -991,6 +1197,26 @@ class $$SyncQueueEntriesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<String> get partitionKey => $composableBuilder(
+    column: $table.partitionKey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get tenantId => $composableBuilder(
+    column: $table.tenantId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get facilityId => $composableBuilder(
+    column: $table.facilityId,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get localId => $composableBuilder(
     column: $table.localId,
     builder: (column) => ColumnFilters(column),
@@ -1048,6 +1274,26 @@ class $$SyncQueueEntriesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<String> get partitionKey => $composableBuilder(
+    column: $table.partitionKey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get tenantId => $composableBuilder(
+    column: $table.tenantId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get facilityId => $composableBuilder(
+    column: $table.facilityId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get localId => $composableBuilder(
     column: $table.localId,
     builder: (column) => ColumnOrderings(column),
@@ -1103,6 +1349,22 @@ class $$SyncQueueEntriesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<String> get partitionKey => $composableBuilder(
+    column: $table.partitionKey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get tenantId =>
+      $composableBuilder(column: $table.tenantId, builder: (column) => column);
+
+  GeneratedColumn<String> get facilityId => $composableBuilder(
+    column: $table.facilityId,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get localId =>
       $composableBuilder(column: $table.localId, builder: (column) => column);
 
@@ -1176,6 +1438,10 @@ class $$SyncQueueEntriesTableTableManager
               $$SyncQueueEntriesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
+                Value<String> partitionKey = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> tenantId = const Value.absent(),
+                Value<String?> facilityId = const Value.absent(),
                 Value<String> localId = const Value.absent(),
                 Value<SyncQueueOperation> operation = const Value.absent(),
                 Value<String> payloadJson = const Value.absent(),
@@ -1187,6 +1453,10 @@ class $$SyncQueueEntriesTableTableManager
                 Value<String?> failureCode = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SyncQueueEntriesCompanion(
+                partitionKey: partitionKey,
+                userId: userId,
+                tenantId: tenantId,
+                facilityId: facilityId,
                 localId: localId,
                 operation: operation,
                 payloadJson: payloadJson,
@@ -1200,6 +1470,10 @@ class $$SyncQueueEntriesTableTableManager
               ),
           createCompanionCallback:
               ({
+                required String partitionKey,
+                required String userId,
+                required String tenantId,
+                Value<String?> facilityId = const Value.absent(),
                 required String localId,
                 required SyncQueueOperation operation,
                 required String payloadJson,
@@ -1211,6 +1485,10 @@ class $$SyncQueueEntriesTableTableManager
                 Value<String?> failureCode = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SyncQueueEntriesCompanion.insert(
+                partitionKey: partitionKey,
+                userId: userId,
+                tenantId: tenantId,
+                facilityId: facilityId,
                 localId: localId,
                 operation: operation,
                 payloadJson: payloadJson,

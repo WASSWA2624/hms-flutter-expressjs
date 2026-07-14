@@ -65,18 +65,29 @@ const extractModuleCode = (entry) => {
 const getRoleNames = (user = {}) => {
   const roles = Array.isArray(user.roles) ? user.roles : [];
   const names = roles
-    .map((role) => {
+    .flatMap((role) => {
       if (typeof role === 'string') {
-        return normalizeRoleName(role) || text(role).toUpperCase();
+        const normalized = normalizeRoleName(role) || text(role).toUpperCase();
+        return normalized ? [normalized] : [];
       }
-      return (
-        normalizeRoleName(role?.name || role?.role_name || role?.code) ||
-        text(role?.name || role?.role_name || role?.code).toUpperCase()
-      );
+      // ORM shape: user_role { role: { name } } or flat { name }
+      const candidates = [
+        role?.role?.name,
+        role?.role?.code,
+        role?.name,
+        role?.role_name,
+        role?.code,
+      ];
+      return candidates
+        .map((candidate) => normalizeRoleName(candidate) || text(candidate).toUpperCase())
+        .filter(Boolean);
     })
     .filter(Boolean);
 
-  const direct = normalizeRoleName(user.role) || text(user.role).toUpperCase();
+  const direct =
+    normalizeRoleName(user.role) ||
+    normalizeRoleName(user.role?.name) ||
+    text(typeof user.role === 'string' ? user.role : user.role?.name).toUpperCase();
   if (direct) names.push(direct);
   return uniqueValues(names);
 };

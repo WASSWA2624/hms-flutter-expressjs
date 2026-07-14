@@ -10,7 +10,7 @@ CREATE TABLE `user_module_assignment` (
   `deleted_at` DATETIME(3) NULL,
   `version` INTEGER NOT NULL DEFAULT 1,
 
-  UNIQUE INDEX `user_module_assignment_user_id_module_id_tenant_id_facility_id_key`
+  UNIQUE INDEX `uma_user_mod_tenant_fac_key`
     (`user_id`, `module_id`, `tenant_id`, `facility_id`),
   INDEX `user_module_assignment_user_id_idx` (`user_id`),
   INDEX `user_module_assignment_module_id_idx` (`module_id`),

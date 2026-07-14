@@ -2,11 +2,19 @@ part of '../app_database.dart';
 
 @DataClassName('SyncQueueEntryRow')
 @TableIndex(
-  name: 'sync_queue_entries_status_updated_at_idx',
-  columns: {#status, #updatedAt},
+  name: 'sync_queue_entries_partition_status_updated_at_idx',
+  columns: {#partitionKey, #status, #updatedAt},
 )
 @TableIndex(name: 'sync_queue_entries_operation_idx', columns: {#operation})
 class SyncQueueEntries extends Table {
+  TextColumn get partitionKey => text()();
+
+  TextColumn get userId => text()();
+
+  TextColumn get tenantId => text()();
+
+  TextColumn get facilityId => text().nullable()();
+
   TextColumn get localId => text()();
 
   TextColumn get operation => textEnum<SyncQueueOperation>()();
@@ -28,5 +36,5 @@ class SyncQueueEntries extends Table {
   TextColumn get failureCode => text().nullable()();
 
   @override
-  Set<Column> get primaryKey => {localId};
+  Set<Column> get primaryKey => {partitionKey, localId};
 }

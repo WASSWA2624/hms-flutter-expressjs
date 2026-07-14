@@ -35,8 +35,8 @@ void main() {
 
       await tester.pumpWidget(
         wrap(
-          AppAccessGate(
-            requirement: const AccessRequirement(
+          const AppAccessGate(
+            requirement: AccessRequirement(
               anyPermissions: <AppPermission>[AppPermissions.billingWrite],
             ),
             child: const Text('secret'),
@@ -65,8 +65,8 @@ void main() {
 
       await tester.pumpWidget(
         wrap(
-          AppAccessGate(
-            requirement: const AccessRequirement(
+          const AppAccessGate(
+            requirement: AccessRequirement(
               anyPermissions: <AppPermission>[AppPermissions.clinicalRead],
             ),
             child: const Text('allowed'),

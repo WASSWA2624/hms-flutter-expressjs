@@ -1768,7 +1768,7 @@ model user_module_assignment {
   user   user   @relation(fields: [user_id], references: [id])
   module module @relation(fields: [module_id], references: [id])
 
-  @@unique([user_id, module_id, tenant_id, facility_id])
+  @@unique([user_id, module_id, tenant_id, facility_id], map: "uma_user_mod_tenant_fac_key")
   @@index([user_id])
   @@index([module_id])
   @@index([tenant_id])

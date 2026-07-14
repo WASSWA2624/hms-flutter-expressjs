@@ -388,7 +388,6 @@ void main() {
           tenantId: 'tenant-1',
           roles: <String>['TENANT_ADMIN'],
         ),
-        moduleEntitlements: const <AppModuleEntitlement>[],
       );
       final policy = AppAccessPolicy.fromSession(session);
 

@@ -5,6 +5,21 @@ const {
 const { ROLES } = require('@config/roles');
 
 describe('effective-access', () => {
+  test('reads role names from Prisma user_role embeds', () => {
+    const { getRoleNames, userHasSuperAdminRole } = require('@lib/authorization/effective-access');
+    const user = {
+      roles: [
+        { role: { name: ROLES.SUPER_ADMIN } },
+        { role: { name: 'ADMINISTRATOR' } },
+      ],
+    };
+
+    expect(getRoleNames(user)).toEqual(
+      expect.arrayContaining([ROLES.SUPER_ADMIN, ROLES.TENANT_ADMIN])
+    );
+    expect(userHasSuperAdminRole(user)).toBe(true);
+  });
+
   test('intersects grant union with subscription modules', () => {
     const access = resolveEffectiveAccess(
       {

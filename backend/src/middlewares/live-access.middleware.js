@@ -9,8 +9,14 @@ const {
   resolveTenantModuleEntitlements,
 } = require('@lib/subscriptions/tenant-entitlements');
 const {
+  getRoleNames,
   resolveEffectiveAccess,
 } = require('@lib/authorization/effective-access');
+const {
+  filterPermissionNamesByPlanModules,
+  filterPermissionNamesBySubscriptionPermissions,
+  normalizeEnabledModuleSet,
+} = require('@lib/authorization/permission-module-map');
 const authRepository = require('@repositories/auth/auth.repository');
 const { HttpError } = require('@lib/errors');
 
@@ -69,7 +75,7 @@ const isApiKeyContext = (user = {}) =>
 const hydrateLiveAccess = () => async (req, res, next) => {
   try {
     const user = req.user;
-    if (!user || typeof user !== 'object' || isApiKeyContext(user)) {
+    if (!user || typeof user !== 'object') {
       return next();
     }
 
@@ -98,6 +104,25 @@ const hydrateLiveAccess = () => async (req, res, next) => {
       setCachedEntitlements(tenantId, entitlements);
     }
 
+    if (isApiKeyContext(user)) {
+      const tokenPermissions = Array.isArray(user.permissions)
+        ? user.permissions
+            .map((permission) => String(permission || '').trim())
+            .filter(Boolean)
+        : [];
+      user.permissions = filterPermissionNamesBySubscriptionPermissions(
+        filterPermissionNamesByPlanModules(
+          tokenPermissions,
+          normalizeEnabledModuleSet(entitlements)
+        ),
+        entitlements
+      );
+      user.permission_names = user.permissions;
+      user.module_entitlements = entitlements;
+      user.moduleEntitlements = entitlements;
+      return next();
+    }
+
     const liveAccess = resolveEffectiveAccess(
       {
         ...liveUser,
@@ -111,7 +136,14 @@ const hydrateLiveAccess = () => async (req, res, next) => {
       }
     );
 
-    user.roles = liveUser.roles;
+    // Keep request roles as canonical name strings. Prisma returns user_role
+    // rows; authorize()/RBAC compare against SUPER_ADMIN etc. and must not see
+    // nested ORM objects (which stringify to "[OBJECT OBJECT]").
+    const liveRoleNames = getRoleNames(liveUser);
+    user.roles = liveRoleNames.length
+      ? liveRoleNames
+      : getRoleNames(user);
+    user.role = user.roles[0] || user.role || null;
     user.permissions = liveAccess.permissions;
     user.permission_names = liveAccess.permissions;
     user.direct_permissions = liveAccess.direct_permissions;

@@ -15,7 +15,7 @@ describe('plan-module-matrix', () => {
     }
   });
 
-  test('Free tier includes core clinic stack and excludes higher tiers', () => {
+  test('Free tier is limited to identity, registry, and minimal reports', () => {
     const freeSlugs = modulesForPlanTier('FREE', {
       includeLegacyAliases: false,
     }).map((entry) => entry.slug);
@@ -24,13 +24,7 @@ describe('plan-module-matrix', () => {
       expect.arrayContaining([
         'auth-rbac-basics',
         'patient-registry',
-        'scheduling-queue',
-        'encounters-vitals',
-        'lab-workflows',
-        'pharmacy-dispensing',
-        'billing-payments',
-        'insurance-claims',
-        'notifications-communications',
+        'reporting-analytics',
       ])
     );
     expect(freeSlugs).not.toContain('radiology-workflows');
@@ -40,7 +34,7 @@ describe('plan-module-matrix', () => {
     expect(freeSlugs).not.toContain('developer-tools');
   });
 
-  test('Basic adds radiology only beyond Free', () => {
+  test('Basic adds core administration and outpatient operations', () => {
     const basic = new Set(
       modulesForPlanTier('BASIC', { includeLegacyAliases: false }).map(
         (entry) => entry.slug
@@ -52,10 +46,22 @@ describe('plan-module-matrix', () => {
       )
     );
     const added = [...basic].filter((slug) => !free.has(slug));
-    expect(added).toEqual(['radiology-workflows']);
+    expect(added).toEqual(
+      expect.arrayContaining([
+        'scheduling-queue',
+        'encounters-vitals',
+        'pharmacy-dispensing',
+        'billing-payments',
+        'notifications-communications',
+        'inpatient-bed-management',
+        'subscription-controls',
+      ])
+    );
+    expect(added).not.toContain('lab-workflows');
+    expect(added).not.toContain('radiology-workflows');
   });
 
-  test('Pro / Advanced / Custom accumulate correctly', () => {
+  test('Advanced / Pro / Custom accumulate in catalog order', () => {
     expect(isEligibleForTier('PRO', 'BASIC')).toBe(true);
     expect(isEligibleForTier('BASIC', 'PRO')).toBe(false);
 
@@ -69,24 +75,25 @@ describe('plan-module-matrix', () => {
         'physiotherapy',
         'facilities-maintenance',
         'reporting-analytics',
+        'icu-critical-care',
+        'hr-rosters',
+        'integrations-core',
       ])
     );
-    expect(pro).not.toContain('icu-critical-care');
-    expect(pro).not.toContain('hr-rosters');
 
     const advanced = modulesForPlanTier('ADVANCED', {
       includeLegacyAliases: false,
     }).map((entry) => entry.slug);
     expect(advanced).toEqual(
       expect.arrayContaining([
-        'icu-critical-care',
-        'inventory-procurement-lite',
-        'mortuary',
-        'biomedical-engineering-suite',
-        'extra-storage',
-        'hr-rosters',
+        'lab-workflows',
+        'radiology-workflows',
+        'insurance-claims',
+        'physiotherapy',
       ])
     );
+    expect(advanced).not.toContain('icu-critical-care');
+    expect(advanced).not.toContain('hr-rosters');
     expect(advanced).not.toContain('developer-tools');
 
     const custom = modulesForPlanTier('CUSTOM', {
@@ -96,12 +103,16 @@ describe('plan-module-matrix', () => {
       expect.arrayContaining([
         'subscription-controls',
         'compliance-audit-core',
-        'integrations-core',
         'advanced-analytics',
         'sms-credits',
-        'developer-tools',
       ])
     );
+    expect(custom).not.toContain('developer-tools');
+
+    const developer = modulesForPlanTier('DEVELOPER', {
+      includeLegacyAliases: false,
+    }).map((entry) => entry.slug);
+    expect(developer).toContain('developer-tools');
   });
 
   test('commercial matrix has unique slugs', () => {

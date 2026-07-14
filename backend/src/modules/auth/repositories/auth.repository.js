@@ -127,8 +127,26 @@ const splitAdminName = (value) => {
   };
 };
 
-const isMissingSchemaArtifactError = (error) =>
-  error?.code === 'P2021' || error?.code === 'P2022';
+const isMissingSchemaArtifactError = (error) => {
+  if (error?.code === 'P2021' || error?.code === 'P2022') {
+    return true;
+  }
+
+  const message = String(
+    error?.message || error?.meta?.cause || error?.meta?.driverAdapterError?.message || ''
+  );
+
+  // Stale Prisma clients reject unknown include fields before hitting the DB.
+  if (
+    error?.name === 'PrismaClientValidationError' &&
+    /Unknown field `[^`]+` for include statement/i.test(message)
+  ) {
+    return true;
+  }
+
+  // Driver adapters sometimes surface missing-table errors without P2021.
+  return /does not exist in the current database/i.test(message);
+};
 
 const sortUsersByCreatedAtDesc = (users = []) => {
   return [...users].sort((left, right) => {

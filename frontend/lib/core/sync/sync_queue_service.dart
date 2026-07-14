@@ -6,9 +6,13 @@ import 'package:hosspi_hms/core/sync/sync_queue_entry.dart';
 
 typedef DateTimeReader = DateTime Function();
 
-final syncQueueServiceProvider = Provider<SyncQueueService>((ref) {
-  return DriftSyncQueueService(database: ref.watch(appDatabaseProvider));
-});
+final syncQueueServiceProvider =
+    Provider.family<SyncQueueService, SessionDataPartition>((ref, partition) {
+      return DriftSyncQueueService(
+        database: ref.watch(appDatabaseProvider),
+        partition: partition,
+      );
+    });
 
 abstract interface class SyncQueueService {
   Future<void> enqueue(SyncQueueEnqueueRequest request);
@@ -27,11 +31,14 @@ abstract interface class SyncQueueService {
 final class DriftSyncQueueService implements SyncQueueService {
   const DriftSyncQueueService({
     required AppDatabase database,
+    required SessionDataPartition partition,
     DateTimeReader clock = DateTime.now,
   }) : _database = database,
+       _partition = partition,
        _clock = clock;
 
   final AppDatabase _database;
+  final SessionDataPartition _partition;
   final DateTimeReader _clock;
 
   @override
@@ -42,6 +49,10 @@ final class DriftSyncQueueService implements SyncQueueService {
         .into(_database.syncQueueEntries)
         .insertOnConflictUpdate(
           SyncQueueEntriesCompanion.insert(
+            partitionKey: _partition.key,
+            userId: _partition.userId,
+            tenantId: _partition.tenantId,
+            facilityId: Value(_partition.facilityId),
             localId: request.localId,
             operation: request.operation,
             payloadJson: request.payload.value,
@@ -57,10 +68,12 @@ final class DriftSyncQueueService implements SyncQueueService {
     final rows =
         await (_database.select(_database.syncQueueEntries)
               ..where(
-                (table) => table.status.isInValues(const [
-                  SyncQueueStatus.pending,
-                  SyncQueueStatus.failed,
-                ]),
+                (table) =>
+                    table.partitionKey.equals(_partition.key) &
+                    table.status.isInValues(const [
+                      SyncQueueStatus.pending,
+                      SyncQueueStatus.failed,
+                    ]),
               )
               ..orderBy([
                 (table) => OrderingTerm.asc(table.createdAt),
@@ -124,19 +137,22 @@ final class DriftSyncQueueService implements SyncQueueService {
       return;
     }
 
-    await (_database.update(
-      _database.syncQueueEntries,
-    )..where((table) => table.localId.equals(normalizedLocalId))).write(
-      SyncQueueEntriesCompanion(
-        status: Value(status),
-        updatedAt: Value(_clock().toUtc()),
-        lastAttemptAt: Value(lastAttemptAt),
-        failureCode: Value(failureCode),
-        retryCount: retryCount == null
-            ? const Value.absent()
-            : Value(retryCount),
-      ),
-    );
+    await (_database.update(_database.syncQueueEntries)..where(
+          (table) =>
+              table.partitionKey.equals(_partition.key) &
+              table.localId.equals(normalizedLocalId),
+        ))
+        .write(
+          SyncQueueEntriesCompanion(
+            status: Value(status),
+            updatedAt: Value(_clock().toUtc()),
+            lastAttemptAt: Value(lastAttemptAt),
+            failureCode: Value(failureCode),
+            retryCount: retryCount == null
+                ? const Value.absent()
+                : Value(retryCount),
+          ),
+        );
   }
 
   Future<SyncQueueEntryRow?> _rowByLocalId(String localId) {
@@ -145,14 +161,22 @@ final class DriftSyncQueueService implements SyncQueueService {
       return Future<SyncQueueEntryRow?>.value();
     }
 
-    return (_database.select(_database.syncQueueEntries)
-          ..where((table) => table.localId.equals(normalizedLocalId)))
+    return (_database.select(_database.syncQueueEntries)..where(
+          (table) =>
+              table.partitionKey.equals(_partition.key) &
+              table.localId.equals(normalizedLocalId),
+        ))
         .getSingleOrNull();
   }
 }
 
 SyncQueueEntry _syncQueueEntryFromRow(SyncQueueEntryRow row) {
   return SyncQueueEntry(
+    partition: SessionDataPartition(
+      userId: row.userId,
+      tenantId: row.tenantId,
+      facilityId: row.facilityId,
+    ),
     localId: row.localId,
     operation: row.operation,
     payload: SyncQueuePayload.fromJsonString(row.payloadJson),

@@ -4,6 +4,40 @@ enum SyncQueueOperation { create, update, delete, upload }
 
 enum SyncQueueStatus { pending, syncing, synced, failed, conflict }
 
+final class SessionDataPartition {
+  factory SessionDataPartition({
+    required String userId,
+    required String tenantId,
+    String? facilityId,
+  }) {
+    final normalizedUserId = userId.trim();
+    final normalizedTenantId = tenantId.trim();
+    final normalizedFacilityId = facilityId?.trim();
+    if (normalizedUserId.isEmpty || normalizedTenantId.isEmpty) {
+      throw ArgumentError('User and tenant are required for local data.');
+    }
+    return SessionDataPartition._(
+      userId: normalizedUserId,
+      tenantId: normalizedTenantId,
+      facilityId: normalizedFacilityId == null || normalizedFacilityId.isEmpty
+          ? null
+          : normalizedFacilityId,
+    );
+  }
+
+  const SessionDataPartition._({
+    required this.userId,
+    required this.tenantId,
+    this.facilityId,
+  });
+
+  final String userId;
+  final String tenantId;
+  final String? facilityId;
+
+  String get key => '$userId::$tenantId::${facilityId ?? '-'}';
+}
+
 final class SyncQueuePayload {
   factory SyncQueuePayload.fromJsonString(String value) {
     final normalizedValue = value.trim();
@@ -65,6 +99,7 @@ final class SyncQueueEnqueueRequest {
 
 final class SyncQueueEntry {
   const SyncQueueEntry({
+    required this.partition,
     required this.localId,
     required this.operation,
     required this.payload,
@@ -76,6 +111,7 @@ final class SyncQueueEntry {
     this.failureCode,
   });
 
+  final SessionDataPartition partition;
   final String localId;
   final SyncQueueOperation operation;
   final SyncQueuePayload payload;

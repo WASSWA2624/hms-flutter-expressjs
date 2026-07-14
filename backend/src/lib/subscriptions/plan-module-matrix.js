@@ -183,7 +183,7 @@ const COMMERCIAL_MODULE_MATRIX = Object.freeze([
     slug: 'subscription-controls',
     name: 'Subscription and Licensing Controls',
     module_group: 18,
-    minimum_plan_tier_code: 'CUSTOM',
+    minimum_plan_tier_code: 'BASIC',
     description:
       'Plan management, renewals, upgrades, licensing, and module self-service.',
   },
@@ -199,7 +199,7 @@ const COMMERCIAL_MODULE_MATRIX = Object.freeze([
     slug: 'integrations-core',
     name: 'Integrations and Webhooks',
     module_group: 20,
-    minimum_plan_tier_code: 'CUSTOM',
+    minimum_plan_tier_code: 'PRO',
   },
   {
     code: 'advanced_analytics',
@@ -220,7 +220,7 @@ const COMMERCIAL_MODULE_MATRIX = Object.freeze([
     slug: 'developer-tools',
     name: 'Developer Tools',
     module_group: 21,
-    minimum_plan_tier_code: 'CUSTOM',
+    minimum_plan_tier_code: 'DEVELOPER',
     description:
       'API keys, webhook debugging, sandbox utilities, and full integration tooling.',
   },
