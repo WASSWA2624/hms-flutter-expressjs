@@ -1064,50 +1064,32 @@ class _ClinicalEncounterContextPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
     final String patientNumber = _clinicalPatientNumber(entry);
-    final List<AppWorkspacePatientContextField> fields =
-        _clinicalPatientContextFields(
-          context,
-          l10n,
-          entry,
-          patientNumber,
-          omitSubtitleFields: omitSubtitleFields,
-        );
-    final bool showStatusBadges =
-        (showPrimaryStatus && status.label.isNotEmpty) || alerts.isNotEmpty;
+    final String genderLabel = _clinicalGenderLabel(l10n, entry.patientGender);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (showStatusBadges) ...<Widget>[
-              Wrap(
-                spacing: theme.spacing.sm,
-                runSpacing: theme.spacing.xs,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: <Widget>[
-                  if (showPrimaryStatus && status.label.isNotEmpty)
-                    AppWorkspaceStatusBadge(status: status),
-                  for (final AppWorkspaceStatus alert in alerts)
-                    AppWorkspaceStatusBadge(status: alert),
-                ],
-              ),
-              SizedBox(height: theme.spacing.md),
-            ],
-            if (fields.any(
-              (AppWorkspacePatientContextField field) => field.hasValue,
-            ))
-              _ClinicalInfoGrid(fields: fields),
-          ],
-        ),
+    return AppPatientDetails(
+      patientName: entry.displayTitle,
+      patientNumber: patientNumber,
+      patientNumberLabel: l10n.opdPatientIdLabel,
+      ageLabel: entry.patientDateOfBirth == null
+          ? null
+          : formatPatientAge(l10n, entry.patientDateOfBirth),
+      genderLabel: genderLabel.isEmpty ? null : genderLabel,
+      genderIcon: patientGenderIcon(entry.patientGender),
+      compactSupportingText: entry.patientDateOfBirth == null &&
+              genderLabel.isEmpty
+          ? entry.patientAgeSex?.trim()
+          : null,
+      showAvatar: false,
+      semanticLabel: l10n.patientsDetailTitle,
+      status: showPrimaryStatus && status.label.isNotEmpty ? status : null,
+      alerts: alerts,
+      fieldStyle: AppWorkspacePatientContextFieldStyle.tiles,
+      expandedFields: _clinicalPatientContextFields(
+        context,
+        l10n,
+        entry,
+        omitSubtitleFields: omitSubtitleFields,
       ),
     );
   }
@@ -2610,31 +2592,19 @@ List<AppSearchBarFilterChoice> _filterChoices(
 List<AppWorkspacePatientContextField> _clinicalPatientContextFields(
   BuildContext context,
   AppLocalizations l10n,
-  ClinicalWorklistEntry entry,
-  String patientNumber, {
+  ClinicalWorklistEntry entry, {
   bool omitSubtitleFields = false,
 }) {
-  final String age = _clinicalAgeLabel(entry.patientDateOfBirth);
-  final String gender = _clinicalGenderLabel(l10n, entry.patientGender);
   final String dob = entry.patientDateOfBirth == null
       ? ''
       : AppFormatters.mediumDate(
           entry.patientDateOfBirth!,
           Localizations.localeOf(context),
         );
-  final String demographics = _joinDisplay(<String?>[dob, age, gender]);
-  final bool hasStructuredDemographics = demographics.isNotEmpty;
   final DateTime? lastUpdated = entry.updatedAt ?? entry.startedAt;
 
+  // Compact AppPatientDetails already shows name, public ID, age, and gender.
   return <AppWorkspacePatientContextField>[
-    AppWorkspacePatientContextField(
-      label: l10n.opdPatientIdLabel,
-      value: patientNumber,
-      icon: Icons.badge_outlined,
-      copyable: true,
-      copyTooltip: MaterialLocalizations.of(context).copyButtonLabel,
-      copiedMessage: l10n.clinicalPatientIdCopiedMessage,
-    ),
     if (!omitSubtitleFields)
       AppWorkspacePatientContextField(
         label: l10n.clinicalEncounterNumberLabel,
@@ -2681,15 +2651,9 @@ List<AppWorkspacePatientContextField> _clinicalPatientContextFields(
     ),
     AppWorkspacePatientContextField(
       label: l10n.patientsDobLabel,
-      value: demographics,
+      value: dob,
       icon: Icons.event_outlined,
     ),
-    if (!hasStructuredDemographics)
-      AppWorkspacePatientContextField(
-        label: l10n.patientsAgeSexColumnLabel,
-        value: entry.patientAgeSex ?? '',
-        icon: Icons.badge_outlined,
-      ),
     AppWorkspacePatientContextField(
       label: l10n.patientsPhoneLabel,
       value: entry.patientPhone ?? '',

@@ -646,7 +646,8 @@ class _IpdDetailPanel extends ConsumerWidget {
           AppPatientDetails(
             semanticLabel: l10n.ipdPatientContextLabel,
             patientName: admission.patientDisplayName,
-            patientNumber: '',
+            patientNumber: (admission.summary.patientId ?? '').trim(),
+            patientNumberLabel: l10n.opdPatientIdLabel,
             ageLabel: admission.patientDateOfBirth == null
                 ? null
                 : AppFormatters.mediumDate(

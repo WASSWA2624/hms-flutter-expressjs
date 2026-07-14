@@ -134,7 +134,7 @@ AppWorkspaceStatus _aggregateOrderStatus(
   return _entryStatus(context, workflows.first.order);
 }
 
-List<AppWorkspaceStatusBadge> _aggregateOrderSubBadges(
+List<AppWorkspaceStatus> _aggregateOrderSubStatuses(
   BuildContext context,
   List<LabOrderWorkflow> workflows,
 ) {
@@ -144,22 +144,20 @@ List<AppWorkspaceStatusBadge> _aggregateOrderSubBadges(
     (total, workflow) => total + workflow.order.rejectedItemCount,
   );
   if (rejectedCount <= 0) {
-    return const <AppWorkspaceStatusBadge>[];
+    return const <AppWorkspaceStatus>[];
   }
 
   final primary = _aggregateOrderStatus(context, workflows);
   if (primary.label == l10n.labStatusRejected ||
       primary.label == l10n.labStatusPartiallyRejected) {
-    return const <AppWorkspaceStatusBadge>[];
+    return const <AppWorkspaceStatus>[];
   }
 
-  return <AppWorkspaceStatusBadge>[
-    AppWorkspaceStatusBadge(
-      status: AppWorkspaceStatus(
-        label: l10n.labRejectedItemCount(rejectedCount),
-        tone: AppWorkspaceStatusTone.error,
-        icon: Icons.block_outlined,
-      ),
+  return <AppWorkspaceStatus>[
+    AppWorkspaceStatus(
+      label: l10n.labRejectedItemCount(rejectedCount),
+      tone: AppWorkspaceStatusTone.error,
+      icon: Icons.block_outlined,
     ),
   ];
 }

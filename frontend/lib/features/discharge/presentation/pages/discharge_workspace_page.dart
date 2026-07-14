@@ -526,9 +526,10 @@ class _DischargeDetailContent extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppPatientDetails(
-          patientName: detail.ipd.patientDisplayName,
-          patientNumber: l10n.profileUnknownValue,
+          AppPatientDetails(
+            patientName: detail.ipd.patientDisplayName,
+            patientNumber: (detail.patientId ?? '').trim(),
+            patientNumberLabel: l10n.dischargeReportPatientNoLabel,
           ageLabel: _patientAgeLabel(context, detail),
           genderLabel: _patientGenderLabel(context, detail),
           semanticLabel: l10n.dischargePatientContextLabel,

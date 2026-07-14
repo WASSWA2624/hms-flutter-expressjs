@@ -61,6 +61,8 @@ final class AppWorkspacePatientContextField {
     this.copySemanticLabel,
     this.showCopyIcon = true,
     this.copyPlaceholderValues = const <String>{},
+    /// When false, the field is omitted entirely (authorization / scope).
+    this.authorized = true,
   });
 
   final String label;
@@ -73,8 +75,10 @@ final class AppWorkspacePatientContextField {
   final String? copySemanticLabel;
   final bool showCopyIcon;
   final Set<String> copyPlaceholderValues;
+  final bool authorized;
 
-  bool get hasValue => value.trim().isNotEmpty;
+  /// Unauthorized fields never render, even when [value] is non-empty.
+  bool get hasValue => authorized && value.trim().isNotEmpty;
 }
 
 class AppWorkspace extends StatelessWidget {

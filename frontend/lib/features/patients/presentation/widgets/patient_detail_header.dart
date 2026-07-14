@@ -109,12 +109,12 @@ class PatientDetailHeader extends ConsumerWidget {
           value: patient.primaryPhone ?? '',
           icon: Icons.phone_outlined,
         ),
-        if (registrationScope.showFacilityPicker)
-          AppWorkspacePatientContextField(
-            label: l10n.patientsFacilityLabel,
-            value: patient.facilityLabel ?? '',
-            icon: Icons.business_outlined,
-          ),
+        AppWorkspacePatientContextField(
+          label: l10n.patientsFacilityLabel,
+          value: patient.facilityLabel ?? '',
+          icon: Icons.business_outlined,
+          authorized: registrationScope.showFacilityPicker,
+        ),
         if (visit != null)
           AppWorkspacePatientContextField(
             label: l10n.patientsVisitIdLabel,

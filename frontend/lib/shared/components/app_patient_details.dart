@@ -4,6 +4,7 @@ import 'package:hosspi_hms/app/startup/app_preferences_restorer.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -20,8 +21,11 @@ final appPatientDetailsExpandedProvider =
 final class AppPatientDetailsExpandedController extends Notifier<bool> {
   @override
   bool build() {
+    // Rebuild on logout / account or facility switch so prior-session UI state
+    // does not leak; preference payload remains a boolean only.
+    watchSessionEpoch(ref);
     final SessionState sessionState = ref.watch(sessionStateProvider);
-    final String preferenceKey = _preferenceKeyForSession(sessionState.session);
+    final String preferenceKey = preferenceKeyForSession(sessionState.session);
     return ref.read(appPreferencesStoreProvider).getBool(preferenceKey) ??
         false;
   }
@@ -33,7 +37,7 @@ final class AppPatientDetailsExpandedController extends Notifier<bool> {
 
     final bool previous = state;
     state = expanded;
-    final String preferenceKey = _preferenceKeyForSession(
+    final String preferenceKey = preferenceKeyForSession(
       ref.read(sessionStateProvider).session,
     );
 
@@ -52,7 +56,7 @@ final class AppPatientDetailsExpandedController extends Notifier<bool> {
   }
 
   /// Preference stores only a boolean, keyed by session scope (never PHI).
-  static String _preferenceKeyForSession(AuthSession? session) {
+  static String preferenceKeyForSession(AuthSession? session) {
     final AuthUserProfile? user = session?.user;
     final String userId = (user?.id ?? session?.subject ?? 'anon').trim();
     final String tenantId = (user?.tenantId ?? 'none').trim();

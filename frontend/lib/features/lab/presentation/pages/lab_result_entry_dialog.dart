@@ -1008,60 +1008,37 @@ class _LabResultContextHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
     final LabOrderSummary firstOrder = workflows.first.order;
     final List<String> encounterIds = _uniqueNonEmpty(
       workflows.map((LabOrderWorkflow workflow) => workflow.order.encounterId),
     );
+    final String patientNumber = (firstOrder.patientId ?? '').trim();
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.md,
-          vertical: theme.spacing.sm,
+    return AppPatientDetails(
+      patientName: firstOrder.patientDisplayName ?? l10n.profileUnknownValue,
+      patientNumber: patientNumber,
+      patientNumberLabel: l10n.labPatientIdFieldLabel,
+      showAvatar: false,
+      semanticLabel: l10n.labPatientContextLabel,
+      status: _aggregateOrderStatus(context, workflows),
+      alerts: _aggregateOrderSubStatuses(context, workflows),
+      expandedFields: <AppWorkspacePatientContextField>[
+        if (encounterIds.isNotEmpty)
+          AppWorkspacePatientContextField(
+            label: l10n.labEncounterFieldLabel,
+            value: encounterIds.join(', '),
+            icon: Icons.assignment_outlined,
+            copyable: encounterIds.length == 1,
+            copyTooltip: l10n.opdCopyEncounterIdAction,
+            copiedMessage: l10n.opdEncounterIdCopiedMessage,
+          ),
+        AppWorkspacePatientContextField(
+          label: l10n.labOrdersIncludedLabel,
+          value: l10n.labActiveOrderCount(workflows.length),
+          icon: Icons.science_outlined,
         ),
-        child: Wrap(
-          spacing: theme.spacing.md,
-          runSpacing: theme.spacing.xs,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: <Widget>[
-            _LabContextInlineFact(
-              label: l10n.labPatientSearchLabel,
-              value: firstOrder.patientDisplayName ?? l10n.profileUnknownValue,
-            ),
-            _LabContextInlineFact(
-              label: l10n.labPatientIdFieldLabel,
-              value: firstOrder.patientId ?? l10n.profileUnknownValue,
-              copyable:
-                  firstOrder.patientId != null &&
-                  firstOrder.patientId!.trim().isNotEmpty,
-              copyTooltip: l10n.copyIdentifierAction,
-              copiedMessage: l10n.identifierCopiedMessage,
-            ),
-            if (encounterIds.isNotEmpty)
-              _LabContextInlineFact(
-                label: l10n.labEncounterFieldLabel,
-                value: encounterIds.join(', '),
-                copyable: encounterIds.length == 1,
-                copyTooltip: l10n.opdCopyEncounterIdAction,
-                copiedMessage: l10n.opdEncounterIdCopiedMessage,
-              ),
-            _LabContextInlineFact(
-              label: l10n.labOrdersIncludedLabel,
-              value: l10n.labActiveOrderCount(workflows.length),
-            ),
-            AppWorkspaceStatusBadge(
-              status: _aggregateOrderStatus(context, workflows),
-            ),
-            ..._aggregateOrderSubBadges(context, workflows),
-          ],
-        ),
-      ),
+      ],
     );
   }
 }
@@ -1259,58 +1236,6 @@ class _LabResultValidationMessage extends StatelessWidget {
       style: theme.textTheme.bodySmall?.copyWith(
         color: theme.colorScheme.error,
         fontWeight: FontWeight.w700,
-      ),
-    );
-  }
-}
-
-class _LabContextInlineFact extends StatelessWidget {
-  const _LabContextInlineFact({
-    required this.label,
-    required this.value,
-    this.copyable = false,
-    this.copyTooltip,
-    this.copiedMessage,
-  });
-
-  final String label;
-  final String value;
-  final bool copyable;
-  final String? copyTooltip;
-  final String? copiedMessage;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final TextStyle labelStyle = theme.textTheme.bodySmall!.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w700,
-    );
-    final TextStyle valueStyle = theme.textTheme.bodyMedium!.copyWith(
-      fontWeight: FontWeight.w700,
-    );
-
-    if (copyable) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text('$label: ', style: labelStyle),
-          AppCopyableIdentifier(
-            value: value,
-            tooltip: copyTooltip,
-            copiedMessage: copiedMessage,
-            textStyle: valueStyle,
-          ),
-        ],
-      );
-    }
-
-    return Text.rich(
-      TextSpan(
-        children: <InlineSpan>[
-          TextSpan(text: '$label: ', style: labelStyle),
-          TextSpan(text: value, style: valueStyle),
-        ],
       ),
     );
   }
