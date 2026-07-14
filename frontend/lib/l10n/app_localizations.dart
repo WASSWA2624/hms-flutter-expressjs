@@ -16720,6 +16720,144 @@ abstract class AppLocalizations {
   /// **'Workflow progress'**
   String get radiologyWorkflowProgressTitle;
 
+  /// Disabled action when unpaid billing blocks radiology study execution.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment required'**
+  String get radiologyBillingGateBlockedAction;
+
+  /// Next workflow guidance when billing gate blocks radiology execution.
+  ///
+  /// In en, this message translates to:
+  /// **'Await payment before imaging can start'**
+  String get radiologyWorkflowNextAwaitPayment;
+
+  /// Label for radiology study scheduled date.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled date'**
+  String get radiologyScheduledAtLabel;
+
+  /// Label for radiology room assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Room / modality suite'**
+  String get radiologyRoomLabel;
+
+  /// Label for Biomedical imaging equipment selected for scheduling.
+  ///
+  /// In en, this message translates to:
+  /// **'Imaging equipment'**
+  String get radiologyEquipmentLabel;
+
+  /// Label for a radiology report version number.
+  ///
+  /// In en, this message translates to:
+  /// **'Report version {version}'**
+  String radiologyReportVersionLabel(int version);
+
+  /// Title for radiology report version history.
+  ///
+  /// In en, this message translates to:
+  /// **'Report versions'**
+  String get radiologyReportVersionsTitle;
+
+  /// Radiology workflow step: order received.
+  ///
+  /// In en, this message translates to:
+  /// **'Order received'**
+  String get radiologyWorkflowStepOrderReceived;
+
+  /// Help text for order received step.
+  ///
+  /// In en, this message translates to:
+  /// **'Imaging request is on the radiology work queue'**
+  String get radiologyWorkflowStepOrderReceivedDescription;
+
+  /// Radiology workflow step: billing gate.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing gate'**
+  String get radiologyWorkflowStepBillingGate;
+
+  /// Help text for billing gate step.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm payment when required before study execution'**
+  String get radiologyWorkflowStepBillingGateDescription;
+
+  /// Radiology workflow step: schedule and assign.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule and assign'**
+  String get radiologyWorkflowStepSchedule;
+
+  /// Help text for schedule step.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign modality, room, equipment, and staff'**
+  String get radiologyWorkflowStepScheduleDescription;
+
+  /// Radiology workflow step: study started.
+  ///
+  /// In en, this message translates to:
+  /// **'Study started'**
+  String get radiologyWorkflowStepStudyStarted;
+
+  /// Help text for study started step.
+  ///
+  /// In en, this message translates to:
+  /// **'Begin the imaging study for the patient'**
+  String get radiologyWorkflowStepStudyStartedDescription;
+
+  /// Radiology workflow step: study completed with assets.
+  ///
+  /// In en, this message translates to:
+  /// **'Study completed'**
+  String get radiologyWorkflowStepStudyCompleted;
+
+  /// Help text for study completed step.
+  ///
+  /// In en, this message translates to:
+  /// **'Capture imaging assets and sync to PACS when configured'**
+  String get radiologyWorkflowStepStudyCompletedDescription;
+
+  /// Radiology workflow step: report draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Report drafted'**
+  String get radiologyWorkflowStepReportDraft;
+
+  /// Help text for report draft step.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft findings and impression for review'**
+  String get radiologyWorkflowStepReportDraftDescription;
+
+  /// Radiology workflow step: report finalized.
+  ///
+  /// In en, this message translates to:
+  /// **'Report finalized'**
+  String get radiologyWorkflowStepReportFinal;
+
+  /// Help text for report final step.
+  ///
+  /// In en, this message translates to:
+  /// **'Finalize and attest the radiology report'**
+  String get radiologyWorkflowStepReportFinalDescription;
+
+  /// Radiology workflow step: addendum or correction.
+  ///
+  /// In en, this message translates to:
+  /// **'Addendum'**
+  String get radiologyWorkflowStepAddendum;
+
+  /// Help text for addendum step.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a correction or supplemental report when required'**
+  String get radiologyWorkflowStepAddendumDescription;
+
   /// Radiology workflow step: receive request.
   ///
   /// In en, this message translates to:

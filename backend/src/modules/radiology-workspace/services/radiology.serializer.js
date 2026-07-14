@@ -7,6 +7,28 @@ const {
 
 const toText = (value) => (value == null ? '' : String(value).trim());
 
+/** Payment statuses that allow radiology study execution to proceed. */
+const RADIOLOGY_PAYMENT_SATISFIED_STATUSES = new Set([
+  'PAID',
+  'NOT_REQUIRED',
+  'NO_CHARGE',
+  'NOT_BILLED',
+]);
+
+const resolveRadiologyOrderPaymentStatus = (order = {}) => {
+  const billingFields = mapClinicalOrderBillingFields(order);
+  const direct = toText(billingFields.payment_status).toUpperCase();
+  if (direct) return direct;
+  const billing = extractStoredClinicalBilling(order);
+  return toText(billing?.payment_status).toUpperCase() || null;
+};
+
+const isRadiologyOrderPaymentSatisfied = (order = {}) => {
+  const status = resolveRadiologyOrderPaymentStatus(order);
+  if (!status) return true;
+  return RADIOLOGY_PAYMENT_SATISFIED_STATUSES.has(status);
+};
+
 const toPublicIdentifier = (...candidates) => {
   for (const candidate of candidates) {
     const normalized = toText(candidate);
@@ -67,6 +89,23 @@ const mapImagingAssetRecord = (record) => {
   };
 };
 
+const mapEquipmentRegistrySummary = (record) => {
+  if (!record || typeof record !== 'object') return null;
+  const publicId = toPublicIdentifier(record.human_friendly_id, record.id);
+  const name =
+    toText(record.equipment_name) ||
+    toText(record.name) ||
+    toText(record.equipment_code) ||
+    null;
+  return {
+    id: publicId,
+    display_id: publicId,
+    equipment_name: name,
+    equipment_code: toText(record.equipment_code) || null,
+    status: toText(record.status) || null,
+  };
+};
+
 const mapPacsLinkRecord = (record) => {
   if (!record || typeof record !== 'object') return null;
   const publicId = toPublicIdentifier(record.human_friendly_id, record.id);
@@ -94,6 +133,8 @@ const mapImagingStudyRecord = (record) => {
     ? record.pacs_links.map(mapPacsLinkRecord).filter(Boolean)
     : [];
 
+  const equipment = mapEquipmentRegistrySummary(record.equipment_registry);
+
   return {
     id: publicId,
     display_id: publicId,
@@ -102,7 +143,15 @@ const mapImagingStudyRecord = (record) => {
       record.radiology_order_id
     ),
     modality: toText(record.modality).toUpperCase() || null,
+    room: toText(record.room) || null,
+    equipment_registry_id: toPublicIdentifier(
+      record.equipment_registry?.human_friendly_id,
+      record.equipment_registry_id
+    ),
+    equipment_display_name: equipment?.equipment_name || null,
     performed_at: toIsoDateTime(record.performed_at),
+    started_at: toIsoDateTime(record.started_at),
+    completed_at: toIsoDateTime(record.completed_at),
     created_at: toIsoDateTime(record.created_at),
     updated_at: toIsoDateTime(record.updated_at),
     asset_count: assets.length,
@@ -150,6 +199,10 @@ const mapRadiologyResultRecord = (record) => {
     id: publicId,
     display_id: publicId,
     radiology_order_id: toPublicIdentifier(order?.human_friendly_id, record.radiology_order_id),
+    parent_result_id: toPublicIdentifier(
+      record.parent_result?.human_friendly_id,
+      record.parent_result_id
+    ),
     patient_id: toPublicIdentifier(patient?.human_friendly_id, order?.patient_id),
     patient_display_name: toDisplayName(patient?.first_name, patient?.last_name),
     radiology_test_id: toPublicIdentifier(test?.human_friendly_id, order?.radiology_test_id),
@@ -165,6 +218,10 @@ const mapRadiologyResultRecord = (record) => {
       null,
     status: toText(record.status).toUpperCase() || null,
     report_text: toText(record.report_text) || null,
+    addendum_text: toText(record.addendum_text) || null,
+    report_version: Number.isFinite(Number(record.report_version))
+      ? Number(record.report_version)
+      : 1,
     finalization: {
       requested: Boolean(requestAttestation),
       requested_at: requestAttestation?.attested_at || null,
@@ -222,6 +279,9 @@ const mapRadiologyOrderRecord = (record, options = {}) => {
   const amendedResultCount = results.filter((entry) => entry.status === 'AMENDED').length;
   const draftResultCount = results.filter((entry) => entry.status === 'DRAFT').length;
   const unsyncedStudyCount = studies.filter((entry) => Number(entry.pacs_link_count || 0) === 0).length;
+  const assignedUser = record.assigned_user;
+  const equipment = mapEquipmentRegistrySummary(record.equipment_registry);
+  const paymentSatisfied = isRadiologyOrderPaymentSatisfied(record);
 
   return {
     id: publicId,
@@ -235,6 +295,22 @@ const mapRadiologyOrderRecord = (record, options = {}) => {
     radiology_test_display_name: testDisplayName,
     modality,
     clinical_note: toText(record.clinical_note) || null,
+    assigned_user_id: toPublicIdentifier(
+      assignedUser?.human_friendly_id,
+      record.assigned_user_id
+    ),
+    assigned_user_display_name: toDisplayName(
+      assignedUser?.profile?.first_name,
+      assignedUser?.profile?.last_name,
+      assignedUser?.email
+    ),
+    scheduled_at: toIsoDateTime(record.scheduled_at),
+    room: toText(record.room) || null,
+    equipment_registry_id: toPublicIdentifier(
+      record.equipment_registry?.human_friendly_id,
+      record.equipment_registry_id
+    ),
+    equipment_display_name: equipment?.equipment_name || null,
     request_details: {
       ...requestDetails,
       radiology_test_id: toPublicIdentifier(
@@ -269,6 +345,7 @@ const mapRadiologyOrderRecord = (record, options = {}) => {
     unsynced_study_count: unsyncedStudyCount,
     results,
     imaging_studies: studies,
+    billing_gate_blocked: !paymentSatisfied,
     ...mapClinicalOrderBillingFields(record),
   };
 };
@@ -338,6 +415,29 @@ const mapRadiologyOrderWorkflowRecord = (record) => {
   const hasPendingResultAttestation = order.results.some(
     (entry) => entry.finalization?.pending_attestation
   );
+  const paymentSatisfied = !order.billing_gate_blocked;
+  const isActive = order.status !== 'CANCELLED';
+  const isAssignable = ['ORDERED', 'IN_PROCESS'].includes(order.status);
+  const hasAssignment = Boolean(
+    order.assigned_user_id || order.scheduled_at || order.room || order.equipment_registry_id
+  );
+
+  if (order.scheduled_at || hasAssignment) {
+    timeline.push({
+      id: 'order-scheduled',
+      type: 'ORDER_SCHEDULED',
+      at: order.scheduled_at || order.updated_at || order.ordered_at,
+      label: 'Study scheduled / assigned',
+    });
+    timeline.sort((a, b) => {
+      const left = Date.parse(a.at || '');
+      const right = Date.parse(b.at || '');
+      if (!Number.isFinite(left) && !Number.isFinite(right)) return 0;
+      if (!Number.isFinite(left)) return 1;
+      if (!Number.isFinite(right)) return -1;
+      return left - right;
+    });
+  }
 
   return {
     order,
@@ -345,17 +445,19 @@ const mapRadiologyOrderWorkflowRecord = (record) => {
     studies: order.imaging_studies,
     timeline,
     next_actions: {
-      can_assign: ['ORDERED', 'IN_PROCESS'].includes(order.status),
-      can_start: order.status === 'ORDERED',
+      can_assign: isAssignable,
+      can_start: order.status === 'ORDERED' && paymentSatisfied,
       can_complete: order.status === 'IN_PROCESS' && hasFinalResult,
       can_cancel: ['ORDERED', 'IN_PROCESS'].includes(order.status),
-      can_create_study: order.status !== 'CANCELLED',
-      can_create_draft_result: order.status !== 'CANCELLED',
-      can_finalize_result: hasDraftResult,
-      can_request_finalization: hasDraftResult,
+      can_create_study: isActive && paymentSatisfied,
+      can_create_draft_result: isActive && paymentSatisfied,
+      can_finalize_result: hasDraftResult && paymentSatisfied,
+      can_request_finalization: hasDraftResult && paymentSatisfied,
       can_attest_finalization: hasPendingResultAttestation,
       can_add_addendum: hasFinalResult,
       can_pacs_sync: order.imaging_studies.some((study) => study.asset_count > 0),
+      billing_gate_blocked: !paymentSatisfied,
+      has_assignment: hasAssignment,
     },
   };
 };
@@ -363,6 +465,8 @@ const mapRadiologyOrderWorkflowRecord = (record) => {
 module.exports = {
   toPublicIdentifier,
   toIsoDateTime,
+  isRadiologyOrderPaymentSatisfied,
+  resolveRadiologyOrderPaymentStatus,
   mapRadiologyTestRecord,
   mapRadiologyOrderRecord,
   mapRadiologyResultRecord,

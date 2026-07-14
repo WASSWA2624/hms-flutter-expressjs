@@ -20,6 +20,7 @@ import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
 import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
 import 'package:hosspi_hms/features/radiology/presentation/controllers/radiology_workspace_controller.dart';
+import 'package:hosspi_hms/features/radiology/presentation/widgets/radiology_workflow_progress_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
@@ -659,9 +660,9 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
 
   void _handleWorkflowStepTap(int stepIndex) {
     final GlobalKey target = switch (stepIndex) {
-      0 || 1 => _requestSectionKey,
-      2 || 3 => _studiesSectionKey,
-      4 || 5 => _reportSectionKey,
+      0 || 1 || 2 => _requestSectionKey,
+      3 || 4 => _studiesSectionKey,
+      5 || 6 || 7 => _reportSectionKey,
       _ => _requestSectionKey,
     };
     _scrollToSection(target);
@@ -723,13 +724,25 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
           },
         ),
         SizedBox(height: theme.spacing.md),
-        _WorkflowProgressSection(
+        RadiologyWorkflowProgressSection(
           workflow: widget.workflow,
+          canMutate: widget.canWork,
+          isSaving: widget.state.isMutating,
           expanded: _workflowExpanded,
           onExpandedChanged: (bool value) {
             setState(() => _workflowExpanded = value);
           },
           onStepTap: _handleWorkflowStepTap,
+          onAssign: () => _showAssignDialog(context, ref),
+          onStart: () => _submitNotesOnly(
+            context: context,
+            title: context.l10n.radiologyStartDialogTitle,
+            notesLabel: context.l10n.radiologyNotesLabel,
+            submitLabel: context.l10n.radiologyStartImagingAction,
+            submit: ref
+                .read(radiologyWorkspaceControllerProvider.notifier)
+                .startOrder,
+          ),
         ),
         SizedBox(height: theme.spacing.lg),
         ..._orderedDetailSections(
@@ -821,11 +834,20 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
     final bool imagingView =
         widget.state.detailViewMode == RadiologyDetailViewMode.imagingFloor;
     final List<Widget> actions = <Widget>[];
+    if (workflow.nextActions.billingGateBlocked) {
+      actions.add(
+        AppButton.secondary(
+          label: context.l10n.radiologyBillingGateBlockedAction,
+          leadingIcon: Icons.payments_outlined,
+          onPressed: null,
+        ),
+      );
+    }
     if (workflow.nextActions.canAssign) {
       actions.add(
         AppButton.secondary(
           label: context.l10n.radiologyAssignAction,
-          leadingIcon: Icons.person_add_alt_outlined,
+          leadingIcon: Icons.event_available_outlined,
           isLoading: widget.state.isMutating,
           onPressed: () => _showAssignDialog(context, ref),
         ),
@@ -1096,99 +1118,6 @@ class _WorkflowSummarySection extends StatelessWidget {
   }
 }
 
-class _WorkflowProgressSection extends StatelessWidget {
-  const _WorkflowProgressSection({
-    required this.workflow,
-    required this.expanded,
-    required this.onExpandedChanged,
-    required this.onStepTap,
-  });
-
-  final RadiologyWorkflow workflow;
-  final bool expanded;
-  final ValueChanged<bool> onExpandedChanged;
-  final ValueChanged<int> onStepTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final int activeStep = _radiologyWorkflowStepIndex(workflow);
-    final List<({String label, String description})> stepDefs =
-        <({String label, String description})>[
-          (
-            label: l10n.radiologyWorkflowStepReceive,
-            description: l10n.radiologyWorkflowStepReceiveDescription,
-          ),
-          (
-            label: l10n.radiologyWorkflowStepReview,
-            description: l10n.radiologyWorkflowStepReviewDescription,
-          ),
-          (
-            label: l10n.radiologyWorkflowStepPerform,
-            description: l10n.radiologyWorkflowStepPerformDescription,
-          ),
-          (
-            label: l10n.radiologyWorkflowStepUpload,
-            description: l10n.radiologyWorkflowStepUploadDescription,
-          ),
-          (
-            label: l10n.radiologyWorkflowStepReport,
-            description: l10n.radiologyWorkflowStepReportDescription,
-          ),
-          (
-            label: l10n.radiologyWorkflowStepRelease,
-            description: l10n.radiologyWorkflowStepReleaseDescription,
-          ),
-        ];
-    final bool canCollapse = activeStep >= 2;
-
-    return AppSectionPanel(
-      title: l10n.radiologyWorkflowProgressTitle,
-      spacing: theme.spacing.sm,
-      trailing: canCollapse
-          ? AppButton(
-              iconOnly: true,
-              leadingIcon: expanded ? Icons.unfold_less : Icons.unfold_more,
-              label: l10n.radiologyWorkflowProgressTitle,
-              semanticLabel: l10n.radiologyWorkflowProgressTitle,
-              tooltip: l10n.radiologyWorkflowProgressTitle,
-              onPressed: () => onExpandedChanged(!expanded),
-            )
-          : null,
-      children: <Widget>[
-        if (!expanded && canCollapse)
-          AppButton.tertiary(
-            label: l10n.radiologyWorkflowProgressCollapsedSummary(
-              activeStep,
-              stepDefs.length,
-            ),
-            leadingIcon: Icons.timeline_outlined,
-            onPressed: () => onExpandedChanged(true),
-          )
-        else
-          AppWorkflowStepper(
-            semanticLabel: l10n.radiologyWorkflowProgressTitle,
-            steps: <AppWorkflowStepItem>[
-              for (int index = 0; index < stepDefs.length; index++)
-                AppWorkflowStepItem(
-                  id: index,
-                  label: stepDefs[index].label,
-                  description: stepDefs[index].description,
-                  state: index < activeStep
-                      ? AppWorkflowStepState.completed
-                      : index == activeStep
-                      ? AppWorkflowStepState.current
-                      : AppWorkflowStepState.upcoming,
-                  onTap: index <= activeStep ? () => onStepTap(index) : null,
-                ),
-            ],
-          ),
-      ],
-    );
-  }
-}
-
 class _RequestSection extends ConsumerWidget {
   const _RequestSection({required this.order, required this.canEdit});
 
@@ -1221,6 +1150,27 @@ class _RequestSection extends ConsumerWidget {
         _DetailLine(
           label: l10n.radiologyLateralityLabel,
           value: order.laterality,
+        ),
+        _DetailLine(
+          label: l10n.radiologyAssigneeLabel,
+          value: order.assignedUserDisplayName ?? order.assignedUserId,
+        ),
+        _DetailLine(
+          label: l10n.radiologyScheduledAtLabel,
+          value: order.scheduledAt == null
+              ? null
+              : AppFormatters.mediumDate(
+                  order.scheduledAt!,
+                  Localizations.localeOf(context),
+                ),
+        ),
+        _DetailLine(
+          label: l10n.radiologyRoomLabel,
+          value: order.room,
+        ),
+        _DetailLine(
+          label: l10n.radiologyEquipmentLabel,
+          value: order.equipmentDisplayName ?? order.equipmentRegistryId,
         ),
         _DetailLine(
           label: l10n.radiologyClinicalNotesLabel,
@@ -2279,18 +2229,51 @@ class _DoctorReviewPanel extends StatelessWidget {
             onPressed: released ? null : onOpenReport,
           ),
       ],
-      child: AppWorkspaceStatusBadge(
-        status: AppWorkspaceStatus(
-          label: released
-              ? l10n.radiologyDoctorReviewReadyLabel
-              : l10n.radiologyDoctorReviewPendingLabel,
-          tone: released
-              ? AppWorkspaceStatusTone.success
-              : AppWorkspaceStatusTone.warning,
-          icon: released
-              ? Icons.notification_important_outlined
-              : Icons.pending_actions_outlined,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AppWorkspaceStatusBadge(
+            status: AppWorkspaceStatus(
+              label: released
+                  ? l10n.radiologyDoctorReviewReadyLabel
+                  : l10n.radiologyDoctorReviewPendingLabel,
+              tone: released
+                  ? AppWorkspaceStatusTone.success
+                  : AppWorkspaceStatusTone.warning,
+              icon: released
+                  ? Icons.notification_important_outlined
+                  : Icons.pending_actions_outlined,
+            ),
+          ),
+          if (order.results.isNotEmpty) ...<Widget>[
+            SizedBox(height: Theme.of(context).spacing.sm),
+            Text(
+              l10n.radiologyReportVersionsTitle,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            SizedBox(height: Theme.of(context).spacing.xs),
+            for (final RadiologyResult result
+                in order.results.toList()
+                  ..sort(
+                    (RadiologyResult a, RadiologyResult b) =>
+                        b.reportVersion.compareTo(a.reportVersion),
+                  ))
+              Padding(
+                padding: EdgeInsets.only(
+                  bottom: Theme.of(context).spacing.xs,
+                ),
+                child: AppListItemText(
+                  title: l10n.radiologyReportVersionLabel(result.reportVersion),
+                  subtitle: <String?>[
+                    result.normalizedStatus,
+                    result.effectiveDisplayId,
+                    if (result.parentResultId != null)
+                      result.parentResultId,
+                  ].whereType<String>().join(' · '),
+                ),
+              ),
+          ],
+        ],
       ),
     );
   }
@@ -2738,11 +2721,33 @@ class _AssignForm extends ConsumerStatefulWidget {
 class _AssignFormState extends ConsumerState<_AssignForm> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _roomController = TextEditingController();
   String? _assigneeUserId;
+  String? _equipmentRegistryId;
+  DateTime? _scheduledAt;
+
+  @override
+  void initState() {
+    super.initState();
+    final RadiologyOrder? order = ref
+        .read(radiologyWorkspaceControllerProvider)
+        .asData
+        ?.value
+        .when(
+          success: (RadiologyWorkspaceState value) =>
+              value.selectedWorkflow?.order,
+          failure: (_) => null,
+        );
+    _assigneeUserId = order?.assignedUserId;
+    _equipmentRegistryId = order?.equipmentRegistryId;
+    _scheduledAt = order?.scheduledAt;
+    _roomController.text = order?.room ?? '';
+  }
 
   @override
   void dispose() {
     _notesController.dispose();
+    _roomController.dispose();
     super.dispose();
   }
 
@@ -2750,6 +2755,8 @@ class _AssignFormState extends ConsumerState<_AssignForm> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final RadiologyWorkspaceState? state = _watchState(ref);
+    final List<RadiologyEquipmentRecord> equipment =
+        state?.equipmentRecords ?? const <RadiologyEquipmentRecord>[];
 
     return AppDialog(
       title: Text(_AssignForm.dialogTitle(l10n)),
@@ -2767,6 +2774,42 @@ class _AssignFormState extends ConsumerState<_AssignForm> {
             ),
             onChanged: (String? value) {
               setState(() => _assigneeUserId = value);
+            },
+          ),
+          AppDateField(
+            value: _scheduledAt,
+            labelText: l10n.radiologyScheduledAtLabel,
+            firstDate: DateTime.now().subtract(const Duration(days: 1)),
+            lastDate: DateTime.now().add(const Duration(days: 365)),
+            currentDate: DateTime.now(),
+            pickerButtonLabel: l10n.patientsDatePickerAction,
+            invalidDateMessage: l10n.appDateInvalidMessage,
+            onChanged: (DateTime? value) {
+              setState(() => _scheduledAt = value);
+            },
+          ),
+          AppTextField(
+            controller: _roomController,
+            labelText: l10n.radiologyRoomLabel,
+          ),
+          AppSelectField<String>.searchable(
+            value: _equipmentRegistryId,
+            labelText: l10n.radiologyEquipmentLabel,
+            options: equipment
+                .map(
+                  (RadiologyEquipmentRecord item) => AppSelectOption<String>(
+                    value: item.effectiveId,
+                    label: item.equipmentName,
+                    searchText: <String?>[
+                      item.equipmentName,
+                      item.equipmentCode,
+                      item.displayId,
+                    ].whereType<String>().join(' '),
+                  ),
+                )
+                .toList(growable: false),
+            onChanged: (String? value) {
+              setState(() => _equipmentRegistryId = value);
             },
           ),
           AppTextField(
@@ -2789,6 +2832,9 @@ class _AssignFormState extends ConsumerState<_AssignForm> {
   void _submit() {
     Navigator.of(context).pop(<String, Object?>{
       'assignee_user_id': _assigneeUserId,
+      'scheduled_at': _scheduledAt?.toUtc().toIso8601String(),
+      'room': _roomController.text.trim(),
+      'equipment_registry_id': _equipmentRegistryId,
       'notes': _notesController.text.trim(),
     });
   }
@@ -3740,26 +3786,6 @@ String? _radiologyPriorityDisplayLabel(
     'STAT' => l10n.radiologyPriorityStatLabel,
     _ => priority,
   };
-}
-
-int _radiologyWorkflowStepIndex(RadiologyWorkflow workflow) {
-  final RadiologyOrder order = workflow.order;
-  if (order.hasFinalResult) {
-    return 5;
-  }
-  if (order.latestDraftResult != null) {
-    return 4;
-  }
-  if (workflow.studies.any((ImagingStudy study) => study.hasAssets)) {
-    return 3;
-  }
-  if (workflow.studies.isNotEmpty) {
-    return 2;
-  }
-  if (!workflow.nextActions.canAssign && !workflow.nextActions.canStart) {
-    return 1;
-  }
-  return 0;
 }
 
 AppClinicalResultStatus _clinicalResultStatusForRadiology(

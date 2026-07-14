@@ -256,6 +256,13 @@ final class RadiologyOrderDto {
       authorizationStatus:
           _string(json['authorization_status']) ??
           _string(_map(json['billing'])['authorization_status']),
+      assignedUserId: _string(json['assigned_user_id']),
+      assignedUserDisplayName: _string(json['assigned_user_display_name']),
+      scheduledAt: _date(json['scheduled_at']),
+      room: _string(json['room']),
+      equipmentRegistryId: _string(json['equipment_registry_id']),
+      equipmentDisplayName: _string(json['equipment_display_name']),
+      billingGateBlocked: _bool(json['billing_gate_blocked']),
       requestDetails: _map(json['request_details']),
       requestedTests: _list(json['requested_tests'])
           .map(RadiologyRequestedTestDto.new)
@@ -321,6 +328,7 @@ final class RadiologyResultDto {
       id: id,
       displayId: _string(json['display_id']),
       radiologyOrderId: _string(json['radiology_order_id']),
+      parentResultId: _string(json['parent_result_id']),
       patientId: _string(json['patient_id']),
       patientDisplayName: _string(json['patient_display_name']),
       radiologyTestId: _string(json['radiology_test_id']),
@@ -328,6 +336,8 @@ final class RadiologyResultDto {
       modality: _string(json['modality']),
       status: _string(json['status']),
       reportText: _string(json['report_text']),
+      addendumText: _string(json['addendum_text']),
+      reportVersion: _int(json['report_version']) ?? 1,
       finalization: RadiologyResultFinalizationDto(
         _map(json['finalization']),
       ).toEntity(),
@@ -398,7 +408,12 @@ final class ImagingStudyDto {
       displayId: _string(json['display_id']),
       radiologyOrderId: _string(json['radiology_order_id']),
       modality: _string(json['modality']),
+      room: _string(json['room']),
+      equipmentRegistryId: _string(json['equipment_registry_id']),
+      equipmentDisplayName: _string(json['equipment_display_name']),
       performedAt: _date(json['performed_at']),
+      startedAt: _date(json['started_at']),
+      completedAt: _date(json['completed_at']),
       createdAt: _date(json['created_at']),
       updatedAt: _date(json['updated_at']),
       assetCount: _int(json['asset_count']) ?? 0,
@@ -477,6 +492,8 @@ final class RadiologyNextActionsDto {
       canAttestFinalization: _bool(json['can_attest_finalization']),
       canAddAddendum: _bool(json['can_add_addendum']),
       canPacsSync: _bool(json['can_pacs_sync']),
+      billingGateBlocked: _bool(json['billing_gate_blocked']),
+      hasAssignment: _bool(json['has_assignment']),
     );
   }
 }

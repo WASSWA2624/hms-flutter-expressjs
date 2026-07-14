@@ -35,17 +35,48 @@ const RADIOLOGY_TEST_PUBLIC_SELECT = {
   updated_at: true,
 };
 
+const ASSIGNED_USER_PUBLIC_SELECT = {
+  id: true,
+  human_friendly_id: true,
+  email: true,
+  profile: {
+    select: {
+      first_name: true,
+      last_name: true,
+    },
+  },
+};
+
+const EQUIPMENT_REGISTRY_PUBLIC_SELECT = {
+  id: true,
+  human_friendly_id: true,
+  equipment_name: true,
+  name: true,
+  equipment_code: true,
+  status: true,
+};
+
 const RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE = {
   patient: { select: PATIENT_PUBLIC_SELECT },
   encounter: { select: ENCOUNTER_PUBLIC_SELECT },
   radiology_test: { select: RADIOLOGY_TEST_PUBLIC_SELECT },
+  assigned_user: { select: ASSIGNED_USER_PUBLIC_SELECT },
+  equipment_registry: { select: EQUIPMENT_REGISTRY_PUBLIC_SELECT },
   results: {
     where: { deleted_at: null },
-    orderBy: { created_at: 'desc' },
+    orderBy: [{ report_version: 'desc' }, { created_at: 'desc' }],
     include: {
       attestations: {
         where: { deleted_at: null },
         orderBy: [{ attested_at: 'desc' }, { created_at: 'desc' }],
+      },
+      parent_result: {
+        select: {
+          id: true,
+          human_friendly_id: true,
+          report_version: true,
+          status: true,
+        },
       },
     },
   },
@@ -53,6 +84,7 @@ const RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE = {
     where: { deleted_at: null },
     orderBy: { created_at: 'asc' },
     include: {
+      equipment_registry: { select: EQUIPMENT_REGISTRY_PUBLIC_SELECT },
       assets: {
         where: { deleted_at: null },
         orderBy: { created_at: 'asc' },
@@ -71,8 +103,11 @@ const RADIOLOGY_STUDY_WITH_RELATIONS_INCLUDE = {
       patient: { select: PATIENT_PUBLIC_SELECT },
       encounter: { select: ENCOUNTER_PUBLIC_SELECT },
       radiology_test: { select: RADIOLOGY_TEST_PUBLIC_SELECT },
+      assigned_user: { select: ASSIGNED_USER_PUBLIC_SELECT },
+      equipment_registry: { select: EQUIPMENT_REGISTRY_PUBLIC_SELECT },
     },
   },
+  equipment_registry: { select: EQUIPMENT_REGISTRY_PUBLIC_SELECT },
   assets: {
     where: { deleted_at: null },
     orderBy: { created_at: 'asc' },
@@ -88,11 +123,21 @@ const RADIOLOGY_RESULT_WITH_RELATIONS_INCLUDE = {
     where: { deleted_at: null },
     orderBy: [{ attested_at: 'desc' }, { created_at: 'desc' }],
   },
+  parent_result: {
+    select: {
+      id: true,
+      human_friendly_id: true,
+      report_version: true,
+      status: true,
+    },
+  },
   radiology_order: {
     include: {
       patient: { select: PATIENT_PUBLIC_SELECT },
       encounter: { select: ENCOUNTER_PUBLIC_SELECT },
       radiology_test: { select: RADIOLOGY_TEST_PUBLIC_SELECT },
+      assigned_user: { select: ASSIGNED_USER_PUBLIC_SELECT },
+      equipment_registry: { select: EQUIPMENT_REGISTRY_PUBLIC_SELECT },
     },
   },
 };

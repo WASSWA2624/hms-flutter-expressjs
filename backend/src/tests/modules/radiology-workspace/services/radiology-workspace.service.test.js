@@ -123,18 +123,64 @@ describe('radiology-workspace.service', () => {
     });
   });
 
-  it('assignRadiologyOrder emits radiology workflow realtime update without blocking mutation', async () => {
-    resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
-    radiologyWorkspaceRepository.findOrderById.mockResolvedValue(buildOrder());
+  it('assignRadiologyOrder persists scheduling fields and emits realtime update', async () => {
+    resolveModelIdOrThrow
+      .mockResolvedValueOnce('order-internal-1')
+      .mockResolvedValueOnce('user-internal-9')
+      .mockResolvedValueOnce('equip-internal-1');
+
+    const before = buildOrder();
+    const after = buildOrder({
+      assigned_user_id: 'user-internal-9',
+      scheduled_at: new Date('2026-03-01T09:00:00.000Z'),
+      room: 'XRAY-1',
+      equipment_registry_id: 'equip-internal-1',
+      assigned_user: {
+        id: 'user-internal-9',
+        human_friendly_id: 'USR0000009',
+        email: 'tech@example.com',
+        profile: { first_name: 'Ray', last_name: 'Tech' },
+      },
+      equipment_registry: {
+        id: 'equip-internal-1',
+        human_friendly_id: 'EQP0000001',
+        equipment_name: 'DR Room A',
+        equipment_code: 'XR-A',
+        status: 'ACTIVE',
+      },
+    });
+
+    radiologyWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    radiologyWorkspaceRepository.txFindOrderById
+      .mockResolvedValueOnce(before)
+      .mockResolvedValueOnce(after);
+    radiologyWorkspaceRepository.txUpdateOrder.mockResolvedValue(after);
 
     const result = await radiologyWorkspaceService.assignRadiologyOrder(
       'RAD0000001',
-      { assignee_user_id: 'USR0000009' },
+      {
+        assignee_user_id: 'USR0000009',
+        scheduled_at: '2026-03-01T09:00:00.000Z',
+        room: 'XRAY-1',
+        equipment_registry_id: 'EQP0000001',
+      },
       'actor-1',
       '127.0.0.1'
     );
 
+    expect(radiologyWorkspaceRepository.txUpdateOrder).toHaveBeenCalledWith(
+      {},
+      'order-internal-1',
+      expect.objectContaining({
+        assigned_user_id: 'user-internal-9',
+        room: 'XRAY-1',
+        equipment_registry_id: 'equip-internal-1',
+      })
+    );
     expect(result?.workflow?.order?.id).toBe('RAD0000001');
+    expect(result?.assignment?.room).toBe('XRAY-1');
 
     await flushAsync();
 
@@ -146,6 +192,101 @@ describe('radiology-workspace.service', () => {
         order_id: 'RAD0000001',
       })
     );
+  });
+
+  it('startRadiologyOrder blocks unpaid orders at the billing gate', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('order-internal-1');
+    const unpaid = buildOrder({
+      request_details: {
+        billing: {
+          payment_status: 'PENDING',
+          total_amount: '80.00',
+          currency: 'USD',
+        },
+      },
+    });
+
+    radiologyWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    radiologyWorkspaceRepository.txFindOrderById.mockResolvedValue(unpaid);
+
+    await expect(
+      radiologyWorkspaceService.startRadiologyOrder('RAD0000001', {}, 'actor-1', '127.0.0.1')
+    ).rejects.toMatchObject({
+      message: 'errors.radiology_order.payment_required',
+      statusCode: 402,
+    });
+  });
+
+  it('addendumRadiologyResult creates a new version without mutating the FINAL report', async () => {
+    resolveModelIdOrThrow.mockResolvedValue('result-internal-1');
+
+    const finalResult = {
+      id: 'result-internal-1',
+      human_friendly_id: 'RRS0000001',
+      radiology_order_id: 'order-internal-1',
+      status: 'FINAL',
+      report_text: 'Original final report',
+      report_version: 1,
+      reported_at: now,
+      created_at: now,
+      updated_at: now,
+      attestations: [],
+    };
+    const amendedResult = {
+      id: 'result-internal-2',
+      human_friendly_id: 'RRS0000002',
+      radiology_order_id: 'order-internal-1',
+      parent_result_id: 'result-internal-1',
+      status: 'AMENDED',
+      report_text: 'Original final report\n\nAddendum:\nClarified findings',
+      addendum_text: 'Clarified findings',
+      report_version: 2,
+      reported_at: now,
+      created_at: now,
+      updated_at: now,
+      attestations: [],
+    };
+    const orderWithFinal = buildOrder({
+      status: 'IN_PROCESS',
+      results: [finalResult],
+    });
+    const orderWithAddendum = buildOrder({
+      status: 'IN_PROCESS',
+      results: [amendedResult, finalResult],
+    });
+
+    radiologyWorkspaceRepository.withTransaction.mockImplementation(async (callback) =>
+      callback({})
+    );
+    radiologyWorkspaceRepository.txFindResultById.mockResolvedValue(finalResult);
+    radiologyWorkspaceRepository.txFindOrderById
+      .mockResolvedValueOnce(orderWithFinal)
+      .mockResolvedValueOnce(orderWithAddendum);
+    radiologyWorkspaceRepository.txCreateResult.mockResolvedValue(amendedResult);
+    radiologyWorkspaceRepository.txUpdateResult = jest.fn();
+
+    const result = await radiologyWorkspaceService.addendumRadiologyResult(
+      'RRS0000001',
+      { addendum_text: 'Clarified findings' },
+      'actor-1',
+      '127.0.0.1'
+    );
+
+    expect(radiologyWorkspaceRepository.txCreateResult).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({
+        parent_result_id: 'result-internal-1',
+        status: 'AMENDED',
+        addendum_text: 'Clarified findings',
+        report_version: 2,
+      })
+    );
+    expect(radiologyWorkspaceRepository.txUpdateResult).not.toHaveBeenCalled();
+    expect(result?.result?.status).toBe('AMENDED');
+    expect(result?.result?.report_version).toBe(2);
+    expect(result?.result?.parent_result_id).toBe('result-internal-1');
   });
 
   it('creates workspace radiology orders through the shared multi-test order service', async () => {

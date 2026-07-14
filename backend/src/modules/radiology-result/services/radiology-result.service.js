@@ -214,6 +214,11 @@ const updateRadiologyResult = async (id, data, userId, ipAddress) => {
       throw new HttpError('errors.radiology_result.not_found', 404);
     }
 
+    const beforeStatus = String(before.status || '').trim().toUpperCase();
+    if (beforeStatus === 'FINAL' || beforeStatus === 'AMENDED') {
+      throw new HttpError('errors.radiology_result.immutable', 409);
+    }
+
     const normalizedData = {
       ...data,
     };

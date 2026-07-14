@@ -11668,6 +11668,103 @@
   "@radiologyWorkflowProgressTitle": {
     "description": "Title for radiology workflow step progress section."
   },
+  "radiologyBillingGateBlockedAction": "Payment required",
+  "@radiologyBillingGateBlockedAction": {
+    "description": "Disabled action when unpaid billing blocks radiology study execution."
+  },
+  "radiologyWorkflowNextAwaitPayment": "Await payment before imaging can start",
+  "@radiologyWorkflowNextAwaitPayment": {
+    "description": "Next workflow guidance when billing gate blocks radiology execution."
+  },
+  "radiologyScheduledAtLabel": "Scheduled date",
+  "@radiologyScheduledAtLabel": {
+    "description": "Label for radiology study scheduled date."
+  },
+  "radiologyRoomLabel": "Room / modality suite",
+  "@radiologyRoomLabel": {
+    "description": "Label for radiology room assignment."
+  },
+  "radiologyEquipmentLabel": "Imaging equipment",
+  "@radiologyEquipmentLabel": {
+    "description": "Label for Biomedical imaging equipment selected for scheduling."
+  },
+  "radiologyReportVersionLabel": "Report version {version}",
+  "@radiologyReportVersionLabel": {
+    "description": "Label for a radiology report version number.",
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "radiologyReportVersionsTitle": "Report versions",
+  "@radiologyReportVersionsTitle": {
+    "description": "Title for radiology report version history."
+  },
+  "radiologyWorkflowStepOrderReceived": "Order received",
+  "@radiologyWorkflowStepOrderReceived": {
+    "description": "Radiology workflow step: order received."
+  },
+  "radiologyWorkflowStepOrderReceivedDescription": "Imaging request is on the radiology work queue",
+  "@radiologyWorkflowStepOrderReceivedDescription": {
+    "description": "Help text for order received step."
+  },
+  "radiologyWorkflowStepBillingGate": "Billing gate",
+  "@radiologyWorkflowStepBillingGate": {
+    "description": "Radiology workflow step: billing gate."
+  },
+  "radiologyWorkflowStepBillingGateDescription": "Confirm payment when required before study execution",
+  "@radiologyWorkflowStepBillingGateDescription": {
+    "description": "Help text for billing gate step."
+  },
+  "radiologyWorkflowStepSchedule": "Schedule and assign",
+  "@radiologyWorkflowStepSchedule": {
+    "description": "Radiology workflow step: schedule and assign."
+  },
+  "radiologyWorkflowStepScheduleDescription": "Assign modality, room, equipment, and staff",
+  "@radiologyWorkflowStepScheduleDescription": {
+    "description": "Help text for schedule step."
+  },
+  "radiologyWorkflowStepStudyStarted": "Study started",
+  "@radiologyWorkflowStepStudyStarted": {
+    "description": "Radiology workflow step: study started."
+  },
+  "radiologyWorkflowStepStudyStartedDescription": "Begin the imaging study for the patient",
+  "@radiologyWorkflowStepStudyStartedDescription": {
+    "description": "Help text for study started step."
+  },
+  "radiologyWorkflowStepStudyCompleted": "Study completed",
+  "@radiologyWorkflowStepStudyCompleted": {
+    "description": "Radiology workflow step: study completed with assets."
+  },
+  "radiologyWorkflowStepStudyCompletedDescription": "Capture imaging assets and sync to PACS when configured",
+  "@radiologyWorkflowStepStudyCompletedDescription": {
+    "description": "Help text for study completed step."
+  },
+  "radiologyWorkflowStepReportDraft": "Report drafted",
+  "@radiologyWorkflowStepReportDraft": {
+    "description": "Radiology workflow step: report draft."
+  },
+  "radiologyWorkflowStepReportDraftDescription": "Draft findings and impression for review",
+  "@radiologyWorkflowStepReportDraftDescription": {
+    "description": "Help text for report draft step."
+  },
+  "radiologyWorkflowStepReportFinal": "Report finalized",
+  "@radiologyWorkflowStepReportFinal": {
+    "description": "Radiology workflow step: report finalized."
+  },
+  "radiologyWorkflowStepReportFinalDescription": "Finalize and attest the radiology report",
+  "@radiologyWorkflowStepReportFinalDescription": {
+    "description": "Help text for report final step."
+  },
+  "radiologyWorkflowStepAddendum": "Addendum",
+  "@radiologyWorkflowStepAddendum": {
+    "description": "Radiology workflow step: addendum or correction."
+  },
+  "radiologyWorkflowStepAddendumDescription": "Add a correction or supplemental report when required",
+  "@radiologyWorkflowStepAddendumDescription": {
+    "description": "Help text for addendum step."
+  },
   "radiologyWorkflowStepReceive": "Receive imaging request",
   "@radiologyWorkflowStepReceive": {
     "description": "Radiology workflow step: receive request."

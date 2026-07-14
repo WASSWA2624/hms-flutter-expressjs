@@ -470,6 +470,13 @@ final class RadiologyOrder {
     this.clinicalNote,
     this.paymentStatus,
     this.authorizationStatus,
+    this.assignedUserId,
+    this.assignedUserDisplayName,
+    this.scheduledAt,
+    this.room,
+    this.equipmentRegistryId,
+    this.equipmentDisplayName,
+    this.billingGateBlocked = false,
     this.requestDetails = const <String, Object?>{},
     this.requestedTests = const <RadiologyRequestedTest>[],
     this.orderedAt,
@@ -503,6 +510,13 @@ final class RadiologyOrder {
   final String? clinicalNote;
   final String? paymentStatus;
   final String? authorizationStatus;
+  final String? assignedUserId;
+  final String? assignedUserDisplayName;
+  final DateTime? scheduledAt;
+  final String? room;
+  final String? equipmentRegistryId;
+  final String? equipmentDisplayName;
+  final bool billingGateBlocked;
   final Map<String, Object?> requestDetails;
   final List<RadiologyRequestedTest> requestedTests;
   final DateTime? orderedAt;
@@ -522,6 +536,13 @@ final class RadiologyOrder {
   final String? testsSummary;
   final List<RadiologyResult> results;
   final List<ImagingStudy> imagingStudies;
+
+  bool get hasAssignment {
+    return (assignedUserId?.trim().isNotEmpty ?? false) ||
+        scheduledAt != null ||
+        (room?.trim().isNotEmpty ?? false) ||
+        (equipmentRegistryId?.trim().isNotEmpty ?? false);
+  }
 
   String get effectiveDisplayId => displayId ?? '';
 
@@ -639,6 +660,7 @@ final class RadiologyResult {
     required this.id,
     this.displayId,
     this.radiologyOrderId,
+    this.parentResultId,
     this.patientId,
     this.patientDisplayName,
     this.radiologyTestId,
@@ -646,6 +668,8 @@ final class RadiologyResult {
     this.modality,
     this.status,
     this.reportText,
+    this.addendumText,
+    this.reportVersion = 1,
     this.finalization = const RadiologyResultFinalization(),
     this.attestations = const <RadiologyResultAttestation>[],
     this.reportedAt,
@@ -656,6 +680,7 @@ final class RadiologyResult {
   final String id;
   final String? displayId;
   final String? radiologyOrderId;
+  final String? parentResultId;
   final String? patientId;
   final String? patientDisplayName;
   final String? radiologyTestId;
@@ -663,6 +688,8 @@ final class RadiologyResult {
   final String? modality;
   final String? status;
   final String? reportText;
+  final String? addendumText;
+  final int reportVersion;
   final RadiologyResultFinalization finalization;
   final List<RadiologyResultAttestation> attestations;
   final DateTime? reportedAt;
@@ -737,7 +764,12 @@ final class ImagingStudy {
     this.displayId,
     this.radiologyOrderId,
     this.modality,
+    this.room,
+    this.equipmentRegistryId,
+    this.equipmentDisplayName,
     this.performedAt,
+    this.startedAt,
+    this.completedAt,
     this.createdAt,
     this.updatedAt,
     this.assetCount = 0,
@@ -751,7 +783,12 @@ final class ImagingStudy {
   final String? displayId;
   final String? radiologyOrderId;
   final String? modality;
+  final String? room;
+  final String? equipmentRegistryId;
+  final String? equipmentDisplayName;
   final DateTime? performedAt;
+  final DateTime? startedAt;
+  final DateTime? completedAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final int assetCount;
@@ -844,6 +881,8 @@ final class RadiologyNextActions {
     this.canAttestFinalization = false,
     this.canAddAddendum = false,
     this.canPacsSync = false,
+    this.billingGateBlocked = false,
+    this.hasAssignment = false,
   });
 
   final bool canAssign;
@@ -857,6 +896,8 @@ final class RadiologyNextActions {
   final bool canAttestFinalization;
   final bool canAddAddendum;
   final bool canPacsSync;
+  final bool billingGateBlocked;
+  final bool hasAssignment;
 }
 
 @immutable

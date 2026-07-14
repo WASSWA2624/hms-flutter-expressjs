@@ -144,8 +144,10 @@ void main() {
             ],
             'next_actions': <String, Object?>{
               'can_assign': true,
-              'can_start': true,
+              'can_start': false,
               'can_cancel': true,
+              'billing_gate_blocked': true,
+              'has_assignment': false,
             },
           },
         },
@@ -156,8 +158,10 @@ void main() {
       expect(workflow.studies.single.modality, 'CT');
       expect(workflow.timeline.single.type, 'ORDER_CREATED');
       expect(workflow.nextActions.canAssign, isTrue);
-      expect(workflow.nextActions.canStart, isTrue);
+      expect(workflow.nextActions.canStart, isFalse);
       expect(workflow.nextActions.canCancel, isTrue);
+      expect(workflow.nextActions.billingGateBlocked, isTrue);
+      expect(workflow.nextActions.hasAssignment, isFalse);
     });
   });
 

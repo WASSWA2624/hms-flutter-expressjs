@@ -27,6 +27,7 @@ const {
 } = require('@services/radiology-workspace/radiology.shared');
 const {
   toPublicIdentifier,
+  isRadiologyOrderPaymentSatisfied,
   mapRadiologyOrderRecord,
   mapRadiologyOrderWorkflowRecord,
   mapRadiologyResultRecord,
@@ -45,7 +46,34 @@ const RADIOLOGY_RECIPIENT_ROLES = [
   ROLES.NURSE,
   ROLES.LAB_TECH,
   ROLES.RADIOLOGY_TECH,
+  ROLES.RADIOLOGIST,
+  ROLES.MEDICAL_RECORDS_CLERK,
 ];
+
+const assertRadiologyPaymentSatisfied = (order) => {
+  if (isRadiologyOrderPaymentSatisfied(order)) return;
+  throw new HttpError('errors.radiology_order.payment_required', 402);
+};
+
+const resolveEquipmentRegistryId = async (identifier) => {
+  if (!identifier) return null;
+  return resolveModelIdOrThrow({
+    identifier,
+    model: 'equipment_registry',
+    where: { deleted_at: null },
+    errorKey: 'errors.equipment_registry.not_found',
+  });
+};
+
+const resolveAssigneeUserId = async (identifier) => {
+  if (!identifier) return null;
+  return resolveModelIdOrThrow({
+    identifier,
+    model: 'user',
+    where: { deleted_at: null },
+    errorKey: 'errors.user.not_found',
+  });
+};
 
 const PATIENT_WORKBENCH_SCAN_LIMIT = 5000;
 const WORKBENCH_VIEWS = new Set(['PATIENTS', 'ORDERS']);
@@ -1091,17 +1119,62 @@ const assignRadiologyOrder = async (identifier, payload = {}, userId, ipAddress)
       errorKey: 'errors.radiology_order.not_found',
     });
 
-    const orderRecord = await radiologyWorkspaceRepository.findOrderById(
-      orderId,
-      RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+    const assigneeUserId = await resolveAssigneeUserId(
+      payload.assignee_user_id || payload.assigned_user_id || null
     );
-    if (!orderRecord) {
-      throw new HttpError('errors.radiology_order.not_found', 404);
-    }
+    const equipmentRegistryId = await resolveEquipmentRegistryId(
+      payload.equipment_registry_id || null
+    );
 
-    assertTransition(orderRecord.status !== 'CANCELLED', {
-      from: orderRecord.status,
-      to: 'ASSIGNED',
+    const mutation = await radiologyWorkspaceRepository.withTransaction(async (tx) => {
+      const order = await radiologyWorkspaceRepository.txFindOrderById(
+        tx,
+        orderId,
+        RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+      );
+      if (!order) {
+        throw new HttpError('errors.radiology_order.not_found', 404);
+      }
+
+      assertTransition(order.status !== 'CANCELLED', {
+        from: order.status,
+        to: 'ASSIGNED',
+      });
+
+      const updateData = {
+        assigned_user_id: assigneeUserId,
+        scheduled_at: toDateOrNull(payload.scheduled_at, null),
+        room: payload.room == null ? order.room : String(payload.room || '').trim() || null,
+        equipment_registry_id: equipmentRegistryId,
+      };
+
+      // Preserve existing assignment fields when omitted from payload.
+      if (!Object.prototype.hasOwnProperty.call(payload, 'assignee_user_id')
+        && !Object.prototype.hasOwnProperty.call(payload, 'assigned_user_id')) {
+        updateData.assigned_user_id = order.assigned_user_id || null;
+      }
+      if (!Object.prototype.hasOwnProperty.call(payload, 'scheduled_at')) {
+        updateData.scheduled_at = order.scheduled_at || null;
+      }
+      if (!Object.prototype.hasOwnProperty.call(payload, 'room')) {
+        updateData.room = order.room || null;
+      }
+      if (!Object.prototype.hasOwnProperty.call(payload, 'equipment_registry_id')) {
+        updateData.equipment_registry_id = order.equipment_registry_id || null;
+      }
+
+      await radiologyWorkspaceRepository.txUpdateOrder(tx, order.id, updateData);
+
+      const refreshedOrder = await radiologyWorkspaceRepository.txFindOrderById(
+        tx,
+        order.id,
+        RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+      );
+
+      return {
+        before: order,
+        order: refreshedOrder,
+      };
     });
 
     createAuditLog({
@@ -1110,18 +1183,29 @@ const assignRadiologyOrder = async (identifier, payload = {}, userId, ipAddress)
       entity: 'radiology_order',
       entity_id: orderId,
       diff: {
+        before: {
+          assigned_user_id: mutation.before?.assigned_user_id || null,
+          scheduled_at: mutation.before?.scheduled_at || null,
+          room: mutation.before?.room || null,
+          equipment_registry_id: mutation.before?.equipment_registry_id || null,
+        },
+        after: {
+          assigned_user_id: mutation.order?.assigned_user_id || null,
+          scheduled_at: mutation.order?.scheduled_at || null,
+          room: mutation.order?.room || null,
+          equipment_registry_id: mutation.order?.equipment_registry_id || null,
+        },
         metadata: {
-          assignee_user_id: payload.assignee_user_id || null,
           notes: payload.notes || null,
         },
       },
       ip_address: ipAddress,
     }).catch(() => {});
 
-    const workflow = mapRadiologyOrderWorkflowRecord(orderRecord);
+    const workflow = mapRadiologyOrderWorkflowRecord(mutation.order);
     publishRadiologyRealtimeUpdates({
       workflow,
-      orderRecord,
+      orderRecord: mutation.order,
       actorUserId: userId || null,
       action: 'ASSIGN',
       resourceType: 'order',
@@ -1131,7 +1215,13 @@ const assignRadiologyOrder = async (identifier, payload = {}, userId, ipAddress)
     return {
       workflow,
       assignment: {
-        assignee_user_id: payload.assignee_user_id || null,
+        assignee_user_id: toPublicIdentifier(
+          mutation.order?.assigned_user?.human_friendly_id,
+          mutation.order?.assigned_user_id
+        ),
+        scheduled_at: workflow?.order?.scheduled_at || null,
+        room: workflow?.order?.room || null,
+        equipment_registry_id: workflow?.order?.equipment_registry_id || null,
       },
     };
   } catch (error) {
@@ -1170,6 +1260,7 @@ const startRadiologyOrder = async (identifier, payload = {}, userId, ipAddress) 
         from: order.status,
         to: 'IN_PROCESS',
       });
+      assertRadiologyPaymentSatisfied(order);
 
       await radiologyWorkspaceRepository.txUpdateOrder(tx, order.id, {
         status: 'IN_PROCESS',
@@ -1433,16 +1524,27 @@ const createRadiologyStudy = async (identifier, payload = {}, userId, ipAddress)
         from: order.status,
         to: 'CREATE_STUDY',
       });
+      assertRadiologyPaymentSatisfied(order);
 
       const modality =
         String(payload.modality || '').trim().toUpperCase() ||
         String(order?.radiology_test?.modality || '').trim().toUpperCase() ||
         'XRAY';
 
+      const equipmentRegistryId = payload.equipment_registry_id
+        ? await resolveEquipmentRegistryId(payload.equipment_registry_id)
+        : order.equipment_registry_id || null;
+
       const study = await radiologyWorkspaceRepository.txCreateStudy(tx, {
         radiology_order_id: order.id,
         modality,
+        room:
+          payload.room == null
+            ? order.room || null
+            : String(payload.room || '').trim() || null,
+        equipment_registry_id: equipmentRegistryId,
         performed_at: toDateOrNull(payload.performed_at, null),
+        started_at: toDateOrNull(payload.started_at, toDateOrNull(payload.performed_at, new Date())),
       });
 
       const refreshedOrder = await radiologyWorkspaceRepository.txFindOrderById(
@@ -1531,13 +1633,22 @@ const initStudyAssetUpload = async (identifier, payload = {}, userId, ipAddress)
       ip_address: ipAddress,
     }).catch(() => {});
 
+    const studyPublicId = toPublicIdentifier(study.human_friendly_id, study.id);
+    // Controlled storage handoff: clients must commit through the authenticated
+    // workspace endpoint (no unrestricted filesystem/object paths).
+    const controlledUploadPath = `/api/v1/radiology/studies/${studyPublicId}/assets/commit-upload`;
+
     return {
-      imaging_study_id: toPublicIdentifier(study.human_friendly_id, study.id),
+      imaging_study_id: studyPublicId,
       upload_token: uploadToken,
       storage_key: storageKey,
       storage_provider: STORAGE_PROVIDER,
-      upload_url: null,
-      headers: {},
+      storage_mode: 'controlled',
+      upload_url: controlledUploadPath,
+      upload_method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
       expires_in_seconds: 900,
     };
   } catch (error) {
@@ -1565,16 +1676,24 @@ const commitStudyAssetUpload = async (identifier, payload = {}, userId, ipAddres
         throw new HttpError('errors.imaging_study.not_found', 404);
       }
 
+      const storageKey = String(payload.storage_key || '').trim();
+      const expectedPrefix = `radiology/${sanitizeForPath(study.id)}/`;
+      if (!storageKey || !storageKey.startsWith(expectedPrefix) || storageKey.includes('..')) {
+        throw new HttpError('errors.validation.invalid', 400, [
+          { field: 'storage_key', reason: 'unrestricted_storage_path' },
+        ]);
+      }
+
       const existingAsset = await radiologyWorkspaceRepository.txFindFirstAsset(tx, {
         imaging_study_id: study.id,
-        storage_key: payload.storage_key,
+        storage_key: storageKey,
       });
 
       const asset = existingAsset
         ? existingAsset
         : await radiologyWorkspaceRepository.txCreateAsset(tx, {
             imaging_study_id: study.id,
-            storage_key: payload.storage_key,
+            storage_key: storageKey,
             file_name: payload.file_name || null,
             content_type: payload.content_type || null,
           });
@@ -1776,6 +1895,7 @@ const draftRadiologyResult = async (identifier, payload = {}, userId, ipAddress)
         from: order.status,
         to: 'DRAFT_RESULT',
       });
+      assertRadiologyPaymentSatisfied(order);
 
       const existingDraft = await radiologyWorkspaceRepository.txFindFirstResult(tx, {
         radiology_order_id: order.id,
@@ -1796,6 +1916,13 @@ const draftRadiologyResult = async (identifier, payload = {}, userId, ipAddress)
             radiology_order_id: order.id,
             status: 'DRAFT',
             report_text: reportText,
+            report_version:
+              (Array.isArray(order.results)
+                ? order.results.reduce(
+                    (max, entry) => Math.max(max, Number(entry.report_version) || 0),
+                    0
+                  )
+                : 0) + 1,
             reported_at: toDateOrNull(payload.reported_at, null),
           });
 
@@ -2231,15 +2358,33 @@ const addendumRadiologyResult = async (identifier, payload = {}, userId, ipAddre
         throw new HttpError('errors.radiology_result.not_found', 404);
       }
 
-      assertTransition(baseResult.status === 'FINAL', {
+      assertTransition(baseResult.status === 'FINAL' || baseResult.status === 'AMENDED', {
         from: baseResult.status,
         to: 'AMENDED',
       });
 
+      // Never mutate the finalized/amended source row; append a new version.
+      const orderForVersion = await radiologyWorkspaceRepository.txFindOrderById(
+        tx,
+        baseResult.radiology_order_id,
+        RADIOLOGY_ORDER_WITH_RELATIONS_INCLUDE
+      );
+      const nextVersion =
+        (Array.isArray(orderForVersion?.results)
+          ? orderForVersion.results.reduce(
+              (max, entry) => Math.max(max, Number(entry.report_version) || 0),
+              0
+            )
+          : Number(baseResult.report_version) || 1) + 1;
+
+      const addendumText = String(payload.addendum_text || '').trim();
       const amendedResult = await radiologyWorkspaceRepository.txCreateResult(tx, {
         radiology_order_id: baseResult.radiology_order_id,
+        parent_result_id: baseResult.id,
         status: 'AMENDED',
-        report_text: composeAddendumText(baseResult.report_text, payload.addendum_text),
+        addendum_text: addendumText,
+        report_text: composeAddendumText(baseResult.report_text, addendumText),
+        report_version: nextVersion,
         reported_at: toDateOrNull(payload.reported_at, new Date()),
       });
 
@@ -2252,6 +2397,7 @@ const addendumRadiologyResult = async (identifier, payload = {}, userId, ipAddre
       return {
         result: amendedResult,
         order,
+        baseResult,
       };
     });
 
@@ -2262,7 +2408,9 @@ const addendumRadiologyResult = async (identifier, payload = {}, userId, ipAddre
       entity_id: mutation.result?.id,
       diff: {
         metadata: {
-          base_result_id: resultId,
+          base_result_id: mutation.baseResult?.id || resultId,
+          parent_result_id: mutation.result?.parent_result_id || null,
+          report_version: mutation.result?.report_version || null,
           notes: payload.notes || null,
         },
       },

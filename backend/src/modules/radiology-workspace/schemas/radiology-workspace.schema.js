@@ -87,7 +87,7 @@ const requestedRadiologyTestSchema = z.object({
 
 const createRadiologyOrderSchema = z.object({
   patient_id: uuidOrFriendlyIdentifierSchema,
-  encounter_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  encounter_id: uuidOrFriendlyIdentifierSchema,
   radiology_test_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   ordered_at: z.string().datetime().optional(),
   notes: z.string().trim().max(65535).optional().nullable(),
@@ -111,6 +111,10 @@ const updateRadiologyOrderRequestDetailsSchema = z.object({
 
 const assignRadiologyOrderSchema = z.object({
   assignee_user_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  assigned_user_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  scheduled_at: z.string().datetime().optional().nullable(),
+  room: z.string().trim().max(120).optional().nullable(),
+  equipment_registry_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   notes: z.string().trim().max(65535).optional().nullable(),
 });
 
@@ -132,7 +136,10 @@ const cancelRadiologyOrderSchema = z.object({
 
 const createRadiologyStudySchema = z.object({
   modality: imagingModalitySchema.optional(),
+  room: z.string().trim().max(120).optional().nullable(),
+  equipment_registry_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
   performed_at: z.string().datetime().optional(),
+  started_at: z.string().datetime().optional(),
   notes: z.string().trim().max(65535).optional().nullable(),
 });
 

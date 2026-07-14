@@ -280,6 +280,8 @@
   "errors.purchase_request.not_found": "Purchase request not found",
   "errors.radiology_order.duplicate_request": "A matching radiology request already exists",
   "errors.radiology_order.not_found": "Radiology order not found",
+  "errors.radiology_order.payment_required": "Payment is required before the radiology study can proceed",
+  "errors.radiology_result.immutable": "Finalized radiology reports cannot be overwritten; create an addendum instead",
   "errors.radiology_result.already_signed_off": "Radiology result already signed off",
   "errors.radiology_result.not_found": "Radiology result not found",
   "errors.radiology_test.not_found": "Radiology test not found",

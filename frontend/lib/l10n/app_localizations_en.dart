@@ -8998,6 +8998,86 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyWorkflowProgressTitle => 'Workflow progress';
 
   @override
+  String get radiologyBillingGateBlockedAction => 'Payment required';
+
+  @override
+  String get radiologyWorkflowNextAwaitPayment =>
+      'Await payment before imaging can start';
+
+  @override
+  String get radiologyScheduledAtLabel => 'Scheduled date';
+
+  @override
+  String get radiologyRoomLabel => 'Room / modality suite';
+
+  @override
+  String get radiologyEquipmentLabel => 'Imaging equipment';
+
+  @override
+  String radiologyReportVersionLabel(int version) {
+    return 'Report version $version';
+  }
+
+  @override
+  String get radiologyReportVersionsTitle => 'Report versions';
+
+  @override
+  String get radiologyWorkflowStepOrderReceived => 'Order received';
+
+  @override
+  String get radiologyWorkflowStepOrderReceivedDescription =>
+      'Imaging request is on the radiology work queue';
+
+  @override
+  String get radiologyWorkflowStepBillingGate => 'Billing gate';
+
+  @override
+  String get radiologyWorkflowStepBillingGateDescription =>
+      'Confirm payment when required before study execution';
+
+  @override
+  String get radiologyWorkflowStepSchedule => 'Schedule and assign';
+
+  @override
+  String get radiologyWorkflowStepScheduleDescription =>
+      'Assign modality, room, equipment, and staff';
+
+  @override
+  String get radiologyWorkflowStepStudyStarted => 'Study started';
+
+  @override
+  String get radiologyWorkflowStepStudyStartedDescription =>
+      'Begin the imaging study for the patient';
+
+  @override
+  String get radiologyWorkflowStepStudyCompleted => 'Study completed';
+
+  @override
+  String get radiologyWorkflowStepStudyCompletedDescription =>
+      'Capture imaging assets and sync to PACS when configured';
+
+  @override
+  String get radiologyWorkflowStepReportDraft => 'Report drafted';
+
+  @override
+  String get radiologyWorkflowStepReportDraftDescription =>
+      'Draft findings and impression for review';
+
+  @override
+  String get radiologyWorkflowStepReportFinal => 'Report finalized';
+
+  @override
+  String get radiologyWorkflowStepReportFinalDescription =>
+      'Finalize and attest the radiology report';
+
+  @override
+  String get radiologyWorkflowStepAddendum => 'Addendum';
+
+  @override
+  String get radiologyWorkflowStepAddendumDescription =>
+      'Add a correction or supplemental report when required';
+
+  @override
   String get radiologyWorkflowStepReceive => 'Receive imaging request';
 
   @override
