@@ -204,8 +204,21 @@ class AppClinicalResultsPreview extends StatelessWidget {
 
     return switch (mode) {
       AppClinicalResultsPreviewMode.inline => panel,
-      AppClinicalResultsPreviewMode.modal ||
-      AppClinicalResultsPreviewMode.fullScreen => panel,
+      AppClinicalResultsPreviewMode.modal => panel,
+      AppClinicalResultsPreviewMode.fullScreen => SizedBox.expand(
+        child: SafeArea(
+          child: Padding(
+            padding: EdgeInsets.all(theme.spacing.md),
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1100),
+                child: panel,
+              ),
+            ),
+          ),
+        ),
+      ),
     };
   }
 }
@@ -215,6 +228,7 @@ Future<T?> showAppClinicalResultsPreviewDialog<T>({
   required WidgetBuilder builder,
   String? title,
   bool barrierDismissible = true,
+  double maxWidth = 960,
 }) {
   return showAppDialog<T>(
     context: context,
@@ -224,8 +238,37 @@ Future<T?> showAppClinicalResultsPreviewDialog<T>({
         title: title == null ? null : Text(title),
         content: builder(dialogContext),
         scrollable: true,
-        maxWidth: 960,
+        maxWidth: maxWidth,
       );
     },
+  );
+}
+
+Future<T?> showAppClinicalResultsPreviewFullScreen<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  String? title,
+}) {
+  return Navigator.of(context, rootNavigator: true).push<T>(
+    MaterialPageRoute<T>(
+      fullscreenDialog: true,
+      builder: (BuildContext routeContext) {
+        final ThemeData theme = Theme.of(routeContext);
+        return Scaffold(
+          appBar: AppBar(
+            title: title == null ? null : Text(title),
+            leading: IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: MaterialLocalizations.of(routeContext).closeButtonTooltip,
+              onPressed: () => Navigator.of(routeContext).maybePop(),
+            ),
+          ),
+          body: ColoredBox(
+            color: theme.colorScheme.surface,
+            child: builder(routeContext),
+          ),
+        );
+      },
+    ),
   );
 }

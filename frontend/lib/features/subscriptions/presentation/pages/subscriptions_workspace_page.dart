@@ -1826,19 +1826,20 @@ class _TimelinePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppSectionPanel(
+    return AppTimeline(
       title: _SubscriptionsText.timeline,
-      leadingIcon: Icons.history_outlined,
-      density: AppContentPanelDensity.compact,
-      children: <Widget>[
-        for (final SubscriptionTimelineItem item in timeline.take(5))
-          _TwoLineCell(
+      maxItems: 5,
+      asActivityList: true,
+      items: <AppTimelineItem>[
+        for (final SubscriptionTimelineItem item in timeline)
+          AppTimelineItem(
             title: item.title,
-            subtitle: _joinDisplay(<String?>[
+            occurredAt: item.occurredAt,
+            description: _joinDisplay(<String?>[
               _resourceLabel(item.resource),
               _statusLabel(item.status),
-              _date(context, item.occurredAt),
             ]),
+            icon: Icons.history_outlined,
           ),
       ],
     );
@@ -1983,26 +1984,10 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final AppWorkspaceStatusTone tone = _statusTone(status);
-    final Color accent = workspaceStatusToneAccentColor(theme, tone);
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(theme.radius.sm),
-        border: Border.all(color: accent.withValues(alpha: 0.35)),
-      ),
-      child: AppWorkspaceStatusBadge(
-        status: AppWorkspaceStatus(
-          label: _statusLabel(status),
-          tone: tone,
-          icon: _statusIcon(status),
-        ),
-      ),
+    return AppStatusBadge(
+      label: _statusLabel(status),
+      tone: _statusTone(status),
+      icon: _statusIcon(status),
     );
   }
 }

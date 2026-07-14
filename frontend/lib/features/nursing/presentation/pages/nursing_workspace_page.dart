@@ -670,20 +670,19 @@ class _NursingPatientDetailContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppWorkspacePatientContextHeader(
+        AppPatientDetails(
           patientName: summary.displayTitle,
           patientNumber: summary.patientDisplayId ?? '',
-          demographics: _joinDisplay(<String?>[
-            detail.patientGender == null
-                ? null
-                : _apiLabel(detail.patientGender!),
-            detail.patientDateOfBirth == null
-                ? null
-                : AppFormatters.mediumDate(
-                    detail.patientDateOfBirth!,
-                    Localizations.localeOf(context),
-                  ),
-          ]),
+          ageLabel: detail.patientDateOfBirth == null
+              ? null
+              : AppFormatters.mediumDate(
+                  detail.patientDateOfBirth!,
+                  Localizations.localeOf(context),
+                ),
+          genderLabel: detail.patientGender == null
+              ? null
+              : _apiLabel(detail.patientGender!),
+          showAvatar: false,
           status: _summaryStatus(summary),
           semanticLabel: l10n.nursingPatientContextLabel,
           alerts: <AppWorkspaceStatus>[
@@ -703,7 +702,7 @@ class _NursingPatientDetailContent extends StatelessWidget {
                 tone: AppWorkspaceStatusTone.warning,
               ),
           ],
-          fields: <AppWorkspacePatientContextField>[
+          expandedFields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
               label: l10n.nursingAdmissionLabel,
               value: summary.displayId ?? '',

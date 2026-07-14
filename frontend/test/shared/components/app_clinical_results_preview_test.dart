@@ -31,4 +31,24 @@ void main() {
 
     expect(find.text('No results to preview'), findsOneWidget);
   });
+
+  testWidgets('fullScreen mode wraps content in expanded safe area', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppClinicalResultsPreview(
+        mode: AppClinicalResultsPreviewMode.fullScreen,
+        title: 'Full report',
+        status: AppClinicalResultStatus.preliminary,
+        child: Text('Draft findings'),
+      ),
+      size: const Size(900, 1200),
+    );
+
+    expect(find.byType(SafeArea), findsWidgets);
+    expect(find.text('Full report'), findsOneWidget);
+    expect(find.text('Draft findings'), findsOneWidget);
+    expect(find.text('Preliminary'), findsOneWidget);
+  });
 }

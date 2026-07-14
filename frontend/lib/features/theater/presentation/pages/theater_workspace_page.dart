@@ -722,16 +722,17 @@ class _TheaterCaseDetailBodyState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppWorkspacePatientContextHeader(
+        AppPatientDetails(
           patientName:
               theaterCase.patientDisplayName ?? l10n.profileUnknownValue,
           patientNumber:
               theaterCase.patientDisplayId ?? l10n.profileUnknownValue,
+          showAvatar: false,
           status: AppWorkspaceStatus(
             label: _caseStatusLabel(l10n, theaterCase.status),
             tone: _statusTone(theaterCase.status),
           ),
-          fields: <AppWorkspacePatientContextField>[
+          expandedFields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
               label: l10n.theaterEncounterLabel,
               value: theaterCase.encounterDisplayId ?? '',

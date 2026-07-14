@@ -19,12 +19,10 @@ class BillingGateBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppWorkspaceStatusBadge(
-      status: AppWorkspaceStatus(
-        label: billingClearanceLabel(context, state),
-        tone: billingClearanceTone(state),
-        icon: billingClearanceIcon(state),
-      ),
+    return AppStatusBadge(
+      label: billingClearanceLabel(context, state),
+      tone: billingClearanceTone(state),
+      icon: billingClearanceIcon(state),
     );
   }
 }
@@ -79,16 +77,28 @@ class BillingDetailBody extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppWorkspacePatientContextHeader(
-          patientName: '',
-          showPatientName: false,
+        AppPatientDetails(
+          patientName: billingPatientName(context, item),
+          patientNumber: item.effectivePatientNumber ?? '',
+          patientNumberLabel: l10n.billingPatientIdColumn,
+          ageLabel: item.patientDateOfBirth == null
+              ? null
+              : formatPatientAge(l10n, item.patientDateOfBirth),
+          genderLabel: () {
+            final String? gender = item.patientGender?.trim();
+            if (gender == null || gender.isEmpty) {
+              return null;
+            }
+            return patientGenderLabel(l10n, gender);
+          }(),
+          genderIcon: patientGenderIcon(item.patientGender),
           showAvatar: false,
-          patientNumber: '',
-          fieldStyle: AppWorkspacePatientContextFieldStyle.inline,
-          fields: _patientContextFields(context, l10n),
-          secondaryFields: item.isInvoice
-              ? _invoiceContextFields(context, l10n)
-              : const <AppWorkspacePatientContextField>[],
+          copyPatientNumberTooltip: l10n.copyIdentifierAction,
+          copyPatientNumberMessage: l10n.identifierCopiedMessage,
+          expandedFields: <AppWorkspacePatientContextField>[
+            ..._patientContextExpandedFields(context, l10n),
+            if (item.isInvoice) ..._invoiceContextFields(context, l10n),
+          ],
           actions: onViewLedger == null
               ? const <Widget>[]
               : <Widget>[
@@ -135,62 +145,19 @@ class BillingDetailBody extends ConsumerWidget {
     );
   }
 
-  List<AppWorkspacePatientContextField> _patientContextFields(
+  List<AppWorkspacePatientContextField> _patientContextExpandedFields(
     BuildContext context,
     AppLocalizations l10n,
   ) {
     final List<AppWorkspacePatientContextField> fields =
         <AppWorkspacePatientContextField>[
           AppWorkspacePatientContextField(
-            label: l10n.billingPatientNameColumn,
-            value: billingPatientName(context, item),
-            icon: Icons.person_outline,
+            label: l10n.billingPaymentStatusLabel,
+            value: billingClearanceLabel(context, item.clearanceState),
+            icon: billingClearanceIcon(item.clearanceState),
+            tone: billingClearanceTone(item.clearanceState),
           ),
         ];
-
-    final String? patientNumber = item.effectivePatientNumber;
-    if (patientNumber != null && patientNumber.isNotEmpty) {
-      fields.add(
-        AppWorkspacePatientContextField(
-          label: l10n.billingPatientIdColumn,
-          value: patientNumber,
-          icon: Icons.badge_outlined,
-          copyable: true,
-          copyTooltip: l10n.copyIdentifierAction,
-          copiedMessage: l10n.identifierCopiedMessage,
-        ),
-      );
-    }
-
-    fields.add(
-      AppWorkspacePatientContextField(
-        label: l10n.billingPaymentStatusLabel,
-        value: billingClearanceLabel(context, item.clearanceState),
-        icon: billingClearanceIcon(item.clearanceState),
-        tone: billingClearanceTone(item.clearanceState),
-      ),
-    );
-
-    final String? gender = item.patientGender?.trim();
-    if (gender != null && gender.isNotEmpty) {
-      fields.add(
-        AppWorkspacePatientContextField(
-          label: l10n.patientsGenderLabel,
-          value: patientGenderLabel(l10n, gender),
-          icon: patientGenderIcon(gender) ?? Icons.wc_outlined,
-        ),
-      );
-    }
-
-    if (item.patientDateOfBirth != null) {
-      fields.add(
-        AppWorkspacePatientContextField(
-          label: l10n.billingAgeLabel,
-          value: formatPatientAge(l10n, item.patientDateOfBirth),
-          icon: Icons.cake_outlined,
-        ),
-      );
-    }
 
     if (item.isInvoice) {
       final String? encounterId = item.encounterDisplayId ?? item.encounterId;

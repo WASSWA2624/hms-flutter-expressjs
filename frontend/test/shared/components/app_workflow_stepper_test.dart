@@ -45,4 +45,32 @@ void main() {
     expect(find.text('Billing'), findsOneWidget);
     expect(find.text('Awaiting labs'), findsOneWidget);
   });
+
+  testWidgets('invokes onTap for completed/current steps', (
+    WidgetTester tester,
+  ) async {
+    Object? tappedId;
+    await pumpComponent(
+      tester,
+      AppWorkflowStepper(
+        steps: <AppWorkflowStepItem>[
+          AppWorkflowStepItem(
+            id: 'receive',
+            label: 'Receive',
+            state: AppWorkflowStepState.completed,
+            onTap: () => tappedId = 'receive',
+          ),
+          const AppWorkflowStepItem(
+            id: 'report',
+            label: 'Report',
+            state: AppWorkflowStepState.upcoming,
+          ),
+        ],
+      ),
+    );
+
+    await tester.tap(find.text('Receive'));
+    await tester.pump();
+    expect(tappedId, 'receive');
+  });
 }

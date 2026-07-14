@@ -496,13 +496,14 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppWorkspacePatientContextHeader(
+        AppPatientDetails(
           patientName: item.displayTitle,
           patientNumber: _value(item.patientPublicId, l10n),
           patientNumberLabel: l10n.physiotherapyPatientNumberLabel,
-          demographics: item.displaySubtitle,
+          ageLabel: item.displaySubtitle,
+          showAvatar: false,
           status: _workspaceStatusForStatus(l10n, item.status),
-          fields: <AppWorkspacePatientContextField>[
+          expandedFields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
               label: l10n.physiotherapyEncounterLabel,
               value: item.encounterPublicId ?? '',

@@ -536,10 +536,11 @@ class _EmergencyDetailPanel extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppWorkspacePatientContextHeader(
+        AppPatientDetails(
           patientName: summary.displayTitle,
           patientNumber: summary.patientDisplayId ?? '',
-          demographics: summary.patientLabel,
+          ageLabel: summary.patientLabel,
+          showAvatar: false,
           status: _caseStatus(summary),
           alerts: <AppWorkspaceStatus>[
             _severityStatus(summary),
@@ -558,7 +559,7 @@ class _EmergencyDetailPanel extends ConsumerWidget {
                 icon: Icons.payments_outlined,
               ),
           ],
-          fields: <AppWorkspacePatientContextField>[
+          expandedFields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
               label: _EmergencyText.caseLabel,
               value: summary.displayId ?? '',
@@ -1177,58 +1178,46 @@ class _EmergencyTimelinePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<_TimelineItem> items =
-        <_TimelineItem>[
+    return AppWorkspaceDetailPanel(
+      title: 'Triage and response',
+      description: 'Clinical activity linked to this emergency case.',
+      child: AppTimeline(
+        emptyTitle: 'No triage or response recorded',
+        asActivityList: true,
+        items: <AppTimelineItem>[
           for (final EmergencyTriageAssessment item in detail.triageAssessments)
-            _TimelineItem(
+            AppTimelineItem(
               title: _joinDisplay(<String?>[
                 'Triage',
                 _apiLabel(item.triageLevel ?? ''),
               ]),
               subtitle: _dateTimeLabel(context, item.createdAt),
-              body: item.notes,
-              icon: Icons.monitor_heart_outlined,
-              sortAt:
+              description: item.notes,
+              occurredAt:
                   item.updatedAt ??
                   item.createdAt ??
                   DateTime.fromMillisecondsSinceEpoch(0),
-              status: _triageStatus(item.triageLevel),
+              icon: Icons.monitor_heart_outlined,
+              tone: _triageStatus(item.triageLevel).tone,
             ),
           for (final EmergencyResponseRecord item in detail.responses)
-            _TimelineItem(
-              title: 'Response',
+            AppTimelineItem(
+              title: _EmergencyText.response,
               subtitle: _dateTimeLabel(
                 context,
                 item.responseAt ?? item.createdAt,
               ),
-              body: item.notes,
-              icon: Icons.medical_services_outlined,
-              sortAt:
+              description: (item.notes ?? '').trim().isEmpty
+                  ? _EmergencyText.responded
+                  : item.notes,
+              occurredAt:
                   item.responseAt ??
                   item.createdAt ??
                   DateTime.fromMillisecondsSinceEpoch(0),
-              status: const AppWorkspaceStatus(
-                label: _EmergencyText.responded,
-                tone: AppWorkspaceStatusTone.success,
-              ),
+              icon: Icons.medical_services_outlined,
+              tone: AppWorkspaceStatusTone.success,
             ),
-        ]..sort(
-          (_TimelineItem left, _TimelineItem right) =>
-              right.sortAt.compareTo(left.sortAt),
-        );
-
-    return AppWorkspaceDetailPanel(
-      title: 'Triage and response',
-      description: 'Clinical activity linked to this emergency case.',
-      child: _RecordList<_TimelineItem>(
-        items: items,
-        emptyLabel: 'No triage or response recorded',
-        icon: Icons.timeline_outlined,
-        titleBuilder: (_TimelineItem item) => item.title,
-        subtitleBuilder: (_, _TimelineItem item) => item.subtitle,
-        bodyBuilder: (_TimelineItem item) => item.body,
-        iconBuilder: (_TimelineItem item) => item.icon,
-        statusBuilder: (_TimelineItem item) => item.status,
+        ],
       ),
     );
   }
@@ -1241,10 +1230,15 @@ class _AmbulancePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<_TimelineItem> items =
-        <_TimelineItem>[
+    return AppWorkspaceDetailPanel(
+      title: 'Ambulance',
+      description: 'Dispatch and trip activity for this emergency case.',
+      child: AppTimeline(
+        emptyTitle: 'No ambulance activity recorded',
+        asActivityList: true,
+        items: <AppTimelineItem>[
           for (final EmergencyAmbulanceDispatch item in detail.dispatches)
-            _TimelineItem(
+            AppTimelineItem(
               title: _joinDisplay(<String?>[
                 'Dispatch',
                 item.ambulanceLabel ??
@@ -1255,18 +1249,15 @@ class _AmbulancePanel extends StatelessWidget {
                 context,
                 item.dispatchedAt ?? item.createdAt,
               ),
-              icon: Icons.airport_shuttle_outlined,
-              sortAt:
+              occurredAt:
                   item.dispatchedAt ??
                   item.createdAt ??
                   DateTime.fromMillisecondsSinceEpoch(0),
-              status: AppWorkspaceStatus(
-                label: _apiLabel(item.status ?? 'DISPATCHED'),
-                tone: _ambulanceTone(item.status),
-              ),
+              icon: Icons.airport_shuttle_outlined,
+              tone: _ambulanceTone(item.status),
             ),
           for (final EmergencyAmbulanceTrip item in detail.trips)
-            _TimelineItem(
+            AppTimelineItem(
               title: _joinDisplay(<String?>[
                 item.isActive ? 'Active trip' : 'Trip complete',
                 item.ambulanceLabel ??
@@ -1279,156 +1270,18 @@ class _AmbulancePanel extends StatelessWidget {
                     ? null
                     : 'Ended ${_dateTimeLabel(context, item.endedAt)}',
               ]),
-              icon: Icons.route_outlined,
-              sortAt:
+              occurredAt:
                   item.endedAt ??
                   item.startedAt ??
                   item.createdAt ??
                   DateTime.fromMillisecondsSinceEpoch(0),
-              status: AppWorkspaceStatus(
-                label: item.isActive ? 'Transporting' : 'Completed',
-                tone: item.isActive
-                    ? AppWorkspaceStatusTone.warning
-                    : AppWorkspaceStatusTone.success,
-              ),
+              icon: Icons.route_outlined,
+              tone: item.isActive
+                  ? AppWorkspaceStatusTone.warning
+                  : AppWorkspaceStatusTone.success,
             ),
-        ]..sort(
-          (_TimelineItem left, _TimelineItem right) =>
-              right.sortAt.compareTo(left.sortAt),
-        );
-
-    return AppWorkspaceDetailPanel(
-      title: 'Ambulance',
-      description: 'Dispatch and trip activity for this emergency case.',
-      child: _RecordList<_TimelineItem>(
-        items: items,
-        emptyLabel: 'No ambulance activity recorded',
-        icon: Icons.airport_shuttle_outlined,
-        titleBuilder: (_TimelineItem item) => item.title,
-        subtitleBuilder: (_, _TimelineItem item) => item.subtitle,
-        iconBuilder: (_TimelineItem item) => item.icon,
-        statusBuilder: (_TimelineItem item) => item.status,
+        ],
       ),
-    );
-  }
-}
-
-class _RecordList<T> extends StatelessWidget {
-  const _RecordList({
-    required this.items,
-    required this.emptyLabel,
-    required this.icon,
-    required this.titleBuilder,
-    required this.subtitleBuilder,
-    this.bodyBuilder,
-    this.iconBuilder,
-    this.statusBuilder,
-  });
-
-  final List<T> items;
-  final String emptyLabel;
-  final IconData icon;
-  final String Function(T item) titleBuilder;
-  final String Function(BuildContext context, T item) subtitleBuilder;
-  final String? Function(T item)? bodyBuilder;
-  final IconData Function(T item)? iconBuilder;
-  final AppWorkspaceStatus? Function(T item)? statusBuilder;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    if (items.isEmpty) {
-      return Row(
-        children: <Widget>[
-          Icon(icon, color: colorScheme.onSurfaceVariant),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(child: Text(emptyLabel)),
-        ],
-      );
-    }
-
-    return Column(
-      children: <Widget>[
-        for (var index = 0; index < items.length; index += 1) ...<Widget>[
-          if (index > 0) const Divider(height: 1),
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
-            child: _RecordRow<T>(
-              item: items[index],
-              titleBuilder: titleBuilder,
-              subtitleBuilder: subtitleBuilder,
-              bodyBuilder: bodyBuilder,
-              iconBuilder: iconBuilder,
-              statusBuilder: statusBuilder,
-              fallbackIcon: icon,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _RecordRow<T> extends StatelessWidget {
-  const _RecordRow({
-    required this.item,
-    required this.titleBuilder,
-    required this.subtitleBuilder,
-    required this.fallbackIcon,
-    this.bodyBuilder,
-    this.iconBuilder,
-    this.statusBuilder,
-  });
-
-  final T item;
-  final String Function(T item) titleBuilder;
-  final String Function(BuildContext context, T item) subtitleBuilder;
-  final String? Function(T item)? bodyBuilder;
-  final IconData Function(T item)? iconBuilder;
-  final AppWorkspaceStatus? Function(T item)? statusBuilder;
-  final IconData fallbackIcon;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final String? body = bodyBuilder?.call(item);
-    final AppWorkspaceStatus? status = statusBuilder?.call(item);
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Icon(
-          iconBuilder?.call(item) ?? fallbackIcon,
-          color: colorScheme.primary,
-          size: theme.appTokens.listIconSize,
-        ),
-        SizedBox(width: theme.spacing.sm),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(titleBuilder(item), style: theme.textTheme.titleSmall),
-              SizedBox(height: theme.spacing.xs),
-              Text(
-                subtitleBuilder(context, item),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              if (body != null && body.trim().isNotEmpty) ...<Widget>[
-                SizedBox(height: theme.spacing.xs),
-                Text(body),
-              ],
-            ],
-          ),
-        ),
-        if (status != null) ...<Widget>[
-          SizedBox(width: theme.spacing.sm),
-          Flexible(child: AppWorkspaceStatusBadge(status: status)),
-        ],
-      ],
     );
   }
 }
@@ -1788,25 +1641,6 @@ final class _HandoffInput {
   final String destination;
   final String? notes;
   final bool closeCase;
-}
-
-@immutable
-final class _TimelineItem {
-  const _TimelineItem({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.sortAt,
-    this.body,
-    this.status,
-  });
-
-  final String title;
-  final String subtitle;
-  final String? body;
-  final IconData icon;
-  final AppWorkspaceStatus? status;
-  final DateTime sortAt;
 }
 
 List<AppSelectOption<EmergencyBoardScope>> _scopeOptions() {

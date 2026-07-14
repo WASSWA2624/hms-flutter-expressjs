@@ -19,15 +19,15 @@ import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_r
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_billing_helpers.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_resolve.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
-import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_catalog_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_instructions_print_helpers.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_order_item_pricing_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_resolve.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_request_flow_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -563,13 +563,15 @@ class _PharmacyDetailPanel extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppWorkspacePatientContextHeader(
-          patientName: '',
-          patientNumber: '',
+        AppPatientDetails(
+          patientName: order.displayTitle,
+          patientNumber: (order.patientId ?? '').trim(),
+          patientNumberLabel: l10n.opdPatientIdLabel,
           showAvatar: false,
-          showPatientName: false,
-          fieldStyle: AppWorkspacePatientContextFieldStyle.inline,
-          fields: _pharmacyDetailContextFields(context, order),
+          status: _orderStatus(context, order),
+          copyPatientNumberTooltip: l10n.copyIdentifierAction,
+          copyPatientNumberMessage: l10n.identifierCopiedMessage,
+          expandedFields: _pharmacyDetailExpandedFields(context, order),
         ),
         SizedBox(height: theme.spacing.md),
         _PharmacyActionPanel(
@@ -2862,31 +2864,13 @@ List<AppSearchBarFilterChoice> _stockStatusFilterChoices(
   ];
 }
 
-List<AppWorkspacePatientContextField> _pharmacyDetailContextFields(
+List<AppWorkspacePatientContextField> _pharmacyDetailExpandedFields(
   BuildContext context,
   PharmacyOrder order,
 ) {
   final AppLocalizations l10n = context.l10n;
-  final AppWorkspaceStatus status = _orderStatus(context, order);
 
   return <AppWorkspacePatientContextField>[
-    AppWorkspacePatientContextField(
-      label: l10n.clinicalRequestPatientNameLabel,
-      value: order.displayTitle,
-    ),
-    if ((order.patientId ?? '').trim().isNotEmpty)
-      AppWorkspacePatientContextField(
-        label: l10n.opdPatientIdLabel,
-        value: order.patientId!.trim(),
-        copyable: true,
-        copyTooltip: l10n.copyIdentifierAction,
-        copiedMessage: l10n.identifierCopiedMessage,
-      ),
-    AppWorkspacePatientContextField(
-      label: l10n.pharmacyStatusColumnLabel,
-      value: status.label,
-      tone: status.tone,
-    ),
     if (order.hasPendingAttestation)
       AppWorkspacePatientContextField(
         label: l10n.pharmacyPendingBatchLabel,

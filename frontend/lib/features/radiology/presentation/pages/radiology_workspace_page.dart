@@ -678,7 +678,7 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppWorkspacePatientContextHeader(
+        AppPatientDetails(
           patientName: order.patientDisplayName ?? l10n.profileUnknownValue,
           patientNumber: order.patientId ?? '',
           patientNumberLabel: l10n.radiologyPatientIdLabel,
@@ -687,9 +687,8 @@ class _RadiologyDetailBodyState extends ConsumerState<_RadiologyDetailBody> {
           semanticLabel: l10n.radiologyPatientContextLabel,
           showAvatar: false,
           showActionLabels: true,
-          mergeFieldsIntoMetaLine: true,
           status: _orderStatus(context, order),
-          fields: <AppWorkspacePatientContextField>[
+          expandedFields: <AppWorkspacePatientContextField>[
             if ((order.testDisplayName ?? '').trim().isNotEmpty)
               AppWorkspacePatientContextField(
                 label: l10n.radiologyStudyLabel,
@@ -1115,22 +1114,33 @@ class _WorkflowProgressSection extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final int activeStep = _radiologyWorkflowStepIndex(workflow);
-    final List<String> steps = <String>[
-      l10n.radiologyWorkflowStepReceive,
-      l10n.radiologyWorkflowStepReview,
-      l10n.radiologyWorkflowStepPerform,
-      l10n.radiologyWorkflowStepUpload,
-      l10n.radiologyWorkflowStepReport,
-      l10n.radiologyWorkflowStepRelease,
-    ];
-    final List<String> descriptions = <String>[
-      l10n.radiologyWorkflowStepReceiveDescription,
-      l10n.radiologyWorkflowStepReviewDescription,
-      l10n.radiologyWorkflowStepPerformDescription,
-      l10n.radiologyWorkflowStepUploadDescription,
-      l10n.radiologyWorkflowStepReportDescription,
-      l10n.radiologyWorkflowStepReleaseDescription,
-    ];
+    final List<({String label, String description})> stepDefs =
+        <({String label, String description})>[
+          (
+            label: l10n.radiologyWorkflowStepReceive,
+            description: l10n.radiologyWorkflowStepReceiveDescription,
+          ),
+          (
+            label: l10n.radiologyWorkflowStepReview,
+            description: l10n.radiologyWorkflowStepReviewDescription,
+          ),
+          (
+            label: l10n.radiologyWorkflowStepPerform,
+            description: l10n.radiologyWorkflowStepPerformDescription,
+          ),
+          (
+            label: l10n.radiologyWorkflowStepUpload,
+            description: l10n.radiologyWorkflowStepUploadDescription,
+          ),
+          (
+            label: l10n.radiologyWorkflowStepReport,
+            description: l10n.radiologyWorkflowStepReportDescription,
+          ),
+          (
+            label: l10n.radiologyWorkflowStepRelease,
+            description: l10n.radiologyWorkflowStepReleaseDescription,
+          ),
+        ];
     final bool canCollapse = activeStep >= 2;
 
     return AppSectionPanel(
@@ -1141,7 +1151,6 @@ class _WorkflowProgressSection extends StatelessWidget {
               iconOnly: true,
               leadingIcon: expanded ? Icons.unfold_less : Icons.unfold_more,
               label: l10n.radiologyWorkflowProgressTitle,
-
               semanticLabel: l10n.radiologyWorkflowProgressTitle,
               tooltip: l10n.radiologyWorkflowProgressTitle,
               onPressed: () => onExpandedChanged(!expanded),
@@ -1152,168 +1161,30 @@ class _WorkflowProgressSection extends StatelessWidget {
           AppButton.tertiary(
             label: l10n.radiologyWorkflowProgressCollapsedSummary(
               activeStep,
-              steps.length,
+              stepDefs.length,
             ),
             leadingIcon: Icons.timeline_outlined,
             onPressed: () => onExpandedChanged(true),
           )
         else
-          LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              final bool compact = constraints.maxWidth < 640;
-              if (compact) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    for (int index = 0; index < steps.length; index++)
-                      _WorkflowStepTile(
-                        label: steps[index],
-                        description: descriptions[index],
-                        index: index + 1,
-                        isComplete: index < activeStep,
-                        isCurrent: index == activeStep,
-                        showConnector: index < steps.length - 1,
-                        onTap: index <= activeStep
-                            ? () => onStepTap(index)
-                            : null,
-                      ),
-                  ],
-                );
-              }
-
-              return Wrap(
-                spacing: theme.spacing.sm,
-                runSpacing: theme.spacing.sm,
-                children: <Widget>[
-                  for (int index = 0; index < steps.length; index++)
-                    SizedBox(
-                      width: (constraints.maxWidth - theme.spacing.sm) / 2,
-                      child: _WorkflowStepTile(
-                        label: steps[index],
-                        description: descriptions[index],
-                        index: index + 1,
-                        isComplete: index < activeStep,
-                        isCurrent: index == activeStep,
-                        onTap: index <= activeStep
-                            ? () => onStepTap(index)
-                            : null,
-                      ),
-                    ),
-                ],
-              );
-            },
+          AppWorkflowStepper(
+            semanticLabel: l10n.radiologyWorkflowProgressTitle,
+            steps: <AppWorkflowStepItem>[
+              for (int index = 0; index < stepDefs.length; index++)
+                AppWorkflowStepItem(
+                  id: index,
+                  label: stepDefs[index].label,
+                  description: stepDefs[index].description,
+                  state: index < activeStep
+                      ? AppWorkflowStepState.completed
+                      : index == activeStep
+                      ? AppWorkflowStepState.current
+                      : AppWorkflowStepState.upcoming,
+                  onTap: index <= activeStep ? () => onStepTap(index) : null,
+                ),
+            ],
           ),
       ],
-    );
-  }
-}
-
-class _WorkflowStepTile extends StatelessWidget {
-  const _WorkflowStepTile({
-    required this.label,
-    required this.description,
-    required this.index,
-    required this.isComplete,
-    required this.isCurrent,
-    this.showConnector = false,
-    this.onTap,
-  });
-
-  final String label;
-  final String description;
-  final int index;
-  final bool isComplete;
-  final bool isCurrent;
-  final bool showConnector;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final Color background = isCurrent
-        ? colorScheme.primaryContainer
-        : isComplete
-        ? colorScheme.secondaryContainer
-        : colorScheme.surfaceContainerLow;
-    final Color foreground = isCurrent
-        ? colorScheme.onPrimaryContainer
-        : isComplete
-        ? colorScheme.onSecondaryContainer
-        : colorScheme.onSurfaceVariant;
-    final BorderRadius radius = BorderRadius.circular(theme.spacing.xs);
-
-    final Widget tile = DecoratedBox(
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: radius,
-        border: Border.all(
-          color: isCurrent ? colorScheme.primary : colorScheme.outlineVariant,
-          width: isCurrent ? 2 : 1,
-        ),
-        boxShadow: isCurrent
-            ? <BoxShadow>[
-                BoxShadow(
-                  color: colorScheme.primary.withValues(alpha: 0.18),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.sm,
-        ),
-        child: Row(
-          children: <Widget>[
-            CircleAvatar(
-              radius: 14,
-              backgroundColor: foreground.withValues(alpha: 0.12),
-              foregroundColor: foreground,
-              child: isComplete
-                  ? const Icon(Icons.check, size: 16)
-                  : Text('$index', style: theme.textTheme.labelMedium),
-            ),
-            SizedBox(width: theme.spacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    label,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: foreground,
-                      fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    description,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: foreground.withValues(alpha: 0.86),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    final Widget interactive = onTap == null
-        ? tile
-        : Material(
-            color: Colors.transparent,
-            child: InkWell(onTap: onTap, borderRadius: radius, child: tile),
-          );
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: theme.spacing.xs),
-      child: interactive,
     );
   }
 }
@@ -1780,23 +1651,21 @@ class _ReportingSectionState extends ConsumerState<_ReportingSection> {
                     ),
                   ),
                   SizedBox(height: theme.spacing.md),
-                  AppReportPreviewPanel(
+                  AppClinicalResultsPreview(
                     title: l10n.radiologyReportLivePreviewTitle,
-                    selectable: true,
-                    child: Text(
-                      _inlineReportController.text.trim().isEmpty
-                          ? l10n.radiologyEmptyReportBody
-                          : _inlineReportController.text.trim(),
-                    ),
+                    status: AppClinicalResultStatus.preliminary,
+                    isEmpty: _inlineReportController.text.trim().isEmpty,
+                    emptyBody: l10n.radiologyEmptyReportBody,
+                    child: Text(_inlineReportController.text.trim()),
                   ),
                   SizedBox(height: theme.spacing.md),
                 ],
-                AppReportPreviewPanel(
+                AppClinicalResultsPreview(
                   title: l10n.radiologyGeneratedReportPreviewTitle,
-                  selectable: !showInlineEditor,
-                  child: Text(
-                    latest.reportText ?? l10n.radiologyEmptyReportBody,
-                  ),
+                  status: _clinicalResultStatusForRadiology(latest),
+                  isEmpty: (latest.reportText ?? '').trim().isEmpty,
+                  emptyBody: l10n.radiologyEmptyReportBody,
+                  child: Text(latest.reportText ?? ''),
                 ),
               ],
             ),
@@ -1872,13 +1741,14 @@ class _StudiesSection extends ConsumerWidget {
                         color: theme.colorScheme.primary,
                       ),
                       children: <Widget>[
-                        AppReportPreviewPanel(
+                        AppClinicalResultsPreview(
                           title: l10n.radiologyGeneratedReportPreviewTitle,
-                          selectable: true,
-                          child: Text(
-                            latestReport.reportText ??
-                                l10n.radiologyEmptyReportBody,
+                          status: _clinicalResultStatusForRadiology(
+                            latestReport,
                           ),
+                          isEmpty: (latestReport.reportText ?? '').trim().isEmpty,
+                          emptyBody: l10n.radiologyEmptyReportBody,
+                          child: Text(latestReport.reportText ?? ''),
                         ),
                       ],
                     ),
@@ -3160,15 +3030,21 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
             maxLines: 16,
           ),
           SizedBox(height: Theme.of(context).spacing.md),
-          AppReportPreviewPanel(
+          AppClinicalResultsPreview(
             title: l10n.radiologyReportLivePreviewTitle,
-            selectable: true,
+            status: AppClinicalResultStatus.preliminary,
+            isEmpty: _composeRadiologyReportText(
+              findings: _findingsController.text.trim(),
+              impression: _impressionController.text.trim(),
+              narrative: _reportController.text.trim(),
+            ).trim().isEmpty,
+            emptyBody: l10n.radiologyEmptyReportBody,
             child: Text(
               _composeRadiologyReportText(
                 findings: _findingsController.text.trim(),
                 impression: _impressionController.text.trim(),
                 narrative: _reportController.text.trim(),
-              ).ifEmpty(l10n.radiologyEmptyReportBody),
+              ),
             ),
           ),
           SizedBox(height: Theme.of(context).spacing.md),
@@ -3842,6 +3718,22 @@ int _radiologyWorkflowStepIndex(RadiologyWorkflow workflow) {
     return 1;
   }
   return 0;
+}
+
+AppClinicalResultStatus _clinicalResultStatusForRadiology(
+  RadiologyResult result,
+) {
+  final String status = result.normalizedStatus;
+  if (status == 'AMENDED') {
+    return AppClinicalResultStatus.corrected;
+  }
+  if (result.isReleased) {
+    return AppClinicalResultStatus.verified;
+  }
+  if (result.isDraft) {
+    return AppClinicalResultStatus.preliminary;
+  }
+  return AppClinicalResultStatus.unavailable;
 }
 
 List<AppSelectOption<String>> _radiologyLateralityOptions(

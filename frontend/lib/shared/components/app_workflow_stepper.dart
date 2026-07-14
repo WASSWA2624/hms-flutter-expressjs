@@ -25,6 +25,7 @@ final class AppWorkflowStepItem {
     this.icon,
     this.helpText,
     this.blockedReason,
+    this.onTap,
     this.actions = const <AppWorkflowStepAction>[],
   });
 
@@ -35,6 +36,7 @@ final class AppWorkflowStepItem {
   final IconData? icon;
   final String? helpText;
   final String? blockedReason;
+  final VoidCallback? onTap;
   final List<AppWorkflowStepAction> actions;
 }
 
@@ -221,6 +223,8 @@ class _WorkflowStepNode extends StatelessWidget {
     ].join('. ');
 
     final Widget node = Semantics(
+      button: step.onTap != null,
+      enabled: step.onTap != null,
       label: help,
       child: Tooltip(
         message: step.helpText ?? step.blockedReason ?? step.description ?? step.label,
@@ -284,7 +288,18 @@ class _WorkflowStepNode extends StatelessWidget {
       ),
     );
 
-    return node;
+    if (step.onTap == null) {
+      return node;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: step.onTap,
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        child: node,
+      ),
+    );
   }
 
   static IconData _defaultIcon(AppWorkflowStepState state) {

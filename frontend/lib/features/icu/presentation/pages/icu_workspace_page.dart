@@ -564,13 +564,14 @@ class _IcuDetailPanel extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppWorkspacePatientContextHeader(
+        AppPatientDetails(
           patientName: summary.displayTitle,
           patientNumber: summary.displayId ?? '',
-          demographics: joinDisplay(<String?>[
-            apiLabel(detail.patientGender ?? ''),
-            dateLabel(context, detail.patientDateOfBirth),
-          ]),
+          ageLabel: dateLabel(context, detail.patientDateOfBirth),
+          genderLabel: detail.patientGender == null
+              ? null
+              : apiLabel(detail.patientGender!),
+          showAvatar: false,
           status: icuStatus(summary),
           alerts: <AppWorkspaceStatus>[
             if (summary.hasCriticalAlert) alertStatus(l10n, summary),
@@ -590,7 +591,7 @@ class _IcuDetailPanel extends ConsumerWidget {
                 tone: AppWorkspaceStatusTone.success,
               ),
           ],
-          fields: <AppWorkspacePatientContextField>[
+          expandedFields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
               label: l10n.icuAdmissionLabel,
               value: summary.displayId ?? '',

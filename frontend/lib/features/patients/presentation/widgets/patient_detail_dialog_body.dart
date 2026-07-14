@@ -512,18 +512,16 @@ class _PatientListPreviewHeader extends StatelessWidget {
     final String gender = patient.gender == null
         ? l10n.profileUnknownValue
         : _genderLabel(l10n, patient.gender!);
-    final String demographics = _joinDisplay(<String?>[
-      _patientAgeLabel(context, patient.dateOfBirth),
-      gender,
-    ]);
     final PatientVisitContext? visit = patient.currentVisit;
 
-    return AppWorkspacePatientContextHeader(
+    return AppPatientDetails(
       patientName: patient.effectiveDisplayName,
       showPatientName: false,
       patientNumber: patient.effectiveIdentifier ?? '',
-      demographics: demographics,
+      ageLabel: _patientAgeLabel(context, patient.dateOfBirth),
+      genderLabel: gender,
       semanticLabel: l10n.patientsDetailTitle,
+      showAvatar: false,
       status: AppWorkspaceStatus(
         label: patient.isActive
             ? l10n.patientsActiveFilter
@@ -549,8 +547,7 @@ class _PatientListPreviewHeader extends StatelessWidget {
             icon: Icons.error_outline,
           ),
       ],
-      fieldStyle: AppWorkspacePatientContextFieldStyle.inline,
-      fields: <AppWorkspacePatientContextField>[
+      expandedFields: <AppWorkspacePatientContextField>[
         AppWorkspacePatientContextField(
           label: l10n.patientsDobLabel,
           value: _formatOptionalDate(context, patient.dateOfBirth),

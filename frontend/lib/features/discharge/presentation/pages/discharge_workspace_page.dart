@@ -526,13 +526,15 @@ class _DischargeDetailContent extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppWorkspacePatientContextHeader(
+        AppPatientDetails(
           patientName: detail.ipd.patientDisplayName,
           patientNumber: l10n.profileUnknownValue,
-          demographics: _patientDemographics(context, detail),
+          ageLabel: _patientAgeLabel(context, detail),
+          genderLabel: _patientGenderLabel(context, detail),
           semanticLabel: l10n.dischargePatientContextLabel,
+          showAvatar: false,
           status: _statusFor(context, detail.summary),
-          fields: <AppWorkspacePatientContextField>[
+          expandedFields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
               label: l10n.dischargeAdmissionFieldLabel,
               value: detail.summary.displayId ?? '',
@@ -1422,21 +1424,25 @@ String _dateLabel(BuildContext context, DateTime? value) {
   );
 }
 
-String _patientDemographics(
+String? _patientAgeLabel(
   BuildContext context,
   DischargeAdmissionDetail detail,
 ) {
-  final String gender = detail.ipd.patientGender == null
-      ? context.l10n.profileUnknownValue
-      : _apiLabel(detail.ipd.patientGender!);
   final DateTime? birthDate = detail.ipd.patientDateOfBirth;
   if (birthDate == null) {
-    return gender;
+    return null;
   }
-  return context.l10n.dischargePatientAgeSexLabel(
-    _ageInYears(birthDate).toString(),
-    gender,
-  );
+  return _ageInYears(birthDate).toString();
+}
+
+String _patientGenderLabel(
+  BuildContext context,
+  DischargeAdmissionDetail detail,
+) {
+  if (detail.ipd.patientGender == null) {
+    return context.l10n.profileUnknownValue;
+  }
+  return _apiLabel(detail.ipd.patientGender!);
 }
 
 int _ageInYears(DateTime birthDate) {

@@ -13,6 +13,7 @@ import 'package:hosspi_hms/features/claims/presentation/controllers/claims_works
 import 'package:hosspi_hms/features/claims/presentation/widgets/claims_insurance_config_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -742,13 +743,14 @@ class _ClaimsDetailContent extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppWorkspacePatientContextHeader(
+        AppPatientDetails(
           patientName: _detailTitle(context, detail),
           patientNumber: _detailNumber(context, detail),
-          demographics: _detailSubtitle(context, detail),
+          compactSupportingText: _detailSubtitle(context, detail),
           semanticLabel: l10n.claimsPatientContextLabel,
+          showAvatar: false,
           status: _statusFor(context, detail.item),
-          fields: <AppWorkspacePatientContextField>[
+          expandedFields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
               label: l10n.claimsCoverageFieldLabel,
               value: _coverageLabel(context, detail),
@@ -781,6 +783,10 @@ class _ClaimsDetailContent extends ConsumerWidget {
               icon: Icons.payments_outlined,
             ),
           ],
+        ),
+        SizedBox(height: theme.spacing.lg),
+        AppActionPanel(
+          title: l10n.claimsDetailTitle,
           actions: _detailActions(context, controller, state, detail),
         ),
         SizedBox(height: theme.spacing.lg),
@@ -811,11 +817,9 @@ class _BillingImpactPanel extends StatelessWidget {
     return AppWorkspaceDetailPanel(
       title: l10n.claimsBillingImpactTitle,
       description: body,
-      child: Wrap(
-        spacing: Theme.of(context).spacing.sm,
-        runSpacing: Theme.of(context).spacing.sm,
-        children: <Widget>[
-          _InfoTile(
+      child: AppInfoTileGrid(
+        items: <AppInfoTileData>[
+          AppInfoTileData(
             icon: Icons.verified_user_outlined,
             label: l10n.claimsCoveragePercentLabel,
             value: coverage?.coveragePercentage == null
@@ -824,12 +828,12 @@ class _BillingImpactPanel extends StatelessWidget {
                     coverage!.coveragePercentage!.toString(),
                   ),
           ),
-          _InfoTile(
+          AppInfoTileData(
             icon: Icons.receipt_long_outlined,
             label: l10n.claimsInvoiceStatusLabel,
             value: _invoiceStatusLabel(context, invoice),
           ),
-          _InfoTile(
+          AppInfoTileData(
             icon: Icons.payments_outlined,
             label: l10n.claimsPatientBalanceLabel,
             value: _patientBalanceLabel(context, detail),
@@ -886,7 +890,7 @@ class _RequiredDocumentsPanel extends StatelessWidget {
         runSpacing: Theme.of(context).spacing.sm,
         children: <Widget>[
           for (final AppWorkspaceStatus status in statuses)
-            AppWorkspaceStatusBadge(status: status),
+            AppStatusBadge.fromStatus(status),
         ],
       ),
     );
@@ -901,95 +905,39 @@ class _TimelinePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<AppWorkspaceActivityItem> items = <AppWorkspaceActivityItem>[
-      if (detail.authorization?.requestedAt != null)
-        AppWorkspaceActivityItem(
-          title: l10n.claimsTimelineAuthorizationRequested,
-          subtitle: _dateTimeLabel(context, detail.authorization!.requestedAt),
-          icon: Icons.schedule_outlined,
-          tone: AppWorkspaceStatusTone.info,
-        ),
-      if (detail.authorization?.approvedAt != null)
-        AppWorkspaceActivityItem(
-          title: l10n.claimsTimelineAuthorizationResponded,
-          subtitle: _dateTimeLabel(context, detail.authorization!.approvedAt),
-          icon: Icons.verified_outlined,
-          tone: AppWorkspaceStatusTone.success,
-        ),
-      if (detail.claim?.submittedAt != null)
-        AppWorkspaceActivityItem(
-          title: l10n.claimsTimelineClaimSubmitted,
-          subtitle: _dateTimeLabel(context, detail.claim!.submittedAt),
-          icon: Icons.outbox_outlined,
-          tone: AppWorkspaceStatusTone.info,
-        ),
-      AppWorkspaceActivityItem(
-        title: l10n.claimsTimelineCurrentStatus,
-        subtitle: _statusLabel(context, detail.item),
-        icon: _kindIcon(detail.item.kind),
-        tone: _statusTone(detail.item),
-      ),
-    ];
-
-    return AppWorkspaceActivityList(
+    return AppTimeline(
       title: l10n.claimsTimelineTitle,
       description: l10n.claimsTimelineDescription,
-      items: items,
-    );
-  }
-}
-
-class _InfoTile extends StatelessWidget {
-  const _InfoTile({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return SizedBox(
-      width: 220,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border.all(color: colorScheme.outlineVariant),
-          color: colorScheme.surface,
-        ),
-        child: Padding(
-          padding: EdgeInsets.all(theme.spacing.sm),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Icon(icon, size: theme.appTokens.listIconSize),
-              SizedBox(width: theme.spacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(label, style: theme.textTheme.labelLarge),
-                    SizedBox(height: theme.spacing.xs),
-                    Text(
-                      value,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+      asActivityList: true,
+      items: <AppTimelineItem>[
+        if (detail.authorization?.requestedAt != null)
+          AppTimelineItem(
+            title: l10n.claimsTimelineAuthorizationRequested,
+            occurredAt: detail.authorization!.requestedAt,
+            icon: Icons.schedule_outlined,
+            tone: AppWorkspaceStatusTone.info,
           ),
+        if (detail.authorization?.approvedAt != null)
+          AppTimelineItem(
+            title: l10n.claimsTimelineAuthorizationResponded,
+            occurredAt: detail.authorization!.approvedAt,
+            icon: Icons.verified_outlined,
+            tone: AppWorkspaceStatusTone.success,
+          ),
+        if (detail.claim?.submittedAt != null)
+          AppTimelineItem(
+            title: l10n.claimsTimelineClaimSubmitted,
+            occurredAt: detail.claim!.submittedAt,
+            icon: Icons.outbox_outlined,
+            tone: AppWorkspaceStatusTone.info,
+          ),
+        AppTimelineItem(
+          title: l10n.claimsTimelineCurrentStatus,
+          subtitle: _statusLabel(context, detail.item),
+          icon: _kindIcon(detail.item.kind),
+          tone: _statusTone(detail.item),
         ),
-      ),
+      ],
     );
   }
 }
@@ -1671,7 +1619,7 @@ Future<void> _openClaimResponseDialog(
   }
 }
 
-List<Widget> _detailActions(
+List<AppActionItem> _detailActions(
   BuildContext context,
   ClaimsWorkspaceController controller,
   ClaimsWorkspaceState state,
@@ -1679,8 +1627,8 @@ List<Widget> _detailActions(
 ) {
   final AppLocalizations l10n = context.l10n;
   if (detail.isAuthorization) {
-    return <Widget>[
-      AppButton.secondary(
+    return <AppActionItem>[
+      AppActionItem(
         label: l10n.claimsUpdateStatusAction,
         leadingIcon: Icons.fact_check_outlined,
         isLoading: state.isSaving,
@@ -1697,8 +1645,8 @@ List<Widget> _detailActions(
   final bool canSubmit = status != 'PAID' && status != 'CANCELLED';
   final bool canRecord = status != 'PAID' && status != 'CANCELLED';
 
-  return <Widget>[
-    AppButton.secondary(
+  return <AppActionItem>[
+    AppActionItem(
       label: status == 'REJECTED'
           ? l10n.claimsResubmitClaimAction
           : l10n.claimsSubmitClaimAction,
@@ -1709,7 +1657,7 @@ List<Widget> _detailActions(
         unawaited(_openSubmitClaimDialog(context, controller));
       },
     ),
-    AppButton.secondary(
+    AppActionItem(
       label: l10n.claimsRecordResponseAction,
       leadingIcon: Icons.fact_check_outlined,
       isLoading: state.isSaving,
@@ -1726,7 +1674,7 @@ List<Widget> _detailActions(
         );
       },
     ),
-    AppButton.secondary(
+    AppActionItem(
       label: l10n.claimsSyncClaimStatusAction,
       leadingIcon: Icons.sync_outlined,
       isLoading: state.isSaving,
@@ -1743,11 +1691,12 @@ List<Widget> _detailActions(
         }());
       },
     ),
-    AppButton.primary(
+    AppActionItem(
       label: l10n.claimsCloseClaimAction,
       leadingIcon: Icons.task_alt_outlined,
       isLoading: state.isSaving,
       enabled: status != 'PAID' && status != 'CANCELLED',
+      variant: AppActionVariant.primary,
       onPressed: () {
         unawaited(
           _openClaimResponseDialog(

@@ -500,12 +500,13 @@ class _BiomedicalDetailPanel extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            AppWorkspacePatientContextHeader(
+            AppPatientDetails(
               semanticLabel: l10n.biomedicalDetailTitle,
               patientName: asset.displayTitle,
               patientNumber: asset.displayId,
               patientNumberLabel: l10n.biomedicalAssetTagLabel,
-              demographics: asset.displaySubtitle,
+              ageLabel: asset.displaySubtitle,
+              showAvatar: false,
               status: AppWorkspaceStatus(
                 label: _labelForCode(
                   asset.priority,
@@ -513,7 +514,7 @@ class _BiomedicalDetailPanel extends ConsumerWidget {
                 ),
                 tone: _toneForPriority(asset.priority),
               ),
-              fields: <AppWorkspacePatientContextField>[
+              expandedFields: <AppWorkspacePatientContextField>[
                 AppWorkspacePatientContextField(
                   label: l10n.biomedicalAssetTagLabel,
                   value: asset.displayId,

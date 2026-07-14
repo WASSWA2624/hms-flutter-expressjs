@@ -643,21 +643,20 @@ class _IpdDetailPanel extends ConsumerWidget {
         children: <Widget>[
           if (state.isRefreshingDetail)
             const LinearProgressIndicator(minHeight: 2),
-          AppWorkspacePatientContextHeader(
+          AppPatientDetails(
             semanticLabel: l10n.ipdPatientContextLabel,
             patientName: admission.patientDisplayName,
             patientNumber: '',
-            demographics: _joinDisplay(<String?>[
-              admission.patientGender == null
-                  ? null
-                  : _apiLabel(admission.patientGender!),
-              admission.patientDateOfBirth == null
-                  ? null
-                  : AppFormatters.mediumDate(
-                      admission.patientDateOfBirth!,
-                      Localizations.localeOf(context),
-                    ),
-            ]),
+            ageLabel: admission.patientDateOfBirth == null
+                ? null
+                : AppFormatters.mediumDate(
+                    admission.patientDateOfBirth!,
+                    Localizations.localeOf(context),
+                  ),
+            genderLabel: admission.patientGender == null
+                ? null
+                : _apiLabel(admission.patientGender!),
+            showAvatar: false,
             status: _stageStatus(context, admission.summary.stage),
             alerts: <AppWorkspaceStatus>[
               if (admission.summary.hasCriticalAlert)
@@ -667,7 +666,7 @@ class _IpdDetailPanel extends ConsumerWidget {
                   icon: Icons.notification_important_outlined,
                 ),
             ],
-            fields: <AppWorkspacePatientContextField>[
+            expandedFields: <AppWorkspacePatientContextField>[
               AppWorkspacePatientContextField(
                 label: l10n.ipdAdmissionIdLabel,
                 value: admission.summary.displayId ?? '',

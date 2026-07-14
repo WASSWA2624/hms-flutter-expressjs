@@ -2649,30 +2649,31 @@ class _LabReportPreviewDialogState
       scrollable: true,
       maxWidth: 1040,
       closeEnabled: !_isPrinting,
-      content: AppReportPreviewPanel(
-        selectable: true,
-        child: _allReportItems.isEmpty
-            ? AppWorkspaceStatePanel.empty(
-                title: l10n.labNoOrderItemsEntryTitle,
-                body: l10n.labNoOrderItemsEntryBody,
-                icon: Icons.print_disabled_outlined,
-              )
-            : _LabReportPreview(
-                workflows: widget.workflows,
-                items: _allReportItems,
-                selectedItemIds: _selectedItemIds,
-                searchController: _searchController,
-                filterValue: _filterValue,
-                hasActiveFilters: _filterValue.isActive,
-                filterGroups: _reportPreviewFilterGroups(l10n),
-                onFilterChanged: (AppSearchBarFilterValue value) {
-                  setState(() => _filterValue = value);
-                },
-                columnVisibilityController: _columnVisibilityController,
-                columns: _reportPreviewColumns(context),
-                columnChoices: _reportPreviewColumnChoices(context),
-                onToggleItem: _toggleReportItem,
-              ),
+      content: AppClinicalResultsPreview(
+        mode: AppClinicalResultsPreviewMode.modal,
+        title: l10n.labReportPreviewTitle,
+        status: _allReportItems.isEmpty
+            ? AppClinicalResultStatus.unavailable
+            : AppClinicalResultStatus.verified,
+        isEmpty: _allReportItems.isEmpty,
+        emptyTitle: l10n.labNoOrderItemsEntryTitle,
+        emptyBody: l10n.labNoOrderItemsEntryBody,
+        child: _LabReportPreview(
+          workflows: widget.workflows,
+          items: _allReportItems,
+          selectedItemIds: _selectedItemIds,
+          searchController: _searchController,
+          filterValue: _filterValue,
+          hasActiveFilters: _filterValue.isActive,
+          filterGroups: _reportPreviewFilterGroups(l10n),
+          onFilterChanged: (AppSearchBarFilterValue value) {
+            setState(() => _filterValue = value);
+          },
+          columnVisibilityController: _columnVisibilityController,
+          columns: _reportPreviewColumns(context),
+          columnChoices: _reportPreviewColumnChoices(context),
+          onToggleItem: _toggleReportItem,
+        ),
       ),
       actions: <Widget>[
         AppButton.secondary(

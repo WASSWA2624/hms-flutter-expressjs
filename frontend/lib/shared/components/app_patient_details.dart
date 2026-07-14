@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/startup/app_preferences_restorer.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -17,9 +20,9 @@ final appPatientDetailsExpandedProvider =
 final class AppPatientDetailsExpandedController extends Notifier<bool> {
   @override
   bool build() {
-    return ref
-            .read(appPreferencesStoreProvider)
-            .getBool(AppPreferenceKeys.patientDetailsExpanded) ??
+    final SessionState sessionState = ref.watch(sessionStateProvider);
+    final String preferenceKey = _preferenceKeyForSession(sessionState.session);
+    return ref.read(appPreferencesStoreProvider).getBool(preferenceKey) ??
         false;
   }
 
@@ -30,11 +33,14 @@ final class AppPatientDetailsExpandedController extends Notifier<bool> {
 
     final bool previous = state;
     state = expanded;
+    final String preferenceKey = _preferenceKeyForSession(
+      ref.read(sessionStateProvider).session,
+    );
 
     try {
       final bool saved = await ref
           .read(appPreferencesStoreProvider)
-          .setBool(AppPreferenceKeys.patientDetailsExpanded, value: expanded);
+          .setBool(preferenceKey, value: expanded);
 
       if (!saved) {
         throw StateError('Unable to persist patient details expand preference.');
@@ -43,6 +49,15 @@ final class AppPatientDetailsExpandedController extends Notifier<bool> {
       state = previous;
       rethrow;
     }
+  }
+
+  /// Preference stores only a boolean, keyed by session scope (never PHI).
+  static String _preferenceKeyForSession(AuthSession? session) {
+    final AuthUserProfile? user = session?.user;
+    final String userId = (user?.id ?? session?.subject ?? 'anon').trim();
+    final String tenantId = (user?.tenantId ?? 'none').trim();
+    final String facilityId = (user?.facilityId ?? 'none').trim();
+    return '${AppPreferenceKeys.patientDetailsExpanded}.$tenantId.$facilityId.$userId';
   }
 }
 
@@ -58,6 +73,7 @@ class AppPatientDetails extends ConsumerStatefulWidget {
     this.ageLabel,
     this.genderLabel,
     this.genderIcon,
+    this.compactSupportingText,
     this.status,
     this.alerts = const <AppWorkspaceStatus>[],
     this.expandedFields = const <AppWorkspacePatientContextField>[],
@@ -84,6 +100,8 @@ class AppPatientDetails extends ConsumerStatefulWidget {
   final String? ageLabel;
   final String? genderLabel;
   final IconData? genderIcon;
+  /// Optional non-PHI compact line (workflow subtitle). Prefer age/gender when available.
+  final String? compactSupportingText;
   final AppWorkspaceStatus? status;
   final List<AppWorkspaceStatus> alerts;
   final List<AppWorkspacePatientContextField> expandedFields;
@@ -196,8 +214,22 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
   Widget? _buildDemographics(ThemeData theme) {
     final String? age = widget.ageLabel?.trim();
     final String? gender = widget.genderLabel?.trim();
-    if ((age == null || age.isEmpty) && (gender == null || gender.isEmpty)) {
+    final String? supporting = widget.compactSupportingText?.trim();
+    final bool hasAgeGender =
+        (age != null && age.isNotEmpty) || (gender != null && gender.isNotEmpty);
+    if (!hasAgeGender && (supporting == null || supporting.isEmpty)) {
       return null;
+    }
+
+    if (!hasAgeGender) {
+      return Text(
+        supporting!,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      );
     }
 
     return Row(

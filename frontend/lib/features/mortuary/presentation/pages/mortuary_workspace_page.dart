@@ -495,7 +495,7 @@ class _MortuaryDetailPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           if (state.isRefreshingDetail) const LinearProgressIndicator(),
-          AppWorkspacePatientContextHeader(
+          AppPatientDetails(
             patientName:
                 item.effectiveDeceasedLabel ??
                 l10n.mortuaryUnknownDeceasedLabel,
@@ -505,13 +505,14 @@ class _MortuaryDetailPanel extends StatelessWidget {
             copyPatientNumberMessage: l10n.identifierCopiedMessage,
             copyPatientNumberSemanticLabel: l10n.copyIdentifierAction,
             semanticLabel: l10n.mortuaryDeceasedContextLabel,
+            showAvatar: false,
             status: AppWorkspaceStatus(
               label:
                   _displayCode(item.caseStatus ?? item.status) ??
                   l10n.mortuaryUnknownValueLabel,
               tone: _statusTone(item.caseStatus ?? item.status),
             ),
-            fields: <AppWorkspacePatientContextField>[
+            expandedFields: <AppWorkspacePatientContextField>[
               AppWorkspacePatientContextField(
                 label: l10n.mortuaryIdentificationFieldLabel,
                 value:
