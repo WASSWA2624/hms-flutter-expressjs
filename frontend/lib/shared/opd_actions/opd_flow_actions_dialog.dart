@@ -1513,6 +1513,7 @@ class AssignDoctorDialog extends ConsumerStatefulWidget {
 class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   List<OpdProviderOption> _providerOptions = const <OpdProviderOption>[];
+  List<OpdProviderSchedule> _providerSchedules = const <OpdProviderSchedule>[];
   String? _providerId;
   bool _isLoadingProviders = false;
   bool _isSaving = false;
@@ -1549,7 +1550,7 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
             _ProviderSelectField(
               value: _providerId,
               providers: _providerOptions,
-              schedules: const <OpdProviderSchedule>[],
+              schedules: _providerSchedules,
               labelText: _opdRequiredFieldLabel(
                 l10n,
                 l10n.opdSearchProviderLabel,
@@ -1582,27 +1583,36 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
     setState(() {
       _isLoadingProviders = true;
     });
-    final Result<List<OpdProviderOption>> result = await ref
-        .read(opdRepositoryProvider)
-        .listProviders();
+    final List<Object> results = await Future.wait(<Future<Object>>[
+      ref.read(opdRepositoryProvider).listProviders(),
+      ref.read(opdRepositoryProvider).listProviderSchedules(),
+    ]);
     if (!mounted) {
       return;
     }
 
-    result.when(
+    final Result<List<OpdProviderOption>> providerResult =
+        results[0] as Result<List<OpdProviderOption>>;
+    final Result<List<OpdProviderSchedule>> scheduleResult =
+        results[1] as Result<List<OpdProviderSchedule>>;
+
+    providerResult.when(
       success: (List<OpdProviderOption> providers) {
-        setState(() {
-          _providerOptions = dedupeOpdProviderOptions(providers);
-          _isLoadingProviders = false;
-        });
+        _providerOptions = dedupeOpdProviderOptions(providers);
       },
       failure: (AppFailure failure) {
-        setState(() {
-          _failure = failure;
-          _isLoadingProviders = false;
-        });
+        _failure = failure;
       },
     );
+    scheduleResult.when(
+      success: (List<OpdProviderSchedule> schedules) {
+        _providerSchedules = schedules;
+      },
+      failure: (_) {},
+    );
+    setState(() {
+      _isLoadingProviders = false;
+    });
   }
 
   Future<void> _submit() async {
@@ -2013,6 +2023,7 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
   String _selectedHeightUnit = AppVitalsUnits.heightCentimeters;
   final Set<String> _riskFlags = <String>{};
   List<OpdProviderOption> _providerOptions = const <OpdProviderOption>[];
+  List<OpdProviderSchedule> _providerSchedules = const <OpdProviderSchedule>[];
   bool _emergencyIndicator = false;
   bool _isLoadingProviders = false;
   bool _isSaving = false;
@@ -2226,7 +2237,7 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
           _ProviderSelectField(
             value: _providerId,
             providers: _providerOptions,
-            schedules: const <OpdProviderSchedule>[],
+            schedules: _providerSchedules,
             labelText: _opdOptionalFieldLabel(
               l10n,
               l10n.opdSearchProviderLabel,
@@ -2592,26 +2603,34 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
     setState(() {
       _isLoadingProviders = true;
     });
-    final Result<List<OpdProviderOption>> result = await ref
-        .read(opdRepositoryProvider)
-        .listProviders();
+    final List<Object> results = await Future.wait(<Future<Object>>[
+      ref.read(opdRepositoryProvider).listProviders(),
+      ref.read(opdRepositoryProvider).listProviderSchedules(),
+    ]);
     if (!mounted) {
       return;
     }
 
-    result.when(
+    final Result<List<OpdProviderOption>> providerResult =
+        results[0] as Result<List<OpdProviderOption>>;
+    final Result<List<OpdProviderSchedule>> scheduleResult =
+        results[1] as Result<List<OpdProviderSchedule>>;
+
+    providerResult.when(
       success: (List<OpdProviderOption> providers) {
-        setState(() {
-          _providerOptions = dedupeOpdProviderOptions(providers);
-          _isLoadingProviders = false;
-        });
+        _providerOptions = dedupeOpdProviderOptions(providers);
       },
-      failure: (_) {
-        setState(() {
-          _isLoadingProviders = false;
-        });
-      },
+      failure: (_) {},
     );
+    scheduleResult.when(
+      success: (List<OpdProviderSchedule> schedules) {
+        _providerSchedules = schedules;
+      },
+      failure: (_) {},
+    );
+    setState(() {
+      _isLoadingProviders = false;
+    });
   }
 
   String _triageNotesPayload(AppLocalizations l10n) {

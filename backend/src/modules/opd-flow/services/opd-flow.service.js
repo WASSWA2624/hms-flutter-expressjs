@@ -1559,8 +1559,9 @@ const buildAssignedStaff = (user) => {
 const isDoctorAssignable = (user) => {
   if (!user) return false;
   const normalizedRoles = new Set(staffRoleNames(user));
-  if (normalizedRoles.has(ROLES.DOCTOR)) return true;
+  if (normalizedRoles.has(ROLES.DOCTOR) || normalizedRoles.has('SPECIALIST')) return true;
   const practitionerType = normalizeStatus(user?.staff_profile?.practitioner_type);
+  if (practitionerType && CONSULTATION_FEE_PRACTITIONER_TYPES.has(practitionerType)) return true;
   const position = normalizeStatus(user?.staff_profile?.position);
   return /DOCTOR|PHYSICIAN|MEDICAL_OFFICER|CLINICAL_OFFICER|CLINICIAN|CONSULTANT/.test(
     `${practitionerType} ${position}`
@@ -3875,6 +3876,20 @@ const assignDoctor = async (id, data, context = {}) => {
       throw new HttpError('errors.user.not_found', 404, [{ field: 'provider_user_id' }]);
     }
     ensureDoctorAssignable(provider);
+
+    const feeDefaults = await resolveConsultationFeeDefaults(tx, {
+      provider,
+      tenantId: encounter.tenant_id,
+      facilityId: encounter.facility_id
+    });
+    const consultation = { ...(flow.consultation || {}) };
+    if (feeDefaults.consultationFee) {
+      consultation.consultation_fee = feeDefaults.consultationFee;
+    }
+    if (feeDefaults.consultationCurrency) {
+      consultation.currency = feeDefaults.consultationCurrency;
+    }
+    flow.consultation = consultation;
 
     const updated = await tx.encounter.update({
       where: { id: encounter.id },

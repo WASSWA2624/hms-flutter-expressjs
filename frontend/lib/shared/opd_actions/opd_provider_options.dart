@@ -39,6 +39,9 @@ List<AppSelectOption<String>> opdProviderSelectOptions({
   final Map<String, AppSelectOption<String>> options =
       <String, AppSelectOption<String>>{};
   final Set<String> seenKeys = <String>{};
+  final Set<String> availableProviderIds = _scheduledProviderIds(schedules);
+  final Map<String, OpdProviderSchedule> scheduleByProvider =
+      _scheduleByProviderId(schedules);
 
   bool addKeys(Iterable<String> keys) {
     final List<String> normalized = keys
@@ -70,14 +73,32 @@ List<AppSelectOption<String>> opdProviderSelectOptions({
     ])) {
       continue;
     }
-    final String subtitle = _joinDisplay(<String?>[
+    final bool isAvailable = _isProviderScheduled(
+      value,
+      provider.staffProfileId,
+      availableProviderIds,
+    );
+    final OpdProviderSchedule? schedule = _matchingSchedule(
+      value,
+      provider.staffProfileId,
+      scheduleByProvider,
+    );
+    final String roleSubtitle = _joinDisplay(<String?>[
       provider.positionTitle,
       provider.practitionerType,
     ]);
+    final String subtitle = _buildAvailabilitySubtitle(
+      roleSubtitle,
+      isAvailable: isAvailable,
+      schedule: schedule,
+    );
     options[value] = AppSelectOption<String>(
       value: value,
       label: _joinDisplay(<String?>[title, subtitle]),
-      leadingIcon: const Icon(Icons.person_search_outlined),
+      leadingIcon: Icon(
+        isAvailable ? Icons.event_available_outlined : Icons.person_search_outlined,
+        color: isAvailable ? const Color(0xFF4CAF50) : null,
+      ),
       labelWidget: AppListItemText(
         title: title,
         subtitle: subtitle.isEmpty ? null : subtitle,
@@ -103,18 +124,40 @@ List<AppSelectOption<String>> opdProviderSelectOptions({
     ])) {
       continue;
     }
+    final String scheduleSubtitle = _buildAvailabilitySubtitle(
+      schedule.facilityName ?? '',
+      isAvailable: true,
+      schedule: schedule,
+    );
     options[value] = AppSelectOption<String>(
       value: value,
-      label: _joinDisplay(<String?>[title, schedule.facilityName]),
-      leadingIcon: const Icon(Icons.person_search_outlined),
+      label: _joinDisplay(<String?>[title, scheduleSubtitle]),
+      leadingIcon: const Icon(
+        Icons.event_available_outlined,
+        color: Color(0xFF4CAF50),
+      ),
       labelWidget: AppListItemText(
         title: title,
-        subtitle: schedule.facilityName,
+        subtitle: scheduleSubtitle.isEmpty ? null : scheduleSubtitle,
       ),
     );
   }
 
-  return options.values.toList(growable: false);
+  final List<AppSelectOption<String>> result =
+      options.values.toList(growable: false);
+  if (availableProviderIds.isEmpty) {
+    return result;
+  }
+  final List<AppSelectOption<String>> available = <AppSelectOption<String>>[];
+  final List<AppSelectOption<String>> others = <AppSelectOption<String>>[];
+  for (final AppSelectOption<String> option in result) {
+    if (availableProviderIds.contains(option.value.trim().toUpperCase())) {
+      available.add(option);
+    } else {
+      others.add(option);
+    }
+  }
+  return <AppSelectOption<String>>[...available, ...others];
 }
 
 String opdProviderTitle(
@@ -156,4 +199,92 @@ String? _firstNonEmpty(Iterable<String?> values) {
 
 String _joinDisplay(Iterable<String?> values) {
   return AppDisplay.joinNonEmpty(values, separator: ' | ');
+}
+
+Set<String> _scheduledProviderIds(List<OpdProviderSchedule> schedules) {
+  final Set<String> ids = <String>{};
+  for (final OpdProviderSchedule schedule in schedules) {
+    final String userId = (schedule.providerUserId ?? '').trim().toUpperCase();
+    final String publicId =
+        (schedule.providerPublicId ?? '').trim().toUpperCase();
+    if (userId.isNotEmpty) ids.add(userId);
+    if (publicId.isNotEmpty) ids.add(publicId);
+  }
+  return ids;
+}
+
+Map<String, OpdProviderSchedule> _scheduleByProviderId(
+  List<OpdProviderSchedule> schedules,
+) {
+  final Map<String, OpdProviderSchedule> map =
+      <String, OpdProviderSchedule>{};
+  for (final OpdProviderSchedule schedule in schedules) {
+    final String userId = (schedule.providerUserId ?? '').trim().toUpperCase();
+    final String publicId =
+        (schedule.providerPublicId ?? '').trim().toUpperCase();
+    if (userId.isNotEmpty) map.putIfAbsent(userId, () => schedule);
+    if (publicId.isNotEmpty) map.putIfAbsent(publicId, () => schedule);
+  }
+  return map;
+}
+
+bool _isProviderScheduled(
+  String providerId,
+  String? staffProfileId,
+  Set<String> scheduledIds,
+) {
+  if (scheduledIds.isEmpty) return false;
+  if (scheduledIds.contains(providerId.trim().toUpperCase())) return true;
+  final String profileKey = (staffProfileId ?? '').trim().toUpperCase();
+  return profileKey.isNotEmpty && scheduledIds.contains(profileKey);
+}
+
+OpdProviderSchedule? _matchingSchedule(
+  String providerId,
+  String? staffProfileId,
+  Map<String, OpdProviderSchedule> scheduleByProvider,
+) {
+  if (scheduleByProvider.isEmpty) return null;
+  final OpdProviderSchedule? byId =
+      scheduleByProvider[providerId.trim().toUpperCase()];
+  if (byId != null) return byId;
+  final String profileKey = (staffProfileId ?? '').trim().toUpperCase();
+  if (profileKey.isEmpty) return null;
+  return scheduleByProvider[profileKey];
+}
+
+String _buildAvailabilitySubtitle(
+  String baseSubtitle, {
+  required bool isAvailable,
+  OpdProviderSchedule? schedule,
+}) {
+  if (!isAvailable) return baseSubtitle;
+  final String timeRange = _scheduleTimeRange(schedule);
+  final String availabilityTag = timeRange.isNotEmpty
+      ? 'Available $timeRange'
+      : 'Available today';
+  if (baseSubtitle.isEmpty) return availabilityTag;
+  return '$baseSubtitle · $availabilityTag';
+}
+
+String _scheduleTimeRange(OpdProviderSchedule? schedule) {
+  if (schedule == null) return '';
+  final DateTime? start = schedule.startTime;
+  final DateTime? end = schedule.endTime;
+  if (start == null && end == null) return '';
+  final String startLabel = start != null ? _formatTimeOfDay(start) : '';
+  final String endLabel = end != null ? _formatTimeOfDay(end) : '';
+  if (startLabel.isNotEmpty && endLabel.isNotEmpty) {
+    return '$startLabel – $endLabel';
+  }
+  return startLabel.isNotEmpty ? 'from $startLabel' : 'until $endLabel';
+}
+
+String _formatTimeOfDay(DateTime dt) {
+  final int hour = dt.hour;
+  final int minute = dt.minute;
+  final String period = hour >= 12 ? 'PM' : 'AM';
+  final int displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+  final String minuteStr = minute.toString().padLeft(2, '0');
+  return '$displayHour:$minuteStr $period';
 }

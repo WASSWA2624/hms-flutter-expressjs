@@ -16,6 +16,8 @@ const {
   CONSULTATION_FEE_PRACTITIONER_TYPES,
 } = require('@lib/hr/reference-data');
 const ROLE_DOCTOR = 'DOCTOR';
+const CLINICAL_ROLE_NAMES = CLINICAL_PRESCRIBER_ROLE_NAMES;
+const CONSULTATION_ELIGIBLE_TYPES = Array.from(CONSULTATION_FEE_PRACTITIONER_TYPES);
 
 const DOCTOR_INCLUDE = {
   tenant: true,
@@ -605,47 +607,67 @@ const listDoctors = async (filters = {}, page = 1, limit = 20, sortBy = 'created
     facilityId = facility.id;
   }
 
+  const clinicalRoleFilter = {
+    OR: [
+      {
+        roles: {
+          some: {
+            deleted_at: null,
+            role: {
+              deleted_at: null,
+              name: { in: CLINICAL_ROLE_NAMES }
+            }
+          }
+        }
+      },
+      {
+        staff_profile: {
+          is: {
+            deleted_at: null,
+            practitioner_type: { in: CONSULTATION_ELIGIBLE_TYPES }
+          }
+        }
+      }
+    ]
+  };
+
   const where = {
     deleted_at: null,
     staff_profile: { isNot: null },
-    roles: {
-      some: {
-        deleted_at: null,
-        role: {
-          deleted_at: null,
-          name: ROLE_DOCTOR
-        }
-      }
-    }
+    AND: [clinicalRoleFilter]
   };
 
   if (tenantId) where.tenant_id = tenantId;
   if (facilityId) where.facility_id = facilityId;
   if (filters.position_title) where.position_title = { contains: filters.position_title };
   if (filters.practitioner_type) {
-    where.staff_profile = {
-      is: {
-        practitioner_type: normalizePractitionerType(filters.practitioner_type)
+    where.AND.push({
+      staff_profile: {
+        is: {
+          practitioner_type: normalizePractitionerType(filters.practitioner_type)
+        }
       }
-    };
+    });
   }
 
   if (filters.search) {
     const term = String(filters.search).trim();
     const upper = term.toUpperCase();
-    where.OR = [
-      { human_friendly_id: { contains: upper } },
-      { email: { contains: term } },
-      { phone: { contains: term } },
-      { position_title: { contains: term } },
-      { profile: { is: { first_name: { contains: term } } } },
-      { profile: { is: { last_name: { contains: term } } } },
-      { profile: { is: { middle_name: { contains: term } } } },
-      { staff_profile: { is: { human_friendly_id: { contains: upper } } } },
-      { staff_profile: { is: { position: { contains: term } } } },
-      { staff_profile: { is: { staff_number: { contains: term } } } },
-      { staff_profile: { is: { practitioner_type: { contains: upper } } } }
-    ];
+    where.AND.push({
+      OR: [
+        { human_friendly_id: { contains: upper } },
+        { email: { contains: term } },
+        { phone: { contains: term } },
+        { position_title: { contains: term } },
+        { profile: { is: { first_name: { contains: term } } } },
+        { profile: { is: { last_name: { contains: term } } } },
+        { profile: { is: { middle_name: { contains: term } } } },
+        { staff_profile: { is: { human_friendly_id: { contains: upper } } } },
+        { staff_profile: { is: { position: { contains: term } } } },
+        { staff_profile: { is: { staff_number: { contains: term } } } },
+        { staff_profile: { is: { practitioner_type: { contains: upper } } } }
+      ]
+    });
   }
 
   const [rows, total] = await Promise.all([
