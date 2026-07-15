@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "backend/**"
 description: >
-  Use this rule file when writing, reviewing, or refactoring backend code to ensure consistency, clarity, and adherence to shared coding practices.
+  Backend coding standards: naming, style, reuse, and documentation requirements.
 ---
 # Coding Standards
 

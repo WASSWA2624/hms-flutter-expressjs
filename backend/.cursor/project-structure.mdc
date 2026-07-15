@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "backend/**"
 description: >
-  Use this rule file when designing, creating, or reviewing backend project structure to ensure consistent and canonical file layout.
+  Canonical backend folder layout and script ownership rules.
 ---
 # Project Structure Rules
 

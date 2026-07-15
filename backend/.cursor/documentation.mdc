@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "backend/**"
 description: >
-  Use this rule file when writing, reviewing, or refactoring backend code to ensure documentation standards are met for maintainability and clarity.
+  Backend documentation standards: JSDoc, route docs, and inline comment rules.
 ---
 # Documentation Rules
 

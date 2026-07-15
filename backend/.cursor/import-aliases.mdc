@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "backend/**"
 description: >
-  Use this rule file when defining, implementing, or reviewing backend import path aliases to ensure stable, maintainable, and consistent import boundaries.
+  Backend import aliases, cross-folder boundaries, and circular dependency rules.
 ---
 # Import Alias Rules
 

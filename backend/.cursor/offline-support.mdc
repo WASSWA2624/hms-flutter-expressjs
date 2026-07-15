@@ -3,7 +3,7 @@ alwaysApply: false
 globs:
   - "backend/**"
 description: >
-  Use this rule file when implementing, designing, or reviewing backend offline support features to ensure sync-capable clients are handled correctly.
+  Backend offline support: idempotency, sync metadata, and online-only boundaries.
 ---
 # Offline Support Rules
 
