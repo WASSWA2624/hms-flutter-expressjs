@@ -2087,6 +2087,12 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
       dividerThickness: theme.appTokens.dividerThickness,
       headingTextStyle: _cachedHeadingTextStyle,
       dataTextStyle: _cachedDataTextStyle,
+      border: TableBorder(
+        verticalInside: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.38),
+          width: theme.appTokens.dividerThickness,
+        ),
+      ),
       columns: <DataColumn>[
         DataColumn(
           numeric: true,
@@ -2245,7 +2251,8 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
   }
 
   DataRow _emptyRow(BuildContext context, int index) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final Color? stripe = index.isOdd
         ? colorScheme.surfaceContainerLowest.withValues(alpha: 0.65)
         : null;
@@ -2256,7 +2263,18 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
           ? null
           : WidgetStatePropertyAll<Color>(stripe),
       cells: <DataCell>[
-        const DataCell(SizedBox(width: _rowNumberColumnWidth)),
+        DataCell(
+          Align(
+            child: SizedBox(
+              width: _rowNumberColumnWidth,
+              child: Text(
+                (widget.rowNumberOffset + index + 1).toString(),
+                textAlign: TextAlign.center,
+                style: _resolveRowNumberStyle(theme),
+              ),
+            ),
+          ),
+        ),
         for (final AppListTableColumn<T> column in widget.columns)
           DataCell(SizedBox(width: widget.columnWidthFor(column))),
       ],

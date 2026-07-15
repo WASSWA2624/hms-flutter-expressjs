@@ -1367,11 +1367,6 @@ class _LabEnableFacilityOfferingDialogState
         .toList(growable: false);
   }
 
-  List<LabCatalogItem> get _availableItems {
-    return _filteredCatalogItems
-        .where((LabCatalogItem item) => !item.isOfferedAtFacility)
-        .toList(growable: false);
-  }
 
   bool get _showingTests => widget.kind == LabEnableOfferingKind.test;
 
