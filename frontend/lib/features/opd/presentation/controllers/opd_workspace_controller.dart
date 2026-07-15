@@ -1126,10 +1126,16 @@ final class OpdWorkspaceController
   Future<List<OpdAvailabilitySlot>> _availabilitySlots(
     List<OpdProviderSchedule> schedules,
   ) async {
+    final List<Result<List<OpdAvailabilitySlot>>> results = await Future.wait(
+      schedules
+          .take(4)
+          .map(
+            (OpdProviderSchedule schedule) =>
+                _repository.listAvailabilitySlots(schedule.apiId),
+          ),
+    );
     final List<OpdAvailabilitySlot> slots = <OpdAvailabilitySlot>[];
-    for (final OpdProviderSchedule schedule in schedules.take(4)) {
-      final Result<List<OpdAvailabilitySlot>> result = await _repository
-          .listAvailabilitySlots(schedule.apiId);
+    for (final Result<List<OpdAvailabilitySlot>> result in results) {
       result.when(
         success: (List<OpdAvailabilitySlot> value) {
           slots.addAll(value);

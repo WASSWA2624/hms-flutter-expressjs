@@ -169,6 +169,22 @@ const assignHumanFriendlyId = async (id, humanFriendlyId) => {
 };
 
 /**
+ * Batch-create multiple notification-delivery records in a single query.
+ *
+ * @param {Array<Object>} records - Array of delivery data objects
+ * @returns {Promise<Object>} Prisma createMany result ({ count })
+ */
+const createMany = async (records) => {
+  try {
+    return await prisma.notification_delivery.createMany({
+      data: records,
+    });
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
  * Create new notification-delivery
  *
  * @param {Object} data - NotificationDelivery data
@@ -257,6 +273,7 @@ module.exports = {
   count,
   assignHumanFriendlyId,
   create,
+  createMany,
   update,
   softDelete
 };

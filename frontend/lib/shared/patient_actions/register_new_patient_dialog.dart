@@ -558,13 +558,13 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
 
     final bool canContinue = await formState.prepareSubmit();
     if (!canContinue) {
-      setState(() {});
+      if (mounted) {
+        setState(() {});
+      }
       return;
     }
 
-    setState(() {
-      _isSaving = true;
-    });
+    setState(() => _isSaving = true);
     formState.clearFailure();
 
     final Result<Patient> result = await widget.onSubmit(
@@ -578,11 +578,8 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
         Navigator.of(context).pop(patient);
       },
       failure: (AppFailure failure) {
-        setState(() {
-          _isSaving = false;
-        });
         formState.setFailure(failure);
-        setState(() {});
+        setState(() => _isSaving = false);
       },
     );
   }

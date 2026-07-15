@@ -43,7 +43,7 @@ const listCampaigns = async (tenantId, search, skip, take) => {
         event_name: true,
         occurred_at: true
       },
-      take: 5000
+      take: 500
     });
 
     const campaignMap = new Map();

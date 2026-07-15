@@ -21,6 +21,7 @@
 
 const express = require('express');
 const path = require('path');
+const compression = require('compression');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { corsOptions } = require('@config/cors');
@@ -66,6 +67,10 @@ const createApp = () => {
 
     // 2. CORS middleware (handles preflight requests)
     app.use(cors(corsOptions));
+
+    // 2.1. Response compression (gzip/brotli) — placed early so all
+    // downstream JSON responses are compressed before hitting the wire.
+    app.use(compression({ threshold: 1024 }));
 
     // 2.5. Public local uploads (facility logos, etc.)
     app.use(

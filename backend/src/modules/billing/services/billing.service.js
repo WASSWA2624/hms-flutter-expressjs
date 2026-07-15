@@ -814,12 +814,13 @@ const getPatientLedger = async (patientIdentifier, filters = {}, page = 1, limit
     ...(scope.facility_id ? { facility_id: scope.facility_id } : {}),
     ...dateFilter,
   };
+  const LEDGER_FETCH_LIMIT = 100;
   const [invoices, payments, refunds, adjustments, claims] = await Promise.all([
-    billingRepository.findManyInvoices(invoiceWhere, 0, 500, { created_at: 'desc' }, INVOICE_INCLUDE),
-    billingRepository.findManyPayments(paymentWhere, 0, 500, { created_at: 'desc' }, PAYMENT_INCLUDE),
-    billingRepository.findManyRefunds({ payment: { deleted_at: null, tenant_id: scope.tenant_id, patient_id: patient.id, ...(scope.facility_id ? { facility_id: scope.facility_id } : {}) }, ...dateFilter }, 0, 500, { created_at: 'desc' }, REFUND_INCLUDE),
-    billingRepository.findManyAdjustments({ invoice: { deleted_at: null, tenant_id: scope.tenant_id, patient_id: patient.id, ...(scope.facility_id ? { facility_id: scope.facility_id } : {}) }, ...dateFilter }, 0, 500, { created_at: 'desc' }, ADJUSTMENT_INCLUDE),
-    billingRepository.findManyClaims({ invoice: { deleted_at: null, tenant_id: scope.tenant_id, patient_id: patient.id, ...(scope.facility_id ? { facility_id: scope.facility_id } : {}) }, ...dateFilter }, 0, 500, { created_at: 'desc' }, CLAIM_INCLUDE),
+    billingRepository.findManyInvoices(invoiceWhere, 0, LEDGER_FETCH_LIMIT, { created_at: 'desc' }, INVOICE_INCLUDE),
+    billingRepository.findManyPayments(paymentWhere, 0, LEDGER_FETCH_LIMIT, { created_at: 'desc' }, PAYMENT_INCLUDE),
+    billingRepository.findManyRefunds({ payment: { deleted_at: null, tenant_id: scope.tenant_id, patient_id: patient.id, ...(scope.facility_id ? { facility_id: scope.facility_id } : {}) }, ...dateFilter }, 0, LEDGER_FETCH_LIMIT, { created_at: 'desc' }, REFUND_INCLUDE),
+    billingRepository.findManyAdjustments({ invoice: { deleted_at: null, tenant_id: scope.tenant_id, patient_id: patient.id, ...(scope.facility_id ? { facility_id: scope.facility_id } : {}) }, ...dateFilter }, 0, LEDGER_FETCH_LIMIT, { created_at: 'desc' }, ADJUSTMENT_INCLUDE),
+    billingRepository.findManyClaims({ invoice: { deleted_at: null, tenant_id: scope.tenant_id, patient_id: patient.id, ...(scope.facility_id ? { facility_id: scope.facility_id } : {}) }, ...dateFilter }, 0, LEDGER_FETCH_LIMIT, { created_at: 'desc' }, CLAIM_INCLUDE),
   ]);
 
   const entries = [

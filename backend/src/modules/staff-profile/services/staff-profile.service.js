@@ -418,18 +418,21 @@ const listStaffProfiles = async (filters, page, limit, sortBy, order, userId, ip
       staffProfileRepository.count(whereClause)
     ]);
 
-    const healedProfiles = await Promise.all(
-      staffProfiles.map(async (profile) => {
-        if (profile?.department_id) {
-          return profile;
-        }
-        await syncStaffProfilePrimaryDepartment(profile.id);
-        return (
-          (await staffProfileRepository.findById(profile.id, STAFF_PROFILE_INCLUDE)) ||
-          profile
-        );
-      })
-    );
+    const unhealedProfiles = staffProfiles.filter((profile) => !profile?.department_id);
+    if (unhealedProfiles.length > 0) {
+      await Promise.all(
+        unhealedProfiles.map((profile) => syncStaffProfilePrimaryDepartment(profile.id))
+      );
+    }
+    const healedProfiles = unhealedProfiles.length > 0
+      ? await staffProfileRepository.findMany(
+          { id: { in: staffProfiles.map((p) => p.id) } },
+          0,
+          staffProfiles.length,
+          orderBy,
+          STAFF_PROFILE_INCLUDE
+        )
+      : staffProfiles;
 
     return {
       staffProfiles: healedProfiles.map(mapStaffProfileForDisplay),

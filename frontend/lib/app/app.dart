@@ -18,9 +18,6 @@ class HosspiHmsApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(appThemeModeProvider);
     final locale = ref.watch(appLocaleProvider);
-    final AppAccessibilityPreferences accessibility = ref.watch(
-      appAccessibilityProvider,
-    );
     final GoRouter router = ref.watch(appRouterProvider);
 
     return SessionBootstrap(
@@ -38,18 +35,31 @@ class HosspiHmsApp extends ConsumerWidget {
           if (child == null) {
             return const SizedBox.shrink();
           }
-
-          final MediaQueryData mediaQuery = MediaQuery.of(context);
-          return MediaQuery(
-            data: mediaQuery.copyWith(
-              disableAnimations: accessibility.reduceMotion,
-              boldText: accessibility.boldText,
-              textScaler: TextScaler.linear(accessibility.textScaleFactor),
-            ),
-            child: child,
-          );
+          return _AccessibilityMediaQueryWrapper(child: child);
         },
       ),
+    );
+  }
+}
+
+class _AccessibilityMediaQueryWrapper extends ConsumerWidget {
+  const _AccessibilityMediaQueryWrapper({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppAccessibilityPreferences accessibility = ref.watch(
+      appAccessibilityProvider,
+    );
+    final MediaQueryData mediaQuery = MediaQuery.of(context);
+    return MediaQuery(
+      data: mediaQuery.copyWith(
+        disableAnimations: accessibility.reduceMotion,
+        boldText: accessibility.boldText,
+        textScaler: TextScaler.linear(accessibility.textScaleFactor),
+      ),
+      child: child,
     );
   }
 }

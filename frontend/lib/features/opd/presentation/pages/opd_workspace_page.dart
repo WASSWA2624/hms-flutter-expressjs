@@ -393,7 +393,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
   }
 }
 
-class _OpdWorkspaceBody extends StatelessWidget {
+class _OpdWorkspaceBody extends StatefulWidget {
   const _OpdWorkspaceBody({
     required this.state,
     required this.filter,
@@ -414,27 +414,43 @@ class _OpdWorkspaceBody extends StatelessWidget {
   final ValueChanged<_OpdTableFilter> onFilterChanged;
 
   @override
+  State<_OpdWorkspaceBody> createState() => _OpdWorkspaceBodyState();
+}
+
+class _OpdWorkspaceBodyState extends State<_OpdWorkspaceBody> {
+  List<_OpdTableItem>? _cachedAllItems;
+  OpdWorkspaceState? _cachedState;
+
+  List<_OpdTableItem> _getAllItems(BuildContext context) {
+    if (!identical(_cachedState, widget.state) || _cachedAllItems == null) {
+      _cachedAllItems = _tableItems(context, widget.state);
+      _cachedState = widget.state;
+    }
+    return _cachedAllItems!;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final List<_OpdTableItem> allItems = _tableItems(context, state);
+    final List<_OpdTableItem> allItems = _getAllItems(context);
     final List<_OpdTableItem> items = allItems
-        .where((_OpdTableItem item) => filter.matches(item))
+        .where((_OpdTableItem item) => widget.filter.matches(item))
         .toList(growable: false);
 
     return _OpdMainTable(
-      state: state,
-      page: _tablePage(items, pageRequest),
-      searchController: searchController,
-      columnVisibilityController: columnVisibilityController,
-      filter: filter,
+      state: widget.state,
+      page: _tablePage(items, widget.pageRequest),
+      searchController: widget.searchController,
+      columnVisibilityController: widget.columnVisibilityController,
+      filter: widget.filter,
       filterItems: allItems,
       statuses: _tableStatuses(allItems),
-      onPageChanged: onPageChanged,
-      onFilterChanged: onFilterChanged,
+      onPageChanged: widget.onPageChanged,
+      onFilterChanged: widget.onFilterChanged,
       isLoading:
-          state.isRefreshingAppointments ||
-          state.isRefreshingQueue ||
-          state.isRefreshingFlows ||
-          state.isRefreshingTriageQueue,
+          widget.state.isRefreshingAppointments ||
+          widget.state.isRefreshingQueue ||
+          widget.state.isRefreshingFlows ||
+          widget.state.isRefreshingTriageQueue,
     );
   }
 }
@@ -1852,7 +1868,7 @@ AppListTableColumn<_OpdTableItem> _opdDataColumn(
         _OpdTableColumnId.queueStatus => _QueueStatusCell(item: item),
         _OpdTableColumnId.provider => _ProviderCell(item: item),
         _OpdTableColumnId.waitingTime => Text(
-          _waitingTimeLabel(context, item),
+          _waitingTimeLabel(context, item, now: DateTime.now()),
           maxLines: 1,
           softWrap: false,
           overflow: TextOverflow.ellipsis,
@@ -2229,7 +2245,7 @@ class _OpdTableMobileRow extends StatelessWidget {
       subtitle: _joinDisplay(<String?>[
         item.patientNumber,
         _arrivalModeLabel(context, item),
-        _waitingTimeLabel(context, item),
+        _waitingTimeLabel(context, item, now: DateTime.now()),
       ]),
       details: <Widget>[
         AppStatusText(
@@ -2313,13 +2329,17 @@ class _OpdEncounterCell extends StatelessWidget {
   }
 }
 
-String _waitingTimeLabel(BuildContext context, _OpdTableItem item) {
+String _waitingTimeLabel(
+  BuildContext context,
+  _OpdTableItem item, {
+  required DateTime now,
+}) {
   final DateTime? time = item.time;
   if (time == null || _isCompletedStatus(item.status)) {
     return context.l10n.profileUnknownValue;
   }
 
-  final Duration duration = DateTime.now().difference(time.toLocal());
+  final Duration duration = now.difference(time.toLocal());
   if (duration.isNegative) {
     return context.l10n.profileUnknownValue;
   }

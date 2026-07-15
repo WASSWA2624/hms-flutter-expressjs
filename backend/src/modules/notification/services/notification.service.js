@@ -373,27 +373,31 @@ const createNotificationDeliveries = async (notification = {}, requestedChannels
   const channels = normalizeDeliveryChannels(requestedChannels);
   assertDeliveryTargets(notification, channels);
 
-  await Promise.all(
-    channels.map(async (channel) => {
-      const now = new Date();
-      const recipientTarget = resolveDeliveryTarget(notification, channel);
-
-      await notificationDeliveryRepository.create({
-        human_friendly_id: notificationDeliveryRepository.createPublicId('NDL'),
-        notification_id: notification.id,
-        channel,
-        status: channel === 'IN_APP' ? 'DELIVERED' : 'QUEUED',
-        recipient_target: recipientTarget,
-        provider_name: channel === 'IN_APP' ? 'IN_APP' : null,
-        attempt_count: channel === 'IN_APP' ? 1 : 0,
-        last_attempt_at: channel === 'IN_APP' ? now : null,
-        sent_at: channel === 'IN_APP' ? now : null,
-        delivered_at: channel === 'IN_APP' ? now : null,
-        retryable: channel !== 'IN_APP',
-        error_message: null,
-      });
-    })
-  );
+  const deliveryRecords = channels.map((channel) => {
+    const now = new Date();
+    const recipientTarget = resolveDeliveryTarget(notification, channel);
+    return {
+      human_friendly_id: notificationDeliveryRepository.createPublicId('NDL'),
+      notification_id: notification.id,
+      channel,
+      status: channel === 'IN_APP' ? 'DELIVERED' : 'QUEUED',
+      recipient_target: recipientTarget,
+      provider_name: channel === 'IN_APP' ? 'IN_APP' : null,
+      attempt_count: channel === 'IN_APP' ? 1 : 0,
+      last_attempt_at: channel === 'IN_APP' ? now : null,
+      sent_at: channel === 'IN_APP' ? now : null,
+      delivered_at: channel === 'IN_APP' ? now : null,
+      retryable: channel !== 'IN_APP',
+      error_message: null,
+    };
+  });
+  if (deliveryRecords.length === 1) {
+    await notificationDeliveryRepository.create(deliveryRecords[0]);
+  } else if (deliveryRecords.length > 1) {
+    await (notificationDeliveryRepository.createMany
+      ? notificationDeliveryRepository.createMany(deliveryRecords)
+      : Promise.all(deliveryRecords.map((record) => notificationDeliveryRepository.create(record))));
+  }
 };
 
 const buildScopeWhere = async (filters = {}, actor = {}) => {

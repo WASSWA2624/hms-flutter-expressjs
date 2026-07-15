@@ -3022,6 +3022,7 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
   final TextEditingController _findingsController = TextEditingController();
   final TextEditingController _impressionController = TextEditingController();
   final TextEditingController _reportController = TextEditingController();
+  VoidCallback? _handleReportTextChanged;
   bool _isSubmitting = false;
   AppFailure? _failure;
 
@@ -3030,21 +3031,28 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
     super.initState();
     final RadiologyResult? draft = widget.order.latestDraftResult;
     _reportController.text = draft?.reportText ?? '';
+    _handleReportTextChanged = () {
+      if (mounted) {
+        setState(() {});
+      }
+    };
     for (final TextEditingController controller in <TextEditingController>[
       _findingsController,
       _impressionController,
       _reportController,
     ]) {
-      controller.addListener(() {
-        if (mounted) {
-          setState(() {});
-        }
-      });
+      controller.addListener(_handleReportTextChanged!);
     }
   }
 
   @override
   void dispose() {
+    final VoidCallback? listener = _handleReportTextChanged;
+    if (listener != null) {
+      _findingsController.removeListener(listener);
+      _impressionController.removeListener(listener);
+      _reportController.removeListener(listener);
+    }
     _findingsController.dispose();
     _impressionController.dispose();
     _reportController.dispose();

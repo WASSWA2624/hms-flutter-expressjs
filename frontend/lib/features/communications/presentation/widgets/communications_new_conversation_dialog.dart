@@ -181,13 +181,20 @@ class _NewGroupFieldsState extends ConsumerState<_NewGroupFields> {
   void initState() {
     super.initState();
     _loadStaff('');
-    _nameController.addListener(() => setState(() {}));
+    _nameController.addListener(_handleNameChanged);
   }
 
   @override
   void dispose() {
+    _nameController.removeListener(_handleNameChanged);
     _nameController.dispose();
     super.dispose();
+  }
+
+  void _handleNameChanged() {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   bool get _hasName => _nameController.text.trim().isNotEmpty;

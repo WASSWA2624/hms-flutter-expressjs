@@ -246,22 +246,23 @@ class _CommunicationsComposeBarState
       constraints: const BoxConstraints(maxHeight: 180),
       child: Card(
         margin: EdgeInsets.only(bottom: theme.spacing.xs),
-        child: ListView(
+        child: ListView.builder(
           shrinkWrap: true,
-          children: <Widget>[
-            for (final CommunicationStaffOption option in _mentionOptions)
-              ListTile(
-                dense: true,
-                title: Text(option.label),
-                subtitle: Text(
-                  <String?>[option.positionTitle, option.email]
-                      .whereType<String>()
-                      .where((String v) => v.isNotEmpty)
-                      .join(' · '),
-                ),
-                onTap: () => _insertMention(option),
+          itemCount: _mentionOptions.length,
+          itemBuilder: (BuildContext context, int index) {
+            final CommunicationStaffOption option = _mentionOptions[index];
+            return ListTile(
+              dense: true,
+              title: Text(option.label),
+              subtitle: Text(
+                <String?>[option.positionTitle, option.email]
+                    .whereType<String>()
+                    .where((String v) => v.isNotEmpty)
+                    .join(' · '),
               ),
-          ],
+              onTap: () => _insertMention(option),
+            );
+          },
         ),
       ),
     );

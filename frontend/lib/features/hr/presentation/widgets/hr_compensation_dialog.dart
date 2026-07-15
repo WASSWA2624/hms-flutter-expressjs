@@ -314,29 +314,30 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
                   ],
                 ),
               ),
-              ListView(
+              ListView.builder(
                 primary: false,
                 padding: EdgeInsets.only(top: theme.spacing.md),
-                children: <Widget>[
-                  for (final MapEntry<String, List<HrStaffCompensation>> entry
-                      in groupedHistory.entries)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: <Widget>[
-                        Padding(
-                          padding: EdgeInsets.only(
-                            top: theme.spacing.sm,
-                            bottom: theme.spacing.xs,
-                          ),
-                          child: Text(
-                            hrCompensationPayTypeLabel(l10n, entry.key),
-                            style: theme.textTheme.titleSmall,
-                          ),
+                itemCount: groupedHistory.entries.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final MapEntry<String, List<HrStaffCompensation>> entry =
+                      groupedHistory.entries.elementAt(index);
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      Padding(
+                        padding: EdgeInsets.only(
+                          top: theme.spacing.sm,
+                          bottom: theme.spacing.xs,
                         ),
-                        for (final HrStaffCompensation item in entry.value)
-                          ListTile(
-                            title: Text(hrCompensationRowTitle(context, item)),
-                            subtitle: Text(
+                        child: Text(
+                          hrCompensationPayTypeLabel(l10n, entry.key),
+                          style: theme.textTheme.titleSmall,
+                        ),
+                      ),
+                      for (final HrStaffCompensation item in entry.value)
+                        ListTile(
+                          title: Text(hrCompensationRowTitle(context, item)),
+                          subtitle: Text(
                               hrDateRange(
                                 context,
                                 item.effectiveFrom,
@@ -365,8 +366,8 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
                             ),
                           ),
                       ],
-                    ),
-                ],
+                    );
+                },
               ),
             ],
           ),

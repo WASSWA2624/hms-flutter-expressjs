@@ -22,9 +22,11 @@ class DashboardChartsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final double gap = theme.spacing.md;
-    final Widget trendPanel = _DashboardTrendPanel(chart: data.trend);
-    final Widget distributionPanel = _DashboardDistributionPanel(
-      chart: data.distribution,
+    final Widget trendPanel = RepaintBoundary(
+      child: _DashboardTrendPanel(chart: data.trend),
+    );
+    final Widget distributionPanel = RepaintBoundary(
+      child: _DashboardDistributionPanel(chart: data.distribution),
     );
 
     if (twoColumns) {

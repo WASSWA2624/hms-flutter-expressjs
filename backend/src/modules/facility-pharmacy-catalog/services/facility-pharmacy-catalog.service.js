@@ -97,16 +97,24 @@ const listFacilityPharmacyDrugs = async (filters, page, limit, sortBy, order, co
       limit,
       { sort_order: 'asc' }
     );
-    const items = (
-      await Promise.all(
-        offerings.map(async (offering) => {
-          const masterDrug =
-            offering.drug ||
-            (offering.drug_id ? await drugRepository.findById(offering.drug_id) : null);
-          return mapMergedDrugRecord(masterDrug, offering);
-        })
-      )
-    ).filter(Boolean);
+    const missingDrugIds = offerings
+      .filter((offering) => !offering.drug && offering.drug_id)
+      .map((offering) => offering.drug_id);
+    const missingDrugsMap = new Map();
+    if (missingDrugIds.length > 0) {
+      const missingDrugs = await drugRepository.findMany(
+        { id: { in: missingDrugIds }, deleted_at: null },
+        0,
+        missingDrugIds.length
+      );
+      missingDrugs.forEach((drug) => missingDrugsMap.set(drug.id, drug));
+    }
+    const items = offerings
+      .map((offering) => {
+        const masterDrug = offering.drug || missingDrugsMap.get(offering.drug_id) || null;
+        return mapMergedDrugRecord(masterDrug, offering);
+      })
+      .filter(Boolean);
     const total = await facilityPharmacyCatalogRepository.countDrugOfferings(offeringWhere);
     return { items, pagination: buildPagination(page, limit, total) };
   }
