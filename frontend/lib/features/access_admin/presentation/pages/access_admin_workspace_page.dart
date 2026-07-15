@@ -585,19 +585,21 @@ class _WorklistPanel extends StatelessWidget {
   const _WorklistPanel({
     required this.state,
     required this.controller,
+    required this.searchController,
     required this.canWrite,
     required this.onItemSelected,
   });
 
   final AccessAdminWorkspaceState state;
   final AccessAdminWorkspaceController controller;
+  final TextEditingController searchController;
   final bool canWrite;
   final ValueChanged<AccessAdminItem> onItemSelected;
 
   @override
   Widget build(BuildContext context) {
     final AppPage<AccessAdminItem> page = state.data.page;
-    if (page.items.isEmpty) {
+    if (page.items.isEmpty && !state.isRefreshing) {
       return AppStateView(
         title: context.l10n.accessAdminEmptyTitle,
         body: context.l10n.accessAdminEmptyBody,
@@ -605,79 +607,130 @@ class _WorklistPanel extends StatelessWidget {
       );
     }
 
-    return AppContentPanel(
-      child: AppListTable<AccessAdminItem>(
-        page: page,
+    return AppListTable<AccessAdminItem>(
+      page: page,
+      isLoading: state.isRefreshing,
+      onRowSelected: onItemSelected,
+      onPageChanged: controller.changePage,
+      search: AppListTableSearch<AccessAdminItem>(
+        controller: searchController,
+        semanticLabel: context.l10n.accessAdminSearchLabel,
+        hintText: context.l10n.accessAdminSearchHint,
         isLoading: state.isRefreshing,
-        onRowSelected: onItemSelected,
-        onPageChanged: controller.changePage,
-        mobileItemBuilder: (BuildContext context, AccessAdminItem item) {
-          final bool isRole = state.query.resource == AccessAdminResource.roles;
-          return ListTile(
-            title: Text(item.title),
-            subtitle: Text(item.subtitle ?? item.effectiveDisplayId),
-            trailing: isRole
-                ? Chip(
-                    label: Text(
-                      item.isFacilityScopedRole
-                          ? context.l10n.accessAdminRoleScopeFacilityBadge
-                          : context.l10n.accessAdminRoleScopeTenantBadge,
-                      style: Theme.of(context).textTheme.labelSmall,
-                    ),
-                    visualDensity: VisualDensity.compact,
-                  )
-                : Text(item.status ?? ''),
-            onTap: () => onItemSelected(item),
-          );
+        onSubmitted: controller.applySearch,
+        onClear: () => unawaited(controller.applySearch('')),
+        enableDateFilter: false,
+        matcher: (AccessAdminItem item, String query) {
+          final String normalizedQuery = query.trim().toLowerCase();
+          if (normalizedQuery.isEmpty) return true;
+          return item.title.toLowerCase().contains(normalizedQuery) ||
+              item.effectiveDisplayId.toLowerCase().contains(normalizedQuery) ||
+              (item.subtitle ?? '').toLowerCase().contains(normalizedQuery) ||
+              (item.email ?? '').toLowerCase().contains(normalizedQuery) ||
+              (item.name ?? '').toLowerCase().contains(normalizedQuery);
         },
-        columns: <AppListTableColumn<AccessAdminItem>>[
-          AppListTableColumn<AccessAdminItem>(
-            label: context.l10n.accessAdminColumnId,
-            cellBuilder: (BuildContext context, AccessAdminItem item) =>
-                Text(item.effectiveDisplayId),
+        filterGroups: <AppSearchBarFilterGroup>[
+          if (state.query.resource == AccessAdminResource.users)
+            AppSearchBarFilterGroup(
+              key: 'status',
+              label: context.l10n.accessAdminStatusLabel,
+              allLabel: context.l10n.accessAdminAllStatusesLabel,
+              choices: state.data.lookups.userStatuses
+                  .map(
+                    (String value) => AppSearchBarFilterChoice(
+                      value: value,
+                      label: value,
+                    ),
+                  )
+                  .toList(growable: false),
+            ),
+        ],
+        filterValue: AppSearchBarFilterValue(
+          options: <String, String>{
+            if (state.query.status != null) 'status': state.query.status!,
+          },
+        ),
+        hasActiveFilters: state.query.status != null,
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          final String? status = value.options['status'];
+          unawaited(controller.applyStatusFilter(
+            status?.isNotEmpty == true ? status : null,
+          ));
+        },
+        trailingActions: <AppSearchBarAction>[
+          AppSearchBarAction(
+            icon: Icons.refresh,
+            label: context.l10n.commonRefreshActionLabel,
+            onPressed: controller.refresh,
           ),
-          AppListTableColumn<AccessAdminItem>(
-            label: context.l10n.accessAdminColumnName,
-            cellBuilder: (BuildContext context, AccessAdminItem item) =>
-                Text(item.title),
-          ),
-          if (state.query.resource == AccessAdminResource.roles)
-            AppListTableColumn<AccessAdminItem>(
-              label: context.l10n.accessAdminColumnScope,
-              cellBuilder: (BuildContext context, AccessAdminItem item) {
-                final bool isFacility = item.isFacilityScopedRole;
-                return Chip(
-                  avatar: Icon(
-                    isFacility
-                        ? Icons.local_hospital_outlined
-                        : Icons.domain_outlined,
-                    size: 16,
-                  ),
+        ],
+      ),
+      mobileItemBuilder: (BuildContext context, AccessAdminItem item) {
+        final bool isRole = state.query.resource == AccessAdminResource.roles;
+        return ListTile(
+          title: Text(item.title),
+          subtitle: Text(item.subtitle ?? item.effectiveDisplayId),
+          trailing: isRole
+              ? Chip(
                   label: Text(
-                    isFacility
-                        ? (item.facilityName?.trim().isNotEmpty == true
-                              ? '${context.l10n.accessAdminRoleScopeFacilityBadge} · ${item.facilityName}'
-                              : context.l10n.accessAdminRoleScopeFacilityBadge)
+                    item.isFacilityScopedRole
+                        ? context.l10n.accessAdminRoleScopeFacilityBadge
                         : context.l10n.accessAdminRoleScopeTenantBadge,
                     style: Theme.of(context).textTheme.labelSmall,
                   ),
                   visualDensity: VisualDensity.compact,
-                );
-              },
-            ),
+                )
+              : Text(item.status ?? ''),
+          onTap: () => onItemSelected(item),
+        );
+      },
+      columns: <AppListTableColumn<AccessAdminItem>>[
+        AppListTableColumn<AccessAdminItem>(
+          label: context.l10n.accessAdminColumnId,
+          cellBuilder: (BuildContext context, AccessAdminItem item) =>
+              Text(item.effectiveDisplayId),
+        ),
+        AppListTableColumn<AccessAdminItem>(
+          label: context.l10n.accessAdminColumnName,
+          cellBuilder: (BuildContext context, AccessAdminItem item) =>
+              Text(item.title),
+        ),
+        if (state.query.resource == AccessAdminResource.roles)
           AppListTableColumn<AccessAdminItem>(
-            label: context.l10n.accessAdminColumnDetails,
-            cellBuilder: (BuildContext context, AccessAdminItem item) =>
-                Text(item.subtitle ?? '—'),
+            label: context.l10n.accessAdminColumnScope,
+            cellBuilder: (BuildContext context, AccessAdminItem item) {
+              final bool isFacility = item.isFacilityScopedRole;
+              return Chip(
+                avatar: Icon(
+                  isFacility
+                      ? Icons.local_hospital_outlined
+                      : Icons.domain_outlined,
+                  size: 16,
+                ),
+                label: Text(
+                  isFacility
+                      ? (item.facilityName?.trim().isNotEmpty == true
+                            ? '${context.l10n.accessAdminRoleScopeFacilityBadge} · ${item.facilityName}'
+                            : context.l10n.accessAdminRoleScopeFacilityBadge)
+                      : context.l10n.accessAdminRoleScopeTenantBadge,
+                  style: Theme.of(context).textTheme.labelSmall,
+                ),
+                visualDensity: VisualDensity.compact,
+              );
+            },
           ),
-          if (state.query.resource != AccessAdminResource.roles)
-            AppListTableColumn<AccessAdminItem>(
-              label: context.l10n.accessAdminColumnStatus,
-              cellBuilder: (BuildContext context, AccessAdminItem item) =>
-                  Text(item.status ?? '—'),
-            ),
-        ],
-      ),
+        AppListTableColumn<AccessAdminItem>(
+          label: context.l10n.accessAdminColumnDetails,
+          cellBuilder: (BuildContext context, AccessAdminItem item) =>
+              Text(item.subtitle ?? '—'),
+        ),
+        if (state.query.resource != AccessAdminResource.roles)
+          AppListTableColumn<AccessAdminItem>(
+            label: context.l10n.accessAdminColumnStatus,
+            cellBuilder: (BuildContext context, AccessAdminItem item) =>
+                Text(item.status ?? '—'),
+          ),
+      ],
     );
   }
 }
