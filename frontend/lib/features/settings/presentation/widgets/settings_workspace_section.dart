@@ -62,7 +62,7 @@ class SettingsWorkspaceSection extends ConsumerWidget {
   }
 }
 
-class _SettingsWorkspaceContent extends ConsumerWidget {
+class _SettingsWorkspaceContent extends ConsumerStatefulWidget {
   const _SettingsWorkspaceContent({
     required this.state,
     required this.onRefresh,
@@ -72,8 +72,17 @@ class _SettingsWorkspaceContent extends ConsumerWidget {
   final VoidCallback onRefresh;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final SettingsWorkspace workspace = state.workspace;
+  ConsumerState<_SettingsWorkspaceContent> createState() =>
+      _SettingsWorkspaceContentState();
+}
+
+class _SettingsWorkspaceContentState
+    extends ConsumerState<_SettingsWorkspaceContent> {
+  String _activeTab = 'overview';
+
+  @override
+  Widget build(BuildContext context) {
+    final SettingsWorkspace workspace = widget.state.workspace;
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
 
@@ -86,7 +95,7 @@ class _SettingsWorkspaceContent extends ConsumerWidget {
             body: l10n.settingsWorkspaceTenantContextRequiredBody,
           ),
           SizedBox(height: theme.spacing.md),
-          _SettingsContextSelector(state: state),
+          _SettingsContextSelector(state: widget.state),
         ],
       );
     }
@@ -99,27 +108,51 @@ class _SettingsWorkspaceContent extends ConsumerWidget {
         action: AppButton.secondary(
           label: l10n.commonRefreshActionLabel,
           leadingIcon: Icons.refresh,
-          onPressed: onRefresh,
+          onPressed: widget.onRefresh,
         ),
       );
     }
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        _SettingsContextSummary(state: state),
+        AppTabStrip(
+          tabs: <AppTabItem>[
+            AppTabItem(
+              id: 'overview',
+              icon: Icons.dashboard_outlined,
+              label: l10n.settingsWorkspaceContextTitle,
+            ),
+            AppTabItem(
+              id: 'setup',
+              icon: Icons.playlist_add_check_outlined,
+              label: l10n.settingsWorkspaceChecklistTitle,
+            ),
+            AppTabItem(
+              id: 'modules',
+              icon: Icons.view_module_outlined,
+              label: l10n.settingsWorkspaceModuleGroupsTitle,
+            ),
+          ],
+          selectedId: _activeTab,
+          onTabTapped: (String id) => setState(() => _activeTab = id),
+        ),
         SizedBox(height: theme.spacing.md),
-        _SettingsSummaryCards(workspace: workspace),
-        SizedBox(height: theme.spacing.md),
-        _SettingsContextSelector(state: state),
-        SizedBox(height: theme.spacing.md),
-        _SettingsWorkspaceFilters(state: state),
-        SizedBox(height: theme.spacing.md),
-        _SettingsChecklistPanel(workspace: workspace),
-        SizedBox(height: theme.spacing.md),
-        _SettingsQuickActionsPanel(actions: workspace.quickActions),
-        SizedBox(height: theme.spacing.md),
-        _SettingsModuleGroupsPanel(groups: workspace.moduleGroups),
+        if (_activeTab == 'overview') ...<Widget>[
+          _SettingsContextSummary(state: widget.state),
+          SizedBox(height: theme.spacing.md),
+          _SettingsSummaryCards(workspace: workspace),
+          SizedBox(height: theme.spacing.md),
+          _SettingsContextSelector(state: widget.state),
+        ] else if (_activeTab == 'setup') ...<Widget>[
+          _SettingsChecklistPanel(workspace: workspace),
+          SizedBox(height: theme.spacing.md),
+          _SettingsQuickActionsPanel(actions: workspace.quickActions),
+        ] else ...<Widget>[
+          _SettingsWorkspaceFilters(state: widget.state),
+          SizedBox(height: theme.spacing.md),
+          _SettingsModuleGroupsPanel(groups: workspace.moduleGroups),
+        ],
       ],
     );
   }

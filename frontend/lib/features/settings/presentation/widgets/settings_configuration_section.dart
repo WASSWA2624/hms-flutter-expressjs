@@ -134,19 +134,33 @@ class _ConfigurationContent extends ConsumerWidget {
       );
     }
 
+    final bool showTenant = canConfigureTenant;
+    final bool showFacility = canConfigureFacility && facility != null;
+
+    if (!showTenant && !showFacility) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: theme.spacing.md),
+        child: Text(
+          l10n.settingsConfigurationNoTenantContext,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        if (canConfigureTenant) ...<Widget>[
+        if (showTenant) ...<Widget>[
           _TenantConfigPanel(tenant: tenant),
-          SizedBox(height: theme.spacing.md),
+          if (showFacility) SizedBox(height: theme.spacing.md),
         ],
-        if (canConfigureFacility && facility != null) ...<Widget>[
+        if (showFacility)
           _FacilityConfigPanel(
             tenant: tenant,
             facility: facility,
           ),
-        ],
       ],
     );
   }

@@ -5,8 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/accessibility/app_accessibility_controller.dart';
 import 'package:hosspi_hms/app/accessibility/app_accessibility_preferences.dart';
-import 'package:hosspi_hms/app/locale/app_locale_controller.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/app/theme/app_theme_mode_controller.dart';
@@ -15,10 +13,8 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
-import 'package:hosspi_hms/features/settings/presentation/controllers/settings_workspace_controller.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_configuration_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_workspace_section.dart';
-import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -32,7 +28,7 @@ class SettingsPage extends ConsumerStatefulWidget {
 }
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
-  String? _expandedSectionId;
+  String? _expandedSectionId = 'preferences';
 
   void _onSectionTapped(String sectionId) {
     setState(() {
@@ -200,46 +196,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         ),
     ];
 
-    return AppWorkspace(
-      title: l10n.settingsTitle,
-      leadingIcon: AppRouteIcons.settings,
+    return ResponsivePage(
       maxWidth: PageMaxWidth.dashboard,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        showFaultReport: false,
-        showHousekeepingRequest: false,
-        onRefresh: () async {
-          ref
-            ..invalidate(appLocaleProvider)
-            ..invalidate(appThemeModeProvider)
-            ..invalidate(appAccessibilityProvider)
-            ..invalidate(appAccessPolicyProvider)
-            ..invalidate(settingsWorkspaceControllerProvider)
-            ..invalidate(tenantFacilitySetupControllerProvider);
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l10n.commonRefreshActionLabel)),
-            );
-          }
-        },
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Text(
-            l10n.settingsBody,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-          SizedBox(height: Theme.of(context).spacing.lg),
-          _SettingsAccordion(
-            sections: sections,
-            expandedSectionId: _expandedSectionId,
-            onSectionTapped: _onSectionTapped,
-            reduceMotion: accessibility.reduceMotion,
-          ),
-        ],
+      child: SizedBox(
+        width: double.infinity,
+        child: _SettingsAccordion(
+          sections: sections,
+          expandedSectionId: _expandedSectionId,
+          onSectionTapped: _onSectionTapped,
+          reduceMotion: accessibility.reduceMotion,
+        ),
       ),
     );
   }
@@ -370,13 +336,25 @@ class _SettingsAccordion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        _AccordionTabStrip(
-          sections: sections,
-          expandedSectionId: expandedSectionId,
-          onSectionTapped: onSectionTapped,
+        Padding(
+          padding: EdgeInsets.only(bottom: theme.spacing.md),
+          child: AppTabStrip(
+            tabs: <AppTabItem>[
+              for (final _AccordionEntry section in sections)
+                AppTabItem(
+                  id: section.id,
+                  icon: section.icon,
+                  label: section.title,
+                ),
+            ],
+            selectedId: expandedSectionId,
+            onTabTapped: onSectionTapped,
+          ),
         ),
         for (final _AccordionEntry section in sections)
           _AccordionPanel(
@@ -386,115 +364,6 @@ class _SettingsAccordion extends StatelessWidget {
             reduceMotion: reduceMotion,
           ),
       ],
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Tab strip — compact row of chips for collapsed sections
-// ---------------------------------------------------------------------------
-
-class _AccordionTabStrip extends StatelessWidget {
-  const _AccordionTabStrip({
-    required this.sections,
-    required this.expandedSectionId,
-    required this.onSectionTapped,
-  });
-
-  final List<_AccordionEntry> sections;
-  final String? expandedSectionId;
-  final ValueChanged<String> onSectionTapped;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: theme.spacing.md),
-      child: Wrap(
-        spacing: theme.spacing.xs,
-        runSpacing: theme.spacing.xs,
-        children: <Widget>[
-          for (final _AccordionEntry section in sections)
-            _AccordionTabChip(
-              icon: section.icon,
-              label: section.title,
-              isSelected: expandedSectionId == section.id,
-              onTap: () => onSectionTapped(section.id),
-              colorScheme: colorScheme,
-              theme: theme,
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AccordionTabChip extends StatelessWidget {
-  const _AccordionTabChip({
-    required this.icon,
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    required this.colorScheme,
-    required this.theme,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final ColorScheme colorScheme;
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    final Color backgroundColor = isSelected
-        ? colorScheme.primaryContainer
-        : colorScheme.surfaceContainerHighest;
-    final Color foregroundColor = isSelected
-        ? colorScheme.onPrimaryContainer
-        : colorScheme.onSurfaceVariant;
-
-    return Semantics(
-      button: true,
-      selected: isSelected,
-      label: label,
-      child: Material(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: theme.spacing.md,
-              vertical: theme.spacing.sm,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Icon(icon, size: 18, color: foregroundColor),
-                SizedBox(width: theme.spacing.xs),
-                Flexible(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      color: foregroundColor,
-                      fontWeight: isSelected
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -523,30 +392,32 @@ class _AccordionPanelState extends State<_AccordionPanel>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _heightFactor;
+  bool _hasBeenExpanded = false;
+
+  static const Duration _animationDuration = Duration(milliseconds: 150);
 
   @override
   void initState() {
     super.initState();
+    _hasBeenExpanded = widget.isExpanded;
     _controller = AnimationController(
-      duration: widget.reduceMotion
-          ? Duration.zero
-          : const Duration(milliseconds: 250),
+      duration: widget.reduceMotion ? Duration.zero : _animationDuration,
       vsync: this,
       value: widget.isExpanded ? 1.0 : 0.0,
     );
-    _heightFactor = _controller.drive(CurveTween(curve: Curves.easeInOut));
+    _heightFactor = _controller.drive(CurveTween(curve: Curves.easeOut));
   }
 
   @override
   void didUpdateWidget(covariant _AccordionPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.reduceMotion != oldWidget.reduceMotion) {
-      _controller.duration = widget.reduceMotion
-          ? Duration.zero
-          : const Duration(milliseconds: 250);
+      _controller.duration =
+          widget.reduceMotion ? Duration.zero : _animationDuration;
     }
     if (widget.isExpanded != oldWidget.isExpanded) {
       if (widget.isExpanded) {
+        _hasBeenExpanded = true;
         _controller.forward();
       } else {
         _controller.reverse();
@@ -562,6 +433,10 @@ class _AccordionPanelState extends State<_AccordionPanel>
 
   @override
   Widget build(BuildContext context) {
+    if (!_hasBeenExpanded) {
+      return const SizedBox.shrink();
+    }
+
     return AnimatedBuilder(
       animation: _heightFactor,
       builder: (BuildContext context, Widget? child) {
