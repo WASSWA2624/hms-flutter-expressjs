@@ -8567,6 +8567,30 @@
   "@navigationClinicalShortLabel": {
     "description": "Compact navigation label for the clinical workspace."
   },
+  "clinicalSectionAllLabel": "All",
+  "@clinicalSectionAllLabel": {
+    "description": "Tab label for showing all clinical worklist items"
+  },
+  "clinicalSectionWaitingReviewLabel": "Waiting review",
+  "@clinicalSectionWaitingReviewLabel": {
+    "description": "Tab label for encounters waiting doctor review"
+  },
+  "clinicalSectionUrgentLabel": "Urgent",
+  "@clinicalSectionUrgentLabel": {
+    "description": "Tab label for urgent encounters"
+  },
+  "clinicalSectionResultsReadyLabel": "Results ready",
+  "@clinicalSectionResultsReadyLabel": {
+    "description": "Tab label for encounters with results ready"
+  },
+  "clinicalSectionInConsultationLabel": "In consultation",
+  "@clinicalSectionInConsultationLabel": {
+    "description": "Tab label for encounters currently in consultation"
+  },
+  "clinicalSectionCompletedLabel": "Completed",
+  "@clinicalSectionCompletedLabel": {
+    "description": "Tab label for completed/closed encounters"
+  },
   "clinicalTitle": "Clinical workspace",
   "@clinicalTitle": {
     "description": "Clinical workspace page title."

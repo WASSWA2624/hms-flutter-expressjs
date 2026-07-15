@@ -6752,6 +6752,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navigationClinicalShortLabel => 'Clinical';
 
   @override
+  String get clinicalSectionAllLabel => 'All';
+
+  @override
+  String get clinicalSectionWaitingReviewLabel => 'Waiting review';
+
+  @override
+  String get clinicalSectionUrgentLabel => 'Urgent';
+
+  @override
+  String get clinicalSectionResultsReadyLabel => 'Results ready';
+
+  @override
+  String get clinicalSectionInConsultationLabel => 'In consultation';
+
+  @override
+  String get clinicalSectionCompletedLabel => 'Completed';
+
+  @override
   String get clinicalTitle => 'Clinical workspace';
 
   @override

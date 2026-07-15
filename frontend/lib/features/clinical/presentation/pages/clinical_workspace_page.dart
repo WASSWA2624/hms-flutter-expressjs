@@ -2,8 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -111,45 +112,31 @@ class _ClinicalWorkspaceContentState
     activeModules: <String>['encounters-vitals'],
   );
 
-  static const AccessRequirement _labOrderRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.clinicalWrite,
-      AppPermissions.systemAdmin,
-    ],
-    activeModules: <String>['encounters-vitals', 'lab-workflows'],
-  );
-
-  static const AccessRequirement _prescribeRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.clinicalWrite,
-      AppPermissions.systemAdmin,
-    ],
-    activeModules: <String>['encounters-vitals', 'pharmacy-dispensing'],
-  );
-
-  static const AccessRequirement _radiologyOrderRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.clinicalWrite,
-      AppPermissions.systemAdmin,
-    ],
-    activeModules: <String>['encounters-vitals', 'radiology-workflows'],
-  );
-
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<ClinicalWorklistEntry>
   _tableColumnController;
   Timer? _searchDebounce;
   String? _appliedRouteSignature;
+  late ClinicalWorkspaceSection _section;
 
   @override
   void initState() {
     super.initState();
+    _section = widget.initialQuery?.section ?? ClinicalWorkspaceSection.all;
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<ClinicalWorklistEntry>(
-          storageKey: 'clinical.worklist',
+          storageKey: 'clinical_${_section.name}',
         );
     _scheduleRouteQuery(widget.initialQuery);
+    if (_section != ClinicalWorkspaceSection.all) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref
+            .read(clinicalWorkspaceControllerProvider.notifier)
+            .applyScope(_clinicalSectionScope(_section));
+      });
+    }
   }
 
   @override
@@ -177,6 +164,10 @@ class _ClinicalWorkspaceContentState
   Future<void> _applyRouteQuery(ClinicalWorkspaceQuery query) async {
     final ClinicalWorkspaceController controller =
         ref.read(clinicalWorkspaceControllerProvider.notifier);
+    if (query.section != ClinicalWorkspaceSection.all &&
+        query.section != _section) {
+      _handleTabChanged(query.section);
+    }
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;
       await controller.applySearch(query.search);
@@ -210,143 +201,76 @@ class _ClinicalWorkspaceContentState
     super.dispose();
   }
 
-  Widget _clinicalToolbarButton({
-    required AccessRequirement requirement,
-    required String label,
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    final AppLocalizations l10n = context.l10n;
-    final ClinicalWorkspaceState state = widget.state;
-    final bool hasSelection = state.selectedBundle != null;
+  void _handleTabChanged(ClinicalWorkspaceSection section) {
+    if (section == _section) {
+      return;
+    }
+    setState(() => _section = section);
+    _updateUrlForSection(section);
+    _searchController.clear();
+    final ClinicalQueueScope scope = _clinicalSectionScope(section);
+    ref.read(clinicalWorkspaceControllerProvider.notifier).applyScope(scope);
+  }
 
-    return AppAccessActionGate(
-      requirement: requirement,
-      builder: (BuildContext context, bool isAllowed) {
-        final bool enabled = isAllowed && hasSelection && !state.isSaving;
-        final String tooltip = !isAllowed
-            ? l10n.tenantFacilityPermissionDenied
-            : !hasSelection
-            ? l10n.clinicalNoSelectionTitle
-            : label;
-
-        return AppButton.secondary(
-          label: label,
-          leadingIcon: icon,
-          semanticLabel: label,
-          tooltip: tooltip,
-          enabled: enabled,
-          onPressed: enabled ? onPressed : null,
-        );
+  void _updateUrlForSection(ClinicalWorkspaceSection section) {
+    if (!mounted) {
+      return;
+    }
+    final String tab = _clinicalSectionQueryValue(section);
+    final String location = AppRoutes.clinical.location(
+      queryParameters: <String, String>{
+        if (tab.isNotEmpty) 'section': tab,
       },
     );
+    GoRouter.of(context).replace<void>(location);
   }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final ClinicalWorkspaceState state = widget.state;
-    final ClinicalWorkspaceController controller = ref.read(
-      clinicalWorkspaceControllerProvider.notifier,
-    );
 
-    return AppWorkspace(
-      title: l10n.clinicalTitle,
-      leadingIcon: AppRouteIcons.clinical,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        summaryNotifications: <AppWorkspaceSummaryNotification>[
-          if (_pageTotal(state.worklist) > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.clinicalAllScopeLabel,
-              count: _pageTotal(state.worklist),
-              icon: Icons.inventory_2_outlined,
-              onSelected: () => controller.applyScope(ClinicalQueueScope.all),
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            AppTabStrip(
+              tabs: <AppTabItem>[
+                for (final ClinicalWorkspaceSection section
+                    in ClinicalWorkspaceSection.values)
+                  AppTabItem(
+                    id: section.name,
+                    icon: _clinicalSectionIcon(section),
+                    label:
+                        '${_clinicalSectionLabel(l10n, section)} (${_clinicalSectionCount(state, section)})',
+                  ),
+              ],
+              selectedId: _section.name,
+              onTabTapped: (String tabId) {
+                for (final ClinicalWorkspaceSection section
+                    in ClinicalWorkspaceSection.values) {
+                  if (section.name == tabId) {
+                    _handleTabChanged(section);
+                    break;
+                  }
+                }
+              },
             ),
-          if (state.waitingReviewCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.clinicalWaitingReviewSummaryLabel,
-              count: state.waitingReviewCount,
-              icon: Icons.rate_review_outlined,
-              tone: AppWorkspaceStatusTone.info,
-              onSelected: () =>
-                  controller.applyScope(ClinicalQueueScope.waitingReview),
+            SizedBox(height: theme.spacing.md),
+            _ClinicalWorklistPanel(
+              state: state,
+              section: _section,
+              searchController: _searchController,
+              columnVisibilityController: _tableColumnController,
+              onSearchChanged: _applySearch,
+              onSearchSubmitted: _applySearchImmediately,
             ),
-          if (state.urgentCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.clinicalUrgentSummaryLabel,
-              count: state.urgentCount,
-              icon: Icons.priority_high_outlined,
-              tone: AppWorkspaceStatusTone.error,
-              onSelected: () =>
-                  controller.applyScope(ClinicalQueueScope.urgent),
-            ),
-          if (state.resultsReadyCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.clinicalResultsReadySummaryLabel,
-              count: state.resultsReadyCount,
-              icon: Icons.science_outlined,
-              tone: AppWorkspaceStatusTone.success,
-              onSelected: () =>
-                  controller.applyScope(ClinicalQueueScope.resultsReady),
-            ),
-          if (state.inConsultationCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.clinicalInConsultationSummaryLabel,
-              count: state.inConsultationCount,
-              icon: Icons.medical_information_outlined,
-              tone: AppWorkspaceStatusTone.warning,
-              onSelected: () =>
-                  controller.applyScope(ClinicalQueueScope.inConsultation),
-            ),
-        ],
-        secondary: <Widget>[
-          _clinicalToolbarButton(
-            requirement: _writeRequirement,
-            label: l10n.clinicalAddNoteAction,
-            icon: Icons.note_add_outlined,
-            onPressed: () => _openNoteDialog(context, controller),
-          ),
-          _clinicalToolbarButton(
-            requirement: _labOrderRequirement,
-            label: l10n.clinicalRequestLabAction,
-            icon: Icons.science_outlined,
-            onPressed: () =>
-                _openLabDialog(context, controller, state.referenceData),
-          ),
-          _clinicalToolbarButton(
-            requirement: _prescribeRequirement,
-            label: l10n.clinicalPrescribeAction,
-            icon: Icons.medication_outlined,
-            onPressed: () => _openPrescriptionDialog(
-              context,
-              controller,
-              state.referenceData,
-            ),
-          ),
-          _clinicalToolbarButton(
-            requirement: _radiologyOrderRequirement,
-            label: l10n.clinicalRequestRadiologyAction,
-            icon: Icons.biotech_outlined,
-            onPressed: () =>
-                _openRadiologyDialog(context, controller, state.referenceData),
-          ),
-        ],
-        onRefresh: () async {
-          final AppFailure? failure = await controller.refresh();
-          if (context.mounted) {
-            _showFailureIfNeeded(context, failure);
-          }
-        },
-        isRefreshing: state.isRefreshing,
-      ),
-
-      body: _ClinicalWorklistPanel(
-        state: state,
-        searchController: _searchController,
-        columnVisibilityController: _tableColumnController,
-        onSearchChanged: _applySearch,
-        onSearchSubmitted: _applySearchImmediately,
+          ],
+        ),
       ),
     );
   }
@@ -371,9 +295,110 @@ class _ClinicalWorkspaceContentState
   }
 }
 
+ClinicalQueueScope _clinicalSectionScope(ClinicalWorkspaceSection section) {
+  return switch (section) {
+    ClinicalWorkspaceSection.all => ClinicalQueueScope.all,
+    ClinicalWorkspaceSection.waitingReview => ClinicalQueueScope.waitingReview,
+    ClinicalWorkspaceSection.urgent => ClinicalQueueScope.urgent,
+    ClinicalWorkspaceSection.resultsReady => ClinicalQueueScope.resultsReady,
+    ClinicalWorkspaceSection.inConsultation =>
+      ClinicalQueueScope.inConsultation,
+    ClinicalWorkspaceSection.completed => ClinicalQueueScope.completed,
+  };
+}
+
+IconData _clinicalSectionIcon(ClinicalWorkspaceSection section) {
+  return switch (section) {
+    ClinicalWorkspaceSection.all => Icons.inventory_2_outlined,
+    ClinicalWorkspaceSection.waitingReview => Icons.rate_review_outlined,
+    ClinicalWorkspaceSection.urgent => Icons.priority_high_outlined,
+    ClinicalWorkspaceSection.resultsReady => Icons.science_outlined,
+    ClinicalWorkspaceSection.inConsultation =>
+      Icons.medical_information_outlined,
+    ClinicalWorkspaceSection.completed => Icons.task_alt_outlined,
+  };
+}
+
+String _clinicalSectionLabel(
+  AppLocalizations l10n,
+  ClinicalWorkspaceSection section,
+) {
+  return switch (section) {
+    ClinicalWorkspaceSection.all => l10n.clinicalSectionAllLabel,
+    ClinicalWorkspaceSection.waitingReview =>
+      l10n.clinicalSectionWaitingReviewLabel,
+    ClinicalWorkspaceSection.urgent => l10n.clinicalSectionUrgentLabel,
+    ClinicalWorkspaceSection.resultsReady =>
+      l10n.clinicalSectionResultsReadyLabel,
+    ClinicalWorkspaceSection.inConsultation =>
+      l10n.clinicalSectionInConsultationLabel,
+    ClinicalWorkspaceSection.completed => l10n.clinicalSectionCompletedLabel,
+  };
+}
+
+int _clinicalSectionCount(
+  ClinicalWorkspaceState state,
+  ClinicalWorkspaceSection section,
+) {
+  return switch (section) {
+    ClinicalWorkspaceSection.all => _pageTotal(state.worklist),
+    ClinicalWorkspaceSection.waitingReview => state.waitingReviewCount,
+    ClinicalWorkspaceSection.urgent => state.urgentCount,
+    ClinicalWorkspaceSection.resultsReady => state.resultsReadyCount,
+    ClinicalWorkspaceSection.inConsultation => state.inConsultationCount,
+    ClinicalWorkspaceSection.completed => state.completedCount,
+  };
+}
+
+String _clinicalSectionQueryValue(ClinicalWorkspaceSection section) {
+  return switch (section) {
+    ClinicalWorkspaceSection.all => '',
+    ClinicalWorkspaceSection.waitingReview => 'waiting-review',
+    ClinicalWorkspaceSection.urgent => 'urgent',
+    ClinicalWorkspaceSection.resultsReady => 'results-ready',
+    ClinicalWorkspaceSection.inConsultation => 'in-consultation',
+    ClinicalWorkspaceSection.completed => 'completed',
+  };
+}
+
+List<_ClinicalTableColumnId> _clinicalDefaultColumnsForSection(
+  ClinicalWorkspaceSection section,
+) {
+  return switch (section) {
+    ClinicalWorkspaceSection.all => _defaultClinicalTableColumns,
+    ClinicalWorkspaceSection.waitingReview => _defaultClinicalTableColumns,
+    ClinicalWorkspaceSection.urgent => _defaultClinicalTableColumns,
+    ClinicalWorkspaceSection.resultsReady => const <_ClinicalTableColumnId>[
+      _ClinicalTableColumnId.patient,
+      _ClinicalTableColumnId.queue,
+      _ClinicalTableColumnId.statusStep,
+      _ClinicalTableColumnId.encounterType,
+      _ClinicalTableColumnId.provider,
+      _ClinicalTableColumnId.lastUpdated,
+    ],
+    ClinicalWorkspaceSection.inConsultation => const <_ClinicalTableColumnId>[
+      _ClinicalTableColumnId.patient,
+      _ClinicalTableColumnId.queue,
+      _ClinicalTableColumnId.statusStep,
+      _ClinicalTableColumnId.provider,
+      _ClinicalTableColumnId.location,
+      _ClinicalTableColumnId.lastUpdated,
+    ],
+    ClinicalWorkspaceSection.completed => const <_ClinicalTableColumnId>[
+      _ClinicalTableColumnId.patient,
+      _ClinicalTableColumnId.queue,
+      _ClinicalTableColumnId.statusStep,
+      _ClinicalTableColumnId.encounterType,
+      _ClinicalTableColumnId.provider,
+      _ClinicalTableColumnId.lastUpdated,
+    ],
+  };
+}
+
 class _ClinicalWorklistPanel extends ConsumerWidget {
   const _ClinicalWorklistPanel({
     required this.state,
+    required this.section,
     required this.searchController,
     required this.columnVisibilityController,
     required this.onSearchChanged,
@@ -381,6 +406,7 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
   });
 
   final ClinicalWorkspaceState state;
+  final ClinicalWorkspaceSection section;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<ClinicalWorklistEntry>
   columnVisibilityController;
@@ -396,7 +422,8 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
     return AppListTable<ClinicalWorklistEntry>(
         page: state.worklist,
         columnVisibilityController: columnVisibilityController,
-        columnVisibilityStorageKey: 'clinical.worklist',
+        columnVisibilityStorageKey: 'clinical_${section.name}',
+        columnWidthStorageKey: 'clinical_cw_${section.name}',
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
         isLoading: state.isRefreshing,
         shrinkWrap: true,
@@ -428,7 +455,7 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
         ),
         columns: <AppListTableColumn<ClinicalWorklistEntry>>[
           for (final _ClinicalTableColumnId column
-              in _defaultClinicalTableColumns)
+              in _clinicalDefaultColumnsForSection(section))
             _clinicalDataColumn(context, column),
         ],
         columnChoices: <AppListTableColumn<ClinicalWorklistEntry>>[
@@ -480,7 +507,7 @@ AppListTableSearch<ClinicalWorklistEntry> _worklistSearch(
     filterGroups: _clinicalFilterGroups(
       l10n,
       filterEntries,
-      includeScope: true,
+      includeScope: false,
     ),
     filterValue: _filterValueFromQuery(
       filters,

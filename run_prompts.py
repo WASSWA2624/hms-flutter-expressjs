@@ -16,32 +16,36 @@ from cursor_sdk import (
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 PROJECT_DIR = str(PROMPTS_DIR.parent)
 EXCLUDED = {"01-patients-screen.md", "02-standardize-opd.md", "TEMP_01-patients-screen.md"}
+MAX_CONCURRENCY = 5
 
 
-async def run_prompt(file: Path, client: AsyncClient) -> dict:
+async def run_prompt(
+    file: Path, client: AsyncClient, semaphore: asyncio.Semaphore
+) -> dict:
     """Run a single prompt file in a Cursor agent."""
-    name = file.name
-    print(f"[START] {name}")
-    try:
-        prompt_text = file.read_text(encoding="utf-8")
-        async with await client.create_agent(
-            AgentOptions(
-                api_key=os.environ["CURSOR_API_KEY"],
-                model="auto",
-                local=LocalAgentOptions(cwd=PROJECT_DIR),
-            )
-        ) as agent:
-            run = await agent.send(prompt_text)
-            result = await run.wait()
-        status = result.status
-        print(f"[{status.upper()}] {name}")
-        return {"file": name, "status": status}
-    except CursorAgentError as err:
-        print(f"[ERROR] {name}: {err.message}", file=sys.stderr)
-        return {"file": name, "status": "error", "message": err.message}
-    except Exception as err:
-        print(f"[ERROR] {name}: {err}", file=sys.stderr)
-        return {"file": name, "status": "error", "message": str(err)}
+    async with semaphore:
+        name = file.name
+        print(f"[START] {name}")
+        try:
+            prompt_text = file.read_text(encoding="utf-8")
+            async with await client.create_agent(
+                AgentOptions(
+                    api_key=os.environ["CURSOR_API_KEY"],
+                    model="auto",
+                    local=LocalAgentOptions(cwd=PROJECT_DIR),
+                )
+            ) as agent:
+                run = await agent.send(prompt_text)
+                result = await run.wait()
+            status = result.status
+            print(f"[{status.upper()}] {name}")
+            return {"file": name, "status": status}
+        except CursorAgentError as err:
+            print(f"[ERROR] {name}: {err.message}", file=sys.stderr)
+            return {"file": name, "status": "error", "message": err.message}
+        except Exception as err:
+            print(f"[ERROR] {name}: {err}", file=sys.stderr)
+            return {"file": name, "status": "error", "message": str(err)}
 
 
 async def main():
@@ -56,12 +60,16 @@ async def main():
     if not files:
         sys.exit("No .md files found in prompts/")
 
-    print(f"Found {len(files)} prompt files. Running sequentially...\n")
+    print(
+        f"Found {len(files)} prompt files. "
+        f"Running with concurrency={MAX_CONCURRENCY}...\n"
+    )
 
-    results = []
+    semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
     async with await AsyncClient.launch_bridge(workspace=PROJECT_DIR) as client:
-        for file in files:
-            results.append(await run_prompt(file, client))
+        results = await asyncio.gather(
+            *(run_prompt(file, client, semaphore) for file in files)
+        )
 
     print("\n--- Summary ---")
     for r in results:

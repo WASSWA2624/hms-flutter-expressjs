@@ -12484,6 +12484,42 @@ abstract class AppLocalizations {
   /// **'Clinical'**
   String get navigationClinicalShortLabel;
 
+  /// Tab label for showing all clinical worklist items
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get clinicalSectionAllLabel;
+
+  /// Tab label for encounters waiting doctor review
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting review'**
+  String get clinicalSectionWaitingReviewLabel;
+
+  /// Tab label for urgent encounters
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get clinicalSectionUrgentLabel;
+
+  /// Tab label for encounters with results ready
+  ///
+  /// In en, this message translates to:
+  /// **'Results ready'**
+  String get clinicalSectionResultsReadyLabel;
+
+  /// Tab label for encounters currently in consultation
+  ///
+  /// In en, this message translates to:
+  /// **'In consultation'**
+  String get clinicalSectionInConsultationLabel;
+
+  /// Tab label for completed/closed encounters
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get clinicalSectionCompletedLabel;
+
   /// Clinical workspace page title.
   ///
   /// In en, this message translates to:

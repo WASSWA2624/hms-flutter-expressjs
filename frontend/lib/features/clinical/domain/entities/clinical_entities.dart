@@ -6,6 +6,7 @@ import 'package:hosspi_hms/shared/data/data.dart';
 @immutable
 final class ClinicalWorkspaceQuery {
   const ClinicalWorkspaceQuery({
+    this.section = ClinicalWorkspaceSection.all,
     this.encounterId = '',
     this.panel = '',
     this.search = '',
@@ -22,25 +23,32 @@ final class ClinicalWorkspaceQuery {
     }
 
     return ClinicalWorkspaceQuery(
+      section: _parseClinicalSection(
+        pick(<String>['section', 'tab']),
+      ),
       encounterId: pick(<String>[
         'encounterId',
         'encounter_id',
         'encounter',
         'id',
       ]),
-      panel: pick(<String>['panel', 'tab', 'section']),
+      panel: pick(<String>['panel']),
       search: pick(<String>['search', 'q']),
     );
   }
 
+  final ClinicalWorkspaceSection section;
   final String encounterId;
   final String panel;
   final String search;
 
   bool get hasRouteTargeting =>
-      encounterId.isNotEmpty || panel.isNotEmpty || search.isNotEmpty;
+      section != ClinicalWorkspaceSection.all ||
+      encounterId.isNotEmpty ||
+      panel.isNotEmpty ||
+      search.isNotEmpty;
 
-  String get signature => '$encounterId|$panel|$search';
+  String get signature => '${section.name}|$encounterId|$panel|$search';
 }
 
 enum ClinicalQueueScope {
@@ -51,6 +59,38 @@ enum ClinicalQueueScope {
   inConsultation,
   resultsReady,
   completed,
+}
+
+enum ClinicalWorkspaceSection {
+  all,
+  waitingReview,
+  urgent,
+  resultsReady,
+  inConsultation,
+  completed,
+}
+
+ClinicalWorkspaceSection _parseClinicalSection(String raw) {
+  return switch (raw.trim().toLowerCase()) {
+    'waiting-review' ||
+    'waiting_review' ||
+    'waitingreview' ||
+    'review' =>
+      ClinicalWorkspaceSection.waitingReview,
+    'urgent' => ClinicalWorkspaceSection.urgent,
+    'results-ready' ||
+    'results_ready' ||
+    'resultsready' ||
+    'results' =>
+      ClinicalWorkspaceSection.resultsReady,
+    'in-consultation' ||
+    'in_consultation' ||
+    'inconsultation' ||
+    'consultation' =>
+      ClinicalWorkspaceSection.inConsultation,
+    'completed' || 'closed' || 'done' => ClinicalWorkspaceSection.completed,
+    _ => ClinicalWorkspaceSection.all,
+  };
 }
 
 @immutable
