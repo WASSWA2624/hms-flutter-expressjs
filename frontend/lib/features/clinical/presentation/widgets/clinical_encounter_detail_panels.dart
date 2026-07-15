@@ -1048,17 +1048,14 @@ class _ClinicalDetailDataTableContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final BorderRadius radius = BorderRadius.circular(theme.radius.md);
 
     return Material(
       color: colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: radius,
         side: BorderSide(
           color: colorScheme.outlineVariant.withValues(alpha: 0.55),
         ),
       ),
-      clipBehavior: Clip.antiAlias,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: child,

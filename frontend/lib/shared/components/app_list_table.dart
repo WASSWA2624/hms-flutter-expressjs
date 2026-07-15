@@ -2072,7 +2072,6 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         : theme.spacing.lg;
     final double rowMinHeight = widget.compact ? 40 : 48;
     final double rowMaxHeight = widget.compact ? 64 : 72;
-    final BorderRadius radius = BorderRadius.circular(theme.radius.md);
 
     _resolveTableStyles(theme);
 
@@ -2137,12 +2136,10 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     return Material(
       color: colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: radius,
         side: BorderSide(
           color: colorScheme.outlineVariant.withValues(alpha: 0.55),
         ),
       ),
-      clipBehavior: Clip.antiAlias,
       child: Scrollbar(
         controller: _horizontalController,
         thumbVisibility: true,

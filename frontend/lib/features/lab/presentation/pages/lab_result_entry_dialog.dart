@@ -1810,12 +1810,10 @@ class _LabResultEntryRowsTable extends StatelessWidget {
     return Material(
       color: colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(theme.radius.md),
         side: BorderSide(
           color: colorScheme.outlineVariant.withValues(alpha: 0.55),
         ),
       ),
-      clipBehavior: Clip.antiAlias,
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: table,
