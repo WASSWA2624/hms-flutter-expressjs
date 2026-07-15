@@ -4516,6 +4516,60 @@ abstract class AppLocalizations {
   /// **'Disposition'**
   String get receptionStepDisposition;
 
+  /// Column header for appointment scheduled date/time.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get receptionScheduledTimeLabel;
+
+  /// Column header for row status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get receptionStatusLabel;
+
+  /// Column header for queue entry timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued at'**
+  String get receptionQueuedAtLabel;
+
+  /// Column header for payment status.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment status'**
+  String get receptionPaymentStatusLabel;
+
+  /// Column header for encounter start timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Started'**
+  String get receptionStartedAtLabel;
+
+  /// Column header for current workflow step.
+  ///
+  /// In en, this message translates to:
+  /// **'Current step'**
+  String get receptionCurrentStepLabel;
+
+  /// Column header for assigned staff.
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned doctor'**
+  String get receptionAssignedDoctorLabel;
+
+  /// Column header for consultation fee amount.
+  ///
+  /// In en, this message translates to:
+  /// **'Consultation fee'**
+  String get receptionConsultationFeeLabel;
+
+  /// Column header for patient name.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient name'**
+  String get opdPatientNameLabel;
+
   /// Status badge shown when OPD data is syncing.
   ///
   /// In en, this message translates to:

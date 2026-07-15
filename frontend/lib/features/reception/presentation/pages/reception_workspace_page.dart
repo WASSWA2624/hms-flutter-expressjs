@@ -24,6 +24,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
+
 /// High-volume front-desk workspace composing Patient Registry + OPD.
 ///
 /// Does not fork patient/billing engines. Triage capture stays in Triage/OPD.
@@ -45,7 +46,6 @@ class ReceptionWorkspacePage extends ConsumerWidget {
       loadingBody: l10n.receptionLoadingBody,
       maxWidth: PageMaxWidth.dataHeavy,
       centerVertically: false,
-      // Show an in-page loading state; shell deferral renders a blank body.
       deferLoadingToShell: false,
       keepPreviousDataDuringRefresh: true,
       onRetry: () {
@@ -77,7 +77,8 @@ class _ReceptionWorkspaceContentState
   late final TextEditingController _searchController;
   late ReceptionDeskSection _section;
   String? _appliedRouteSignature;
-  Timer? _searchDebounce;
+  late final AppListTableColumnVisibilityController<_ReceptionDeskRow>
+      _columnVisibilityController;
 
   static const Set<String> _paymentGateStages = <String>{
     'WAITING_CONSULTATION_PAYMENT',
@@ -102,6 +103,8 @@ class _ReceptionWorkspaceContentState
     _searchController = TextEditingController(
       text: widget.initialQuery?.search ?? '',
     );
+    _columnVisibilityController =
+        AppListTableColumnVisibilityController<_ReceptionDeskRow>();
     _scheduleRouteQuery(widget.initialQuery);
   }
 
@@ -115,8 +118,8 @@ class _ReceptionWorkspaceContentState
 
   @override
   void dispose() {
-    _searchDebounce?.cancel();
     _searchController.dispose();
+    _columnVisibilityController.dispose();
     super.dispose();
   }
 
@@ -193,6 +196,10 @@ class _ReceptionWorkspaceContentState
     return null;
   }
 
+  // ---------------------------------------------------------------------------
+  // Build
+  // ---------------------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -207,8 +214,10 @@ class _ReceptionWorkspaceContentState
     final bool isRefreshing = state.isRefreshingAppointments ||
         state.isRefreshingQueue ||
         state.isRefreshingFlows;
-    final String search = _searchController.text.trim().toLowerCase();
-    final List<_ReceptionDeskRow> rows = _buildRows(state, search);
+
+    final List<_ReceptionDeskRow> rows = _buildRows(state);
+    final List<AppListTableColumn<_ReceptionDeskRow>> columns =
+        _columnsForSection(l10n);
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -227,7 +236,8 @@ class _ReceptionWorkspaceContentState
                         AppTabItem(
                           id: section.name,
                           icon: _sectionIcon(section),
-                          label: _sectionLabel(l10n, section),
+                          label:
+                              '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
                         ),
                     ],
                     selectedId: _section.name,
@@ -259,90 +269,452 @@ class _ReceptionWorkspaceContentState
               ],
             ),
             SizedBox(height: theme.spacing.md),
-            AppSearchBar(
-              controller: _searchController,
-              semanticLabel: l10n.receptionSearchHint,
-              hintText: l10n.receptionSearchHint,
+            AppListTable<_ReceptionDeskRow>(
+              items: rows,
+              columns: columns,
+              columnVisibilityController: _columnVisibilityController,
+              columnVisibilityStorageKey: 'reception_${_section.name}',
+              columnWidthStorageKey: 'reception_cw_${_section.name}',
               isLoading: isRefreshing,
-              onChanged: (_) {
-                _searchDebounce?.cancel();
-                _searchDebounce =
-                    Timer(const Duration(milliseconds: 250), () {
-                      if (mounted) {
-                        setState(() {});
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              onRowSelected: (_ReceptionDeskRow row) =>
+                  unawaited(_openRowDetail(row)),
+              itemKeyBuilder: (_ReceptionDeskRow row) =>
+                  ValueKey<String>(row.id),
+              search: AppListTableSearch<_ReceptionDeskRow>(
+                controller: _searchController,
+                semanticLabel: l10n.receptionSearchHint,
+                hintText: l10n.receptionSearchHint,
+                isLoading: isRefreshing,
+                matcher: _searchMatcher,
+                trailingActions: <AppSearchBarAction>[
+                  AppSearchBarAction(
+                    icon: Icons.refresh_outlined,
+                    label: l10n.commonRefreshActionLabel,
+                    enabled: !isRefreshing,
+                    onPressed: () async {
+                      final AppFailure? failure = await controller.refresh();
+                      if (context.mounted) {
+                        _showFailureIfNeeded(context, failure);
                       }
-                    });
-              },
-              trailingActions: <AppSearchBarAction>[
-                AppSearchBarAction(
-                  icon: Icons.refresh_outlined,
-                  label: l10n.commonRefreshActionLabel,
-                  enabled: !isRefreshing,
-                  onPressed: () async {
-                    final AppFailure? failure = await controller.refresh();
-                    if (context.mounted) {
-                      _showFailureIfNeeded(context, failure);
-                    }
-                  },
-                ),
-                AppSearchBarAction(
-                  icon: Icons.event_available_outlined,
-                  label: l10n.receptionScheduleAppointmentAction,
-                  enabled: canWrite,
-                  onPressed: canWrite
-                      ? () => unawaited(_scheduleAppointment())
-                      : null,
-                ),
-                AppSearchBarAction(
-                  icon: Icons.directions_walk_outlined,
-                  label: l10n.opdStartWalkInAction,
-                  enabled: canWrite,
-                  onPressed: canWrite
-                      ? () => unawaited(
-                          openOpdWorkspaceEncounterFlow(context, ref, state),
-                        )
-                      : null,
-                ),
-              ],
-              maxTrailingActions: 3,
-            ),
-            SizedBox(height: theme.spacing.md),
-            if (rows.isEmpty)
-              AppStateView(
+                    },
+                  ),
+                  AppSearchBarAction(
+                    icon: Icons.event_available_outlined,
+                    label: l10n.receptionScheduleAppointmentAction,
+                    enabled: canWrite,
+                    onPressed: canWrite
+                        ? () => unawaited(_scheduleAppointment())
+                        : null,
+                  ),
+                  AppSearchBarAction(
+                    icon: Icons.directions_walk_outlined,
+                    label: l10n.opdStartWalkInAction,
+                    enabled: canWrite,
+                    onPressed: canWrite
+                        ? () => unawaited(
+                              openOpdWorkspaceEncounterFlow(
+                                context,
+                                ref,
+                                state,
+                              ),
+                            )
+                        : null,
+                  ),
+                  _columnVisibilityController.settingsAction(context),
+                ],
+                maxTrailingActions: 3,
+              ),
+              emptyBuilder: (_) => AppStateView(
                 title: l10n.receptionEmptyTitle,
                 body: l10n.receptionEmptyBody,
                 variant: AppStateViewVariant.empty,
-              )
-            else
-              for (int index = 0; index < rows.length; index++) ...<Widget>[
-                if (index > 0) SizedBox(height: theme.spacing.sm),
-                _ReceptionDeskCard(
-                  row: rows[index],
-                  onOpenAppointment: (OpdAppointment appointment) =>
-                      unawaited(_openAppointmentActions(appointment)),
-                  onCheckIn: (OpdAppointment appointment) =>
-                      unawaited(_checkIn(appointment)),
-                  onStartFromQueue: (OpdQueueEntry entry) =>
-                      unawaited(_startFromQueue(entry)),
-                  onPrioritize: (OpdQueueEntry entry) =>
-                      unawaited(_prioritize(entry)),
-                  onOpenFlow: (OpdFlowSummary flow) =>
-                      unawaited(_openFlowActions(flow)),
-                  onAssignDoctor: (OpdFlowSummary flow) =>
-                      unawaited(_assignDoctor(flow)),
-                  onEditPatient: (String patientId) =>
-                      unawaited(_editPatient(patientId)),
-                  onCaptureInsurance: (String patientId) =>
-                      unawaited(_captureInsurance(patientId)),
-                  onScheduleForPatient: (String patientId) =>
-                      unawaited(_scheduleForPatient(patientId)),
-                ),
-              ],
+              ),
+              mobileItemBuilder: _mobileItemBuilder,
+            ),
           ],
         ),
       ),
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Search matcher
+  // ---------------------------------------------------------------------------
+
+  static bool _searchMatcher(_ReceptionDeskRow row, String query) {
+    if (query.isEmpty) {
+      return true;
+    }
+    final String needle = query.trim().toLowerCase();
+    return <String?>[
+      row.appointment?.patientDisplayName ??
+          row.queueEntry?.patientDisplayName ??
+          row.flow?.patientDisplayName,
+      row.patientId,
+      row.displayId,
+    ].whereType<String>().any(
+      (String value) => value.toLowerCase().contains(needle),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Row building (no search filtering — table handles that)
+  // ---------------------------------------------------------------------------
+
+  List<_ReceptionDeskRow> _buildRows(OpdWorkspaceState state) {
+    switch (_section) {
+      case ReceptionDeskSection.appointments:
+        return <_ReceptionDeskRow>[
+          for (final OpdAppointment appointment in state.appointments.items)
+            if (!_isTerminalStatus(appointment.status))
+              _ReceptionDeskRow.appointment(appointment),
+        ];
+      case ReceptionDeskSection.queue:
+        return <_ReceptionDeskRow>[
+          for (final OpdQueueEntry entry in state.queueEntries.items)
+            if (!_isTerminalStatus(entry.status))
+              _ReceptionDeskRow.queue(entry),
+        ];
+      case ReceptionDeskSection.activeVisits:
+        return <_ReceptionDeskRow>[
+          for (final OpdFlowSummary flow in state.flows.items)
+            if (_activeVisitStages
+                .contains((flow.stage ?? '').toUpperCase()))
+              _ReceptionDeskRow.flow(flow),
+        ];
+      case ReceptionDeskSection.paymentGate:
+        return <_ReceptionDeskRow>[
+          for (final OpdFlowSummary flow in state.flows.items)
+            if (_paymentGateStages
+                .contains((flow.stage ?? '').toUpperCase()))
+              _ReceptionDeskRow.flow(flow),
+        ];
+    }
+  }
+
+  int _sectionCount(OpdWorkspaceState state, ReceptionDeskSection section) {
+    switch (section) {
+      case ReceptionDeskSection.appointments:
+        return state.appointments.items
+            .where(
+              (OpdAppointment a) => !_isTerminalStatus(a.status),
+            )
+            .length;
+      case ReceptionDeskSection.queue:
+        return state.queueEntries.items
+            .where(
+              (OpdQueueEntry e) => !_isTerminalStatus(e.status),
+            )
+            .length;
+      case ReceptionDeskSection.activeVisits:
+        return state.flows.items
+            .where(
+              (OpdFlowSummary f) =>
+                  _activeVisitStages.contains((f.stage ?? '').toUpperCase()),
+            )
+            .length;
+      case ReceptionDeskSection.paymentGate:
+        return state.flows.items
+            .where(
+              (OpdFlowSummary f) =>
+                  _paymentGateStages.contains((f.stage ?? '').toUpperCase()),
+            )
+            .length;
+    }
+  }
+
+  bool _isTerminalStatus(String? status) {
+    switch ((status ?? '').toUpperCase()) {
+      case 'COMPLETED':
+      case 'CANCELLED':
+      case 'NO_SHOW':
+      case 'DISCHARGED':
+      case 'ADMITTED':
+      case 'CLOSED':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Columns per section
+  // ---------------------------------------------------------------------------
+
+  List<AppListTableColumn<_ReceptionDeskRow>> _columnsForSection(
+    AppLocalizations l10n,
+  ) {
+    final Locale locale = Localizations.localeOf(context);
+    switch (_section) {
+      case ReceptionDeskSection.appointments:
+        return <AppListTableColumn<_ReceptionDeskRow>>[
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'patient_name',
+            label: l10n.opdPatientNameLabel,
+            alwaysVisible: true,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
+                Text(row.patientName(context)),
+            sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
+                appListTableCompareText(
+                  a.patientName(context),
+                  b.patientName(context),
+                ),
+          ),
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'appointment_id',
+            label: l10n.opdPatientIdLabel,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
+                Text(row.appointment?.publicId ?? row.appointment?.id ?? ''),
+          ),
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'scheduled_time',
+            label: l10n.receptionScheduledTimeLabel,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+              final DateTime? dt = row.appointment?.scheduledStart;
+              return Text(
+                dt != null ? AppFormatters.dateTime(dt, locale) : '',
+              );
+            },
+            sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
+                appListTableCompareDateTime(
+                  a.appointment?.scheduledStart,
+                  b.appointment?.scheduledStart,
+                ),
+          ),
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'status',
+            label: l10n.receptionStatusLabel,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+              final String? status = row.appointment?.status;
+              if (status == null || status.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return AppWorkspaceStatusBadge(
+                status: AppWorkspaceStatus(
+                  label: opdStageDisplayLabel(context.l10n, status),
+                  tone: AppWorkspaceStatusTone.info,
+                ),
+              );
+            },
+          ),
+        ];
+
+      case ReceptionDeskSection.queue:
+        return <AppListTableColumn<_ReceptionDeskRow>>[
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'patient_name',
+            label: l10n.opdPatientNameLabel,
+            alwaysVisible: true,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
+                Text(row.patientName(context)),
+            sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
+                appListTableCompareText(
+                  a.patientName(context),
+                  b.patientName(context),
+                ),
+          ),
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'queue_id',
+            label: l10n.opdPatientIdLabel,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
+                Text(row.queueEntry?.publicId ?? row.queueEntry?.id ?? ''),
+          ),
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'queued_at',
+            label: l10n.receptionQueuedAtLabel,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+              final DateTime? dt = row.queueEntry?.queuedAt;
+              return Text(
+                dt != null ? AppFormatters.dateTime(dt, locale) : '',
+              );
+            },
+            sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
+                appListTableCompareDateTime(
+                  a.queueEntry?.queuedAt,
+                  b.queueEntry?.queuedAt,
+                ),
+          ),
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'payment_status',
+            label: l10n.receptionPaymentStatusLabel,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
+                Text(row.queueEntry?.paymentStatus ?? ''),
+          ),
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'status',
+            label: l10n.receptionStatusLabel,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+              final String? status = row.queueEntry?.status;
+              if (status == null || status.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return AppWorkspaceStatusBadge(
+                status: AppWorkspaceStatus(
+                  label: opdStageDisplayLabel(context.l10n, status),
+                  tone: AppWorkspaceStatusTone.info,
+                ),
+              );
+            },
+          ),
+        ];
+
+      case ReceptionDeskSection.activeVisits:
+        return <AppListTableColumn<_ReceptionDeskRow>>[
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'patient_name',
+            label: l10n.opdPatientNameLabel,
+            alwaysVisible: true,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
+                Text(row.patientName(context)),
+            sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
+                appListTableCompareText(
+                  a.patientName(context),
+                  b.patientName(context),
+                ),
+          ),
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'encounter_id',
+            label: l10n.opdPatientIdLabel,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
+                Text(row.flow?.publicId ?? row.flow?.id ?? ''),
+          ),
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'started_at',
+            label: l10n.receptionStartedAtLabel,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+              final DateTime? dt = row.flow?.startedAt;
+              return Text(
+                dt != null ? AppFormatters.dateTime(dt, locale) : '',
+              );
+            },
+            sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
+                appListTableCompareDateTime(
+                  a.flow?.startedAt,
+                  b.flow?.startedAt,
+                ),
+          ),
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'current_step',
+            label: l10n.receptionCurrentStepLabel,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+              final String? stage = row.flow?.stage;
+              if (stage == null || stage.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return AppWorkspaceStatusBadge(
+                status: AppWorkspaceStatus(
+                  label: opdStageDisplayLabel(context.l10n, stage),
+                  tone: AppWorkspaceStatusTone.info,
+                ),
+              );
+            },
+          ),
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'assigned_doctor',
+            label: l10n.receptionAssignedDoctorLabel,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
+                Text(row.flow?.assignedStaffDisplayName ?? ''),
+          ),
+        ];
+
+      case ReceptionDeskSection.paymentGate:
+        return <AppListTableColumn<_ReceptionDeskRow>>[
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'patient_name',
+            label: l10n.opdPatientNameLabel,
+            alwaysVisible: true,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
+                Text(row.patientName(context)),
+            sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
+                appListTableCompareText(
+                  a.patientName(context),
+                  b.patientName(context),
+                ),
+          ),
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'encounter_id',
+            label: l10n.opdPatientIdLabel,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
+                Text(row.flow?.publicId ?? row.flow?.id ?? ''),
+          ),
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'stage',
+            label: l10n.receptionCurrentStepLabel,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+              final String? stage = row.flow?.stage;
+              if (stage == null || stage.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return AppWorkspaceStatusBadge(
+                status: AppWorkspaceStatus(
+                  label: opdStageDisplayLabel(context.l10n, stage),
+                  tone: AppWorkspaceStatusTone.info,
+                ),
+              );
+            },
+          ),
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'consultation_fee',
+            label: l10n.receptionConsultationFeeLabel,
+            numeric: true,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+              final num? fee = row.flow?.consultationFee;
+              final String currency = row.flow?.consultationCurrency ?? '';
+              if (fee == null) {
+                return const SizedBox.shrink();
+              }
+              return Text('$currency ${fee.toStringAsFixed(0)}'.trim());
+            },
+          ),
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'payment_status',
+            label: l10n.receptionPaymentStatusLabel,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+              final String? status = row.flow?.consultationPaymentStatus;
+              if (status == null || status.isEmpty) {
+                return Text(
+                  row.flow?.consultationPaid == true ? 'Paid' : 'Unpaid',
+                );
+              }
+              return Text(status);
+            },
+          ),
+        ];
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Mobile item builder
+  // ---------------------------------------------------------------------------
+
+  Widget _mobileItemBuilder(BuildContext context, _ReceptionDeskRow row) {
+    final AppLocalizations l10n = context.l10n;
+    final Locale locale = Localizations.localeOf(context);
+
+    return AppPatientDetails(
+      patientName: row.patientName(context),
+      patientNumber: row.displayId ?? '',
+      patientNumberLabel: l10n.opdPatientIdLabel,
+      showAvatar: false,
+      persistExpandPreference: false,
+      initiallyExpanded: false,
+      compactSupportingText: row.time == null
+          ? null
+          : AppFormatters.dateTime(row.time!, locale),
+      status: (row.status ?? '').isEmpty
+          ? null
+          : AppWorkspaceStatus(
+              label: opdStageDisplayLabel(l10n, row.status!),
+              tone: AppWorkspaceStatusTone.info,
+            ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Tab helpers
+  // ---------------------------------------------------------------------------
 
   String _sectionLabel(AppLocalizations l10n, ReceptionDeskSection section) {
     return switch (section) {
@@ -362,86 +734,61 @@ class _ReceptionWorkspaceContentState
     };
   }
 
-  List<_ReceptionDeskRow> _buildRows(OpdWorkspaceState state, String search) {
-    switch (_section) {
-      case ReceptionDeskSection.appointments:
-        return <_ReceptionDeskRow>[
-          for (final OpdAppointment appointment in state.appointments.items)
-            if (!_isTerminalStatus(appointment.status) &&
-                _matchesSearch(
-                  search,
-                  appointment.patientDisplayName,
-                  appointment.patientId,
-                  appointment.publicId ?? appointment.id,
-                ))
-              _ReceptionDeskRow.appointment(appointment),
-        ];
-      case ReceptionDeskSection.queue:
-        return <_ReceptionDeskRow>[
-          for (final OpdQueueEntry entry in state.queueEntries.items)
-            if (!_isTerminalStatus(entry.status) &&
-                _matchesSearch(
-                  search,
-                  entry.patientDisplayName,
-                  entry.patientId,
-                  entry.publicId ?? entry.id,
-                ))
-              _ReceptionDeskRow.queue(entry),
-        ];
-      case ReceptionDeskSection.activeVisits:
-        return <_ReceptionDeskRow>[
-          for (final OpdFlowSummary flow in state.flows.items)
-            if (_activeVisitStages.contains((flow.stage ?? '').toUpperCase()) &&
-                _matchesSearch(
-                  search,
-                  flow.patientDisplayName,
-                  flow.patientId,
-                  flow.publicId ?? flow.id,
-                ))
-              _ReceptionDeskRow.flow(flow),
-        ];
-      case ReceptionDeskSection.paymentGate:
-        return <_ReceptionDeskRow>[
-          for (final OpdFlowSummary flow in state.flows.items)
-            if (_paymentGateStages.contains((flow.stage ?? '').toUpperCase()) &&
-                _matchesSearch(
-                  search,
-                  flow.patientDisplayName,
-                  flow.patientId,
-                  flow.publicId ?? flow.id,
-                ))
-              _ReceptionDeskRow.flow(flow),
-        ];
-    }
+  // ---------------------------------------------------------------------------
+  // Row-tap detail dialog
+  // ---------------------------------------------------------------------------
+
+  Future<void> _openRowDetail(_ReceptionDeskRow row) async {
+    final AppLocalizations l10n = context.l10n;
+
+    await showAppDialog<void>(
+      context: context,
+      builder: (_) => _ReceptionRowDetailDialog(
+        row: row,
+        onOpenAppointment: (OpdAppointment appointment) {
+          Navigator.of(context).pop();
+          unawaited(_openAppointmentActions(appointment));
+        },
+        onCheckIn: (OpdAppointment appointment) {
+          Navigator.of(context).pop();
+          unawaited(_checkIn(appointment));
+        },
+        onStartFromQueue: (OpdQueueEntry entry) {
+          Navigator.of(context).pop();
+          unawaited(_startFromQueue(entry));
+        },
+        onPrioritize: (OpdQueueEntry entry) {
+          Navigator.of(context).pop();
+          unawaited(_prioritize(entry));
+        },
+        onOpenFlow: (OpdFlowSummary flow) {
+          Navigator.of(context).pop();
+          unawaited(_openFlowActions(flow));
+        },
+        onAssignDoctor: (OpdFlowSummary flow) {
+          Navigator.of(context).pop();
+          unawaited(_assignDoctor(flow));
+        },
+        onEditPatient: (String patientId) {
+          Navigator.of(context).pop();
+          unawaited(_editPatient(patientId));
+        },
+        onCaptureInsurance: (String patientId) {
+          Navigator.of(context).pop();
+          unawaited(_captureInsurance(patientId));
+        },
+        onScheduleForPatient: (String patientId) {
+          Navigator.of(context).pop();
+          unawaited(_scheduleForPatient(patientId));
+        },
+        closeLabel: l10n.commonCloseActionLabel,
+      ),
+    );
   }
 
-  bool _matchesSearch(
-    String search,
-    String? name,
-    String? patientId,
-    String? displayId,
-  ) {
-    if (search.isEmpty) {
-      return true;
-    }
-    return <String?>[name, patientId, displayId]
-        .whereType<String>()
-        .any((String value) => value.toLowerCase().contains(search));
-  }
-
-  bool _isTerminalStatus(String? status) {
-    switch ((status ?? '').toUpperCase()) {
-      case 'COMPLETED':
-      case 'CANCELLED':
-      case 'NO_SHOW':
-      case 'DISCHARGED':
-      case 'ADMITTED':
-      case 'CLOSED':
-        return true;
-      default:
-        return false;
-    }
-  }
+  // ---------------------------------------------------------------------------
+  // Actions (unchanged from original)
+  // ---------------------------------------------------------------------------
 
   Future<void> _openRegisterPatient() async {
     final AsyncValue<Result<PatientRegistryState>> registryAsync = ref.read(
@@ -658,6 +1005,10 @@ class _ReceptionWorkspaceContentState
   }
 }
 
+// -----------------------------------------------------------------------------
+// Row model
+// -----------------------------------------------------------------------------
+
 @immutable
 final class _ReceptionDeskRow {
   const _ReceptionDeskRow._({this.appointment, this.queueEntry, this.flow});
@@ -678,8 +1029,7 @@ final class _ReceptionDeskRow {
   final OpdQueueEntry? queueEntry;
   final OpdFlowSummary? flow;
 
-  String get id =>
-      appointment?.id ?? queueEntry?.id ?? flow?.id ?? '';
+  String get id => appointment?.id ?? queueEntry?.id ?? flow?.id ?? '';
 
   String patientName(BuildContext context) {
     return appointment?.patientDisplayName ??
@@ -706,8 +1056,12 @@ final class _ReceptionDeskRow {
       appointment?.scheduledStart ?? queueEntry?.queuedAt ?? flow?.startedAt;
 }
 
-class _ReceptionDeskCard extends ConsumerWidget {
-  const _ReceptionDeskCard({
+// -----------------------------------------------------------------------------
+// Row detail dialog (replaces inline card actions)
+// -----------------------------------------------------------------------------
+
+class _ReceptionRowDetailDialog extends StatelessWidget {
+  const _ReceptionRowDetailDialog({
     required this.row,
     required this.onOpenAppointment,
     required this.onCheckIn,
@@ -718,6 +1072,7 @@ class _ReceptionDeskCard extends ConsumerWidget {
     required this.onEditPatient,
     required this.onCaptureInsurance,
     required this.onScheduleForPatient,
+    required this.closeLabel,
   });
 
   final _ReceptionDeskRow row;
@@ -730,57 +1085,58 @@ class _ReceptionDeskCard extends ConsumerWidget {
   final ValueChanged<String> onEditPatient;
   final ValueChanged<String> onCaptureInsurance;
   final ValueChanged<String> onScheduleForPatient;
+  final String closeLabel;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ThemeData theme = Theme.of(context);
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final Locale locale = Localizations.localeOf(context);
+    final ThemeData theme = Theme.of(context);
     final OpdFlowSummary? flow = row.flow;
     final List<AppWorkflowStepItem> steps = flow == null
         ? const <AppWorkflowStepItem>[]
         : _receptionWorkflowSteps(context, flow);
 
-    return Material(
-      color: theme.colorScheme.surfaceContainerLowest,
-      borderRadius: BorderRadius.circular(theme.radius.md),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            AppPatientDetails(
-              patientName: row.patientName(context),
-              patientNumber: row.displayId ?? '',
-              patientNumberLabel: l10n.opdPatientIdLabel,
-              showAvatar: false,
-              persistExpandPreference: false,
-              initiallyExpanded: false,
-              compactSupportingText: row.time == null
-                  ? null
-                  : AppFormatters.dateTime(row.time!, locale),
-              status: (row.status ?? '').isEmpty
-                  ? null
-                  : AppWorkspaceStatus(
-                      label: opdStageDisplayLabel(l10n, row.status!),
-                      tone: AppWorkspaceStatusTone.info,
-                    ),
-            ),
-            if (steps.isNotEmpty) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              AppWorkflowStepper(steps: steps),
-            ],
-            if (flow != null) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              ReceptionBillingGuidancePanel(flow: flow),
-            ] else if (row.queueEntry != null) ...<Widget>[
-              SizedBox(height: theme.spacing.sm),
-              ReceptionBillingGuidancePanel(queueEntry: row.queueEntry),
-            ],
+    return AppPatientDetailDialog(
+      title: row.patientName(context),
+      semanticLabel: row.patientName(context),
+      closeLabel: closeLabel,
+      initialMaximized: false,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          AppPatientDetails(
+            patientName: row.patientName(context),
+            patientNumber: row.displayId ?? '',
+            patientNumberLabel: l10n.opdPatientIdLabel,
+            showAvatar: false,
+            persistExpandPreference: false,
+            initiallyExpanded: true,
+            compactSupportingText: row.time == null
+                ? null
+                : AppFormatters.dateTime(row.time!, locale),
+            status: (row.status ?? '').isEmpty
+                ? null
+                : AppWorkspaceStatus(
+                    label: opdStageDisplayLabel(l10n, row.status!),
+                    tone: AppWorkspaceStatusTone.info,
+                  ),
+          ),
+          if (steps.isNotEmpty) ...<Widget>[
             SizedBox(height: theme.spacing.sm),
-            AppPermissionActionList(actions: _actions(context, l10n)),
+            AppWorkflowStepper(steps: steps),
           ],
-        ),
+          if (flow != null) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            ReceptionBillingGuidancePanel(flow: flow),
+          ] else if (row.queueEntry != null) ...<Widget>[
+            SizedBox(height: theme.spacing.sm),
+            ReceptionBillingGuidancePanel(queueEntry: row.queueEntry),
+          ],
+          SizedBox(height: theme.spacing.md),
+          AppPermissionActionList(actions: _actions(context, l10n)),
+        ],
       ),
     );
   }
@@ -885,42 +1241,46 @@ class _ReceptionDeskCard extends ConsumerWidget {
 
     return actions;
   }
+}
 
-  List<AppWorkflowStepItem> _receptionWorkflowSteps(
-    BuildContext context,
-    OpdFlowSummary flow,
-  ) {
-    final AppLocalizations l10n = context.l10n;
-    final String stage = (flow.stage ?? '').toUpperCase();
-    final List<({String id, String label})> sequence =
-        <({String id, String label})>[
-          (id: 'WAITING_CONSULTATION_PAYMENT', label: l10n.receptionStepPayment),
-          (id: 'WAITING_VITALS', label: l10n.receptionStepVitals),
-          (
-            id: 'WAITING_DOCTOR_ASSIGNMENT',
-            label: l10n.receptionStepAssignDoctor,
-          ),
-          (id: 'WAITING_DOCTOR_REVIEW', label: l10n.receptionStepConsultation),
-          (id: 'WAITING_DISPOSITION', label: l10n.receptionStepDisposition),
-        ];
+// -----------------------------------------------------------------------------
+// Workflow steps (shared between dialog sections)
+// -----------------------------------------------------------------------------
 
-    final int currentIndex = sequence.indexWhere(
-      (({String id, String label}) step) => step.id == stage,
-    );
-
-    return <AppWorkflowStepItem>[
-      for (int i = 0; i < sequence.length; i++)
-        AppWorkflowStepItem(
-          id: sequence[i].id,
-          label: sequence[i].label,
-          state: currentIndex < 0
-              ? AppWorkflowStepState.upcoming
-              : i < currentIndex
-              ? AppWorkflowStepState.completed
-              : i == currentIndex
-              ? AppWorkflowStepState.current
-              : AppWorkflowStepState.upcoming,
+List<AppWorkflowStepItem> _receptionWorkflowSteps(
+  BuildContext context,
+  OpdFlowSummary flow,
+) {
+  final AppLocalizations l10n = context.l10n;
+  final String stage = (flow.stage ?? '').toUpperCase();
+  final List<({String id, String label})> sequence =
+      <({String id, String label})>[
+        (id: 'WAITING_CONSULTATION_PAYMENT', label: l10n.receptionStepPayment),
+        (id: 'WAITING_VITALS', label: l10n.receptionStepVitals),
+        (
+          id: 'WAITING_DOCTOR_ASSIGNMENT',
+          label: l10n.receptionStepAssignDoctor,
         ),
-    ];
-  }
+        (id: 'WAITING_DOCTOR_REVIEW', label: l10n.receptionStepConsultation),
+        (id: 'WAITING_DISPOSITION', label: l10n.receptionStepDisposition),
+      ];
+
+  final int currentIndex = sequence.indexWhere(
+    (({String id, String label}) step) => step.id == stage,
+  );
+
+  return <AppWorkflowStepItem>[
+    for (int i = 0; i < sequence.length; i++)
+      AppWorkflowStepItem(
+        id: sequence[i].id,
+        label: sequence[i].label,
+        state: currentIndex < 0
+            ? AppWorkflowStepState.upcoming
+            : i < currentIndex
+            ? AppWorkflowStepState.completed
+            : i == currentIndex
+            ? AppWorkflowStepState.current
+            : AppWorkflowStepState.upcoming,
+      ),
+  ];
 }

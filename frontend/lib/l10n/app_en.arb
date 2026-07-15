@@ -3042,6 +3042,42 @@
   "@receptionStepDisposition": {
     "description": "Workflow step label for visit disposition."
   },
+  "receptionScheduledTimeLabel": "Scheduled",
+  "@receptionScheduledTimeLabel": {
+    "description": "Column header for appointment scheduled date/time."
+  },
+  "receptionStatusLabel": "Status",
+  "@receptionStatusLabel": {
+    "description": "Column header for row status."
+  },
+  "receptionQueuedAtLabel": "Queued at",
+  "@receptionQueuedAtLabel": {
+    "description": "Column header for queue entry timestamp."
+  },
+  "receptionPaymentStatusLabel": "Payment status",
+  "@receptionPaymentStatusLabel": {
+    "description": "Column header for payment status."
+  },
+  "receptionStartedAtLabel": "Started",
+  "@receptionStartedAtLabel": {
+    "description": "Column header for encounter start timestamp."
+  },
+  "receptionCurrentStepLabel": "Current step",
+  "@receptionCurrentStepLabel": {
+    "description": "Column header for current workflow step."
+  },
+  "receptionAssignedDoctorLabel": "Assigned doctor",
+  "@receptionAssignedDoctorLabel": {
+    "description": "Column header for assigned staff."
+  },
+  "receptionConsultationFeeLabel": "Consultation fee",
+  "@receptionConsultationFeeLabel": {
+    "description": "Column header for consultation fee amount."
+  },
+  "opdPatientNameLabel": "Patient name",
+  "@opdPatientNameLabel": {
+    "description": "Column header for patient name."
+  },
   "opdLiveStatus": "Live sync",
   "opdSavingStatus": "Saving",
   "opdStartWalkInAction": "Start OPD encounter",

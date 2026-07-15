@@ -2338,6 +2338,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receptionStepDisposition => 'Disposition';
 
   @override
+  String get receptionScheduledTimeLabel => 'Scheduled';
+
+  @override
+  String get receptionStatusLabel => 'Status';
+
+  @override
+  String get receptionQueuedAtLabel => 'Queued at';
+
+  @override
+  String get receptionPaymentStatusLabel => 'Payment status';
+
+  @override
+  String get receptionStartedAtLabel => 'Started';
+
+  @override
+  String get receptionCurrentStepLabel => 'Current step';
+
+  @override
+  String get receptionAssignedDoctorLabel => 'Assigned doctor';
+
+  @override
+  String get receptionConsultationFeeLabel => 'Consultation fee';
+
+  @override
+  String get opdPatientNameLabel => 'Patient name';
+
+  @override
   String get opdLiveStatus => 'Live sync';
 
   @override
