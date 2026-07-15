@@ -1,66 +1,101 @@
-# Inline Profile and Change Password into the Settings "Account and security" Accordion Section
+# Simplify the Reception Desk Page Layout
 
 ## Objective
 
-Eliminate the standalone Profile page (`/profile`) and relocate its content — along with the Change Password action — into nested sub-panels within the existing **Account and security** accordion section (`id: 'account'`) on the Settings page (`/settings?tab=account`). All entry points that currently navigate to the profile page must redirect to the appropriate settings sub-panel instead.
+Flatten the Reception desk workspace page (`/reception`) by removing the dedicated header title row, the global actions overflow menu, and the external search bar. Replace the `ChoiceChip` section selector with a standard `TabBar`. The primary action ("Register patient") moves to the trailing end of the tab row.
 
 ---
 
 ## Current State
 
-### Profile page (`frontend/lib/features/profile/presentation/pages/user_profile_page.dart`)
-- Rendered at route `/profile` (`AppRoutes.profile`).
-- `_ProfileContent` displays:
-  - **Header actions**: Edit profile (`EditUserProfileDialog`), Change password (`ChangePasswordDialog`), Refresh.
-  - **Profile summary** (`_ProfileSummary`): avatar, name, email, title, role/permission badges.
-  - **Section grid** (`_ProfileSectionGrid`): Account details, Professional details, Roles list, Permissions list.
+**File:** `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart`
 
-### Settings "Account and security" section (`frontend/lib/features/settings/presentation/pages/settings_page.dart`)
-- Accordion entry `id: 'account'` currently renders a `_SettingsActionList` with two navigation tiles:
-  - **Profile** — navigates to `AppRoutes.profile.location()` (the standalone page).
-  - **Change password** — opens `ChangePasswordDialog` in-place.
+The page currently renders (top-to-bottom):
 
-### User menu (`frontend/lib/shared/layout/responsive_shell_scaffold.dart`, wired in `app_router.dart`)
-- `_UserMenuAction.profile` → `context.go(AppRoutes.profile.location())`.
-- `_UserMenuAction.changePassword` → opens `ChangePasswordDialog` directly.
+1. **`AppWorkspace` wrapper** — title `l10n.receptionTitle` ("Reception desk") with `AppRouteIcons.reception`, rendered via `AppWorkspaceHeader`.
+2. **`AppWorkspaceToolbar`** (via `appWorkspaceToolbarWithLabels`) with `showGlobalActions: true` (default) — producing global actions: Refresh, Request maintenance (`AppGlobalHousekeepingRequestAction`), Report equipment fault (`AppGlobalFaultReportAction`), and a Notifications summary submenu (`_ToolbarNotificationsSubmenu`). These collapse into the three-dot overflow menu on narrower widths. The toolbar also includes secondary actions: "Schedule appointment" and "Start walk-in".
+3. **`ChoiceChip` section selector** — a `Wrap` of `ChoiceChip` widgets for `ReceptionDeskSection.values`: Appointments, Desk queue, Active visits, Payment gate.
+4. **`AppTextField` search bar** — a standalone text field (`_searchController`) with debounced client-side filtering, placed between the section chips and the card list.
+5. **`_ReceptionDeskCard` list** — a `Column` of patient/appointment/queue cards, filtered by the selected section and search query. This is **not** an `AppListTable`; it is a custom card layout.
+6. **Primary action** — `AppButton.primary` ("Register patient") gated by `receptionFrontDeskWriteRequirement`, passed as `primary` into the toolbar config.
+
+### Toolbar config (current)
+
+```dart
+toolbar: appWorkspaceToolbarWithLabels(
+  l10n,
+  summaryNotifications: _summaryNotifications(context, state),
+  primary: AppAccessActionGate(
+    requirement: receptionFrontDeskWriteRequirement,
+    builder: (context, isAllowed) => AppButton.primary(
+      label: l10n.receptionRegisterPatientAction,
+      leadingIcon: Icons.person_add_alt_1_outlined,
+      enabled: isAllowed,
+      onPressed: isAllowed ? () => _openRegisterPatient() : null,
+    ),
+  ),
+  secondary: [
+    /* Schedule appointment button */,
+    /* Start walk-in button */,
+  ],
+  onRefresh: () async { ... },
+  isRefreshing: state.isRefreshingAppointments || ...,
+),
+```
 
 ---
 
 ## Target Design
 
-Replace the two-item action list inside the **Account and security** accordion section with a **nested sub-panel layout** (similar to how the settings workspace section uses `initialPanel` / `onPanelChanged`). The section must contain two sub-panels:
+### 1. Remove the `AppWorkspace` header title row
 
-### 1. Profile sub-panel (`panel=profile`)
-- Render the full profile content currently in `_ProfileContent`:
-  - Profile summary (avatar, name, email, title, badges).
-  - Account details, Professional details, Roles, and Permissions sections (the same `_ProfileSectionGrid` content).
-- Include an **Edit profile** action button that opens `EditUserProfileDialog`.
-- Include a **Refresh** action to reload profile data via `userProfileControllerProvider`.
-- This panel must use the same `userProfileControllerProvider` for state, handling loading/error/success states.
+- Remove the `title` / `leadingIcon` display ("Reception desk" heading and its icon). The sidebar navigation already identifies the section.
+- Keep `AppWorkspace` as the layout wrapper for padding/scroll/responsive behaviour, but suppress the header. Alternatively, replace with `ResponsivePage` + `Column` if cleaner.
 
-### 2. Change password sub-panel (`panel=change-password`)
-- Render the `ChangePasswordDialog` content **inline** (not as a dialog), or provide a clear action button that opens `ChangePasswordDialog`.
-- On successful password change, redirect to login as currently implemented.
+### 2. Remove the global actions overflow menu
 
-### Sub-panel navigation
-- When the **Account and security** tab is selected, display a secondary navigation (e.g. a vertical list, tab bar, or segmented control) that switches between the Profile and Change Password sub-panels.
-- The active sub-panel should be reflected in the URL via the existing `panel` query parameter: `/settings?tab=account&panel=profile`, `/settings?tab=account&panel=change-password`.
-- Default panel when none is specified: `profile`.
+- Set `showGlobalActions: false` in the toolbar config.
+- This eliminates: Refresh, Request maintenance, Report equipment fault, and the Notifications summary submenu from the toolbar overflow.
+- **Keep Refresh** — wire it through a pull-to-refresh gesture or an inline refresh indicator within the card list, not the global toolbar overflow.
+
+### 3. Replace the `ChoiceChip` row with the app's standard `TabBar` component
+
+- Replace the `Wrap` of `ChoiceChip` widgets with a `TabBar` / `Tab` widget (or `AppTabStrip` if that is the app's standard component — it is already used in `SettingsAccountSection` and `_SettingsAccordion`).
+- Tab items remain: Appointments, Desk queue, Active visits, Payment gate (from `ReceptionDeskSection.values`).
+- The selected tab must continue to drive `setState(() => _section = section)` and reflect the `section` query parameter in the URL for deep-linking.
+
+### 4. Move the primary action button to the right of the tab row
+
+- Position the "Register patient" `AppButton.primary` (gated by `receptionFrontDeskWriteRequirement`) aligned to the trailing end of the tab bar row.
+- Layout: `Row [ Expanded(TabBar/AppTabStrip), SizedBox(spacing), PrimaryAction ]`.
+- Secondary actions ("Schedule appointment", "Start walk-in") can either:
+  - Remain in a lightweight overflow on the tab row, or
+  - Move into contextual card-level actions, depending on UI simplicity goals.
+
+### 5. Remove the standalone `AppTextField` search bar
+
+- Delete the standalone `AppTextField` widget that currently sits between the section chips and the card list.
+- Move the search input **into** the card list header area — either as a compact search bar above the first card, or as a collapsible/toggle search field triggered by a search icon in the tab row.
+- Continue using the same debounced client-side filtering logic via `_searchController`.
+
+### 6. Remove the `AppWorkspaceToolbar` entirely (optional)
+
+- If the toolbar only served global actions and the primary button (which now lives in the tab row), remove the `toolbar` parameter from `AppWorkspace` entirely.
+- If secondary actions remain toolbar-hosted, keep a minimal toolbar with `showGlobalActions: false`.
 
 ---
 
-## Routing and Navigation Changes
+## Resulting Widget Tree (Target)
 
-### Redirect `/profile` → `/settings?tab=account&panel=profile`
-- Update `AppRoutes.profile` or add a redirect in `app_router.dart` so that navigating to `/profile` seamlessly redirects to `/settings?tab=account&panel=profile`.
-- Alternatively, remove the `/profile` route entirely and update all references.
-
-### User menu callbacks (`app_router.dart`)
-- `onProfileSelected` → navigate to `/settings?tab=account&panel=profile` instead of `/profile`.
-- `onChangePasswordSelected` → navigate to `/settings?tab=account&panel=change-password` instead of opening the dialog directly from the shell.
-
-### Settings "Account and security" section (`settings_page.dart`)
-- Replace the current `_SettingsActionList` builder for `id: 'account'` with a widget that renders the nested sub-panel layout described above.
+```
+AppWorkspace (no visible header) / ResponsivePage
+  └── Column
+        ├── Row (tabs + primary action)
+        │     ├── Expanded(AppTabStrip / TabBar [Appointments, Desk queue, Active visits, Payment gate])
+        │     └── AppAccessActionGate → AppButton.primary ("Register patient")
+        ├── Compact search bar (optional, toggleable)
+        └── _ReceptionDeskCard list (filtered by section + search)
+```
 
 ---
 
@@ -68,26 +103,18 @@ Replace the two-item action list inside the **Account and security** accordion s
 
 | File | Change |
 |---|---|
-| `frontend/lib/features/settings/presentation/pages/settings_page.dart` | Replace `account` accordion builder with nested profile/change-password sub-panels. Import and reuse profile widgets. |
-| `frontend/lib/app/router/app_router.dart` | Redirect `/profile` to `/settings?tab=account&panel=profile`. Update `onProfileSelected` and `onChangePasswordSelected` callbacks. |
-| `frontend/lib/app/router/app_routes.dart` | Remove or deprecate `AppRoutes.profile` if the route is fully replaced. Update `shellRoutes` and `all` lists accordingly. |
-| `frontend/lib/shared/layout/responsive_shell_scaffold.dart` | Remove the `profile` entry from `_UserMenuAction` if Profile is no longer a separate destination, or keep and re-route. |
-| `frontend/lib/features/profile/presentation/pages/user_profile_page.dart` | Refactor `_ProfileContent` (and supporting widgets) into a reusable widget that can be embedded in the settings page. Keep the feature folder for controllers, state, entities, and repository. |
-
----
-
-## Files to Remove (after migration)
-
-- `frontend/lib/features/profile/presentation/pages/user_profile_page.dart` — the standalone page widget becomes unnecessary once the content is inlined into settings. The profile **feature folder** (`controllers/`, `state/`, `domain/`, `data/`) must be preserved.
+| `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart` | Remove `AppWorkspace` title/header. Set `showGlobalActions: false` or remove toolbar. Replace `ChoiceChip` `Wrap` with `AppTabStrip` / `TabBar`. Move "Register patient" button to trailing end of tab row. Remove standalone `AppTextField` search bar; integrate search into card list header. |
+| `frontend/lib/shared/layout/app_workspace_toolbar.dart` | No changes needed (just pass `showGlobalActions: false` from the page, or omit the toolbar entirely). |
 
 ---
 
 ## Technical Constraints
 
-- **State management**: continue using `userProfileControllerProvider` (Riverpod) for profile data. No new providers needed for expand/collapse — use local `StatefulWidget` state, consistent with the existing accordion pattern.
-- **Reusable components**: if the nested sub-panel navigation widget is generic enough, place it in `frontend/lib/shared/components/` for reuse (e.g. by the workspace section).
-- **URL-driven state**: the active sub-panel must be controlled via the `panel` query parameter on `SettingsPageQuery`, which already supports this field.
-- **Localization**: reuse existing `l10n` keys from both the profile and settings features. Add new keys only if new labels are needed for the sub-panel navigation.
-- **Responsiveness**: the inlined profile content must remain fully responsive, adapting its grid layout for mobile, tablet, and desktop as it does today.
-- **Accessibility**: sub-panel navigation items must be focusable and activatable via keyboard (Enter/Space). Respect `reduceMotion` for any transitions.
-- **No regressions**: Edit profile, Change password, Refresh, and all profile data display must continue to function identically.
+- **State management**: continue using `opdWorkspaceControllerProvider` (Riverpod) for data. Section switching, search, and refresh must still work via the controller and local `StatefulWidget` state.
+- **URL-driven state**: the `section` query parameter must still reflect the selected tab. Deep-linking to `/reception?section=queue` must select the correct tab.
+- **Client-side search**: the search field uses debounced local filtering (250ms) via `_searchController`. Retain this behaviour wherever the search field is relocated.
+- **Responsiveness**: the tab bar must scroll or wrap on smaller screens. The primary action button must remain accessible on mobile. The card list must remain fully responsive.
+- **Access control**: the "Register patient" button and secondary actions must remain gated by `receptionFrontDeskWriteRequirement` via `AppAccessActionGate`.
+- **No regressions**: Register patient, Schedule appointment, Start walk-in, appointment check-in, queue prioritisation, flow actions, patient editing, insurance capture, and all section views must continue to function identically.
+- **Accessibility**: tabs must be keyboard-navigable (arrow keys, Enter/Space). The search field must have an appropriate `semanticLabel`. Respect `reduceMotion` for any transitions.
+- **Consistent pattern**: this simplification follows the same pattern applied to the Admin Access page (`prompt1.md`). Use the same component choices (`AppTabStrip` vs. `TabBar`) and layout approach for cross-page consistency.

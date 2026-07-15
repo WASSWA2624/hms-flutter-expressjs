@@ -133,10 +133,9 @@ final class AccessAdminWorkspaceQuery {
   }
 
   String location() {
-    final Map<String, String> query = <String, String>{};
-    if (panel != AccessAdminPanel.directory) {
-      query['panel'] = panel.serverValue;
-    }
+    final Map<String, String> query = <String, String>{
+      'panel': panel.serverValue,
+    };
     if (resource != AccessAdminResource.users) {
       query['resource'] = resource.serverValue;
     }
@@ -146,7 +145,7 @@ final class AccessAdminWorkspaceQuery {
     if (recordId != null) query['id'] = recordId!;
     if (status != null) query['status'] = status!;
     if (roleScope != null) query['roleScope'] = roleScope!;
-    return Uri(path: '/admin/access', queryParameters: query.isEmpty ? null : query).toString();
+    return Uri(path: '/admin/access', queryParameters: query).toString();
   }
 
   AccessAdminWorkspaceQuery copyWith({

@@ -59,6 +59,22 @@ class _AccessAdminWorkspacePageState
     _appliedRouteSignature = signature;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final AsyncValue<Result<AccessAdminWorkspaceState>> current = ref.read(
+        accessAdminWorkspaceControllerProvider,
+      );
+      final AccessAdminWorkspaceState? currentState = current.maybeWhen(
+        data: (Result<AccessAdminWorkspaceState> r) => r.when(
+          success: (AccessAdminWorkspaceState s) => s,
+          failure: (_) => null,
+        ),
+        orElse: () => null,
+      );
+      if (currentState != null &&
+          currentState.query.panel == query.panel &&
+          currentState.query.resource == query.resource &&
+          query.recordId == null) {
+        return;
+      }
       ref
           .read(accessAdminWorkspaceControllerProvider.notifier)
           .applyRouteQuery(query);

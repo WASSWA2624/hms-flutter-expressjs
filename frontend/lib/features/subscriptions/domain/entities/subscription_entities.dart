@@ -175,10 +175,9 @@ final class SubscriptionsWorkspaceQuery {
   }
 
   String location() {
-    final Map<String, String> query = <String, String>{};
-    if (panel != SubscriptionPanel.catalog) {
-      query['panel'] = panel.serverValue;
-    }
+    final Map<String, String> query = <String, String>{
+      'panel': panel.serverValue,
+    };
     if (resource != SubscriptionResource.subscriptionPlans) {
       query['resource'] = resource.serverValue;
     }
@@ -190,7 +189,7 @@ final class SubscriptionsWorkspaceQuery {
     if (status != null) query['status'] = status!;
     if (tierCode != null) query['tierCode'] = tierCode!;
     if (billingCycle != null) query['billingCycle'] = billingCycle!;
-    return Uri(path: '/subscriptions', queryParameters: query.isEmpty ? null : query).toString();
+    return Uri(path: '/subscriptions', queryParameters: query).toString();
   }
 
   bool get hasActiveFilters {

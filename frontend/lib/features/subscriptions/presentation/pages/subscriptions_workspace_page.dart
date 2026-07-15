@@ -64,6 +64,22 @@ class _SubscriptionsWorkspacePageState
       if (!mounted) {
         return;
       }
+      final AsyncValue<Result<SubscriptionsWorkspaceState>> current = ref.read(
+        subscriptionsWorkspaceControllerProvider,
+      );
+      final SubscriptionsWorkspaceState? currentState = current.maybeWhen(
+        data: (Result<SubscriptionsWorkspaceState> r) => r.when(
+          success: (SubscriptionsWorkspaceState s) => s,
+          failure: (_) => null,
+        ),
+        orElse: () => null,
+      );
+      if (currentState != null &&
+          currentState.query.panel == query.panel &&
+          currentState.query.resource == query.resource &&
+          query.recordId == null) {
+        return;
+      }
       ref
           .read(subscriptionsWorkspaceControllerProvider.notifier)
           .applyRouteQuery(query);
