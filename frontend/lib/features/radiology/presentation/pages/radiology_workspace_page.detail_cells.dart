@@ -105,12 +105,7 @@ void _showMutationResult(BuildContext context, AppFailure? failure) {
 }
 
 void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
-  if (failure == null || !context.mounted) {
-    return;
-  }
-  ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(context.l10n.failureMessage(failure))));
+  showAppFailureSnackBar(context, failure);
 }
 
 AppWorkspaceStatus _orderStatus(BuildContext context, RadiologyOrder order) {

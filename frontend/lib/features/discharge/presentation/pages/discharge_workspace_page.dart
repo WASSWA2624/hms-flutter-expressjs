@@ -9,6 +9,7 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
 import 'package:hosspi_hms/features/discharge/presentation/controllers/discharge_workspace_controller.dart';
@@ -1516,29 +1517,10 @@ String _relatedSubtitle(BuildContext context, DischargeRelatedRecord record) {
   ].where((String value) => value.trim().isNotEmpty).join(' | ');
 }
 
-String _apiLabel(String value) {
-  final String normalized = value.trim().replaceAll(RegExp(r'[_-]+'), ' ');
-  if (normalized.isEmpty) {
-    return value;
-  }
-  return normalized
-      .split(RegExp(r'\s+'))
-      .map((String word) {
-        if (word.isEmpty) {
-          return word;
-        }
-        return '${word.substring(0, 1).toUpperCase()}${word.substring(1).toLowerCase()}';
-      })
-      .join(' ');
-}
+String _apiLabel(String value) => AppDisplay.apiLabel(value);
 
 void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
-  if (failure == null) {
-    return;
-  }
-  ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(context.l10n.failureMessage(failure))));
+  showAppFailureSnackBar(context, failure);
 }
 
 void _showSaved(BuildContext context) {

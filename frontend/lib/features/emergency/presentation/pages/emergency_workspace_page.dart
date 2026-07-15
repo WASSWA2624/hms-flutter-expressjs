@@ -2123,20 +2123,8 @@ void _showFailureIfNeeded(
   AppFailure? failure, {
   String? successMessage,
 }) {
-  final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
-  if (failure == null) {
-    if (successMessage != null) {
-      messenger.showSnackBar(SnackBar(content: Text(successMessage)));
-    }
-    return;
+  showAppFailureSnackBar(context, failure);
+  if (failure == null && successMessage != null) {
+    showAppSuccessSnackBar(context, successMessage);
   }
-
-  final String message = switch (failure.category) {
-    AppFailureCategory.validation => 'Check the required emergency fields.',
-    AppFailureCategory.forbidden => 'You do not have access to this action.',
-    AppFailureCategory.offline => 'You appear to be offline.',
-    AppFailureCategory.timeout => 'The request timed out.',
-    _ => 'Emergency action failed.',
-  };
-  messenger.showSnackBar(SnackBar(content: Text(message)));
 }

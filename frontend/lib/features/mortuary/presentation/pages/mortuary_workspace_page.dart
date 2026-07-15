@@ -1623,18 +1623,7 @@ String _reportBodyHtml(
 }
 
 void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
-  if (failure == null) {
-    return;
-  }
-
-  final AppLocalizations l10n = context.l10n;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(_failureSnackBarMessage(l10n, failure))),
-  );
-}
-
-String _failureSnackBarMessage(AppLocalizations l10n, AppFailure failure) {
-  return '${l10n.failureTitle(failure)}: ${l10n.failureMessage(failure)}';
+  showAppFailureSnackBar(context, failure);
 }
 
 String _formatDateTime(BuildContext context, DateTime? value) {

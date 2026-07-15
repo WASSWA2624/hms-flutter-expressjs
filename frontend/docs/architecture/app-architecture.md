@@ -165,6 +165,41 @@ dart run build_runner build --delete-conflicting-outputs
 Do not manually edit generated files. If generated output changes, commit both
 the source file and generated file together.
 
+## Cross-Cutting Consistency
+
+All features must reuse shared infrastructure before creating module-specific
+implementations. Apply in priority order:
+
+1. Shared implementation from `lib/shared/` or `lib/core/`
+2. Extension of an existing shared implementation
+3. New module-specific code only when behavior is genuinely domain-specific
+
+### Error and State Handling
+
+- Use `AppFailure` (from `core/errors/app_failure.dart`) for all typed errors.
+- Use `Result<T>` (from `core/errors/result.dart`) for repository return types.
+- Use `AsyncStateScaffold` for top-level page state (loading, empty, error).
+- Use `AppFailureStateView` or `AppFormInformationBanner.failure` inline.
+- Use `showAppFailureSnackBar` (from `shared/layout/`) for transient feedback.
+- Use `NetworkFailureMapper` to convert HTTP/Dio errors to typed failures.
+- Use `ValidationMessagePresenter` for localized field-level error messages.
+
+### Display Formatting
+
+- Use `AppDisplay.apiLabel` to convert snake_case/kebab-case API values to
+  human-readable labels. Do not create private formatting functions.
+- Use `AppFormatters` for locale-aware dates, times, numbers, and currencies.
+- Use `AppDisplay.joinNonEmpty` for multi-value display labels.
+
+### Mutation and Sync
+
+- Controllers write through repositories over HTTP; WebSockets are never
+  a mutation transport.
+- On success, patch Riverpod state immediately from the response.
+- On cancel/failure, UI state remains unchanged.
+- Use `AppActionRunner` for idempotent, retryable mutations.
+- Use `createIdempotencyKey` for offline-capable writes.
+
 ## Boundary Checklist
 
 - Widgets do not call APIs, databases, secure storage, or platform services.

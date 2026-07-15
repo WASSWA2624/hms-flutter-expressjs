@@ -2987,13 +2987,7 @@ AppWorkspaceStatusTone _stageTone(String? value) {
 }
 
 void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
-  if (failure == null) {
-    return;
-  }
-
-  ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(context.l10n.failureMessage(failure))));
+  showAppFailureSnackBar(context, failure);
 }
 
 const String _opdCategoryArrival = 'ARRIVAL';

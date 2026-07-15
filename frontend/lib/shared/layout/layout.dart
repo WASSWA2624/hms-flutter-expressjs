@@ -5,6 +5,7 @@ export 'app_shell_sidebar_preference.dart';
 export 'app_toolbar_overflow_section.dart';
 export 'app_workspace.dart';
 export 'app_workspace_board_toggle.dart';
+export 'app_workspace_feedback.dart';
 export 'app_workspace_live_status.dart';
 export 'app_workspace_mutation_dialog.dart';
 export 'app_workspace_option_toggle.dart';

@@ -27,6 +27,7 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace_feedback.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_consultation_billing_breakdown.dart';
@@ -3081,13 +3082,7 @@ IconData _flowStageIcon(String value) {
 }
 
 void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
-  if (failure == null) {
-    return;
-  }
-
-  ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(context.l10n.failureMessage(failure))));
+  showAppFailureSnackBar(context, failure);
 }
 
 final List<AppSelectOption<String>> _painSeverityOptions =

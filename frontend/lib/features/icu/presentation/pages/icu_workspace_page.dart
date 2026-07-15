@@ -2599,10 +2599,5 @@ String _readinessHtml(AppLocalizations l10n, IcuPatientDetail detail) {
 }
 
 void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
-  if (failure == null) {
-    return;
-  }
-  ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(context.l10n.failureMessage(failure))));
+  showAppFailureSnackBar(context, failure);
 }

@@ -1,4 +1,10 @@
 abstract final class AppDisplay {
+  static final RegExp _separatorPattern = RegExp(r'[_\-]+');
+  static final RegExp _whitespacePattern = RegExp(r'\s+');
+
+  /// Converts a snake_case or kebab-case API value to a human-readable label.
+  ///
+  /// Handles underscores, hyphens, and whitespace as word separators.
   static String apiLabel(String? value) {
     final String normalized = value?.trim() ?? '';
     if (normalized.isEmpty) {
@@ -6,7 +12,8 @@ abstract final class AppDisplay {
     }
 
     return normalized
-        .split('_')
+        .replaceAll(_separatorPattern, ' ')
+        .split(_whitespacePattern)
         .where((String part) => part.isNotEmpty)
         .map((String part) {
           final String lower = part.toLowerCase();
