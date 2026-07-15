@@ -45,6 +45,7 @@ import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/pages/hr_workspace_page.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/pages/icu_workspace_page.dart';
+import 'package:hosspi_hms/features/integrations/domain/entities/integration_entities.dart';
 import 'package:hosspi_hms/features/integrations/presentation/pages/integrations_workspace_page.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/pages/ipd_workspace_page.dart';
@@ -55,11 +56,11 @@ import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dar
 import 'package:hosspi_hms/features/nursing/presentation/pages/nursing_workspace_page.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.dart';
-import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
-import 'package:hosspi_hms/features/reception/presentation/pages/reception_workspace_page.dart';
 import 'package:hosspi_hms/features/operations/domain/entities/operations_entities.dart';
 import 'package:hosspi_hms/features/operations/presentation/pages/operations_workspace_page.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
+import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
+import 'package:hosspi_hms/features/reception/presentation/pages/reception_workspace_page.dart';
 import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry_page.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart';
@@ -317,7 +318,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.integrations.path,
             name: AppRoutes.integrations.name,
-            builder: (_, _) => const IntegrationsWorkspacePage(),
+            builder: (_, GoRouterState state) {
+              return IntegrationsWorkspacePage(
+                initialQuery: IntegrationWorkspaceQuery.fromUri(state.uri),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.discharge.path,

@@ -2,18 +2,22 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
+import 'package:hosspi_hms/features/claims/presentation/claims_access.dart';
 import 'package:hosspi_hms/features/claims/presentation/controllers/claims_workspace_controller.dart';
 import 'package:hosspi_hms/features/claims/presentation/widgets/claims_insurance_config_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
+import 'package:hosspi_hms/shared/components/app_tab_strip.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -67,12 +71,16 @@ class _ClaimsWorkspaceContentState
     extends ConsumerState<_ClaimsWorkspaceContent> {
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<ClaimsQueueItem>
-  _tableColumnController;
+      _tableColumnController;
+  late ClaimsDeskSection _section;
   String? _appliedRouteSignature;
 
   @override
   void initState() {
     super.initState();
+    _section = widget.initialQuery?.section.isNotEmpty == true
+        ? claimsDeskSectionFromQuery(widget.initialQuery!.section)
+        : ClaimsDeskSection.authorizations;
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<ClaimsQueueItem>();
@@ -105,6 +113,12 @@ class _ClaimsWorkspaceContentState
     final ClaimsWorkspaceController controller = ref.read(
       claimsWorkspaceControllerProvider.notifier,
     );
+    if (query.section.isNotEmpty) {
+      final ClaimsDeskSection section =
+          claimsDeskSectionFromQuery(query.section);
+      setState(() => _section = section);
+      unawaited(controller.applyFilter(_defaultFilterForSection(section)));
+    }
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;
       await controller.applySearch(query.search);
@@ -160,333 +174,194 @@ class _ClaimsWorkspaceContentState
     super.dispose();
   }
 
+  void _updateUrlForSection(ClaimsDeskSection section) {
+    if (!mounted) return;
+    final String tab = claimsDeskSectionToQuery(section);
+    final String location = AppRoutes.claims.location(
+      queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
+    );
+    GoRouter.of(context).replace<void>(location);
+  }
+
+  static ClaimsQueueFilter _defaultFilterForSection(
+    ClaimsDeskSection section,
+  ) {
+    return switch (section) {
+      ClaimsDeskSection.authorizations => ClaimsQueueFilter.authorizationPending,
+      ClaimsDeskSection.activeClaims => ClaimsQueueFilter.claimSubmitted,
+      ClaimsDeskSection.settled => ClaimsQueueFilter.claimPaid,
+      ClaimsDeskSection.insuranceSetup => ClaimsQueueFilter.all,
+    };
+  }
+
+  static IconData _sectionIcon(ClaimsDeskSection section) {
+    return switch (section) {
+      ClaimsDeskSection.authorizations => Icons.verified_user_outlined,
+      ClaimsDeskSection.activeClaims => Icons.receipt_long_outlined,
+      ClaimsDeskSection.settled => Icons.task_alt_outlined,
+      ClaimsDeskSection.insuranceSetup => Icons.business_outlined,
+    };
+  }
+
+  String _sectionLabel(AppLocalizations l10n, ClaimsDeskSection section) {
+    return switch (section) {
+      ClaimsDeskSection.authorizations => l10n.claimsSectionAuthorizations,
+      ClaimsDeskSection.activeClaims => l10n.claimsSectionActiveClaims,
+      ClaimsDeskSection.settled => l10n.claimsSectionSettled,
+      ClaimsDeskSection.insuranceSetup => l10n.claimsSectionInsuranceSetup,
+    };
+  }
+
+  int _sectionCount(ClaimsWorkspaceState state, ClaimsDeskSection section) {
+    return switch (section) {
+      ClaimsDeskSection.authorizations =>
+        state.authorizationPendingCount + state.authorizationApprovedCount,
+      ClaimsDeskSection.activeClaims =>
+        state.submittedClaimsCount +
+            state.approvedClaimsCount +
+            state.partialClaimsCount +
+            state.rejectedResubmissionCount,
+      ClaimsDeskSection.settled => state.paidClosedCount,
+      ClaimsDeskSection.insuranceSetup => 0,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final ClaimsWorkspaceState state = widget.state;
     final ClaimsWorkspaceController controller = ref.read(
       claimsWorkspaceControllerProvider.notifier,
     );
-    final int allCount = state.queue.totalItemCount ?? state.queue.items.length;
-    final int authorizationDeniedCount = _claimsCountForFilter(
-      state,
-      ClaimsQueueFilter.authorizationDenied,
-    );
-    final int rejectedClaimsCount = _claimsCountForFilter(
-      state,
-      ClaimsQueueFilter.claimRejected,
-    );
-    final int paidClaimsCount = _claimsCountForFilter(
-      state,
-      ClaimsQueueFilter.claimPaid,
-    );
-    final int cancelledClaimsCount = _claimsCountForFilter(
-      state,
-      ClaimsQueueFilter.claimCancelled,
-    );
 
-    return AppWorkspace(
-      title: l10n.claimsWorkspaceTitle,
-      leadingIcon: AppRouteIcons.claims,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        summaryNotifications: <AppWorkspaceSummaryNotification>[
-          if (allCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.claimsFilterAll,
-              count: allCount,
-              icon: Icons.inventory_2_outlined,
-              onSelected: () {
-                unawaited(
-                  _applySummaryFilter(controller, ClaimsQueueFilter.all),
-                );
-              },
-            ),
-          if (state.authorizationPendingCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.claimsAuthorizationPendingSummaryLabel,
-              count: state.authorizationPendingCount,
-              icon: Icons.schedule_outlined,
-              tone: AppWorkspaceStatusTone.warning,
-              onSelected: () {
-                unawaited(
-                  _applySummaryFilter(
-                    controller,
-                    ClaimsQueueFilter.authorizationPending,
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      scrollable: false,
+      child: SizedBox(
+        width: double.infinity,
+        height: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: AppTabStrip(
+                    tabs: <AppTabItem>[
+                      for (final ClaimsDeskSection section
+                          in ClaimsDeskSection.values)
+                        AppTabItem(
+                          id: section.name,
+                          icon: _sectionIcon(section),
+                          label:
+                              '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
+                        ),
+                    ],
+                    selectedId: _section.name,
+                    onTabTapped: (String tabId) {
+                      for (final ClaimsDeskSection section
+                          in ClaimsDeskSection.values) {
+                        if (section.name == tabId) {
+                          setState(() => _section = section);
+                          _updateUrlForSection(section);
+                          unawaited(
+                            controller
+                                .applyFilter(_defaultFilterForSection(section)),
+                          );
+                          break;
+                        }
+                      }
+                    },
                   ),
-                );
-              },
+                ),
+                SizedBox(width: theme.spacing.sm),
+                _buildPrimaryActionButton(l10n, state, controller),
+              ],
             ),
-          if (state.authorizationApprovedCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.claimsAuthorizationApprovedSummaryLabel,
-              count: state.authorizationApprovedCount,
-              icon: Icons.verified_outlined,
-              tone: AppWorkspaceStatusTone.success,
-              onSelected: () {
-                unawaited(
-                  _applySummaryFilter(
-                    controller,
-                    ClaimsQueueFilter.authorizationApproved,
-                  ),
-                );
-              },
-            ),
-          if (state.submittedClaimsCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.claimsSubmittedSummaryLabel,
-              count: state.submittedClaimsCount,
-              icon: Icons.outbox_outlined,
-              tone: AppWorkspaceStatusTone.info,
-              onSelected: () {
-                unawaited(
-                  _applySummaryFilter(
-                    controller,
-                    ClaimsQueueFilter.claimSubmitted,
-                  ),
-                );
-              },
-            ),
-          if (state.eligibilityPendingCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.claimsEligibilityPendingSummaryLabel,
-              count: state.eligibilityPendingCount,
-              icon: Icons.badge_outlined,
-              tone: AppWorkspaceStatusTone.warning,
-              onSelected: () {
-                unawaited(
-                  _applySummaryFilter(controller, ClaimsQueueFilter.all),
-                );
-              },
-            ),
-          if (state.partialClaimsCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.claimsPartialSummaryLabel,
-              count: state.partialClaimsCount,
-              icon: Icons.pie_chart_outline,
-              tone: AppWorkspaceStatusTone.warning,
-              onSelected: () {
-                unawaited(
-                  _applySummaryFilter(
-                    controller,
-                    ClaimsQueueFilter.claimPartial,
-                  ),
-                );
-              },
-            ),
-          if (state.claimsToSubmitCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.claimsToSubmitSummaryLabel,
-              count: state.claimsToSubmitCount,
-              icon: Icons.send_outlined,
-              tone: AppWorkspaceStatusTone.info,
-              onSelected: () {
-                unawaited(
-                  _applySummaryFilter(
-                    controller,
-                    ClaimsQueueFilter.claimSubmitted,
-                  ),
-                );
-              },
-            ),
-          if (state.readyToSettleCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.claimsReadyToSettleSummaryLabel,
-              count: state.readyToSettleCount,
-              icon: Icons.account_balance_wallet_outlined,
-              tone: AppWorkspaceStatusTone.success,
-              onSelected: () {
-                unawaited(
-                  _applySummaryFilter(
-                    controller,
-                    ClaimsQueueFilter.claimApproved,
-                  ),
-                );
-              },
-            ),
-          if (authorizationDeniedCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.claimsFilterAuthorizationDenied,
-              count: authorizationDeniedCount,
-              icon: Icons.report_gmailerrorred_outlined,
-              tone: AppWorkspaceStatusTone.error,
-              onSelected: () {
-                unawaited(
-                  _applySummaryFilter(
-                    controller,
-                    ClaimsQueueFilter.authorizationDenied,
-                  ),
-                );
-              },
-            ),
-          if (rejectedClaimsCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.claimsFilterClaimRejected,
-              count: rejectedClaimsCount,
-              icon: Icons.report_gmailerrorred_outlined,
-              tone: AppWorkspaceStatusTone.error,
-              onSelected: () {
-                unawaited(
-                  _applySummaryFilter(
-                    controller,
-                    ClaimsQueueFilter.claimRejected,
-                  ),
-                );
-              },
-            ),
-          if (state.approvedClaimsCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.claimsApprovedSummaryLabel,
-              count: state.approvedClaimsCount,
-              icon: Icons.fact_check_outlined,
-              tone: AppWorkspaceStatusTone.success,
-              onSelected: () {
-                unawaited(
-                  _applySummaryFilter(
-                    controller,
-                    ClaimsQueueFilter.claimApproved,
-                  ),
-                );
-              },
-            ),
-          if (paidClaimsCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.claimsFilterClaimPaid,
-              count: paidClaimsCount,
-              icon: Icons.task_alt_outlined,
-              onSelected: () {
-                unawaited(
-                  _applySummaryFilter(controller, ClaimsQueueFilter.claimPaid),
-                );
-              },
-            ),
-          if (cancelledClaimsCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.claimsFilterClaimCancelled,
-              count: cancelledClaimsCount,
-              icon: Icons.cancel_outlined,
-              onSelected: () {
-                unawaited(
-                  _applySummaryFilter(
-                    controller,
-                    ClaimsQueueFilter.claimCancelled,
-                  ),
-                );
-              },
-            ),
-        ],
-        primary: AppButton.primary(
-          label: l10n.claimsRequestAuthorizationAction,
-          leadingIcon: Icons.verified_user_outlined,
-          isLoading: state.isSaving,
-          onPressed: () {
-            unawaited(
-              _openRequestAuthorizationDialog(context, controller, state),
-            );
-          },
+            SizedBox(height: theme.spacing.md),
+            if (_section == ClaimsDeskSection.authorizations ||
+                _section == ClaimsDeskSection.activeClaims) ...<Widget>[
+              _ClaimsSummaryBar(
+                state: state,
+                section: _section,
+                onFilterApplied: (ClaimsQueueFilter filter) {
+                  unawaited(_applySummaryFilter(controller, filter));
+                },
+              ),
+              SizedBox(height: theme.spacing.md),
+            ],
+            if (_section == ClaimsDeskSection.insuranceSetup)
+              Expanded(
+                child: _ClaimsInsuranceSetupPanel(state: state),
+              )
+            else
+              Expanded(
+                child: _ClaimsQueuePanel(
+                  state: state,
+                  section: _section,
+                  searchController: _searchController,
+                  columnVisibilityController: _tableColumnController,
+                ),
+              ),
+          ],
         ),
-        secondary: <Widget>[
-          AppButton.secondary(
-            label: l10n.claimsPrepareClaimAction,
-            leadingIcon: Icons.receipt_long_outlined,
-            isLoading: state.isSaving,
-            onPressed: () {
-              unawaited(_openPrepareClaimDialog(context, controller, state));
-            },
-          ),
-          AppButton.secondary(
-            label: l10n.claimsAddCompanyAction,
-            leadingIcon: Icons.business_outlined,
-            onPressed: () {
-              unawaited(
-                openClaimsInsuranceCompanyDialog(
-                  context: context,
-                  ref: ref,
-                  referenceData: state.referenceData,
-                ),
-              );
-            },
-          ),
-          AppButton.secondary(
-            label: l10n.claimsAddSchemeAction,
-            leadingIcon: Icons.account_balance_outlined,
-            onPressed: () {
-              unawaited(
-                openClaimsSchemeDialog(
-                  context: context,
-                  ref: ref,
-                  referenceData: state.referenceData,
-                ),
-              );
-            },
-          ),
-          AppButton.secondary(
-            label: l10n.claimsAddOfferAction,
-            leadingIcon: Icons.local_offer_outlined,
-            onPressed: () {
-              unawaited(
-                openClaimsSchemeOfferDialog(
-                  context: context,
-                  ref: ref,
-                  referenceData: state.referenceData,
-                ),
-              );
-            },
-          ),
-          AppButton.secondary(
-            label: l10n.claimsAddEnrollmentAction,
-            leadingIcon: Icons.badge_outlined,
-            onPressed: () {
-              unawaited(
-                openClaimsEnrollmentDialog(
-                  context: context,
-                  ref: ref,
-                  referenceData: state.referenceData,
-                ),
-              );
-            },
-          ),
-          AppButton.secondary(
-            label: l10n.claimsAddPriceBookAction,
-            leadingIcon: Icons.menu_book_outlined,
-            onPressed: () {
-              unawaited(
-                openClaimsPriceBookEntryDialog(
-                  context: context,
-                  ref: ref,
-                  referenceData: state.referenceData,
-                ),
-              );
-            },
-          ),
-          AppButton.secondary(
-            label: l10n.claimsAddInsurerIntegrationAction,
-            leadingIcon: Icons.vpn_key_outlined,
-            onPressed: () {
-              unawaited(
-                openClaimsInsurerIntegrationDialog(
-                  context: context,
-                  ref: ref,
-                  referenceData: state.referenceData,
-                ),
-              );
-            },
-          ),
-        ],
-        onRefresh: () async {
-          final AppFailure? failure = await controller.refresh();
-          if (context.mounted) {
-            _showFailureIfNeeded(context, failure);
-          }
-        },
-        isRefreshing: state.isRefreshing,
       ),
+    );
+  }
 
-      body: _ClaimsQueuePanel(
-        state: state,
-        searchController: _searchController,
-        columnVisibilityController: _tableColumnController,
-      ),
+  Widget _buildPrimaryActionButton(
+    AppLocalizations l10n,
+    ClaimsWorkspaceState state,
+    ClaimsWorkspaceController controller,
+  ) {
+    return AppAccessActionGate(
+      requirement: claimsWorkspaceWriteRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        return switch (_section) {
+          ClaimsDeskSection.authorizations => AppButton.primary(
+              label: l10n.claimsRequestAuthorizationAction,
+              leadingIcon: Icons.verified_user_outlined,
+              isLoading: state.isSaving,
+              enabled: isAllowed,
+              onPressed: isAllowed
+                  ? () => unawaited(
+                        _openRequestAuthorizationDialog(
+                          context,
+                          controller,
+                          state,
+                        ),
+                      )
+                  : null,
+            ),
+          ClaimsDeskSection.activeClaims => AppButton.primary(
+              label: l10n.claimsPrepareClaimAction,
+              leadingIcon: Icons.receipt_long_outlined,
+              isLoading: state.isSaving,
+              enabled: isAllowed,
+              onPressed: isAllowed
+                  ? () => unawaited(
+                        _openPrepareClaimDialog(context, controller, state),
+                      )
+                  : null,
+            ),
+          ClaimsDeskSection.settled => const SizedBox.shrink(),
+          ClaimsDeskSection.insuranceSetup => AppButton.primary(
+              label: l10n.claimsAddCompanyAction,
+              leadingIcon: Icons.business_outlined,
+              enabled: isAllowed,
+              onPressed: isAllowed
+                  ? () => unawaited(
+                        openClaimsInsuranceCompanyDialog(
+                          context: context,
+                          ref: ref,
+                          referenceData: state.referenceData,
+                        ),
+                      )
+                  : null,
+            ),
+        };
+      },
     );
   }
 
@@ -501,17 +376,284 @@ class _ClaimsWorkspaceContentState
   }
 }
 
+class _ClaimsSummaryBar extends StatelessWidget {
+  const _ClaimsSummaryBar({
+    required this.state,
+    required this.section,
+    required this.onFilterApplied,
+  });
+
+  final ClaimsWorkspaceState state;
+  final ClaimsDeskSection section;
+  final ValueChanged<ClaimsQueueFilter> onFilterApplied;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final List<AppWorkspaceSummaryNotification> cards = switch (section) {
+      ClaimsDeskSection.authorizations => <AppWorkspaceSummaryNotification>[
+          if (state.authorizationPendingCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.claimsAuthorizationPendingSummaryLabel,
+              count: state.authorizationPendingCount,
+              icon: Icons.schedule_outlined,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () =>
+                  onFilterApplied(ClaimsQueueFilter.authorizationPending),
+            ),
+          if (state.authorizationApprovedCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.claimsAuthorizationApprovedSummaryLabel,
+              count: state.authorizationApprovedCount,
+              icon: Icons.verified_outlined,
+              tone: AppWorkspaceStatusTone.success,
+              onSelected: () =>
+                  onFilterApplied(ClaimsQueueFilter.authorizationApproved),
+            ),
+          if (_claimsCountForFilter(
+                state,
+                ClaimsQueueFilter.authorizationDenied,
+              ) >
+              0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.claimsFilterAuthorizationDenied,
+              count: _claimsCountForFilter(
+                state,
+                ClaimsQueueFilter.authorizationDenied,
+              ),
+              icon: Icons.report_gmailerrorred_outlined,
+              tone: AppWorkspaceStatusTone.error,
+              onSelected: () =>
+                  onFilterApplied(ClaimsQueueFilter.authorizationDenied),
+            ),
+          if (_claimsCountForFilter(
+                state,
+                ClaimsQueueFilter.authorizationExpired,
+              ) >
+              0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.claimsFilterAuthorizationExpired,
+              count: _claimsCountForFilter(
+                state,
+                ClaimsQueueFilter.authorizationExpired,
+              ),
+              icon: Icons.block_outlined,
+              tone: AppWorkspaceStatusTone.neutral,
+              onSelected: () =>
+                  onFilterApplied(ClaimsQueueFilter.authorizationExpired),
+            ),
+        ],
+      ClaimsDeskSection.activeClaims => <AppWorkspaceSummaryNotification>[
+          if (state.submittedClaimsCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.claimsSubmittedSummaryLabel,
+              count: state.submittedClaimsCount,
+              icon: Icons.outbox_outlined,
+              tone: AppWorkspaceStatusTone.info,
+              onSelected: () =>
+                  onFilterApplied(ClaimsQueueFilter.claimSubmitted),
+            ),
+          if (state.approvedClaimsCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.claimsApprovedSummaryLabel,
+              count: state.approvedClaimsCount,
+              icon: Icons.fact_check_outlined,
+              tone: AppWorkspaceStatusTone.success,
+              onSelected: () =>
+                  onFilterApplied(ClaimsQueueFilter.claimApproved),
+            ),
+          if (state.partialClaimsCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.claimsPartialSummaryLabel,
+              count: state.partialClaimsCount,
+              icon: Icons.pie_chart_outline,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () =>
+                  onFilterApplied(ClaimsQueueFilter.claimPartial),
+            ),
+          if (state.rejectedResubmissionCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.claimsFilterClaimRejected,
+              count: state.rejectedResubmissionCount,
+              icon: Icons.report_gmailerrorred_outlined,
+              tone: AppWorkspaceStatusTone.error,
+              onSelected: () =>
+                  onFilterApplied(ClaimsQueueFilter.claimRejected),
+            ),
+          if (state.eligibilityPendingCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.claimsEligibilityPendingSummaryLabel,
+              count: state.eligibilityPendingCount,
+              icon: Icons.badge_outlined,
+              tone: AppWorkspaceStatusTone.warning,
+              onSelected: () => onFilterApplied(ClaimsQueueFilter.all),
+            ),
+          if (state.claimsToSubmitCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.claimsToSubmitSummaryLabel,
+              count: state.claimsToSubmitCount,
+              icon: Icons.send_outlined,
+              tone: AppWorkspaceStatusTone.info,
+              onSelected: () =>
+                  onFilterApplied(ClaimsQueueFilter.claimSubmitted),
+            ),
+          if (state.readyToSettleCount > 0)
+            AppWorkspaceSummaryNotification(
+              label: l10n.claimsReadyToSettleSummaryLabel,
+              count: state.readyToSettleCount,
+              icon: Icons.account_balance_wallet_outlined,
+              tone: AppWorkspaceStatusTone.success,
+              onSelected: () =>
+                  onFilterApplied(ClaimsQueueFilter.claimApproved),
+            ),
+        ],
+      _ => const <AppWorkspaceSummaryNotification>[],
+    };
+
+    if (cards.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Wrap(
+      spacing: Theme.of(context).spacing.sm,
+      runSpacing: Theme.of(context).spacing.sm,
+      children: <Widget>[
+        for (final AppWorkspaceSummaryNotification card in cards)
+          AppWorkspaceSummaryNotificationCard(notification: card),
+      ],
+    );
+  }
+}
+
+class _ClaimsInsuranceSetupPanel extends ConsumerWidget {
+  const _ClaimsInsuranceSetupPanel({required this.state});
+
+  final ClaimsWorkspaceState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            l10n.claimsSectionInsuranceSetup,
+            style: theme.textTheme.titleMedium,
+          ),
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            l10n.claimsInsuranceSetupDescription,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: theme.spacing.lg),
+          Wrap(
+            spacing: theme.spacing.sm,
+            runSpacing: theme.spacing.sm,
+            children: <Widget>[
+              AppButton.secondary(
+                label: l10n.claimsAddCompanyAction,
+                leadingIcon: Icons.business_outlined,
+                onPressed: () {
+                  unawaited(
+                    openClaimsInsuranceCompanyDialog(
+                      context: context,
+                      ref: ref,
+                      referenceData: state.referenceData,
+                    ),
+                  );
+                },
+              ),
+              AppButton.secondary(
+                label: l10n.claimsAddSchemeAction,
+                leadingIcon: Icons.account_balance_outlined,
+                onPressed: () {
+                  unawaited(
+                    openClaimsSchemeDialog(
+                      context: context,
+                      ref: ref,
+                      referenceData: state.referenceData,
+                    ),
+                  );
+                },
+              ),
+              AppButton.secondary(
+                label: l10n.claimsAddOfferAction,
+                leadingIcon: Icons.local_offer_outlined,
+                onPressed: () {
+                  unawaited(
+                    openClaimsSchemeOfferDialog(
+                      context: context,
+                      ref: ref,
+                      referenceData: state.referenceData,
+                    ),
+                  );
+                },
+              ),
+              AppButton.secondary(
+                label: l10n.claimsAddEnrollmentAction,
+                leadingIcon: Icons.badge_outlined,
+                onPressed: () {
+                  unawaited(
+                    openClaimsEnrollmentDialog(
+                      context: context,
+                      ref: ref,
+                      referenceData: state.referenceData,
+                    ),
+                  );
+                },
+              ),
+              AppButton.secondary(
+                label: l10n.claimsAddPriceBookAction,
+                leadingIcon: Icons.menu_book_outlined,
+                onPressed: () {
+                  unawaited(
+                    openClaimsPriceBookEntryDialog(
+                      context: context,
+                      ref: ref,
+                      referenceData: state.referenceData,
+                    ),
+                  );
+                },
+              ),
+              AppButton.secondary(
+                label: l10n.claimsAddInsurerIntegrationAction,
+                leadingIcon: Icons.vpn_key_outlined,
+                onPressed: () {
+                  unawaited(
+                    openClaimsInsurerIntegrationDialog(
+                      context: context,
+                      ref: ref,
+                      referenceData: state.referenceData,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ClaimsQueuePanel extends ConsumerWidget {
   const _ClaimsQueuePanel({
     required this.state,
+    required this.section,
     required this.searchController,
     required this.columnVisibilityController,
   });
 
   final ClaimsWorkspaceState state;
+  final ClaimsDeskSection section;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<ClaimsQueueItem>
-  columnVisibilityController;
+      columnVisibilityController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -520,137 +662,309 @@ class _ClaimsQueuePanel extends ConsumerWidget {
       claimsWorkspaceControllerProvider.notifier,
     );
 
-    return SizedBox(
-      height: 520,
-      child: AppListTable<ClaimsQueueItem>(
-        page: state.queue,
-        isLoading: state.isRefreshing,
-        columnVisibilityController: columnVisibilityController,
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        search: AppListTableSearch<ClaimsQueueItem>(
-          controller: searchController,
-          semanticLabel: l10n.claimsSearchSemanticLabel,
-          hintText: l10n.claimsSearchHint,
-          matcher: (_, _) => true,
-          onSubmitted: (String value) async {
-            final AppFailure? failure = await controller.applySearch(value);
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-          onClear: () async {
-            final AppFailure? failure = await controller.applySearch('');
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-          showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.claimsQueueFilterLabel,
-          advancedFilterTitle: l10n.claimsQueueFilterLabel,
-          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-          advancedFilterResetLabel: l10n.opdClearFiltersAction,
-          enableDateFilter: false,
-          allFieldsLabel: l10n.claimsFilterAll,
-          filterGroups: <AppSearchBarFilterGroup>[
-            AppSearchBarFilterGroup(
-              key: _claimsQueueFilterKey,
-              label: l10n.claimsQueueFilterLabel,
-              allLabel: l10n.claimsFilterAll,
-              choices: _claimsQueueFilterChoices(l10n),
-            ),
-          ],
-          filterValue: _claimsFilterValue(state.query),
-          hasActiveFilters: state.query.filter != ClaimsQueueFilter.all,
-          onFilterChanged: (AppSearchBarFilterValue value) async {
-            final AppFailure? failure = await controller.applyFilter(
-              _claimsFilterFromValue(value.option(_claimsQueueFilterKey)),
-            );
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-        ),
-        previousPageLabel: l10n.claimsPreviousPageLabel,
-        nextPageLabel: l10n.claimsNextPageLabel,
-        pageLabelBuilder: (AppPage<ClaimsQueueItem> page) {
-          return l10n.claimsPageLabel(
-            page.firstItemNumber,
-            page.lastItemNumber,
-            page.totalItemCount ?? page.items.length,
-          );
+    return AppListTable<ClaimsQueueItem>(
+      page: state.queue,
+      isLoading: state.isRefreshing,
+      columnVisibilityController: columnVisibilityController,
+      columnVisibilityStorageKey: 'claims_${section.name}',
+      columnWidthStorageKey: 'claims_cw_${section.name}',
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      search: AppListTableSearch<ClaimsQueueItem>(
+        controller: searchController,
+        semanticLabel: l10n.claimsSearchSemanticLabel,
+        hintText: l10n.claimsSearchHint,
+        matcher: (_, _) => true,
+        onSubmitted: (String value) async {
+          final AppFailure? failure = await controller.applySearch(value);
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
         },
-        onPageChanged: (AppPageRequest request) {
-          unawaited(controller.changePage(request));
+        onClear: () async {
+          final AppFailure? failure = await controller.applySearch('');
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
         },
-        onRowSelected: (ClaimsQueueItem item) {
-          unawaited(_openClaimsDetailDialog(context, ref, state, item));
-        },
-        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-          title: l10n.claimsEmptyQueueTitle,
-          body: l10n.claimsEmptyQueueBody,
-          icon: Icons.inbox_outlined,
-        ),
-        columns: <AppListTableColumn<ClaimsQueueItem>>[
-          AppListTableColumn<ClaimsQueueItem>(
-            label: l10n.claimsTypeColumnLabel,
-            sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
-                appListTableCompareText(left.kind.name, right.kind.name),
-            cellBuilder: (BuildContext context, ClaimsQueueItem item) {
-              return Text(_kindLabel(context, item.kind));
-            },
-          ),
-          AppListTableColumn<ClaimsQueueItem>(
-            label: l10n.claimsReferenceColumnLabel,
-            sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
-                appListTableCompareText(left.displayId, right.displayId),
-            cellBuilder: (BuildContext context, ClaimsQueueItem item) {
-              return Text(item.displayId);
-            },
-          ),
-          AppListTableColumn<ClaimsQueueItem>(
-            label: l10n.claimsCoverageColumnLabel,
-            sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
-                appListTableCompareText(
-                  left.coveragePlanDisplayId,
-                  right.coveragePlanDisplayId,
-                ),
-            cellBuilder: (BuildContext context, ClaimsQueueItem item) {
-              return Text(_fallback(context, item.coveragePlanDisplayId));
-            },
-          ),
-          AppListTableColumn<ClaimsQueueItem>(
-            label: l10n.claimsInvoiceColumnLabel,
-            sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
-                appListTableCompareText(
-                  left.invoiceDisplayId,
-                  right.invoiceDisplayId,
-                ),
-            cellBuilder: (BuildContext context, ClaimsQueueItem item) {
-              return Text(_fallback(context, item.invoiceDisplayId));
-            },
-          ),
-          AppListTableColumn<ClaimsQueueItem>(
-            label: l10n.claimsStatusColumnLabel,
-            sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
-                appListTableCompareText(left.status, right.status),
-            cellBuilder: (BuildContext context, ClaimsQueueItem item) {
-              return AppWorkspaceStatusBadge(status: _statusFor(context, item));
-            },
-          ),
-          AppListTableColumn<ClaimsQueueItem>(
-            label: l10n.claimsTimelineColumnLabel,
-            sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
-                appListTableCompareDateTime(left.timelineAt, right.timelineAt),
-            cellBuilder: (BuildContext context, ClaimsQueueItem item) {
-              return Text(_dateTimeLabel(context, item.timelineAt));
-            },
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.claimsQueueFilterLabel,
+        advancedFilterTitle: l10n.claimsQueueFilterLabel,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        enableDateFilter: false,
+        allFieldsLabel: l10n.claimsFilterAll,
+        filterGroups: <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: _claimsQueueFilterKey,
+            label: l10n.claimsQueueFilterLabel,
+            allLabel: l10n.claimsFilterAll,
+            choices: _claimsFilterChoicesForSection(l10n, section),
           ),
         ],
-        mobileItemBuilder: (BuildContext context, ClaimsQueueItem item) {
-          return _MobileQueueItem(item: item);
+        filterValue: _claimsFilterValue(state.query),
+        hasActiveFilters: state.query.filter != ClaimsQueueFilter.all,
+        onFilterChanged: (AppSearchBarFilterValue value) async {
+          final AppFailure? failure = await controller.applyFilter(
+            _claimsFilterFromValue(value.option(_claimsQueueFilterKey)),
+          );
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
         },
       ),
+      previousPageLabel: l10n.claimsPreviousPageLabel,
+      nextPageLabel: l10n.claimsNextPageLabel,
+      pageLabelBuilder: (AppPage<ClaimsQueueItem> page) {
+        return l10n.claimsPageLabel(
+          page.firstItemNumber,
+          page.lastItemNumber,
+          page.totalItemCount ?? page.items.length,
+        );
+      },
+      onPageChanged: (AppPageRequest request) {
+        unawaited(controller.changePage(request));
+      },
+      onRowSelected: (ClaimsQueueItem item) {
+        unawaited(_openClaimsDetailDialog(context, ref, state, item));
+      },
+      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+        title: l10n.claimsEmptyQueueTitle,
+        body: l10n.claimsEmptyQueueBody,
+        icon: Icons.inbox_outlined,
+      ),
+      columns: _columnsForSection(context, l10n, section),
+      mobileItemBuilder: (BuildContext context, ClaimsQueueItem item) {
+        return _MobileQueueItem(item: item);
+      },
     );
+  }
+
+  static List<AppListTableColumn<ClaimsQueueItem>> _columnsForSection(
+    BuildContext context,
+    AppLocalizations l10n,
+    ClaimsDeskSection section,
+  ) {
+    return switch (section) {
+      ClaimsDeskSection.authorizations => <AppListTableColumn<ClaimsQueueItem>>[
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'auth_reference',
+            label: l10n.claimsReferenceColumnLabel,
+            alwaysVisible: true,
+            sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+                appListTableCompareText(a.displayId, b.displayId),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+                Text(item.displayId),
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'auth_patient',
+            label: l10n.claimsPatientColumnLabel,
+            sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+                appListTableCompareText(
+                  a.patientDisplayId,
+                  b.patientDisplayId,
+                ),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+                Text(_fallback(context, item.patientDisplayId)),
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'auth_coverage',
+            label: l10n.claimsCoverageColumnLabel,
+            sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+                appListTableCompareText(
+                  a.coveragePlanDisplayId,
+                  b.coveragePlanDisplayId,
+                ),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+                Text(_fallback(context, item.coveragePlanDisplayId)),
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'auth_status',
+            label: l10n.claimsStatusColumnLabel,
+            sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+                appListTableCompareText(a.status, b.status),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+                AppWorkspaceStatusBadge(status: _statusFor(context, item)),
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'auth_approved_amount',
+            label: l10n.claimsAmountColumnLabel,
+            numeric: true,
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) {
+              final num? amount = item.authorization?.approvedAmount;
+              if (amount == null) return Text(_fallback(context, null));
+              return Text(
+                AppFormatters.currency(amount, Localizations.localeOf(context)),
+              );
+            },
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'auth_requested_at',
+            label: l10n.claimsRequestedAtColumnLabel,
+            sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+                appListTableCompareDateTime(
+                  a.authorization?.requestedAt,
+                  b.authorization?.requestedAt,
+                ),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+                Text(_dateTimeLabel(context, item.authorization?.requestedAt)),
+          ),
+        ],
+      ClaimsDeskSection.activeClaims => <AppListTableColumn<ClaimsQueueItem>>[
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'claim_reference',
+            label: l10n.claimsReferenceColumnLabel,
+            alwaysVisible: true,
+            sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+                appListTableCompareText(a.displayId, b.displayId),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+                Text(item.displayId),
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'claim_patient',
+            label: l10n.claimsPatientColumnLabel,
+            sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+                appListTableCompareText(
+                  a.patientDisplayId,
+                  b.patientDisplayId,
+                ),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+                Text(_fallback(context, item.patientDisplayId)),
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'claim_coverage',
+            label: l10n.claimsCoverageColumnLabel,
+            sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+                appListTableCompareText(
+                  a.coveragePlanDisplayId,
+                  b.coveragePlanDisplayId,
+                ),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+                Text(_fallback(context, item.coveragePlanDisplayId)),
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'claim_invoice',
+            label: l10n.claimsInvoiceColumnLabel,
+            sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+                appListTableCompareText(a.invoiceDisplayId, b.invoiceDisplayId),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+                Text(_fallback(context, item.invoiceDisplayId)),
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'claim_amount',
+            label: l10n.claimsAmountColumnLabel,
+            numeric: true,
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) {
+              final num? amount = item.claim?.claimAmount;
+              if (amount == null) return Text(_fallback(context, null));
+              return Text(
+                AppFormatters.currency(amount, Localizations.localeOf(context)),
+              );
+            },
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'claim_status',
+            label: l10n.claimsStatusColumnLabel,
+            sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+                appListTableCompareText(a.status, b.status),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+                AppWorkspaceStatusBadge(status: _statusFor(context, item)),
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'claim_submitted_at',
+            label: l10n.claimsSubmittedAtColumnLabel,
+            sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+                appListTableCompareDateTime(
+                  a.claim?.submittedAt,
+                  b.claim?.submittedAt,
+                ),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+                Text(_dateTimeLabel(context, item.claim?.submittedAt)),
+          ),
+        ],
+      ClaimsDeskSection.settled => <AppListTableColumn<ClaimsQueueItem>>[
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'settled_reference',
+            label: l10n.claimsReferenceColumnLabel,
+            alwaysVisible: true,
+            sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+                appListTableCompareText(a.displayId, b.displayId),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+                Text(item.displayId),
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'settled_patient',
+            label: l10n.claimsPatientColumnLabel,
+            sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+                appListTableCompareText(
+                  a.patientDisplayId,
+                  b.patientDisplayId,
+                ),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+                Text(_fallback(context, item.patientDisplayId)),
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'settled_coverage',
+            label: l10n.claimsCoverageColumnLabel,
+            sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+                appListTableCompareText(
+                  a.coveragePlanDisplayId,
+                  b.coveragePlanDisplayId,
+                ),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+                Text(_fallback(context, item.coveragePlanDisplayId)),
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'settled_invoice',
+            label: l10n.claimsInvoiceColumnLabel,
+            sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+                appListTableCompareText(a.invoiceDisplayId, b.invoiceDisplayId),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+                Text(_fallback(context, item.invoiceDisplayId)),
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'settled_claim_amount',
+            label: l10n.claimsAmountColumnLabel,
+            numeric: true,
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) {
+              final num? amount = item.claim?.claimAmount;
+              if (amount == null) return Text(_fallback(context, null));
+              return Text(
+                AppFormatters.currency(amount, Localizations.localeOf(context)),
+              );
+            },
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'settled_settlement_amount',
+            label: l10n.claimsSettlementAmountColumnLabel,
+            numeric: true,
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) {
+              final num? amount = item.claim?.settlementAmount;
+              if (amount == null) return Text(_fallback(context, null));
+              return Text(
+                AppFormatters.currency(amount, Localizations.localeOf(context)),
+              );
+            },
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'settled_status',
+            label: l10n.claimsStatusColumnLabel,
+            sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+                appListTableCompareText(a.status, b.status),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+                AppWorkspaceStatusBadge(status: _statusFor(context, item)),
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            id: 'settled_timeline',
+            label: l10n.claimsTimelineColumnLabel,
+            sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+                appListTableCompareDateTime(a.timelineAt, b.timelineAt),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+                Text(_dateTimeLabel(context, item.timelineAt)),
+          ),
+        ],
+      ClaimsDeskSection.insuranceSetup => const <AppListTableColumn<
+          ClaimsQueueItem>>[],
+    };
   }
 }
 

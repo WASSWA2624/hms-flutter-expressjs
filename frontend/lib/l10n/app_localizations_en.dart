@@ -1772,6 +1772,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get theaterCompletedSummaryLabel => 'Completed';
 
   @override
+  String get theaterRecoverySectionLabel => 'Recovery';
+
+  @override
   String get theaterAllCasesSummaryLabel => 'All cases';
 
   @override
@@ -7779,6 +7782,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ipdBedStatusBlocked => 'Blocked';
 
   @override
+  String get ipdAdmissionQueueTabLabel => 'Admission Queue';
+
+  @override
+  String get ipdActivePatientsTabLabel => 'Active Patients';
+
+  @override
+  String get ipdTransfersTabLabel => 'Transfers';
+
+  @override
+  String get ipdDischargeTabLabel => 'Discharge';
+
+  @override
   String get ipdPatientBoardTab => 'Patient board';
 
   @override
@@ -11438,6 +11453,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get claimsReportFooter => 'Generated from claims and billing data.';
+
+  @override
+  String get claimsSectionAuthorizations => 'Authorizations';
+
+  @override
+  String get claimsSectionActiveClaims => 'Active Claims';
+
+  @override
+  String get claimsSectionSettled => 'Settled';
+
+  @override
+  String get claimsSectionInsuranceSetup => 'Insurance Setup';
+
+  @override
+  String get claimsPatientColumnLabel => 'Patient';
+
+  @override
+  String get claimsAmountColumnLabel => 'Amount';
+
+  @override
+  String get claimsSettlementAmountColumnLabel => 'Settlement';
+
+  @override
+  String get claimsRequestedAtColumnLabel => 'Requested';
+
+  @override
+  String get claimsSubmittedAtColumnLabel => 'Submitted';
+
+  @override
+  String get claimsInsuranceSetupDescription =>
+      'Manage insurance companies, schemes, offers, enrollments, price books, and insurer integrations.';
 
   @override
   String get labTitle => 'Laboratory';
@@ -15982,6 +16028,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get roomsBedsSavedMessage => 'Rooms and beds updated.';
+
+  @override
+  String get roomsBedsSectionAllLabel => 'All beds';
+
+  @override
+  String get roomsBedsSectionAvailableLabel => 'Available';
+
+  @override
+  String get roomsBedsSectionOccupiedLabel => 'Occupied';
+
+  @override
+  String get roomsBedsSectionTurnoverLabel => 'Turnover';
+
+  @override
+  String get roomsBedsSectionOutOfServiceLabel => 'Out of service';
 
   @override
   String roomsBedsRequiredMessage(String field) {

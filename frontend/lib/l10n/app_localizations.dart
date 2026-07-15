@@ -3436,6 +3436,12 @@ abstract class AppLocalizations {
   /// **'Completed'**
   String get theaterCompletedSummaryLabel;
 
+  /// Tab label for theater cases in post-op recovery or PACU handoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery'**
+  String get theaterRecoverySectionLabel;
+
   /// Summary card label for all theater cases on the current board.
   ///
   /// In en, this message translates to:
@@ -14374,6 +14380,30 @@ abstract class AppLocalizations {
   /// **'Blocked'**
   String get ipdBedStatusBlocked;
 
+  /// Tab label for the IPD admission queue section.
+  ///
+  /// In en, this message translates to:
+  /// **'Admission Queue'**
+  String get ipdAdmissionQueueTabLabel;
+
+  /// Tab label for the IPD active patients section.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Patients'**
+  String get ipdActivePatientsTabLabel;
+
+  /// Tab label for the IPD transfers section.
+  ///
+  /// In en, this message translates to:
+  /// **'Transfers'**
+  String get ipdTransfersTabLabel;
+
+  /// Tab label for the IPD discharge section.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge'**
+  String get ipdDischargeTabLabel;
+
   /// Tab label for the IPD active patient board.
   ///
   /// In en, this message translates to:
@@ -21207,6 +21237,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Generated from claims and billing data.'**
   String get claimsReportFooter;
+
+  /// Tab label for the pre-authorizations section in the claims workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Authorizations'**
+  String get claimsSectionAuthorizations;
+
+  /// Tab label for the active claims section in the claims workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Active Claims'**
+  String get claimsSectionActiveClaims;
+
+  /// Tab label for the settled claims section in the claims workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Settled'**
+  String get claimsSectionSettled;
+
+  /// Tab label for the insurance setup section in the claims workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance Setup'**
+  String get claimsSectionInsuranceSetup;
+
+  /// Column header for patient display ID in claims tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get claimsPatientColumnLabel;
+
+  /// Column header for claim or approved amount in claims tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount'**
+  String get claimsAmountColumnLabel;
+
+  /// Column header for settlement amount in the settled claims table.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement'**
+  String get claimsSettlementAmountColumnLabel;
+
+  /// Column header for authorization request timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested'**
+  String get claimsRequestedAtColumnLabel;
+
+  /// Column header for claim submission timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Submitted'**
+  String get claimsSubmittedAtColumnLabel;
+
+  /// Description text for the insurance setup panel.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage insurance companies, schemes, offers, enrollments, price books, and insurer integrations.'**
+  String get claimsInsuranceSetupDescription;
 
   /// Localized text for labTitle.
   ///
@@ -29810,6 +29900,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rooms and beds updated.'**
   String get roomsBedsSavedMessage;
+
+  /// Tab label for showing all beds in the bed board
+  ///
+  /// In en, this message translates to:
+  /// **'All beds'**
+  String get roomsBedsSectionAllLabel;
+
+  /// Tab label for showing available beds
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get roomsBedsSectionAvailableLabel;
+
+  /// Tab label for showing occupied beds
+  ///
+  /// In en, this message translates to:
+  /// **'Occupied'**
+  String get roomsBedsSectionOccupiedLabel;
+
+  /// Tab label for showing beds in transition (reserved, cleaning, maintenance)
+  ///
+  /// In en, this message translates to:
+  /// **'Turnover'**
+  String get roomsBedsSectionTurnoverLabel;
+
+  /// Tab label for showing blocked and out-of-service beds
+  ///
+  /// In en, this message translates to:
+  /// **'Out of service'**
+  String get roomsBedsSectionOutOfServiceLabel;
 
   /// Validation message for required rooms and beds fields.
   ///

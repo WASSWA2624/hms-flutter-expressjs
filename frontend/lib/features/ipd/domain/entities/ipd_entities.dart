@@ -13,6 +13,52 @@ enum IpdQueueScope {
 
 enum IpdBoardMode { patientBoard, bedBoard }
 
+enum IpdWorkspaceSection {
+  admissionQueue,
+  activePatients,
+  transferPending,
+  dischargePlanned,
+  bedBoard,
+}
+
+extension IpdWorkspaceSectionX on IpdWorkspaceSection {
+  IpdQueueScope? get queueScope => switch (this) {
+    IpdWorkspaceSection.admissionQueue => IpdQueueScope.admissionQueue,
+    IpdWorkspaceSection.activePatients => IpdQueueScope.activePatients,
+    IpdWorkspaceSection.transferPending => IpdQueueScope.transferPending,
+    IpdWorkspaceSection.dischargePlanned => IpdQueueScope.dischargePlanned,
+    IpdWorkspaceSection.bedBoard => null,
+  };
+
+  bool get isBedBoard => this == IpdWorkspaceSection.bedBoard;
+
+  static IpdWorkspaceSection fromQueryParam(String? value) {
+    return switch ((value ?? '').trim().toLowerCase()) {
+      'admission-queue' ||
+      'admission_queue' ||
+      'admissionqueue' ||
+      'queue' => IpdWorkspaceSection.admissionQueue,
+      'active' ||
+      'active-patients' ||
+      'active_patients' ||
+      'activepatients' => IpdWorkspaceSection.activePatients,
+      'transfers' ||
+      'transfer-pending' ||
+      'transfer_pending' ||
+      'transferpending' => IpdWorkspaceSection.transferPending,
+      'discharge' ||
+      'discharge-planned' ||
+      'discharge_planned' ||
+      'dischargeplanned' => IpdWorkspaceSection.dischargePlanned,
+      'bed-board' ||
+      'bed_board' ||
+      'bedboard' ||
+      'beds' => IpdWorkspaceSection.bedBoard,
+      _ => IpdWorkspaceSection.admissionQueue,
+    };
+  }
+}
+
 @immutable
 final class IpdAdmissionQuery {
   const IpdAdmissionQuery({
@@ -22,6 +68,7 @@ final class IpdAdmissionQuery {
     this.pageRequest = const AppPageRequest(),
     this.focusAdmissionId,
     this.focusPanel,
+    this.section = IpdWorkspaceSection.admissionQueue,
   });
 
   final String search;
@@ -34,6 +81,8 @@ final class IpdAdmissionQuery {
 
   /// Deep-link target panel to scroll/focus once the admission opens.
   final IpdDetailPanel? focusPanel;
+
+  final IpdWorkspaceSection section;
 
   factory IpdAdmissionQuery.fromUri(Uri uri) {
     final Map<String, String> params = uri.queryParameters;
@@ -48,6 +97,7 @@ final class IpdAdmissionQuery {
       wardId: _nonEmpty(params['wardId'] ?? params['ward']),
       focusAdmissionId: admissionId,
       focusPanel: IpdDetailPanelX.fromToken(params['panel']),
+      section: IpdWorkspaceSectionX.fromQueryParam(params['section']),
     );
   }
 
@@ -64,6 +114,7 @@ final class IpdAdmissionQuery {
     AppPageRequest? pageRequest,
     String? focusAdmissionId,
     IpdDetailPanel? focusPanel,
+    IpdWorkspaceSection? section,
     bool clearWard = false,
     bool clearFocus = false,
   }) {
@@ -76,6 +127,7 @@ final class IpdAdmissionQuery {
           ? null
           : focusAdmissionId ?? this.focusAdmissionId,
       focusPanel: clearFocus ? null : focusPanel ?? this.focusPanel,
+      section: section ?? this.section,
     );
   }
 }

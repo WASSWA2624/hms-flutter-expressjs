@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -23,12 +23,12 @@ import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_start_admission
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
-import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 
 const List<AppRole> _ipdAdminActionRoles = <AppRole>[
   AppRole.superAdmin,
@@ -172,7 +172,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<IpdAdmissionSummary>
   _tableColumnController;
-  IpdBoardMode _boardMode = IpdBoardMode.patientBoard;
+  IpdWorkspaceSection _section = IpdWorkspaceSection.admissionQueue;
 
   @override
   void initState() {
@@ -180,18 +180,46 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<IpdAdmissionSummary>();
+    _section = widget.state.query.section;
   }
 
-  void _selectBoardMode(IpdBoardMode mode) {
-    if (_boardMode == mode) {
-      return;
+  void _selectSection(IpdWorkspaceSection section) {
+    if (_section == section) return;
+    setState(() => _section = section);
+
+    final IpdWorkspaceController controller = ref.read(
+      ipdWorkspaceControllerProvider.notifier,
+    );
+
+    final IpdQueueScope? scope = section.queueScope;
+    if (scope != null) {
+      unawaited(controller.applyScope(scope));
+    } else if (section.isBedBoard) {
+      unawaited(controller.loadBedBoard());
     }
-    setState(() => _boardMode = mode);
-    if (mode == IpdBoardMode.bedBoard) {
-      unawaited(
-        ref.read(ipdWorkspaceControllerProvider.notifier).loadBedBoard(),
-      );
-    }
+
+    _updateUrlForSection(section);
+  }
+
+  void _updateUrlForSection(IpdWorkspaceSection section) {
+    if (!mounted) return;
+    final String sectionValue = _sectionToQueryValue(section);
+    final String location = AppRoutes.ipd.location(
+      queryParameters: <String, String>{
+        if (sectionValue.isNotEmpty) 'section': sectionValue,
+      },
+    );
+    GoRouter.of(context).replace<void>(location);
+  }
+
+  static String _sectionToQueryValue(IpdWorkspaceSection section) {
+    return switch (section) {
+      IpdWorkspaceSection.admissionQueue => 'admission-queue',
+      IpdWorkspaceSection.activePatients => 'active',
+      IpdWorkspaceSection.transferPending => 'transfers',
+      IpdWorkspaceSection.dischargePlanned => 'discharge',
+      IpdWorkspaceSection.bedBoard => 'bed-board',
+    };
   }
 
   @override
@@ -213,132 +241,119 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final IpdWorkspaceState state = widget.state;
-    final IpdWorkspaceController controller = ref.read(
-      ipdWorkspaceControllerProvider.notifier,
-    );
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
-    final bool canOperate = _ipdOperationalWriteRequirement.isAllowed(policy);
     final bool canManageBeds = _ipdBedManageRequirement.isAllowed(policy);
 
-    return AppWorkspace(
-      title: l10n.ipdTitle,
-      leadingIcon: AppRouteIcons.ipd,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        summaryNotifications: <AppWorkspaceSummaryNotification>[
-          if (_pageTotal(state.admissions) > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.ipdScopeAll,
-              count: _pageTotal(state.admissions),
-              icon: Icons.inventory_2_outlined,
-              onSelected: () => controller.applyScope(IpdQueueScope.all),
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: AppTabStrip(
+                    tabs: <AppTabItem>[
+                      AppTabItem(
+                        id: IpdWorkspaceSection.admissionQueue.name,
+                        icon: Icons.bed_outlined,
+                        label: _tabLabel(
+                          l10n.ipdAdmissionQueueTabLabel,
+                          state.admissionQueueCount,
+                        ),
+                      ),
+                      AppTabItem(
+                        id: IpdWorkspaceSection.activePatients.name,
+                        icon: Icons.local_hospital_outlined,
+                        label: _tabLabel(
+                          l10n.ipdActivePatientsTabLabel,
+                          state.activePatientCount,
+                        ),
+                      ),
+                      AppTabItem(
+                        id: IpdWorkspaceSection.transferPending.name,
+                        icon: Icons.swap_horiz,
+                        label: _tabLabel(
+                          l10n.ipdTransfersTabLabel,
+                          state.transferPendingCount,
+                        ),
+                      ),
+                      AppTabItem(
+                        id: IpdWorkspaceSection.dischargePlanned.name,
+                        icon: Icons.fact_check_outlined,
+                        label: _tabLabel(
+                          l10n.ipdDischargeTabLabel,
+                          state.dischargePlannedCount,
+                        ),
+                      ),
+                      AppTabItem(
+                        id: IpdWorkspaceSection.bedBoard.name,
+                        icon: Icons.grid_view_outlined,
+                        label: l10n.ipdBedBoardTab,
+                      ),
+                    ],
+                    selectedId: _section.name,
+                    onTabTapped: (String id) {
+                      final IpdWorkspaceSection section = IpdWorkspaceSection
+                          .values
+                          .firstWhere(
+                            (IpdWorkspaceSection s) => s.name == id,
+                            orElse: () => IpdWorkspaceSection.admissionQueue,
+                          );
+                      _selectSection(section);
+                    },
+                  ),
+                ),
+                SizedBox(width: theme.spacing.sm),
+                AppAccessActionGate(
+                  requirement: _ipdOperationalWriteRequirement,
+                  builder: (BuildContext context, bool isAllowed) {
+                    return AppButton.primary(
+                      label: l10n.ipdStartAdmissionAction,
+                      leadingIcon: Icons.person_add_alt_1_outlined,
+                      enabled: isAllowed && !state.isSaving,
+                      onPressed: isAllowed
+                          ? () => unawaited(_openStartAdmissionDialog(context))
+                          : null,
+                    );
+                  },
+                ),
+              ],
             ),
-          if (state.admissionQueueCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.ipdAdmissionQueueSummaryLabel,
-              count: state.admissionQueueCount,
-              icon: Icons.bed_outlined,
-              tone: AppWorkspaceStatusTone.warning,
-              onSelected: () =>
-                  controller.applyScope(IpdQueueScope.admissionQueue),
-            ),
-          if (state.activePatientCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.ipdActivePatientsSummaryLabel,
-              count: state.activePatientCount,
-              icon: Icons.local_hospital_outlined,
-              tone: AppWorkspaceStatusTone.info,
-              onSelected: () =>
-                  controller.applyScope(IpdQueueScope.activePatients),
-            ),
-          if (state.transferPendingCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.ipdTransferPendingSummaryLabel,
-              count: state.transferPendingCount,
-              icon: Icons.swap_horiz,
-              tone: AppWorkspaceStatusTone.warning,
-              onSelected: () =>
-                  controller.applyScope(IpdQueueScope.transferPending),
-            ),
-          if (state.dischargePlannedCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.ipdDischargePlannedSummaryLabel,
-              count: state.dischargePlannedCount,
-              icon: Icons.fact_check_outlined,
-              tone: AppWorkspaceStatusTone.success,
-              onSelected: () =>
-                  controller.applyScope(IpdQueueScope.dischargePlanned),
-            ),
-          if (state.criticalAlertCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.ipdCriticalAlertsSummaryLabel,
-              count: state.criticalAlertCount,
-              icon: Icons.notification_important_outlined,
-              tone: AppWorkspaceStatusTone.error,
-              onSelected: () =>
-                  controller.applyScope(IpdQueueScope.activePatients),
-            ),
-        ],
-        secondary: <Widget>[
-          AppWorkspaceBoardToggle<IpdBoardMode>(
-            value: _boardMode,
-            segments: <ButtonSegment<IpdBoardMode>>[
-              ButtonSegment<IpdBoardMode>(
-                value: IpdBoardMode.patientBoard,
-                label: Text(l10n.ipdPatientBoardTab),
-                icon: const Icon(Icons.people_alt_outlined),
-              ),
-              ButtonSegment<IpdBoardMode>(
-                value: IpdBoardMode.bedBoard,
-                label: Text(l10n.ipdBedBoardTab),
-                icon: const Icon(Icons.bed_outlined),
-              ),
-            ],
-            onChanged: _selectBoardMode,
-          ),
-        ],
-        primary: canOperate
-            ? AppButton.primary(
-                label: l10n.ipdStartAdmissionAction,
-                leadingIcon: Icons.person_add_alt_1_outlined,
-                enabled: !state.isSaving,
-                onPressed: () => unawaited(_openStartAdmissionDialog(context)),
+            SizedBox(height: theme.spacing.md),
+            if (_section.isBedBoard)
+              IpdBedBoardPanel(
+                state: state,
+                canManageBeds: canManageBeds,
+                onManageBeds: () => context.go(AppRoutes.roomsBeds.path),
+                onOpenAdmission: (IpdBedBoardEntry bed) {
+                  final String? admissionId =
+                      bed.occupantAdmissionId ?? bed.occupantAdmissionDisplayId;
+                  if (admissionId != null) {
+                    unawaited(
+                      _openIpdDetailDialogById(context, ref, admissionId),
+                    );
+                  }
+                },
               )
-            : null,
-        onRefresh: () async {
-          final AppFailure? failure = await controller.refresh();
-          if (_boardMode == IpdBoardMode.bedBoard) {
-            await controller.loadBedBoard(force: true);
-          }
-          if (context.mounted) {
-            _showFailureIfNeeded(context, failure);
-          }
-        },
-        isRefreshing: state.isRefreshing,
+            else
+              _IpdBoardPanel(
+                state: state,
+                searchController: _searchController,
+                columnVisibilityController: _tableColumnController,
+              ),
+          ],
+        ),
       ),
-
-      body: _boardMode == IpdBoardMode.bedBoard
-          ? IpdBedBoardPanel(
-              state: state,
-              canManageBeds: canManageBeds,
-              onManageBeds: () => context.go(AppRoutes.roomsBeds.path),
-              onOpenAdmission: (IpdBedBoardEntry bed) {
-                final String? admissionId =
-                    bed.occupantAdmissionId ?? bed.occupantAdmissionDisplayId;
-                if (admissionId != null) {
-                  unawaited(
-                    _openIpdDetailDialogById(context, ref, admissionId),
-                  );
-                }
-              },
-            )
-          : _IpdBoardPanel(
-              state: state,
-              searchController: _searchController,
-              columnVisibilityController: _tableColumnController,
-            ),
     );
+  }
+
+  static String _tabLabel(String label, int count) {
+    return count > 0 ? '$label ($count)' : label;
   }
 
   Future<void> _openStartAdmissionDialog(BuildContext context) async {
@@ -395,36 +410,26 @@ class _IpdBoardPanel extends ConsumerWidget {
         allFieldsLabel: l10n.ipdAllWardsOption,
         filterGroups: <AppSearchBarFilterGroup>[
           AppSearchBarFilterGroup(
-            key: _ipdScopeFilterKey,
-            label: l10n.ipdScopeFilterLabel,
-            allLabel: _ipdScopeLabel(l10n, IpdQueueScope.admissionQueue),
-            choices: _ipdScopeFilterChoices(l10n),
-          ),
-          AppSearchBarFilterGroup(
             key: _ipdWardFilterKey,
             label: l10n.ipdWardFilterLabel,
             allLabel: l10n.ipdAllWardsOption,
             choices: _ipdWardFilterChoices(state.referenceData.wards),
           ),
         ],
-        filterValue: _ipdFilterValue(state.query),
-        hasActiveFilters:
-            state.query.scope != IpdQueueScope.admissionQueue ||
-            state.query.wardId != null,
+        filterValue: AppSearchBarFilterValue(
+          options: <String, String>{
+            if (state.query.wardId != null)
+              _ipdWardFilterKey: state.query.wardId!,
+          },
+        ),
+        hasActiveFilters: state.query.wardId != null,
         onFilterChanged: (AppSearchBarFilterValue value) async {
-          final IpdQueueScope nextScope = _ipdScopeFromFilter(
-            value.option(_ipdScopeFilterKey),
-          );
           final String? nextWardId = value.option(_ipdWardFilterKey);
-          AppFailure? failure;
-          if (nextScope != state.query.scope) {
-            failure = await controller.applyScope(nextScope);
-          }
           if (nextWardId != state.query.wardId) {
-            failure ??= await controller.applyWard(nextWardId);
-          }
-          if (context.mounted) {
-            _showFailureIfNeeded(context, failure);
+            final AppFailure? failure = await controller.applyWard(nextWardId);
+            if (context.mounted) {
+              _showFailureIfNeeded(context, failure);
+            }
           }
         },
       ),
@@ -2532,72 +2537,7 @@ class _MedicationAdministrationDialogState
   }
 }
 
-List<AppSelectOption<IpdQueueScope>> _scopeOptions(AppLocalizations l10n) {
-  return <AppSelectOption<IpdQueueScope>>[
-    AppSelectOption<IpdQueueScope>(
-      value: IpdQueueScope.admissionQueue,
-      label: l10n.ipdScopeAdmissionQueue,
-    ),
-    AppSelectOption<IpdQueueScope>(
-      value: IpdQueueScope.activePatients,
-      label: l10n.ipdScopeActivePatients,
-    ),
-    AppSelectOption<IpdQueueScope>(
-      value: IpdQueueScope.transferPending,
-      label: l10n.ipdScopeTransferPending,
-    ),
-    AppSelectOption<IpdQueueScope>(
-      value: IpdQueueScope.dischargePlanned,
-      label: l10n.ipdScopeDischargePlanned,
-    ),
-    AppSelectOption<IpdQueueScope>(
-      value: IpdQueueScope.awaitingClearance,
-      label: l10n.ipdScopeAwaitingClearance,
-    ),
-    AppSelectOption<IpdQueueScope>(
-      value: IpdQueueScope.discharged,
-      label: l10n.ipdScopeDischarged,
-    ),
-    AppSelectOption<IpdQueueScope>(
-      value: IpdQueueScope.all,
-      label: l10n.ipdScopeAll,
-    ),
-  ];
-}
-
-const String _ipdScopeFilterKey = 'scope';
 const String _ipdWardFilterKey = 'ward';
-
-AppSearchBarFilterValue _ipdFilterValue(IpdAdmissionQuery query) {
-  return AppSearchBarFilterValue(
-    options: <String, String>{
-      if (query.scope != IpdQueueScope.admissionQueue)
-        _ipdScopeFilterKey: query.scope.name,
-      if (query.wardId != null) _ipdWardFilterKey: query.wardId!,
-    },
-  );
-}
-
-IpdQueueScope _ipdScopeFromFilter(String? value) {
-  for (final IpdQueueScope scope in IpdQueueScope.values) {
-    if (scope.name == value) {
-      return scope;
-    }
-  }
-  return IpdQueueScope.admissionQueue;
-}
-
-List<AppSearchBarFilterChoice> _ipdScopeFilterChoices(AppLocalizations l10n) {
-  return <AppSearchBarFilterChoice>[
-    for (final AppSelectOption<IpdQueueScope> option in _scopeOptions(l10n))
-      if (option.value != IpdQueueScope.admissionQueue)
-        AppSearchBarFilterChoice(
-          value: option.value.name,
-          label: option.label,
-          icon: Icons.filter_list,
-        ),
-  ];
-}
 
 List<AppSearchBarFilterChoice> _ipdWardFilterChoices(
   List<IpdWardOption> wards,
@@ -2610,15 +2550,6 @@ List<AppSearchBarFilterChoice> _ipdWardFilterChoices(
         icon: Icons.local_hospital_outlined,
       ),
   ];
-}
-
-String _ipdScopeLabel(AppLocalizations l10n, IpdQueueScope scope) {
-  for (final AppSelectOption<IpdQueueScope> option in _scopeOptions(l10n)) {
-    if (option.value == scope) {
-      return option.label;
-    }
-  }
-  return l10n.ipdScopeAdmissionQueue;
 }
 
 List<AppSelectOption<String>> _routeOptions(AppLocalizations l10n) {
@@ -2857,8 +2788,6 @@ IconData _recordIcon(String kind) {
     _ => Icons.circle_outlined,
   };
 }
-
-int _pageTotal<T>(AppPage<T> page) => page.totalItemCount ?? page.items.length;
 
 String _pageLabel<T>(BuildContext context, AppPage<T> page) {
   final int total = page.totalItemCount ?? page.lastItemNumber;

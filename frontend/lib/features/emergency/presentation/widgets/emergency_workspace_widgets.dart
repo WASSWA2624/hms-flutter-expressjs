@@ -16,6 +16,7 @@ import 'package:hosspi_hms/features/emergency/presentation/widgets/emergency_dia
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
@@ -490,6 +491,87 @@ void showFailureIfNeeded(
   if (failure == null && successMessage != null) {
     showAppSuccessSnackBar(context, successMessage);
   }
+}
+
+AppListTableColumn<EmergencyCaseSummary> emergencyPatientColumn() {
+  return AppListTableColumn<EmergencyCaseSummary>(
+    id: 'patient',
+    label: EmergencyText.patient,
+    alwaysVisible: true,
+    sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+        appListTableCompareText(left.displayTitle, right.displayTitle),
+    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
+      return EmergencyCaseCell(item: item);
+    },
+  );
+}
+
+AppListTableColumn<EmergencyCaseSummary> emergencyPriorityColumn() {
+  return AppListTableColumn<EmergencyCaseSummary>(
+    id: 'priority',
+    label: EmergencyText.priority,
+    sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+        appListTableCompareText(left.severity, right.severity),
+    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
+      return AppWorkspaceStatusBadge(status: severityStatus(item));
+    },
+  );
+}
+
+AppListTableColumn<EmergencyCaseSummary> emergencyArrivalColumn() {
+  return AppListTableColumn<EmergencyCaseSummary>(
+    id: 'arrival',
+    label: EmergencyText.arrival,
+    sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+        appListTableCompareDateTime(left.createdAt, right.createdAt),
+    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
+      return Text(dateTimeLabel(context, item.createdAt));
+    },
+  );
+}
+
+AppListTableColumn<EmergencyCaseSummary> emergencyResponseColumn() {
+  return AppListTableColumn<EmergencyCaseSummary>(
+    id: 'response',
+    label: EmergencyText.response,
+    sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+        appListTableCompareText(left.responseStatus, right.responseStatus),
+    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
+      return AppWorkspaceStatusBadge(status: responseStatus(item));
+    },
+  );
+}
+
+AppListTableColumn<EmergencyCaseSummary> emergencyLocationColumn() {
+  return AppListTableColumn<EmergencyCaseSummary>(
+    id: 'location',
+    label: EmergencyText.location,
+    sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+        appListTableCompareText(left.currentLocation, right.currentLocation),
+    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
+      return Text(item.currentLocation);
+    },
+  );
+}
+
+AppListTableColumn<EmergencyCaseSummary> emergencyNextActionColumn() {
+  return AppListTableColumn<EmergencyCaseSummary>(
+    id: 'next_action',
+    label: EmergencyText.next,
+    alwaysVisible: true,
+    sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+        appListTableCompareText(left.nextAction, right.nextAction),
+    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
+      return WorkflowActionButton(
+        encounterId: item.id,
+        patientId: item.patientId,
+        stage: item.status,
+        nextStep: emergencyNextStepCode(item),
+        sourceModule: 'emergency',
+        compact: true,
+      );
+    },
+  );
 }
 
 class EmergencyCaseCell extends StatelessWidget {
@@ -1251,4 +1333,55 @@ class AmbulancePanel extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> openEmergencyDetailDialog(
+  BuildContext context,
+  WidgetRef ref,
+  EmergencyWorkspaceState fallbackState,
+  EmergencyCaseSummary summary,
+  AccessRequirement writeRequirement,
+) async {
+  final EmergencyWorkspaceController controller = ref.read(
+    emergencyWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? failure = await controller.selectCase(summary);
+  if (context.mounted) {
+    showFailureIfNeeded(context, failure);
+  }
+  if (failure != null || !context.mounted) {
+    return;
+  }
+
+  final EmergencyWorkspaceState state =
+      readEmergencyState(ref) ?? fallbackState;
+  if (state.selectedDetail == null) {
+    return;
+  }
+
+  await showAppDialog<void>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: Text(context.l10n.emergencyCaseDialogTitle),
+      icon: const Icon(Icons.emergency_outlined),
+      scrollable: true,
+      maxWidth: 980,
+      content: EmergencyDetailPanel(
+        state: state,
+        writeRequirement: writeRequirement,
+        isDialog: true,
+      ),
+    ),
+  );
+}
+
+EmergencyWorkspaceState? readEmergencyState(WidgetRef ref) {
+  return ref
+      .read(emergencyWorkspaceControllerProvider)
+      .asData
+      ?.value
+      .when(
+        success: (EmergencyWorkspaceState state) => state,
+        failure: (_) => null,
+      );
 }

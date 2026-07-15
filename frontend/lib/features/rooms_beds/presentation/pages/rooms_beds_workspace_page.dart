@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -77,7 +76,7 @@ class _RoomsBedsWorkspacePageState
     if (query == null) {
       return null;
     }
-    return '${query.wardId}|${query.roomId}|${query.bedId}|${query.status?.apiValue}|${query.search}';
+    return '${query.section.name}|${query.wardId}|${query.roomId}|${query.bedId}|${query.status?.apiValue}|${query.search}';
   }
 
   @override
@@ -119,6 +118,7 @@ class _RoomsBedsWorkspaceContentState
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<BedBoardItem>
   _tableColumnController;
+  late RoomsBedsSection _section;
 
   @override
   void initState() {
@@ -126,6 +126,7 @@ class _RoomsBedsWorkspaceContentState
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<BedBoardItem>();
+    _section = widget.state.query.section;
   }
 
   @override
@@ -144,9 +145,29 @@ class _RoomsBedsWorkspaceContentState
     super.dispose();
   }
 
+  void _updateUrlForSection(RoomsBedsSection section) {
+    if (!mounted) {
+      return;
+    }
+    final String tab = _roomsBedsSectionQueryValue(section);
+    final String location = AppRoutes.roomsBeds.location(
+      queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
+    );
+    GoRouter.of(context).replace<void>(location);
+  }
+
+  void _handleTabChanged(RoomsBedsSection section) {
+    if (section == _section) {
+      return;
+    }
+    setState(() => _section = section);
+    _updateUrlForSection(section);
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final RoomsBedsWorkspaceState state = widget.state;
     final RoomsBedsWorkspaceController controller = ref.read(
       roomsBedsWorkspaceControllerProvider.notifier,
@@ -156,341 +177,287 @@ class _RoomsBedsWorkspaceContentState
     final bool canIpdWrite = accessPolicy.grants(AppPermissions.clinicalWrite);
     final AppFailure? lastFailure = state.lastFailure as AppFailure?;
 
-    return AppWorkspace(
-      title: l10n.roomsBedsTitle,
-      leadingIcon: AppRouteIcons.roomsBeds,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        summaryNotifications: <AppWorkspaceSummaryNotification>[
-          AppWorkspaceSummaryNotification(
-            label: l10n.roomsBedsTotalSummaryLabel,
-            count: state.totalBedCount,
-            icon: Icons.bed_outlined,
-            onSelected: controller.clearFilters,
-          ),
-          AppWorkspaceSummaryNotification(
-            label: l10n.tenantFacilityBedStatusAvailable,
-            count: state.availableCount,
-            icon: Icons.check_circle_outline,
-            tone: AppWorkspaceStatusTone.success,
-            onSelected: () => controller.applyStatus(BedSetupStatus.available),
-          ),
-          AppWorkspaceSummaryNotification(
-            label: l10n.tenantFacilityBedStatusOccupied,
-            count: state.occupiedCount,
-            icon: Icons.person_pin_circle_outlined,
-            tone: AppWorkspaceStatusTone.info,
-            onSelected: () => controller.applyStatus(BedSetupStatus.occupied),
-          ),
-          AppWorkspaceSummaryNotification(
-            label: l10n.tenantFacilityBedStatusReserved,
-            count: state.reservedCount,
-            icon: Icons.event_available_outlined,
-            tone: AppWorkspaceStatusTone.warning,
-            onSelected: () => controller.applyStatus(BedSetupStatus.reserved),
-          ),
-          AppWorkspaceSummaryNotification(
-            label: l10n.tenantFacilityBedStatusCleaning,
-            count: state.cleaningCount,
-            icon: Icons.cleaning_services_outlined,
-            tone: AppWorkspaceStatusTone.warning,
-            onSelected: () => controller.applyStatus(BedSetupStatus.cleaning),
-          ),
-          AppWorkspaceSummaryNotification(
-            label: l10n.tenantFacilityBedStatusBlocked,
-            count: state.blockedCount,
-            icon: Icons.block_outlined,
-            tone: AppWorkspaceStatusTone.error,
-            onSelected: () => controller.applyStatus(BedSetupStatus.blocked),
-          ),
-        ],
-        primary: canAdminBeds
-            ? AppButton.primary(
-                label: l10n.tenantFacilityAddRoomAction,
-                leadingIcon: Icons.meeting_room_outlined,
-                semanticLabel: l10n.tenantFacilityAddRoomAction,
-                tooltip: l10n.tenantFacilityAddRoomAction,
-                enabled: !state.isSaving,
-                onPressed: () async {
-                  await showTenantFacilityRoomFormDialog(
-                    context,
-                    state.referenceData.snapshot,
-                  );
-                  if (context.mounted) {
-                    await controller.refresh();
-                  }
-                },
-              )
-            : null,
-        secondary: <Widget>[
-          if (canAdminBeds)
-            AppButton.secondary(
-              label: l10n.tenantFacilityAddBedAction,
-              leadingIcon: Icons.bed_outlined,
-              semanticLabel: l10n.tenantFacilityAddBedAction,
-              tooltip: l10n.tenantFacilityAddBedAction,
-              enabled: !state.isSaving,
-              onPressed: () async {
-                await showTenantFacilityBedFormDialog(
-                  context,
-                  state.referenceData.snapshot,
-                );
-                if (context.mounted) {
-                  await controller.refresh();
-                }
-              },
-            ),
-          if (canAdminBeds)
-            AppButton.secondary(
-              label: l10n.roomsBedsManageCatalogAction,
-              leadingIcon: Icons.apartment_outlined,
-              enabled: !state.isSaving,
-              onPressed: () =>
-                  context.go(AppRoutes.tenantFacilitySetup.location()),
-            ),
-          AppButton.tertiary(
-            label: l10n.navigationSetupLabel,
-            leadingIcon: Icons.settings_outlined,
-            onPressed: () =>
-                context.go(AppRoutes.tenantFacilitySetup.location()),
-          ),
-        ],
-        onRefresh: () async {
-          final AppFailure? failure = await controller.refresh();
-          if (context.mounted) {
-            _showFailureIfNeeded(context, failure);
-          }
-        },
-        isRefreshing: state.isRefreshing,
-      ),
+    final AppPage<BedBoardItem> sectionPage = _sectionFilteredPage(
+      state.beds,
+      _section,
+    );
 
-      body: Column(
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: AppTabStrip(
+                  tabs: <AppTabItem>[
+                    for (final RoomsBedsSection section
+                        in RoomsBedsSection.values)
+                      AppTabItem(
+                        id: section.name,
+                        icon: _roomsBedsSectionIcon(section),
+                        label:
+                            '${_roomsBedsSectionLabel(l10n, section)} (${_roomsBedsSectionCount(state, section)})',
+                      ),
+                  ],
+                  selectedId: _section.name,
+                  onTabTapped: (String tabId) {
+                    for (final RoomsBedsSection section
+                        in RoomsBedsSection.values) {
+                      if (section.name == tabId) {
+                        _handleTabChanged(section);
+                        break;
+                      }
+                    }
+                  },
+                ),
+              ),
+              SizedBox(width: theme.spacing.sm),
+              if (canAdminBeds)
+                AppButton.primary(
+                  label: l10n.tenantFacilityAddRoomAction,
+                  leadingIcon: Icons.meeting_room_outlined,
+                  semanticLabel: l10n.tenantFacilityAddRoomAction,
+                  tooltip: l10n.tenantFacilityAddRoomAction,
+                  enabled: !state.isSaving,
+                  onPressed: () async {
+                    await showTenantFacilityRoomFormDialog(
+                      context,
+                      state.referenceData.snapshot,
+                    );
+                    if (context.mounted) {
+                      await controller.refresh();
+                    }
+                  },
+                ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.md),
           if (lastFailure != null) ...<Widget>[
             AppFailureStateView(
               failure: lastFailure,
               onRetry: controller.refresh,
             ),
-            SizedBox(height: Theme.of(context).spacing.md),
+            SizedBox(height: theme.spacing.md),
           ],
-          _BedBoardPanel(
-            state: state,
-            canAdminBeds: canAdminBeds,
-            canIpdWrite: canIpdWrite,
-            searchController: _searchController,
+          AppListTable<BedBoardItem>(
+            page: sectionPage,
+            isLoading: state.isRefreshing,
             columnVisibilityController: _tableColumnController,
+            columnVisibilityStorageKey: 'rooms_beds_${_section.name}',
+            columnWidthStorageKey: 'rooms_beds_cw_${_section.name}',
+            columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            search: AppListTableSearch<BedBoardItem>(
+              controller: _searchController,
+              semanticLabel: l10n.roomsBedsSearchLabel,
+              hintText: l10n.roomsBedsSearchHint,
+              matcher: (_, _) => true,
+              onSubmitted: (String value) async {
+                final AppFailure? failure = await controller.applySearch(value);
+                if (context.mounted) {
+                  _showFailureIfNeeded(context, failure);
+                }
+              },
+              onClear: () async {
+                final AppFailure? failure = await controller.applySearch('');
+                if (context.mounted) {
+                  _showFailureIfNeeded(context, failure);
+                }
+              },
+              showAdvancedFilterButton: true,
+              advancedFilterButtonLabel: l10n.roomsBedsFiltersLabel,
+              advancedFilterTitle: l10n.roomsBedsFiltersLabel,
+              advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+              advancedFilterResetLabel: l10n.opdClearFiltersAction,
+              enableDateFilter: false,
+              allFieldsLabel: l10n.roomsBedsAllFilterLabel,
+              filterGroups: <AppSearchBarFilterGroup>[
+                AppSearchBarFilterGroup(
+                  key: _facilityFilterKey,
+                  label: l10n.roomsBedsFacilityFilterLabel,
+                  allLabel: l10n.roomsBedsAllFacilitiesLabel,
+                  choices: _facilityChoices(state.referenceData.facilities),
+                ),
+                AppSearchBarFilterGroup(
+                  key: _wardFilterKey,
+                  label: l10n.roomsBedsWardFilterLabel,
+                  allLabel: l10n.roomsBedsAllWardsLabel,
+                  choices: _wardChoices(state.referenceData.wards),
+                ),
+                AppSearchBarFilterGroup(
+                  key: _roomFilterKey,
+                  label: l10n.roomsBedsRoomFilterLabel,
+                  allLabel: l10n.roomsBedsAllRoomsLabel,
+                  choices: _roomChoices(state.referenceData.rooms),
+                ),
+                AppSearchBarFilterGroup(
+                  key: _statusFilterKey,
+                  label: l10n.roomsBedsStatusFilterLabel,
+                  allLabel: l10n.roomsBedsAllStatusesLabel,
+                  choices: roomsBedsStatusFilterChoices(l10n),
+                ),
+              ],
+              filterValue: _filterValue(state.query),
+              hasActiveFilters: state.query.hasFilters,
+              onFilterChanged: (AppSearchBarFilterValue value) async {
+                AppFailure? failure;
+                final String? facilityId = value.option(_facilityFilterKey);
+                final String? wardId = value.option(_wardFilterKey);
+                final String? roomId = value.option(_roomFilterKey);
+                final BedSetupStatus? status = roomsBedsStatusFromFilter(
+                  value.option(_statusFilterKey),
+                );
+                if (facilityId != state.query.facilityId) {
+                  failure = await controller.applyFacility(facilityId);
+                }
+                if (wardId != state.query.wardId) {
+                  failure ??= await controller.applyWard(wardId);
+                }
+                if (roomId != state.query.roomId) {
+                  failure ??= await controller.applyRoom(roomId);
+                }
+                if (status != state.query.status) {
+                  failure ??= await controller.applyStatus(status);
+                }
+                if (context.mounted) {
+                  _showFailureIfNeeded(context, failure);
+                }
+              },
+              trailingActions: <AppSearchBarAction>[
+                if (canAdminBeds)
+                  AppSearchBarAction(
+                    icon: Icons.bed_outlined,
+                    label: l10n.tenantFacilityAddBedAction,
+                    tooltip: l10n.tenantFacilityAddBedAction,
+                    onPressed: () async {
+                      await showTenantFacilityBedFormDialog(
+                        context,
+                        state.referenceData.snapshot,
+                      );
+                      if (context.mounted) {
+                        await controller.refresh();
+                      }
+                    },
+                  ),
+                if (canAdminBeds)
+                  AppSearchBarAction(
+                    icon: Icons.apartment_outlined,
+                    label: l10n.roomsBedsManageCatalogAction,
+                    tooltip: l10n.roomsBedsManageCatalogAction,
+                    onPressed: () =>
+                        context.go(AppRoutes.tenantFacilitySetup.location()),
+                  ),
+                AppSearchBarAction(
+                  icon: Icons.settings_outlined,
+                  label: l10n.navigationSetupLabel,
+                  tooltip: l10n.navigationSetupLabel,
+                  onPressed: () =>
+                      context.go(AppRoutes.tenantFacilitySetup.location()),
+                ),
+              ],
+            ),
+            itemKeyBuilder: (BedBoardItem item) => ValueKey<String>(item.id),
+            onPageChanged: (AppPageRequest request) {
+              unawaited(controller.changePage(request));
+            },
+            onRowSelected: (BedBoardItem item) {
+              unawaited(
+                _openBedDetailDialog(
+                  context,
+                  ref,
+                  state,
+                  item,
+                  canAdminBeds: canAdminBeds,
+                  canIpdWrite: canIpdWrite,
+                ),
+              );
+            },
+            previousPageLabel: l10n.roomsBedsPreviousPageLabel,
+            nextPageLabel: l10n.roomsBedsNextPageLabel,
+            pageLabelBuilder: (AppPage<BedBoardItem> page) {
+              return l10n.roomsBedsPageLabel(
+                page.firstItemNumber,
+                page.lastItemNumber,
+                page.totalItemCount ?? page.items.length,
+              );
+            },
+            emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+              title: l10n.roomsBedsEmptyTitle,
+              body: l10n.roomsBedsEmptyBody,
+              icon: Icons.bed_outlined,
+            ),
+            columns: <AppListTableColumn<BedBoardItem>>[
+              AppListTableColumn<BedBoardItem>(
+                label: l10n.roomsBedsBedColumnLabel,
+                sortComparator: (BedBoardItem left, BedBoardItem right) {
+                  return appListTableCompareText(left.label, right.label);
+                },
+                cellBuilder: (BuildContext context, BedBoardItem item) {
+                  return _TwoLineCell(
+                    title: item.label,
+                    subtitle: _joinDisplay(<String?>[item.facility?.name]),
+                  );
+                },
+              ),
+              AppListTableColumn<BedBoardItem>(
+                label: l10n.roomsBedsLocationColumnLabel,
+                sortComparator: (BedBoardItem left, BedBoardItem right) {
+                  return appListTableCompareText(
+                    _locationLabel(context, left),
+                    _locationLabel(context, right),
+                  );
+                },
+                cellBuilder: (BuildContext context, BedBoardItem item) {
+                  return Text(_locationLabel(context, item));
+                },
+              ),
+              AppListTableColumn<BedBoardItem>(
+                label: l10n.roomsBedsStatusColumnLabel,
+                sortComparator: (BedBoardItem left, BedBoardItem right) {
+                  return appListTableCompareText(
+                    left.status.apiValue,
+                    right.status.apiValue,
+                  );
+                },
+                cellBuilder: (BuildContext context, BedBoardItem item) {
+                  return AppWorkspaceStatusBadge(
+                    status: roomsBedsStatusBadge(context.l10n, item.status),
+                  );
+                },
+              ),
+              AppListTableColumn<BedBoardItem>(
+                label: l10n.roomsBedsAssignmentColumnLabel,
+                sortComparator: (BedBoardItem left, BedBoardItem right) {
+                  return appListTableCompareText(
+                    _assignmentLabel(context, left),
+                    _assignmentLabel(context, right),
+                  );
+                },
+                cellBuilder: (BuildContext context, BedBoardItem item) {
+                  return Text(_assignmentLabel(context, item));
+                },
+              ),
+              AppListTableColumn<BedBoardItem>(
+                label: l10n.roomsBedsNextActionColumnLabel,
+                sortComparator: (BedBoardItem left, BedBoardItem right) {
+                  return appListTableCompareText(
+                    roomsBedsNextActionLabel(context.l10n, left),
+                    roomsBedsNextActionLabel(context.l10n, right),
+                  );
+                },
+                cellBuilder: (BuildContext context, BedBoardItem item) {
+                  return Text(roomsBedsNextActionLabel(context.l10n, item));
+                },
+              ),
+            ],
+            mobileItemBuilder: (BuildContext context, BedBoardItem item) {
+              return _BedMobileItem(item: item);
+            },
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _BedBoardPanel extends ConsumerWidget {
-  const _BedBoardPanel({
-    required this.state,
-    required this.canAdminBeds,
-    required this.canIpdWrite,
-    required this.searchController,
-    required this.columnVisibilityController,
-  });
-
-  final RoomsBedsWorkspaceState state;
-  final bool canAdminBeds;
-  final bool canIpdWrite;
-  final TextEditingController searchController;
-  final AppListTableColumnVisibilityController<BedBoardItem>
-  columnVisibilityController;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final RoomsBedsWorkspaceController controller = ref.read(
-      roomsBedsWorkspaceControllerProvider.notifier,
-    );
-
-    return SizedBox(
-      height: 560,
-      child: AppListTable<BedBoardItem>(
-        page: state.beds,
-        isLoading: state.isRefreshing,
-        columnVisibilityController: columnVisibilityController,
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        search: AppListTableSearch<BedBoardItem>(
-          controller: searchController,
-          semanticLabel: l10n.roomsBedsSearchLabel,
-          hintText: l10n.roomsBedsSearchHint,
-          matcher: (_, _) => true,
-          onSubmitted: (String value) async {
-            final AppFailure? failure = await controller.applySearch(value);
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-          onClear: () async {
-            final AppFailure? failure = await controller.applySearch('');
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-          showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.roomsBedsFiltersLabel,
-          advancedFilterTitle: l10n.roomsBedsFiltersLabel,
-          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-          advancedFilterResetLabel: l10n.opdClearFiltersAction,
-          enableDateFilter: false,
-          allFieldsLabel: l10n.roomsBedsAllFilterLabel,
-          filterGroups: <AppSearchBarFilterGroup>[
-            AppSearchBarFilterGroup(
-              key: _facilityFilterKey,
-              label: l10n.roomsBedsFacilityFilterLabel,
-              allLabel: l10n.roomsBedsAllFacilitiesLabel,
-              choices: _facilityChoices(state.referenceData.facilities),
-            ),
-            AppSearchBarFilterGroup(
-              key: _wardFilterKey,
-              label: l10n.roomsBedsWardFilterLabel,
-              allLabel: l10n.roomsBedsAllWardsLabel,
-              choices: _wardChoices(state.referenceData.wards),
-            ),
-            AppSearchBarFilterGroup(
-              key: _roomFilterKey,
-              label: l10n.roomsBedsRoomFilterLabel,
-              allLabel: l10n.roomsBedsAllRoomsLabel,
-              choices: _roomChoices(state.referenceData.rooms),
-            ),
-            AppSearchBarFilterGroup(
-              key: _statusFilterKey,
-              label: l10n.roomsBedsStatusFilterLabel,
-              allLabel: l10n.roomsBedsAllStatusesLabel,
-              choices: roomsBedsStatusFilterChoices(l10n),
-            ),
-          ],
-          filterValue: _filterValue(state.query),
-          hasActiveFilters: state.query.hasFilters,
-          onFilterChanged: (AppSearchBarFilterValue value) async {
-            AppFailure? failure;
-            final String? facilityId = value.option(_facilityFilterKey);
-            final String? wardId = value.option(_wardFilterKey);
-            final String? roomId = value.option(_roomFilterKey);
-            final BedSetupStatus? status = roomsBedsStatusFromFilter(
-              value.option(_statusFilterKey),
-            );
-            if (facilityId != state.query.facilityId) {
-              failure = await controller.applyFacility(facilityId);
-            }
-            if (wardId != state.query.wardId) {
-              failure ??= await controller.applyWard(wardId);
-            }
-            if (roomId != state.query.roomId) {
-              failure ??= await controller.applyRoom(roomId);
-            }
-            if (status != state.query.status) {
-              failure ??= await controller.applyStatus(status);
-            }
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-        ),
-        itemKeyBuilder: (BedBoardItem item) => ValueKey<String>(item.id),
-        onPageChanged: (AppPageRequest request) {
-          unawaited(controller.changePage(request));
-        },
-        onRowSelected: (BedBoardItem item) {
-          unawaited(
-            _openBedDetailDialog(
-              context,
-              ref,
-              state,
-              item,
-              canAdminBeds: canAdminBeds,
-              canIpdWrite: canIpdWrite,
-            ),
-          );
-        },
-        previousPageLabel: l10n.roomsBedsPreviousPageLabel,
-        nextPageLabel: l10n.roomsBedsNextPageLabel,
-        pageLabelBuilder: (AppPage<BedBoardItem> page) {
-          return l10n.roomsBedsPageLabel(
-            page.firstItemNumber,
-            page.lastItemNumber,
-            page.totalItemCount ?? page.items.length,
-          );
-        },
-        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-          title: l10n.roomsBedsEmptyTitle,
-          body: l10n.roomsBedsEmptyBody,
-          icon: Icons.bed_outlined,
-        ),
-        columns: <AppListTableColumn<BedBoardItem>>[
-          AppListTableColumn<BedBoardItem>(
-            label: l10n.roomsBedsBedColumnLabel,
-            sortComparator: (BedBoardItem left, BedBoardItem right) {
-              return appListTableCompareText(left.label, right.label);
-            },
-            cellBuilder: (BuildContext context, BedBoardItem item) {
-              return _TwoLineCell(
-                title: item.label,
-                subtitle: _joinDisplay(<String?>[item.facility?.name]),
-              );
-            },
-          ),
-          AppListTableColumn<BedBoardItem>(
-            label: l10n.roomsBedsLocationColumnLabel,
-            sortComparator: (BedBoardItem left, BedBoardItem right) {
-              return appListTableCompareText(
-                _locationLabel(context, left),
-                _locationLabel(context, right),
-              );
-            },
-            cellBuilder: (BuildContext context, BedBoardItem item) {
-              return Text(_locationLabel(context, item));
-            },
-          ),
-          AppListTableColumn<BedBoardItem>(
-            label: l10n.roomsBedsStatusColumnLabel,
-            sortComparator: (BedBoardItem left, BedBoardItem right) {
-              return appListTableCompareText(
-                left.status.apiValue,
-                right.status.apiValue,
-              );
-            },
-            cellBuilder: (BuildContext context, BedBoardItem item) {
-              return AppWorkspaceStatusBadge(
-                status: roomsBedsStatusBadge(context.l10n, item.status),
-              );
-            },
-          ),
-          AppListTableColumn<BedBoardItem>(
-            label: l10n.roomsBedsAssignmentColumnLabel,
-            sortComparator: (BedBoardItem left, BedBoardItem right) {
-              return appListTableCompareText(
-                _assignmentLabel(context, left),
-                _assignmentLabel(context, right),
-              );
-            },
-            cellBuilder: (BuildContext context, BedBoardItem item) {
-              return Text(_assignmentLabel(context, item));
-            },
-          ),
-          AppListTableColumn<BedBoardItem>(
-            label: l10n.roomsBedsNextActionColumnLabel,
-            sortComparator: (BedBoardItem left, BedBoardItem right) {
-              return appListTableCompareText(
-                roomsBedsNextActionLabel(context.l10n, left),
-                roomsBedsNextActionLabel(context.l10n, right),
-              );
-            },
-            cellBuilder: (BuildContext context, BedBoardItem item) {
-              return Text(roomsBedsNextActionLabel(context.l10n, item));
-            },
-          ),
-        ],
-        mobileItemBuilder: (BuildContext context, BedBoardItem item) {
-          return _BedMobileItem(item: item);
-        },
       ),
     );
   }
@@ -1376,6 +1343,87 @@ bool _canAdminBeds(AppAccessPolicy accessPolicy) {
         AppPermissions.facilityAdmin,
         AppPermissions.systemAdmin,
       ]);
+}
+
+IconData _roomsBedsSectionIcon(RoomsBedsSection section) {
+  return switch (section) {
+    RoomsBedsSection.all => Icons.bed_outlined,
+    RoomsBedsSection.available => Icons.check_circle_outline,
+    RoomsBedsSection.occupied => Icons.person_pin_circle_outlined,
+    RoomsBedsSection.turnover => Icons.swap_horiz_outlined,
+    RoomsBedsSection.outOfService => Icons.block_outlined,
+  };
+}
+
+String _roomsBedsSectionLabel(AppLocalizations l10n, RoomsBedsSection section) {
+  return switch (section) {
+    RoomsBedsSection.all => l10n.roomsBedsSectionAllLabel,
+    RoomsBedsSection.available => l10n.roomsBedsSectionAvailableLabel,
+    RoomsBedsSection.occupied => l10n.roomsBedsSectionOccupiedLabel,
+    RoomsBedsSection.turnover => l10n.roomsBedsSectionTurnoverLabel,
+    RoomsBedsSection.outOfService => l10n.roomsBedsSectionOutOfServiceLabel,
+  };
+}
+
+int _roomsBedsSectionCount(
+  RoomsBedsWorkspaceState state,
+  RoomsBedsSection section,
+) {
+  return switch (section) {
+    RoomsBedsSection.all => state.totalBedCount,
+    RoomsBedsSection.available => state.availableCount,
+    RoomsBedsSection.occupied => state.occupiedCount,
+    RoomsBedsSection.turnover =>
+      state.reservedCount + state.cleaningCount + state.maintenanceCount,
+    RoomsBedsSection.outOfService => state.blockedCount,
+  };
+}
+
+String _roomsBedsSectionQueryValue(RoomsBedsSection section) {
+  return switch (section) {
+    RoomsBedsSection.all => '',
+    RoomsBedsSection.available => 'available',
+    RoomsBedsSection.occupied => 'occupied',
+    RoomsBedsSection.turnover => 'turnover',
+    RoomsBedsSection.outOfService => 'out-of-service',
+  };
+}
+
+bool _roomsBedsSectionMatchesStatus(
+  RoomsBedsSection section,
+  BedSetupStatus status,
+) {
+  return switch (section) {
+    RoomsBedsSection.all => true,
+    RoomsBedsSection.available => status == BedSetupStatus.available,
+    RoomsBedsSection.occupied => status == BedSetupStatus.occupied,
+    RoomsBedsSection.turnover =>
+      status == BedSetupStatus.reserved ||
+          status == BedSetupStatus.cleaning ||
+          status == BedSetupStatus.maintenance,
+    RoomsBedsSection.outOfService =>
+      status == BedSetupStatus.blocked || status == BedSetupStatus.outOfService,
+  };
+}
+
+AppPage<BedBoardItem> _sectionFilteredPage(
+  AppPage<BedBoardItem> page,
+  RoomsBedsSection section,
+) {
+  if (section == RoomsBedsSection.all) {
+    return page;
+  }
+  final List<BedBoardItem> filtered = page.items
+      .where(
+        (BedBoardItem item) =>
+            _roomsBedsSectionMatchesStatus(section, item.status),
+      )
+      .toList(growable: false);
+  return AppPage<BedBoardItem>(
+    items: filtered,
+    request: page.request,
+    totalItemCount: filtered.length,
+  );
 }
 
 String _locationLabel(BuildContext context, BedBoardItem item) {

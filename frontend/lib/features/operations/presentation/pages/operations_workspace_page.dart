@@ -315,6 +315,7 @@ class _OperationsWorkspaceContentState
           label: l10n.operationsAllRequestsSummaryLabel,
           count: total,
           icon: Icons.inventory_2_outlined,
+          onSelected: () => _onTabChanged(OperationsDeskSection.allRequests),
         ),
       if (state.openCount > 0)
         AppWorkspaceSummaryNotification(
@@ -322,6 +323,7 @@ class _OperationsWorkspaceContentState
           count: state.openCount,
           icon: Icons.pending_actions_outlined,
           tone: AppWorkspaceStatusTone.warning,
+          onSelected: () => _onTabChanged(OperationsDeskSection.open),
         ),
       if (state.inProgressCount > 0)
         AppWorkspaceSummaryNotification(
@@ -329,6 +331,7 @@ class _OperationsWorkspaceContentState
           count: state.inProgressCount,
           icon: Icons.engineering_outlined,
           tone: AppWorkspaceStatusTone.info,
+          onSelected: () => _onTabChanged(OperationsDeskSection.inProgress),
         ),
       if (state.completedCount > 0)
         AppWorkspaceSummaryNotification(
@@ -336,6 +339,7 @@ class _OperationsWorkspaceContentState
           count: state.completedCount,
           icon: Icons.task_alt_outlined,
           tone: AppWorkspaceStatusTone.success,
+          onSelected: () => _onTabChanged(OperationsDeskSection.completed),
         ),
       if (state.cancelledCount > 0)
         AppWorkspaceSummaryNotification(
@@ -343,12 +347,14 @@ class _OperationsWorkspaceContentState
           count: state.cancelledCount,
           icon: Icons.cancel_outlined,
           tone: AppWorkspaceStatusTone.error,
+          onSelected: () => _onTabChanged(OperationsDeskSection.completed),
         ),
       if (state.assetCount > 0)
         AppWorkspaceSummaryNotification(
           label: l10n.operationsAssetsSummaryLabel,
           count: state.assetCount,
           icon: Icons.precision_manufacturing_outlined,
+          onSelected: () => _onTabChanged(OperationsDeskSection.assets),
         ),
     ];
   }

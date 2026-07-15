@@ -87,6 +87,16 @@ final class BillingWorkspaceQuery {
           break;
         }
       }
+      if (queue == BillingQueueType.all) {
+        const Map<String, BillingQueueType> slugMap =
+            <String, BillingQueueType>{
+              'needs-issue': BillingQueueType.needsIssue,
+              'pending-payment': BillingQueueType.pendingPayment,
+              'claims-pending': BillingQueueType.claimsPending,
+              'approval-required': BillingQueueType.approvalRequired,
+            };
+        queue = slugMap[queueRaw.toLowerCase()] ?? BillingQueueType.all;
+      }
     }
 
     return BillingWorkspaceQuery(

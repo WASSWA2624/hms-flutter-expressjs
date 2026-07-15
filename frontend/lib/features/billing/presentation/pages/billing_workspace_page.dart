@@ -4,9 +4,10 @@ import 'dart:typed_data';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/core/currency/effective_default_currency_provider.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
@@ -15,6 +16,7 @@ import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dar
 import 'package:hosspi_hms/features/billing/presentation/billing_invoice_print_helpers.dart';
 import 'package:hosspi_hms/features/billing/presentation/controllers/billing_workspace_controller.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_detail_widgets.dart';
+import 'package:hosspi_hms/features/billing/presentation/widgets/billing_form_dialogs.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_ledger_dialog.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_receive_payment_dialog.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_support.dart';
@@ -22,7 +24,6 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
 class BillingWorkspacePage extends ConsumerWidget {
@@ -74,10 +75,12 @@ class _BillingWorkspaceContentState
   _tableColumnController;
   Timer? _searchDebounce;
   bool _handledRouteQuery = false;
+  late BillingQueueType _section;
 
   @override
   void initState() {
     super.initState();
+    _section = widget.state.query.queue;
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<BillingWorkItem>();
@@ -112,6 +115,11 @@ class _BillingWorkspaceContentState
     final BillingWorkspaceController controller = ref.read(
       billingWorkspaceControllerProvider.notifier,
     );
+
+    if (query.queue != _section) {
+      setState(() => _section = query.queue);
+    }
+
     if (query.queue != BillingQueueType.all &&
         query.search.trim().isEmpty &&
         query.patientId.trim().isEmpty &&
@@ -180,6 +188,9 @@ class _BillingWorkspaceContentState
         _searchController.text != widget.state.query.search) {
       _searchController.text = widget.state.query.search;
     }
+    if (widget.state.query.queue != _section) {
+      setState(() => _section = widget.state.query.queue);
+    }
   }
 
   void _onSearchChanged() {
@@ -200,6 +211,26 @@ class _BillingWorkspaceContentState
     _searchController.dispose();
     _tableColumnController.dispose();
     super.dispose();
+  }
+
+  static String _queueToQueryValue(BillingQueueType queue) {
+    return switch (queue) {
+      BillingQueueType.all => 'all',
+      BillingQueueType.needsIssue => 'needs-issue',
+      BillingQueueType.pendingPayment => 'pending-payment',
+      BillingQueueType.claimsPending => 'claims-pending',
+      BillingQueueType.approvalRequired => 'approval-required',
+      BillingQueueType.overdue => 'overdue',
+    };
+  }
+
+  void _updateUrlForQueue(BillingQueueType queue) {
+    if (!mounted) return;
+    final String tab = _queueToQueryValue(queue);
+    final String location = AppRoutes.billing.location(
+      queryParameters: <String, String>{if (tab != 'all') 'queue': tab},
+    );
+    GoRouter.of(context).replace<void>(location);
   }
 
   @override
@@ -247,11 +278,45 @@ class _BillingWorkspaceContentState
             ),
             SizedBox(height: Theme.of(context).spacing.md),
           ],
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: AppTabStrip(
+                  tabs: <AppTabItem>[
+                    for (final BillingQueueType queue
+                        in BillingQueueType.values)
+                      AppTabItem(
+                        id: queue.name,
+                        icon: billingQueueIcon(queue),
+                        label:
+                            '${billingQueueLabel(context, queue)} (${state.overview.summary.countFor(queue)})',
+                      ),
+                  ],
+                  selectedId: _section.name,
+                  onTabTapped: (String tabId) {
+                    for (final BillingQueueType queue
+                        in BillingQueueType.values) {
+                      if (queue.name == tabId) {
+                        setState(() => _section = queue);
+                        _updateUrlForQueue(queue);
+                        ref
+                            .read(billingWorkspaceControllerProvider.notifier)
+                            .applyQueue(queue);
+                        break;
+                      }
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: Theme.of(context).spacing.md),
           _BillingQueuePanel(
             state: state,
             canWrite: canWrite,
             searchController: _searchController,
             columnVisibilityController: _tableColumnController,
+            activeQueue: _section,
           ),
         ],
       ),
@@ -326,6 +391,7 @@ class _BillingQueuePanel extends ConsumerWidget {
     required this.canWrite,
     required this.searchController,
     required this.columnVisibilityController,
+    required this.activeQueue,
   });
 
   final BillingWorkspaceState state;
@@ -333,6 +399,7 @@ class _BillingQueuePanel extends ConsumerWidget {
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<BillingWorkItem>
   columnVisibilityController;
+  final BillingQueueType activeQueue;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -345,6 +412,8 @@ class _BillingQueuePanel extends ConsumerWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       columnVisibilityController: columnVisibilityController,
+      columnVisibilityStorageKey: 'billing_${activeQueue.name}',
+      columnWidthStorageKey: 'billing_cw_${activeQueue.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       search: AppListTableSearch<BillingWorkItem>(
         controller: searchController,
@@ -403,146 +472,240 @@ class _BillingQueuePanel extends ConsumerWidget {
           body: l10n.billingEmptyBody,
         );
       },
-      columns: <AppListTableColumn<BillingWorkItem>>[
-        AppListTableColumn<BillingWorkItem>(
-          id: 'patient_name',
-          label: l10n.billingPatientNameColumn,
-          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-              appListTableCompareText(
-                left.effectivePatientName,
-                right.effectivePatientName,
-              ),
-          cellBuilder: (BuildContext context, BillingWorkItem item) {
-            return Text(
-              billingPatientName(context, item),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            );
-          },
-        ),
-        AppListTableColumn<BillingWorkItem>(
-          id: 'patient_id',
-          label: l10n.billingPatientIdColumn,
-          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-              appListTableCompareText(
-                left.effectivePatientNumber,
-                right.effectivePatientNumber,
-              ),
-          cellBuilder: (BuildContext context, BillingWorkItem item) {
-            return Text(
-              item.effectivePatientNumber ?? l10n.profileUnknownValue,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            );
-          },
-        ),
-        AppListTableColumn<BillingWorkItem>(
-          id: 'invoice',
-          label: l10n.billingInvoiceColumn,
-          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-              appListTableCompareText(
-                left.effectiveDisplayId,
-                right.effectiveDisplayId,
-              ),
-          cellBuilder: (BuildContext context, BillingWorkItem item) {
-            return Text(
-              item.effectiveDisplayId,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            );
-          },
-        ),
-        AppListTableColumn<BillingWorkItem>(
-          id: 'encounter',
-          label: l10n.billingEncounterLabel,
-          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-              appListTableCompareText(
-                left.encounterDisplayId ?? left.encounterId,
-                right.encounterDisplayId ?? right.encounterId,
-              ),
-          cellBuilder: (BuildContext context, BillingWorkItem item) {
-            return Text(
-              item.encounterDisplayId ??
-                  item.encounterId ??
-                  l10n.profileUnknownValue,
-            );
-          },
-        ),
-        AppListTableColumn<BillingWorkItem>(
-          id: 'source',
-          label: l10n.billingSourceColumn,
-          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-              appListTableCompareText(
-                left.invoiceSourceSummary,
-                right.invoiceSourceSummary,
-              ),
-          cellBuilder: (BuildContext context, BillingWorkItem item) {
-            return Text(
-              billingInvoiceSourceLabel(context, item),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            );
-          },
-        ),
-        AppListTableColumn<BillingWorkItem>(
-          id: 'status',
-          label: l10n.billingStatusColumn,
-          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-              appListTableCompareText(
-                left.clearanceState.name,
-                right.clearanceState.name,
-              ),
-          cellBuilder: (BuildContext context, BillingWorkItem item) {
-            return BillingGateBadge(state: item.clearanceState);
-          },
-        ),
-        AppListTableColumn<BillingWorkItem>(
-          id: 'amount_due',
-          label: l10n.billingAmountDueColumn,
-          numeric: true,
-          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-              appListTableCompareNumber(left.balanceDue, right.balanceDue),
-          cellBuilder: (BuildContext context, BillingWorkItem item) {
-            return Text(billingMoney(context, item.balanceDue, item.currency));
-          },
-        ),
-        AppListTableColumn<BillingWorkItem>(
-          id: 'amount_paid',
-          label: l10n.billingPaidColumn,
-          numeric: true,
-          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-              appListTableCompareNumber(left.paidAmount, right.paidAmount),
-          cellBuilder: (BuildContext context, BillingWorkItem item) {
-            return Text(billingMoney(context, item.paidAmount, item.currency));
-          },
-        ),
-      ],
-      columnChoices: <AppListTableColumn<BillingWorkItem>>[
-        AppListTableColumn<BillingWorkItem>(
-          id: 'balance',
-          label: l10n.billingBalanceColumn,
-          numeric: true,
-          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-              appListTableCompareNumber(left.balanceDue, right.balanceDue),
-          cellBuilder: (BuildContext context, BillingWorkItem item) {
-            return Text(billingMoney(context, item.balanceDue, item.currency));
-          },
-        ),
-        AppListTableColumn<BillingWorkItem>(
-          id: 'updated',
-          label: l10n.billingUpdatedColumn,
-          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-              appListTableCompareDateTime(left.timelineAt, right.timelineAt),
-          cellBuilder: (BuildContext context, BillingWorkItem item) {
-            return Text(billingDateTime(context, item.timelineAt));
-          },
-        ),
-      ],
+      columns: _columnsForQueue(context, l10n, activeQueue),
+      columnChoices: _columnChoices(l10n),
       mobileItemBuilder: (BuildContext context, BillingWorkItem item) {
         return _BillingMobileTile(item: item);
       },
     );
   }
+}
+
+List<AppListTableColumn<BillingWorkItem>> _columnsForQueue(
+  BuildContext context,
+  AppLocalizations l10n,
+  BillingQueueType queue,
+) {
+  final AppListTableColumn<BillingWorkItem> patientName =
+      AppListTableColumn<BillingWorkItem>(
+        id: 'patient_name',
+        label: l10n.billingPatientNameColumn,
+        sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+            appListTableCompareText(
+              left.effectivePatientName,
+              right.effectivePatientName,
+            ),
+        cellBuilder: (BuildContext context, BillingWorkItem item) {
+          return Text(
+            billingPatientName(context, item),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          );
+        },
+      );
+  final AppListTableColumn<BillingWorkItem> patientId =
+      AppListTableColumn<BillingWorkItem>(
+        id: 'patient_id',
+        label: l10n.billingPatientIdColumn,
+        sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+            appListTableCompareText(
+              left.effectivePatientNumber,
+              right.effectivePatientNumber,
+            ),
+        cellBuilder: (BuildContext context, BillingWorkItem item) {
+          return Text(
+            item.effectivePatientNumber ?? l10n.profileUnknownValue,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          );
+        },
+      );
+  final AppListTableColumn<BillingWorkItem> invoice =
+      AppListTableColumn<BillingWorkItem>(
+        id: 'invoice',
+        label: l10n.billingInvoiceColumn,
+        sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+            appListTableCompareText(
+              left.effectiveDisplayId,
+              right.effectiveDisplayId,
+            ),
+        cellBuilder: (BuildContext context, BillingWorkItem item) {
+          return Text(
+            item.effectiveDisplayId,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          );
+        },
+      );
+  final AppListTableColumn<BillingWorkItem> encounter =
+      AppListTableColumn<BillingWorkItem>(
+        id: 'encounter',
+        label: l10n.billingEncounterLabel,
+        sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+            appListTableCompareText(
+              left.encounterDisplayId ?? left.encounterId,
+              right.encounterDisplayId ?? right.encounterId,
+            ),
+        cellBuilder: (BuildContext context, BillingWorkItem item) {
+          return Text(
+            item.encounterDisplayId ??
+                item.encounterId ??
+                l10n.profileUnknownValue,
+          );
+        },
+      );
+  final AppListTableColumn<BillingWorkItem> source =
+      AppListTableColumn<BillingWorkItem>(
+        id: 'source',
+        label: l10n.billingSourceColumn,
+        sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+            appListTableCompareText(
+              left.invoiceSourceSummary,
+              right.invoiceSourceSummary,
+            ),
+        cellBuilder: (BuildContext context, BillingWorkItem item) {
+          return Text(
+            billingInvoiceSourceLabel(context, item),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          );
+        },
+      );
+  final AppListTableColumn<BillingWorkItem> status =
+      AppListTableColumn<BillingWorkItem>(
+        id: 'status',
+        label: l10n.billingStatusColumn,
+        sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+            appListTableCompareText(
+              left.clearanceState.name,
+              right.clearanceState.name,
+            ),
+        cellBuilder: (BuildContext context, BillingWorkItem item) {
+          return BillingGateBadge(state: item.clearanceState);
+        },
+      );
+  final AppListTableColumn<BillingWorkItem> amountDue =
+      AppListTableColumn<BillingWorkItem>(
+        id: 'amount_due',
+        label: l10n.billingAmountDueColumn,
+        numeric: true,
+        sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+            appListTableCompareNumber(left.balanceDue, right.balanceDue),
+        cellBuilder: (BuildContext context, BillingWorkItem item) {
+          return Text(billingMoney(context, item.balanceDue, item.currency));
+        },
+      );
+  final AppListTableColumn<BillingWorkItem> amountPaid =
+      AppListTableColumn<BillingWorkItem>(
+        id: 'amount_paid',
+        label: l10n.billingPaidColumn,
+        numeric: true,
+        sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+            appListTableCompareNumber(left.paidAmount, right.paidAmount),
+        cellBuilder: (BuildContext context, BillingWorkItem item) {
+          return Text(billingMoney(context, item.paidAmount, item.currency));
+        },
+      );
+  final AppListTableColumn<BillingWorkItem> balance =
+      AppListTableColumn<BillingWorkItem>(
+        id: 'balance',
+        label: l10n.billingBalanceColumn,
+        numeric: true,
+        sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+            appListTableCompareNumber(left.balanceDue, right.balanceDue),
+        cellBuilder: (BuildContext context, BillingWorkItem item) {
+          return Text(billingMoney(context, item.balanceDue, item.currency));
+        },
+      );
+  final AppListTableColumn<BillingWorkItem> updated =
+      AppListTableColumn<BillingWorkItem>(
+        id: 'updated',
+        label: l10n.billingUpdatedColumn,
+        sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+            appListTableCompareDateTime(left.timelineAt, right.timelineAt),
+        cellBuilder: (BuildContext context, BillingWorkItem item) {
+          return Text(billingDateTime(context, item.timelineAt));
+        },
+      );
+
+  return switch (queue) {
+    BillingQueueType.all => <AppListTableColumn<BillingWorkItem>>[
+      patientName,
+      patientId,
+      invoice,
+      source,
+      status,
+      amountDue,
+      amountPaid,
+    ],
+    BillingQueueType.needsIssue => <AppListTableColumn<BillingWorkItem>>[
+      patientName,
+      invoice,
+      encounter,
+      source,
+      amountDue,
+    ],
+    BillingQueueType.pendingPayment => <AppListTableColumn<BillingWorkItem>>[
+      patientName,
+      patientId,
+      invoice,
+      status,
+      amountDue,
+      amountPaid,
+      balance,
+    ],
+    BillingQueueType.claimsPending => <AppListTableColumn<BillingWorkItem>>[
+      patientName,
+      invoice,
+      encounter,
+      source,
+      status,
+      amountDue,
+    ],
+    BillingQueueType.approvalRequired => <AppListTableColumn<BillingWorkItem>>[
+      patientName,
+      invoice,
+      encounter,
+      source,
+      status,
+      amountDue,
+    ],
+    BillingQueueType.overdue => <AppListTableColumn<BillingWorkItem>>[
+      patientName,
+      patientId,
+      invoice,
+      status,
+      amountDue,
+      amountPaid,
+      updated,
+    ],
+  };
+}
+
+List<AppListTableColumn<BillingWorkItem>> _columnChoices(
+  AppLocalizations l10n,
+) {
+  return <AppListTableColumn<BillingWorkItem>>[
+    AppListTableColumn<BillingWorkItem>(
+      id: 'balance',
+      label: l10n.billingBalanceColumn,
+      numeric: true,
+      sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+          appListTableCompareNumber(left.balanceDue, right.balanceDue),
+      cellBuilder: (BuildContext context, BillingWorkItem item) {
+        return Text(billingMoney(context, item.balanceDue, item.currency));
+      },
+    ),
+    AppListTableColumn<BillingWorkItem>(
+      id: 'updated',
+      label: l10n.billingUpdatedColumn,
+      sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+          appListTableCompareDateTime(left.timelineAt, right.timelineAt),
+      cellBuilder: (BuildContext context, BillingWorkItem item) {
+        return Text(billingDateTime(context, item.timelineAt));
+      },
+    ),
+  ];
 }
 
 Future<void> _showBillingDetailDialog(
@@ -674,481 +837,6 @@ class _BillingMobileTile extends StatelessWidget {
   }
 }
 
-class _RefundForm extends StatefulWidget {
-  const _RefundForm({
-    required this.dialogTitle,
-    this.dialogIcon,
-    required this.item,
-  });
-
-  final Widget dialogTitle;
-  final Widget? dialogIcon;
-  final BillingWorkItem item;
-
-  @override
-  State<_RefundForm> createState() => _RefundFormState();
-}
-
-class _RefundFormState extends State<_RefundForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _amountController;
-  final TextEditingController _reasonController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
-  late String _paymentId;
-
-  @override
-  void initState() {
-    super.initState();
-    final BillingPayment payment = widget.item.firstRefundablePayment!;
-    _paymentId = payment.id;
-    _amountController = TextEditingController(
-      text: payment.amount.toStringAsFixed(2),
-    );
-  }
-
-  @override
-  void dispose() {
-    _amountController.dispose();
-    _reasonController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    Navigator.of(context).pop(
-      BillingRefundDraft(
-        paymentId: _paymentId,
-        amount: _amountController.text,
-        reason: _reasonController.text.trim(),
-        notes: billingEmptyToNull(_notesController.text),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppDialog(
-      title: widget.dialogTitle,
-      icon: widget.dialogIcon,
-      scrollable: true,
-      content: AppFormShell(
-        formKey: _formKey,
-        children: <Widget>[
-          AppSelectField<String>(
-            value: _paymentId,
-            labelText: context.l10n.billingPaymentLabel,
-            options: <AppSelectOption<String>>[
-              for (final BillingPayment payment in widget.item.payments)
-                if (payment.isRefundable)
-                  AppSelectOption<String>(
-                    value: payment.id,
-                    label: billingJoinDisplay(<String?>[
-                      payment.effectiveDisplayId,
-                      billingMoney(
-                        context,
-                        payment.amount,
-                        widget.item.currency,
-                      ),
-                    ]),
-                  ),
-            ],
-            onChanged: (String? value) {
-              if (value != null) {
-                setState(() => _paymentId = value);
-              }
-            },
-          ),
-          AppCurrencyAmountField(
-            amountController: _amountController,
-            currency: widget.item.currency ?? appDefaultCurrencyCode,
-            onCurrencyChanged: (_) {},
-            amountLabelText: context.l10n.billingRefundAmountLabel,
-            currencyLabelText: context.l10n.billingCurrencyLabel,
-            isRequired: true,
-            allowZero: false,
-          ),
-          AppTextField(
-            controller: _reasonController,
-            labelText: context.l10n.billingReasonLabel,
-            isRequired: true,
-            validator: AppValidators.requiredText(
-              context.l10n.billingRefundReasonValidation,
-            ),
-          ),
-          AppTextField(
-            controller: _notesController,
-            labelText: context.l10n.billingNotesLabel,
-            maxLines: 3,
-          ),
-        ],
-      ),
-      actions: buildAppDialogFormActions(
-        cancelLabel: context.l10n.commonCancelActionLabel,
-        submitLabel: context.l10n.billingRequestRefund,
-        submitIcon: Icons.assignment_return_outlined,
-        onCancel: () => Navigator.of(context).maybePop(),
-        onSubmit: _submit,
-      ),
-    );
-  }
-}
-
-class _AdjustmentForm extends StatefulWidget {
-  const _AdjustmentForm({
-    required this.dialogTitle,
-    this.dialogIcon,
-    required this.item,
-  });
-
-  final Widget dialogTitle;
-  final Widget? dialogIcon;
-  final BillingWorkItem item;
-
-  @override
-  State<_AdjustmentForm> createState() => _AdjustmentFormState();
-}
-
-class _AdjustmentFormState extends State<_AdjustmentForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _reasonController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
-  String _status = 'ISSUED';
-
-  @override
-  void dispose() {
-    _amountController.dispose();
-    _reasonController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    Navigator.of(context).pop(
-      BillingAdjustmentDraft(
-        amount: _amountController.text,
-        reason: _reasonController.text.trim(),
-        status: _status,
-        notes: billingEmptyToNull(_notesController.text),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppDialog(
-      title: widget.dialogTitle,
-      icon: widget.dialogIcon,
-      scrollable: true,
-      content: AppFormShell(
-        formKey: _formKey,
-        children: <Widget>[
-          AppTextField(
-            controller: _amountController,
-            labelText: context.l10n.billingAdjustmentAmountLabel,
-            isRequired: true,
-            validator: (String? value) {
-              final String normalized = value?.replaceAll(',', '').trim() ?? '';
-              if (!RegExp(r'^-?\d+(\.\d{1,2})?$').hasMatch(normalized)) {
-                return context.l10n.billingAdjustmentAmountValidation;
-              }
-              return null;
-            },
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          ),
-          AppSelectField<String>(
-            value: _status,
-            labelText: context.l10n.billingAppliedStatusLabel,
-            options: <AppSelectOption<String>>[
-              AppSelectOption<String>(
-                value: 'ISSUED',
-                label: context.l10n.billingStatusIssued,
-              ),
-              AppSelectOption<String>(
-                value: 'PARTIAL',
-                label: context.l10n.billingStatusPartial,
-              ),
-              AppSelectOption<String>(
-                value: 'PAID',
-                label: context.l10n.billingStatusPaid,
-              ),
-              AppSelectOption<String>(
-                value: 'DRAFT',
-                label: context.l10n.billingStatusDraft,
-              ),
-            ],
-            onChanged: (String? value) {
-              if (value != null) {
-                setState(() => _status = value);
-              }
-            },
-          ),
-          AppTextField(
-            controller: _reasonController,
-            labelText: context.l10n.billingReasonLabel,
-            isRequired: true,
-            validator: AppValidators.requiredText(
-              context.l10n.billingAdjustmentReasonValidation,
-            ),
-          ),
-          AppTextField(
-            controller: _notesController,
-            labelText: context.l10n.billingNotesLabel,
-            maxLines: 3,
-          ),
-        ],
-      ),
-      actions: buildAppDialogFormActions(
-        cancelLabel: context.l10n.commonCancelActionLabel,
-        submitLabel: context.l10n.billingRequestAdjustment,
-        submitIcon: Icons.tune,
-        onCancel: () => Navigator.of(context).maybePop(),
-        onSubmit: _submit,
-      ),
-    );
-  }
-}
-
-class _ReasonForm extends StatefulWidget {
-  const _ReasonForm({
-    required this.dialogTitle,
-    this.dialogIcon,
-    required this.submitLabel,
-    required this.reasonLabel,
-  });
-
-  final Widget dialogTitle;
-  final Widget? dialogIcon;
-  final String submitLabel;
-  final String reasonLabel;
-
-  @override
-  State<_ReasonForm> createState() => _ReasonFormState();
-}
-
-class _ReasonFormState extends State<_ReasonForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _reasonController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
-
-  @override
-  void dispose() {
-    _reasonController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    Navigator.of(context).pop(<String, String?>{
-      'reason': _reasonController.text.trim(),
-      'notes': billingEmptyToNull(_notesController.text),
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppDialog(
-      title: widget.dialogTitle,
-      icon: widget.dialogIcon,
-      scrollable: true,
-      content: AppFormShell(
-        formKey: _formKey,
-        children: <Widget>[
-          AppTextField(
-            controller: _reasonController,
-            labelText: widget.reasonLabel,
-            isRequired: true,
-            validator: AppValidators.requiredText(
-              context.l10n.billingReasonValidation,
-            ),
-          ),
-          AppTextField(
-            controller: _notesController,
-            labelText: context.l10n.billingNotesLabel,
-            maxLines: 3,
-          ),
-        ],
-      ),
-      actions: buildAppDialogFormActions(
-        cancelLabel: context.l10n.commonCancelActionLabel,
-        submitLabel: widget.submitLabel,
-        submitIcon: Icons.save_outlined,
-        onCancel: () => Navigator.of(context).maybePop(),
-        onSubmit: _submit,
-      ),
-    );
-  }
-}
-
-class _NotesForm extends StatefulWidget {
-  const _NotesForm({
-    required this.dialogTitle,
-    this.dialogIcon,
-    required this.submitLabel,
-    this.email = false,
-  });
-
-  final Widget dialogTitle;
-  final Widget? dialogIcon;
-  final String submitLabel;
-  final bool email;
-
-  @override
-  State<_NotesForm> createState() => _NotesFormState();
-}
-
-class _NotesFormState extends State<_NotesForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    Navigator.of(context).pop(billingEmptyToNull(_controller.text));
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppDialog(
-      title: widget.dialogTitle,
-      icon: widget.dialogIcon,
-      scrollable: true,
-      content: AppFormShell(
-        formKey: _formKey,
-        children: <Widget>[
-          AppTextField(
-            controller: _controller,
-            labelText: widget.email
-                ? context.l10n.billingRecipientEmailLabel
-                : context.l10n.billingNotesLabel,
-            keyboardType: widget.email ? TextInputType.emailAddress : null,
-            maxLines: widget.email ? 1 : 3,
-          ),
-        ],
-      ),
-      actions: buildAppDialogFormActions(
-        cancelLabel: context.l10n.commonCancelActionLabel,
-        submitLabel: widget.submitLabel,
-        submitIcon: Icons.save_outlined,
-        onCancel: () => Navigator.of(context).maybePop(),
-        onSubmit: _submit,
-      ),
-    );
-  }
-}
-
-class _CloseForm extends ConsumerStatefulWidget {
-  const _CloseForm({
-    required this.dialogTitle,
-    this.dialogIcon,
-    required this.title,
-    required this.shiftClose,
-  });
-
-  final Widget dialogTitle;
-  final Widget? dialogIcon;
-  final String title;
-  final bool shiftClose;
-
-  @override
-  ConsumerState<_CloseForm> createState() => _CloseFormState();
-}
-
-class _CloseFormState extends ConsumerState<_CloseForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _expectedController = TextEditingController();
-  final TextEditingController _actualController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
-  bool _submitForApproval = true;
-
-  @override
-  void dispose() {
-    _expectedController.dispose();
-    _actualController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    Navigator.of(context).pop(
-      BillingCloseDraft(
-        expectedAmount: billingEmptyToNull(_expectedController.text),
-        actualAmount: billingEmptyToNull(_actualController.text),
-        notes: billingEmptyToNull(_notesController.text),
-        submit: _submitForApproval,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final String defaultCurrency = ref.watch(effectiveDefaultCurrencyProvider);
-    return AppDialog(
-      title: widget.dialogTitle,
-      icon: widget.dialogIcon,
-      scrollable: true,
-      content: AppFormShell(
-        formKey: _formKey,
-        children: <Widget>[
-          if (widget.shiftClose) ...<Widget>[
-            AppCurrencyAmountField(
-              amountController: _expectedController,
-              currency: defaultCurrency,
-              onCurrencyChanged: (_) {},
-              amountLabelText: context.l10n.billingExpectedAmountLabel,
-              currencyLabelText: context.l10n.billingCurrencyLabel,
-            ),
-            AppCurrencyAmountField(
-              amountController: _actualController,
-              currency: defaultCurrency,
-              onCurrencyChanged: (_) {},
-              amountLabelText: context.l10n.billingActualAmountLabel,
-              currencyLabelText: context.l10n.billingCurrencyLabel,
-            ),
-          ],
-          AppTextField(
-            controller: _notesController,
-            labelText: context.l10n.billingNotesLabel,
-            maxLines: 3,
-          ),
-          AppCheckboxField(
-            title: context.l10n.billingSubmitForApprovalLabel,
-            value: _submitForApproval,
-            onChanged: (bool value) =>
-                setState(() => _submitForApproval = value),
-          ),
-        ],
-      ),
-      actions: buildAppDialogFormActions(
-        cancelLabel: context.l10n.commonCancelActionLabel,
-        submitLabel: widget.title,
-        submitIcon: Icons.task_alt_outlined,
-        onCancel: () => Navigator.of(context).maybePop(),
-        onSubmit: _submit,
-      ),
-    );
-  }
-}
-
 Future<void> _showPaymentDialog(
   BuildContext context,
   WidgetRef ref,
@@ -1178,7 +866,7 @@ Future<void> _showRefundDialog(
   final BillingRefundDraft? draft = await showAppDialog(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _RefundForm(
+    builder: (_) => BillingRefundForm(
       dialogTitle: Text(context.l10n.billingRequestRefund),
       dialogIcon: const Icon(Icons.assignment_return_outlined),
       item: item,
@@ -1204,7 +892,7 @@ Future<void> _showAdjustmentDialog(
   final BillingAdjustmentDraft? draft = await showAppDialog(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _AdjustmentForm(
+    builder: (_) => BillingAdjustmentForm(
       dialogTitle: Text(context.l10n.billingRequestAdjustment),
       dialogIcon: const Icon(Icons.tune),
       item: item,
@@ -1226,7 +914,7 @@ Future<void> _showVoidDialog(BuildContext context, WidgetRef ref) async {
   final Map<String, String?>? payload = await showAppDialog(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _ReasonForm(
+    builder: (_) => BillingReasonForm(
       dialogTitle: Text(context.l10n.billingVoidInvoice),
       dialogIcon: const Icon(Icons.block_outlined),
       submitLabel: context.l10n.billingRequestVoidAction,
@@ -1252,7 +940,7 @@ Future<void> _showIssueDialog(BuildContext context, WidgetRef ref) async {
   final String? notes = await showAppDialog(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _NotesForm(
+    builder: (_) => BillingNotesForm(
       dialogTitle: Text(context.l10n.billingIssueInvoice),
       dialogIcon: const Icon(Icons.outbox_outlined),
       submitLabel: context.l10n.billingIssueAction,
@@ -1274,7 +962,7 @@ Future<void> _showSendDialog(BuildContext context, WidgetRef ref) async {
   final String? recipientEmail = await showAppDialog(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _NotesForm(
+    builder: (_) => BillingNotesForm(
       dialogTitle: Text(context.l10n.billingSendInvoice),
       dialogIcon: const Icon(Icons.send_outlined),
       submitLabel: context.l10n.billingSendAction,
@@ -1297,7 +985,7 @@ Future<void> _showShiftCloseDialog(BuildContext context, WidgetRef ref) async {
   final BillingCloseDraft? draft = await showAppDialog(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _CloseForm(
+    builder: (_) => BillingCloseForm(
       dialogTitle: Text(context.l10n.billingCloseShift),
       dialogIcon: const Icon(Icons.schedule_send_outlined),
       title: context.l10n.billingCloseShift,
@@ -1320,7 +1008,7 @@ Future<void> _showDayCloseDialog(BuildContext context, WidgetRef ref) async {
   final BillingCloseDraft? draft = await showAppDialog(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _CloseForm(
+    builder: (_) => BillingCloseForm(
       dialogTitle: Text(context.l10n.billingCloseDay),
       dialogIcon: const Icon(Icons.today_outlined),
       title: context.l10n.billingCloseDay,
@@ -1438,7 +1126,7 @@ Future<void> _showApproveDialog(BuildContext context, WidgetRef ref) async {
   final String? notes = await showAppDialog(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _NotesForm(
+    builder: (_) => BillingNotesForm(
       dialogTitle: Text(context.l10n.billingApproveAction),
       dialogIcon: const Icon(Icons.check_circle_outline),
       submitLabel: context.l10n.billingApproveAction,
@@ -1462,7 +1150,7 @@ Future<void> _showRejectDialog(BuildContext context, WidgetRef ref) async {
   final Map<String, String?>? payload = await showAppDialog(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _ReasonForm(
+    builder: (_) => BillingReasonForm(
       dialogTitle: Text(context.l10n.billingRejectAction),
       dialogIcon: const Icon(Icons.cancel_outlined),
       submitLabel: context.l10n.billingRejectAction,
@@ -1490,7 +1178,7 @@ Future<void> _showSubmitClaimDialog(BuildContext context, WidgetRef ref) async {
   final String? notes = await showAppDialog(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _NotesForm(
+    builder: (_) => BillingNotesForm(
       dialogTitle: Text(context.l10n.billingSubmitClaimAction),
       dialogIcon: const Icon(Icons.upload_outlined),
       submitLabel: context.l10n.billingSubmitClaimAction,
@@ -1515,7 +1203,7 @@ Future<void> _showReconcileClaimDialog(
   final BillingClaimActionDraft? draft = await showAppDialog(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _ClaimReconcileForm(
+    builder: (_) => BillingClaimReconcileForm(
       dialogTitle: Text(context.l10n.billingReconcileClaimAction),
       dialogIcon: const Icon(Icons.fact_check_outlined),
     ),
@@ -1541,7 +1229,7 @@ Future<void> _showPreAuthStatusDialog(
   final String? notes = await showAppDialog(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _NotesForm(
+    builder: (_) => BillingNotesForm(
       dialogTitle: Text(
         status == 'APPROVED'
             ? l10n.billingPreAuthApproveAction
@@ -1779,88 +1467,4 @@ List<AppSearchBarFilterChoice> _billingQueueFilterChoices(
           icon: billingQueueIcon(queue),
         ),
   ];
-}
-
-class _ClaimReconcileForm extends StatefulWidget {
-  const _ClaimReconcileForm({required this.dialogTitle, this.dialogIcon});
-
-  final Widget dialogTitle;
-  final Widget? dialogIcon;
-
-  @override
-  State<_ClaimReconcileForm> createState() => _ClaimReconcileFormState();
-}
-
-class _ClaimReconcileFormState extends State<_ClaimReconcileForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _notesController = TextEditingController();
-  String _status = 'APPROVED';
-
-  @override
-  void dispose() {
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    Navigator.of(context).pop(
-      BillingClaimActionDraft(
-        status: _status,
-        notes: billingEmptyToNull(_notesController.text),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppDialog(
-      title: widget.dialogTitle,
-      icon: widget.dialogIcon,
-      scrollable: true,
-      content: AppFormShell(
-        formKey: _formKey,
-        children: <Widget>[
-          AppSelectField<String>(
-            value: _status,
-            labelText: l10n.billingStatusColumn,
-            options: <AppSelectOption<String>>[
-              AppSelectOption<String>(
-                value: 'APPROVED',
-                label: l10n.billingClaimStatusApproved,
-              ),
-              AppSelectOption<String>(
-                value: 'REJECTED',
-                label: l10n.billingClaimStatusRejected,
-              ),
-              AppSelectOption<String>(
-                value: 'PAID',
-                label: l10n.billingClaimStatusPaid,
-              ),
-            ],
-            onChanged: (String? value) {
-              if (value != null) {
-                setState(() => _status = value);
-              }
-            },
-          ),
-          AppTextField(
-            controller: _notesController,
-            labelText: l10n.billingNotesLabel,
-            maxLines: 3,
-          ),
-        ],
-      ),
-      actions: buildAppDialogFormActions(
-        cancelLabel: l10n.commonCancelActionLabel,
-        submitLabel: l10n.billingReconcileClaimAction,
-        submitIcon: Icons.fact_check_outlined,
-        onCancel: () => Navigator.of(context).maybePop(),
-        onSubmit: _submit,
-      ),
-    );
-  }
 }

@@ -12,6 +12,7 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
 import 'package:hosspi_hms/features/communications/presentation/controllers/communications_workspace_controller.dart';
 import 'package:hosspi_hms/features/communications/presentation/widgets/communications_inbox_panel.dart';
+import 'package:hosspi_hms/features/communications/presentation/widgets/communications_new_conversation_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -238,6 +239,41 @@ class _CommunicationsWorkspaceContentState
             ),
             SizedBox(height: Theme.of(context).spacing.md),
           ],
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: AppTabStrip(
+                  tabs: <AppTabItem>[
+                    for (final CommunicationsPanel panel
+                        in CommunicationsPanel.values)
+                      AppTabItem(
+                        id: panel.serverValue,
+                        icon: _panelIcon(panel),
+                        label:
+                            '${_panelTitle(l10n, panel)} (${_panelCount(state, panel)})',
+                      ),
+                  ],
+                  selectedId: state.query.panel.serverValue,
+                  onTabTapped: (String tabId) {
+                    final CommunicationsPanel panel =
+                        CommunicationsPanel.fromServer(tabId);
+                    controller.applyPanel(panel);
+                  },
+                ),
+              ),
+              if (state.query.panel == CommunicationsPanel.inbox &&
+                  canWrite) ...<Widget>[
+                SizedBox(width: Theme.of(context).spacing.sm),
+                AppButton.primary(
+                  label: l10n.communicationsNewMessageAction,
+                  leadingIcon: Icons.add_comment_outlined,
+                  onPressed: () =>
+                      showCommunicationsNewDirectMessageDialog(context, ref),
+                ),
+              ],
+            ],
+          ),
+          SizedBox(height: Theme.of(context).spacing.md),
           _CommunicationsListPanel(
             state: state,
             searchController: _searchController,
@@ -337,31 +373,17 @@ class _CommunicationsListPanel extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
 
     if (state.query.panel == CommunicationsPanel.inbox) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _PanelSelector(selected: state.query.panel),
-          SizedBox(height: Theme.of(context).spacing.sm),
-          CommunicationsInboxPanel(
-            state: state,
-            searchController: searchController,
-            canWrite: canWrite,
-          ),
-        ],
+      return CommunicationsInboxPanel(
+        state: state,
+        searchController: searchController,
+        canWrite: canWrite,
       );
     }
 
     return AppWorkspaceDetailPanel(
       title: _panelTitle(l10n, state.query.panel),
       description: l10n.communicationsListDescription,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          _PanelSelector(selected: state.query.panel),
-          SizedBox(height: Theme.of(context).spacing.sm),
-          _tableForPanel(context, ref),
-        ],
-      ),
+      child: _tableForPanel(context, ref),
     );
   }
 
@@ -384,35 +406,6 @@ class _CommunicationsListPanel extends ConsumerWidget {
         columnVisibilityController: templateColumns,
       ),
     };
-  }
-}
-
-class _PanelSelector extends ConsumerWidget {
-  const _PanelSelector({required this.selected});
-
-  final CommunicationsPanel selected;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final CommunicationsWorkspaceController controller = ref.read(
-      communicationsWorkspaceControllerProvider.notifier,
-    );
-
-    return AppWorkspaceOptionToggle<CommunicationsPanel>(
-      value: selected,
-      options: CommunicationsPanel.values
-          .map(
-            (CommunicationsPanel panel) =>
-                AppWorkspaceOptionToggleOption<CommunicationsPanel>(
-                  value: panel,
-                  label: _panelTitle(l10n, panel),
-                  icon: _panelIcon(panel),
-                ),
-          )
-          .toList(growable: false),
-      onChanged: controller.applyPanel,
-    );
   }
 }
 
@@ -439,7 +432,11 @@ class _NotificationsTable extends ConsumerWidget {
       page: state.notifications,
       isLoading: state.isRefreshingNotifications,
       columnVisibilityController: columnVisibilityController,
+      columnVisibilityStorageKey: 'communications_notifications',
+      columnWidthStorageKey: 'communications_cw_notifications',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       search: _tableSearch<NotificationItem>(
         context,
         ref,
@@ -469,7 +466,9 @@ class _NotificationsTable extends ConsumerWidget {
       },
       columns: <AppListTableColumn<NotificationItem>>[
         AppListTableColumn<NotificationItem>(
+          id: 'alert',
           label: l10n.communicationsAlertColumnLabel,
+          alwaysVisible: true,
           sortComparator: (NotificationItem left, NotificationItem right) =>
               appListTableCompareText(left.title, right.title),
           cellBuilder: (_, NotificationItem item) {
@@ -477,6 +476,7 @@ class _NotificationsTable extends ConsumerWidget {
           },
         ),
         AppListTableColumn<NotificationItem>(
+          id: 'type',
           label: l10n.communicationsTypeColumnLabel,
           sortComparator: (NotificationItem left, NotificationItem right) =>
               appListTableCompareText(
@@ -488,6 +488,7 @@ class _NotificationsTable extends ConsumerWidget {
           },
         ),
         AppListTableColumn<NotificationItem>(
+          id: 'priority',
           label: l10n.communicationsPriorityColumnLabel,
           sortComparator: (NotificationItem left, NotificationItem right) =>
               appListTableCompareText(left.priority, right.priority),
@@ -498,6 +499,7 @@ class _NotificationsTable extends ConsumerWidget {
           },
         ),
         AppListTableColumn<NotificationItem>(
+          id: 'state',
           label: l10n.communicationsStateColumnLabel,
           sortComparator: (NotificationItem left, NotificationItem right) =>
               appListTableCompareText(
@@ -509,6 +511,7 @@ class _NotificationsTable extends ConsumerWidget {
           },
         ),
         AppListTableColumn<NotificationItem>(
+          id: 'time',
           label: l10n.communicationsTimeColumnLabel,
           sortComparator: (NotificationItem left, NotificationItem right) =>
               appListTableCompareDateTime(left.createdAt, right.createdAt),
@@ -565,7 +568,11 @@ class _DeliveriesTable extends ConsumerWidget {
       page: state.deliveries,
       isLoading: state.isRefreshingDeliveries,
       columnVisibilityController: columnVisibilityController,
+      columnVisibilityStorageKey: 'communications_deliveries',
+      columnWidthStorageKey: 'communications_cw_deliveries',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       search: _tableSearch<NotificationDelivery>(
         context,
         ref,
@@ -587,7 +594,9 @@ class _DeliveriesTable extends ConsumerWidget {
       ),
       columns: <AppListTableColumn<NotificationDelivery>>[
         AppListTableColumn<NotificationDelivery>(
+          id: 'notification',
           label: l10n.communicationsNotificationColumnLabel,
+          alwaysVisible: true,
           sortComparator:
               (NotificationDelivery left, NotificationDelivery right) =>
                   appListTableCompareText(
@@ -602,6 +611,7 @@ class _DeliveriesTable extends ConsumerWidget {
           },
         ),
         AppListTableColumn<NotificationDelivery>(
+          id: 'channel',
           label: l10n.communicationsChannelColumnLabel,
           sortComparator:
               (NotificationDelivery left, NotificationDelivery right) =>
@@ -611,6 +621,7 @@ class _DeliveriesTable extends ConsumerWidget {
           },
         ),
         AppListTableColumn<NotificationDelivery>(
+          id: 'recipient',
           label: l10n.communicationsRecipientColumnLabel,
           sortComparator:
               (NotificationDelivery left, NotificationDelivery right) =>
@@ -623,6 +634,7 @@ class _DeliveriesTable extends ConsumerWidget {
           },
         ),
         AppListTableColumn<NotificationDelivery>(
+          id: 'status',
           label: l10n.communicationsStatusColumnLabel,
           sortComparator:
               (NotificationDelivery left, NotificationDelivery right) =>
@@ -634,6 +646,7 @@ class _DeliveriesTable extends ConsumerWidget {
           },
         ),
         AppListTableColumn<NotificationDelivery>(
+          id: 'attempts',
           label: l10n.communicationsAttemptsColumnLabel,
           numeric: true,
           sortComparator:
@@ -696,7 +709,11 @@ class _TemplatesTable extends ConsumerWidget {
       page: state.templates,
       isLoading: state.isRefreshingTemplates,
       columnVisibilityController: columnVisibilityController,
+      columnVisibilityStorageKey: 'communications_templates',
+      columnWidthStorageKey: 'communications_cw_templates',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       search: _tableSearch<CommunicationTemplate>(
         context,
         ref,
@@ -718,7 +735,9 @@ class _TemplatesTable extends ConsumerWidget {
       ),
       columns: <AppListTableColumn<CommunicationTemplate>>[
         AppListTableColumn<CommunicationTemplate>(
+          id: 'template',
           label: l10n.communicationsTemplateColumnLabel,
+          alwaysVisible: true,
           sortComparator:
               (CommunicationTemplate left, CommunicationTemplate right) =>
                   appListTableCompareText(left.name, right.name),
@@ -730,6 +749,7 @@ class _TemplatesTable extends ConsumerWidget {
           },
         ),
         AppListTableColumn<CommunicationTemplate>(
+          id: 'channel',
           label: l10n.communicationsChannelColumnLabel,
           sortComparator:
               (CommunicationTemplate left, CommunicationTemplate right) =>
@@ -739,6 +759,7 @@ class _TemplatesTable extends ConsumerWidget {
           },
         ),
         AppListTableColumn<CommunicationTemplate>(
+          id: 'state',
           label: l10n.communicationsStateColumnLabel,
           sortComparator:
               (CommunicationTemplate left, CommunicationTemplate right) =>
@@ -753,6 +774,7 @@ class _TemplatesTable extends ConsumerWidget {
           },
         ),
         AppListTableColumn<CommunicationTemplate>(
+          id: 'variables',
           label: l10n.communicationsVariablesColumnLabel,
           numeric: true,
           sortComparator:
@@ -1288,6 +1310,18 @@ void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
   ScaffoldMessenger.of(
     context,
   ).showSnackBar(SnackBar(content: Text(context.l10n.failureMessage(failure))));
+}
+
+int _panelCount(CommunicationsWorkspaceState state, CommunicationsPanel panel) {
+  return switch (panel) {
+    CommunicationsPanel.inbox => state.conversations.items.length,
+    CommunicationsPanel.notifications =>
+      state.notifications.totalItemCount ?? state.notifications.items.length,
+    CommunicationsPanel.deliveries =>
+      state.deliveries.totalItemCount ?? state.deliveries.items.length,
+    CommunicationsPanel.templates =>
+      state.templates.totalItemCount ?? state.templates.items.length,
+  };
 }
 
 String _panelTitle(AppLocalizations l10n, CommunicationsPanel panel) {

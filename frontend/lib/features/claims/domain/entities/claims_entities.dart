@@ -8,6 +8,7 @@ final class ClaimsWorkspaceQuery {
     this.patientId = '',
     this.action = '',
     this.search = '',
+    this.section = '',
   });
 
   factory ClaimsWorkspaceQuery.fromUri(Uri uri) {
@@ -25,6 +26,7 @@ final class ClaimsWorkspaceQuery {
       patientId: pick(<String>['patientId', 'patient_id', 'patient']),
       action: pick(<String>['action']),
       search: pick(<String>['search', 'q']),
+      section: pick(<String>['section', 'panel', 'filter', 'tab']),
     );
   }
 
@@ -32,14 +34,43 @@ final class ClaimsWorkspaceQuery {
   final String patientId;
   final String action;
   final String search;
+  final String section;
 
   bool get hasRouteTargeting =>
       encounterId.isNotEmpty ||
       patientId.isNotEmpty ||
       action.isNotEmpty ||
-      search.isNotEmpty;
+      search.isNotEmpty ||
+      section.isNotEmpty;
 
-  String get signature => '$encounterId|$patientId|$action|$search';
+  String get signature => '$encounterId|$patientId|$action|$search|$section';
+}
+
+/// Desk sections for the Claims workspace tab strip.
+enum ClaimsDeskSection {
+  authorizations,
+  activeClaims,
+  settled,
+  insuranceSetup,
+}
+
+ClaimsDeskSection claimsDeskSectionFromQuery(String value) {
+  return switch (value) {
+    'authorizations' => ClaimsDeskSection.authorizations,
+    'active-claims' => ClaimsDeskSection.activeClaims,
+    'settled' => ClaimsDeskSection.settled,
+    'insurance-setup' => ClaimsDeskSection.insuranceSetup,
+    _ => ClaimsDeskSection.authorizations,
+  };
+}
+
+String claimsDeskSectionToQuery(ClaimsDeskSection section) {
+  return switch (section) {
+    ClaimsDeskSection.authorizations => 'authorizations',
+    ClaimsDeskSection.activeClaims => 'active-claims',
+    ClaimsDeskSection.settled => 'settled',
+    ClaimsDeskSection.insuranceSetup => 'insurance-setup',
+  };
 }
 
 enum ClaimsQueueKind { authorization, claim }

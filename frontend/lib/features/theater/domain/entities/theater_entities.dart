@@ -44,6 +44,26 @@ const List<String> theaterFinalizeRecordTypes = <String>[
   'ALL',
 ];
 
+enum TheaterSection { scheduled, inTheater, recovery, all }
+
+extension TheaterSectionX on TheaterSection {
+  String get queryValue => switch (this) {
+    TheaterSection.scheduled => 'scheduled',
+    TheaterSection.inTheater => 'in-theater',
+    TheaterSection.recovery => 'recovery',
+    TheaterSection.all => 'all',
+  };
+
+  static TheaterSection fromQuery(String? value) {
+    return switch ((value ?? '').trim().toLowerCase()) {
+      'scheduled' => TheaterSection.scheduled,
+      'in-theater' || 'in_theater' || 'intheater' => TheaterSection.inTheater,
+      'recovery' || 'post-op' || 'post_op' || 'pacu' => TheaterSection.recovery,
+      _ => TheaterSection.all,
+    };
+  }
+}
+
 enum TheaterDetailPanel { checklist, anesthesia, postop, resources }
 
 extension TheaterDetailPanelX on TheaterDetailPanel {
@@ -63,6 +83,7 @@ extension TheaterDetailPanelX on TheaterDetailPanel {
 final class TheaterBoardQuery {
   const TheaterBoardQuery({
     this.search = '',
+    this.section = 'all',
     this.status,
     this.stage,
     this.scheduledDate,
@@ -80,6 +101,7 @@ final class TheaterBoardQuery {
   });
 
   final String search;
+  final String section;
   final String? status;
   final String? stage;
   final DateTime? scheduledDate;
@@ -107,7 +129,9 @@ final class TheaterBoardQuery {
   }
 
   bool get hasRouteTargeting =>
-      (focusCaseId ?? '').trim().isNotEmpty || focusPanel != null;
+      (focusCaseId ?? '').trim().isNotEmpty ||
+      focusPanel != null ||
+      section != 'all';
 
   TheaterCaseQuery toCaseQuery() {
     return TheaterCaseQuery(
@@ -138,6 +162,7 @@ final class TheaterBoardQuery {
     final String? focusId = pick(<String>['id', 'case', 'caseId', 'case_id']);
     return TheaterBoardQuery(
       search: focusId ?? pick(<String>['search', 'q']) ?? '',
+      section: pick(<String>['section']) ?? 'all',
       focusCaseId: focusId,
       focusPanel: TheaterDetailPanelX.fromValue(params['panel']),
       initialPatientId: pick(<String>['patient_id', 'patientId', 'patient']),
@@ -157,6 +182,7 @@ final class TheaterBoardQuery {
 
   TheaterBoardQuery copyWith({
     String? search,
+    String? section,
     String? status,
     String? stage,
     DateTime? scheduledDate,
@@ -182,6 +208,7 @@ final class TheaterBoardQuery {
   }) {
     return TheaterBoardQuery(
       search: search ?? this.search,
+      section: section ?? this.section,
       status: clearStatus ? null : status ?? this.status,
       stage: clearStage ? null : stage ?? this.stage,
       scheduledDate: clearScheduledDate
@@ -594,6 +621,13 @@ final class TheaterWorkspaceState {
     return cases.items
         .where((TheaterCase item) => item.normalizedStatus == 'CANCELLED')
         .length;
+  }
+
+  int get recoveryCount {
+    return cases.items.where((TheaterCase item) {
+      final String stage = item.normalizedStage;
+      return stage == 'POST_OP' || stage == 'PACU_HANDOFF';
+    }).length;
   }
 
   int get readyCount {

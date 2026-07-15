@@ -2310,6 +2310,10 @@
   "@theaterCompletedSummaryLabel": {
     "description": "Summary card label for completed theater cases."
   },
+  "theaterRecoverySectionLabel": "Recovery",
+  "@theaterRecoverySectionLabel": {
+    "description": "Tab label for theater cases in post-op recovery or PACU handoff."
+  },
   "theaterAllCasesSummaryLabel": "All cases",
   "@theaterAllCasesSummaryLabel": {
     "description": "Summary card label for all theater cases on the current board."
@@ -9912,6 +9916,22 @@
   "@ipdBedStatusBlocked": {
     "description": "IPD bed status label for blocked."
   },
+  "ipdAdmissionQueueTabLabel": "Admission Queue",
+  "@ipdAdmissionQueueTabLabel": {
+    "description": "Tab label for the IPD admission queue section."
+  },
+  "ipdActivePatientsTabLabel": "Active Patients",
+  "@ipdActivePatientsTabLabel": {
+    "description": "Tab label for the IPD active patients section."
+  },
+  "ipdTransfersTabLabel": "Transfers",
+  "@ipdTransfersTabLabel": {
+    "description": "Tab label for the IPD transfers section."
+  },
+  "ipdDischargeTabLabel": "Discharge",
+  "@ipdDischargeTabLabel": {
+    "description": "Tab label for the IPD discharge section."
+  },
   "ipdPatientBoardTab": "Patient board",
   "@ipdPatientBoardTab": {
     "description": "Tab label for the IPD active patient board."
@@ -14612,6 +14632,46 @@
   "claimsReportFooter": "Generated from claims and billing data.",
   "@claimsReportFooter": {
     "description": "Localized text for claimsReportFooter."
+  },
+  "claimsSectionAuthorizations": "Authorizations",
+  "@claimsSectionAuthorizations": {
+    "description": "Tab label for the pre-authorizations section in the claims workspace."
+  },
+  "claimsSectionActiveClaims": "Active Claims",
+  "@claimsSectionActiveClaims": {
+    "description": "Tab label for the active claims section in the claims workspace."
+  },
+  "claimsSectionSettled": "Settled",
+  "@claimsSectionSettled": {
+    "description": "Tab label for the settled claims section in the claims workspace."
+  },
+  "claimsSectionInsuranceSetup": "Insurance Setup",
+  "@claimsSectionInsuranceSetup": {
+    "description": "Tab label for the insurance setup section in the claims workspace."
+  },
+  "claimsPatientColumnLabel": "Patient",
+  "@claimsPatientColumnLabel": {
+    "description": "Column header for patient display ID in claims tables."
+  },
+  "claimsAmountColumnLabel": "Amount",
+  "@claimsAmountColumnLabel": {
+    "description": "Column header for claim or approved amount in claims tables."
+  },
+  "claimsSettlementAmountColumnLabel": "Settlement",
+  "@claimsSettlementAmountColumnLabel": {
+    "description": "Column header for settlement amount in the settled claims table."
+  },
+  "claimsRequestedAtColumnLabel": "Requested",
+  "@claimsRequestedAtColumnLabel": {
+    "description": "Column header for authorization request timestamp."
+  },
+  "claimsSubmittedAtColumnLabel": "Submitted",
+  "@claimsSubmittedAtColumnLabel": {
+    "description": "Column header for claim submission timestamp."
+  },
+  "claimsInsuranceSetupDescription": "Manage insurance companies, schemes, offers, enrollments, price books, and insurer integrations.",
+  "@claimsInsuranceSetupDescription": {
+    "description": "Description text for the insurance setup panel."
   },
   "labTitle": "Laboratory",
   "@labTitle": {
@@ -20592,6 +20652,26 @@
   "roomsBedsSavedMessage": "Rooms and beds updated.",
   "@roomsBedsSavedMessage": {
     "description": "Snackbar message after rooms and beds changes are saved."
+  },
+  "roomsBedsSectionAllLabel": "All beds",
+  "@roomsBedsSectionAllLabel": {
+    "description": "Tab label for showing all beds in the bed board"
+  },
+  "roomsBedsSectionAvailableLabel": "Available",
+  "@roomsBedsSectionAvailableLabel": {
+    "description": "Tab label for showing available beds"
+  },
+  "roomsBedsSectionOccupiedLabel": "Occupied",
+  "@roomsBedsSectionOccupiedLabel": {
+    "description": "Tab label for showing occupied beds"
+  },
+  "roomsBedsSectionTurnoverLabel": "Turnover",
+  "@roomsBedsSectionTurnoverLabel": {
+    "description": "Tab label for showing beds in transition (reserved, cleaning, maintenance)"
+  },
+  "roomsBedsSectionOutOfServiceLabel": "Out of service",
+  "@roomsBedsSectionOutOfServiceLabel": {
+    "description": "Tab label for showing blocked and out-of-service beds"
   },
   "roomsBedsRequiredMessage": "{field} is required.",
   "@roomsBedsRequiredMessage": {

@@ -138,17 +138,22 @@ class _TheaterWorkspaceContentState
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<TheaterCase>
   _tableColumnController;
+  late TheaterSection _section;
   bool _scheduleDialogHandled = false;
 
   @override
   void initState() {
     super.initState();
+    _section = TheaterSectionX.fromQuery(widget.initialQuery?.section);
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<TheaterCase>();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
+      }
+      if (_section != TheaterSection.all) {
+        _applyTabFilter(_section);
       }
       unawaited(_maybeOpenScheduleDialog());
     });
@@ -193,6 +198,60 @@ class _TheaterWorkspaceContentState
     _searchController.dispose();
     _tableColumnController.dispose();
     super.dispose();
+  }
+
+  void _updateUrlForSection(TheaterSection section) {
+    if (!mounted) {
+      return;
+    }
+    final String tab = section.queryValue;
+    final String location = AppRoutes.theater.location(
+      queryParameters: <String, String>{if (tab != 'all') 'section': tab},
+    );
+    GoRouter.of(context).replace<void>(location);
+  }
+
+  void _applyTabFilter(TheaterSection section) {
+    final TheaterWorkspaceController controller = ref.read(
+      theaterWorkspaceControllerProvider.notifier,
+    );
+    switch (section) {
+      case TheaterSection.scheduled:
+        controller.applyStatus('SCHEDULED');
+      case TheaterSection.inTheater:
+        controller.applyStatus('IN_PROGRESS');
+      case TheaterSection.recovery:
+        controller.applyStage('POST_OP');
+      case TheaterSection.all:
+        controller.clearFilters();
+    }
+  }
+
+  static IconData _sectionIcon(TheaterSection section) {
+    return switch (section) {
+      TheaterSection.scheduled => Icons.event_available_outlined,
+      TheaterSection.inTheater => Icons.meeting_room_outlined,
+      TheaterSection.recovery => Icons.monitor_heart_outlined,
+      TheaterSection.all => Icons.inventory_2_outlined,
+    };
+  }
+
+  String _sectionLabel(AppLocalizations l10n, TheaterSection section) {
+    return switch (section) {
+      TheaterSection.scheduled => l10n.theaterScheduledSummaryLabel,
+      TheaterSection.inTheater => l10n.theaterInTheaterSummaryLabel,
+      TheaterSection.recovery => l10n.theaterRecoverySectionLabel,
+      TheaterSection.all => l10n.theaterAllCasesSummaryLabel,
+    };
+  }
+
+  int _sectionCount(TheaterWorkspaceState state, TheaterSection section) {
+    return switch (section) {
+      TheaterSection.scheduled => state.scheduledCount,
+      TheaterSection.inTheater => state.inTheaterCount,
+      TheaterSection.recovery => state.recoveryCount,
+      TheaterSection.all => _pageTotal(state.cases),
+    };
   }
 
   @override
@@ -272,6 +331,36 @@ class _TheaterWorkspaceContentState
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: AppTabStrip(
+                  tabs: <AppTabItem>[
+                    for (final TheaterSection section in TheaterSection.values)
+                      AppTabItem(
+                        id: section.name,
+                        icon: _sectionIcon(section),
+                        label:
+                            '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
+                      ),
+                  ],
+                  selectedId: _section.name,
+                  onTabTapped: (String tabId) {
+                    for (final TheaterSection section
+                        in TheaterSection.values) {
+                      if (section.name == tabId) {
+                        setState(() => _section = section);
+                        _applyTabFilter(section);
+                        _updateUrlForSection(section);
+                        break;
+                      }
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: Theme.of(context).spacing.md),
           if (lastFailure != null) ...<Widget>[
             AppFailureStateView(
               failure: lastFailure,

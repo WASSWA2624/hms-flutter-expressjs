@@ -157,7 +157,7 @@ class _PharmacyWorkspaceContentState
     }
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;
-      controller.applySearch(query.search);
+      unawaited(controller.applySearch(query.search));
     }
     if (query.encounterId.isNotEmpty || query.orderId.isNotEmpty) {
       final PharmacyOrder? order = _findOrderByQuery(query);
@@ -206,9 +206,7 @@ class _PharmacyWorkspaceContentState
     if (!mounted) return;
     final String tab = _sectionToQueryValue(section);
     final String location = AppRoutes.pharmacy.location(
-      queryParameters: <String, String>{
-        if (tab.isNotEmpty) 'section': tab,
-      },
+      queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
     GoRouter.of(context).replace<void>(location);
   }
@@ -300,24 +298,24 @@ class _PharmacyWorkspaceContentState
     PharmacyWorkspaceController controller,
   ) {
     return switch (section) {
-      PharmacyDeskSection.queue || PharmacyDeskSection.inProgress =>
-        AppButton.primary(
-          label: l10n.pharmacyDispenseAction,
-          leadingIcon: Icons.medication_liquid_outlined,
-          onPressed: () => controller.applyFilter(PharmacyOrderFilter.ready),
-        ),
+      PharmacyDeskSection.queue ||
+      PharmacyDeskSection.inProgress => AppButton.primary(
+        label: l10n.pharmacyDispenseAction,
+        leadingIcon: Icons.medication_liquid_outlined,
+        onPressed: () => controller.applyFilter(PharmacyOrderFilter.ready),
+      ),
       PharmacyDeskSection.pendingPayment => AppButton.primary(
         label: l10n.pharmacyQueueFilterLabel,
         leadingIcon: Icons.payments_outlined,
         onPressed: () =>
             controller.applyFilter(PharmacyOrderFilter.pendingPayment),
       ),
-      PharmacyDeskSection.completed || PharmacyDeskSection.allOrders =>
-        AppButton.primary(
-          label: l10n.pharmacyCatalogPanelTitle,
-          leadingIcon: Icons.inventory_2_outlined,
-          onPressed: () => unawaited(openPharmacyCatalogDialog(context, ref)),
-        ),
+      PharmacyDeskSection.completed ||
+      PharmacyDeskSection.allOrders => AppButton.primary(
+        label: l10n.pharmacyCatalogPanelTitle,
+        leadingIcon: Icons.inventory_2_outlined,
+        onPressed: () => unawaited(openPharmacyCatalogDialog(context, ref)),
+      ),
     };
   }
 
@@ -476,12 +474,14 @@ class _PharmacyWorkspaceContentState
 class _PharmacyQueuePanel extends ConsumerWidget {
   const _PharmacyQueuePanel({
     required this.state,
+    required this.section,
     required this.writeRequirement,
     required this.searchController,
     required this.columnVisibilityController,
   });
 
   final PharmacyWorkspaceState state;
+  final PharmacyDeskSection section;
   final AccessRequirement writeRequirement;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<PharmacyOrder>
@@ -498,6 +498,8 @@ class _PharmacyQueuePanel extends ConsumerWidget {
       page: state.workbench.orders,
       isLoading: state.isRefreshingOrders,
       columnVisibilityController: columnVisibilityController,
+      columnVisibilityStorageKey: 'pharmacy_${section.name}',
+      columnWidthStorageKey: 'pharmacy_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       search: AppListTableSearch<PharmacyOrder>(
         controller: searchController,

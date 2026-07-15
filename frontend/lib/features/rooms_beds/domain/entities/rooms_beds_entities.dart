@@ -2,9 +2,28 @@ import 'package:flutter/foundation.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
+enum RoomsBedsSection { all, available, occupied, turnover, outOfService }
+
+RoomsBedsSection _parseRoomsBedsSection(String raw) {
+  return switch (raw.trim().toLowerCase()) {
+    'available' => RoomsBedsSection.available,
+    'occupied' => RoomsBedsSection.occupied,
+    'turnover' ||
+    'reserved' ||
+    'cleaning' ||
+    'maintenance' => RoomsBedsSection.turnover,
+    'out-of-service' ||
+    'out_of_service' ||
+    'blocked' ||
+    'oos' => RoomsBedsSection.outOfService,
+    _ => RoomsBedsSection.all,
+  };
+}
+
 @immutable
 final class RoomsBedsQuery {
   const RoomsBedsQuery({
+    this.section = RoomsBedsSection.all,
     this.search = '',
     this.facilityId,
     this.wardId,
@@ -17,6 +36,7 @@ final class RoomsBedsQuery {
   factory RoomsBedsQuery.fromUri(Uri uri) {
     final Map<String, String> params = uri.queryParameters;
     return RoomsBedsQuery(
+      section: _parseRoomsBedsSection(params['section'] ?? params['tab'] ?? ''),
       search: params['search'] ?? '',
       facilityId: _nonEmpty(params['facilityId'] ?? params['facility_id']),
       wardId: _nonEmpty(params['wardId'] ?? params['ward']),
@@ -26,6 +46,7 @@ final class RoomsBedsQuery {
     );
   }
 
+  final RoomsBedsSection section;
   final String search;
   final String? facilityId;
   final String? wardId;
@@ -35,7 +56,8 @@ final class RoomsBedsQuery {
   final AppPageRequest pageRequest;
 
   bool get hasRouteTargeting {
-    return search.trim().isNotEmpty ||
+    return section != RoomsBedsSection.all ||
+        search.trim().isNotEmpty ||
         facilityId != null ||
         wardId != null ||
         roomId != null ||
@@ -44,6 +66,7 @@ final class RoomsBedsQuery {
   }
 
   RoomsBedsQuery copyWith({
+    RoomsBedsSection? section,
     String? search,
     String? facilityId,
     String? wardId,
@@ -58,6 +81,7 @@ final class RoomsBedsQuery {
     bool clearStatus = false,
   }) {
     return RoomsBedsQuery(
+      section: section ?? this.section,
       search: search ?? this.search,
       facilityId: clearFacility ? null : facilityId ?? this.facilityId,
       wardId: clearWard ? null : wardId ?? this.wardId,

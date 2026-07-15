@@ -16,6 +16,8 @@ enum IntegrationWorkspaceFilter {
   disabled,
 }
 
+enum IntegrationDeskSection { integrations, apiKeys, webhooks, logs, interop }
+
 @immutable
 final class IntegrationWorkspaceQuery {
   const IntegrationWorkspaceQuery({
@@ -24,9 +26,39 @@ final class IntegrationWorkspaceQuery {
     this.pageRequest = const AppPageRequest(pageSize: 12),
   });
 
+  factory IntegrationWorkspaceQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    String pick(List<String> keys) {
+      for (final String key in keys) {
+        final String value = (params[key] ?? '').trim();
+        if (value.isNotEmpty) {
+          return value;
+        }
+      }
+      return '';
+    }
+
+    final String sectionRaw = pick(<String>[
+      'section',
+      'panel',
+      'filter',
+      'kind',
+    ]);
+    final String searchRaw = pick(<String>['search', 'q']);
+    return IntegrationWorkspaceQuery(
+      search: searchRaw,
+      filter: _filterFromSection(sectionRaw),
+    );
+  }
+
   final String search;
   final IntegrationWorkspaceFilter filter;
   final AppPageRequest pageRequest;
+
+  bool get hasRouteTargeting =>
+      search.isNotEmpty || filter != IntegrationWorkspaceFilter.all;
+
+  String get signature => '${filter.name}|$search';
 
   IntegrationWorkspaceQuery copyWith({
     String? search,
@@ -38,6 +70,24 @@ final class IntegrationWorkspaceQuery {
       filter: filter ?? this.filter,
       pageRequest: pageRequest ?? this.pageRequest,
     );
+  }
+
+  static IntegrationWorkspaceFilter _filterFromSection(String raw) {
+    return switch (raw.trim().toLowerCase()) {
+      'integrations' ||
+      'integration' => IntegrationWorkspaceFilter.integrations,
+      'api-keys' ||
+      'apikeys' ||
+      'api_keys' ||
+      'keys' => IntegrationWorkspaceFilter.apiKeys,
+      'webhooks' || 'webhook' || 'hooks' => IntegrationWorkspaceFilter.webhooks,
+      'logs' || 'log' || 'activity' => IntegrationWorkspaceFilter.logs,
+      'interop' ||
+      'interoperability' ||
+      'fhir' ||
+      'hl7' => IntegrationWorkspaceFilter.interop,
+      _ => IntegrationWorkspaceFilter.all,
+    };
   }
 }
 
