@@ -313,13 +313,26 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     String? slug,
     required bool isActive,
     String? currency,
+    String? standardConsultationFee,
+    bool clearStandardConsultationFee = false,
   }) {
     final String? normalizedCurrency = _normalizedOptional(
       currency,
     )?.toUpperCase();
-    final Map<String, Object?>? extensionJson = normalizedCurrency == null
-        ? null
-        : <String, Object?>{'currency': normalizedCurrency};
+    final String? normalizedFee = _normalizedOptional(standardConsultationFee);
+    final bool writeExtension =
+        normalizedCurrency != null ||
+        normalizedFee != null ||
+        clearStandardConsultationFee;
+    final Map<String, Object?>? extensionJson = writeExtension
+        ? <String, Object?>{
+            'currency': ?normalizedCurrency,
+            'billing': <String, Object?>{
+              'standard_consultation_fee':
+                  clearStandardConsultationFee ? null : normalizedFee,
+            },
+          }
+        : null;
     final payload = <String, Object?>{
       'name': name.trim(),
       'slug': _normalizedOptional(slug),
@@ -351,18 +364,30 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     String? logoUrl,
     bool removeLogo = false,
     String? currency,
+    String? standardConsultationFee,
+    bool clearStandardConsultationFee = false,
   }) {
     final String? normalizedLogoUrl = _normalizedOptional(logoUrl);
     final String? normalizedCurrency = _normalizedOptional(
       currency,
     )?.toUpperCase();
+    final String? normalizedFee = _normalizedOptional(standardConsultationFee);
+    final bool writeBilling = normalizedFee != null || clearStandardConsultationFee;
     final bool writeExtension =
-        normalizedLogoUrl != null || removeLogo || normalizedCurrency != null;
+        normalizedLogoUrl != null ||
+        removeLogo ||
+        normalizedCurrency != null ||
+        writeBilling;
     final Map<String, Object?>? extensionJson = writeExtension
         ? <String, Object?>{
             'logo_url': ?normalizedLogoUrl,
             if (removeLogo) 'logo_url': null,
             'currency': ?normalizedCurrency,
+            if (writeBilling)
+              'billing': <String, Object?>{
+                'standard_consultation_fee':
+                    clearStandardConsultationFee ? null : normalizedFee,
+              },
           }
         : null;
     final payload = <String, Object?>{

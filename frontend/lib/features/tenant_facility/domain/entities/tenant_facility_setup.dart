@@ -44,6 +44,7 @@ final class TenantProfile {
     this.slug,
     this.isActive = true,
     this.currency,
+    this.standardConsultationFee,
     this.resourceUuid,
     this.displayId,
     this.deletedAt,
@@ -54,6 +55,7 @@ final class TenantProfile {
   final String? slug;
   final bool isActive;
   final String? currency;
+  final String? standardConsultationFee;
   final String? resourceUuid;
   final String? displayId;
   final DateTime? deletedAt;
@@ -69,11 +71,13 @@ final class TenantProfile {
     String? slug,
     bool? isActive,
     String? currency,
+    String? standardConsultationFee,
     String? resourceUuid,
     String? displayId,
     DateTime? deletedAt,
     bool clearDeletedAt = false,
     bool clearCurrency = false,
+    bool clearStandardConsultationFee = false,
   }) {
     return TenantProfile(
       id: id ?? this.id,
@@ -81,6 +85,9 @@ final class TenantProfile {
       slug: slug ?? this.slug,
       isActive: isActive ?? this.isActive,
       currency: clearCurrency ? null : (currency ?? this.currency),
+      standardConsultationFee: clearStandardConsultationFee
+          ? null
+          : (standardConsultationFee ?? this.standardConsultationFee),
       resourceUuid: resourceUuid ?? this.resourceUuid,
       displayId: displayId ?? this.displayId,
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
@@ -97,6 +104,7 @@ final class FacilityProfile {
     this.isActive = true,
     this.logoUrl,
     this.currency,
+    this.standardConsultationFee,
     this.resourceUuid,
     this.displayId,
     this.deletedAt,
@@ -109,6 +117,7 @@ final class FacilityProfile {
   final bool isActive;
   final String? logoUrl;
   final String? currency;
+  final String? standardConsultationFee;
   final String? resourceUuid;
   final String? displayId;
   final DateTime? deletedAt;
@@ -126,12 +135,14 @@ final class FacilityProfile {
     bool? isActive,
     String? logoUrl,
     String? currency,
+    String? standardConsultationFee,
     String? resourceUuid,
     String? displayId,
     DateTime? deletedAt,
     bool clearDeletedAt = false,
     bool clearLogoUrl = false,
     bool clearCurrency = false,
+    bool clearStandardConsultationFee = false,
   }) {
     return FacilityProfile(
       id: id ?? this.id,
@@ -141,6 +152,9 @@ final class FacilityProfile {
       isActive: isActive ?? this.isActive,
       logoUrl: clearLogoUrl ? null : (logoUrl ?? this.logoUrl),
       currency: clearCurrency ? null : (currency ?? this.currency),
+      standardConsultationFee: clearStandardConsultationFee
+          ? null
+          : (standardConsultationFee ?? this.standardConsultationFee),
       resourceUuid: resourceUuid ?? this.resourceUuid,
       displayId: displayId ?? this.displayId,
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),

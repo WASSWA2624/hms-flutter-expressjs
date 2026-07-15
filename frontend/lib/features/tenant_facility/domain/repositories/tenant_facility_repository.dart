@@ -45,6 +45,8 @@ abstract interface class TenantFacilityRepository {
     String? slug,
     required bool isActive,
     String? currency,
+    String? standardConsultationFee,
+    bool clearStandardConsultationFee = false,
   });
 
   Future<Result<FacilityProfile>> saveFacility({
@@ -56,6 +58,8 @@ abstract interface class TenantFacilityRepository {
     String? logoUrl,
     bool removeLogo = false,
     String? currency,
+    String? standardConsultationFee,
+    bool clearStandardConsultationFee = false,
   });
 
   Future<Result<String>> uploadFacilityLogo({

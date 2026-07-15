@@ -4977,6 +4977,62 @@ class AppLocalizationsEn extends AppLocalizations {
       'Configure organization identity, facility profile, departments, units, and physical locations.';
 
   @override
+  String get settingsConfigurationSectionTitle => 'Configuration';
+
+  @override
+  String get settingsConfigurationSectionBody =>
+      'Set default currency and consultation fee for your organization and facility.';
+
+  @override
+  String get settingsConfigurationTenantTitle => 'Tenant defaults';
+
+  @override
+  String get settingsConfigurationFacilityTitle => 'Facility defaults';
+
+  @override
+  String get settingsConfigurationCurrencyLabel => 'Default currency';
+
+  @override
+  String get settingsConfigurationCurrencyHelper =>
+      'Applied to billing and amount fields when no currency is specified.';
+
+  @override
+  String get settingsConfigurationConsultationFeeLabel =>
+      'Default consultation fee';
+
+  @override
+  String get settingsConfigurationConsultationFeeHelper =>
+      'Used as the default fee for new consultations when no practitioner fee is set.';
+
+  @override
+  String get settingsConfigurationSaveAction => 'Save configuration';
+
+  @override
+  String get settingsConfigurationResetAction => 'Reset to default';
+
+  @override
+  String get settingsConfigurationSaveSuccess =>
+      'Configuration saved successfully.';
+
+  @override
+  String get settingsConfigurationSaveError => 'Could not save configuration.';
+
+  @override
+  String get settingsConfigurationResetConfirmTitle => 'Reset configuration?';
+
+  @override
+  String get settingsConfigurationResetConfirmBody =>
+      'This will clear the configured values and revert to defaults.';
+
+  @override
+  String get settingsConfigurationNoTenantContext =>
+      'Select a tenant and facility to configure defaults.';
+
+  @override
+  String get settingsConfigurationFacilityOverrideHint =>
+      'Facility values override tenant defaults.';
+
+  @override
   String get tenantFacilitySetupTitle => 'Tenant and facility setup';
 
   @override

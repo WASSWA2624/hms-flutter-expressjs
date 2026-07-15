@@ -196,6 +196,8 @@ final class TenantFacilitySetupSubmissionController
     String? slug,
     required bool isActive,
     String? currency,
+    String? standardConsultationFee,
+    bool clearStandardConsultationFee = false,
     bool refreshSetup = true,
   }) {
     return _submit(
@@ -205,11 +207,75 @@ final class TenantFacilitySetupSubmissionController
         slug: slug,
         isActive: isActive,
         currency: currency,
+        standardConsultationFee: standardConsultationFee,
+        clearStandardConsultationFee: clearStandardConsultationFee,
       ),
       updateSnapshot: (FacilitySetupSnapshot snapshot, TenantProfile tenant) {
         return snapshot.copyWith(tenant: tenant);
       },
       refreshSetup: refreshSetup,
+    );
+  }
+
+  Future<bool> saveTenantConfiguration({
+    required String id,
+    required String name,
+    required bool isActive,
+    String? slug,
+    String? currency,
+    String? standardConsultationFee,
+    bool clearCurrency = false,
+    bool clearStandardConsultationFee = false,
+  }) {
+    return _submit(
+      () => _repository.saveTenant(
+        id: id,
+        name: name,
+        slug: slug,
+        isActive: isActive,
+        currency: clearCurrency ? null : currency,
+        standardConsultationFee: standardConsultationFee,
+        clearStandardConsultationFee: clearStandardConsultationFee,
+      ),
+      updateSnapshot: (FacilitySetupSnapshot snapshot, TenantProfile tenant) {
+        return snapshot.copyWith(tenant: tenant);
+      },
+    );
+  }
+
+  Future<bool> saveFacilityConfiguration({
+    required String id,
+    required String tenantId,
+    required String name,
+    required FacilitySetupType type,
+    required bool isActive,
+    String? currency,
+    String? standardConsultationFee,
+    bool clearCurrency = false,
+    bool clearStandardConsultationFee = false,
+  }) {
+    return _submit(
+      () => _repository.saveFacility(
+        id: id,
+        tenantId: tenantId,
+        name: name,
+        type: type,
+        isActive: isActive,
+        currency: clearCurrency ? null : currency,
+        standardConsultationFee: standardConsultationFee,
+        clearStandardConsultationFee: clearStandardConsultationFee,
+      ),
+      updateSnapshot:
+          (FacilitySetupSnapshot snapshot, FacilityProfile facility) {
+            return snapshot.copyWith(
+              facility: facility,
+              facilities: _upsertById<FacilityProfile>(
+                snapshot.facilities,
+                facility,
+                (FacilityProfile item) => item.id,
+              ),
+            );
+          },
     );
   }
 

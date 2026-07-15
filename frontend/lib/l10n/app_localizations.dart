@@ -9442,6 +9442,102 @@ abstract class AppLocalizations {
   /// **'Configure organization identity, facility profile, departments, units, and physical locations.'**
   String get settingsTenantFacilitySetupActionBody;
 
+  /// Section title for tenant and facility configuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration'**
+  String get settingsConfigurationSectionTitle;
+
+  /// Section description for configuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Set default currency and consultation fee for your organization and facility.'**
+  String get settingsConfigurationSectionBody;
+
+  /// Panel title for tenant-level configuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Tenant defaults'**
+  String get settingsConfigurationTenantTitle;
+
+  /// Panel title for facility-level configuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility defaults'**
+  String get settingsConfigurationFacilityTitle;
+
+  /// Label for the default currency selector.
+  ///
+  /// In en, this message translates to:
+  /// **'Default currency'**
+  String get settingsConfigurationCurrencyLabel;
+
+  /// Helper text for currency field.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied to billing and amount fields when no currency is specified.'**
+  String get settingsConfigurationCurrencyHelper;
+
+  /// Label for the standard consultation fee input.
+  ///
+  /// In en, this message translates to:
+  /// **'Default consultation fee'**
+  String get settingsConfigurationConsultationFeeLabel;
+
+  /// Helper text for consultation fee field.
+  ///
+  /// In en, this message translates to:
+  /// **'Used as the default fee for new consultations when no practitioner fee is set.'**
+  String get settingsConfigurationConsultationFeeHelper;
+
+  /// Button label to save configuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Save configuration'**
+  String get settingsConfigurationSaveAction;
+
+  /// Button label to reset configuration to default.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to default'**
+  String get settingsConfigurationResetAction;
+
+  /// Success message after saving configuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration saved successfully.'**
+  String get settingsConfigurationSaveSuccess;
+
+  /// Error message when configuration save fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save configuration.'**
+  String get settingsConfigurationSaveError;
+
+  /// Confirmation dialog title for resetting configuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset configuration?'**
+  String get settingsConfigurationResetConfirmTitle;
+
+  /// Confirmation dialog body for resetting configuration.
+  ///
+  /// In en, this message translates to:
+  /// **'This will clear the configured values and revert to defaults.'**
+  String get settingsConfigurationResetConfirmBody;
+
+  /// Shown when no tenant context is available for configuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a tenant and facility to configure defaults.'**
+  String get settingsConfigurationNoTenantContext;
+
+  /// Hint that facility config overrides tenant config.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility values override tenant defaults.'**
+  String get settingsConfigurationFacilityOverrideHint;
+
   /// Tenant and facility setup screen title.
   ///
   /// In en, this message translates to:

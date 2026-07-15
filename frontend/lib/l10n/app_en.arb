@@ -6497,6 +6497,70 @@
   "@settingsTenantFacilitySetupActionBody": {
     "description": "Settings action body for opening tenant and facility setup."
   },
+  "settingsConfigurationSectionTitle": "Configuration",
+  "@settingsConfigurationSectionTitle": {
+    "description": "Section title for tenant and facility configuration."
+  },
+  "settingsConfigurationSectionBody": "Set default currency and consultation fee for your organization and facility.",
+  "@settingsConfigurationSectionBody": {
+    "description": "Section description for configuration."
+  },
+  "settingsConfigurationTenantTitle": "Tenant defaults",
+  "@settingsConfigurationTenantTitle": {
+    "description": "Panel title for tenant-level configuration."
+  },
+  "settingsConfigurationFacilityTitle": "Facility defaults",
+  "@settingsConfigurationFacilityTitle": {
+    "description": "Panel title for facility-level configuration."
+  },
+  "settingsConfigurationCurrencyLabel": "Default currency",
+  "@settingsConfigurationCurrencyLabel": {
+    "description": "Label for the default currency selector."
+  },
+  "settingsConfigurationCurrencyHelper": "Applied to billing and amount fields when no currency is specified.",
+  "@settingsConfigurationCurrencyHelper": {
+    "description": "Helper text for currency field."
+  },
+  "settingsConfigurationConsultationFeeLabel": "Default consultation fee",
+  "@settingsConfigurationConsultationFeeLabel": {
+    "description": "Label for the standard consultation fee input."
+  },
+  "settingsConfigurationConsultationFeeHelper": "Used as the default fee for new consultations when no practitioner fee is set.",
+  "@settingsConfigurationConsultationFeeHelper": {
+    "description": "Helper text for consultation fee field."
+  },
+  "settingsConfigurationSaveAction": "Save configuration",
+  "@settingsConfigurationSaveAction": {
+    "description": "Button label to save configuration."
+  },
+  "settingsConfigurationResetAction": "Reset to default",
+  "@settingsConfigurationResetAction": {
+    "description": "Button label to reset configuration to default."
+  },
+  "settingsConfigurationSaveSuccess": "Configuration saved successfully.",
+  "@settingsConfigurationSaveSuccess": {
+    "description": "Success message after saving configuration."
+  },
+  "settingsConfigurationSaveError": "Could not save configuration.",
+  "@settingsConfigurationSaveError": {
+    "description": "Error message when configuration save fails."
+  },
+  "settingsConfigurationResetConfirmTitle": "Reset configuration?",
+  "@settingsConfigurationResetConfirmTitle": {
+    "description": "Confirmation dialog title for resetting configuration."
+  },
+  "settingsConfigurationResetConfirmBody": "This will clear the configured values and revert to defaults.",
+  "@settingsConfigurationResetConfirmBody": {
+    "description": "Confirmation dialog body for resetting configuration."
+  },
+  "settingsConfigurationNoTenantContext": "Select a tenant and facility to configure defaults.",
+  "@settingsConfigurationNoTenantContext": {
+    "description": "Shown when no tenant context is available for configuration."
+  },
+  "settingsConfigurationFacilityOverrideHint": "Facility values override tenant defaults.",
+  "@settingsConfigurationFacilityOverrideHint": {
+    "description": "Hint that facility config overrides tenant config."
+  },
   "tenantFacilitySetupTitle": "Tenant and facility setup",
   "@tenantFacilitySetupTitle": {
     "description": "Tenant and facility setup screen title."

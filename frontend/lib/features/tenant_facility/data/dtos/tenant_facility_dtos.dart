@@ -8,6 +8,7 @@ final class TenantProfileDto {
     this.slug,
     required this.isActive,
     this.currency,
+    this.standardConsultationFee,
     this.resourceUuid,
     this.displayId,
     this.deletedAt,
@@ -15,6 +16,7 @@ final class TenantProfileDto {
 
   factory TenantProfileDto.fromJson(JsonMap json) {
     final JsonMap extensionJson = _map(json['extension_json']);
+    final JsonMap billing = _map(extensionJson['billing']);
 
     return TenantProfileDto(
       id: _requiredString(json, 'id'),
@@ -22,6 +24,10 @@ final class TenantProfileDto {
       slug: _optionalString(json, 'slug'),
       isActive: _optionalBool(json, 'is_active') ?? true,
       currency: _optionalString(extensionJson, 'currency'),
+      standardConsultationFee: _optionalDecimalString(
+        billing,
+        'standard_consultation_fee',
+      ),
       resourceUuid:
           _optionalString(json, 'resource_uuid') ?? _requiredString(json, 'id'),
       displayId: _optionalString(json, 'display_id'),
@@ -34,6 +40,7 @@ final class TenantProfileDto {
   final String? slug;
   final bool isActive;
   final String? currency;
+  final String? standardConsultationFee;
   final String? resourceUuid;
   final String? displayId;
   final DateTime? deletedAt;
@@ -45,6 +52,7 @@ final class TenantProfileDto {
       slug: slug,
       isActive: isActive,
       currency: currency,
+      standardConsultationFee: standardConsultationFee,
       resourceUuid: resourceUuid,
       displayId: displayId,
       deletedAt: deletedAt,
@@ -61,6 +69,7 @@ final class FacilityProfileDto {
     required this.isActive,
     this.logoUrl,
     this.currency,
+    this.standardConsultationFee,
     this.resourceUuid,
     this.displayId,
     this.deletedAt,
@@ -68,6 +77,7 @@ final class FacilityProfileDto {
 
   factory FacilityProfileDto.fromJson(JsonMap json) {
     final JsonMap extensionJson = _map(json['extension_json']);
+    final JsonMap billing = _map(extensionJson['billing']);
 
     return FacilityProfileDto(
       id: _requiredString(json, 'id'),
@@ -79,6 +89,10 @@ final class FacilityProfileDto {
       isActive: _optionalBool(json, 'is_active') ?? true,
       logoUrl: _optionalString(extensionJson, 'logo_url'),
       currency: _optionalString(extensionJson, 'currency'),
+      standardConsultationFee: _optionalDecimalString(
+        billing,
+        'standard_consultation_fee',
+      ),
       resourceUuid:
           _optionalString(json, 'resource_uuid') ?? _requiredString(json, 'id'),
       displayId: _optionalString(json, 'display_id'),
@@ -93,6 +107,7 @@ final class FacilityProfileDto {
   final bool isActive;
   final String? logoUrl;
   final String? currency;
+  final String? standardConsultationFee;
   final String? resourceUuid;
   final String? displayId;
   final DateTime? deletedAt;
@@ -106,6 +121,7 @@ final class FacilityProfileDto {
       isActive: isActive,
       logoUrl: logoUrl,
       currency: currency,
+      standardConsultationFee: standardConsultationFee,
       resourceUuid: resourceUuid,
       displayId: displayId,
       deletedAt: deletedAt,
@@ -471,6 +487,18 @@ DateTime? _optionalDateTime(JsonMap json, String key) {
 
 JsonMap _map(Object? value) {
   return value is JsonMap ? value : const <String, Object?>{};
+}
+
+String? _optionalDecimalString(JsonMap json, String key) {
+  final Object? value = json[key];
+  if (value == null) {
+    return null;
+  }
+  final String text = value.toString().trim();
+  if (text.isEmpty) {
+    return null;
+  }
+  return text;
 }
 
 final class TenantSubscriptionSummaryDto {
