@@ -67,6 +67,33 @@ describe('opd-flow.schema', () => {
         '550e8400-e29b-41d4-a716-446655440001'
       );
     });
+
+    it('requires the active encounter id when forcing a new encounter', () => {
+      const result = createOpdFlowSchema.safeParse({
+        tenant_id: 'TEN0000001',
+        patient_id: 'PAT0000003',
+        force_new_encounter: true
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error.issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ path: ['supersede_encounter_id'] })
+        ])
+      );
+    });
+
+    it('accepts an explicit supersede-and-create request', () => {
+      const result = createOpdFlowSchema.safeParse({
+        tenant_id: 'TEN0000001',
+        patient_id: 'PAT0000003',
+        force_new_encounter: true,
+        supersede_encounter_id: 'ENC0000009'
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data.reuse_open_encounter).toBeUndefined();
+    });
   });
 
   describe('encounterIdParamsSchema', () => {

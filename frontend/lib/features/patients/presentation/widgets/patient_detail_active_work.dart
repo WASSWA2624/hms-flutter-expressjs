@@ -64,6 +64,8 @@ class _PatientActiveWorkRow extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final String kindLabel = patientActiveWorkKindLabel(l10n, item);
     final String statusLabel = patientActiveWorkStatusLabel(l10n, item);
+    final String nextStepLabel = patientActiveWorkNextStepLabel(l10n, item);
+    final String actionLabel = patientActiveWorkActionLabel(l10n, item);
     final String contextLabel = patientActiveWorkContextLabel(item);
     final AppWorkspaceStatusTone statusTone = patientActiveWorkStatusTone(item);
     final String when = item.occurredAt == null
@@ -89,19 +91,11 @@ class _PatientActiveWorkRow extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Wrap(
-                    spacing: theme.spacing.xs,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: <Widget>[
-                      Text(
-                        kindLabel,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (statusLabel.isNotEmpty)
-                        AppStatusText(label: statusLabel, tone: statusTone),
-                    ],
+                  Text(
+                    kindLabel,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   if (contextLabel.isNotEmpty) ...<Widget>[
                     SizedBox(height: theme.spacing.xs),
@@ -121,13 +115,44 @@ class _PatientActiveWorkRow extends StatelessWidget {
                       ),
                     ),
                   ],
+                  if (statusLabel.isNotEmpty) ...<Widget>[
+                    SizedBox(height: theme.spacing.xs),
+                    Wrap(
+                      spacing: theme.spacing.xs,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: <Widget>[
+                        Text(
+                          '${l10n.patientsActiveWorkCurrentStatusLabel}:',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        AppStatusText(label: statusLabel, tone: statusTone),
+                      ],
+                    ),
+                  ],
+                  SizedBox(height: theme.spacing.xs),
+                  Text.rich(
+                    TextSpan(
+                      children: <InlineSpan>[
+                        TextSpan(
+                          text: '${l10n.patientsActiveWorkNextStepLabel}: ',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        TextSpan(text: nextStepLabel),
+                      ],
+                    ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
             ),
             AppButton.secondary(
-              label: l10n.patientsActiveWorkContinueAction,
+              label: actionLabel,
               leadingIcon: Icons.play_arrow_outlined,
-              tooltip: l10n.patientsActiveWorkContinueAction,
+              tooltip: actionLabel,
               onPressed: onContinue,
             ),
           ],

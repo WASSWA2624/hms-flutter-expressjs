@@ -46,6 +46,11 @@ class PatientDetailQuickActions extends ConsumerWidget {
     final Patient patient = detail.patient;
     final PatientVisitContext? visit = patient.currentVisit;
     final bool hasActiveOpdEncounter = isActiveOpdPatientVisit(visit);
+    final bool hasActiveOpdWorkItem = collectPatientActiveWorkItems(detail).any(
+      (PatientActiveWorkItem item) =>
+          item.kind == PatientActiveWorkKind.encounter ||
+          item.kind == PatientActiveWorkKind.queue,
+    );
     final PatientSummaryRecord? activeAdmission = activePatientAdmissionRecord(
       detail.workspace.admissions,
     );
@@ -74,7 +79,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
             allPermissions: <AppPermission>[AppPermissions.patientWrite],
           ),
         ),
-      if (hasActiveOpdEncounter)
+      if (hasActiveOpdEncounter && !hasActiveOpdWorkItem)
         AppPermissionActionItem(
           label: l10n.patientsQuickViewActiveOpdAction,
           icon: Icons.open_in_new_outlined,
@@ -89,7 +94,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
             ],
           ),
         )
-      else
+      else if (!hasActiveOpdEncounter && !hasActiveOpdWorkItem)
         AppPermissionActionItem(
           label: l10n.patientsQuickOpdCheckInAction,
           icon: opdEncounterIcon,

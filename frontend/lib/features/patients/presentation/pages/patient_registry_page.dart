@@ -1467,7 +1467,9 @@ Future<void> _continuePatientActiveWork(
         context,
         ref,
         patient,
-        PatientQuickAction.discharge,
+        isPendingPatientAdmissionRequest(item.status)
+            ? PatientQuickAction.admission
+            : PatientQuickAction.discharge,
       );
     case PatientActiveWorkKind.labOrder:
       await _openPatientQuickAction(

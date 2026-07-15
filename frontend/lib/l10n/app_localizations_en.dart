@@ -2963,7 +2963,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opdActiveEncounterFoundBody =>
-      'Active OPD encounter exists. Update it instead of creating a duplicate.';
+      'This visit is still open. Continue it, close it, or explicitly replace it with a new encounter.';
+
+  @override
+  String get opdStartNewEncounterAction => 'Start new encounter';
+
+  @override
+  String get opdStartNewEncounterConfirmTitle =>
+      'Replace the active encounter?';
+
+  @override
+  String get opdStartNewEncounterConfirmBody =>
+      'The current encounter will be cancelled and recorded as superseded before the new encounter starts. This cannot be undone.';
+
+  @override
+  String get opdStartNewEncounterConfirmAction => 'Cancel old and start new';
 
   @override
   String get opdContinueEncounterAction => 'Continue encounter';
@@ -3843,6 +3857,66 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get patientsActiveWorkContinueAction => 'Continue';
+
+  @override
+  String get patientsActiveWorkCurrentStatusLabel => 'Current status';
+
+  @override
+  String get patientsActiveWorkNextStepLabel => 'Next step';
+
+  @override
+  String get patientsActiveWorkNextAppointment =>
+      'Review the appointment and complete check-in.';
+
+  @override
+  String get patientsActiveWorkNextEncounter =>
+      'Open the OPD workflow to complete its highlighted next action.';
+
+  @override
+  String get patientsActiveWorkNextQueue =>
+      'Open the OPD workflow and move the patient to the next care step.';
+
+  @override
+  String get patientsActiveWorkNextAdmission =>
+      'Review the admission and its current care or discharge action.';
+
+  @override
+  String get patientsActiveWorkNextLabOrder =>
+      'Open the laboratory order and complete the pending work.';
+
+  @override
+  String get patientsActiveWorkNextRadiologyOrder =>
+      'Open the radiology order and complete the pending work.';
+
+  @override
+  String get patientsActiveWorkNextTherapy =>
+      'Open the physiotherapy episode and complete the pending work.';
+
+  @override
+  String get patientsActiveWorkNextTheater =>
+      'Open the theater case and complete the pending work.';
+
+  @override
+  String get patientsActiveWorkManageAppointmentAction => 'Manage appointment';
+
+  @override
+  String get patientsActiveWorkOpenOpdAction => 'Open OPD workflow';
+
+  @override
+  String get patientsActiveWorkManageAdmissionAction => 'Manage admission';
+
+  @override
+  String get patientsActiveWorkOpenLabOrderAction => 'Open lab order';
+
+  @override
+  String get patientsActiveWorkOpenRadiologyOrderAction =>
+      'Open radiology order';
+
+  @override
+  String get patientsActiveWorkOpenTherapyAction => 'Open physiotherapy';
+
+  @override
+  String get patientsActiveWorkOpenTheaterAction => 'Open theater case';
 
   @override
   String get patientsActiveWorkKindAppointment => 'Appointment';

@@ -3,6 +3,7 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
 
 enum PatientActiveWorkKind {
   appointment,
@@ -171,7 +172,9 @@ List<PatientActiveWorkItem> collectPatientActiveWorkItems(
       PatientActiveWorkItem(
         id: record.id,
         kind: PatientActiveWorkKind.encounter,
-        status: record.status ?? '',
+        status: isActiveOpdPatientVisit(detail.patient.currentVisit)
+            ? detail.patient.currentVisit?.status ?? record.status ?? ''
+            : record.status ?? '',
         title: record.title ?? 'Encounter',
         subtitle: record.subtitle,
         occurredAt: record.occurredAt,
@@ -358,7 +361,7 @@ String patientActiveWorkStatusLabel(
     PatientActiveWorkKind.encounter => switch (status) {
       'OPEN' => l10n.patientsActiveWorkStatusEncounterOpen,
       'IN_PROGRESS' => l10n.patientsActiveWorkStatusEncounterInProgress,
-      _ => AppDisplay.apiLabel(item.status),
+      _ => opdStageDisplayLabel(l10n, item.status),
     },
     PatientActiveWorkKind.queue => switch (status) {
       'OPEN' => l10n.patientsActiveWorkStatusQueueWaiting,
@@ -386,10 +389,64 @@ String patientActiveWorkStatusLabel(
   };
 }
 
+String patientActiveWorkNextStepLabel(
+  AppLocalizations l10n,
+  PatientActiveWorkItem item,
+) {
+  return switch (item.kind) {
+    PatientActiveWorkKind.appointment => l10n.patientsActiveWorkNextAppointment,
+    PatientActiveWorkKind.encounter =>
+      _opdActionLabelForStatus(l10n, item.status) ??
+          l10n.patientsActiveWorkNextEncounter,
+    PatientActiveWorkKind.queue => l10n.patientsActiveWorkNextQueue,
+    PatientActiveWorkKind.admission => l10n.patientsActiveWorkNextAdmission,
+    PatientActiveWorkKind.labOrder => l10n.patientsActiveWorkNextLabOrder,
+    PatientActiveWorkKind.radiologyOrder =>
+      l10n.patientsActiveWorkNextRadiologyOrder,
+    PatientActiveWorkKind.therapy => l10n.patientsActiveWorkNextTherapy,
+    PatientActiveWorkKind.theater => l10n.patientsActiveWorkNextTheater,
+  };
+}
+
+String patientActiveWorkActionLabel(
+  AppLocalizations l10n,
+  PatientActiveWorkItem item,
+) {
+  return switch (item.kind) {
+    PatientActiveWorkKind.appointment =>
+      l10n.patientsActiveWorkManageAppointmentAction,
+    PatientActiveWorkKind.encounter =>
+      _opdActionLabelForStatus(l10n, item.status) ??
+          l10n.patientsActiveWorkOpenOpdAction,
+    PatientActiveWorkKind.queue => l10n.patientsActiveWorkOpenOpdAction,
+    PatientActiveWorkKind.admission =>
+      l10n.patientsActiveWorkManageAdmissionAction,
+    PatientActiveWorkKind.labOrder => l10n.patientsActiveWorkOpenLabOrderAction,
+    PatientActiveWorkKind.radiologyOrder =>
+      l10n.patientsActiveWorkOpenRadiologyOrderAction,
+    PatientActiveWorkKind.therapy => l10n.patientsActiveWorkOpenTherapyAction,
+    PatientActiveWorkKind.theater => l10n.patientsActiveWorkOpenTheaterAction,
+  };
+}
+
 AppWorkspaceStatusTone patientActiveWorkStatusTone(PatientActiveWorkItem item) {
   if (item.kind == PatientActiveWorkKind.admission &&
       isPendingPatientAdmissionRequest(item.status)) {
     return AppWorkspaceStatusTone.warning;
   }
+  if (item.kind == PatientActiveWorkKind.encounter) {
+    return opdStageStatusTone(item.status);
+  }
   return AppWorkspaceStatusTone.info;
+}
+
+String? _opdActionLabelForStatus(AppLocalizations l10n, String status) {
+  return switch (status.trim().toUpperCase()) {
+    'WAITING_CONSULTATION_PAYMENT' => l10n.opdPayConsultationAction,
+    'WAITING_VITALS' => l10n.opdRecordVitalsAction,
+    'WAITING_DOCTOR_ASSIGNMENT' => l10n.opdAssignDoctorAction,
+    'WAITING_DOCTOR_REVIEW' => l10n.opdStartConsultationAction,
+    'WAITING_DISPOSITION' => l10n.opdDispositionAction,
+    _ => null,
+  };
 }

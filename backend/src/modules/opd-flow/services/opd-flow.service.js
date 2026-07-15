@@ -2630,6 +2630,7 @@ const bootstrapOpdFlow = async (data = {}, context = {}) => {
 const startOpdFlow = async (data, context = {}) => {
   const startedAt = new Date();
   const reuseOpenEncounter = data?.reuse_open_encounter === true;
+  const forceNewEncounter = data?.force_new_encounter === true;
 
   let startedResult;
   try {
@@ -2693,7 +2694,7 @@ const startOpdFlow = async (data, context = {}) => {
           select: { id: true }
         });
 
-        if (existingQueueFlow) {
+        if (existingQueueFlow && !forceNewEncounter) {
           return { existingEncounterId: existingQueueFlow.id };
         }
       }
@@ -2709,7 +2710,7 @@ const startOpdFlow = async (data, context = {}) => {
           select: { id: true }
         });
 
-        if (existingFlow) {
+        if (existingFlow && !forceNewEncounter) {
           return { existingEncounterId: existingFlow.id };
         }
       }
@@ -2792,15 +2793,57 @@ const startOpdFlow = async (data, context = {}) => {
         patientId
       });
       if (existingOpenEncounter) {
-        if (reuseOpenEncounter) {
-          return { existingEncounterId: existingOpenEncounter.id };
-        }
+        if (forceNewEncounter) {
+          const requestedSupersededId = normalizeIdentifier(
+            data.supersede_encounter_id
+          );
+          const existingIds = new Set(
+            [
+              existingOpenEncounter.id,
+              existingOpenEncounter.human_friendly_id
+            ]
+              .map(normalizeIdentifier)
+              .filter(Boolean)
+          );
+          if (!requestedSupersededId || !existingIds.has(requestedSupersededId)) {
+            throw new HttpError(
+              'errors.opd_flow.supersede_encounter_mismatch',
+              409,
+              [{ field: 'supersede_encounter_id' }]
+            );
+          }
 
-        throwActiveOpdEncounterExists({
-          encounter_id: existingOpenEncounter.human_friendly_id || existingOpenEncounter.id,
-          encounter_type: existingOpenEncounter.encounter_type,
-          stage: existingOpenEncounter.extension_json?.opd_flow?.stage || null
-        });
+          const supersededFlow = getOpdFlowState(existingOpenEncounter);
+          supersededFlow.cancellation_reason_code = 'SUPERSEDED_BY_NEW_VISIT';
+          supersededFlow.cancellation_reason_notes =
+            normalizeNotes(data.supersede_reason_notes) || null;
+          supersededFlow.cancelled_at = startedAt.toISOString();
+          appendTimelineEvent(
+            supersededFlow,
+            'ENCOUNTER_SUPERSEDED',
+            context,
+            {
+              reason_code: 'SUPERSEDED_BY_NEW_VISIT',
+              reason_notes: supersededFlow.cancellation_reason_notes
+            },
+            startedAt
+          );
+          await finalizeEncounterClosure(
+            tx,
+            existingOpenEncounter,
+            supersededFlow,
+            startedAt,
+            'CANCELLED'
+          );
+        } else if (reuseOpenEncounter) {
+          return { existingEncounterId: existingOpenEncounter.id };
+        } else {
+          throwActiveOpdEncounterExists({
+            encounter_id: existingOpenEncounter.human_friendly_id || existingOpenEncounter.id,
+            encounter_type: existingOpenEncounter.encounter_type,
+            stage: existingOpenEncounter.extension_json?.opd_flow?.stage || null
+          });
+        }
       }
 
       const providerIdentifier =

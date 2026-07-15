@@ -695,6 +695,44 @@ describe('opd-flow.service', () => {
     );
   });
 
+  it('rejects a stale supersede request when the active encounter changed', async () => {
+    const tx = {
+      tenant: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'TENANT-1' })
+      },
+      patient: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'pat-1' })
+      }
+    };
+    opdFlowRepository.findOpenActiveEncounterForPatient.mockResolvedValueOnce({
+      id: 'enc-open-1',
+      human_friendly_id: 'ENC0000009',
+      encounter_type: 'OPD',
+      extension_json: {
+        opd_flow: {
+          stage: 'WAITING_DOCTOR_REVIEW',
+          timeline: []
+        }
+      }
+    });
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      opdFlowService.startOpdFlow(
+        {
+          tenant_id: 'tenant-1',
+          patient_id: 'PAT0000003',
+          force_new_encounter: true,
+          supersede_encounter_id: 'ENC0000010'
+        },
+        { tenant_id: 'tenant-1', user_id: 'usr-1' }
+      )
+    ).rejects.toMatchObject({
+      messageKey: 'errors.opd_flow.supersede_encounter_mismatch',
+      statusCode: 409
+    });
+  });
+
   it('maps database active OPD lock conflicts to duplicate encounter errors', async () => {
     const duplicateError = new Error('unique conflict');
     duplicateError.code = 'P2002';

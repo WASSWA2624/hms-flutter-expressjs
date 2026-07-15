@@ -74,7 +74,7 @@ class _ReceptionWorkspaceContentState
   late ReceptionDeskSection _section;
   String? _appliedRouteSignature;
   late final AppListTableColumnVisibilityController<_ReceptionDeskRow>
-      _columnVisibilityController;
+  _columnVisibilityController;
 
   static const Set<String> _paymentGateStages = <String>{
     'WAITING_CONSULTATION_PAYMENT',
@@ -197,7 +197,8 @@ class _ReceptionWorkspaceContentState
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final OpdWorkspaceState state = widget.state;
-    final bool isRefreshing = state.isRefreshingAppointments ||
+    final bool isRefreshing =
+        state.isRefreshingAppointments ||
         state.isRefreshingQueue ||
         state.isRefreshingFlows;
 
@@ -405,9 +406,7 @@ class _ReceptionWorkspaceContentState
             label: l10n.receptionScheduledTimeLabel,
             cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
               final DateTime? dt = row.appointment?.scheduledStart;
-              return Text(
-                dt != null ? AppFormatters.dateTime(dt, locale) : '',
-              );
+              return Text(dt != null ? AppFormatters.dateTime(dt, locale) : '');
             },
             sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
                 appListTableCompareDateTime(
@@ -458,9 +457,7 @@ class _ReceptionWorkspaceContentState
             label: l10n.receptionQueuedAtLabel,
             cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
               final DateTime? dt = row.queueEntry?.queuedAt;
-              return Text(
-                dt != null ? AppFormatters.dateTime(dt, locale) : '',
-              );
+              return Text(dt != null ? AppFormatters.dateTime(dt, locale) : '');
             },
             sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
                 appListTableCompareDateTime(
@@ -517,9 +514,7 @@ class _ReceptionWorkspaceContentState
             label: l10n.receptionStartedAtLabel,
             cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
               final DateTime? dt = row.flow?.startedAt;
-              return Text(
-                dt != null ? AppFormatters.dateTime(dt, locale) : '',
-              );
+              return Text(dt != null ? AppFormatters.dateTime(dt, locale) : '');
             },
             sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
                 appListTableCompareDateTime(
@@ -538,7 +533,7 @@ class _ReceptionWorkspaceContentState
               return AppWorkspaceStatusBadge(
                 status: AppWorkspaceStatus(
                   label: opdStageDisplayLabel(context.l10n, stage),
-                  tone: AppWorkspaceStatusTone.info,
+                  tone: opdStageStatusTone(stage),
                 ),
               );
             },
@@ -548,6 +543,22 @@ class _ReceptionWorkspaceContentState
             label: l10n.receptionAssignedDoctorLabel,
             cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
                 Text(row.flow?.assignedStaffDisplayName ?? ''),
+          ),
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'next_action',
+            label: l10n.opdNextActionFilterLabel,
+            alwaysVisible: true,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+              final OpdFlowSummary? flow = row.flow;
+              if (flow == null) {
+                return const SizedBox.shrink();
+              }
+              return AppButton.tertiary(
+                label: _flowNextActionLabel(context, flow),
+                leadingIcon: Icons.arrow_forward_outlined,
+                onPressed: () => unawaited(_openFlowActions(flow)),
+              );
+            },
           ),
         ];
 
@@ -582,7 +593,7 @@ class _ReceptionWorkspaceContentState
               return AppWorkspaceStatusBadge(
                 status: AppWorkspaceStatus(
                   label: opdStageDisplayLabel(context.l10n, stage),
-                  tone: AppWorkspaceStatusTone.info,
+                  tone: opdStageStatusTone(stage),
                 ),
               );
             },
@@ -604,13 +615,36 @@ class _ReceptionWorkspaceContentState
             id: 'payment_status',
             label: l10n.receptionPaymentStatusLabel,
             cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
-              final String? status = row.flow?.consultationPaymentStatus;
-              if (status == null || status.isEmpty) {
-                return Text(
-                  row.flow?.consultationPaid == true ? 'Paid' : 'Unpaid',
-                );
+              final OpdFlowSummary? flow = row.flow;
+              if (flow == null) {
+                return const SizedBox.shrink();
               }
-              return Text(status);
+              final OpdBillingDisplay billing = opdFlowBillingDisplay(
+                context,
+                flow,
+              );
+              return AppWorkspaceStatusBadge(
+                status: AppWorkspaceStatus(
+                  label: billing.statusLabel,
+                  tone: billing.tone,
+                ),
+              );
+            },
+          ),
+          AppListTableColumn<_ReceptionDeskRow>(
+            id: 'next_action',
+            label: l10n.opdNextActionFilterLabel,
+            alwaysVisible: true,
+            cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+              final OpdFlowSummary? flow = row.flow;
+              if (flow == null) {
+                return const SizedBox.shrink();
+              }
+              return AppButton.tertiary(
+                label: _flowNextActionLabel(context, flow),
+                leadingIcon: Icons.arrow_forward_outlined,
+                onPressed: () => unawaited(_openFlowActions(flow)),
+              );
             },
           ),
         ];
@@ -638,6 +672,14 @@ class _ReceptionWorkspaceContentState
               tone: AppWorkspaceStatusTone.info,
             ),
     );
+  }
+
+  String _flowNextActionLabel(BuildContext context, OpdFlowSummary flow) {
+    final String label = opdNextStepDisplayLabel(
+      context.l10n,
+      flow.displayNextStep ?? flow.nextStep,
+    ).trim();
+    return label.isEmpty ? context.l10n.opdContinueEncounterAction : label;
   }
 
   String _sectionLabel(AppLocalizations l10n, ReceptionDeskSection section) {
@@ -693,8 +735,11 @@ class _ReceptionWorkspaceContentState
       }
     }
 
-    final PatientRegistryState? loaded =
-        ref.read(patientRegistryControllerProvider).asData?.value.when(
+    final PatientRegistryState? loaded = ref
+        .read(patientRegistryControllerProvider)
+        .asData
+        ?.value
+        .when(
           success: (PatientRegistryState state) => state,
           failure: (_) => null,
         );
@@ -727,9 +772,9 @@ class _ReceptionWorkspaceContentState
     if (created == null || !mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.patientsSavedMessage)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.patientsSavedMessage)));
   }
 
   Future<void> _openFlowActions(OpdFlowSummary flow) async {

@@ -3528,7 +3528,11 @@
   "opdAppointmentPatientHelper": "Select an appointment to check the patient into OPD.",
   "opdActiveEncounterCheckingLabel": "Checking for an active OPD encounter...",
   "opdActiveEncounterFoundTitle": "Active OPD encounter found",
-  "opdActiveEncounterFoundBody": "Active OPD encounter exists. Update it instead of creating a duplicate.",
+  "opdActiveEncounterFoundBody": "This visit is still open. Continue it, close it, or explicitly replace it with a new encounter.",
+  "opdStartNewEncounterAction": "Start new encounter",
+  "opdStartNewEncounterConfirmTitle": "Replace the active encounter?",
+  "opdStartNewEncounterConfirmBody": "The current encounter will be cancelled and recorded as superseded before the new encounter starts. This cannot be undone.",
+  "opdStartNewEncounterConfirmAction": "Cancel old and start new",
   "opdContinueEncounterAction": "Continue encounter",
   "opdCloseEncounterAction": "Close encounter",
   "opdCancelEncounterAction": "Cancel encounter",
@@ -4094,6 +4098,18 @@
   },
   "@opdActiveEncounterFoundBody": {
     "description": "Body text shown when an OPD encounter selection matches an already active encounter."
+  },
+  "@opdStartNewEncounterAction": {
+    "description": "Action that begins the confirmed flow for replacing an active OPD encounter."
+  },
+  "@opdStartNewEncounterConfirmTitle": {
+    "description": "Confirmation title shown before replacing an active OPD encounter."
+  },
+  "@opdStartNewEncounterConfirmBody": {
+    "description": "Warning shown before the active encounter is atomically superseded."
+  },
+  "@opdStartNewEncounterConfirmAction": {
+    "description": "Confirmation action that cancels the old encounter and starts a new one."
   },
   "@opdContinueEncounterAction": {
     "description": "Action that opens the active OPD workflow from the encounter dialog."
@@ -5028,6 +5044,23 @@
   "@patientsActiveWorkContinueAction": {
     "description": "Action label to continue an active patient workflow item."
   },
+  "patientsActiveWorkCurrentStatusLabel": "Current status",
+  "patientsActiveWorkNextStepLabel": "Next step",
+  "patientsActiveWorkNextAppointment": "Review the appointment and complete check-in.",
+  "patientsActiveWorkNextEncounter": "Open the OPD workflow to complete its highlighted next action.",
+  "patientsActiveWorkNextQueue": "Open the OPD workflow and move the patient to the next care step.",
+  "patientsActiveWorkNextAdmission": "Review the admission and its current care or discharge action.",
+  "patientsActiveWorkNextLabOrder": "Open the laboratory order and complete the pending work.",
+  "patientsActiveWorkNextRadiologyOrder": "Open the radiology order and complete the pending work.",
+  "patientsActiveWorkNextTherapy": "Open the physiotherapy episode and complete the pending work.",
+  "patientsActiveWorkNextTheater": "Open the theater case and complete the pending work.",
+  "patientsActiveWorkManageAppointmentAction": "Manage appointment",
+  "patientsActiveWorkOpenOpdAction": "Open OPD workflow",
+  "patientsActiveWorkManageAdmissionAction": "Manage admission",
+  "patientsActiveWorkOpenLabOrderAction": "Open lab order",
+  "patientsActiveWorkOpenRadiologyOrderAction": "Open radiology order",
+  "patientsActiveWorkOpenTherapyAction": "Open physiotherapy",
+  "patientsActiveWorkOpenTheaterAction": "Open theater case",
   "patientsActiveWorkKindAppointment": "Appointment",
   "@patientsActiveWorkKindAppointment": {
     "description": "Active work row label for a scheduled appointment."

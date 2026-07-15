@@ -5719,8 +5719,32 @@ abstract class AppLocalizations {
   /// Body text shown when an OPD encounter selection matches an already active encounter.
   ///
   /// In en, this message translates to:
-  /// **'Active OPD encounter exists. Update it instead of creating a duplicate.'**
+  /// **'This visit is still open. Continue it, close it, or explicitly replace it with a new encounter.'**
   String get opdActiveEncounterFoundBody;
+
+  /// Action that begins the confirmed flow for replacing an active OPD encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Start new encounter'**
+  String get opdStartNewEncounterAction;
+
+  /// Confirmation title shown before replacing an active OPD encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace the active encounter?'**
+  String get opdStartNewEncounterConfirmTitle;
+
+  /// Warning shown before the active encounter is atomically superseded.
+  ///
+  /// In en, this message translates to:
+  /// **'The current encounter will be cancelled and recorded as superseded before the new encounter starts. This cannot be undone.'**
+  String get opdStartNewEncounterConfirmBody;
+
+  /// Confirmation action that cancels the old encounter and starts a new one.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel old and start new'**
+  String get opdStartNewEncounterConfirmAction;
 
   /// Action that opens the active OPD workflow from the encounter dialog.
   ///
@@ -7419,6 +7443,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue'**
   String get patientsActiveWorkContinueAction;
+
+  /// No description provided for @patientsActiveWorkCurrentStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Current status'**
+  String get patientsActiveWorkCurrentStatusLabel;
+
+  /// No description provided for @patientsActiveWorkNextStepLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next step'**
+  String get patientsActiveWorkNextStepLabel;
+
+  /// No description provided for @patientsActiveWorkNextAppointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the appointment and complete check-in.'**
+  String get patientsActiveWorkNextAppointment;
+
+  /// No description provided for @patientsActiveWorkNextEncounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the OPD workflow to complete its highlighted next action.'**
+  String get patientsActiveWorkNextEncounter;
+
+  /// No description provided for @patientsActiveWorkNextQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the OPD workflow and move the patient to the next care step.'**
+  String get patientsActiveWorkNextQueue;
+
+  /// No description provided for @patientsActiveWorkNextAdmission.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the admission and its current care or discharge action.'**
+  String get patientsActiveWorkNextAdmission;
+
+  /// No description provided for @patientsActiveWorkNextLabOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the laboratory order and complete the pending work.'**
+  String get patientsActiveWorkNextLabOrder;
+
+  /// No description provided for @patientsActiveWorkNextRadiologyOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the radiology order and complete the pending work.'**
+  String get patientsActiveWorkNextRadiologyOrder;
+
+  /// No description provided for @patientsActiveWorkNextTherapy.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the physiotherapy episode and complete the pending work.'**
+  String get patientsActiveWorkNextTherapy;
+
+  /// No description provided for @patientsActiveWorkNextTheater.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the theater case and complete the pending work.'**
+  String get patientsActiveWorkNextTheater;
+
+  /// No description provided for @patientsActiveWorkManageAppointmentAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage appointment'**
+  String get patientsActiveWorkManageAppointmentAction;
+
+  /// No description provided for @patientsActiveWorkOpenOpdAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open OPD workflow'**
+  String get patientsActiveWorkOpenOpdAction;
+
+  /// No description provided for @patientsActiveWorkManageAdmissionAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage admission'**
+  String get patientsActiveWorkManageAdmissionAction;
+
+  /// No description provided for @patientsActiveWorkOpenLabOrderAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open lab order'**
+  String get patientsActiveWorkOpenLabOrderAction;
+
+  /// No description provided for @patientsActiveWorkOpenRadiologyOrderAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open radiology order'**
+  String get patientsActiveWorkOpenRadiologyOrderAction;
+
+  /// No description provided for @patientsActiveWorkOpenTherapyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open physiotherapy'**
+  String get patientsActiveWorkOpenTherapyAction;
+
+  /// No description provided for @patientsActiveWorkOpenTheaterAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Open theater case'**
+  String get patientsActiveWorkOpenTheaterAction;
 
   /// Active work row label for a scheduled appointment.
   ///

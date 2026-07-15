@@ -17,6 +17,7 @@ import 'package:hosspi_hms/features/patients/data/repositories/patient_repositor
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_resolve.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
@@ -235,6 +236,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   String _paymentMethod = 'CASH';
   bool _requireConsultationPayment = true;
   bool _payNow = false;
+  bool _forceNewEncounter = false;
   bool _isSaving = false;
   AppFailure? _failure;
   int _activeEncounterLookupToken = 0;
@@ -490,12 +492,12 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     final bool isNewPatientMode = _patientMode == _WalkInPatientMode.newPatient;
     final String primaryActionLabel = isNewPatientMode
         ? l10n.opdCreatePatientAction
-        : hasActiveEncounter
+        : hasActiveEncounter && !_forceNewEncounter
         ? l10n.opdOpenActiveEncounterAction
         : l10n.opdStartEncounterAction;
     final IconData primaryActionIcon = isNewPatientMode
         ? Icons.person_add_alt_1_outlined
-        : hasActiveEncounter
+        : hasActiveEncounter && !_forceNewEncounter
         ? Icons.save_outlined
         : Icons.play_arrow_outlined;
 
@@ -539,6 +541,13 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       ),
       actions: <Widget>[
         if (hasActiveEncounter) ...<Widget>[
+          if (!_forceNewEncounter)
+            AppButton.secondary(
+              label: l10n.opdStartNewEncounterAction,
+              leadingIcon: Icons.add_circle_outline,
+              enabled: !_isSaving,
+              onPressed: _promptStartNewEncounter,
+            ),
           AppButton.secondary(
             label: l10n.opdContinueEncounterAction,
             leadingIcon: Icons.play_arrow_outlined,
@@ -1015,6 +1024,32 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     );
   }
 
+  Future<void> _promptStartNewEncounter() async {
+    final OpdFlowSummary? flow = _activeEncounter;
+    if (flow == null) {
+      return;
+    }
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AppConfirmActionDialog(
+        title: context.l10n.opdStartNewEncounterConfirmTitle,
+        body: context.l10n.opdStartNewEncounterConfirmBody,
+        highlightedText: flow.apiId,
+        submitLabel: context.l10n.opdStartNewEncounterConfirmAction,
+        destructive: true,
+        icon: const Icon(Icons.add_circle_outline),
+      ),
+    );
+    if (!mounted || confirmed != true) {
+      return;
+    }
+    setState(() {
+      _forceNewEncounter = true;
+      _failure = null;
+    });
+  }
+
   Future<void> _promptCloseEncounter() async {
     final OpdFlowSummary? flow = _activeEncounter;
     if (flow == null || widget.onCloseEncounter == null) {
@@ -1322,6 +1357,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     final bool hasSearch = _isNonEmpty(search);
     setState(() {
       _isResolvingActiveEncounter = hasSearch;
+      _forceNewEncounter = false;
       _applyActiveEncounterToState(localMatch);
     });
 
@@ -1734,8 +1770,13 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
 
     return <String, Object?>{
       if (_isNonEmpty(widget.source)) 'source': widget.source,
-      if (activeEncounter != null)
+      if (activeEncounter != null && !_forceNewEncounter)
         'existing_encounter_id': activeEncounter.apiId,
+      if (activeEncounter != null && _forceNewEncounter) ...<String, Object?>{
+        'force_new_encounter': true,
+        'supersede_encounter_id': activeEncounter.apiId,
+        'reuse_open_encounter': false,
+      },
       if (_patientMode == _WalkInPatientMode.appointment)
         'appointment_id': _appointmentId
       else if (_patientMode == _WalkInPatientMode.newPatient)
@@ -1757,7 +1798,8 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       if ((_payerContext?.insuranceCompanyId ?? '').trim().isNotEmpty)
         'insurance_company_id': _payerContext!.insuranceCompanyId,
       'require_consultation_payment': _requireConsultationPayment,
-      if (canReuseOpenEncounter) 'reuse_open_encounter': true,
+      if (canReuseOpenEncounter && !_forceNewEncounter)
+        'reuse_open_encounter': true,
       'create_consultation_invoice':
           hasConsultationFee || _requireConsultationPayment || submitPayment,
       if (submitPayment)

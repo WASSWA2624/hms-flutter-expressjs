@@ -42,8 +42,11 @@ Future<Result<OpdFlowDetail>> submitPatientOpdEncounter(
   Patient patient,
   Map<String, Object?> payload,
 ) {
+  final bool forceNewEncounter = payload['force_new_encounter'] == true;
   final Object? existingEncounterId = payload['existing_encounter_id'];
-  if (existingEncounterId is String && existingEncounterId.trim().isNotEmpty) {
+  if (!forceNewEncounter &&
+      existingEncounterId is String &&
+      existingEncounterId.trim().isNotEmpty) {
     return ref
         .read(opdRepositoryProvider)
         .updateActiveEncounter(

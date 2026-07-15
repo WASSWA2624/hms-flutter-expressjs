@@ -157,6 +157,9 @@ const createOpdFlowSchema = z
     create_consultation_invoice: z.boolean().optional(),
     require_consultation_payment: z.boolean().optional(),
     reuse_open_encounter: z.boolean().optional(),
+    force_new_encounter: z.boolean().optional(),
+    supersede_encounter_id: encounterIdentifierSchema.optional(),
+    supersede_reason_notes: z.string().trim().max(65535).optional().nullable(),
     pay_now: payNowSchema.optional(),
     emergency_case_id: scopeIdentifierSchema.optional(),
     emergency: emergencyPayloadSchema.optional(),
@@ -177,6 +180,14 @@ const createOpdFlowSchema = z
         code: z.ZodIssueCode.custom,
         path: ['appointment_id'],
         message: 'errors.opd_flow.appointment_required_for_online_mode'
+      });
+    }
+
+    if (data.force_new_encounter === true && !data.supersede_encounter_id) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['supersede_encounter_id'],
+        message: 'errors.validation.required'
       });
     }
   });
