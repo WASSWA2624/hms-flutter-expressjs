@@ -140,8 +140,9 @@ final class WorkflowActionExecutor {
   ) async {
     if (ref != null) {
       final WorkflowActionRegistry registry = WorkflowActionRegistry.instance;
-      final WorkflowDialogOpener? opener =
-          registry.dialogOpenerFor(action.code);
+      final WorkflowDialogOpener? opener = registry.dialogOpenerFor(
+        action.code,
+      );
 
       if (opener != null) {
         final bool? result = await opener(context, ref, action);
@@ -184,9 +185,7 @@ final class WorkflowActionExecutor {
   void _showUnsupportedSnackBar(BuildContext context, WorkflowAction action) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          action.unavailableReason ?? 'Action not yet supported',
-        ),
+        content: Text(action.unavailableReason ?? 'Action not yet supported'),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
       ),

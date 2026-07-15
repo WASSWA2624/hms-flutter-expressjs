@@ -599,9 +599,15 @@ void main() {
         expect(policy.grants(AppPermissions.operationsRead), isFalse);
         expect(policy.grants(AppPermissions.hrRead), isFalse);
         expect(policy.grants(AppPermissions.labRead), isTrue);
-        expect(AppRoutes.housekeeping.accessRequirement.isAllowed(policy), isFalse);
+        expect(
+          AppRoutes.housekeeping.accessRequirement.isAllowed(policy),
+          isFalse,
+        );
         expect(AppRoutes.hr.accessRequirement.isAllowed(policy), isFalse);
-        expect(AppRoutes.biomedical.accessRequirement.isAllowed(policy), isFalse);
+        expect(
+          AppRoutes.biomedical.accessRequirement.isAllowed(policy),
+          isFalse,
+        );
         expect(AppRoutes.mortuary.accessRequirement.isAllowed(policy), isFalse);
         expect(AppRoutes.theater.accessRequirement.isAllowed(policy), isFalse);
       },

@@ -2612,9 +2612,8 @@ class _OpdPatientActionsDialogState
           label: l10n.opdCancelAction,
           icon: Icons.cancel_outlined,
           enabled: !terminal && status != 'CANCELLED',
-          onPressed: () => _openNested(
-            OpdCancelAppointmentDialog(appointment: appointment),
-          ),
+          onPressed: () =>
+              _openNested(OpdCancelAppointmentDialog(appointment: appointment)),
         ),
       ]);
     }

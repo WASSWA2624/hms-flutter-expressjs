@@ -39,13 +39,7 @@ final class OperationsWorkspaceQuery {
   String get signature => '$section|$search|$requestId';
 }
 
-enum OperationsDeskSection {
-  allRequests,
-  open,
-  inProgress,
-  completed,
-  assets,
-}
+enum OperationsDeskSection { allRequests, open, inProgress, completed, assets }
 
 const List<String> operationsMaintenanceStatuses = <String>[
   'OPEN',

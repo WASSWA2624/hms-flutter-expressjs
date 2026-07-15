@@ -115,12 +115,7 @@ class _ClaimsWorkspaceContentState
         patientId: query.patientId,
       );
       if (item != null && mounted) {
-        await _openClaimsDetailDialog(
-          context,
-          ref,
-          widget.state,
-          item,
-        );
+        await _openClaimsDetailDialog(context, ref, widget.state, item);
       }
     }
     if (query.action == 'preauth' && mounted) {
@@ -526,140 +521,135 @@ class _ClaimsQueuePanel extends ConsumerWidget {
     );
 
     return SizedBox(
-        height: 520,
-        child: AppListTable<ClaimsQueueItem>(
-          page: state.queue,
-          isLoading: state.isRefreshing,
-          columnVisibilityController: columnVisibilityController,
-          columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-          search: AppListTableSearch<ClaimsQueueItem>(
-            controller: searchController,
-            semanticLabel: l10n.claimsSearchSemanticLabel,
-            hintText: l10n.claimsSearchHint,
-            matcher: (_, _) => true,
-            onSubmitted: (String value) async {
-              final AppFailure? failure = await controller.applySearch(value);
-              if (context.mounted) {
-                _showFailureIfNeeded(context, failure);
-              }
-            },
-            onClear: () async {
-              final AppFailure? failure = await controller.applySearch('');
-              if (context.mounted) {
-                _showFailureIfNeeded(context, failure);
-              }
-            },
-            showAdvancedFilterButton: true,
-            advancedFilterButtonLabel: l10n.claimsQueueFilterLabel,
-            advancedFilterTitle: l10n.claimsQueueFilterLabel,
-            advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-            advancedFilterResetLabel: l10n.opdClearFiltersAction,
-            enableDateFilter: false,
-            allFieldsLabel: l10n.claimsFilterAll,
-            filterGroups: <AppSearchBarFilterGroup>[
-              AppSearchBarFilterGroup(
-                key: _claimsQueueFilterKey,
-                label: l10n.claimsQueueFilterLabel,
-                allLabel: l10n.claimsFilterAll,
-                choices: _claimsQueueFilterChoices(l10n),
-              ),
-            ],
-            filterValue: _claimsFilterValue(state.query),
-            hasActiveFilters: state.query.filter != ClaimsQueueFilter.all,
-            onFilterChanged: (AppSearchBarFilterValue value) async {
-              final AppFailure? failure = await controller.applyFilter(
-                _claimsFilterFromValue(value.option(_claimsQueueFilterKey)),
-              );
-              if (context.mounted) {
-                _showFailureIfNeeded(context, failure);
-              }
-            },
-          ),
-          previousPageLabel: l10n.claimsPreviousPageLabel,
-          nextPageLabel: l10n.claimsNextPageLabel,
-          pageLabelBuilder: (AppPage<ClaimsQueueItem> page) {
-            return l10n.claimsPageLabel(
-              page.firstItemNumber,
-              page.lastItemNumber,
-              page.totalItemCount ?? page.items.length,
-            );
+      height: 520,
+      child: AppListTable<ClaimsQueueItem>(
+        page: state.queue,
+        isLoading: state.isRefreshing,
+        columnVisibilityController: columnVisibilityController,
+        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        search: AppListTableSearch<ClaimsQueueItem>(
+          controller: searchController,
+          semanticLabel: l10n.claimsSearchSemanticLabel,
+          hintText: l10n.claimsSearchHint,
+          matcher: (_, _) => true,
+          onSubmitted: (String value) async {
+            final AppFailure? failure = await controller.applySearch(value);
+            if (context.mounted) {
+              _showFailureIfNeeded(context, failure);
+            }
           },
-          onPageChanged: (AppPageRequest request) {
-            unawaited(controller.changePage(request));
+          onClear: () async {
+            final AppFailure? failure = await controller.applySearch('');
+            if (context.mounted) {
+              _showFailureIfNeeded(context, failure);
+            }
           },
-          onRowSelected: (ClaimsQueueItem item) {
-            unawaited(_openClaimsDetailDialog(context, ref, state, item));
-          },
-          emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-            title: l10n.claimsEmptyQueueTitle,
-            body: l10n.claimsEmptyQueueBody,
-            icon: Icons.inbox_outlined,
-          ),
-          columns: <AppListTableColumn<ClaimsQueueItem>>[
-            AppListTableColumn<ClaimsQueueItem>(
-              label: l10n.claimsTypeColumnLabel,
-              sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
-                  appListTableCompareText(left.kind.name, right.kind.name),
-              cellBuilder: (BuildContext context, ClaimsQueueItem item) {
-                return Text(_kindLabel(context, item.kind));
-              },
-            ),
-            AppListTableColumn<ClaimsQueueItem>(
-              label: l10n.claimsReferenceColumnLabel,
-              sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
-                  appListTableCompareText(left.displayId, right.displayId),
-              cellBuilder: (BuildContext context, ClaimsQueueItem item) {
-                return Text(item.displayId);
-              },
-            ),
-            AppListTableColumn<ClaimsQueueItem>(
-              label: l10n.claimsCoverageColumnLabel,
-              sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
-                  appListTableCompareText(
-                    left.coveragePlanDisplayId,
-                    right.coveragePlanDisplayId,
-                  ),
-              cellBuilder: (BuildContext context, ClaimsQueueItem item) {
-                return Text(_fallback(context, item.coveragePlanDisplayId));
-              },
-            ),
-            AppListTableColumn<ClaimsQueueItem>(
-              label: l10n.claimsInvoiceColumnLabel,
-              sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
-                  appListTableCompareText(
-                    left.invoiceDisplayId,
-                    right.invoiceDisplayId,
-                  ),
-              cellBuilder: (BuildContext context, ClaimsQueueItem item) {
-                return Text(_fallback(context, item.invoiceDisplayId));
-              },
-            ),
-            AppListTableColumn<ClaimsQueueItem>(
-              label: l10n.claimsStatusColumnLabel,
-              sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
-                  appListTableCompareText(left.status, right.status),
-              cellBuilder: (BuildContext context, ClaimsQueueItem item) {
-                return AppWorkspaceStatusBadge(
-                  status: _statusFor(context, item),
-                );
-              },
-            ),
-            AppListTableColumn<ClaimsQueueItem>(
-              label: l10n.claimsTimelineColumnLabel,
-              sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
-                  appListTableCompareDateTime(
-                    left.timelineAt,
-                    right.timelineAt,
-                  ),
-              cellBuilder: (BuildContext context, ClaimsQueueItem item) {
-                return Text(_dateTimeLabel(context, item.timelineAt));
-              },
+          showAdvancedFilterButton: true,
+          advancedFilterButtonLabel: l10n.claimsQueueFilterLabel,
+          advancedFilterTitle: l10n.claimsQueueFilterLabel,
+          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+          advancedFilterResetLabel: l10n.opdClearFiltersAction,
+          enableDateFilter: false,
+          allFieldsLabel: l10n.claimsFilterAll,
+          filterGroups: <AppSearchBarFilterGroup>[
+            AppSearchBarFilterGroup(
+              key: _claimsQueueFilterKey,
+              label: l10n.claimsQueueFilterLabel,
+              allLabel: l10n.claimsFilterAll,
+              choices: _claimsQueueFilterChoices(l10n),
             ),
           ],
-          mobileItemBuilder: (BuildContext context, ClaimsQueueItem item) {
-            return _MobileQueueItem(item: item);
+          filterValue: _claimsFilterValue(state.query),
+          hasActiveFilters: state.query.filter != ClaimsQueueFilter.all,
+          onFilterChanged: (AppSearchBarFilterValue value) async {
+            final AppFailure? failure = await controller.applyFilter(
+              _claimsFilterFromValue(value.option(_claimsQueueFilterKey)),
+            );
+            if (context.mounted) {
+              _showFailureIfNeeded(context, failure);
+            }
           },
         ),
+        previousPageLabel: l10n.claimsPreviousPageLabel,
+        nextPageLabel: l10n.claimsNextPageLabel,
+        pageLabelBuilder: (AppPage<ClaimsQueueItem> page) {
+          return l10n.claimsPageLabel(
+            page.firstItemNumber,
+            page.lastItemNumber,
+            page.totalItemCount ?? page.items.length,
+          );
+        },
+        onPageChanged: (AppPageRequest request) {
+          unawaited(controller.changePage(request));
+        },
+        onRowSelected: (ClaimsQueueItem item) {
+          unawaited(_openClaimsDetailDialog(context, ref, state, item));
+        },
+        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+          title: l10n.claimsEmptyQueueTitle,
+          body: l10n.claimsEmptyQueueBody,
+          icon: Icons.inbox_outlined,
+        ),
+        columns: <AppListTableColumn<ClaimsQueueItem>>[
+          AppListTableColumn<ClaimsQueueItem>(
+            label: l10n.claimsTypeColumnLabel,
+            sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
+                appListTableCompareText(left.kind.name, right.kind.name),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) {
+              return Text(_kindLabel(context, item.kind));
+            },
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            label: l10n.claimsReferenceColumnLabel,
+            sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
+                appListTableCompareText(left.displayId, right.displayId),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) {
+              return Text(item.displayId);
+            },
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            label: l10n.claimsCoverageColumnLabel,
+            sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
+                appListTableCompareText(
+                  left.coveragePlanDisplayId,
+                  right.coveragePlanDisplayId,
+                ),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) {
+              return Text(_fallback(context, item.coveragePlanDisplayId));
+            },
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            label: l10n.claimsInvoiceColumnLabel,
+            sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
+                appListTableCompareText(
+                  left.invoiceDisplayId,
+                  right.invoiceDisplayId,
+                ),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) {
+              return Text(_fallback(context, item.invoiceDisplayId));
+            },
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            label: l10n.claimsStatusColumnLabel,
+            sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
+                appListTableCompareText(left.status, right.status),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) {
+              return AppWorkspaceStatusBadge(status: _statusFor(context, item));
+            },
+          ),
+          AppListTableColumn<ClaimsQueueItem>(
+            label: l10n.claimsTimelineColumnLabel,
+            sortComparator: (ClaimsQueueItem left, ClaimsQueueItem right) =>
+                appListTableCompareDateTime(left.timelineAt, right.timelineAt),
+            cellBuilder: (BuildContext context, ClaimsQueueItem item) {
+              return Text(_dateTimeLabel(context, item.timelineAt));
+            },
+          ),
+        ],
+        mobileItemBuilder: (BuildContext context, ClaimsQueueItem item) {
+          return _MobileQueueItem(item: item);
+        },
+      ),
     );
   }
 }

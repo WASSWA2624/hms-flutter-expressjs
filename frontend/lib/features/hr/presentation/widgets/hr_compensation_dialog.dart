@@ -338,35 +338,32 @@ class _HrCompensationFormState extends ConsumerState<_HrCompensationForm>
                         ListTile(
                           title: Text(hrCompensationRowTitle(context, item)),
                           subtitle: Text(
-                              hrDateRange(
-                                context,
-                                item.effectiveFrom,
-                                item.effectiveTo,
-                              ),
-                            ),
-                            trailing: AppWorkspaceStatusBadge(
-                              status: AppWorkspaceStatus(
-                                label: item.isActive
-                                    ? l10n.hrCompensationActiveStatusLabel
-                                    : l10n.hrCompensationEndedStatusLabel,
-                                tone: item.isActive
-                                    ? AppWorkspaceStatusTone.success
-                                    : AppWorkspaceStatusTone.neutral,
-                              ),
-                            ),
-                            onTap: () => showHrCompensationDetailDialog(
+                            hrDateRange(
                               context,
-                              item,
-                              () {
+                              item.effectiveFrom,
+                              item.effectiveTo,
+                            ),
+                          ),
+                          trailing: AppWorkspaceStatusBadge(
+                            status: AppWorkspaceStatus(
+                              label: item.isActive
+                                  ? l10n.hrCompensationActiveStatusLabel
+                                  : l10n.hrCompensationEndedStatusLabel,
+                              tone: item.isActive
+                                  ? AppWorkspaceStatusTone.success
+                                  : AppWorkspaceStatusTone.neutral,
+                            ),
+                          ),
+                          onTap: () =>
+                              showHrCompensationDetailDialog(context, item, () {
                                 if (!mounted) {
                                   return;
                                 }
                                 _focusPayStructure(payType: item.payType);
-                              },
-                            ),
-                          ),
-                      ],
-                    );
+                              }),
+                        ),
+                    ],
+                  );
                 },
               ),
             ],

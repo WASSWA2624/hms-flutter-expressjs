@@ -1367,7 +1367,6 @@ class _LabEnableFacilityOfferingDialogState
         .toList(growable: false);
   }
 
-
   bool get _showingTests => widget.kind == LabEnableOfferingKind.test;
 
   @override

@@ -54,10 +54,7 @@ class LabWorkspacePage extends ConsumerWidget {
         ref.read(labWorkspaceControllerProvider.notifier).refresh();
       },
       dataBuilder: (BuildContext context, LabWorkspaceState data) {
-        return _LabWorkspaceContent(
-          state: data,
-          initialQuery: initialQuery,
-        );
+        return _LabWorkspaceContent(state: data, initialQuery: initialQuery);
       },
     );
   }
@@ -319,9 +316,9 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
   Future<void> _applyRouteQuery(LabWorkspaceQuery query) async {
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;
-      ref.read(labWorkspaceControllerProvider.notifier).applySearch(
-        query.search,
-      );
+      ref
+          .read(labWorkspaceControllerProvider.notifier)
+          .applySearch(query.search);
     }
     final LabOrderSummary? order = _findOrderByQuery(query);
     if (order != null) {
@@ -393,90 +390,90 @@ class _LabWorklistPanel extends ConsumerWidget {
     );
 
     return Stack(
-        children: <Widget>[
-          AppListTable<LabOrderSummary>(
-            page: state.worklist,
-            columnVisibilityController: columnVisibilityController,
-            columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-            columnVisibilityTitle: l10n.labTableColumnsTitle,
-            columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
-            columnVisibilityResetLabel: l10n.labResetColumnsAction,
-            search: AppListTableSearch<LabOrderSummary>(
-              controller: searchController,
-              semanticLabel: l10n.labSearchLabel,
-              hintText: l10n.labSearchHint,
-              matcher: (_, _) => true,
-              onChanged: onSearchChanged,
-              onSubmitted: onSearchSubmitted,
-              onClear: onSearchCleared,
-              showAdvancedFilterButton: true,
-              advancedFilterButtonLabel: l10n.labFiltersLabel,
-              advancedFilterTitle: l10n.labFiltersLabel,
-              advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-              advancedFilterResetLabel: l10n.opdClearFiltersAction,
-              enableDateFilter: false,
-              allFieldsLabel: l10n.labScopeAll,
-              filterGroups: <AppSearchBarFilterGroup>[
-                AppSearchBarFilterGroup(
-                  key: _labScopeFilterKey,
-                  label: l10n.labScopeFilterLabel,
-                  allLabel: l10n.labScopeAll,
-                  choices: _labScopeFilterChoices(l10n),
-                ),
-              ],
-              filterValue: _labFilterValue(state.query),
-              hasActiveFilters: state.query.scope != LabQueueScope.all,
-              onFilterChanged: (AppSearchBarFilterValue value) {
-                controller.applyScope(
-                  _labScopeFromFilter(value.option(_labScopeFilterKey)),
-                );
-              },
-            ),
-            previousPageLabel: l10n.labPreviousPageLabel,
-            nextPageLabel: l10n.labNextPageLabel,
-            pageLabelBuilder: (AppPage<LabOrderSummary> page) {
-              return _pageLabel(context, page);
-            },
-            onPageChanged: controller.changePage,
-            onRowSelected: (LabOrderSummary order) {
-              unawaited(
-                _openLabDetailDialog(context, ref, state, order, canMutate),
-              );
-            },
-            emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-              title: state.query.view == LabWorkbenchView.patients
-                  ? l10n.labNoPatientsTitle
-                  : l10n.labNoOrdersTitle,
-              body: state.query.view == LabWorkbenchView.patients
-                  ? l10n.labNoPatientsBody
-                  : l10n.labNoOrdersBody,
-              icon: Icons.science_outlined,
-            ),
-            columns: state.query.view == LabWorkbenchView.patients
-                ? _patientViewWorklistColumns(context)
-                : _orderViewWorklistColumns(context),
-            columnChoices: _optionalWorklistColumns(context),
-            mobileItemBuilder: (BuildContext context, LabOrderSummary item) {
-              return AppListItemRow(
-                title: item.displayTitle,
-                subtitle: item.isPatientGroup ? item.patientId : item.apiId,
-                details: <Widget>[
-                  AppWorkspaceStatusBadge(
-                    status: _orderStatus(context, item.status),
-                  ),
-                ],
-                trailing: const Icon(Icons.chevron_right),
+      children: <Widget>[
+        AppListTable<LabOrderSummary>(
+          page: state.worklist,
+          columnVisibilityController: columnVisibilityController,
+          columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+          columnVisibilityTitle: l10n.labTableColumnsTitle,
+          columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
+          columnVisibilityResetLabel: l10n.labResetColumnsAction,
+          search: AppListTableSearch<LabOrderSummary>(
+            controller: searchController,
+            semanticLabel: l10n.labSearchLabel,
+            hintText: l10n.labSearchHint,
+            matcher: (_, _) => true,
+            onChanged: onSearchChanged,
+            onSubmitted: onSearchSubmitted,
+            onClear: onSearchCleared,
+            showAdvancedFilterButton: true,
+            advancedFilterButtonLabel: l10n.labFiltersLabel,
+            advancedFilterTitle: l10n.labFiltersLabel,
+            advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+            advancedFilterResetLabel: l10n.opdClearFiltersAction,
+            enableDateFilter: false,
+            allFieldsLabel: l10n.labScopeAll,
+            filterGroups: <AppSearchBarFilterGroup>[
+              AppSearchBarFilterGroup(
+                key: _labScopeFilterKey,
+                label: l10n.labScopeFilterLabel,
+                allLabel: l10n.labScopeAll,
+                choices: _labScopeFilterChoices(l10n),
+              ),
+            ],
+            filterValue: _labFilterValue(state.query),
+            hasActiveFilters: state.query.scope != LabQueueScope.all,
+            onFilterChanged: (AppSearchBarFilterValue value) {
+              controller.applyScope(
+                _labScopeFromFilter(value.option(_labScopeFilterKey)),
               );
             },
           ),
-          if (state.isRefreshing)
-            const Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: LinearProgressIndicator(minHeight: 2),
-            ),
-        ],
+          previousPageLabel: l10n.labPreviousPageLabel,
+          nextPageLabel: l10n.labNextPageLabel,
+          pageLabelBuilder: (AppPage<LabOrderSummary> page) {
+            return _pageLabel(context, page);
+          },
+          onPageChanged: controller.changePage,
+          onRowSelected: (LabOrderSummary order) {
+            unawaited(
+              _openLabDetailDialog(context, ref, state, order, canMutate),
+            );
+          },
+          emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+            title: state.query.view == LabWorkbenchView.patients
+                ? l10n.labNoPatientsTitle
+                : l10n.labNoOrdersTitle,
+            body: state.query.view == LabWorkbenchView.patients
+                ? l10n.labNoPatientsBody
+                : l10n.labNoOrdersBody,
+            icon: Icons.science_outlined,
+          ),
+          columns: state.query.view == LabWorkbenchView.patients
+              ? _patientViewWorklistColumns(context)
+              : _orderViewWorklistColumns(context),
+          columnChoices: _optionalWorklistColumns(context),
+          mobileItemBuilder: (BuildContext context, LabOrderSummary item) {
+            return AppListItemRow(
+              title: item.displayTitle,
+              subtitle: item.isPatientGroup ? item.patientId : item.apiId,
+              details: <Widget>[
+                AppWorkspaceStatusBadge(
+                  status: _orderStatus(context, item.status),
+                ),
+              ],
+              trailing: const Icon(Icons.chevron_right),
+            );
+          },
+        ),
+        if (state.isRefreshing)
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: LinearProgressIndicator(minHeight: 2),
+          ),
+      ],
     );
   }
 }
@@ -541,10 +538,7 @@ List<AppListTableColumn<LabOrderSummary>> _optionalWorklistColumns(
       cellBuilder: (BuildContext context, LabOrderSummary item) {
         final String encounterId = item.encounterId ?? '';
         if (encounterId.trim().isEmpty) {
-          return _labWorklistTextCell(
-            context,
-            _nextActionLabel(context, item),
-          );
+          return _labWorklistTextCell(context, _nextActionLabel(context, item));
         }
         return WorkflowActionButton(
           encounterId: encounterId,

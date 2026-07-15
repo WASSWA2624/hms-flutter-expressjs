@@ -150,10 +150,12 @@ class _BillingWorkspaceContentState
 
     BillingWorkItem? target;
     for (final BillingWorkItem item in state!.workItems.items) {
-      final bool matchesEncounter = targetEncounter.isNotEmpty &&
+      final bool matchesEncounter =
+          targetEncounter.isNotEmpty &&
           (item.encounterId == targetEncounter ||
               item.displayId == targetEncounter);
-      final bool matchesInvoice = targetInvoice.isNotEmpty &&
+      final bool matchesInvoice =
+          targetInvoice.isNotEmpty &&
           (item.invoiceDisplayId == targetInvoice ||
               item.displayId == targetInvoice);
       if (matchesEncounter || matchesInvoice) {
@@ -338,213 +340,207 @@ class _BillingQueuePanel extends ConsumerWidget {
     final controller = ref.read(billingWorkspaceControllerProvider.notifier);
 
     return AppListTable<BillingWorkItem>(
-        page: state.workItems,
-        isLoading: state.isRefreshing,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        columnVisibilityController: columnVisibilityController,
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        search: AppListTableSearch<BillingWorkItem>(
-          controller: searchController,
-          semanticLabel: l10n.billingSearchSemanticLabel,
-          hintText: l10n.billingSearchHint,
-          clearLabel: l10n.billingClearSearch,
-          matcher: (_, _) => true,
-          onSubmitted: controller.applySearch,
-          onClear: () => controller.applySearch(''),
-          showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.billingFiltersTitle,
-          advancedFilterTitle: l10n.billingFiltersTitle,
-          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-          advancedFilterResetLabel: l10n.billingClearFilters,
-          dateFilterLabel: l10n.billingIssuedDateFilterLabel,
-          dateFromLabel: l10n.opdDateFromLabel,
-          dateToLabel: l10n.opdDateToLabel,
-          allFieldsLabel: billingQueueLabel(context, BillingQueueType.all),
-          textFilters: _billingTextFilters(l10n),
-          filterGroups: _billingTableFilterGroups(context),
-          filterValue: _billingFilterValue(state.query),
-          hasActiveFilters: state.query.hasActiveFilters,
-          onFilterChanged: (AppSearchBarFilterValue value) {
-            if (!value.isActive) {
-              unawaited(controller.clearFilters());
-              return;
-            }
-            unawaited(
-              controller.applyFilters(
-                _billingQueryFromFilter(state.query, value),
+      page: state.workItems,
+      isLoading: state.isRefreshing,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      columnVisibilityController: columnVisibilityController,
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      search: AppListTableSearch<BillingWorkItem>(
+        controller: searchController,
+        semanticLabel: l10n.billingSearchSemanticLabel,
+        hintText: l10n.billingSearchHint,
+        clearLabel: l10n.billingClearSearch,
+        matcher: (_, _) => true,
+        onSubmitted: controller.applySearch,
+        onClear: () => controller.applySearch(''),
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.billingFiltersTitle,
+        advancedFilterTitle: l10n.billingFiltersTitle,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.billingClearFilters,
+        dateFilterLabel: l10n.billingIssuedDateFilterLabel,
+        dateFromLabel: l10n.opdDateFromLabel,
+        dateToLabel: l10n.opdDateToLabel,
+        allFieldsLabel: billingQueueLabel(context, BillingQueueType.all),
+        textFilters: _billingTextFilters(l10n),
+        filterGroups: _billingTableFilterGroups(context),
+        filterValue: _billingFilterValue(state.query),
+        hasActiveFilters: state.query.hasActiveFilters,
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          if (!value.isActive) {
+            unawaited(controller.clearFilters());
+            return;
+          }
+          unawaited(
+            controller.applyFilters(
+              _billingQueryFromFilter(state.query, value),
+            ),
+          );
+        },
+      ),
+      itemKeyBuilder: (BillingWorkItem item) => ValueKey<String>(item.id),
+      onRowSelected: (BillingWorkItem item) {
+        controller.selectItem(item);
+        _showBillingDetailDialog(
+          context,
+          ref,
+          item,
+          canWrite: canWrite,
+          isSaving: state.isSaving,
+        );
+      },
+      previousPageLabel: l10n.billingPreviousPageLabel,
+      nextPageLabel: l10n.billingNextPageLabel,
+      pageLabelBuilder: (AppPage<BillingWorkItem> page) {
+        final int total = page.totalItemCount ?? page.lastItemNumber;
+        return '${page.firstItemNumber}-${page.lastItemNumber} of $total';
+      },
+      onPageChanged: controller.changePage,
+      emptyBuilder: (BuildContext context) {
+        return AppWorkspaceStatePanel.empty(
+          title: l10n.billingEmptyTitle,
+          body: l10n.billingEmptyBody,
+        );
+      },
+      columns: <AppListTableColumn<BillingWorkItem>>[
+        AppListTableColumn<BillingWorkItem>(
+          id: 'patient_name',
+          label: l10n.billingPatientNameColumn,
+          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+              appListTableCompareText(
+                left.effectivePatientName,
+                right.effectivePatientName,
               ),
+          cellBuilder: (BuildContext context, BillingWorkItem item) {
+            return Text(
+              billingPatientName(context, item),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             );
           },
         ),
-        itemKeyBuilder: (BillingWorkItem item) => ValueKey<String>(item.id),
-        onRowSelected: (BillingWorkItem item) {
-          controller.selectItem(item);
-          _showBillingDetailDialog(
-            context,
-            ref,
-            item,
-            canWrite: canWrite,
-            isSaving: state.isSaving,
-          );
-        },
-        previousPageLabel: l10n.billingPreviousPageLabel,
-        nextPageLabel: l10n.billingNextPageLabel,
-        pageLabelBuilder: (AppPage<BillingWorkItem> page) {
-          final int total = page.totalItemCount ?? page.lastItemNumber;
-          return '${page.firstItemNumber}-${page.lastItemNumber} of $total';
-        },
-        onPageChanged: controller.changePage,
-        emptyBuilder: (BuildContext context) {
-          return AppWorkspaceStatePanel.empty(
-            title: l10n.billingEmptyTitle,
-            body: l10n.billingEmptyBody,
-          );
-        },
-        columns: <AppListTableColumn<BillingWorkItem>>[
-          AppListTableColumn<BillingWorkItem>(
-            id: 'patient_name',
-            label: l10n.billingPatientNameColumn,
-            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-                appListTableCompareText(
-                  left.effectivePatientName,
-                  right.effectivePatientName,
-                ),
-            cellBuilder: (BuildContext context, BillingWorkItem item) {
-              return Text(
-                billingPatientName(context, item),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              );
-            },
-          ),
-          AppListTableColumn<BillingWorkItem>(
-            id: 'patient_id',
-            label: l10n.billingPatientIdColumn,
-            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-                appListTableCompareText(
-                  left.effectivePatientNumber,
-                  right.effectivePatientNumber,
-                ),
-            cellBuilder: (BuildContext context, BillingWorkItem item) {
-              return Text(
-                item.effectivePatientNumber ?? l10n.profileUnknownValue,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              );
-            },
-          ),
-          AppListTableColumn<BillingWorkItem>(
-            id: 'invoice',
-            label: l10n.billingInvoiceColumn,
-            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-                appListTableCompareText(
-                  left.effectiveDisplayId,
-                  right.effectiveDisplayId,
-                ),
-            cellBuilder: (BuildContext context, BillingWorkItem item) {
-              return Text(
-                item.effectiveDisplayId,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              );
-            },
-          ),
-          AppListTableColumn<BillingWorkItem>(
-            id: 'encounter',
-            label: l10n.billingEncounterLabel,
-            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-                appListTableCompareText(
-                  left.encounterDisplayId ?? left.encounterId,
-                  right.encounterDisplayId ?? right.encounterId,
-                ),
-            cellBuilder: (BuildContext context, BillingWorkItem item) {
-              return Text(
-                item.encounterDisplayId ??
-                    item.encounterId ??
-                    l10n.profileUnknownValue,
-              );
-            },
-          ),
-          AppListTableColumn<BillingWorkItem>(
-            id: 'source',
-            label: l10n.billingSourceColumn,
-            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-                appListTableCompareText(
-                  left.invoiceSourceSummary,
-                  right.invoiceSourceSummary,
-                ),
-            cellBuilder: (BuildContext context, BillingWorkItem item) {
-              return Text(
-                billingInvoiceSourceLabel(context, item),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              );
-            },
-          ),
-          AppListTableColumn<BillingWorkItem>(
-            id: 'status',
-            label: l10n.billingStatusColumn,
-            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-                appListTableCompareText(
-                  left.clearanceState.name,
-                  right.clearanceState.name,
-                ),
-            cellBuilder: (BuildContext context, BillingWorkItem item) {
-              return BillingGateBadge(state: item.clearanceState);
-            },
-          ),
-          AppListTableColumn<BillingWorkItem>(
-            id: 'amount_due',
-            label: l10n.billingAmountDueColumn,
-            numeric: true,
-            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-                appListTableCompareNumber(left.balanceDue, right.balanceDue),
-            cellBuilder: (BuildContext context, BillingWorkItem item) {
-              return Text(
-                billingMoney(context, item.balanceDue, item.currency),
-              );
-            },
-          ),
-          AppListTableColumn<BillingWorkItem>(
-            id: 'amount_paid',
-            label: l10n.billingPaidColumn,
-            numeric: true,
-            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-                appListTableCompareNumber(left.paidAmount, right.paidAmount),
-            cellBuilder: (BuildContext context, BillingWorkItem item) {
-              return Text(
-                billingMoney(context, item.paidAmount, item.currency),
-              );
-            },
-          ),
-        ],
-        columnChoices: <AppListTableColumn<BillingWorkItem>>[
-          AppListTableColumn<BillingWorkItem>(
-            id: 'balance',
-            label: l10n.billingBalanceColumn,
-            numeric: true,
-            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-                appListTableCompareNumber(left.balanceDue, right.balanceDue),
-            cellBuilder: (BuildContext context, BillingWorkItem item) {
-              return Text(
-                billingMoney(context, item.balanceDue, item.currency),
-              );
-            },
-          ),
-          AppListTableColumn<BillingWorkItem>(
-            id: 'updated',
-            label: l10n.billingUpdatedColumn,
-            sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
-                appListTableCompareDateTime(left.timelineAt, right.timelineAt),
-            cellBuilder: (BuildContext context, BillingWorkItem item) {
-              return Text(billingDateTime(context, item.timelineAt));
-            },
-          ),
-        ],
-        mobileItemBuilder: (BuildContext context, BillingWorkItem item) {
-          return _BillingMobileTile(item: item);
-        },
+        AppListTableColumn<BillingWorkItem>(
+          id: 'patient_id',
+          label: l10n.billingPatientIdColumn,
+          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+              appListTableCompareText(
+                left.effectivePatientNumber,
+                right.effectivePatientNumber,
+              ),
+          cellBuilder: (BuildContext context, BillingWorkItem item) {
+            return Text(
+              item.effectivePatientNumber ?? l10n.profileUnknownValue,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            );
+          },
+        ),
+        AppListTableColumn<BillingWorkItem>(
+          id: 'invoice',
+          label: l10n.billingInvoiceColumn,
+          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+              appListTableCompareText(
+                left.effectiveDisplayId,
+                right.effectiveDisplayId,
+              ),
+          cellBuilder: (BuildContext context, BillingWorkItem item) {
+            return Text(
+              item.effectiveDisplayId,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            );
+          },
+        ),
+        AppListTableColumn<BillingWorkItem>(
+          id: 'encounter',
+          label: l10n.billingEncounterLabel,
+          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+              appListTableCompareText(
+                left.encounterDisplayId ?? left.encounterId,
+                right.encounterDisplayId ?? right.encounterId,
+              ),
+          cellBuilder: (BuildContext context, BillingWorkItem item) {
+            return Text(
+              item.encounterDisplayId ??
+                  item.encounterId ??
+                  l10n.profileUnknownValue,
+            );
+          },
+        ),
+        AppListTableColumn<BillingWorkItem>(
+          id: 'source',
+          label: l10n.billingSourceColumn,
+          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+              appListTableCompareText(
+                left.invoiceSourceSummary,
+                right.invoiceSourceSummary,
+              ),
+          cellBuilder: (BuildContext context, BillingWorkItem item) {
+            return Text(
+              billingInvoiceSourceLabel(context, item),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            );
+          },
+        ),
+        AppListTableColumn<BillingWorkItem>(
+          id: 'status',
+          label: l10n.billingStatusColumn,
+          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+              appListTableCompareText(
+                left.clearanceState.name,
+                right.clearanceState.name,
+              ),
+          cellBuilder: (BuildContext context, BillingWorkItem item) {
+            return BillingGateBadge(state: item.clearanceState);
+          },
+        ),
+        AppListTableColumn<BillingWorkItem>(
+          id: 'amount_due',
+          label: l10n.billingAmountDueColumn,
+          numeric: true,
+          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+              appListTableCompareNumber(left.balanceDue, right.balanceDue),
+          cellBuilder: (BuildContext context, BillingWorkItem item) {
+            return Text(billingMoney(context, item.balanceDue, item.currency));
+          },
+        ),
+        AppListTableColumn<BillingWorkItem>(
+          id: 'amount_paid',
+          label: l10n.billingPaidColumn,
+          numeric: true,
+          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+              appListTableCompareNumber(left.paidAmount, right.paidAmount),
+          cellBuilder: (BuildContext context, BillingWorkItem item) {
+            return Text(billingMoney(context, item.paidAmount, item.currency));
+          },
+        ),
+      ],
+      columnChoices: <AppListTableColumn<BillingWorkItem>>[
+        AppListTableColumn<BillingWorkItem>(
+          id: 'balance',
+          label: l10n.billingBalanceColumn,
+          numeric: true,
+          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+              appListTableCompareNumber(left.balanceDue, right.balanceDue),
+          cellBuilder: (BuildContext context, BillingWorkItem item) {
+            return Text(billingMoney(context, item.balanceDue, item.currency));
+          },
+        ),
+        AppListTableColumn<BillingWorkItem>(
+          id: 'updated',
+          label: l10n.billingUpdatedColumn,
+          sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+              appListTableCompareDateTime(left.timelineAt, right.timelineAt),
+          cellBuilder: (BuildContext context, BillingWorkItem item) {
+            return Text(billingDateTime(context, item.timelineAt));
+          },
+        ),
+      ],
+      mobileItemBuilder: (BuildContext context, BillingWorkItem item) {
+        return _BillingMobileTile(item: item);
+      },
     );
   }
 }

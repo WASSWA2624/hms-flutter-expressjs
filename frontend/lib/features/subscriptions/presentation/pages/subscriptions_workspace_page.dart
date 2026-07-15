@@ -219,8 +219,8 @@ class _SubscriptionsWorkspaceContentState
               isRefreshing: state.isRefreshing,
               onPanelSelected: (SubscriptionPanel panel) {
                 controller.applyPanel(panel);
-                final SubscriptionsWorkspaceQuery newQuery =
-                    state.query.copyWith(panel: panel);
+                final SubscriptionsWorkspaceQuery newQuery = state.query
+                    .copyWith(panel: panel);
                 context.go(newQuery.location());
               },
               summaryNotifications: _summaryNotifications(context, state),
@@ -825,15 +825,11 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
           controller.applyFilters(
             status: _emptyOption(value.option(_FilterKeys.status)),
             tierCode: _emptyOption(value.option(_FilterKeys.tier)),
-            billingCycle: _emptyOption(
-              value.option(_FilterKeys.billingCycle),
-            ),
+            billingCycle: _emptyOption(value.option(_FilterKeys.billingCycle)),
             planId: _emptyOption(value.option(_FilterKeys.plan)),
             moduleId: _emptyOption(value.option(_FilterKeys.module)),
             fitStatus: _emptyOption(value.option(_FilterKeys.fit)),
-            invoiceStatus: _emptyOption(
-              value.option(_FilterKeys.invoice),
-            ),
+            invoiceStatus: _emptyOption(value.option(_FilterKeys.invoice)),
             licenseType: _emptyOption(value.option(_FilterKeys.license)),
             eligibilityState: _emptyOption(
               value.option(_FilterKeys.eligibility),
@@ -896,9 +892,7 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
       columns: _worklistColumns(state.query.resource),
       mobileItemBuilder: (BuildContext context, SubscriptionItem item) {
         return Padding(
-          padding: EdgeInsets.symmetric(
-            vertical: Theme.of(context).spacing.sm,
-          ),
+          padding: EdgeInsets.symmetric(vertical: Theme.of(context).spacing.sm),
           child: _SubscriptionMobileTile(item: item),
         );
       },

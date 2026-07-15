@@ -9,10 +9,11 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
-const AccessRequirement _radiologyWorkflowMutationRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[AppPermissions.radiologyWrite],
-  activeModules: <String>['radiology-workflows'],
-);
+const AccessRequirement _radiologyWorkflowMutationRequirement =
+    AccessRequirement(
+      anyPermissions: <AppPermission>[AppPermissions.radiologyWrite],
+      activeModules: <String>['radiology-workflows'],
+    );
 
 /// Maps backend order status + next_actions into the shared workflow stepper.
 class RadiologyWorkflowProgressSection extends ConsumerWidget {

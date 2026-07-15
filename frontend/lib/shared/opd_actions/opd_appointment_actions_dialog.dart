@@ -234,10 +234,7 @@ class _OpdAppointmentActionsDialogState
 }
 
 class OpdRescheduleAppointmentDialog extends ConsumerStatefulWidget {
-  const OpdRescheduleAppointmentDialog({
-    required this.appointment,
-    super.key,
-  });
+  const OpdRescheduleAppointmentDialog({required this.appointment, super.key});
 
   final OpdAppointment appointment;
 

@@ -401,8 +401,10 @@ String patientActiveWorkNextStepLabel(
     PatientActiveWorkKind.queue =>
       _opdNextStepDescriptionForStatus(l10n, item.status) ??
           l10n.patientsActiveWorkNextQueue,
-    PatientActiveWorkKind.admission =>
-      _admissionNextStepDescription(l10n, item.status),
+    PatientActiveWorkKind.admission => _admissionNextStepDescription(
+      l10n,
+      item.status,
+    ),
     PatientActiveWorkKind.labOrder => l10n.patientsActiveWorkNextLabPending,
     PatientActiveWorkKind.radiologyOrder =>
       l10n.patientsActiveWorkNextImagingPending,
@@ -424,8 +426,7 @@ String patientActiveWorkActionLabel(
     PatientActiveWorkKind.queue =>
       _opdActionLabelForStatus(l10n, item.status) ??
           l10n.patientsActiveWorkOpenOpdAction,
-    PatientActiveWorkKind.admission =>
-      _admissionActionLabel(l10n, item.status),
+    PatientActiveWorkKind.admission => _admissionActionLabel(l10n, item.status),
     PatientActiveWorkKind.labOrder => l10n.opdCollectSampleAction,
     PatientActiveWorkKind.radiologyOrder => l10n.opdPerformImagingAction,
     PatientActiveWorkKind.therapy => l10n.opdPhysiotherapyAction,
@@ -471,10 +472,8 @@ String? _opdActionLabelForStatus(AppLocalizations l10n, String status) {
     'RADIOLOGY_ORDER_CREATED' => l10n.opdPerformImagingAction,
     'LAB_AND_RADIOLOGY_REQUESTED' ||
     'DIAGNOSTICS_PENDING' => l10n.opdDiagnosticsPendingAction,
-    'RESULTS_READY' ||
-    'LAB_RESULTS_READY' => l10n.opdReviewResultsAction,
-    'REPORT_READY' ||
-    'IMAGING_REPORT_READY' => l10n.opdReviewReportAction,
+    'RESULTS_READY' || 'LAB_RESULTS_READY' => l10n.opdReviewResultsAction,
+    'REPORT_READY' || 'IMAGING_REPORT_READY' => l10n.opdReviewReportAction,
     'PHARMACY_PENDING' ||
     'PHARMACY_REQUESTED' ||
     'PRESCRIPTION_READY' ||
@@ -489,17 +488,12 @@ String? _opdActionLabelForStatus(AppLocalizations l10n, String status) {
     'ADMISSION_PENDING' ||
     'ADMIT_PATIENT' ||
     'IPD_ADMISSION' => l10n.opdAdmissionHandoffAction,
-    'ADMITTED' ||
-    'IN_IPD' ||
-    'IPD_ACTIVE' => l10n.opdAdmittedAction,
+    'ADMITTED' || 'IN_IPD' || 'IPD_ACTIVE' => l10n.opdAdmittedAction,
     _ => null,
   };
 }
 
-String? _opdNextStepDescriptionForStatus(
-  AppLocalizations l10n,
-  String status,
-) {
+String? _opdNextStepDescriptionForStatus(AppLocalizations l10n, String status) {
   return switch (status.trim().toUpperCase()) {
     'PAYMENT_DUE' ||
     'WAITING_CONSULTATION_PAYMENT' ||

@@ -292,155 +292,155 @@ class _HousekeepingWorklistPanel extends ConsumerWidget {
     );
 
     return AppListTable<HousekeepingWorkItem>(
-        page: state.items,
-        isLoading: state.isRefreshing,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        columnVisibilityController: columnVisibilityController,
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        search: AppListTableSearch<HousekeepingWorkItem>(
-          controller: searchController,
-          semanticLabel: l10n.housekeepingSearchLabel,
-          hintText: l10n.housekeepingSearchHint,
-          clearLabel: l10n.housekeepingClearSearchAction,
-          matcher: (_, _) => true,
-          onSubmitted: controller.applySearch,
-          onClear: () => controller.applySearch(''),
-          showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.housekeepingFiltersAction,
-          advancedFilterTitle: l10n.housekeepingFiltersTitle,
-          advancedFilterApplyLabel: l10n.housekeepingApplyFiltersAction,
-          advancedFilterResetLabel: l10n.housekeepingClearFiltersAction,
-          enableDateFilter: false,
-          filterGroups: _filterGroups(l10n, state),
-          filterValue: _filterValue(state.query),
-          hasActiveFilters: _hasActiveFilters(state.query),
-          onFilterChanged: (AppSearchBarFilterValue value) {
-            controller.applyFilters(
-              resource: _resourceFromFilter(value.option(_resourceFilterKey)),
-              queue:
-                  _queueFromFilter(value.option(_queueFilterKey)) ??
-                  HousekeepingQueue.all,
-              status: value.option(_statusFilterKey),
-              facilityId: value.option(_facilityFilterKey),
-              roomId: value.option(_roomFilterKey),
-              assigneeId: value.option(_assigneeFilterKey),
-              datePreset:
-                  _datePresetFromFilter(value.option(_datePresetFilterKey)) ??
-                  HousekeepingDatePreset.all,
+      page: state.items,
+      isLoading: state.isRefreshing,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      columnVisibilityController: columnVisibilityController,
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      search: AppListTableSearch<HousekeepingWorkItem>(
+        controller: searchController,
+        semanticLabel: l10n.housekeepingSearchLabel,
+        hintText: l10n.housekeepingSearchHint,
+        clearLabel: l10n.housekeepingClearSearchAction,
+        matcher: (_, _) => true,
+        onSubmitted: controller.applySearch,
+        onClear: () => controller.applySearch(''),
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.housekeepingFiltersAction,
+        advancedFilterTitle: l10n.housekeepingFiltersTitle,
+        advancedFilterApplyLabel: l10n.housekeepingApplyFiltersAction,
+        advancedFilterResetLabel: l10n.housekeepingClearFiltersAction,
+        enableDateFilter: false,
+        filterGroups: _filterGroups(l10n, state),
+        filterValue: _filterValue(state.query),
+        hasActiveFilters: _hasActiveFilters(state.query),
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          controller.applyFilters(
+            resource: _resourceFromFilter(value.option(_resourceFilterKey)),
+            queue:
+                _queueFromFilter(value.option(_queueFilterKey)) ??
+                HousekeepingQueue.all,
+            status: value.option(_statusFilterKey),
+            facilityId: value.option(_facilityFilterKey),
+            roomId: value.option(_roomFilterKey),
+            assigneeId: value.option(_assigneeFilterKey),
+            datePreset:
+                _datePresetFromFilter(value.option(_datePresetFilterKey)) ??
+                HousekeepingDatePreset.all,
+          );
+        },
+      ),
+      itemKeyBuilder: (HousekeepingWorkItem item) =>
+          ValueKey<String>('${item.resource.serverValue}:${item.id}'),
+      onRowSelected: onItemSelected,
+      previousPageLabel: l10n.housekeepingPreviousPageLabel,
+      nextPageLabel: l10n.housekeepingNextPageLabel,
+      pageLabelBuilder: (AppPage<HousekeepingWorkItem> page) {
+        final int total = page.totalItemCount ?? page.lastItemNumber;
+        return l10n.housekeepingPageLabel(
+          page.firstItemNumber,
+          page.lastItemNumber,
+          total,
+        );
+      },
+      onPageChanged: controller.changePage,
+      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+        title: l10n.housekeepingEmptyQueueTitle,
+        body: l10n.housekeepingEmptyQueueBody,
+      ),
+      columns: <AppListTableColumn<HousekeepingWorkItem>>[
+        AppListTableColumn<HousekeepingWorkItem>(
+          label: l10n.housekeepingTaskColumnLabel,
+          sortComparator:
+              (HousekeepingWorkItem left, HousekeepingWorkItem right) {
+                return appListTableCompareText(left.title, right.title);
+              },
+          cellBuilder: (BuildContext context, HousekeepingWorkItem item) {
+            return _CopyableTaskCell(
+              title: item.title,
+              identifier: item.effectiveDisplayId,
             );
           },
         ),
-        itemKeyBuilder: (HousekeepingWorkItem item) =>
-            ValueKey<String>('${item.resource.serverValue}:${item.id}'),
-        onRowSelected: onItemSelected,
-        previousPageLabel: l10n.housekeepingPreviousPageLabel,
-        nextPageLabel: l10n.housekeepingNextPageLabel,
-        pageLabelBuilder: (AppPage<HousekeepingWorkItem> page) {
-          final int total = page.totalItemCount ?? page.lastItemNumber;
-          return l10n.housekeepingPageLabel(
-            page.firstItemNumber,
-            page.lastItemNumber,
-            total,
-          );
-        },
-        onPageChanged: controller.changePage,
-        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-          title: l10n.housekeepingEmptyQueueTitle,
-          body: l10n.housekeepingEmptyQueueBody,
+        AppListTableColumn<HousekeepingWorkItem>(
+          label: l10n.housekeepingLocationColumnLabel,
+          sortComparator:
+              (HousekeepingWorkItem left, HousekeepingWorkItem right) {
+                return appListTableCompareText(
+                  left.locationDisplay,
+                  right.locationDisplay,
+                );
+              },
+          cellBuilder: (BuildContext context, HousekeepingWorkItem item) {
+            return Text(_locationLabel(l10n, item));
+          },
         ),
-        columns: <AppListTableColumn<HousekeepingWorkItem>>[
-          AppListTableColumn<HousekeepingWorkItem>(
-            label: l10n.housekeepingTaskColumnLabel,
-            sortComparator:
-                (HousekeepingWorkItem left, HousekeepingWorkItem right) {
-                  return appListTableCompareText(left.title, right.title);
-                },
-            cellBuilder: (BuildContext context, HousekeepingWorkItem item) {
-              return _CopyableTaskCell(
-                title: item.title,
-                identifier: item.effectiveDisplayId,
-              );
-            },
-          ),
-          AppListTableColumn<HousekeepingWorkItem>(
-            label: l10n.housekeepingLocationColumnLabel,
-            sortComparator:
-                (HousekeepingWorkItem left, HousekeepingWorkItem right) {
-                  return appListTableCompareText(
-                    left.locationDisplay,
-                    right.locationDisplay,
-                  );
-                },
-            cellBuilder: (BuildContext context, HousekeepingWorkItem item) {
-              return Text(_locationLabel(l10n, item));
-            },
-          ),
-          AppListTableColumn<HousekeepingWorkItem>(
-            label: l10n.housekeepingAssigneeColumnLabel,
-            sortComparator:
-                (HousekeepingWorkItem left, HousekeepingWorkItem right) {
-                  return appListTableCompareText(
-                    left.assigneeLabel,
-                    right.assigneeLabel,
-                  );
-                },
-            cellBuilder: (BuildContext context, HousekeepingWorkItem item) {
-              return Text(item.assigneeLabel ?? l10n.housekeepingUnassigned);
-            },
-          ),
-          AppListTableColumn<HousekeepingWorkItem>(
-            label: l10n.housekeepingDueColumnLabel,
-            sortComparator:
-                (HousekeepingWorkItem left, HousekeepingWorkItem right) {
-                  return appListTableCompareDateTime(
-                    _primaryDate(left),
-                    _primaryDate(right),
-                  );
-                },
-            cellBuilder: (BuildContext context, HousekeepingWorkItem item) {
-              return Text(_dateTimeLabel(context, _primaryDate(item)));
-            },
-          ),
-          AppListTableColumn<HousekeepingWorkItem>(
-            label: l10n.housekeepingStatusColumnLabel,
-            sortComparator:
-                (HousekeepingWorkItem left, HousekeepingWorkItem right) {
-                  return appListTableCompareText(left.status, right.status);
-                },
-            cellBuilder: (BuildContext context, HousekeepingWorkItem item) {
-              return _HousekeepingStatusBadge(item: item);
-            },
-          ),
-          AppListTableColumn<HousekeepingWorkItem>(
-            label: l10n.housekeepingNextActionColumnLabel,
-            cellBuilder: (BuildContext context, HousekeepingWorkItem item) {
-              return Text(_nextActionLabel(l10n, item, capabilities));
-            },
-          ),
-        ],
-        mobileItemBuilder: (BuildContext context, HousekeepingWorkItem item) {
-          return AppListItemRow(
-            title: item.title,
-            subtitle: _locationLabel(l10n, item),
-            leadingIcon: _resourceIcon(item.resource),
-            trailing: _HousekeepingStatusBadge(item: item),
-            details: <Widget>[
-              AppCopyableIdentifier(
-                value: item.effectiveDisplayId,
-                textStyle: Theme.of(context).textTheme.bodySmall,
-              ),
-              AppInlineMetaText(
-                icon: Icons.person_outline,
-                label: item.assigneeLabel ?? l10n.housekeepingUnassigned,
-              ),
-              AppInlineMetaText(
-                icon: Icons.schedule_outlined,
-                label: _dateTimeLabel(context, _primaryDate(item)),
-              ),
-            ],
-          );
-        },
+        AppListTableColumn<HousekeepingWorkItem>(
+          label: l10n.housekeepingAssigneeColumnLabel,
+          sortComparator:
+              (HousekeepingWorkItem left, HousekeepingWorkItem right) {
+                return appListTableCompareText(
+                  left.assigneeLabel,
+                  right.assigneeLabel,
+                );
+              },
+          cellBuilder: (BuildContext context, HousekeepingWorkItem item) {
+            return Text(item.assigneeLabel ?? l10n.housekeepingUnassigned);
+          },
+        ),
+        AppListTableColumn<HousekeepingWorkItem>(
+          label: l10n.housekeepingDueColumnLabel,
+          sortComparator:
+              (HousekeepingWorkItem left, HousekeepingWorkItem right) {
+                return appListTableCompareDateTime(
+                  _primaryDate(left),
+                  _primaryDate(right),
+                );
+              },
+          cellBuilder: (BuildContext context, HousekeepingWorkItem item) {
+            return Text(_dateTimeLabel(context, _primaryDate(item)));
+          },
+        ),
+        AppListTableColumn<HousekeepingWorkItem>(
+          label: l10n.housekeepingStatusColumnLabel,
+          sortComparator:
+              (HousekeepingWorkItem left, HousekeepingWorkItem right) {
+                return appListTableCompareText(left.status, right.status);
+              },
+          cellBuilder: (BuildContext context, HousekeepingWorkItem item) {
+            return _HousekeepingStatusBadge(item: item);
+          },
+        ),
+        AppListTableColumn<HousekeepingWorkItem>(
+          label: l10n.housekeepingNextActionColumnLabel,
+          cellBuilder: (BuildContext context, HousekeepingWorkItem item) {
+            return Text(_nextActionLabel(l10n, item, capabilities));
+          },
+        ),
+      ],
+      mobileItemBuilder: (BuildContext context, HousekeepingWorkItem item) {
+        return AppListItemRow(
+          title: item.title,
+          subtitle: _locationLabel(l10n, item),
+          leadingIcon: _resourceIcon(item.resource),
+          trailing: _HousekeepingStatusBadge(item: item),
+          details: <Widget>[
+            AppCopyableIdentifier(
+              value: item.effectiveDisplayId,
+              textStyle: Theme.of(context).textTheme.bodySmall,
+            ),
+            AppInlineMetaText(
+              icon: Icons.person_outline,
+              label: item.assigneeLabel ?? l10n.housekeepingUnassigned,
+            ),
+            AppInlineMetaText(
+              icon: Icons.schedule_outlined,
+              label: _dateTimeLabel(context, _primaryDate(item)),
+            ),
+          ],
+        );
+      },
     );
   }
 }

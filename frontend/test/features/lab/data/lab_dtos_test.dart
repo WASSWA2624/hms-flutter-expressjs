@@ -121,17 +121,17 @@ void main() {
 
       final LabOrderItem item = dto.toEntity();
 
-      expect(item.appliedReferenceRange?['summary'], 'Adult ISE | Unit mg/dL | 3.6 - 5.2');
+      expect(
+        item.appliedReferenceRange?['summary'],
+        'Adult ISE | Unit mg/dL | 3.6 - 5.2',
+      );
       expect(item.displayReferenceRange, 'Adult ISE | Unit mg/dL | 3.6 - 5.2');
     });
   });
 
   group('LabOrderSummary payment gate', () {
     test('treats missing and bill-later statuses as satisfied', () {
-      expect(
-        const LabOrderSummary(id: 'LAB1').isPaymentSatisfied,
-        isTrue,
-      );
+      expect(const LabOrderSummary(id: 'LAB1').isPaymentSatisfied, isTrue);
       expect(
         const LabOrderSummary(
           id: 'LAB2',
@@ -151,14 +151,13 @@ void main() {
 
   group('LabWorkflowNextActionsDto', () {
     test('maps billing gate capabilities from workflow next_actions', () {
-      const LabWorkflowNextActionsDto dto = LabWorkflowNextActionsDto(
-        <String, Object?>{
-          'can_collect': false,
-          'billing_gate_blocked': true,
-          'payment_status': 'PENDING',
-          'can_receive_sample': false,
-        },
-      );
+      const LabWorkflowNextActionsDto dto =
+          LabWorkflowNextActionsDto(<String, Object?>{
+            'can_collect': false,
+            'billing_gate_blocked': true,
+            'payment_status': 'PENDING',
+            'can_receive_sample': false,
+          });
 
       final LabWorkflowNextActions actions = dto.toEntity();
       expect(actions.canCollect, isFalse);

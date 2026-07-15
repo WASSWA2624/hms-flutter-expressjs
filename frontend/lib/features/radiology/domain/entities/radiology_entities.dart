@@ -79,8 +79,11 @@ final class RadiologyWorkspaceQuery {
       return '';
     }
 
-    final String encounter =
-        pick(<String>['encounterId', 'encounter_id', 'encounter']);
+    final String encounter = pick(<String>[
+      'encounterId',
+      'encounter_id',
+      'encounter',
+    ]);
     final String order = pick(<String>['orderId', 'order_id', 'order']);
     final String search = pick(<String>['search', 'q']);
     return RadiologyWorkspaceQuery(
@@ -109,8 +112,7 @@ final class RadiologyWorkspaceQuery {
       (orderId?.isNotEmpty ?? false) ||
       search.isNotEmpty;
 
-  String get signature =>
-      '${encounterId ?? ''}|${orderId ?? ''}|$search';
+  String get signature => '${encounterId ?? ''}|${orderId ?? ''}|$search';
 
   RadiologyWorkspaceQuery copyWith({
     String? search,

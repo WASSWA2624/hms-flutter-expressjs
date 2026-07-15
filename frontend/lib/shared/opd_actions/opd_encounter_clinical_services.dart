@@ -375,7 +375,8 @@ class _BodyCell extends StatelessWidget {
         horizontal: theme.spacing.md,
         vertical: theme.spacing.sm,
       ),
-      child: child ??
+      child:
+          child ??
           Text(
             text ?? '',
             style: theme.textTheme.bodyMedium?.copyWith(

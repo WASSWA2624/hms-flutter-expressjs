@@ -578,7 +578,9 @@ final class AppAccessPolicy {
     final bool entitled =
         moduleEntitlements[normalizedCode]?.isAvailable == true ||
         moduleEntitlements[resolvedCode]?.isAvailable == true ||
-        moduleEntitlements.entries.any((MapEntry<String, AppModuleEntitlement> entry) {
+        moduleEntitlements.entries.any((
+          MapEntry<String, AppModuleEntitlement> entry,
+        ) {
           if (!entry.value.isAvailable) {
             return false;
           }

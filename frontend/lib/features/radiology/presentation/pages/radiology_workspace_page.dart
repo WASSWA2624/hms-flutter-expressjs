@@ -348,154 +348,154 @@ class _RadiologyOrderBoard extends ConsumerWidget {
     final controller = ref.read(radiologyWorkspaceControllerProvider.notifier);
 
     return AppListTable<RadiologyOrder>(
-        page: state.orders,
-        isLoading: state.isRefreshing,
-        columnVisibilityController: columnVisibilityController,
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        columnVisibilityTitle: l10n.radiologyTableColumnsTitle,
-        columnVisibilityApplyLabel: l10n.radiologyApplyColumnsAction,
-        columnVisibilityResetLabel: l10n.radiologyResetColumnsAction,
-        search: AppListTableSearch<RadiologyOrder>(
-          controller: searchController,
-          semanticLabel: l10n.radiologySearchLabel,
-          hintText: l10n.radiologySearchHint,
-          matcher: (_, _) => true,
-          onChanged: onSearchChanged,
-          onSubmitted: onSearchSubmitted,
-          onClear: () {
-            onSearchSubmitted('');
-          },
-          showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.radiologyFiltersLabel,
-          advancedFilterTitle: l10n.radiologyFiltersLabel,
-          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-          advancedFilterResetLabel: l10n.radiologyClearFiltersAction,
-          dateFilterLabel: l10n.radiologyOrderDateFilterLabel,
-          dateFromLabel: l10n.radiologyOrderDateFilterLabel,
-          dateToLabel: l10n.opdDateToLabel,
-          datePickerButtonLabel: l10n.radiologyPickOrderDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          allFieldsLabel: l10n.opdAllFieldsFilterLabel,
-          filterGroups: <AppSearchBarFilterGroup>[
-            AppSearchBarFilterGroup(
-              key: _radiologyStageFilterKey,
-              label: l10n.radiologyStageFilterLabel,
-              allLabel: _stageFilterLabel(l10n, 'ALL'),
-              choices: _radiologyStageFilterChoices(l10n),
-            ),
-            AppSearchBarFilterGroup(
-              key: _radiologyStatusFilterKey,
-              label: l10n.radiologyStatusFilterLabel,
-              allLabel: l10n.opdAllFieldsFilterLabel,
-              choices: _radiologyStatusFilterChoices(l10n),
-            ),
-            AppSearchBarFilterGroup(
-              key: _radiologyModalityFilterKey,
-              label: l10n.radiologyModalityFilterLabel,
-              allLabel: l10n.opdAllFieldsFilterLabel,
-              choices: _radiologyModalityFilterChoices(l10n),
-            ),
-            AppSearchBarFilterGroup(
-              key: _radiologyPriorityFilterKey,
-              label: l10n.radiologyPriorityFilterLabel,
-              allLabel: l10n.opdAllFieldsFilterLabel,
-              choices: _radiologyPriorityFilterChoices(l10n),
-            ),
-            AppSearchBarFilterGroup(
-              key: _radiologyBillingGateFilterKey,
-              label: l10n.radiologyBillingGateFilterLabel,
-              allLabel: l10n.opdAllFieldsFilterLabel,
-              choices: _radiologyBillingGateFilterChoices(l10n),
-            ),
-          ],
-          filterValue: _radiologyFilterValue(state.query),
-          hasActiveFilters: _hasRadiologyFilters(state.query),
-          onFilterChanged: (AppSearchBarFilterValue value) async {
-            final String nextStage =
-                value.option(_radiologyStageFilterKey) ?? 'ALL';
-            final String? nextStatus = value.option(_radiologyStatusFilterKey);
-            final String? nextModality = value.option(
-              _radiologyModalityFilterKey,
-            );
-            final String? nextPriority = value.option(
-              _radiologyPriorityFilterKey,
-            );
-            final String? nextBillingGate = value.option(
-              _radiologyBillingGateFilterKey,
-            );
-            final DateTime? nextDate = value.dateFrom;
-            AppFailure? failure;
-            if (nextStage != state.query.stage) {
-              failure = await controller.applyStage(nextStage);
-            }
-            if (nextStatus != state.query.status) {
-              failure ??= await controller.applyStatus(nextStatus);
-            }
-            if (nextModality != state.query.modality) {
-              failure ??= await controller.applyModality(nextModality);
-            }
-            if (nextPriority != state.query.priority) {
-              failure ??= await controller.applyPriority(nextPriority);
-            }
-            if (nextBillingGate != state.query.billingGate) {
-              failure ??= await controller.applyBillingGate(nextBillingGate);
-            }
-            if (!_isSameFilterDate(nextDate, state.query.from)) {
-              failure ??= await controller.applyOrderedDate(nextDate);
-            }
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-        ),
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemKeyBuilder: (RadiologyOrder item) => ValueKey<String>(item.id),
-        onRowSelected: (RadiologyOrder order) {
-          unawaited(
-            _openRadiologyDetailDialog(
-              context,
-              ref,
-              state,
-              order,
-              canWork: canWork,
-              canRequest: canRequest,
-            ),
+      page: state.orders,
+      isLoading: state.isRefreshing,
+      columnVisibilityController: columnVisibilityController,
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.radiologyTableColumnsTitle,
+      columnVisibilityApplyLabel: l10n.radiologyApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.radiologyResetColumnsAction,
+      search: AppListTableSearch<RadiologyOrder>(
+        controller: searchController,
+        semanticLabel: l10n.radiologySearchLabel,
+        hintText: l10n.radiologySearchHint,
+        matcher: (_, _) => true,
+        onChanged: onSearchChanged,
+        onSubmitted: onSearchSubmitted,
+        onClear: () {
+          onSearchSubmitted('');
+        },
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.radiologyFiltersLabel,
+        advancedFilterTitle: l10n.radiologyFiltersLabel,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.radiologyClearFiltersAction,
+        dateFilterLabel: l10n.radiologyOrderDateFilterLabel,
+        dateFromLabel: l10n.radiologyOrderDateFilterLabel,
+        dateToLabel: l10n.opdDateToLabel,
+        datePickerButtonLabel: l10n.radiologyPickOrderDateAction,
+        invalidDateMessage: l10n.appDateInvalidMessage,
+        firstDate: DateTime(2020),
+        lastDate: DateTime(2100),
+        currentDate: DateTime.now(),
+        allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+        filterGroups: <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: _radiologyStageFilterKey,
+            label: l10n.radiologyStageFilterLabel,
+            allLabel: _stageFilterLabel(l10n, 'ALL'),
+            choices: _radiologyStageFilterChoices(l10n),
+          ),
+          AppSearchBarFilterGroup(
+            key: _radiologyStatusFilterKey,
+            label: l10n.radiologyStatusFilterLabel,
+            allLabel: l10n.opdAllFieldsFilterLabel,
+            choices: _radiologyStatusFilterChoices(l10n),
+          ),
+          AppSearchBarFilterGroup(
+            key: _radiologyModalityFilterKey,
+            label: l10n.radiologyModalityFilterLabel,
+            allLabel: l10n.opdAllFieldsFilterLabel,
+            choices: _radiologyModalityFilterChoices(l10n),
+          ),
+          AppSearchBarFilterGroup(
+            key: _radiologyPriorityFilterKey,
+            label: l10n.radiologyPriorityFilterLabel,
+            allLabel: l10n.opdAllFieldsFilterLabel,
+            choices: _radiologyPriorityFilterChoices(l10n),
+          ),
+          AppSearchBarFilterGroup(
+            key: _radiologyBillingGateFilterKey,
+            label: l10n.radiologyBillingGateFilterLabel,
+            allLabel: l10n.opdAllFieldsFilterLabel,
+            choices: _radiologyBillingGateFilterChoices(l10n),
+          ),
+        ],
+        filterValue: _radiologyFilterValue(state.query),
+        hasActiveFilters: _hasRadiologyFilters(state.query),
+        onFilterChanged: (AppSearchBarFilterValue value) async {
+          final String nextStage =
+              value.option(_radiologyStageFilterKey) ?? 'ALL';
+          final String? nextStatus = value.option(_radiologyStatusFilterKey);
+          final String? nextModality = value.option(
+            _radiologyModalityFilterKey,
           );
-        },
-        previousPageLabel: l10n.radiologyPreviousPageLabel,
-        nextPageLabel: l10n.radiologyNextPageLabel,
-        pageLabelBuilder: (AppPage<RadiologyOrder> page) {
-          return l10n.radiologyPageLabel(
-            page.firstItemNumber,
-            page.lastItemNumber,
-            page.totalItemCount ?? page.lastItemNumber,
+          final String? nextPriority = value.option(
+            _radiologyPriorityFilterKey,
           );
-        },
-        onPageChanged: (AppPageRequest request) {
-          unawaited(controller.changePage(request));
-        },
-        emptyBuilder: (BuildContext context) {
-          return AppWorkspaceStatePanel.empty(
-            title: state.query.view == RadiologyWorkbenchView.patients
-                ? l10n.radiologyNoPatientsTitle
-                : l10n.radiologyNoOrdersTitle,
-            body: state.query.view == RadiologyWorkbenchView.patients
-                ? l10n.radiologyNoPatientsBody
-                : l10n.radiologyNoOrdersBody,
-            icon: Icons.inbox_outlined,
+          final String? nextBillingGate = value.option(
+            _radiologyBillingGateFilterKey,
           );
+          final DateTime? nextDate = value.dateFrom;
+          AppFailure? failure;
+          if (nextStage != state.query.stage) {
+            failure = await controller.applyStage(nextStage);
+          }
+          if (nextStatus != state.query.status) {
+            failure ??= await controller.applyStatus(nextStatus);
+          }
+          if (nextModality != state.query.modality) {
+            failure ??= await controller.applyModality(nextModality);
+          }
+          if (nextPriority != state.query.priority) {
+            failure ??= await controller.applyPriority(nextPriority);
+          }
+          if (nextBillingGate != state.query.billingGate) {
+            failure ??= await controller.applyBillingGate(nextBillingGate);
+          }
+          if (!_isSameFilterDate(nextDate, state.query.from)) {
+            failure ??= await controller.applyOrderedDate(nextDate);
+          }
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
         },
-        columns: state.query.view == RadiologyWorkbenchView.patients
-            ? _patientViewWorklistColumns(context)
-            : _orderViewWorklistColumns(context),
-        columnChoices: _optionalRadiologyWorklistColumns(context),
-        mobileItemBuilder: (BuildContext context, RadiologyOrder item) {
-          return _RadiologyOrderListTile(order: item);
-        },
+      ),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemKeyBuilder: (RadiologyOrder item) => ValueKey<String>(item.id),
+      onRowSelected: (RadiologyOrder order) {
+        unawaited(
+          _openRadiologyDetailDialog(
+            context,
+            ref,
+            state,
+            order,
+            canWork: canWork,
+            canRequest: canRequest,
+          ),
+        );
+      },
+      previousPageLabel: l10n.radiologyPreviousPageLabel,
+      nextPageLabel: l10n.radiologyNextPageLabel,
+      pageLabelBuilder: (AppPage<RadiologyOrder> page) {
+        return l10n.radiologyPageLabel(
+          page.firstItemNumber,
+          page.lastItemNumber,
+          page.totalItemCount ?? page.lastItemNumber,
+        );
+      },
+      onPageChanged: (AppPageRequest request) {
+        unawaited(controller.changePage(request));
+      },
+      emptyBuilder: (BuildContext context) {
+        return AppWorkspaceStatePanel.empty(
+          title: state.query.view == RadiologyWorkbenchView.patients
+              ? l10n.radiologyNoPatientsTitle
+              : l10n.radiologyNoOrdersTitle,
+          body: state.query.view == RadiologyWorkbenchView.patients
+              ? l10n.radiologyNoPatientsBody
+              : l10n.radiologyNoOrdersBody,
+          icon: Icons.inbox_outlined,
+        );
+      },
+      columns: state.query.view == RadiologyWorkbenchView.patients
+          ? _patientViewWorklistColumns(context)
+          : _orderViewWorklistColumns(context),
+      columnChoices: _optionalRadiologyWorklistColumns(context),
+      mobileItemBuilder: (BuildContext context, RadiologyOrder item) {
+        return _RadiologyOrderListTile(order: item);
+      },
     );
   }
 }
@@ -1209,10 +1209,7 @@ class _RequestSection extends ConsumerWidget {
                   Localizations.localeOf(context),
                 ),
         ),
-        _DetailLine(
-          label: l10n.radiologyRoomLabel,
-          value: order.room,
-        ),
+        _DetailLine(label: l10n.radiologyRoomLabel, value: order.room),
         _DetailLine(
           label: l10n.radiologyEquipmentLabel,
           value: order.equipmentDisplayName ?? order.equipmentRegistryId,
@@ -2319,22 +2316,18 @@ class _DoctorReviewPanel extends StatelessWidget {
             ),
             SizedBox(height: Theme.of(context).spacing.xs),
             for (final RadiologyResult result
-                in order.results.toList()
-                  ..sort(
-                    (RadiologyResult a, RadiologyResult b) =>
-                        b.reportVersion.compareTo(a.reportVersion),
-                  ))
+                in order.results.toList()..sort(
+                  (RadiologyResult a, RadiologyResult b) =>
+                      b.reportVersion.compareTo(a.reportVersion),
+                ))
               Padding(
-                padding: EdgeInsets.only(
-                  bottom: Theme.of(context).spacing.xs,
-                ),
+                padding: EdgeInsets.only(bottom: Theme.of(context).spacing.xs),
                 child: AppListItemText(
                   title: l10n.radiologyReportVersionLabel(result.reportVersion),
                   subtitle: <String?>[
                     result.normalizedStatus,
                     result.effectiveDisplayId,
-                    if (result.parentResultId != null)
-                      result.parentResultId,
+                    if (result.parentResultId != null) result.parentResultId,
                   ].whereType<String>().join(' · '),
                 ),
               ),

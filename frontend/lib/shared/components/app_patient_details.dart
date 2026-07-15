@@ -47,7 +47,9 @@ final class AppPatientDetailsExpandedController extends Notifier<bool> {
           .setBool(preferenceKey, value: expanded);
 
       if (!saved) {
-        throw StateError('Unable to persist patient details expand preference.');
+        throw StateError(
+          'Unable to persist patient details expand preference.',
+        );
       }
     } catch (_) {
       state = previous;
@@ -104,6 +106,7 @@ class AppPatientDetails extends ConsumerStatefulWidget {
   final String? ageLabel;
   final String? genderLabel;
   final IconData? genderIcon;
+
   /// Optional non-PHI compact line (workflow subtitle). Prefer age/gender when available.
   final String? compactSupportingText;
   final AppWorkspaceStatus? status;
@@ -189,8 +192,7 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
           onCopyPatientNumber: widget.onCopyPatientNumber,
           copyPatientNumberTooltip: widget.copyPatientNumberTooltip,
           copyPatientNumberMessage: widget.copyPatientNumberMessage,
-          copyPatientNumberSemanticLabel:
-              widget.copyPatientNumberSemanticLabel,
+          copyPatientNumberSemanticLabel: widget.copyPatientNumberSemanticLabel,
           showPatientNumberCopyIcon: widget.showPatientNumberCopyIcon,
           showPatientName: widget.showPatientName,
           showAvatar: widget.showAvatar,
@@ -220,7 +222,8 @@ class _AppPatientDetailsState extends ConsumerState<AppPatientDetails> {
     final String? gender = widget.genderLabel?.trim();
     final String? supporting = widget.compactSupportingText?.trim();
     final bool hasAgeGender =
-        (age != null && age.isNotEmpty) || (gender != null && gender.isNotEmpty);
+        (age != null && age.isNotEmpty) ||
+        (gender != null && gender.isNotEmpty);
     if (!hasAgeGender && (supporting == null || supporting.isEmpty)) {
       return null;
     }

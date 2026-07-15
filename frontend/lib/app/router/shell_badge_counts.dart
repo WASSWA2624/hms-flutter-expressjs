@@ -136,30 +136,30 @@ final class ShellBadgeCounts {
 
   @override
   int get hashCode => Object.hashAll(<int?>[
-        opdWorkloadCount,
-        emergencyWorkloadCount,
-        ipdWorkloadCount,
-        roomsBedsWorkloadCount,
-        icuCriticalCount,
-        nursingWorkloadCount,
-        clinicalWorkloadCount,
-        labWorkloadCount,
-        radiologyWorkloadCount,
-        pharmacyWorkloadCount,
-        billingWorkloadCount,
-        claimsWorkloadCount,
-        subscriptionsWorkloadCount,
-        operationsWorkloadCount,
-        housekeepingWorkloadCount,
-        hrWorkloadCount,
-        biomedicalWorkloadCount,
-        communicationsWorkloadCount,
-        integrationsWorkloadCount,
-        dischargeWorkloadCount,
-        mortuaryWorkloadCount,
-        theaterWorkloadCount,
-        notificationUnreadCount,
-      ]);
+    opdWorkloadCount,
+    emergencyWorkloadCount,
+    ipdWorkloadCount,
+    roomsBedsWorkloadCount,
+    icuCriticalCount,
+    nursingWorkloadCount,
+    clinicalWorkloadCount,
+    labWorkloadCount,
+    radiologyWorkloadCount,
+    pharmacyWorkloadCount,
+    billingWorkloadCount,
+    claimsWorkloadCount,
+    subscriptionsWorkloadCount,
+    operationsWorkloadCount,
+    housekeepingWorkloadCount,
+    hrWorkloadCount,
+    biomedicalWorkloadCount,
+    communicationsWorkloadCount,
+    integrationsWorkloadCount,
+    dischargeWorkloadCount,
+    mortuaryWorkloadCount,
+    theaterWorkloadCount,
+    notificationUnreadCount,
+  ]);
 }
 
 int? _positiveOrNull(int count) => count > 0 ? count : null;
@@ -215,144 +215,230 @@ final shellBadgeCountsProvider = Provider<ShellBadgeCounts>((ref) {
 
   return ShellBadgeCounts(
     opdWorkloadCount: canOpd
-        ? ref.watch(opdWorkspaceControllerProvider.select(
-            (v) => _selectBadge<OpdWorkspaceState>(v, (s) => s.workloadCount),
-          ))
+        ? ref.watch(
+            opdWorkspaceControllerProvider.select(
+              (v) => _selectBadge<OpdWorkspaceState>(v, (s) => s.workloadCount),
+            ),
+          )
         : null,
     emergencyWorkloadCount: canEmergency
-        ? ref.watch(emergencyWorkspaceControllerProvider.select(
-            (v) => _selectBadge<EmergencyWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            emergencyWorkspaceControllerProvider.select(
+              (v) => _selectBadge<EmergencyWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     ipdWorkloadCount: canIpd
-        ? ref.watch(ipdWorkspaceControllerProvider.select(
-            (v) => _selectBadge<IpdWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            ipdWorkspaceControllerProvider.select(
+              (v) => _selectBadge<IpdWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     roomsBedsWorkloadCount: canRoomsBeds
-        ? ref.watch(roomsBedsWorkspaceControllerProvider.select(
-            (v) => _selectBadge<RoomsBedsWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            roomsBedsWorkspaceControllerProvider.select(
+              (v) => _selectBadge<RoomsBedsWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     icuCriticalCount: canIcu
-        ? ref.watch(icuWorkspaceControllerProvider.select(
-            (v) => _selectBadge<IcuWorkspaceState>(
-                v, (s) => _positiveOrNull(s.criticalCount)),
-          ))
+        ? ref.watch(
+            icuWorkspaceControllerProvider.select(
+              (v) => _selectBadge<IcuWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.criticalCount),
+              ),
+            ),
+          )
         : null,
     nursingWorkloadCount: canNursing
-        ? ref.watch(nursingWorkspaceControllerProvider.select(
-            (v) => _selectBadge<NursingWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            nursingWorkspaceControllerProvider.select(
+              (v) => _selectBadge<NursingWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     clinicalWorkloadCount: canClinical
-        ? ref.watch(clinicalWorkspaceControllerProvider.select(
-            (v) => _selectBadge<ClinicalWorkspaceState>(v, (s) {
-              final int count = s.workloadCount;
-              return count > 0 ? count : null;
-            }),
-          ))
+        ? ref.watch(
+            clinicalWorkspaceControllerProvider.select(
+              (v) => _selectBadge<ClinicalWorkspaceState>(v, (s) {
+                final int count = s.workloadCount;
+                return count > 0 ? count : null;
+              }),
+            ),
+          )
         : null,
     labWorkloadCount: canLab
-        ? ref.watch(labWorkspaceControllerProvider.select(
-            (v) => _selectBadge<LabWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            labWorkspaceControllerProvider.select(
+              (v) => _selectBadge<LabWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     radiologyWorkloadCount: canRadiology
-        ? ref.watch(radiologyWorkspaceControllerProvider.select(
-            (v) => _selectBadge<RadiologyWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            radiologyWorkspaceControllerProvider.select(
+              (v) => _selectBadge<RadiologyWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     pharmacyWorkloadCount: canPharmacy
-        ? ref.watch(pharmacyWorkspaceControllerProvider.select(
-            (v) => _selectBadge<PharmacyWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            pharmacyWorkspaceControllerProvider.select(
+              (v) => _selectBadge<PharmacyWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     billingWorkloadCount: canBilling
-        ? ref.watch(billingWorkspaceControllerProvider.select(
-            (v) => _selectBadge<BillingWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            billingWorkspaceControllerProvider.select(
+              (v) => _selectBadge<BillingWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     claimsWorkloadCount: canClaims
-        ? ref.watch(claimsWorkspaceControllerProvider.select(
-            (v) => _selectBadge<ClaimsWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            claimsWorkspaceControllerProvider.select(
+              (v) => _selectBadge<ClaimsWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     subscriptionsWorkloadCount: canSubscriptions
-        ? ref.watch(subscriptionsWorkspaceControllerProvider.select(
-            (v) => _selectBadge<SubscriptionsWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            subscriptionsWorkspaceControllerProvider.select(
+              (v) => _selectBadge<SubscriptionsWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     operationsWorkloadCount: canOperations
-        ? ref.watch(operationsWorkspaceControllerProvider.select(
-            (v) => _selectBadge<OperationsWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            operationsWorkspaceControllerProvider.select(
+              (v) => _selectBadge<OperationsWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     housekeepingWorkloadCount: canHousekeeping
-        ? ref.watch(housekeepingWorkspaceControllerProvider.select(
-            (v) => _selectBadge<HousekeepingWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            housekeepingWorkspaceControllerProvider.select(
+              (v) => _selectBadge<HousekeepingWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     hrWorkloadCount: canHr
-        ? ref.watch(hrWorkspaceControllerProvider.select(
-            (v) => _selectBadge<HrWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            hrWorkspaceControllerProvider.select(
+              (v) => _selectBadge<HrWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     biomedicalWorkloadCount: canBiomedical
-        ? ref.watch(biomedicalWorkspaceControllerProvider.select(
-            (v) => _selectBadge<BiomedicalWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            biomedicalWorkspaceControllerProvider.select(
+              (v) => _selectBadge<BiomedicalWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     communicationsWorkloadCount: canCommunications
-        ? ref.watch(communicationsWorkspaceControllerProvider.select(
-            (v) => _selectBadge<CommunicationsWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            communicationsWorkspaceControllerProvider.select(
+              (v) => _selectBadge<CommunicationsWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     integrationsWorkloadCount: canIntegrations
-        ? ref.watch(integrationsWorkspaceControllerProvider.select(
-            (v) => _selectBadge<IntegrationWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            integrationsWorkspaceControllerProvider.select(
+              (v) => _selectBadge<IntegrationWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     dischargeWorkloadCount: canDischarge
-        ? ref.watch(dischargeWorkspaceControllerProvider.select(
-            (v) => _selectBadge<DischargeWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            dischargeWorkspaceControllerProvider.select(
+              (v) => _selectBadge<DischargeWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     mortuaryWorkloadCount: canMortuary
-        ? ref.watch(mortuaryWorkspaceControllerProvider.select(
-            (v) => _selectBadge<MortuaryWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            mortuaryWorkspaceControllerProvider.select(
+              (v) => _selectBadge<MortuaryWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     theaterWorkloadCount: canTheater
-        ? ref.watch(theaterWorkspaceControllerProvider.select(
-            (v) => _selectBadge<TheaterWorkspaceState>(
-                v, (s) => _positiveOrNull(s.workloadCount)),
-          ))
+        ? ref.watch(
+            theaterWorkspaceControllerProvider.select(
+              (v) => _selectBadge<TheaterWorkspaceState>(
+                v,
+                (s) => _positiveOrNull(s.workloadCount),
+              ),
+            ),
+          )
         : null,
     notificationUnreadCount: canCommunications
-        ? ref.watch(communicationsWorkspaceControllerProvider.select(
-            (v) => _selectBadge<CommunicationsWorkspaceState>(v, (s) {
-              return s.unreadBadgeCount > 0 ? s.unreadBadgeCount : null;
-            }),
-          ))
+        ? ref.watch(
+            communicationsWorkspaceControllerProvider.select(
+              (v) => _selectBadge<CommunicationsWorkspaceState>(v, (s) {
+                return s.unreadBadgeCount > 0 ? s.unreadBadgeCount : null;
+              }),
+            ),
+          )
         : null,
   );
 });

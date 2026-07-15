@@ -34,10 +34,7 @@ Options idempotentRequestOptions({
   final String key = idempotencyKey.trim();
   assert(key.isNotEmpty, 'Idempotency key must not be empty.');
   return Options(
-    headers: <String, dynamic>{
-      ...?headers,
-      idempotencyHeaderName: key,
-    },
+    headers: <String, dynamic>{...?headers, idempotencyHeaderName: key},
     extra: extra == null ? null : <String, dynamic>{...extra},
   );
 }

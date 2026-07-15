@@ -22,10 +22,7 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 
 @immutable
 final class SettingsPageQuery {
-  const SettingsPageQuery({
-    this.tab = 'preferences',
-    this.panel,
-  });
+  const SettingsPageQuery({this.tab = 'preferences', this.panel});
 
   factory SettingsPageQuery.fromUri(Uri uri) {
     final Map<String, String> params = uri.queryParameters;
@@ -49,7 +46,11 @@ final class SettingsPageQuery {
     return AppRoutes.settings.location(queryParameters: query);
   }
 
-  SettingsPageQuery copyWith({String? tab, String? panel, bool clearPanel = false}) {
+  SettingsPageQuery copyWith({
+    String? tab,
+    String? panel,
+    bool clearPanel = false,
+  }) {
     return SettingsPageQuery(
       tab: tab ?? this.tab,
       panel: clearPanel ? null : (panel ?? this.panel),
@@ -89,8 +90,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   }
 
   void _onSectionTapped(String sectionId) {
-    final String? newSection =
-        _expandedSectionId == sectionId ? null : sectionId;
+    final String? newSection = _expandedSectionId == sectionId
+        ? null
+        : sectionId;
     setState(() {
       _expandedSectionId = newSection;
     });
@@ -468,8 +470,9 @@ class _AccordionPanelState extends State<_AccordionPanel>
   void didUpdateWidget(covariant _AccordionPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.reduceMotion != oldWidget.reduceMotion) {
-      _controller.duration =
-          widget.reduceMotion ? Duration.zero : _animationDuration;
+      _controller.duration = widget.reduceMotion
+          ? Duration.zero
+          : _animationDuration;
     }
     if (widget.isExpanded != oldWidget.isExpanded) {
       if (widget.isExpanded) {
@@ -521,11 +524,7 @@ class _AccordionPanelContent extends StatelessWidget {
     final Widget content = entry.builder(context);
 
     final Widget sectionContent = entry.wrapInSection
-        ? AppScreenSection(
-            title: entry.title,
-            body: entry.body,
-            child: content,
-          )
+        ? AppScreenSection(title: entry.title, body: entry.body, child: content)
         : content;
 
     return Padding(
@@ -667,10 +666,7 @@ const AccessRequirement _configTenantRequirement = AccessRequirement(
     AppPermissions.tenantAdmin,
     AppPermissions.systemAdmin,
   ],
-  anyRoles: <AppRole>[
-    AppRole.superAdmin,
-    AppRole.tenantAdmin,
-  ],
+  anyRoles: <AppRole>[AppRole.superAdmin, AppRole.tenantAdmin],
   requiresTenantContext: true,
 );
 

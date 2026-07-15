@@ -34,8 +34,9 @@ Future<bool?> _openAssignDoctorDialog(
   final String? flowId = action.encounterId;
   if (flowId == null || flowId.isEmpty) return null;
 
-  final Result<OpdFlowDetail> result =
-      await ref.read(opdRepositoryProvider).getOpdFlow(flowId);
+  final Result<OpdFlowDetail> result = await ref
+      .read(opdRepositoryProvider)
+      .getOpdFlow(flowId);
 
   OpdFlowSummary? flow;
   result.when(

@@ -74,30 +74,29 @@ void main() {
       expect(find.text('Order lab'), findsNothing);
     });
 
-    testWidgets(
-      'disables when authorized but capability/prerequisite blocks',
-      (tester) async {
-        var pressed = 0;
-        await tester.pumpWidget(
-          wrap(
-            AppPermissionActionButton(
-              requirement: clinicalWrite,
-              label: 'Discharge',
-              icon: Icons.logout,
-              capabilityAllowed: false,
-              blockedReason: 'Encounter is still open',
-              onPressed: () => pressed += 1,
-            ),
-            doctorPolicy(),
+    testWidgets('disables when authorized but capability/prerequisite blocks', (
+      tester,
+    ) async {
+      var pressed = 0;
+      await tester.pumpWidget(
+        wrap(
+          AppPermissionActionButton(
+            requirement: clinicalWrite,
+            label: 'Discharge',
+            icon: Icons.logout,
+            capabilityAllowed: false,
+            blockedReason: 'Encounter is still open',
+            onPressed: () => pressed += 1,
           ),
-        );
+          doctorPolicy(),
+        ),
+      );
 
-        expect(find.text('Discharge'), findsOneWidget);
-        await tester.tap(find.text('Discharge'), warnIfMissed: false);
-        await tester.pump();
-        expect(pressed, 0);
-      },
-    );
+      expect(find.text('Discharge'), findsOneWidget);
+      await tester.tap(find.text('Discharge'), warnIfMissed: false);
+      await tester.pump();
+      expect(pressed, 0);
+    });
 
     testWidgets('enabled action invokes callback when authorized', (
       tester,
@@ -220,41 +219,42 @@ void main() {
   });
 
   group('AppPermissionAsyncActionButton lifecycle', () {
-    testWidgets('success patches via onSuccess and cancel leaves domain alone', (
-      tester,
-    ) async {
-      var domainValue = 0;
-      var calls = 0;
-      final AppActionRunner runner = AppActionRunner(createKey: () => 'k-1');
+    testWidgets(
+      'success patches via onSuccess and cancel leaves domain alone',
+      (tester) async {
+        var domainValue = 0;
+        var calls = 0;
+        final AppActionRunner runner = AppActionRunner(createKey: () => 'k-1');
 
-      await tester.pumpWidget(
-        wrap(
-          AppPermissionAsyncActionButton(
-            requirement: clinicalWrite,
-            label: 'Save vitals',
-            icon: Icons.monitor_heart_outlined,
-            runner: runner,
-            mutate: (context) async {
-              calls += 1;
-              await Future<void>.delayed(const Duration(milliseconds: 20));
-              return null;
-            },
-            onSuccess: () => domainValue = 1,
+        await tester.pumpWidget(
+          wrap(
+            AppPermissionAsyncActionButton(
+              requirement: clinicalWrite,
+              label: 'Save vitals',
+              icon: Icons.monitor_heart_outlined,
+              runner: runner,
+              mutate: (context) async {
+                calls += 1;
+                await Future<void>.delayed(const Duration(milliseconds: 20));
+                return null;
+              },
+              onSuccess: () => domainValue = 1,
+            ),
+            doctorPolicy(),
           ),
-          doctorPolicy(),
-        ),
-      );
+        );
 
-      await tester.tap(find.text('Save vitals'));
-      await tester.pump();
-      // In-flight: second tap must not double-submit.
-      await tester.tap(find.text('Save vitals'), warnIfMissed: false);
-      await tester.pump(const Duration(milliseconds: 30));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Save vitals'));
+        await tester.pump();
+        // In-flight: second tap must not double-submit.
+        await tester.tap(find.text('Save vitals'), warnIfMissed: false);
+        await tester.pump(const Duration(milliseconds: 30));
+        await tester.pumpAndSettle();
 
-      expect(calls, 1);
-      expect(domainValue, 1);
-    });
+        expect(calls, 1);
+        expect(domainValue, 1);
+      },
+    );
 
     testWidgets('failure leaves domain unchanged and offers idempotent retry', (
       tester,
@@ -262,7 +262,9 @@ void main() {
       var domainValue = 0;
       final List<String> keys = <String>[];
       var attempt = 0;
-      final AppActionRunner runner = AppActionRunner(createKey: () => 'retry-key');
+      final AppActionRunner runner = AppActionRunner(
+        createKey: () => 'retry-key',
+      );
 
       await tester.pumpWidget(
         wrap(

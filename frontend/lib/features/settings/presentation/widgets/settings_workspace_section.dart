@@ -110,8 +110,9 @@ class _SettingsWorkspaceContentState
   void initState() {
     super.initState();
     final String? panel = widget.initialPanel;
-    _activeTab =
-        (panel != null && _validPanels.contains(panel)) ? panel : 'overview';
+    _activeTab = (panel != null && _validPanels.contains(panel))
+        ? panel
+        : 'overview';
   }
 
   @override
@@ -230,28 +231,33 @@ class _SettingsContextSummary extends StatelessWidget {
 
     final TextStyle labelStyle =
         (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
-      color: colorScheme.onSurfaceVariant,
-      fontWeight: FontWeight.w600,
-    );
+          color: colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        );
     final TextStyle valueStyle =
         (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
-      color: colorScheme.onSurface,
-    );
+          color: colorScheme.onSurface,
+        );
     final TextStyle separatorStyle =
         (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
-      color: colorScheme.outlineVariant,
-    );
+          color: colorScheme.outlineVariant,
+        );
 
     final List<(String, String)> items = <(String, String)>[
-      (l10n.settingsWorkspaceTenantLabel,
-          ctx.tenantName ?? ctx.tenantId ?? unknown),
-      (l10n.settingsWorkspaceFacilityLabel,
-          ctx.facilityName ?? ctx.facilityId ?? unknown),
-      (l10n.settingsWorkspaceFacilityTypeLabel,
-          ctx.facilityType ?? unknown),
+      (
+        l10n.settingsWorkspaceTenantLabel,
+        ctx.tenantName ?? ctx.tenantId ?? unknown,
+      ),
+      (
+        l10n.settingsWorkspaceFacilityLabel,
+        ctx.facilityName ?? ctx.facilityId ?? unknown,
+      ),
+      (l10n.settingsWorkspaceFacilityTypeLabel, ctx.facilityType ?? unknown),
       (l10n.settingsWorkspaceRolesLabel, roles),
-      (l10n.settingsWorkspaceGeneratedAtLabel,
-          _dateLabel(workspace.generatedAt)),
+      (
+        l10n.settingsWorkspaceGeneratedAtLabel,
+        _dateLabel(workspace.generatedAt),
+      ),
     ];
 
     final List<InlineSpan> spans = <InlineSpan>[];
@@ -268,9 +274,7 @@ class _SettingsContextSummary extends StatelessWidget {
       leadingIcon: Icons.domain_outlined,
       density: AppContentPanelDensity.compact,
       borderColor: Colors.transparent,
-      children: <Widget>[
-        Text.rich(TextSpan(children: spans)),
-      ],
+      children: <Widget>[Text.rich(TextSpan(children: spans))],
     );
   }
 }
@@ -504,8 +508,7 @@ class _SettingsChecklistPanel extends ConsumerWidget {
           spacing: theme.spacing.sm,
           runSpacing: theme.spacing.sm,
           children: <Widget>[
-            for (final SettingsChecklistItem item
-                in workspace.checklist.items)
+            for (final SettingsChecklistItem item in workspace.checklist.items)
               _SettingsChecklistChip(item: item, onRefresh: onRefresh),
           ],
         ),
@@ -515,10 +518,7 @@ class _SettingsChecklistPanel extends ConsumerWidget {
 }
 
 class _SettingsChecklistChip extends ConsumerWidget {
-  const _SettingsChecklistChip({
-    required this.item,
-    required this.onRefresh,
-  });
+  const _SettingsChecklistChip({required this.item, required this.onRefresh});
 
   final SettingsChecklistItem item;
   final VoidCallback onRefresh;
@@ -543,8 +543,8 @@ class _SettingsChecklistChip extends ConsumerWidget {
           borderRadius: BorderRadius.circular(theme.radius.sm),
           onTap: canOpen
               ? () => unawaited(
-                    _handleChecklistOpen(context, ref, item, onRefresh),
-                  )
+                  _handleChecklistOpen(context, ref, item, onRefresh),
+                )
               : null,
           child: Container(
             padding: EdgeInsets.symmetric(
@@ -560,8 +560,7 @@ class _SettingsChecklistChip extends ConsumerWidget {
               ),
               color: item.completed
                   ? theme.statusColors.success.withValues(alpha: 0.06)
-                  : colorScheme.surfaceContainerHighest
-                      .withValues(alpha: 0.4),
+                  : colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -629,10 +628,7 @@ class _SettingsQuickActionsPanel extends ConsumerWidget {
             runSpacing: theme.spacing.sm,
             children: <Widget>[
               for (final SettingsQuickAction action in actions)
-                _SettingsActionButton(
-                  action: action,
-                  onRefresh: onRefresh,
-                ),
+                _SettingsActionButton(action: action, onRefresh: onRefresh),
             ],
           ),
       ],
@@ -641,10 +637,7 @@ class _SettingsQuickActionsPanel extends ConsumerWidget {
 }
 
 class _SettingsActionButton extends ConsumerWidget {
-  const _SettingsActionButton({
-    required this.action,
-    required this.onRefresh,
-  });
+  const _SettingsActionButton({required this.action, required this.onRefresh});
 
   final SettingsQuickAction action;
   final VoidCallback onRefresh;
@@ -662,8 +655,8 @@ class _SettingsActionButton extends ConsumerWidget {
           : l10n.settingsWorkspaceRouteUnavailableBody,
       onPressed: action.canExecute
           ? () => unawaited(
-                _handleQuickCreateAction(context, ref, action, onRefresh),
-              )
+              _handleQuickCreateAction(context, ref, action, onRefresh),
+            )
           : null,
     );
   }

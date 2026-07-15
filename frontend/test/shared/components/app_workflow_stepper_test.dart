@@ -210,7 +210,10 @@ void main() {
     expect(find.text('Complete'), findsOneWidget);
     final Finder button = find.widgetWithText(FilledButton, 'Complete');
     final Finder textButton = find.widgetWithText(TextButton, 'Complete');
-    expect(button.evaluate().isNotEmpty || textButton.evaluate().isNotEmpty, isTrue);
+    expect(
+      button.evaluate().isNotEmpty || textButton.evaluate().isNotEmpty,
+      isTrue,
+    );
   });
 
   testWidgets('confirmation gate cancels without invoking action', (

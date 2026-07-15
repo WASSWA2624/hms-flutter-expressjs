@@ -3,11 +3,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 
 @immutable
 final class AppTabItem {
-  const AppTabItem({
-    required this.id,
-    required this.icon,
-    required this.label,
-  });
+  const AppTabItem({required this.id, required this.icon, required this.label});
 
   final String id;
   final IconData icon;
@@ -86,8 +82,8 @@ class _AppTabChipState extends State<_AppTabChip> {
     final Color backgroundColor = widget.isSelected
         ? widget.colorScheme.primaryContainer.withValues(alpha: 0.7)
         : _isHovered
-            ? widget.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
-            : Colors.transparent;
+        ? widget.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
+        : Colors.transparent;
     final Color foregroundColor = widget.isSelected
         ? widget.colorScheme.onPrimaryContainer
         : widget.colorScheme.onSurfaceVariant;

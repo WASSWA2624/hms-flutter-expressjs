@@ -229,8 +229,9 @@ class _AppCurrencySelectFieldState extends State<AppCurrencySelectField> {
                           color: code.isNotEmpty
                               ? (canEdit
                                     ? colorScheme.onSurface
-                                    : colorScheme.onSurface
-                                          .withValues(alpha: 0.62))
+                                    : colorScheme.onSurface.withValues(
+                                        alpha: 0.62,
+                                      ))
                               : colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w700,
                         ),
@@ -243,8 +244,7 @@ class _AppCurrencySelectFieldState extends State<AppCurrencySelectField> {
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: canEdit
                                 ? colorScheme.onSurfaceVariant
-                                : colorScheme.onSurface
-                                      .withValues(alpha: 0.38),
+                                : colorScheme.onSurface.withValues(alpha: 0.38),
                           ),
                         ),
                     ],

@@ -297,169 +297,166 @@ class _BiomedicalWorklistPanel extends ConsumerWidget {
     );
 
     return AppListTable<BiomedicalAsset>(
-        page: state.workbench.assets,
-        isLoading: state.isRefreshing,
-        columnVisibilityController: columnVisibilityController,
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        search: AppListTableSearch<BiomedicalAsset>(
-          controller: searchController,
-          semanticLabel: l10n.biomedicalSearchLabel,
-          hintText: l10n.biomedicalSearchHint,
-          matcher: (_, _) => true,
-          onSubmitted: controller.applySearch,
-          onClear: () => controller.applySearch(''),
-          showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.biomedicalFiltersLabel,
-          advancedFilterTitle: l10n.biomedicalFiltersLabel,
-          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-          advancedFilterResetLabel: l10n.opdClearFiltersAction,
-          enableDateFilter: false,
-          filterGroups: <AppSearchBarFilterGroup>[
-            AppSearchBarFilterGroup(
-              key: _panelFilterKey,
-              label: l10n.biomedicalPanelFilterLabel,
-              allLabel: l10n.biomedicalPanelRegistry,
-              choices: _panelChoices(l10n),
+      page: state.workbench.assets,
+      isLoading: state.isRefreshing,
+      columnVisibilityController: columnVisibilityController,
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      search: AppListTableSearch<BiomedicalAsset>(
+        controller: searchController,
+        semanticLabel: l10n.biomedicalSearchLabel,
+        hintText: l10n.biomedicalSearchHint,
+        matcher: (_, _) => true,
+        onSubmitted: controller.applySearch,
+        onClear: () => controller.applySearch(''),
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.biomedicalFiltersLabel,
+        advancedFilterTitle: l10n.biomedicalFiltersLabel,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        enableDateFilter: false,
+        filterGroups: <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: _panelFilterKey,
+            label: l10n.biomedicalPanelFilterLabel,
+            allLabel: l10n.biomedicalPanelRegistry,
+            choices: _panelChoices(l10n),
+          ),
+          AppSearchBarFilterGroup(
+            key: _statusFilterKey,
+            label: l10n.biomedicalStatusFilterLabel,
+            choices: _lookupChoices(
+              state.workbench.lookups.statuses,
+              fallbackValues: _fallbackStatuses,
             ),
-            AppSearchBarFilterGroup(
-              key: _statusFilterKey,
-              label: l10n.biomedicalStatusFilterLabel,
-              choices: _lookupChoices(
-                state.workbench.lookups.statuses,
-                fallbackValues: _fallbackStatuses,
+          ),
+          AppSearchBarFilterGroup(
+            key: _priorityFilterKey,
+            label: l10n.biomedicalPriorityFilterLabel,
+            choices: _lookupChoices(
+              state.workbench.lookups.priorities,
+              fallbackValues: _fallbackPriorities,
+            ),
+          ),
+          AppSearchBarFilterGroup(
+            key: _facilityFilterKey,
+            label: l10n.biomedicalFacilityFilterLabel,
+            choices: _lookupChoices(state.workbench.lookups.facilities),
+          ),
+          AppSearchBarFilterGroup(
+            key: _datePresetFilterKey,
+            label: l10n.biomedicalDatePresetFilterLabel,
+            choices: _datePresetChoices(l10n),
+          ),
+        ],
+        filterValue: _filterValue(state.query),
+        hasActiveFilters: state.query.hasActiveFilters,
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          unawaited(
+            controller.applyFilters(
+              panel: value.option(_panelFilterKey) ?? BiomedicalPanels.registry,
+              status: value.option(_statusFilterKey),
+              priority: value.option(_priorityFilterKey),
+              facilityId: value.option(_facilityFilterKey),
+              datePreset: value.option(_datePresetFilterKey),
+            ),
+          );
+        },
+      ),
+      previousPageLabel: l10n.biomedicalPreviousPageLabel,
+      nextPageLabel: l10n.biomedicalNextPageLabel,
+      pageLabelBuilder: (AppPage<BiomedicalAsset> page) {
+        return l10n.biomedicalPageLabel(
+          page.firstItemNumber,
+          page.lastItemNumber,
+          page.totalItemCount ?? page.items.length,
+        );
+      },
+      onPageChanged: controller.changePage,
+      onRowSelected: onAssetSelected,
+      itemKeyBuilder: (BiomedicalAsset item) =>
+          ValueKey<String>('${item.resource}:${item.displayId}'),
+      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+        title: l10n.biomedicalNoAssetsTitle,
+        body: l10n.biomedicalNoAssetsBody,
+        icon: Icons.medical_services_outlined,
+      ),
+      mobileItemBuilder: (BuildContext context, BiomedicalAsset item) {
+        return _BiomedicalAssetListTile(asset: item);
+      },
+      columns: <AppListTableColumn<BiomedicalAsset>>[
+        AppListTableColumn<BiomedicalAsset>(
+          id: 'asset_tag',
+          label: l10n.biomedicalAssetTagColumnLabel,
+          sortComparator: (BiomedicalAsset left, BiomedicalAsset right) =>
+              appListTableCompareText(left.displayId, right.displayId),
+          cellBuilder: (_, BiomedicalAsset item) {
+            return AppCopyableIdentifier(value: item.displayId);
+          },
+        ),
+        AppListTableColumn<BiomedicalAsset>(
+          id: 'equipment',
+          label: l10n.biomedicalEquipmentColumnLabel,
+          sortComparator: (BiomedicalAsset left, BiomedicalAsset right) =>
+              appListTableCompareText(left.displayTitle, right.displayTitle),
+          cellBuilder: (_, BiomedicalAsset item) {
+            return _AssetTitleCell(asset: item);
+          },
+        ),
+        AppListTableColumn<BiomedicalAsset>(
+          id: 'category',
+          label: l10n.biomedicalCategoryColumnLabel,
+          cellBuilder: (_, BiomedicalAsset item) {
+            return Text(_dash(item.categoryLabel, l10n));
+          },
+        ),
+        AppListTableColumn<BiomedicalAsset>(
+          id: 'location',
+          label: l10n.biomedicalLocationColumnLabel,
+          cellBuilder: (_, BiomedicalAsset item) {
+            return Text(_dash(item.facilityLabel, l10n));
+          },
+        ),
+        AppListTableColumn<BiomedicalAsset>(
+          id: 'risk',
+          label: l10n.biomedicalRiskColumnLabel,
+          cellBuilder: (_, BiomedicalAsset item) {
+            return _statusBadge(
+              _labelForCode(
+                item.priority,
+                fallback: l10n.biomedicalNotAvailableLabel,
               ),
-            ),
-            AppSearchBarFilterGroup(
-              key: _priorityFilterKey,
-              label: l10n.biomedicalPriorityFilterLabel,
-              choices: _lookupChoices(
-                state.workbench.lookups.priorities,
-                fallbackValues: _fallbackPriorities,
-              ),
-            ),
-            AppSearchBarFilterGroup(
-              key: _facilityFilterKey,
-              label: l10n.biomedicalFacilityFilterLabel,
-              choices: _lookupChoices(state.workbench.lookups.facilities),
-            ),
-            AppSearchBarFilterGroup(
-              key: _datePresetFilterKey,
-              label: l10n.biomedicalDatePresetFilterLabel,
-              choices: _datePresetChoices(l10n),
-            ),
-          ],
-          filterValue: _filterValue(state.query),
-          hasActiveFilters: state.query.hasActiveFilters,
-          onFilterChanged: (AppSearchBarFilterValue value) {
-            unawaited(
-              controller.applyFilters(
-                panel:
-                    value.option(_panelFilterKey) ?? BiomedicalPanels.registry,
-                status: value.option(_statusFilterKey),
-                priority: value.option(_priorityFilterKey),
-                facilityId: value.option(_facilityFilterKey),
-                datePreset: value.option(_datePresetFilterKey),
-              ),
+              _toneForPriority(item.priority),
             );
           },
         ),
-        previousPageLabel: l10n.biomedicalPreviousPageLabel,
-        nextPageLabel: l10n.biomedicalNextPageLabel,
-        pageLabelBuilder: (AppPage<BiomedicalAsset> page) {
-          return l10n.biomedicalPageLabel(
-            page.firstItemNumber,
-            page.lastItemNumber,
-            page.totalItemCount ?? page.items.length,
-          );
-        },
-        onPageChanged: controller.changePage,
-        onRowSelected: onAssetSelected,
-        itemKeyBuilder: (BiomedicalAsset item) =>
-            ValueKey<String>('${item.resource}:${item.displayId}'),
-        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-          title: l10n.biomedicalNoAssetsTitle,
-          body: l10n.biomedicalNoAssetsBody,
-          icon: Icons.medical_services_outlined,
+        AppListTableColumn<BiomedicalAsset>(
+          id: 'status',
+          label: l10n.biomedicalStatusColumnLabel,
+          cellBuilder: (_, BiomedicalAsset item) {
+            return _statusBadge(
+              _labelForCode(
+                item.status,
+                fallback: l10n.biomedicalNotAvailableLabel,
+              ),
+              _toneForStatus(item.status),
+            );
+          },
         ),
-        mobileItemBuilder: (BuildContext context, BiomedicalAsset item) {
-          return _BiomedicalAssetListTile(asset: item);
-        },
-        columns: <AppListTableColumn<BiomedicalAsset>>[
-          AppListTableColumn<BiomedicalAsset>(
-            id: 'asset_tag',
-            label: l10n.biomedicalAssetTagColumnLabel,
-            sortComparator: (BiomedicalAsset left, BiomedicalAsset right) =>
-                appListTableCompareText(left.displayId, right.displayId),
-            cellBuilder: (_, BiomedicalAsset item) {
-              return AppCopyableIdentifier(value: item.displayId);
-            },
-          ),
-          AppListTableColumn<BiomedicalAsset>(
-            id: 'equipment',
-            label: l10n.biomedicalEquipmentColumnLabel,
-            sortComparator: (BiomedicalAsset left, BiomedicalAsset right) =>
-                appListTableCompareText(left.displayTitle, right.displayTitle),
-            cellBuilder: (_, BiomedicalAsset item) {
-              return _AssetTitleCell(asset: item);
-            },
-          ),
-          AppListTableColumn<BiomedicalAsset>(
-            id: 'category',
-            label: l10n.biomedicalCategoryColumnLabel,
-            cellBuilder: (_, BiomedicalAsset item) {
-              return Text(_dash(item.categoryLabel, l10n));
-            },
-          ),
-          AppListTableColumn<BiomedicalAsset>(
-            id: 'location',
-            label: l10n.biomedicalLocationColumnLabel,
-            cellBuilder: (_, BiomedicalAsset item) {
-              return Text(_dash(item.facilityLabel, l10n));
-            },
-          ),
-          AppListTableColumn<BiomedicalAsset>(
-            id: 'risk',
-            label: l10n.biomedicalRiskColumnLabel,
-            cellBuilder: (_, BiomedicalAsset item) {
-              return _statusBadge(
-                _labelForCode(
-                  item.priority,
-                  fallback: l10n.biomedicalNotAvailableLabel,
-                ),
-                _toneForPriority(item.priority),
-              );
-            },
-          ),
-          AppListTableColumn<BiomedicalAsset>(
-            id: 'status',
-            label: l10n.biomedicalStatusColumnLabel,
-            cellBuilder: (_, BiomedicalAsset item) {
-              return _statusBadge(
-                _labelForCode(
-                  item.status,
-                  fallback: l10n.biomedicalNotAvailableLabel,
-                ),
-                _toneForStatus(item.status),
-              );
-            },
-          ),
-          AppListTableColumn<BiomedicalAsset>(
-            id: 'owner',
-            label: l10n.biomedicalOwnerColumnLabel,
-            cellBuilder: (_, BiomedicalAsset item) {
-              return Text(
-                _dash(item.engineerLabel ?? item.facilityLabel, l10n),
-              );
-            },
-          ),
-          AppListTableColumn<BiomedicalAsset>(
-            id: 'next_action',
-            label: l10n.biomedicalNextActionColumnLabel,
-            cellBuilder: (BuildContext context, BiomedicalAsset item) {
-              return Text(_nextActionLabel(context.l10n, item));
-            },
-          ),
-        ],
+        AppListTableColumn<BiomedicalAsset>(
+          id: 'owner',
+          label: l10n.biomedicalOwnerColumnLabel,
+          cellBuilder: (_, BiomedicalAsset item) {
+            return Text(_dash(item.engineerLabel ?? item.facilityLabel, l10n));
+          },
+        ),
+        AppListTableColumn<BiomedicalAsset>(
+          id: 'next_action',
+          label: l10n.biomedicalNextActionColumnLabel,
+          cellBuilder: (BuildContext context, BiomedicalAsset item) {
+            return Text(_nextActionLabel(context.l10n, item));
+          },
+        ),
+      ],
     );
   }
 }

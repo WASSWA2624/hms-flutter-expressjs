@@ -98,10 +98,7 @@ final class AppWorkflowStepAction {
   bool get requiresConfirmation {
     final String? title = confirmTitle?.trim();
     final String? body = confirmBody?.trim();
-    return title != null &&
-        title.isNotEmpty &&
-        body != null &&
-        body.isNotEmpty;
+    return title != null && title.isNotEmpty && body != null && body.isNotEmpty;
   }
 }
 
@@ -156,7 +153,11 @@ class AppWorkflowStepper extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: <Widget>[
-                for (var index = 0; index < steps.length; index += 1) ...<Widget>[
+                for (
+                  var index = 0;
+                  index < steps.length;
+                  index += 1
+                ) ...<Widget>[
                   if (index > 0)
                     Container(
                       width: compact ? 16 : 24,
@@ -274,7 +275,11 @@ Future<void> showAppWorkflowStepHelp({
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            for (var index = 0; index < sections.length; index += 1) ...<Widget>[
+            for (
+              var index = 0;
+              index < sections.length;
+              index += 1
+            ) ...<Widget>[
               if (index > 0) SizedBox(height: theme.spacing.sm),
               Text(
                 sections[index],
@@ -523,8 +528,9 @@ class _WorkflowStepNode extends StatelessWidget {
       AppWorkflowStepState.upcoming => scheme.onSurfaceVariant,
       AppWorkflowStepState.skipped => scheme.onSurfaceVariant,
       AppWorkflowStepState.reverted => theme.statusColors.warning,
-      AppWorkflowStepState.unavailable =>
-        scheme.onSurfaceVariant.withValues(alpha: 0.45),
+      AppWorkflowStepState.unavailable => scheme.onSurfaceVariant.withValues(
+        alpha: 0.45,
+      ),
     };
   }
 }

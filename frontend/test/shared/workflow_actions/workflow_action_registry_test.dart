@@ -39,10 +39,7 @@ void main() {
           'ASSIGN_DOCTOR',
         );
         expect(registry.canonicalize('DOCTOR_NEEDED'), 'ASSIGN_DOCTOR');
-        expect(
-          registry.canonicalize('WAITING_DOCTOR_REVIEW'),
-          'DOCTOR_REVIEW',
-        );
+        expect(registry.canonicalize('WAITING_DOCTOR_REVIEW'), 'DOCTOR_REVIEW');
         expect(registry.canonicalize('WITH_DOCTOR'), 'DOCTOR_REVIEW');
         expect(registry.canonicalize('LAB_REQUESTED'), 'COLLECT_SAMPLE');
         expect(registry.canonicalize('LAB_PENDING'), 'COLLECT_SAMPLE');
@@ -53,7 +50,10 @@ void main() {
       });
 
       test('normalizes case and whitespace', () {
-        expect(registry.canonicalize('  pay_consultation  '), 'PAY_CONSULTATION');
+        expect(
+          registry.canonicalize('  pay_consultation  '),
+          'PAY_CONSULTATION',
+        );
         expect(registry.canonicalize('waiting_vitals'), 'RECORD_VITALS');
         expect(registry.canonicalize('Doctor_Needed'), 'ASSIGN_DOCTOR');
       });
@@ -242,8 +242,9 @@ void main() {
         'RECORD_VITALS',
         (_, _, _) async => true,
       );
-      final opener =
-          WorkflowActionRegistry.instance.dialogOpenerFor('RECORD_VITALS');
+      final opener = WorkflowActionRegistry.instance.dialogOpenerFor(
+        'RECORD_VITALS',
+      );
       expect(opener, isNotNull);
     });
 
@@ -253,8 +254,9 @@ void main() {
         (_, _, _) async => true,
         onSuccess: (_) {},
       );
-      final callback = WorkflowActionRegistry.instance
-          .postSuccessCallbackFor('DOCTOR_REVIEW');
+      final callback = WorkflowActionRegistry.instance.postSuccessCallbackFor(
+        'DOCTOR_REVIEW',
+      );
       expect(callback, isNotNull);
     });
   });
@@ -264,8 +266,9 @@ void main() {
       expect(WorkflowActionExecutor.instance.isExecuting, isFalse);
     });
 
-    testWidgets('execute returns denied for permission-denied action',
-        (WidgetTester tester) async {
+    testWidgets('execute returns denied for permission-denied action', (
+      WidgetTester tester,
+    ) async {
       late WorkflowActionResult result;
       await tester.pumpWidget(
         MaterialApp(
@@ -295,8 +298,9 @@ void main() {
       expect(result, WorkflowActionResult.denied);
     });
 
-    testWidgets('execute returns unavailable for unsupported action',
-        (WidgetTester tester) async {
+    testWidgets('execute returns unavailable for unsupported action', (
+      WidgetTester tester,
+    ) async {
       late WorkflowActionResult result;
       await tester.pumpWidget(
         MaterialApp(

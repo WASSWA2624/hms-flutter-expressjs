@@ -45,9 +45,4 @@ final class ReceptionWorkspaceQuery {
 }
 
 /// Desk worklist sections for high-volume reception workflows.
-enum ReceptionDeskSection {
-  appointments,
-  queue,
-  activeVisits,
-  paymentGate,
-}
+enum ReceptionDeskSection { appointments, queue, activeVisits, paymentGate }

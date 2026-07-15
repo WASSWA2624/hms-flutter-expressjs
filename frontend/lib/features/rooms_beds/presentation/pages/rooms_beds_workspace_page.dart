@@ -311,187 +311,187 @@ class _BedBoardPanel extends ConsumerWidget {
     );
 
     return SizedBox(
-        height: 560,
-        child: AppListTable<BedBoardItem>(
-          page: state.beds,
-          isLoading: state.isRefreshing,
-          columnVisibilityController: columnVisibilityController,
-          columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-          search: AppListTableSearch<BedBoardItem>(
-            controller: searchController,
-            semanticLabel: l10n.roomsBedsSearchLabel,
-            hintText: l10n.roomsBedsSearchHint,
-            matcher: (_, _) => true,
-            onSubmitted: (String value) async {
-              final AppFailure? failure = await controller.applySearch(value);
-              if (context.mounted) {
-                _showFailureIfNeeded(context, failure);
-              }
-            },
-            onClear: () async {
-              final AppFailure? failure = await controller.applySearch('');
-              if (context.mounted) {
-                _showFailureIfNeeded(context, failure);
-              }
-            },
-            showAdvancedFilterButton: true,
-            advancedFilterButtonLabel: l10n.roomsBedsFiltersLabel,
-            advancedFilterTitle: l10n.roomsBedsFiltersLabel,
-            advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-            advancedFilterResetLabel: l10n.opdClearFiltersAction,
-            enableDateFilter: false,
-            allFieldsLabel: l10n.roomsBedsAllFilterLabel,
-            filterGroups: <AppSearchBarFilterGroup>[
-              AppSearchBarFilterGroup(
-                key: _facilityFilterKey,
-                label: l10n.roomsBedsFacilityFilterLabel,
-                allLabel: l10n.roomsBedsAllFacilitiesLabel,
-                choices: _facilityChoices(state.referenceData.facilities),
-              ),
-              AppSearchBarFilterGroup(
-                key: _wardFilterKey,
-                label: l10n.roomsBedsWardFilterLabel,
-                allLabel: l10n.roomsBedsAllWardsLabel,
-                choices: _wardChoices(state.referenceData.wards),
-              ),
-              AppSearchBarFilterGroup(
-                key: _roomFilterKey,
-                label: l10n.roomsBedsRoomFilterLabel,
-                allLabel: l10n.roomsBedsAllRoomsLabel,
-                choices: _roomChoices(state.referenceData.rooms),
-              ),
-              AppSearchBarFilterGroup(
-                key: _statusFilterKey,
-                label: l10n.roomsBedsStatusFilterLabel,
-                allLabel: l10n.roomsBedsAllStatusesLabel,
-                choices: roomsBedsStatusFilterChoices(l10n),
-              ),
-            ],
-            filterValue: _filterValue(state.query),
-            hasActiveFilters: state.query.hasFilters,
-            onFilterChanged: (AppSearchBarFilterValue value) async {
-              AppFailure? failure;
-              final String? facilityId = value.option(_facilityFilterKey);
-              final String? wardId = value.option(_wardFilterKey);
-              final String? roomId = value.option(_roomFilterKey);
-              final BedSetupStatus? status = roomsBedsStatusFromFilter(
-                value.option(_statusFilterKey),
-              );
-              if (facilityId != state.query.facilityId) {
-                failure = await controller.applyFacility(facilityId);
-              }
-              if (wardId != state.query.wardId) {
-                failure ??= await controller.applyWard(wardId);
-              }
-              if (roomId != state.query.roomId) {
-                failure ??= await controller.applyRoom(roomId);
-              }
-              if (status != state.query.status) {
-                failure ??= await controller.applyStatus(status);
-              }
-              if (context.mounted) {
-                _showFailureIfNeeded(context, failure);
-              }
-            },
-          ),
-          itemKeyBuilder: (BedBoardItem item) => ValueKey<String>(item.id),
-          onPageChanged: (AppPageRequest request) {
-            unawaited(controller.changePage(request));
+      height: 560,
+      child: AppListTable<BedBoardItem>(
+        page: state.beds,
+        isLoading: state.isRefreshing,
+        columnVisibilityController: columnVisibilityController,
+        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        search: AppListTableSearch<BedBoardItem>(
+          controller: searchController,
+          semanticLabel: l10n.roomsBedsSearchLabel,
+          hintText: l10n.roomsBedsSearchHint,
+          matcher: (_, _) => true,
+          onSubmitted: (String value) async {
+            final AppFailure? failure = await controller.applySearch(value);
+            if (context.mounted) {
+              _showFailureIfNeeded(context, failure);
+            }
           },
-          onRowSelected: (BedBoardItem item) {
-            unawaited(
-              _openBedDetailDialog(
-                context,
-                ref,
-                state,
-                item,
-                canAdminBeds: canAdminBeds,
-                canIpdWrite: canIpdWrite,
-              ),
-            );
+          onClear: () async {
+            final AppFailure? failure = await controller.applySearch('');
+            if (context.mounted) {
+              _showFailureIfNeeded(context, failure);
+            }
           },
-          previousPageLabel: l10n.roomsBedsPreviousPageLabel,
-          nextPageLabel: l10n.roomsBedsNextPageLabel,
-          pageLabelBuilder: (AppPage<BedBoardItem> page) {
-            return l10n.roomsBedsPageLabel(
-              page.firstItemNumber,
-              page.lastItemNumber,
-              page.totalItemCount ?? page.items.length,
-            );
-          },
-          emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-            title: l10n.roomsBedsEmptyTitle,
-            body: l10n.roomsBedsEmptyBody,
-            icon: Icons.bed_outlined,
-          ),
-          columns: <AppListTableColumn<BedBoardItem>>[
-            AppListTableColumn<BedBoardItem>(
-              label: l10n.roomsBedsBedColumnLabel,
-              sortComparator: (BedBoardItem left, BedBoardItem right) {
-                return appListTableCompareText(left.label, right.label);
-              },
-              cellBuilder: (BuildContext context, BedBoardItem item) {
-                return _TwoLineCell(
-                  title: item.label,
-                  subtitle: _joinDisplay(<String?>[item.facility?.name]),
-                );
-              },
+          showAdvancedFilterButton: true,
+          advancedFilterButtonLabel: l10n.roomsBedsFiltersLabel,
+          advancedFilterTitle: l10n.roomsBedsFiltersLabel,
+          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+          advancedFilterResetLabel: l10n.opdClearFiltersAction,
+          enableDateFilter: false,
+          allFieldsLabel: l10n.roomsBedsAllFilterLabel,
+          filterGroups: <AppSearchBarFilterGroup>[
+            AppSearchBarFilterGroup(
+              key: _facilityFilterKey,
+              label: l10n.roomsBedsFacilityFilterLabel,
+              allLabel: l10n.roomsBedsAllFacilitiesLabel,
+              choices: _facilityChoices(state.referenceData.facilities),
             ),
-            AppListTableColumn<BedBoardItem>(
-              label: l10n.roomsBedsLocationColumnLabel,
-              sortComparator: (BedBoardItem left, BedBoardItem right) {
-                return appListTableCompareText(
-                  _locationLabel(context, left),
-                  _locationLabel(context, right),
-                );
-              },
-              cellBuilder: (BuildContext context, BedBoardItem item) {
-                return Text(_locationLabel(context, item));
-              },
+            AppSearchBarFilterGroup(
+              key: _wardFilterKey,
+              label: l10n.roomsBedsWardFilterLabel,
+              allLabel: l10n.roomsBedsAllWardsLabel,
+              choices: _wardChoices(state.referenceData.wards),
             ),
-            AppListTableColumn<BedBoardItem>(
-              label: l10n.roomsBedsStatusColumnLabel,
-              sortComparator: (BedBoardItem left, BedBoardItem right) {
-                return appListTableCompareText(
-                  left.status.apiValue,
-                  right.status.apiValue,
-                );
-              },
-              cellBuilder: (BuildContext context, BedBoardItem item) {
-                return AppWorkspaceStatusBadge(
-                  status: roomsBedsStatusBadge(context.l10n, item.status),
-                );
-              },
+            AppSearchBarFilterGroup(
+              key: _roomFilterKey,
+              label: l10n.roomsBedsRoomFilterLabel,
+              allLabel: l10n.roomsBedsAllRoomsLabel,
+              choices: _roomChoices(state.referenceData.rooms),
             ),
-            AppListTableColumn<BedBoardItem>(
-              label: l10n.roomsBedsAssignmentColumnLabel,
-              sortComparator: (BedBoardItem left, BedBoardItem right) {
-                return appListTableCompareText(
-                  _assignmentLabel(context, left),
-                  _assignmentLabel(context, right),
-                );
-              },
-              cellBuilder: (BuildContext context, BedBoardItem item) {
-                return Text(_assignmentLabel(context, item));
-              },
-            ),
-            AppListTableColumn<BedBoardItem>(
-              label: l10n.roomsBedsNextActionColumnLabel,
-              sortComparator: (BedBoardItem left, BedBoardItem right) {
-                return appListTableCompareText(
-                  roomsBedsNextActionLabel(context.l10n, left),
-                  roomsBedsNextActionLabel(context.l10n, right),
-                );
-              },
-              cellBuilder: (BuildContext context, BedBoardItem item) {
-                return Text(roomsBedsNextActionLabel(context.l10n, item));
-              },
+            AppSearchBarFilterGroup(
+              key: _statusFilterKey,
+              label: l10n.roomsBedsStatusFilterLabel,
+              allLabel: l10n.roomsBedsAllStatusesLabel,
+              choices: roomsBedsStatusFilterChoices(l10n),
             ),
           ],
-          mobileItemBuilder: (BuildContext context, BedBoardItem item) {
-            return _BedMobileItem(item: item);
+          filterValue: _filterValue(state.query),
+          hasActiveFilters: state.query.hasFilters,
+          onFilterChanged: (AppSearchBarFilterValue value) async {
+            AppFailure? failure;
+            final String? facilityId = value.option(_facilityFilterKey);
+            final String? wardId = value.option(_wardFilterKey);
+            final String? roomId = value.option(_roomFilterKey);
+            final BedSetupStatus? status = roomsBedsStatusFromFilter(
+              value.option(_statusFilterKey),
+            );
+            if (facilityId != state.query.facilityId) {
+              failure = await controller.applyFacility(facilityId);
+            }
+            if (wardId != state.query.wardId) {
+              failure ??= await controller.applyWard(wardId);
+            }
+            if (roomId != state.query.roomId) {
+              failure ??= await controller.applyRoom(roomId);
+            }
+            if (status != state.query.status) {
+              failure ??= await controller.applyStatus(status);
+            }
+            if (context.mounted) {
+              _showFailureIfNeeded(context, failure);
+            }
           },
         ),
+        itemKeyBuilder: (BedBoardItem item) => ValueKey<String>(item.id),
+        onPageChanged: (AppPageRequest request) {
+          unawaited(controller.changePage(request));
+        },
+        onRowSelected: (BedBoardItem item) {
+          unawaited(
+            _openBedDetailDialog(
+              context,
+              ref,
+              state,
+              item,
+              canAdminBeds: canAdminBeds,
+              canIpdWrite: canIpdWrite,
+            ),
+          );
+        },
+        previousPageLabel: l10n.roomsBedsPreviousPageLabel,
+        nextPageLabel: l10n.roomsBedsNextPageLabel,
+        pageLabelBuilder: (AppPage<BedBoardItem> page) {
+          return l10n.roomsBedsPageLabel(
+            page.firstItemNumber,
+            page.lastItemNumber,
+            page.totalItemCount ?? page.items.length,
+          );
+        },
+        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+          title: l10n.roomsBedsEmptyTitle,
+          body: l10n.roomsBedsEmptyBody,
+          icon: Icons.bed_outlined,
+        ),
+        columns: <AppListTableColumn<BedBoardItem>>[
+          AppListTableColumn<BedBoardItem>(
+            label: l10n.roomsBedsBedColumnLabel,
+            sortComparator: (BedBoardItem left, BedBoardItem right) {
+              return appListTableCompareText(left.label, right.label);
+            },
+            cellBuilder: (BuildContext context, BedBoardItem item) {
+              return _TwoLineCell(
+                title: item.label,
+                subtitle: _joinDisplay(<String?>[item.facility?.name]),
+              );
+            },
+          ),
+          AppListTableColumn<BedBoardItem>(
+            label: l10n.roomsBedsLocationColumnLabel,
+            sortComparator: (BedBoardItem left, BedBoardItem right) {
+              return appListTableCompareText(
+                _locationLabel(context, left),
+                _locationLabel(context, right),
+              );
+            },
+            cellBuilder: (BuildContext context, BedBoardItem item) {
+              return Text(_locationLabel(context, item));
+            },
+          ),
+          AppListTableColumn<BedBoardItem>(
+            label: l10n.roomsBedsStatusColumnLabel,
+            sortComparator: (BedBoardItem left, BedBoardItem right) {
+              return appListTableCompareText(
+                left.status.apiValue,
+                right.status.apiValue,
+              );
+            },
+            cellBuilder: (BuildContext context, BedBoardItem item) {
+              return AppWorkspaceStatusBadge(
+                status: roomsBedsStatusBadge(context.l10n, item.status),
+              );
+            },
+          ),
+          AppListTableColumn<BedBoardItem>(
+            label: l10n.roomsBedsAssignmentColumnLabel,
+            sortComparator: (BedBoardItem left, BedBoardItem right) {
+              return appListTableCompareText(
+                _assignmentLabel(context, left),
+                _assignmentLabel(context, right),
+              );
+            },
+            cellBuilder: (BuildContext context, BedBoardItem item) {
+              return Text(_assignmentLabel(context, item));
+            },
+          ),
+          AppListTableColumn<BedBoardItem>(
+            label: l10n.roomsBedsNextActionColumnLabel,
+            sortComparator: (BedBoardItem left, BedBoardItem right) {
+              return appListTableCompareText(
+                roomsBedsNextActionLabel(context.l10n, left),
+                roomsBedsNextActionLabel(context.l10n, right),
+              );
+            },
+            cellBuilder: (BuildContext context, BedBoardItem item) {
+              return Text(roomsBedsNextActionLabel(context.l10n, item));
+            },
+          ),
+        ],
+        mobileItemBuilder: (BuildContext context, BedBoardItem item) {
+          return _BedMobileItem(item: item);
+        },
+      ),
     );
   }
 }

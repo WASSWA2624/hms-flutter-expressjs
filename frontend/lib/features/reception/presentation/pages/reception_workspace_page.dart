@@ -162,9 +162,7 @@ class _ReceptionWorkspaceContentState
     }
     final String tab = _sectionToQueryValue(section);
     final String location = AppRoutes.reception.location(
-      queryParameters: <String, String>{
-        if (tab.isNotEmpty) 'section': tab,
-      },
+      queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
     GoRouter.of(context).replace<void>(location);
   }
@@ -533,11 +531,7 @@ class _ReceptionWorkspaceContentState
             id: 'patient_id',
             label: l10n.opdPatientIdLabel,
             cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
-                Text(
-                  row.flow?.patientIdentifier ??
-                      row.flow?.patientId ??
-                      '',
-                ),
+                Text(row.flow?.patientIdentifier ?? row.flow?.patientId ?? ''),
           ),
           AppListTableColumn<_ReceptionDeskRow>(
             id: 'started_at',
@@ -613,11 +607,7 @@ class _ReceptionWorkspaceContentState
             id: 'patient_id',
             label: l10n.opdPatientIdLabel,
             cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
-                Text(
-                  row.flow?.patientIdentifier ??
-                      row.flow?.patientId ??
-                      '',
-                ),
+                Text(row.flow?.patientIdentifier ?? row.flow?.patientId ?? ''),
           ),
           AppListTableColumn<_ReceptionDeskRow>(
             id: 'stage',

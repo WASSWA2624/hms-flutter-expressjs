@@ -134,14 +134,10 @@ class AppPermissionActionList extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     // Async mutate actions stay inline so loading / retry feedback remain visible.
     final List<AppPermissionActionItem> inlineActions = actions
-        .where(
-          (AppPermissionActionItem a) => !a.isOverflow || a.isAsync,
-        )
+        .where((AppPermissionActionItem a) => !a.isOverflow || a.isAsync)
         .toList(growable: false);
     final List<AppPermissionActionItem> overflowActions = actions
-        .where(
-          (AppPermissionActionItem a) => a.isOverflow && !a.isAsync,
-        )
+        .where((AppPermissionActionItem a) => a.isOverflow && !a.isAsync)
         .toList(growable: false);
 
     final List<Widget> children = <Widget>[

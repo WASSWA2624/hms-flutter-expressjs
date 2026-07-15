@@ -327,12 +327,7 @@ final class RadiologyWorkspaceController
     final AppFailure? failure = await _refreshEquipmentRecords(search: search);
     final RadiologyWorkspaceState? latest = _currentState;
     if (latest != null) {
-      _emit(
-        latest.copyWith(
-          isRefreshing: false,
-          clearLastFailure: true,
-        ),
-      );
+      _emit(latest.copyWith(isRefreshing: false, clearLastFailure: true));
     }
     return failure;
   }

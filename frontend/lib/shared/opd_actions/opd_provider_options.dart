@@ -96,7 +96,9 @@ List<AppSelectOption<String>> opdProviderSelectOptions({
       value: value,
       label: _joinDisplay(<String?>[title, subtitle]),
       leadingIcon: Icon(
-        isAvailable ? Icons.event_available_outlined : Icons.person_search_outlined,
+        isAvailable
+            ? Icons.event_available_outlined
+            : Icons.person_search_outlined,
         color: isAvailable ? const Color(0xFF4CAF50) : null,
       ),
       labelWidget: AppListItemText(
@@ -143,8 +145,9 @@ List<AppSelectOption<String>> opdProviderSelectOptions({
     );
   }
 
-  final List<AppSelectOption<String>> result =
-      options.values.toList(growable: false);
+  final List<AppSelectOption<String>> result = options.values.toList(
+    growable: false,
+  );
   if (availableProviderIds.isEmpty) {
     return result;
   }
@@ -205,8 +208,9 @@ Set<String> _scheduledProviderIds(List<OpdProviderSchedule> schedules) {
   final Set<String> ids = <String>{};
   for (final OpdProviderSchedule schedule in schedules) {
     final String userId = (schedule.providerUserId ?? '').trim().toUpperCase();
-    final String publicId =
-        (schedule.providerPublicId ?? '').trim().toUpperCase();
+    final String publicId = (schedule.providerPublicId ?? '')
+        .trim()
+        .toUpperCase();
     if (userId.isNotEmpty) ids.add(userId);
     if (publicId.isNotEmpty) ids.add(publicId);
   }
@@ -216,12 +220,12 @@ Set<String> _scheduledProviderIds(List<OpdProviderSchedule> schedules) {
 Map<String, OpdProviderSchedule> _scheduleByProviderId(
   List<OpdProviderSchedule> schedules,
 ) {
-  final Map<String, OpdProviderSchedule> map =
-      <String, OpdProviderSchedule>{};
+  final Map<String, OpdProviderSchedule> map = <String, OpdProviderSchedule>{};
   for (final OpdProviderSchedule schedule in schedules) {
     final String userId = (schedule.providerUserId ?? '').trim().toUpperCase();
-    final String publicId =
-        (schedule.providerPublicId ?? '').trim().toUpperCase();
+    final String publicId = (schedule.providerPublicId ?? '')
+        .trim()
+        .toUpperCase();
     if (userId.isNotEmpty) map.putIfAbsent(userId, () => schedule);
     if (publicId.isNotEmpty) map.putIfAbsent(publicId, () => schedule);
   }

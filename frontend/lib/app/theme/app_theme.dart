@@ -269,17 +269,17 @@ abstract final class AppTheme {
           color: colorScheme.onSurface,
           fontWeight: FontWeight.w500,
         ),
-        dataRowColor: WidgetStateProperty.resolveWith<Color?>(
-          (Set<WidgetState> states) {
-            if (states.contains(WidgetState.hovered)) {
-              return colorScheme.primary.withValues(alpha: 0.05);
-            }
-            if (states.contains(WidgetState.selected)) {
-              return colorScheme.primary.withValues(alpha: 0.08);
-            }
-            return null;
-          },
-        ),
+        dataRowColor: WidgetStateProperty.resolveWith<Color?>((
+          Set<WidgetState> states,
+        ) {
+          if (states.contains(WidgetState.hovered)) {
+            return colorScheme.primary.withValues(alpha: 0.05);
+          }
+          if (states.contains(WidgetState.selected)) {
+            return colorScheme.primary.withValues(alpha: 0.08);
+          }
+          return null;
+        }),
       ),
       snackBarTheme: SnackBarThemeData(
         shape: controlShape,

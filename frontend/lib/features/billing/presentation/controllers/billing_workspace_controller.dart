@@ -269,7 +269,9 @@ final class BillingWorkspaceController
   }
 
   Future<AppFailure?> closeDay(BillingCloseDraft draft) {
-    return _submitOnlineOnlyMaintenanceAction(() => _repository.closeDay(draft));
+    return _submitOnlineOnlyMaintenanceAction(
+      () => _repository.closeDay(draft),
+    );
   }
 
   Future<Result<BillingPatientLedger>> fetchPatientLedger(

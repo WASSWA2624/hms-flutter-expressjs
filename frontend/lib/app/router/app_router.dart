@@ -57,6 +57,7 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.dart';
 import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
 import 'package:hosspi_hms/features/reception/presentation/pages/reception_workspace_page.dart';
+import 'package:hosspi_hms/features/operations/domain/entities/operations_entities.dart';
 import 'package:hosspi_hms/features/operations/presentation/pages/operations_workspace_page.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry_page.dart';
@@ -219,11 +220,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             name: AppRoutes.nursing.name,
             builder: (_, GoRouterState state) {
               final Map<String, String> params = state.uri.queryParameters;
-              final String id = (params['id'] ??
-                      params['admissionId'] ??
-                      params['encounterId'] ??
-                      '')
-                  .trim();
+              final String id =
+                  (params['id'] ??
+                          params['admissionId'] ??
+                          params['encounterId'] ??
+                          '')
+                      .trim();
               return NursingWorkspacePage(
                 initialAdmissionId: id.isEmpty ? null : id,
                 initialPanel: NursingDetailPanel.fromValue(params['panel']),
@@ -278,7 +280,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.operations.path,
             name: AppRoutes.operations.name,
-            builder: (_, _) => const OperationsWorkspacePage(),
+            builder: (_, GoRouterState state) {
+              return OperationsWorkspacePage(
+                initialQuery: OperationsWorkspaceQuery.fromUri(state.uri),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.housekeeping.path,

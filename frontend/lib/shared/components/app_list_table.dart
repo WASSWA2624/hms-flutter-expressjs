@@ -2126,9 +2126,11 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
       rows: <DataRow>[
         for (var index = 0; index < widget.items.length; index += 1)
           _dataRow(context, index),
-        for (var index = widget.items.length;
-            index < _minTableRowCount;
-            index += 1)
+        for (
+          var index = widget.items.length;
+          index < _minTableRowCount;
+          index += 1
+        )
           _emptyRow(context, index),
       ],
     );
@@ -2256,9 +2258,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
 
     return DataRow(
       key: ValueKey<int>(index),
-      color: stripe == null
-          ? null
-          : WidgetStatePropertyAll<Color>(stripe),
+      color: stripe == null ? null : WidgetStatePropertyAll<Color>(stripe),
       cells: <DataCell>[
         DataCell(
           Align(
@@ -2287,8 +2287,9 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
       return _cachedDefaultRowColor!;
     }
     _cachedRowColorScheme = colorScheme;
-    _cachedDefaultRowColor =
-        WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
+    _cachedDefaultRowColor = WidgetStateProperty.resolveWith<Color?>((
+      Set<WidgetState> states,
+    ) {
       if (states.contains(WidgetState.hovered)) {
         return colorScheme.primary.withValues(alpha: 0.05);
       }

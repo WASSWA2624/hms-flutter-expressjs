@@ -55,7 +55,9 @@ void main() {
 
   group('Reception authorization split', () {
     test('receptionist can open reception shell route', () {
-      final AppAccessPolicy policy = _policyFor(roles: <String>['RECEPTIONIST']);
+      final AppAccessPolicy policy = _policyFor(
+        roles: <String>['RECEPTIONIST'],
+      );
 
       expect(canAccessShellRoute(AppRoutes.reception, policy), isTrue);
       expect(canAccessShellRoute(AppRoutes.billing, policy), isFalse);
@@ -83,7 +85,9 @@ void main() {
     });
 
     test('billing guidance remains available with patient:read', () {
-      final AppAccessPolicy policy = _policyFor(roles: <String>['RECEPTIONIST']);
+      final AppAccessPolicy policy = _policyFor(
+        roles: <String>['RECEPTIONIST'],
+      );
 
       expect(policy.grants(AppPermissions.patientRead), isTrue);
       expect(receptionBillingGuidanceRequirement.isAllowed(policy), isTrue);
@@ -91,7 +95,9 @@ void main() {
     });
 
     test('receptionist can capture insurance without billing:write', () {
-      final AppAccessPolicy policy = _policyFor(roles: <String>['RECEPTIONIST']);
+      final AppAccessPolicy policy = _policyFor(
+        roles: <String>['RECEPTIONIST'],
+      );
 
       expect(policy.grants(AppPermissions.patientWrite), isTrue);
       expect(receptionInsuranceCaptureRequirement.isAllowed(policy), isTrue);

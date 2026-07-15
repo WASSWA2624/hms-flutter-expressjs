@@ -84,16 +84,18 @@ class _PhysiotherapyWorkspacePageState
   }
 
   Future<void> _applyRouteQuery(PhysiotherapyWorkspaceQuery query) async {
-    final controller =
-        ref.read(physiotherapyWorkspaceControllerProvider.notifier);
+    final controller = ref.read(
+      physiotherapyWorkspaceControllerProvider.notifier,
+    );
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;
       await controller.applySearch(query.search);
       return;
     }
     if (query.encounterId.isNotEmpty || query.sessionId.isNotEmpty) {
-      final String term =
-          query.encounterId.isNotEmpty ? query.encounterId : query.sessionId;
+      final String term = query.encounterId.isNotEmpty
+          ? query.encounterId
+          : query.sessionId;
       _searchController.text = term;
       await controller.applySearch(term);
     }

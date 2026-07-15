@@ -90,10 +90,14 @@ Future<bool> openReceptionScheduleAppointment({
       );
       return false;
     }
-    registry = ref.read(patientRegistryControllerProvider).asData?.value.when(
-      success: (PatientRegistryState state) => state,
-      failure: (_) => null,
-    );
+    registry = ref
+        .read(patientRegistryControllerProvider)
+        .asData
+        ?.value
+        .when(
+          success: (PatientRegistryState state) => state,
+          failure: (_) => null,
+        );
   }
   if (registry == null || !context.mounted) {
     return false;

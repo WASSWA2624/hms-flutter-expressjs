@@ -65,10 +65,7 @@ Widget? appFieldLabelWidget(
       children: <InlineSpan>[
         TextSpan(text: parts.label),
         if (markRequired)
-          TextSpan(
-            text: ' *',
-            style: _requiredLabelStyle(theme.colorScheme),
-          )
+          TextSpan(text: ' *', style: _requiredLabelStyle(theme.colorScheme))
         else if (markOptional)
           TextSpan(
             text: ' (optional)',

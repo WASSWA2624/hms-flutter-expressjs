@@ -374,9 +374,7 @@ class _ClearanceChecklist extends StatelessWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final List<DischargeClearanceItem> items = detail.clearanceItems
-        .where(
-          (DischargeClearanceItem item) => !_isNonBlocking(item.code),
-        )
+        .where((DischargeClearanceItem item) => !_isNonBlocking(item.code))
         .toList(growable: false);
     final int firstPendingIndex = items.indexWhere(
       (DischargeClearanceItem item) =>

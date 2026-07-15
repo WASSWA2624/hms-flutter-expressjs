@@ -18,10 +18,7 @@ const AccessRequirement _tenantConfigRequirement = AccessRequirement(
     AppPermissions.tenantAdmin,
     AppPermissions.systemAdmin,
   ],
-  anyRoles: <AppRole>[
-    AppRole.superAdmin,
-    AppRole.tenantAdmin,
-  ],
+  anyRoles: <AppRole>[AppRole.superAdmin, AppRole.tenantAdmin],
   requiresTenantContext: true,
 );
 
@@ -46,10 +43,12 @@ class SettingsConfigurationSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool canConfigureTenant =
-        _tenantConfigRequirement.isAllowed(accessPolicy);
-    final bool canConfigureFacility =
-        _facilityConfigRequirement.isAllowed(accessPolicy);
+    final bool canConfigureTenant = _tenantConfigRequirement.isAllowed(
+      accessPolicy,
+    );
+    final bool canConfigureFacility = _facilityConfigRequirement.isAllowed(
+      accessPolicy,
+    );
 
     if (!canConfigureTenant && !canConfigureFacility) {
       return const SizedBox.shrink();
@@ -75,27 +74,24 @@ class SettingsConfigurationSection extends ConsumerWidget {
           action: AppButton.secondary(
             label: l10n.commonRefreshActionLabel,
             leadingIcon: Icons.refresh,
-            onPressed: () => ref.invalidate(
-              tenantFacilitySetupControllerProvider,
-            ),
+            onPressed: () =>
+                ref.invalidate(tenantFacilitySetupControllerProvider),
           ),
         ),
         data: (Result<FacilitySetupSnapshot> result) => result.when(
-          success: (FacilitySetupSnapshot snapshot) =>
-              _ConfigurationContent(
-                snapshot: snapshot,
-                canConfigureTenant: canConfigureTenant,
-                canConfigureFacility: canConfigureFacility,
-              ),
+          success: (FacilitySetupSnapshot snapshot) => _ConfigurationContent(
+            snapshot: snapshot,
+            canConfigureTenant: canConfigureTenant,
+            canConfigureFacility: canConfigureFacility,
+          ),
           failure: (_) => AppStateView(
             title: l10n.settingsConfigurationSaveError,
             body: l10n.settingsConfigurationSectionBody,
             action: AppButton.secondary(
               label: l10n.commonRefreshActionLabel,
               leadingIcon: Icons.refresh,
-              onPressed: () => ref.invalidate(
-                tenantFacilitySetupControllerProvider,
-              ),
+              onPressed: () =>
+                  ref.invalidate(tenantFacilitySetupControllerProvider),
             ),
           ),
         ),
@@ -157,10 +153,7 @@ class _ConfigurationContent extends ConsumerWidget {
           if (showFacility) SizedBox(height: theme.spacing.md),
         ],
         if (showFacility)
-          _FacilityConfigPanel(
-            tenant: tenant,
-            facility: facility,
-          ),
+          _FacilityConfigPanel(tenant: tenant, facility: facility),
       ],
     );
   }
@@ -238,11 +231,9 @@ class _TenantConfigPanelState extends ConsumerState<_TenantConfigPanel> {
                   setState(() => _currency = value);
                 }
               },
-              amountLabelText:
-                  l10n.settingsConfigurationConsultationFeeLabel,
+              amountLabelText: l10n.settingsConfigurationConsultationFeeLabel,
               currencyLabelText: l10n.settingsConfigurationCurrencyLabel,
-              helperText:
-                  l10n.settingsConfigurationConsultationFeeHelper,
+              helperText: l10n.settingsConfigurationConsultationFeeHelper,
               enabled: !_saving,
             );
 
@@ -340,9 +331,7 @@ class _TenantConfigPanelState extends ConsumerState<_TenantConfigPanel> {
         content: Text(l10n.settingsConfigurationResetConfirmBody),
         actions: <Widget>[
           AppButton.tertiary(
-            label: MaterialLocalizations.of(
-              dialogContext,
-            ).cancelButtonLabel,
+            label: MaterialLocalizations.of(dialogContext).cancelButtonLabel,
             onPressed: () => Navigator.of(dialogContext).pop(false),
           ),
           AppButton.primary(
@@ -392,10 +381,7 @@ class _TenantConfigPanelState extends ConsumerState<_TenantConfigPanel> {
 }
 
 class _FacilityConfigPanel extends ConsumerStatefulWidget {
-  const _FacilityConfigPanel({
-    required this.tenant,
-    required this.facility,
-  });
+  const _FacilityConfigPanel({required this.tenant, required this.facility});
 
   final TenantProfile tenant;
   final FacilityProfile facility;
@@ -476,11 +462,9 @@ class _FacilityConfigPanelState extends ConsumerState<_FacilityConfigPanel> {
                   setState(() => _currency = value);
                 }
               },
-              amountLabelText:
-                  l10n.settingsConfigurationConsultationFeeLabel,
+              amountLabelText: l10n.settingsConfigurationConsultationFeeLabel,
               currencyLabelText: l10n.settingsConfigurationCurrencyLabel,
-              helperText:
-                  l10n.settingsConfigurationConsultationFeeHelper,
+              helperText: l10n.settingsConfigurationConsultationFeeHelper,
               enabled: !_saving,
             );
 
@@ -579,9 +563,7 @@ class _FacilityConfigPanelState extends ConsumerState<_FacilityConfigPanel> {
         content: Text(l10n.settingsConfigurationResetConfirmBody),
         actions: <Widget>[
           AppButton.tertiary(
-            label: MaterialLocalizations.of(
-              dialogContext,
-            ).cancelButtonLabel,
+            label: MaterialLocalizations.of(dialogContext).cancelButtonLabel,
             onPressed: () => Navigator.of(dialogContext).pop(false),
           ),
           AppButton.primary(

@@ -47,9 +47,10 @@ class AppReportSectionTile extends StatelessWidget {
       button: interactive,
       enabled: interactive,
       checked: isSelected,
-      label: section.semanticLabel ??
+      label:
+          section.semanticLabel ??
           '${section.title}${section.count > 0 ? ', ${section.count}' : ''}'
-          '${section.enabled ? '' : ', ${section.disabledReason ?? 'unavailable'}'}',
+              '${section.enabled ? '' : ', ${section.disabledReason ?? 'unavailable'}'}',
       child: InkWell(
         onTap: interactive ? () => onChanged!(!selected) : null,
         child: DecoratedBox(

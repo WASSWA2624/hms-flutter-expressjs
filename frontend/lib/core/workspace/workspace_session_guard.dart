@@ -65,8 +65,11 @@ Future<Result<T>> runWorkspaceInitialLoad<T>(
   Future<Result<T>> Function() load, {
   int maxAttempts = 3,
 }) async {
-  return _runWorkspaceInitialLoadInner(ref, load, maxAttempts: maxAttempts)
-      .timeout(
+  return _runWorkspaceInitialLoadInner(
+    ref,
+    load,
+    maxAttempts: maxAttempts,
+  ).timeout(
     const Duration(seconds: 45),
     onTimeout: () => Result<T>.failure(
       _finalizeWorkspaceBootstrapFailure(ref, const AppFailure.timeout()),

@@ -84,10 +84,7 @@ final class AppPermissionActionItem {
   bool get requiresConfirmation {
     final String? title = confirmTitle?.trim();
     final String? body = confirmBody?.trim();
-    return title != null &&
-        title.isNotEmpty &&
-        body != null &&
-        body.isNotEmpty;
+    return title != null && title.isNotEmpty && body != null && body.isNotEmpty;
   }
 
   bool get isOverflow => placement == AppActionPlacement.overflow;

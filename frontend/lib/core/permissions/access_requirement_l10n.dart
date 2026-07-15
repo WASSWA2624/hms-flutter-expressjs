@@ -53,8 +53,9 @@ String accessRequirementDenialMessage(
 
 String accessRequirementModuleLabel(AppLocalizations l10n, String moduleCode) {
   return switch (moduleCode.trim().toLowerCase()) {
-    'scheduling-queue' || 'scheduling' || 'emergency' =>
-      l10n.accessDeniedModuleSchedulingLabel,
+    'scheduling-queue' ||
+    'scheduling' ||
+    'emergency' => l10n.accessDeniedModuleSchedulingLabel,
     'inpatient-bed-management' => l10n.accessDeniedModuleInpatientLabel,
     'lab' || 'lab-workflows' => l10n.accessDeniedModuleLabLabel,
     'radiology' ||

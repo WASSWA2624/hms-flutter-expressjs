@@ -375,168 +375,167 @@ class _IpdBoardPanel extends ConsumerWidget {
     );
 
     return AppListTable<IpdAdmissionSummary>(
-        page: state.admissions,
-        isLoading: state.isRefreshing,
-        columnVisibilityController: columnVisibilityController,
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        search: AppListTableSearch<IpdAdmissionSummary>(
-          controller: searchController,
-          semanticLabel: l10n.ipdSearchLabel,
-          hintText: l10n.ipdSearchHint,
-          matcher: (_, _) => true,
-          onSubmitted: controller.applySearch,
-          onClear: () => controller.applySearch(''),
-          showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.ipdFiltersLabel,
-          advancedFilterTitle: l10n.ipdFiltersLabel,
-          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-          advancedFilterResetLabel: l10n.opdClearFiltersAction,
-          enableDateFilter: false,
-          allFieldsLabel: l10n.ipdAllWardsOption,
-          filterGroups: <AppSearchBarFilterGroup>[
-            AppSearchBarFilterGroup(
-              key: _ipdScopeFilterKey,
-              label: l10n.ipdScopeFilterLabel,
-              allLabel: _ipdScopeLabel(l10n, IpdQueueScope.admissionQueue),
-              choices: _ipdScopeFilterChoices(l10n),
-            ),
-            AppSearchBarFilterGroup(
-              key: _ipdWardFilterKey,
-              label: l10n.ipdWardFilterLabel,
-              allLabel: l10n.ipdAllWardsOption,
-              choices: _ipdWardFilterChoices(state.referenceData.wards),
-            ),
-          ],
-          filterValue: _ipdFilterValue(state.query),
-          hasActiveFilters:
-              state.query.scope != IpdQueueScope.admissionQueue ||
-              state.query.wardId != null,
-          onFilterChanged: (AppSearchBarFilterValue value) async {
-            final IpdQueueScope nextScope = _ipdScopeFromFilter(
-              value.option(_ipdScopeFilterKey),
-            );
-            final String? nextWardId = value.option(_ipdWardFilterKey);
-            AppFailure? failure;
-            if (nextScope != state.query.scope) {
-              failure = await controller.applyScope(nextScope);
-            }
-            if (nextWardId != state.query.wardId) {
-              failure ??= await controller.applyWard(nextWardId);
-            }
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-        ),
-        previousPageLabel: l10n.opdPreviousPageLabel,
-        nextPageLabel: l10n.opdNextPageLabel,
-        pageLabelBuilder: (AppPage<IpdAdmissionSummary> page) {
-          return _pageLabel(context, page);
-        },
-        onPageChanged: controller.changePage,
-        onRowSelected: (IpdAdmissionSummary admission) {
-          unawaited(_openIpdDetailDialog(context, ref, state, admission));
-        },
-        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-          title: l10n.ipdNoAdmissionsTitle,
-          body: l10n.ipdNoAdmissionsBody,
-          icon: Icons.bed_outlined,
-        ),
-        columns: <AppListTableColumn<IpdAdmissionSummary>>[
-          AppListTableColumn<IpdAdmissionSummary>(
-            label: l10n.opdPatientColumnLabel,
-            sortComparator:
-                (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-                    appListTableCompareText(
-                      left.displayTitle,
-                      right.displayTitle,
-                    ),
-            cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-              return _IpdPatientCell(admission: item);
-            },
+      page: state.admissions,
+      isLoading: state.isRefreshing,
+      columnVisibilityController: columnVisibilityController,
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      search: AppListTableSearch<IpdAdmissionSummary>(
+        controller: searchController,
+        semanticLabel: l10n.ipdSearchLabel,
+        hintText: l10n.ipdSearchHint,
+        matcher: (_, _) => true,
+        onSubmitted: controller.applySearch,
+        onClear: () => controller.applySearch(''),
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.ipdFiltersLabel,
+        advancedFilterTitle: l10n.ipdFiltersLabel,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        enableDateFilter: false,
+        allFieldsLabel: l10n.ipdAllWardsOption,
+        filterGroups: <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: _ipdScopeFilterKey,
+            label: l10n.ipdScopeFilterLabel,
+            allLabel: _ipdScopeLabel(l10n, IpdQueueScope.admissionQueue),
+            choices: _ipdScopeFilterChoices(l10n),
           ),
-          AppListTableColumn<IpdAdmissionSummary>(
-            label: l10n.opdStatusColumnLabel,
-            sortComparator:
-                (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-                    appListTableCompareText(left.stage, right.stage),
-            cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-              return AppWorkspaceStatusBadge(
-                status: _stageStatus(context, item.stage),
-              );
-            },
-          ),
-          AppListTableColumn<IpdAdmissionSummary>(
-            label: l10n.ipdLocationColumnLabel,
-            sortComparator:
-                (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-                    appListTableCompareText(left.location, right.location),
-            cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-              return Text(item.location ?? context.l10n.profileUnknownValue);
-            },
-          ),
-          AppListTableColumn<IpdAdmissionSummary>(
-            label: l10n.ipdPendingActionColumnLabel,
-            sortComparator:
-                (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-                    appListTableCompareText(left.nextStep, right.nextStep),
-            cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-              final String encounterId =
-                  item.encounterId ?? item.id;
-              if (encounterId.trim().isEmpty) {
-                return Text(_nextStepLabel(context, item.nextStep));
-              }
-              return WorkflowActionButton(
-                encounterId: encounterId,
-                patientId: item.patientId,
-                admissionId: item.id,
-                nextStep: item.nextStep,
-                stage: item.stage,
-                sourceModule: 'ipd',
-                compact: true,
-              );
-            },
-          ),
-          AppListTableColumn<IpdAdmissionSummary>(
-            label: l10n.settingsWorkspaceModuleRole,
-            sortComparator:
-                (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-                    appListTableCompareText(
-                      _ipdOwnerRoleLabel(context, left.stage),
-                      _ipdOwnerRoleLabel(context, right.stage),
-                    ),
-            cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-              return Text(_ipdOwnerRoleLabel(context, item.stage));
-            },
-          ),
-          AppListTableColumn<IpdAdmissionSummary>(
-            label: l10n.ipdAdmittedAtColumnLabel,
-            sortComparator:
-                (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-                    appListTableCompareDateTime(
-                      left.admittedAt,
-                      right.admittedAt,
-                    ),
-            cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-              return Text(_dateTimeLabel(context, item.admittedAt));
-            },
-          ),
-          AppListTableColumn<IpdAdmissionSummary>(
-            label: l10n.ipdLengthOfStayColumnLabel,
-            sortComparator:
-                (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-                    appListTableCompareDateTime(
-                      left.admittedAt,
-                      right.admittedAt,
-                    ),
-            cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-              return Text(_lengthOfStayLabel(context, item));
-            },
+          AppSearchBarFilterGroup(
+            key: _ipdWardFilterKey,
+            label: l10n.ipdWardFilterLabel,
+            allLabel: l10n.ipdAllWardsOption,
+            choices: _ipdWardFilterChoices(state.referenceData.wards),
           ),
         ],
-        mobileItemBuilder: (BuildContext context, IpdAdmissionSummary item) {
-          return _IpdMobileAdmissionRow(admission: item);
+        filterValue: _ipdFilterValue(state.query),
+        hasActiveFilters:
+            state.query.scope != IpdQueueScope.admissionQueue ||
+            state.query.wardId != null,
+        onFilterChanged: (AppSearchBarFilterValue value) async {
+          final IpdQueueScope nextScope = _ipdScopeFromFilter(
+            value.option(_ipdScopeFilterKey),
+          );
+          final String? nextWardId = value.option(_ipdWardFilterKey);
+          AppFailure? failure;
+          if (nextScope != state.query.scope) {
+            failure = await controller.applyScope(nextScope);
+          }
+          if (nextWardId != state.query.wardId) {
+            failure ??= await controller.applyWard(nextWardId);
+          }
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
         },
+      ),
+      previousPageLabel: l10n.opdPreviousPageLabel,
+      nextPageLabel: l10n.opdNextPageLabel,
+      pageLabelBuilder: (AppPage<IpdAdmissionSummary> page) {
+        return _pageLabel(context, page);
+      },
+      onPageChanged: controller.changePage,
+      onRowSelected: (IpdAdmissionSummary admission) {
+        unawaited(_openIpdDetailDialog(context, ref, state, admission));
+      },
+      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+        title: l10n.ipdNoAdmissionsTitle,
+        body: l10n.ipdNoAdmissionsBody,
+        icon: Icons.bed_outlined,
+      ),
+      columns: <AppListTableColumn<IpdAdmissionSummary>>[
+        AppListTableColumn<IpdAdmissionSummary>(
+          label: l10n.opdPatientColumnLabel,
+          sortComparator:
+              (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                  appListTableCompareText(
+                    left.displayTitle,
+                    right.displayTitle,
+                  ),
+          cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+            return _IpdPatientCell(admission: item);
+          },
+        ),
+        AppListTableColumn<IpdAdmissionSummary>(
+          label: l10n.opdStatusColumnLabel,
+          sortComparator:
+              (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                  appListTableCompareText(left.stage, right.stage),
+          cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+            return AppWorkspaceStatusBadge(
+              status: _stageStatus(context, item.stage),
+            );
+          },
+        ),
+        AppListTableColumn<IpdAdmissionSummary>(
+          label: l10n.ipdLocationColumnLabel,
+          sortComparator:
+              (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                  appListTableCompareText(left.location, right.location),
+          cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+            return Text(item.location ?? context.l10n.profileUnknownValue);
+          },
+        ),
+        AppListTableColumn<IpdAdmissionSummary>(
+          label: l10n.ipdPendingActionColumnLabel,
+          sortComparator:
+              (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                  appListTableCompareText(left.nextStep, right.nextStep),
+          cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+            final String encounterId = item.encounterId ?? item.id;
+            if (encounterId.trim().isEmpty) {
+              return Text(_nextStepLabel(context, item.nextStep));
+            }
+            return WorkflowActionButton(
+              encounterId: encounterId,
+              patientId: item.patientId,
+              admissionId: item.id,
+              nextStep: item.nextStep,
+              stage: item.stage,
+              sourceModule: 'ipd',
+              compact: true,
+            );
+          },
+        ),
+        AppListTableColumn<IpdAdmissionSummary>(
+          label: l10n.settingsWorkspaceModuleRole,
+          sortComparator:
+              (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                  appListTableCompareText(
+                    _ipdOwnerRoleLabel(context, left.stage),
+                    _ipdOwnerRoleLabel(context, right.stage),
+                  ),
+          cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+            return Text(_ipdOwnerRoleLabel(context, item.stage));
+          },
+        ),
+        AppListTableColumn<IpdAdmissionSummary>(
+          label: l10n.ipdAdmittedAtColumnLabel,
+          sortComparator:
+              (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                  appListTableCompareDateTime(
+                    left.admittedAt,
+                    right.admittedAt,
+                  ),
+          cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+            return Text(_dateTimeLabel(context, item.admittedAt));
+          },
+        ),
+        AppListTableColumn<IpdAdmissionSummary>(
+          label: l10n.ipdLengthOfStayColumnLabel,
+          sortComparator:
+              (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+                  appListTableCompareDateTime(
+                    left.admittedAt,
+                    right.admittedAt,
+                  ),
+          cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+            return Text(_lengthOfStayLabel(context, item));
+          },
+        ),
+      ],
+      mobileItemBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return _IpdMobileAdmissionRow(admission: item);
+      },
     );
   }
 }

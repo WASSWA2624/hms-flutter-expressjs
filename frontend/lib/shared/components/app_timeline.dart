@@ -188,7 +188,8 @@ class _TimelineNode extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
     final Color toneColor = _toneColor(theme, item.tone);
     final Locale locale = Localizations.localeOf(context);
-    final String timestamp = item.subtitle ??
+    final String timestamp =
+        item.subtitle ??
         (item.occurredAt == null
             ? missingTimestampLabel
             : AppFormatters.dateTime(item.occurredAt!, locale));
@@ -238,7 +239,9 @@ class _TimelineNode extends StatelessWidget {
             Expanded(
               child: Padding(
                 padding: EdgeInsets.only(
-                  bottom: isLast ? 0 : (dense ? theme.spacing.sm : theme.spacing.md),
+                  bottom: isLast
+                      ? 0
+                      : (dense ? theme.spacing.sm : theme.spacing.md),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

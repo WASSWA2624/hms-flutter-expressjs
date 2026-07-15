@@ -96,13 +96,15 @@ class ReceptionBillingGuidancePanel extends StatelessWidget {
                 style: theme.textTheme.labelLarge,
               ),
               SizedBox(height: theme.spacing.xs),
-              ...invoices.take(3).map(
-                (PatientSummaryRecord invoice) => _GuidanceRecordTile(
-                  record: invoice,
-                  locale: locale,
-                  leadingIcon: Icons.receipt_outlined,
-                ),
-              ),
+              ...invoices
+                  .take(3)
+                  .map(
+                    (PatientSummaryRecord invoice) => _GuidanceRecordTile(
+                      record: invoice,
+                      locale: locale,
+                      leadingIcon: Icons.receipt_outlined,
+                    ),
+                  ),
             ],
             if (payments.isNotEmpty) ...<Widget>[
               SizedBox(height: theme.spacing.md),
@@ -111,13 +113,15 @@ class ReceptionBillingGuidancePanel extends StatelessWidget {
                 style: theme.textTheme.labelLarge,
               ),
               SizedBox(height: theme.spacing.xs),
-              ...payments.take(3).map(
-                (PatientSummaryRecord payment) => _GuidanceRecordTile(
-                  record: payment,
-                  locale: locale,
-                  leadingIcon: Icons.paid_outlined,
-                ),
-              ),
+              ...payments
+                  .take(3)
+                  .map(
+                    (PatientSummaryRecord payment) => _GuidanceRecordTile(
+                      record: payment,
+                      locale: locale,
+                      leadingIcon: Icons.paid_outlined,
+                    ),
+                  ),
             ],
             SizedBox(height: theme.spacing.md),
             AppAccessActionGate(

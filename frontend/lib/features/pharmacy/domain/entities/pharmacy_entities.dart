@@ -15,6 +15,15 @@ enum PharmacyOrderFilter {
   urgent,
 }
 
+/// Desk worklist sections for the pharmacy workspace tab strip.
+enum PharmacyDeskSection {
+  queue,
+  inProgress,
+  pendingPayment,
+  completed,
+  allOrders,
+}
+
 extension PharmacyOrderFilterX on PharmacyOrderFilter {
   String? get backendStatus {
     return switch (this) {
@@ -1549,6 +1558,7 @@ final class PharmacyReturnLineInput {
 @immutable
 final class PharmacyWorkspaceQuery {
   const PharmacyWorkspaceQuery({
+    this.section = '',
     this.encounterId = '',
     this.orderId = '',
     this.search = '',
@@ -1563,21 +1573,27 @@ final class PharmacyWorkspaceQuery {
       }
       return '';
     }
+
     return PharmacyWorkspaceQuery(
+      section: pick(<String>['section']),
       encounterId: pick(<String>['encounterId', 'encounter_id', 'encounter']),
       orderId: pick(<String>['orderId', 'order_id', 'order']),
       search: pick(<String>['search', 'q']),
     );
   }
 
+  final String section;
   final String encounterId;
   final String orderId;
   final String search;
 
   bool get hasRouteTargeting =>
-      encounterId.isNotEmpty || orderId.isNotEmpty || search.isNotEmpty;
+      section.isNotEmpty ||
+      encounterId.isNotEmpty ||
+      orderId.isNotEmpty ||
+      search.isNotEmpty;
 
-  String get signature => '$encounterId|$orderId|$search';
+  String get signature => '$section|$encounterId|$orderId|$search';
 }
 
 @immutable

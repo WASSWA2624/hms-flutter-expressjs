@@ -106,10 +106,7 @@ class WorkflowActionButton extends ConsumerWidget {
 }
 
 class _StandardActionButton extends StatelessWidget {
-  const _StandardActionButton({
-    required this.action,
-    required this.onPressed,
-  });
+  const _StandardActionButton({required this.action, required this.onPressed});
 
   final WorkflowAction action;
   final VoidCallback onPressed;
@@ -118,10 +115,9 @@ class _StandardActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final bool enabled = action.isAvailable;
-    final Color primaryColor =
-        enabled
-            ? theme.colorScheme.primary
-            : theme.colorScheme.onSurface.withValues(alpha: 0.38);
+    final Color primaryColor = enabled
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurface.withValues(alpha: 0.38);
 
     return Semantics(
       button: true,
@@ -134,8 +130,9 @@ class _StandardActionButton extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           onTap: enabled ? onPressed : null,
           child: MouseRegion(
-            cursor:
-                enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+            cursor: enabled
+                ? SystemMouseCursors.click
+                : SystemMouseCursors.basic,
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: theme.spacing.xs,
@@ -154,8 +151,7 @@ class _StandardActionButton extends StatelessWidget {
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: primaryColor,
                         fontWeight: FontWeight.w600,
-                        decoration:
-                            enabled ? TextDecoration.underline : null,
+                        decoration: enabled ? TextDecoration.underline : null,
                         decorationColor: primaryColor.withValues(alpha: 0.4),
                       ),
                     ),
@@ -184,10 +180,7 @@ class _StandardActionButton extends StatelessWidget {
 }
 
 class _CompactActionButton extends StatelessWidget {
-  const _CompactActionButton({
-    required this.action,
-    required this.onPressed,
-  });
+  const _CompactActionButton({required this.action, required this.onPressed});
 
   final WorkflowAction action;
   final VoidCallback onPressed;
@@ -196,10 +189,9 @@ class _CompactActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final bool enabled = action.isAvailable;
-    final Color primaryColor =
-        enabled
-            ? theme.colorScheme.primary
-            : theme.colorScheme.onSurface.withValues(alpha: 0.38);
+    final Color primaryColor = enabled
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurface.withValues(alpha: 0.38);
 
     return Semantics(
       button: true,
@@ -211,8 +203,9 @@ class _CompactActionButton extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           onTap: enabled ? onPressed : null,
           child: MouseRegion(
-            cursor:
-                enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+            cursor: enabled
+                ? SystemMouseCursors.click
+                : SystemMouseCursors.basic,
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: theme.spacing.xs,
@@ -221,11 +214,7 @@ class _CompactActionButton extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  Icon(
-                    action.icon,
-                    size: 14,
-                    color: primaryColor,
-                  ),
+                  Icon(action.icon, size: 14, color: primaryColor),
                   SizedBox(width: theme.spacing.xs),
                   Flexible(
                     child: Text(

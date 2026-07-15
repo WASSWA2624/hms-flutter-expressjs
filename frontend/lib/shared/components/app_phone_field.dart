@@ -818,8 +818,10 @@ class _CountryFlagEmoji extends StatelessWidget {
       return Icon(Icons.public_outlined, size: size);
     }
 
-    final TextStyle style =
-        _styleCache[size] ??= TextStyle(fontSize: size, height: 1);
+    final TextStyle style = _styleCache[size] ??= TextStyle(
+      fontSize: size,
+      height: 1,
+    );
     return Text(emoji, style: style);
   }
 }

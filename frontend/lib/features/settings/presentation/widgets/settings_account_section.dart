@@ -44,8 +44,7 @@ class _SettingsAccountSectionState
   @override
   void initState() {
     super.initState();
-    _activePanel =
-        widget.initialPanel ?? SettingsAccountSection.profilePanel;
+    _activePanel = widget.initialPanel ?? SettingsAccountSection.profilePanel;
   }
 
   @override
@@ -212,8 +211,7 @@ class _ProfilePanel extends ConsumerWidget {
         ),
       ),
       data: (Result<UserProfileState> result) => result.when(
-        success: (UserProfileState state) =>
-            _ProfilePanelContent(state: state),
+        success: (UserProfileState state) => _ProfilePanelContent(state: state),
         failure: (AppFailure failure) => AppFailureStateView(
           failure: failure,
           title: l10n.profileUnavailableTitle,
@@ -422,7 +420,9 @@ class _ProfileSummary extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.lg),
@@ -564,9 +564,7 @@ class _ProfileRolesSection extends StatelessWidget {
               runSpacing: theme.spacing.sm,
               children: <Widget>[
                 for (final String role in roles)
-                  _ProfileBadge(
-                    label: _formatProfileToken(role) ?? role,
-                  ),
+                  _ProfileBadge(label: _formatProfileToken(role) ?? role),
               ],
             ),
     );

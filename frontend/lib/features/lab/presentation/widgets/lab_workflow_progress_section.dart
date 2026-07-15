@@ -141,11 +141,7 @@ class LabWorkflowProgressSection extends ConsumerWidget {
             label: l10n.labWorkflowStepResultsEntered,
             help: l10n.labWorkflowNextVerifyResults,
           ),
-          (
-            id: 'verified',
-            label: l10n.labWorkflowStepVerified,
-            help: null,
-          ),
+          (id: 'verified', label: l10n.labWorkflowStepVerified, help: null),
         ];
 
     return AppSectionPanel(
@@ -247,7 +243,8 @@ int labWorkflowStepIndex(LabOrderWorkflow workflow) {
     return 4;
   }
   if (status == 'IN_PROCESS') {
-    final bool allEntered = workflow.order.items.isNotEmpty &&
+    final bool allEntered =
+        workflow.order.items.isNotEmpty &&
         workflow.order.items.every(
           (LabOrderItem item) =>
               item.isCompleted ||

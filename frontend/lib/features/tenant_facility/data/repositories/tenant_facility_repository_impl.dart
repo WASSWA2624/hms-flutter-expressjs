@@ -328,8 +328,9 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
         ? <String, Object?>{
             'currency': ?normalizedCurrency,
             'billing': <String, Object?>{
-              'standard_consultation_fee':
-                  clearStandardConsultationFee ? null : normalizedFee,
+              'standard_consultation_fee': clearStandardConsultationFee
+                  ? null
+                  : normalizedFee,
             },
           }
         : null;
@@ -372,7 +373,8 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
       currency,
     )?.toUpperCase();
     final String? normalizedFee = _normalizedOptional(standardConsultationFee);
-    final bool writeBilling = normalizedFee != null || clearStandardConsultationFee;
+    final bool writeBilling =
+        normalizedFee != null || clearStandardConsultationFee;
     final bool writeExtension =
         normalizedLogoUrl != null ||
         removeLogo ||
@@ -385,8 +387,9 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
             'currency': ?normalizedCurrency,
             if (writeBilling)
               'billing': <String, Object?>{
-                'standard_consultation_fee':
-                    clearStandardConsultationFee ? null : normalizedFee,
+                'standard_consultation_fee': clearStandardConsultationFee
+                    ? null
+                    : normalizedFee,
               },
           }
         : null;

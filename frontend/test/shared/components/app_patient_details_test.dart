@@ -72,10 +72,7 @@ void main() {
         persistExpandPreference: false,
         initiallyExpanded: true,
         expandedFields: const <AppWorkspacePatientContextField>[
-          AppWorkspacePatientContextField(
-            label: 'Encounter',
-            value: 'ENC-9',
-          ),
+          AppWorkspacePatientContextField(label: 'Encounter', value: 'ENC-9'),
         ],
       ),
     );
@@ -105,10 +102,7 @@ void main() {
             value: '+256700000000',
             authorized: false,
           ),
-          AppWorkspacePatientContextField(
-            label: 'Ward',
-            value: 'Ward A',
-          ),
+          AppWorkspacePatientContextField(label: 'Ward', value: 'Ward A'),
         ],
       ),
     );

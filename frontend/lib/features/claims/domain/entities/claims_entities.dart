@@ -19,6 +19,7 @@ final class ClaimsWorkspaceQuery {
       }
       return '';
     }
+
     return ClaimsWorkspaceQuery(
       encounterId: pick(<String>['encounterId', 'encounter_id', 'encounter']),
       patientId: pick(<String>['patientId', 'patient_id', 'patient']),
@@ -33,7 +34,10 @@ final class ClaimsWorkspaceQuery {
   final String search;
 
   bool get hasRouteTargeting =>
-      encounterId.isNotEmpty || patientId.isNotEmpty || action.isNotEmpty || search.isNotEmpty;
+      encounterId.isNotEmpty ||
+      patientId.isNotEmpty ||
+      action.isNotEmpty ||
+      search.isNotEmpty;
 
   String get signature => '$encounterId|$patientId|$action|$search';
 }

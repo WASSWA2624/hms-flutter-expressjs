@@ -134,9 +134,7 @@ class _OperationsWorkspaceContentState
     if (!mounted) return;
     final String tab = _sectionToQueryValue(section);
     final String location = AppRoutes.operations.location(
-      queryParameters: <String, String>{
-        if (tab.isNotEmpty) 'section': tab,
-      },
+      queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
     GoRouter.of(context).replace<void>(location);
   }
@@ -228,7 +226,7 @@ class _OperationsWorkspaceContentState
       leadingIcon: AppRouteIcons.operations,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
-        summaryNotifications: _summaryNotifications(context, state, controller),
+        summaryNotifications: _summaryNotifications(context, state),
         secondary: <Widget>[
           AppButton.secondary(
             label: l10n.operationsOpenReportAction,
@@ -263,14 +261,41 @@ class _OperationsWorkspaceContentState
             ),
             SizedBox(height: Theme.of(context).spacing.md),
           ],
-          _OperationsQueuePanel(
-            state: state,
-            searchController: _searchController,
-            columnVisibilityController: _tableColumnController,
-            onItemSelected: (OperationsWorkItem item) {
-              unawaited(_openRequestDetailDialog(context, item, canMutate));
+          AppTabStrip(
+            tabs: <AppTabItem>[
+              for (final OperationsDeskSection section
+                  in OperationsDeskSection.values)
+                AppTabItem(
+                  id: section.name,
+                  icon: _sectionIcon(section),
+                  label:
+                      '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
+                ),
+            ],
+            selectedId: _section.name,
+            onTabTapped: (String tabId) {
+              for (final OperationsDeskSection section
+                  in OperationsDeskSection.values) {
+                if (section.name == tabId) {
+                  _onTabChanged(section);
+                  break;
+                }
+              }
             },
           ),
+          SizedBox(height: Theme.of(context).spacing.md),
+          if (_section == OperationsDeskSection.assets)
+            _OperationsAssetsPanel(state: state)
+          else
+            _OperationsQueuePanel(
+              state: state,
+              searchController: _searchController,
+              columnVisibilityController: _tableColumnController,
+              onItemSelected: (OperationsWorkItem item) {
+                unawaited(_openRequestDetailDialog(context, item, canMutate));
+              },
+              section: _section,
+            ),
         ],
       ),
     );
@@ -279,7 +304,6 @@ class _OperationsWorkspaceContentState
   List<AppWorkspaceSummaryNotification> _summaryNotifications(
     BuildContext context,
     OperationsWorkspaceState state,
-    OperationsWorkspaceController controller,
   ) {
     final AppLocalizations l10n = context.l10n;
     final int total =
@@ -291,7 +315,6 @@ class _OperationsWorkspaceContentState
           label: l10n.operationsAllRequestsSummaryLabel,
           count: total,
           icon: Icons.inventory_2_outlined,
-          onSelected: controller.clearFilters,
         ),
       if (state.openCount > 0)
         AppWorkspaceSummaryNotification(
@@ -299,7 +322,6 @@ class _OperationsWorkspaceContentState
           count: state.openCount,
           icon: Icons.pending_actions_outlined,
           tone: AppWorkspaceStatusTone.warning,
-          onSelected: () => controller.applyStatus('OPEN'),
         ),
       if (state.inProgressCount > 0)
         AppWorkspaceSummaryNotification(
@@ -307,7 +329,6 @@ class _OperationsWorkspaceContentState
           count: state.inProgressCount,
           icon: Icons.engineering_outlined,
           tone: AppWorkspaceStatusTone.info,
-          onSelected: () => controller.applyStatus('IN_PROGRESS'),
         ),
       if (state.completedCount > 0)
         AppWorkspaceSummaryNotification(
@@ -315,7 +336,6 @@ class _OperationsWorkspaceContentState
           count: state.completedCount,
           icon: Icons.task_alt_outlined,
           tone: AppWorkspaceStatusTone.success,
-          onSelected: () => controller.applyStatus('COMPLETED'),
         ),
       if (state.cancelledCount > 0)
         AppWorkspaceSummaryNotification(
@@ -323,14 +343,12 @@ class _OperationsWorkspaceContentState
           count: state.cancelledCount,
           icon: Icons.cancel_outlined,
           tone: AppWorkspaceStatusTone.error,
-          onSelected: () => controller.applyStatus('CANCELLED'),
         ),
       if (state.assetCount > 0)
         AppWorkspaceSummaryNotification(
           label: l10n.operationsAssetsSummaryLabel,
           count: state.assetCount,
           icon: Icons.precision_manufacturing_outlined,
-          onSelected: () {},
         ),
     ];
   }
@@ -383,6 +401,7 @@ class _OperationsQueuePanel extends ConsumerWidget {
     required this.searchController,
     required this.columnVisibilityController,
     required this.onItemSelected,
+    required this.section,
   });
 
   final OperationsWorkspaceState state;
@@ -390,6 +409,7 @@ class _OperationsQueuePanel extends ConsumerWidget {
   final AppListTableColumnVisibilityController<OperationsWorkItem>
   columnVisibilityController;
   final ValueChanged<OperationsWorkItem> onItemSelected;
+  final OperationsDeskSection section;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -399,90 +419,163 @@ class _OperationsQueuePanel extends ConsumerWidget {
     );
 
     return AppListTable<OperationsWorkItem>(
-        page: state.workItems,
-        isLoading: state.isRefreshing,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        columnVisibilityController: columnVisibilityController,
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        search: AppListTableSearch<OperationsWorkItem>(
-          controller: searchController,
-          semanticLabel: l10n.operationsSearchLabel,
-          hintText: l10n.operationsSearchHint,
-          clearLabel: l10n.operationsClearFiltersAction,
-          matcher: (_, _) => true,
-          onSubmitted: controller.applySearch,
-          onClear: () => controller.applySearch(''),
-          showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.operationsFiltersLabel,
-          advancedFilterTitle: l10n.operationsFiltersLabel,
-          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-          advancedFilterResetLabel: l10n.operationsClearFiltersAction,
-          searchFieldLabel: l10n.operationsSearchFieldsLabel,
-          allFieldsLabel: l10n.operationsAllFilterOption,
-          searchFields: _operationsSearchFields(l10n),
-          textFilters: _operationsTextFilters(l10n),
-          dateFilterLabel: l10n.operationsReportedDateFilterLabel,
-          dateFromLabel: l10n.operationsReportedFromLabel,
-          dateToLabel: l10n.operationsReportedToLabel,
-          datePickerButtonLabel: l10n.operationsPickReportedDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          filterGroups: <AppSearchBarFilterGroup>[
-            AppSearchBarFilterGroup(
-              key: _operationsStatusFilterKey,
-              label: l10n.operationsStatusFilterLabel,
-              allLabel: l10n.operationsAllFilterOption,
-              choices: _statusFilterChoices(l10n),
-            ),
-            AppSearchBarFilterGroup(
-              key: _operationsPriorityFilterKey,
-              label: l10n.operationsPriorityFilterLabel,
-              allLabel: l10n.operationsAllFilterOption,
-              choices: _priorityFilterChoices(l10n),
-            ),
-          ],
-          filterValue: _operationsFilterValue(state.query),
-          hasActiveFilters: _hasOperationsFilters(state.query),
-          onFilterChanged: (AppSearchBarFilterValue value) async {
-            final AppFailure? failure = await controller.applyFilters(
-              status: value.option(_operationsStatusFilterKey),
-              priority: value.option(_operationsPriorityFilterKey),
-              facilityId: value.text(_operationsFacilityFilterKey),
-              assetId: value.text(_operationsAssetFilterKey),
-              reportedFrom: value.dateFrom,
-              reportedTo: value.dateTo,
+      page: state.workItems,
+      isLoading: state.isRefreshing,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      columnVisibilityController: columnVisibilityController,
+      columnVisibilityStorageKey: 'operations_${section.name}',
+      columnWidthStorageKey: 'operations_cw_${section.name}',
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      search: AppListTableSearch<OperationsWorkItem>(
+        controller: searchController,
+        semanticLabel: l10n.operationsSearchLabel,
+        hintText: l10n.operationsSearchHint,
+        clearLabel: l10n.operationsClearFiltersAction,
+        matcher: (_, _) => true,
+        onSubmitted: controller.applySearch,
+        onClear: () => controller.applySearch(''),
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.operationsFiltersLabel,
+        advancedFilterTitle: l10n.operationsFiltersLabel,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.operationsClearFiltersAction,
+        searchFieldLabel: l10n.operationsSearchFieldsLabel,
+        allFieldsLabel: l10n.operationsAllFilterOption,
+        searchFields: _operationsSearchFields(l10n),
+        textFilters: _operationsTextFilters(l10n),
+        dateFilterLabel: l10n.operationsReportedDateFilterLabel,
+        dateFromLabel: l10n.operationsReportedFromLabel,
+        dateToLabel: l10n.operationsReportedToLabel,
+        datePickerButtonLabel: l10n.operationsPickReportedDateAction,
+        invalidDateMessage: l10n.appDateInvalidMessage,
+        firstDate: DateTime(2020),
+        lastDate: DateTime(2100),
+        currentDate: DateTime.now(),
+        filterGroups: <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: _operationsStatusFilterKey,
+            label: l10n.operationsStatusFilterLabel,
+            allLabel: l10n.operationsAllFilterOption,
+            choices: _statusFilterChoices(l10n),
+          ),
+          AppSearchBarFilterGroup(
+            key: _operationsPriorityFilterKey,
+            label: l10n.operationsPriorityFilterLabel,
+            allLabel: l10n.operationsAllFilterOption,
+            choices: _priorityFilterChoices(l10n),
+          ),
+        ],
+        filterValue: _operationsFilterValue(state.query),
+        hasActiveFilters: _hasOperationsFilters(state.query),
+        onFilterChanged: (AppSearchBarFilterValue value) async {
+          final AppFailure? failure = await controller.applyFilters(
+            status: value.option(_operationsStatusFilterKey),
+            priority: value.option(_operationsPriorityFilterKey),
+            facilityId: value.text(_operationsFacilityFilterKey),
+            assetId: value.text(_operationsAssetFilterKey),
+            reportedFrom: value.dateFrom,
+            reportedTo: value.dateTo,
+          );
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
+        },
+      ),
+      itemKeyBuilder: (OperationsWorkItem item) => ValueKey<String>(item.id),
+      onRowSelected: onItemSelected,
+      previousPageLabel: l10n.opdPreviousPageLabel,
+      nextPageLabel: l10n.opdNextPageLabel,
+      pageLabelBuilder: (AppPage<OperationsWorkItem> page) {
+        return l10n.operationsPageLabel(
+          page.firstItemNumber,
+          page.lastItemNumber,
+          page.totalItemCount ?? page.lastItemNumber,
+        );
+      },
+      onPageChanged: (AppPageRequest request) {
+        unawaited(controller.changePage(request));
+      },
+      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+        title: l10n.operationsNoRequestsTitle,
+        body: l10n.operationsNoRequestsBody,
+      ),
+      columns: _operationColumns(l10n),
+      columnChoices: _operationColumnChoices(l10n),
+      mobileItemBuilder: (BuildContext context, OperationsWorkItem item) {
+        return _OperationsRequestListTile(item: item);
+      },
+    );
+  }
+}
+
+class _OperationsAssetsPanel extends StatelessWidget {
+  const _OperationsAssetsPanel({required this.state});
+
+  final OperationsWorkspaceState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return AppListTable<OperationsAsset>(
+      items: state.assets.items,
+      isLoading: state.isRefreshing,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      columnVisibilityStorageKey: 'operations_assets',
+      columnWidthStorageKey: 'operations_cw_assets',
+      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+        title: l10n.operationsNoAssetsTitle,
+        body: l10n.operationsNoAssetsBody,
+      ),
+      columns: <AppListTableColumn<OperationsAsset>>[
+        AppListTableColumn<OperationsAsset>(
+          label: l10n.operationsAssetNameColumnLabel,
+          cellBuilder: (BuildContext context, OperationsAsset asset) {
+            return _CopyableSubtitleCell(
+              title: asset.effectiveLabel,
+              identifier: asset.effectiveDisplayId,
             );
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
           },
         ),
-        itemKeyBuilder: (OperationsWorkItem item) => ValueKey<String>(item.id),
-        onRowSelected: onItemSelected,
-        previousPageLabel: l10n.opdPreviousPageLabel,
-        nextPageLabel: l10n.opdNextPageLabel,
-        pageLabelBuilder: (AppPage<OperationsWorkItem> page) {
-          return l10n.operationsPageLabel(
-            page.firstItemNumber,
-            page.lastItemNumber,
-            page.totalItemCount ?? page.lastItemNumber,
-          );
-        },
-        onPageChanged: (AppPageRequest request) {
-          unawaited(controller.changePage(request));
-        },
-        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-          title: l10n.operationsNoRequestsTitle,
-          body: l10n.operationsNoRequestsBody,
+        AppListTableColumn<OperationsAsset>(
+          label: l10n.operationsAssetTagColumnLabel,
+          cellBuilder: (BuildContext context, OperationsAsset asset) {
+            return Text(_display(asset.assetTag, l10n.operationsUnknownValue));
+          },
         ),
-        columns: _operationColumns(l10n),
-        columnChoices: _operationColumnChoices(l10n),
-        mobileItemBuilder: (BuildContext context, OperationsWorkItem item) {
-          return _OperationsRequestListTile(item: item);
-        },
+        AppListTableColumn<OperationsAsset>(
+          label: l10n.operationsStatusColumnLabel,
+          cellBuilder: (BuildContext context, OperationsAsset asset) {
+            return _OperationStatusBadge(status: asset.status);
+          },
+        ),
+        AppListTableColumn<OperationsAsset>(
+          label: l10n.operationsLocationColumnLabel,
+          cellBuilder: (BuildContext context, OperationsAsset asset) {
+            return Text(
+              _display(
+                asset.facilityLabel,
+                asset.facilityId ?? l10n.operationsUnknownValue,
+              ),
+            );
+          },
+        ),
+      ],
+      mobileItemBuilder: (BuildContext context, OperationsAsset asset) {
+        return AppListItemRow(
+          leadingIcon: Icons.precision_manufacturing_outlined,
+          title: asset.effectiveLabel,
+          subtitle: _display(asset.assetTag, ''),
+          trailing: _OperationStatusBadge(status: asset.status),
+          details: <Widget>[
+            AppCopyableIdentifier(
+              value: asset.effectiveDisplayId,
+              textStyle: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        );
+      },
     );
   }
 }

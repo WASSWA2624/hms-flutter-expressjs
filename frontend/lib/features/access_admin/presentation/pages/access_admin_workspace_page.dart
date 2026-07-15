@@ -168,7 +168,12 @@ class _AccessAdminWorkspaceContentState
               state: state,
               controller: controller,
               canWrite: canWrite,
-              primaryAction: _primaryAction(context, state, canWrite, controller),
+              primaryAction: _primaryAction(
+                context,
+                state,
+                canWrite,
+                controller,
+              ),
             ),
             SizedBox(height: theme.spacing.md),
             if (lastFailure != null) ...<Widget>[
@@ -232,7 +237,6 @@ class _AccessAdminWorkspaceContentState
       _ => null,
     };
   }
-
 
   Future<void> _openDetailDialog(
     BuildContext context,
@@ -602,7 +606,6 @@ class _AccessAdminPanelTabBar extends ConsumerWidget {
   }
 }
 
-
 class _WorklistPanel extends StatelessWidget {
   const _WorklistPanel({
     required this.state,
@@ -659,10 +662,8 @@ class _WorklistPanel extends StatelessWidget {
               allLabel: context.l10n.accessAdminAllStatusesLabel,
               choices: state.data.lookups.userStatuses
                   .map(
-                    (String value) => AppSearchBarFilterChoice(
-                      value: value,
-                      label: value,
-                    ),
+                    (String value) =>
+                        AppSearchBarFilterChoice(value: value, label: value),
                   )
                   .toList(growable: false),
             ),
@@ -675,9 +676,11 @@ class _WorklistPanel extends StatelessWidget {
         hasActiveFilters: state.query.status != null,
         onFilterChanged: (AppSearchBarFilterValue value) {
           final String? status = value.options['status'];
-          unawaited(controller.applyStatusFilter(
-            status?.isNotEmpty == true ? status : null,
-          ));
+          unawaited(
+            controller.applyStatusFilter(
+              status?.isNotEmpty == true ? status : null,
+            ),
+          );
         },
         trailingActions: <AppSearchBarAction>[
           AppSearchBarAction(

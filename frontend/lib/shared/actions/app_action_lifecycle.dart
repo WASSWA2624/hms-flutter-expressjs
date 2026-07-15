@@ -115,10 +115,8 @@ typedef AppActionMutate =
 /// Online-only actions (payments, refunds, break-glass, etc.) set
 /// [onlineOnly] and pass [isOnline] — the runner never queues them.
 final class AppActionRunner extends ChangeNotifier {
-  AppActionRunner({
-    this.onlineOnly = false,
-    String Function()? createKey,
-  }) : _createKey = createKey ?? createIdempotencyKey;
+  AppActionRunner({this.onlineOnly = false, String Function()? createKey})
+    : _createKey = createKey ?? createIdempotencyKey;
 
   /// When true, mutations are refused while offline (never queued).
   final bool onlineOnly;
@@ -154,10 +152,7 @@ final class AppActionRunner extends ChangeNotifier {
       return;
     }
     _setSnapshot(
-      _snapshot.copyWith(
-        phase: AppActionPhase.confirming,
-        clearFailure: true,
-      ),
+      _snapshot.copyWith(phase: AppActionPhase.confirming, clearFailure: true),
     );
   }
 
@@ -174,29 +169,15 @@ final class AppActionRunner extends ChangeNotifier {
   /// Returns `null` on success. Returns [AppFailure.cancelled] when a duplicate
   /// in-flight submission is ignored. On cancel/failure the domain state must
   /// remain unchanged (caller responsibility).
-  Future<AppFailure?> run(
-    AppActionMutate mutate, {
-    bool? isOnline,
-  }) {
-    return _execute(
-      mutate,
-      reuseKey: false,
-      isOnline: isOnline,
-    );
+  Future<AppFailure?> run(AppActionMutate mutate, {bool? isOnline}) {
+    return _execute(mutate, reuseKey: false, isOnline: isOnline);
   }
 
   /// Retries the last failed mutation using the same idempotency key.
   ///
   /// If there is no prior key (first attempt), behaves like [run].
-  Future<AppFailure?> retry(
-    AppActionMutate mutate, {
-    bool? isOnline,
-  }) {
-    return _execute(
-      mutate,
-      reuseKey: true,
-      isOnline: isOnline,
-    );
+  Future<AppFailure?> retry(AppActionMutate mutate, {bool? isOnline}) {
+    return _execute(mutate, reuseKey: true, isOnline: isOnline);
   }
 
   /// Resets to idle and clears any idempotency key / failure.
@@ -225,7 +206,8 @@ final class AppActionRunner extends ChangeNotifier {
       return offline;
     }
 
-    final String key = reuseKey && (_snapshot.idempotencyKey?.isNotEmpty ?? false)
+    final String key =
+        reuseKey && (_snapshot.idempotencyKey?.isNotEmpty ?? false)
         ? _snapshot.idempotencyKey!
         : _createKey();
 

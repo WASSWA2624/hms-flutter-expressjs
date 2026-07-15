@@ -71,10 +71,7 @@ class AppPermissionAsyncActionButton extends ConsumerStatefulWidget {
   bool get requiresConfirmation {
     final String? title = confirmTitle?.trim();
     final String? body = confirmBody?.trim();
-    return title != null &&
-        title.isNotEmpty &&
-        body != null &&
-        body.isNotEmpty;
+    return title != null && title.isNotEmpty && body != null && body.isNotEmpty;
   }
 
   @override
@@ -91,9 +88,7 @@ class _AppPermissionAsyncActionButtonState
   void initState() {
     super.initState();
     _ownsRunner = widget.runner == null;
-    _runner =
-        widget.runner ??
-        AppActionRunner(onlineOnly: widget.onlineOnly);
+    _runner = widget.runner ?? AppActionRunner(onlineOnly: widget.onlineOnly);
     _runner.addListener(_onRunnerChanged);
   }
 
@@ -106,9 +101,7 @@ class _AppPermissionAsyncActionButtonState
         _runner.dispose();
       }
       _ownsRunner = widget.runner == null;
-      _runner =
-          widget.runner ??
-          AppActionRunner(onlineOnly: widget.onlineOnly);
+      _runner = widget.runner ?? AppActionRunner(onlineOnly: widget.onlineOnly);
       _runner.addListener(_onRunnerChanged);
     }
   }
@@ -161,11 +154,7 @@ class _AppPermissionAsyncActionButtonState
     final String resolvedTooltip = canPress
         ? (widget.tooltip ?? widget.label)
         : (!isAllowed
-              ? accessRequirementDenialMessage(
-                  l10n,
-                  widget.requirement,
-                  policy,
-                )
+              ? accessRequirementDenialMessage(l10n, widget.requirement, policy)
               : (widget.blockedReason ?? widget.tooltip ?? widget.label));
 
     final ColorScheme colorScheme = Theme.of(context).colorScheme;

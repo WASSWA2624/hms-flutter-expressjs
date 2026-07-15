@@ -61,6 +61,7 @@ final class AppWorkspacePatientContextField {
     this.copySemanticLabel,
     this.showCopyIcon = true,
     this.copyPlaceholderValues = const <String>{},
+
     /// When false, the field is omitted entirely (authorization / scope).
     this.authorized = true,
   });

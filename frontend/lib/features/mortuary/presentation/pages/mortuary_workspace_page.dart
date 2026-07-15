@@ -244,69 +244,69 @@ class _MortuaryWorklist extends StatelessWidget {
     );
 
     return AppListTable<MortuaryWorkspaceItem>(
-        page: state.items,
-        columns: columns,
-        columnChoices: columns,
-        columnVisibilityController: tableColumnController,
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        columnVisibilityTitle: l10n.commonTableSettingsActionLabel,
-        columnVisibilityApplyLabel: l10n.mortuaryApplyFiltersAction,
-        columnVisibilityResetLabel: l10n.mortuaryResetFiltersAction,
-        isLoading: state.isRefreshing,
-        itemKeyBuilder: (MortuaryWorkspaceItem item) =>
-            ValueKey<String>('${item.resource}:${item.id}'),
-        onRowSelected: onItemSelected,
-        onPageChanged: (AppPageRequest request) {
-          unawaited(controller.changePage(request));
+      page: state.items,
+      columns: columns,
+      columnChoices: columns,
+      columnVisibilityController: tableColumnController,
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsActionLabel,
+      columnVisibilityApplyLabel: l10n.mortuaryApplyFiltersAction,
+      columnVisibilityResetLabel: l10n.mortuaryResetFiltersAction,
+      isLoading: state.isRefreshing,
+      itemKeyBuilder: (MortuaryWorkspaceItem item) =>
+          ValueKey<String>('${item.resource}:${item.id}'),
+      onRowSelected: onItemSelected,
+      onPageChanged: (AppPageRequest request) {
+        unawaited(controller.changePage(request));
+      },
+      pageLabelBuilder: (AppPage<MortuaryWorkspaceItem> page) {
+        final int total = page.totalItemCount ?? page.items.length;
+        final int from = total == 0 ? 0 : page.firstItemNumber;
+        final int to = page.lastItemNumber;
+        return l10n.mortuaryPageLabel(from, to, total);
+      },
+      previousPageLabel: l10n.mortuaryPreviousPageLabel,
+      nextPageLabel: l10n.mortuaryNextPageLabel,
+      search: AppListTableSearch<MortuaryWorkspaceItem>(
+        controller: searchController,
+        semanticLabel: l10n.mortuarySearchLabel,
+        hintText: l10n.mortuarySearchHint,
+        matcher: _matchesSearch,
+        onSubmitted: (String value) {
+          unawaited(controller.applySearch(value));
         },
-        pageLabelBuilder: (AppPage<MortuaryWorkspaceItem> page) {
-          final int total = page.totalItemCount ?? page.items.length;
-          final int from = total == 0 ? 0 : page.firstItemNumber;
-          final int to = page.lastItemNumber;
-          return l10n.mortuaryPageLabel(from, to, total);
+        onClear: () {
+          unawaited(controller.applySearch(''));
         },
-        previousPageLabel: l10n.mortuaryPreviousPageLabel,
-        nextPageLabel: l10n.mortuaryNextPageLabel,
-        search: AppListTableSearch<MortuaryWorkspaceItem>(
-          controller: searchController,
-          semanticLabel: l10n.mortuarySearchLabel,
-          hintText: l10n.mortuarySearchHint,
-          matcher: _matchesSearch,
-          onSubmitted: (String value) {
-            unawaited(controller.applySearch(value));
-          },
-          onClear: () {
-            unawaited(controller.applySearch(''));
-          },
-          showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.mortuaryFiltersLabel,
-          advancedFilterTitle: l10n.mortuaryFiltersLabel,
-          advancedFilterApplyLabel: l10n.mortuaryApplyFiltersAction,
-          advancedFilterResetLabel: l10n.mortuaryResetFiltersAction,
-          searchFieldLabel: l10n.mortuarySearchFieldLabel,
-          allFieldsLabel: l10n.mortuaryAllFieldsLabel,
-          dateFilterLabel: l10n.mortuaryDateFilterLabel,
-          dateFromLabel: l10n.mortuaryDateFromLabel,
-          dateToLabel: l10n.mortuaryDateToLabel,
-          datePickerButtonLabel: l10n.mortuaryDatePickerButtonLabel,
-          invalidDateMessage: l10n.mortuaryInvalidDateMessage,
-          enableDateFilter: false,
-          filterValue: _filterValueForQuery(state.query),
-          hasActiveFilters: _hasActiveFilters(state.query),
-          filterGroups: _filterGroups(l10n, state.lookups),
-          onFilterChanged: (AppSearchBarFilterValue value) {
-            unawaited(_applyFilterValue(controller, value));
-          },
-        ),
-        emptyBuilder: (BuildContext context) {
-          return AppWorkspaceStatePanel.empty(
-            title: l10n.mortuaryWorklistEmptyTitle,
-            body: l10n.mortuaryWorklistEmptyBody,
-          );
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.mortuaryFiltersLabel,
+        advancedFilterTitle: l10n.mortuaryFiltersLabel,
+        advancedFilterApplyLabel: l10n.mortuaryApplyFiltersAction,
+        advancedFilterResetLabel: l10n.mortuaryResetFiltersAction,
+        searchFieldLabel: l10n.mortuarySearchFieldLabel,
+        allFieldsLabel: l10n.mortuaryAllFieldsLabel,
+        dateFilterLabel: l10n.mortuaryDateFilterLabel,
+        dateFromLabel: l10n.mortuaryDateFromLabel,
+        dateToLabel: l10n.mortuaryDateToLabel,
+        datePickerButtonLabel: l10n.mortuaryDatePickerButtonLabel,
+        invalidDateMessage: l10n.mortuaryInvalidDateMessage,
+        enableDateFilter: false,
+        filterValue: _filterValueForQuery(state.query),
+        hasActiveFilters: _hasActiveFilters(state.query),
+        filterGroups: _filterGroups(l10n, state.lookups),
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          unawaited(_applyFilterValue(controller, value));
         },
-        mobileItemBuilder: (BuildContext context, MortuaryWorkspaceItem item) {
-          return _MortuaryMobileListItem(item: item);
-        },
+      ),
+      emptyBuilder: (BuildContext context) {
+        return AppWorkspaceStatePanel.empty(
+          title: l10n.mortuaryWorklistEmptyTitle,
+          body: l10n.mortuaryWorklistEmptyBody,
+        );
+      },
+      mobileItemBuilder: (BuildContext context, MortuaryWorkspaceItem item) {
+        return _MortuaryMobileListItem(item: item);
+      },
     );
   }
 

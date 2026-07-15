@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -85,12 +86,16 @@ class _PharmacyWorkspaceContentState
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<PharmacyOrder>
   _tableColumnController;
+  late PharmacyDeskSection _section;
   bool _handledSectionDeepLink = false;
   String? _appliedRouteSignature;
 
   @override
   void initState() {
     super.initState();
+    _section =
+        _sectionFromQuery(widget.initialQuery?.section ?? '') ??
+        PharmacyDeskSection.queue;
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<PharmacyOrder>();
@@ -109,15 +114,24 @@ class _PharmacyWorkspaceContentState
           context,
         ).uri.queryParameters['section']?.trim().toLowerCase() ??
         '';
-    if (section != 'inventory' && section != 'stock') {
+    if (section == 'inventory' || section == 'stock') {
+      _handledSectionDeepLink = true;
+      await openPharmacyCatalogDialog(
+        context,
+        ref,
+        initialTab: PharmacyCatalogTab.inventory,
+      );
       return;
     }
-    _handledSectionDeepLink = true;
-    await openPharmacyCatalogDialog(
-      context,
-      ref,
-      initialTab: PharmacyCatalogTab.inventory,
-    );
+    final PharmacyDeskSection? parsed = _sectionFromQuery(section);
+    if (parsed != null && parsed != _section) {
+      _handledSectionDeepLink = true;
+      setState(() => _section = parsed);
+      final PharmacyWorkspaceController controller = ref.read(
+        pharmacyWorkspaceControllerProvider.notifier,
+      );
+      unawaited(controller.applyFilter(_filterForSection(parsed)));
+    }
   }
 
   void _scheduleRouteQuery(PharmacyWorkspaceQuery? query) {
@@ -134,6 +148,13 @@ class _PharmacyWorkspaceContentState
     final PharmacyWorkspaceController controller = ref.read(
       pharmacyWorkspaceControllerProvider.notifier,
     );
+    if (query.section.isNotEmpty) {
+      final PharmacyDeskSection? parsed = _sectionFromQuery(query.section);
+      if (parsed != null && parsed != _section) {
+        setState(() => _section = parsed);
+        unawaited(controller.applyFilter(_filterForSection(parsed)));
+      }
+    }
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;
       controller.applySearch(query.search);
@@ -179,6 +200,129 @@ class _PharmacyWorkspaceContentState
     super.dispose();
   }
 
+  // ─── Tab-to-section mapping helpers ──────────────────────────────────
+
+  void _updateUrlForSection(PharmacyDeskSection section) {
+    if (!mounted) return;
+    final String tab = _sectionToQueryValue(section);
+    final String location = AppRoutes.pharmacy.location(
+      queryParameters: <String, String>{
+        if (tab.isNotEmpty) 'section': tab,
+      },
+    );
+    GoRouter.of(context).replace<void>(location);
+  }
+
+  static String _sectionToQueryValue(PharmacyDeskSection section) {
+    return switch (section) {
+      PharmacyDeskSection.queue => 'queue',
+      PharmacyDeskSection.inProgress => 'in-progress',
+      PharmacyDeskSection.pendingPayment => 'pending-payment',
+      PharmacyDeskSection.completed => 'completed',
+      PharmacyDeskSection.allOrders => 'all',
+    };
+  }
+
+  static PharmacyDeskSection? _sectionFromQuery(String raw) {
+    switch (raw.trim().toLowerCase()) {
+      case 'queue':
+      case 'ready':
+      case 'dispense':
+        return PharmacyDeskSection.queue;
+      case 'in-progress':
+      case 'partial':
+      case 'in_progress':
+        return PharmacyDeskSection.inProgress;
+      case 'pending-payment':
+      case 'payment':
+      case 'pending_payment':
+        return PharmacyDeskSection.pendingPayment;
+      case 'completed':
+      case 'dispensed':
+        return PharmacyDeskSection.completed;
+      case 'all':
+      case 'all-orders':
+        return PharmacyDeskSection.allOrders;
+      default:
+        return null;
+    }
+  }
+
+  static PharmacyOrderFilter _filterForSection(PharmacyDeskSection section) {
+    return switch (section) {
+      PharmacyDeskSection.queue => PharmacyOrderFilter.ready,
+      PharmacyDeskSection.inProgress => PharmacyOrderFilter.partial,
+      PharmacyDeskSection.pendingPayment => PharmacyOrderFilter.pendingPayment,
+      PharmacyDeskSection.completed => PharmacyOrderFilter.completed,
+      PharmacyDeskSection.allOrders => PharmacyOrderFilter.all,
+    };
+  }
+
+  static int _sectionCount(
+    PharmacyWorkbenchSummary summary,
+    PharmacyDeskSection section,
+  ) {
+    return switch (section) {
+      PharmacyDeskSection.queue => summary.orderedQueue,
+      PharmacyDeskSection.inProgress => summary.partiallyDispensedQueue,
+      PharmacyDeskSection.pendingPayment => summary.pendingPaymentQueue,
+      PharmacyDeskSection.completed => summary.dispensedOrders,
+      PharmacyDeskSection.allOrders => summary.totalOrders,
+    };
+  }
+
+  static IconData _sectionIcon(PharmacyDeskSection section) {
+    return switch (section) {
+      PharmacyDeskSection.queue => Icons.medication_liquid_outlined,
+      PharmacyDeskSection.inProgress => Icons.pending_actions_outlined,
+      PharmacyDeskSection.pendingPayment => Icons.payments_outlined,
+      PharmacyDeskSection.completed => Icons.done_all_outlined,
+      PharmacyDeskSection.allOrders => Icons.inventory_2_outlined,
+    };
+  }
+
+  static String _sectionLabel(
+    AppLocalizations l10n,
+    PharmacyDeskSection section,
+  ) {
+    return switch (section) {
+      PharmacyDeskSection.queue => l10n.pharmacySummaryReadyLabel,
+      PharmacyDeskSection.inProgress => l10n.pharmacySummaryPartialLabel,
+      PharmacyDeskSection.pendingPayment => l10n.pharmacyFilterPendingPayment,
+      PharmacyDeskSection.completed => l10n.pharmacySummaryCompletedLabel,
+      PharmacyDeskSection.allOrders => l10n.pharmacyFilterAll,
+    };
+  }
+
+  Widget _primaryActionForSection(
+    AppLocalizations l10n,
+    PharmacyDeskSection section,
+    PharmacyWorkspaceController controller,
+  ) {
+    return switch (section) {
+      PharmacyDeskSection.queue || PharmacyDeskSection.inProgress =>
+        AppButton.primary(
+          label: l10n.pharmacyDispenseAction,
+          leadingIcon: Icons.medication_liquid_outlined,
+          onPressed: () => controller.applyFilter(PharmacyOrderFilter.ready),
+        ),
+      PharmacyDeskSection.pendingPayment => AppButton.primary(
+        label: l10n.pharmacyQueueFilterLabel,
+        leadingIcon: Icons.payments_outlined,
+        onPressed: () =>
+            controller.applyFilter(PharmacyOrderFilter.pendingPayment),
+      ),
+      PharmacyDeskSection.completed || PharmacyDeskSection.allOrders =>
+        AppButton.primary(
+          label: l10n.pharmacyCatalogPanelTitle,
+          leadingIcon: Icons.inventory_2_outlined,
+          onPressed: () => unawaited(openPharmacyCatalogDialog(context, ref)),
+        ),
+    };
+  }
+
+  // ─── End tab helpers ──────────────────────────────────────────────────
+
   Future<void> _openCatalogForInventoryAlert(
     PharmacyInventoryFilter filter,
   ) async {
@@ -206,6 +350,7 @@ class _PharmacyWorkspaceContentState
     final PharmacyWorkspaceController controller = ref.read(
       pharmacyWorkspaceControllerProvider.notifier,
     );
+    final ThemeData theme = Theme.of(context);
 
     return AppWorkspace(
       title: l10n.pharmacyTitle,
@@ -213,85 +358,6 @@ class _PharmacyWorkspaceContentState
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         summaryNotifications: <AppWorkspaceSummaryNotification>[
-          if (state.workbench.summary.totalOrders > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.pharmacyFilterAll,
-              count: state.workbench.summary.totalOrders,
-              icon: Icons.inventory_2_outlined,
-              onSelected: () => controller.applyFilter(PharmacyOrderFilter.all),
-            ),
-          if (state.workbench.summary.orderedQueue > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.pharmacySummaryReadyLabel,
-              count: state.workbench.summary.orderedQueue,
-              icon: Icons.medication_liquid_outlined,
-              tone: AppWorkspaceStatusTone.info,
-              onSelected: () =>
-                  controller.applyFilter(PharmacyOrderFilter.ready),
-            ),
-          if (state.workbench.summary.partiallyDispensedQueue > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.pharmacySummaryPartialLabel,
-              count: state.workbench.summary.partiallyDispensedQueue,
-              icon: Icons.pending_actions_outlined,
-              tone: AppWorkspaceStatusTone.warning,
-              onSelected: () =>
-                  controller.applyFilter(PharmacyOrderFilter.partial),
-            ),
-          if (state.workbench.summary.dispensedOrders > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.pharmacySummaryCompletedLabel,
-              count: state.workbench.summary.dispensedOrders,
-              icon: Icons.done_all_outlined,
-              tone: AppWorkspaceStatusTone.success,
-              onSelected: () =>
-                  controller.applyFilter(PharmacyOrderFilter.completed),
-            ),
-          if (state.workbench.summary.dischargePendingQueue > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.pharmacyFilterDischarge,
-              count: state.workbench.summary.dischargePendingQueue,
-              icon: Icons.local_hospital_outlined,
-              tone: AppWorkspaceStatusTone.warning,
-              onSelected: () =>
-                  controller.applyFilter(PharmacyOrderFilter.discharge),
-            ),
-          if (state.workbench.summary.outpatientQueue > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.pharmacyFilterOutpatient,
-              count: state.workbench.summary.outpatientQueue,
-              icon: Icons.person_outline,
-              tone: AppWorkspaceStatusTone.info,
-              onSelected: () =>
-                  controller.applyFilter(PharmacyOrderFilter.outpatient),
-            ),
-          if (state.workbench.summary.wardQueue > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.pharmacyFilterWard,
-              count: state.workbench.summary.wardQueue,
-              icon: Icons.bed_outlined,
-              tone: AppWorkspaceStatusTone.info,
-              onSelected: () =>
-                  controller.applyFilter(PharmacyOrderFilter.ward),
-            ),
-          if (state.workbench.summary.pendingPaymentQueue > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.pharmacyFilterPendingPayment,
-              count: state.workbench.summary.pendingPaymentQueue,
-              icon: Icons.payments_outlined,
-              tone: AppWorkspaceStatusTone.warning,
-              onSelected: () =>
-                  controller.applyFilter(PharmacyOrderFilter.pendingPayment),
-            ),
-          if (state.workbench.summary.pendingAttestations > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.pharmacySummaryAttestationLabel,
-              count: state.workbench.summary.pendingAttestations,
-              icon: Icons.verified_outlined,
-              tone: AppWorkspaceStatusTone.warning,
-              onSelected: () =>
-                  controller.applyFilter(PharmacyOrderFilter.partial),
-            ),
           if (state.inventoryWorkbench.summary.criticalStockRows > 0)
             AppWorkspaceSummaryNotification(
               label: l10n.pharmacySummaryLowStockLabel,
@@ -328,11 +394,6 @@ class _PharmacyWorkspaceContentState
             ),
         ],
         maxVisibleScreenActions: 1,
-        primary: AppButton.primary(
-          label: l10n.pharmacyDispenseAction,
-          leadingIcon: Icons.medication_liquid_outlined,
-          onPressed: () => controller.applyFilter(PharmacyOrderFilter.ready),
-        ),
         overflowSections: <AppToolbarOverflowSection>[
           AppToolbarOverflowSection(
             headerLabel: l10n.pharmacyCatalogPanelTitle,
@@ -356,12 +417,57 @@ class _PharmacyWorkspaceContentState
         },
         isRefreshing: state.isRefreshingOrders,
       ),
-
-      body: _PharmacyQueuePanel(
-        state: state,
-        writeRequirement: _writeRequirement,
-        searchController: _searchController,
-        columnVisibilityController: _tableColumnController,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: AppTabStrip(
+                  tabs: <AppTabItem>[
+                    for (final PharmacyDeskSection section
+                        in PharmacyDeskSection.values)
+                      AppTabItem(
+                        id: section.name,
+                        icon: _sectionIcon(section),
+                        label:
+                            '${_sectionLabel(l10n, section)} (${_sectionCount(state.workbench.summary, section)})',
+                      ),
+                  ],
+                  selectedId: _section.name,
+                  onTabTapped: (String tabId) {
+                    for (final PharmacyDeskSection section
+                        in PharmacyDeskSection.values) {
+                      if (section.name == tabId) {
+                        setState(() => _section = section);
+                        _updateUrlForSection(section);
+                        unawaited(
+                          controller.applyFilter(_filterForSection(section)),
+                        );
+                        break;
+                      }
+                    }
+                  },
+                ),
+              ),
+              SizedBox(width: theme.spacing.sm),
+              AppAccessActionGate(
+                requirement: _writeRequirement,
+                builder: (BuildContext context, bool isAllowed) {
+                  return _primaryActionForSection(l10n, _section, controller);
+                },
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.md),
+          _PharmacyQueuePanel(
+            state: state,
+            section: _section,
+            writeRequirement: _writeRequirement,
+            searchController: _searchController,
+            columnVisibilityController: _tableColumnController,
+          ),
+        ],
       ),
     );
   }

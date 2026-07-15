@@ -16,9 +16,9 @@ void showAppFailureSnackBar(BuildContext context, AppFailure? failure) {
   if (!context.mounted) {
     return;
   }
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(context.l10n.failureMessage(failure))),
-  );
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(context.l10n.failureMessage(failure))));
 }
 
 /// Shows a localized success message as a [SnackBar].
@@ -26,7 +26,5 @@ void showAppSuccessSnackBar(BuildContext context, String message) {
   if (!context.mounted) {
     return;
   }
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(message)),
-  );
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }
