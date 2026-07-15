@@ -64,6 +64,13 @@ Before writing any prompt content, perform a full audit of the codebase to gathe
 - Identify the primary action per tab (e.g., "New Patient", "Create Order", "Admit").
 - Note any screen-specific behaviors that must be preserved during refactoring.
 
+### 1.7 Identify migration infrastructure
+
+- Locate the project's database/migration system (e.g., Drift, Supabase, Prisma, raw SQL migrations folder).
+- Note the naming conventions and file structure for existing migrations.
+- Determine if the refactored screen requires schema changes (new filter columns, status enums, index changes).
+- Check for seed data or test fixtures that may need updating.
+
 ---
 
 ## Step 2: Generate the Prompt
@@ -165,6 +172,47 @@ Do NOT create new implementations of these. Import and use them directly:
 |-----------|--------|
 | [path]    | [why it's being removed] |
 
+## Cleanup: Remove Stale Code
+
+After the refactor, the agent MUST remove all dead/stale code left behind:
+
+- [ ] Delete old page widgets, layout files, and custom table implementations that the new standardized screen replaces.
+- [ ] Remove unused imports across all modified files.
+- [ ] Delete orphaned controllers, providers, or state classes that are no longer referenced.
+- [ ] Remove dead route definitions that pointed to the old screen structure.
+- [ ] Delete unused model classes or DTOs that only served the old layout.
+- [ ] Remove deprecated helper functions, extension methods, or utilities specific to the old screen.
+- [ ] Clean up unused assets (icons, images, strings) tied to removed components.
+- [ ] Run `dart analyze` to catch any remaining unreferenced declarations and remove them.
+- [ ] Verify no test files reference deleted code — update or remove stale tests.
+
+List every file and symbol removed in a "Cleanup Summary" section at the end of the implementation.
+
+## Database Migrations
+
+If the refactoring changes data models, API contracts, or introduces new query requirements:
+
+- [ ] Identify whether new database tables, columns, or indexes are needed for the refactored screen (e.g., new filter fields, tab-specific status columns, sort order columns).
+- [ ] Identify whether existing columns or tables become unused after the refactor and should be deprecated/removed.
+- [ ] Create the appropriate migration files following the project's migration conventions (inspect `backend/migrations/`, `backend/prisma/`, `supabase/migrations/`, or equivalent — use whatever migration system exists in this codebase).
+- [ ] Name migration files descriptively: `{timestamp}_standardize_{screen_name_snake_case}.sql` or equivalent.
+- [ ] Ensure migrations are idempotent and include rollback/down steps where the framework supports it.
+- [ ] Run migrations locally and confirm they apply cleanly:
+
+```bash
+# Detect and run the project's migration tool (adjust to actual tool found in codebase)
+# Examples:
+# Supabase: supabase db push
+# Prisma: npx prisma migrate dev
+# Drift (Flutter): dart run build_runner build
+# Raw SQL: apply migration file manually
+
+[Agent: replace with the actual migration command found in this project]
+```
+
+- [ ] Update seed data or test fixtures if the schema change affects them.
+- [ ] If no database changes are needed, explicitly state: "No database migrations required — schema unchanged."
+
 ## Responsive Design Requirements
 
 - **Desktop (≥1024px):** [specific layout — e.g., full table with all columns visible, side-by-side elements]
@@ -214,10 +262,11 @@ The refactor is complete when ALL of the following are true:
 - [ ] The page body uses `AppListTable` with integrated search, filter, and settings
 - [ ] No shared component is re-implemented — only imported and used
 - [ ] The layout is fully responsive across mobile, tablet, and desktop
-- [ ] All old/duplicate layout code is removed
+- [ ] All old/duplicate layout code is removed — no stale files or dead symbols remain
 - [ ] Domain-specific business logic and data are preserved
-- [ ] `dart analyze` reports no new issues
-- [ ] All tests pass
+- [ ] All necessary database migrations are created and applied (or explicitly noted as unnecessary)
+- [ ] `dart analyze` reports no new issues — zero unused imports, zero unreferenced declarations
+- [ ] All tests pass (no stale test references to removed code)
 ```
 
 ---
