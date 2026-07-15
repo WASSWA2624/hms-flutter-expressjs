@@ -19,6 +19,7 @@ import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
+import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -386,7 +387,20 @@ class _DischargeQueuePanel extends ConsumerWidget {
                         _nextActionLabel(context, right),
                       ),
               cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-                return Text(_nextActionLabel(context, item));
+                final String encounterId =
+                    item.encounterId ?? item.id;
+                if (encounterId.trim().isEmpty) {
+                  return Text(_nextActionLabel(context, item));
+                }
+                return WorkflowActionButton(
+                  encounterId: encounterId,
+                  patientId: item.patientId,
+                  admissionId: item.id,
+                  nextStep: _dischargeNextStepCode(item),
+                  stage: item.stage,
+                  sourceModule: 'discharge',
+                  compact: true,
+                );
               },
             ),
             AppListTableColumn<IpdAdmissionSummary>(
@@ -1455,6 +1469,16 @@ String _nextActionLabel(BuildContext context, IpdAdmissionSummary item) {
     return context.l10n.dischargeNextActionClearance;
   }
   return context.l10n.dischargeNextActionStartPlan;
+}
+
+String _dischargeNextStepCode(IpdAdmissionSummary item) {
+  if (isCompletedDischarge(item)) {
+    return 'DISPOSITION';
+  }
+  if (isPlannedDischarge(item)) {
+    return 'FINALIZE_DISCHARGE';
+  }
+  return 'DISCHARGE_PLANNING';
 }
 
 String _dateLabel(BuildContext context, DateTime? value) {

@@ -3271,6 +3271,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdRoutePharmacyAction => 'Send to pharmacy';
 
   @override
+  String get opdReviewResultsAction => 'Review results';
+
+  @override
+  String get opdReviewReportAction => 'Review report';
+
+  @override
+  String get opdMedicinesDispensedAction => 'Medicines dispensed';
+
+  @override
+  String get opdCollectSampleAction => 'Collect sample';
+
+  @override
+  String get opdDiagnosticsPendingAction => 'Diagnostics pending';
+
+  @override
+  String get opdPerformImagingAction => 'Perform imaging';
+
+  @override
+  String get opdDispenseMedicineAction => 'Dispense medicine';
+
+  @override
+  String get opdAdmissionHandoffAction => 'Admit patient';
+
+  @override
+  String get opdAdmittedAction => 'View admission';
+
+  @override
+  String get opdDischargeAction => 'Plan discharge';
+
+  @override
+  String get opdTheatreSchedulingAction => 'Theatre scheduling';
+
+  @override
+  String get opdPhysiotherapyAction => 'Physiotherapy session';
+
+  @override
+  String get opdInsurancePreauthAction => 'Pre-authorization';
+
+  @override
+  String get opdAssignBedAction => 'Assign bed';
+
+  @override
   String get opdPrintSummaryAction => 'Print summary';
 
   @override

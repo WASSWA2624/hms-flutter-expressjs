@@ -23,6 +23,7 @@ import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_start_admission
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
+import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -480,7 +481,20 @@ class _IpdBoardPanel extends ConsumerWidget {
                 (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
                     appListTableCompareText(left.nextStep, right.nextStep),
             cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-              return Text(_nextStepLabel(context, item.nextStep));
+              final String encounterId =
+                  item.encounterId ?? item.id;
+              if (encounterId.trim().isEmpty) {
+                return Text(_nextStepLabel(context, item.nextStep));
+              }
+              return WorkflowActionButton(
+                encounterId: encounterId,
+                patientId: item.patientId,
+                admissionId: item.id,
+                nextStep: item.nextStep,
+                stage: item.stage,
+                sourceModule: 'ipd',
+                compact: true,
+              );
             },
           ),
           AppListTableColumn<IpdAdmissionSummary>(

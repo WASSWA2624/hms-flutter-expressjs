@@ -22,6 +22,7 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
+import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 
 /// High-volume front-desk workspace composing Patient Registry + OPD.
 ///
@@ -582,14 +583,13 @@ class _ReceptionWorkspaceContentState
               if (flow == null) {
                 return const SizedBox.shrink();
               }
-              return NextStepActionButton(
+              return WorkflowActionButton(
                 encounterId: flow.publicId ?? flow.id,
                 patientId: flow.patientId,
                 stage: flow.stage,
                 nextStep: flow.nextStep,
                 displayNextStep: flow.displayNextStep,
                 assignedStaffId: flow.providerUserId,
-                flow: flow,
               );
             },
           ),
@@ -677,14 +677,13 @@ class _ReceptionWorkspaceContentState
               if (flow == null) {
                 return const SizedBox.shrink();
               }
-              return NextStepActionButton(
+              return WorkflowActionButton(
                 encounterId: flow.publicId ?? flow.id,
                 patientId: flow.patientId,
                 stage: flow.stage,
                 nextStep: flow.nextStep,
                 displayNextStep: flow.displayNextStep,
                 assignedStaffId: flow.providerUserId,
-                flow: flow,
               );
             },
           ),

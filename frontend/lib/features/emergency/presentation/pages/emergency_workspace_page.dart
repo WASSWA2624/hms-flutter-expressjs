@@ -20,6 +20,7 @@ import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities
 import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
+import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -416,7 +417,14 @@ class _EmergencyBoardPanel extends ConsumerWidget {
                 (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
                     appListTableCompareText(left.nextAction, right.nextAction),
             cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
-              return Text(item.nextAction);
+              return WorkflowActionButton(
+                encounterId: item.id,
+                patientId: item.patientId,
+                stage: item.status,
+                nextStep: _emergencyNextStepCode(item),
+                sourceModule: 'emergency',
+                compact: true,
+              );
             },
           ),
         ],
@@ -2123,4 +2131,21 @@ void _showFailureIfNeeded(
   if (failure == null && successMessage != null) {
     showAppSuccessSnackBar(context, successMessage);
   }
+}
+
+String _emergencyNextStepCode(EmergencyCaseSummary item) {
+  final String normalizedStatus = (item.status ?? '').toUpperCase();
+  if (normalizedStatus == 'CLOSED' || normalizedStatus == 'COMPLETED') {
+    return 'DISPOSITION';
+  }
+  if (normalizedStatus == 'CANCELLED') {
+    return 'DISPOSITION';
+  }
+  if (item.latestTriage == null) {
+    return 'EMERGENCY_TRIAGE';
+  }
+  if (item.latestResponse == null) {
+    return 'EMERGENCY_STABILIZE';
+  }
+  return 'EMERGENCY_STABILIZE';
 }

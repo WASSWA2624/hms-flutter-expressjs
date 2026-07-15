@@ -8,6 +8,7 @@ import 'package:hosspi_hms/app/startup/app_startup_initializer.dart';
 import 'package:hosspi_hms/app/startup/startup_shell.dart';
 import 'package:hosspi_hms/core/config/app_config.dart';
 import 'package:hosspi_hms/core/logging/app_logger.dart';
+import 'package:hosspi_hms/shared/workflow_actions/workflow_action_registry.dart';
 
 Future<void> bootstrap({
   AppConfig? config,
@@ -15,6 +16,7 @@ Future<void> bootstrap({
 }) async {
   WidgetsFlutterBinding.ensureInitialized();
   configureAppUrlStrategy();
+  initializeWorkflowActionRegistry();
   final String initialLocation = _platformInitialLocation();
 
   runApp(ProviderScope(key: UniqueKey(), child: const StartupLoadingApp()));

@@ -23,6 +23,7 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
+import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 
 class OpdWorkspacePage extends ConsumerWidget {
   const OpdWorkspacePage({this.initialQuery, super.key});
@@ -2261,13 +2262,13 @@ class _OpdTableMobileRow extends StatelessWidget {
   }
 }
 
-class _NextStepCell extends StatelessWidget {
+class _NextStepCell extends ConsumerWidget {
   const _NextStepCell({required this.item});
 
   final _OpdTableItem item;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final OpdFlowSummary? flow = item.flow;
     final String encounterId =
         flow?.publicId ?? flow?.id ?? item.encounterId ?? item.id;
@@ -2281,14 +2282,13 @@ class _NextStepCell extends StatelessWidget {
       );
     }
 
-    return NextStepActionButton(
+    return WorkflowActionButton(
       encounterId: encounterId,
       patientId: flow?.patientId ?? item.patientNumber,
       stage: flow?.stage ?? item.status,
       nextStep: item.nextStep,
       displayNextStep: flow?.displayNextStep,
       assignedStaffId: flow?.providerUserId,
-      flow: flow,
       compact: true,
     );
   }

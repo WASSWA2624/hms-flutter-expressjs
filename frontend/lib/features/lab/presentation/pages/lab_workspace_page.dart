@@ -24,6 +24,7 @@ import 'package:hosspi_hms/features/lab/presentation/pages/lab_result_entry_dial
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
+import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope_section.dart';
@@ -486,7 +487,21 @@ List<AppListTableColumn<LabOrderSummary>> _optionalWorklistColumns(
             _nextActionLabel(context, right),
           ),
       cellBuilder: (BuildContext context, LabOrderSummary item) {
-        return _labWorklistTextCell(context, _nextActionLabel(context, item));
+        final String encounterId = item.encounterId ?? '';
+        if (encounterId.trim().isEmpty) {
+          return _labWorklistTextCell(
+            context,
+            _nextActionLabel(context, item),
+          );
+        }
+        return WorkflowActionButton(
+          encounterId: encounterId,
+          patientId: item.patientId,
+          orderId: item.id,
+          nextStep: item.status,
+          sourceModule: 'laboratory',
+          compact: true,
+        );
       },
     ),
   ];

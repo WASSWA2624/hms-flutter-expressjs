@@ -6310,6 +6310,90 @@ abstract class AppLocalizations {
   /// **'Send to pharmacy'**
   String get opdRoutePharmacyAction;
 
+  /// No description provided for @opdReviewResultsAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Review results'**
+  String get opdReviewResultsAction;
+
+  /// No description provided for @opdReviewReportAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Review report'**
+  String get opdReviewReportAction;
+
+  /// No description provided for @opdMedicinesDispensedAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Medicines dispensed'**
+  String get opdMedicinesDispensedAction;
+
+  /// No description provided for @opdCollectSampleAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect sample'**
+  String get opdCollectSampleAction;
+
+  /// No description provided for @opdDiagnosticsPendingAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics pending'**
+  String get opdDiagnosticsPendingAction;
+
+  /// No description provided for @opdPerformImagingAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Perform imaging'**
+  String get opdPerformImagingAction;
+
+  /// No description provided for @opdDispenseMedicineAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispense medicine'**
+  String get opdDispenseMedicineAction;
+
+  /// No description provided for @opdAdmissionHandoffAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Admit patient'**
+  String get opdAdmissionHandoffAction;
+
+  /// No description provided for @opdAdmittedAction.
+  ///
+  /// In en, this message translates to:
+  /// **'View admission'**
+  String get opdAdmittedAction;
+
+  /// No description provided for @opdDischargeAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan discharge'**
+  String get opdDischargeAction;
+
+  /// No description provided for @opdTheatreSchedulingAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Theatre scheduling'**
+  String get opdTheatreSchedulingAction;
+
+  /// No description provided for @opdPhysiotherapyAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Physiotherapy session'**
+  String get opdPhysiotherapyAction;
+
+  /// No description provided for @opdInsurancePreauthAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Pre-authorization'**
+  String get opdInsurancePreauthAction;
+
+  /// No description provided for @opdAssignBedAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign bed'**
+  String get opdAssignBedAction;
+
   /// Action label to open the OPD print summary.
   ///
   /// In en, this message translates to:
