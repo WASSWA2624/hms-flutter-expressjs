@@ -273,9 +273,12 @@ The refactor is complete when ALL of the following are true:
 
 ## Step 3: Save the Output
 
-- Inspect existing files in `prompts/` to determine the next available numeric prefix.
-- Save the generated prompt as: `prompts/{NN}-standardize-{screen-name-kebab-case}.md`
-  - Example: if `{screen_name}` is "Patient Management" and the highest existing prefix is `13`, save as `prompts/14-standardize-patient-management.md`.
+- List all existing files in the `prompts/` folder.
+- Find the highest numeric prefix currently in use (e.g., if `14-standardize-patients.md` exists, the highest is `14`).
+- Increment by 1 and zero-pad to two digits for the new file's prefix.
+- Save the generated prompt as: `prompts/{NN}-{short-kebab-case-name}.md`
+  - The filename should be short and descriptive (3–5 words max in kebab-case).
+  - Example: if the highest existing file is `14-standardize-patients.md` and the screen name is "Laboratory", save as `prompts/15-standardize-laboratory.md`.
 
 ---
 
