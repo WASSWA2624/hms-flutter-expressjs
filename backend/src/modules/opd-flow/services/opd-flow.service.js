@@ -3883,12 +3883,68 @@ const assignDoctor = async (id, data, context = {}) => {
       facilityId: encounter.facility_id
     });
     const consultation = { ...(flow.consultation || {}) };
+    const currency = normalizeCurrencyCode(
+      feeDefaults.consultationCurrency || consultation.currency,
+      'USD'
+    );
     if (feeDefaults.consultationFee) {
       consultation.consultation_fee = feeDefaults.consultationFee;
     }
-    if (feeDefaults.consultationCurrency) {
-      consultation.currency = feeDefaults.consultationCurrency;
+    consultation.currency = currency;
+
+    const consultationCatalogItemId =
+      provider?.staff_profile?.id || encounter.facility_id || null;
+    const requiresInvoice =
+      consultation.require_payment !== false &&
+      Boolean(consultation.consultation_fee);
+
+    let invoice = consultation.invoice_id
+      ? await tx.invoice.findFirst({
+          where: { id: consultation.invoice_id, deleted_at: null }
+        })
+      : null;
+
+    if (requiresInvoice) {
+      const existingSnapshot =
+        consultation.billing ||
+        (consultation.invoice_id ? { invoice_id: consultation.invoice_id } : null);
+      const billingPayload = buildConsultationBillingPayload({
+        consultationFee: consultation.consultation_fee || '0.00',
+        currency,
+        paymentStatus: consultation.require_payment !== false ? 'PENDING' : 'PENDING',
+        catalogItemId: consultationCatalogItemId,
+        payNow: null
+      });
+
+      if (billingPayload) {
+        const snapshot = await persistConsultationBilling(tx, {
+          encounterId: encounter.id,
+          billing: billingPayload,
+          existingSnapshot,
+          tenantId: encounter.tenant_id,
+          facilityId: encounter.facility_id,
+          patientId: encounter.patient_id,
+          encounterDisplayId: encounter.human_friendly_id || null,
+          catalogItemId: consultationCatalogItemId,
+          actorUserId: context.user_id || null,
+          currency,
+          description: 'Consultation fee',
+          mutableUpdate: Boolean(existingSnapshot)
+        });
+
+        if (snapshot?.invoice_id) {
+          invoice = await tx.invoice.findFirst({
+            where: { id: snapshot.invoice_id, deleted_at: null },
+            include: {
+              payments: { where: { deleted_at: null }, orderBy: { created_at: 'desc' } }
+            }
+          });
+          consultation.invoice_id = snapshot.invoice_id;
+          consultation.billing = snapshot;
+        }
+      }
     }
+
     flow.consultation = consultation;
 
     const updated = await tx.encounter.update({
@@ -3909,7 +3965,22 @@ const assignDoctor = async (id, data, context = {}) => {
     }
 
     if (flow.stage === STAGES.WAITING_DOCTOR_ASSIGNMENT) {
-      setFlowStage(flow, STAGES.WAITING_DOCTOR_REVIEW);
+      const invoiceCreated = Boolean(invoice && consultation.invoice_id);
+      const paymentPending =
+        invoiceCreated &&
+        consultation.require_payment !== false &&
+        !consultation.is_paid;
+      setFlowStage(
+        flow,
+        paymentPending
+          ? STAGES.WAITING_CONSULTATION_PAYMENT
+          : STAGES.WAITING_DOCTOR_REVIEW
+      );
+      if (invoiceCreated) {
+        appendTimelineEvent(flow, 'CONSULTATION_INVOICE_CREATED', context, {
+          invoice_id: consultation.invoice_id
+        });
+      }
     }
     appendTimelineEvent(flow, 'DOCTOR_ASSIGNED', context, {
       provider_user_id: provider.id
