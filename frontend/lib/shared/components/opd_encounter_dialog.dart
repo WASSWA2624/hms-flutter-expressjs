@@ -245,6 +245,37 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   ClinicalRequestBillingLineItem? _resolvedConsultationLine;
   bool _engineFeeResolved = false;
 
+  List<AppSelectOption<String>>? _cachedPatientSelectOptions;
+  List<Patient>? _cachedPatientSelectSource;
+  List<AppSelectOption<String>>? _cachedAppointmentSelectOptions;
+  List<OpdAppointment>? _cachedAppointmentSelectSource;
+
+  List<AppSelectOption<String>> _patientSelectOptions() {
+    if (identical(_cachedPatientSelectSource, _patientOptions) &&
+        _cachedPatientSelectOptions != null) {
+      return _cachedPatientSelectOptions!;
+    }
+    _cachedPatientSelectSource = _patientOptions;
+    _cachedPatientSelectOptions = _patientOptions
+        .map(_patientSelectOption)
+        .whereType<AppSelectOption<String>>()
+        .toList(growable: false);
+    return _cachedPatientSelectOptions!;
+  }
+
+  List<AppSelectOption<String>> _appointmentSelectOptions() {
+    if (identical(_cachedAppointmentSelectSource, _appointmentOptions) &&
+        _cachedAppointmentSelectOptions != null) {
+      return _cachedAppointmentSelectOptions!;
+    }
+    _cachedAppointmentSelectSource = _appointmentOptions;
+    _cachedAppointmentSelectOptions = _appointmentOptions
+        .map(_appointmentSelectOption)
+        .whereType<AppSelectOption<String>>()
+        .toList(growable: false);
+    return _cachedAppointmentSelectOptions!;
+  }
+
   bool get _pinPatientContext =>
       widget.initialPatient != null || _isNonEmpty(widget.initialPatientId);
 
@@ -1157,10 +1188,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     return switch (_patientMode) {
       _WalkInPatientMode.existing => AppSelectField<String>.searchable(
         value: _patientId,
-        options: _patientOptions
-            .map(_patientSelectOption)
-            .whereType<AppSelectOption<String>>()
-            .toList(growable: false),
+        options: _patientSelectOptions(),
         labelText: _opdRequiredFieldLabel(l10n, l10n.opdSearchPatientLabel),
         semanticLabel: _opdRequiredFieldLabel(l10n, l10n.opdSearchPatientLabel),
         isLoading: _isLoadingPatients,
@@ -1173,10 +1201,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       ),
       _WalkInPatientMode.appointment => AppSelectField<String>.searchable(
         value: _appointmentId,
-        options: _appointmentOptions
-            .map(_appointmentSelectOption)
-            .whereType<AppSelectOption<String>>()
-            .toList(growable: false),
+        options: _appointmentSelectOptions(),
         labelText: _opdRequiredFieldLabel(
           l10n,
           l10n.opdAppointmentPatientLabel,

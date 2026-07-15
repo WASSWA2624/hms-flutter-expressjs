@@ -467,6 +467,7 @@ class _AttachmentTile extends StatelessWidget {
           height: 140,
           width: double.infinity,
           fit: BoxFit.cover,
+          cacheHeight: 280,
           errorBuilder: (_, _, _) => _fileRow(context),
         ),
       );

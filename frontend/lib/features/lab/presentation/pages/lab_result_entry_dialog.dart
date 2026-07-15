@@ -1747,71 +1747,78 @@ class _LabResultEntryRowsTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final AppLocalizations l10n = context.l10n;
     final double tableWidth = availableWidth
         .clamp(860.0, double.infinity)
         .toDouble();
-    final Color borderColor = theme.colorScheme.outlineVariant;
-    final TableBorder tableBorder = embeddedInPanel
-        ? TableBorder(
-            left: BorderSide(color: borderColor),
-            right: BorderSide(color: borderColor),
-            bottom: BorderSide(color: borderColor),
-            horizontalInside: BorderSide(color: borderColor),
-            verticalInside: BorderSide(color: borderColor),
-          )
-        : TableBorder.all(color: borderColor);
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SizedBox(
-        width: tableWidth,
-        child: Table(
-          border: tableBorder,
-          columnWidths: const <int, TableColumnWidth>{
-            0: FlexColumnWidth(2.2),
-            1: FlexColumnWidth(1.35),
-            2: FlexColumnWidth(3.4),
-            3: FlexColumnWidth(),
-            4: FlexColumnWidth(1.45),
-          },
-          children: <TableRow>[
-            TableRow(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer.withValues(
-                  alpha: 0.32,
-                ),
-              ),
-              children: <Widget>[
-                _LabResultTableCell.header(label: l10n.labTestsColumnLabel),
-                _LabResultTableCell.header(label: l10n.labReferenceRangeLabel),
-                _LabResultTableCell.header(label: l10n.labReportResultLabel),
-                _LabResultTableCell.header(label: l10n.labResultFlagLabel),
-                _LabResultTableCell.header(label: l10n.labActionColumnLabel),
-              ],
+    final Color borderColor = colorScheme.outlineVariant;
+    final TableBorder tableBorder = TableBorder(
+      horizontalInside: BorderSide(color: borderColor),
+      verticalInside: BorderSide(color: borderColor),
+    );
+
+    final Widget table = SizedBox(
+      width: tableWidth,
+      child: Table(
+        border: tableBorder,
+        columnWidths: const <int, TableColumnWidth>{
+          0: FlexColumnWidth(2.2),
+          1: FlexColumnWidth(1.35),
+          2: FlexColumnWidth(3.4),
+          3: FlexColumnWidth(),
+          4: FlexColumnWidth(1.45),
+        },
+        children: <TableRow>[
+          TableRow(
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.72),
             ),
-            for (final _ResultDraft draft in drafts)
-              _labResultEntryTableRow(
-                context,
-                draft: draft,
-                canMutate: canMutate,
-                isSelected: selectedItemIds.contains(draft.item.apiId),
-                showSelection: canMutate && onToggleItemSelection != null,
-                selectionEnabled: _isBulkSelectable(draft),
-                onSelectionChanged: onToggleItemSelection == null
-                    ? null
-                    : (bool? value) => onToggleItemSelection!(
-                        draft.item.apiId,
-                        selected: value ?? false,
-                      ),
-                onSaveDraft: () => onSaveDraft(draft),
-                onSubmit: () => onSubmit(draft),
-                onVerify: () => onVerify(draft),
-                onEditVerified: () => onEditVerified(draft),
-                onReject: () => onReject(draft.item),
-                onRemove: () => onRemove(draft),
-              ),
-          ],
+            children: <Widget>[
+              _LabResultTableCell.header(label: l10n.labTestsColumnLabel),
+              _LabResultTableCell.header(label: l10n.labReferenceRangeLabel),
+              _LabResultTableCell.header(label: l10n.labReportResultLabel),
+              _LabResultTableCell.header(label: l10n.labResultFlagLabel),
+              _LabResultTableCell.header(label: l10n.labActionColumnLabel),
+            ],
+          ),
+          for (final _ResultDraft draft in drafts)
+            _labResultEntryTableRow(
+              context,
+              draft: draft,
+              canMutate: canMutate,
+              isSelected: selectedItemIds.contains(draft.item.apiId),
+              showSelection: canMutate && onToggleItemSelection != null,
+              selectionEnabled: _isBulkSelectable(draft),
+              onSelectionChanged: onToggleItemSelection == null
+                  ? null
+                  : (bool? value) => onToggleItemSelection!(
+                      draft.item.apiId,
+                      selected: value ?? false,
+                    ),
+              onSaveDraft: () => onSaveDraft(draft),
+              onSubmit: () => onSubmit(draft),
+              onVerify: () => onVerify(draft),
+              onEditVerified: () => onEditVerified(draft),
+              onReject: () => onReject(draft.item),
+              onRemove: () => onRemove(draft),
+            ),
+        ],
+      ),
+    );
+
+    return Material(
+      color: colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.55),
         ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: table,
       ),
     );
   }
@@ -1841,11 +1848,14 @@ class _LabResultHeaderText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return Text(
       label,
-      style: Theme.of(
-        context,
-      ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+      style: theme.textTheme.labelLarge?.copyWith(
+        fontWeight: FontWeight.w700,
+        color: theme.colorScheme.onSurfaceVariant,
+        letterSpacing: 0.1,
+      ),
     );
   }
 }

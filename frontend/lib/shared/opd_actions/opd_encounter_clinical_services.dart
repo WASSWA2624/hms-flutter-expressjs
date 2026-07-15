@@ -266,75 +266,78 @@ class _OpdClinicalServicesTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final TextStyle headerStyle = theme.textTheme.labelSmall!.copyWith(
+    final ColorScheme colorScheme = theme.colorScheme;
+    final TextStyle headerStyle = theme.textTheme.labelLarge!.copyWith(
       fontWeight: FontWeight.w700,
-      color: theme.colorScheme.onSurfaceVariant,
+      color: colorScheme.onSurfaceVariant,
+      letterSpacing: 0.1,
     );
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(theme.radius.sm),
+    return Material(
+      color: colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(theme.radius.md),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.55),
+        ),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(theme.radius.sm),
-        child: Table(
-          columnWidths: const <int, TableColumnWidth>{
-            0: FlexColumnWidth(2.6),
-            1: FlexColumnWidth(2.2),
-            2: FlexColumnWidth(1.6),
-            3: FlexColumnWidth(1.6),
-            4: FlexColumnWidth(2.4),
-          },
-          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-          children: <TableRow>[
-            TableRow(
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
+      clipBehavior: Clip.antiAlias,
+      child: Table(
+        columnWidths: const <int, TableColumnWidth>{
+          0: FlexColumnWidth(2.6),
+          1: FlexColumnWidth(2.2),
+          2: FlexColumnWidth(1.6),
+          3: FlexColumnWidth(1.6),
+          4: FlexColumnWidth(2.4),
+        },
+        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+        children: <TableRow>[
+          TableRow(
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.72),
+            ),
+            children: <Widget>[
+              _HeaderCell(l10n.opdClinicalServiceColumnLabel, headerStyle),
+              _HeaderCell(
+                l10n.opdClinicalServiceRequestedColumnLabel,
+                headerStyle,
               ),
+              _HeaderCell(
+                l10n.opdClinicalServiceStatusColumnLabel,
+                headerStyle,
+              ),
+              _HeaderCell(
+                l10n.opdClinicalServiceLocationColumnLabel,
+                headerStyle,
+              ),
+              _HeaderCell(
+                l10n.opdClinicalServiceResultColumnLabel,
+                headerStyle,
+              ),
+            ],
+          ),
+          for (final OpdClinicalServiceRow row in rows)
+            TableRow(
               children: <Widget>[
-                _HeaderCell(l10n.opdClinicalServiceColumnLabel, headerStyle),
-                _HeaderCell(
-                  l10n.opdClinicalServiceRequestedColumnLabel,
-                  headerStyle,
+                _ServiceCell(row: row),
+                _BodyCell(text: row.requestedLabel),
+                _BodyCell(
+                  child: _OpdClinicalServiceStatusChip(
+                    label: row.statusLabel,
+                    tone: row.statusTone,
+                  ),
                 ),
-                _HeaderCell(
-                  l10n.opdClinicalServiceStatusColumnLabel,
-                  headerStyle,
+                _BodyCell(
+                  child: _OpdClinicalServiceStatusChip(
+                    label: row.locationLabel,
+                    tone: row.locationTone,
+                    compact: true,
+                  ),
                 ),
-                _HeaderCell(
-                  l10n.opdClinicalServiceLocationColumnLabel,
-                  headerStyle,
-                ),
-                _HeaderCell(
-                  l10n.opdClinicalServiceResultColumnLabel,
-                  headerStyle,
-                ),
+                _ResultCell(row: row, l10n: l10n),
               ],
             ),
-            for (final OpdClinicalServiceRow row in rows)
-              TableRow(
-                children: <Widget>[
-                  _ServiceCell(row: row),
-                  _BodyCell(text: row.requestedLabel),
-                  _BodyCell(
-                    child: _OpdClinicalServiceStatusChip(
-                      label: row.statusLabel,
-                      tone: row.statusTone,
-                    ),
-                  ),
-                  _BodyCell(
-                    child: _OpdClinicalServiceStatusChip(
-                      label: row.locationLabel,
-                      tone: row.locationTone,
-                      compact: true,
-                    ),
-                  ),
-                  _ResultCell(row: row, l10n: l10n),
-                ],
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -351,8 +354,8 @@ class _HeaderCell extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.xs,
+        horizontal: theme.spacing.md,
+        vertical: theme.spacing.sm,
       ),
       child: Text(label, style: style),
     );
@@ -368,12 +371,20 @@ class _BodyCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.xs,
+        horizontal: theme.spacing.md,
+        vertical: theme.spacing.sm,
       ),
-      child: child ?? Text(text ?? '', style: theme.textTheme.bodySmall),
+      child: child ??
+          Text(
+            text ?? '',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
     );
   }
 }

@@ -2073,6 +2073,8 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     final double rowMaxHeight = widget.compact ? 64 : 72;
     final BorderRadius radius = BorderRadius.circular(theme.radius.md);
 
+    _resolveTableStyles(theme);
+
     final Widget table = DataTable(
       showCheckboxColumn: false,
       horizontalMargin: horizontalMargin,
@@ -2080,19 +2082,10 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
       headingRowHeight: widget.compact ? 44 : 48,
       dataRowMinHeight: rowMinHeight,
       dataRowMaxHeight: rowMaxHeight,
-      headingRowColor: WidgetStatePropertyAll<Color>(
-        colorScheme.surfaceContainerHigh.withValues(alpha: 0.72),
-      ),
+      headingRowColor: _cachedHeadingRowColor,
       dividerThickness: theme.appTokens.dividerThickness,
-      headingTextStyle: theme.textTheme.labelLarge?.copyWith(
-        color: colorScheme.onSurfaceVariant,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0.1,
-      ),
-      dataTextStyle: theme.textTheme.bodyMedium?.copyWith(
-        color: colorScheme.onSurface,
-        fontWeight: FontWeight.w500,
-      ),
+      headingTextStyle: _cachedHeadingTextStyle,
+      dataTextStyle: _cachedDataTextStyle,
       columns: <DataColumn>[
         DataColumn(
           numeric: true,
@@ -2101,10 +2094,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
             child: Text(
               '#',
               textAlign: TextAlign.center,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w700,
-              ),
+              style: _cachedNumberColumnStyle,
             ),
           ),
         ),
@@ -2160,15 +2150,44 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     );
   }
 
+  ColorScheme? _cachedTableStyleScheme;
+  WidgetStatePropertyAll<Color>? _cachedHeadingRowColor;
+  TextStyle? _cachedHeadingTextStyle;
+  TextStyle? _cachedDataTextStyle;
+  TextStyle? _cachedNumberColumnStyle;
+
+  void _resolveTableStyles(ThemeData theme) {
+    final ColorScheme cs = theme.colorScheme;
+    if (identical(_cachedTableStyleScheme, cs)) {
+      return;
+    }
+    _cachedTableStyleScheme = cs;
+    _cachedHeadingRowColor = WidgetStatePropertyAll<Color>(
+      cs.surfaceContainerHigh.withValues(alpha: 0.72),
+    );
+    _cachedHeadingTextStyle = theme.textTheme.labelLarge?.copyWith(
+      color: cs.onSurfaceVariant,
+      fontWeight: FontWeight.w700,
+      letterSpacing: 0.1,
+    );
+    _cachedDataTextStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: cs.onSurface,
+      fontWeight: FontWeight.w500,
+    );
+    _cachedNumberColumnStyle = theme.textTheme.labelMedium?.copyWith(
+      color: cs.onSurfaceVariant,
+      fontWeight: FontWeight.w700,
+    );
+    _rowNumberStyle = null;
+  }
+
   TextStyle? _rowNumberStyle;
-  ColorScheme? _rowNumberStyleScheme;
 
   TextStyle? _resolveRowNumberStyle(ThemeData theme) {
     if (_rowNumberStyle != null &&
-        identical(_rowNumberStyleScheme, theme.colorScheme)) {
+        identical(_cachedTableStyleScheme, theme.colorScheme)) {
       return _rowNumberStyle;
     }
-    _rowNumberStyleScheme = theme.colorScheme;
     _rowNumberStyle = theme.textTheme.labelMedium?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
       fontWeight: FontWeight.w600,

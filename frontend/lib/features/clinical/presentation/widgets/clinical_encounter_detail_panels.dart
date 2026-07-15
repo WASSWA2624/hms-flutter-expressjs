@@ -291,8 +291,7 @@ class ClinicalRadiologyOrdersTablePanel extends ConsumerWidget {
               ],
             );
           }
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          return _ClinicalDetailDataTableContainer(
             child: DataTable(
               showCheckboxColumn: false,
               columns: <DataColumn>[
@@ -361,8 +360,7 @@ class _ClinicalLabOrderGroup extends StatelessWidget {
             onDelete: onDelete,
           )
         else
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          _ClinicalDetailDataTableContainer(
             child: DataTable(
               showCheckboxColumn: false,
               columns: <DataColumn>[
@@ -405,8 +403,7 @@ class _ClinicalLabOrderGroup extends StatelessWidget {
                         ),
                     ],
                   )
-                : SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
+                : _ClinicalDetailDataTableContainer(
                     child: DataTable(
                       showCheckboxColumn: false,
                       columns: <DataColumn>[
@@ -1040,4 +1037,32 @@ String? _firstNonEmpty(Iterable<String?> values) {
     }
   }
   return null;
+}
+
+class _ClinicalDetailDataTableContainer extends StatelessWidget {
+  const _ClinicalDetailDataTableContainer({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final BorderRadius radius = BorderRadius.circular(theme.radius.md);
+
+    return Material(
+      color: colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: radius,
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.55),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: child,
+      ),
+    );
+  }
 }

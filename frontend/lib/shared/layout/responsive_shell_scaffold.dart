@@ -260,7 +260,8 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
             bottom: false,
             child: Column(
               children: <Widget>[
-                AppMenuBar(
+                RepaintBoundary(
+                  child: AppMenuBar(
                   title: widget.title,
                   compactTitle: widget.compactTitle,
                   breakpoint: breakpoint,
@@ -293,6 +294,7 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
                   onToggleNavigation: useDrawer
                       ? _openMobileDrawer
                       : _toggleDesktopSidebar,
+                  ),
                 ),
                 AppShellLoadingBar(visible: widget.isShellLoading),
                 Expanded(
@@ -402,19 +404,21 @@ class _ShellBody extends StatelessWidget {
 
     return Row(
       children: <Widget>[
-        SideNavigation(
-          destinations: destinations,
-          selectedIndex: selectedIndex,
-          collapsed: sidebarCollapsed,
-          width: sidebarWidth,
-          searchLabel: navigationSearchLabel,
-          searchHint: navigationSearchHint,
-          noResultsLabel: navigationSearchNoResultsLabel,
-          onDestinationSelected: onDestinationSelected,
+        RepaintBoundary(
+          child: SideNavigation(
+            destinations: destinations,
+            selectedIndex: selectedIndex,
+            collapsed: sidebarCollapsed,
+            width: sidebarWidth,
+            searchLabel: navigationSearchLabel,
+            searchHint: navigationSearchHint,
+            noResultsLabel: navigationSearchNoResultsLabel,
+            onDestinationSelected: onDestinationSelected,
+          ),
         ),
         if (!sidebarCollapsed) _SidebarResizeHandle(onDrag: onResizeSidebar),
         const VerticalDivider(width: AppShellLayout.dividerWidth),
-        Expanded(child: routeChild),
+        Expanded(child: RepaintBoundary(child: routeChild)),
       ],
     );
   }

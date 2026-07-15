@@ -252,10 +252,34 @@ abstract final class AppTheme {
       ),
       dataTableTheme: DataTableThemeData(
         dataRowMinHeight: 40,
-        dataRowMaxHeight: 44,
-        headingRowHeight: 40,
+        dataRowMaxHeight: 48,
+        headingRowHeight: 48,
         horizontalMargin: spacing.md,
-        columnSpacing: spacing.xl,
+        columnSpacing: spacing.lg,
+        dividerThickness: appTokens.dividerThickness,
+        headingRowColor: WidgetStatePropertyAll<Color>(
+          colorScheme.surfaceContainerHigh.withValues(alpha: 0.72),
+        ),
+        headingTextStyle: textTheme.labelLarge?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.1,
+        ),
+        dataTextStyle: textTheme.bodyMedium?.copyWith(
+          color: colorScheme.onSurface,
+          fontWeight: FontWeight.w500,
+        ),
+        dataRowColor: WidgetStateProperty.resolveWith<Color?>(
+          (Set<WidgetState> states) {
+            if (states.contains(WidgetState.hovered)) {
+              return colorScheme.primary.withValues(alpha: 0.05);
+            }
+            if (states.contains(WidgetState.selected)) {
+              return colorScheme.primary.withValues(alpha: 0.08);
+            }
+            return null;
+          },
+        ),
       ),
       snackBarTheme: SnackBarThemeData(
         shape: controlShape,
