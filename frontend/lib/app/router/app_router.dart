@@ -222,16 +222,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.nursing.path,
             name: AppRoutes.nursing.name,
             builder: (_, GoRouterState state) {
-              final Map<String, String> params = state.uri.queryParameters;
-              final String id =
-                  (params['id'] ??
-                          params['admissionId'] ??
-                          params['encounterId'] ??
-                          '')
-                      .trim();
               return NursingWorkspacePage(
-                initialAdmissionId: id.isEmpty ? null : id,
-                initialPanel: NursingDetailPanel.fromValue(params['panel']),
+                initialQuery: NursingWorkspaceQuery.fromUri(state.uri),
               );
             },
           ),

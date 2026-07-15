@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -107,7 +106,8 @@ class _RadiologyWorkspaceContentState
   @override
   void initState() {
     super.initState();
-    _section = _sectionFromQuery(widget.initialQuery?.section ?? '') ??
+    _section =
+        _sectionFromQuery(widget.initialQuery?.section ?? '') ??
         RadiologyDeskSection.worklist;
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
@@ -201,9 +201,98 @@ class _RadiologyWorkspaceContentState
     return null;
   }
 
+  void _updateUrlForSection(RadiologyDeskSection section) {
+    if (!mounted) return;
+    final String tab = _sectionToQueryValue(section);
+    final String location = AppRoutes.radiology.location(
+      queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
+    );
+    GoRouter.of(context).replace<void>(location);
+  }
+
+  static String _sectionToQueryValue(RadiologyDeskSection section) {
+    return switch (section) {
+      RadiologyDeskSection.worklist => 'worklist',
+      RadiologyDeskSection.reporting => 'reporting',
+      RadiologyDeskSection.released => 'released',
+      RadiologyDeskSection.allOrders => 'all',
+    };
+  }
+
+  RadiologyDeskSection? _sectionFromQuery(String raw) {
+    switch (raw.trim().toLowerCase()) {
+      case 'worklist':
+      case 'work':
+        return RadiologyDeskSection.worklist;
+      case 'reporting':
+      case 'reports':
+      case 'draft':
+        return RadiologyDeskSection.reporting;
+      case 'released':
+      case 'completed':
+      case 'finalized':
+        return RadiologyDeskSection.released;
+      case 'all':
+      case 'all_orders':
+      case 'all-orders':
+        return RadiologyDeskSection.allOrders;
+      default:
+        return null;
+    }
+  }
+
+  void _applyStageForSection(RadiologyDeskSection section) {
+    final RadiologyWorkspaceController controller = ref.read(
+      radiologyWorkspaceControllerProvider.notifier,
+    );
+    switch (section) {
+      case RadiologyDeskSection.worklist:
+        unawaited(controller.applyStage('ALL'));
+      case RadiologyDeskSection.reporting:
+        unawaited(controller.applyStage('REPORTING'));
+      case RadiologyDeskSection.released:
+        unawaited(controller.applyStage('COMPLETED'));
+      case RadiologyDeskSection.allOrders:
+        unawaited(controller.applyStage('ALL'));
+    }
+  }
+
+  String _sectionLabel(AppLocalizations l10n, RadiologyDeskSection section) {
+    return switch (section) {
+      RadiologyDeskSection.worklist => l10n.radiologyStageAll,
+      RadiologyDeskSection.reporting => l10n.radiologyStageReporting,
+      RadiologyDeskSection.released => l10n.radiologyStageCompleted,
+      RadiologyDeskSection.allOrders => l10n.radiologyTotalOrdersSummaryLabel,
+    };
+  }
+
+  static IconData _sectionIcon(RadiologyDeskSection section) {
+    return switch (section) {
+      RadiologyDeskSection.worklist => Icons.pending_actions_outlined,
+      RadiologyDeskSection.reporting => Icons.edit_note_outlined,
+      RadiologyDeskSection.released => Icons.verified_outlined,
+      RadiologyDeskSection.allOrders => Icons.assignment_outlined,
+    };
+  }
+
+  int _sectionCount(
+    RadiologyWorkspaceState state,
+    RadiologyDeskSection section,
+  ) {
+    return switch (section) {
+      RadiologyDeskSection.worklist => state.workloadCount,
+      RadiologyDeskSection.reporting => state.reportingCount,
+      RadiologyDeskSection.released => state.releasedCount,
+      RadiologyDeskSection.allOrders => state.summary.totalForView(
+        state.query.view,
+      ),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final RadiologyWorkspaceState state = widget.state;
     final controller = ref.read(radiologyWorkspaceControllerProvider.notifier);
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
@@ -214,120 +303,110 @@ class _RadiologyWorkspaceContentState
     final bool canWork = accessPolicy.grants(AppPermissions.radiologyWrite);
     final AppFailure? lastFailure = state.lastFailure;
 
-    return AppWorkspace(
-      title: l10n.radiologyTitle,
-      leadingIcon: AppRouteIcons.radiology,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        summaryNotifications: <AppWorkspaceSummaryNotification>[
-          if (state.summary.totalForView(state.query.view) > 0)
-            AppWorkspaceSummaryNotification(
-              label: state.query.view == RadiologyWorkbenchView.patients
-                  ? l10n.radiologyPatientsSummaryLabel
-                  : l10n.radiologyTotalOrdersSummaryLabel,
-              count: state.summary.totalForView(state.query.view),
-              icon: Icons.assignment_outlined,
-              onSelected: controller.clearFilters,
-            ),
-          if (state.summary.orderedForView(state.query.view) > 0)
-            AppWorkspaceSummaryNotification(
-              label: state.query.view == RadiologyWorkbenchView.patients
-                  ? l10n.radiologyPatientsWaitingImagingSummaryLabel
-                  : l10n.radiologyWaitingImagingSummaryLabel,
-              count: state.summary.orderedForView(state.query.view),
-              icon: Icons.pending_actions_outlined,
-              tone: AppWorkspaceStatusTone.warning,
-              onSelected: () => controller.applyStage('ORDERED'),
-            ),
-          if (state.reportingCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.radiologyReportingSummaryLabel,
-              count: state.reportingCount,
-              icon: Icons.edit_note_outlined,
-              tone: AppWorkspaceStatusTone.info,
-              onSelected: () => controller.applyStage('REPORTING'),
-            ),
-          if (state.releasedCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.radiologyReleasedSummaryLabel,
-              count: state.releasedCount,
-              icon: Icons.verified_outlined,
-              tone: AppWorkspaceStatusTone.success,
-              onSelected: () => controller.applyStage('COMPLETED'),
-            ),
-        ],
-        secondary: <Widget>[
-          AppButton.secondary(
-            label: state.query.view == RadiologyWorkbenchView.patients
-                ? l10n.radiologyOrdersViewAction
-                : l10n.radiologyPatientsViewAction,
-            leadingIcon: Icons.swap_horiz_outlined,
-            semanticLabel: state.query.view == RadiologyWorkbenchView.patients
-                ? l10n.radiologyOrdersViewAction
-                : l10n.radiologyPatientsViewAction,
-            tooltip: state.query.view == RadiologyWorkbenchView.patients
-                ? l10n.radiologyOrdersViewAction
-                : l10n.radiologyPatientsViewAction,
-            onPressed: state.isMutating
-                ? null
-                : () => controller.applyView(
-                    state.query.view == RadiologyWorkbenchView.patients
-                        ? RadiologyWorkbenchView.orders
-                        : RadiologyWorkbenchView.patients,
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: AppTabStrip(
+                    tabs: <AppTabItem>[
+                      for (final RadiologyDeskSection section
+                          in RadiologyDeskSection.values)
+                        AppTabItem(
+                          id: section.name,
+                          icon: _sectionIcon(section),
+                          label:
+                              '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
+                        ),
+                    ],
+                    selectedId: _section.name,
+                    onTabTapped: (String tabId) {
+                      for (final RadiologyDeskSection section
+                          in RadiologyDeskSection.values) {
+                        if (section.name == tabId) {
+                          setState(() => _section = section);
+                          _updateUrlForSection(section);
+                          _applyStageForSection(section);
+                          break;
+                        }
+                      }
+                    },
                   ),
-          ),
-          if (canWork)
-            AppButton.secondary(
-              label: l10n.radiologyConfigurationsAction,
-              leadingIcon: Icons.tune_outlined,
-              semanticLabel: l10n.radiologyConfigurationsAction,
-              tooltip: l10n.radiologyConfigurationsAction,
-              enabled: !state.isMutating,
-              onPressed: state.isMutating
-                  ? null
-                  : () => _showRadiologyConfigurationsDialog(
-                      context,
-                      ref,
-                      tenantId: accessPolicy.tenantId,
-                    ),
+                ),
+                SizedBox(width: theme.spacing.sm),
+                AppButton.secondary(
+                  label: state.query.view == RadiologyWorkbenchView.patients
+                      ? l10n.radiologyOrdersViewAction
+                      : l10n.radiologyPatientsViewAction,
+                  leadingIcon: Icons.swap_horiz_outlined,
+                  semanticLabel:
+                      state.query.view == RadiologyWorkbenchView.patients
+                      ? l10n.radiologyOrdersViewAction
+                      : l10n.radiologyPatientsViewAction,
+                  tooltip: state.query.view == RadiologyWorkbenchView.patients
+                      ? l10n.radiologyOrdersViewAction
+                      : l10n.radiologyPatientsViewAction,
+                  onPressed: state.isMutating
+                      ? null
+                      : () => controller.applyView(
+                          state.query.view == RadiologyWorkbenchView.patients
+                              ? RadiologyWorkbenchView.orders
+                              : RadiologyWorkbenchView.patients,
+                        ),
+                ),
+                if (canWork) ...<Widget>[
+                  SizedBox(width: theme.spacing.sm),
+                  AppButton.secondary(
+                    label: l10n.radiologyConfigurationsAction,
+                    leadingIcon: Icons.tune_outlined,
+                    semanticLabel: l10n.radiologyConfigurationsAction,
+                    tooltip: l10n.radiologyConfigurationsAction,
+                    enabled: !state.isMutating,
+                    onPressed: state.isMutating
+                        ? null
+                        : () => _showRadiologyConfigurationsDialog(
+                            context,
+                            ref,
+                            tenantId: accessPolicy.tenantId,
+                          ),
+                  ),
+                ],
+                SizedBox(width: theme.spacing.sm),
+                if (canRequest)
+                  AppButton.primary(
+                    label: l10n.radiologyRequestImagingAction,
+                    leadingIcon: Icons.add,
+                    semanticLabel: l10n.radiologyRequestImagingAction,
+                    tooltip: l10n.radiologyRequestImagingAction,
+                    enabled: !state.isMutating,
+                    onPressed: () => _showCreateOrderDialog(context, ref),
+                  ),
+              ],
             ),
-        ],
-        primary: canRequest
-            ? AppButton.primary(
-                label: l10n.radiologyRequestImagingAction,
-                leadingIcon: Icons.add,
-                semanticLabel: l10n.radiologyRequestImagingAction,
-                tooltip: l10n.radiologyRequestImagingAction,
-                enabled: !state.isMutating,
-                onPressed: () => _showCreateOrderDialog(context, ref),
-              )
-            : null,
-        onRefresh: () async {
-          await controller.refresh();
-        },
-        isRefreshing: state.isRefreshing,
-      ),
-
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (lastFailure != null) ...<Widget>[
-            AppFailureStateView(
-              failure: lastFailure,
-              onRetry: controller.refresh,
+            SizedBox(height: theme.spacing.md),
+            if (lastFailure != null) ...<Widget>[
+              AppFailureStateView(
+                failure: lastFailure,
+                onRetry: controller.refresh,
+              ),
+              SizedBox(height: theme.spacing.md),
+            ],
+            _RadiologyOrderBoard(
+              state: state,
+              canWork: canWork,
+              canRequest: canRequest,
+              searchController: _searchController,
+              columnVisibilityController: _tableColumnController,
+              onSearchChanged: _scheduleSearch,
+              onSearchSubmitted: _applySearchNow,
             ),
-            SizedBox(height: Theme.of(context).spacing.md),
           ],
-          _RadiologyOrderBoard(
-            state: state,
-            canWork: canWork,
-            canRequest: canRequest,
-            searchController: _searchController,
-            columnVisibilityController: _tableColumnController,
-            onSearchChanged: _scheduleSearch,
-            onSearchSubmitted: _applySearchNow,
-          ),
-        ],
+        ),
       ),
     );
   }

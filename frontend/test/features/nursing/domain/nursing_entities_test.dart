@@ -50,6 +50,89 @@ void main() {
     });
   });
 
+  group('NursingWorkspaceQuery', () {
+    test('fromUri parses scope, id, and panel correctly', () {
+      final Uri uri = Uri.parse(
+        '/nursing?scope=urgent&id=abc&panel=vitals',
+      );
+      final NursingWorkspaceQuery query = NursingWorkspaceQuery.fromUri(uri);
+      expect(query.scope, 'urgent');
+      expect(query.admissionId, 'abc');
+      expect(query.panel, 'vitals');
+      expect(query.search, '');
+    });
+
+    test('fromUri handles alias parameters', () {
+      final Uri uri = Uri.parse(
+        '/nursing?section=medication-due&admission_id=X1&detail=handover&q=jones',
+      );
+      final NursingWorkspaceQuery query = NursingWorkspaceQuery.fromUri(uri);
+      expect(query.scope, 'medication-due');
+      expect(query.admissionId, 'X1');
+      expect(query.panel, 'handover');
+      expect(query.search, 'jones');
+    });
+
+    test('fromUri returns empty strings for missing parameters', () {
+      final Uri uri = Uri.parse('/nursing');
+      final NursingWorkspaceQuery query = NursingWorkspaceQuery.fromUri(uri);
+      expect(query.scope, '');
+      expect(query.search, '');
+      expect(query.admissionId, '');
+      expect(query.panel, '');
+    });
+
+    test('hasRouteTargeting returns true when any parameter is set', () {
+      const NursingWorkspaceQuery empty = NursingWorkspaceQuery();
+      expect(empty.hasRouteTargeting, isFalse);
+
+      const NursingWorkspaceQuery withScope = NursingWorkspaceQuery(
+        scope: 'urgent',
+      );
+      expect(withScope.hasRouteTargeting, isTrue);
+
+      const NursingWorkspaceQuery withSearch = NursingWorkspaceQuery(
+        search: 'Smith',
+      );
+      expect(withSearch.hasRouteTargeting, isTrue);
+
+      const NursingWorkspaceQuery withId = NursingWorkspaceQuery(
+        admissionId: 'abc-123',
+      );
+      expect(withId.hasRouteTargeting, isTrue);
+
+      const NursingWorkspaceQuery withPanel = NursingWorkspaceQuery(
+        panel: 'vitals',
+      );
+      expect(withPanel.hasRouteTargeting, isTrue);
+    });
+
+    test('signature produces distinct strings for different queries', () {
+      const NursingWorkspaceQuery q1 = NursingWorkspaceQuery(
+        scope: 'urgent',
+        admissionId: 'abc',
+      );
+      const NursingWorkspaceQuery q2 = NursingWorkspaceQuery(
+        scope: 'all',
+        admissionId: 'abc',
+      );
+      const NursingWorkspaceQuery q3 = NursingWorkspaceQuery(
+        scope: 'urgent',
+        admissionId: 'abc',
+      );
+      expect(q1.signature, isNot(equals(q2.signature)));
+      expect(q1.signature, equals(q3.signature));
+    });
+
+    test('fromUri picks first matching key from alias list', () {
+      final Uri uri = Uri.parse(
+        '/nursing?encounterId=ENC1&admissionId=ADM1',
+      );
+      final NursingWorkspaceQuery query = NursingWorkspaceQuery.fromUri(uri);
+      expect(query.admissionId, 'ADM1');
+    });
+  });
+
   group('NursingPatientDetail checklist note helpers', () {
     NursingPatientDetail buildDetail(List<NursingNoteRecord> notes) {
       return NursingPatientDetail(
