@@ -195,53 +195,76 @@ class _AppCurrencySelectFieldState extends State<AppCurrencySelectField> {
         floatingLabelBehavior: FloatingLabelBehavior.auto,
         helperText: widget.helperText,
         errorText: widget.errorText,
-        suffixIcon: widget.isLoading
-            ? const Padding(
-                padding: EdgeInsets.all(12),
-                child: SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            : Icon(
-                Icons.keyboard_arrow_down,
-                color: canEdit
-                    ? colorScheme.onSurfaceVariant
-                    : colorScheme.onSurface.withValues(alpha: 0.38),
-              ),
+        contentPadding: EdgeInsets.zero,
       ),
       child: InkWell(
         onTap: canEdit ? _openPicker : null,
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
-          child: Row(
-            children: <Widget>[
-              AppCurrencyFlagIcon(
-                option: selected,
-                currencyCode: code,
-                size: 28,
-                enabled: canEdit,
-              ),
-              SizedBox(width: theme.spacing.sm),
-              Expanded(
-                child: Text(
-                  selected?.label ??
-                      (code.isNotEmpty
-                          ? code
-                          : (widget.hintText ?? widget.labelText)),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: code.isNotEmpty
-                        ? (canEdit
-                              ? colorScheme.onSurface
-                              : colorScheme.onSurface.withValues(alpha: 0.62))
-                        : colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w700,
+        child: SizedBox(
+          height: 56,
+          child: Padding(
+            padding: EdgeInsetsDirectional.only(
+              start: theme.spacing.md,
+              end: theme.spacing.sm,
+            ),
+            child: Row(
+              children: <Widget>[
+                AppCurrencyFlagIcon(
+                  option: selected,
+                  currencyCode: code,
+                  enabled: canEdit,
+                ),
+                SizedBox(width: theme.spacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        code.isNotEmpty
+                            ? code
+                            : (widget.hintText ?? widget.labelText),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: code.isNotEmpty
+                              ? (canEdit
+                                    ? colorScheme.onSurface
+                                    : colorScheme.onSurface
+                                          .withValues(alpha: 0.62))
+                              : colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      if (selected != null)
+                        Text(
+                          selected.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: canEdit
+                                ? colorScheme.onSurfaceVariant
+                                : colorScheme.onSurface
+                                      .withValues(alpha: 0.38),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-              ),
-            ],
+                SizedBox(width: theme.spacing.xs),
+                if (widget.isLoading)
+                  const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  Icon(
+                    Icons.keyboard_arrow_down,
+                    color: canEdit
+                        ? colorScheme.onSurfaceVariant
+                        : colorScheme.onSurface.withValues(alpha: 0.38),
+                  ),
+              ],
+            ),
           ),
         ),
       ),

@@ -247,15 +247,13 @@ class _TenantConfigPanelState extends ConsumerState<_TenantConfigPanel> {
             );
 
             if (wide) {
-              return IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    Expanded(child: currencyField),
-                    SizedBox(width: theme.spacing.lg),
-                    Expanded(child: feeField),
-                  ],
-                ),
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(child: currencyField),
+                  SizedBox(width: theme.spacing.lg),
+                  Expanded(child: feeField),
+                ],
               );
             }
 
@@ -270,20 +268,22 @@ class _TenantConfigPanelState extends ConsumerState<_TenantConfigPanel> {
           },
         ),
         SizedBox(height: theme.spacing.lg),
-        Row(
+        Wrap(
+          alignment: WrapAlignment.end,
+          spacing: theme.spacing.sm,
+          runSpacing: theme.spacing.sm,
           children: <Widget>[
-            AppButton.primary(
-              label: l10n.settingsConfigurationSaveAction,
-              leadingIcon: Icons.save_outlined,
-              isLoading: _saving,
-              onPressed: _saving ? null : _save,
-            ),
-            SizedBox(width: theme.spacing.sm),
             AppButton.tertiary(
               label: l10n.settingsConfigurationResetAction,
               leadingIcon: Icons.restart_alt_outlined,
               enabled: !_saving && _hasValues,
               onPressed: _saving ? null : _confirmReset,
+            ),
+            AppButton.primary(
+              label: l10n.settingsConfigurationSaveAction,
+              leadingIcon: Icons.save_outlined,
+              isLoading: _saving,
+              onPressed: _saving ? null : _save,
             ),
           ],
         ),
@@ -485,15 +485,13 @@ class _FacilityConfigPanelState extends ConsumerState<_FacilityConfigPanel> {
             );
 
             if (wide) {
-              return IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    Expanded(child: currencyField),
-                    SizedBox(width: theme.spacing.lg),
-                    Expanded(child: feeField),
-                  ],
-                ),
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(child: currencyField),
+                  SizedBox(width: theme.spacing.lg),
+                  Expanded(child: feeField),
+                ],
               );
             }
 
@@ -508,20 +506,22 @@ class _FacilityConfigPanelState extends ConsumerState<_FacilityConfigPanel> {
           },
         ),
         SizedBox(height: theme.spacing.lg),
-        Row(
+        Wrap(
+          alignment: WrapAlignment.end,
+          spacing: theme.spacing.sm,
+          runSpacing: theme.spacing.sm,
           children: <Widget>[
-            AppButton.primary(
-              label: l10n.settingsConfigurationSaveAction,
-              leadingIcon: Icons.save_outlined,
-              isLoading: _saving,
-              onPressed: _saving ? null : _save,
-            ),
-            SizedBox(width: theme.spacing.sm),
             AppButton.tertiary(
               label: l10n.settingsConfigurationResetAction,
               leadingIcon: Icons.restart_alt_outlined,
               enabled: !_saving && _hasValues,
               onPressed: _saving ? null : _confirmReset,
+            ),
+            AppButton.primary(
+              label: l10n.settingsConfigurationSaveAction,
+              leadingIcon: Icons.save_outlined,
+              isLoading: _saving,
+              onPressed: _saving ? null : _save,
             ),
           ],
         ),
