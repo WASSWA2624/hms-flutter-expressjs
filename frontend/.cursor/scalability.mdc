@@ -14,12 +14,14 @@ Defines how the template remains maintainable as more features, platforms, and t
 ## Mandatory rules
 - Keep features independent and feature-first.
 - Keep cross-cutting services in `core` only when multiple features use them.
-- Keep shared UI generic and business-free.
+- Keep shared UI generic and business-free; all reusable components must live under `frontend/lib/shared/`.
 - Keep public feature exports intentional.
 - Avoid global mutable state.
 - Use clear contracts between layers.
 - Document architecture decisions that affect future development.
 - Avoid copying whole screens to support new layouts.
+- UI must be fully responsive across mobile, tablet, and desktop breakpoints.
+- Prohibit hard-coded style tokens; use theme tokens exclusively.
 
 ## Scaling patterns
 | Problem | Required pattern |

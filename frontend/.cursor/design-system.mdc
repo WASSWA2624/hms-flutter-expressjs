@@ -19,6 +19,9 @@ Purpose: single source of truth for the HOSSPI HMS visual system.
 - Light theme: clean blue-based palette; dark theme: clean, readable, Material-aligned.
 - Never hard-code color, spacing, radius, elevation, or typography tokens in feature or shared widget code.
 - All surfaces must remain readable and consistently styled on mobile, tablet, and desktop breakpoints ([`layouts.mdc`](./layouts.mdc)).
+- Reusable theme-aware components must live in `frontend/lib/shared/`; check the shared catalog before creating new styled widgets.
+- All user-facing text (labels, tooltips, status descriptions) must be localized with concise, clinically appropriate terminology.
+- Keep visual design simple and intuitive; avoid decorative complexity that slows rendering or confuses clinical workflows.
 - Store theme mode as a non-sensitive preference when persisted.
 - Theme changes must update the app reactively.
 - Shared components read colors, typography, shape, and spacing from the active theme or design tokens.

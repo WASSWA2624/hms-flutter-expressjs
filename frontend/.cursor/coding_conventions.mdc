@@ -27,8 +27,11 @@ Purpose: naming, imports, style, and file focus.
 - `const` constructors where possible.
 - Small focused widgets; no business logic in widgets.
 - Typed models, not maps, for app data.
-- No hard-coded route strings, user-facing text, colors, spacing, or repeated formatting.
+- No hard-coded route strings, user-facing text, colors, spacing, or repeated formatting. Use design tokens exclusively ([`design-system.mdc`](./design-system.mdc)).
+- All user-facing text must be localized with concise, clinically appropriate terminology via ARB keys.
 - Use `human_friendly_id` in routes, deep links, and user-visible identifiers — not raw database IDs.
+- Reuse shared components from `frontend/lib/shared/` before creating feature-local widgets; check the shared catalog first.
+- Menus, UI components, and actions must never be visible or accessible to unauthorized users — enforce RBAC+ABAC ([`permissions.mdc`](./permissions.mdc)).
 - Presentation files must not define private UI copy classes (`_XxxText`) — use `app_en.arb`.
 - `*_workspace_page.dart` files should stay compositional; extract widgets when approaching ~800 lines.
 - Treat analyzer warnings seriously.

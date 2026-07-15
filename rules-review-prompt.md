@@ -28,3 +28,4 @@ For each rule file, apply the following steps where applicable:
    - Administrators must be able to customize, extend, or restore module, role, and package permissions to shipped defaults at any time.
    - Document and enforce all relationships and permission assignments between modules, subscriptions, roles, and users in the applicable rule files.
    - Guarantee that defaults can be restored and active changes are atomic, ensuring no user’s effective permissions can ever exceed those allowed by both their assigned roles/modules and active subscription package.
+13. Ensure that whenever a database schema change necessitates a migration, all required migrations are executed promptly and reliably for every applicable database environment.

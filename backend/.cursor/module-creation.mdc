@@ -25,6 +25,7 @@ Done gate:
 - owned tables and permission keys exist
 - public routes and responses use `human_friendly_id` only; internal IDs are not exposed
 - default permissions match `.cursor/access/` and subscription intersection tests pass
+- effective permissions = `union(role, module, user grants) ∩ active subscription ∩ ABAC scope`; no endpoint accessible to unauthorized users
 - standalone workflow is usable without another paid module being open
 - mutation paths create audit evidence
 - route, permission, entitlement, and module names match all docs

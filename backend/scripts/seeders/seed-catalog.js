@@ -84,7 +84,7 @@ const DEMO_PLAN_CATALOG = Object.freeze([
   {
     code: 'custom',
     name: 'Custom',
-    tier_code: 'DEVELOPER',
+    tier_code: 'CUSTOM',
     price: 10000,
     billing_cycle: 'YEARLY',
     max_users: null,
@@ -104,7 +104,7 @@ const DEMO_PLAN_CATALOG = Object.freeze([
   {
     code: 'developer',
     name: 'Developer',
-    tier_code: 'CUSTOM',
+    tier_code: 'DEVELOPER',
     price: 0,
     billing_cycle: 'YEARLY',
     max_users: null,
@@ -222,7 +222,7 @@ const DEMO_TENANTS = Object.freeze([
     tenant_code: 'DEMO',
     name: 'DemoCare General Hospital',
     slug: 'democare-general-hospital',
-    primary_plan_code: 'advanced',
+    primary_plan_code: 'pro',
     seed_inpatient_resources: true,
     facilities: [{ key: 'main', name: 'DemoCare General Hospital', type: 'HOSPITAL' }],
     branches: [],
@@ -240,6 +240,7 @@ const DEMO_TENANTS = Object.freeze([
       'Compliance',
       'Support Services',
       'Mortuary',
+      'Human Resources',
     ],
     users: [
       { key: 'superadmin', role: 'SUPER_ADMIN', email: 'super.admin@hosspi.com', first_name: 'Platform', last_name: 'Demo', title: 'Platform Administrator' },

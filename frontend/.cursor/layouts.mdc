@@ -34,6 +34,12 @@ Purpose: single source of truth for screen breakpoints, shell behavior, and cont
 - Icons/buttons per [`design-system.mdc`](./design-system.mdc).
 - Maintain uniform shell and content-width behavior across modules — no one-off breakpoint logic in features.
 - Layouts must support simple, intuitive navigation flows on mobile (drawer/bottom nav), tablet (rail), and desktop (menu bar + side nav).
+- High performance: avoid unnecessary rebuilds in layout shells; use const constructors and efficient builders.
+- Reusable layout components must live in `frontend/lib/shared/layout/`; check the shared catalog before creating feature-local layout wrappers.
+- All layout labels and navigation text must be localized with concise, clinically appropriate terminology.
+- Omit navigation destinations, menu items, and route links for unauthorized users — enforce RBAC and ABAC visibility ([`permissions.mdc`](./permissions.mdc)).
+- Frontend must reference entities by `human_friendly_id` in routes and navigation labels; do not expose raw table IDs.
+- Prohibit hard-coded color values, spacing values, and typography in layout code — use design tokens exclusively ([`design-system.mdc`](./design-system.mdc)).
 
 ## Navigation by width
 

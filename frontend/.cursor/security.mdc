@@ -24,6 +24,12 @@ Defines security expectations for storage, networking, logging, configuration, a
 - Clear sensitive session state on logout.
 - Keep debug tools and verbose logs disabled in production builds.
 
+## RBAC / ABAC authorization
+- Enforce Role-Based (RBAC) and Attribute-Based (ABAC) Access Control on every surface: menus, components, actions, routes, and workflows must never be visible or accessible to unauthorized users.
+- Effective permissions = union(role/module/user grants) ∩ active subscription package ∩ ABAC scope.
+- Users may hold multiple roles and module assignments; hidden UI alone is never sufficient — backend authorization is mandatory.
+- Reference [`.cursor/access/`](../../.cursor/access/) files and [`permissions.mdc`](./permissions.mdc) as source of truth.
+
 ## Secure storage notes
 - Native mobile and desktop may use platform-backed secure storage.
 - Web secure storage has platform limitations; do not assume web storage is equivalent to native secure storage.

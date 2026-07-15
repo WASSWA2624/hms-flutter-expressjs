@@ -22,6 +22,7 @@ Defines asset folders, naming, branding, icons, splash screens, and image qualit
 - Keep logos in a dedicated folder.
 - Register assets explicitly in `pubspec.yaml`.
 - Represent brand colors through the theme system, not raw widget colors.
+- Use localized alt text and semantic labels for meaningful images and branding assets.
 
 ## Implementation standard
 - Recommended folders: `assets/images`, `assets/icons`, `assets/logos`, `assets/illustrations`, `assets/fonts` only when needed.

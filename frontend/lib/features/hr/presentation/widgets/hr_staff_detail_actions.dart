@@ -122,9 +122,7 @@ class HrStaffDetailActions extends ConsumerWidget {
         icon: Icons.price_change_outlined,
         enabled: enabled,
         tooltip: l10n.hrCompensationActionTooltip,
-        onPressed: separated
-            ? null
-            : () => onCompensation(context, ref, profile),
+        onPressed: () => onCompensation(context, ref, profile),
       ),
       AppPermissionActionItem(
         requirement: hrPayrollRequirement,
@@ -134,9 +132,7 @@ class HrStaffDetailActions extends ConsumerWidget {
         tooltip: hasCompensation
             ? l10n.hrRunPayrollActionTooltip
             : l10n.hrPayrollMissingCompensationTooltip,
-        onPressed: separated || !hasCompensation
-            ? null
-            : () => onRunPayroll(context, ref, profile),
+        onPressed: () => onRunPayroll(context, ref, profile),
       ),
       if (!separated && hasLinkedUser) ...<AppPermissionActionItem>[
         AppPermissionActionItem(

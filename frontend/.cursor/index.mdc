@@ -1,9 +1,9 @@
 ---
 alwaysApply: false
 globs:
-  - "frontend/.cursor/**"
+  - "frontend/**"
 description: >
-  Navigate, resolve conflicts between, or update HOSSPI HMS frontend rule files.
+  Frontend rules index: ownership, conflict precedence, and frontend-wide invariants.
 ---
 # Frontend Rules Index
 

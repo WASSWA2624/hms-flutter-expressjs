@@ -19,8 +19,7 @@ Defines how app state, feature state, and dependencies are created, read, tested
 - Keep providers close to the layer they own.
 - Use generated providers where it improves safety and consistency.
 - Controllers own presentation state and user actions.
-- Mutation and realtime reconciliation behavior is owned by
-  [`instant_ui_sync.mdc`](./instant_ui_sync.mdc); do not restate or override it here.
+- HTTP persists mutations; WebSocket reconciles Riverpod state across sessions. Full flow is owned by [`instant_ui_sync.mdc`](./instant_ui_sync.mdc); do not restate or override it here.
 - Repositories own data coordination, not UI state.
 - Providers must be override-friendly for tests.
 - Do not perform heavy initialization inside widget `build` methods.

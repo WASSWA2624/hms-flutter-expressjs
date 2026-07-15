@@ -5,7 +5,7 @@ globs:
   - "backend/src/modules/ipd-flow/**"
   - "backend/src/modules/icu-stay/**"
 description: >
-  ICU overlay on IPD: stays, observations, alerts, and transfer rules.
+  ICU stay, observation, alert, and transfer overlay rules for ICU module changes.
 ---
 # ICU (Intensive Care) Patient Flow
 
@@ -578,9 +578,9 @@ backend/src/modules/opd-flow/services/opd-flow.service.js
 
 - Reuse components from `frontend/lib/shared/` before creating module-specific UI; prioritize reusability and consistency.
 - Responsive layouts for mobile, tablet, and desktop; keep UI uniform, simple, and intuitive.
-- High performance worklists (pagination/lazy lists); localize all labels; no raw enum codes in production UI.
-- Theme tokens only (`frontend/.cursor/design-system.mdc`); no hard-coded style values.
-- Strict RBAC+ABAC: actions visible only when stage AND role AND subscription entitlement allow; hide unauthorized menus/components/workflows.
+- High performance worklists (pagination/lazy lists); localize all user-facing text with concise, clinically appropriate terminology; no raw enum codes in production UI.
+- Theme tokens only (`frontend/.cursor/design-system.mdc`); no hard-coded color, spacing, or typography values.
+- Strict RBAC+ABAC: menus, components, API endpoints, and workflow actions must never be visible or accessible to unauthorized users. Effective permissions = union(role/module/user grants) ∩ active subscription package ∩ ABAC scope.
 - Mutations: optimistic Riverpod update on HTTP success; WebSocket reconciliation (`.cursor/api-contract.mdc`).
-- Reference entities by `human_friendly_id` / display IDs in UI and deep links — never raw table IDs.
+- Reference entities by `human_friendly_id` in frontend and API responses; backend maps to internal IDs. Never expose raw table IDs.
 

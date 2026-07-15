@@ -33,6 +33,9 @@ presentation -> domain -> data contracts
 - Mapping between DTOs, database models, and domain entities must be explicit.
 - Domain and presentation layers reference entities by `human_friendly_id`; internal IDs must not leak into UI state or routes.
 - Presentation must follow product UI standards in [`components.mdc`](./components.mdc), [`layouts.mdc`](./layouts.mdc), and [`instant_ui_sync.mdc`](./instant_ui_sync.mdc).
+- All user-facing text in the presentation layer must be localized with concise, clinically appropriate terminology — no hard-coded strings.
+- Presentation layer must enforce RBAC+ABAC: menus, components, and actions must never be visible or accessible to unauthorized users ([`permissions.mdc`](./permissions.mdc)).
+- Prohibit hard-coded color values, spacing values, and typography in presentation code — use design tokens exclusively ([`design-system.mdc`](./design-system.mdc)).
 
 ## Layer ownership
 

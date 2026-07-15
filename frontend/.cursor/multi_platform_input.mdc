@@ -22,6 +22,10 @@ Defines touch, mouse, keyboard, focus, hover, and shortcut behavior across platf
 - Keep form submission accessible from keyboard where practical.
 - Respect safe areas and keyboard insets on mobile.
 
+- All user-facing labels, hints, and input affordances must be localized with concise, clinically appropriate terminology.
+- Reusable input components must live in `frontend/lib/shared/`; check the shared catalog before creating feature-local input wrappers.
+- Use design tokens exclusively for colors, spacing, and typography in input components — no hard-coded values ([`design-system.mdc`](./design-system.mdc)).
+
 ## Implementation standard
 - Shared components should handle focus, hover, enabled/disabled, and pressed states consistently.
 - Shortcut keys may be added at the shell level for app-specific workflows, but must not conflict with browser/system shortcuts.

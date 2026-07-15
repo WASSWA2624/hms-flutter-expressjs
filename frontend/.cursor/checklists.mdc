@@ -19,6 +19,9 @@ Purpose: release gates only. Detailed standards live in owner files in [`index.m
 - [ ] Layouts/shell per [`layouts.mdc`](./layouts.mdc)
 - [ ] Module workspaces per [`ui-workspace.mdc`](./ui-workspace.mdc) (new/changed queue screens)
 - [ ] Localization: no hard-coded user-facing strings; no `_FeatureText` private copy classes
+- [ ] Responsiveness: layouts adapt across mobile, tablet, and desktop ([`layouts.mdc`](./layouts.mdc))
+- [ ] Design tokens: no hard-coded colors, spacing, or typography — all via theme tokens ([`design-system.mdc`](./design-system.mdc))
+- [ ] Reusable components live in `frontend/lib/shared/`; shared catalog checked before new widgets created
 - [ ] Auth/permissions align with backend entitlements
 - [ ] Entity refs: UI/API use `human_friendly_id` only ([`data_modeling.mdc`](./data_modeling.mdc))
 - [ ] Subscription ∩ role permission intersection enforced ([`permissions.mdc`](./permissions.mdc), `.cursor/access/subscriptions.mdc`)

@@ -20,6 +20,9 @@ Defines the repeatable process for adding a new feature to the template or an ap
 - Queue/workspace features must confirm layout against [`ui-workspace.mdc`](./ui-workspace.mdc) and a reference module before implementation.
 - Confirm subscription-gated module access and permission gates before exposing routes or actions ([`permissions.mdc`](./permissions.mdc)).
 - Deliver high-performance, uniform, simple, intuitive workflows; reuse `frontend/lib/shared/` components and verify mobile, tablet, and desktop layouts.
+- Prohibit hard-coded color values, spacing values, and typography — use design tokens exclusively ([`design-system.mdc`](./design-system.mdc)).
+- Frontend must reference entities by `human_friendly_id`; backend maps to internal IDs. Do not expose raw table IDs in frontend or API responses.
+- Menus, UI components, and workflow actions must never be visible or accessible to unauthorized users — enforce RBAC and ABAC visibility.
 - Shared-data mutations must update Riverpod immediately and reconcile with backend realtime events per [`instant_ui_sync.mdc`](./instant_ui_sync.mdc).
 - Add tests for controller logic, repository mapping, and important widgets.
 - Update docs when the feature changes app structure or conventions.

@@ -16,7 +16,9 @@ Purpose: uniform data-entry and data-display interaction patterns.
 - Uniform UI: shared components from `frontend/lib/shared/` only ([`components.mdc`](./components.mdc)).
 - Full responsiveness: mobile list/card fallbacks, desktop tables ([`layouts.mdc`](./layouts.mdc)).
 - Simple, intuitive workflows: clear states, minimal steps, hospital language — not internal codes.
-- Real-time refresh after mutations ([`instant_ui_sync.mdc`](./instant_ui_sync.mdc)).
+- Real-time sync: HTTP persists mutations, WebSocket reconciles Riverpod state ([`instant_ui_sync.mdc`](./instant_ui_sync.mdc)).
+- Prohibit hard-coded color values, spacing values, and typography — use design tokens exclusively ([`design-system.mdc`](./design-system.mdc)).
+- Check `frontend/lib/shared/` for existing components before creating feature-local form, table, or search widgets; reusable patterns must live there.
 
 ## Forms
 

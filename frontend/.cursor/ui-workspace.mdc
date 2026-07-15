@@ -60,6 +60,11 @@ Import from `package:hosspi_hms/shared/layout/layout.dart`, `shared/components/c
 
 When a workspace page exceeds ~800 lines, extract widgets before adding more inline UI.
 
+## Reusability
+
+- All components suitable for reuse across modules **must** be implemented as reusable components and stored under `frontend/lib/shared/` — never duplicate workspace patterns in feature folders.
+- Check the shared component catalog before creating new UI elements; one implementation per interaction pattern.
+
 ## Before adding UI (checklist)
 
 1. Search `frontend/lib/shared/` for an existing component or pattern.

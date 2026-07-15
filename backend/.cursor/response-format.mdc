@@ -16,7 +16,8 @@ Success rules:
 - resource objects expose `human_friendly_id` as the client-visible identifier; omit internal numeric/uuid primary keys from `data` and `meta`
 - nested references use `human_friendly_id` or stable business codes, never raw foreign-key IDs
 - Frontend must reference entities by `human_friendly_id`; backend maps to internal IDs. Do not expose raw table IDs in frontend or API responses.
-- human-facing messages use translation keys or localized strings from the i18n layer
+- human-facing messages use translation keys or localized strings from the i18n layer; no hard-coded user-facing strings outside locale files
+- use concise, appropriate clinical/operational terminology in all user-facing text
 - see [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc) for cross-stack envelope details
 
 Error rules:

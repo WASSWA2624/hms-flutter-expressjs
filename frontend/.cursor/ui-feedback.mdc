@@ -15,7 +15,9 @@ Purpose: consistent async and error presentation in the UI.
 - Use `AsyncStateScaffold` or equivalent shared wrappers for loading, empty, error, and success.
 - Module workspace pages must wrap data content in `AsyncStateScaffold` at the page root — do not hand-roll `CircularProgressIndicator` + `Column` error layouts on new screens.
 - Keep feedback high-performance, uniform, simple, and responsive on mobile, tablet, and desktop by reusing `frontend/lib/shared/` components.
-- Reflect successful shared-data changes immediately from Riverpod; backend realtime events reconcile subsequent changes.
+- Keep feedback design simple and intuitive; avoid complex or decorative error layouts that confuse clinical workflows.
+- Use design tokens exclusively for colors, spacing, and typography in feedback states — no hard-coded values ([`design-system.mdc`](./design-system.mdc)).
+- Reflect successful shared-data changes immediately from Riverpod; backend realtime events reconcile subsequent changes (HTTP persists, WebSocket reconciles).
 - Do not expose raw technical errors or exception text to users.
 - Keep user-facing error messages localized.
 - Provide retry actions for recoverable failures.

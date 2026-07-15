@@ -25,6 +25,11 @@ Schema rules:
 - frequently filtered scope, status, and `deleted_at` columns are indexed
 - soft delete is the default for business records unless law or storage design requires otherwise
 
+Migration rules:
+- whenever a schema change necessitates a migration, all required migrations must be created and executed promptly and reliably for every applicable database environment
+- migration files must be committed alongside the schema changes that produce them
+- destructive migrations (column drops, type changes) require a documented rollback plan
+
 Data-access rules:
 - repositories are the only place for model operations
 - service-level Prisma usage is limited to transaction orchestration

@@ -1,9 +1,9 @@
 ---
-alwaysApply: false
+alwaysApply: true
 globs:
   - "frontend/lib/**"
 description: >
-  Apply when implementing optimistic UI updates, Riverpod patches, or reconciliation.
+  Optimistic UI sync, Riverpod patches, and WebSocket reconciliation requirements.
 ---
 # Instant UI and Backend Sync
 

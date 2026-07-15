@@ -20,6 +20,10 @@ Purpose: single navigation package and centralized route configuration.
 - No navigation in repositories or data sources.
 - Localized not-found page for unknown routes.
 - Responsive shell for persistent navigation ([`layouts.mdc`](./layouts.mdc)).
+- High performance: avoid unnecessary rebuilds in navigation shells; keep route transitions simple and efficient.
+- Uniform and consistent navigation UI across all modules — reuse shell components from `frontend/lib/shared/layout/`.
+- All navigation labels, tooltips, and route titles must be localized with concise, clinically appropriate terminology.
+- Prohibit hard-coded color values, spacing values, and typography in navigation code — use design tokens exclusively ([`design-system.mdc`](./design-system.mdc)).
 
 ## Shell rules
 

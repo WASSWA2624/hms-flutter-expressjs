@@ -28,6 +28,9 @@ Purpose: uniform reusable UI built on Flutter Material primitives.
 - Components use [`design-system.mdc`](./design-system.mdc) tokens for colors, spacing, typography, radius, and elevation.
 - Before creating new UI, check `lib/shared/` for an existing component; add reusable widgets there, one-off widgets in the feature.
 - Module work-queue screens must follow [`ui-workspace.mdc`](./ui-workspace.mdc) unless the screen type is excluded there (auth, simple settings, static profile).
+- Frontend must reference entities by `human_friendly_id`; backend maps to internal IDs. Do not expose raw table IDs in frontend or API responses.
+- Menus, UI components, and workflow actions must never be visible, rendered, or accessible to unauthorized users — enforce RBAC and ABAC access control ([`permissions.mdc`](./permissions.mdc)).
+- Prohibit hard-coded color values, spacing values, and typography throughout — use design tokens exclusively ([`design-system.mdc`](./design-system.mdc)).
 
 ## Standard catalog
 

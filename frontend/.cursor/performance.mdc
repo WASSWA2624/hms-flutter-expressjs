@@ -13,6 +13,9 @@ description: >
 Defines performance expectations for startup, rendering, lists, images, networking, and local data.
 
 ## Mandatory rules
+- High performance is required: smooth, responsive, and efficient across mobile, tablet, and desktop.
+- Full responsiveness is required for all surfaces; layouts must adapt to mobile, tablet, and desktop breakpoints.
+- Prohibit hard-coded style tokens; use theme tokens exclusively ([`design-system.mdc`](./design-system.mdc)).
 - Avoid unnecessary rebuilds by keeping provider watches focused.
 - Use `const` widgets where possible.
 - Paginate or virtualize large lists and tables.

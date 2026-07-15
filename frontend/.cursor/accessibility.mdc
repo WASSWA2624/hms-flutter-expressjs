@@ -23,6 +23,10 @@ Defines baseline accessibility requirements for screens, components, forms, navi
 - Associate form errors with their fields where possible.
 - Avoid excessive motion and provide simple transitions by default.
 
+- Use design tokens for colors and contrast — prohibit hard-coded color values ([`design-system.mdc`](./design-system.mdc)).
+- Reusable accessible components must live in `frontend/lib/shared/`; check the shared catalog before creating feature-local accessible wrappers.
+- All user-facing text, labels, and hints must be localized with concise, appropriate clinical/operational terminology.
+
 ## Implementation standard
 - Dialogs should trap focus where the platform expects it and return focus after closing.
 - State views should announce meaningful loading, empty, and error messages.

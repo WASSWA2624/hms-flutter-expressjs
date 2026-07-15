@@ -22,6 +22,7 @@ Defines sign-in, registration readiness, session restoration, secure token stora
 - If refresh fails, clear the session and redirect to login.
 - Logout must clear sensitive local session data.
 - UI route protection must be backed by backend authorization.
+- Session context must carry effective permissions (RBAC + ABAC + subscription); route guards and action gates enforce them per [`permissions.mdc`](./permissions.mdc) and [`.cursor/access/`](../../.cursor/access/).
 
 ## Session states
 | State | Meaning |

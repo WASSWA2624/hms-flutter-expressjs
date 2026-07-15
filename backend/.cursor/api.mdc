@@ -38,3 +38,5 @@ Contract rules:
 - no business logic in routes
 - no undocumented custom verbs
 - no route may bypass tenancy or facility scope rules
+- no API endpoint or workflow action may be accessible to unauthorized users; effective permissions follow `auth-security.mdc`
+- `.cursor/access/` files are the source of truth for default permissions, roles, and subscription entitlements
