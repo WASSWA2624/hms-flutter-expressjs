@@ -3063,9 +3063,13 @@ const startOpdFlow = async (data, context = {}) => {
         }
       });
 
-      if (shouldCreateConsultationInvoice) {
+      const needsBillingForPaymentStage =
+        shouldCreateConsultationInvoice ||
+        (flowState.stage === STAGES.WAITING_CONSULTATION_PAYMENT && requireConsultationPayment);
+
+      if (needsBillingForPaymentStage) {
         const billingPayload = buildConsultationBillingPayload({
-          consultationFee,
+          consultationFee: consultationFee || '0.00',
           currency,
           paymentStatus: requireConsultationPayment ? 'PENDING' : 'PENDING',
           catalogItemId: consultationCatalogItemId,
@@ -3435,6 +3439,41 @@ const updateActiveEncounterContext = async (id, data, context = {}) => {
       }
       if (providerUserId && flow.stage === STAGES.WAITING_DOCTOR_ASSIGNMENT) {
         setFlowStage(flow, STAGES.WAITING_DOCTOR_REVIEW);
+      }
+
+      if (
+        flow.stage === STAGES.WAITING_CONSULTATION_PAYMENT &&
+        !consultation.invoice_id &&
+        !consultation.is_paid
+      ) {
+        const emergencyBillingPayload = buildConsultationBillingPayload({
+          consultationFee: consultation.consultation_fee || '0.00',
+          currency,
+          paymentStatus: 'PENDING',
+          catalogItemId: consultationCatalogItemId,
+          payNow: null
+        });
+        if (emergencyBillingPayload) {
+          const snapshot = await persistConsultationBilling(tx, {
+            encounterId: encounter.id,
+            billing: emergencyBillingPayload,
+            tenantId: encounter.tenant_id,
+            facilityId,
+            patientId: encounter.patient_id,
+            encounterDisplayId: encounter.human_friendly_id || null,
+            catalogItemId: consultationCatalogItemId,
+            actorUserId: context.user_id || null,
+            currency,
+            issuedAt: now,
+            description: 'Consultation fee'
+          });
+          if (snapshot?.invoice_id) {
+            consultation.invoice_id = snapshot.invoice_id;
+            consultation.billing = snapshot;
+            consultation.payment_status = snapshot.payment_status || 'PENDING';
+            flow.consultation = consultation;
+          }
+        }
       }
 
       if (flow.visit_queue_id) {

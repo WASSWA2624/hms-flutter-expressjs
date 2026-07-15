@@ -1879,12 +1879,7 @@ AppListTableColumn<_OpdTableItem> _opdDataColumn(
           softWrap: false,
           overflow: TextOverflow.ellipsis,
         ),
-        _OpdTableColumnId.nextStep => Text(
-          _nextStepLabel(context, item),
-          maxLines: 1,
-          softWrap: false,
-          overflow: TextOverflow.ellipsis,
-        ),
+        _OpdTableColumnId.nextStep => _NextStepCell(item: item),
         _OpdTableColumnId.encounter => _OpdEncounterCell(item: item),
       };
     },
@@ -2262,6 +2257,39 @@ class _OpdTableMobileRow extends StatelessWidget {
         ),
       ],
       trailing: const Icon(Icons.chevron_right),
+    );
+  }
+}
+
+class _NextStepCell extends StatelessWidget {
+  const _NextStepCell({required this.item});
+
+  final _OpdTableItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final OpdFlowSummary? flow = item.flow;
+    final String encounterId =
+        flow?.publicId ?? flow?.id ?? item.encounterId ?? item.id;
+
+    if (encounterId.trim().isEmpty) {
+      return Text(
+        _nextStepLabel(context, item),
+        maxLines: 1,
+        softWrap: false,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+
+    return NextStepActionButton(
+      encounterId: encounterId,
+      patientId: flow?.patientId ?? item.patientNumber,
+      stage: flow?.stage ?? item.status,
+      nextStep: item.nextStep,
+      displayNextStep: flow?.displayNextStep,
+      assignedStaffId: flow?.providerUserId,
+      flow: flow,
+      compact: true,
     );
   }
 }

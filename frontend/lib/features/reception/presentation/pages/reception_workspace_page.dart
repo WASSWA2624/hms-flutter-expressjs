@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -153,6 +155,28 @@ class _ReceptionWorkspaceContentState
     }
   }
 
+  void _updateUrlForSection(ReceptionDeskSection section) {
+    if (!mounted) {
+      return;
+    }
+    final String tab = _sectionToQueryValue(section);
+    final String location = AppRoutes.reception.location(
+      queryParameters: <String, String>{
+        if (tab.isNotEmpty) 'section': tab,
+      },
+    );
+    GoRouter.of(context).replace<void>(location);
+  }
+
+  static String _sectionToQueryValue(ReceptionDeskSection section) {
+    return switch (section) {
+      ReceptionDeskSection.appointments => 'appointments',
+      ReceptionDeskSection.queue => 'desk-queue',
+      ReceptionDeskSection.activeVisits => 'active',
+      ReceptionDeskSection.paymentGate => 'payment-gate',
+    };
+  }
+
   ReceptionDeskSection? _sectionFromQuery(String raw) {
     switch (raw.trim().toLowerCase()) {
       case 'appointments':
@@ -233,6 +257,7 @@ class _ReceptionWorkspaceContentState
                           in ReceptionDeskSection.values) {
                         if (section.name == tabId) {
                           setState(() => _section = section);
+                          _updateUrlForSection(section);
                           break;
                         }
                       }
@@ -504,10 +529,14 @@ class _ReceptionWorkspaceContentState
                 ),
           ),
           AppListTableColumn<_ReceptionDeskRow>(
-            id: 'encounter_id',
+            id: 'patient_id',
             label: l10n.opdPatientIdLabel,
             cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
-                Text(row.flow?.publicId ?? row.flow?.id ?? ''),
+                Text(
+                  row.flow?.patientIdentifier ??
+                      row.flow?.patientId ??
+                      '',
+                ),
           ),
           AppListTableColumn<_ReceptionDeskRow>(
             id: 'started_at',
@@ -553,10 +582,14 @@ class _ReceptionWorkspaceContentState
               if (flow == null) {
                 return const SizedBox.shrink();
               }
-              return AppButton.tertiary(
-                label: _flowNextActionLabel(context, flow),
-                leadingIcon: Icons.arrow_forward_outlined,
-                onPressed: () => unawaited(_openFlowActions(flow)),
+              return NextStepActionButton(
+                encounterId: flow.publicId ?? flow.id,
+                patientId: flow.patientId,
+                stage: flow.stage,
+                nextStep: flow.nextStep,
+                displayNextStep: flow.displayNextStep,
+                assignedStaffId: flow.providerUserId,
+                flow: flow,
               );
             },
           ),
@@ -577,10 +610,14 @@ class _ReceptionWorkspaceContentState
                 ),
           ),
           AppListTableColumn<_ReceptionDeskRow>(
-            id: 'encounter_id',
+            id: 'patient_id',
             label: l10n.opdPatientIdLabel,
             cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
-                Text(row.flow?.publicId ?? row.flow?.id ?? ''),
+                Text(
+                  row.flow?.patientIdentifier ??
+                      row.flow?.patientId ??
+                      '',
+                ),
           ),
           AppListTableColumn<_ReceptionDeskRow>(
             id: 'stage',
@@ -640,10 +677,14 @@ class _ReceptionWorkspaceContentState
               if (flow == null) {
                 return const SizedBox.shrink();
               }
-              return AppButton.tertiary(
-                label: _flowNextActionLabel(context, flow),
-                leadingIcon: Icons.arrow_forward_outlined,
-                onPressed: () => unawaited(_openFlowActions(flow)),
+              return NextStepActionButton(
+                encounterId: flow.publicId ?? flow.id,
+                patientId: flow.patientId,
+                stage: flow.stage,
+                nextStep: flow.nextStep,
+                displayNextStep: flow.displayNextStep,
+                assignedStaffId: flow.providerUserId,
+                flow: flow,
               );
             },
           ),
@@ -672,14 +713,6 @@ class _ReceptionWorkspaceContentState
               tone: AppWorkspaceStatusTone.info,
             ),
     );
-  }
-
-  String _flowNextActionLabel(BuildContext context, OpdFlowSummary flow) {
-    final String label = opdNextStepDisplayLabel(
-      context.l10n,
-      flow.displayNextStep ?? flow.nextStep,
-    ).trim();
-    return label.isEmpty ? context.l10n.opdContinueEncounterAction : label;
   }
 
   String _sectionLabel(AppLocalizations l10n, ReceptionDeskSection section) {
