@@ -173,3 +173,5 @@ All modules must read from and write to the same encounter step state. When a st
 - **Real-time updates**: When a step is completed in any module, all other modules showing that encounter must reflect the change (via WebSocket, polling, or Riverpod state invalidation).
 - **No regressions**: All existing table interactions (sorting, searching, pagination, row click navigation) must continue working.
 - **Accessibility**: Action buttons must be keyboard-accessible with clear focus indicators and ARIA labels.
+
+
