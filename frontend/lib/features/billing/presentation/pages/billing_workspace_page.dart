@@ -83,6 +83,16 @@ class _BillingWorkspaceContentState
         AppListTableColumnVisibilityController<BillingWorkItem>();
     _searchController.addListener(_onSearchChanged);
     _scheduleRouteQuery(widget.initialQuery);
+    _refreshOnMount();
+  }
+
+  void _refreshOnMount() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      ref.read(billingWorkspaceControllerProvider.notifier).refresh();
+    });
   }
 
   void _scheduleRouteQuery(BillingWorkspaceQuery? query) {

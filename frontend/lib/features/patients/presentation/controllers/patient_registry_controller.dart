@@ -146,9 +146,16 @@ final class PatientRegistryController
   }
 
   Future<AppFailure?> selectPatient(String patientId) async {
-    final PatientRegistryState? current = _currentState;
+    PatientRegistryState? current = _currentState;
     if (current == null) {
-      return refresh();
+      final AppFailure? failure = await refresh();
+      if (failure != null) {
+        return failure;
+      }
+      current = _currentState;
+      if (current == null) {
+        return null;
+      }
     }
 
     _emit(current.copyWith(isRefreshingDetail: true, clearLastFailure: true));
