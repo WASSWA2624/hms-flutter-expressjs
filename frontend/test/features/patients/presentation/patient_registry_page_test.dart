@@ -10,7 +10,10 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/security/secure_session_storage.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/core/storage/preferences/app_preferences_store.dart';
+import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/discharge/data/repositories/discharge_repository_impl.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
 import 'package:hosspi_hms/features/discharge/domain/repositories/discharge_repository.dart';
@@ -1194,10 +1197,11 @@ void main() {
 
     await tester.tap(find.text('Amina Kato').first);
     await tester.pumpAndSettle();
+    expect(find.text('Patient report'), findsOneWidget);
     await tester.tap(find.text('Patient report'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Print preview'), findsOneWidget);
+    expect(find.text('PRINT PREVIEW'), findsOneWidget);
     expect(find.text('Report period'), findsWidgets);
     expect(find.text('Report sections'), findsOneWidget);
     expect(find.text('Patient information'), findsWidgets);
@@ -1243,6 +1247,52 @@ final class _MockIpdRepository extends Mock implements IpdRepository {}
 
 final class _MockDischargeRepository extends Mock
     implements DischargeRepository {}
+
+final class _TestSecureSessionStorage implements SecureSessionStorage {
+  @override
+  Future<SessionTokens?> readTokens() async =>
+      SessionTokens(accessToken: 'test-access-token');
+
+  @override
+  Future<void> writeTokens(SessionTokens tokens) async {}
+
+  @override
+  Future<void> clear() async {}
+}
+
+final class _TestAppPreferencesStore implements AppPreferencesStore {
+  final Map<String, Object> _data = <String, Object>{};
+
+  @override
+  String? getString(String key) => _data[key] as String?;
+  @override
+  bool? getBool(String key) => _data[key] as bool?;
+  @override
+  int? getInt(String key) => _data[key] as int?;
+  @override
+  Future<bool> setString(String key, String value) async {
+    _data[key] = value;
+    return true;
+  }
+
+  @override
+  Future<bool> setBool(String key, {required bool value}) async {
+    _data[key] = value;
+    return true;
+  }
+
+  @override
+  Future<bool> setInt(String key, int value) async {
+    _data[key] = value;
+    return true;
+  }
+
+  @override
+  Future<bool> remove(String key) async {
+    _data.remove(key);
+    return true;
+  }
+}
 
 void _stubPatientRegistry(
   _MockPatientRepository patientRepository,
@@ -1323,6 +1373,12 @@ Future<void> _pumpPatientRegistry(
               ),
             ),
           ),
+        ),
+        secureSessionStorageProvider.overrideWithValue(
+          _TestSecureSessionStorage(),
+        ),
+        appPreferencesStoreProvider.overrideWithValue(
+          _TestAppPreferencesStore(),
         ),
         patientRepositoryProvider.overrideWithValue(patientRepository),
         opdRepositoryProvider.overrideWithValue(opdRepository),

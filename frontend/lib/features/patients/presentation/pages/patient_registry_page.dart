@@ -4,8 +4,9 @@ import 'dart:math' as math;
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/currency/effective_default_currency_provider.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -109,6 +110,7 @@ class _PatientRegistryContentState
   _tableColumnController;
   Timer? _tableSearchDebounce;
   bool _handledRouteQuery = false;
+  late PatientRegistrySection _section;
 
   @override
   void initState() {
@@ -117,6 +119,7 @@ class _PatientRegistryContentState
       text: widget.state.query.search,
     );
     _tableColumnController = AppListTableColumnVisibilityController<Patient>();
+    _section = widget.initialQuery?.section ?? PatientRegistrySection.all;
     _tableSearchController.addListener(_handleTableSearchChanged);
     _scheduleRouteQuery(widget.initialQuery);
   }
@@ -163,34 +166,68 @@ class _PatientRegistryContentState
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
 
-    return AppWorkspace(
-      title: l10n.patientsTitle,
-      leadingIcon: AppRouteIcons.patients,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        showGlobalActions: false,
-        primary: AppAccessActionGate(
-          requirement: _PatientRegistryContent._writeRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppButton.primary(
-              leadingIcon: Icons.person_add_alt_1_outlined,
-              label: l10n.patientsRegisterPatientAction,
-              semanticLabel: l10n.patientsRegisterPatientAction,
-              tooltip: l10n.patientsRegisterPatientAction,
-              enabled: isAllowed,
-              onPressed: () {
-                _openRegisterPatientDialog(context, ref);
-              },
-            );
-          },
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: AppTabStrip(
+                    tabs: <AppTabItem>[
+                      for (final PatientRegistrySection section
+                          in PatientRegistrySection.values)
+                        AppTabItem(
+                          id: section.name,
+                          icon: _sectionIcon(section),
+                          label:
+                              '${_sectionLabel(l10n, section)} (${_sectionCount(widget.state, section)})',
+                        ),
+                    ],
+                    selectedId: _section.name,
+                    onTabTapped: (String tabId) {
+                      for (final PatientRegistrySection section
+                          in PatientRegistrySection.values) {
+                        if (section.name == tabId) {
+                          unawaited(_handleTabChanged(section));
+                          break;
+                        }
+                      }
+                    },
+                  ),
+                ),
+                SizedBox(width: theme.spacing.sm),
+                AppAccessActionGate(
+                  requirement: _PatientRegistryContent._writeRequirement,
+                  builder: (BuildContext context, bool isAllowed) {
+                    return AppButton.primary(
+                      leadingIcon: Icons.person_add_alt_1_outlined,
+                      label: l10n.patientsRegisterPatientAction,
+                      semanticLabel: l10n.patientsRegisterPatientAction,
+                      tooltip: l10n.patientsRegisterPatientAction,
+                      enabled: isAllowed,
+                      onPressed: () {
+                        _openRegisterPatientDialog(context, ref);
+                      },
+                    );
+                  },
+                ),
+              ],
+            ),
+            SizedBox(height: theme.spacing.md),
+            _PatientList(
+              state: widget.state,
+              section: _section,
+              searchController: _tableSearchController,
+              columnVisibilityController: _tableColumnController,
+            ),
+          ],
         ),
-      ),
-
-      body: _PatientList(
-        state: widget.state,
-        searchController: _tableSearchController,
-        columnVisibilityController: _tableColumnController,
       ),
     );
   }
@@ -211,16 +248,92 @@ class _PatientRegistryContentState
       return;
     }
 
+    final PatientListQuery baseQuery = widget.state.query.copyWith(
+      search: search,
+      section: _section,
+      pageRequest: widget.state.query.pageRequest.first(),
+    );
+    final PatientListQuery filteredQuery = _section.applyToQuery(baseQuery);
     final AppFailure? failure = await ref
         .read(patientRegistryControllerProvider.notifier)
-        .applyQuery(
-          widget.state.query.copyWith(
-            search: search,
-            pageRequest: widget.state.query.pageRequest.first(),
-          ),
-        );
+        .applyQuery(filteredQuery);
     if (mounted) {
       await _showFailureIfNeeded(context, failure);
+    }
+  }
+
+  void _updateUrlForSection(PatientRegistrySection section) {
+    if (!mounted) {
+      return;
+    }
+    final String tab = section.queryValue;
+    final String location = AppRoutes.patients.location(
+      queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
+    );
+    GoRouter.of(context).replace<void>(location);
+  }
+
+  Future<void> _handleTabChanged(PatientRegistrySection section) async {
+    if (section == _section) {
+      return;
+    }
+    setState(() => _section = section);
+    _updateUrlForSection(section);
+    _tableSearchController.clear();
+    final PatientListQuery baseQuery = const PatientListQuery().copyWith(
+      section: section,
+    );
+    final PatientListQuery filteredQuery = section.applyToQuery(baseQuery);
+    final AppFailure? failure = await ref
+        .read(patientRegistryControllerProvider.notifier)
+        .applyQuery(filteredQuery);
+    if (mounted) {
+      await _showFailureIfNeeded(context, failure);
+    }
+  }
+
+  static IconData _sectionIcon(PatientRegistrySection section) {
+    switch (section) {
+      case PatientRegistrySection.all:
+        return Icons.people_outlined;
+      case PatientRegistrySection.active:
+        return Icons.how_to_reg_outlined;
+      case PatientRegistrySection.admitted:
+        return Icons.local_hospital_outlined;
+      case PatientRegistrySection.balanceDue:
+        return Icons.payments_outlined;
+    }
+  }
+
+  static String _sectionLabel(
+    AppLocalizations l10n,
+    PatientRegistrySection section,
+  ) {
+    switch (section) {
+      case PatientRegistrySection.all:
+        return l10n.patientsTabAll;
+      case PatientRegistrySection.active:
+        return l10n.patientsTabActive;
+      case PatientRegistrySection.admitted:
+        return l10n.patientsTabAdmitted;
+      case PatientRegistrySection.balanceDue:
+        return l10n.patientsTabBalanceDue;
+    }
+  }
+
+  static int _sectionCount(
+    PatientRegistryState state,
+    PatientRegistrySection section,
+  ) {
+    switch (section) {
+      case PatientRegistrySection.all:
+        return state.overview.totalPatients;
+      case PatientRegistrySection.active:
+        return state.overview.activePatients;
+      case PatientRegistrySection.admitted:
+        return state.overview.activeAdmissions;
+      case PatientRegistrySection.balanceDue:
+        return state.overview.unpaidInvoices;
     }
   }
 
@@ -259,7 +372,6 @@ class _PatientRegistryContentState
     ).showSnackBar(SnackBar(content: Text(context.l10n.patientsSavedMessage)));
     await showPatientDetailDialog(context, ref, createdPatient.id);
   }
-
 }
 
 @immutable
@@ -780,11 +892,13 @@ Future<void> _applyPatientFilterDraft(
 class _PatientList extends ConsumerWidget {
   const _PatientList({
     required this.state,
+    required this.section,
     required this.searchController,
     required this.columnVisibilityController,
   });
 
   final PatientRegistryState state;
+  final PatientRegistrySection section;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<Patient>
   columnVisibilityController;
@@ -795,6 +909,8 @@ class _PatientList extends ConsumerWidget {
     return AppListTable<Patient>(
       page: state.page,
       columnVisibilityController: columnVisibilityController,
+      columnVisibilityStorageKey: 'patients_${section.name}',
+      columnWidthStorageKey: 'patients_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       search: AppListTableSearch<Patient>(
         controller: searchController,
@@ -827,83 +943,7 @@ class _PatientList extends ConsumerWidget {
       isLoading: state.isRefreshingList,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      columns: <AppListTableColumn<Patient>>[
-        AppListTableColumn<Patient>(
-          label: l10n.patientsPatientNumberColumnLabel,
-          sortComparator: (Patient left, Patient right) =>
-              appListTableCompareText(
-                left.effectiveIdentifier ?? left.publicId,
-                right.effectiveIdentifier ?? right.publicId,
-              ),
-          cellBuilder: (_, Patient patient) =>
-              _PatientNumberCell(patient: patient),
-        ),
-        AppListTableColumn<Patient>(
-          label: l10n.patientsPatientColumnLabel,
-          sortComparator: (Patient left, Patient right) =>
-              appListTableCompareText(
-                left.effectiveDisplayName,
-                right.effectiveDisplayName,
-              ),
-          cellBuilder: (_, Patient patient) =>
-              _PatientNameCell(patient: patient),
-        ),
-        AppListTableColumn<Patient>(
-          label: l10n.patientsAgeSexColumnLabel,
-          sortComparator: (Patient left, Patient right) =>
-              appListTableCompareDateTime(left.dateOfBirth, right.dateOfBirth),
-          cellBuilder: (_, Patient patient) => _AgeSexText(patient: patient),
-        ),
-        AppListTableColumn<Patient>(
-          label: l10n.patientsPhoneIdentifierColumnLabel,
-          sortComparator: (Patient left, Patient right) =>
-              appListTableCompareText(
-                left.primaryPhone ?? left.primaryEmail,
-                right.primaryPhone ?? right.primaryEmail,
-              ),
-          cellBuilder: (_, Patient patient) =>
-              _PatientContactIdentifierCell(patient: patient),
-        ),
-        AppListTableColumn<Patient>(
-          label: l10n.patientsAlertColumnLabel,
-          sortComparator: (Patient left, Patient right) =>
-              appListTableCompareText(
-                _patientAlertSortValue(left),
-                _patientAlertSortValue(right),
-              ),
-          cellBuilder: (_, Patient patient) =>
-              _PatientAlertCell(patient: patient),
-        ),
-        AppListTableColumn<Patient>(
-          label: l10n.patientsVisitColumnLabel,
-          sortComparator: (Patient left, Patient right) =>
-              appListTableCompareDateTime(
-                left.currentVisit?.occurredAt,
-                right.currentVisit?.occurredAt,
-              ),
-          cellBuilder: (_, Patient patient) =>
-              _VisitContextCell(patient: patient),
-        ),
-        AppListTableColumn<Patient>(
-          label: l10n.patientsStatusColumnLabel,
-          sortComparator: (Patient left, Patient right) =>
-              appListTableCompareText(
-                left.isActive ? 'active' : 'inactive',
-                right.isActive ? 'active' : 'inactive',
-              ),
-          cellBuilder: (BuildContext context, Patient patient) =>
-              _patientActiveStatusText(context, patient.isActive),
-        ),
-        AppListTableColumn<Patient>(
-          label: l10n.patientsNextActionColumnLabel,
-          cellBuilder: (_, Patient patient) => _NextActionCell(
-            patient: patient,
-            onPressed: () {
-              unawaited(showPatientDetailDialog(context, ref, patient.id));
-            },
-          ),
-        ),
-      ],
+      columns: _columnsForSection(context, ref, section, l10n),
       mobileItemBuilder: (_, Patient patient) =>
           _PatientMobileRow(patient: patient),
       itemKeyBuilder: (Patient patient) => ValueKey<String>(patient.id),
@@ -926,14 +966,137 @@ class _PatientList extends ConsumerWidget {
       previousPageLabel: l10n.patientsPreviousPageLabel,
       nextPageLabel: l10n.patientsNextPageLabel,
       onPageChanged: (AppPageRequest request) async {
+        final PatientListQuery baseQuery = state.query.copyWith(
+          pageRequest: request,
+          section: section,
+        );
+        final PatientListQuery filteredQuery = section.applyToQuery(baseQuery);
         final AppFailure? failure = await ref
             .read(patientRegistryControllerProvider.notifier)
-            .applyQuery(state.query.copyWith(pageRequest: request));
+            .applyQuery(filteredQuery);
         if (context.mounted) {
           await _showFailureIfNeeded(context, failure);
         }
       },
     );
+  }
+}
+
+List<AppListTableColumn<Patient>> _columnsForSection(
+  BuildContext context,
+  WidgetRef ref,
+  PatientRegistrySection section,
+  AppLocalizations l10n,
+) {
+  final AppListTableColumn<Patient> numberCol = AppListTableColumn<Patient>(
+    label: l10n.patientsPatientNumberColumnLabel,
+    sortComparator: (Patient left, Patient right) => appListTableCompareText(
+      left.effectiveIdentifier ?? left.publicId,
+      right.effectiveIdentifier ?? right.publicId,
+    ),
+    cellBuilder: (_, Patient patient) => _PatientNumberCell(patient: patient),
+  );
+  final AppListTableColumn<Patient> nameCol = AppListTableColumn<Patient>(
+    label: l10n.patientsPatientColumnLabel,
+    sortComparator: (Patient left, Patient right) => appListTableCompareText(
+      left.effectiveDisplayName,
+      right.effectiveDisplayName,
+    ),
+    cellBuilder: (_, Patient patient) => _PatientNameCell(patient: patient),
+  );
+  final AppListTableColumn<Patient> ageSexCol = AppListTableColumn<Patient>(
+    label: l10n.patientsAgeSexColumnLabel,
+    sortComparator: (Patient left, Patient right) =>
+        appListTableCompareDateTime(left.dateOfBirth, right.dateOfBirth),
+    cellBuilder: (_, Patient patient) => _AgeSexText(patient: patient),
+  );
+  final AppListTableColumn<Patient> phoneCol = AppListTableColumn<Patient>(
+    label: l10n.patientsPhoneIdentifierColumnLabel,
+    sortComparator: (Patient left, Patient right) => appListTableCompareText(
+      left.primaryPhone ?? left.primaryEmail,
+      right.primaryPhone ?? right.primaryEmail,
+    ),
+    cellBuilder: (_, Patient patient) =>
+        _PatientContactIdentifierCell(patient: patient),
+  );
+  final AppListTableColumn<Patient> alertCol = AppListTableColumn<Patient>(
+    label: l10n.patientsAlertColumnLabel,
+    sortComparator: (Patient left, Patient right) => appListTableCompareText(
+      _patientAlertSortValue(left),
+      _patientAlertSortValue(right),
+    ),
+    cellBuilder: (_, Patient patient) => _PatientAlertCell(patient: patient),
+  );
+  final AppListTableColumn<Patient> visitCol = AppListTableColumn<Patient>(
+    label: l10n.patientsVisitColumnLabel,
+    sortComparator: (Patient left, Patient right) =>
+        appListTableCompareDateTime(
+          left.currentVisit?.occurredAt,
+          right.currentVisit?.occurredAt,
+        ),
+    cellBuilder: (_, Patient patient) => _VisitContextCell(patient: patient),
+  );
+  final AppListTableColumn<Patient> statusCol = AppListTableColumn<Patient>(
+    label: l10n.patientsStatusColumnLabel,
+    sortComparator: (Patient left, Patient right) => appListTableCompareText(
+      left.isActive ? 'active' : 'inactive',
+      right.isActive ? 'active' : 'inactive',
+    ),
+    cellBuilder: (BuildContext context, Patient patient) =>
+        _patientActiveStatusText(context, patient.isActive),
+  );
+  final AppListTableColumn<Patient> nextActionCol = AppListTableColumn<Patient>(
+    label: l10n.patientsNextActionColumnLabel,
+    cellBuilder: (_, Patient patient) => _NextActionCell(
+      patient: patient,
+      onPressed: () {
+        unawaited(showPatientDetailDialog(context, ref, patient.id));
+      },
+    ),
+  );
+
+  switch (section) {
+    case PatientRegistrySection.all:
+      return <AppListTableColumn<Patient>>[
+        numberCol,
+        nameCol,
+        ageSexCol,
+        phoneCol,
+        alertCol,
+        visitCol,
+        statusCol,
+        nextActionCol,
+      ];
+    case PatientRegistrySection.active:
+      return <AppListTableColumn<Patient>>[
+        numberCol,
+        nameCol,
+        ageSexCol,
+        phoneCol,
+        alertCol,
+        visitCol,
+        nextActionCol,
+      ];
+    case PatientRegistrySection.admitted:
+      return <AppListTableColumn<Patient>>[
+        numberCol,
+        nameCol,
+        ageSexCol,
+        phoneCol,
+        alertCol,
+        visitCol,
+        nextActionCol,
+      ];
+    case PatientRegistrySection.balanceDue:
+      return <AppListTableColumn<Patient>>[
+        numberCol,
+        nameCol,
+        ageSexCol,
+        phoneCol,
+        visitCol,
+        statusCol,
+        nextActionCol,
+      ];
   }
 }
 
@@ -2831,7 +2994,9 @@ class _PatientReportPrintPreviewDialogState
     final l10n = context.l10n;
     setState(() => _isPrinting = true);
     try {
-      await ref.read(patientRepositoryProvider).recordPatientReportPrintEvent(
+      await ref
+          .read(patientRepositoryProvider)
+          .recordPatientReportPrintEvent(
             patientId: widget.patient.id,
             sections: selection.sections
                 .map(_patientReportSectionApiId)

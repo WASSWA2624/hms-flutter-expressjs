@@ -4485,6 +4485,22 @@
   "@opdTriageNotesLabel": {
     "description": "Triage notes field label."
   },
+  "patientsTabAll": "All patients",
+  "@patientsTabAll": {
+    "description": "Tab label for showing all patients"
+  },
+  "patientsTabActive": "Active",
+  "@patientsTabActive": {
+    "description": "Tab label for showing active patients"
+  },
+  "patientsTabAdmitted": "Admitted",
+  "@patientsTabAdmitted": {
+    "description": "Tab label for showing currently admitted patients"
+  },
+  "patientsTabBalanceDue": "Balance due",
+  "@patientsTabBalanceDue": {
+    "description": "Tab label for showing patients with outstanding balance"
+  },
   "patientsTitle": "Patient registry",
   "@patientsTitle": {
     "description": "Patient registry screen title."

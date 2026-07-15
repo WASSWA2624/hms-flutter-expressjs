@@ -3465,6 +3465,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdNoRouteDecisionLabel => 'Do not route yet';
 
   @override
+  String get patientsTabAll => 'All patients';
+
+  @override
+  String get patientsTabActive => 'Active';
+
+  @override
+  String get patientsTabAdmitted => 'Admitted';
+
+  @override
+  String get patientsTabBalanceDue => 'Balance due';
+
+  @override
   String get patientsTitle => 'Patient registry';
 
   @override

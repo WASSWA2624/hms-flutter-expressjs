@@ -1,9 +1,56 @@
 import 'package:flutter/foundation.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
+enum PatientRegistrySection { all, active, admitted, balanceDue }
+
+extension PatientRegistrySectionFilter on PatientRegistrySection {
+  PatientListQuery applyToQuery(PatientListQuery query) {
+    switch (this) {
+      case PatientRegistrySection.all:
+        return query.copyWith(
+          clearIsActive: true,
+          clearHasActiveAdmission: true,
+          clearHasOutstandingBalance: true,
+        );
+      case PatientRegistrySection.active:
+        return query.copyWith(
+          isActive: true,
+          clearHasActiveAdmission: true,
+          clearHasOutstandingBalance: true,
+        );
+      case PatientRegistrySection.admitted:
+        return query.copyWith(
+          hasActiveAdmission: true,
+          clearIsActive: true,
+          clearHasOutstandingBalance: true,
+        );
+      case PatientRegistrySection.balanceDue:
+        return query.copyWith(
+          hasOutstandingBalance: true,
+          clearIsActive: true,
+          clearHasActiveAdmission: true,
+        );
+    }
+  }
+
+  String get queryValue {
+    switch (this) {
+      case PatientRegistrySection.all:
+        return '';
+      case PatientRegistrySection.active:
+        return 'active';
+      case PatientRegistrySection.admitted:
+        return 'admitted';
+      case PatientRegistrySection.balanceDue:
+        return 'balance-due';
+    }
+  }
+}
+
 @immutable
 final class PatientListQuery {
   const PatientListQuery({
+    this.section = PatientRegistrySection.all,
     this.search = '',
     this.patientId = '',
     this.contact = '',
@@ -50,7 +97,23 @@ final class PatientListQuery {
       return null;
     }
 
+    PatientRegistrySection parseSection(String raw) {
+      switch (raw.trim().toLowerCase()) {
+        case 'active':
+          return PatientRegistrySection.active;
+        case 'admitted':
+          return PatientRegistrySection.admitted;
+        case 'balance-due':
+        case 'balance_due':
+        case 'balancedue':
+          return PatientRegistrySection.balanceDue;
+        default:
+          return PatientRegistrySection.all;
+      }
+    }
+
     return PatientListQuery(
+      section: parseSection(pick(<String>['section', 'tab'])),
       search: pick(<String>['search', 'q']),
       patientId: pick(<String>['patientId', 'patient_id', 'patient']),
       contact: pick(<String>['contact', 'phone']),
@@ -67,6 +130,7 @@ final class PatientListQuery {
     );
   }
 
+  final PatientRegistrySection section;
   final String search;
   final String patientId;
   final String contact;
@@ -87,7 +151,8 @@ final class PatientListQuery {
   final AppPageRequest pageRequest;
 
   bool get hasRouteTargeting {
-    return search.trim().isNotEmpty ||
+    return section != PatientRegistrySection.all ||
+        search.trim().isNotEmpty ||
         patientId.trim().isNotEmpty ||
         contact.trim().isNotEmpty ||
         hasOutstandingBalance != null ||
@@ -95,9 +160,10 @@ final class PatientListQuery {
   }
 
   String get signature =>
-      '$search|$patientId|$contact|$hasOutstandingBalance|$hasActiveAdmission';
+      '${section.name}|$search|$patientId|$contact|$hasOutstandingBalance|$hasActiveAdmission';
 
   PatientListQuery copyWith({
+    PatientRegistrySection? section,
     String? search,
     String? patientId,
     String? contact,
@@ -132,6 +198,7 @@ final class PatientListQuery {
     bool clearHasOutstandingBalance = false,
   }) {
     return PatientListQuery(
+      section: section ?? this.section,
       search: search ?? this.search,
       patientId: patientId ?? this.patientId,
       contact: contact ?? this.contact,

@@ -51,9 +51,11 @@ class AppStatusText extends StatelessWidget {
       children: <Widget>[
         Icon(resolvedIcon, size: theme.appTokens.listIconSize, color: color),
         SizedBox(width: theme.spacing.xs),
-        ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 220),
-          child: text,
+        Flexible(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 220),
+            child: text,
+          ),
         ),
       ],
     );

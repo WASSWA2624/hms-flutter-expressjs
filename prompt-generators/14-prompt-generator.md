@@ -1,21 +1,21 @@
-/patients
+﻿/claims
 
 ---
 
 # Screen Standardization Prompt Generator
 
-You are a coding AI agent acting as a prompt generator. Given the screen name on the first line of this file, you must audit the codebase, then produce a comprehensive, context-aware refactoring prompt that another coding AI agent can execute autonomously — and save it to the `prompts/` folder.
+You are a coding AI agent acting as a prompt generator. Given the screen name on the first line of this file, you must audit the codebase, then produce a comprehensive, context-aware refactoring prompt that another coding AI agent can execute autonomously â€” and save it to the `prompts/` folder.
 
 The generated prompt must be written for a coding AI agent that:
 - Has full read/write access to the codebase.
 - Can create, modify, and delete files.
 - Can run shell commands (tests, linting, formatting).
-- Operates without human clarification — all instructions must be unambiguous and self-contained.
+- Operates without human clarification â€” all instructions must be unambiguous and self-contained.
 - Needs explicit file paths, exact class/widget names, and concrete code patterns to act on.
 
 ---
 
-## Step 1: Codebase Discovery (mandatory — do this first)
+## Step 1: Codebase Discovery (mandatory â€” do this first)
 
 Before writing any prompt content, perform a full audit of the codebase to gather context specific to the target screen.
 
@@ -75,7 +75,7 @@ Before writing any prompt content, perform a full audit of the codebase to gathe
 
 ## Step 2: Generate the Prompt
 
-Using the audit findings, generate a detailed, actionable refactoring prompt written for a coding AI agent. The prompt must be self-contained — the executing agent should not need to re-discover context or ask questions.
+Using the audit findings, generate a detailed, actionable refactoring prompt written for a coding AI agent. The prompt must be self-contained â€” the executing agent should not need to re-discover context or ask questions.
 
 ### Generated prompt structure
 
@@ -90,7 +90,7 @@ The output file must follow this exact structure:
 
 ## Context for the Executing Agent
 
-You are a coding AI agent with full read/write access to this Flutter codebase. Execute every step below precisely. Do not skip steps. Do not ask for clarification — all information needed is in this prompt. Run tests and formatting after implementation.
+You are a coding AI agent with full read/write access to this Flutter codebase. Execute every step below precisely. Do not skip steps. Do not ask for clarification â€” all information needed is in this prompt. Run tests and formatting after implementation.
 
 ## Current State (from audit)
 
@@ -112,7 +112,7 @@ Read these files to understand the target patterns (do NOT modify them):
 
 | Tab Name | Route Path | Description | Primary Action Button |
 |----------|-----------|-------------|----------------------|
-| [tab]    | [path]    | [desc]      | [label → action]     |
+| [tab]    | [path]    | [desc]      | [label â†’ action]     |
 
 ### Routing
 
@@ -136,17 +136,17 @@ Read these files to understand the target patterns (do NOT modify them):
 
 [Numbered steps the agent must execute in order. Each step must specify:]
 
-1. **[Action]** — File: `[exact path]`
+1. **[Action]** â€” File: `[exact path]`
    - What to do (create / modify / delete)
    - Specific code changes or patterns to apply
    - Imports to add
 
-2. **[Action]** — File: `[exact path]`
+2. **[Action]** â€” File: `[exact path]`
    - ...
 
 [Continue for all necessary changes]
 
-## Shared Components — MUST Reuse
+## Shared Components â€” MUST Reuse
 
 Do NOT create new implementations of these. Import and use them directly:
 
@@ -184,7 +184,7 @@ After the refactor, the agent MUST remove all dead/stale code left behind:
 - [ ] Remove deprecated helper functions, extension methods, or utilities specific to the old screen.
 - [ ] Clean up unused assets (icons, images, strings) tied to removed components.
 - [ ] Run `dart analyze` to catch any remaining unreferenced declarations and remove them.
-- [ ] Verify no test files reference deleted code — update or remove stale tests.
+- [ ] Verify no test files reference deleted code â€” update or remove stale tests.
 
 List every file and symbol removed in a "Cleanup Summary" section at the end of the implementation.
 
@@ -194,7 +194,7 @@ If the refactoring changes data models, API contracts, or introduces new query r
 
 - [ ] Identify whether new database tables, columns, or indexes are needed for the refactored screen (e.g., new filter fields, tab-specific status columns, sort order columns).
 - [ ] Identify whether existing columns or tables become unused after the refactor and should be deprecated/removed.
-- [ ] Create the appropriate migration files following the project's migration conventions (inspect `backend/migrations/`, `backend/prisma/`, `supabase/migrations/`, or equivalent — use whatever migration system exists in this codebase).
+- [ ] Create the appropriate migration files following the project's migration conventions (inspect `backend/migrations/`, `backend/prisma/`, `supabase/migrations/`, or equivalent â€” use whatever migration system exists in this codebase).
 - [ ] Name migration files descriptively: `{timestamp}_standardize_{screen_name_snake_case}.sql` or equivalent.
 - [ ] Ensure migrations are idempotent and include rollback/down steps where the framework supports it.
 - [ ] Run migrations locally and confirm they apply cleanly:
@@ -211,13 +211,13 @@ If the refactoring changes data models, API contracts, or introduces new query r
 ```
 
 - [ ] Update seed data or test fixtures if the schema change affects them.
-- [ ] If no database changes are needed, explicitly state: "No database migrations required — schema unchanged."
+- [ ] If no database changes are needed, explicitly state: "No database migrations required â€” schema unchanged."
 
 ## Responsive Design Requirements
 
-- **Desktop (≥1024px):** [specific layout — e.g., full table with all columns visible, side-by-side elements]
-- **Tablet (600–1023px):** [specific layout — e.g., condensed columns, stacked action area]
-- **Mobile (<600px):** [specific layout — e.g., card-based rows, bottom action sheet, hidden columns]
+- **Desktop (â‰¥1024px):** [specific layout â€” e.g., full table with all columns visible, side-by-side elements]
+- **Tablet (600â€“1023px):** [specific layout â€” e.g., condensed columns, stacked action area]
+- **Mobile (<600px):** [specific layout â€” e.g., card-based rows, bottom action sheet, hidden columns]
 
 [Reference the exact breakpoint utility/widget from the codebase to use.]
 
@@ -260,12 +260,12 @@ The refactor is complete when ALL of the following are true:
 - [ ] Each tab has its own URL that supports deep linking
 - [ ] The primary action button is contextual per tab and positioned correctly
 - [ ] The page body uses `AppListTable` with integrated search, filter, and settings
-- [ ] No shared component is re-implemented — only imported and used
+- [ ] No shared component is re-implemented â€” only imported and used
 - [ ] The layout is fully responsive across mobile, tablet, and desktop
-- [ ] All old/duplicate layout code is removed — no stale files or dead symbols remain
+- [ ] All old/duplicate layout code is removed â€” no stale files or dead symbols remain
 - [ ] Domain-specific business logic and data are preserved
 - [ ] All necessary database migrations are created and applied (or explicitly noted as unnecessary)
-- [ ] `dart analyze` reports no new issues — zero unused imports, zero unreferenced declarations
+- [ ] `dart analyze` reports no new issues â€” zero unused imports, zero unreferenced declarations
 - [ ] All tests pass (no stale test references to removed code)
 ```
 
@@ -274,21 +274,21 @@ The refactor is complete when ALL of the following are true:
 ## Step 3: Save the Output
 
 - List all existing files in the `prompts/` folder.
-- Find the highest numeric prefix currently in use (e.g., if `14-standardize-patients.md` exists, the highest is `14`).
-- Increment by 1 and zero-pad to two digits for the new file's prefix.
+- Find the highest numeric prefix currently in use (e.g., if `01-standardize-patients.md` exists, the highest is `01`).
+- Increment by 1 and zero-pad to two digits for the new file's prefix (e.g., `02`, `03`, etc.).
 - Save the generated prompt as: `prompts/{NN}-{short-kebab-case-name}.md`
-  - The filename should be short and descriptive (3–5 words max in kebab-case).
-  - Example: if the highest existing file is `14-standardize-patients.md` and the screen name is "Laboratory", save as `prompts/15-standardize-laboratory.md`.
+  - The filename should be short and descriptive (3â€“5 words max in kebab-case).
+  - Example: if the highest existing file is `01-standardize-patients.md` and the screen name is "Laboratory", save as `prompts/02-standardize-laboratory.md`.
 
 ---
 
 ## Rules
 
 1. **Never generate a generic prompt.** Every section must reference actual file paths, component names, provider names, and patterns discovered during the audit. The executing agent must not need to search for anything.
-2. **Do not guess.** If a shared component or pattern cannot be found in the codebase, note its absence and instruct the executing agent to create it following the Reception reference — provide the exact pattern to replicate.
-3. **Preserve domain logic.** The generated prompt must not remove screen-specific business behavior — only restructure the UI layer to match the standard layout.
+2. **Do not guess.** If a shared component or pattern cannot be found in the codebase, note its absence and instruct the executing agent to create it following the Reception reference â€” provide the exact pattern to replicate.
+3. **Preserve domain logic.** The generated prompt must not remove screen-specific business behavior â€” only restructure the UI layer to match the standard layout.
 4. **Reuse over reinvention.** The generated prompt must explicitly forbid creating new table, tab, search, or filter implementations when shared ones exist.
-5. **Be specific.** Reference exact file paths, class names, widget names, provider names, and route paths. Vague instructions like "use the shared table" are insufficient — specify which import, which constructor, which parameters.
+5. **Be specific.** Reference exact file paths, class names, widget names, provider names, and route paths. Vague instructions like "use the shared table" are insufficient â€” specify which import, which constructor, which parameters.
 6. **Mobile-first.** The responsive design section must specify concrete breakpoints and layout changes, not just "make it responsive."
 7. **Agent-executable.** Every instruction must be unambiguous enough that a coding AI agent can execute it without asking follow-up questions. Include exact code snippets where patterns are non-obvious.
 8. **Include verification.** The prompt must end with concrete shell commands and test expectations so the executing agent can self-verify its work.

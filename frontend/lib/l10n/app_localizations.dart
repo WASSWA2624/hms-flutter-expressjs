@@ -6694,6 +6694,30 @@ abstract class AppLocalizations {
   /// **'Do not route yet'**
   String get opdNoRouteDecisionLabel;
 
+  /// Tab label for showing all patients
+  ///
+  /// In en, this message translates to:
+  /// **'All patients'**
+  String get patientsTabAll;
+
+  /// Tab label for showing active patients
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get patientsTabActive;
+
+  /// Tab label for showing currently admitted patients
+  ///
+  /// In en, this message translates to:
+  /// **'Admitted'**
+  String get patientsTabAdmitted;
+
+  /// Tab label for showing patients with outstanding balance
+  ///
+  /// In en, this message translates to:
+  /// **'Balance due'**
+  String get patientsTabBalanceDue;
+
   /// Patient registry screen title.
   ///
   /// In en, this message translates to:
