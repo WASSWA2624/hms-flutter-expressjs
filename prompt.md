@@ -1,8 +1,8 @@
-# Make OPD Flow "Next Step" Actions Navigable and Fix Cross-Module Consistency
+# Universal "Next Step" Navigation — All Patient Flows
 
 ## Objective
 
-Ensure that every "next step" or "current step" indicator across all modules (Reception, OPD, Billing, IPD, ICU, Nursing, Clinical, Pharmacy, Radiology, Laboratory, etc.) is an actionable button that routes the user directly to the exact page, dialog, or module where the step can be completed. Additionally, fix data inconsistencies and make Reception tabs URL-routable.
+Implement a system-wide "next step" navigation pattern so that **every** workflow in the application — OPD, IPD, ICU, Emergency, Nursing, Clinical (Doctors), Pharmacy, Laboratory, Radiology, Billing, Physiotherapy, Operating Theater, Discharge Planning — presents a clear, clickable action button that instantly routes the user to the exact page, dialog, or module where the next step must be completed. The user should never have to guess where to go or what to do next. Additionally, fix data inconsistencies and make Reception tabs URL-routable.
 
 ---
 
@@ -60,7 +60,11 @@ Even though the patient has "Payment due" status in both Reception and OPD, the 
 - The "Patient ID" column in the Active visits tab must show the patient's actual ID (e.g. `PAT0000001`), not the encounter ID.
 - If both are needed, add a separate "Encounter ID" column or show the encounter ID in a secondary/detail row.
 
-### 3. Convert "Next step" into an actionable navigation button
+### 3. Convert "Next step" into an actionable navigation button — across ALL flows
+
+This is not limited to OPD. **Every module** that participates in a patient workflow must render its "next step" / "current step" / "next action" column as a clickable, clearly styled button that navigates the user to the exact destination.
+
+**Principle:** No matter which module or page the user is on, if a row shows a pending next action, one click should take the user directly there. The user never guesses, never hunts through the sidebar, never has to know which module "owns" the next step.
 
 For every module's table that displays a "next step", "current step", or equivalent status column:
 
@@ -68,24 +72,37 @@ For every module's table that displays a "next step", "current step", or equival
 - On click, the button must **navigate the user to the exact module, page, or dialog** where the action can be completed.
 - The routing logic should be centralized — a single `resolveNextStepRoute(stepType, context)` utility that maps step identifiers to their target routes/dialogs.
 
-**Example mappings:**
+**Example mappings (comprehensive across all flows):**
 
-| Step identifier | Target route / action |
-|---|---|
-| `pay_consultation` | Navigate to `/billing` with encounter pre-filtered, or open payment dialog inline |
-| `start_encounter` | Navigate to the clinical workspace for the encounter |
-| `triage` | Navigate to nursing triage form for the encounter |
-| `assign_doctor` | Open doctor assignment dialog |
-| `lab_order` | Navigate to `/laboratory` with the pending order |
-| `dispense_medication` | Navigate to `/pharmacy` with the prescription |
+| Step identifier | Flow(s) | Target route / action |
+|---|---|---|
+| `pay_consultation` | OPD, Emergency | Navigate to `/billing` with encounter pre-filtered, or open payment dialog inline |
+| `start_encounter` | OPD, IPD, Emergency | Navigate to the clinical workspace for the encounter |
+| `triage` | OPD, Emergency, IPD | Navigate to nursing triage form for the encounter |
+| `assign_doctor` | OPD, IPD, ICU | Open doctor assignment dialog |
+| `lab_order` | Clinical, OPD, IPD, ICU | Navigate to `/laboratory` with the pending order |
+| `lab_results_ready` | Laboratory | Navigate to clinical workspace to review results |
+| `dispense_medication` | Pharmacy | Navigate to `/pharmacy` with the prescription |
+| `radiology_scan` | Clinical, OPD, IPD | Navigate to `/radiology` with the imaging request |
+| `radiology_report_ready` | Radiology | Navigate to clinical workspace to review report |
+| `admit_patient` | Emergency, OPD | Navigate to IPD admission form |
+| `assign_bed` | IPD, ICU | Navigate to `/rooms-beds` with patient context |
+| `nursing_assessment` | Nursing, IPD, ICU | Navigate to nursing assessment form |
+| `surgery_scheduling` | Clinical, IPD | Navigate to `/operating-theater` scheduling |
+| `discharge_planning` | IPD, ICU | Navigate to `/discharge-planning` with encounter |
+| `physiotherapy_session` | Clinical, IPD | Navigate to physiotherapy module |
+| `insurance_preauth` | Billing | Navigate to `/insurance-claims` pre-authorization form |
+| `close_encounter` | OPD, Emergency | Complete and close the encounter |
 
-- This must work **regardless of which module the user is currently viewing**. Whether in Reception, OPD, Billing, or Nursing — clicking the next step button always takes the user to the correct destination.
+- This must work **regardless of which module the user is currently viewing**. Whether in Reception, OPD, Billing, Nursing, IPD, ICU, Laboratory, Pharmacy, Radiology, or any other module — clicking the next step button always takes the user to the correct destination.
+- The system should detect the appropriate next step based on the encounter's current state and workflow configuration, then present it as a single clear call-to-action.
 
-### 4. Ensure Billing queue is populated from OPD consultation fees
+### 4. Ensure Billing queue is populated from ALL flows that require payment
 
-- When an encounter reaches the "pay consultation" step, a billing item / invoice must be created and appear in the Billing module's queue.
-- The billing item should reference the encounter, patient, assigned doctor, and the consultation fee amount.
+- When **any** encounter (OPD, IPD, ICU, Emergency, etc.) reaches a payment step, a billing item / invoice must be created and appear in the Billing module's queue.
+- The billing item should reference the encounter, patient, assigned staff, service type, and the fee amount.
 - Until payment is completed, the item remains visible in the Billing queue with "Payment due" status.
+- This applies to consultation fees, lab fees, radiology fees, pharmacy charges, procedure fees, bed charges, etc. — any billable step across any flow.
 
 ### 5. Improve status label clarity
 
@@ -96,16 +113,29 @@ For every module's table that displays a "next step", "current step", or equival
 
 ## Implementation Approach
 
-### Central "Next Step" resolver
+### Central "Next Step" resolver (shared across all modules)
 
 Create a shared utility/service that:
-1. Accepts a step type/identifier and encounter context.
+1. Accepts a step type/identifier and encounter context (encounter ID, patient ID, flow type, assigned staff, etc.).
 2. Returns the appropriate navigation action (route path, dialog builder, or deep-link URL).
-3. Is consumed by all module tables that render "next step" or "current step" columns.
+3. Is consumed by **all** module tables that render "next step" or "current step" columns — OPD, IPD, ICU, Emergency, Nursing, Clinical, Pharmacy, Lab, Radiology, Billing, Operating Theater, Discharge Planning, Physiotherapy.
+4. Handles edge cases: if the next step requires a different user role (e.g. only a doctor can start a consultation), show the button but indicate it's assigned to another role/person.
 
-### Billing item creation
+### Shared "NextStepActionButton" widget
 
-Ensure the OPD flow service creates a billing/invoice record when the encounter transitions to the payment step. The backend endpoint that advances the encounter step should also trigger billing item creation if one doesn't already exist.
+A single reusable widget used in every module's table:
+- Displays the human-readable step label.
+- Styled as a clear call-to-action (not plain text).
+- On tap, calls the central resolver and navigates accordingly.
+- Shows a tooltip or subtitle indicating which module/area it will navigate to (e.g. "Opens in Billing").
+
+### Billing item creation (all flows)
+
+Ensure that **every** flow service (OPD, IPD, ICU, Emergency, etc.) creates a billing/invoice record when the encounter transitions to any payment step. The backend endpoint that advances the encounter step should also trigger billing item creation if one doesn't already exist.
+
+### Step state synchronization
+
+All modules must read from and write to the same encounter step state. When a step is completed in one module (e.g. payment completed in Billing), all other modules displaying that encounter (Reception, OPD, etc.) must immediately reflect the updated status and advance to the next step.
 
 ---
 
@@ -115,11 +145,20 @@ Ensure the OPD flow service creates a billing/invoice record when the encounter 
 |---|---|
 | Reception page routing | `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart` |
 | Active visits data mapping | Reception controller/provider mapping encounter fields to table columns |
-| Next step button widget | New shared widget: `NextStepActionButton` or similar |
-| Step → route resolver | New shared utility: `next_step_resolver.dart` or equivalent |
-| OPD flow table | `frontend/lib/features/opd/presentation/` — OPD table column definitions |
-| Billing queue population | `backend/src/modules/billing/` — invoice/billing item creation |
+| Next step button widget | New shared widget: `NextStepActionButton` — used in ALL module tables |
+| Step → route resolver | New shared utility: `next_step_resolver.dart` — central routing logic |
+| OPD flow table | `frontend/lib/features/opd/presentation/` — table column definitions |
+| IPD flow table | `frontend/lib/features/ipd/presentation/` — table column definitions |
+| ICU flow table | `frontend/lib/features/icu/presentation/` — table column definitions |
+| Emergency flow table | `frontend/lib/features/emergency/presentation/` — table column definitions |
+| Nursing module table | `frontend/lib/features/nursing/presentation/` — table column definitions |
+| Clinical (Doctors) table | `frontend/lib/features/clinical/presentation/` — table column definitions |
+| Pharmacy module table | `frontend/lib/features/pharmacy/presentation/` — table column definitions |
+| Laboratory module table | `frontend/lib/features/laboratory/presentation/` — table column definitions |
+| Radiology module table | `frontend/lib/features/radiology/presentation/` — table column definitions |
+| Billing queue population | `backend/src/modules/billing/` — invoice/billing item creation from all flows |
 | OPD flow service | `backend/src/modules/opd-flow/services/opd-flow.service.js` — step transition logic |
+| All flow services (backend) | Every flow service that manages encounter step transitions |
 | Status label mapping | Shared enum/constants mapping step states to human-readable labels |
 
 ---
@@ -127,7 +166,10 @@ Ensure the OPD flow service creates a billing/invoice record when the encounter 
 ## Technical Constraints
 
 - **URL-driven state**: Tab selection and deep-linking must work with browser back/forward navigation.
-- **Cross-module navigation**: The next-step resolver must handle routing across module boundaries without circular dependencies.
+- **Cross-module navigation**: The next-step resolver must handle routing across module boundaries without circular dependencies. Use a registry pattern or route map — not direct imports between feature modules.
 - **Backend consistency**: Billing items must be created atomically with step transitions (or via an event/hook) to prevent orphaned states where a patient is "awaiting payment" but no billing item exists.
+- **All flows, not just OPD**: The implementation must cover OPD, IPD, ICU, Emergency, Nursing, Clinical, Pharmacy, Laboratory, Radiology, Operating Theater, Discharge Planning, Physiotherapy, and Billing. Every module that displays a patient's workflow state must use the shared `NextStepActionButton`.
+- **Scalability**: Adding a new flow step in the future should only require registering the step identifier and its target route in the central resolver — no changes to individual module tables.
+- **Real-time updates**: When a step is completed in any module, all other modules showing that encounter must reflect the change (via WebSocket, polling, or Riverpod state invalidation).
 - **No regressions**: All existing table interactions (sorting, searching, pagination, row click navigation) must continue working.
 - **Accessibility**: Action buttons must be keyboard-accessible with clear focus indicators and ARIA labels.
