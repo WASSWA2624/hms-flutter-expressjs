@@ -1,137 +1,133 @@
-# Simplify Reception Search Actions and Reuse Patient Detail Dialog
+# Make OPD Flow "Next Step" Actions Navigable and Fix Cross-Module Consistency
 
 ## Objective
 
-Streamline the Reception workspace (`/reception`) search bar so it only exposes filter and column-settings controls, and replace the custom row-detail dialog with the same Patient Registry patient detail dialog used on `/patients`. Contextual workflow actions (schedule appointment, start/update OPD encounter, etc.) must live in that reused dialog—not in the table search bar.
+Ensure that every "next step" or "current step" indicator across all modules (Reception, OPD, Billing, IPD, ICU, Nursing, Clinical, Pharmacy, Radiology, Laboratory, etc.) is an actionable button that routes the user directly to the exact page, dialog, or module where the step can be completed. Additionally, fix data inconsistencies and make Reception tabs URL-routable.
 
 ---
 
-## Current State (from screenshots + code)
+## Current State (Problems Identified)
 
-**File:** `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart`
+### 1. Reception tabs are not URL-routable
 
-### What works
-- Tab strip with counts: Appointments, Desk queue, Active visits, Payment gate
-- `AppListTable<_ReceptionDeskRow>` with one-attribute columns and row selection
-- "+ Register patient" primary action on the tab row
+**Location:** `/reception`
 
-### Problems visible in screenshots
+The four tabs — Appointments, Desk queue, Active visits, Payment gate — do not update the browser URL when selected. Deep-linking (e.g. `/reception?tab=payment-gate`) is not supported.
 
-1. **Search bar is overcrowded** — trailing actions currently include:
-   - Refresh
-   - Schedule appointment
-   - Start OPD encounter
-   - Column settings
-   - Overflow **"More actions"** menu (`maxTrailingActions: 3`)
-2. **Custom row dialog is wrong UX** — `_ReceptionRowDetailDialog` (built on `AppPatientDetailDialog`) shows a sparse action strip and large blank white space. It does **not** match Patient Registry.
-3. **Patient Registry is the reference** — on `/patients`, row tap opens `PatientDetailDialog` via `showPatientDetailDialog(...)`. That dialog already includes patient header, active work, quick actions (schedule appointment, start/update encounter, etc.), and related sections. Reception must reuse this exact dialog.
+### 2. Patient ID column shows Encounter ID on Active Visits
+
+**Location:** Reception → Active visits tab
+
+The "Patient ID" column displays `ENC0000003` (an encounter identifier) instead of the actual patient ID (`PAT0000001`). This is a data mapping error.
+
+### 3. "Next step" / "Current step" labels are informational only — not actionable
+
+**Locations observed:**
+- Reception → Active visits: "Current step" column shows "Payment due" as plain text.
+- Reception → Payment gate: "Current step" shows "Payment due" with no link.
+- OPD flow (`/opd`): "Next step" column shows "Pay consultation" as plain text.
+
+**Expected behaviour:** Each "next step" value should be a clickable button/link that navigates the user to the exact location where that step is completed. For "Pay consultation", clicking should route to the Billing module (or open an inline payment dialog) with the relevant encounter pre-loaded.
+
+### 4. Billing module shows no items despite pending payments
+
+**Location:** `/billing`
+
+Even though the patient has "Payment due" status in both Reception and OPD, the Billing page displays "No billing items — No invoices or billing actions in this queue." The billing queue is not being populated from the OPD flow's consultation fee requirement.
+
+### 5. Status labels are vague and inconsistent across modules
+
+| Module | Column | Value shown | Problem |
+|--------|--------|-------------|---------|
+| Reception → Appointments | Status | "In Progress" | Doesn't indicate *what* is in progress |
+| Reception → Desk queue | Status | "In Progress" | Same vague label |
+| Reception → Active visits | Current step | "Payment due" | Informational but not actionable |
+| OPD flow | Queue status | "Payment due" | Duplicate info, still not actionable |
+| OPD flow | Next step | "Pay consultation" | Descriptive but no navigation path |
 
 ---
 
 ## Target Design
 
-### 1. Slim the `AppListTable` search bar
+### 1. Make Reception tabs URL-routable
 
-In `AppListTableSearch<_ReceptionDeskRow>`:
+- Selecting a tab must update the URL query parameter (e.g. `/reception?tab=appointments`, `/reception?tab=desk-queue`, `/reception?tab=active-visits`, `/reception?tab=payment-gate`).
+- Direct navigation to these URLs must select the correct tab on page load.
+- Follow the same pattern already used in other routable tabs in the app (e.g. Admin Access page with `panel` query param).
 
-**Remove these trailing actions:**
-- Refresh
-- Schedule appointment
-- Start OPD encounter
+### 2. Fix Patient ID mapping on Active Visits
 
-**Keep only:**
-- Built-in filter controls (advanced filter / filter button from `AppSearchBar` / `AppListTableSearch`)
-- Column settings action from `AppListTableColumnVisibilityController.settingsAction(context)`
+- The "Patient ID" column in the Active visits tab must show the patient's actual ID (e.g. `PAT0000001`), not the encounter ID.
+- If both are needed, add a separate "Encounter ID" column or show the encounter ID in a secondary/detail row.
 
-**Also remove:**
-- The overflow **"More actions"** menu caused by excess trailing actions — with only settings remaining, set `maxTrailingActions` high enough that settings never collapses into overflow, or omit `maxTrailingActions` if defaults already avoid overflow for a single action.
+### 3. Convert "Next step" into an actionable navigation button
 
-**Keep on the page (outside search bar):**
-- Tab strip + "+ Register patient" button (unchanged)
+For every module's table that displays a "next step", "current step", or equivalent status column:
 
-### 2. Replace `_ReceptionRowDetailDialog` with Patient Registry dialog
+- Render the value as a **clickable button or chip** (styled distinctly from plain text — e.g. teal/primary color, underline, or icon-adorned).
+- On click, the button must **navigate the user to the exact module, page, or dialog** where the action can be completed.
+- The routing logic should be centralized — a single `resolveNextStepRoute(stepType, context)` utility that maps step identifiers to their target routes/dialogs.
 
-On row tap (`onRowSelected`):
+**Example mappings:**
 
-1. Resolve the row’s **patient ID** (`row.patientId`).
-2. If missing, show a localized failure/snackbar and return.
-3. Open the shared Patient Registry dialog:
-
-```dart
-await showPatientDetailDialog(context, ref, patientId);
-// or equivalently:
-await openReceptionPatientEditor(context, ref, patientId);
-```
-
-**Requirements:**
-- The dialog must look and behave **exactly** like Patient Registry (`/patients` row click).
-- Reuse `showPatientDetailDialog` / `PatientDetailDialog` from:
-  - `frontend/lib/features/patients/presentation/widgets/patient_detail_dialog_body.dart`
-  - re-exported via `frontend/lib/shared/patient_actions/patient_detail_dialog.dart`
-- Do **not** invent a reception-specific detail shell.
-- Schedule appointment, start OPD encounter, update encounter, and other clinical/quick actions must come from that dialog’s existing `PatientDetailQuickActions` / active-work panels—not from reception search-bar buttons.
-
-### 3. Delete the custom reception detail dialog
-
-Remove entirely:
-- `_ReceptionRowDetailDialog` class
-- `_openRowDetail` custom dialog wiring that builds reception-only actions
-- Any now-unused reception-only dialog action callbacks used solely by that dialog
-
-Keep reception-specific table row actions only if still needed elsewhere; otherwise delete dead paths.
-
-### 4. Preserve reception table behavior
-
-Do not regress:
-- Tab filtering / section counts
-- Local search matcher
-- Column definitions (one attribute per column)
-- Column visibility persistence keys
-- Empty state (`AppStateView`)
-- Deep-link `ReceptionWorkspaceQuery` / `?section=` support
-
----
-
-## Resulting Widget Tree (Target)
-
-```
-ResponsivePage
-  └── Column
-        ├── Row
-        │     ├── Expanded(AppTabStrip [...counts...])
-        │     └── AppButton.primary("Register patient")
-        └── AppListTable<_ReceptionDeskRow>
-              ├── Search bar
-              │     ├── Search field
-              │     ├── Filter button
-              │     └── Column settings only
-              └── Rows → onRowSelected → showPatientDetailDialog(patientId)
-                    └── PatientDetailDialog (same as /patients)
-                          ├── PatientDetailHeader
-                          ├── PatientDetailActiveWorkPanel
-                          ├── PatientDetailQuickActions
-                          │     (schedule appointment, start/update encounter, …)
-                          └── Related patient sections
-```
-
----
-
-## Files to Modify
-
-| File | Change |
+| Step identifier | Target route / action |
 |---|---|
-| `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart` | Strip search trailing actions to column settings only; on row tap call `showPatientDetailDialog` / `openReceptionPatientEditor`; delete `_ReceptionRowDetailDialog` and related dead code. |
-| `frontend/lib/features/reception/presentation/widgets/reception_patient_actions.dart` | Prefer reusing `openReceptionPatientEditor` (already wraps `showPatientDetailDialog`). No new dialog. |
+| `pay_consultation` | Navigate to `/billing` with encounter pre-filtered, or open payment dialog inline |
+| `start_encounter` | Navigate to the clinical workspace for the encounter |
+| `triage` | Navigate to nursing triage form for the encounter |
+| `assign_doctor` | Open doctor assignment dialog |
+| `lab_order` | Navigate to `/laboratory` with the pending order |
+| `dispense_medication` | Navigate to `/pharmacy` with the prescription |
 
-No new shared components. No duplicate patient detail UI.
+- This must work **regardless of which module the user is currently viewing**. Whether in Reception, OPD, Billing, or Nursing — clicking the next step button always takes the user to the correct destination.
+
+### 4. Ensure Billing queue is populated from OPD consultation fees
+
+- When an encounter reaches the "pay consultation" step, a billing item / invoice must be created and appear in the Billing module's queue.
+- The billing item should reference the encounter, patient, assigned doctor, and the consultation fee amount.
+- Until payment is completed, the item remains visible in the Billing queue with "Payment due" status.
+
+### 5. Improve status label clarity
+
+- Replace vague "In Progress" with contextual status text that reflects the actual current activity (e.g. "Awaiting payment", "In triage", "With doctor", "Awaiting lab results").
+- Ensure status text is consistent across all modules for the same encounter state.
+
+---
+
+## Implementation Approach
+
+### Central "Next Step" resolver
+
+Create a shared utility/service that:
+1. Accepts a step type/identifier and encounter context.
+2. Returns the appropriate navigation action (route path, dialog builder, or deep-link URL).
+3. Is consumed by all module tables that render "next step" or "current step" columns.
+
+### Billing item creation
+
+Ensure the OPD flow service creates a billing/invoice record when the encounter transitions to the payment step. The backend endpoint that advances the encounter step should also trigger billing item creation if one doesn't already exist.
+
+---
+
+## Files Likely Affected
+
+| Area | Files / Modules |
+|---|---|
+| Reception page routing | `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart` |
+| Active visits data mapping | Reception controller/provider mapping encounter fields to table columns |
+| Next step button widget | New shared widget: `NextStepActionButton` or similar |
+| Step → route resolver | New shared utility: `next_step_resolver.dart` or equivalent |
+| OPD flow table | `frontend/lib/features/opd/presentation/` — OPD table column definitions |
+| Billing queue population | `backend/src/modules/billing/` — invoice/billing item creation |
+| OPD flow service | `backend/src/modules/opd-flow/services/opd-flow.service.js` — step transition logic |
+| Status label mapping | Shared enum/constants mapping step states to human-readable labels |
 
 ---
 
 ## Technical Constraints
 
-- **Reuse, don’t fork:** Patient detail UX must be identical to Patient Registry.
-- **Row identity:** Open dialog with the patient `human_friendly_id` / patient id from the row (`row.patientId`). Never invent a reception-only detail model.
-- **RBAC:** Keep existing access gating; PatientDetailDialog already enforces patient write/delete and clinical action permissions.
-- **Localization:** No hard-coded English for new strings; reuse existing l10n keys.
-- **Cleanup:** Remove unused imports/methods after deleting the custom dialog and search actions.
-- **UX:** Search bar must not show Refresh / Schedule appointment / Start OPD / More actions.
+- **URL-driven state**: Tab selection and deep-linking must work with browser back/forward navigation.
+- **Cross-module navigation**: The next-step resolver must handle routing across module boundaries without circular dependencies.
+- **Backend consistency**: Billing items must be created atomically with step transitions (or via an event/hook) to prevent orphaned states where a patient is "awaiting payment" but no billing item exists.
+- **No regressions**: All existing table interactions (sorting, searching, pagination, row click navigation) must continue working.
+- **Accessibility**: Action buttons must be keyboard-accessible with clear focus indicators and ARIA labels.

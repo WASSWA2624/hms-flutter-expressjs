@@ -2872,10 +2872,11 @@ const startOpdFlow = async (data, context = {}) => {
         feeDefaults.consultationFee || '0.00'
       );
       const currency = normalizeCurrencyCode(data.currency, feeDefaults.consultationCurrency || 'USD');
+      const hasPositiveFee = toDecimalNumber(consultationFee) > 0;
       const requireConsultationPayment =
         data.require_consultation_payment !== undefined
-          ? data.require_consultation_payment
-          : arrivalMode !== 'EMERGENCY';
+          ? data.require_consultation_payment && hasPositiveFee
+          : arrivalMode !== 'EMERGENCY' && hasPositiveFee;
       const createConsultationInvoice =
         data.create_consultation_invoice !== undefined
           ? data.create_consultation_invoice
@@ -3345,15 +3346,23 @@ const updateActiveEncounterContext = async (id, data, context = {}) => {
         consultation.consultation_fee = feeDefaults.consultationFee;
       }
       consultation.currency = currency;
+      const hasPositiveContextFee = toDecimalNumber(consultation.consultation_fee || '0') > 0;
       if (data.require_consultation_payment !== undefined) {
-        consultation.require_payment = data.require_consultation_payment;
+        consultation.require_payment = data.require_consultation_payment && hasPositiveContextFee;
+      } else if (consultation.require_payment && !hasPositiveContextFee) {
+        consultation.require_payment = false;
+        if (!consultation.payment_status || consultation.payment_status === 'PENDING') {
+          consultation.payment_status = 'NOT_REQUIRED';
+        }
       }
 
       const requiresInvoice =
-        data.create_consultation_invoice === true ||
-        data.pay_now ||
-        consultation.require_payment === true ||
-        Boolean(consultation.consultation_fee);
+        hasPositiveContextFee && (
+          data.create_consultation_invoice === true ||
+          data.pay_now ||
+          consultation.require_payment === true ||
+          Boolean(consultation.consultation_fee)
+        );
       let invoice = consultation.invoice_id
         ? await tx.invoice.findFirst({
             where: { id: consultation.invoice_id, deleted_at: null }
@@ -3542,122 +3551,152 @@ const payConsultation = async (id, data, context = {}) => {
       let invoiceId = data.invoice_id || consultation.invoice_id || null;
       let invoice = null;
 
-      if (invoiceId) {
-        invoice = await resolveEntityByIdentifier(tx, 'invoice', invoiceId, {
-          tenant_id: encounter.tenant_id
-        });
-        if (!invoice) {
-          throw new HttpError('errors.invoice.not_found', 404);
+      const effectiveFee = toDecimalNumber(
+        normalizeDecimalString(data.amount, consultation.consultation_fee || '0.00')
+      );
+      const isZeroFee = effectiveFee <= 0 && !invoiceId;
+
+      if (isZeroFee) {
+        consultation.is_paid = true;
+        consultation.paid_amount = '0.00';
+        consultation.paid_at = new Date().toISOString();
+        consultation.payment_status = 'PAID';
+        consultation.require_payment = false;
+        flow.consultation = consultation;
+
+        if (flow.stage === STAGES.WAITING_CONSULTATION_PAYMENT) {
+          setFlowStage(flow, STAGES.WAITING_VITALS);
         }
-        invoiceId = invoice.id;
+
+        appendTimelineEvent(
+          flow,
+          'CONSULTATION_PAYMENT_RECORDED',
+          context,
+          {
+            amount: '0.00',
+            status: 'COMPLETED',
+            zero_fee_auto_completed: true,
+            notes: data.notes || null
+          }
+        );
       } else {
-        const consultationCatalogItemId =
-          encounter.provider?.staff_profile?.id ||
-          encounter.facility_id ||
-          null;
-        const currencyForCharge = normalizeCurrencyCode(
-          data.currency || consultation.currency,
+        if (invoiceId) {
+          invoice = await resolveEntityByIdentifier(tx, 'invoice', invoiceId, {
+            tenant_id: encounter.tenant_id
+          });
+          if (!invoice) {
+            throw new HttpError('errors.invoice.not_found', 404);
+          }
+          invoiceId = invoice.id;
+        } else {
+          const consultationCatalogItemId =
+            encounter.provider?.staff_profile?.id ||
+            encounter.facility_id ||
+            null;
+          const currencyForCharge = normalizeCurrencyCode(
+            data.currency || consultation.currency,
+            await resolveDefaultCurrency(tx, encounter.tenant_id, encounter.facility_id)
+          );
+          const amountForCharge = normalizeDecimalString(
+            data.amount,
+            consultation.consultation_fee || '0.00'
+          );
+          const billingPayload = buildConsultationBillingPayload({
+            consultationFee: amountForCharge,
+            currency: currencyForCharge,
+            paymentStatus: 'PENDING',
+            catalogItemId: consultationCatalogItemId,
+            payNow: null
+          });
+          const snapshot = await persistConsultationBilling(tx, {
+            encounterId: encounter.id,
+            billing: billingPayload,
+            existingSnapshot: consultation.billing || null,
+            tenantId: encounter.tenant_id,
+            facilityId: encounter.facility_id,
+            patientId: encounter.patient_id,
+            encounterDisplayId: encounter.human_friendly_id || null,
+            catalogItemId: consultationCatalogItemId,
+            actorUserId: context.user_id || null,
+            currency: currencyForCharge,
+            description: 'Consultation fee'
+          });
+          if (!snapshot?.invoice_id) {
+            throw new HttpError('errors.invoice.not_found', 404);
+          }
+          invoice = await tx.invoice.findFirst({
+            where: { id: snapshot.invoice_id, deleted_at: null }
+          });
+          invoiceId = invoice.id;
+          consultation.billing = snapshot;
+        }
+
+        const paymentStatus = data.status || 'COMPLETED';
+        const currency = normalizeCurrencyCode(
+          data.currency || consultation.currency || invoice.currency,
           await resolveDefaultCurrency(tx, encounter.tenant_id, encounter.facility_id)
         );
-        const amountForCharge = normalizeDecimalString(
+        const amount = normalizeDecimalString(
           data.amount,
-          consultation.consultation_fee || '0.00'
+          consultation.consultation_fee || normalizeDecimalString(invoice.total_amount, '0.00')
         );
-        const billingPayload = buildConsultationBillingPayload({
-          consultationFee: amountForCharge,
-          currency: currencyForCharge,
-          paymentStatus: 'PENDING',
-          catalogItemId: consultationCatalogItemId,
-          payNow: null
+
+        const payment = await tx.payment.create({
+          data: {
+            tenant_id: encounter.tenant_id,
+            facility_id: encounter.facility_id,
+            patient_id: encounter.patient_id,
+            invoice_id: invoiceId,
+            status: paymentStatus,
+            method: data.method,
+            amount,
+            paid_at: paymentStatus === 'COMPLETED' ? (data.paid_at ? new Date(data.paid_at) : new Date()) : null,
+            transaction_ref: data.transaction_ref || null
+          }
         });
-        const snapshot = await persistConsultationBilling(tx, {
-          encounterId: encounter.id,
-          billing: billingPayload,
-          existingSnapshot: consultation.billing || null,
-          tenantId: encounter.tenant_id,
-          facilityId: encounter.facility_id,
-          patientId: encounter.patient_id,
-          encounterDisplayId: encounter.human_friendly_id || null,
-          catalogItemId: consultationCatalogItemId,
-          actorUserId: context.user_id || null,
-          currency: currencyForCharge,
-          description: 'Consultation fee'
+
+        const correctedInvoiceTotal =
+          isCorrection && data.amount ? amount : normalizeDecimalString(invoice.total_amount, amount);
+        const shouldUpdateTotal =
+          isCorrection &&
+          data.amount &&
+          toDecimalNumber(correctedInvoiceTotal) !== toDecimalNumber(invoice.total_amount);
+
+        invoice = await tx.invoice.update({
+          where: { id: invoice.id },
+          data: {
+            currency,
+            ...(shouldUpdateTotal ? { total_amount: correctedInvoiceTotal } : {})
+          }
         });
-        if (!snapshot?.invoice_id) {
-          throw new HttpError('errors.invoice.not_found', 404);
-        }
-        invoice = await tx.invoice.findFirst({
-          where: { id: snapshot.invoice_id, deleted_at: null }
-        });
-        invoiceId = invoice.id;
-        consultation.billing = snapshot;
-      }
 
-      const paymentStatus = data.status || 'COMPLETED';
-      const currency = normalizeCurrencyCode(
-        data.currency || consultation.currency || invoice.currency,
-        await resolveDefaultCurrency(tx, encounter.tenant_id, encounter.facility_id)
-      );
-      const amount = normalizeDecimalString(
-        data.amount,
-        consultation.consultation_fee || normalizeDecimalString(invoice.total_amount, '0.00')
-      );
-
-      const payment = await tx.payment.create({
-        data: {
-          tenant_id: encounter.tenant_id,
-          facility_id: encounter.facility_id,
-          patient_id: encounter.patient_id,
-          invoice_id: invoiceId,
-          status: paymentStatus,
-          method: data.method,
-          amount,
-          paid_at: paymentStatus === 'COMPLETED' ? (data.paid_at ? new Date(data.paid_at) : new Date()) : null,
-          transaction_ref: data.transaction_ref || null
-        }
-      });
-
-      const correctedInvoiceTotal =
-        isCorrection && data.amount ? amount : normalizeDecimalString(invoice.total_amount, amount);
-      const shouldUpdateTotal =
-        isCorrection &&
-        data.amount &&
-        toDecimalNumber(correctedInvoiceTotal) !== toDecimalNumber(invoice.total_amount);
-
-      invoice = await tx.invoice.update({
-        where: { id: invoice.id },
-        data: {
+        consultation.invoice_id = invoice.id;
+        await applyConsultationBillingSnapshot(tx, {
+          invoiceId: invoice.id,
+          payment,
+          consultation,
           currency,
-          ...(shouldUpdateTotal ? { total_amount: correctedInvoiceTotal } : {})
+          paymentStatus
+        });
+        flow.consultation = consultation;
+
+        if (flow.stage === STAGES.WAITING_CONSULTATION_PAYMENT && consultation.is_paid) {
+          setFlowStage(flow, STAGES.WAITING_VITALS);
         }
-      });
 
-      consultation.invoice_id = invoice.id;
-      await applyConsultationBillingSnapshot(tx, {
-        invoiceId: invoice.id,
-        payment,
-        consultation,
-        currency,
-        paymentStatus
-      });
-      flow.consultation = consultation;
-
-      if (flow.stage === STAGES.WAITING_CONSULTATION_PAYMENT && consultation.is_paid) {
-        setFlowStage(flow, STAGES.WAITING_VITALS);
+        appendTimelineEvent(
+          flow,
+          isCorrection ? 'CONSULTATION_PAYMENT_CORRECTED' : 'CONSULTATION_PAYMENT_RECORDED',
+          context,
+          {
+            payment_id: payment.id,
+            invoice_id: invoice.id,
+            amount,
+            status: paymentStatus,
+            notes: data.notes || null
+          }
+        );
       }
-
-      appendTimelineEvent(
-        flow,
-        isCorrection ? 'CONSULTATION_PAYMENT_CORRECTED' : 'CONSULTATION_PAYMENT_RECORDED',
-        context,
-        {
-          payment_id: payment.id,
-          invoice_id: invoice.id,
-          amount,
-          status: paymentStatus,
-          notes: data.notes || null
-        }
-      );
 
       const updatedEncounter = await tx.encounter.update({
         where: { id: encounter.id },
