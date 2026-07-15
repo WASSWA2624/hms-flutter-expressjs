@@ -27,6 +27,7 @@ import 'package:hosspi_hms/features/auth/presentation/widgets/auth_shell_layout.
 import 'package:hosspi_hms/app/router/shell_badge_counts.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/presentation/pages/billing_workspace_page.dart';
+import 'package:hosspi_hms/features/biomedical/domain/entities/biomedical_entities.dart';
 import 'package:hosspi_hms/features/biomedical/presentation/pages/biomedical_workspace_page.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 import 'package:hosspi_hms/features/claims/presentation/pages/claims_workspace_page.dart';
@@ -40,6 +41,7 @@ import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities
 import 'package:hosspi_hms/features/emergency/presentation/pages/emergency_workspace_page.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
+import 'package:hosspi_hms/features/housekeeping/domain/entities/housekeeping_entities.dart';
 import 'package:hosspi_hms/features/housekeeping/presentation/pages/housekeeping_workspace_page.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
 import 'package:hosspi_hms/features/hr/presentation/pages/hr_workspace_page.dart';
@@ -290,7 +292,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.housekeeping.path,
             name: AppRoutes.housekeeping.name,
-            builder: (_, _) => const HousekeepingWorkspacePage(),
+            builder: (_, GoRouterState state) {
+              final String? section =
+                  state.uri.queryParameters['section'];
+              final String? search =
+                  state.uri.queryParameters['search'];
+              return HousekeepingWorkspacePage(
+                initialSection:
+                    HousekeepingSection.fromQueryValue(section),
+                initialSearch: search ?? '',
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.hr.path,
@@ -304,7 +316,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.biomedical.path,
             name: AppRoutes.biomedical.name,
-            builder: (_, _) => const BiomedicalWorkspacePage(),
+            builder: (_, GoRouterState state) => BiomedicalWorkspacePage(
+              initialQuery: BiomedicalRouteQuery.fromUri(state.uri),
+            ),
           ),
           GoRoute(
             path: AppRoutes.communications.path,

@@ -3,11 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -24,7 +27,9 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class BiomedicalWorkspacePage extends ConsumerWidget {
-  const BiomedicalWorkspacePage({super.key});
+  const BiomedicalWorkspacePage({this.initialQuery, super.key});
+
+  final BiomedicalRouteQuery? initialQuery;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,7 +48,10 @@ class BiomedicalWorkspacePage extends ConsumerWidget {
         ref.read(biomedicalWorkspaceControllerProvider.notifier).refresh();
       },
       dataBuilder: (BuildContext context, BiomedicalWorkspaceState data) {
-        return _BiomedicalWorkspaceContent(state: data);
+        return _BiomedicalWorkspaceContent(
+          state: data,
+          initialQuery: initialQuery,
+        );
       },
     );
   }

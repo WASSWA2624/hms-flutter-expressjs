@@ -51,9 +51,12 @@ const List<String> radiologyBillingGateFilters = <String>[
 
 enum RadiologyWorkbenchView { patients, orders }
 
+enum RadiologyDeskSection { worklist, reporting, released, allOrders }
+
 @immutable
 final class RadiologyWorkspaceQuery {
   const RadiologyWorkspaceQuery({
+    this.section = '',
     this.search = '',
     this.stage = 'ALL',
     this.view = RadiologyWorkbenchView.patients,
@@ -79,6 +82,7 @@ final class RadiologyWorkspaceQuery {
       return '';
     }
 
+    final String section = pick(<String>['section', 'panel', 'tab']);
     final String encounter = pick(<String>[
       'encounterId',
       'encounter_id',
@@ -87,12 +91,14 @@ final class RadiologyWorkspaceQuery {
     final String order = pick(<String>['orderId', 'order_id', 'order']);
     final String search = pick(<String>['search', 'q']);
     return RadiologyWorkspaceQuery(
+      section: section,
       encounterId: encounter.isEmpty ? null : encounter,
       orderId: order.isEmpty ? null : order,
       search: search,
     );
   }
 
+  final String section;
   final String search;
   final String stage;
   final RadiologyWorkbenchView view;
@@ -108,13 +114,16 @@ final class RadiologyWorkspaceQuery {
   final AppPageRequest pageRequest;
 
   bool get hasRouteTargeting =>
+      section.isNotEmpty ||
       (encounterId?.isNotEmpty ?? false) ||
       (orderId?.isNotEmpty ?? false) ||
       search.isNotEmpty;
 
-  String get signature => '${encounterId ?? ''}|${orderId ?? ''}|$search';
+  String get signature =>
+      '$section|${encounterId ?? ''}|${orderId ?? ''}|$search';
 
   RadiologyWorkspaceQuery copyWith({
+    String? section,
     String? search,
     String? stage,
     RadiologyWorkbenchView? view,
@@ -139,6 +148,7 @@ final class RadiologyWorkspaceQuery {
     bool clearOrderId = false,
   }) {
     return RadiologyWorkspaceQuery(
+      section: section ?? this.section,
       search: search ?? this.search,
       stage: stage ?? this.stage,
       view: view ?? this.view,

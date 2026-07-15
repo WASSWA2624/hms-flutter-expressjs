@@ -80,6 +80,36 @@ enum HousekeepingDatePreset {
   }
 }
 
+enum HousekeepingSection {
+  tasks,
+  schedules,
+  maintenance;
+
+  HousekeepingResource get resource {
+    return switch (this) {
+      HousekeepingSection.tasks => HousekeepingResource.tasks,
+      HousekeepingSection.schedules => HousekeepingResource.schedules,
+      HousekeepingSection.maintenance => HousekeepingResource.maintenanceRequests,
+    };
+  }
+
+  static HousekeepingSection fromQueryValue(String? value) {
+    return switch ((value ?? '').trim().toLowerCase()) {
+      'schedules' => HousekeepingSection.schedules,
+      'maintenance' => HousekeepingSection.maintenance,
+      _ => HousekeepingSection.tasks,
+    };
+  }
+
+  String get queryValue {
+    return switch (this) {
+      HousekeepingSection.tasks => 'tasks',
+      HousekeepingSection.schedules => 'schedules',
+      HousekeepingSection.maintenance => 'maintenance',
+    };
+  }
+}
+
 @immutable
 final class HousekeepingWorkspaceQuery {
   const HousekeepingWorkspaceQuery({

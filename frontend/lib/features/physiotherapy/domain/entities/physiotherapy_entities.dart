@@ -7,6 +7,7 @@ final class PhysiotherapyWorkspaceQuery {
     this.encounterId = '',
     this.sessionId = '',
     this.search = '',
+    this.section = '',
   });
 
   factory PhysiotherapyWorkspaceQuery.fromUri(Uri uri) {
@@ -23,17 +24,22 @@ final class PhysiotherapyWorkspaceQuery {
       encounterId: pick(<String>['encounterId', 'encounter_id', 'encounter']),
       sessionId: pick(<String>['sessionId', 'session_id', 'session']),
       search: pick(<String>['search', 'q']),
+      section: pick(<String>['section']),
     );
   }
 
   final String encounterId;
   final String sessionId;
   final String search;
+  final String section;
 
   bool get hasRouteTargeting =>
-      encounterId.isNotEmpty || sessionId.isNotEmpty || search.isNotEmpty;
+      encounterId.isNotEmpty ||
+      sessionId.isNotEmpty ||
+      search.isNotEmpty ||
+      section.isNotEmpty;
 
-  String get signature => '$encounterId|$sessionId|$search';
+  String get signature => '$encounterId|$sessionId|$search|$section';
 }
 
 enum PhysiotherapyQueueScope {

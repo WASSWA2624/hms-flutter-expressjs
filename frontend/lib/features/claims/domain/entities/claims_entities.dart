@@ -47,12 +47,7 @@ final class ClaimsWorkspaceQuery {
 }
 
 /// Desk sections for the Claims workspace tab strip.
-enum ClaimsDeskSection {
-  authorizations,
-  activeClaims,
-  settled,
-  insuranceSetup,
-}
+enum ClaimsDeskSection { authorizations, activeClaims, settled, insuranceSetup }
 
 ClaimsDeskSection claimsDeskSectionFromQuery(String value) {
   return switch (value) {

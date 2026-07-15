@@ -428,6 +428,32 @@ final class BiomedicalMutationResult {
   final Map<String, Object?> raw;
 }
 
+@immutable
+final class BiomedicalRouteQuery {
+  const BiomedicalRouteQuery({
+    this.panel = '',
+    this.search = '',
+    this.assetId = '',
+  });
+
+  final String panel;
+  final String search;
+  final String assetId;
+
+  bool get hasRouteTargeting =>
+      panel.isNotEmpty || search.isNotEmpty || assetId.isNotEmpty;
+
+  String get signature => '$panel|$search|$assetId';
+
+  factory BiomedicalRouteQuery.fromUri(Uri uri) {
+    return BiomedicalRouteQuery(
+      panel: uri.queryParameters['panel'] ?? '',
+      search: uri.queryParameters['search'] ?? '',
+      assetId: uri.queryParameters['asset'] ?? '',
+    );
+  }
+}
+
 String _defaultResourceForPanel(String panel) {
   return switch (panel) {
     BiomedicalPanels.overview => BiomedicalResources.workOrders,

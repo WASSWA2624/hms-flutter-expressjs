@@ -4,8 +4,10 @@ import 'dart:typed_data';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -61,11 +63,12 @@ class RadiologyWorkspacePage extends ConsumerWidget {
 
     return AsyncStateScaffold<RadiologyWorkspaceState>(
       value: workspace,
-      appBarTitle: l10n.radiologyTitle,
       loadingTitle: l10n.radiologyLoadingTitle,
       loadingBody: l10n.radiologyLoadingBody,
       maxWidth: PageMaxWidth.dataHeavy,
       centerVertically: false,
+      deferLoadingToShell: false,
+      keepPreviousDataDuringRefresh: true,
       onRetry: () {
         ref.read(radiologyWorkspaceControllerProvider.notifier).refresh();
       },
@@ -99,10 +102,13 @@ class _RadiologyWorkspaceContentState
   _tableColumnController;
   Timer? _searchDebounce;
   String? _appliedRouteSignature;
+  late RadiologyDeskSection _section;
 
   @override
   void initState() {
     super.initState();
+    _section = _sectionFromQuery(widget.initialQuery?.section ?? '') ??
+        RadiologyDeskSection.worklist;
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<RadiologyOrder>();
@@ -159,6 +165,11 @@ class _RadiologyWorkspaceContentState
   }
 
   Future<void> _applyRouteQuery(RadiologyWorkspaceQuery query) async {
+    final RadiologyDeskSection? section = _sectionFromQuery(query.section);
+    if (section != null) {
+      setState(() => _section = section);
+      _applyStageForSection(section);
+    }
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;
       ref

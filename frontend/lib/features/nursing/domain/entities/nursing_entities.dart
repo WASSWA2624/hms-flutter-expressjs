@@ -32,6 +32,56 @@ enum NursingDetailPanel {
   }
 }
 
+/// Deep-link / filter targeting for the Nursing workspace.
+@immutable
+final class NursingWorkspaceQuery {
+  const NursingWorkspaceQuery({
+    this.scope = '',
+    this.search = '',
+    this.admissionId = '',
+    this.panel = '',
+  });
+
+  factory NursingWorkspaceQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    String pick(List<String> keys) {
+      for (final String key in keys) {
+        final String value = (params[key] ?? '').trim();
+        if (value.isNotEmpty) {
+          return value;
+        }
+      }
+      return '';
+    }
+
+    return NursingWorkspaceQuery(
+      scope: pick(<String>['scope', 'section', 'filter', 'queue']),
+      search: pick(<String>['search', 'q', 'patient']),
+      admissionId: pick(<String>[
+        'id',
+        'admissionId',
+        'admission_id',
+        'encounterId',
+        'encounter_id',
+      ]),
+      panel: pick(<String>['panel', 'detail']),
+    );
+  }
+
+  final String scope;
+  final String search;
+  final String admissionId;
+  final String panel;
+
+  bool get hasRouteTargeting =>
+      scope.isNotEmpty ||
+      search.isNotEmpty ||
+      admissionId.isNotEmpty ||
+      panel.isNotEmpty;
+
+  String get signature => '$scope|$search|$admissionId|$panel';
+}
+
 /// Structured tags embedded in free-text nursing notes so admission-checklist
 /// steps (identity, allergies, belongings, doctor notification) and discharge
 /// clearance can be tracked until dedicated backend substates exist.
