@@ -1,6 +1,41 @@
 import 'package:flutter/foundation.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
+@immutable
+final class PhysiotherapyWorkspaceQuery {
+  const PhysiotherapyWorkspaceQuery({
+    this.encounterId = '',
+    this.sessionId = '',
+    this.search = '',
+  });
+
+  factory PhysiotherapyWorkspaceQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    String pick(List<String> keys) {
+      for (final String key in keys) {
+        final String value = (params[key] ?? '').trim();
+        if (value.isNotEmpty) return value;
+      }
+      return '';
+    }
+
+    return PhysiotherapyWorkspaceQuery(
+      encounterId: pick(<String>['encounterId', 'encounter_id', 'encounter']),
+      sessionId: pick(<String>['sessionId', 'session_id', 'session']),
+      search: pick(<String>['search', 'q']),
+    );
+  }
+
+  final String encounterId;
+  final String sessionId;
+  final String search;
+
+  bool get hasRouteTargeting =>
+      encounterId.isNotEmpty || sessionId.isNotEmpty || search.isNotEmpty;
+
+  String get signature => '$encounterId|$sessionId|$search';
+}
+
 enum PhysiotherapyQueueScope {
   referrals,
   today,

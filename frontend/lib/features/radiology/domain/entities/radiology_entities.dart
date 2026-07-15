@@ -65,8 +65,30 @@ final class RadiologyWorkspaceQuery {
     this.to,
     this.patientId,
     this.encounterId,
+    this.orderId,
     this.pageRequest = const AppPageRequest(),
   });
+
+  factory RadiologyWorkspaceQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    String pick(List<String> keys) {
+      for (final String key in keys) {
+        final String value = (params[key] ?? '').trim();
+        if (value.isNotEmpty) return value;
+      }
+      return '';
+    }
+
+    final String encounter =
+        pick(<String>['encounterId', 'encounter_id', 'encounter']);
+    final String order = pick(<String>['orderId', 'order_id', 'order']);
+    final String search = pick(<String>['search', 'q']);
+    return RadiologyWorkspaceQuery(
+      encounterId: encounter.isEmpty ? null : encounter,
+      orderId: order.isEmpty ? null : order,
+      search: search,
+    );
+  }
 
   final String search;
   final String stage;
@@ -79,7 +101,16 @@ final class RadiologyWorkspaceQuery {
   final DateTime? to;
   final String? patientId;
   final String? encounterId;
+  final String? orderId;
   final AppPageRequest pageRequest;
+
+  bool get hasRouteTargeting =>
+      (encounterId?.isNotEmpty ?? false) ||
+      (orderId?.isNotEmpty ?? false) ||
+      search.isNotEmpty;
+
+  String get signature =>
+      '${encounterId ?? ''}|${orderId ?? ''}|$search';
 
   RadiologyWorkspaceQuery copyWith({
     String? search,
@@ -93,6 +124,7 @@ final class RadiologyWorkspaceQuery {
     DateTime? to,
     String? patientId,
     String? encounterId,
+    String? orderId,
     AppPageRequest? pageRequest,
     bool clearStatus = false,
     bool clearModality = false,
@@ -102,6 +134,7 @@ final class RadiologyWorkspaceQuery {
     bool clearTo = false,
     bool clearPatientId = false,
     bool clearEncounterId = false,
+    bool clearOrderId = false,
   }) {
     return RadiologyWorkspaceQuery(
       search: search ?? this.search,
@@ -115,6 +148,7 @@ final class RadiologyWorkspaceQuery {
       to: clearTo ? null : to ?? this.to,
       patientId: clearPatientId ? null : patientId ?? this.patientId,
       encounterId: clearEncounterId ? null : encounterId ?? this.encounterId,
+      orderId: clearOrderId ? null : orderId ?? this.orderId,
       pageRequest: pageRequest ?? this.pageRequest,
     );
   }

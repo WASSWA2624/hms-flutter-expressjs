@@ -2,6 +2,47 @@ import 'package:flutter/foundation.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
+/// Route-level query parameters for deep-linking into the clinical workspace.
+@immutable
+final class ClinicalWorkspaceQuery {
+  const ClinicalWorkspaceQuery({
+    this.encounterId = '',
+    this.panel = '',
+    this.search = '',
+  });
+
+  factory ClinicalWorkspaceQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    String pick(List<String> keys) {
+      for (final String key in keys) {
+        final String value = (params[key] ?? '').trim();
+        if (value.isNotEmpty) return value;
+      }
+      return '';
+    }
+
+    return ClinicalWorkspaceQuery(
+      encounterId: pick(<String>[
+        'encounterId',
+        'encounter_id',
+        'encounter',
+        'id',
+      ]),
+      panel: pick(<String>['panel', 'tab', 'section']),
+      search: pick(<String>['search', 'q']),
+    );
+  }
+
+  final String encounterId;
+  final String panel;
+  final String search;
+
+  bool get hasRouteTargeting =>
+      encounterId.isNotEmpty || panel.isNotEmpty || search.isNotEmpty;
+
+  String get signature => '$encounterId|$panel|$search';
+}
+
 enum ClinicalQueueScope {
   all,
   today,

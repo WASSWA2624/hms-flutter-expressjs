@@ -118,12 +118,52 @@ class _BillingWorkspaceContentState
         query.invoiceNumber.trim().isEmpty &&
         query.encounterId.trim().isEmpty &&
         query.sourceModule.trim().isEmpty &&
-        query.billingStatus.trim().isEmpty) {
+        query.billingStatus.trim().isEmpty &&
+        query.action.trim().isEmpty) {
       await controller.applyQueue(query.queue);
       return;
     }
     if (query.hasRouteTargeting) {
       await controller.applyFilters(query);
+    }
+
+    if (query.action.trim().toLowerCase() == 'pay' && mounted) {
+      await _autoOpenPaymentDialog(query);
+    }
+  }
+
+  Future<void> _autoOpenPaymentDialog(BillingWorkspaceQuery query) async {
+    final AsyncValue<Result<BillingWorkspaceState>> stateAsync = ref.read(
+      billingWorkspaceControllerProvider,
+    );
+    BillingWorkspaceState? state;
+    stateAsync.whenData((Result<BillingWorkspaceState> result) {
+      result.when(
+        success: (BillingWorkspaceState s) => state = s,
+        failure: (_) {},
+      );
+    });
+    if (state == null || !mounted) return;
+
+    final String targetEncounter = query.encounterId.trim();
+    final String targetInvoice = query.invoiceNumber.trim();
+
+    BillingWorkItem? target;
+    for (final BillingWorkItem item in state!.workItems.items) {
+      final bool matchesEncounter = targetEncounter.isNotEmpty &&
+          (item.encounterId == targetEncounter ||
+              item.displayId == targetEncounter);
+      final bool matchesInvoice = targetInvoice.isNotEmpty &&
+          (item.invoiceDisplayId == targetInvoice ||
+              item.displayId == targetInvoice);
+      if (matchesEncounter || matchesInvoice) {
+        target = item;
+        break;
+      }
+    }
+
+    if (target != null && mounted) {
+      await _showPaymentDialog(context, ref, target);
     }
   }
 

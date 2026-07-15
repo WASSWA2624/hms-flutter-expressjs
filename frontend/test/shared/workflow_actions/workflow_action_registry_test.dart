@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action.dart';
+import 'package:hosspi_hms/shared/workflow_actions/workflow_action_executor.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action_registry.dart';
 
 void main() {
@@ -225,6 +226,103 @@ void main() {
         nextStep: '  pay_consultation  ',
       );
       expect(ctx.effectiveActionCode, 'PAY_CONSULTATION');
+    });
+  });
+
+  group('dialogOpenerFor', () {
+    test('returns null when no dialog opener is registered', () {
+      expect(
+        WorkflowActionRegistry.instance.dialogOpenerFor('RECORD_VITALS'),
+        isNull,
+      );
+    });
+
+    test('returns opener after registerDialogOpener', () {
+      WorkflowActionRegistry.instance.registerDialogOpener(
+        'RECORD_VITALS',
+        (_, _, _) async => true,
+      );
+      final opener =
+          WorkflowActionRegistry.instance.dialogOpenerFor('RECORD_VITALS');
+      expect(opener, isNotNull);
+    });
+
+    test('postSuccessCallbackFor returns callback', () {
+      WorkflowActionRegistry.instance.registerDialogOpener(
+        'DOCTOR_REVIEW',
+        (_, _, _) async => true,
+        onSuccess: (_) {},
+      );
+      final callback = WorkflowActionRegistry.instance
+          .postSuccessCallbackFor('DOCTOR_REVIEW');
+      expect(callback, isNotNull);
+    });
+  });
+
+  group('WorkflowActionExecutor', () {
+    test('isExecuting is false when idle', () {
+      expect(WorkflowActionExecutor.instance.isExecuting, isFalse);
+    });
+
+    testWidgets('execute returns denied for permission-denied action',
+        (WidgetTester tester) async {
+      late WorkflowActionResult result;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: Builder(
+            builder: (BuildContext context) {
+              Future.microtask(() async {
+                result = await WorkflowActionExecutor.instance.execute(
+                  context,
+                  const WorkflowAction(
+                    code: 'PAY_CONSULTATION',
+                    label: 'Pay',
+                    icon: Icons.payment,
+                    mode: WorkflowActionMode.dialog,
+                    targetModule: 'billing',
+                    availability: WorkflowActionAvailability.permissionDenied,
+                    unavailableReason: 'No access',
+                  ),
+                );
+              });
+              return const Scaffold();
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(result, WorkflowActionResult.denied);
+    });
+
+    testWidgets('execute returns unavailable for unsupported action',
+        (WidgetTester tester) async {
+      late WorkflowActionResult result;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: Builder(
+            builder: (BuildContext context) {
+              Future.microtask(() async {
+                result = await WorkflowActionExecutor.instance.execute(
+                  context,
+                  const WorkflowAction(
+                    code: 'FAKE',
+                    label: 'Fake',
+                    icon: Icons.error,
+                    mode: WorkflowActionMode.route,
+                    targetModule: 'unknown',
+                    availability: WorkflowActionAvailability.unsupported,
+                  ),
+                );
+              });
+              return const Scaffold();
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(result, WorkflowActionResult.unavailable);
     });
   });
 }

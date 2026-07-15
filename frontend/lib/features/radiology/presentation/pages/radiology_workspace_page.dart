@@ -48,7 +48,9 @@ typedef _RadiologyResultMutation =
     );
 
 class RadiologyWorkspacePage extends ConsumerWidget {
-  const RadiologyWorkspacePage({super.key});
+  const RadiologyWorkspacePage({this.initialQuery, super.key});
+
+  final RadiologyWorkspaceQuery? initialQuery;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -68,16 +70,20 @@ class RadiologyWorkspacePage extends ConsumerWidget {
         ref.read(radiologyWorkspaceControllerProvider.notifier).refresh();
       },
       dataBuilder: (BuildContext context, RadiologyWorkspaceState state) {
-        return _RadiologyWorkspaceContent(state: state);
+        return _RadiologyWorkspaceContent(
+          state: state,
+          initialQuery: initialQuery,
+        );
       },
     );
   }
 }
 
 class _RadiologyWorkspaceContent extends ConsumerStatefulWidget {
-  const _RadiologyWorkspaceContent({required this.state});
+  const _RadiologyWorkspaceContent({required this.state, this.initialQuery});
 
   final RadiologyWorkspaceState state;
+  final RadiologyWorkspaceQuery? initialQuery;
 
   @override
   ConsumerState<_RadiologyWorkspaceContent> createState() =>
@@ -92,6 +98,7 @@ class _RadiologyWorkspaceContentState
   late final AppListTableColumnVisibilityController<RadiologyOrder>
   _tableColumnController;
   Timer? _searchDebounce;
+  String? _appliedRouteSignature;
 
   @override
   void initState() {
@@ -99,6 +106,7 @@ class _RadiologyWorkspaceContentState
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<RadiologyOrder>();
+    _scheduleRouteQuery(widget.initialQuery);
   }
 
   @override
@@ -107,6 +115,9 @@ class _RadiologyWorkspaceContentState
     final String search = widget.state.query.search;
     if (_searchController.text != search) {
       _searchController.value = TextEditingValue(text: search);
+    }
+    if (oldWidget.initialQuery?.signature != widget.initialQuery?.signature) {
+      _scheduleRouteQuery(widget.initialQuery);
     }
   }
 
@@ -135,6 +146,48 @@ class _RadiologyWorkspaceContentState
           .read(radiologyWorkspaceControllerProvider.notifier)
           .applySearch(value),
     );
+  }
+
+  void _scheduleRouteQuery(RadiologyWorkspaceQuery? query) {
+    if (query == null || !query.hasRouteTargeting) return;
+    if (_appliedRouteSignature == query.signature) return;
+    _appliedRouteSignature = query.signature;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_applyRouteQuery(query));
+    });
+  }
+
+  Future<void> _applyRouteQuery(RadiologyWorkspaceQuery query) async {
+    if (query.search.isNotEmpty) {
+      _searchController.text = query.search;
+      ref
+          .read(radiologyWorkspaceControllerProvider.notifier)
+          .applySearch(query.search);
+    }
+    final String encounterId = query.encounterId ?? '';
+    final String orderId = query.orderId ?? '';
+    if (encounterId.isNotEmpty || orderId.isNotEmpty) {
+      final RadiologyOrder? order = _findOrderByRoute(encounterId, orderId);
+      if (order != null) {
+        await ref
+            .read(radiologyWorkspaceControllerProvider.notifier)
+            .selectOrder(order);
+      }
+    }
+  }
+
+  RadiologyOrder? _findOrderByRoute(String encounterId, String orderId) {
+    for (final RadiologyOrder order in widget.state.orders.items) {
+      if (orderId.isNotEmpty &&
+          (order.id == orderId || order.displayId == orderId)) {
+        return order;
+      }
+      if (encounterId.isNotEmpty && order.encounterId == encounterId) {
+        return order;
+      }
+    }
+    return null;
   }
 
   @override

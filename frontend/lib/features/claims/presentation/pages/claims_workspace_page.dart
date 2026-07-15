@@ -21,7 +21,9 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class ClaimsWorkspacePage extends ConsumerWidget {
-  const ClaimsWorkspacePage({super.key});
+  const ClaimsWorkspacePage({this.initialQuery, super.key});
+
+  final ClaimsWorkspaceQuery? initialQuery;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,16 +42,20 @@ class ClaimsWorkspacePage extends ConsumerWidget {
         ref.invalidate(claimsWorkspaceControllerProvider);
       },
       dataBuilder: (BuildContext context, ClaimsWorkspaceState state) {
-        return _ClaimsWorkspaceContent(state: state);
+        return _ClaimsWorkspaceContent(
+          state: state,
+          initialQuery: initialQuery,
+        );
       },
     );
   }
 }
 
 class _ClaimsWorkspaceContent extends ConsumerStatefulWidget {
-  const _ClaimsWorkspaceContent({required this.state});
+  const _ClaimsWorkspaceContent({required this.state, this.initialQuery});
 
   final ClaimsWorkspaceState state;
+  final ClaimsWorkspaceQuery? initialQuery;
 
   @override
   ConsumerState<_ClaimsWorkspaceContent> createState() {
@@ -62,6 +68,7 @@ class _ClaimsWorkspaceContentState
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<ClaimsQueueItem>
   _tableColumnController;
+  String? _appliedRouteSignature;
 
   @override
   void initState() {
@@ -69,6 +76,7 @@ class _ClaimsWorkspaceContentState
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<ClaimsQueueItem>();
+    _scheduleRouteQuery(widget.initialQuery);
   }
 
   @override
@@ -78,6 +86,76 @@ class _ClaimsWorkspaceContentState
     if (_searchController.text != search) {
       _searchController.value = TextEditingValue(text: search);
     }
+    if (oldWidget.initialQuery?.signature != widget.initialQuery?.signature) {
+      _scheduleRouteQuery(widget.initialQuery);
+    }
+  }
+
+  void _scheduleRouteQuery(ClaimsWorkspaceQuery? query) {
+    if (query == null || !query.hasRouteTargeting) return;
+    if (_appliedRouteSignature == query.signature) return;
+    _appliedRouteSignature = query.signature;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_applyRouteQuery(query));
+    });
+  }
+
+  Future<void> _applyRouteQuery(ClaimsWorkspaceQuery query) async {
+    final ClaimsWorkspaceController controller = ref.read(
+      claimsWorkspaceControllerProvider.notifier,
+    );
+    if (query.search.isNotEmpty) {
+      _searchController.text = query.search;
+      await controller.applySearch(query.search);
+    }
+    if (query.encounterId.isNotEmpty || query.patientId.isNotEmpty) {
+      final ClaimsQueueItem? item = _findQueueItem(
+        encounterId: query.encounterId,
+        patientId: query.patientId,
+      );
+      if (item != null && mounted) {
+        await _openClaimsDetailDialog(
+          context,
+          ref,
+          widget.state,
+          item,
+        );
+      }
+    }
+    if (query.action == 'preauth' && mounted) {
+      unawaited(
+        _openRequestAuthorizationDialog(context, controller, widget.state),
+      );
+    }
+  }
+
+  ClaimsQueueItem? _findQueueItem({
+    required String encounterId,
+    required String patientId,
+  }) {
+    for (final ClaimsQueueItem item in widget.state.queue.items) {
+      if (encounterId.isNotEmpty) {
+        final String? authEncounter = item.authorization?.encounterId;
+        final String? authEncounterDisplay =
+            item.authorization?.encounterDisplayId;
+        if (authEncounter == encounterId ||
+            authEncounterDisplay == encounterId) {
+          return item;
+        }
+      }
+      if (patientId.isNotEmpty) {
+        final String? authPatient = item.authorization?.patientId;
+        final String? authPatientDisplay = item.authorization?.patientDisplayId;
+        final String? claimPatientDisplay = item.claim?.patientDisplayId;
+        if (authPatient == patientId ||
+            authPatientDisplay == patientId ||
+            claimPatientDisplay == patientId) {
+          return item;
+        }
+      }
+    }
+    return null;
   }
 
   @override

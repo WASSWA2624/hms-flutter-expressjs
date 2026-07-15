@@ -28,7 +28,9 @@ import 'package:hosspi_hms/app/router/shell_badge_counts.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/presentation/pages/billing_workspace_page.dart';
 import 'package:hosspi_hms/features/biomedical/presentation/pages/biomedical_workspace_page.dart';
+import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 import 'package:hosspi_hms/features/claims/presentation/pages/claims_workspace_page.dart';
+import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/presentation/pages/clinical_workspace_page.dart';
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
 import 'package:hosspi_hms/features/communications/presentation/pages/communications_workspace_page.dart';
@@ -46,6 +48,7 @@ import 'package:hosspi_hms/features/icu/presentation/pages/icu_workspace_page.da
 import 'package:hosspi_hms/features/integrations/presentation/pages/integrations_workspace_page.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/pages/ipd_workspace_page.dart';
+import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/presentation/pages/lab_workspace_page.dart';
 import 'package:hosspi_hms/features/mortuary/presentation/pages/mortuary_workspace_page.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
@@ -57,9 +60,12 @@ import 'package:hosspi_hms/features/reception/presentation/pages/reception_works
 import 'package:hosspi_hms/features/operations/presentation/pages/operations_workspace_page.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry_page.dart';
+import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart';
+import 'package:hosspi_hms/features/physiotherapy/domain/entities/physiotherapy_entities.dart';
 import 'package:hosspi_hms/features/physiotherapy/presentation/pages/physiotherapy_workspace_page.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_account_section.dart';
+import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
 import 'package:hosspi_hms/features/radiology/presentation/pages/radiology_workspace_page.dart';
 import 'package:hosspi_hms/features/reports/presentation/pages/reports_workspace_page.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
@@ -77,7 +83,6 @@ import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dar
 import 'package:hosspi_hms/features/theater/presentation/pages/theater_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/app_shell_sidebar_preference.dart';
 import 'package:hosspi_hms/shared/layout/responsive_shell_scaffold.dart';
 import 'package:hosspi_hms/shared/layout/shell_navigation_loading.dart';
@@ -149,7 +154,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.claims.path,
             name: AppRoutes.claims.name,
-            builder: (_, _) => const ClaimsWorkspacePage(),
+            builder: (_, GoRouterState state) {
+              return ClaimsWorkspacePage(
+                initialQuery: ClaimsWorkspaceQuery.fromUri(state.uri),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.subscriptions.path,
@@ -209,39 +218,62 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.nursing.path,
             name: AppRoutes.nursing.name,
             builder: (_, GoRouterState state) {
-              final String? id = state.uri.queryParameters['id']?.trim();
+              final Map<String, String> params = state.uri.queryParameters;
+              final String id = (params['id'] ??
+                      params['admissionId'] ??
+                      params['encounterId'] ??
+                      '')
+                  .trim();
               return NursingWorkspacePage(
-                initialAdmissionId: (id == null || id.isEmpty) ? null : id,
-                initialPanel: NursingDetailPanel.fromValue(
-                  state.uri.queryParameters['panel'],
-                ),
+                initialAdmissionId: id.isEmpty ? null : id,
+                initialPanel: NursingDetailPanel.fromValue(params['panel']),
               );
             },
           ),
           GoRoute(
             path: AppRoutes.clinical.path,
             name: AppRoutes.clinical.name,
-            builder: (_, _) => const ClinicalWorkspacePage(),
+            builder: (_, GoRouterState state) {
+              return ClinicalWorkspacePage(
+                initialQuery: ClinicalWorkspaceQuery.fromUri(state.uri),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.physiotherapy.path,
             name: AppRoutes.physiotherapy.name,
-            builder: (_, _) => const PhysiotherapyWorkspacePage(),
+            builder: (_, GoRouterState state) {
+              return PhysiotherapyWorkspacePage(
+                initialQuery: PhysiotherapyWorkspaceQuery.fromUri(state.uri),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.lab.path,
             name: AppRoutes.lab.name,
-            builder: (_, _) => const LabWorkspacePage(),
+            builder: (_, GoRouterState state) {
+              return LabWorkspacePage(
+                initialQuery: LabWorkspaceQuery.fromUri(state.uri),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.radiology.path,
             name: AppRoutes.radiology.name,
-            builder: (_, _) => const RadiologyWorkspacePage(),
+            builder: (_, GoRouterState state) {
+              return RadiologyWorkspacePage(
+                initialQuery: RadiologyWorkspaceQuery.fromUri(state.uri),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.pharmacy.path,
             name: AppRoutes.pharmacy.name,
-            builder: (_, _) => const PharmacyWorkspacePage(),
+            builder: (_, GoRouterState state) {
+              return PharmacyWorkspacePage(
+                initialQuery: PharmacyWorkspaceQuery.fromUri(state.uri),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.operations.path,

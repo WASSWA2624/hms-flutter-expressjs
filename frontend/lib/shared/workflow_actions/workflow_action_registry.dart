@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
@@ -7,6 +8,21 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action.dart';
+
+/// Callback to open an inline dialog for a workflow action.
+///
+/// Returns `true` if the action completed successfully, `false` if cancelled,
+/// or `null` if the dialog could not be opened (executor falls back to route).
+typedef WorkflowDialogOpener = Future<bool?> Function(
+  BuildContext context,
+  WidgetRef ref,
+  WorkflowAction action,
+);
+
+/// Callback invoked after a dialog-mode action completes successfully.
+///
+/// Use this to invalidate providers/worklists affected by the action.
+typedef WorkflowPostSuccessCallback = void Function(WidgetRef ref);
 
 /// Definition of how to handle a specific workflow action code.
 @immutable
@@ -23,6 +39,8 @@ final class WorkflowActionDefinition {
     this.panelId,
     this.actionId,
     this.tooltipBuilder,
+    this.dialogOpener,
+    this.onSuccess,
   });
 
   final String code;
@@ -36,6 +54,16 @@ final class WorkflowActionDefinition {
   final String? panelId;
   final String? actionId;
   final String Function(AppLocalizations l10n)? tooltipBuilder;
+
+  /// Opens an inline dialog for this action without navigating away.
+  ///
+  /// When provided and [mode] is [WorkflowActionMode.dialog], the executor
+  /// calls this first. Falls back to route-based navigation when `null` or
+  /// when the opener returns `null`.
+  final WorkflowDialogOpener? dialogOpener;
+
+  /// Called after a dialog-mode action completes successfully.
+  final WorkflowPostSuccessCallback? onSuccess;
 }
 
 /// Central registry of all workflow action handlers.
@@ -54,6 +82,10 @@ final class WorkflowActionRegistry {
   final Map<String, WorkflowActionDefinition> _definitions =
       <String, WorkflowActionDefinition>{};
   final Map<String, String> _aliasIndex = <String, String>{};
+  final Map<String, WorkflowDialogOpener> _dialogOpeners =
+      <String, WorkflowDialogOpener>{};
+  final Map<String, WorkflowPostSuccessCallback> _postSuccessCallbacks =
+      <String, WorkflowPostSuccessCallback>{};
 
   /// Register a new action definition. Overwrites existing registrations for
   /// the same code.
@@ -69,6 +101,35 @@ final class WorkflowActionRegistry {
     for (final WorkflowActionDefinition def in definitions) {
       register(def);
     }
+  }
+
+  /// Register a dialog opener for a canonical action code.
+  ///
+  /// Dialog openers are kept separate from definitions to avoid coupling the
+  /// core registry with feature-specific imports. Feature modules register
+  /// their openers during bootstrap.
+  void registerDialogOpener(
+    String canonicalCode,
+    WorkflowDialogOpener opener, {
+    WorkflowPostSuccessCallback? onSuccess,
+  }) {
+    _dialogOpeners[canonicalCode] = opener;
+    if (onSuccess != null) {
+      _postSuccessCallbacks[canonicalCode] = onSuccess;
+    }
+  }
+
+  /// Returns the dialog opener for a canonical code, checking both the
+  /// definition field and the separate opener registry.
+  WorkflowDialogOpener? dialogOpenerFor(String canonicalCode) {
+    return _definitions[canonicalCode]?.dialogOpener ??
+        _dialogOpeners[canonicalCode];
+  }
+
+  /// Returns the post-success callback for a canonical code.
+  WorkflowPostSuccessCallback? postSuccessCallbackFor(String canonicalCode) {
+    return _definitions[canonicalCode]?.onSuccess ??
+        _postSuccessCallbacks[canonicalCode];
   }
 
   /// Resolve a raw action code (possibly a legacy alias) to its canonical code.

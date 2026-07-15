@@ -99,6 +99,7 @@ class WorkflowActionButton extends ConsumerWidget {
     WorkflowActionExecutor.instance.execute(
       context,
       action,
+      ref: ref,
       onBeforeNavigate: onBeforeNavigate,
     );
   }

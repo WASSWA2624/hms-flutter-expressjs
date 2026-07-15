@@ -1547,6 +1547,40 @@ final class PharmacyReturnLineInput {
 }
 
 @immutable
+final class PharmacyWorkspaceQuery {
+  const PharmacyWorkspaceQuery({
+    this.encounterId = '',
+    this.orderId = '',
+    this.search = '',
+  });
+
+  factory PharmacyWorkspaceQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    String pick(List<String> keys) {
+      for (final String key in keys) {
+        final String value = (params[key] ?? '').trim();
+        if (value.isNotEmpty) return value;
+      }
+      return '';
+    }
+    return PharmacyWorkspaceQuery(
+      encounterId: pick(<String>['encounterId', 'encounter_id', 'encounter']),
+      orderId: pick(<String>['orderId', 'order_id', 'order']),
+      search: pick(<String>['search', 'q']),
+    );
+  }
+
+  final String encounterId;
+  final String orderId;
+  final String search;
+
+  bool get hasRouteTargeting =>
+      encounterId.isNotEmpty || orderId.isNotEmpty || search.isNotEmpty;
+
+  String get signature => '$encounterId|$orderId|$search';
+}
+
+@immutable
 final class PharmacyWorkspaceState {
   const PharmacyWorkspaceState({
     required this.query,

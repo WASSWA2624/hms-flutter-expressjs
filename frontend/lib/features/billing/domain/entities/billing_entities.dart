@@ -60,6 +60,7 @@ final class BillingWorkspaceQuery {
     this.encounterId = '',
     this.sourceModule = '',
     this.billingStatus = '',
+    this.action = '',
     this.from,
     this.to,
   });
@@ -104,6 +105,7 @@ final class BillingWorkspaceQuery {
         'billing_status',
         'status',
       ]),
+      action: pick(<String>['action']),
     );
   }
 
@@ -115,6 +117,9 @@ final class BillingWorkspaceQuery {
   final String encounterId;
   final String sourceModule;
   final String billingStatus;
+
+  /// Deep-link action to auto-trigger (e.g. `pay` to open the payment dialog).
+  final String action;
   final DateTime? from;
   final DateTime? to;
 
@@ -125,11 +130,12 @@ final class BillingWorkspaceQuery {
         invoiceNumber.trim().isNotEmpty ||
         encounterId.trim().isNotEmpty ||
         sourceModule.trim().isNotEmpty ||
-        billingStatus.trim().isNotEmpty;
+        billingStatus.trim().isNotEmpty ||
+        action.trim().isNotEmpty;
   }
 
   String get signature =>
-      '$search|${queue.name}|$patientId|$invoiceNumber|$encounterId|$sourceModule|$billingStatus';
+      '$search|${queue.name}|$patientId|$invoiceNumber|$encounterId|$sourceModule|$billingStatus|$action';
 
   bool get hasActiveFilters {
     return queue != BillingQueueType.all ||
@@ -151,6 +157,7 @@ final class BillingWorkspaceQuery {
     String? encounterId,
     String? sourceModule,
     String? billingStatus,
+    String? action,
     DateTime? from,
     DateTime? to,
     bool clearFrom = false,
@@ -165,6 +172,7 @@ final class BillingWorkspaceQuery {
       encounterId: encounterId ?? this.encounterId,
       sourceModule: sourceModule ?? this.sourceModule,
       billingStatus: billingStatus ?? this.billingStatus,
+      action: action ?? this.action,
       from: clearFrom ? null : from ?? this.from,
       to: clearTo ? null : to ?? this.to,
     );

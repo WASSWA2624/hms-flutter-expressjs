@@ -33,7 +33,9 @@ import 'package:hosspi_hms/shared/lab_catalog/lab_catalog.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
 class LabWorkspacePage extends ConsumerWidget {
-  const LabWorkspacePage({super.key});
+  const LabWorkspacePage({this.initialQuery, super.key});
+
+  final LabWorkspaceQuery? initialQuery;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -52,16 +54,20 @@ class LabWorkspacePage extends ConsumerWidget {
         ref.read(labWorkspaceControllerProvider.notifier).refresh();
       },
       dataBuilder: (BuildContext context, LabWorkspaceState data) {
-        return _LabWorkspaceContent(state: data);
+        return _LabWorkspaceContent(
+          state: data,
+          initialQuery: initialQuery,
+        );
       },
     );
   }
 }
 
 class _LabWorkspaceContent extends ConsumerStatefulWidget {
-  const _LabWorkspaceContent({required this.state});
+  const _LabWorkspaceContent({required this.state, this.initialQuery});
 
   final LabWorkspaceState state;
+  final LabWorkspaceQuery? initialQuery;
 
   @override
   ConsumerState<_LabWorkspaceContent> createState() =>
@@ -78,6 +84,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
   late final AppListTableColumnVisibilityController<LabOrderSummary>
   _tableColumnController;
   Timer? _searchDebounce;
+  String? _appliedRouteSignature;
 
   @override
   void initState() {
@@ -86,6 +93,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
     _tableColumnController =
         AppListTableColumnVisibilityController<LabOrderSummary>();
     WidgetsBinding.instance.addPostFrameCallback((_) => _applyScopeFromRoute());
+    _scheduleRouteQuery(widget.initialQuery);
   }
 
   void _applyScopeFromRoute() {
@@ -113,6 +121,9 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
     if (oldWidget.state.query.search != widget.state.query.search &&
         _searchController.text != widget.state.query.search) {
       _searchController.text = widget.state.query.search;
+    }
+    if (oldWidget.initialQuery?.signature != widget.initialQuery?.signature) {
+      _scheduleRouteQuery(widget.initialQuery);
     }
   }
 
@@ -293,6 +304,47 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
     unawaited(
       ref.read(labWorkspaceControllerProvider.notifier).applySearch(''),
     );
+  }
+
+  void _scheduleRouteQuery(LabWorkspaceQuery? query) {
+    if (query == null || !query.hasRouteTargeting) return;
+    if (_appliedRouteSignature == query.signature) return;
+    _appliedRouteSignature = query.signature;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_applyRouteQuery(query));
+    });
+  }
+
+  Future<void> _applyRouteQuery(LabWorkspaceQuery query) async {
+    if (query.search.isNotEmpty) {
+      _searchController.text = query.search;
+      ref.read(labWorkspaceControllerProvider.notifier).applySearch(
+        query.search,
+      );
+    }
+    final LabOrderSummary? order = _findOrderByQuery(query);
+    if (order != null) {
+      await ref
+          .read(labWorkspaceControllerProvider.notifier)
+          .selectOrder(order);
+    }
+  }
+
+  LabOrderSummary? _findOrderByQuery(LabWorkspaceQuery query) {
+    for (final LabOrderSummary order in widget.state.worklist.items) {
+      if (query.orderId.isNotEmpty &&
+          (order.apiId == query.orderId ||
+              order.id == query.orderId ||
+              order.displayId == query.orderId)) {
+        return order;
+      }
+      if (query.encounterId.isNotEmpty &&
+          order.encounterId == query.encounterId) {
+        return order;
+      }
+    }
+    return null;
   }
 
   AppWorkspaceSummaryNotification _summaryNotification(

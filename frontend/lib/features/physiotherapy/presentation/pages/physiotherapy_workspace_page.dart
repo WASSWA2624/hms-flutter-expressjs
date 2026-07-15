@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -40,7 +39,9 @@ const AccessRequirement _therapyWriteRequirement = AccessRequirement(
 );
 
 class PhysiotherapyWorkspacePage extends ConsumerStatefulWidget {
-  const PhysiotherapyWorkspacePage({super.key});
+  const PhysiotherapyWorkspacePage({this.initialQuery, super.key});
+
+  final PhysiotherapyWorkspaceQuery? initialQuery;
 
   @override
   ConsumerState<PhysiotherapyWorkspacePage> createState() =>
@@ -53,6 +54,7 @@ class _PhysiotherapyWorkspacePageState
   late final AppListTableColumnVisibilityController<TherapyWorkItem>
   _columnVisibilityController;
   String? _pendingSearchControllerText;
+  String? _appliedRouteSignature;
 
   @override
   void initState() {
@@ -60,19 +62,41 @@ class _PhysiotherapyWorkspacePageState
     _searchController = TextEditingController();
     _columnVisibilityController =
         AppListTableColumnVisibilityController<TherapyWorkItem>();
+    _scheduleRouteQuery(widget.initialQuery);
+  }
+
+  @override
+  void didUpdateWidget(covariant PhysiotherapyWorkspacePage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialQuery?.signature != widget.initialQuery?.signature) {
+      _scheduleRouteQuery(widget.initialQuery);
+    }
+  }
+
+  void _scheduleRouteQuery(PhysiotherapyWorkspaceQuery? query) {
+    if (query == null || !query.hasRouteTargeting) return;
+    if (_appliedRouteSignature == query.signature) return;
+    _appliedRouteSignature = query.signature;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      final String? encounterId =
-          GoRouterState.of(context).uri.queryParameters['encounterId'] ??
-          GoRouterState.of(context).uri.queryParameters['encounter_id'];
-      if (encounterId != null && encounterId.trim().isNotEmpty) {
-        ref
-            .read(physiotherapyWorkspaceControllerProvider.notifier)
-            .applySearch(encounterId.trim());
-      }
+      if (!mounted) return;
+      unawaited(_applyRouteQuery(query));
     });
+  }
+
+  Future<void> _applyRouteQuery(PhysiotherapyWorkspaceQuery query) async {
+    final controller =
+        ref.read(physiotherapyWorkspaceControllerProvider.notifier);
+    if (query.search.isNotEmpty) {
+      _searchController.text = query.search;
+      await controller.applySearch(query.search);
+      return;
+    }
+    if (query.encounterId.isNotEmpty || query.sessionId.isNotEmpty) {
+      final String term =
+          query.encounterId.isNotEmpty ? query.encounterId : query.sessionId;
+      _searchController.text = term;
+      await controller.applySearch(term);
+    }
   }
 
   @override

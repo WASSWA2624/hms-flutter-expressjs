@@ -35,7 +35,9 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class PharmacyWorkspacePage extends ConsumerWidget {
-  const PharmacyWorkspacePage({super.key});
+  const PharmacyWorkspacePage({this.initialQuery, super.key});
+
+  final PharmacyWorkspaceQuery? initialQuery;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -54,16 +56,20 @@ class PharmacyWorkspacePage extends ConsumerWidget {
         ref.read(pharmacyWorkspaceControllerProvider.notifier).refresh();
       },
       dataBuilder: (BuildContext context, PharmacyWorkspaceState data) {
-        return _PharmacyWorkspaceContent(state: data);
+        return _PharmacyWorkspaceContent(
+          state: data,
+          initialQuery: initialQuery,
+        );
       },
     );
   }
 }
 
 class _PharmacyWorkspaceContent extends ConsumerStatefulWidget {
-  const _PharmacyWorkspaceContent({required this.state});
+  const _PharmacyWorkspaceContent({required this.state, this.initialQuery});
 
   final PharmacyWorkspaceState state;
+  final PharmacyWorkspaceQuery? initialQuery;
 
   @override
   ConsumerState<_PharmacyWorkspaceContent> createState() =>
@@ -80,6 +86,7 @@ class _PharmacyWorkspaceContentState
   late final AppListTableColumnVisibilityController<PharmacyOrder>
   _tableColumnController;
   bool _handledSectionDeepLink = false;
+  String? _appliedRouteSignature;
 
   @override
   void initState() {
@@ -90,6 +97,7 @@ class _PharmacyWorkspaceContentState
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_handleSectionDeepLink());
     });
+    _scheduleRouteQuery(widget.initialQuery);
   }
 
   Future<void> _handleSectionDeepLink() async {
@@ -112,12 +120,55 @@ class _PharmacyWorkspaceContentState
     );
   }
 
+  void _scheduleRouteQuery(PharmacyWorkspaceQuery? query) {
+    if (query == null || !query.hasRouteTargeting) return;
+    if (_appliedRouteSignature == query.signature) return;
+    _appliedRouteSignature = query.signature;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_applyRouteQuery(query));
+    });
+  }
+
+  Future<void> _applyRouteQuery(PharmacyWorkspaceQuery query) async {
+    final PharmacyWorkspaceController controller = ref.read(
+      pharmacyWorkspaceControllerProvider.notifier,
+    );
+    if (query.search.isNotEmpty) {
+      _searchController.text = query.search;
+      controller.applySearch(query.search);
+    }
+    if (query.encounterId.isNotEmpty || query.orderId.isNotEmpty) {
+      final PharmacyOrder? order = _findOrderByQuery(query);
+      if (order != null) {
+        await controller.selectOrder(order);
+      }
+    }
+  }
+
+  PharmacyOrder? _findOrderByQuery(PharmacyWorkspaceQuery query) {
+    for (final PharmacyOrder order in widget.state.workbench.orders.items) {
+      if (query.orderId.isNotEmpty &&
+          (order.id == query.orderId || order.displayId == query.orderId)) {
+        return order;
+      }
+      if (query.encounterId.isNotEmpty &&
+          order.encounterId == query.encounterId) {
+        return order;
+      }
+    }
+    return null;
+  }
+
   @override
   void didUpdateWidget(covariant _PharmacyWorkspaceContent oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.state.query.search != widget.state.query.search &&
         _searchController.text != widget.state.query.search) {
       _searchController.text = widget.state.query.search;
+    }
+    if (oldWidget.initialQuery?.signature != widget.initialQuery?.signature) {
+      _scheduleRouteQuery(widget.initialQuery);
     }
   }
 

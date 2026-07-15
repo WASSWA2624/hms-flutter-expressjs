@@ -1,6 +1,43 @@
 import 'package:flutter/foundation.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
+@immutable
+final class ClaimsWorkspaceQuery {
+  const ClaimsWorkspaceQuery({
+    this.encounterId = '',
+    this.patientId = '',
+    this.action = '',
+    this.search = '',
+  });
+
+  factory ClaimsWorkspaceQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    String pick(List<String> keys) {
+      for (final String key in keys) {
+        final String value = (params[key] ?? '').trim();
+        if (value.isNotEmpty) return value;
+      }
+      return '';
+    }
+    return ClaimsWorkspaceQuery(
+      encounterId: pick(<String>['encounterId', 'encounter_id', 'encounter']),
+      patientId: pick(<String>['patientId', 'patient_id', 'patient']),
+      action: pick(<String>['action']),
+      search: pick(<String>['search', 'q']),
+    );
+  }
+
+  final String encounterId;
+  final String patientId;
+  final String action;
+  final String search;
+
+  bool get hasRouteTargeting =>
+      encounterId.isNotEmpty || patientId.isNotEmpty || action.isNotEmpty || search.isNotEmpty;
+
+  String get signature => '$encounterId|$patientId|$action|$search';
+}
+
 enum ClaimsQueueKind { authorization, claim }
 
 enum ClaimsQueueFilter {

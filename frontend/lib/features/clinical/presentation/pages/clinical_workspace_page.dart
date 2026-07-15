@@ -27,7 +27,9 @@ import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class ClinicalWorkspacePage extends ConsumerWidget {
-  const ClinicalWorkspacePage({super.key});
+  const ClinicalWorkspacePage({this.initialQuery, super.key});
+
+  final ClinicalWorkspaceQuery? initialQuery;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -79,16 +81,20 @@ class ClinicalWorkspacePage extends ConsumerWidget {
         ref.read(clinicalWorkspaceControllerProvider.notifier).refresh();
       },
       dataBuilder: (BuildContext context, ClinicalWorkspaceState data) {
-        return _ClinicalWorkspaceContent(state: data);
+        return _ClinicalWorkspaceContent(
+          state: data,
+          initialQuery: initialQuery,
+        );
       },
     );
   }
 }
 
 class _ClinicalWorkspaceContent extends ConsumerStatefulWidget {
-  const _ClinicalWorkspaceContent({required this.state});
+  const _ClinicalWorkspaceContent({required this.state, this.initialQuery});
 
   final ClinicalWorkspaceState state;
+  final ClinicalWorkspaceQuery? initialQuery;
 
   @override
   ConsumerState<_ClinicalWorkspaceContent> createState() =>
@@ -133,6 +139,7 @@ class _ClinicalWorkspaceContentState
   late final AppListTableColumnVisibilityController<ClinicalWorklistEntry>
   _tableColumnController;
   Timer? _searchDebounce;
+  String? _appliedRouteSignature;
 
   @override
   void initState() {
@@ -142,6 +149,7 @@ class _ClinicalWorkspaceContentState
         AppListTableColumnVisibilityController<ClinicalWorklistEntry>(
           storageKey: 'clinical.worklist',
         );
+    _scheduleRouteQuery(widget.initialQuery);
   }
 
   @override
@@ -151,6 +159,47 @@ class _ClinicalWorkspaceContentState
         _searchController.text != widget.state.query.search) {
       _searchController.text = widget.state.query.search;
     }
+    if (oldWidget.initialQuery?.signature != widget.initialQuery?.signature) {
+      _scheduleRouteQuery(widget.initialQuery);
+    }
+  }
+
+  void _scheduleRouteQuery(ClinicalWorkspaceQuery? query) {
+    if (query == null || !query.hasRouteTargeting) return;
+    if (_appliedRouteSignature == query.signature) return;
+    _appliedRouteSignature = query.signature;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(_applyRouteQuery(query));
+    });
+  }
+
+  Future<void> _applyRouteQuery(ClinicalWorkspaceQuery query) async {
+    final ClinicalWorkspaceController controller =
+        ref.read(clinicalWorkspaceControllerProvider.notifier);
+    if (query.search.isNotEmpty) {
+      _searchController.text = query.search;
+      await controller.applySearch(query.search);
+    }
+    if (query.encounterId.isNotEmpty) {
+      final ClinicalWorklistEntry? entry =
+          _findEntryByEncounterId(query.encounterId);
+      if (entry != null) {
+        await controller.selectEntry(entry);
+      }
+    }
+  }
+
+  ClinicalWorklistEntry? _findEntryByEncounterId(String encounterId) {
+    for (final ClinicalWorklistEntry entry
+        in widget.state.worklist.items) {
+      if (entry.encounterId == encounterId ||
+          entry.encounterPublicId == encounterId ||
+          entry.id == encounterId) {
+        return entry;
+      }
+    }
+    return null;
   }
 
   @override
