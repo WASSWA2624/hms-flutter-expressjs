@@ -17,7 +17,14 @@ import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
 
 class SettingsWorkspaceSection extends ConsumerWidget {
-  const SettingsWorkspaceSection({super.key});
+  const SettingsWorkspaceSection({
+    this.initialPanel,
+    this.onPanelChanged,
+    super.key,
+  });
+
+  final String? initialPanel;
+  final ValueChanged<String>? onPanelChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,6 +52,8 @@ class SettingsWorkspaceSection extends ConsumerWidget {
         data: (Result<SettingsWorkspaceState> result) => result.when(
           success: (SettingsWorkspaceState state) => _SettingsWorkspaceContent(
             state: state,
+            initialPanel: initialPanel,
+            onPanelChanged: onPanelChanged,
             onRefresh: () => unawaited(
               ref.read(settingsWorkspaceControllerProvider.notifier).refresh(),
             ),
@@ -66,10 +75,14 @@ class _SettingsWorkspaceContent extends ConsumerStatefulWidget {
   const _SettingsWorkspaceContent({
     required this.state,
     required this.onRefresh,
+    this.initialPanel,
+    this.onPanelChanged,
   });
 
   final SettingsWorkspaceState state;
   final VoidCallback onRefresh;
+  final String? initialPanel;
+  final ValueChanged<String>? onPanelChanged;
 
   @override
   ConsumerState<_SettingsWorkspaceContent> createState() =>
@@ -78,7 +91,31 @@ class _SettingsWorkspaceContent extends ConsumerStatefulWidget {
 
 class _SettingsWorkspaceContentState
     extends ConsumerState<_SettingsWorkspaceContent> {
-  String _activeTab = 'overview';
+  late String _activeTab;
+
+  static const Set<String> _validPanels = <String>{
+    'overview',
+    'setup',
+    'modules',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    final String? panel = widget.initialPanel;
+    _activeTab =
+        (panel != null && _validPanels.contains(panel)) ? panel : 'overview';
+  }
+
+  @override
+  void didUpdateWidget(covariant _SettingsWorkspaceContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialPanel != widget.initialPanel &&
+        widget.initialPanel != null &&
+        _validPanels.contains(widget.initialPanel)) {
+      setState(() => _activeTab = widget.initialPanel!);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -135,7 +172,10 @@ class _SettingsWorkspaceContentState
             ),
           ],
           selectedId: _activeTab,
-          onTabTapped: (String id) => setState(() => _activeTab = id),
+          onTabTapped: (String id) {
+            setState(() => _activeTab = id);
+            widget.onPanelChanged?.call(id);
+          },
         ),
         SizedBox(height: theme.spacing.md),
         if (_activeTab == 'overview') ...<Widget>[
@@ -214,6 +254,7 @@ class _SettingsContextSummary extends StatelessWidget {
       title: l10n.settingsWorkspaceContextTitle,
       leadingIcon: Icons.domain_outlined,
       density: AppContentPanelDensity.compact,
+      borderColor: Colors.transparent,
       children: <Widget>[
         Text.rich(TextSpan(children: spans)),
       ],
@@ -236,6 +277,7 @@ class _SettingsSummaryCards extends StatelessWidget {
     return AppInfoTileGrid(
       minItemWidth: 170,
       maxColumns: 3,
+      borderedTiles: false,
       items: <AppInfoTileData>[
         for (final SettingsSummaryCard card in workspace.summaryCards)
           AppInfoTileData(

@@ -65,7 +65,8 @@ import 'package:hosspi_hms/features/radiology/presentation/pages/radiology_works
 import 'package:hosspi_hms/features/reports/presentation/pages/reports_workspace_page.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
 import 'package:hosspi_hms/features/rooms_beds/presentation/pages/rooms_beds_workspace_page.dart';
-import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart';
+import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart'
+    show SettingsPage, SettingsPageQuery;
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/pages/subscriptions_workspace_page.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_expired_prompt.dart';
@@ -312,7 +313,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.settings.path,
             name: AppRoutes.settings.name,
-            builder: (_, _) => const SettingsPage(),
+            builder: (_, GoRouterState state) => SettingsPage(
+              initialQuery: SettingsPageQuery.fromUri(state.uri),
+            ),
           ),
           GoRoute(
             path: AppRoutes.tenantFacilitySetup.path,

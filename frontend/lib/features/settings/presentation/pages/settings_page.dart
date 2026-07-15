@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,21 +21,92 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
+@immutable
+final class SettingsPageQuery {
+  const SettingsPageQuery({
+    this.tab = 'preferences',
+    this.panel,
+  });
+
+  factory SettingsPageQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    return SettingsPageQuery(
+      tab: _nonEmptyParam(params['tab']) ?? 'preferences',
+      panel: _nonEmptyParam(params['panel']),
+    );
+  }
+
+  final String tab;
+  final String? panel;
+
+  String location() {
+    final Map<String, String> query = <String, String>{};
+    if (tab != 'preferences') {
+      query['tab'] = tab;
+    }
+    if (panel != null && panel!.isNotEmpty) {
+      query['panel'] = panel!;
+    }
+    return AppRoutes.settings.location(queryParameters: query);
+  }
+
+  SettingsPageQuery copyWith({String? tab, String? panel, bool clearPanel = false}) {
+    return SettingsPageQuery(
+      tab: tab ?? this.tab,
+      panel: clearPanel ? null : (panel ?? this.panel),
+    );
+  }
+
+  static String? _nonEmptyParam(String? value) {
+    final String? trimmed = value?.trim();
+    return (trimmed == null || trimmed.isEmpty) ? null : trimmed;
+  }
+}
+
 class SettingsPage extends ConsumerStatefulWidget {
-  const SettingsPage({super.key});
+  const SettingsPage({required this.initialQuery, super.key});
+
+  final SettingsPageQuery initialQuery;
 
   @override
   ConsumerState<SettingsPage> createState() => _SettingsPageState();
 }
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
-  String? _expandedSectionId = 'preferences';
+  late String? _expandedSectionId;
+
+  @override
+  void initState() {
+    super.initState();
+    _expandedSectionId = widget.initialQuery.tab;
+  }
+
+  @override
+  void didUpdateWidget(covariant SettingsPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialQuery.tab != widget.initialQuery.tab) {
+      _expandedSectionId = widget.initialQuery.tab;
+    }
+  }
 
   void _onSectionTapped(String sectionId) {
+    final String? newSection =
+        _expandedSectionId == sectionId ? null : sectionId;
     setState(() {
-      _expandedSectionId =
-          _expandedSectionId == sectionId ? null : sectionId;
+      _expandedSectionId = newSection;
     });
+    if (newSection != null) {
+      final SettingsPageQuery newQuery = SettingsPageQuery(tab: newSection);
+      context.go(newQuery.location());
+    }
+  }
+
+  void _onWorkspacePanelChanged(String panel) {
+    final SettingsPageQuery newQuery = SettingsPageQuery(
+      tab: 'workspace',
+      panel: panel,
+    );
+    context.go(newQuery.location());
   }
 
   @override
@@ -192,7 +264,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           title: l10n.settingsWorkspaceSectionTitle,
           body: l10n.settingsWorkspaceSectionBody,
           wrapInSection: false,
-          builder: (_) => const SettingsWorkspaceSection(),
+          builder: (_) => SettingsWorkspaceSection(
+            initialPanel: widget.initialQuery.panel,
+            onPanelChanged: _onWorkspacePanelChanged,
+          ),
         ),
     ];
 
