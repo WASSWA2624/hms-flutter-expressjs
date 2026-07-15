@@ -1,0 +1,728 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
+import 'package:hosspi_hms/features/profile/domain/entities/user_profile_entities.dart';
+import 'package:hosspi_hms/features/profile/presentation/controllers/user_profile_controller.dart';
+import 'package:hosspi_hms/features/profile/presentation/state/user_profile_state.dart';
+import 'package:hosspi_hms/features/profile/presentation/widgets/edit_user_profile_dialog.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
+
+class SettingsAccountSection extends ConsumerStatefulWidget {
+  const SettingsAccountSection({
+    this.initialPanel,
+    this.onPanelChanged,
+    super.key,
+  });
+
+  final String? initialPanel;
+  final ValueChanged<String>? onPanelChanged;
+
+  static const String profilePanel = 'profile';
+  static const String changePasswordPanel = 'change-password';
+
+  @override
+  ConsumerState<SettingsAccountSection> createState() =>
+      _SettingsAccountSectionState();
+}
+
+class _SettingsAccountSectionState
+    extends ConsumerState<SettingsAccountSection> {
+  late String _activePanel;
+
+  @override
+  void initState() {
+    super.initState();
+    _activePanel =
+        widget.initialPanel ?? SettingsAccountSection.profilePanel;
+  }
+
+  @override
+  void didUpdateWidget(covariant SettingsAccountSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialPanel != null &&
+        widget.initialPanel != oldWidget.initialPanel) {
+      _activePanel = widget.initialPanel!;
+    }
+  }
+
+  void _onPanelSelected(String panelId) {
+    if (panelId == _activePanel) return;
+    setState(() {
+      _activePanel = panelId;
+    });
+    widget.onPanelChanged?.call(panelId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+
+    return AppScreenSection(
+      title: l10n.settingsAccountSectionTitle,
+      body: l10n.settingsAccountSectionBody,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AppTabStrip(
+            tabs: <AppTabItem>[
+              AppTabItem(
+                id: SettingsAccountSection.profilePanel,
+                icon: Icons.person_outline,
+                label: l10n.settingsProfileActionTitle,
+              ),
+              AppTabItem(
+                id: SettingsAccountSection.changePasswordPanel,
+                icon: Icons.lock_reset_outlined,
+                label: l10n.settingsChangePasswordActionTitle,
+              ),
+            ],
+            selectedId: _activePanel,
+            onTabTapped: _onPanelSelected,
+          ),
+          SizedBox(height: theme.spacing.lg),
+          if (_activePanel == SettingsAccountSection.profilePanel)
+            const _ProfilePanel()
+          else
+            const _ChangePasswordPanel(),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Profile sub-panel
+// ---------------------------------------------------------------------------
+
+class _ProfilePanel extends ConsumerWidget {
+  const _ProfilePanel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final AsyncValue<Result<UserProfileState>> profileState = ref.watch(
+      userProfileControllerProvider,
+    );
+
+    return profileState.when(
+      loading: () => AppStateView(
+        variant: AppStateViewVariant.loading,
+        title: l10n.profileLoadingTitle,
+        body: l10n.profileLoadingBody,
+      ),
+      error: (_, _) => AppFailureStateView(
+        failure: const AppFailure.unexpected(),
+        title: l10n.profileUnavailableTitle,
+        onRetry: () => unawaited(
+          ref.read(userProfileControllerProvider.notifier).refresh(),
+        ),
+      ),
+      data: (Result<UserProfileState> result) => result.when(
+        success: (UserProfileState state) =>
+            _ProfilePanelContent(state: state),
+        failure: (AppFailure failure) => AppFailureStateView(
+          failure: failure,
+          title: l10n.profileUnavailableTitle,
+          onRetry: () => unawaited(
+            ref.read(userProfileControllerProvider.notifier).refresh(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfilePanelContent extends ConsumerWidget {
+  const _ProfilePanelContent({required this.state});
+
+  final UserProfileState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final UserProfileView view = state.view;
+    final AuthUserProfile profile = view.profile;
+    final AuthSession session = view.session;
+
+    if (profile.displayName == null && session.subject == null) {
+      return AppStateView(
+        title: l10n.profileUnavailableTitle,
+        body: l10n.profileUnavailableBody,
+        icon: Icons.person_off_outlined,
+      );
+    }
+
+    final List<String> roles = view.roles;
+    final List<AppPermission> permissions = view.permissions;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            if (view.record != null)
+              AppButton.secondary(
+                label: l10n.profileEditActionTitle,
+                leadingIcon: Icons.edit_outlined,
+                enabled: !state.isSaving,
+                onPressed: state.isSaving
+                    ? null
+                    : () => unawaited(_editProfile(context, ref, view.record!)),
+              ),
+            SizedBox(width: theme.spacing.sm),
+            AppButton.secondary(
+              label: l10n.commonRefreshActionLabel,
+              leadingIcon: Icons.refresh,
+              onPressed: () => unawaited(
+                ref.read(userProfileControllerProvider.notifier).refresh(),
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: theme.spacing.lg),
+        _ProfileSummary(
+          profile: profile,
+          permissionCount: permissions.length,
+          roleCount: roles.length,
+        ),
+        SizedBox(height: theme.spacing.lg),
+        _ProfileSectionGrid(
+          sections: <Widget>[
+            _ProfileDetailSection(
+              title: l10n.profileAccountSectionTitle,
+              body: l10n.profileAccountSectionBody,
+              items: <_ProfileDetailItem>[
+                _ProfileDetailItem(
+                  label: l10n.profileNameLabel,
+                  value: _value(profile.displayName, l10n),
+                ),
+                _ProfileDetailItem(
+                  label: l10n.profileEmailLabel,
+                  value: _value(profile.email ?? session.subject, l10n),
+                ),
+                _ProfileDetailItem(
+                  label: l10n.profilePhoneLabel,
+                  value: _value(profile.phone, l10n),
+                ),
+                _ProfileDetailItem(
+                  label: l10n.profileStatusLabel,
+                  value: _value(_formatProfileToken(profile.status), l10n),
+                ),
+                _ProfileDetailItem(
+                  label: l10n.profileUserIdLabel,
+                  value: _value(profile.displayId ?? profile.id, l10n),
+                  selectable: true,
+                  copyTooltip: l10n.copyUserIdAction,
+                  copiedMessage: l10n.userIdCopiedMessage,
+                ),
+              ],
+            ),
+            _ProfileDetailSection(
+              title: l10n.profileProfessionalSectionTitle,
+              body: l10n.profileProfessionalSectionBody,
+              items: <_ProfileDetailItem>[
+                _ProfileDetailItem(
+                  label: l10n.profileTitleLabel,
+                  value: _value(profile.effectiveTitle, l10n),
+                ),
+                _ProfileDetailItem(
+                  label: l10n.profileOverallRoleLabel,
+                  value: _value(profile.overallRole, l10n),
+                ),
+                _ProfileDetailItem(
+                  label: l10n.profileUserTypeLabel,
+                  value: _value(profile.userType, l10n),
+                ),
+                _ProfileDetailItem(
+                  label: l10n.profileTenantLabel,
+                  value: _value(profile.tenantName, l10n),
+                ),
+                _ProfileDetailItem(
+                  label: l10n.profileFacilityLabel,
+                  value: _value(profile.facilityName, l10n),
+                ),
+                _ProfileDetailItem(
+                  label: l10n.profileFacilityTypeLabel,
+                  value: _value(
+                    _formatProfileToken(profile.facilityType),
+                    l10n,
+                  ),
+                ),
+                _ProfileDetailItem(
+                  label: l10n.profileStaffNumberLabel,
+                  value: _value(profile.staffNumber, l10n),
+                  selectable: true,
+                  copyTooltip: l10n.copyIdentifierAction,
+                  copiedMessage: l10n.identifierCopiedMessage,
+                ),
+              ],
+            ),
+            _ProfileRolesSection(roles: roles),
+            _ProfilePermissionsSection(permissions: permissions),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _editProfile(
+    BuildContext context,
+    WidgetRef ref,
+    UserProfileRecord record,
+  ) async {
+    final UserProfileDraft? draft = await showAppDialog<UserProfileDraft>(
+      context: context,
+      builder: (_) => EditUserProfileDialog(record: record),
+    );
+    if (draft == null || !context.mounted) {
+      return;
+    }
+
+    final bool saved = await ref
+        .read(userProfileControllerProvider.notifier)
+        .saveProfile(draft);
+    if (!context.mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          saved
+              ? context.l10n.profileSaveSuccessMessage
+              : context.l10n.profileSaveErrorMessage,
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Change password sub-panel
+// ---------------------------------------------------------------------------
+
+class _ChangePasswordPanel extends StatelessWidget {
+  const _ChangePasswordPanel();
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          l10n.settingsChangePasswordActionBody,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: theme.spacing.lg),
+        AppButton.primary(
+          label: l10n.settingsChangePasswordActionTitle,
+          leadingIcon: Icons.lock_reset_outlined,
+          onPressed: () => unawaited(_changePassword(context)),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _changePassword(BuildContext context) async {
+    final bool? changed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const ChangePasswordDialog(),
+    );
+
+    if (changed == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.authPasswordChangedMessage)),
+      );
+      context.go(AppRoutes.login.location());
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Profile summary
+// ---------------------------------------------------------------------------
+
+class _ProfileSummary extends StatelessWidget {
+  const _ProfileSummary({
+    required this.profile,
+    required this.permissionCount,
+    required this.roleCount,
+  });
+
+  final AuthUserProfile profile;
+  final int permissionCount;
+  final int roleCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final AppLocalizations l10n = context.l10n;
+    final String displayName = _value(profile.displayName, l10n);
+    final String supportingLine = <String>[
+      if (profile.email != null) profile.email!,
+      if (profile.effectiveTitle != null) profile.effectiveTitle!,
+    ].join(' | ');
+    final List<String> badges = <String>{
+      if (profile.overallRole != null) profile.overallRole!,
+      if (profile.userType != null) profile.userType!,
+      l10n.profileRoleCountLabel(roleCount),
+      l10n.profilePermissionCountLabel(permissionCount),
+    }.toList(growable: false);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(theme.spacing.lg),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: colorScheme.primaryContainer,
+              foregroundColor: colorScheme.onPrimaryContainer,
+              child: Text(
+                profile.initials,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            SizedBox(width: theme.spacing.lg),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    displayName,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (supportingLine.isNotEmpty) ...<Widget>[
+                    SizedBox(height: theme.spacing.xs),
+                    Text(
+                      supportingLine,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                  SizedBox(height: theme.spacing.md),
+                  Wrap(
+                    spacing: theme.spacing.sm,
+                    runSpacing: theme.spacing.sm,
+                    children: <Widget>[
+                      for (final String badge in badges)
+                        _ProfileBadge(label: badge),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Profile detail widgets
+// ---------------------------------------------------------------------------
+
+class _ProfileBadge extends StatelessWidget {
+  const _ProfileBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer,
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs,
+        ),
+        child: Text(
+          label,
+          style: theme.textTheme.labelMedium?.copyWith(
+            color: colorScheme.onSecondaryContainer,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileDetailSection extends StatelessWidget {
+  const _ProfileDetailSection({
+    required this.title,
+    required this.body,
+    required this.items,
+  });
+
+  final String title;
+  final String body;
+  final List<_ProfileDetailItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppScreenSection(
+      title: title,
+      body: body,
+      child: _ProfileDetailList(items: items),
+    );
+  }
+}
+
+class _ProfileRolesSection extends StatelessWidget {
+  const _ProfileRolesSection({required this.roles});
+
+  final List<String> roles;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+
+    return AppScreenSection(
+      title: l10n.profileRolesSectionTitle,
+      body: l10n.profileRolesSectionBody,
+      child: roles.isEmpty
+          ? Text(
+              l10n.profileRolesEmpty,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            )
+          : Wrap(
+              spacing: theme.spacing.sm,
+              runSpacing: theme.spacing.sm,
+              children: <Widget>[
+                for (final String role in roles)
+                  _ProfileBadge(
+                    label: _formatProfileToken(role) ?? role,
+                  ),
+              ],
+            ),
+    );
+  }
+}
+
+class _ProfilePermissionsSection extends StatelessWidget {
+  const _ProfilePermissionsSection({required this.permissions});
+
+  final List<AppPermission> permissions;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+
+    return AppScreenSection(
+      title: l10n.profilePermissionsSectionTitle,
+      body: l10n.profilePermissionsSectionBody,
+      child: permissions.isEmpty
+          ? Text(
+              l10n.profilePermissionsEmpty,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            )
+          : Wrap(
+              spacing: theme.spacing.sm,
+              runSpacing: theme.spacing.sm,
+              children: <Widget>[
+                for (final AppPermission permission in permissions)
+                  _ProfileBadge(label: permission.value),
+              ],
+            ),
+    );
+  }
+}
+
+class _ProfileDetailList extends StatelessWidget {
+  const _ProfileDetailList({required this.items});
+
+  final List<_ProfileDetailItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Column(
+      children: <Widget>[
+        for (var index = 0; index < items.length; index += 1) ...<Widget>[
+          if (index > 0)
+            Divider(
+              height: theme.spacing.lg,
+              color: colorScheme.outlineVariant,
+            ),
+          _ProfileDetailRow(item: items[index]),
+        ],
+      ],
+    );
+  }
+}
+
+class _ProfileDetailRow extends StatelessWidget {
+  const _ProfileDetailRow({required this.item});
+
+  final _ProfileDetailItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final TextStyle? valueStyle = theme.textTheme.bodyLarge?.copyWith(
+      fontWeight: FontWeight.w600,
+    );
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final Widget label = Text(
+          item.label,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        );
+        final Widget value = item.selectable
+            ? AppCopyableIdentifier(
+                value: item.value,
+                tooltip: item.copyTooltip,
+                copiedMessage: item.copiedMessage,
+                textStyle: valueStyle,
+              )
+            : Text(item.value, style: valueStyle);
+
+        if (constraints.maxWidth < 520) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              label,
+              SizedBox(height: theme.spacing.xs),
+              value,
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            SizedBox(width: 150, child: label),
+            SizedBox(width: theme.spacing.md),
+            Expanded(child: value),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _ProfileDetailItem {
+  const _ProfileDetailItem({
+    required this.label,
+    required this.value,
+    this.selectable = false,
+    this.copyTooltip,
+    this.copiedMessage,
+  });
+
+  final String label;
+  final String value;
+  final bool selectable;
+  final String? copyTooltip;
+  final String? copiedMessage;
+}
+
+class _ProfileSectionGrid extends StatelessWidget {
+  const _ProfileSectionGrid({required this.sections});
+
+  final List<Widget> sections;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool useTwoColumns = constraints.maxWidth >= 920;
+        final double itemWidth = useTwoColumns
+            ? (constraints.maxWidth - theme.spacing.lg) / 2
+            : constraints.maxWidth;
+
+        return Wrap(
+          spacing: theme.spacing.lg,
+          runSpacing: theme.spacing.lg,
+          children: <Widget>[
+            for (final Widget section in sections)
+              SizedBox(width: itemWidth, child: section),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+String _value(String? value, AppLocalizations l10n) {
+  final String? normalized = value?.trim();
+  return normalized == null || normalized.isEmpty
+      ? l10n.profileUnknownValue
+      : normalized;
+}
+
+String? _formatProfileToken(String? value) {
+  final String? normalized = value?.trim();
+  if (normalized == null || normalized.isEmpty) {
+    return null;
+  }
+
+  final String words = normalized
+      .replaceAll(RegExp(r'[_-]+'), ' ')
+      .split(RegExp(r'\s+'))
+      .where((String word) => word.isNotEmpty)
+      .map((String word) {
+        final String lower = word.toLowerCase();
+        return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
+      })
+      .join(' ');
+
+  return words.isEmpty ? null : words;
+}

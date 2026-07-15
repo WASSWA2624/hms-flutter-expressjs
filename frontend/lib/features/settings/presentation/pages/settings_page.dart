@@ -12,7 +12,7 @@ import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
-import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
+import 'package:hosspi_hms/features/settings/presentation/widgets/settings_account_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_configuration_section.dart';
 import 'package:hosspi_hms/features/settings/presentation/widgets/settings_workspace_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -98,6 +98,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       final SettingsPageQuery newQuery = SettingsPageQuery(tab: newSection);
       context.go(newQuery.location());
     }
+  }
+
+  void _onAccountPanelChanged(String panel) {
+    final SettingsPageQuery newQuery = SettingsPageQuery(
+      tab: 'account',
+      panel: panel,
+    );
+    context.go(newQuery.location());
   }
 
   void _onWorkspacePanelChanged(String panel) {
@@ -222,21 +230,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         icon: Icons.shield_outlined,
         title: l10n.settingsAccountSectionTitle,
         body: l10n.settingsAccountSectionBody,
-        builder: (_) => _SettingsActionList(
-          actions: <_SettingsAction>[
-            _SettingsAction(
-              icon: Icons.person_outline,
-              title: l10n.settingsProfileActionTitle,
-              body: l10n.settingsProfileActionBody,
-              onTap: () => context.go(AppRoutes.profile.location()),
-            ),
-            _SettingsAction(
-              icon: Icons.lock_reset_outlined,
-              title: l10n.settingsChangePasswordActionTitle,
-              body: l10n.settingsChangePasswordActionBody,
-              onTap: () => unawaited(_changePassword(context)),
-            ),
-          ],
+        wrapInSection: false,
+        builder: (_) => SettingsAccountSection(
+          initialPanel: widget.initialQuery.panel,
+          onPanelChanged: _onAccountPanelChanged,
         ),
       ),
       if (adminActions.isNotEmpty)
@@ -339,21 +336,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       if (context.mounted) {
         _showSaveError(context);
       }
-    }
-  }
-
-  Future<void> _changePassword(BuildContext context) async {
-    final changed = await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const ChangePasswordDialog(),
-    );
-
-    if (changed == true && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.authPasswordChangedMessage)),
-      );
-      context.go(AppRoutes.login.location());
     }
   }
 
@@ -593,13 +575,6 @@ List<_SettingsAction> _adminActions(
       icon: Icons.manage_accounts_outlined,
       title: l10n.settingsAccessAdminActionTitle,
       body: l10n.settingsAccessAdminActionBody,
-      requirement: _accessAdminRequirement,
-      onTap: () => context.go(AppRoutes.accessAdmin.location()),
-    ),
-    _SettingsAction(
-      icon: Icons.admin_panel_settings_outlined,
-      title: l10n.settingsSecurityBoundaryLabel,
-      body: l10n.settingsSecurityBoundaryBody,
       requirement: _accessAdminRequirement,
       onTap: () => context.go(AppRoutes.accessAdmin.location()),
     ),

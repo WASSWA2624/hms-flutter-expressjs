@@ -24,7 +24,6 @@ import 'package:hosspi_hms/features/auth/presentation/pages/register_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/reset_password_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/verify_email_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_shell_layout.dart';
-import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
 import 'package:hosspi_hms/app/router/shell_badge_counts.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/presentation/pages/billing_workspace_page.dart';
@@ -60,7 +59,7 @@ import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.da
 import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry_page.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart';
 import 'package:hosspi_hms/features/physiotherapy/presentation/pages/physiotherapy_workspace_page.dart';
-import 'package:hosspi_hms/features/profile/presentation/pages/user_profile_page.dart';
+import 'package:hosspi_hms/features/settings/presentation/widgets/settings_account_section.dart';
 import 'package:hosspi_hms/features/radiology/presentation/pages/radiology_workspace_page.dart';
 import 'package:hosspi_hms/features/reports/presentation/pages/reports_workspace_page.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
@@ -334,7 +333,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.profile.path,
             name: AppRoutes.profile.name,
-            builder: (_, _) => const UserProfilePage(),
+            redirect: (_, _) => const SettingsPageQuery(
+              tab: 'account',
+              panel: SettingsAccountSection.profilePanel,
+            ).location(),
           ),
         ],
       ),
@@ -907,27 +909,23 @@ class _AppShell extends ConsumerWidget {
         userProfile: _userMenuProfile(session),
         showUserAvatar: session != null,
         onProfileSelected: () {
-          if (!AppRoutes.profile.matchesPath(location.path)) {
-            context.go(AppRoutes.profile.location());
-          }
+          final String target = const SettingsPageQuery(
+            tab: 'account',
+            panel: SettingsAccountSection.profilePanel,
+          ).location();
+          context.go(target);
         },
         onSettingsSelected: () {
           if (!AppRoutes.settings.matchesPath(location.path)) {
             context.go(AppRoutes.settings.location());
           }
         },
-        onChangePasswordSelected: () async {
-          final changed = await showAppDialog<bool>(
-            context: context,
-            barrierDismissible: false,
-            builder: (_) => const ChangePasswordDialog(),
-          );
-          if (changed == true && context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(l10n.authPasswordChangedMessage)),
-            );
-            context.go(AppRoutes.login.location());
-          }
+        onChangePasswordSelected: () {
+          final String target = const SettingsPageQuery(
+            tab: 'account',
+            panel: SettingsAccountSection.changePasswordPanel,
+          ).location();
+          context.go(target);
         },
         onLogoutSelected: () async {
           await ref.read(authRepositoryProvider).logout();

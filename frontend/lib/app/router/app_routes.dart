@@ -716,7 +716,6 @@ abstract final class AppRoutes {
     settings,
     tenantFacilitySetup,
     accessAdmin,
-    profile,
   ];
 
   static AppRouteData? matchPath(String locationPath) {
@@ -786,7 +785,6 @@ abstract final class AppRoutes {
     communications,
     reports,
     settings,
-    profile,
   ];
 
   static bool isBillingFocusedShellRoute(AppRouteData route) {

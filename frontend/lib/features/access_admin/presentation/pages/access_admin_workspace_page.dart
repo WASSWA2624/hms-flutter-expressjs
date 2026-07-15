@@ -139,53 +139,48 @@ class _AccessAdminWorkspaceContentState
     final AppFailure? lastFailure = state.lastFailure is AppFailure
         ? state.lastFailure! as AppFailure
         : null;
+    final ThemeData theme = Theme.of(context);
 
-    return AppWorkspace(
-      title: context.l10n.accessAdminTitle,
-      leadingIcon: Icons.manage_accounts_outlined,
-      toolbar: appWorkspaceToolbarWithLabels(
-        context.l10n,
-        summaryNotifications: _summaryNotifications(context, state),
-        primary: _primaryAction(context, state, canWrite, controller),
-        onRefresh: controller.refresh,
-        isRefreshing: state.isRefreshing,
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (lastFailure != null) ...<Widget>[
-            AppFailureStateView(
-              failure: lastFailure,
-              onRetry: controller.refresh,
-            ),
-            SizedBox(height: Theme.of(context).spacing.md),
-          ],
-          if (state.isTenantContextRequired &&
-              state.query.panel != AccessAdminPanel.registrations)
-            AppStateView(
-              title: context.l10n.accessAdminTenantContextRequiredTitle,
-              body: context.l10n.accessAdminTenantContextRequiredBody,
-              variant: AppStateViewVariant.empty,
-            )
-          else ...<Widget>[
-            _PanelSelector(state: state, controller: controller),
-            SizedBox(height: Theme.of(context).spacing.md),
-            _FiltersBar(
-              state: state,
-              searchController: _searchController,
-              controller: controller,
-            ),
-            SizedBox(height: Theme.of(context).spacing.md),
-            _WorklistPanel(
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            _AccessAdminPanelTabBar(
               state: state,
               controller: controller,
               canWrite: canWrite,
-              onItemSelected: (AccessAdminItem item) {
-                unawaited(_openDetailDialog(context, item, canWrite));
-              },
+              primaryAction: _primaryAction(context, state, canWrite, controller),
             ),
+            SizedBox(height: theme.spacing.md),
+            if (lastFailure != null) ...<Widget>[
+              AppFailureStateView(
+                failure: lastFailure,
+                onRetry: controller.refresh,
+              ),
+              SizedBox(height: theme.spacing.md),
+            ],
+            if (state.isTenantContextRequired &&
+                state.query.panel != AccessAdminPanel.registrations)
+              AppStateView(
+                title: context.l10n.accessAdminTenantContextRequiredTitle,
+                body: context.l10n.accessAdminTenantContextRequiredBody,
+                variant: AppStateViewVariant.empty,
+              )
+            else
+              _WorklistPanel(
+                state: state,
+                controller: controller,
+                searchController: _searchController,
+                canWrite: canWrite,
+                onItemSelected: (AccessAdminItem item) {
+                  unawaited(_openDetailDialog(context, item, canWrite));
+                },
+              ),
           ],
-        ],
+        ),
       ),
     );
   }
@@ -222,38 +217,6 @@ class _AccessAdminWorkspaceContentState
     };
   }
 
-  List<AppWorkspaceSummaryNotification> _summaryNotifications(
-    BuildContext context,
-    AccessAdminWorkspaceState state,
-  ) {
-    final AccessAdminOverview overview = state.data.overview;
-    return <AppWorkspaceSummaryNotification>[
-      AppWorkspaceSummaryNotification(
-        label: context.l10n.accessAdminActiveUsersLabel,
-        count: overview.activeUsers,
-        icon: Icons.people_outline,
-        onSelected: () {},
-      ),
-      AppWorkspaceSummaryNotification(
-        label: context.l10n.accessAdminRolesLabel,
-        count: overview.totalRoles,
-        icon: Icons.badge_outlined,
-        onSelected: () {},
-      ),
-      AppWorkspaceSummaryNotification(
-        label: context.l10n.accessAdminPermissionsLabel,
-        count: overview.totalPermissions,
-        icon: Icons.key_outlined,
-        onSelected: () {},
-      ),
-      AppWorkspaceSummaryNotification(
-        label: context.l10n.accessAdminModulesLabel,
-        count: overview.activeModulesCount,
-        icon: Icons.extension_outlined,
-        onSelected: () {},
-      ),
-    ];
-  }
 
   Future<void> _openDetailDialog(
     BuildContext context,
@@ -533,15 +496,23 @@ class _AccessAdminWorkspaceContentState
   }
 }
 
-class _PanelSelector extends ConsumerWidget {
-  const _PanelSelector({required this.state, required this.controller});
+class _AccessAdminPanelTabBar extends ConsumerWidget {
+  const _AccessAdminPanelTabBar({
+    required this.state,
+    required this.controller,
+    required this.canWrite,
+    this.primaryAction,
+  });
 
   final AccessAdminWorkspaceState state;
   final AccessAdminWorkspaceController controller;
+  final bool canWrite;
+  final Widget? primaryAction;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bool isSuperAdmin = ref.watch(appAccessPolicyProvider).isElevated;
+    final ThemeData theme = Theme.of(context);
     final List<AccessAdminPanel> panels = AccessAdminPanel.values
         .where(
           (AccessAdminPanel panel) =>
@@ -549,25 +520,52 @@ class _PanelSelector extends ConsumerWidget {
         )
         .toList(growable: false);
 
-    return Wrap(
-      spacing: Theme.of(context).spacing.sm,
-      runSpacing: Theme.of(context).spacing.sm,
-      children: panels
-          .map((AccessAdminPanel panel) {
-            final bool selected = state.query.panel == panel;
-            return FilterChip(
-              label: Text(_panelLabel(context, panel)),
-              selected: selected,
-              onSelected: state.isSaving
-                  ? null
-                  : (_) => unawaited(controller.applyPanel(panel)),
-            );
-          })
-          .toList(growable: false),
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: AppTabStrip(
+            tabs: <AppTabItem>[
+              for (final AccessAdminPanel panel in panels)
+                AppTabItem(
+                  id: panel.serverValue,
+                  icon: _panelIcon(panel),
+                  label: _panelLabel(context, panel),
+                ),
+            ],
+            selectedId: state.query.panel.serverValue,
+            onTabTapped: state.isSaving ? (_) {} : _onTabTapped,
+          ),
+        ),
+        if (primaryAction != null) ...<Widget>[
+          SizedBox(width: theme.spacing.sm),
+          primaryAction!,
+        ],
+      ],
     );
   }
 
-  String _panelLabel(BuildContext context, AccessAdminPanel panel) {
+  void _onTabTapped(String tabId) {
+    for (final AccessAdminPanel panel in AccessAdminPanel.values) {
+      if (panel.serverValue == tabId) {
+        unawaited(controller.applyPanel(panel));
+        return;
+      }
+    }
+  }
+
+  static IconData _panelIcon(AccessAdminPanel panel) {
+    return switch (panel) {
+      AccessAdminPanel.overview => Icons.dashboard_outlined,
+      AccessAdminPanel.directory => Icons.people_outline,
+      AccessAdminPanel.roles => Icons.badge_outlined,
+      AccessAdminPanel.permissions => Icons.key_outlined,
+      AccessAdminPanel.entitlements => Icons.extension_outlined,
+      AccessAdminPanel.registrations => Icons.pending_actions_outlined,
+      AccessAdminPanel.demo => Icons.science_outlined,
+    };
+  }
+
+  static String _panelLabel(BuildContext context, AccessAdminPanel panel) {
     return switch (panel) {
       AccessAdminPanel.overview => context.l10n.accessAdminPanelOverview,
       AccessAdminPanel.directory => context.l10n.accessAdminPanelDirectory,
@@ -582,55 +580,6 @@ class _PanelSelector extends ConsumerWidget {
   }
 }
 
-class _FiltersBar extends StatelessWidget {
-  const _FiltersBar({
-    required this.state,
-    required this.searchController,
-    required this.controller,
-  });
-
-  final AccessAdminWorkspaceState state;
-  final TextEditingController searchController;
-  final AccessAdminWorkspaceController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppContentPanel(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppTextField(
-            controller: searchController,
-            labelText: context.l10n.accessAdminSearchLabel,
-            hintText: context.l10n.accessAdminSearchHint,
-            textInputAction: TextInputAction.search,
-            onFieldSubmitted: controller.applySearch,
-          ),
-          if (state.query.resource == AccessAdminResource.users) ...<Widget>[
-            SizedBox(height: Theme.of(context).spacing.md),
-            AppSelectField<String?>(
-              labelText: context.l10n.accessAdminStatusLabel,
-              value: state.query.status,
-              options: <AppSelectOption<String?>>[
-                AppSelectOption<String?>(
-                  value: null,
-                  label: context.l10n.accessAdminAllStatusesLabel,
-                ),
-                ...state.data.lookups.userStatuses.map(
-                  (String value) =>
-                      AppSelectOption<String?>(value: value, label: value),
-                ),
-              ],
-              onChanged: (String? value) {
-                unawaited(controller.applyStatusFilter(value));
-              },
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
 
 class _WorklistPanel extends StatelessWidget {
   const _WorklistPanel({

@@ -203,7 +203,6 @@ class _SubscriptionsWorkspaceContentState
               onPanelSelected: controller.applyPanel,
               summaryNotifications: _summaryNotifications(context, state),
               primaryAction: _primaryAction(context, canWrite, state),
-              onRefresh: controller.refresh,
             ),
             SizedBox(height: theme.spacing.md),
             if (lastFailure != null) ...<Widget>[
@@ -355,7 +354,6 @@ class _SubscriptionsPanelTabBar extends StatelessWidget {
     required this.onPanelSelected,
     required this.summaryNotifications,
     this.primaryAction,
-    this.onRefresh,
   });
 
   final SubscriptionPanel activePanel;
@@ -363,57 +361,41 @@ class _SubscriptionsPanelTabBar extends StatelessWidget {
   final ValueChanged<SubscriptionPanel> onPanelSelected;
   final List<AppWorkspaceSummaryNotification> summaryNotifications;
   final Widget? primaryAction;
-  final Future<void> Function()? onRefresh;
+
+  static const String _notificationsTabId = '__notifications__';
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
     final int notificationCount = totalWorkspaceSummaryNotificationCount(
       summaryNotifications,
     );
 
+    final String notificationsLabel = notificationCount > 0
+        ? '${_SubscriptionsText.notifications} ($notificationCount)'
+        : _SubscriptionsText.notifications;
+
     return Row(
       children: <Widget>[
         Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: <Widget>[
-                for (final SubscriptionPanel panel
-                    in SubscriptionPanel.values) ...<Widget>[
-                  _PanelTab(
-                    label: _panelLabel(panel),
-                    icon: _panelIcon(panel),
-                    isActive: activePanel == panel,
-                    isDisabled: isRefreshing,
-                    onTap: activePanel == panel
-                        ? null
-                        : () => onPanelSelected(panel),
-                  ),
-                  SizedBox(width: theme.spacing.xs),
-                ],
-                _NotificationTab(
-                  count: notificationCount,
-                  isDisabled: isRefreshing,
+          child: AppTabStrip(
+            tabs: <AppTabItem>[
+              for (final SubscriptionPanel panel in SubscriptionPanel.values)
+                AppTabItem(
+                  id: panel.serverValue,
+                  icon: _panelIcon(panel),
+                  label: _panelLabel(panel),
                 ),
-              ],
-            ),
+              AppTabItem(
+                id: _notificationsTabId,
+                icon: Icons.notifications_outlined,
+                label: notificationsLabel,
+              ),
+            ],
+            selectedId: activePanel.serverValue,
+            onTabTapped: isRefreshing ? (_) {} : _onTabTapped,
           ),
         ),
-        if (onRefresh != null) ...<Widget>[
-          SizedBox(width: theme.spacing.sm),
-          IconButton(
-            icon: Icon(
-              Icons.refresh,
-              color: isRefreshing
-                  ? colorScheme.onSurface.withValues(alpha: 0.38)
-                  : colorScheme.onSurfaceVariant,
-            ),
-            tooltip: _SubscriptionsText.refresh,
-            onPressed: isRefreshing ? null : onRefresh,
-          ),
-        ],
         if (primaryAction != null) ...<Widget>[
           SizedBox(width: theme.spacing.sm),
           primaryAction!,
@@ -421,130 +403,17 @@ class _SubscriptionsPanelTabBar extends StatelessWidget {
       ],
     );
   }
-}
 
-class _PanelTab extends StatelessWidget {
-  const _PanelTab({
-    required this.label,
-    required this.icon,
-    required this.isActive,
-    required this.isDisabled,
-    this.onTap,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool isActive;
-  final bool isDisabled;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final Color activeColor = colorScheme.primary;
-    final Color inactiveColor = colorScheme.onSurfaceVariant;
-    final Color disabledColor = colorScheme.onSurface.withValues(alpha: 0.38);
-
-    final Color foreground = isDisabled
-        ? disabledColor
-        : isActive
-            ? activeColor
-            : inactiveColor;
-
-    return Material(
-      color: isActive
-          ? activeColor.withValues(alpha: 0.1)
-          : Colors.transparent,
-      borderRadius: BorderRadius.circular(theme.radius.sm),
-      child: InkWell(
-        onTap: isDisabled ? null : onTap,
-        borderRadius: BorderRadius.circular(theme.radius.sm),
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: theme.spacing.sm,
-            vertical: theme.spacing.xs,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(theme.radius.sm),
-            border: isActive
-                ? Border.all(color: activeColor.withValues(alpha: 0.4))
-                : null,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(icon, size: 18, color: foreground),
-              SizedBox(width: theme.spacing.xs),
-              Text(
-                label,
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: foreground,
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NotificationTab extends StatelessWidget {
-  const _NotificationTab({
-    required this.count,
-    required this.isDisabled,
-  });
-
-  final int count;
-  final bool isDisabled;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final Color foreground = isDisabled
-        ? colorScheme.onSurface.withValues(alpha: 0.38)
-        : colorScheme.onSurfaceVariant;
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.xs,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(Icons.notifications_outlined, size: 18, color: foreground),
-          SizedBox(width: theme.spacing.xs),
-          Text(
-            _SubscriptionsText.notifications,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: foreground,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          if (count > 0) ...<Widget>[
-            SizedBox(width: theme.spacing.xs),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: colorScheme.error,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                count.toString(),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onError,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
+  void _onTabTapped(String tabId) {
+    if (tabId == _notificationsTabId) {
+      return;
+    }
+    for (final SubscriptionPanel panel in SubscriptionPanel.values) {
+      if (panel.serverValue == tabId) {
+        onPanelSelected(panel);
+        return;
+      }
+    }
   }
 }
 
@@ -5020,7 +4889,6 @@ abstract final class _SubscriptionsText {
   static const String savedMessage = 'Subscription workspace updated.';
   static const String overview = 'Overview';
   static const String notifications = 'Notifications';
-  static const String refresh = 'Refresh';
   static const String activePlans = 'Active plans';
   static const String notSubscribed = 'Not subscribed';
   static const String closedSubscriptions = 'Closed subscriptions';
