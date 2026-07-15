@@ -610,6 +610,10 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
   AppFailure? _failure;
   bool _isSaving = false;
 
+  late final List<String> _cachedTestNameOptions;
+  late final List<String> _cachedCategoryOptions;
+  late final List<String> _cachedSpecimenOptions;
+
   @override
   void initState() {
     super.initState();
@@ -648,6 +652,16 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
     _currency = item.currency ?? appDefaultCurrencyCode;
     _isOfferedAtFacility = item.isOfferedAtFacility;
     _resultKind = item.resultKind ?? 'NUMERIC';
+
+    _cachedTestNameOptions = _uniqueNonEmpty(
+      widget.catalogTests.map((LabCatalogItem item) => item.name),
+    );
+    _cachedCategoryOptions = _uniqueNonEmpty(
+      widget.catalogTests.map((LabCatalogItem item) => item.category),
+    );
+    _cachedSpecimenOptions = _uniqueNonEmpty(
+      widget.catalogTests.map((LabCatalogItem item) => item.specimenType),
+    );
   }
 
   @override
@@ -864,23 +878,11 @@ class _LabCatalogTestDialogState extends State<LabCatalogTestDialog> {
     );
   }
 
-  List<String> get _testNameOptions {
-    return _uniqueNonEmpty(
-      widget.catalogTests.map((LabCatalogItem item) => item.name),
-    );
-  }
+  List<String> get _testNameOptions => _cachedTestNameOptions;
 
-  List<String> get _categoryOptions {
-    return _uniqueNonEmpty(
-      widget.catalogTests.map((LabCatalogItem item) => item.category),
-    );
-  }
+  List<String> get _categoryOptions => _cachedCategoryOptions;
 
-  List<String> get _specimenOptions {
-    return _uniqueNonEmpty(
-      widget.catalogTests.map((LabCatalogItem item) => item.specimenType),
-    );
-  }
+  List<String> get _specimenOptions => _cachedSpecimenOptions;
 
   List<String> get _unitOptionsCatalog {
     return _uniqueNonEmpty(<String?>[
@@ -1064,6 +1066,8 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
   bool _isOfferedAtFacility = false;
   AppFailure? _failure;
   bool _isSaving = false;
+  late final List<String> _cachedPanelNameOptions;
+  late final List<String> _cachedPanelCategoryOptions;
 
   @override
   void initState() {
@@ -1081,6 +1085,14 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
     _currency = item.currency ?? appDefaultCurrencyCode;
     _isOfferedAtFacility = item.isOfferedAtFacility;
     _selectedTests = _initialSelectedTests(item);
+
+    _cachedPanelNameOptions = _uniqueNonEmpty(
+      widget.catalogPanels.map((LabCatalogItem item) => item.name),
+    );
+    _cachedPanelCategoryOptions = _uniqueNonEmpty(<String?>[
+      ...widget.catalogTests.map((LabCatalogItem item) => item.category),
+      ...widget.catalogPanels.map((LabCatalogItem item) => item.category),
+    ]);
   }
 
   @override
@@ -1221,18 +1233,9 @@ class _LabCatalogPanelDialogState extends State<LabCatalogPanelDialog> {
     );
   }
 
-  List<String> get _panelNameOptions {
-    return _uniqueNonEmpty(
-      widget.catalogPanels.map((LabCatalogItem item) => item.name),
-    );
-  }
+  List<String> get _panelNameOptions => _cachedPanelNameOptions;
 
-  List<String> get _categoryOptions {
-    return _uniqueNonEmpty(<String?>[
-      ...widget.catalogTests.map((LabCatalogItem item) => item.category),
-      ...widget.catalogPanels.map((LabCatalogItem item) => item.category),
-    ]);
-  }
+  List<String> get _categoryOptions => _cachedPanelCategoryOptions;
 
   void _addPendingTest() {
     final String? testId = _pendingTestId;
@@ -1459,7 +1462,10 @@ class _LabEnableFacilityOfferingDialogState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final List<LabCatalogItem> available = _availableItems;
+    final List<LabCatalogItem> filtered = _filteredCatalogItems;
+    final List<LabCatalogItem> available = filtered
+        .where((LabCatalogItem item) => !item.isOfferedAtFacility)
+        .toList(growable: false);
 
     return AppDialog(
       title: Text(l10n.labEnableOfferingDialogTitle),
@@ -1496,13 +1502,13 @@ class _LabEnableFacilityOfferingDialogState
             )
           else if (!_isSearching && _catalogItems.isEmpty)
             AppMutedText(l10n.labEnableOfferingNoPlatformItemsLabel)
-          else if (!_isSearching && _filteredCatalogItems.isEmpty)
+          else if (!_isSearching && filtered.isEmpty)
             AppMutedText(l10n.labEnableOfferingNoItemsLabel)
           else if (!_isSearching && available.isEmpty)
             AppMutedText(l10n.labEnableOfferingNoItemsLabel)
           else
             AppListTable<LabCatalogItem>(
-              items: _filteredCatalogItems,
+              items: filtered,
               maxVisibleItems: _maxVisibleLabCatalogDialogItems,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
