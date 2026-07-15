@@ -6,7 +6,6 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
@@ -15,13 +14,10 @@ import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.da
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
 import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
 import 'package:hosspi_hms/features/reception/presentation/reception_access.dart';
-import 'package:hosspi_hms/features/reception/presentation/widgets/reception_billing_guidance.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_patient_actions.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
 
@@ -196,21 +192,11 @@ class _ReceptionWorkspaceContentState
     return null;
   }
 
-  // ---------------------------------------------------------------------------
-  // Build
-  // ---------------------------------------------------------------------------
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final OpdWorkspaceState state = widget.state;
-    final OpdWorkspaceController controller = ref.read(
-      opdWorkspaceControllerProvider.notifier,
-    );
-    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
-    final bool canWrite =
-        receptionFrontDeskWriteRequirement.isAllowed(policy);
     final bool isRefreshing = state.isRefreshingAppointments ||
         state.isRefreshingQueue ||
         state.isRefreshingFlows;
@@ -275,11 +261,12 @@ class _ReceptionWorkspaceContentState
               columnVisibilityController: _columnVisibilityController,
               columnVisibilityStorageKey: 'reception_${_section.name}',
               columnWidthStorageKey: 'reception_cw_${_section.name}',
+              columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
               isLoading: isRefreshing,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               onRowSelected: (_ReceptionDeskRow row) =>
-                  unawaited(_openRowDetail(row)),
+                  unawaited(_openPatientDetail(row)),
               itemKeyBuilder: (_ReceptionDeskRow row) =>
                   ValueKey<String>(row.id),
               search: AppListTableSearch<_ReceptionDeskRow>(
@@ -288,43 +275,6 @@ class _ReceptionWorkspaceContentState
                 hintText: l10n.receptionSearchHint,
                 isLoading: isRefreshing,
                 matcher: _searchMatcher,
-                trailingActions: <AppSearchBarAction>[
-                  AppSearchBarAction(
-                    icon: Icons.refresh_outlined,
-                    label: l10n.commonRefreshActionLabel,
-                    enabled: !isRefreshing,
-                    onPressed: () async {
-                      final AppFailure? failure = await controller.refresh();
-                      if (context.mounted) {
-                        _showFailureIfNeeded(context, failure);
-                      }
-                    },
-                  ),
-                  AppSearchBarAction(
-                    icon: Icons.event_available_outlined,
-                    label: l10n.receptionScheduleAppointmentAction,
-                    enabled: canWrite,
-                    onPressed: canWrite
-                        ? () => unawaited(_scheduleAppointment())
-                        : null,
-                  ),
-                  AppSearchBarAction(
-                    icon: Icons.directions_walk_outlined,
-                    label: l10n.opdStartWalkInAction,
-                    enabled: canWrite,
-                    onPressed: canWrite
-                        ? () => unawaited(
-                              openOpdWorkspaceEncounterFlow(
-                                context,
-                                ref,
-                                state,
-                              ),
-                            )
-                        : null,
-                  ),
-                  _columnVisibilityController.settingsAction(context),
-                ],
-                maxTrailingActions: 3,
               ),
               emptyBuilder: (_) => AppStateView(
                 title: l10n.receptionEmptyTitle,
@@ -338,10 +288,6 @@ class _ReceptionWorkspaceContentState
       ),
     );
   }
-
-  // ---------------------------------------------------------------------------
-  // Search matcher
-  // ---------------------------------------------------------------------------
 
   static bool _searchMatcher(_ReceptionDeskRow row, String query) {
     if (query.isEmpty) {
@@ -358,10 +304,6 @@ class _ReceptionWorkspaceContentState
       (String value) => value.toLowerCase().contains(needle),
     );
   }
-
-  // ---------------------------------------------------------------------------
-  // Row building (no search filtering — table handles that)
-  // ---------------------------------------------------------------------------
 
   List<_ReceptionDeskRow> _buildRows(OpdWorkspaceState state) {
     switch (_section) {
@@ -380,15 +322,13 @@ class _ReceptionWorkspaceContentState
       case ReceptionDeskSection.activeVisits:
         return <_ReceptionDeskRow>[
           for (final OpdFlowSummary flow in state.flows.items)
-            if (_activeVisitStages
-                .contains((flow.stage ?? '').toUpperCase()))
+            if (_activeVisitStages.contains((flow.stage ?? '').toUpperCase()))
               _ReceptionDeskRow.flow(flow),
         ];
       case ReceptionDeskSection.paymentGate:
         return <_ReceptionDeskRow>[
           for (final OpdFlowSummary flow in state.flows.items)
-            if (_paymentGateStages
-                .contains((flow.stage ?? '').toUpperCase()))
+            if (_paymentGateStages.contains((flow.stage ?? '').toUpperCase()))
               _ReceptionDeskRow.flow(flow),
         ];
     }
@@ -398,15 +338,11 @@ class _ReceptionWorkspaceContentState
     switch (section) {
       case ReceptionDeskSection.appointments:
         return state.appointments.items
-            .where(
-              (OpdAppointment a) => !_isTerminalStatus(a.status),
-            )
+            .where((OpdAppointment a) => !_isTerminalStatus(a.status))
             .length;
       case ReceptionDeskSection.queue:
         return state.queueEntries.items
-            .where(
-              (OpdQueueEntry e) => !_isTerminalStatus(e.status),
-            )
+            .where((OpdQueueEntry e) => !_isTerminalStatus(e.status))
             .length;
       case ReceptionDeskSection.activeVisits:
         return state.flows.items
@@ -438,10 +374,6 @@ class _ReceptionWorkspaceContentState
         return false;
     }
   }
-
-  // ---------------------------------------------------------------------------
-  // Columns per section
-  // ---------------------------------------------------------------------------
 
   List<AppListTableColumn<_ReceptionDeskRow>> _columnsForSection(
     AppLocalizations l10n,
@@ -685,10 +617,6 @@ class _ReceptionWorkspaceContentState
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Mobile item builder
-  // ---------------------------------------------------------------------------
-
   Widget _mobileItemBuilder(BuildContext context, _ReceptionDeskRow row) {
     final AppLocalizations l10n = context.l10n;
     final Locale locale = Localizations.localeOf(context);
@@ -712,10 +640,6 @@ class _ReceptionWorkspaceContentState
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // Tab helpers
-  // ---------------------------------------------------------------------------
-
   String _sectionLabel(AppLocalizations l10n, ReceptionDeskSection section) {
     return switch (section) {
       ReceptionDeskSection.appointments => l10n.receptionSectionAppointments,
@@ -734,61 +658,19 @@ class _ReceptionWorkspaceContentState
     };
   }
 
-  // ---------------------------------------------------------------------------
-  // Row-tap detail dialog
-  // ---------------------------------------------------------------------------
-
-  Future<void> _openRowDetail(_ReceptionDeskRow row) async {
-    final AppLocalizations l10n = context.l10n;
-
-    await showAppDialog<void>(
-      context: context,
-      builder: (_) => _ReceptionRowDetailDialog(
-        row: row,
-        onOpenAppointment: (OpdAppointment appointment) {
-          Navigator.of(context).pop();
-          unawaited(_openAppointmentActions(appointment));
-        },
-        onCheckIn: (OpdAppointment appointment) {
-          Navigator.of(context).pop();
-          unawaited(_checkIn(appointment));
-        },
-        onStartFromQueue: (OpdQueueEntry entry) {
-          Navigator.of(context).pop();
-          unawaited(_startFromQueue(entry));
-        },
-        onPrioritize: (OpdQueueEntry entry) {
-          Navigator.of(context).pop();
-          unawaited(_prioritize(entry));
-        },
-        onOpenFlow: (OpdFlowSummary flow) {
-          Navigator.of(context).pop();
-          unawaited(_openFlowActions(flow));
-        },
-        onAssignDoctor: (OpdFlowSummary flow) {
-          Navigator.of(context).pop();
-          unawaited(_assignDoctor(flow));
-        },
-        onEditPatient: (String patientId) {
-          Navigator.of(context).pop();
-          unawaited(_editPatient(patientId));
-        },
-        onCaptureInsurance: (String patientId) {
-          Navigator.of(context).pop();
-          unawaited(_captureInsurance(patientId));
-        },
-        onScheduleForPatient: (String patientId) {
-          Navigator.of(context).pop();
-          unawaited(_scheduleForPatient(patientId));
-        },
-        closeLabel: l10n.commonCloseActionLabel,
-      ),
-    );
+  Future<void> _openPatientDetail(_ReceptionDeskRow row) async {
+    final String? patientId = row.patientId?.trim();
+    if (patientId == null || patientId.isEmpty) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.patientsNoSelectionBody)),
+      );
+      return;
+    }
+    await openReceptionPatientEditor(context, ref, patientId);
   }
-
-  // ---------------------------------------------------------------------------
-  // Actions (unchanged from original)
-  // ---------------------------------------------------------------------------
 
   Future<void> _openRegisterPatient() async {
     final AsyncValue<Result<PatientRegistryState>> registryAsync = ref.read(
@@ -850,130 +732,6 @@ class _ReceptionWorkspaceContentState
     );
   }
 
-  Future<void> _scheduleAppointment() async {
-    final bool saved = await openReceptionScheduleAppointment(
-      context: context,
-      ref: ref,
-    );
-    if (saved && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-      await ref.read(opdWorkspaceControllerProvider.notifier).refresh();
-    }
-  }
-
-  Future<void> _scheduleForPatient(String patientId) async {
-    final Patient? patient = await _resolvePatient(patientId);
-    if (patient == null || !mounted) {
-      return;
-    }
-    final bool saved = await openReceptionScheduleAppointment(
-      context: context,
-      ref: ref,
-      patient: patient,
-    );
-    if (saved && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-      await ref.read(opdWorkspaceControllerProvider.notifier).refresh();
-    }
-  }
-
-  Future<Patient?> _resolvePatient(String patientId) async {
-    final Result<AppPage<Patient>> result = await ref
-        .read(patientRegistryControllerProvider.notifier)
-        .loadPatientPage(
-          PatientListQuery(
-            patientId: patientId,
-            pageRequest: const AppPageRequest(pageSize: 1),
-          ),
-        );
-    return result.when(
-      success: (AppPage<Patient> page) =>
-          page.items.isEmpty ? null : page.items.first,
-      failure: (AppFailure failure) {
-        if (mounted) {
-          _showFailureIfNeeded(context, failure);
-        }
-        return null;
-      },
-    );
-  }
-
-  Future<void> _editPatient(String patientId) async {
-    await openReceptionPatientEditor(context, ref, patientId);
-  }
-
-  Future<void> _captureInsurance(String patientId) async {
-    await openReceptionInsuranceCapture(
-      context: context,
-      ref: ref,
-      patientId: patientId,
-    );
-  }
-
-  Future<void> _openAppointmentActions(OpdAppointment appointment) async {
-    final bool? changed = await showOpdAppointmentActionsDialog(
-      context: context,
-      appointment: appointment,
-    );
-    if (changed == true && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-    }
-  }
-
-  Future<void> _checkIn(OpdAppointment appointment) async {
-    final AppFailure? failure = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .checkInAppointment(appointment);
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-      return;
-    }
-    _showFailureIfNeeded(context, failure);
-  }
-
-  Future<void> _startFromQueue(OpdQueueEntry entry) async {
-    final AppFailure? failure = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .startOpdFromQueue(entry);
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-      return;
-    }
-    _showFailureIfNeeded(context, failure);
-  }
-
-  Future<void> _prioritize(OpdQueueEntry entry) async {
-    final AppFailure? failure = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .prioritizeQueueEntry(entry, null);
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-      return;
-    }
-    _showFailureIfNeeded(context, failure);
-  }
-
   Future<void> _openFlowActions(OpdFlowSummary flow) async {
     final bool? changed = await showAppDialog<bool>(
       context: context,
@@ -987,27 +745,10 @@ class _ReceptionWorkspaceContentState
     }
   }
 
-  Future<void> _assignDoctor(OpdFlowSummary flow) async {
-    final bool? changed = await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AssignDoctorDialog(flow: flow),
-    );
-    if (changed == true && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-    }
-  }
-
   void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
     showAppFailureSnackBar(context, failure);
   }
 }
-
-// -----------------------------------------------------------------------------
-// Row model
-// -----------------------------------------------------------------------------
 
 @immutable
 final class _ReceptionDeskRow {
@@ -1054,233 +795,4 @@ final class _ReceptionDeskRow {
 
   DateTime? get time =>
       appointment?.scheduledStart ?? queueEntry?.queuedAt ?? flow?.startedAt;
-}
-
-// -----------------------------------------------------------------------------
-// Row detail dialog (replaces inline card actions)
-// -----------------------------------------------------------------------------
-
-class _ReceptionRowDetailDialog extends StatelessWidget {
-  const _ReceptionRowDetailDialog({
-    required this.row,
-    required this.onOpenAppointment,
-    required this.onCheckIn,
-    required this.onStartFromQueue,
-    required this.onPrioritize,
-    required this.onOpenFlow,
-    required this.onAssignDoctor,
-    required this.onEditPatient,
-    required this.onCaptureInsurance,
-    required this.onScheduleForPatient,
-    required this.closeLabel,
-  });
-
-  final _ReceptionDeskRow row;
-  final ValueChanged<OpdAppointment> onOpenAppointment;
-  final ValueChanged<OpdAppointment> onCheckIn;
-  final ValueChanged<OpdQueueEntry> onStartFromQueue;
-  final ValueChanged<OpdQueueEntry> onPrioritize;
-  final ValueChanged<OpdFlowSummary> onOpenFlow;
-  final ValueChanged<OpdFlowSummary> onAssignDoctor;
-  final ValueChanged<String> onEditPatient;
-  final ValueChanged<String> onCaptureInsurance;
-  final ValueChanged<String> onScheduleForPatient;
-  final String closeLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final Locale locale = Localizations.localeOf(context);
-    final ThemeData theme = Theme.of(context);
-    final OpdFlowSummary? flow = row.flow;
-    final List<AppWorkflowStepItem> steps = flow == null
-        ? const <AppWorkflowStepItem>[]
-        : _receptionWorkflowSteps(context, flow);
-
-    return AppPatientDetailDialog(
-      title: row.patientName(context),
-      semanticLabel: row.patientName(context),
-      closeLabel: closeLabel,
-      initialMaximized: false,
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          AppPatientDetails(
-            patientName: row.patientName(context),
-            patientNumber: row.displayId ?? '',
-            patientNumberLabel: l10n.opdPatientIdLabel,
-            showAvatar: false,
-            persistExpandPreference: false,
-            initiallyExpanded: true,
-            compactSupportingText: row.time == null
-                ? null
-                : AppFormatters.dateTime(row.time!, locale),
-            status: (row.status ?? '').isEmpty
-                ? null
-                : AppWorkspaceStatus(
-                    label: opdStageDisplayLabel(l10n, row.status!),
-                    tone: AppWorkspaceStatusTone.info,
-                  ),
-          ),
-          if (steps.isNotEmpty) ...<Widget>[
-            SizedBox(height: theme.spacing.sm),
-            AppWorkflowStepper(steps: steps),
-          ],
-          if (flow != null) ...<Widget>[
-            SizedBox(height: theme.spacing.sm),
-            ReceptionBillingGuidancePanel(flow: flow),
-          ] else if (row.queueEntry != null) ...<Widget>[
-            SizedBox(height: theme.spacing.sm),
-            ReceptionBillingGuidancePanel(queueEntry: row.queueEntry),
-          ],
-          SizedBox(height: theme.spacing.md),
-          AppPermissionActionList(actions: _actions(context, l10n)),
-        ],
-      ),
-    );
-  }
-
-  List<AppPermissionActionItem> _actions(
-    BuildContext context,
-    AppLocalizations l10n,
-  ) {
-    final List<AppPermissionActionItem> actions = <AppPermissionActionItem>[];
-    final OpdAppointment? appointment = row.appointment;
-    final OpdQueueEntry? queueEntry = row.queueEntry;
-    final OpdFlowSummary? flow = row.flow;
-    final String? patientId = row.patientId;
-
-    if (appointment != null) {
-      actions.add(
-        AppPermissionActionItem(
-          requirement: receptionFrontDeskWriteRequirement,
-          label: l10n.receptionAppointmentActionsAction,
-          icon: Icons.event_available_outlined,
-          variant: AppButtonVariant.primary,
-          onPressed: () => onOpenAppointment(appointment),
-        ),
-      );
-      actions.add(
-        AppPermissionActionItem(
-          requirement: receptionFrontDeskWriteRequirement,
-          label: l10n.opdCheckInAction,
-          icon: Icons.login_outlined,
-          onPressed: () => onCheckIn(appointment),
-        ),
-      );
-    }
-
-    if (queueEntry != null) {
-      actions.add(
-        AppPermissionActionItem(
-          requirement: receptionFrontDeskWriteRequirement,
-          label: l10n.opdStartConsultationAction,
-          icon: Icons.play_arrow_outlined,
-          variant: AppButtonVariant.primary,
-          onPressed: () => onStartFromQueue(queueEntry),
-        ),
-      );
-      actions.add(
-        AppPermissionActionItem(
-          requirement: receptionFrontDeskWriteRequirement,
-          label: l10n.opdPrioritizeAction,
-          icon: Icons.priority_high_outlined,
-          onPressed: () => onPrioritize(queueEntry),
-        ),
-      );
-    }
-
-    if (flow != null) {
-      actions.add(
-        AppPermissionActionItem(
-          requirement: receptionFrontDeskWriteRequirement,
-          label: l10n.receptionRoutePatientAction,
-          icon: Icons.assignment_ind_outlined,
-          variant: AppButtonVariant.primary,
-          onPressed: () => onAssignDoctor(flow),
-        ),
-      );
-      actions.add(
-        AppPermissionActionItem(
-          requirement: receptionWorkspaceRequirement,
-          label: l10n.receptionOpenEncounterAction,
-          icon: Icons.medical_services_outlined,
-          hideWhenDenied: false,
-          onPressed: () => onOpenFlow(flow),
-        ),
-      );
-    }
-
-    if (patientId != null && patientId.isNotEmpty) {
-      actions.add(
-        AppPermissionActionItem(
-          requirement: receptionFrontDeskWriteRequirement,
-          label: l10n.receptionEditPatientAction,
-          icon: Icons.person_outline,
-          onPressed: () => onEditPatient(patientId),
-        ),
-      );
-      actions.add(
-        AppPermissionActionItem(
-          requirement: receptionFrontDeskWriteRequirement,
-          label: l10n.receptionScheduleAppointmentAction,
-          icon: Icons.calendar_month_outlined,
-          onPressed: () => onScheduleForPatient(patientId),
-        ),
-      );
-      actions.add(
-        AppPermissionActionItem(
-          requirement: receptionInsuranceCaptureRequirement,
-          label: l10n.receptionCaptureInsuranceAction,
-          icon: Icons.badge_outlined,
-          onPressed: () => onCaptureInsurance(patientId),
-        ),
-      );
-    }
-
-    return actions;
-  }
-}
-
-// -----------------------------------------------------------------------------
-// Workflow steps (shared between dialog sections)
-// -----------------------------------------------------------------------------
-
-List<AppWorkflowStepItem> _receptionWorkflowSteps(
-  BuildContext context,
-  OpdFlowSummary flow,
-) {
-  final AppLocalizations l10n = context.l10n;
-  final String stage = (flow.stage ?? '').toUpperCase();
-  final List<({String id, String label})> sequence =
-      <({String id, String label})>[
-        (id: 'WAITING_CONSULTATION_PAYMENT', label: l10n.receptionStepPayment),
-        (id: 'WAITING_VITALS', label: l10n.receptionStepVitals),
-        (
-          id: 'WAITING_DOCTOR_ASSIGNMENT',
-          label: l10n.receptionStepAssignDoctor,
-        ),
-        (id: 'WAITING_DOCTOR_REVIEW', label: l10n.receptionStepConsultation),
-        (id: 'WAITING_DISPOSITION', label: l10n.receptionStepDisposition),
-      ];
-
-  final int currentIndex = sequence.indexWhere(
-    (({String id, String label}) step) => step.id == stage,
-  );
-
-  return <AppWorkflowStepItem>[
-    for (int i = 0; i < sequence.length; i++)
-      AppWorkflowStepItem(
-        id: sequence[i].id,
-        label: sequence[i].label,
-        state: currentIndex < 0
-            ? AppWorkflowStepState.upcoming
-            : i < currentIndex
-            ? AppWorkflowStepState.completed
-            : i == currentIndex
-            ? AppWorkflowStepState.current
-            : AppWorkflowStepState.upcoming,
-      ),
-  ];
 }
