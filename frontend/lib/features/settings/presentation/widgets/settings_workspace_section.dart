@@ -166,46 +166,56 @@ class _SettingsContextSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final SettingsWorkspace workspace = state.workspace;
-    final SettingsWorkspaceContext workspaceContext = workspace.context;
+    final SettingsWorkspaceContext ctx = workspace.context;
     final String unknown = l10n.profileUnknownValue;
-    final String roles = workspaceContext.roleKeys.isEmpty
+    final String roles = ctx.roleKeys.isEmpty
         ? unknown
-        : workspaceContext.roleKeys.join(', ');
+        : ctx.roleKeys.join(', ');
+
+    final TextStyle labelStyle =
+        (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
+      color: colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w600,
+    );
+    final TextStyle valueStyle =
+        (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
+      color: colorScheme.onSurface,
+    );
+    final TextStyle separatorStyle =
+        (theme.textTheme.bodyMedium ?? const TextStyle()).copyWith(
+      color: colorScheme.outlineVariant,
+    );
+
+    final List<(String, String)> items = <(String, String)>[
+      (l10n.settingsWorkspaceTenantLabel,
+          ctx.tenantName ?? ctx.tenantId ?? unknown),
+      (l10n.settingsWorkspaceFacilityLabel,
+          ctx.facilityName ?? ctx.facilityId ?? unknown),
+      (l10n.settingsWorkspaceFacilityTypeLabel,
+          ctx.facilityType ?? unknown),
+      (l10n.settingsWorkspaceRolesLabel, roles),
+      (l10n.settingsWorkspaceGeneratedAtLabel,
+          _dateLabel(workspace.generatedAt)),
+    ];
+
+    final List<InlineSpan> spans = <InlineSpan>[];
+    for (int i = 0; i < items.length; i++) {
+      spans.add(TextSpan(text: '${items[i].$1}: ', style: labelStyle));
+      spans.add(TextSpan(text: items[i].$2, style: valueStyle));
+      if (i < items.length - 1) {
+        spans.add(TextSpan(text: '  ;  ', style: separatorStyle));
+      }
+    }
 
     return AppSectionPanel(
       title: l10n.settingsWorkspaceContextTitle,
       leadingIcon: Icons.domain_outlined,
       density: AppContentPanelDensity.compact,
       children: <Widget>[
-        AppInfoTileGrid(
-          minItemWidth: 180,
-          maxColumns: 3,
-          emptyValue: unknown,
-          items: <AppInfoTileData>[
-            AppInfoTileData(
-              label: l10n.settingsWorkspaceTenantLabel,
-              value: workspaceContext.tenantName ?? workspaceContext.tenantId,
-            ),
-            AppInfoTileData(
-              label: l10n.settingsWorkspaceFacilityLabel,
-              value:
-                  workspaceContext.facilityName ?? workspaceContext.facilityId,
-            ),
-            AppInfoTileData(
-              label: l10n.settingsWorkspaceFacilityTypeLabel,
-              value: workspaceContext.facilityType,
-            ),
-            AppInfoTileData(
-              label: l10n.settingsWorkspaceRolesLabel,
-              value: roles,
-            ),
-            AppInfoTileData(
-              label: l10n.settingsWorkspaceGeneratedAtLabel,
-              value: _dateLabel(workspace.generatedAt),
-            ),
-          ],
-        ),
+        Text.rich(TextSpan(children: spans)),
       ],
     );
   }
@@ -264,6 +274,7 @@ class _SettingsContextSelector extends ConsumerWidget {
       title: l10n.settingsWorkspaceTenantSelectorLabel,
       leadingIcon: Icons.tune_outlined,
       density: AppContentPanelDensity.compact,
+      borderColor: Colors.transparent,
       children: <Widget>[
         Wrap(
           spacing: theme.spacing.md,
