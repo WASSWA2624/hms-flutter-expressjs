@@ -14,7 +14,7 @@ const PRIVATE_HOSTNAME_REGEX = /^[a-z0-9-]+(\.local)?$/i;
 const LOOPBACK_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);
 
 const normalizeHostname = (hostname) => String(hostname || '').replace(/^\[|\]$/g, '').toLowerCase();
-const LOCAL_DEV_PORTS = ['3000', '3001', '8081', '8084', '8085', '8086', '8087', '8088'];
+const LOCAL_DEV_PORTS = ['3000', '3001', '5201', '8081', '8084', '8085', '8086', '8087', '8088'];
 
 const isPrivateIPv6Host = (hostname) => {
   const normalized = normalizeHostname(hostname);

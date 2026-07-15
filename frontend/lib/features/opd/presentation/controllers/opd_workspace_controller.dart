@@ -41,7 +41,6 @@ final class OpdWorkspaceController
 
   @override
   Future<Result<OpdWorkspaceState>> build() async {
-    print('[OPD_DEBUG] build() started');
     watchSessionEpoch(ref);
     ref.onDispose(() {
       _adaptivePolling.dispose();
@@ -57,12 +56,10 @@ final class OpdWorkspaceController
       realtimeConnectionStateProvider,
       (_, _) => _adaptivePolling.onConnectionStateChanged(),
     );
-    print('[OPD_DEBUG] about to runWorkspaceInitialLoad');
     final Result<OpdWorkspaceState> result = await runWorkspaceInitialLoad(
       ref,
       _loadInitialState,
     );
-    print('[OPD_DEBUG] runWorkspaceInitialLoad returned: ${result.isSuccess}');
     _startAdaptivePolling();
     return result;
   }
@@ -756,13 +753,11 @@ final class OpdWorkspaceController
   }
 
   Future<Result<OpdWorkspaceState>> _loadInitialState() async {
-    print('[OPD_DEBUG] _loadInitialState() started');
     const OpdAppointmentQuery appointmentQuery = OpdAppointmentQuery();
     const OpdQueueQuery queueQuery = OpdQueueQuery();
     const OpdFlowQuery flowQuery = OpdFlowQuery();
     const OpdTriageQueueQuery triageQueueQuery = OpdTriageQueueQuery();
 
-    print('[OPD_DEBUG] starting 5 concurrent API calls');
     final List<Object?> bootstrapResults =
         await Future.wait<Object?>(<Future<Object?>>[
           _repository.listAppointments(appointmentQuery),
@@ -771,7 +766,6 @@ final class OpdWorkspaceController
           _repository.getOpdSummaryCounts(),
           _repository.listTriageQueue(triageQueueQuery),
         ]);
-    print('[OPD_DEBUG] 5 API calls completed');
 
     final Result<AppPage<OpdAppointment>> appointmentsResult =
         bootstrapResults[0]! as Result<AppPage<OpdAppointment>>;
