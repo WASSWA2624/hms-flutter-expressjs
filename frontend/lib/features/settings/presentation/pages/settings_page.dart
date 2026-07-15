@@ -517,17 +517,32 @@ class _AccordionPanelContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final Widget content = entry.builder(context);
+
+    final Widget sectionContent = entry.wrapInSection
+        ? AppScreenSection(
+            title: entry.title,
+            body: entry.body,
+            child: content,
+          )
+        : content;
 
     return Padding(
       padding: EdgeInsets.only(bottom: theme.spacing.md),
-      child: entry.wrapInSection
-          ? AppScreenSection(
-              title: entry.title,
-              body: entry.body,
-              child: content,
-            )
-          : content,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(theme.spacing.lg),
+          child: sectionContent,
+        ),
+      ),
     );
   }
 }
@@ -684,11 +699,19 @@ class _SettingsActionList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
     return Column(
       children: <Widget>[
         for (var index = 0; index < actions.length; index += 1) ...<Widget>[
           _SettingsActionTile(action: actions[index]),
-          if (index < actions.length - 1) const Divider(height: 1),
+          if (index < actions.length - 1)
+            Divider(
+              height: 1,
+              indent: theme.spacing.sm,
+              endIndent: theme.spacing.sm,
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+            ),
         ],
       ],
     );
@@ -707,23 +730,42 @@ class _SettingsActionTile extends StatelessWidget {
 
     return Material(
       color: Colors.transparent,
+      borderRadius: BorderRadius.circular(8),
       child: InkWell(
+        borderRadius: BorderRadius.circular(8),
         onTap: action.onTap,
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
+          padding: EdgeInsets.symmetric(
+            vertical: theme.spacing.md,
+            horizontal: theme.spacing.sm,
+          ),
           child: Row(
             children: <Widget>[
-              Icon(
-                action.icon,
-                size: theme.appTokens.listIconSize,
-                color: colorScheme.onSurfaceVariant,
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(theme.spacing.sm),
+                  child: Icon(
+                    action.icon,
+                    size: 20,
+                    color: colorScheme.primary,
+                  ),
+                ),
               ),
-              SizedBox(width: theme.spacing.sm),
+              SizedBox(width: theme.spacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(action.title, style: theme.textTheme.titleSmall),
+                    Text(
+                      action.title,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     SizedBox(height: theme.spacing.xs / 2),
                     Text(
                       action.body,
@@ -737,7 +779,7 @@ class _SettingsActionTile extends StatelessWidget {
               SizedBox(width: theme.spacing.sm),
               Icon(
                 Icons.chevron_right,
-                size: theme.appTokens.listIconSize,
+                size: 20,
                 color: colorScheme.onSurfaceVariant,
               ),
             ],

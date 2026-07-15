@@ -76,21 +76,32 @@ class _SettingsAccountSectionState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          AppTabStrip(
-            tabs: <AppTabItem>[
-              AppTabItem(
-                id: SettingsAccountSection.profilePanel,
-                icon: Icons.person_outline,
-                label: l10n.settingsProfileActionTitle,
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: AppTabStrip(
+                  tabs: <AppTabItem>[
+                    AppTabItem(
+                      id: SettingsAccountSection.profilePanel,
+                      icon: Icons.person_outline,
+                      label: l10n.settingsProfileActionTitle,
+                    ),
+                    AppTabItem(
+                      id: SettingsAccountSection.changePasswordPanel,
+                      icon: Icons.lock_reset_outlined,
+                      label: l10n.settingsChangePasswordActionTitle,
+                    ),
+                  ],
+                  selectedId: _activePanel,
+                  onTabTapped: _onPanelSelected,
+                ),
               ),
-              AppTabItem(
-                id: SettingsAccountSection.changePasswordPanel,
-                icon: Icons.lock_reset_outlined,
-                label: l10n.settingsChangePasswordActionTitle,
-              ),
+              if (_activePanel == SettingsAccountSection.profilePanel)
+                Padding(
+                  padding: EdgeInsets.only(left: theme.spacing.sm),
+                  child: const _ProfileEditAction(),
+                ),
             ],
-            selectedId: _activePanel,
-            onTabTapped: _onPanelSelected,
           ),
           SizedBox(height: theme.spacing.lg),
           if (_activePanel == SettingsAccountSection.profilePanel)
@@ -98,6 +109,76 @@ class _SettingsAccountSectionState
           else
             const _ChangePasswordPanel(),
         ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Profile edit action (shown in the tab strip row)
+// ---------------------------------------------------------------------------
+
+class _ProfileEditAction extends ConsumerWidget {
+  const _ProfileEditAction();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final AsyncValue<Result<UserProfileState>> profileState = ref.watch(
+      userProfileControllerProvider,
+    );
+
+    final UserProfileRecord? record = profileState.maybeWhen(
+      data: (Result<UserProfileState> result) => result.when(
+        success: (UserProfileState state) => state.view.record,
+        failure: (_) => null,
+      ),
+      orElse: () => null,
+    );
+
+    if (record == null) return const SizedBox.shrink();
+
+    final bool isSaving = profileState.maybeWhen(
+      data: (Result<UserProfileState> result) => result.when(
+        success: (UserProfileState state) => state.isSaving,
+        failure: (_) => false,
+      ),
+      orElse: () => false,
+    );
+
+    return AppButton.secondary(
+      label: l10n.profileEditActionTitle,
+      leadingIcon: Icons.edit_outlined,
+      enabled: !isSaving,
+      onPressed: isSaving
+          ? null
+          : () => unawaited(_editProfile(context, ref, record)),
+    );
+  }
+
+  Future<void> _editProfile(
+    BuildContext context,
+    WidgetRef ref,
+    UserProfileRecord record,
+  ) async {
+    final UserProfileDraft? draft = await showAppDialog<UserProfileDraft>(
+      context: context,
+      builder: (_) => EditUserProfileDialog(record: record),
+    );
+    if (draft == null || !context.mounted) return;
+
+    final bool saved = await ref
+        .read(userProfileControllerProvider.notifier)
+        .saveProfile(draft);
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          saved
+              ? context.l10n.profileSaveSuccessMessage
+              : context.l10n.profileSaveErrorMessage,
+        ),
       ),
     );
   }
@@ -172,28 +253,6 @@ class _ProfilePanelContent extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Row(
-          children: <Widget>[
-            if (view.record != null)
-              AppButton.secondary(
-                label: l10n.profileEditActionTitle,
-                leadingIcon: Icons.edit_outlined,
-                enabled: !state.isSaving,
-                onPressed: state.isSaving
-                    ? null
-                    : () => unawaited(_editProfile(context, ref, view.record!)),
-              ),
-            SizedBox(width: theme.spacing.sm),
-            AppButton.secondary(
-              label: l10n.commonRefreshActionLabel,
-              leadingIcon: Icons.refresh,
-              onPressed: () => unawaited(
-                ref.read(userProfileControllerProvider.notifier).refresh(),
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: theme.spacing.lg),
         _ProfileSummary(
           profile: profile,
           permissionCount: permissions.length,
@@ -276,37 +335,6 @@ class _ProfilePanelContent extends ConsumerWidget {
           ],
         ),
       ],
-    );
-  }
-
-  Future<void> _editProfile(
-    BuildContext context,
-    WidgetRef ref,
-    UserProfileRecord record,
-  ) async {
-    final UserProfileDraft? draft = await showAppDialog<UserProfileDraft>(
-      context: context,
-      builder: (_) => EditUserProfileDialog(record: record),
-    );
-    if (draft == null || !context.mounted) {
-      return;
-    }
-
-    final bool saved = await ref
-        .read(userProfileControllerProvider.notifier)
-        .saveProfile(draft);
-    if (!context.mounted) {
-      return;
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          saved
-              ? context.l10n.profileSaveSuccessMessage
-              : context.l10n.profileSaveErrorMessage,
-        ),
-      ),
     );
   }
 }
@@ -393,7 +421,8 @@ class _ProfileSummary extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLowest,
-        border: Border.all(color: colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: Padding(
         padding: EdgeInsets.all(theme.spacing.lg),
@@ -401,7 +430,7 @@ class _ProfileSummary extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             CircleAvatar(
-              radius: 30,
+              radius: 32,
               backgroundColor: colorScheme.primaryContainer,
               foregroundColor: colorScheme.onPrimaryContainer,
               child: Text(
@@ -466,8 +495,11 @@ class _ProfileBadge extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: colorScheme.secondaryContainer,
-        border: Border.all(color: colorScheme.outlineVariant),
+        color: colorScheme.secondaryContainer.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
       ),
       child: Padding(
         padding: EdgeInsets.symmetric(
@@ -478,7 +510,7 @@ class _ProfileBadge extends StatelessWidget {
           label,
           style: theme.textTheme.labelMedium?.copyWith(
             color: colorScheme.onSecondaryContainer,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
