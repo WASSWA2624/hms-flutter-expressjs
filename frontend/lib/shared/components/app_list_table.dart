@@ -34,6 +34,7 @@ enum AppListTableDisplayMode { adaptive, table, list }
 enum AppListTablePaginationMode { infinite, buttons }
 
 const int _maxVisibleTableColumns = 5;
+const int _minTableRowCount = 50;
 const double _rowNumberColumnWidth = 48;
 const double _minResizableColumnWidth = 72;
 const double _defaultColumnWidth = 160;
@@ -2120,6 +2121,10 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
       rows: <DataRow>[
         for (var index = 0; index < widget.items.length; index += 1)
           _dataRow(context, index),
+        for (var index = widget.items.length;
+            index < _minTableRowCount;
+            index += 1)
+          _emptyRow(context, index),
       ],
     );
 
@@ -2235,6 +2240,25 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
               ),
             ),
           ),
+      ],
+    );
+  }
+
+  DataRow _emptyRow(BuildContext context, int index) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final Color? stripe = index.isOdd
+        ? colorScheme.surfaceContainerLowest.withValues(alpha: 0.65)
+        : null;
+
+    return DataRow(
+      key: ValueKey<int>(index),
+      color: stripe == null
+          ? null
+          : WidgetStatePropertyAll<Color>(stripe),
+      cells: <DataCell>[
+        const DataCell(SizedBox(width: _rowNumberColumnWidth)),
+        for (final AppListTableColumn<T> _ in widget.columns)
+          DataCell(SizedBox(width: widget.columnWidthFor(_))),
       ],
     );
   }
