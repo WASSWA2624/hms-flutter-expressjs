@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
@@ -201,206 +201,147 @@ class _ReceptionWorkspaceContentState
     final OpdWorkspaceController controller = ref.read(
       opdWorkspaceControllerProvider.notifier,
     );
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canWrite =
+        receptionFrontDeskWriteRequirement.isAllowed(policy);
+    final bool isRefreshing = state.isRefreshingAppointments ||
+        state.isRefreshingQueue ||
+        state.isRefreshingFlows;
     final String search = _searchController.text.trim().toLowerCase();
     final List<_ReceptionDeskRow> rows = _buildRows(state, search);
 
-    return AppWorkspace(
-      title: l10n.receptionTitle,
-      leadingIcon: AppRouteIcons.reception,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        summaryNotifications: _summaryNotifications(context, state),
-        primary: AppAccessActionGate(
-          requirement: receptionFrontDeskWriteRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppButton.primary(
-              label: l10n.receptionRegisterPatientAction,
-              leadingIcon: Icons.person_add_alt_1_outlined,
-              enabled: isAllowed,
-              onPressed: isAllowed
-                  ? () => unawaited(_openRegisterPatient())
-                  : null,
-            );
-          },
-        ),
-        secondary: <Widget>[
-          AppAccessActionGate(
-            requirement: receptionFrontDeskWriteRequirement,
-            builder: (BuildContext context, bool isAllowed) {
-              return AppButton.secondary(
-                label: l10n.receptionScheduleAppointmentAction,
-                leadingIcon: Icons.event_available_outlined,
-                enabled: isAllowed,
-                onPressed: isAllowed
-                    ? () => unawaited(_scheduleAppointment())
-                    : null,
-              );
-            },
-          ),
-          AppAccessActionGate(
-            requirement: receptionFrontDeskWriteRequirement,
-            builder: (BuildContext context, bool isAllowed) {
-              return AppButton.secondary(
-                label: l10n.opdStartWalkInAction,
-                leadingIcon: Icons.directions_walk_outlined,
-                enabled: isAllowed,
-                onPressed: isAllowed
-                    ? () => unawaited(
-                        openOpdWorkspaceEncounterFlow(context, ref, state),
-                      )
-                    : null,
-              );
-            },
-          ),
-        ],
-        onRefresh: () async {
-          final AppFailure? failure = await controller.refresh();
-          if (context.mounted) {
-            _showFailureIfNeeded(context, failure);
-          }
-        },
-        isRefreshing:
-            state.isRefreshingAppointments ||
-            state.isRefreshingQueue ||
-            state.isRefreshingFlows,
-      ),
-      // AppWorkspace scrolls the page; do not nest Expanded/ListView flex.
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Wrap(
-            spacing: theme.spacing.sm,
-            runSpacing: theme.spacing.sm,
-            children: <Widget>[
-              for (final ReceptionDeskSection section
-                  in ReceptionDeskSection.values)
-                ChoiceChip(
-                  label: Text(_sectionLabel(l10n, section)),
-                  selected: _section == section,
-                  onSelected: (_) => setState(() => _section = section),
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: AppTabStrip(
+                    tabs: <AppTabItem>[
+                      for (final ReceptionDeskSection section
+                          in ReceptionDeskSection.values)
+                        AppTabItem(
+                          id: section.name,
+                          icon: _sectionIcon(section),
+                          label: _sectionLabel(l10n, section),
+                        ),
+                    ],
+                    selectedId: _section.name,
+                    onTabTapped: (String tabId) {
+                      for (final ReceptionDeskSection section
+                          in ReceptionDeskSection.values) {
+                        if (section.name == tabId) {
+                          setState(() => _section = section);
+                          break;
+                        }
+                      }
+                    },
+                  ),
                 ),
-            ],
-          ),
-          SizedBox(height: theme.spacing.md),
-          AppTextField(
-            controller: _searchController,
-            labelText: l10n.receptionSearchHint,
-            prefixIcon: const Icon(Icons.search),
-            onChanged: (_) {
-              _searchDebounce?.cancel();
-              _searchDebounce = Timer(const Duration(milliseconds: 250), () {
-                if (mounted) {
-                  setState(() {});
-                }
-              });
-            },
-          ),
-          SizedBox(height: theme.spacing.md),
-          if (rows.isEmpty)
-            AppStateView(
-              title: l10n.receptionEmptyTitle,
-              body: l10n.receptionEmptyBody,
-              variant: AppStateViewVariant.empty,
-            )
-          else
-            for (int index = 0; index < rows.length; index++) ...<Widget>[
-              if (index > 0) SizedBox(height: theme.spacing.sm),
-              _ReceptionDeskCard(
-                row: rows[index],
-                onOpenAppointment: (OpdAppointment appointment) =>
-                    unawaited(_openAppointmentActions(appointment)),
-                onCheckIn: (OpdAppointment appointment) =>
-                    unawaited(_checkIn(appointment)),
-                onStartFromQueue: (OpdQueueEntry entry) =>
-                    unawaited(_startFromQueue(entry)),
-                onPrioritize: (OpdQueueEntry entry) =>
-                    unawaited(_prioritize(entry)),
-                onOpenFlow: (OpdFlowSummary flow) =>
-                    unawaited(_openFlowActions(flow)),
-                onAssignDoctor: (OpdFlowSummary flow) =>
-                    unawaited(_assignDoctor(flow)),
-                onEditPatient: (String patientId) =>
-                    unawaited(_editPatient(patientId)),
-                onCaptureInsurance: (String patientId) =>
-                    unawaited(_captureInsurance(patientId)),
-                onScheduleForPatient: (String patientId) =>
-                    unawaited(_scheduleForPatient(patientId)),
-              ),
-            ],
-        ],
+                SizedBox(width: theme.spacing.sm),
+                AppAccessActionGate(
+                  requirement: receptionFrontDeskWriteRequirement,
+                  builder: (BuildContext context, bool isAllowed) {
+                    return AppButton.primary(
+                      label: l10n.receptionRegisterPatientAction,
+                      leadingIcon: Icons.person_add_alt_1_outlined,
+                      enabled: isAllowed,
+                      onPressed: isAllowed
+                          ? () => unawaited(_openRegisterPatient())
+                          : null,
+                    );
+                  },
+                ),
+              ],
+            ),
+            SizedBox(height: theme.spacing.md),
+            AppSearchBar(
+              controller: _searchController,
+              semanticLabel: l10n.receptionSearchHint,
+              hintText: l10n.receptionSearchHint,
+              isLoading: isRefreshing,
+              onChanged: (_) {
+                _searchDebounce?.cancel();
+                _searchDebounce =
+                    Timer(const Duration(milliseconds: 250), () {
+                      if (mounted) {
+                        setState(() {});
+                      }
+                    });
+              },
+              trailingActions: <AppSearchBarAction>[
+                AppSearchBarAction(
+                  icon: Icons.refresh_outlined,
+                  label: l10n.commonRefreshActionLabel,
+                  enabled: !isRefreshing,
+                  onPressed: () async {
+                    final AppFailure? failure = await controller.refresh();
+                    if (context.mounted) {
+                      _showFailureIfNeeded(context, failure);
+                    }
+                  },
+                ),
+                AppSearchBarAction(
+                  icon: Icons.event_available_outlined,
+                  label: l10n.receptionScheduleAppointmentAction,
+                  enabled: canWrite,
+                  onPressed: canWrite
+                      ? () => unawaited(_scheduleAppointment())
+                      : null,
+                ),
+                AppSearchBarAction(
+                  icon: Icons.directions_walk_outlined,
+                  label: l10n.opdStartWalkInAction,
+                  enabled: canWrite,
+                  onPressed: canWrite
+                      ? () => unawaited(
+                          openOpdWorkspaceEncounterFlow(context, ref, state),
+                        )
+                      : null,
+                ),
+              ],
+              maxTrailingActions: 3,
+            ),
+            SizedBox(height: theme.spacing.md),
+            if (rows.isEmpty)
+              AppStateView(
+                title: l10n.receptionEmptyTitle,
+                body: l10n.receptionEmptyBody,
+                variant: AppStateViewVariant.empty,
+              )
+            else
+              for (int index = 0; index < rows.length; index++) ...<Widget>[
+                if (index > 0) SizedBox(height: theme.spacing.sm),
+                _ReceptionDeskCard(
+                  row: rows[index],
+                  onOpenAppointment: (OpdAppointment appointment) =>
+                      unawaited(_openAppointmentActions(appointment)),
+                  onCheckIn: (OpdAppointment appointment) =>
+                      unawaited(_checkIn(appointment)),
+                  onStartFromQueue: (OpdQueueEntry entry) =>
+                      unawaited(_startFromQueue(entry)),
+                  onPrioritize: (OpdQueueEntry entry) =>
+                      unawaited(_prioritize(entry)),
+                  onOpenFlow: (OpdFlowSummary flow) =>
+                      unawaited(_openFlowActions(flow)),
+                  onAssignDoctor: (OpdFlowSummary flow) =>
+                      unawaited(_assignDoctor(flow)),
+                  onEditPatient: (String patientId) =>
+                      unawaited(_editPatient(patientId)),
+                  onCaptureInsurance: (String patientId) =>
+                      unawaited(_captureInsurance(patientId)),
+                  onScheduleForPatient: (String patientId) =>
+                      unawaited(_scheduleForPatient(patientId)),
+                ),
+              ],
+          ],
+        ),
       ),
     );
-  }
-
-  List<AppWorkspaceSummaryNotification> _summaryNotifications(
-    BuildContext context,
-    OpdWorkspaceState state,
-  ) {
-    final AppLocalizations l10n = context.l10n;
-    final int appointments = state.appointments.items
-        .where((OpdAppointment item) => !_isTerminalStatus(item.status))
-        .length;
-    final int queue = state.queueEntries.items
-        .where((OpdQueueEntry item) => !_isTerminalStatus(item.status))
-        .length;
-    final int paymentGate = state.flows.items
-        .where(
-          (OpdFlowSummary flow) =>
-              _paymentGateStages.contains((flow.stage ?? '').toUpperCase()),
-        )
-        .length;
-    final int active = state.flows.items
-        .where(
-          (OpdFlowSummary flow) =>
-              _activeVisitStages.contains((flow.stage ?? '').toUpperCase()),
-        )
-        .length;
-
-    final List<AppWorkspaceSummaryNotification> cards =
-        <AppWorkspaceSummaryNotification>[];
-
-    void add(
-      int count,
-      IconData icon,
-      ReceptionDeskSection section, {
-      AppWorkspaceStatusTone tone = AppWorkspaceStatusTone.neutral,
-    }) {
-      if (count <= 0) {
-        return;
-      }
-      cards.add(
-        AppWorkspaceSummaryNotification(
-          label: _sectionLabel(l10n, section),
-          count: count,
-          icon: icon,
-          tone: tone,
-          onSelected: () => setState(() => _section = section),
-        ),
-      );
-    }
-
-    add(
-      appointments,
-      Icons.event_available_outlined,
-      ReceptionDeskSection.appointments,
-    );
-    add(
-      queue,
-      Icons.queue_outlined,
-      ReceptionDeskSection.queue,
-    );
-    add(
-      active,
-      Icons.pending_actions_outlined,
-      ReceptionDeskSection.activeVisits,
-    );
-    add(
-      paymentGate,
-      Icons.payments_outlined,
-      ReceptionDeskSection.paymentGate,
-      tone: AppWorkspaceStatusTone.warning,
-    );
-    return cards;
   }
 
   String _sectionLabel(AppLocalizations l10n, ReceptionDeskSection section) {
@@ -409,6 +350,15 @@ class _ReceptionWorkspaceContentState
       ReceptionDeskSection.queue => l10n.receptionSectionQueue,
       ReceptionDeskSection.activeVisits => l10n.receptionSectionActiveVisits,
       ReceptionDeskSection.paymentGate => l10n.receptionSectionPaymentGate,
+    };
+  }
+
+  static IconData _sectionIcon(ReceptionDeskSection section) {
+    return switch (section) {
+      ReceptionDeskSection.appointments => Icons.event_available_outlined,
+      ReceptionDeskSection.queue => Icons.queue_outlined,
+      ReceptionDeskSection.activeVisits => Icons.pending_actions_outlined,
+      ReceptionDeskSection.paymentGate => Icons.payments_outlined,
     };
   }
 

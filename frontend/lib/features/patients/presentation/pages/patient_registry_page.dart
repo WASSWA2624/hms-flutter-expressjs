@@ -163,48 +163,13 @@ class _PatientRegistryContentState
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final PatientRegistryController controller = ref.read(
-      patientRegistryControllerProvider.notifier,
-    );
 
     return AppWorkspace(
       title: l10n.patientsTitle,
       leadingIcon: AppRouteIcons.patients,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
-        summaryNotifications: <AppWorkspaceSummaryNotification>[
-          if (widget.state.overview.totalPatients > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.opdSummaryAllPatientsLabel,
-              count: widget.state.overview.totalPatients,
-              icon: Icons.groups_outlined,
-              onSelected: () {
-                unawaited(
-                  _applySummaryQuery(
-                    PatientListQuery(
-                      pageRequest: widget.state.query.pageRequest.first(),
-                    ),
-                  ),
-                );
-              },
-            ),
-          if (widget.state.overview.activePatients > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.patientsActiveSummaryLabel,
-              count: widget.state.overview.activePatients,
-              icon: Icons.how_to_reg_outlined,
-              onSelected: () {
-                unawaited(
-                  _applySummaryQuery(
-                    PatientListQuery(
-                      isActive: true,
-                      pageRequest: widget.state.query.pageRequest.first(),
-                    ),
-                  ),
-                );
-              },
-            ),
-        ],
+        showGlobalActions: false,
         primary: AppAccessActionGate(
           requirement: _PatientRegistryContent._writeRequirement,
           builder: (BuildContext context, bool isAllowed) {
@@ -220,13 +185,6 @@ class _PatientRegistryContentState
             );
           },
         ),
-        onRefresh: () async {
-          final AppFailure? failure = await controller.refresh();
-          if (context.mounted) {
-            await _showFailureIfNeeded(context, failure);
-          }
-        },
-        isRefreshing: widget.state.isRefreshingList,
       ),
 
       body: _PatientList(
@@ -302,15 +260,6 @@ class _PatientRegistryContentState
     await showPatientDetailDialog(context, ref, createdPatient.id);
   }
 
-  Future<void> _applySummaryQuery(PatientListQuery query) async {
-    _tableSearchDebounce?.cancel();
-    final AppFailure? failure = await ref
-        .read(patientRegistryControllerProvider.notifier)
-        .applyQuery(query);
-    if (mounted) {
-      await _showFailureIfNeeded(context, failure);
-    }
-  }
 }
 
 @immutable
