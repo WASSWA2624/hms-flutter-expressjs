@@ -287,9 +287,7 @@ class _BillingQueuePanel extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final controller = ref.read(billingWorkspaceControllerProvider.notifier);
 
-    return AppWorkspaceDetailPanel(
-      title: billingQueueLabel(context, state.query.queue),
-      child: AppListTable<BillingWorkItem>(
+    return AppListTable<BillingWorkItem>(
         page: state.workItems,
         isLoading: state.isRefreshing,
         shrinkWrap: true,
@@ -497,7 +495,6 @@ class _BillingQueuePanel extends ConsumerWidget {
         mobileItemBuilder: (BuildContext context, BillingWorkItem item) {
           return _BillingMobileTile(item: item);
         },
-      ),
     );
   }
 }

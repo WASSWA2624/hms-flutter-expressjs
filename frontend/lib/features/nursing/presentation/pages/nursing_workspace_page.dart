@@ -411,10 +411,7 @@ class _NursingWorklistPanel extends ConsumerWidget {
       nursingWorkspaceControllerProvider.notifier,
     );
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.nursingWorklistTitle,
-      description: l10n.nursingWorklistDescription,
-      child: AppListTable<NursingWorkItem>(
+    return AppListTable<NursingWorkItem>(
         page: state.worklist,
         isLoading: state.isRefreshing,
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
@@ -499,7 +496,6 @@ class _NursingWorklistPanel extends ConsumerWidget {
             ),
           );
         },
-      ),
     );
   }
 }

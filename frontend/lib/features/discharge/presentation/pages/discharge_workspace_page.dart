@@ -270,10 +270,7 @@ class _DischargeQueuePanel extends ConsumerWidget {
       dischargeWorkspaceControllerProvider.notifier,
     );
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.dischargeWorklistTitle,
-      description: l10n.dischargeWorklistDescription,
-      child: SizedBox(
+    return SizedBox(
         height: 520,
         child: AppListTable<IpdAdmissionSummary>(
           page: state.queue,
@@ -409,7 +406,6 @@ class _DischargeQueuePanel extends ConsumerWidget {
             return _MobileQueueItem(item: item);
           },
         ),
-      ),
     );
   }
 }

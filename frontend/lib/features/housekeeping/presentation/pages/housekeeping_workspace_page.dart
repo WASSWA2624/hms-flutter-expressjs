@@ -291,10 +291,7 @@ class _HousekeepingWorklistPanel extends ConsumerWidget {
       housekeepingWorkspaceControllerProvider.notifier,
     );
 
-    return AppWorkspaceDetailPanel(
-      title: _resourceLabel(l10n, state.query.resource),
-      description: l10n.housekeepingWorklistDescription,
-      child: AppListTable<HousekeepingWorkItem>(
+    return AppListTable<HousekeepingWorkItem>(
         page: state.items,
         isLoading: state.isRefreshing,
         shrinkWrap: true,
@@ -444,7 +441,6 @@ class _HousekeepingWorklistPanel extends ConsumerWidget {
             ],
           );
         },
-      ),
     );
   }
 }

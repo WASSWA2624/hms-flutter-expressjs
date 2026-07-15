@@ -447,10 +447,7 @@ class _ClaimsQueuePanel extends ConsumerWidget {
       claimsWorkspaceControllerProvider.notifier,
     );
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.claimsWorklistTitle,
-      description: l10n.claimsWorklistDescription,
-      child: SizedBox(
+    return SizedBox(
         height: 520,
         child: AppListTable<ClaimsQueueItem>(
           page: state.queue,
@@ -585,7 +582,6 @@ class _ClaimsQueuePanel extends ConsumerWidget {
             return _MobileQueueItem(item: item);
           },
         ),
-      ),
     );
   }
 }

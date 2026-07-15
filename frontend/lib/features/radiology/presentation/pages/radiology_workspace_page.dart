@@ -294,14 +294,7 @@ class _RadiologyOrderBoard extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final controller = ref.read(radiologyWorkspaceControllerProvider.notifier);
 
-    return AppWorkspaceDetailPanel(
-      title: state.query.view == RadiologyWorkbenchView.patients
-          ? l10n.radiologyPatientsWorklistTitle
-          : l10n.radiologyWorklistTitle,
-      description: state.query.view == RadiologyWorkbenchView.patients
-          ? l10n.radiologyPatientsWorklistDescription
-          : l10n.radiologyWorklistDescription,
-      child: AppListTable<RadiologyOrder>(
+    return AppListTable<RadiologyOrder>(
         page: state.orders,
         isLoading: state.isRefreshing,
         columnVisibilityController: columnVisibilityController,
@@ -450,7 +443,6 @@ class _RadiologyOrderBoard extends ConsumerWidget {
         mobileItemBuilder: (BuildContext context, RadiologyOrder item) {
           return _RadiologyOrderListTile(order: item);
         },
-      ),
     );
   }
 }

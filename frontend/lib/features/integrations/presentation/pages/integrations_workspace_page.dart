@@ -313,10 +313,7 @@ class _IntegrationWorklistPanel extends ConsumerWidget {
       integrationsWorkspaceControllerProvider.notifier,
     );
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.integrationsWorklistTitle,
-      description: l10n.integrationsWorklistDescription,
-      child: AppListTable<IntegrationWorkItem>(
+    return AppListTable<IntegrationWorkItem>(
         page: state.workItemsPage,
         isLoading: state.isRefreshing,
         shrinkWrap: true,
@@ -469,7 +466,6 @@ class _IntegrationWorklistPanel extends ConsumerWidget {
         mobileItemBuilder: (BuildContext context, IntegrationWorkItem item) {
           return _MobileIntegrationItem(item: item);
         },
-      ),
     );
   }
 }

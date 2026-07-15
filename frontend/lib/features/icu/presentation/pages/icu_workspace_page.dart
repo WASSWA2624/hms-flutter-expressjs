@@ -321,10 +321,7 @@ class _IcuBoardPanel extends ConsumerWidget {
       icuWorkspaceControllerProvider.notifier,
     );
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.icuBoardTitle,
-      description: l10n.icuBoardDescription,
-      child: AppListTable<IcuPatientSummary>(
+    return AppListTable<IcuPatientSummary>(
         page: state.board,
         isLoading: state.isRefreshingBoard,
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
@@ -488,7 +485,6 @@ class _IcuBoardPanel extends ConsumerWidget {
             ),
           );
         },
-      ),
     );
   }
 

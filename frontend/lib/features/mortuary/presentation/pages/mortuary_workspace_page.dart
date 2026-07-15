@@ -243,10 +243,7 @@ class _MortuaryWorklist extends StatelessWidget {
       context,
     );
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.mortuaryWorklistTitle,
-      description: _resourceLabel(l10n, state.query.resource),
-      child: AppListTable<MortuaryWorkspaceItem>(
+    return AppListTable<MortuaryWorkspaceItem>(
         page: state.items,
         columns: columns,
         columnChoices: columns,
@@ -310,7 +307,6 @@ class _MortuaryWorklist extends StatelessWidget {
         mobileItemBuilder: (BuildContext context, MortuaryWorkspaceItem item) {
           return _MortuaryMobileListItem(item: item);
         },
-      ),
     );
   }
 

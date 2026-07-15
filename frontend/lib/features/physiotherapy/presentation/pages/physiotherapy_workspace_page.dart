@@ -340,10 +340,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
       state.query,
     );
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.physiotherapyWorklistTitle,
-      description: l10n.physiotherapyWorklistDescription,
-      child: AppListTable<TherapyWorkItem>(
+    return AppListTable<TherapyWorkItem>(
         page: state.worklist,
         isLoading: state.isRefreshing,
         columns: _columns(context, locale),
@@ -417,7 +414,6 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
             );
           },
         ),
-      ),
     );
   }
 

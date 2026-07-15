@@ -339,14 +339,7 @@ class _LabWorklistPanel extends ConsumerWidget {
       labWorkspaceControllerProvider.notifier,
     );
 
-    return AppWorkspaceDetailPanel(
-      title: state.query.view == LabWorkbenchView.patients
-          ? l10n.labPatientsWorklistTitle
-          : l10n.labWorklistTitle,
-      description: state.query.view == LabWorkbenchView.patients
-          ? null
-          : l10n.labWorklistDescription,
-      child: Stack(
+    return Stack(
         children: <Widget>[
           AppListTable<LabOrderSummary>(
             page: state.worklist,
@@ -431,7 +424,6 @@ class _LabWorklistPanel extends ConsumerWidget {
               child: LinearProgressIndicator(minHeight: 2),
             ),
         ],
-      ),
     );
   }
 }

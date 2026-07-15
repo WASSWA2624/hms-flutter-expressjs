@@ -344,8 +344,7 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
     final ClinicalWorkspaceController controller = ref.read(
       clinicalWorkspaceControllerProvider.notifier,
     );
-    return _ClinicalWorklistSurface(
-      child: AppListTable<ClinicalWorklistEntry>(
+    return AppListTable<ClinicalWorklistEntry>(
         page: state.worklist,
         columnVisibilityController: columnVisibilityController,
         columnVisibilityStorageKey: 'clinical.worklist',
@@ -391,27 +390,6 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
         mobileItemBuilder: _clinicalWorklistMobileItemBuilder,
         itemKeyBuilder: _clinicalWorklistItemKey,
         rowColorBuilder: _clinicalRowColor,
-      ),
-    );
-  }
-}
-
-class _ClinicalWorklistSurface extends StatelessWidget {
-  const _ClinicalWorklistSurface({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Padding(padding: EdgeInsets.all(theme.spacing.md), child: child),
     );
   }
 }

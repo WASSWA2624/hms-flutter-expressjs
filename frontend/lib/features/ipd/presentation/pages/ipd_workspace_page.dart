@@ -373,10 +373,7 @@ class _IpdBoardPanel extends ConsumerWidget {
       ipdWorkspaceControllerProvider.notifier,
     );
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.ipdBoardTitle,
-      description: l10n.ipdBoardDescription,
-      child: AppListTable<IpdAdmissionSummary>(
+    return AppListTable<IpdAdmissionSummary>(
         page: state.admissions,
         isLoading: state.isRefreshing,
         columnVisibilityController: columnVisibilityController,
@@ -526,7 +523,6 @@ class _IpdBoardPanel extends ConsumerWidget {
         mobileItemBuilder: (BuildContext context, IpdAdmissionSummary item) {
           return _IpdMobileAdmissionRow(admission: item);
         },
-      ),
     );
   }
 }

@@ -296,10 +296,7 @@ class _BiomedicalWorklistPanel extends ConsumerWidget {
       biomedicalWorkspaceControllerProvider.notifier,
     );
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.biomedicalAssetListTitle,
-      description: l10n.biomedicalAssetListDescription,
-      child: AppListTable<BiomedicalAsset>(
+    return AppListTable<BiomedicalAsset>(
         page: state.workbench.assets,
         isLoading: state.isRefreshing,
         columnVisibilityController: columnVisibilityController,
@@ -463,7 +460,6 @@ class _BiomedicalWorklistPanel extends ConsumerWidget {
             },
           ),
         ],
-      ),
     );
   }
 }

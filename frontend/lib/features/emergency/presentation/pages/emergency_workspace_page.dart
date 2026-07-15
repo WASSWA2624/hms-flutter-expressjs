@@ -293,10 +293,7 @@ class _EmergencyBoardPanel extends ConsumerWidget {
       emergencyWorkspaceControllerProvider.notifier,
     );
 
-    return AppWorkspaceDetailPanel(
-      title: 'Emergency board',
-      description: 'Open cases remain actionable without billing checkpoints.',
-      child: AppListTable<EmergencyCaseSummary>(
+    return AppListTable<EmergencyCaseSummary>(
         page: state.board,
         isLoading: state.isRefreshingBoard,
         columnVisibilityController: columnVisibilityController,
@@ -454,7 +451,6 @@ class _EmergencyBoardPanel extends ConsumerWidget {
             ),
           );
         },
-      ),
     );
   }
 

@@ -279,10 +279,7 @@ class _OperationsQueuePanel extends ConsumerWidget {
       operationsWorkspaceControllerProvider.notifier,
     );
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.operationsQueueTitle,
-      description: l10n.operationsQueueDescription,
-      child: AppListTable<OperationsWorkItem>(
+    return AppListTable<OperationsWorkItem>(
         page: state.workItems,
         isLoading: state.isRefreshing,
         shrinkWrap: true,
@@ -367,7 +364,6 @@ class _OperationsQueuePanel extends ConsumerWidget {
         mobileItemBuilder: (BuildContext context, OperationsWorkItem item) {
           return _OperationsRequestListTile(item: item);
         },
-      ),
     );
   }
 }

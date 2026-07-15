@@ -310,10 +310,7 @@ class _BedBoardPanel extends ConsumerWidget {
       roomsBedsWorkspaceControllerProvider.notifier,
     );
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.roomsBedsBoardTitle,
-      description: l10n.roomsBedsBoardDescription,
-      child: SizedBox(
+    return SizedBox(
         height: 560,
         child: AppListTable<BedBoardItem>(
           page: state.beds,
@@ -495,7 +492,6 @@ class _BedBoardPanel extends ConsumerWidget {
             return _BedMobileItem(item: item);
           },
         ),
-      ),
     );
   }
 }

@@ -607,7 +607,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
 
     final OpdWorkspaceState? workspaceState = _workspaceState(ref);
     final OpdFlowSummary? updatedFlow = workspaceState?.selectedFlow?.summary;
-    final bool isTerminal = updatedFlow?.isTerminal ?? false;
+    final bool isTerminal = updatedFlow == null || updatedFlow.isTerminal;
 
     ScaffoldMessenger.of(
       context,

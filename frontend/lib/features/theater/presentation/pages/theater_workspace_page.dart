@@ -315,10 +315,7 @@ class _TheaterCaseBoard extends ConsumerWidget {
       theaterWorkspaceControllerProvider.notifier,
     );
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.theaterCasesTitle,
-      description: l10n.theaterCasesDescription,
-      child: AppListTable<TheaterCase>(
+    return AppListTable<TheaterCase>(
         page: state.cases,
         isLoading: state.isRefreshing,
         columnVisibilityController: columnVisibilityController,
@@ -548,7 +545,6 @@ class _TheaterCaseBoard extends ConsumerWidget {
         mobileItemBuilder: (BuildContext context, TheaterCase item) {
           return _TheaterCaseListTile(theaterCase: item);
         },
-      ),
     );
   }
 }

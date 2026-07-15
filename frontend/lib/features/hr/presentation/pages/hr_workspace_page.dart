@@ -477,10 +477,7 @@ class _HrStaffDirectory extends ConsumerWidget {
             totalItemCount: state.staff.totalItemCount,
           );
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.hrStaffDirectoryTitle,
-      description: l10n.hrStaffDirectoryDescription,
-      child: AppListTable<HrStaffProfile>(
+    return AppListTable<HrStaffProfile>(
         page: staffPage,
         isLoading: state.isRefreshingStaff,
         columnVisibilityController: columnVisibilityController,
@@ -624,7 +621,6 @@ class _HrStaffDirectory extends ConsumerWidget {
         mobileItemBuilder: (BuildContext context, HrStaffProfile item) {
           return _HrStaffListTile(staff: item);
         },
-      ),
     );
   }
 }
