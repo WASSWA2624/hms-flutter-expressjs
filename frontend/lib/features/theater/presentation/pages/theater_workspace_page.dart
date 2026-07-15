@@ -316,235 +316,224 @@ class _TheaterCaseBoard extends ConsumerWidget {
     );
 
     return AppListTable<TheaterCase>(
-        page: state.cases,
-        isLoading: state.isRefreshing,
-        columnVisibilityController: columnVisibilityController,
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        search: AppListTableSearch<TheaterCase>(
-          controller: searchController,
-          semanticLabel: l10n.theaterSearchLabel,
-          hintText: l10n.theaterSearchHint,
-          clearLabel: l10n.theaterClearFiltersAction,
-          matcher: (_, _) => true,
-          onSubmitted: controller.applySearch,
-          onClear: () => controller.applySearch(''),
-          showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.theaterFiltersLabel,
-          advancedFilterTitle: l10n.theaterFiltersLabel,
-          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-          advancedFilterResetLabel: l10n.theaterClearFiltersAction,
-          dateFilterLabel: l10n.theaterScheduleDateFilterLabel,
-          dateFromLabel: l10n.theaterScheduleDateFilterLabel,
-          dateToLabel: l10n.opdDateToLabel,
-          datePickerButtonLabel: l10n.theaterPickScheduleDateAction,
-          invalidDateMessage: l10n.appDateInvalidMessage,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2100),
-          currentDate: DateTime.now(),
-          allFieldsLabel: l10n.opdAllFieldsFilterLabel,
-          textFilters: <AppSearchBarTextFilter>[
-            AppSearchBarTextFilter(
-              key: _theaterRoomFilterKey,
-              label: l10n.theaterRoomIdLabel,
-              icon: Icons.meeting_room_outlined,
-              textInputAction: TextInputAction.next,
-            ),
-            AppSearchBarTextFilter(
-              key: _theaterSurgeonFilterKey,
-              label: l10n.theaterSurgeonIdLabel,
-              icon: Icons.medical_services_outlined,
-              textInputAction: TextInputAction.next,
-            ),
-            AppSearchBarTextFilter(
-              key: _theaterAnesthetistFilterKey,
-              label: l10n.theaterAnesthetistIdLabel,
-              icon: Icons.masks_outlined,
-              textInputAction: TextInputAction.done,
-            ),
-          ],
-          filterGroups: <AppSearchBarFilterGroup>[
-            AppSearchBarFilterGroup(
-              key: _theaterStatusFilterKey,
-              label: l10n.theaterStatusFilterLabel,
-              allLabel: l10n.opdAllFieldsFilterLabel,
-              choices: _theaterStatusFilterChoices(l10n),
-            ),
-            AppSearchBarFilterGroup(
-              key: _theaterStageFilterKey,
-              label: l10n.theaterStageFilterLabel,
-              allLabel: l10n.opdAllFieldsFilterLabel,
-              choices: _theaterStageFilterChoices(l10n),
-            ),
-          ],
-          filterValue: _theaterFilterValue(state.query),
-          hasActiveFilters: _hasTheaterFilters(state.query),
-          onFilterChanged: (AppSearchBarFilterValue value) async {
-            final String? nextStatus = value.option(_theaterStatusFilterKey);
-            final String? nextStage = value.option(_theaterStageFilterKey);
-            final DateTime? nextDate = value.dateFrom;
-            final String? nextRoomId = value.text(_theaterRoomFilterKey);
-            final String? nextSurgeonUserId = value.text(
-              _theaterSurgeonFilterKey,
-            );
-            final String? nextAnesthetistUserId = value.text(
-              _theaterAnesthetistFilterKey,
-            );
-            AppFailure? failure;
-            if (nextStatus != state.query.status) {
-              failure = await controller.applyStatus(nextStatus);
-            }
-            if (nextStage != state.query.stage) {
-              failure ??= await controller.applyStage(nextStage);
-            }
-            if (!_isSameTheaterFilterDate(
-              nextDate,
-              state.query.scheduledDate,
-            )) {
-              failure ??= await controller.applyScheduledDate(nextDate);
-            }
-            if (nextRoomId != state.query.roomId ||
-                nextSurgeonUserId != state.query.surgeonUserId ||
-                nextAnesthetistUserId != state.query.anesthetistUserId) {
-              failure ??= await controller.applyResourceFilters(
-                roomId: nextRoomId,
-                surgeonUserId: nextSurgeonUserId,
-                anesthetistUserId: nextAnesthetistUserId,
-              );
-            }
-            if (context.mounted) {
-              _showFailureIfNeeded(context, failure);
-            }
-          },
-        ),
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemKeyBuilder: (TheaterCase item) => ValueKey<String>(item.id),
-        onRowSelected: (TheaterCase item) {
-          unawaited(
-            _openTheaterCaseDialog(context, ref, state, item, canWrite),
-          );
-        },
-        previousPageLabel: l10n.opdPreviousPageLabel,
-        nextPageLabel: l10n.opdNextPageLabel,
-        pageLabelBuilder: (AppPage<TheaterCase> page) {
-          return l10n.theaterPageLabel(
-            page.firstItemNumber,
-            page.lastItemNumber,
-            page.totalItemCount ?? page.lastItemNumber,
-          );
-        },
-        onPageChanged: onPageChanged,
-        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-          title: l10n.theaterNoCasesTitle,
-          body: l10n.theaterNoCasesBody,
-        ),
-        columns: <AppListTableColumn<TheaterCase>>[
-          AppListTableColumn<TheaterCase>(
-            label: l10n.theaterCaseIdColumnLabel,
-            sortComparator: (TheaterCase left, TheaterCase right) =>
-                appListTableCompareText(
-                  left.effectiveDisplayId,
-                  right.effectiveDisplayId,
-                ),
-            cellBuilder: (BuildContext context, TheaterCase item) {
-              return Text(item.effectiveDisplayId);
-            },
+      page: state.cases,
+      isLoading: state.isRefreshing,
+      columnVisibilityController: columnVisibilityController,
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      search: AppListTableSearch<TheaterCase>(
+        controller: searchController,
+        semanticLabel: l10n.theaterSearchLabel,
+        hintText: l10n.theaterSearchHint,
+        clearLabel: l10n.theaterClearFiltersAction,
+        matcher: (_, _) => true,
+        onSubmitted: controller.applySearch,
+        onClear: () => controller.applySearch(''),
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.theaterFiltersLabel,
+        advancedFilterTitle: l10n.theaterFiltersLabel,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.theaterClearFiltersAction,
+        dateFilterLabel: l10n.theaterScheduleDateFilterLabel,
+        dateFromLabel: l10n.theaterScheduleDateFilterLabel,
+        dateToLabel: l10n.opdDateToLabel,
+        datePickerButtonLabel: l10n.theaterPickScheduleDateAction,
+        invalidDateMessage: l10n.appDateInvalidMessage,
+        firstDate: DateTime(2020),
+        lastDate: DateTime(2100),
+        currentDate: DateTime.now(),
+        allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+        textFilters: <AppSearchBarTextFilter>[
+          AppSearchBarTextFilter(
+            key: _theaterRoomFilterKey,
+            label: l10n.theaterRoomIdLabel,
+            icon: Icons.meeting_room_outlined,
+            textInputAction: TextInputAction.next,
           ),
-          AppListTableColumn<TheaterCase>(
-            label: l10n.theaterProcedureColumnLabel,
-            sortComparator: (TheaterCase left, TheaterCase right) =>
-                appListTableCompareText(
-                  left.procedureName,
-                  right.procedureName,
-                ),
-            cellBuilder: (BuildContext context, TheaterCase item) {
-              return Text(item.procedureName ?? l10n.profileUnknownValue);
-            },
+          AppSearchBarTextFilter(
+            key: _theaterSurgeonFilterKey,
+            label: l10n.theaterSurgeonIdLabel,
+            icon: Icons.medical_services_outlined,
+            textInputAction: TextInputAction.next,
           ),
-          AppListTableColumn<TheaterCase>(
-            label: l10n.theaterPatientColumnLabel,
-            sortComparator: (TheaterCase left, TheaterCase right) =>
-                appListTableCompareText(
-                  left.patientDisplayName ?? left.patientDisplayId,
-                  right.patientDisplayName ?? right.patientDisplayId,
-                ),
-            cellBuilder: (BuildContext context, TheaterCase item) {
-              return _TwoLineCell(
-                title: item.patientDisplayName ?? l10n.profileUnknownValue,
-                subtitle: _joinDisplay(<String?>[
-                  item.patientDisplayId,
-                  item.encounterDisplayId,
-                ]),
-              );
-            },
-          ),
-          AppListTableColumn<TheaterCase>(
-            label: l10n.theaterTimeColumnLabel,
-            sortComparator: (TheaterCase left, TheaterCase right) =>
-                appListTableCompareDateTime(
-                  left.scheduledAt,
-                  right.scheduledAt,
-                ),
-            cellBuilder: (BuildContext context, TheaterCase item) {
-              return Text(_formatDateTime(context, item.scheduledAt));
-            },
-          ),
-          AppListTableColumn<TheaterCase>(
-            label: l10n.theaterRoomColumnLabel,
-            sortComparator: (TheaterCase left, TheaterCase right) =>
-                appListTableCompareText(
-                  _roomLabel(context, left),
-                  _roomLabel(context, right),
-                ),
-            cellBuilder: (BuildContext context, TheaterCase item) {
-              return Text(_roomLabel(context, item));
-            },
-          ),
-          AppListTableColumn<TheaterCase>(
-            label: l10n.theaterStatusColumnLabel,
-            sortComparator: (TheaterCase left, TheaterCase right) =>
-                appListTableCompareText(left.status, right.status),
-            cellBuilder: (BuildContext context, TheaterCase item) {
-              return _TheaterStatusBadge(status: item.status);
-            },
-          ),
-          AppListTableColumn<TheaterCase>(
-            label: l10n.theaterReadinessColumnLabel,
-            sortComparator: (TheaterCase left, TheaterCase right) =>
-                appListTableCompareNumber(
-                  left.checklistCompleted,
-                  right.checklistCompleted,
-                ),
-            cellBuilder: (BuildContext context, TheaterCase item) {
-              return Text(_readinessLabel(context, item));
-            },
-          ),
-          AppListTableColumn<TheaterCase>(
-            label: l10n.theaterResponsibleRoleColumnLabel,
-            sortComparator: (TheaterCase left, TheaterCase right) =>
-                appListTableCompareText(
-                  _responsibleRoleLabel(l10n, left),
-                  _responsibleRoleLabel(l10n, right),
-                ),
-            cellBuilder: (BuildContext context, TheaterCase item) {
-              return Text(_responsibleRoleLabel(l10n, item));
-            },
-          ),
-          AppListTableColumn<TheaterCase>(
-            label: l10n.theaterNextActionColumnLabel,
-            sortComparator: (TheaterCase left, TheaterCase right) =>
-                appListTableCompareText(
-                  _nextActionLabel(context, left),
-                  _nextActionLabel(context, right),
-                ),
-            cellBuilder: (BuildContext context, TheaterCase item) {
-              return Text(_nextActionLabel(context, item));
-            },
+          AppSearchBarTextFilter(
+            key: _theaterAnesthetistFilterKey,
+            label: l10n.theaterAnesthetistIdLabel,
+            icon: Icons.masks_outlined,
+            textInputAction: TextInputAction.done,
           ),
         ],
-        mobileItemBuilder: (BuildContext context, TheaterCase item) {
-          return _TheaterCaseListTile(theaterCase: item);
+        filterGroups: <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: _theaterStatusFilterKey,
+            label: l10n.theaterStatusFilterLabel,
+            allLabel: l10n.opdAllFieldsFilterLabel,
+            choices: _theaterStatusFilterChoices(l10n),
+          ),
+          AppSearchBarFilterGroup(
+            key: _theaterStageFilterKey,
+            label: l10n.theaterStageFilterLabel,
+            allLabel: l10n.opdAllFieldsFilterLabel,
+            choices: _theaterStageFilterChoices(l10n),
+          ),
+        ],
+        filterValue: _theaterFilterValue(state.query),
+        hasActiveFilters: _hasTheaterFilters(state.query),
+        onFilterChanged: (AppSearchBarFilterValue value) async {
+          final String? nextStatus = value.option(_theaterStatusFilterKey);
+          final String? nextStage = value.option(_theaterStageFilterKey);
+          final DateTime? nextDate = value.dateFrom;
+          final String? nextRoomId = value.text(_theaterRoomFilterKey);
+          final String? nextSurgeonUserId = value.text(
+            _theaterSurgeonFilterKey,
+          );
+          final String? nextAnesthetistUserId = value.text(
+            _theaterAnesthetistFilterKey,
+          );
+          AppFailure? failure;
+          if (nextStatus != state.query.status) {
+            failure = await controller.applyStatus(nextStatus);
+          }
+          if (nextStage != state.query.stage) {
+            failure ??= await controller.applyStage(nextStage);
+          }
+          if (!_isSameTheaterFilterDate(nextDate, state.query.scheduledDate)) {
+            failure ??= await controller.applyScheduledDate(nextDate);
+          }
+          if (nextRoomId != state.query.roomId ||
+              nextSurgeonUserId != state.query.surgeonUserId ||
+              nextAnesthetistUserId != state.query.anesthetistUserId) {
+            failure ??= await controller.applyResourceFilters(
+              roomId: nextRoomId,
+              surgeonUserId: nextSurgeonUserId,
+              anesthetistUserId: nextAnesthetistUserId,
+            );
+          }
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
         },
+      ),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemKeyBuilder: (TheaterCase item) => ValueKey<String>(item.id),
+      onRowSelected: (TheaterCase item) {
+        unawaited(_openTheaterCaseDialog(context, ref, state, item, canWrite));
+      },
+      previousPageLabel: l10n.opdPreviousPageLabel,
+      nextPageLabel: l10n.opdNextPageLabel,
+      pageLabelBuilder: (AppPage<TheaterCase> page) {
+        return l10n.theaterPageLabel(
+          page.firstItemNumber,
+          page.lastItemNumber,
+          page.totalItemCount ?? page.lastItemNumber,
+        );
+      },
+      onPageChanged: onPageChanged,
+      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+        title: l10n.theaterNoCasesTitle,
+        body: l10n.theaterNoCasesBody,
+      ),
+      columns: <AppListTableColumn<TheaterCase>>[
+        AppListTableColumn<TheaterCase>(
+          label: l10n.theaterCaseIdColumnLabel,
+          sortComparator: (TheaterCase left, TheaterCase right) =>
+              appListTableCompareText(
+                left.effectiveDisplayId,
+                right.effectiveDisplayId,
+              ),
+          cellBuilder: (BuildContext context, TheaterCase item) {
+            return Text(item.effectiveDisplayId);
+          },
+        ),
+        AppListTableColumn<TheaterCase>(
+          label: l10n.theaterProcedureColumnLabel,
+          sortComparator: (TheaterCase left, TheaterCase right) =>
+              appListTableCompareText(left.procedureName, right.procedureName),
+          cellBuilder: (BuildContext context, TheaterCase item) {
+            return Text(item.procedureName ?? l10n.profileUnknownValue);
+          },
+        ),
+        AppListTableColumn<TheaterCase>(
+          label: l10n.theaterPatientColumnLabel,
+          sortComparator: (TheaterCase left, TheaterCase right) =>
+              appListTableCompareText(
+                left.patientDisplayName ?? left.patientDisplayId,
+                right.patientDisplayName ?? right.patientDisplayId,
+              ),
+          cellBuilder: (BuildContext context, TheaterCase item) {
+            return _TwoLineCell(
+              title: item.patientDisplayName ?? l10n.profileUnknownValue,
+              subtitle: _joinDisplay(<String?>[
+                item.patientDisplayId,
+                item.encounterDisplayId,
+              ]),
+            );
+          },
+        ),
+        AppListTableColumn<TheaterCase>(
+          label: l10n.theaterTimeColumnLabel,
+          sortComparator: (TheaterCase left, TheaterCase right) =>
+              appListTableCompareDateTime(left.scheduledAt, right.scheduledAt),
+          cellBuilder: (BuildContext context, TheaterCase item) {
+            return Text(_formatDateTime(context, item.scheduledAt));
+          },
+        ),
+        AppListTableColumn<TheaterCase>(
+          label: l10n.theaterRoomColumnLabel,
+          sortComparator: (TheaterCase left, TheaterCase right) =>
+              appListTableCompareText(
+                _roomLabel(context, left),
+                _roomLabel(context, right),
+              ),
+          cellBuilder: (BuildContext context, TheaterCase item) {
+            return Text(_roomLabel(context, item));
+          },
+        ),
+        AppListTableColumn<TheaterCase>(
+          label: l10n.theaterStatusColumnLabel,
+          sortComparator: (TheaterCase left, TheaterCase right) =>
+              appListTableCompareText(left.status, right.status),
+          cellBuilder: (BuildContext context, TheaterCase item) {
+            return _TheaterStatusBadge(status: item.status);
+          },
+        ),
+        AppListTableColumn<TheaterCase>(
+          label: l10n.theaterReadinessColumnLabel,
+          sortComparator: (TheaterCase left, TheaterCase right) =>
+              appListTableCompareNumber(
+                left.checklistCompleted,
+                right.checklistCompleted,
+              ),
+          cellBuilder: (BuildContext context, TheaterCase item) {
+            return Text(_readinessLabel(context, item));
+          },
+        ),
+        AppListTableColumn<TheaterCase>(
+          label: l10n.theaterResponsibleRoleColumnLabel,
+          sortComparator: (TheaterCase left, TheaterCase right) =>
+              appListTableCompareText(
+                _responsibleRoleLabel(l10n, left),
+                _responsibleRoleLabel(l10n, right),
+              ),
+          cellBuilder: (BuildContext context, TheaterCase item) {
+            return Text(_responsibleRoleLabel(l10n, item));
+          },
+        ),
+        AppListTableColumn<TheaterCase>(
+          label: l10n.theaterNextActionColumnLabel,
+          sortComparator: (TheaterCase left, TheaterCase right) =>
+              appListTableCompareText(
+                _nextActionLabel(context, left),
+                _nextActionLabel(context, right),
+              ),
+          cellBuilder: (BuildContext context, TheaterCase item) {
+            return Text(_nextActionLabel(context, item));
+          },
+        ),
+      ],
+      mobileItemBuilder: (BuildContext context, TheaterCase item) {
+        return _TheaterCaseListTile(theaterCase: item);
+      },
     );
   }
 }

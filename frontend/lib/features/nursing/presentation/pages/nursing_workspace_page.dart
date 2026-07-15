@@ -412,90 +412,90 @@ class _NursingWorklistPanel extends ConsumerWidget {
     );
 
     return AppListTable<NursingWorkItem>(
-        page: state.worklist,
-        isLoading: state.isRefreshing,
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        previousPageLabel: l10n.opdPreviousPageLabel,
-        nextPageLabel: l10n.opdNextPageLabel,
-        pageLabelBuilder: (AppPage<NursingWorkItem> page) {
-          return _pageLabel(context, page);
+      page: state.worklist,
+      isLoading: state.isRefreshing,
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      previousPageLabel: l10n.opdPreviousPageLabel,
+      nextPageLabel: l10n.opdNextPageLabel,
+      pageLabelBuilder: (AppPage<NursingWorkItem> page) {
+        return _pageLabel(context, page);
+      },
+      onPageChanged: controller.changePage,
+      onRowSelected: (NursingWorkItem item) {
+        _openPatientDetailDialog(context, ref, item);
+      },
+      search: AppListTableSearch<NursingWorkItem>(
+        controller: searchController,
+        semanticLabel: l10n.nursingSearchLabel,
+        hintText: l10n.nursingSearchHint,
+        matcher: (NursingWorkItem item, String query) {
+          return item.matchesSearchField(state.query.searchField, query);
         },
-        onPageChanged: controller.changePage,
-        onRowSelected: (NursingWorkItem item) {
-          _openPatientDetailDialog(context, ref, item);
-        },
-        search: AppListTableSearch<NursingWorkItem>(
-          controller: searchController,
-          semanticLabel: l10n.nursingSearchLabel,
-          hintText: l10n.nursingSearchHint,
-          matcher: (NursingWorkItem item, String query) {
-            return item.matchesSearchField(state.query.searchField, query);
-          },
-          onSubmitted: controller.applySearch,
-          onClear: () => controller.applySearch(''),
-          showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.nursingAdvancedFiltersLabel,
-          advancedFilterTitle: l10n.nursingAdvancedFiltersTitle,
-          advancedFilterApplyLabel: l10n.nursingApplyFiltersLabel,
-          advancedFilterResetLabel: l10n.nursingResetFiltersLabel,
-          searchFieldLabel: l10n.nursingSearchFieldLabel,
-          allFieldsLabel: l10n.nursingAllFieldsLabel,
-          dateFilterLabel: l10n.nursingDateFilterLabel,
-          dateFromLabel: l10n.nursingDateFromLabel,
-          dateToLabel: l10n.nursingDateToLabel,
-          datePickerButtonLabel: l10n.nursingDatePickerLabel,
-          invalidDateMessage: l10n.nursingInvalidDateMessage,
-          currentDate: DateTime.now(),
-          searchFields: _worklistSearchFields(l10n),
-          textFilters: _worklistTextFilters(l10n),
-          filterGroups: _worklistFilterGroups(l10n),
-          filterValue: filterValue,
-          hasActiveFilters: state.query.hasAdvancedFilters,
-          onFilterChanged: onFilterChanged,
-        ),
-        emptyBuilder: (_) => AppWorkspaceStatePanel.state(
-          variant: AppStateViewVariant.empty,
-          title: l10n.nursingNoWorklistTitle,
-          body: l10n.nursingNoWorklistBody,
-          icon: Icons.assignment_outlined,
-        ),
-        columnChoices: _nursingWorklistColumnChoices(l10n),
-        columns: _nursingWorklistDefaultColumns(l10n),
-        mobileItemBuilder: (BuildContext context, NursingWorkItem item) {
-          final ThemeData theme = Theme.of(context);
-          return Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: theme.spacing.sm,
-              vertical: theme.spacing.sm,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                _NursingPatientCell(item: item),
-                SizedBox(height: theme.spacing.xs),
-                Wrap(
-                  spacing: theme.spacing.xs,
-                  runSpacing: theme.spacing.xs,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: <Widget>[
-                    AppWorkspaceStatusBadge(
-                      status: _priorityStatus(context, item),
-                    ),
-                    AppWorkspaceStatusBadge(status: _summaryStatus(item)),
-                    Text(
-                      _joinDisplay(<String?>[
-                        item.locationLabel,
-                        _taskTypeLabel(context, item),
-                        _dueTimeLabel(context, item),
-                      ]),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        },
+        onSubmitted: controller.applySearch,
+        onClear: () => controller.applySearch(''),
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.nursingAdvancedFiltersLabel,
+        advancedFilterTitle: l10n.nursingAdvancedFiltersTitle,
+        advancedFilterApplyLabel: l10n.nursingApplyFiltersLabel,
+        advancedFilterResetLabel: l10n.nursingResetFiltersLabel,
+        searchFieldLabel: l10n.nursingSearchFieldLabel,
+        allFieldsLabel: l10n.nursingAllFieldsLabel,
+        dateFilterLabel: l10n.nursingDateFilterLabel,
+        dateFromLabel: l10n.nursingDateFromLabel,
+        dateToLabel: l10n.nursingDateToLabel,
+        datePickerButtonLabel: l10n.nursingDatePickerLabel,
+        invalidDateMessage: l10n.nursingInvalidDateMessage,
+        currentDate: DateTime.now(),
+        searchFields: _worklistSearchFields(l10n),
+        textFilters: _worklistTextFilters(l10n),
+        filterGroups: _worklistFilterGroups(l10n),
+        filterValue: filterValue,
+        hasActiveFilters: state.query.hasAdvancedFilters,
+        onFilterChanged: onFilterChanged,
+      ),
+      emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+        variant: AppStateViewVariant.empty,
+        title: l10n.nursingNoWorklistTitle,
+        body: l10n.nursingNoWorklistBody,
+        icon: Icons.assignment_outlined,
+      ),
+      columnChoices: _nursingWorklistColumnChoices(l10n),
+      columns: _nursingWorklistDefaultColumns(l10n),
+      mobileItemBuilder: (BuildContext context, NursingWorkItem item) {
+        final ThemeData theme = Theme.of(context);
+        return Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: theme.spacing.sm,
+            vertical: theme.spacing.sm,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              _NursingPatientCell(item: item),
+              SizedBox(height: theme.spacing.xs),
+              Wrap(
+                spacing: theme.spacing.xs,
+                runSpacing: theme.spacing.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: <Widget>[
+                  AppWorkspaceStatusBadge(
+                    status: _priorityStatus(context, item),
+                  ),
+                  AppWorkspaceStatusBadge(status: _summaryStatus(item)),
+                  Text(
+                    _joinDisplay(<String?>[
+                      item.locationLabel,
+                      _taskTypeLabel(context, item),
+                      _dueTimeLabel(context, item),
+                    ]),
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
