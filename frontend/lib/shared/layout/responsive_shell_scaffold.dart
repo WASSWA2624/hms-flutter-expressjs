@@ -1033,8 +1033,8 @@ String _avatarInitials(UserMenuProfileData? profile) {
   }
 
   final List<String> words = source
-      .replaceAll(RegExp(r'[@._-]+'), ' ')
-      .split(RegExp(r'\s+'))
+      .replaceAll(_initialsDelimiterPattern, ' ')
+      .split(_whitespacePattern)
       .where((String word) => word.isNotEmpty)
       .toList(growable: false);
   if (words.isEmpty) {
@@ -1742,6 +1742,9 @@ class _SidebarResizeHandle extends StatelessWidget {
     );
   }
 }
+
+final RegExp _initialsDelimiterPattern = RegExp(r'[@._-]+');
+final RegExp _whitespacePattern = RegExp(r'\s+');
 
 const double _drawerHeaderHeight = AppShellLayout.headerHeight;
 const double _headerLogoSize = 24;

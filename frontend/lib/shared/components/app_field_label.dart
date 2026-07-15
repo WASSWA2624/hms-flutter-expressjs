@@ -67,18 +67,12 @@ Widget? appFieldLabelWidget(
         if (markRequired)
           TextSpan(
             text: ' *',
-            style: TextStyle(
-              color: theme.colorScheme.error,
-              fontWeight: FontWeight.w800,
-            ),
+            style: _requiredLabelStyle(theme.colorScheme),
           )
         else if (markOptional)
           TextSpan(
             text: ' (optional)',
-            style: TextStyle(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
-            ),
+            style: _optionalLabelStyle(theme.colorScheme),
           ),
       ],
     ),
@@ -86,6 +80,38 @@ Widget? appFieldLabelWidget(
     overflow: TextOverflow.ellipsis,
     style: style,
   );
+}
+
+ColorScheme? _cachedLabelColorScheme;
+TextStyle? _cachedRequiredStyle;
+TextStyle? _cachedOptionalStyle;
+
+TextStyle _requiredLabelStyle(ColorScheme colorScheme) {
+  if (_cachedRequiredStyle != null &&
+      identical(_cachedLabelColorScheme, colorScheme)) {
+    return _cachedRequiredStyle!;
+  }
+  _cachedLabelColorScheme = colorScheme;
+  _cachedRequiredStyle = TextStyle(
+    color: colorScheme.error,
+    fontWeight: FontWeight.w800,
+  );
+  _cachedOptionalStyle = null;
+  return _cachedRequiredStyle!;
+}
+
+TextStyle _optionalLabelStyle(ColorScheme colorScheme) {
+  if (_cachedOptionalStyle != null &&
+      identical(_cachedLabelColorScheme, colorScheme)) {
+    return _cachedOptionalStyle!;
+  }
+  _cachedLabelColorScheme = colorScheme;
+  _cachedOptionalStyle = TextStyle(
+    color: colorScheme.onSurfaceVariant,
+    fontWeight: FontWeight.w700,
+  );
+  _cachedRequiredStyle = null;
+  return _cachedOptionalStyle!;
 }
 
 _AppFieldLabelParts? _parseFieldLabel(String? label) {

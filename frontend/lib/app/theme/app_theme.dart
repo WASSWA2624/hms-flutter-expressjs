@@ -6,9 +6,9 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/app/theme/app_theme_palette.dart';
 
 abstract final class AppTheme {
-  static ThemeData get light => _buildTheme(AppLightThemePalette.palette);
+  static final ThemeData light = _buildTheme(AppLightThemePalette.palette);
 
-  static ThemeData get dark => _buildTheme(AppDarkThemePalette.palette);
+  static final ThemeData dark = _buildTheme(AppDarkThemePalette.palette);
 
   static ThemeData _buildTheme(AppThemePalette palette) {
     final ColorScheme colorScheme = palette.colorScheme;

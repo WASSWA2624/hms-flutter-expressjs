@@ -980,13 +980,14 @@ class _ClinicalDetailPanel extends ConsumerWidget {
       if (triageHandoff?.hasContent ?? false)
         _ClinicalTriageHandoffPanel(handoff: triageHandoff!),
       _ClinicalActionBar(bundle: bundle, referenceData: state.referenceData),
-      if (_clinicalResultsPreviewEntries(bundle).isNotEmpty)
+      if (_clinicalResultsPreviewEntries(bundle) case final previewEntries
+          when previewEntries.isNotEmpty)
         AppClinicalResultsPreview(
           title: l10n.clinicalResultsChronologyTitle,
           status: AppClinicalResultStatus.verified,
           encounterPublicId: bundle.entry.encounterPublicId,
           child: AppClinicalResultsPreviewList(
-            entries: _clinicalResultsPreviewEntries(bundle),
+            entries: previewEntries,
             dense: true,
           ),
         ),

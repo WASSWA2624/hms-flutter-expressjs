@@ -871,7 +871,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
         visibleItems = _filteredItems(sourceItems, query, matcher);
       }
     }
-    final int totalSortedCount = _sortedItems(visibleItems).length;
+    final int totalSortedCount = visibleItems.length;
     if (_canRevealMoreItems(totalSortedCount)) {
       _revealMoreItems(totalSortedCount);
     }
@@ -1620,8 +1620,10 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   }
 }
 
+final RegExp _whitespaceRun = RegExp(r'\s+');
+
 String _normalizeTableSearchQuery(String query) {
-  return query.trim().replaceAll(RegExp(r'\s+'), ' ');
+  return query.trim().replaceAll(_whitespaceRun, ' ');
 }
 
 List<String> _tableSearchTokens(String query) {
@@ -2158,6 +2160,22 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     );
   }
 
+  TextStyle? _rowNumberStyle;
+  ColorScheme? _rowNumberStyleScheme;
+
+  TextStyle? _resolveRowNumberStyle(ThemeData theme) {
+    if (_rowNumberStyle != null &&
+        identical(_rowNumberStyleScheme, theme.colorScheme)) {
+      return _rowNumberStyle;
+    }
+    _rowNumberStyleScheme = theme.colorScheme;
+    _rowNumberStyle = theme.textTheme.labelMedium?.copyWith(
+      color: theme.colorScheme.onSurfaceVariant,
+      fontWeight: FontWeight.w600,
+    );
+    return _rowNumberStyle;
+  }
+
   DataRow _dataRow(BuildContext context, int index) {
     final T item = widget.items[index];
 
@@ -2181,10 +2199,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
               child: Text(
                 (widget.rowNumberOffset + index + 1).toString(),
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: _resolveRowNumberStyle(Theme.of(context)),
               ),
             ),
           ),
@@ -2205,6 +2220,28 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     );
   }
 
+  WidgetStateProperty<Color?>? _cachedDefaultRowColor;
+  ColorScheme? _cachedRowColorScheme;
+
+  WidgetStateProperty<Color?> _defaultRowColor(ColorScheme colorScheme) {
+    if (_cachedDefaultRowColor != null &&
+        identical(_cachedRowColorScheme, colorScheme)) {
+      return _cachedDefaultRowColor!;
+    }
+    _cachedRowColorScheme = colorScheme;
+    _cachedDefaultRowColor =
+        WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
+      if (states.contains(WidgetState.hovered)) {
+        return colorScheme.primary.withValues(alpha: 0.05);
+      }
+      if (states.contains(WidgetState.selected)) {
+        return colorScheme.primary.withValues(alpha: 0.08);
+      }
+      return null;
+    });
+    return _cachedDefaultRowColor!;
+  }
+
   WidgetStateProperty<Color?>? _rowColor(
     BuildContext context,
     T item,
@@ -2219,15 +2256,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         : null;
     final Color? base = custom ?? stripe;
     if (base == null) {
-      return WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
-        if (states.contains(WidgetState.hovered)) {
-          return colorScheme.primary.withValues(alpha: 0.05);
-        }
-        if (states.contains(WidgetState.selected)) {
-          return colorScheme.primary.withValues(alpha: 0.08);
-        }
-        return null;
-      });
+      return _defaultRowColor(colorScheme);
     }
 
     return WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {

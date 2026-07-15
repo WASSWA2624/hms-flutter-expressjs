@@ -809,6 +809,8 @@ class _CountryFlagEmoji extends StatelessWidget {
   final IsoCode isoCode;
   final double size;
 
+  static final Map<double, TextStyle> _styleCache = <double, TextStyle>{};
+
   @override
   Widget build(BuildContext context) {
     final String emoji = isoCodeToFlagEmoji(isoCode);
@@ -816,7 +818,9 @@ class _CountryFlagEmoji extends StatelessWidget {
       return Icon(Icons.public_outlined, size: size);
     }
 
-    return Text(emoji, style: TextStyle(fontSize: size, height: 1));
+    final TextStyle style =
+        _styleCache[size] ??= TextStyle(fontSize: size, height: 1);
+    return Text(emoji, style: style);
   }
 }
 

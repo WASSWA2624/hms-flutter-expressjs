@@ -2136,20 +2136,41 @@ class _StudyAssetTile extends StatelessWidget {
   }
 }
 
-class _StudyImagePreview extends StatelessWidget {
+class _StudyImagePreview extends StatefulWidget {
   const _StudyImagePreview({required this.file, this.size = 96});
 
   final XFile file;
   final double size;
 
   @override
+  State<_StudyImagePreview> createState() => _StudyImagePreviewState();
+}
+
+class _StudyImagePreviewState extends State<_StudyImagePreview> {
+  late Future<Uint8List> _bytesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _bytesFuture = widget.file.readAsBytes();
+  }
+
+  @override
+  void didUpdateWidget(_StudyImagePreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.file != widget.file) {
+      _bytesFuture = widget.file.readAsBytes();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return FutureBuilder<Uint8List>(
-      future: file.readAsBytes(),
+      future: _bytesFuture,
       builder: (BuildContext context, AsyncSnapshot<Uint8List> snapshot) {
         if (!snapshot.hasData) {
           return SizedBox.square(
-            dimension: size,
+            dimension: widget.size,
             child: const Center(
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
@@ -2158,8 +2179,8 @@ class _StudyImagePreview extends StatelessWidget {
         return ClipRRect(
           child: Image.memory(
             snapshot.data!,
-            width: size,
-            height: size,
+            width: widget.size,
+            height: widget.size,
             fit: BoxFit.cover,
           ),
         );

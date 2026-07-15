@@ -391,10 +391,12 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   }
 
   double _effectiveMenuHeight(BuildContext context) {
-    final MediaQueryData mediaQuery = MediaQuery.of(context);
+    final Size screenSize = MediaQuery.sizeOf(context);
+    final EdgeInsets padding = MediaQuery.paddingOf(context);
+    final EdgeInsets viewInsets = MediaQuery.viewInsetsOf(context);
     final double preferredHeight =
         widget.menuHeight ??
-        (mediaQuery.size.height * 0.42)
+        (screenSize.height * 0.42)
             .clamp(_defaultMenuMinHeight, _defaultMenuMaxHeight)
             .toDouble();
     final RenderObject? renderObject = context.findRenderObject();
@@ -405,11 +407,11 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
     final Offset fieldOffset = renderObject.localToGlobal(Offset.zero);
     final double fieldTop = fieldOffset.dy;
     final double fieldBottom = fieldTop + renderObject.size.height;
-    final double viewportTop = mediaQuery.padding.top + _menuViewportPadding;
+    final double viewportTop = padding.top + _menuViewportPadding;
     final double viewportBottom =
-        mediaQuery.size.height -
-        mediaQuery.padding.bottom -
-        mediaQuery.viewInsets.bottom -
+        screenSize.height -
+        padding.bottom -
+        viewInsets.bottom -
         _menuViewportPadding;
     final double spaceBelow = viewportBottom - fieldBottom - _menuFieldGap;
     final double spaceAbove = fieldTop - viewportTop - _menuFieldGap;

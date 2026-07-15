@@ -15,7 +15,6 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
-import 'package:hosspi_hms/core/workspace/workspace_prefetch_ready_provider.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/pages/access_admin_workspace_page.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
@@ -26,78 +25,48 @@ import 'package:hosspi_hms/features/auth/presentation/pages/reset_password_page.
 import 'package:hosspi_hms/features/auth/presentation/pages/verify_email_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_shell_layout.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/change_password_dialog.dart';
+import 'package:hosspi_hms/app/router/shell_badge_counts.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
-import 'package:hosspi_hms/features/billing/presentation/controllers/billing_workspace_controller.dart';
 import 'package:hosspi_hms/features/billing/presentation/pages/billing_workspace_page.dart';
-import 'package:hosspi_hms/features/biomedical/domain/entities/biomedical_entities.dart';
-import 'package:hosspi_hms/features/biomedical/presentation/controllers/biomedical_workspace_controller.dart';
 import 'package:hosspi_hms/features/biomedical/presentation/pages/biomedical_workspace_page.dart';
-import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
-import 'package:hosspi_hms/features/claims/presentation/controllers/claims_workspace_controller.dart';
 import 'package:hosspi_hms/features/claims/presentation/pages/claims_workspace_page.dart';
-import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
-import 'package:hosspi_hms/features/clinical/presentation/controllers/clinical_workspace_controller.dart';
 import 'package:hosspi_hms/features/clinical/presentation/pages/clinical_workspace_page.dart';
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
-import 'package:hosspi_hms/features/communications/presentation/controllers/communications_workspace_controller.dart';
 import 'package:hosspi_hms/features/communications/presentation/pages/communications_workspace_page.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
-import 'package:hosspi_hms/features/discharge/presentation/controllers/discharge_workspace_controller.dart';
 import 'package:hosspi_hms/features/discharge/presentation/pages/discharge_workspace_page.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
-import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
 import 'package:hosspi_hms/features/emergency/presentation/pages/emergency_workspace_page.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/presentation/pages/home_page.dart';
-import 'package:hosspi_hms/features/housekeeping/domain/entities/housekeeping_entities.dart';
-import 'package:hosspi_hms/features/housekeeping/presentation/controllers/housekeeping_workspace_controller.dart';
 import 'package:hosspi_hms/features/housekeeping/presentation/pages/housekeeping_workspace_page.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
-import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/pages/hr_workspace_page.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
-import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
 import 'package:hosspi_hms/features/icu/presentation/pages/icu_workspace_page.dart';
-import 'package:hosspi_hms/features/integrations/domain/entities/integration_entities.dart';
-import 'package:hosspi_hms/features/integrations/presentation/controllers/integrations_workspace_controller.dart';
 import 'package:hosspi_hms/features/integrations/presentation/pages/integrations_workspace_page.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
-import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
 import 'package:hosspi_hms/features/ipd/presentation/pages/ipd_workspace_page.dart';
-import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
-import 'package:hosspi_hms/features/lab/presentation/controllers/lab_workspace_controller.dart';
 import 'package:hosspi_hms/features/lab/presentation/pages/lab_workspace_page.dart';
-import 'package:hosspi_hms/features/mortuary/domain/entities/mortuary_entities.dart';
-import 'package:hosspi_hms/features/mortuary/presentation/controllers/mortuary_workspace_controller.dart';
 import 'package:hosspi_hms/features/mortuary/presentation/pages/mortuary_workspace_page.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
-import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
 import 'package:hosspi_hms/features/nursing/presentation/pages/nursing_workspace_page.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
-import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.dart';
 import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
 import 'package:hosspi_hms/features/reception/presentation/pages/reception_workspace_page.dart';
-import 'package:hosspi_hms/features/operations/domain/entities/operations_entities.dart';
-import 'package:hosspi_hms/features/operations/presentation/controllers/operations_workspace_controller.dart';
 import 'package:hosspi_hms/features/operations/presentation/pages/operations_workspace_page.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry_page.dart';
-import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
-import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pages/pharmacy_workspace_page.dart';
 import 'package:hosspi_hms/features/physiotherapy/presentation/pages/physiotherapy_workspace_page.dart';
 import 'package:hosspi_hms/features/profile/presentation/pages/user_profile_page.dart';
-import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
-import 'package:hosspi_hms/features/radiology/presentation/controllers/radiology_workspace_controller.dart';
 import 'package:hosspi_hms/features/radiology/presentation/pages/radiology_workspace_page.dart';
 import 'package:hosspi_hms/features/reports/presentation/pages/reports_workspace_page.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
-import 'package:hosspi_hms/features/rooms_beds/presentation/controllers/rooms_beds_workspace_controller.dart';
 import 'package:hosspi_hms/features/rooms_beds/presentation/pages/rooms_beds_workspace_page.dart';
 import 'package:hosspi_hms/features/settings/presentation/pages/settings_page.dart';
 import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_entities.dart';
-import 'package:hosspi_hms/features/subscriptions/presentation/controllers/subscriptions_workspace_controller.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/pages/subscriptions_workspace_page.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_expired_prompt.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_header_button.dart';
@@ -105,7 +74,6 @@ import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscript
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_upgrade_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dart';
-import 'package:hosspi_hms/features/theater/presentation/controllers/theater_workspace_controller.dart';
 import 'package:hosspi_hms/features/theater/presentation/pages/theater_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -814,401 +782,36 @@ class _AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool canAccessBilling = _canAccessShellRoute(
-      AppRoutes.billing,
-      accessPolicy,
-    );
-    final bool canAccessClaims = _canAccessShellRoute(
-      AppRoutes.claims,
-      accessPolicy,
-    );
-    final bool canAccessSubscriptions = _canAccessShellRoute(
-      AppRoutes.subscriptions,
-      accessPolicy,
-    );
-    final bool canAccessOpd = _canAccessShellRoute(AppRoutes.opd, accessPolicy);
-    final bool canAccessEmergency = _canAccessShellRoute(
-      AppRoutes.emergency,
-      accessPolicy,
-    );
-    final bool canAccessIpd = _canAccessShellRoute(AppRoutes.ipd, accessPolicy);
-    final bool canAccessRoomsBeds = _canAccessShellRoute(
-      AppRoutes.roomsBeds,
-      accessPolicy,
-    );
-    final bool canAccessIcu = _canAccessShellRoute(AppRoutes.icu, accessPolicy);
-    final bool canAccessNursing = _canAccessShellRoute(
-      AppRoutes.nursing,
-      accessPolicy,
-    );
-    final bool canAccessClinical = _canAccessShellRoute(
-      AppRoutes.clinical,
-      accessPolicy,
-    );
-    final bool canAccessLab = _canAccessShellRoute(AppRoutes.lab, accessPolicy);
-    final bool canAccessRadiology = _canAccessShellRoute(
-      AppRoutes.radiology,
-      accessPolicy,
-    );
-    final bool canAccessPharmacy = _canAccessShellRoute(
-      AppRoutes.pharmacy,
-      accessPolicy,
-    );
-    final bool canAccessOperations = _canAccessShellRoute(
-      AppRoutes.operations,
-      accessPolicy,
-    );
-    final bool canAccessHousekeeping = _canAccessShellRoute(
-      AppRoutes.housekeeping,
-      accessPolicy,
-    );
-    final bool canAccessHr = _canAccessShellRoute(AppRoutes.hr, accessPolicy);
-    final bool canAccessBiomedical = _canAccessShellRoute(
-      AppRoutes.biomedical,
-      accessPolicy,
-    );
     final bool canAccessCommunications = _canAccessShellRoute(
       AppRoutes.communications,
       accessPolicy,
     );
-    final bool canAccessIntegrations = _canAccessShellRoute(
-      AppRoutes.integrations,
-      accessPolicy,
-    );
-    final bool canAccessDischarge = _canAccessShellRoute(
-      AppRoutes.discharge,
-      accessPolicy,
-    );
-    final bool canAccessMortuary = _canAccessShellRoute(
-      AppRoutes.mortuary,
-      accessPolicy,
-    );
-    final bool canAccessTheater = _canAccessShellRoute(
-      AppRoutes.theater,
-      accessPolicy,
-    );
-    final bool prefetchWorkspaceBadges = ref
-        .watch(workspacePrefetchReadyProvider)
-        .maybeWhen(data: (bool ready) => ready, orElse: () => false);
-    final int? opdWorkloadCount = canAccessOpd && prefetchWorkspaceBadges
-        ? ref
-              .watch(opdWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (OpdWorkspaceState state) => state.workloadCount,
-                failure: (_) => null,
-              )
-        : null;
-    final int? emergencyWorkloadCount =
-        canAccessEmergency && prefetchWorkspaceBadges
-        ? ref
-              .watch(emergencyWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (EmergencyWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? ipdWorkloadCount = canAccessIpd && prefetchWorkspaceBadges
-        ? ref
-              .watch(ipdWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (IpdWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? roomsBedsWorkloadCount =
-        canAccessRoomsBeds && prefetchWorkspaceBadges
-        ? ref
-              .watch(roomsBedsWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (RoomsBedsWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? icuCriticalCount = canAccessIcu && prefetchWorkspaceBadges
-        ? ref
-              .watch(icuWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (IcuWorkspaceState state) {
-                  return state.criticalCount > 0 ? state.criticalCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? nursingWorkloadCount =
-        canAccessNursing && prefetchWorkspaceBadges
-        ? ref
-              .watch(nursingWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (NursingWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? clinicalWorkloadCount =
-        canAccessClinical && prefetchWorkspaceBadges
-        ? ref
-              .watch(clinicalWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (ClinicalWorkspaceState state) {
-                  final int count = state.workloadCount;
-                  return count > 0 ? count : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? labWorkloadCount = canAccessLab && prefetchWorkspaceBadges
-        ? ref
-              .watch(labWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (LabWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? radiologyWorkloadCount =
-        canAccessRadiology && prefetchWorkspaceBadges
-        ? ref
-              .watch(radiologyWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (RadiologyWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? billingWorkloadCount =
-        canAccessBilling && prefetchWorkspaceBadges
-        ? ref
-              .watch(billingWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (BillingWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? claimsWorkloadCount = canAccessClaims && prefetchWorkspaceBadges
-        ? ref
-              .watch(claimsWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (ClaimsWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? subscriptionsWorkloadCount =
-        canAccessSubscriptions && prefetchWorkspaceBadges
-        ? ref
-              .watch(subscriptionsWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (SubscriptionsWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? pharmacyWorkloadCount =
-        canAccessPharmacy && prefetchWorkspaceBadges
-        ? ref
-              .watch(pharmacyWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (PharmacyWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? operationsWorkloadCount =
-        canAccessOperations && prefetchWorkspaceBadges
-        ? ref
-              .watch(operationsWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (OperationsWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? housekeepingWorkloadCount =
-        canAccessHousekeeping && prefetchWorkspaceBadges
-        ? ref
-              .watch(housekeepingWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (HousekeepingWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? hrWorkloadCount = canAccessHr && prefetchWorkspaceBadges
-        ? ref
-              .watch(hrWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (HrWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? biomedicalWorkloadCount =
-        canAccessBiomedical && prefetchWorkspaceBadges
-        ? ref
-              .watch(biomedicalWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (BiomedicalWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? communicationsWorkloadCount =
-        canAccessCommunications && prefetchWorkspaceBadges
-        ? ref
-              .watch(communicationsWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (CommunicationsWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? integrationsWorkloadCount =
-        canAccessIntegrations && prefetchWorkspaceBadges
-        ? ref
-              .watch(integrationsWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (IntegrationWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? notificationUnreadCount =
-        canAccessCommunications && prefetchWorkspaceBadges
-        ? ref
-              .watch(communicationsWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (CommunicationsWorkspaceState state) {
-                  return state.unreadBadgeCount > 0
-                      ? state.unreadBadgeCount
-                      : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? dischargeWorkloadCount =
-        canAccessDischarge && prefetchWorkspaceBadges
-        ? ref
-              .watch(dischargeWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (DischargeWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? mortuaryWorkloadCount =
-        canAccessMortuary && prefetchWorkspaceBadges
-        ? ref
-              .watch(mortuaryWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (MortuaryWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
-    final int? theaterWorkloadCount =
-        canAccessTheater && prefetchWorkspaceBadges
-        ? ref
-              .watch(theaterWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (TheaterWorkspaceState state) {
-                  return state.workloadCount > 0 ? state.workloadCount : null;
-                },
-                failure: (_) => null,
-              )
-        : null;
+    final ShellBadgeCounts badges = ref.watch(shellBadgeCountsProvider);
     final List<_ShellDestinationRoute> shellDestinations =
         _localizedShellDestinations(
               l10n,
-              billingWorkloadCount: billingWorkloadCount,
-              claimsWorkloadCount: claimsWorkloadCount,
-              subscriptionsWorkloadCount: subscriptionsWorkloadCount,
-              opdWorkloadCount: opdWorkloadCount,
-              emergencyWorkloadCount: emergencyWorkloadCount,
-              ipdWorkloadCount: ipdWorkloadCount,
-              roomsBedsWorkloadCount: roomsBedsWorkloadCount,
-              icuCriticalCount: icuCriticalCount,
-              nursingWorkloadCount: nursingWorkloadCount,
-              clinicalWorkloadCount: clinicalWorkloadCount,
-              labWorkloadCount: labWorkloadCount,
-              radiologyWorkloadCount: radiologyWorkloadCount,
-              pharmacyWorkloadCount: pharmacyWorkloadCount,
-              operationsWorkloadCount: operationsWorkloadCount,
-              housekeepingWorkloadCount: housekeepingWorkloadCount,
-              hrWorkloadCount: hrWorkloadCount,
-              biomedicalWorkloadCount: biomedicalWorkloadCount,
-              communicationsWorkloadCount: communicationsWorkloadCount,
-              integrationsWorkloadCount: integrationsWorkloadCount,
-              dischargeWorkloadCount: dischargeWorkloadCount,
-              mortuaryWorkloadCount: mortuaryWorkloadCount,
-              theaterWorkloadCount: theaterWorkloadCount,
+              billingWorkloadCount: badges.billingWorkloadCount,
+              claimsWorkloadCount: badges.claimsWorkloadCount,
+              subscriptionsWorkloadCount: badges.subscriptionsWorkloadCount,
+              opdWorkloadCount: badges.opdWorkloadCount,
+              emergencyWorkloadCount: badges.emergencyWorkloadCount,
+              ipdWorkloadCount: badges.ipdWorkloadCount,
+              roomsBedsWorkloadCount: badges.roomsBedsWorkloadCount,
+              icuCriticalCount: badges.icuCriticalCount,
+              nursingWorkloadCount: badges.nursingWorkloadCount,
+              clinicalWorkloadCount: badges.clinicalWorkloadCount,
+              labWorkloadCount: badges.labWorkloadCount,
+              radiologyWorkloadCount: badges.radiologyWorkloadCount,
+              pharmacyWorkloadCount: badges.pharmacyWorkloadCount,
+              operationsWorkloadCount: badges.operationsWorkloadCount,
+              housekeepingWorkloadCount: badges.housekeepingWorkloadCount,
+              hrWorkloadCount: badges.hrWorkloadCount,
+              biomedicalWorkloadCount: badges.biomedicalWorkloadCount,
+              communicationsWorkloadCount: badges.communicationsWorkloadCount,
+              integrationsWorkloadCount: badges.integrationsWorkloadCount,
+              dischargeWorkloadCount: badges.dischargeWorkloadCount,
+              mortuaryWorkloadCount: badges.mortuaryWorkloadCount,
+              theaterWorkloadCount: badges.theaterWorkloadCount,
             )
             .where((_ShellDestinationRoute destination) {
               return _canAccessShellRoute(destination.route, accessPolicy);
@@ -1278,9 +881,9 @@ class _AppShell extends ConsumerWidget {
         navigationSearchNoResultsLabel: l10n.appNavigationSearchNoResultsLabel,
         accountTooltip: l10n.appAccountTooltip,
         notificationsTooltip: l10n.appNotificationsTooltip,
-        unreadNotificationCount: notificationUnreadCount ?? 0,
+        unreadNotificationCount: badges.notificationUnreadCount ?? 0,
         notificationsUnreadLabel: l10n.appNotificationsUnreadLabel(
-          notificationUnreadCount ?? 0,
+          badges.notificationUnreadCount ?? 0,
         ),
         onNotificationsSelected: canAccessCommunications
             ? () {
@@ -1474,6 +1077,9 @@ String? _emailFromSubject(String? subject) {
   return subject;
 }
 
+final RegExp _initialsDelimiterPattern = RegExp(r'[@._-]+');
+final RegExp _whitespacePattern = RegExp(r'\s+');
+
 String? _initialsFrom(String? value) {
   final String? normalized = _nonEmpty(value);
   if (normalized == null) {
@@ -1481,8 +1087,8 @@ String? _initialsFrom(String? value) {
   }
 
   final List<String> words = normalized
-      .replaceAll(RegExp(r'[@._-]+'), ' ')
-      .split(RegExp(r'\s+'))
+      .replaceAll(_initialsDelimiterPattern, ' ')
+      .split(_whitespacePattern)
       .where((String word) => word.isNotEmpty)
       .toList(growable: false);
   if (words.isEmpty) {

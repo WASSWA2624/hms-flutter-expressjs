@@ -428,8 +428,11 @@ class _PlanColumnTile extends StatelessWidget {
                     height: 24,
                     child: Align(
                       alignment: Alignment.centerLeft,
-                      child: Opacity(
-                        opacity: isCurrentPlan ? 1 : 0,
+                      child: Visibility(
+                        visible: isCurrentPlan,
+                        maintainSize: true,
+                        maintainAnimation: true,
+                        maintainState: true,
                         child: Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: theme.spacing.sm,
