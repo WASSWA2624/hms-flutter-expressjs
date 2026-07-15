@@ -40,6 +40,72 @@ void main() {
       expect(query.focusAdmissionId, isNull);
       expect(query.focusPanel, isNull);
       expect(query.hasRouteTargeting, isFalse);
+      expect(query.section, isEmpty);
+    });
+
+    test('parses section query parameter', () {
+      final IcuBoardQuery query = IcuBoardQuery.fromUri(
+        Uri.parse('/icu?section=critical'),
+      );
+      expect(query.section, 'critical');
+      expect(query.hasRouteTargeting, isFalse);
+    });
+
+    test('parses section alongside focus id', () {
+      final IcuBoardQuery query = IcuBoardQuery.fromUri(
+        Uri.parse('/icu?section=transfers&id=ADM0001&panel=vitals'),
+      );
+      expect(query.section, 'transfers');
+      expect(query.focusAdmissionId, 'ADM0001');
+      expect(query.focusPanel, IcuDetailPanel.vitals);
+      expect(query.hasRouteTargeting, isTrue);
+    });
+
+    test('section defaults to empty when beds tab is selected', () {
+      final IcuBoardQuery query = IcuBoardQuery.fromUri(
+        Uri.parse('/icu?section=beds'),
+      );
+      expect(query.section, 'beds');
+    });
+
+    test('copyWith preserves section', () {
+      const IcuBoardQuery original = IcuBoardQuery(section: 'critical');
+      final IcuBoardQuery copied = original.copyWith(search: 'test');
+      expect(copied.section, 'critical');
+      expect(copied.search, 'test');
+    });
+
+    test('copyWith overrides section', () {
+      const IcuBoardQuery original = IcuBoardQuery(section: 'critical');
+      final IcuBoardQuery copied = original.copyWith(section: 'beds');
+      expect(copied.section, 'beds');
+    });
+  });
+
+  group('IcuWorkspaceSection', () {
+    test('toBoardScope maps to correct IcuBoardScope', () {
+      expect(IcuWorkspaceSection.active.toBoardScope(), IcuBoardScope.active);
+      expect(
+        IcuWorkspaceSection.critical.toBoardScope(),
+        IcuBoardScope.critical,
+      );
+      expect(
+        IcuWorkspaceSection.transfers.toBoardScope(),
+        IcuBoardScope.transfer,
+      );
+      expect(
+        IcuWorkspaceSection.discharge.toBoardScope(),
+        IcuBoardScope.discharge,
+      );
+      expect(IcuWorkspaceSection.ended.toBoardScope(), IcuBoardScope.ended);
+      expect(IcuWorkspaceSection.all.toBoardScope(), IcuBoardScope.all);
+      expect(IcuWorkspaceSection.beds.toBoardScope(), isNull);
+    });
+
+    test('isBedBoard returns true only for beds section', () {
+      expect(IcuWorkspaceSection.beds.isBedBoard, isTrue);
+      expect(IcuWorkspaceSection.active.isBedBoard, isFalse);
+      expect(IcuWorkspaceSection.all.isBedBoard, isFalse);
     });
   });
 

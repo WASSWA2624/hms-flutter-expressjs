@@ -2,6 +2,51 @@ import 'package:flutter/foundation.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
+@immutable
+final class OperationsWorkspaceQuery {
+  const OperationsWorkspaceQuery({
+    this.section = '',
+    this.search = '',
+    this.requestId = '',
+  });
+
+  factory OperationsWorkspaceQuery.fromUri(Uri uri) {
+    final Map<String, String> params = uri.queryParameters;
+    String pick(List<String> keys) {
+      for (final String key in keys) {
+        final String value = (params[key] ?? '').trim();
+        if (value.isNotEmpty) {
+          return value;
+        }
+      }
+      return '';
+    }
+
+    return OperationsWorkspaceQuery(
+      section: pick(<String>['section', 'panel', 'tab']),
+      search: pick(<String>['search', 'q']),
+      requestId: pick(<String>['requestId', 'request_id', 'id']),
+    );
+  }
+
+  final String section;
+  final String search;
+  final String requestId;
+
+  bool get hasRouteTargeting =>
+      section.isNotEmpty || search.isNotEmpty || requestId.isNotEmpty;
+
+  String get signature => '$section|$search|$requestId';
+}
+
+enum OperationsDeskSection {
+  allRequests,
+  open,
+  inProgress,
+  completed,
+  assets,
+}
+
 const List<String> operationsMaintenanceStatuses = <String>[
   'OPEN',
   'IN_PROGRESS',

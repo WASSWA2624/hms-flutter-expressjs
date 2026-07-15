@@ -8742,6 +8742,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dischargeStatusCompleted => 'Completed';
 
   @override
+  String get dischargeSectionAll => 'All patients';
+
+  @override
+  String get dischargeSectionPlanned => 'Planned';
+
+  @override
+  String get dischargeSectionPendingClearance => 'Pending clearance';
+
+  @override
+  String get dischargeSectionCompleted => 'Completed';
+
+  @override
   String get dischargeWorklistTitle => 'Discharge worklist';
 
   @override
@@ -12289,6 +12301,19 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get operationsNoRequestsBody =>
       'Create a request or adjust the filters.';
+
+  @override
+  String get operationsNoAssetsTitle => 'No assets registered';
+
+  @override
+  String get operationsNoAssetsBody =>
+      'No facility assets have been registered yet.';
+
+  @override
+  String get operationsAssetNameColumnLabel => 'Asset';
+
+  @override
+  String get operationsAssetTagColumnLabel => 'Tag';
 
   @override
   String get operationsDetailTitle => 'Request detail';

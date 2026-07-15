@@ -162,8 +162,9 @@ class _ClinicalWorkspaceContentState
   }
 
   Future<void> _applyRouteQuery(ClinicalWorkspaceQuery query) async {
-    final ClinicalWorkspaceController controller =
-        ref.read(clinicalWorkspaceControllerProvider.notifier);
+    final ClinicalWorkspaceController controller = ref.read(
+      clinicalWorkspaceControllerProvider.notifier,
+    );
     if (query.section != ClinicalWorkspaceSection.all &&
         query.section != _section) {
       _handleTabChanged(query.section);
@@ -173,8 +174,9 @@ class _ClinicalWorkspaceContentState
       await controller.applySearch(query.search);
     }
     if (query.encounterId.isNotEmpty) {
-      final ClinicalWorklistEntry? entry =
-          _findEntryByEncounterId(query.encounterId);
+      final ClinicalWorklistEntry? entry = _findEntryByEncounterId(
+        query.encounterId,
+      );
       if (entry != null) {
         await controller.selectEntry(entry);
       }
@@ -182,8 +184,7 @@ class _ClinicalWorkspaceContentState
   }
 
   ClinicalWorklistEntry? _findEntryByEncounterId(String encounterId) {
-    for (final ClinicalWorklistEntry entry
-        in widget.state.worklist.items) {
+    for (final ClinicalWorklistEntry entry in widget.state.worklist.items) {
       if (entry.encounterId == encounterId ||
           entry.encounterPublicId == encounterId ||
           entry.id == encounterId) {
@@ -218,9 +219,7 @@ class _ClinicalWorkspaceContentState
     }
     final String tab = _clinicalSectionQueryValue(section);
     final String location = AppRoutes.clinical.location(
-      queryParameters: <String, String>{
-        if (tab.isNotEmpty) 'section': tab,
-      },
+      queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
     GoRouter.of(context).replace<void>(location);
   }
@@ -420,52 +419,52 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
       clinicalWorkspaceControllerProvider.notifier,
     );
     return AppListTable<ClinicalWorklistEntry>(
-        page: state.worklist,
-        columnVisibilityController: columnVisibilityController,
-        columnVisibilityStorageKey: 'clinical_${section.name}',
-        columnWidthStorageKey: 'clinical_cw_${section.name}',
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        isLoading: state.isRefreshing,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        previousPageLabel: l10n.opdPreviousPageLabel,
-        nextPageLabel: l10n.opdNextPageLabel,
-        pageLabelBuilder: (AppPage<ClinicalWorklistEntry> page) {
-          return _pageLabel(context, page);
-        },
-        onPageChanged: controller.changePage,
-        onRowSelected: (ClinicalWorklistEntry entry) {
-          _openClinicalEntryDialog(context, ref, entry);
-        },
-        emptyBuilder: (_) => AppWorkspaceStatePanel.state(
-          variant: AppStateViewVariant.empty,
-          title: l10n.clinicalNoWorklistTitle,
-          body: l10n.clinicalNoWorklistBody,
-          icon: Icons.assignment_outlined,
-        ),
-        search: _worklistSearch(
-          context,
-          controller,
-          searchController,
-          filters: state.query.filters,
-          scope: state.query.scope,
-          filterEntries: state.worklist.items,
-          onSearchChanged: onSearchChanged,
-          onSearchSubmitted: onSearchSubmitted,
-        ),
-        columns: <AppListTableColumn<ClinicalWorklistEntry>>[
-          for (final _ClinicalTableColumnId column
-              in _clinicalDefaultColumnsForSection(section))
-            _clinicalDataColumn(context, column),
-        ],
-        columnChoices: <AppListTableColumn<ClinicalWorklistEntry>>[
-          for (final _ClinicalTableColumnId column
-              in _availableClinicalTableColumns)
-            _clinicalDataColumn(context, column),
-        ],
-        mobileItemBuilder: _clinicalWorklistMobileItemBuilder,
-        itemKeyBuilder: _clinicalWorklistItemKey,
-        rowColorBuilder: _clinicalRowColor,
+      page: state.worklist,
+      columnVisibilityController: columnVisibilityController,
+      columnVisibilityStorageKey: 'clinical_${section.name}',
+      columnWidthStorageKey: 'clinical_cw_${section.name}',
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      isLoading: state.isRefreshing,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      previousPageLabel: l10n.opdPreviousPageLabel,
+      nextPageLabel: l10n.opdNextPageLabel,
+      pageLabelBuilder: (AppPage<ClinicalWorklistEntry> page) {
+        return _pageLabel(context, page);
+      },
+      onPageChanged: controller.changePage,
+      onRowSelected: (ClinicalWorklistEntry entry) {
+        _openClinicalEntryDialog(context, ref, entry);
+      },
+      emptyBuilder: (_) => AppWorkspaceStatePanel.state(
+        variant: AppStateViewVariant.empty,
+        title: l10n.clinicalNoWorklistTitle,
+        body: l10n.clinicalNoWorklistBody,
+        icon: Icons.assignment_outlined,
+      ),
+      search: _worklistSearch(
+        context,
+        controller,
+        searchController,
+        filters: state.query.filters,
+        scope: state.query.scope,
+        filterEntries: state.worklist.items,
+        onSearchChanged: onSearchChanged,
+        onSearchSubmitted: onSearchSubmitted,
+      ),
+      columns: <AppListTableColumn<ClinicalWorklistEntry>>[
+        for (final _ClinicalTableColumnId column
+            in _clinicalDefaultColumnsForSection(section))
+          _clinicalDataColumn(context, column),
+      ],
+      columnChoices: <AppListTableColumn<ClinicalWorklistEntry>>[
+        for (final _ClinicalTableColumnId column
+            in _availableClinicalTableColumns)
+          _clinicalDataColumn(context, column),
+      ],
+      mobileItemBuilder: _clinicalWorklistMobileItemBuilder,
+      itemKeyBuilder: _clinicalWorklistItemKey,
+      rowColorBuilder: _clinicalRowColor,
     );
   }
 }

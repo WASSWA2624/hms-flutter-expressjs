@@ -3,6 +3,8 @@ import 'package:hosspi_hms/shared/data/data.dart';
 
 enum EmergencyBoardScope { active, critical, ambulance, handoff, closed, all }
 
+enum EmergencyBoardTab { active, critical, ambulance, handoff, closed, all }
+
 /// Panels the emergency workspace can focus via deep link
 /// (`/emergency?id=&panel=triage|response|ambulance|handoff`).
 enum EmergencyDetailPanelFocus { none, triage, response, ambulance, handoff }
@@ -19,6 +21,7 @@ final class EmergencyWorkspaceQuery {
     this.caseId = '',
     this.panel = EmergencyDetailPanelFocus.none,
     this.search = '',
+    this.scope = '',
   });
 
   factory EmergencyWorkspaceQuery.fromUri(Uri uri) {
@@ -37,19 +40,22 @@ final class EmergencyWorkspaceQuery {
       caseId: pick(<String>['id', 'case', 'caseId', 'emergencyCaseId']),
       panel: _panelFromValue(pick(<String>['panel', 'focus', 'action'])),
       search: pick(<String>['search', 'q', 'patient']),
+      scope: pick(<String>['scope', 'board', 'tab']),
     );
   }
 
   final String caseId;
   final EmergencyDetailPanelFocus panel;
   final String search;
+  final String scope;
 
   bool get hasRouteTargeting =>
       caseId.isNotEmpty ||
       panel != EmergencyDetailPanelFocus.none ||
-      search.isNotEmpty;
+      search.isNotEmpty ||
+      scope.isNotEmpty;
 
-  String get signature => '$caseId|${panel.name}|$search';
+  String get signature => '$caseId|${panel.name}|$search|$scope';
 
   static EmergencyDetailPanelFocus _panelFromValue(String value) {
     return switch (value.trim().toLowerCase()) {
@@ -630,6 +636,14 @@ final class EmergencyWorkspaceState {
         .where((EmergencyCaseSummary item) => item.isReadyForHandoff)
         .length;
   }
+
+  int get closedCount {
+    return board.items
+        .where((EmergencyCaseSummary item) => !item.isOpen)
+        .length;
+  }
+
+  int get allCount => board.totalItemCount ?? board.items.length;
 
   int get workloadCount {
     final Set<String> uniqueCases = <String>{};

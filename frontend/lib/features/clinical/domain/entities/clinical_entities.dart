@@ -23,9 +23,7 @@ final class ClinicalWorkspaceQuery {
     }
 
     return ClinicalWorkspaceQuery(
-      section: _parseClinicalSection(
-        pick(<String>['section', 'tab']),
-      ),
+      section: _parseClinicalSection(pick(<String>['section', 'tab'])),
       encounterId: pick(<String>[
         'encounterId',
         'encounter_id',
@@ -75,19 +73,16 @@ ClinicalWorkspaceSection _parseClinicalSection(String raw) {
     'waiting-review' ||
     'waiting_review' ||
     'waitingreview' ||
-    'review' =>
-      ClinicalWorkspaceSection.waitingReview,
+    'review' => ClinicalWorkspaceSection.waitingReview,
     'urgent' => ClinicalWorkspaceSection.urgent,
     'results-ready' ||
     'results_ready' ||
     'resultsready' ||
-    'results' =>
-      ClinicalWorkspaceSection.resultsReady,
+    'results' => ClinicalWorkspaceSection.resultsReady,
     'in-consultation' ||
     'in_consultation' ||
     'inconsultation' ||
-    'consultation' =>
-      ClinicalWorkspaceSection.inConsultation,
+    'consultation' => ClinicalWorkspaceSection.inConsultation,
     'completed' || 'closed' || 'done' => ClinicalWorkspaceSection.completed,
     _ => ClinicalWorkspaceSection.all,
   };

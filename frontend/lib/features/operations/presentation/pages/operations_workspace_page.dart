@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -22,7 +24,12 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
 class OperationsWorkspacePage extends ConsumerWidget {
-  const OperationsWorkspacePage({super.key});
+  const OperationsWorkspacePage({
+    super.key,
+    this.initialQuery = const OperationsWorkspaceQuery(),
+  });
+
+  final OperationsWorkspaceQuery initialQuery;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -42,16 +49,23 @@ class OperationsWorkspacePage extends ConsumerWidget {
         ref.read(operationsWorkspaceControllerProvider.notifier).refresh();
       },
       dataBuilder: (BuildContext context, OperationsWorkspaceState state) {
-        return _OperationsWorkspaceContent(state: state);
+        return _OperationsWorkspaceContent(
+          state: state,
+          initialQuery: initialQuery,
+        );
       },
     );
   }
 }
 
 class _OperationsWorkspaceContent extends ConsumerStatefulWidget {
-  const _OperationsWorkspaceContent({required this.state});
+  const _OperationsWorkspaceContent({
+    required this.state,
+    this.initialQuery = const OperationsWorkspaceQuery(),
+  });
 
   final OperationsWorkspaceState state;
+  final OperationsWorkspaceQuery initialQuery;
 
   @override
   ConsumerState<_OperationsWorkspaceContent> createState() =>
@@ -65,6 +79,7 @@ class _OperationsWorkspaceContentState
     activeModules: <String>['facilities-maintenance'],
   );
 
+  late OperationsDeskSection _section;
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<OperationsWorkItem>
   _tableColumnController;
@@ -72,9 +87,11 @@ class _OperationsWorkspaceContentState
   @override
   void initState() {
     super.initState();
+    _section = _sectionFromQuery(widget.initialQuery.section);
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<OperationsWorkItem>();
+    _applyDeepLink(widget.initialQuery);
   }
 
   @override
@@ -91,6 +108,108 @@ class _OperationsWorkspaceContentState
     _searchController.dispose();
     _tableColumnController.dispose();
     super.dispose();
+  }
+
+  static OperationsDeskSection _sectionFromQuery(String value) {
+    return switch (value.trim().toLowerCase()) {
+      'open' => OperationsDeskSection.open,
+      'in-progress' => OperationsDeskSection.inProgress,
+      'completed' => OperationsDeskSection.completed,
+      'assets' => OperationsDeskSection.assets,
+      _ => OperationsDeskSection.allRequests,
+    };
+  }
+
+  static String _sectionToQueryValue(OperationsDeskSection section) {
+    return switch (section) {
+      OperationsDeskSection.allRequests => 'all',
+      OperationsDeskSection.open => 'open',
+      OperationsDeskSection.inProgress => 'in-progress',
+      OperationsDeskSection.completed => 'completed',
+      OperationsDeskSection.assets => 'assets',
+    };
+  }
+
+  void _updateUrlForSection(OperationsDeskSection section) {
+    if (!mounted) return;
+    final String tab = _sectionToQueryValue(section);
+    final String location = AppRoutes.operations.location(
+      queryParameters: <String, String>{
+        if (tab.isNotEmpty) 'section': tab,
+      },
+    );
+    GoRouter.of(context).replace<void>(location);
+  }
+
+  void _applyDeepLink(OperationsWorkspaceQuery query) {
+    if (!query.hasRouteTargeting) return;
+    if (query.search.isNotEmpty) {
+      _searchController.text = query.search;
+      ref
+          .read(operationsWorkspaceControllerProvider.notifier)
+          .applySearch(query.search);
+    }
+    _onTabChanged(_section);
+  }
+
+  void _onTabChanged(OperationsDeskSection section) {
+    setState(() => _section = section);
+    _updateUrlForSection(section);
+
+    final OperationsWorkspaceController controller = ref.read(
+      operationsWorkspaceControllerProvider.notifier,
+    );
+    switch (section) {
+      case OperationsDeskSection.allRequests:
+        controller.clearFilters();
+      case OperationsDeskSection.open:
+        controller.applyStatus('OPEN');
+      case OperationsDeskSection.inProgress:
+        controller.applyStatus('IN_PROGRESS');
+      case OperationsDeskSection.completed:
+        controller.applyStatus('COMPLETED');
+      case OperationsDeskSection.assets:
+        break;
+    }
+  }
+
+  static IconData _sectionIcon(OperationsDeskSection section) {
+    return switch (section) {
+      OperationsDeskSection.allRequests => Icons.inventory_2_outlined,
+      OperationsDeskSection.open => Icons.pending_actions_outlined,
+      OperationsDeskSection.inProgress => Icons.engineering_outlined,
+      OperationsDeskSection.completed => Icons.task_alt_outlined,
+      OperationsDeskSection.assets => Icons.precision_manufacturing_outlined,
+    };
+  }
+
+  static String _sectionLabel(
+    AppLocalizations l10n,
+    OperationsDeskSection section,
+  ) {
+    return switch (section) {
+      OperationsDeskSection.allRequests =>
+        l10n.operationsAllRequestsSummaryLabel,
+      OperationsDeskSection.open => l10n.operationsOpenSummaryLabel,
+      OperationsDeskSection.inProgress => l10n.operationsInProgressSummaryLabel,
+      OperationsDeskSection.completed => l10n.operationsCompletedSummaryLabel,
+      OperationsDeskSection.assets => l10n.operationsAssetsSummaryLabel,
+    };
+  }
+
+  static int _sectionCount(
+    OperationsWorkspaceState state,
+    OperationsDeskSection section,
+  ) {
+    return switch (section) {
+      OperationsDeskSection.allRequests =>
+        state.workItems.totalItemCount ?? state.workItems.items.length,
+      OperationsDeskSection.open => state.openCount,
+      OperationsDeskSection.inProgress => state.inProgressCount,
+      OperationsDeskSection.completed =>
+        state.completedCount + state.cancelledCount,
+      OperationsDeskSection.assets => state.assetCount,
+    };
   }
 
   @override

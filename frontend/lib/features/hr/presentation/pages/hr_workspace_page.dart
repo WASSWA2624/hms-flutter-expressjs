@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -27,6 +28,7 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_acti
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_offboarding_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_workspace_form_fields.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -84,12 +86,17 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
   _staffColumnController;
   late final AppListTableColumnVisibilityController<HrWorkItem>
   _queueColumnController;
+  late HrDeskSection _section;
 
   bool _deepLinkHandled = false;
 
   @override
   void initState() {
     super.initState();
+    _section =
+        _sectionFromQuery(widget.initialQuery?.section ?? '') ??
+        _sectionFromQueue(widget.initialQuery?.queue) ??
+        HrDeskSection.staffDirectory;
     _searchController = TextEditingController(
       text: widget.state.staffQuery.search,
     );
@@ -119,8 +126,16 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
       hrWorkspaceControllerProvider.notifier,
     );
 
+    final HrDeskSection? sectionFromRoute =
+        _sectionFromQuery(query.section) ?? _sectionFromQueue(query.queue);
+    if (sectionFromRoute != null && sectionFromRoute != _section) {
+      setState(() => _section = sectionFromRoute);
+      _loadDataForSection(sectionFromRoute);
+    }
+
     final String? focusStaffId = query.focusStaffId?.trim();
     if (focusStaffId != null && focusStaffId.isNotEmpty) {
+      setState(() => _section = HrDeskSection.staffDirectory);
       final AppFailure? failure = await controller.selectStaffByDisplayId(
         focusStaffId,
       );
@@ -142,7 +157,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     }
 
     final HrQueue? queue = query.queue;
-    if (queue != null) {
+    if (queue != null && sectionFromRoute == null) {
       await applyHrQueueAndShow(context, ref, queue);
       return;
     }
@@ -151,6 +166,32 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     if (search.isNotEmpty) {
       await controller.applyStaffSearch(search);
     }
+  }
+
+  void _loadDataForSection(HrDeskSection section) {
+    final HrWorkspaceController controller = ref.read(
+      hrWorkspaceControllerProvider.notifier,
+    );
+    final HrQueue? targetQueue = switch (section) {
+      HrDeskSection.leaveRequests => HrQueue.leaveRequests,
+      HrDeskSection.shiftRoster => HrQueue.rosterDrafts,
+      HrDeskSection.payroll => HrQueue.payrollDrafts,
+      HrDeskSection.staffDirectory || HrDeskSection.access => null,
+    };
+    if (targetQueue != null) {
+      unawaited(controller.applyQueue(targetQueue));
+    }
+  }
+
+  void _updateUrlForSection(HrDeskSection section) {
+    if (!mounted) {
+      return;
+    }
+    final String tab = _sectionToQueryValue(section);
+    final String location = AppRoutes.hr.location(
+      queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
+    );
+    GoRouter.of(context).replace<void>(location);
   }
 
   @override
@@ -195,6 +236,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     );
 
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final HrWorkspaceState state = widget.state;
     final HrWorkspaceController controller = ref.read(
       hrWorkspaceControllerProvider.notifier,
@@ -203,145 +245,164 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         ? state.lastFailure! as AppFailure
         : null;
 
-    final Widget addStaffAction = AppButton.secondary(
-      label: l10n.hrAddStaffAction,
-      leadingIcon: Icons.person_add_outlined,
-      semanticLabel: l10n.hrAddStaffAction,
-      tooltip: l10n.hrAddStaffDialogTitle,
-      onPressed: state.isRefreshing
-          ? null
-          : () => showHrStaffOnboardingDialog(context, ref),
-    );
-    final Widget workQueuesAction = AppButton.secondary(
-      label: l10n.hrWorkQueuesTitle,
-      leadingIcon: Icons.pending_actions_outlined,
-      semanticLabel: l10n.hrWorkQueuesTitle,
-      tooltip: l10n.hrWorkQueuesToolbarTooltip,
-      onPressed: state.isRefreshing
-          ? null
-          : () => showHrWorkQueueDialog(
-              context,
-              ref,
-              columnVisibilityController: _queueColumnController,
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: AppTabStrip(
+                    tabs: <AppTabItem>[
+                      for (final HrDeskSection section in HrDeskSection.values)
+                        AppTabItem(
+                          id: section.name,
+                          icon: _sectionIcon(section),
+                          label:
+                              '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
+                        ),
+                    ],
+                    selectedId: _section.name,
+                    onTabTapped: (String tabId) {
+                      for (final HrDeskSection section
+                          in HrDeskSection.values) {
+                        if (section.name == tabId) {
+                          setState(() => _section = section);
+                          _updateUrlForSection(section);
+                          _loadDataForSection(section);
+                          break;
+                        }
+                      }
+                    },
+                  ),
+                ),
+                SizedBox(width: theme.spacing.sm),
+                _buildPrimaryActionButton(l10n, state),
+              ],
             ),
-    );
-    final Widget manageAccessAction = AppButton.secondary(
-      label: l10n.hrManageAccessAction,
-      leadingIcon: Icons.manage_accounts_outlined,
-      semanticLabel: l10n.hrManageAccessAction,
-      tooltip: l10n.hrManageAccessAction,
-      onPressed: state.isRefreshing
-          ? null
-          : () => showHrAccessWorkspaceDialog(context),
-    );
-    final Widget scheduleTemplatesAction = AppButton.secondary(
-      label: l10n.hrShiftTemplateAction,
-      leadingIcon: Icons.view_week_outlined,
-      semanticLabel: l10n.hrShiftTemplateAction,
-      tooltip: l10n.hrShiftTemplateAction,
-      onPressed: state.isRefreshing
-          ? null
-          : () => showHrManageScheduleTemplatesDialog(context, ref),
-    );
-    final Widget hrActivityAction = AppButton.secondary(
-      label: l10n.hrActivityTitle,
-      leadingIcon: Icons.timeline_outlined,
-      semanticLabel: l10n.hrActivityTitle,
-      tooltip: l10n.hrActivityTitle,
-      onPressed: state.isRefreshing ? null : () => _showActivityDialog(context),
-    );
-    final Widget refreshAction = AppWorkspaceRefreshAction(
-      label: l10n.commonRefreshActionLabel,
-      isLoading: state.isRefreshing,
-      onPressed: state.isRefreshing
-          ? null
-          : () {
-              unawaited(
-                controller.refresh().then((AppFailure? failure) {
-                  if (context.mounted && failure != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(l10n.failureMessage(failure))),
-                    );
-                  }
-                }),
-              );
-            },
-    );
-    final Widget housekeepingAction = AppGlobalHousekeepingRequestAction(
-      label: l10n.workspaceGlobalHousekeepingRequestAction,
-    );
-    final Widget faultReportAction = AppGlobalFaultReportAction(
-      label: l10n.workspaceGlobalFaultReportAction,
-    );
-
-    return AppWorkspace(
-      title: l10n.hrTitle,
-      leadingIcon: AppRouteIcons.hr,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        showGlobalActions: false,
-        maxVisibleScreenActions: 2,
-        summaryNotifications: _summaryNotifications(context, state, controller),
-        toolbarLayoutActions: <Widget>[
-          addStaffAction,
-          workQueuesAction,
-          manageAccessAction,
-          scheduleTemplatesAction,
-          hrActivityAction,
-          refreshAction,
-          housekeepingAction,
-          faultReportAction,
-        ],
-        overflowSections: <AppToolbarOverflowSection>[
-          AppToolbarOverflowSection(
-            headerLabel: l10n.workspaceToolbarSectionStaffAccess,
-            actions: <Widget>[addStaffAction, manageAccessAction],
-          ),
-          AppToolbarOverflowSection(
-            headerLabel: l10n.workspaceToolbarSectionScheduling,
-            actions: <Widget>[workQueuesAction, scheduleTemplatesAction],
-          ),
-          AppToolbarOverflowSection(
-            headerLabel: l10n.workspaceToolbarSectionApprovals,
-            showsNotifications: true,
-          ),
-          AppToolbarOverflowSection(
-            headerLabel: l10n.workspaceToolbarSectionActivity,
-            actions: <Widget>[hrActivityAction],
-          ),
-          AppToolbarOverflowSection(
-            headerLabel: l10n.workspaceToolbarSectionWorkspace,
-            actions: <Widget>[refreshAction],
-          ),
-          AppToolbarOverflowSection(
-            headerLabel: l10n.workspaceToolbarSectionFacilities,
-            actions: <Widget>[housekeepingAction, faultReportAction],
-          ),
-        ],
-      ),
-
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (lastFailure != null) ...<Widget>[
-            AppFailureStateView(
-              failure: lastFailure,
-              onRetry: controller.refresh,
+            SizedBox(height: theme.spacing.sm),
+            _SecondaryActionsRow(
+              state: state,
+              controller: controller,
+              onActivityPressed: () => _showActivityDialog(context),
             ),
-            SizedBox(height: Theme.of(context).spacing.md),
+            SizedBox(height: theme.spacing.md),
+            if (lastFailure != null) ...<Widget>[
+              AppFailureStateView(
+                failure: lastFailure,
+                onRetry: controller.refresh,
+              ),
+              SizedBox(height: theme.spacing.md),
+            ],
+            _buildTabBody(l10n, state, controller),
           ],
-          _HrStaffDirectory(
-            state: state,
-            searchController: _searchController,
-            columnVisibilityController: _staffColumnController,
-            onPageChanged: controller.changeStaffPage,
-            onStaffSelected: (HrStaffProfile item) {
-              unawaited(_openStaffDetailDialog(context, item));
-            },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrimaryActionButton(
+    AppLocalizations l10n,
+    HrWorkspaceState state,
+  ) {
+    return switch (_section) {
+      HrDeskSection.staffDirectory => AppButton.primary(
+        label: l10n.hrAddStaffAction,
+        leadingIcon: Icons.person_add_outlined,
+        onPressed: state.isRefreshing
+            ? null
+            : () => showHrStaffOnboardingDialog(context, ref),
+      ),
+      HrDeskSection.leaveRequests => AppButton.primary(
+        label: l10n.hrWorkQueuesTitle,
+        leadingIcon: Icons.pending_actions_outlined,
+        onPressed: state.isRefreshing
+            ? null
+            : () => showHrWorkQueueDialog(
+                context,
+                ref,
+                columnVisibilityController: _queueColumnController,
+              ),
+      ),
+      HrDeskSection.shiftRoster => AppButton.primary(
+        label: l10n.hrShiftTemplateAction,
+        leadingIcon: Icons.view_week_outlined,
+        onPressed: state.isRefreshing
+            ? null
+            : () => showHrManageScheduleTemplatesDialog(context, ref),
+      ),
+      HrDeskSection.payroll => AppButton.primary(
+        label: l10n.hrPayrollDraftsSummaryLabel,
+        leadingIcon: Icons.payments_outlined,
+        onPressed: state.isRefreshing
+            ? null
+            : () => showHrWorkQueueDialog(
+                context,
+                ref,
+                columnVisibilityController: _queueColumnController,
+              ),
+      ),
+      HrDeskSection.access => AppButton.primary(
+        label: l10n.hrManageAccessAction,
+        leadingIcon: Icons.manage_accounts_outlined,
+        onPressed: state.isRefreshing
+            ? null
+            : () => showHrAccessWorkspaceDialog(context),
+      ),
+    };
+  }
+
+  Widget _buildTabBody(
+    AppLocalizations l10n,
+    HrWorkspaceState state,
+    HrWorkspaceController controller,
+  ) {
+    return switch (_section) {
+      HrDeskSection.staffDirectory => _HrStaffDirectory(
+        state: state,
+        searchController: _searchController,
+        columnVisibilityController: _staffColumnController,
+        onPageChanged: controller.changeStaffPage,
+        onStaffSelected: (HrStaffProfile item) {
+          unawaited(_openStaffDetailDialog(context, item));
+        },
+      ),
+      HrDeskSection.leaveRequests => _HrWorkQueueTable(
+        columnVisibilityController: _queueColumnController,
+        onPageChanged: controller.changeWorkItemsPage,
+      ),
+      HrDeskSection.shiftRoster => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          const _HrWorkQueueSwitcherRow(),
+          SizedBox(height: Theme.of(context).spacing.md),
+          _HrWorkQueueTable(
+            columnVisibilityController: _queueColumnController,
+            onPageChanged: controller.changeWorkItemsPage,
           ),
         ],
       ),
-    );
+      HrDeskSection.payroll => _HrWorkQueueTable(
+        columnVisibilityController: _queueColumnController,
+        onPageChanged: controller.changeWorkItemsPage,
+      ),
+      HrDeskSection.access => AppStateView(
+        title: l10n.hrManageAccessAction,
+        body: l10n.hrManageAccessAction,
+        variant: AppStateViewVariant.empty,
+        action: AppButton.primary(
+          label: l10n.hrManageAccessAction,
+          leadingIcon: Icons.manage_accounts_outlined,
+          onPressed: state.isRefreshing
+              ? null
+              : () => showHrAccessWorkspaceDialog(context),
+        ),
+      ),
+    };
   }
 
   Future<void> _openStaffDetailDialog(
@@ -384,57 +445,56 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
       ),
     );
   }
+}
 
-  List<AppWorkspaceSummaryNotification> _summaryNotifications(
-    BuildContext context,
-    HrWorkspaceState state,
-    HrWorkspaceController controller,
-  ) {
+class _SecondaryActionsRow extends ConsumerWidget {
+  const _SecondaryActionsRow({
+    required this.state,
+    required this.controller,
+    required this.onActivityPressed,
+  });
+
+  final HrWorkspaceState state;
+  final HrWorkspaceController controller;
+  final VoidCallback onActivityPressed;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final HrWorkspaceSummary summary = state.overview.summary;
-
-    return <AppWorkspaceSummaryNotification>[
-      AppWorkspaceSummaryNotification(
-        label: l10n.hrLeaveRequestsSummaryLabel,
-        count: summary.leaveRequests,
-        icon: Icons.event_busy_outlined,
-        tone: summary.leaveRequests > 0
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.neutral,
-        onSelected: () {
-          unawaited(applyHrQueueAndShow(context, ref, HrQueue.leaveRequests));
-        },
-      ),
-      AppWorkspaceSummaryNotification(
-        label: l10n.hrRosterDraftsSummaryLabel,
-        count: summary.draftRosters,
-        icon: Icons.calendar_month_outlined,
-        onSelected: () {
-          unawaited(applyHrQueueAndShow(context, ref, HrQueue.rosterDrafts));
-        },
-      ),
-      AppWorkspaceSummaryNotification(
-        label: l10n.hrUnassignedShiftsSummaryLabel,
-        count: summary.unassignedShifts,
-        icon: Icons.event_available_outlined,
-        tone: summary.unassignedShifts > 0
-            ? AppWorkspaceStatusTone.info
-            : AppWorkspaceStatusTone.neutral,
-        onSelected: () {
-          unawaited(
-            applyHrQueueAndShow(context, ref, HrQueue.unassignedShifts),
-          );
-        },
-      ),
-      AppWorkspaceSummaryNotification(
-        label: l10n.hrPayrollDraftsSummaryLabel,
-        count: summary.payrollDraftRuns,
-        icon: Icons.payments_outlined,
-        onSelected: () {
-          unawaited(applyHrQueueAndShow(context, ref, HrQueue.payrollDrafts));
-        },
-      ),
-    ];
+    return Wrap(
+      spacing: Theme.of(context).spacing.sm,
+      runSpacing: Theme.of(context).spacing.xs,
+      children: <Widget>[
+        AppButton.tertiary(
+          label: l10n.hrActivityTitle,
+          leadingIcon: Icons.timeline_outlined,
+          onPressed: state.isRefreshing ? null : onActivityPressed,
+        ),
+        AppWorkspaceRefreshAction(
+          label: l10n.commonRefreshActionLabel,
+          isLoading: state.isRefreshing,
+          onPressed: state.isRefreshing
+              ? null
+              : () {
+                  unawaited(
+                    controller.refresh().then((AppFailure? failure) {
+                      if (context.mounted && failure != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(l10n.failureMessage(failure))),
+                        );
+                      }
+                    }),
+                  );
+                },
+        ),
+        AppGlobalHousekeepingRequestAction(
+          label: l10n.workspaceGlobalHousekeepingRequestAction,
+        ),
+        AppGlobalFaultReportAction(
+          label: l10n.workspaceGlobalFaultReportAction,
+        ),
+      ],
+    );
   }
 }
 
@@ -478,149 +538,149 @@ class _HrStaffDirectory extends ConsumerWidget {
           );
 
     return AppListTable<HrStaffProfile>(
-        page: staffPage,
-        isLoading: state.isRefreshingStaff,
-        columnVisibilityController: columnVisibilityController,
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        search: AppListTableSearch<HrStaffProfile>(
-          controller: searchController,
-          semanticLabel: l10n.hrSearchLabel,
-          hintText: l10n.hrSearchHint,
-          clearLabel: l10n.hrClearFiltersAction,
-          matcher: (_, _) => true,
-          onSubmitted: controller.applyStaffSearch,
-          onClear: () => controller.applyStaffSearch(''),
-          showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.hrFiltersLabel,
-          advancedFilterTitle: l10n.hrFiltersLabel,
-          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-          advancedFilterResetLabel: l10n.hrClearFiltersAction,
-          enableDateFilter: false,
-          allFieldsLabel: l10n.opdAllFieldsFilterLabel,
-          textFilters: <AppSearchBarTextFilter>[
-            AppSearchBarTextFilter(
-              key: _hrPositionFilterKey,
-              label: l10n.hrPositionFilterLabel,
-              icon: Icons.work_outline,
-              textInputAction: TextInputAction.done,
+      page: staffPage,
+      isLoading: state.isRefreshingStaff,
+      columnVisibilityController: columnVisibilityController,
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      search: AppListTableSearch<HrStaffProfile>(
+        controller: searchController,
+        semanticLabel: l10n.hrSearchLabel,
+        hintText: l10n.hrSearchHint,
+        clearLabel: l10n.hrClearFiltersAction,
+        matcher: (_, _) => true,
+        onSubmitted: controller.applyStaffSearch,
+        onClear: () => controller.applyStaffSearch(''),
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.hrFiltersLabel,
+        advancedFilterTitle: l10n.hrFiltersLabel,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.hrClearFiltersAction,
+        enableDateFilter: false,
+        allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+        textFilters: <AppSearchBarTextFilter>[
+          AppSearchBarTextFilter(
+            key: _hrPositionFilterKey,
+            label: l10n.hrPositionFilterLabel,
+            icon: Icons.work_outline,
+            textInputAction: TextInputAction.done,
+          ),
+        ],
+        filterGroups: <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: _hrDepartmentFilterKey,
+            label: l10n.hrDepartmentFilterLabel,
+            allLabel: l10n.opdAllFieldsFilterLabel,
+            choices: _optionChoices(
+              state.referenceData.departments,
+              Icons.apartment_outlined,
             ),
-          ],
-          filterGroups: <AppSearchBarFilterGroup>[
-            AppSearchBarFilterGroup(
-              key: _hrDepartmentFilterKey,
-              label: l10n.hrDepartmentFilterLabel,
-              allLabel: l10n.opdAllFieldsFilterLabel,
-              choices: _optionChoices(
-                state.referenceData.departments,
-                Icons.apartment_outlined,
-              ),
+          ),
+          AppSearchBarFilterGroup(
+            key: _hrPractitionerFilterKey,
+            label: l10n.hrPractitionerTypeFilterLabel,
+            allLabel: l10n.opdAllFieldsFilterLabel,
+            choices: _optionChoices(
+              state.referenceData.practitionerTypes,
+              Icons.medical_information_outlined,
             ),
-            AppSearchBarFilterGroup(
-              key: _hrPractitionerFilterKey,
-              label: l10n.hrPractitionerTypeFilterLabel,
-              allLabel: l10n.opdAllFieldsFilterLabel,
-              choices: _optionChoices(
-                state.referenceData.practitionerTypes,
-                Icons.medical_information_outlined,
-              ),
-            ),
-          ],
-          filterValue: _staffFilterValue(state.staffQuery),
-          hasActiveFilters: _hasStaffFilters(state.staffQuery),
-          onFilterChanged: (AppSearchBarFilterValue value) {
-            controller.applyStaffFilters(
-              departmentId: value.option(_hrDepartmentFilterKey),
-              practitionerType: value.option(_hrPractitionerFilterKey),
-              position: value.text(_hrPositionFilterKey),
+          ),
+        ],
+        filterValue: _staffFilterValue(state.staffQuery),
+        hasActiveFilters: _hasStaffFilters(state.staffQuery),
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          controller.applyStaffFilters(
+            departmentId: value.option(_hrDepartmentFilterKey),
+            practitionerType: value.option(_hrPractitionerFilterKey),
+            position: value.text(_hrPositionFilterKey),
+          );
+        },
+      ),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemKeyBuilder: (HrStaffProfile item) => ValueKey<String>(item.id),
+      onRowSelected: onStaffSelected,
+      previousPageLabel: l10n.hrPreviousPageLabel,
+      nextPageLabel: l10n.hrNextPageLabel,
+      pageLabelBuilder: (AppPage<HrStaffProfile> page) {
+        return l10n.hrPageLabel(
+          page.firstItemNumber,
+          page.lastItemNumber,
+          page.totalItemCount ?? page.lastItemNumber,
+        );
+      },
+      onPageChanged: onPageChanged,
+      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+        title: l10n.hrNoStaffTitle,
+        body: l10n.hrNoStaffBody,
+      ),
+      columns: <AppListTableColumn<HrStaffProfile>>[
+        AppListTableColumn<HrStaffProfile>(
+          label: l10n.hrStaffColumnLabel,
+          sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
+              appListTableCompareText(left.displayName, right.displayName),
+          cellBuilder: (BuildContext context, HrStaffProfile item) {
+            return AppCopyableIdentifierCell(
+              title: item.displayName,
+              identifier: item.staffNumber ?? item.displayId,
             );
           },
         ),
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemKeyBuilder: (HrStaffProfile item) => ValueKey<String>(item.id),
-        onRowSelected: onStaffSelected,
-        previousPageLabel: l10n.hrPreviousPageLabel,
-        nextPageLabel: l10n.hrNextPageLabel,
-        pageLabelBuilder: (AppPage<HrStaffProfile> page) {
-          return l10n.hrPageLabel(
-            page.firstItemNumber,
-            page.lastItemNumber,
-            page.totalItemCount ?? page.lastItemNumber,
-          );
-        },
-        onPageChanged: onPageChanged,
-        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-          title: l10n.hrNoStaffTitle,
-          body: l10n.hrNoStaffBody,
+        AppListTableColumn<HrStaffProfile>(
+          label: l10n.hrRolePositionColumnLabel,
+          sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
+              appListTableCompareText(
+                left.assignmentLine,
+                right.assignmentLine,
+              ),
+          cellBuilder: (BuildContext context, HrStaffProfile item) {
+            final ThemeData theme = Theme.of(context);
+            return AppListItemText(
+              title: item.position ?? context.l10n.profileUnknownValue,
+              subtitle: item.practitionerType == null
+                  ? null
+                  : _apiLabel(context, item.practitionerType),
+              titleStyle: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            );
+          },
         ),
-        columns: <AppListTableColumn<HrStaffProfile>>[
-          AppListTableColumn<HrStaffProfile>(
-            label: l10n.hrStaffColumnLabel,
-            sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
-                appListTableCompareText(left.displayName, right.displayName),
-            cellBuilder: (BuildContext context, HrStaffProfile item) {
-              return AppCopyableIdentifierCell(
-                title: item.displayName,
-                identifier: item.staffNumber ?? item.displayId,
-              );
-            },
-          ),
-          AppListTableColumn<HrStaffProfile>(
-            label: l10n.hrRolePositionColumnLabel,
-            sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
-                appListTableCompareText(
-                  left.assignmentLine,
-                  right.assignmentLine,
-                ),
-            cellBuilder: (BuildContext context, HrStaffProfile item) {
-              final ThemeData theme = Theme.of(context);
-              return AppListItemText(
-                title: item.position ?? context.l10n.profileUnknownValue,
-                subtitle: item.practitionerType == null
-                    ? null
-                    : _apiLabel(context, item.practitionerType),
-                titleStyle: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              );
-            },
-          ),
-          AppListTableColumn<HrStaffProfile>(
-            label: l10n.hrDepartmentColumnLabel,
-            sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
-                appListTableCompareText(
-                  left.departmentName,
-                  right.departmentName,
-                ),
-            cellBuilder: (BuildContext context, HrStaffProfile item) {
-              return Text(
-                (item.departmentName ?? '').trim().isNotEmpty
-                    ? item.departmentName!
-                    : context.l10n.profileUnknownValue,
-              );
-            },
-          ),
-          AppListTableColumn<HrStaffProfile>(
-            label: l10n.hrStatusColumnLabel,
-            sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
-                appListTableCompareText(left.status, right.status),
-            cellBuilder: (BuildContext context, HrStaffProfile item) {
-              return _StatusBadge(status: item.status);
-            },
-          ),
-          AppListTableColumn<HrStaffProfile>(
-            label: l10n.hrNextActionColumnLabel,
-            cellBuilder: (BuildContext context, HrStaffProfile item) {
-              return AppButton.tertiary(
-                label: _staffNextAction(context, item),
-                onPressed: () => onStaffSelected(item),
-              );
-            },
-          ),
-        ],
-        mobileItemBuilder: (BuildContext context, HrStaffProfile item) {
-          return _HrStaffListTile(staff: item);
-        },
+        AppListTableColumn<HrStaffProfile>(
+          label: l10n.hrDepartmentColumnLabel,
+          sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
+              appListTableCompareText(
+                left.departmentName,
+                right.departmentName,
+              ),
+          cellBuilder: (BuildContext context, HrStaffProfile item) {
+            return Text(
+              (item.departmentName ?? '').trim().isNotEmpty
+                  ? item.departmentName!
+                  : context.l10n.profileUnknownValue,
+            );
+          },
+        ),
+        AppListTableColumn<HrStaffProfile>(
+          label: l10n.hrStatusColumnLabel,
+          sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
+              appListTableCompareText(left.status, right.status),
+          cellBuilder: (BuildContext context, HrStaffProfile item) {
+            return _StatusBadge(status: item.status);
+          },
+        ),
+        AppListTableColumn<HrStaffProfile>(
+          label: l10n.hrNextActionColumnLabel,
+          cellBuilder: (BuildContext context, HrStaffProfile item) {
+            return AppButton.tertiary(
+              label: _staffNextAction(context, item),
+              onPressed: () => onStaffSelected(item),
+            );
+          },
+        ),
+      ],
+      mobileItemBuilder: (BuildContext context, HrStaffProfile item) {
+        return _HrStaffListTile(staff: item);
+      },
     );
   }
 }
@@ -737,9 +797,8 @@ class _HrStaffDetailBody extends ConsumerWidget {
             ),
             AppWorkspacePatientContextField(
               label: l10n.hrDepartmentLabel,
-              value: profile.departmentName ??
-                  profile.departmentDisplayId ??
-                  '',
+              value:
+                  profile.departmentName ?? profile.departmentDisplayId ?? '',
               icon: Icons.apartment_outlined,
             ),
             AppWorkspacePatientContextField(
@@ -762,7 +821,7 @@ class _HrStaffDetailBody extends ConsumerWidget {
               value: profile.consultationFee == null
                   ? ''
                   : '${profile.consultationFee}'
-                      '${profile.consultationCurrency != null ? ' ${profile.consultationCurrency}' : ''}',
+                        '${profile.consultationCurrency != null ? ' ${profile.consultationCurrency}' : ''}',
               icon: Icons.payments_outlined,
             ),
             if (hasLinkedUser) ...<AppWorkspacePatientContextField>[
@@ -1498,8 +1557,8 @@ Future<void> _showShiftAssignmentDialog(
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
   );
-  final GlobalKey<_ShiftAssignmentFieldsState> fieldsKey =
-      GlobalKey<_ShiftAssignmentFieldsState>();
+  final GlobalKey<HrShiftAssignmentFieldsState> fieldsKey =
+      GlobalKey<HrShiftAssignmentFieldsState>();
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
     title: Text(l10n.hrAssignShiftDialogTitle),
@@ -1514,7 +1573,7 @@ Future<void> _showShiftAssignmentDialog(
           bool _, [
           AppFailure? failure,
         ]) {
-          return _ShiftAssignmentFields(
+          return HrShiftAssignmentFields(
             key: fieldsKey,
             referenceData: state?.referenceData ?? const HrReferenceData(),
           );
@@ -1534,8 +1593,8 @@ Future<void> _showShiftSwapDialog(BuildContext context, WidgetRef ref) async {
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
   );
-  final GlobalKey<_ShiftSwapFieldsState> fieldsKey =
-      GlobalKey<_ShiftSwapFieldsState>();
+  final GlobalKey<HrShiftSwapFieldsState> fieldsKey =
+      GlobalKey<HrShiftSwapFieldsState>();
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
     title: Text(l10n.hrSwapShiftDialogTitle),
@@ -1550,7 +1609,7 @@ Future<void> _showShiftSwapDialog(BuildContext context, WidgetRef ref) async {
           bool _, [
           AppFailure? failure,
         ]) {
-          return _ShiftSwapFields(
+          return HrShiftSwapFields(
             key: fieldsKey,
             referenceData: state?.referenceData ?? const HrReferenceData(),
           );
@@ -1764,8 +1823,8 @@ Future<void> _submitReason(
   required Future<AppFailure?> Function(String? reason) onSubmit,
 }) async {
   final AppLocalizations l10n = context.l10n;
-  final GlobalKey<_ReasonFieldsState> fieldsKey =
-      GlobalKey<_ReasonFieldsState>();
+  final GlobalKey<HrReasonFieldsState> fieldsKey =
+      GlobalKey<HrReasonFieldsState>();
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
     title: Text(title),
@@ -1780,7 +1839,7 @@ Future<void> _submitReason(
           bool _, [
           AppFailure? failure,
         ]) {
-          return _ReasonFields(key: fieldsKey, requiredReason: requiredReason);
+          return HrReasonFields(key: fieldsKey, requiredReason: requiredReason);
         },
     onSubmit: () => onSubmit(fieldsKey.currentState?.reason),
   );
@@ -1795,8 +1854,8 @@ Future<void> _showRosterPublishDialog(
   HrWorkItem item,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  final GlobalKey<_RosterPublishFieldsState> fieldsKey =
-      GlobalKey<_RosterPublishFieldsState>();
+  final GlobalKey<HrRosterPublishFieldsState> fieldsKey =
+      GlobalKey<HrRosterPublishFieldsState>();
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
     title: Text(l10n.hrPublishRosterDialogTitle),
@@ -1811,7 +1870,7 @@ Future<void> _showRosterPublishDialog(
           bool _, [
           AppFailure? failure,
         ]) {
-          return _RosterPublishFields(key: fieldsKey);
+          return HrRosterPublishFields(key: fieldsKey);
         },
     onSubmit: () {
       final Map<String, Object?> payload =
@@ -1839,8 +1898,8 @@ Future<void> _showOverrideShiftDialog(
   final HrWorkspaceController controller = ref.read(
     hrWorkspaceControllerProvider.notifier,
   );
-  final GlobalKey<_OverrideShiftFieldsState> fieldsKey =
-      GlobalKey<_OverrideShiftFieldsState>();
+  final GlobalKey<HrOverrideShiftFieldsState> fieldsKey =
+      GlobalKey<HrOverrideShiftFieldsState>();
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
     title: Text(l10n.hrOverrideShiftDialogTitle),
@@ -1855,7 +1914,7 @@ Future<void> _showOverrideShiftDialog(
           bool _, [
           AppFailure? failure,
         ]) {
-          return _OverrideShiftFields(
+          return HrOverrideShiftFields(
             key: fieldsKey,
             referenceData: state?.referenceData ?? const HrReferenceData(),
           );
@@ -1881,8 +1940,8 @@ Future<void> _showProcessPayrollDialog(
   HrWorkItem item,
 ) async {
   final AppLocalizations l10n = context.l10n;
-  final GlobalKey<_ProcessPayrollFieldsState> fieldsKey =
-      GlobalKey<_ProcessPayrollFieldsState>();
+  final GlobalKey<HrProcessPayrollFieldsState> fieldsKey =
+      GlobalKey<HrProcessPayrollFieldsState>();
   final bool? saved = await showAppWorkspaceMutationDialog(
     context: context,
     title: Text(l10n.hrProcessPayrollDialogTitle),
@@ -1897,7 +1956,7 @@ Future<void> _showProcessPayrollDialog(
           bool _, [
           AppFailure? failure,
         ]) {
-          return _ProcessPayrollFields(key: fieldsKey);
+          return HrProcessPayrollFields(key: fieldsKey);
         },
     onSubmit: () {
       final Map<String, Object?> payload =
@@ -1924,286 +1983,6 @@ Future<void> _submitSimple(
   }
 }
 
-class _ShiftAssignmentFields extends StatefulWidget {
-  const _ShiftAssignmentFields({required this.referenceData, super.key});
-
-  final HrReferenceData referenceData;
-
-  @override
-  State<_ShiftAssignmentFields> createState() => _ShiftAssignmentFieldsState();
-}
-
-class _ShiftAssignmentFieldsState extends State<_ShiftAssignmentFields> {
-  String? _shiftId;
-
-  Map<String, Object?> toPayload() {
-    return <String, Object?>{
-      'shift_id': _shiftId ?? '',
-      'assigned_at': DateTime.now().toUtc().toIso8601String(),
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppFormSection(
-      children: <Widget>[
-        AppSelectField<String>.searchable(
-          value: _shiftId,
-          labelText: l10n.hrSelectShiftLabel,
-          hintText: l10n.hrSelectShiftHint,
-          isRequired: true,
-          options: _shiftSelectOptions(widget.referenceData.shifts),
-          validator: AppValidators.requiredValue(
-            l10n.hrFieldRequiredLabel(l10n.hrSelectShiftLabel),
-          ),
-          onChanged: (String? value) => setState(() => _shiftId = value),
-        ),
-      ],
-    );
-  }
-}
-
-class _ShiftSwapFields extends StatefulWidget {
-  const _ShiftSwapFields({required this.referenceData, super.key});
-
-  final HrReferenceData referenceData;
-
-  @override
-  State<_ShiftSwapFields> createState() => _ShiftSwapFieldsState();
-}
-
-class _ShiftSwapFieldsState extends State<_ShiftSwapFields> {
-  String? _shiftId;
-  String? _targetStaffId;
-
-  Map<String, Object?> toPayload() {
-    return <String, Object?>{
-      'shift_id': _shiftId ?? '',
-      'target_staff_id': _targetStaffId,
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppFormSection(
-      children: <Widget>[
-        AppSelectField<String>.searchable(
-          value: _shiftId,
-          labelText: l10n.hrSelectShiftLabel,
-          hintText: l10n.hrSelectShiftHint,
-          isRequired: true,
-          options: _shiftSelectOptions(widget.referenceData.shifts),
-          validator: AppValidators.requiredValue(
-            l10n.hrFieldRequiredLabel(l10n.hrSelectShiftLabel),
-          ),
-          onChanged: (String? value) => setState(() => _shiftId = value),
-        ),
-        AppSelectField<String>.searchable(
-          value: _targetStaffId,
-          labelText: l10n.hrTargetStaffLabel,
-          options: hrSelectOptions(widget.referenceData.staffProfiles),
-          onChanged: (String? value) => setState(() => _targetStaffId = value),
-        ),
-      ],
-    );
-  }
-}
-
-class _ReasonFields extends StatefulWidget {
-  const _ReasonFields({required this.requiredReason, super.key});
-
-  final bool requiredReason;
-
-  @override
-  State<_ReasonFields> createState() => _ReasonFieldsState();
-}
-
-class _ReasonFieldsState extends State<_ReasonFields> {
-  final TextEditingController _reasonController = TextEditingController();
-
-  String get reason => _reasonController.text.trim();
-
-  @override
-  void dispose() {
-    _reasonController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppFormSection(
-      children: <Widget>[
-        AppTextField(
-          controller: _reasonController,
-          labelText: l10n.hrReasonLabel,
-          isRequired: widget.requiredReason,
-          maxLines: 3,
-          validator: widget.requiredReason
-              ? AppValidators.requiredText(
-                  l10n.hrFieldRequiredLabel(l10n.hrReasonLabel),
-                )
-              : null,
-        ),
-      ],
-    );
-  }
-}
-
-class _RosterPublishFields extends StatefulWidget {
-  const _RosterPublishFields({super.key});
-
-  @override
-  State<_RosterPublishFields> createState() => _RosterPublishFieldsState();
-}
-
-class _RosterPublishFieldsState extends State<_RosterPublishFields> {
-  final TextEditingController _noteController = TextEditingController();
-  bool _notifyStaff = true;
-  bool _allowPartial = false;
-
-  @override
-  void dispose() {
-    _noteController.dispose();
-    super.dispose();
-  }
-
-  Map<String, Object?> toPayload() {
-    return <String, Object?>{
-      'notify_staff': _notifyStaff,
-      'allow_partial_publish': _allowPartial,
-      'publish_note': _noteController.text.trim(),
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppFormSection(
-      children: <Widget>[
-        AppCheckboxField(
-          title: l10n.hrNotifyStaffLabel,
-          value: _notifyStaff,
-          onChanged: (bool value) => setState(() => _notifyStaff = value),
-        ),
-        AppCheckboxField(
-          title: l10n.hrAllowPartialPublishLabel,
-          value: _allowPartial,
-          onChanged: (bool value) => setState(() => _allowPartial = value),
-        ),
-        AppTextField(
-          controller: _noteController,
-          labelText: l10n.hrPublishNoteLabel,
-          maxLines: 3,
-        ),
-      ],
-    );
-  }
-}
-
-class _OverrideShiftFields extends StatefulWidget {
-  const _OverrideShiftFields({required this.referenceData, super.key});
-
-  final HrReferenceData referenceData;
-
-  @override
-  State<_OverrideShiftFields> createState() => _OverrideShiftFieldsState();
-}
-
-class _OverrideShiftFieldsState extends State<_OverrideShiftFields> {
-  final TextEditingController _reasonController = TextEditingController();
-  String? _staffProfileId;
-
-  @override
-  void dispose() {
-    _reasonController.dispose();
-    super.dispose();
-  }
-
-  Map<String, Object?> toPayload() {
-    return <String, Object?>{
-      'staff_profile_id': _staffProfileId,
-      'reason': _reasonController.text.trim(),
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppFormSection(
-      children: <Widget>[
-        AppSelectField<String>.searchable(
-          value: _staffProfileId,
-          labelText: l10n.hrStaffLabel,
-          isRequired: true,
-          options: hrSelectOptions(widget.referenceData.staffProfiles),
-          validator: AppValidators.requiredValue(
-            l10n.hrFieldRequiredLabel(l10n.hrStaffLabel),
-          ),
-          onChanged: (String? value) => setState(() => _staffProfileId = value),
-        ),
-        AppTextField(
-          controller: _reasonController,
-          labelText: l10n.hrReasonLabel,
-          isRequired: true,
-          maxLines: 3,
-          validator: AppValidators.requiredText(
-            l10n.hrFieldRequiredLabel(l10n.hrReasonLabel),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ProcessPayrollFields extends StatefulWidget {
-  const _ProcessPayrollFields({super.key});
-
-  @override
-  State<_ProcessPayrollFields> createState() => _ProcessPayrollFieldsState();
-}
-
-class _ProcessPayrollFieldsState extends State<_ProcessPayrollFields> {
-  final TextEditingController _notesController = TextEditingController();
-  bool _replaceExistingItems = false;
-
-  @override
-  void dispose() {
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  Map<String, Object?> toPayload() {
-    return <String, Object?>{
-      'replace_existing_items': _replaceExistingItems,
-      'notes': _notesController.text.trim(),
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppFormSection(
-      children: <Widget>[
-        AppCheckboxField(
-          title: l10n.hrReplacePayrollItemsLabel,
-          value: _replaceExistingItems,
-          onChanged: (bool value) {
-            setState(() => _replaceExistingItems = value);
-          },
-        ),
-        AppTextField(
-          controller: _notesController,
-          labelText: l10n.hrNotesLabel,
-          maxLines: 3,
-        ),
-      ],
-    );
-  }
-}
-
 HrWorkspaceState? _hrStateFromAsync(
   AsyncValue<Result<HrWorkspaceState>> asyncState,
 ) {
@@ -2213,25 +1992,88 @@ HrWorkspaceState? _hrStateFromAsync(
   );
 }
 
-List<AppSelectOption<String>> _shiftSelectOptions(List<HrOption> options) {
-  return <AppSelectOption<String>>[
-    for (final HrOption option in options)
-      AppSelectOption<String>(
-        value: option.value,
-        label: option.label,
-        searchText: _shiftSearchText(option),
-      ),
-  ];
+String _sectionLabel(AppLocalizations l10n, HrDeskSection section) {
+  return switch (section) {
+    HrDeskSection.staffDirectory => l10n.hrTitle,
+    HrDeskSection.leaveRequests => l10n.hrLeaveRequestsSummaryLabel,
+    HrDeskSection.shiftRoster => l10n.hrShiftsSectionTitle,
+    HrDeskSection.payroll => l10n.hrPayrollDraftsSummaryLabel,
+    HrDeskSection.access => l10n.hrManageAccessAction,
+  };
 }
 
-String _shiftSearchText(HrOption option) {
-  final List<String> parts = <String>[
-    option.label,
-    if (option.displayId != null) option.displayId!,
-    for (final Object? value in option.extra.values)
-      if (value != null) value.toString(),
-  ];
-  return parts.where((String part) => part.isNotEmpty).join(' ');
+IconData _sectionIcon(HrDeskSection section) {
+  return switch (section) {
+    HrDeskSection.staffDirectory => Icons.people_outlined,
+    HrDeskSection.leaveRequests => Icons.event_busy_outlined,
+    HrDeskSection.shiftRoster => Icons.calendar_view_week_outlined,
+    HrDeskSection.payroll => Icons.payments_outlined,
+    HrDeskSection.access => Icons.manage_accounts_outlined,
+  };
+}
+
+int _sectionCount(HrWorkspaceState state, HrDeskSection section) {
+  final HrWorkspaceSummary summary = state.overview.summary;
+  return switch (section) {
+    HrDeskSection.staffDirectory =>
+      state.staff.totalItemCount ?? state.staff.items.length,
+    HrDeskSection.leaveRequests => summary.leaveRequests,
+    HrDeskSection.shiftRoster =>
+      summary.draftRosters + summary.unassignedShifts + summary.overdueShifts,
+    HrDeskSection.payroll => summary.payrollDraftRuns,
+    HrDeskSection.access => 0,
+  };
+}
+
+String _sectionToQueryValue(HrDeskSection section) {
+  return switch (section) {
+    HrDeskSection.staffDirectory => 'staff',
+    HrDeskSection.leaveRequests => 'leave-requests',
+    HrDeskSection.shiftRoster => 'shift-roster',
+    HrDeskSection.payroll => 'payroll',
+    HrDeskSection.access => 'access',
+  };
+}
+
+HrDeskSection? _sectionFromQuery(String raw) {
+  switch (raw.trim().toLowerCase()) {
+    case 'staff':
+    case 'staff-directory':
+    case 'directory':
+      return HrDeskSection.staffDirectory;
+    case 'leave':
+    case 'leave-requests':
+    case 'leaves':
+      return HrDeskSection.leaveRequests;
+    case 'shift':
+    case 'shift-roster':
+    case 'roster':
+    case 'shifts':
+      return HrDeskSection.shiftRoster;
+    case 'payroll':
+    case 'payroll-drafts':
+      return HrDeskSection.payroll;
+    case 'access':
+    case 'roles':
+    case 'permissions':
+      return HrDeskSection.access;
+    default:
+      return null;
+  }
+}
+
+HrDeskSection? _sectionFromQueue(HrQueue? queue) {
+  if (queue == null) {
+    return null;
+  }
+  return switch (queue) {
+    HrQueue.leaveRequests ||
+    HrQueue.swapRequests => HrDeskSection.leaveRequests,
+    HrQueue.rosterDrafts ||
+    HrQueue.unassignedShifts ||
+    HrQueue.overdueShifts => HrDeskSection.shiftRoster,
+    HrQueue.payrollDrafts => HrDeskSection.payroll,
+  };
 }
 
 List<AppSearchBarFilterChoice> _optionChoices(

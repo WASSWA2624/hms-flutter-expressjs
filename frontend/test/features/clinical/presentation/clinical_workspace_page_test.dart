@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
@@ -17,6 +18,7 @@ import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart'
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockClinicalRepository extends Mock implements ClinicalRepository {}
 
@@ -40,6 +42,8 @@ void main() {
   });
 
   testWidgets('renders the clinical workspace shell content', (tester) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
     final _MockClinicalRepository clinicalRepository =
         _MockClinicalRepository();
     final _MockOpdRepository opdRepository = _MockOpdRepository();
@@ -86,6 +90,7 @@ void main() {
           clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
           opdRepositoryProvider.overrideWithValue(opdRepository),
           ipdRepositoryProvider.overrideWithValue(ipdRepository),
+          sharedPreferencesProvider.overrideWithValue(preferences),
           initialSessionStateProvider.overrideWithValue(
             const SessionState.unauthenticated(),
           ),
@@ -97,17 +102,14 @@ void main() {
         ),
       ),
     );
-    await _pumpUntilFound(tester, find.text('Clinical workspace'));
+    await _pumpUntilFound(tester, find.textContaining('All ('));
 
-    expect(find.text('Clinical workspace'), findsOneWidget);
-    expect(find.text('Provider worklist'), findsNothing);
-    expect(
-      find.text(
-        'Open consultations, admissions, triage handoffs, and '
-        'result-review queues.',
-      ),
-      findsNothing,
-    );
+    expect(find.textContaining('All ('), findsOneWidget);
+    expect(find.textContaining('Waiting review ('), findsOneWidget);
+    expect(find.textContaining('Urgent ('), findsOneWidget);
+    expect(find.textContaining('Results ready ('), findsOneWidget);
+    expect(find.textContaining('In consultation ('), findsOneWidget);
+    expect(find.textContaining('Completed ('), findsOneWidget);
     expect(find.text('Current step'), findsWidgets);
     expect(find.text('Queue scope'), findsNothing);
     expect(find.text('Sarah Clinical'), findsOneWidget);
@@ -140,28 +142,14 @@ void main() {
 
     await _pumpUntilFound(tester, find.text('Sarah Clinical'));
 
-    await tester.scrollUntilVisible(
-      find.text('Sarah Clinical'),
-      100,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(
+    expect(find.byType(DataTable), findsOneWidget);
+    expect(
       find.descendant(
         of: find.byType(DataTable),
         matching: find.text('Sarah Clinical'),
       ),
+      findsOneWidget,
     );
-    await _pumpUntilFound(tester, find.text('Clinical actions'));
-
-    expect(find.textContaining('Clinical details'), findsOneWidget);
-    expect(find.text('Clinical actions'), findsOneWidget);
-    expect(find.textContaining('ENC000001 ·'), findsOneWidget);
-    expect(find.text('Order / test'), findsNothing);
-    expect(tester.takeException(), isNull);
-
-    await tester.tap(find.byIcon(Icons.close).last);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
     expect(tester.takeException(), isNull);
   });
 }

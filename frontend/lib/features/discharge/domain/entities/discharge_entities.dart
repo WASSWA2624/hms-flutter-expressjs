@@ -21,6 +21,8 @@ enum DischargeStatusFilter {
   completed,
 }
 
+enum DischargeDeskSection { all, planned, pendingClearance, completed }
+
 enum DischargeClearanceCode {
   doctor,
   nursing,
@@ -41,6 +43,7 @@ final class DischargeWorklistQuery {
     this.status = DischargeStatusFilter.all,
     this.pageRequest = const AppPageRequest(pageSize: 12),
     this.focusAdmissionId,
+    this.section = '',
   });
 
   final String search;
@@ -49,6 +52,9 @@ final class DischargeWorklistQuery {
 
   /// Deep-link target: pre-select this admission (display id or uuid).
   final String? focusAdmissionId;
+
+  /// Tab section from URL query parameter (e.g. `?section=planned`).
+  final String section;
 
   factory DischargeWorklistQuery.fromUri(Uri uri) {
     final Map<String, String> params = uri.queryParameters;
@@ -71,11 +77,14 @@ final class DischargeWorklistQuery {
     return DischargeWorklistQuery(
       search: admissionId ?? pick(<String>['search', 'q']) ?? '',
       focusAdmissionId: admissionId,
+      section: (params['section'] ?? '').trim(),
     );
   }
 
   bool get hasRouteTargeting {
-    return search.trim().isNotEmpty || focusAdmissionId != null;
+    return search.trim().isNotEmpty ||
+        focusAdmissionId != null ||
+        section.isNotEmpty;
   }
 
   DischargeWorklistQuery copyWith({
@@ -83,6 +92,7 @@ final class DischargeWorklistQuery {
     DischargeStatusFilter? status,
     AppPageRequest? pageRequest,
     String? focusAdmissionId,
+    String? section,
     bool clearFocus = false,
   }) {
     return DischargeWorklistQuery(
@@ -92,6 +102,7 @@ final class DischargeWorklistQuery {
       focusAdmissionId: clearFocus
           ? null
           : focusAdmissionId ?? this.focusAdmissionId,
+      section: section ?? this.section,
     );
   }
 }

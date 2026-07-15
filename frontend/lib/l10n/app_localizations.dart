@@ -16204,6 +16204,30 @@ abstract class AppLocalizations {
   /// **'Completed'**
   String get dischargeStatusCompleted;
 
+  /// Tab label for the All Patients discharge section.
+  ///
+  /// In en, this message translates to:
+  /// **'All patients'**
+  String get dischargeSectionAll;
+
+  /// Tab label for the Planned discharge section.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get dischargeSectionPlanned;
+
+  /// Tab label for the Pending Clearance discharge section.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending clearance'**
+  String get dischargeSectionPendingClearance;
+
+  /// Tab label for the Completed discharge section.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get dischargeSectionCompleted;
+
   /// Discharge queue panel title.
   ///
   /// In en, this message translates to:
@@ -22785,6 +22809,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create a request or adjust the filters.'**
   String get operationsNoRequestsBody;
+
+  /// Empty-state title for operations assets tab.
+  ///
+  /// In en, this message translates to:
+  /// **'No assets registered'**
+  String get operationsNoAssetsTitle;
+
+  /// Empty-state body for operations assets tab.
+  ///
+  /// In en, this message translates to:
+  /// **'No facility assets have been registered yet.'**
+  String get operationsNoAssetsBody;
+
+  /// Column label for asset name in the assets table.
+  ///
+  /// In en, this message translates to:
+  /// **'Asset'**
+  String get operationsAssetNameColumnLabel;
+
+  /// Column label for asset tag in the assets table.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag'**
+  String get operationsAssetTagColumnLabel;
 
   /// Title for operations request detail.
   ///

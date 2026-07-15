@@ -6,6 +6,31 @@ enum IcuBoardScope { active, critical, transfer, discharge, ended, all }
 /// Primary workspace views per icu-flow §15.
 enum IcuBoardView { patientBoard, bedBoard }
 
+/// Tabs shown in the ICU workspace tab strip.
+enum IcuWorkspaceSection {
+  active,
+  critical,
+  transfers,
+  discharge,
+  ended,
+  all,
+  beds,
+}
+
+extension IcuWorkspaceSectionX on IcuWorkspaceSection {
+  IcuBoardScope? toBoardScope() => switch (this) {
+    IcuWorkspaceSection.active => IcuBoardScope.active,
+    IcuWorkspaceSection.critical => IcuBoardScope.critical,
+    IcuWorkspaceSection.transfers => IcuBoardScope.transfer,
+    IcuWorkspaceSection.discharge => IcuBoardScope.discharge,
+    IcuWorkspaceSection.ended => IcuBoardScope.ended,
+    IcuWorkspaceSection.all => IcuBoardScope.all,
+    IcuWorkspaceSection.beds => null,
+  };
+
+  bool get isBedBoard => this == IcuWorkspaceSection.beds;
+}
+
 /// Detail panels that can be focused via deep link (`/icu?id=&panel=`).
 enum IcuDetailPanel {
   vitals,
@@ -56,6 +81,7 @@ final class IcuBoardQuery {
     this.pageRequest = const AppPageRequest(),
     this.focusAdmissionId,
     this.focusPanel,
+    this.section = '',
   });
 
   final String search;
@@ -63,6 +89,7 @@ final class IcuBoardQuery {
   final AppPageRequest pageRequest;
   final String? focusAdmissionId;
   final IcuDetailPanel? focusPanel;
+  final String section;
 
   bool get hasRouteTargeting =>
       (focusAdmissionId ?? '').trim().isNotEmpty || focusPanel != null;
@@ -89,6 +116,7 @@ final class IcuBoardQuery {
       search: focusId ?? pick(<String>['search', 'q']) ?? '',
       focusAdmissionId: focusId,
       focusPanel: IcuDetailPanelX.fromValue(params['panel']),
+      section: (params['section'] ?? '').trim(),
     );
   }
 
@@ -98,6 +126,7 @@ final class IcuBoardQuery {
     AppPageRequest? pageRequest,
     String? focusAdmissionId,
     IcuDetailPanel? focusPanel,
+    String? section,
     bool clearFocus = false,
   }) {
     return IcuBoardQuery(
@@ -108,6 +137,7 @@ final class IcuBoardQuery {
           ? null
           : focusAdmissionId ?? this.focusAdmissionId,
       focusPanel: clearFocus ? null : focusPanel ?? this.focusPanel,
+      section: section ?? this.section,
     );
   }
 }

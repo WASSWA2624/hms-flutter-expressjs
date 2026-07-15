@@ -11148,6 +11148,22 @@
   "@dischargeStatusCompleted": {
     "description": "Discharge status filter option for completed discharges."
   },
+  "dischargeSectionAll": "All patients",
+  "@dischargeSectionAll": {
+    "description": "Tab label for the All Patients discharge section."
+  },
+  "dischargeSectionPlanned": "Planned",
+  "@dischargeSectionPlanned": {
+    "description": "Tab label for the Planned discharge section."
+  },
+  "dischargeSectionPendingClearance": "Pending clearance",
+  "@dischargeSectionPendingClearance": {
+    "description": "Tab label for the Pending Clearance discharge section."
+  },
+  "dischargeSectionCompleted": "Completed",
+  "@dischargeSectionCompleted": {
+    "description": "Tab label for the Completed discharge section."
+  },
   "dischargeWorklistTitle": "Discharge worklist",
   "@dischargeWorklistTitle": {
     "description": "Discharge queue panel title."
@@ -15763,6 +15779,22 @@
   "operationsNoRequestsBody": "Create a request or adjust the filters.",
   "@operationsNoRequestsBody": {
     "description": "Empty-state body for operations requests."
+  },
+  "operationsNoAssetsTitle": "No assets registered",
+  "@operationsNoAssetsTitle": {
+    "description": "Empty-state title for operations assets tab."
+  },
+  "operationsNoAssetsBody": "No facility assets have been registered yet.",
+  "@operationsNoAssetsBody": {
+    "description": "Empty-state body for operations assets tab."
+  },
+  "operationsAssetNameColumnLabel": "Asset",
+  "@operationsAssetNameColumnLabel": {
+    "description": "Column label for asset name in the assets table."
+  },
+  "operationsAssetTagColumnLabel": "Tag",
+  "@operationsAssetTagColumnLabel": {
+    "description": "Column label for asset tag in the assets table."
   },
   "operationsDetailTitle": "Request detail",
   "@operationsDetailTitle": {

@@ -178,6 +178,98 @@ void main() {
       },
     );
 
+    test('inConsultation scope matches consultation-like stages', () {
+      final ClinicalWorklistEntry inProgress = _entry(
+        status: 'IN_PROGRESS',
+        stage: 'IN_PROGRESS',
+      );
+      final ClinicalWorklistEntry consulting = _entry(
+        status: 'OPEN',
+        stage: 'CONSULTING',
+      );
+      final ClinicalWorklistEntry closed = _entry(status: 'CLOSED');
+
+      expect(
+        clinicalWorklistEntryMatchesScope(
+          inProgress,
+          ClinicalQueueScope.inConsultation,
+        ),
+        isTrue,
+      );
+      expect(
+        clinicalWorklistEntryMatchesScope(
+          consulting,
+          ClinicalQueueScope.inConsultation,
+        ),
+        isTrue,
+      );
+      expect(
+        clinicalWorklistEntryMatchesScope(
+          closed,
+          ClinicalQueueScope.inConsultation,
+        ),
+        isFalse,
+      );
+    });
+
+    test('completed scope matches terminal entries', () {
+      final ClinicalWorklistEntry completed = _entry(status: 'COMPLETED');
+      final ClinicalWorklistEntry discharged = _entry(status: 'DISCHARGED');
+      final ClinicalWorklistEntry open = _entry(status: 'OPEN');
+
+      expect(
+        clinicalWorklistEntryMatchesScope(
+          completed,
+          ClinicalQueueScope.completed,
+        ),
+        isTrue,
+      );
+      expect(
+        clinicalWorklistEntryMatchesScope(
+          discharged,
+          ClinicalQueueScope.completed,
+        ),
+        isTrue,
+      );
+      expect(
+        clinicalWorklistEntryMatchesScope(open, ClinicalQueueScope.completed),
+        isFalse,
+      );
+    });
+
+    test('inConsultationCount counts non-terminal consultation entries', () {
+      final ClinicalWorkspaceState state = ClinicalWorkspaceState(
+        query: const ClinicalWorklistQuery(),
+        worklist: AppPage<ClinicalWorklistEntry>(
+          request: const AppPageRequest(),
+          items: <ClinicalWorklistEntry>[
+            _entry(encounterId: 'enc-1', stage: 'IN_PROGRESS', status: 'OPEN'),
+            _entry(encounterId: 'enc-2', stage: 'CONSULTING', status: 'OPEN'),
+            _entry(encounterId: 'enc-3', status: 'COMPLETED'),
+          ],
+        ),
+      );
+
+      expect(state.inConsultationCount, 2);
+    });
+
+    test('completedCount counts terminal entries', () {
+      final ClinicalWorkspaceState state = ClinicalWorkspaceState(
+        query: const ClinicalWorklistQuery(),
+        worklist: AppPage<ClinicalWorklistEntry>(
+          request: const AppPageRequest(),
+          items: <ClinicalWorklistEntry>[
+            _entry(encounterId: 'enc-1', status: 'OPEN'),
+            _entry(encounterId: 'enc-2', status: 'COMPLETED'),
+            _entry(encounterId: 'enc-3', status: 'DISCHARGED'),
+            _entry(encounterId: 'enc-4', status: 'CANCELLED'),
+          ],
+        ),
+      );
+
+      expect(state.completedCount, 3);
+    });
+
     test('deduplicates clinical workload count across action categories', () {
       final ClinicalWorkspaceState state = ClinicalWorkspaceState(
         query: const ClinicalWorklistQuery(),
@@ -211,6 +303,125 @@ void main() {
       expect(state.urgentCount, 1);
       expect(state.resultsReadyCount, 2);
       expect(state.workloadCount, 2);
+    });
+  });
+
+  group('ClinicalWorkspaceSection parsing', () {
+    test(
+      'fromUri parses ?section=urgent as ClinicalWorkspaceSection.urgent',
+      () {
+        final ClinicalWorkspaceQuery query = ClinicalWorkspaceQuery.fromUri(
+          Uri.parse('/clinical?section=urgent'),
+        );
+        expect(query.section, ClinicalWorkspaceSection.urgent);
+      },
+    );
+
+    test('fromUri parses ?section=waiting-review as waitingReview', () {
+      final ClinicalWorkspaceQuery query = ClinicalWorkspaceQuery.fromUri(
+        Uri.parse('/clinical?section=waiting-review'),
+      );
+      expect(query.section, ClinicalWorkspaceSection.waitingReview);
+    });
+
+    test('fromUri parses ?section=results-ready as resultsReady', () {
+      final ClinicalWorkspaceQuery query = ClinicalWorkspaceQuery.fromUri(
+        Uri.parse('/clinical?section=results-ready'),
+      );
+      expect(query.section, ClinicalWorkspaceSection.resultsReady);
+    });
+
+    test('fromUri parses ?section=in-consultation as inConsultation', () {
+      final ClinicalWorkspaceQuery query = ClinicalWorkspaceQuery.fromUri(
+        Uri.parse('/clinical?section=in-consultation'),
+      );
+      expect(query.section, ClinicalWorkspaceSection.inConsultation);
+    });
+
+    test('fromUri parses ?section=completed as completed', () {
+      final ClinicalWorkspaceQuery query = ClinicalWorkspaceQuery.fromUri(
+        Uri.parse('/clinical?section=completed'),
+      );
+      expect(query.section, ClinicalWorkspaceSection.completed);
+    });
+
+    test('fromUri defaults to all when section is missing', () {
+      final ClinicalWorkspaceQuery query = ClinicalWorkspaceQuery.fromUri(
+        Uri.parse('/clinical'),
+      );
+      expect(query.section, ClinicalWorkspaceSection.all);
+    });
+
+    test('fromUri accepts ?tab= alias for section', () {
+      final ClinicalWorkspaceQuery query = ClinicalWorkspaceQuery.fromUri(
+        Uri.parse('/clinical?tab=urgent'),
+      );
+      expect(query.section, ClinicalWorkspaceSection.urgent);
+    });
+
+    test('fromUri parses alternate aliases for sections', () {
+      expect(
+        ClinicalWorkspaceQuery.fromUri(
+          Uri.parse('/clinical?section=review'),
+        ).section,
+        ClinicalWorkspaceSection.waitingReview,
+      );
+      expect(
+        ClinicalWorkspaceQuery.fromUri(
+          Uri.parse('/clinical?section=results'),
+        ).section,
+        ClinicalWorkspaceSection.resultsReady,
+      );
+      expect(
+        ClinicalWorkspaceQuery.fromUri(
+          Uri.parse('/clinical?section=consultation'),
+        ).section,
+        ClinicalWorkspaceSection.inConsultation,
+      );
+      expect(
+        ClinicalWorkspaceQuery.fromUri(
+          Uri.parse('/clinical?section=closed'),
+        ).section,
+        ClinicalWorkspaceSection.completed,
+      );
+      expect(
+        ClinicalWorkspaceQuery.fromUri(
+          Uri.parse('/clinical?section=done'),
+        ).section,
+        ClinicalWorkspaceSection.completed,
+      );
+    });
+
+    test('panel key no longer conflicts with section parsing', () {
+      final ClinicalWorkspaceQuery query = ClinicalWorkspaceQuery.fromUri(
+        Uri.parse('/clinical?section=urgent&panel=details'),
+      );
+      expect(query.section, ClinicalWorkspaceSection.urgent);
+      expect(query.panel, 'details');
+    });
+
+    test('hasRouteTargeting returns true for non-default section', () {
+      const ClinicalWorkspaceQuery query = ClinicalWorkspaceQuery(
+        section: ClinicalWorkspaceSection.urgent,
+      );
+      expect(query.hasRouteTargeting, isTrue);
+    });
+
+    test(
+      'hasRouteTargeting returns false for default section with no params',
+      () {
+        const ClinicalWorkspaceQuery query = ClinicalWorkspaceQuery();
+        expect(query.hasRouteTargeting, isFalse);
+      },
+    );
+
+    test('signature includes section name', () {
+      const ClinicalWorkspaceQuery query = ClinicalWorkspaceQuery(
+        section: ClinicalWorkspaceSection.resultsReady,
+        encounterId: 'enc-1',
+      );
+      expect(query.signature, contains('resultsReady'));
+      expect(query.signature, contains('enc-1'));
     });
   });
 }
