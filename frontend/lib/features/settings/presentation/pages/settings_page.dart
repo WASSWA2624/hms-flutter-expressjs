@@ -24,11 +24,25 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
-class SettingsPage extends ConsumerWidget {
+class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends ConsumerState<SettingsPage> {
+  String? _expandedSectionId;
+
+  void _onSectionTapped(String sectionId) {
+    setState(() {
+      _expandedSectionId =
+          _expandedSectionId == sectionId ? null : sectionId;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeMode themeMode = ref.watch(appThemeModeProvider);
     final AppAccessibilityPreferences accessibility = ref.watch(
@@ -43,6 +57,148 @@ class SettingsPage extends ConsumerWidget {
     final bool showSettingsWorkspace =
         _settingsWorkspaceRequirement.isAllowed(accessPolicy) ||
         _hrSettingsWorkspaceRequirement.isAllowed(accessPolicy);
+    final bool showConfiguration =
+        _configTenantRequirement.isAllowed(accessPolicy) ||
+        _configFacilityRequirement.isAllowed(accessPolicy);
+
+    final List<_AccordionEntry> sections = <_AccordionEntry>[
+      _AccordionEntry(
+        id: 'preferences',
+        icon: Icons.palette_outlined,
+        title: l10n.settingsPreferencesSectionTitle,
+        body: l10n.settingsPreferencesSectionBody,
+        builder: (_) => Column(
+          children: <Widget>[
+            AppRadioGroup<ThemeMode>(
+              labelText: l10n.settingsThemeModeFieldLabel,
+              value: themeMode,
+              options: <AppRadioOption<ThemeMode>>[
+                AppRadioOption<ThemeMode>(
+                  value: ThemeMode.system,
+                  label: l10n.settingsThemeModeSystem,
+                  description: l10n.settingsThemeModeSystemDescription,
+                  secondary: const Icon(Icons.brightness_auto_outlined),
+                ),
+                AppRadioOption<ThemeMode>(
+                  value: ThemeMode.light,
+                  label: l10n.settingsThemeModeLight,
+                  description: l10n.settingsThemeModeLightDescription,
+                  secondary: const Icon(Icons.light_mode_outlined),
+                ),
+                AppRadioOption<ThemeMode>(
+                  value: ThemeMode.dark,
+                  label: l10n.settingsThemeModeDark,
+                  description: l10n.settingsThemeModeDarkDescription,
+                  secondary: const Icon(Icons.dark_mode_outlined),
+                ),
+              ],
+              onChanged: (ThemeMode? mode) {
+                if (mode == null) return;
+                unawaited(_setThemeMode(context, ref, mode));
+              },
+            ),
+          ],
+        ),
+      ),
+      _AccordionEntry(
+        id: 'accessibility',
+        icon: Icons.accessibility_new_outlined,
+        title: l10n.settingsAccessibilitySectionTitle,
+        body: l10n.settingsAccessibilitySectionBody,
+        builder: (_) => Column(
+          children: <Widget>[
+            AppCheckboxField(
+              title: l10n.settingsReduceMotionLabel,
+              subtitle: l10n.settingsReduceMotionDescription,
+              value: accessibility.reduceMotion,
+              onChanged: (bool value) {
+                unawaited(_setReduceMotion(context, ref, value));
+              },
+            ),
+            SizedBox(height: Theme.of(context).spacing.md),
+            AppCheckboxField(
+              title: l10n.settingsBoldTextLabel,
+              subtitle: l10n.settingsBoldTextDescription,
+              value: accessibility.boldText,
+              onChanged: (bool value) {
+                unawaited(_setBoldText(context, ref, value));
+              },
+            ),
+            SizedBox(height: Theme.of(context).spacing.lg),
+            AppSelectField<AppTextScaleLevel>(
+              labelText: l10n.settingsTextScaleFieldLabel,
+              value: accessibility.textScaleLevel,
+              options: <AppSelectOption<AppTextScaleLevel>>[
+                AppSelectOption<AppTextScaleLevel>(
+                  value: AppTextScaleLevel.normal,
+                  label: l10n.settingsTextScaleNormal,
+                ),
+                AppSelectOption<AppTextScaleLevel>(
+                  value: AppTextScaleLevel.large,
+                  label: l10n.settingsTextScaleLarge,
+                ),
+                AppSelectOption<AppTextScaleLevel>(
+                  value: AppTextScaleLevel.extraLarge,
+                  label: l10n.settingsTextScaleExtraLarge,
+                ),
+              ],
+              onChanged: (AppTextScaleLevel? level) {
+                if (level == null) return;
+                unawaited(_setTextScaleLevel(context, ref, level));
+              },
+            ),
+          ],
+        ),
+      ),
+      _AccordionEntry(
+        id: 'account',
+        icon: Icons.shield_outlined,
+        title: l10n.settingsAccountSectionTitle,
+        body: l10n.settingsAccountSectionBody,
+        builder: (_) => _SettingsActionList(
+          actions: <_SettingsAction>[
+            _SettingsAction(
+              icon: Icons.person_outline,
+              title: l10n.settingsProfileActionTitle,
+              body: l10n.settingsProfileActionBody,
+              onTap: () => context.go(AppRoutes.profile.location()),
+            ),
+            _SettingsAction(
+              icon: Icons.lock_reset_outlined,
+              title: l10n.settingsChangePasswordActionTitle,
+              body: l10n.settingsChangePasswordActionBody,
+              onTap: () => unawaited(_changePassword(context)),
+            ),
+          ],
+        ),
+      ),
+      if (adminActions.isNotEmpty)
+        _AccordionEntry(
+          id: 'administration',
+          icon: Icons.admin_panel_settings_outlined,
+          title: l10n.settingsAdministrationSectionTitle,
+          body: l10n.settingsAdministrationSectionBody,
+          builder: (_) => _SettingsActionList(actions: adminActions),
+        ),
+      if (showConfiguration)
+        _AccordionEntry(
+          id: 'configuration',
+          icon: Icons.tune_outlined,
+          title: l10n.settingsConfigurationSectionTitle,
+          body: l10n.settingsConfigurationSectionBody,
+          wrapInSection: false,
+          builder: (_) => const SettingsConfigurationSection(),
+        ),
+      if (showSettingsWorkspace)
+        _AccordionEntry(
+          id: 'workspace',
+          icon: Icons.build_outlined,
+          title: l10n.settingsWorkspaceSectionTitle,
+          body: l10n.settingsWorkspaceSectionBody,
+          wrapInSection: false,
+          builder: (_) => const SettingsWorkspaceSection(),
+        ),
+    ];
 
     return AppWorkspace(
       title: l10n.settingsTitle,
@@ -77,131 +233,12 @@ class SettingsPage extends ConsumerWidget {
             ),
           ),
           SizedBox(height: Theme.of(context).spacing.lg),
-          _SettingsSectionGrid(
-            sections: <Widget>[
-              AppScreenSection(
-                title: l10n.settingsPreferencesSectionTitle,
-                body: l10n.settingsPreferencesSectionBody,
-                child: Column(
-                  children: <Widget>[
-                    AppRadioGroup<ThemeMode>(
-                      labelText: l10n.settingsThemeModeFieldLabel,
-                      value: themeMode,
-                      options: <AppRadioOption<ThemeMode>>[
-                        AppRadioOption<ThemeMode>(
-                          value: ThemeMode.system,
-                          label: l10n.settingsThemeModeSystem,
-                          description: l10n.settingsThemeModeSystemDescription,
-                          secondary: const Icon(Icons.brightness_auto_outlined),
-                        ),
-                        AppRadioOption<ThemeMode>(
-                          value: ThemeMode.light,
-                          label: l10n.settingsThemeModeLight,
-                          description: l10n.settingsThemeModeLightDescription,
-                          secondary: const Icon(Icons.light_mode_outlined),
-                        ),
-                        AppRadioOption<ThemeMode>(
-                          value: ThemeMode.dark,
-                          label: l10n.settingsThemeModeDark,
-                          description: l10n.settingsThemeModeDarkDescription,
-                          secondary: const Icon(Icons.dark_mode_outlined),
-                        ),
-                      ],
-                      onChanged: (ThemeMode? mode) {
-                        if (mode == null) {
-                          return;
-                        }
-
-                        unawaited(_setThemeMode(context, ref, mode));
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              AppScreenSection(
-                title: l10n.settingsAccessibilitySectionTitle,
-                body: l10n.settingsAccessibilitySectionBody,
-                child: Column(
-                  children: <Widget>[
-                    AppCheckboxField(
-                      title: l10n.settingsReduceMotionLabel,
-                      subtitle: l10n.settingsReduceMotionDescription,
-                      value: accessibility.reduceMotion,
-                      onChanged: (bool value) {
-                        unawaited(_setReduceMotion(context, ref, value));
-                      },
-                    ),
-                    SizedBox(height: Theme.of(context).spacing.md),
-                    AppCheckboxField(
-                      title: l10n.settingsBoldTextLabel,
-                      subtitle: l10n.settingsBoldTextDescription,
-                      value: accessibility.boldText,
-                      onChanged: (bool value) {
-                        unawaited(_setBoldText(context, ref, value));
-                      },
-                    ),
-                    SizedBox(height: Theme.of(context).spacing.lg),
-                    AppSelectField<AppTextScaleLevel>(
-                      labelText: l10n.settingsTextScaleFieldLabel,
-                      value: accessibility.textScaleLevel,
-                      options: <AppSelectOption<AppTextScaleLevel>>[
-                        AppSelectOption<AppTextScaleLevel>(
-                          value: AppTextScaleLevel.normal,
-                          label: l10n.settingsTextScaleNormal,
-                        ),
-                        AppSelectOption<AppTextScaleLevel>(
-                          value: AppTextScaleLevel.large,
-                          label: l10n.settingsTextScaleLarge,
-                        ),
-                        AppSelectOption<AppTextScaleLevel>(
-                          value: AppTextScaleLevel.extraLarge,
-                          label: l10n.settingsTextScaleExtraLarge,
-                        ),
-                      ],
-                      onChanged: (AppTextScaleLevel? level) {
-                        if (level == null) {
-                          return;
-                        }
-
-                        unawaited(_setTextScaleLevel(context, ref, level));
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              AppScreenSection(
-                title: l10n.settingsAccountSectionTitle,
-                body: l10n.settingsAccountSectionBody,
-                child: _SettingsActionList(
-                  actions: <_SettingsAction>[
-                    _SettingsAction(
-                      icon: Icons.person_outline,
-                      title: l10n.settingsProfileActionTitle,
-                      body: l10n.settingsProfileActionBody,
-                      onTap: () => context.go(AppRoutes.profile.location()),
-                    ),
-                    _SettingsAction(
-                      icon: Icons.lock_reset_outlined,
-                      title: l10n.settingsChangePasswordActionTitle,
-                      body: l10n.settingsChangePasswordActionBody,
-                      onTap: () => unawaited(_changePassword(context)),
-                    ),
-                  ],
-                ),
-              ),
-              if (adminActions.isNotEmpty)
-                AppScreenSection(
-                  title: l10n.settingsAdministrationSectionTitle,
-                  body: l10n.settingsAdministrationSectionBody,
-                  child: _SettingsActionList(actions: adminActions),
-                ),
-            ],
+          _SettingsAccordion(
+            sections: sections,
+            expandedSectionId: _expandedSectionId,
+            onSectionTapped: _onSectionTapped,
+            reduceMotion: accessibility.reduceMotion,
           ),
-          const SettingsConfigurationSection(),
-          if (showSettingsWorkspace) ...<Widget>[
-            SizedBox(height: Theme.of(context).spacing.md),
-            const SettingsWorkspaceSection(),
-          ],
         ],
       ),
     );
@@ -289,6 +326,285 @@ class SettingsPage extends ConsumerWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Accordion data model
+// ---------------------------------------------------------------------------
+
+final class _AccordionEntry {
+  const _AccordionEntry({
+    required this.id,
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.builder,
+    this.wrapInSection = true,
+  });
+
+  final String id;
+  final IconData icon;
+  final String title;
+  final String body;
+  final WidgetBuilder builder;
+
+  /// When false, the builder already provides its own [AppScreenSection]
+  /// wrapper (e.g. [SettingsConfigurationSection], [SettingsWorkspaceSection]).
+  final bool wrapInSection;
+}
+
+// ---------------------------------------------------------------------------
+// Accordion widget
+// ---------------------------------------------------------------------------
+
+class _SettingsAccordion extends StatelessWidget {
+  const _SettingsAccordion({
+    required this.sections,
+    required this.expandedSectionId,
+    required this.onSectionTapped,
+    required this.reduceMotion,
+  });
+
+  final List<_AccordionEntry> sections;
+  final String? expandedSectionId;
+  final ValueChanged<String> onSectionTapped;
+  final bool reduceMotion;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        _AccordionTabStrip(
+          sections: sections,
+          expandedSectionId: expandedSectionId,
+          onSectionTapped: onSectionTapped,
+        ),
+        for (final _AccordionEntry section in sections)
+          _AccordionPanel(
+            key: ValueKey<String>(section.id),
+            entry: section,
+            isExpanded: expandedSectionId == section.id,
+            reduceMotion: reduceMotion,
+          ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tab strip — compact row of chips for collapsed sections
+// ---------------------------------------------------------------------------
+
+class _AccordionTabStrip extends StatelessWidget {
+  const _AccordionTabStrip({
+    required this.sections,
+    required this.expandedSectionId,
+    required this.onSectionTapped,
+  });
+
+  final List<_AccordionEntry> sections;
+  final String? expandedSectionId;
+  final ValueChanged<String> onSectionTapped;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: theme.spacing.md),
+      child: Wrap(
+        spacing: theme.spacing.xs,
+        runSpacing: theme.spacing.xs,
+        children: <Widget>[
+          for (final _AccordionEntry section in sections)
+            _AccordionTabChip(
+              icon: section.icon,
+              label: section.title,
+              isSelected: expandedSectionId == section.id,
+              onTap: () => onSectionTapped(section.id),
+              colorScheme: colorScheme,
+              theme: theme,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccordionTabChip extends StatelessWidget {
+  const _AccordionTabChip({
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    required this.colorScheme,
+    required this.theme,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final ColorScheme colorScheme;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color backgroundColor = isSelected
+        ? colorScheme.primaryContainer
+        : colorScheme.surfaceContainerHighest;
+    final Color foregroundColor = isSelected
+        ? colorScheme.onPrimaryContainer
+        : colorScheme.onSurfaceVariant;
+
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: Material(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: theme.spacing.md,
+              vertical: theme.spacing.sm,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(icon, size: 18, color: foregroundColor),
+                SizedBox(width: theme.spacing.xs),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      color: foregroundColor,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Accordion panel — animated expand/collapse
+// ---------------------------------------------------------------------------
+
+class _AccordionPanel extends StatefulWidget {
+  const _AccordionPanel({
+    super.key,
+    required this.entry,
+    required this.isExpanded,
+    required this.reduceMotion,
+  });
+
+  final _AccordionEntry entry;
+  final bool isExpanded;
+  final bool reduceMotion;
+
+  @override
+  State<_AccordionPanel> createState() => _AccordionPanelState();
+}
+
+class _AccordionPanelState extends State<_AccordionPanel>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _heightFactor;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: widget.reduceMotion
+          ? Duration.zero
+          : const Duration(milliseconds: 250),
+      vsync: this,
+      value: widget.isExpanded ? 1.0 : 0.0,
+    );
+    _heightFactor = _controller.drive(CurveTween(curve: Curves.easeInOut));
+  }
+
+  @override
+  void didUpdateWidget(covariant _AccordionPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.reduceMotion != oldWidget.reduceMotion) {
+      _controller.duration = widget.reduceMotion
+          ? Duration.zero
+          : const Duration(milliseconds: 250);
+    }
+    if (widget.isExpanded != oldWidget.isExpanded) {
+      if (widget.isExpanded) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _heightFactor,
+      builder: (BuildContext context, Widget? child) {
+        return ClipRect(
+          child: Align(
+            alignment: Alignment.topCenter,
+            heightFactor: _heightFactor.value,
+            child: child,
+          ),
+        );
+      },
+      child: _AccordionPanelContent(entry: widget.entry),
+    );
+  }
+}
+
+class _AccordionPanelContent extends StatelessWidget {
+  const _AccordionPanelContent({required this.entry});
+
+  final _AccordionEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Widget content = entry.builder(context);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: theme.spacing.md),
+      child: entry.wrapInSection
+          ? AppScreenSection(
+              title: entry.title,
+              body: entry.body,
+              child: content,
+            )
+          : content,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Settings action data + list widgets (unchanged)
+// ---------------------------------------------------------------------------
+
 final class _SettingsAction {
   const _SettingsAction({
     required this.icon,
@@ -340,6 +656,10 @@ List<_SettingsAction> _adminActions(
     ),
   ];
 }
+
+// ---------------------------------------------------------------------------
+// Access requirements
+// ---------------------------------------------------------------------------
 
 const AccessRequirement _tenantFacilitySetupRequirement = AccessRequirement(
   anyPermissions: <AppPermission>[
@@ -402,6 +722,36 @@ const AccessRequirement _settingsWorkspaceRequirement = AccessRequirement(
   ],
   requiresTenantContext: true,
 );
+
+const AccessRequirement _configTenantRequirement = AccessRequirement(
+  anyPermissions: <AppPermission>[
+    AppPermissions.tenantAdmin,
+    AppPermissions.systemAdmin,
+  ],
+  anyRoles: <AppRole>[
+    AppRole.superAdmin,
+    AppRole.tenantAdmin,
+  ],
+  requiresTenantContext: true,
+);
+
+const AccessRequirement _configFacilityRequirement = AccessRequirement(
+  anyPermissions: <AppPermission>[
+    AppPermissions.tenantAdmin,
+    AppPermissions.facilityAdmin,
+    AppPermissions.systemAdmin,
+  ],
+  anyRoles: <AppRole>[
+    AppRole.superAdmin,
+    AppRole.tenantAdmin,
+    AppRole.facilityAdmin,
+  ],
+  requiresFacilityContext: true,
+);
+
+// ---------------------------------------------------------------------------
+// Settings action list & tile widgets (unchanged)
+// ---------------------------------------------------------------------------
 
 class _SettingsActionList extends StatelessWidget {
   const _SettingsActionList({required this.actions});
@@ -473,34 +823,3 @@ class _SettingsActionTile extends StatelessWidget {
     );
   }
 }
-
-class _SettingsSectionGrid extends StatelessWidget {
-  const _SettingsSectionGrid({required this.sections});
-
-  final List<Widget> sections;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool useTwoColumns = constraints.maxWidth >= _twoColumnMinWidth;
-        final double itemWidth = useTwoColumns
-            ? (constraints.maxWidth - theme.spacing.md) / 2
-            : constraints.maxWidth;
-
-        return Wrap(
-          spacing: theme.spacing.md,
-          runSpacing: theme.spacing.md,
-          children: <Widget>[
-            for (final Widget section in sections)
-              SizedBox(width: itemWidth, child: section),
-          ],
-        );
-      },
-    );
-  }
-}
-
-const double _twoColumnMinWidth = 920;

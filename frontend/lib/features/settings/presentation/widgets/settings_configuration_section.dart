@@ -201,73 +201,62 @@ class _TenantConfigPanelState extends ConsumerState<_TenantConfigPanel> {
     return AppSectionPanel(
       title: l10n.settingsConfigurationTenantTitle,
       leadingIcon: Icons.domain_outlined,
-      density: AppContentPanelDensity.compact,
       children: <Widget>[
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final bool wide = constraints.maxWidth >= 600;
-            final List<Widget> fields = <Widget>[
-              SizedBox(
-                width: wide ? 280 : double.infinity,
-                child: AppCurrencySelectField(
-                  value: _currency,
-                  labelText: l10n.settingsConfigurationCurrencyLabel,
-                  helperText: l10n.settingsConfigurationCurrencyHelper,
-                  enabled: !_saving,
-                  onChanged: (String? value) {
-                    setState(() => _currency = value);
-                  },
-                ),
-              ),
-              SizedBox(
-                width: wide ? 280 : double.infinity,
-                child: AppCurrencyAmountField(
-                  amountController: _feeController,
-                  currency: resolvedCurrency,
-                  onCurrencyChanged: (String? value) {
-                    if (value != null) {
-                      setState(() => _currency = value);
-                    }
-                  },
-                  amountLabelText:
-                      l10n.settingsConfigurationConsultationFeeLabel,
-                  currencyLabelText: l10n.settingsConfigurationCurrencyLabel,
-                  helperText:
-                      l10n.settingsConfigurationConsultationFeeHelper,
-                  enabled: !_saving,
-                ),
-              ),
-            ];
+
+            final Widget currencyField = AppCurrencySelectField(
+              value: _currency,
+              labelText: l10n.settingsConfigurationCurrencyLabel,
+              helperText: l10n.settingsConfigurationCurrencyHelper,
+              enabled: !_saving,
+              onChanged: (String? value) {
+                setState(() => _currency = value);
+              },
+            );
+
+            final Widget feeField = AppCurrencyAmountField(
+              amountController: _feeController,
+              currency: resolvedCurrency,
+              onCurrencyChanged: (String? value) {
+                if (value != null) {
+                  setState(() => _currency = value);
+                }
+              },
+              amountLabelText:
+                  l10n.settingsConfigurationConsultationFeeLabel,
+              currencyLabelText: l10n.settingsConfigurationCurrencyLabel,
+              helperText:
+                  l10n.settingsConfigurationConsultationFeeHelper,
+              enabled: !_saving,
+            );
 
             if (wide) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  for (int i = 0; i < fields.length; i++) ...<Widget>[
-                    fields[i],
-                    if (i < fields.length - 1)
-                      SizedBox(width: theme.spacing.md),
+              return IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Expanded(child: currencyField),
+                    SizedBox(width: theme.spacing.lg),
+                    Expanded(child: feeField),
                   ],
-                ],
+                ),
               );
             }
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                for (int i = 0; i < fields.length; i++) ...<Widget>[
-                  fields[i],
-                  if (i < fields.length - 1)
-                    SizedBox(height: theme.spacing.md),
-                ],
+                currencyField,
+                SizedBox(height: theme.spacing.md),
+                feeField,
               ],
             );
           },
         ),
-        SizedBox(height: theme.spacing.md),
-        Wrap(
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.sm,
+        SizedBox(height: theme.spacing.lg),
+        Row(
           children: <Widget>[
             AppButton.primary(
               label: l10n.settingsConfigurationSaveAction,
@@ -275,6 +264,7 @@ class _TenantConfigPanelState extends ConsumerState<_TenantConfigPanel> {
               isLoading: _saving,
               onPressed: _saving ? null : _save,
             ),
+            SizedBox(width: theme.spacing.sm),
             AppButton.tertiary(
               label: l10n.settingsConfigurationResetAction,
               leadingIcon: Icons.restart_alt_outlined,
@@ -330,18 +320,20 @@ class _TenantConfigPanelState extends ConsumerState<_TenantConfigPanel> {
     final AppLocalizations l10n = context.l10n;
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (_) => AppDialog(
+      builder: (BuildContext dialogContext) => AppDialog(
         title: Text(l10n.settingsConfigurationResetConfirmTitle),
         icon: const Icon(Icons.restart_alt_outlined),
         content: Text(l10n.settingsConfigurationResetConfirmBody),
         actions: <Widget>[
           AppButton.tertiary(
-            label: MaterialLocalizations.of(context).cancelButtonLabel,
-            onPressed: () => Navigator.of(context).pop(false),
+            label: MaterialLocalizations.of(
+              dialogContext,
+            ).cancelButtonLabel,
+            onPressed: () => Navigator.of(dialogContext).pop(false),
           ),
           AppButton.primary(
             label: l10n.settingsConfigurationResetAction,
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
           ),
         ],
       ),
@@ -440,7 +432,6 @@ class _FacilityConfigPanelState extends ConsumerState<_FacilityConfigPanel> {
     return AppSectionPanel(
       title: l10n.settingsConfigurationFacilityTitle,
       leadingIcon: Icons.business_outlined,
-      density: AppContentPanelDensity.compact,
       children: <Widget>[
         Text(
           l10n.settingsConfigurationFacilityOverrideHint,
@@ -452,68 +443,58 @@ class _FacilityConfigPanelState extends ConsumerState<_FacilityConfigPanel> {
         LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
             final bool wide = constraints.maxWidth >= 600;
-            final List<Widget> fields = <Widget>[
-              SizedBox(
-                width: wide ? 280 : double.infinity,
-                child: AppCurrencySelectField(
-                  value: _currency,
-                  labelText: l10n.settingsConfigurationCurrencyLabel,
-                  helperText: l10n.settingsConfigurationCurrencyHelper,
-                  enabled: !_saving,
-                  onChanged: (String? value) {
-                    setState(() => _currency = value);
-                  },
-                ),
-              ),
-              SizedBox(
-                width: wide ? 280 : double.infinity,
-                child: AppCurrencyAmountField(
-                  amountController: _feeController,
-                  currency: resolvedCurrency,
-                  onCurrencyChanged: (String? value) {
-                    if (value != null) {
-                      setState(() => _currency = value);
-                    }
-                  },
-                  amountLabelText:
-                      l10n.settingsConfigurationConsultationFeeLabel,
-                  currencyLabelText: l10n.settingsConfigurationCurrencyLabel,
-                  helperText:
-                      l10n.settingsConfigurationConsultationFeeHelper,
-                  enabled: !_saving,
-                ),
-              ),
-            ];
+
+            final Widget currencyField = AppCurrencySelectField(
+              value: _currency,
+              labelText: l10n.settingsConfigurationCurrencyLabel,
+              helperText: l10n.settingsConfigurationCurrencyHelper,
+              enabled: !_saving,
+              onChanged: (String? value) {
+                setState(() => _currency = value);
+              },
+            );
+
+            final Widget feeField = AppCurrencyAmountField(
+              amountController: _feeController,
+              currency: resolvedCurrency,
+              onCurrencyChanged: (String? value) {
+                if (value != null) {
+                  setState(() => _currency = value);
+                }
+              },
+              amountLabelText:
+                  l10n.settingsConfigurationConsultationFeeLabel,
+              currencyLabelText: l10n.settingsConfigurationCurrencyLabel,
+              helperText:
+                  l10n.settingsConfigurationConsultationFeeHelper,
+              enabled: !_saving,
+            );
 
             if (wide) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  for (int i = 0; i < fields.length; i++) ...<Widget>[
-                    fields[i],
-                    if (i < fields.length - 1)
-                      SizedBox(width: theme.spacing.md),
+              return IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Expanded(child: currencyField),
+                    SizedBox(width: theme.spacing.lg),
+                    Expanded(child: feeField),
                   ],
-                ],
+                ),
               );
             }
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                for (int i = 0; i < fields.length; i++) ...<Widget>[
-                  fields[i],
-                  if (i < fields.length - 1)
-                    SizedBox(height: theme.spacing.md),
-                ],
+                currencyField,
+                SizedBox(height: theme.spacing.md),
+                feeField,
               ],
             );
           },
         ),
-        SizedBox(height: theme.spacing.md),
-        Wrap(
-          spacing: theme.spacing.sm,
-          runSpacing: theme.spacing.sm,
+        SizedBox(height: theme.spacing.lg),
+        Row(
           children: <Widget>[
             AppButton.primary(
               label: l10n.settingsConfigurationSaveAction,
@@ -521,6 +502,7 @@ class _FacilityConfigPanelState extends ConsumerState<_FacilityConfigPanel> {
               isLoading: _saving,
               onPressed: _saving ? null : _save,
             ),
+            SizedBox(width: theme.spacing.sm),
             AppButton.tertiary(
               label: l10n.settingsConfigurationResetAction,
               leadingIcon: Icons.restart_alt_outlined,
@@ -577,18 +559,20 @@ class _FacilityConfigPanelState extends ConsumerState<_FacilityConfigPanel> {
     final AppLocalizations l10n = context.l10n;
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
-      builder: (_) => AppDialog(
+      builder: (BuildContext dialogContext) => AppDialog(
         title: Text(l10n.settingsConfigurationResetConfirmTitle),
         icon: const Icon(Icons.restart_alt_outlined),
         content: Text(l10n.settingsConfigurationResetConfirmBody),
         actions: <Widget>[
           AppButton.tertiary(
-            label: MaterialLocalizations.of(context).cancelButtonLabel,
-            onPressed: () => Navigator.of(context).pop(false),
+            label: MaterialLocalizations.of(
+              dialogContext,
+            ).cancelButtonLabel,
+            onPressed: () => Navigator.of(dialogContext).pop(false),
           ),
           AppButton.primary(
             label: l10n.settingsConfigurationResetAction,
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
           ),
         ],
       ),
