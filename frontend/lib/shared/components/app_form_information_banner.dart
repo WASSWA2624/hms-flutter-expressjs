@@ -178,6 +178,7 @@ class AppFormInformationBanner extends StatelessWidget {
   static AppFormInformationVariant _variantForFailure(AppFailure failure) {
     return switch (failure.category) {
       AppFailureCategory.validation => AppFormInformationVariant.error,
+      AppFailureCategory.conflict => AppFormInformationVariant.warning,
       AppFailureCategory.forbidden ||
       AppFailureCategory.unauthorized => AppFormInformationVariant.error,
       AppFailureCategory.offline => AppFormInformationVariant.info,

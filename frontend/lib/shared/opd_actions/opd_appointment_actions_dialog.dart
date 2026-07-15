@@ -8,32 +8,56 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_encounter_flow.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 
-/// Lightweight appointment actions for Reception — avoids importing the full OPD page.
-Future<bool?> showReceptionAppointmentActionsDialog({
+/// Shared appointment actions for OPD and Reception workspaces.
+Future<bool?> showOpdAppointmentActionsDialog({
   required BuildContext context,
   required OpdAppointment appointment,
+  OpdWorkspaceState? workspaceState,
 }) {
   return showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _ReceptionAppointmentActionsDialog(appointment: appointment),
+    builder: (_) => OpdAppointmentActionsDialog(
+      appointment: appointment,
+      workspaceState: workspaceState,
+    ),
   );
 }
 
-class _ReceptionAppointmentActionsDialog extends ConsumerStatefulWidget {
-  const _ReceptionAppointmentActionsDialog({required this.appointment});
+bool isOpdAppointmentTerminalStatus(String? status) {
+  return switch ((status ?? '').toUpperCase()) {
+    'COMPLETED' ||
+    'CANCELLED' ||
+    'NO_SHOW' ||
+    'DISCHARGED' ||
+    'ADMITTED' ||
+    'CLOSED' => true,
+    _ => false,
+  };
+}
+
+class OpdAppointmentActionsDialog extends ConsumerStatefulWidget {
+  const OpdAppointmentActionsDialog({
+    required this.appointment,
+    this.workspaceState,
+    super.key,
+  });
 
   final OpdAppointment appointment;
 
+  /// When set, check-in opens the encounter dialog; otherwise direct check-in.
+  final OpdWorkspaceState? workspaceState;
+
   @override
-  ConsumerState<_ReceptionAppointmentActionsDialog> createState() =>
-      _ReceptionAppointmentActionsDialogState();
+  ConsumerState<OpdAppointmentActionsDialog> createState() =>
+      _OpdAppointmentActionsDialogState();
 }
 
-class _ReceptionAppointmentActionsDialogState
-    extends ConsumerState<_ReceptionAppointmentActionsDialog> {
+class _OpdAppointmentActionsDialogState
+    extends ConsumerState<OpdAppointmentActionsDialog> {
   bool _isSaving = false;
   AppFailure? _failure;
 
@@ -42,7 +66,7 @@ class _ReceptionAppointmentActionsDialogState
     final AppLocalizations l10n = context.l10n;
     final Locale locale = Localizations.localeOf(context);
     final String status = (widget.appointment.status ?? '').toUpperCase();
-    final bool terminal = _isTerminal(status);
+    final bool terminal = isOpdAppointmentTerminalStatus(status);
     final bool canQueue =
         !terminal &&
         status != 'IN_PROGRESS' &&
@@ -65,27 +89,36 @@ class _ReceptionAppointmentActionsDialogState
               context: context,
               failure: _failure!,
             ),
-          AppInfoTile(
-            label: l10n.opdStatusColumnLabel,
-            value: opdStageDisplayLabel(l10n, widget.appointment.status ?? ''),
-            icon: Icons.flag_outlined,
-          ),
-          AppInfoTile(
-            label: l10n.opdProviderColumnLabel,
-            value:
-                widget.appointment.providerDisplayName ??
-                l10n.profileUnknownValue,
-            icon: Icons.person_outline,
-          ),
-          AppInfoTile(
-            label: l10n.opdTimeColumnLabel,
-            value: widget.appointment.scheduledStart == null
-                ? l10n.profileUnknownValue
-                : AppFormatters.dateTime(
-                    widget.appointment.scheduledStart!,
-                    locale,
-                  ),
-            icon: Icons.schedule_outlined,
+          AppTriageSummaryPanel(
+            items: <AppInfoTileData>[
+              AppInfoTileData(
+                label: l10n.opdStatusColumnLabel,
+                value: opdStageDisplayLabel(
+                  l10n,
+                  widget.appointment.status ?? '',
+                ),
+              ),
+              AppInfoTileData(
+                label: l10n.opdProviderColumnLabel,
+                value:
+                    widget.appointment.providerDisplayName ??
+                    l10n.profileUnknownValue,
+              ),
+              AppInfoTileData(
+                label: l10n.opdTimeColumnLabel,
+                value: widget.appointment.scheduledStart == null
+                    ? l10n.profileUnknownValue
+                    : AppFormatters.dateTime(
+                        widget.appointment.scheduledStart!,
+                        locale,
+                      ),
+              ),
+              AppInfoTileData(
+                label: l10n.opdReasonLabel,
+                value: widget.appointment.reason ?? l10n.profileUnknownValue,
+              ),
+            ],
+            emptyValue: l10n.profileUnknownValue,
           ),
         ],
       ),
@@ -120,13 +153,39 @@ class _ReceptionAppointmentActionsDialogState
             label: l10n.opdCheckInAction,
             leadingIcon: Icons.login_outlined,
             isLoading: _isSaving,
-            onPressed: () => _run(
-              () => ref
-                  .read(opdWorkspaceControllerProvider.notifier)
-                  .checkInAppointment(widget.appointment),
-            ),
+            onPressed: _openCheckIn,
           ),
       ],
+    );
+  }
+
+  Future<void> _openCheckIn() async {
+    final OpdWorkspaceState? workspaceState = widget.workspaceState;
+    if (workspaceState != null) {
+      final OpdEncounterDialogResult? dialogResult =
+          await showOpdEncounterDialog(
+            context: context,
+            dialog: buildOpdWorkspaceEncounterDialog(
+              ref: ref,
+              state: workspaceState,
+              initialAppointment: widget.appointment,
+              initialAppointmentId: widget.appointment.apiId,
+              defaultArrivalMode: 'ONLINE_APPOINTMENT',
+              defaultProviderId: widget.appointment.providerUserId,
+              includeEncounterLifecycleCallbacks: false,
+            ),
+          );
+      if (!mounted || dialogResult == null) {
+        return;
+      }
+      Navigator.of(context).pop(true);
+      return;
+    }
+
+    await _run(
+      () => ref
+          .read(opdWorkspaceControllerProvider.notifier)
+          .checkInAppointment(widget.appointment),
     );
   }
 
@@ -135,7 +194,7 @@ class _ReceptionAppointmentActionsDialogState
       context: context,
       barrierDismissible: false,
       builder: (_) =>
-          _ReceptionRescheduleDialog(appointment: widget.appointment),
+          OpdRescheduleAppointmentDialog(appointment: widget.appointment),
     );
     if (changed == true && mounted) {
       Navigator.of(context).pop(true);
@@ -146,7 +205,8 @@ class _ReceptionAppointmentActionsDialogState
     final bool? changed = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => _ReceptionCancelDialog(appointment: widget.appointment),
+      builder: (_) =>
+          OpdCancelAppointmentDialog(appointment: widget.appointment),
     );
     if (changed == true && mounted) {
       Navigator.of(context).pop(true);
@@ -171,32 +231,23 @@ class _ReceptionAppointmentActionsDialogState
       _isSaving = false;
     });
   }
-
-  bool _isTerminal(String status) {
-    switch (status) {
-      case 'COMPLETED':
-      case 'CANCELLED':
-      case 'NO_SHOW':
-      case 'CLOSED':
-        return true;
-      default:
-        return false;
-    }
-  }
 }
 
-class _ReceptionRescheduleDialog extends ConsumerStatefulWidget {
-  const _ReceptionRescheduleDialog({required this.appointment});
+class OpdRescheduleAppointmentDialog extends ConsumerStatefulWidget {
+  const OpdRescheduleAppointmentDialog({
+    required this.appointment,
+    super.key,
+  });
 
   final OpdAppointment appointment;
 
   @override
-  ConsumerState<_ReceptionRescheduleDialog> createState() =>
-      _ReceptionRescheduleDialogState();
+  ConsumerState<OpdRescheduleAppointmentDialog> createState() =>
+      _OpdRescheduleAppointmentDialogState();
 }
 
-class _ReceptionRescheduleDialogState
-    extends ConsumerState<_ReceptionRescheduleDialog> {
+class _OpdRescheduleAppointmentDialogState
+    extends ConsumerState<OpdRescheduleAppointmentDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late DateTime? _date;
   late AppTimeValue? _startTime;
@@ -237,7 +288,9 @@ class _ReceptionRescheduleDialogState
               value: _date,
               firstDate: DateTime.now().subtract(const Duration(days: 1)),
               lastDate: DateTime.now().add(const Duration(days: 365)),
-              labelText: l10n.patientsAppointmentDateLabel,
+              labelText: l10n.opdFieldRequiredLabel(
+                l10n.patientsAppointmentDateLabel,
+              ),
               pickerButtonLabel: l10n.patientsDatePickerAction,
               invalidDateMessage: l10n.appDateInvalidMessage,
               enabled: !_isSaving,
@@ -251,7 +304,9 @@ class _ReceptionRescheduleDialogState
               children: <Widget>[
                 AppTimeField(
                   value: _startTime,
-                  labelText: l10n.opdAppointmentStartLabel,
+                  labelText: l10n.opdFieldRequiredLabel(
+                    l10n.opdAppointmentStartLabel,
+                  ),
                   pickerButtonLabel: l10n.appTimePickerAction,
                   invalidTimeMessage: l10n.patientsTimeInvalidMessage,
                   hintText: l10n.patientsTimeHint,
@@ -267,7 +322,9 @@ class _ReceptionRescheduleDialogState
                 ),
                 AppTimeField(
                   value: _endTime,
-                  labelText: l10n.opdAppointmentEndLabel,
+                  labelText: l10n.opdFieldRequiredLabel(
+                    l10n.opdAppointmentEndLabel,
+                  ),
                   pickerButtonLabel: l10n.appTimePickerAction,
                   invalidTimeMessage: l10n.patientsTimeInvalidMessage,
                   hintText: l10n.patientsTimeHint,
@@ -335,17 +392,18 @@ class _ReceptionRescheduleDialogState
   }
 }
 
-class _ReceptionCancelDialog extends ConsumerStatefulWidget {
-  const _ReceptionCancelDialog({required this.appointment});
+class OpdCancelAppointmentDialog extends ConsumerStatefulWidget {
+  const OpdCancelAppointmentDialog({required this.appointment, super.key});
 
   final OpdAppointment appointment;
 
   @override
-  ConsumerState<_ReceptionCancelDialog> createState() =>
-      _ReceptionCancelDialogState();
+  ConsumerState<OpdCancelAppointmentDialog> createState() =>
+      _OpdCancelAppointmentDialogState();
 }
 
-class _ReceptionCancelDialogState extends ConsumerState<_ReceptionCancelDialog> {
+class _OpdCancelAppointmentDialogState
+    extends ConsumerState<OpdCancelAppointmentDialog> {
   late final TextEditingController _reasonController;
   bool _isSaving = false;
   AppFailure? _failure;
@@ -377,7 +435,9 @@ class _ReceptionCancelDialogState extends ConsumerState<_ReceptionCancelDialog> 
             ),
           AppTextField(
             controller: _reasonController,
-            labelText: l10n.opdCancellationReasonLabel,
+            labelText: l10n.opdFieldOptionalLabel(
+              l10n.opdCancellationReasonLabel,
+            ),
             enabled: !_isSaving,
             maxLines: 3,
           ),

@@ -8338,6 +8338,14 @@
   "@errorNotFoundMessage": {
     "description": "Safe user-facing message for a not-found failure."
   },
+  "errorConflictTitle": "Update conflict",
+  "@errorConflictTitle": {
+    "description": "Title for a concurrent-update or state-conflict failure."
+  },
+  "errorConflictMessage": "This record changed. Refresh and try again.",
+  "@errorConflictMessage": {
+    "description": "Safe user-facing message for a conflict failure without leaking record details."
+  },
   "errorValidationTitle": "Check the details",
   "@errorValidationTitle": {
     "description": "Title for a validation failure."

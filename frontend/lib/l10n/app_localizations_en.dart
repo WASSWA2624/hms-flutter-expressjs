@@ -6431,6 +6431,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorNotFoundMessage => 'The item is not available.';
 
   @override
+  String get errorConflictTitle => 'Update conflict';
+
+  @override
+  String get errorConflictMessage =>
+      'This record changed. Refresh and try again.';
+
+  @override
   String get errorValidationTitle => 'Check the details';
 
   @override

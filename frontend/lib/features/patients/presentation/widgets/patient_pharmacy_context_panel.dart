@@ -63,7 +63,11 @@ class PatientPharmacyContextPanel extends StatelessWidget {
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: const Icon(Icons.medication_liquid_outlined),
-                title: Text(order.title ?? order.id),
+                title: Text(
+                  (order.title ?? '').trim().isNotEmpty
+                      ? order.title!.trim()
+                      : order.kind,
+                ),
                 subtitle: subtitle.isEmpty ? null : Text(subtitle),
               ),
             );

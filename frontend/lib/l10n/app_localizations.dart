@@ -11920,6 +11920,18 @@ abstract class AppLocalizations {
   /// **'The item is not available.'**
   String get errorNotFoundMessage;
 
+  /// Title for a concurrent-update or state-conflict failure.
+  ///
+  /// In en, this message translates to:
+  /// **'Update conflict'**
+  String get errorConflictTitle;
+
+  /// Safe user-facing message for a conflict failure without leaking record details.
+  ///
+  /// In en, this message translates to:
+  /// **'This record changed. Refresh and try again.'**
+  String get errorConflictMessage;
+
   /// Title for a validation failure.
   ///
   /// In en, this message translates to:

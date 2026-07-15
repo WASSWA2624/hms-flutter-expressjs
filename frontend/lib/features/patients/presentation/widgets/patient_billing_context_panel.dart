@@ -53,7 +53,8 @@ class PatientBillingContextPanel extends StatelessWidget {
                   onPressed: () => context.go(
                     AppRoutes.billing.location(
                       queryParameters: <String, String>{
-                        'patientId': detail.patient.id,
+                        'patientId':
+                            detail.patient.publicId ?? detail.patient.id,
                       },
                     ),
                   ),
@@ -144,7 +145,11 @@ class _BillingSummaryTile extends StatelessWidget {
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: Icon(leadingIcon),
-        title: Text(record.title ?? record.id),
+        title: Text(
+          (record.title ?? '').trim().isNotEmpty
+              ? record.title!.trim()
+              : record.kind,
+        ),
         subtitle: subtitle.isEmpty ? null : Text(subtitle),
       ),
     );

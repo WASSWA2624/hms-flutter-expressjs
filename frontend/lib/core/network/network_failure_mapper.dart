@@ -66,7 +66,7 @@ final class NetworkFailureMapper {
     }
 
     if (statusCode == 409) {
-      return AppFailure.validation(
+      return AppFailure.conflict(
         statusCode: statusCode,
         validationFields: _validationFields(response?.data),
         detailMessage: _responseDetail(response?.data),

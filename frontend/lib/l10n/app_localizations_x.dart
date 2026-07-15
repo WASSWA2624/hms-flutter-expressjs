@@ -17,6 +17,7 @@ extension AppFailureLocalizations on AppLocalizations {
       AppFailureCategory.unauthorized => errorUnauthorizedTitle,
       AppFailureCategory.forbidden => errorForbiddenTitle,
       AppFailureCategory.notFound => errorNotFoundTitle,
+      AppFailureCategory.conflict => errorConflictTitle,
       AppFailureCategory.validation => errorValidationTitle,
       AppFailureCategory.unexpectedResponse => errorUnexpectedResponseTitle,
       AppFailureCategory.storage => errorStorageTitle,

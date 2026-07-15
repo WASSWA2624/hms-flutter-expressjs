@@ -881,7 +881,11 @@ class _RelatedRecordsSection extends StatelessWidget {
                 for (final DischargeRelatedRecord record in records)
                   ListTile(
                     leading: Icon(icon),
-                    title: Text(record.title ?? record.id),
+                    title: Text(
+                      (record.title ?? '').trim().isNotEmpty
+                          ? record.title!.trim()
+                          : record.kind,
+                    ),
                     subtitle: Text(_relatedSubtitle(context, record)),
                     trailing: AppWorkspaceStatusBadge(
                       status: _recordStatus(context, record),
@@ -1586,7 +1590,10 @@ String _printRecords(
 
   return records
       .map((DischargeRelatedRecord record) {
-        return '${record.title ?? record.id} - ${_apiLabel(record.billingStatus ?? record.status ?? '')}';
+        final String label = (record.title ?? '').trim().isNotEmpty
+            ? record.title!.trim()
+            : record.kind;
+        return '$label - ${_apiLabel(record.billingStatus ?? record.status ?? '')}';
       })
       .join('\n');
 }

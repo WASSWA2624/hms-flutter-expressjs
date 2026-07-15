@@ -235,37 +235,41 @@ void main() {
       expect(cancelledFailure.isRetryable, isFalse);
     });
 
-    test('maps precondition and conflict responses to validation failures', () {
-      final preconditionRequest = RequestOptions(path: '/shift-closes');
-      final conflictRequest = RequestOptions(path: '/shift-closes');
+    test(
+      'maps precondition to validation and conflict to conflict failures',
+      () {
+        final preconditionRequest = RequestOptions(path: '/shift-closes');
+        final conflictRequest = RequestOptions(path: '/shift-closes');
 
-      final preconditionFailure = mapper.map(
-        DioException(
-          requestOptions: preconditionRequest,
-          response: Response<Object?>(
+        final preconditionFailure = mapper.map(
+          DioException(
             requestOptions: preconditionRequest,
-            statusCode: 428,
+            response: Response<Object?>(
+              requestOptions: preconditionRequest,
+              statusCode: 428,
+            ),
+            type: DioExceptionType.badResponse,
           ),
-          type: DioExceptionType.badResponse,
-        ),
-        StackTrace.empty,
-      );
-      final conflictFailure = mapper.map(
-        DioException(
-          requestOptions: conflictRequest,
-          response: Response<Object?>(
+          StackTrace.empty,
+        );
+        final conflictFailure = mapper.map(
+          DioException(
             requestOptions: conflictRequest,
-            statusCode: 409,
+            response: Response<Object?>(
+              requestOptions: conflictRequest,
+              statusCode: 409,
+            ),
+            type: DioExceptionType.badResponse,
           ),
-          type: DioExceptionType.badResponse,
-        ),
-        StackTrace.empty,
-      );
+          StackTrace.empty,
+        );
 
-      expect(preconditionFailure.category, AppFailureCategory.validation);
-      expect(conflictFailure.category, AppFailureCategory.validation);
-      expect(conflictFailure.statusCode, 409);
-    });
+        expect(preconditionFailure.category, AppFailureCategory.validation);
+        expect(conflictFailure.category, AppFailureCategory.conflict);
+        expect(conflictFailure.statusCode, 409);
+        expect(conflictFailure.isRetryable, isTrue);
+      },
+    );
 
     test('maps validation responses without exposing server messages', () {
       final requestOptions = RequestOptions(path: '/example-resources');
@@ -291,7 +295,7 @@ void main() {
       expect(failure.messageKey, 'errors.validation');
     });
 
-    test('maps problem+json validation arrays and detail messages', () {
+    test('maps problem+json conflict arrays and detail messages', () {
       final requestOptions = RequestOptions(path: '/users');
       final failure = mapper.map(
         DioException(
@@ -315,7 +319,7 @@ void main() {
         StackTrace.empty,
       );
 
-      expect(failure.category, AppFailureCategory.validation);
+      expect(failure.category, AppFailureCategory.conflict);
       expect(failure.validationFields, <String>{'email'});
       expect(
         failure.detailMessage,

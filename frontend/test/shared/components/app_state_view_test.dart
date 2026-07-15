@@ -104,6 +104,33 @@ void main() {
     expect(find.text('Try again'), findsNothing);
   });
 
+  testWidgets('AppFailureStateView renders retryable conflict failures', (
+    WidgetTester tester,
+  ) async {
+    var retryCount = 0;
+
+    await pumpComponent(
+      tester,
+      AppFailureStateView(
+        failure: AppFailure.conflict(),
+        onRetry: () {
+          retryCount += 1;
+        },
+      ),
+    );
+
+    expect(find.text('Update conflict'), findsOneWidget);
+    expect(
+      find.text('This record changed. Refresh and try again.'),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.sync_problem_outlined), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
+
+    await tester.tap(find.text('Try again'));
+    expect(retryCount, 1);
+  });
+
   testWidgets('AsyncStateScaffold maps typed result failures to error views', (
     WidgetTester tester,
   ) async {

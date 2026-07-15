@@ -15,11 +15,11 @@ import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.da
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
 import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
 import 'package:hosspi_hms/features/reception/presentation/reception_access.dart';
-import 'package:hosspi_hms/features/reception/presentation/widgets/reception_appointment_actions.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_billing_guidance.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_patient_actions.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -618,7 +618,7 @@ class _ReceptionWorkspaceContentState
   }
 
   Future<void> _openAppointmentActions(OpdAppointment appointment) async {
-    final bool? changed = await showReceptionAppointmentActionsDialog(
+    final bool? changed = await showOpdAppointmentActionsDialog(
       context: context,
       appointment: appointment,
     );
@@ -804,42 +804,23 @@ class _ReceptionDeskCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        row.patientName(context),
-                        style: theme.textTheme.titleMedium,
-                      ),
-                      if ((row.displayId ?? '').isNotEmpty)
-                        Text(
-                          row.displayId!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                if ((row.status ?? '').isNotEmpty)
-                  AppStatusBadge(
-                    label: opdStageDisplayLabel(l10n, row.status!),
-                    tone: AppWorkspaceStatusTone.info,
-                  ),
-              ],
+            AppPatientDetails(
+              patientName: row.patientName(context),
+              patientNumber: row.displayId ?? '',
+              patientNumberLabel: l10n.opdPatientIdLabel,
+              showAvatar: false,
+              persistExpandPreference: false,
+              initiallyExpanded: false,
+              compactSupportingText: row.time == null
+                  ? null
+                  : AppFormatters.dateTime(row.time!, locale),
+              status: (row.status ?? '').isEmpty
+                  ? null
+                  : AppWorkspaceStatus(
+                      label: opdStageDisplayLabel(l10n, row.status!),
+                      tone: AppWorkspaceStatusTone.info,
+                    ),
             ),
-            if (row.time != null) ...<Widget>[
-              SizedBox(height: theme.spacing.xs),
-              Text(
-                AppFormatters.dateTime(row.time!, locale),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
             if (steps.isNotEmpty) ...<Widget>[
               SizedBox(height: theme.spacing.sm),
               AppWorkflowStepper(steps: steps),
@@ -852,19 +833,18 @@ class _ReceptionDeskCard extends ConsumerWidget {
               ReceptionBillingGuidancePanel(queueEntry: row.queueEntry),
             ],
             SizedBox(height: theme.spacing.sm),
-            Wrap(
-              spacing: theme.spacing.sm,
-              runSpacing: theme.spacing.sm,
-              children: _actions(context, l10n),
-            ),
+            AppPermissionActionList(actions: _actions(context, l10n)),
           ],
         ),
       ),
     );
   }
 
-  List<Widget> _actions(BuildContext context, AppLocalizations l10n) {
-    final List<Widget> actions = <Widget>[];
+  List<AppPermissionActionItem> _actions(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    final List<AppPermissionActionItem> actions = <AppPermissionActionItem>[];
     final OpdAppointment? appointment = row.appointment;
     final OpdQueueEntry? queueEntry = row.queueEntry;
     final OpdFlowSummary? flow = row.flow;
@@ -872,82 +852,60 @@ class _ReceptionDeskCard extends ConsumerWidget {
 
     if (appointment != null) {
       actions.add(
-        AppAccessActionGate(
+        AppPermissionActionItem(
           requirement: receptionFrontDeskWriteRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppButton.primary(
-              label: l10n.receptionAppointmentActionsAction,
-              leadingIcon: Icons.event_available_outlined,
-              enabled: isAllowed,
-              onPressed: isAllowed
-                  ? () => onOpenAppointment(appointment)
-                  : null,
-            );
-          },
+          label: l10n.receptionAppointmentActionsAction,
+          icon: Icons.event_available_outlined,
+          variant: AppButtonVariant.primary,
+          onPressed: () => onOpenAppointment(appointment),
         ),
       );
       actions.add(
-        AppAccessActionGate(
+        AppPermissionActionItem(
           requirement: receptionFrontDeskWriteRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppButton.secondary(
-              label: l10n.opdCheckInAction,
-              leadingIcon: Icons.login_outlined,
-              enabled: isAllowed,
-              onPressed: isAllowed ? () => onCheckIn(appointment) : null,
-            );
-          },
+          label: l10n.opdCheckInAction,
+          icon: Icons.login_outlined,
+          onPressed: () => onCheckIn(appointment),
         ),
       );
     }
 
     if (queueEntry != null) {
       actions.add(
-        AppAccessActionGate(
+        AppPermissionActionItem(
           requirement: receptionFrontDeskWriteRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppButton.primary(
-              label: l10n.opdStartConsultationAction,
-              leadingIcon: Icons.play_arrow_outlined,
-              enabled: isAllowed,
-              onPressed: isAllowed ? () => onStartFromQueue(queueEntry) : null,
-            );
-          },
+          label: l10n.opdStartConsultationAction,
+          icon: Icons.play_arrow_outlined,
+          variant: AppButtonVariant.primary,
+          onPressed: () => onStartFromQueue(queueEntry),
         ),
       );
       actions.add(
-        AppAccessActionGate(
+        AppPermissionActionItem(
           requirement: receptionFrontDeskWriteRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppButton.secondary(
-              label: l10n.opdPrioritizeAction,
-              leadingIcon: Icons.priority_high_outlined,
-              enabled: isAllowed,
-              onPressed: isAllowed ? () => onPrioritize(queueEntry) : null,
-            );
-          },
+          label: l10n.opdPrioritizeAction,
+          icon: Icons.priority_high_outlined,
+          onPressed: () => onPrioritize(queueEntry),
         ),
       );
     }
 
     if (flow != null) {
       actions.add(
-        AppAccessActionGate(
+        AppPermissionActionItem(
           requirement: receptionFrontDeskWriteRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppButton.primary(
-              label: l10n.receptionRoutePatientAction,
-              leadingIcon: Icons.assignment_ind_outlined,
-              enabled: isAllowed,
-              onPressed: isAllowed ? () => onAssignDoctor(flow) : null,
-            );
-          },
+          label: l10n.receptionRoutePatientAction,
+          icon: Icons.assignment_ind_outlined,
+          variant: AppButtonVariant.primary,
+          onPressed: () => onAssignDoctor(flow),
         ),
       );
       actions.add(
-        AppButton.secondary(
+        AppPermissionActionItem(
+          requirement: receptionWorkspaceRequirement,
           label: l10n.receptionOpenEncounterAction,
-          leadingIcon: Icons.medical_services_outlined,
+          icon: Icons.medical_services_outlined,
+          hideWhenDenied: false,
           onPressed: () => onOpenFlow(flow),
         ),
       );
@@ -955,46 +913,27 @@ class _ReceptionDeskCard extends ConsumerWidget {
 
     if (patientId != null && patientId.isNotEmpty) {
       actions.add(
-        AppAccessActionGate(
+        AppPermissionActionItem(
           requirement: receptionFrontDeskWriteRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppButton.secondary(
-              label: l10n.receptionEditPatientAction,
-              leadingIcon: Icons.person_outline,
-              enabled: isAllowed,
-              onPressed: isAllowed ? () => onEditPatient(patientId) : null,
-            );
-          },
+          label: l10n.receptionEditPatientAction,
+          icon: Icons.person_outline,
+          onPressed: () => onEditPatient(patientId),
         ),
       );
       actions.add(
-        AppAccessActionGate(
+        AppPermissionActionItem(
           requirement: receptionFrontDeskWriteRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppButton.secondary(
-              label: l10n.receptionScheduleAppointmentAction,
-              leadingIcon: Icons.calendar_month_outlined,
-              enabled: isAllowed,
-              onPressed: isAllowed
-                  ? () => onScheduleForPatient(patientId)
-                  : null,
-            );
-          },
+          label: l10n.receptionScheduleAppointmentAction,
+          icon: Icons.calendar_month_outlined,
+          onPressed: () => onScheduleForPatient(patientId),
         ),
       );
       actions.add(
-        AppAccessActionGate(
+        AppPermissionActionItem(
           requirement: receptionInsuranceCaptureRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppButton.secondary(
-              label: l10n.receptionCaptureInsuranceAction,
-              leadingIcon: Icons.badge_outlined,
-              enabled: isAllowed,
-              onPressed: isAllowed
-                  ? () => onCaptureInsurance(patientId)
-                  : null,
-            );
-          },
+          label: l10n.receptionCaptureInsuranceAction,
+          icon: Icons.badge_outlined,
+          onPressed: () => onCaptureInsurance(patientId),
         ),
       );
     }

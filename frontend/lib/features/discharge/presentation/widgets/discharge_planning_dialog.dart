@@ -542,7 +542,11 @@ class _RelatedRecordsSection extends StatelessWidget {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.medication_outlined, size: 20),
-              title: Text(record.title ?? record.id),
+              title: Text(
+                (record.title ?? '').trim().isNotEmpty
+                    ? record.title!.trim()
+                    : record.kind,
+              ),
               subtitle: Text(record.status ?? ''),
               trailing: AppButton.tertiary(
                 label: l10n.patientsActiveWorkContinueAction,
@@ -564,7 +568,11 @@ class _RelatedRecordsSection extends StatelessWidget {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.receipt_long_outlined, size: 20),
-              title: Text(record.title ?? record.id),
+              title: Text(
+                (record.title ?? '').trim().isNotEmpty
+                    ? record.title!.trim()
+                    : record.kind,
+              ),
               subtitle: Text(record.status ?? record.billingStatus ?? ''),
               trailing: AppButton.tertiary(
                 label: l10n.patientsActiveWorkContinueAction,

@@ -6,6 +6,7 @@ enum AppFailureCategory {
   unauthorized,
   forbidden,
   notFound,
+  conflict,
   validation,
   unexpectedResponse,
   storage,
@@ -43,6 +44,15 @@ sealed class AppFailure {
       ForbiddenFailure;
 
   const factory AppFailure.notFound({int? statusCode}) = NotFoundFailure;
+
+  factory AppFailure.conflict({
+    String code,
+    int? statusCode,
+    Set<String> validationFields,
+    String? detailMessage,
+    Map<String, String> fieldMessages,
+    bool isRetryable,
+  }) = ConflictFailure;
 
   factory AppFailure.validation({
     String code,
@@ -212,6 +222,29 @@ final class NotFoundFailure extends AppFailure {
         messageKey: 'errors.notFound',
         isRetryable: false,
       );
+}
+
+final class ConflictFailure extends AppFailure {
+  ConflictFailure({
+    super.code = 'network.conflict',
+    super.statusCode,
+    Set<String> validationFields = const <String>{},
+    String? detailMessage,
+    Map<String, String> fieldMessages = const <String, String>{},
+    super.isRetryable = true,
+  }) : super._(
+         category: AppFailureCategory.conflict,
+         messageKey: 'errors.conflict',
+         validationFields: AppFailure._normalizedFields(validationFields),
+         detailMessage: () {
+           final String? trimmed = detailMessage?.trim();
+           if (trimmed == null || trimmed.isEmpty) {
+             return null;
+           }
+           return trimmed;
+         }(),
+         fieldMessages: AppFailure._normalizedFieldMessages(fieldMessages),
+       );
 }
 
 final class ValidationFailure extends AppFailure {

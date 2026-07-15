@@ -82,18 +82,20 @@ lib/
 |           `-- widgets/
 |-- l10n/
 `-- shared/
+    |-- actions/
     |-- components/
     |-- data/
     |-- forms/
     |-- layout/
+    |-- opd_actions/
     |-- search/
-    `-- widgets/
+    `-- reporting/
 ```
 
-The `home` feature is the starter example feature. Its folders are intentionally
-minimal and demonstrate where production code belongs when the feature grows.
-Shared pagination models and search/filter controllers live under `shared`
-because they are feature-neutral UI/data helpers.
+Feature modules under `lib/features/` own domain workflows. Shared pagination
+models, search/filter controllers, permission-aware actions, patient details,
+workflow steppers, and OPD/front-desk dialogs live under `shared` because they
+are reused across modules.
 
 ## Provider Placement
 

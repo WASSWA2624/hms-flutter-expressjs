@@ -51,6 +51,7 @@ abstract final class ValidationMessagePresenter {
       AppFailureCategory.unauthorized => l10n.errorUnauthorizedMessage,
       AppFailureCategory.forbidden => l10n.errorForbiddenMessage,
       AppFailureCategory.notFound => l10n.errorNotFoundMessage,
+      AppFailureCategory.conflict => l10n.errorConflictMessage,
       AppFailureCategory.validation => l10n.errorValidationMessage,
       AppFailureCategory.unexpectedResponse =>
         l10n.errorUnexpectedResponseMessage,
