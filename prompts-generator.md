@@ -1,7 +1,0 @@
- 
-
-Thoroughly analyze each application improvement requirement in [prompt.md](prompt.md). For every unique requirement, generate a clear, concise, and context-aware markdown prompt in the [prompts](prompts) directory. Use sequential and descriptive filenames (e.g., 00-[short-name].md, 01-[short-name].md, etc) to ensure logical ordering and easy discovery.
-
-Each prompt must translate its requirement into actionable, step-by-step instructions that cover backend, database, and frontend implementation as appropriate. Stress code and component reusability and maintain a modular structure. For data model or schema changes, detail all required database migrations, removal of outdated data, and elimination of obsolete code. Avoid duplicating existing patterns—address only missing or non-compliant implementation.
-
-Always adhere strictly to all applicable .cursor/** rules—including those in [HMS rules](.cursor), [Backend rules](backend/.cursor), and [Frontend rules](frontend/.cursor)—to ensure consistency and best practices throughout.
