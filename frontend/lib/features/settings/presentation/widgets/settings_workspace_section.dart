@@ -7,9 +7,16 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/settings/domain/entities/settings_workspace_entities.dart';
 import 'package:hosspi_hms/features/settings/presentation/controllers/settings_workspace_controller.dart';
 import 'package:hosspi_hms/features/settings/presentation/state/settings_workspace_state.dart';
+import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -185,9 +192,15 @@ class _SettingsWorkspaceContentState
           SizedBox(height: theme.spacing.md),
           _SettingsContextSelector(state: widget.state),
         ] else if (_activeTab == 'setup') ...<Widget>[
-          _SettingsChecklistPanel(workspace: workspace),
+          _SettingsChecklistPanel(
+            workspace: workspace,
+            onRefresh: widget.onRefresh,
+          ),
           SizedBox(height: theme.spacing.md),
-          _SettingsQuickActionsPanel(actions: workspace.quickActions),
+          _SettingsQuickActionsPanel(
+            actions: workspace.quickActions,
+            onRefresh: widget.onRefresh,
+          ),
         ] else ...<Widget>[
           _SettingsWorkspaceFilters(state: widget.state),
           SizedBox(height: theme.spacing.md),
@@ -462,13 +475,17 @@ class _SettingsWorkspaceFilters extends ConsumerWidget {
   }
 }
 
-class _SettingsChecklistPanel extends StatelessWidget {
-  const _SettingsChecklistPanel({required this.workspace});
+class _SettingsChecklistPanel extends ConsumerWidget {
+  const _SettingsChecklistPanel({
+    required this.workspace,
+    required this.onRefresh,
+  });
 
   final SettingsWorkspace workspace;
+  final VoidCallback onRefresh;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
 
@@ -483,64 +500,114 @@ class _SettingsChecklistPanel extends StatelessWidget {
       leadingIcon: Icons.playlist_add_check_outlined,
       density: AppContentPanelDensity.compact,
       children: <Widget>[
-        for (final SettingsChecklistItem item
-            in workspace.checklist.items) ...<Widget>[
-          _SettingsChecklistRow(item: item),
-          if (item != workspace.checklist.items.last)
-            SizedBox(height: theme.spacing.xs),
-        ],
+        Wrap(
+          spacing: theme.spacing.sm,
+          runSpacing: theme.spacing.sm,
+          children: <Widget>[
+            for (final SettingsChecklistItem item
+                in workspace.checklist.items)
+              _SettingsChecklistChip(item: item, onRefresh: onRefresh),
+          ],
+        ),
       ],
     );
   }
 }
 
-class _SettingsChecklistRow extends StatelessWidget {
-  const _SettingsChecklistRow({required this.item});
+class _SettingsChecklistChip extends ConsumerWidget {
+  const _SettingsChecklistChip({
+    required this.item,
+    required this.onRefresh,
+  });
 
   final SettingsChecklistItem item;
+  final VoidCallback onRefresh;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final String? route = _mappedSettingsRoute(item.createRoute ?? item.route);
-    final bool canOpen = route != null;
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String entityKey = item.labelKey.split('.').last;
+    final String label = _labelForKey(l10n, item.labelKey);
+    final bool canOpen =
+        _mappedSettingsRoute(item.createRoute ?? item.route) != null;
 
-    return Row(
-      children: <Widget>[
-        Icon(
-          item.completed
-              ? Icons.check_circle_outline
-              : Icons.radio_button_unchecked,
-          color: item.completed
-              ? theme.statusColors.success
-              : theme.colorScheme.onSurfaceVariant,
-          size: theme.appTokens.listIconSize,
+    return Semantics(
+      button: true,
+      label:
+          '$label — ${item.completed ? l10n.settingsWorkspaceConfiguredStatus : l10n.settingsWorkspaceEmptyStatus}',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(theme.radius.sm),
+          onTap: canOpen
+              ? () => unawaited(
+                    _handleChecklistOpen(context, ref, item, onRefresh),
+                  )
+              : null,
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: theme.spacing.sm,
+              vertical: theme.spacing.xs,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(theme.radius.sm),
+              border: Border.all(
+                color: item.completed
+                    ? theme.statusColors.success.withValues(alpha: 0.4)
+                    : colorScheme.outlineVariant,
+              ),
+              color: item.completed
+                  ? theme.statusColors.success.withValues(alpha: 0.06)
+                  : colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.4),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(
+                  _checklistEntityIcon(entityKey),
+                  size: 18,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                SizedBox(width: theme.spacing.xs),
+                Text(
+                  label,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                SizedBox(width: theme.spacing.xs),
+                Icon(
+                  item.completed
+                      ? Icons.check_circle
+                      : Icons.radio_button_unchecked,
+                  size: 16,
+                  color: item.completed
+                      ? theme.statusColors.success
+                      : colorScheme.outlineVariant,
+                ),
+              ],
+            ),
+          ),
         ),
-        SizedBox(width: theme.spacing.sm),
-        Expanded(child: Text(_labelForKey(l10n, item.labelKey))),
-        SizedBox(width: theme.spacing.sm),
-        AppButton.tertiary(
-          label: canOpen
-              ? l10n.settingsWorkspaceOpenAction
-              : l10n.settingsWorkspaceRouteUnavailableLabel,
-          leadingIcon: canOpen ? Icons.open_in_new : Icons.block_outlined,
-          tooltip: canOpen ? null : l10n.settingsWorkspaceRouteUnavailableBody,
-          enabled: canOpen,
-          onPressed: canOpen ? () => context.go(route) : null,
-        ),
-      ],
+      ),
     );
   }
 }
 
-class _SettingsQuickActionsPanel extends StatelessWidget {
-  const _SettingsQuickActionsPanel({required this.actions});
+class _SettingsQuickActionsPanel extends ConsumerWidget {
+  const _SettingsQuickActionsPanel({
+    required this.actions,
+    required this.onRefresh,
+  });
 
   final List<SettingsQuickAction> actions;
+  final VoidCallback onRefresh;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
 
@@ -562,7 +629,10 @@ class _SettingsQuickActionsPanel extends StatelessWidget {
             runSpacing: theme.spacing.sm,
             children: <Widget>[
               for (final SettingsQuickAction action in actions)
-                _SettingsActionButton(action: action),
+                _SettingsActionButton(
+                  action: action,
+                  onRefresh: onRefresh,
+                ),
             ],
           ),
       ],
@@ -570,23 +640,31 @@ class _SettingsQuickActionsPanel extends StatelessWidget {
   }
 }
 
-class _SettingsActionButton extends StatelessWidget {
-  const _SettingsActionButton({required this.action});
+class _SettingsActionButton extends ConsumerWidget {
+  const _SettingsActionButton({
+    required this.action,
+    required this.onRefresh,
+  });
 
   final SettingsQuickAction action;
+  final VoidCallback onRefresh;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final String? route = _mappedSettingsRoute(action.route);
-    final bool canExecute = action.canExecute && route != null;
 
     return AppButton.secondary(
       label: _quickActionLabel(l10n, action),
       leadingIcon: _iconFor(action.icon),
-      enabled: canExecute,
-      tooltip: canExecute ? null : l10n.settingsWorkspaceRouteUnavailableBody,
-      onPressed: canExecute ? () => context.go(route) : null,
+      enabled: action.canExecute,
+      tooltip: action.canExecute
+          ? null
+          : l10n.settingsWorkspaceRouteUnavailableBody,
+      onPressed: action.canExecute
+          ? () => unawaited(
+                _handleQuickCreateAction(context, ref, action, onRefresh),
+              )
+          : null,
     );
   }
 }
@@ -833,6 +911,145 @@ String _labelForKey(AppLocalizations l10n, String key) {
     'settings.tabs.oauth-account' => l10n.settingsWorkspaceModuleOauthAccount,
     _ => l10n.settingsWorkspaceUnknownLabel,
   };
+}
+
+IconData _checklistEntityIcon(String entityKey) {
+  return switch (entityKey) {
+    'tenant' => Icons.business_outlined,
+    'facility' => Icons.local_hospital_outlined,
+    'department' => Icons.folder_outlined,
+    'ward' => Icons.home_outlined,
+    'bed' => Icons.bed_outlined,
+    'user' => Icons.person_outline,
+    'role' => Icons.shield_outlined,
+    'permission' => Icons.key_outlined,
+    _ => Icons.layers_outlined,
+  };
+}
+
+Future<void> _handleChecklistOpen(
+  BuildContext context,
+  WidgetRef ref,
+  SettingsChecklistItem item,
+  VoidCallback onRefresh,
+) async {
+  final String entityKey = item.labelKey.split('.').last;
+  bool? result;
+
+  switch (entityKey) {
+    case 'tenant':
+      result = await showManageTenantsDialog(context, ref);
+    case 'facility':
+      result = await showManageFacilitiesDialog(context, ref);
+    case 'user':
+      result = await showManageUsersDialog(context, ref);
+    case 'role' || 'permission':
+      result = await showManageRolesPermissionsDialog(context, ref);
+    default:
+      final String? route = _mappedSettingsRoute(item.route);
+      if (route != null && context.mounted) {
+        context.go(route);
+      }
+      return;
+  }
+
+  if (result == true) {
+    onRefresh();
+  }
+}
+
+Future<void> _handleQuickCreateAction(
+  BuildContext context,
+  WidgetRef ref,
+  SettingsQuickAction action,
+  VoidCallback onRefresh,
+) async {
+  final String entityKey = action.moduleLabelKey.split('.').last;
+
+  switch (entityKey) {
+    case 'tenant':
+      final bool? saved = await showTenantFacilityTenantFormDialog(
+        context,
+        forceCreate: true,
+      );
+      if (saved == true) onRefresh();
+    case 'facility':
+      final bool? saved = await showTenantFacilityFacilityFormDialog(
+        context,
+        requireTenantPicker: true,
+        managementMode: true,
+      );
+      if (saved == true) onRefresh();
+    case 'department':
+      await _openCreateWithSnapshot(
+        context,
+        ref,
+        (BuildContext ctx, FacilitySetupSnapshot snapshot) =>
+            showTenantFacilityDepartmentFormDialog(ctx, snapshot),
+        onRefresh,
+      );
+    case 'ward':
+      await _openCreateWithSnapshot(
+        context,
+        ref,
+        (BuildContext ctx, FacilitySetupSnapshot snapshot) =>
+            showTenantFacilityWardFormDialog(ctx, snapshot),
+        onRefresh,
+      );
+    case 'bed':
+      await _openCreateWithSnapshot(
+        context,
+        ref,
+        (BuildContext ctx, FacilitySetupSnapshot snapshot) =>
+            showTenantFacilityBedFormDialog(ctx, snapshot),
+        onRefresh,
+      );
+    case 'user':
+      final bool? saved = await showAccessAdminCreateUserDialog(context, ref);
+      if (saved == true) onRefresh();
+    case 'role':
+      final bool? saved = await showAccessAdminCreateRoleDialog(context, ref);
+      if (saved == true) onRefresh();
+    case 'permission':
+      await showAccessAdminWorkspaceDialog(
+        context,
+        initialPanel: AccessAdminPanel.permissions,
+      );
+      onRefresh();
+    default:
+      final String? route = _mappedSettingsRoute(action.route);
+      if (route != null && context.mounted) {
+        context.go(route);
+      }
+  }
+}
+
+Future<void> _openCreateWithSnapshot(
+  BuildContext context,
+  WidgetRef ref,
+  Future<void> Function(BuildContext, FacilitySetupSnapshot) openDialog,
+  VoidCallback onRefresh,
+) async {
+  final Result<FacilitySetupSnapshot> result = await ref.read(
+    tenantFacilitySetupControllerProvider.future,
+  );
+
+  final FacilitySetupSnapshot? snapshot = result.when(
+    success: (FacilitySetupSnapshot s) => s,
+    failure: (_) => null,
+  );
+
+  if (snapshot == null || !context.mounted) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.settingsWorkspaceErrorTitle)),
+      );
+    }
+    return;
+  }
+
+  await openDialog(context, snapshot);
+  onRefresh();
 }
 
 String _dateLabel(DateTime? value) {
