@@ -7,6 +7,7 @@ import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/network/api_interceptors.dart';
 import 'package:hosspi_hms/core/network/connection_retry_interceptor.dart';
 import 'package:hosspi_hms/core/network/dio_adapter_configurer.dart';
+import 'package:hosspi_hms/core/network/http_response_cache_interceptor.dart';
 import 'package:hosspi_hms/core/network/network_failure_mapper.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_token_provider.dart';
@@ -84,6 +85,7 @@ final dioProvider = Provider<Dio>((ref) {
       retryClient: dio,
     ),
     ConnectionRetryInterceptor(retryClient: dio),
+    HttpResponseCacheInterceptor(),
     SafeDiagnosticsInterceptor(
       enabled: !config.isProduction && config.logLevel == AppLogLevel.debug,
     ),

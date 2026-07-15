@@ -43,7 +43,19 @@ final class ConnectionRetryInterceptor extends Interceptor {
   }
 
   bool _shouldRetry(DioException err) {
-    return err.type == DioExceptionType.connectionError ||
-        err.type == DioExceptionType.connectionTimeout;
+    if (err.type == DioExceptionType.connectionError ||
+        err.type == DioExceptionType.connectionTimeout) {
+      return true;
+    }
+    final int? statusCode = err.response?.statusCode;
+    if (statusCode != null && statusCode >= 500 && _isIdempotent(err)) {
+      return true;
+    }
+    return false;
+  }
+
+  static bool _isIdempotent(DioException err) {
+    final String method = err.requestOptions.method.toUpperCase();
+    return method == 'GET' || method == 'HEAD' || method == 'OPTIONS';
   }
 }

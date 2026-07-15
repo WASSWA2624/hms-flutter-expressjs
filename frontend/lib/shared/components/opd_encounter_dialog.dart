@@ -1096,7 +1096,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     if (formState != null) {
       final bool canContinue = await formState.prepareSubmit();
       if (!canContinue) {
-        setState(() {});
         return;
       }
     }
@@ -1295,15 +1294,13 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       appointmentId,
     ]);
 
+    final bool hasSearch = _isNonEmpty(search);
     setState(() {
-      _isResolvingActiveEncounter = _isNonEmpty(search);
+      _isResolvingActiveEncounter = hasSearch;
       _applyActiveEncounterToState(localMatch);
     });
 
-    if (!_isNonEmpty(search)) {
-      setState(() {
-        _isResolvingActiveEncounter = false;
-      });
+    if (!hasSearch) {
       return;
     }
 
