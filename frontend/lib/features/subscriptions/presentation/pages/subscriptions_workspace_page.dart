@@ -188,62 +188,45 @@ class _SubscriptionsWorkspaceContentState
     );
     final Object? failure = state.lastFailure;
     final AppFailure? lastFailure = failure is AppFailure ? failure : null;
+    final ThemeData theme = Theme.of(context);
 
-    final List<Widget> panelActions = <Widget>[
-      for (final SubscriptionPanel panel in SubscriptionPanel.values)
-        AppButton(
-          label: _panelLabel(panel),
-          leadingIcon: _panelIcon(panel),
-          variant: state.query.panel == panel
-              ? AppButtonVariant.primary
-              : AppButtonVariant.secondary,
-          onPressed: state.query.panel == panel || state.isRefreshing
-              ? null
-              : () => controller.applyPanel(panel),
-        ),
-    ];
-
-    return AppWorkspace(
-      title: _SubscriptionsText.title,
-      leadingIcon: AppRouteIcons.subscriptions,
-      toolbar: appWorkspaceToolbarWithLabels(
-        context.l10n,
-        maxVisibleScreenActions: 2,
-        summaryNotifications: _summaryNotifications(context, state),
-        primary: _primaryAction(context, canWrite, state),
-        onRefresh: controller.refresh,
-        isRefreshing: state.isRefreshing,
-        overflowSections: <AppToolbarOverflowSection>[
-          AppToolbarOverflowSection(
-            headerLabel: _SubscriptionsText.viewsMenu,
-            actions: panelActions,
-          ),
-          const AppToolbarOverflowSection(showsNotifications: true),
-        ],
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (lastFailure != null) ...<Widget>[
-            AppFailureStateView(
-              failure: lastFailure,
-              onRetry: controller.refresh,
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            _SubscriptionsPanelTabBar(
+              activePanel: state.query.panel,
+              isRefreshing: state.isRefreshing,
+              onPanelSelected: controller.applyPanel,
+              summaryNotifications: _summaryNotifications(context, state),
+              primaryAction: _primaryAction(context, canWrite, state),
+              onRefresh: controller.refresh,
             ),
-            SizedBox(height: Theme.of(context).spacing.md),
+            SizedBox(height: theme.spacing.md),
+            if (lastFailure != null) ...<Widget>[
+              AppFailureStateView(
+                failure: lastFailure,
+                onRetry: controller.refresh,
+              ),
+              SizedBox(height: theme.spacing.md),
+            ],
+            _SubscriptionOverviewPanel(state: state, canWrite: canWrite),
+            SizedBox(height: theme.spacing.md),
+            _SubscriptionsWorklistPanel(
+              state: state,
+              searchController: _searchController,
+              columnVisibilityController: _tableColumnController,
+              onItemSelected: (SubscriptionItem item) {
+                unawaited(
+                  _openSubscriptionDetailDialog(context, ref, item, canWrite),
+                );
+              },
+            ),
           ],
-          _SubscriptionOverviewPanel(state: state, canWrite: canWrite),
-          SizedBox(height: Theme.of(context).spacing.md),
-          _SubscriptionsWorklistPanel(
-            state: state,
-            searchController: _searchController,
-            columnVisibilityController: _tableColumnController,
-            onItemSelected: (SubscriptionItem item) {
-              unawaited(
-                _openSubscriptionDetailDialog(context, ref, item, canWrite),
-              );
-            },
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -362,6 +345,206 @@ class _SubscriptionsWorkspaceContentState
         queueId: _QueueIds.upgradeRecommended,
       ),
     ];
+  }
+}
+
+class _SubscriptionsPanelTabBar extends StatelessWidget {
+  const _SubscriptionsPanelTabBar({
+    required this.activePanel,
+    required this.isRefreshing,
+    required this.onPanelSelected,
+    required this.summaryNotifications,
+    this.primaryAction,
+    this.onRefresh,
+  });
+
+  final SubscriptionPanel activePanel;
+  final bool isRefreshing;
+  final ValueChanged<SubscriptionPanel> onPanelSelected;
+  final List<AppWorkspaceSummaryNotification> summaryNotifications;
+  final Widget? primaryAction;
+  final Future<void> Function()? onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final int notificationCount = totalWorkspaceSummaryNotificationCount(
+      summaryNotifications,
+    );
+
+    return Row(
+      children: <Widget>[
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: <Widget>[
+                for (final SubscriptionPanel panel
+                    in SubscriptionPanel.values) ...<Widget>[
+                  _PanelTab(
+                    label: _panelLabel(panel),
+                    icon: _panelIcon(panel),
+                    isActive: activePanel == panel,
+                    isDisabled: isRefreshing,
+                    onTap: activePanel == panel
+                        ? null
+                        : () => onPanelSelected(panel),
+                  ),
+                  SizedBox(width: theme.spacing.xs),
+                ],
+                _NotificationTab(
+                  count: notificationCount,
+                  isDisabled: isRefreshing,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (onRefresh != null) ...<Widget>[
+          SizedBox(width: theme.spacing.sm),
+          IconButton(
+            icon: Icon(
+              Icons.refresh,
+              color: isRefreshing
+                  ? colorScheme.onSurface.withValues(alpha: 0.38)
+                  : colorScheme.onSurfaceVariant,
+            ),
+            tooltip: _SubscriptionsText.refresh,
+            onPressed: isRefreshing ? null : onRefresh,
+          ),
+        ],
+        if (primaryAction != null) ...<Widget>[
+          SizedBox(width: theme.spacing.sm),
+          primaryAction!,
+        ],
+      ],
+    );
+  }
+}
+
+class _PanelTab extends StatelessWidget {
+  const _PanelTab({
+    required this.label,
+    required this.icon,
+    required this.isActive,
+    required this.isDisabled,
+    this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool isActive;
+  final bool isDisabled;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color activeColor = colorScheme.primary;
+    final Color inactiveColor = colorScheme.onSurfaceVariant;
+    final Color disabledColor = colorScheme.onSurface.withValues(alpha: 0.38);
+
+    final Color foreground = isDisabled
+        ? disabledColor
+        : isActive
+            ? activeColor
+            : inactiveColor;
+
+    return Material(
+      color: isActive
+          ? activeColor.withValues(alpha: 0.1)
+          : Colors.transparent,
+      borderRadius: BorderRadius.circular(theme.radius.sm),
+      child: InkWell(
+        onTap: isDisabled ? null : onTap,
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: theme.spacing.sm,
+            vertical: theme.spacing.xs,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(theme.radius.sm),
+            border: isActive
+                ? Border.all(color: activeColor.withValues(alpha: 0.4))
+                : null,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(icon, size: 18, color: foreground),
+              SizedBox(width: theme.spacing.xs),
+              Text(
+                label,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: foreground,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NotificationTab extends StatelessWidget {
+  const _NotificationTab({
+    required this.count,
+    required this.isDisabled,
+  });
+
+  final int count;
+  final bool isDisabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color foreground = isDisabled
+        ? colorScheme.onSurface.withValues(alpha: 0.38)
+        : colorScheme.onSurfaceVariant;
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(Icons.notifications_outlined, size: 18, color: foreground),
+          SizedBox(width: theme.spacing.xs),
+          Text(
+            _SubscriptionsText.notifications,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: foreground,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          if (count > 0) ...<Widget>[
+            SizedBox(width: theme.spacing.xs),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: colorScheme.error,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                count.toString(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onError,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 
@@ -714,129 +897,120 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
       subscriptionsWorkspaceControllerProvider.notifier,
     );
 
-    return AppWorkspaceDetailPanel(
-      title: _resourceLabel(state.query.resource),
-      titleIcon: _resourceIcon(state.query.resource),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppListTable<SubscriptionItem>(
-            page: state.items,
-            isLoading: state.isRefreshing,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            columnVisibilityController: columnVisibilityController,
-            columnVisibilityLabel: context.l10n.commonTableSettingsActionLabel,
-            search: AppListTableSearch<SubscriptionItem>(
-              controller: searchController,
-              semanticLabel: _SubscriptionsText.searchLabel,
-              hintText: _SubscriptionsText.searchHint,
-              clearLabel: _SubscriptionsText.clearSearch,
-              matcher: (_, _) => true,
-              onSubmitted: controller.applySearch,
-              onClear: () => controller.applySearch(''),
-              showAdvancedFilterButton: true,
-              advancedFilterButtonLabel: _SubscriptionsText.filters,
-              advancedFilterTitle: _SubscriptionsText.filters,
-              advancedFilterApplyLabel: _SubscriptionsText.applyFilters,
-              advancedFilterResetLabel: _SubscriptionsText.clearFilters,
-              enableDateFilter: false,
-              allFieldsLabel: _SubscriptionsText.all,
-              filterGroups: _filterGroups(state),
-              filterValue: _filterValue(state.query),
-              hasActiveFilters: state.query.hasActiveFilters,
-              onFilterChanged: (AppSearchBarFilterValue value) {
-                final SubscriptionResource resource = _resourceFromFilter(
-                  value.option(_FilterKeys.resource),
-                  state.query.resource,
-                );
-                if (resource != state.query.resource) {
-                  controller.applyResource(resource);
-                  return;
-                }
-                controller.applyFilters(
-                  status: _emptyOption(value.option(_FilterKeys.status)),
-                  tierCode: _emptyOption(value.option(_FilterKeys.tier)),
-                  billingCycle: _emptyOption(
-                    value.option(_FilterKeys.billingCycle),
-                  ),
-                  planId: _emptyOption(value.option(_FilterKeys.plan)),
-                  moduleId: _emptyOption(value.option(_FilterKeys.module)),
-                  fitStatus: _emptyOption(value.option(_FilterKeys.fit)),
-                  invoiceStatus: _emptyOption(
-                    value.option(_FilterKeys.invoice),
-                  ),
-                  licenseType: _emptyOption(value.option(_FilterKeys.license)),
-                  eligibilityState: _emptyOption(
-                    value.option(_FilterKeys.eligibility),
-                  ),
-                  datePreset: _datePresetFromFilter(
-                    value.option(_FilterKeys.datePreset),
-                  ),
-                );
-              },
+    return AppListTable<SubscriptionItem>(
+      page: state.items,
+      isLoading: state.isRefreshing,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      columnVisibilityController: columnVisibilityController,
+      columnVisibilityLabel: context.l10n.commonTableSettingsActionLabel,
+      search: AppListTableSearch<SubscriptionItem>(
+        controller: searchController,
+        semanticLabel: _SubscriptionsText.searchLabel,
+        hintText: _SubscriptionsText.searchHint,
+        clearLabel: _SubscriptionsText.clearSearch,
+        matcher: (_, _) => true,
+        onSubmitted: controller.applySearch,
+        onClear: () => controller.applySearch(''),
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: _SubscriptionsText.filters,
+        advancedFilterTitle: _SubscriptionsText.filters,
+        advancedFilterApplyLabel: _SubscriptionsText.applyFilters,
+        advancedFilterResetLabel: _SubscriptionsText.clearFilters,
+        enableDateFilter: false,
+        allFieldsLabel: _SubscriptionsText.all,
+        filterGroups: _filterGroups(state),
+        filterValue: _filterValue(state.query),
+        hasActiveFilters: state.query.hasActiveFilters,
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          final SubscriptionResource resource = _resourceFromFilter(
+            value.option(_FilterKeys.resource),
+            state.query.resource,
+          );
+          if (resource != state.query.resource) {
+            controller.applyResource(resource);
+            return;
+          }
+          controller.applyFilters(
+            status: _emptyOption(value.option(_FilterKeys.status)),
+            tierCode: _emptyOption(value.option(_FilterKeys.tier)),
+            billingCycle: _emptyOption(
+              value.option(_FilterKeys.billingCycle),
             ),
-            itemKeyBuilder: (SubscriptionItem item) => ValueKey<String>(
-              <String?>[
-                    item.resource.serverValue,
-                    item.id,
-                    item.tenantId,
-                    item.planId,
-                    item.moduleId,
-                    item.invoiceId,
-                  ]
-                  .whereType<String>()
-                  .where((String value) => value.isNotEmpty)
-                  .join(':'),
+            planId: _emptyOption(value.option(_FilterKeys.plan)),
+            moduleId: _emptyOption(value.option(_FilterKeys.module)),
+            fitStatus: _emptyOption(value.option(_FilterKeys.fit)),
+            invoiceStatus: _emptyOption(
+              value.option(_FilterKeys.invoice),
             ),
-            onRowSelected: onItemSelected,
-            previousPageLabel: _SubscriptionsText.previousPage,
-            nextPageLabel: _SubscriptionsText.nextPage,
-            pageLabelBuilder: (AppPage<SubscriptionItem> page) {
-              final int total = page.totalItemCount ?? page.lastItemNumber;
-              return _SubscriptionsText.pageLabel(
-                page.firstItemNumber,
-                page.lastItemNumber,
-                total,
-              );
-            },
-            onPageChanged: controller.changePage,
-            emptyBuilder: (_) => const AppWorkspaceStatePanel.empty(
-              title: _SubscriptionsText.emptyTitle,
-              body: _SubscriptionsText.emptyBody,
+            licenseType: _emptyOption(value.option(_FilterKeys.license)),
+            eligibilityState: _emptyOption(
+              value.option(_FilterKeys.eligibility),
             ),
-            initialSortColumnKey:
-                state.query.resource == SubscriptionResource.subscriptionPlans
-                ? _PlanColumnIds.monthlyPrice
-                : null,
-            rowColorBuilder:
-                state.query.resource == SubscriptionResource.subscriptionPlans
-                ? (BuildContext context, SubscriptionItem item) {
-                    return SubscriptionPlanTheme.of(
-                      context,
-                      item.tierCode ?? item.name ?? item.code,
-                    ).rowTint;
-                  }
-                : state.query.resource == SubscriptionResource.subscriptions
-                ? (BuildContext context, SubscriptionItem item) {
-                    return SubscriptionPlanTheme.of(
-                      context,
-                      item.tierCode ?? item.planCode ?? item.planLabel,
-                    ).rowTint;
-                  }
-                : null,
-            columns: _worklistColumns(state.query.resource),
-            mobileItemBuilder: (BuildContext context, SubscriptionItem item) {
-              return Padding(
-                padding: EdgeInsets.symmetric(
-                  vertical: Theme.of(context).spacing.sm,
-                ),
-                child: _SubscriptionMobileTile(item: item),
-              );
-            },
-          ),
-        ],
+            datePreset: _datePresetFromFilter(
+              value.option(_FilterKeys.datePreset),
+            ),
+          );
+        },
       ),
+      itemKeyBuilder: (SubscriptionItem item) => ValueKey<String>(
+        <String?>[
+              item.resource.serverValue,
+              item.id,
+              item.tenantId,
+              item.planId,
+              item.moduleId,
+              item.invoiceId,
+            ]
+            .whereType<String>()
+            .where((String value) => value.isNotEmpty)
+            .join(':'),
+      ),
+      onRowSelected: onItemSelected,
+      previousPageLabel: _SubscriptionsText.previousPage,
+      nextPageLabel: _SubscriptionsText.nextPage,
+      pageLabelBuilder: (AppPage<SubscriptionItem> page) {
+        final int total = page.totalItemCount ?? page.lastItemNumber;
+        return _SubscriptionsText.pageLabel(
+          page.firstItemNumber,
+          page.lastItemNumber,
+          total,
+        );
+      },
+      onPageChanged: controller.changePage,
+      emptyBuilder: (_) => const AppWorkspaceStatePanel.empty(
+        title: _SubscriptionsText.emptyTitle,
+        body: _SubscriptionsText.emptyBody,
+      ),
+      initialSortColumnKey:
+          state.query.resource == SubscriptionResource.subscriptionPlans
+          ? _PlanColumnIds.monthlyPrice
+          : null,
+      rowColorBuilder:
+          state.query.resource == SubscriptionResource.subscriptionPlans
+          ? (BuildContext context, SubscriptionItem item) {
+              return SubscriptionPlanTheme.of(
+                context,
+                item.tierCode ?? item.name ?? item.code,
+              ).rowTint;
+            }
+          : state.query.resource == SubscriptionResource.subscriptions
+          ? (BuildContext context, SubscriptionItem item) {
+              return SubscriptionPlanTheme.of(
+                context,
+                item.tierCode ?? item.planCode ?? item.planLabel,
+              ).rowTint;
+            }
+          : null,
+      columns: _worklistColumns(state.query.resource),
+      mobileItemBuilder: (BuildContext context, SubscriptionItem item) {
+        return Padding(
+          padding: EdgeInsets.symmetric(
+            vertical: Theme.of(context).spacing.sm,
+          ),
+          child: _SubscriptionMobileTile(item: item),
+        );
+      },
     );
   }
 }
@@ -4845,7 +5019,8 @@ abstract final class _SubscriptionsText {
       'Fetching plans, subscriptions, modules, licenses, and invoices.';
   static const String savedMessage = 'Subscription workspace updated.';
   static const String overview = 'Overview';
-  static const String viewsMenu = 'Views';
+  static const String notifications = 'Notifications';
+  static const String refresh = 'Refresh';
   static const String activePlans = 'Active plans';
   static const String notSubscribed = 'Not subscribed';
   static const String closedSubscriptions = 'Closed subscriptions';
