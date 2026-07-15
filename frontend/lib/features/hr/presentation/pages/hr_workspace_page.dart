@@ -25,7 +25,6 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_request_leave_dia
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_shift_detail_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_actions.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_helpers.dart';
-import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_detail_overview.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_offboarding_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -696,11 +695,127 @@ class _HrStaffDetailBody extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final HrStaffProfile profile = detail.profile;
+    final bool hasLinkedUser =
+        (profile.userEmail ?? profile.userDisplayId ?? profile.userId ?? '')
+            .trim()
+            .isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        HrStaffDetailOverview(profile: profile),
+        AppPatientDetails(
+          semanticLabel: l10n.hrStaffDetailTitle,
+          patientName: profile.displayName,
+          patientNumber: profile.staffNumber ?? profile.effectiveId,
+          patientNumberLabel: l10n.hrStaffNumberLabel,
+          showAvatar: false,
+          persistExpandPreference: false,
+          initiallyExpanded: false,
+          compactSupportingText: hrJoinDisplay(<String?>[
+            profile.position,
+            l10n.hrReferencePractitionerTypeLabel(
+              profile.practitionerType,
+              fallback: profile.practitionerType,
+            ),
+          ]),
+          status: profile.isSeparated
+              ? AppWorkspaceStatus(
+                  label: _apiLabel(context, profile.status),
+                  tone: AppWorkspaceStatusTone.error,
+                  icon: Icons.person_off_outlined,
+                )
+              : null,
+          expandedFields: <AppWorkspacePatientContextField>[
+            AppWorkspacePatientContextField(
+              label: l10n.hrPositionLabel,
+              value: profile.position ?? '',
+              icon: Icons.work_outline,
+            ),
+            AppWorkspacePatientContextField(
+              label: l10n.hrPractitionerTypeLabel,
+              value: l10n.hrReferencePractitionerTypeLabel(
+                profile.practitionerType,
+                fallback: profile.practitionerType,
+              ),
+              icon: Icons.medical_information_outlined,
+            ),
+            AppWorkspacePatientContextField(
+              label: l10n.hrDepartmentLabel,
+              value: profile.departmentName ??
+                  profile.departmentDisplayId ??
+                  '',
+              icon: Icons.apartment_outlined,
+            ),
+            AppWorkspacePatientContextField(
+              label: l10n.hrHireDateLabel,
+              value: profile.hireDate == null
+                  ? ''
+                  : AppFormatters.mediumDate(
+                      profile.hireDate!,
+                      Localizations.localeOf(context),
+                    ),
+              icon: Icons.calendar_today_outlined,
+            ),
+            AppWorkspacePatientContextField(
+              label: l10n.hrStatusLabel,
+              value: _apiLabel(context, profile.status),
+              icon: Icons.radio_button_checked,
+            ),
+            AppWorkspacePatientContextField(
+              label: l10n.hrConsultationFeeLabel,
+              value: profile.consultationFee == null
+                  ? ''
+                  : '${profile.consultationFee}'
+                      '${profile.consultationCurrency != null ? ' ${profile.consultationCurrency}' : ''}',
+              icon: Icons.payments_outlined,
+            ),
+            if (hasLinkedUser) ...<AppWorkspacePatientContextField>[
+              AppWorkspacePatientContextField(
+                label: l10n.hrEmailLabel,
+                value: profile.userEmail ?? '',
+                icon: Icons.email_outlined,
+              ),
+              AppWorkspacePatientContextField(
+                label: l10n.hrUserIdLabel,
+                value: profile.userDisplayId ?? profile.userId ?? '',
+                icon: Icons.badge_outlined,
+                copyable: true,
+              ),
+            ],
+            if (profile.isSeparated) ...<AppWorkspacePatientContextField>[
+              AppWorkspacePatientContextField(
+                label: l10n.hrSeparationTypeLabel,
+                value: hrSeparationTypeLabel(l10n, profile.separationType),
+                icon: Icons.person_off_outlined,
+              ),
+              AppWorkspacePatientContextField(
+                label: l10n.hrLastWorkingDayLabel,
+                value: profile.separationDate == null
+                    ? ''
+                    : AppFormatters.mediumDate(
+                        profile.separationDate!,
+                        Localizations.localeOf(context),
+                      ),
+                icon: Icons.event_outlined,
+              ),
+              AppWorkspacePatientContextField(
+                label: l10n.hrSeparationNotesLabel,
+                value: profile.separationNotes ?? '',
+                icon: Icons.notes_outlined,
+              ),
+            ],
+            AppWorkspacePatientContextField(
+              label: l10n.hrUpdatedAtLabel,
+              value: profile.updatedAt == null
+                  ? ''
+                  : AppFormatters.dateTime(
+                      profile.updatedAt!,
+                      Localizations.localeOf(context),
+                    ),
+              icon: Icons.update_outlined,
+            ),
+          ],
+        ),
         if (detail.accessSummary != null &&
             detail.accessSummary!.userRoles.isNotEmpty) ...<Widget>[
           SizedBox(height: theme.spacing.md),
