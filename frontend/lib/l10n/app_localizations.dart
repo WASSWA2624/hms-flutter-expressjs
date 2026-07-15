@@ -7588,6 +7588,114 @@ abstract class AppLocalizations {
   /// **'Open the theater case and complete the pending work.'**
   String get patientsActiveWorkNextTheater;
 
+  /// No description provided for @patientsActiveWorkNextPayConsultation.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the consultation payment to proceed with this encounter.'**
+  String get patientsActiveWorkNextPayConsultation;
+
+  /// No description provided for @patientsActiveWorkNextRecordVitals.
+  ///
+  /// In en, this message translates to:
+  /// **'Record the patient\'s vital signs for this encounter.'**
+  String get patientsActiveWorkNextRecordVitals;
+
+  /// No description provided for @patientsActiveWorkNextAssignDoctor.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign a doctor to handle this patient\'s encounter.'**
+  String get patientsActiveWorkNextAssignDoctor;
+
+  /// No description provided for @patientsActiveWorkNextDoctorReview.
+  ///
+  /// In en, this message translates to:
+  /// **'The doctor needs to review and consult the patient.'**
+  String get patientsActiveWorkNextDoctorReview;
+
+  /// No description provided for @patientsActiveWorkNextWithDoctor.
+  ///
+  /// In en, this message translates to:
+  /// **'The doctor is actively consulting the patient.'**
+  String get patientsActiveWorkNextWithDoctor;
+
+  /// No description provided for @patientsActiveWorkNextLabPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect and process the laboratory sample.'**
+  String get patientsActiveWorkNextLabPending;
+
+  /// No description provided for @patientsActiveWorkNextImagingPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Perform the imaging study for this encounter.'**
+  String get patientsActiveWorkNextImagingPending;
+
+  /// No description provided for @patientsActiveWorkNextLabAndImagingPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Both laboratory and imaging orders need attention.'**
+  String get patientsActiveWorkNextLabAndImagingPending;
+
+  /// No description provided for @patientsActiveWorkNextPharmacyPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispense the prescribed medication for this encounter.'**
+  String get patientsActiveWorkNextPharmacyPending;
+
+  /// No description provided for @patientsActiveWorkNextResultsReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the laboratory results.'**
+  String get patientsActiveWorkNextResultsReady;
+
+  /// No description provided for @patientsActiveWorkNextReportReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the completed radiology report.'**
+  String get patientsActiveWorkNextReportReady;
+
+  /// No description provided for @patientsActiveWorkNextMedicinesDispensed.
+  ///
+  /// In en, this message translates to:
+  /// **'Medications have been dispensed. Proceed with disposition.'**
+  String get patientsActiveWorkNextMedicinesDispensed;
+
+  /// No description provided for @patientsActiveWorkNextDisposition.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the encounter disposition decision.'**
+  String get patientsActiveWorkNextDisposition;
+
+  /// No description provided for @patientsActiveWorkNextAdmissionPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the inpatient admission handoff.'**
+  String get patientsActiveWorkNextAdmissionPending;
+
+  /// No description provided for @patientsActiveWorkNextAdmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient is admitted. Review inpatient care plan.'**
+  String get patientsActiveWorkNextAdmitted;
+
+  /// No description provided for @patientsActiveWorkNextAdmissionBedPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign a bed for this admitted patient.'**
+  String get patientsActiveWorkNextAdmissionBedPending;
+
+  /// No description provided for @patientsActiveWorkNextAdmissionTransfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete or approve the ongoing transfer.'**
+  String get patientsActiveWorkNextAdmissionTransfer;
+
+  /// No description provided for @patientsActiveWorkNextAdmissionDischarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the discharge planning process.'**
+  String get patientsActiveWorkNextAdmissionDischarge;
+
   /// No description provided for @patientsActiveWorkManageAppointmentAction.
   ///
   /// In en, this message translates to:

@@ -396,13 +396,16 @@ String patientActiveWorkNextStepLabel(
   return switch (item.kind) {
     PatientActiveWorkKind.appointment => l10n.patientsActiveWorkNextAppointment,
     PatientActiveWorkKind.encounter =>
-      _opdActionLabelForStatus(l10n, item.status) ??
+      _opdNextStepDescriptionForStatus(l10n, item.status) ??
           l10n.patientsActiveWorkNextEncounter,
-    PatientActiveWorkKind.queue => l10n.patientsActiveWorkNextQueue,
-    PatientActiveWorkKind.admission => l10n.patientsActiveWorkNextAdmission,
-    PatientActiveWorkKind.labOrder => l10n.patientsActiveWorkNextLabOrder,
+    PatientActiveWorkKind.queue =>
+      _opdNextStepDescriptionForStatus(l10n, item.status) ??
+          l10n.patientsActiveWorkNextQueue,
+    PatientActiveWorkKind.admission =>
+      _admissionNextStepDescription(l10n, item.status),
+    PatientActiveWorkKind.labOrder => l10n.patientsActiveWorkNextLabPending,
     PatientActiveWorkKind.radiologyOrder =>
-      l10n.patientsActiveWorkNextRadiologyOrder,
+      l10n.patientsActiveWorkNextImagingPending,
     PatientActiveWorkKind.therapy => l10n.patientsActiveWorkNextTherapy,
     PatientActiveWorkKind.theater => l10n.patientsActiveWorkNextTheater,
   };
@@ -418,14 +421,15 @@ String patientActiveWorkActionLabel(
     PatientActiveWorkKind.encounter =>
       _opdActionLabelForStatus(l10n, item.status) ??
           l10n.patientsActiveWorkOpenOpdAction,
-    PatientActiveWorkKind.queue => l10n.patientsActiveWorkOpenOpdAction,
+    PatientActiveWorkKind.queue =>
+      _opdActionLabelForStatus(l10n, item.status) ??
+          l10n.patientsActiveWorkOpenOpdAction,
     PatientActiveWorkKind.admission =>
-      l10n.patientsActiveWorkManageAdmissionAction,
-    PatientActiveWorkKind.labOrder => l10n.patientsActiveWorkOpenLabOrderAction,
-    PatientActiveWorkKind.radiologyOrder =>
-      l10n.patientsActiveWorkOpenRadiologyOrderAction,
-    PatientActiveWorkKind.therapy => l10n.patientsActiveWorkOpenTherapyAction,
-    PatientActiveWorkKind.theater => l10n.patientsActiveWorkOpenTheaterAction,
+      _admissionActionLabel(l10n, item.status),
+    PatientActiveWorkKind.labOrder => l10n.opdCollectSampleAction,
+    PatientActiveWorkKind.radiologyOrder => l10n.opdPerformImagingAction,
+    PatientActiveWorkKind.therapy => l10n.opdPhysiotherapyAction,
+    PatientActiveWorkKind.theater => l10n.opdTheatreSchedulingAction,
   };
 }
 
@@ -442,11 +446,130 @@ AppWorkspaceStatusTone patientActiveWorkStatusTone(PatientActiveWorkItem item) {
 
 String? _opdActionLabelForStatus(AppLocalizations l10n, String status) {
   return switch (status.trim().toUpperCase()) {
-    'WAITING_CONSULTATION_PAYMENT' => l10n.opdPayConsultationAction,
-    'WAITING_VITALS' => l10n.opdRecordVitalsAction,
-    'WAITING_DOCTOR_ASSIGNMENT' => l10n.opdAssignDoctorAction,
-    'WAITING_DOCTOR_REVIEW' => l10n.opdStartConsultationAction,
-    'WAITING_DISPOSITION' => l10n.opdDispositionAction,
+    'PAYMENT_DUE' ||
+    'WAITING_CONSULTATION_PAYMENT' ||
+    'CONSULTATION_PAYMENT_PENDING' => l10n.opdPayConsultationAction,
+    'VITALS_NEEDED' ||
+    'WAITING_VITALS' ||
+    'VITALS_PENDING' ||
+    'TRIAGE_PENDING' => l10n.opdRecordVitalsAction,
+    'DOCTOR_NEEDED' ||
+    'WAITING_DOCTOR_ASSIGNMENT' ||
+    'AWAITING_DOCTOR' => l10n.opdAssignDoctorAction,
+    'WITH_DOCTOR' ||
+    'WAITING_DOCTOR_REVIEW' ||
+    'CLINICAL_REVIEW' ||
+    'DOCTOR_CONSULTATION' => l10n.opdDoctorReviewAction,
+    'LAB_PENDING' ||
+    'LAB_REQUESTED' ||
+    'SAMPLE_PENDING' ||
+    'IN_LAB' ||
+    'LAB_ORDER_CREATED' => l10n.opdCollectSampleAction,
+    'IMAGING_PENDING' ||
+    'RADIOLOGY_REQUESTED' ||
+    'REPORT_PENDING' ||
+    'RADIOLOGY_ORDER_CREATED' => l10n.opdPerformImagingAction,
+    'LAB_AND_RADIOLOGY_REQUESTED' ||
+    'DIAGNOSTICS_PENDING' => l10n.opdDiagnosticsPendingAction,
+    'RESULTS_READY' ||
+    'LAB_RESULTS_READY' => l10n.opdReviewResultsAction,
+    'REPORT_READY' ||
+    'IMAGING_REPORT_READY' => l10n.opdReviewReportAction,
+    'PHARMACY_PENDING' ||
+    'PHARMACY_REQUESTED' ||
+    'PRESCRIPTION_READY' ||
+    'AWAITING_DISPENSING' ||
+    'DISPENSING' => l10n.opdDispenseMedicineAction,
+    'MEDICINES_DISPENSED' ||
+    'MEDICATION_COMPLETE' => l10n.opdMedicinesDispensedAction,
+    'DECISION_NEEDED' ||
+    'WAITING_DISPOSITION' ||
+    'ENCOUNTER_COMPLETE' ||
+    'CLOSE_ENCOUNTER' => l10n.opdDispositionAction,
+    'ADMISSION_PENDING' ||
+    'ADMIT_PATIENT' ||
+    'IPD_ADMISSION' => l10n.opdAdmissionHandoffAction,
+    'ADMITTED' ||
+    'IN_IPD' ||
+    'IPD_ACTIVE' => l10n.opdAdmittedAction,
     _ => null,
+  };
+}
+
+String? _opdNextStepDescriptionForStatus(
+  AppLocalizations l10n,
+  String status,
+) {
+  return switch (status.trim().toUpperCase()) {
+    'PAYMENT_DUE' ||
+    'WAITING_CONSULTATION_PAYMENT' ||
+    'CONSULTATION_PAYMENT_PENDING' =>
+      l10n.patientsActiveWorkNextPayConsultation,
+    'VITALS_NEEDED' ||
+    'WAITING_VITALS' ||
+    'VITALS_PENDING' ||
+    'TRIAGE_PENDING' => l10n.patientsActiveWorkNextRecordVitals,
+    'DOCTOR_NEEDED' ||
+    'WAITING_DOCTOR_ASSIGNMENT' ||
+    'AWAITING_DOCTOR' => l10n.patientsActiveWorkNextAssignDoctor,
+    'WAITING_DOCTOR_REVIEW' ||
+    'CLINICAL_REVIEW' ||
+    'DOCTOR_CONSULTATION' => l10n.patientsActiveWorkNextDoctorReview,
+    'WITH_DOCTOR' => l10n.patientsActiveWorkNextWithDoctor,
+    'LAB_PENDING' ||
+    'LAB_REQUESTED' ||
+    'SAMPLE_PENDING' ||
+    'IN_LAB' ||
+    'LAB_ORDER_CREATED' => l10n.patientsActiveWorkNextLabPending,
+    'IMAGING_PENDING' ||
+    'RADIOLOGY_REQUESTED' ||
+    'REPORT_PENDING' ||
+    'RADIOLOGY_ORDER_CREATED' => l10n.patientsActiveWorkNextImagingPending,
+    'LAB_AND_RADIOLOGY_REQUESTED' ||
+    'DIAGNOSTICS_PENDING' => l10n.patientsActiveWorkNextLabAndImagingPending,
+    'RESULTS_READY' ||
+    'LAB_RESULTS_READY' => l10n.patientsActiveWorkNextResultsReady,
+    'REPORT_READY' ||
+    'IMAGING_REPORT_READY' => l10n.patientsActiveWorkNextReportReady,
+    'PHARMACY_PENDING' ||
+    'PHARMACY_REQUESTED' ||
+    'PRESCRIPTION_READY' ||
+    'AWAITING_DISPENSING' ||
+    'DISPENSING' => l10n.patientsActiveWorkNextPharmacyPending,
+    'MEDICINES_DISPENSED' ||
+    'MEDICATION_COMPLETE' => l10n.patientsActiveWorkNextMedicinesDispensed,
+    'DECISION_NEEDED' ||
+    'WAITING_DISPOSITION' ||
+    'ENCOUNTER_COMPLETE' ||
+    'CLOSE_ENCOUNTER' => l10n.patientsActiveWorkNextDisposition,
+    'ADMISSION_PENDING' ||
+    'ADMIT_PATIENT' ||
+    'IPD_ADMISSION' => l10n.patientsActiveWorkNextAdmissionPending,
+    'ADMITTED' ||
+    'IN_IPD' ||
+    'IPD_ACTIVE' => l10n.patientsActiveWorkNextAdmitted,
+    _ => null,
+  };
+}
+
+String _admissionNextStepDescription(AppLocalizations l10n, String status) {
+  return switch (status.trim().toUpperCase()) {
+    'REQUESTED' => l10n.patientsActiveWorkNextAdmissionPending,
+    'ADMITTED_PENDING_BED' => l10n.patientsActiveWorkNextAdmissionBedPending,
+    'TRANSFER_REQUESTED' ||
+    'TRANSFER_IN_PROGRESS' => l10n.patientsActiveWorkNextAdmissionTransfer,
+    'DISCHARGE_PLANNED' => l10n.patientsActiveWorkNextAdmissionDischarge,
+    _ => l10n.patientsActiveWorkNextAdmission,
+  };
+}
+
+String _admissionActionLabel(AppLocalizations l10n, String status) {
+  return switch (status.trim().toUpperCase()) {
+    'REQUESTED' => l10n.opdAdmissionHandoffAction,
+    'ADMITTED_PENDING_BED' => l10n.opdAssignBedAction,
+    'TRANSFER_REQUESTED' ||
+    'TRANSFER_IN_PROGRESS' => l10n.ipdNextApproveTransfer,
+    'DISCHARGE_PLANNED' => l10n.opdDischargeAction,
+    _ => l10n.patientsActiveWorkManageAdmissionAction,
   };
 }

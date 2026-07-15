@@ -3939,6 +3939,78 @@ class AppLocalizationsEn extends AppLocalizations {
       'Open the theater case and complete the pending work.';
 
   @override
+  String get patientsActiveWorkNextPayConsultation =>
+      'Complete the consultation payment to proceed with this encounter.';
+
+  @override
+  String get patientsActiveWorkNextRecordVitals =>
+      'Record the patient\'s vital signs for this encounter.';
+
+  @override
+  String get patientsActiveWorkNextAssignDoctor =>
+      'Assign a doctor to handle this patient\'s encounter.';
+
+  @override
+  String get patientsActiveWorkNextDoctorReview =>
+      'The doctor needs to review and consult the patient.';
+
+  @override
+  String get patientsActiveWorkNextWithDoctor =>
+      'The doctor is actively consulting the patient.';
+
+  @override
+  String get patientsActiveWorkNextLabPending =>
+      'Collect and process the laboratory sample.';
+
+  @override
+  String get patientsActiveWorkNextImagingPending =>
+      'Perform the imaging study for this encounter.';
+
+  @override
+  String get patientsActiveWorkNextLabAndImagingPending =>
+      'Both laboratory and imaging orders need attention.';
+
+  @override
+  String get patientsActiveWorkNextPharmacyPending =>
+      'Dispense the prescribed medication for this encounter.';
+
+  @override
+  String get patientsActiveWorkNextResultsReady =>
+      'Review the laboratory results.';
+
+  @override
+  String get patientsActiveWorkNextReportReady =>
+      'Review the completed radiology report.';
+
+  @override
+  String get patientsActiveWorkNextMedicinesDispensed =>
+      'Medications have been dispensed. Proceed with disposition.';
+
+  @override
+  String get patientsActiveWorkNextDisposition =>
+      'Complete the encounter disposition decision.';
+
+  @override
+  String get patientsActiveWorkNextAdmissionPending =>
+      'Complete the inpatient admission handoff.';
+
+  @override
+  String get patientsActiveWorkNextAdmitted =>
+      'Patient is admitted. Review inpatient care plan.';
+
+  @override
+  String get patientsActiveWorkNextAdmissionBedPending =>
+      'Assign a bed for this admitted patient.';
+
+  @override
+  String get patientsActiveWorkNextAdmissionTransfer =>
+      'Complete or approve the ongoing transfer.';
+
+  @override
+  String get patientsActiveWorkNextAdmissionDischarge =>
+      'Complete the discharge planning process.';
+
+  @override
   String get patientsActiveWorkManageAppointmentAction => 'Manage appointment';
 
   @override
