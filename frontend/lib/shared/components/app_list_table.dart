@@ -2257,8 +2257,8 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
           : WidgetStatePropertyAll<Color>(stripe),
       cells: <DataCell>[
         const DataCell(SizedBox(width: _rowNumberColumnWidth)),
-        for (final AppListTableColumn<T> _ in widget.columns)
-          DataCell(SizedBox(width: widget.columnWidthFor(_))),
+        for (final AppListTableColumn<T> column in widget.columns)
+          DataCell(SizedBox(width: widget.columnWidthFor(column))),
       ],
     );
   }
