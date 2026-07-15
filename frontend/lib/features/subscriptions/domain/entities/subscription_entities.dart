@@ -174,6 +174,25 @@ final class SubscriptionsWorkspaceQuery {
         tenantId != null;
   }
 
+  String location() {
+    final Map<String, String> query = <String, String>{};
+    if (panel != SubscriptionPanel.catalog) {
+      query['panel'] = panel.serverValue;
+    }
+    if (resource != SubscriptionResource.subscriptionPlans) {
+      query['resource'] = resource.serverValue;
+    }
+    if (search.isNotEmpty) query['search'] = search;
+    if (queue != null) query['queue'] = queue!;
+    if (tenantId != null) query['tenantId'] = tenantId!;
+    if (recordId != null) query['id'] = recordId!;
+    if (action != null) query['action'] = action!;
+    if (status != null) query['status'] = status!;
+    if (tierCode != null) query['tierCode'] = tierCode!;
+    if (billingCycle != null) query['billingCycle'] = billingCycle!;
+    return Uri(path: '/subscriptions', queryParameters: query.isEmpty ? null : query).toString();
+  }
+
   bool get hasActiveFilters {
     return search.trim().isNotEmpty ||
         queue != null ||

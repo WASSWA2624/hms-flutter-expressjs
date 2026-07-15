@@ -132,6 +132,23 @@ final class AccessAdminWorkspaceQuery {
         facilityId != null;
   }
 
+  String location() {
+    final Map<String, String> query = <String, String>{};
+    if (panel != AccessAdminPanel.directory) {
+      query['panel'] = panel.serverValue;
+    }
+    if (resource != AccessAdminResource.users) {
+      query['resource'] = resource.serverValue;
+    }
+    if (search.isNotEmpty) query['search'] = search;
+    if (tenantId != null) query['tenantId'] = tenantId!;
+    if (facilityId != null) query['facilityId'] = facilityId!;
+    if (recordId != null) query['id'] = recordId!;
+    if (status != null) query['status'] = status!;
+    if (roleScope != null) query['roleScope'] = roleScope!;
+    return Uri(path: '/admin/access', queryParameters: query.isEmpty ? null : query).toString();
+  }
+
   AccessAdminWorkspaceQuery copyWith({
     String? search,
     AccessAdminPanel? panel,

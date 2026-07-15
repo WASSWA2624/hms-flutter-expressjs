@@ -533,7 +533,9 @@ class _AccessAdminPanelTabBar extends ConsumerWidget {
                 ),
             ],
             selectedId: state.query.panel.serverValue,
-            onTabTapped: state.isSaving ? (_) {} : _onTabTapped,
+            onTabTapped: state.isSaving
+                ? (_) {}
+                : (String tabId) => _onTabTapped(context, tabId),
           ),
         ),
         if (primaryAction != null) ...<Widget>[
@@ -544,10 +546,14 @@ class _AccessAdminPanelTabBar extends ConsumerWidget {
     );
   }
 
-  void _onTabTapped(String tabId) {
+  void _onTabTapped(BuildContext context, String tabId) {
     for (final AccessAdminPanel panel in AccessAdminPanel.values) {
       if (panel.serverValue == tabId) {
         unawaited(controller.applyPanel(panel));
+        final AccessAdminWorkspaceQuery newQuery = state.query.copyWith(
+          panel: panel,
+        );
+        context.go(newQuery.location());
         return;
       }
     }

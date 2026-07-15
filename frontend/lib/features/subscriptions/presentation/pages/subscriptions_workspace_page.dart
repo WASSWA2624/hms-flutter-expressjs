@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/currency/fx_currency_utils.dart';
@@ -200,7 +201,12 @@ class _SubscriptionsWorkspaceContentState
             _SubscriptionsPanelTabBar(
               activePanel: state.query.panel,
               isRefreshing: state.isRefreshing,
-              onPanelSelected: controller.applyPanel,
+              onPanelSelected: (SubscriptionPanel panel) {
+                controller.applyPanel(panel);
+                final SubscriptionsWorkspaceQuery newQuery =
+                    state.query.copyWith(panel: panel);
+                context.go(newQuery.location());
+              },
               summaryNotifications: _summaryNotifications(context, state),
               primaryAction: _primaryAction(context, canWrite, state),
             ),
