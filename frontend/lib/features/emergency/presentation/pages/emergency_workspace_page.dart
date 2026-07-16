@@ -81,7 +81,11 @@ class _EmergencyWorkspaceContentState
   @override
   void initState() {
     super.initState();
-    _searchController = TextEditingController(text: widget.state.query.search);
+    _searchController = TextEditingController(
+      text: widget.initialQuery.search.isNotEmpty
+          ? widget.initialQuery.search
+          : widget.state.query.search,
+    );
     _columnVisibilityController =
         AppListTableColumnVisibilityController<EmergencyCaseSummary>();
     _currentTab =
@@ -160,6 +164,15 @@ class _EmergencyWorkspaceContentState
     if (oldWidget.state.query.search != widget.state.query.search &&
         _searchController.text != widget.state.query.search) {
       _searchController.text = widget.state.query.search;
+    }
+    if (oldWidget.initialQuery.signature != widget.initialQuery.signature &&
+        widget.initialQuery.hasRouteTargeting) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        unawaited(_applyDeepLink(widget.initialQuery));
+      });
     }
   }
 

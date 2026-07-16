@@ -60,14 +60,22 @@ class _IcuWorkspacePageState extends ConsumerState<IcuWorkspacePage> {
   }
 
   Future<void> _handleDeepLink(IcuBoardQuery query) async {
-    final IcuWorkspaceController controller = ref.read(
-      icuWorkspaceControllerProvider.notifier,
-    );
     final String? focusId = query.focusAdmissionId?.trim();
     if (focusId == null || focusId.isEmpty) {
       return;
     }
 
+    // Wait for the initial board load so deep links can resolve patient rows.
+    final Result<IcuWorkspaceState> loadResult = await ref.read(
+      icuWorkspaceControllerProvider.future,
+    );
+    if (!mounted || loadResult.isFailure) {
+      return;
+    }
+
+    final IcuWorkspaceController controller = ref.read(
+      icuWorkspaceControllerProvider.notifier,
+    );
     final AppFailure? failure = await controller.selectPatientByDisplayId(
       focusId,
     );

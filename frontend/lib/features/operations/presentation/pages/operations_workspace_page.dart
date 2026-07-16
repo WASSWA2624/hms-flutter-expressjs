@@ -91,7 +91,7 @@ class _OperationsWorkspaceContentState
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<OperationsWorkItem>();
-    _applyDeepLink(widget.initialQuery);
+    _scheduleDeepLink(widget.initialQuery);
   }
 
   @override
@@ -100,6 +100,10 @@ class _OperationsWorkspaceContentState
     if (oldWidget.state.query.search != widget.state.query.search &&
         _searchController.text != widget.state.query.search) {
       _searchController.text = widget.state.query.search;
+    }
+    if (oldWidget.initialQuery.signature != widget.initialQuery.signature) {
+      _section = _sectionFromQuery(widget.initialQuery.section);
+      _scheduleDeepLink(widget.initialQuery);
     }
   }
 
@@ -139,33 +143,53 @@ class _OperationsWorkspaceContentState
     GoRouter.of(context).replace<void>(location);
   }
 
+  void _scheduleDeepLink(OperationsWorkspaceQuery query) {
+    if (!query.hasRouteTargeting) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _applyDeepLink(query);
+    });
+  }
+
   void _applyDeepLink(OperationsWorkspaceQuery query) {
-    if (!query.hasRouteTargeting) return;
+    if (!query.hasRouteTargeting) {
+      return;
+    }
+    // Apply section filters first, then search, so clearFilters cannot wipe q=.
+    _applySectionFilter(_section);
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;
-      ref
-          .read(operationsWorkspaceControllerProvider.notifier)
-          .applySearch(query.search);
+      unawaited(
+        ref
+            .read(operationsWorkspaceControllerProvider.notifier)
+            .applySearch(query.search),
+      );
     }
-    _onTabChanged(_section);
   }
 
   void _onTabChanged(OperationsDeskSection section) {
     setState(() => _section = section);
     _updateUrlForSection(section);
+    _applySectionFilter(section);
+  }
 
+  void _applySectionFilter(OperationsDeskSection section) {
     final OperationsWorkspaceController controller = ref.read(
       operationsWorkspaceControllerProvider.notifier,
     );
     switch (section) {
       case OperationsDeskSection.allRequests:
-        controller.clearFilters();
+        unawaited(controller.clearFilters());
       case OperationsDeskSection.open:
-        controller.applyStatus('OPEN');
+        unawaited(controller.applyStatus('OPEN'));
       case OperationsDeskSection.inProgress:
-        controller.applyStatus('IN_PROGRESS');
+        unawaited(controller.applyStatus('IN_PROGRESS'));
       case OperationsDeskSection.completed:
-        controller.applyStatus('COMPLETED');
+        unawaited(controller.applyStatus('COMPLETED'));
       case OperationsDeskSection.assets:
         break;
     }
@@ -309,13 +333,14 @@ class _OperationsWorkspaceContentState
     final int total =
         state.workItems.totalItemCount ?? state.workItems.items.length;
 
+    // Summary badges are count indicators only; AppTabStrip owns navigation.
     return <AppWorkspaceSummaryNotification>[
       if (total > 0)
         AppWorkspaceSummaryNotification(
           label: l10n.operationsAllRequestsSummaryLabel,
           count: total,
           icon: Icons.inventory_2_outlined,
-          onSelected: () => _onTabChanged(OperationsDeskSection.allRequests),
+          onSelected: () {},
         ),
       if (state.openCount > 0)
         AppWorkspaceSummaryNotification(
@@ -323,7 +348,7 @@ class _OperationsWorkspaceContentState
           count: state.openCount,
           icon: Icons.pending_actions_outlined,
           tone: AppWorkspaceStatusTone.warning,
-          onSelected: () => _onTabChanged(OperationsDeskSection.open),
+          onSelected: () {},
         ),
       if (state.inProgressCount > 0)
         AppWorkspaceSummaryNotification(
@@ -331,7 +356,7 @@ class _OperationsWorkspaceContentState
           count: state.inProgressCount,
           icon: Icons.engineering_outlined,
           tone: AppWorkspaceStatusTone.info,
-          onSelected: () => _onTabChanged(OperationsDeskSection.inProgress),
+          onSelected: () {},
         ),
       if (state.completedCount > 0)
         AppWorkspaceSummaryNotification(
@@ -339,7 +364,7 @@ class _OperationsWorkspaceContentState
           count: state.completedCount,
           icon: Icons.task_alt_outlined,
           tone: AppWorkspaceStatusTone.success,
-          onSelected: () => _onTabChanged(OperationsDeskSection.completed),
+          onSelected: () {},
         ),
       if (state.cancelledCount > 0)
         AppWorkspaceSummaryNotification(
@@ -347,14 +372,14 @@ class _OperationsWorkspaceContentState
           count: state.cancelledCount,
           icon: Icons.cancel_outlined,
           tone: AppWorkspaceStatusTone.error,
-          onSelected: () => _onTabChanged(OperationsDeskSection.completed),
+          onSelected: () {},
         ),
       if (state.assetCount > 0)
         AppWorkspaceSummaryNotification(
           label: l10n.operationsAssetsSummaryLabel,
           count: state.assetCount,
           icon: Icons.precision_manufacturing_outlined,
-          onSelected: () => _onTabChanged(OperationsDeskSection.assets),
+          onSelected: () {},
         ),
     ];
   }

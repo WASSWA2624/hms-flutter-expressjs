@@ -125,9 +125,7 @@ class _ClinicalWorkspaceContentState
     _section = widget.initialQuery?.section ?? ClinicalWorkspaceSection.all;
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
-        AppListTableColumnVisibilityController<ClinicalWorklistEntry>(
-          storageKey: 'clinical_${_section.name}',
-        );
+        AppListTableColumnVisibilityController<ClinicalWorklistEntry>();
     _scheduleRouteQuery(widget.initialQuery);
     if (_section != ClinicalWorkspaceSection.all) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -419,6 +417,7 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
       clinicalWorkspaceControllerProvider.notifier,
     );
     return AppListTable<ClinicalWorklistEntry>(
+      key: ValueKey<String>('clinical_table_${section.name}'),
       page: state.worklist,
       columnVisibilityController: columnVisibilityController,
       columnVisibilityStorageKey: 'clinical_${section.name}',
@@ -503,19 +502,10 @@ AppListTableSearch<ClinicalWorklistEntry> _worklistSearch(
     dateToLabel: l10n.opdDateToLabel,
     datePickerButtonLabel: l10n.opdDatePickerButtonLabel,
     invalidDateMessage: l10n.opdInvalidDateMessage,
-    filterGroups: _clinicalFilterGroups(
-      l10n,
-      filterEntries,
-      includeScope: false,
-    ),
-    filterValue: _filterValueFromQuery(
-      filters,
-      scope: scope,
-      search: searchController.text,
-    ),
+    filterGroups: _clinicalFilterGroups(l10n, filterEntries),
+    filterValue: _filterValueFromQuery(filters, search: searchController.text),
     hasActiveFilters: _hasActiveClinicalFilters(
       filters,
-      scope,
       search: searchController.text,
     ),
     onFilterChanged: (AppSearchBarFilterValue value) {
@@ -523,8 +513,9 @@ AppListTableSearch<ClinicalWorklistEntry> _worklistSearch(
       if (searchController.text != search) {
         searchController.text = search;
       }
+      // Scope is owned by the tab strip; preserve the active tab scope.
       controller.applyWorklistFilters(
-        scope: _scopeFromValue(value),
+        scope: scope,
         filters: _filtersFromValue(value),
         search: search,
       );
@@ -2374,7 +2365,6 @@ Future<void> _showActionResult(
 
 AppSearchBarFilterValue _filterValueFromQuery(
   ClinicalWorklistFilters filters, {
-  ClinicalQueueScope scope = ClinicalQueueScope.all,
   String search = '',
 }) {
   return AppSearchBarFilterValue(
@@ -2398,7 +2388,6 @@ AppSearchBarFilterValue _filterValueFromQuery(
       if (_hasText(filters.location)) _clinicalTextLocation: filters.location!,
     },
     options: <String, String>{
-      if (scope != ClinicalQueueScope.all) _clinicalFilterScope: scope.name,
       if (_hasText(filters.sourceQueue))
         _clinicalFilterSource: filters.sourceQueue!,
       if (_hasText(filters.status)) _clinicalFilterStatus: filters.status!,
@@ -2437,25 +2426,11 @@ String _searchFromValue(AppSearchBarFilterValue value) {
   return value.text(_clinicalTextGeneral)?.trim() ?? '';
 }
 
-ClinicalQueueScope _scopeFromValue(AppSearchBarFilterValue value) {
-  final String? scope = value.option(_clinicalFilterScope);
-  if (scope == null) {
-    return ClinicalQueueScope.all;
-  }
-  return ClinicalQueueScope.values.firstWhere(
-    (ClinicalQueueScope candidate) => candidate.name == scope,
-    orElse: () => ClinicalQueueScope.all,
-  );
-}
-
 bool _hasActiveClinicalFilters(
-  ClinicalWorklistFilters filters,
-  ClinicalQueueScope scope, {
+  ClinicalWorklistFilters filters, {
   String search = '',
 }) {
-  return filters.isActive ||
-      scope != ClinicalQueueScope.all ||
-      _hasText(search);
+  return filters.isActive || _hasText(search);
 }
 
 List<AppSearchBarTextFilter> _clinicalTextFilters(AppLocalizations l10n) {
@@ -2522,17 +2497,9 @@ List<AppSearchBarTextFilter> _clinicalTextFilters(AppLocalizations l10n) {
 
 List<AppSearchBarFilterGroup> _clinicalFilterGroups(
   AppLocalizations l10n,
-  List<ClinicalWorklistEntry> entries, {
-  bool includeScope = false,
-}) {
+  List<ClinicalWorklistEntry> entries,
+) {
   return <AppSearchBarFilterGroup>[
-    if (includeScope)
-      AppSearchBarFilterGroup(
-        key: _clinicalFilterScope,
-        label: l10n.clinicalScopeFilterLabel,
-        allLabel: l10n.clinicalAllScopeLabel,
-        choices: _scopeFilterChoices(l10n),
-      ),
     AppSearchBarFilterGroup(
       key: _clinicalFilterSource,
       label: l10n.clinicalSourceQueueLabel,
@@ -2591,41 +2558,6 @@ List<AppSearchBarFilterGroup> _clinicalFilterGroups(
         icon: Icons.location_on_outlined,
         formatApiLabel: false,
       ),
-    ),
-  ];
-}
-
-List<AppSearchBarFilterChoice> _scopeFilterChoices(AppLocalizations l10n) {
-  return <AppSearchBarFilterChoice>[
-    AppSearchBarFilterChoice(
-      value: ClinicalQueueScope.today.name,
-      label: l10n.clinicalTodayScopeLabel,
-      icon: Icons.today_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: ClinicalQueueScope.urgent.name,
-      label: l10n.clinicalUrgentSummaryLabel,
-      icon: Icons.priority_high_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: ClinicalQueueScope.waitingReview.name,
-      label: l10n.clinicalWaitingReviewSummaryLabel,
-      icon: Icons.rate_review_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: ClinicalQueueScope.inConsultation.name,
-      label: l10n.clinicalInConsultationSummaryLabel,
-      icon: Icons.medical_information_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: ClinicalQueueScope.resultsReady.name,
-      label: l10n.clinicalResultsReadySummaryLabel,
-      icon: Icons.science_outlined,
-    ),
-    AppSearchBarFilterChoice(
-      value: ClinicalQueueScope.completed.name,
-      label: l10n.clinicalCompletedSummaryLabel,
-      icon: Icons.task_alt_outlined,
     ),
   ];
 }
@@ -3173,7 +3105,6 @@ const String _clinicalTextQueue = 'queue';
 const String _clinicalTextProvider = 'provider_text';
 const String _clinicalTextStatus = 'status_text';
 const String _clinicalTextLocation = 'location';
-const String _clinicalFilterScope = 'scope';
 const String _clinicalFilterSource = 'source';
 const String _clinicalFilterStatus = 'status';
 const String _clinicalFilterProvider = 'provider';

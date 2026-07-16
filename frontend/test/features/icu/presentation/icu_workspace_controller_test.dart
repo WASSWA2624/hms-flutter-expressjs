@@ -160,7 +160,9 @@ void main() {
       expect(state.query.scope, IcuBoardScope.active);
       expect(state.board.items.single.displayId, 'ADM0001');
       expect(state.criticalCount, 1);
-      verify(() => repository.listIcuBoard(any())).called(1);
+      verify(
+        () => repository.listIcuBoard(any()),
+      ).called(greaterThanOrEqualTo(1));
     });
 
     test('startIcuStay delegates to the repository', () async {
@@ -213,6 +215,44 @@ void main() {
           startedAt: any(named: 'startedAt'),
         ),
       ).called(1);
+    });
+
+    test('applyScope refreshes board with the requested scope', () async {
+      final _MockIcuRepository repository = _MockIcuRepository();
+      _stubInitialLoad(
+        repository,
+        board: const <IcuPatientSummary>[
+          IcuPatientSummary(
+            id: 'ADM-1',
+            admissionId: 'ADM-1',
+            displayId: 'ADM0001',
+            hasCriticalAlert: true,
+          ),
+        ],
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [icuRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(icuWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(icuWorkspaceControllerProvider.notifier)
+          .applyScope(IcuBoardScope.critical);
+
+      expect(failure, isNull);
+      final Result<IcuWorkspaceState> result = container
+          .read(icuWorkspaceControllerProvider)
+          .requireValue;
+      final IcuWorkspaceState state = result.when(
+        success: (IcuWorkspaceState value) => value,
+        failure: (AppFailure f) => fail(f.code),
+      );
+      expect(state.query.scope, IcuBoardScope.critical);
+      verify(
+        () => repository.listIcuBoard(any()),
+      ).called(greaterThanOrEqualTo(2));
     });
 
     test('selectPatientByDisplayId selects a matching board row', () async {

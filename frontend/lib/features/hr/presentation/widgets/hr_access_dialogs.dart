@@ -31,20 +31,27 @@ final RegExp _hrAccessTenantUuidPattern = RegExp(
 Future<void> showHrAccessWorkspaceDialog(BuildContext context) async {
   await showAppDialog<void>(
     context: context,
-    builder: (_) => const _HrAccessWorkspaceDialog(),
+    builder: (_) => const HrAccessWorkspacePanel(),
   );
 }
 
-class _HrAccessWorkspaceDialog extends ConsumerStatefulWidget {
-  const _HrAccessWorkspaceDialog();
+/// Access management panel for users, roles, and permissions.
+///
+/// When [embedded] is true, renders inline (for the HR Access tab) with
+/// shrink-wrapped tables. When false, wraps content in an [AppDialog].
+class HrAccessWorkspacePanel extends ConsumerStatefulWidget {
+  const HrAccessWorkspacePanel({super.key, this.embedded = false});
+
+  /// When true, render as an inline page section instead of a dialog.
+  final bool embedded;
 
   @override
-  ConsumerState<_HrAccessWorkspaceDialog> createState() =>
-      _HrAccessWorkspaceDialogState();
+  ConsumerState<HrAccessWorkspacePanel> createState() =>
+      _HrAccessWorkspacePanelState();
 }
 
-class _HrAccessWorkspaceDialogState
-    extends ConsumerState<_HrAccessWorkspaceDialog> {
+class _HrAccessWorkspacePanelState
+    extends ConsumerState<HrAccessWorkspacePanel> {
   static const int _pageSize = 12;
   static const String _accessStatusFilterKey = 'access_status';
   static const String _accessSystemRoleFilterKey = 'access_system_role';
@@ -415,112 +422,127 @@ class _HrAccessWorkspaceDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final Widget body = _buildBody(context, l10n);
+
+    if (widget.embedded) {
+      return body;
+    }
 
     return AppDialog(
       title: Text(l10n.hrAccessWorkspaceTitle),
       icon: const Icon(Icons.manage_accounts_outlined),
       pinActionsToBottom: true,
-      content: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Text(
-            l10n.hrAccessWorkspaceDescription,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 12),
-          AppWorkspaceBoardToggle<HrAccessPanel>(
-            value: _panel,
-            segments: <ButtonSegment<HrAccessPanel>>[
-              ButtonSegment<HrAccessPanel>(
-                value: HrAccessPanel.users,
-                label: Text(l10n.hrAccessPanelUsers),
-              ),
-              ButtonSegment<HrAccessPanel>(
-                value: HrAccessPanel.roles,
-                label: Text(l10n.hrAccessPanelRoles),
-              ),
-              ButtonSegment<HrAccessPanel>(
-                value: HrAccessPanel.permissions,
-                label: Text(l10n.hrAccessPanelPermissions),
-              ),
-            ],
-            onChanged: (HrAccessPanel next) {
-              if (next == _panel) {
-                return;
-              }
-              setState(() {
-                _panel = next;
-                _accessFilters = AppSearchBarFilterValue.empty;
-              });
-              unawaited(_reload(resetPage: true));
-            },
-          ),
-          const SizedBox(height: 12),
-          if (_tenantContextRequired)
-            Expanded(
-              child: AppStateView(
-                title: l10n.hrAccessTenantContextRequiredTitle,
-                body: l10n.hrAccessTenantContextRequiredBody,
-              ),
-            )
-          else if (_failure != null)
-            Expanded(
-              child: AppFailureStateView(
-                failure: _failure!,
-                onRetry: () => unawaited(_reload(resetPage: true)),
-              ),
-            )
-          else
-            Expanded(child: _buildPanelTable(context, l10n)),
-        ],
+      content: body,
+      actions: _buildActions(context, l10n),
+    );
+  }
+
+  List<Widget> _buildActions(BuildContext context, AppLocalizations l10n) {
+    return <Widget>[
+      AppButton.secondary(
+        label: l10n.commonRefreshActionLabel,
+        leadingIcon: Icons.refresh,
+        onPressed: _loading ? null : () => unawaited(_reload(resetPage: true)),
       ),
-      actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.commonRefreshActionLabel,
-          leadingIcon: Icons.refresh,
-          onPressed: _loading
-              ? null
-              : () => unawaited(_reload(resetPage: true)),
+      if (_canWrite && !_tenantContextRequired && _panel == HrAccessPanel.users)
+        AppButton.primary(
+          label: l10n.hrCreateUserAction,
+          leadingIcon: Icons.person_add_outlined,
+          onPressed: () async {
+            await showHrStaffOnboardingDialog(context, ref);
+            if (context.mounted) {
+              unawaited(_reload(resetPage: true));
+            }
+          },
         ),
-        if (_canWrite &&
-            !_tenantContextRequired &&
-            _panel == HrAccessPanel.users)
-          AppButton.primary(
-            label: l10n.hrCreateUserAction,
-            leadingIcon: Icons.person_add_outlined,
-            onPressed: () async {
-              await showHrStaffOnboardingDialog(context, ref);
-              if (context.mounted) {
-                unawaited(_reload(resetPage: true));
-              }
-            },
+      if (_canWrite && !_tenantContextRequired && _panel == HrAccessPanel.roles)
+        AppButton.primary(
+          label: l10n.hrAccessCreateRoleAction,
+          leadingIcon: Icons.add_moderator_outlined,
+          onPressed: () async {
+            await showHrCreateRoleDialog(context, ref);
+            if (context.mounted) {
+              unawaited(_reload(resetPage: true));
+            }
+          },
+        ),
+      if (_canWrite &&
+          !_tenantContextRequired &&
+          _panel == HrAccessPanel.permissions)
+        AppButton.primary(
+          label: l10n.hrAccessCreatePermissionAction,
+          leadingIcon: Icons.add_circle_outline,
+          onPressed: () async {
+            await showHrCreatePermissionDialog(context, ref);
+            if (context.mounted) {
+              unawaited(_reload(resetPage: true));
+            }
+          },
+        ),
+    ];
+  }
+
+  Widget _buildBody(BuildContext context, AppLocalizations l10n) {
+    final bool embedded = widget.embedded;
+    final Widget panelContent = _tenantContextRequired
+        ? AppStateView(
+            title: l10n.hrAccessTenantContextRequiredTitle,
+            body: l10n.hrAccessTenantContextRequiredBody,
+          )
+        : _failure != null
+        ? AppFailureStateView(
+            failure: _failure!,
+            onRetry: () => unawaited(_reload(resetPage: true)),
+          )
+        : _buildPanelTable(context, l10n);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: embedded ? MainAxisSize.min : MainAxisSize.max,
+      children: <Widget>[
+        Text(
+          l10n.hrAccessWorkspaceDescription,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        const SizedBox(height: 12),
+        AppWorkspaceBoardToggle<HrAccessPanel>(
+          value: _panel,
+          segments: <ButtonSegment<HrAccessPanel>>[
+            ButtonSegment<HrAccessPanel>(
+              value: HrAccessPanel.users,
+              label: Text(l10n.hrAccessPanelUsers),
+            ),
+            ButtonSegment<HrAccessPanel>(
+              value: HrAccessPanel.roles,
+              label: Text(l10n.hrAccessPanelRoles),
+            ),
+            ButtonSegment<HrAccessPanel>(
+              value: HrAccessPanel.permissions,
+              label: Text(l10n.hrAccessPanelPermissions),
+            ),
+          ],
+          onChanged: (HrAccessPanel next) {
+            if (next == _panel) {
+              return;
+            }
+            setState(() {
+              _panel = next;
+              _accessFilters = AppSearchBarFilterValue.empty;
+            });
+            unawaited(_reload(resetPage: true));
+          },
+        ),
+        const SizedBox(height: 12),
+        if (embedded) ...<Widget>[
+          Wrap(
+            spacing: Theme.of(context).spacing.sm,
+            runSpacing: Theme.of(context).spacing.xs,
+            children: _buildActions(context, l10n),
           ),
-        if (_canWrite &&
-            !_tenantContextRequired &&
-            _panel == HrAccessPanel.roles)
-          AppButton.primary(
-            label: l10n.hrAccessCreateRoleAction,
-            leadingIcon: Icons.add_moderator_outlined,
-            onPressed: () async {
-              await showHrCreateRoleDialog(context, ref);
-              if (context.mounted) {
-                unawaited(_reload(resetPage: true));
-              }
-            },
-          ),
-        if (_canWrite &&
-            !_tenantContextRequired &&
-            _panel == HrAccessPanel.permissions)
-          AppButton.primary(
-            label: l10n.hrAccessCreatePermissionAction,
-            leadingIcon: Icons.add_circle_outline,
-            onPressed: () async {
-              await showHrCreatePermissionDialog(context, ref);
-              if (context.mounted) {
-                unawaited(_reload(resetPage: true));
-              }
-            },
-          ),
+          SizedBox(height: Theme.of(context).spacing.md),
+          panelContent,
+        ] else
+          Expanded(child: panelContent),
       ],
     );
   }
@@ -552,6 +574,8 @@ class _HrAccessWorkspaceDialogState
       search: _usersTableSearch(l10n),
       columnVisibilityController: _userColumnVisibility,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      shrinkWrap: widget.embedded,
+      physics: widget.embedded ? const NeverScrollableScrollPhysics() : null,
       itemKeyBuilder: (HrAccessUser item) => ValueKey<String>(item.effectiveId),
       onRowSelected: (HrAccessUser user) async {
         await showHrAccessUserDetailDialog(
@@ -679,6 +703,8 @@ class _HrAccessWorkspaceDialogState
       search: _rolesTableSearch(l10n),
       columnVisibilityController: _roleColumnVisibility,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      shrinkWrap: widget.embedded,
+      physics: widget.embedded ? const NeverScrollableScrollPhysics() : null,
       itemKeyBuilder: (HrAccessRole item) => ValueKey<String>(item.effectiveId),
       onRowSelected: (HrAccessRole role) async {
         await showHrAccessRoleDetailDialog(
@@ -786,6 +812,8 @@ class _HrAccessWorkspaceDialogState
       search: _permissionsTableSearch(l10n),
       columnVisibilityController: _permissionColumnVisibility,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      shrinkWrap: widget.embedded,
+      physics: widget.embedded ? const NeverScrollableScrollPhysics() : null,
       itemKeyBuilder: (HrAccessPermission item) =>
           ValueKey<String>(item.effectiveId),
       onRowSelected: (HrAccessPermission permission) async {

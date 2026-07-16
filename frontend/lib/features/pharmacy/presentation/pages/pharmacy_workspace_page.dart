@@ -99,8 +99,9 @@ class _PharmacyWorkspaceContentState
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<PharmacyOrder>();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_handleSectionDeepLink());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _handleSectionDeepLink();
+      await _ensureDefaultSectionFilter();
     });
     _scheduleRouteQuery(widget.initialQuery);
   }
@@ -124,13 +125,15 @@ class _PharmacyWorkspaceContentState
       return;
     }
     final PharmacyDeskSection? parsed = _sectionFromQuery(section);
-    if (parsed != null && parsed != _section) {
+    if (parsed != null) {
       _handledSectionDeepLink = true;
-      setState(() => _section = parsed);
+      if (parsed != _section) {
+        setState(() => _section = parsed);
+      }
       final PharmacyWorkspaceController controller = ref.read(
         pharmacyWorkspaceControllerProvider.notifier,
       );
-      unawaited(controller.applyFilter(_filterForSection(parsed)));
+      await controller.applyFilter(_filterForSection(parsed));
     }
   }
 
@@ -150,9 +153,14 @@ class _PharmacyWorkspaceContentState
     );
     if (query.section.isNotEmpty) {
       final PharmacyDeskSection? parsed = _sectionFromQuery(query.section);
-      if (parsed != null && parsed != _section) {
-        setState(() => _section = parsed);
-        unawaited(controller.applyFilter(_filterForSection(parsed)));
+      if (parsed != null) {
+        if (parsed != _section) {
+          setState(() => _section = parsed);
+        }
+        // Skip if deep-link handler already synced this desk section.
+        if (!_handledSectionDeepLink) {
+          unawaited(controller.applyFilter(_filterForSection(parsed)));
+        }
       }
     }
     if (query.search.isNotEmpty) {
@@ -165,6 +173,23 @@ class _PharmacyWorkspaceContentState
         await controller.selectOrder(order);
       }
     }
+  }
+
+  /// Ensures the default Queue tab applies its server-side filter on landing.
+  Future<void> _ensureDefaultSectionFilter() async {
+    if (!mounted || _handledSectionDeepLink) {
+      return;
+    }
+    final PharmacyWorkspaceQuery? query = widget.initialQuery;
+    if (query != null &&
+        query.section.isNotEmpty &&
+        _sectionFromQuery(query.section) != null) {
+      return;
+    }
+    final PharmacyWorkspaceController controller = ref.read(
+      pharmacyWorkspaceControllerProvider.notifier,
+    );
+    await controller.applyFilter(_filterForSection(_section));
   }
 
   PharmacyOrder? _findOrderByQuery(PharmacyWorkspaceQuery query) {
@@ -592,7 +617,7 @@ class _PharmacyQueuePanel extends ConsumerWidget {
         body: l10n.pharmacyNoOrdersBody,
         icon: Icons.medication_liquid_outlined,
       ),
-      columns: _defaultPharmacyWorklistColumns(context),
+      columns: _columnsForSection(context, section),
       columnChoices: _optionalPharmacyWorklistColumns(context),
       mobileItemBuilder: (BuildContext context, PharmacyOrder item) {
         return _PharmacyOrderListTile(order: item);
@@ -2620,6 +2645,26 @@ const String _pharmacyPaymentFilterKey = 'pending_payment';
 const String _pharmacyPriorityFilterKey = 'priority';
 const String _pharmacyStockFilterKey = 'partial_stock';
 const String _pharmacyUrgentFilterKey = 'urgent';
+
+List<AppListTableColumn<PharmacyOrder>> _columnsForSection(
+  BuildContext context,
+  PharmacyDeskSection section,
+) {
+  final List<AppListTableColumn<PharmacyOrder>> base =
+      _defaultPharmacyWorklistColumns(context);
+  return switch (section) {
+    PharmacyDeskSection.queue => base,
+    PharmacyDeskSection.inProgress => base,
+    PharmacyDeskSection.pendingPayment => <AppListTableColumn<PharmacyOrder>>[
+      ...base,
+      ..._optionalPharmacyWorklistColumns(
+        context,
+      ).where((AppListTableColumn<PharmacyOrder> c) => c.id == 'ordered_at'),
+    ],
+    PharmacyDeskSection.completed => base,
+    PharmacyDeskSection.allOrders => base,
+  };
+}
 
 List<AppListTableColumn<PharmacyOrder>> _defaultPharmacyWorklistColumns(
   BuildContext context,

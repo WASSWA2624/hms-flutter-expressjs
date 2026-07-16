@@ -172,6 +172,8 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
 
   List<AppListTableColumn<T>> _availableColumns = <AppListTableColumn<T>>[];
   Set<String> _visibleColumnKeys = <String>{};
+  String? _syncedStorageKey;
+  Set<String> _syncedDefaultColumnKeys = <String>{};
 
   void syncColumns({
     required List<AppListTableColumn<T>> columns,
@@ -188,12 +190,25 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
     final List<String> nextKeys = nextColumns
         .map((AppListTableColumn<T> column) => column.key)
         .toList(growable: false);
+    final Set<String> nextDefaultKeys = appListTableDefaultVisibleColumns(
+      nextColumns,
+      defaultColumns: columns,
+    ).map((AppListTableColumn<T> column) => column.key).toSet();
+    final String? resolvedStorageKey = _resolvedStorageKey(storageKey);
 
-    if (listEquals(currentKeys, nextKeys)) {
+    final bool availableUnchanged = listEquals(currentKeys, nextKeys);
+    final bool defaultsUnchanged = setEquals(
+      _syncedDefaultColumnKeys,
+      nextDefaultKeys,
+    );
+    final bool storageUnchanged = _syncedStorageKey == resolvedStorageKey;
+    if (availableUnchanged && defaultsUnchanged && storageUnchanged) {
       return;
     }
 
     _availableColumns = nextColumns;
+    _syncedDefaultColumnKeys = nextDefaultKeys;
+    _syncedStorageKey = resolvedStorageKey;
     _visibleColumnKeys = _resolveVisibleColumnKeys(
       columns: columns,
       availableColumns: nextColumns,
@@ -218,7 +233,10 @@ class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
   bool get canConfigure => _availableColumns.length > 1;
 
   bool get hasCustomColumnVisibility {
-    return !setEquals(_visibleColumnKeys, _defaultColumnKeys);
+    final Set<String> defaults = _syncedDefaultColumnKeys.isEmpty
+        ? _defaultColumnKeys
+        : _syncedDefaultColumnKeys;
+    return !setEquals(_visibleColumnKeys, defaults);
   }
 
   bool isColumnVisible(String key) {
@@ -665,6 +683,8 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
         oldWidget.columnChoices != widget.columnChoices ||
         oldWidget.columnVisibilityController !=
             widget.columnVisibilityController ||
+        oldWidget.columnVisibilityStorageKey !=
+            widget.columnVisibilityStorageKey ||
         oldWidget.initialSortColumnKey != widget.initialSortColumnKey ||
         oldWidget.initialSortAscending != widget.initialSortAscending) {
       if (oldWidget.initialSortColumnKey != widget.initialSortColumnKey ||

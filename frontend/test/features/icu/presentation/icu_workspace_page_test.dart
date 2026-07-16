@@ -1,0 +1,329 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/core/storage/storage_providers.dart';
+import 'package:hosspi_hms/features/icu/data/repositories/icu_repository_impl.dart';
+import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
+import 'package:hosspi_hms/features/icu/domain/repositories/icu_repository.dart';
+import 'package:hosspi_hms/features/icu/presentation/pages/icu_workspace_page.dart';
+import 'package:hosspi_hms/features/icu/presentation/widgets/icu_bed_board_panel.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _MockIcuRepository extends Mock implements IcuRepository {}
+
+const IcuPatientSummary _activePatient = IcuPatientSummary(
+  id: 'ADM-1',
+  admissionId: 'ADM-1',
+  displayId: 'ADM0001',
+  patientDisplayName: 'Ada Active',
+  icuStatus: 'ACTIVE',
+  bedLabel: 'ICU-1',
+);
+
+const IcuPatientSummary _criticalPatient = IcuPatientSummary(
+  id: 'ADM-2',
+  admissionId: 'ADM-2',
+  displayId: 'ADM0002',
+  patientDisplayName: 'Chris Critical',
+  icuStatus: 'ACTIVE',
+  hasCriticalAlert: true,
+  criticalSeverity: 'HIGH',
+  bedLabel: 'ICU-2',
+);
+
+AppAccessPolicy _icuWritePolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['DOCTOR']),
+      permissions: <AppPermission>{
+        AppPermissions.clinicalWrite,
+        AppPermissions.emergencyWrite,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(
+          code: 'icu-critical-care',
+          licenseStatus: 'ACTIVE',
+        ),
+        AppModuleEntitlement(
+          code: 'encounters-vitals',
+          licenseStatus: 'ACTIVE',
+        ),
+        AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
+      ],
+    ),
+  );
+}
+
+void _stubBoard(
+  _MockIcuRepository repository, {
+  List<IcuPatientSummary> board = const <IcuPatientSummary>[
+    _activePatient,
+    _criticalPatient,
+  ],
+}) {
+  when(() => repository.listIcuBoard(any())).thenAnswer((
+    Invocation invocation,
+  ) async {
+    final IcuBoardQuery query =
+        invocation.positionalArguments.single as IcuBoardQuery;
+    List<IcuPatientSummary> items = board;
+    if (query.scope == IcuBoardScope.critical) {
+      items = board
+          .where((IcuPatientSummary item) => item.hasCriticalAlert)
+          .toList(growable: false);
+    }
+    return Result<AppPage<IcuPatientSummary>>.success(
+      AppPage<IcuPatientSummary>(
+        items: items,
+        request: query.pageRequest,
+        totalItemCount: items.length,
+      ),
+    );
+  });
+  when(() => repository.loadReferenceData()).thenAnswer(
+    (_) async => const Result<IcuReferenceData>.success(IcuReferenceData()),
+  );
+  when(() => repository.loadBedBoard()).thenAnswer(
+    (_) async => const Result<IcuBedBoard>.success(
+      IcuBedBoard(
+        wards: <IcuBedWard>[IcuBedWard(id: 'ward-1', name: 'ICU Ward')],
+        beds: <IcuBed>[
+          IcuBed(
+            id: 'bed-1',
+            label: 'ICU-1',
+            status: 'AVAILABLE',
+            wardId: 'ward-1',
+            wardName: 'ICU Ward',
+          ),
+        ],
+      ),
+    ),
+  );
+  when(() => repository.loadIcuDetail(any())).thenAnswer((
+    Invocation invocation,
+  ) async {
+    final IcuPatientSummary summary =
+        invocation.positionalArguments.single as IcuPatientSummary;
+    return Result<IcuPatientDetail>.success(IcuPatientDetail(summary: summary));
+  });
+}
+
+Future<void> _pumpIcuWorkspace(
+  WidgetTester tester, {
+  required _MockIcuRepository repository,
+  IcuBoardQuery? initialQuery,
+  String initialLocation = '/icu',
+}) async {
+  SharedPreferences.setMockInitialValues(<String, Object>{});
+  final SharedPreferences preferences = await SharedPreferences.getInstance();
+
+  tester.view.physicalSize = const Size(1440, 900);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
+  final GoRouter router = GoRouter(
+    initialLocation: initialLocation,
+    routes: <RouteBase>[
+      GoRoute(
+        path: '/icu',
+        builder: (BuildContext context, GoRouterState state) {
+          return Scaffold(
+            body: IcuWorkspacePage(
+              initialQuery: initialQuery ?? IcuBoardQuery.fromUri(state.uri),
+            ),
+          );
+        },
+      ),
+    ],
+  );
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        icuRepositoryProvider.overrideWithValue(repository),
+        sharedPreferencesProvider.overrideWithValue(preferences),
+        initialSessionStateProvider.overrideWithValue(
+          const SessionState.ready(),
+        ),
+        appAccessPolicyProvider.overrideWithValue(_icuWritePolicy()),
+      ],
+      child: MaterialApp.router(
+        routerConfig: router,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
+  await tester.pumpAndSettle();
+}
+
+void main() {
+  late _MockIcuRepository repository;
+
+  setUpAll(() {
+    registerFallbackValue(const IcuBoardQuery());
+    registerFallbackValue(
+      const IcuPatientSummary(id: 'ADM-1', admissionId: 'ADM-1'),
+    );
+  });
+
+  setUp(() {
+    repository = _MockIcuRepository();
+    _stubBoard(repository);
+  });
+
+  testWidgets('renders tab strip with section counts and patient table', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIcuWorkspace(tester, repository: repository);
+
+    expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.byType(AppListTable<IcuPatientSummary>), findsOneWidget);
+    expect(find.textContaining('Active ICU'), findsWidgets);
+    expect(find.textContaining('Critical alerts'), findsWidgets);
+    expect(find.textContaining('Transfers'), findsWidgets);
+    expect(find.textContaining('Discharge ready'), findsWidgets);
+    expect(find.textContaining('Ended stays'), findsWidgets);
+    expect(find.textContaining('All ICU'), findsWidgets);
+    expect(find.textContaining('Bed board'), findsWidgets);
+    expect(find.text('Ada Active'), findsOneWidget);
+    expect(find.text('Chris Critical'), findsOneWidget);
+    expect(find.textContaining('Start ICU stay'), findsOneWidget);
+  });
+
+  testWidgets('deep link section=critical selects Critical tab', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIcuWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/icu?section=critical',
+      initialQuery: IcuBoardQuery.fromUri(Uri.parse('/icu?section=critical')),
+    );
+
+    final List<IcuBoardQuery> scopes = verify(
+      () => repository.listIcuBoard(captureAny()),
+    ).captured.cast<IcuBoardQuery>();
+    expect(
+      scopes.any((IcuBoardQuery q) => q.scope == IcuBoardScope.critical),
+      isTrue,
+    );
+    expect(find.text('Chris Critical'), findsOneWidget);
+    expect(find.textContaining('Start ICU stay'), findsOneWidget);
+  });
+
+  testWidgets('deep link section=beds shows bed board and hides start action', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIcuWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/icu?section=beds',
+      initialQuery: IcuBoardQuery.fromUri(Uri.parse('/icu?section=beds')),
+    );
+
+    expect(find.byType(IcuBedBoardPanel), findsOneWidget);
+    expect(find.byType(AppListTable<IcuPatientSummary>), findsNothing);
+    expect(find.text('ICU bed board'), findsOneWidget);
+    expect(find.textContaining('Start ICU stay'), findsNothing);
+    verify(() => repository.loadBedBoard()).called(greaterThanOrEqualTo(1));
+  });
+
+  testWidgets('switching tabs calls applyScope with the correct scope', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIcuWorkspace(tester, repository: repository);
+    clearInteractions(repository);
+    _stubBoard(repository);
+
+    await tester.tap(find.textContaining('Critical alerts').first);
+    await tester.pumpAndSettle();
+
+    final List<IcuBoardQuery> scopes = verify(
+      () => repository.listIcuBoard(captureAny()),
+    ).captured.cast<IcuBoardQuery>();
+    expect(
+      scopes.any((IcuBoardQuery q) => q.scope == IcuBoardScope.critical),
+      isTrue,
+    );
+  });
+
+  testWidgets('selecting Bed board tab renders IcuBedBoardPanel', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIcuWorkspace(tester, repository: repository);
+
+    await tester.tap(find.textContaining('Bed board').first);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(IcuBedBoardPanel), findsOneWidget);
+    expect(find.byType(AppListTable<IcuPatientSummary>), findsNothing);
+    expect(find.textContaining('Start ICU stay'), findsNothing);
+  });
+
+  testWidgets('search submits call applySearch via repository refresh', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIcuWorkspace(tester, repository: repository);
+    clearInteractions(repository);
+    _stubBoard(repository);
+
+    await tester.enterText(find.byType(TextField).first, 'Ada');
+    await tester.testTextInput.receiveAction(TextInputAction.search);
+    await tester.pumpAndSettle();
+
+    final List<IcuBoardQuery> queries = verify(
+      () => repository.listIcuBoard(captureAny()),
+    ).captured.cast<IcuBoardQuery>();
+    expect(queries.any((IcuBoardQuery q) => q.search == 'Ada'), isTrue);
+  });
+
+  testWidgets('existing deep links open detail dialog on vitals panel', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIcuWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/icu?id=ADM0001&panel=vitals',
+      initialQuery: IcuBoardQuery.fromUri(
+        Uri.parse('/icu?id=ADM0001&panel=vitals'),
+      ),
+    );
+
+    expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+    verify(
+      () => repository.loadIcuDetail(any()),
+    ).called(greaterThanOrEqualTo(1));
+  });
+
+  testWidgets('AppListTable uses icu_board column visibility storage key', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIcuWorkspace(tester, repository: repository);
+
+    final AppListTable<IcuPatientSummary> table = tester
+        .widget<AppListTable<IcuPatientSummary>>(
+          find.byType(AppListTable<IcuPatientSummary>),
+        );
+    expect(table.columnVisibilityStorageKey, 'icu_board');
+    expect(table.columnWidthStorageKey, 'icu_cw_board');
+    expect(table.columnVisibilityController, isNotNull);
+  });
+}

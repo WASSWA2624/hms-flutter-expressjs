@@ -29,13 +29,68 @@ enum HrDeskSection {
   leaveRequests,
   shiftRoster,
   payroll,
-  access,
+  access;
+
+  /// Canonical `?section=` query value for this tab.
+  String get routeQueryValue {
+    return switch (this) {
+      HrDeskSection.staffDirectory => 'staff',
+      HrDeskSection.leaveRequests => 'leave-requests',
+      HrDeskSection.shiftRoster => 'shift-roster',
+      HrDeskSection.payroll => 'payroll',
+      HrDeskSection.access => 'access',
+    };
+  }
+
+  /// Resolves a `?section=` / `?tab=` value to a desk section.
+  static HrDeskSection? fromQuery(String raw) {
+    switch (raw.trim().toLowerCase()) {
+      case 'staff':
+      case 'staff-directory':
+      case 'directory':
+        return HrDeskSection.staffDirectory;
+      case 'leave':
+      case 'leave-requests':
+      case 'leaves':
+        return HrDeskSection.leaveRequests;
+      case 'shift':
+      case 'shift-roster':
+      case 'roster':
+      case 'shifts':
+        return HrDeskSection.shiftRoster;
+      case 'payroll':
+      case 'payroll-drafts':
+        return HrDeskSection.payroll;
+      case 'access':
+      case 'roles':
+      case 'permissions':
+        return HrDeskSection.access;
+      default:
+        return null;
+    }
+  }
+
+  /// Maps a work-queue deep-link onto the matching desk tab.
+  static HrDeskSection? fromQueue(HrQueue? queue) {
+    if (queue == null) {
+      return null;
+    }
+    return switch (queue) {
+      HrQueue.leaveRequests ||
+      HrQueue.swapRequests => HrDeskSection.leaveRequests,
+      HrQueue.rosterDrafts ||
+      HrQueue.unassignedShifts ||
+      HrQueue.overdueShifts => HrDeskSection.shiftRoster,
+      HrQueue.payrollDrafts => HrDeskSection.payroll,
+    };
+  }
 }
 
 /// Deep-link targeting parsed from the `/hr` route query string.
 ///
 /// Supports pre-selecting a staff profile (`?id=` / `?staff=`), opening a
-/// management queue (`?queue=`), or seeding the directory search (`?search=`).
+/// management queue (`?queue=`), seeding directory search (`?search=`), or
+/// selecting a desk tab (`?section=` / `?tab=`).
 @immutable
 final class HrWorkspaceQuery {
   const HrWorkspaceQuery({

@@ -49,6 +49,41 @@ void main() {
       expect(query.panel, EmergencyDetailPanelFocus.none);
       expect(query.hasRouteTargeting, isFalse);
     });
+
+    test('parses scope from the query string', () {
+      final EmergencyWorkspaceQuery query = EmergencyWorkspaceQuery.fromUri(
+        Uri.parse('/emergency?scope=critical'),
+      );
+
+      expect(query.scope, 'critical');
+      expect(query.hasRouteTargeting, isTrue);
+    });
+
+    test('accepts board and tab aliases for scope', () {
+      expect(
+        EmergencyWorkspaceQuery.fromUri(
+          Uri.parse('/emergency?board=ambulance'),
+        ).scope,
+        'ambulance',
+      );
+      expect(
+        EmergencyWorkspaceQuery.fromUri(
+          Uri.parse('/emergency?tab=handoff'),
+        ).scope,
+        'handoff',
+      );
+    });
+
+    test('includes scope in the route signature', () {
+      final EmergencyWorkspaceQuery withScope = EmergencyWorkspaceQuery.fromUri(
+        Uri.parse('/emergency?scope=closed&search=Jane'),
+      );
+      final EmergencyWorkspaceQuery withoutScope =
+          EmergencyWorkspaceQuery.fromUri(Uri.parse('/emergency?search=Jane'));
+
+      expect(withScope.signature, contains('closed'));
+      expect(withScope.signature, isNot(withoutScope.signature));
+    });
   });
 
   group('EmergencyHandoffOutcome', () {

@@ -11,7 +11,6 @@ import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
-import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/hr/data/repositories/hr_repository_impl.dart';
 import 'package:hosspi_hms/features/hr/domain/entities/hr_entities.dart';
@@ -72,11 +71,7 @@ final class HrWorkspaceController
   }
 
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(
-      showLoading: true,
-      refreshReferences: true,
-      plan: WorkspaceRefreshPlan.full,
-    );
+    return _syncVisibleData(showLoading: true, refreshReferences: true);
   }
 
   /// Loads facility-scoped reference data when onboarding dropdowns are empty.

@@ -93,8 +93,8 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
   void initState() {
     super.initState();
     _section =
-        _sectionFromQuery(widget.initialQuery?.section ?? '') ??
-        _sectionFromQueue(widget.initialQuery?.queue) ??
+        HrDeskSection.fromQuery(widget.initialQuery?.section ?? '') ??
+        HrDeskSection.fromQueue(widget.initialQuery?.queue) ??
         HrDeskSection.staffDirectory;
     _searchController = TextEditingController(
       text: widget.state.staffQuery.search,
@@ -126,10 +126,10 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     );
 
     final HrDeskSection? sectionFromRoute =
-        _sectionFromQuery(query.section) ?? _sectionFromQueue(query.queue);
+        HrDeskSection.fromQuery(query.section) ??
+        HrDeskSection.fromQueue(query.queue);
     if (sectionFromRoute != null && sectionFromRoute != _section) {
       setState(() => _section = sectionFromRoute);
-      _loadDataForSection(sectionFromRoute);
     }
 
     final String? focusStaffId = query.focusStaffId?.trim();
@@ -156,9 +156,20 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     }
 
     final HrQueue? queue = query.queue;
-    if (queue != null && sectionFromRoute == null) {
-      await applyHrQueueAndShow(context, ref, queue);
+    if (queue != null) {
+      // Map queue deep-links onto the matching tab and load inline (no dialog).
+      final AppFailure? failure = await controller.applyQueue(queue);
+      if (!mounted) {
+        return;
+      }
+      if (failure != null) {
+        showHrMutationSnackBar(context, failure);
+      }
       return;
+    }
+
+    if (sectionFromRoute != null) {
+      _loadDataForSection(sectionFromRoute);
     }
 
     final String search = query.search.trim();
@@ -186,7 +197,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     if (!mounted) {
       return;
     }
-    final String tab = _sectionToQueryValue(section);
+    final String tab = section.routeQueryValue;
     final String location = AppRoutes.hr.location(
       queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
@@ -296,7 +307,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
               ),
               SizedBox(height: theme.spacing.md),
             ],
-            _buildTabBody(l10n, state, controller),
+            _buildTabBody(state, controller),
           ],
         ),
       ),
@@ -316,15 +327,11 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
             : () => showHrStaffOnboardingDialog(context, ref),
       ),
       HrDeskSection.leaveRequests => AppButton.primary(
-        label: l10n.hrWorkQueuesTitle,
-        leadingIcon: Icons.pending_actions_outlined,
+        label: l10n.hrRequestLeaveAction,
+        leadingIcon: Icons.event_busy_outlined,
         onPressed: state.isRefreshing
             ? null
-            : () => showHrWorkQueueDialog(
-                context,
-                ref,
-                columnVisibilityController: _queueColumnController,
-              ),
+            : () => showHrRequestLeaveDialog(context, ref),
       ),
       HrDeskSection.shiftRoster => AppButton.primary(
         label: l10n.hrShiftTemplateAction,
@@ -334,15 +341,21 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
             : () => showHrManageScheduleTemplatesDialog(context, ref),
       ),
       HrDeskSection.payroll => AppButton.primary(
-        label: l10n.hrPayrollDraftsSummaryLabel,
+        label: l10n.hrRunPayrollAction,
         leadingIcon: Icons.payments_outlined,
         onPressed: state.isRefreshing
             ? null
-            : () => showHrWorkQueueDialog(
-                context,
-                ref,
-                columnVisibilityController: _queueColumnController,
-              ),
+            : () {
+                final HrStaffProfile? staff =
+                    state.selectedStaff?.profile ??
+                    (state.staff.items.isNotEmpty
+                        ? state.staff.items.first
+                        : null);
+                if (staff == null) {
+                  return;
+                }
+                unawaited(showHrPayrollWizardDialog(context, ref, staff));
+              },
       ),
       HrDeskSection.access => AppButton.primary(
         label: l10n.hrManageAccessAction,
@@ -355,7 +368,6 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
   }
 
   Widget _buildTabBody(
-    AppLocalizations l10n,
     HrWorkspaceState state,
     HrWorkspaceController controller,
   ) {
@@ -389,18 +401,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         columnVisibilityController: _queueColumnController,
         onPageChanged: controller.changeWorkItemsPage,
       ),
-      HrDeskSection.access => AppStateView(
-        title: l10n.hrManageAccessAction,
-        body: l10n.hrManageAccessAction,
-        variant: AppStateViewVariant.empty,
-        action: AppButton.primary(
-          label: l10n.hrManageAccessAction,
-          leadingIcon: Icons.manage_accounts_outlined,
-          onPressed: state.isRefreshing
-              ? null
-              : () => showHrAccessWorkspaceDialog(context),
-        ),
-      ),
+      HrDeskSection.access => const HrAccessWorkspacePanel(embedded: true),
     };
   }
 
@@ -2021,57 +2022,6 @@ int _sectionCount(HrWorkspaceState state, HrDeskSection section) {
       summary.draftRosters + summary.unassignedShifts + summary.overdueShifts,
     HrDeskSection.payroll => summary.payrollDraftRuns,
     HrDeskSection.access => 0,
-  };
-}
-
-String _sectionToQueryValue(HrDeskSection section) {
-  return switch (section) {
-    HrDeskSection.staffDirectory => 'staff',
-    HrDeskSection.leaveRequests => 'leave-requests',
-    HrDeskSection.shiftRoster => 'shift-roster',
-    HrDeskSection.payroll => 'payroll',
-    HrDeskSection.access => 'access',
-  };
-}
-
-HrDeskSection? _sectionFromQuery(String raw) {
-  switch (raw.trim().toLowerCase()) {
-    case 'staff':
-    case 'staff-directory':
-    case 'directory':
-      return HrDeskSection.staffDirectory;
-    case 'leave':
-    case 'leave-requests':
-    case 'leaves':
-      return HrDeskSection.leaveRequests;
-    case 'shift':
-    case 'shift-roster':
-    case 'roster':
-    case 'shifts':
-      return HrDeskSection.shiftRoster;
-    case 'payroll':
-    case 'payroll-drafts':
-      return HrDeskSection.payroll;
-    case 'access':
-    case 'roles':
-    case 'permissions':
-      return HrDeskSection.access;
-    default:
-      return null;
-  }
-}
-
-HrDeskSection? _sectionFromQueue(HrQueue? queue) {
-  if (queue == null) {
-    return null;
-  }
-  return switch (queue) {
-    HrQueue.leaveRequests ||
-    HrQueue.swapRequests => HrDeskSection.leaveRequests,
-    HrQueue.rosterDrafts ||
-    HrQueue.unassignedShifts ||
-    HrQueue.overdueShifts => HrDeskSection.shiftRoster,
-    HrQueue.payrollDrafts => HrDeskSection.payroll,
   };
 }
 

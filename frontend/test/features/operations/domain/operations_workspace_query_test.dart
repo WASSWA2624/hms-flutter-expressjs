@@ -82,5 +82,40 @@ void main() {
         <String>['allRequests', 'open', 'inProgress', 'completed', 'assets'],
       );
     });
+
+    test('query section values map to expected desk sections', () {
+      OperationsDeskSection fromQuery(String value) {
+        return switch (value.trim().toLowerCase()) {
+          'open' => OperationsDeskSection.open,
+          'in-progress' => OperationsDeskSection.inProgress,
+          'completed' => OperationsDeskSection.completed,
+          'assets' => OperationsDeskSection.assets,
+          _ => OperationsDeskSection.allRequests,
+        };
+      }
+
+      expect(
+        fromQuery(
+          OperationsWorkspaceQuery.fromUri(
+            Uri.parse('/operations?section=open'),
+          ).section,
+        ),
+        OperationsDeskSection.open,
+      );
+      expect(
+        fromQuery(
+          OperationsWorkspaceQuery.fromUri(
+            Uri.parse('/operations?section=assets'),
+          ).section,
+        ),
+        OperationsDeskSection.assets,
+      );
+      expect(
+        fromQuery(
+          OperationsWorkspaceQuery.fromUri(Uri.parse('/operations')).section,
+        ),
+        OperationsDeskSection.allRequests,
+      );
+    });
   });
 }

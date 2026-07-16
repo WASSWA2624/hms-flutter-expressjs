@@ -28,4 +28,60 @@ void main() {
       expect(query.isDefaultFilters, isTrue);
     });
   });
+
+  group('PharmacyWorkspaceQuery', () {
+    test('parses section=queue from URI', () {
+      final PharmacyWorkspaceQuery query = PharmacyWorkspaceQuery.fromUri(
+        Uri.parse('/pharmacy?section=queue'),
+      );
+
+      expect(query.section, 'queue');
+      expect(query.hasRouteTargeting, isTrue);
+      expect(query.signature, contains('queue'));
+    });
+
+    test('parses section=in-progress with search', () {
+      final PharmacyWorkspaceQuery query = PharmacyWorkspaceQuery.fromUri(
+        Uri.parse('/pharmacy?section=in-progress&search=Noah'),
+      );
+
+      expect(query.section, 'in-progress');
+      expect(query.search, 'Noah');
+      expect(query.hasRouteTargeting, isTrue);
+    });
+
+    test('parses inventory section for catalog deep link', () {
+      final PharmacyWorkspaceQuery query = PharmacyWorkspaceQuery.fromUri(
+        Uri.parse('/pharmacy?section=inventory'),
+      );
+
+      expect(query.section, 'inventory');
+      expect(query.hasRouteTargeting, isTrue);
+    });
+
+    test('empty query has no route targeting', () {
+      final PharmacyWorkspaceQuery query = PharmacyWorkspaceQuery.fromUri(
+        Uri.parse('/pharmacy'),
+      );
+
+      expect(query.section, isEmpty);
+      expect(query.hasRouteTargeting, isFalse);
+    });
+  });
+
+  group('PharmacyDeskSection', () {
+    test('exposes five desk worklist sections', () {
+      expect(PharmacyDeskSection.values, hasLength(5));
+      expect(
+        PharmacyDeskSection.values,
+        containsAll(<PharmacyDeskSection>[
+          PharmacyDeskSection.queue,
+          PharmacyDeskSection.inProgress,
+          PharmacyDeskSection.pendingPayment,
+          PharmacyDeskSection.completed,
+          PharmacyDeskSection.allOrders,
+        ]),
+      );
+    });
+  });
 }

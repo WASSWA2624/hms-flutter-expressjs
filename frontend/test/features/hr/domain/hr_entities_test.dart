@@ -49,10 +49,29 @@ void main() {
       expect(query.hasRouteTargeting, isTrue);
     });
 
+    test('parses section tab targeting', () {
+      final HrWorkspaceQuery query = HrWorkspaceQuery.fromUri(
+        Uri.parse('/hr?section=leave-requests'),
+      );
+
+      expect(query.section, 'leave-requests');
+      expect(query.hasRouteTargeting, isTrue);
+    });
+
+    test('parses tab alias for section', () {
+      final HrWorkspaceQuery query = HrWorkspaceQuery.fromUri(
+        Uri.parse('/hr?tab=payroll'),
+      );
+
+      expect(query.section, 'payroll');
+      expect(query.hasRouteTargeting, isTrue);
+    });
+
     test('has no targeting when query string is empty', () {
       final HrWorkspaceQuery query = HrWorkspaceQuery.fromUri(Uri.parse('/hr'));
 
       expect(query.hasRouteTargeting, isFalse);
+      expect(query.section, isEmpty);
     });
 
     test('prefers staff identifier aliases', () {
@@ -61,6 +80,53 @@ void main() {
       );
 
       expect(query.focusStaffId, 'abc-123');
+    });
+  });
+
+  group('HrDeskSection', () {
+    test('exposes all expected desk tabs', () {
+      expect(
+        HrDeskSection.values,
+        containsAll(<HrDeskSection>[
+          HrDeskSection.staffDirectory,
+          HrDeskSection.leaveRequests,
+          HrDeskSection.shiftRoster,
+          HrDeskSection.payroll,
+          HrDeskSection.access,
+        ]),
+      );
+    });
+
+    test('routeQueryValue matches canonical section params', () {
+      expect(HrDeskSection.staffDirectory.routeQueryValue, 'staff');
+      expect(HrDeskSection.leaveRequests.routeQueryValue, 'leave-requests');
+      expect(HrDeskSection.shiftRoster.routeQueryValue, 'shift-roster');
+      expect(HrDeskSection.payroll.routeQueryValue, 'payroll');
+      expect(HrDeskSection.access.routeQueryValue, 'access');
+    });
+
+    test('fromQuery resolves aliases', () {
+      expect(HrDeskSection.fromQuery('leave-requests'), HrDeskSection.leaveRequests);
+      expect(HrDeskSection.fromQuery('leaves'), HrDeskSection.leaveRequests);
+      expect(HrDeskSection.fromQuery('roster'), HrDeskSection.shiftRoster);
+      expect(HrDeskSection.fromQuery('roles'), HrDeskSection.access);
+      expect(HrDeskSection.fromQuery('unknown'), isNull);
+    });
+
+    test('fromQueue maps work queues onto desk tabs', () {
+      expect(
+        HrDeskSection.fromQueue(HrQueue.leaveRequests),
+        HrDeskSection.leaveRequests,
+      );
+      expect(
+        HrDeskSection.fromQueue(HrQueue.overdueShifts),
+        HrDeskSection.shiftRoster,
+      );
+      expect(
+        HrDeskSection.fromQueue(HrQueue.payrollDrafts),
+        HrDeskSection.payroll,
+      );
+      expect(HrDeskSection.fromQueue(null), isNull);
     });
   });
 

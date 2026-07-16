@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
@@ -16,6 +17,7 @@ import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.da
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -41,69 +43,12 @@ void main() {
     registerFallbackValue(const IpdAdmissionQuery());
   });
 
-  testWidgets('renders the clinical workspace shell content', (tester) async {
-    SharedPreferences.setMockInitialValues(<String, Object>{});
-    final SharedPreferences preferences = await SharedPreferences.getInstance();
-    final _MockClinicalRepository clinicalRepository =
-        _MockClinicalRepository();
-    final _MockOpdRepository opdRepository = _MockOpdRepository();
-    final _MockIpdRepository ipdRepository = _MockIpdRepository();
-    final ClinicalWorklistEntry entry = ClinicalWorklistEntry(
-      id: 'encounter-1',
-      sourceQueue: 'OPD',
-      encounterId: 'encounter-1',
-      encounterPublicId: 'ENC000001',
-      patientDisplayName: 'Sarah Clinical',
-      patientPublicId: 'PAT000001',
-      providerDisplayName: 'Dr Kizza',
-      status: 'OPEN',
-      stage: 'WAITING_DOCTOR_REVIEW',
-      updatedAt: DateTime.now(),
-    );
-    final ClinicalWorklistEntry otherEntry = ClinicalWorklistEntry(
-      id: 'encounter-2',
-      sourceQueue: 'OPD',
-      encounterId: 'encounter-2',
-      encounterPublicId: 'ENC000002',
-      patientDisplayName: 'John Other',
-      patientPublicId: 'PAT000002',
-      providerDisplayName: 'Dr Mugerwa',
-      status: 'OPEN',
-      stage: 'IN_PROGRESS',
-      updatedAt: DateTime.now(),
-    );
-    _stubClinicalInitialLoad(
-      clinicalRepository,
-      encounters: <ClinicalWorklistEntry>[entry, otherEntry],
-    );
-    _stubOpdInitialLoad(opdRepository);
-    _stubIpdInitialLoad(ipdRepository);
+  testWidgets('renders tab strip with section counts and worklist', (
+    tester,
+  ) async {
+    final _Harness harness = await _pumpClinicalWorkspace(tester);
 
-    tester.view.devicePixelRatio = 1;
-    tester.view.physicalSize = const Size(1440, 900);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    addTearDown(tester.view.resetPhysicalSize);
-
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
-          opdRepositoryProvider.overrideWithValue(opdRepository),
-          ipdRepositoryProvider.overrideWithValue(ipdRepository),
-          sharedPreferencesProvider.overrideWithValue(preferences),
-          initialSessionStateProvider.overrideWithValue(
-            const SessionState.unauthenticated(),
-          ),
-        ],
-        child: const MaterialApp(
-          supportedLocales: AppLocalizations.supportedLocales,
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          home: Scaffold(body: ClinicalWorkspacePage()),
-        ),
-      ),
-    );
-    await _pumpUntilFound(tester, find.textContaining('All ('));
-
+    expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.textContaining('All ('), findsOneWidget);
     expect(find.textContaining('Waiting review ('), findsOneWidget);
     expect(find.textContaining('Urgent ('), findsOneWidget);
@@ -117,7 +62,7 @@ void main() {
     expect(find.text('No encounter selected'), findsNothing);
     expect(tester.takeException(), isNull);
 
-    clearInteractions(clinicalRepository);
+    clearInteractions(harness.clinicalRepository);
     await tester.enterText(find.byType(TextFormField).first, 'Other');
     await tester.pump();
 
@@ -127,7 +72,7 @@ void main() {
     await tester.pump();
 
     final List<Object?> capturedQueries = verify(
-      () => clinicalRepository.listEncounters(captureAny()),
+      () => harness.clinicalRepository.listEncounters(captureAny()),
     ).captured;
     expect(
       (capturedQueries.single as ClinicalWorklistQuery).databaseSearch,
@@ -152,6 +97,271 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('switching tabs calls applyScope with matching queue scope', (
+    tester,
+  ) async {
+    final _Harness harness = await _pumpClinicalWorkspace(tester);
+
+    clearInteractions(harness.clinicalRepository);
+    await tester.tap(find.textContaining('Urgent ('));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final List<Object?> captured = verify(
+      () => harness.clinicalRepository.listEncounters(captureAny()),
+    ).captured;
+    expect(captured, isNotEmpty);
+    final ClinicalWorklistQuery query = captured.last as ClinicalWorklistQuery;
+    expect(query.scope, ClinicalQueueScope.urgent);
+    expect(
+      harness.router.routeInformationProvider.value.uri.queryParameters,
+      containsPair('section', 'urgent'),
+    );
+  });
+
+  testWidgets('switching to waiting-review updates URL section query', (
+    tester,
+  ) async {
+    final _Harness harness = await _pumpClinicalWorkspace(tester);
+
+    await tester.tap(find.textContaining('Waiting review ('));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(
+      harness.router.routeInformationProvider.value.uri.queryParameters,
+      containsPair('section', 'waiting-review'),
+    );
+
+    final List<Object?> captured = verify(
+      () => harness.clinicalRepository.listEncounters(captureAny()),
+    ).captured;
+    expect(
+      (captured.last as ClinicalWorklistQuery).scope,
+      ClinicalQueueScope.waitingReview,
+    );
+  });
+
+  testWidgets('deep link section=urgent selects Urgent tab and scopes fetch', (
+    tester,
+  ) async {
+    final _Harness harness = await _pumpClinicalWorkspace(
+      tester,
+      initialLocation: '/clinical?section=urgent',
+      initialQuery: ClinicalWorkspaceQuery.fromUri(
+        Uri.parse('/clinical?section=urgent'),
+      ),
+    );
+
+    expect(find.textContaining('Urgent ('), findsOneWidget);
+
+    final List<Object?> captured = verify(
+      () => harness.clinicalRepository.listEncounters(captureAny()),
+    ).captured;
+    expect(
+      captured.any(
+        (Object? query) =>
+            (query as ClinicalWorklistQuery).scope == ClinicalQueueScope.urgent,
+      ),
+      isTrue,
+    );
+  });
+
+  testWidgets('results-ready tab shows encounter type column by default', (
+    tester,
+  ) async {
+    await _pumpClinicalWorkspace(
+      tester,
+      encounters: <ClinicalWorklistEntry>[
+        ClinicalWorklistEntry(
+          id: 'encounter-results',
+          sourceQueue: 'OPD',
+          encounterId: 'encounter-results',
+          encounterPublicId: 'ENC000099',
+          patientDisplayName: 'Results Patient',
+          patientPublicId: 'PAT000099',
+          providerDisplayName: 'Dr Results',
+          encounterType: 'OUTPATIENT',
+          currentLocation: 'Clinic R',
+          status: 'OPEN',
+          stage: 'LAB_RESULTS_READY',
+          resultsReady: true,
+          updatedAt: DateTime.now(),
+        ),
+      ],
+    );
+
+    await tester.tap(find.textContaining('Results ready ('));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(
+      find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Encounter type'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('in-consultation tab shows location column by default', (
+    tester,
+  ) async {
+    await _pumpClinicalWorkspace(tester);
+
+    await tester.tap(find.textContaining('In consultation ('));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(
+      find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Location'),
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('row tap opens encounter detail dialog with action bar', (
+    tester,
+  ) async {
+    await _pumpClinicalWorkspace(tester);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Sarah Clinical'),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.byType(Dialog), findsWidgets);
+    expect(find.textContaining('Sarah Clinical'), findsWidgets);
+  });
+
+  testWidgets('mobile layout renders list items via mobile item builder', (
+    tester,
+  ) async {
+    await _pumpClinicalWorkspace(tester, physicalSize: const Size(390, 844));
+
+    expect(find.byType(DataTable), findsNothing);
+    expect(find.text('Sarah Clinical'), findsOneWidget);
+    expect(find.text('John Other'), findsOneWidget);
+  });
+
+  testWidgets('advanced filter dialog has no Queue scope dropdown', (
+    tester,
+  ) async {
+    await _pumpClinicalWorkspace(tester);
+
+    await tester.tap(find.text('Clinical filters'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Queue scope'), findsNothing);
+  });
+}
+
+class _Harness {
+  const _Harness({required this.clinicalRepository, required this.router});
+
+  final _MockClinicalRepository clinicalRepository;
+  final GoRouter router;
+}
+
+Future<_Harness> _pumpClinicalWorkspace(
+  WidgetTester tester, {
+  ClinicalWorkspaceQuery? initialQuery,
+  String initialLocation = '/clinical',
+  Size physicalSize = const Size(1440, 900),
+  List<ClinicalWorklistEntry>? encounters,
+}) async {
+  SharedPreferences.setMockInitialValues(<String, Object>{});
+  final SharedPreferences preferences = await SharedPreferences.getInstance();
+  final _MockClinicalRepository clinicalRepository = _MockClinicalRepository();
+  final _MockOpdRepository opdRepository = _MockOpdRepository();
+  final _MockIpdRepository ipdRepository = _MockIpdRepository();
+  final List<ClinicalWorklistEntry> worklist =
+      encounters ??
+      <ClinicalWorklistEntry>[
+        ClinicalWorklistEntry(
+          id: 'encounter-1',
+          sourceQueue: 'OPD',
+          encounterId: 'encounter-1',
+          encounterPublicId: 'ENC000001',
+          patientDisplayName: 'Sarah Clinical',
+          patientPublicId: 'PAT000001',
+          providerDisplayName: 'Dr Kizza',
+          encounterType: 'OUTPATIENT',
+          currentLocation: 'Clinic A',
+          status: 'OPEN',
+          stage: 'WAITING_DOCTOR_REVIEW',
+          updatedAt: DateTime.now(),
+        ),
+        ClinicalWorklistEntry(
+          id: 'encounter-2',
+          sourceQueue: 'OPD',
+          encounterId: 'encounter-2',
+          encounterPublicId: 'ENC000002',
+          patientDisplayName: 'John Other',
+          patientPublicId: 'PAT000002',
+          providerDisplayName: 'Dr Mugerwa',
+          encounterType: 'OUTPATIENT',
+          currentLocation: 'Clinic B',
+          status: 'OPEN',
+          stage: 'IN_PROGRESS',
+          updatedAt: DateTime.now(),
+        ),
+      ];
+  _stubClinicalInitialLoad(clinicalRepository, encounters: worklist);
+  _stubOpdInitialLoad(opdRepository);
+  _stubIpdInitialLoad(ipdRepository);
+
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = physicalSize;
+  addTearDown(tester.view.resetDevicePixelRatio);
+  addTearDown(tester.view.resetPhysicalSize);
+
+  final GoRouter router = GoRouter(
+    initialLocation: initialLocation,
+    routes: <RouteBase>[
+      GoRoute(
+        path: '/clinical',
+        builder: (BuildContext context, GoRouterState state) {
+          return Scaffold(
+            body: ClinicalWorkspacePage(
+              initialQuery:
+                  initialQuery ?? ClinicalWorkspaceQuery.fromUri(state.uri),
+            ),
+          );
+        },
+      ),
+    ],
+  );
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
+        opdRepositoryProvider.overrideWithValue(opdRepository),
+        ipdRepositoryProvider.overrideWithValue(ipdRepository),
+        sharedPreferencesProvider.overrideWithValue(preferences),
+        initialSessionStateProvider.overrideWithValue(
+          const SessionState.unauthenticated(),
+        ),
+      ],
+      child: MaterialApp.router(
+        routerConfig: router,
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+      ),
+    ),
+  );
+  await _pumpUntilFound(tester, find.textContaining('All ('));
+
+  return _Harness(clinicalRepository: clinicalRepository, router: router);
 }
 
 Future<void> _pumpUntilFound(

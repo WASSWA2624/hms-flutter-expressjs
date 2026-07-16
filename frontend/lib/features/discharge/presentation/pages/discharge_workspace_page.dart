@@ -127,6 +127,7 @@ class _DischargeWorkspaceContentState
   late final AppListTableColumnVisibilityController<IpdAdmissionSummary>
   _columnVisibilityController;
   late DischargeDeskSection _section;
+  IpdAdmissionSummary? _selectedAdmission;
 
   @override
   void initState() {
@@ -145,6 +146,15 @@ class _DischargeWorkspaceContentState
     final String search = widget.state.query.search;
     if (_searchController.text != search) {
       _searchController.value = TextEditingValue(text: search);
+    }
+    final String? nextSection = widget.initialQuery?.section;
+    final String? previousSection = oldWidget.initialQuery?.section;
+    if (nextSection != previousSection) {
+      final DischargeDeskSection? parsed = _sectionFromQuery(nextSection ?? '');
+      if (parsed != null && parsed != _section) {
+        _section = parsed;
+        _selectedAdmission = null;
+      }
     }
   }
 
@@ -298,7 +308,7 @@ class _DischargeWorkspaceContentState
         return <AppListTableColumn<IpdAdmissionSummary>>[
           _patientColumn(l10n),
           _locationColumn(l10n),
-          _statusColumn(l10n),
+          _blockingItemColumn(l10n),
           _nextActionColumn(l10n),
         ];
       case DischargeDeskSection.completed:
@@ -406,7 +416,7 @@ class _DischargeWorkspaceContentState
   ) {
     return AppListTableColumn<IpdAdmissionSummary>(
       id: 'clearance_phase',
-      label: l10n.dischargeSectionPendingClearance,
+      label: l10n.ipdDischargeClearancePhaseLabel,
       sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
           appListTableCompareText(left.clearancePhase, right.clearancePhase),
       cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
@@ -424,17 +434,82 @@ class _DischargeWorkspaceContentState
     );
   }
 
+  AppListTableColumn<IpdAdmissionSummary> _blockingItemColumn(
+    AppLocalizations l10n,
+  ) {
+    return AppListTableColumn<IpdAdmissionSummary>(
+      id: 'blocking_item',
+      label: l10n.dischargeStatusSummaryPending,
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareText(
+            left.clearancePhase ?? left.nextStep,
+            right.clearancePhase ?? right.nextStep,
+          ),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        final String blocker =
+            item.clearancePhase ?? item.nextStep ?? item.stage ?? '';
+        if (blocker.isEmpty) {
+          return Text(l10n.dischargeStatusSummaryPending);
+        }
+        return AppWorkspaceStatusBadge(
+          status: AppWorkspaceStatus(
+            label: _apiLabel(blocker),
+            tone: AppWorkspaceStatusTone.warning,
+          ),
+        );
+      },
+    );
+  }
+
   AppListTableColumn<IpdAdmissionSummary> _dischargedAtColumn(
     AppLocalizations l10n,
   ) {
     return AppListTableColumn<IpdAdmissionSummary>(
       id: 'discharged_at',
-      label: l10n.dischargeTargetColumnLabel,
+      label: l10n.ipdDischargedAtLabel,
       sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
           appListTableCompareDateTime(left.dischargedAt, right.dischargedAt),
       cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
         return Text(_dateLabel(context, item.dischargedAt));
       },
+    );
+  }
+
+  IpdAdmissionSummary? _resolveSelectedAdmission(
+    List<IpdAdmissionSummary> rows,
+  ) {
+    final IpdAdmissionSummary? selected = _selectedAdmission;
+    if (selected == null) {
+      return null;
+    }
+    for (final IpdAdmissionSummary item in rows) {
+      if (item.id == selected.id) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _handlePrimaryAction(
+    DischargeWorkspaceState state,
+    List<IpdAdmissionSummary> rows,
+  ) async {
+    final IpdAdmissionSummary? admission =
+        _resolveSelectedAdmission(rows) ?? (rows.isEmpty ? null : rows.first);
+    if (admission == null) {
+      return;
+    }
+    setState(() => _selectedAdmission = admission);
+
+    final bool openClearance =
+        _section == DischargeDeskSection.planned ||
+        _section == DischargeDeskSection.pendingClearance;
+    await _openDischargeDetailDialog(
+      context,
+      ref,
+      state,
+      admission,
+      openClearance: openClearance,
     );
   }
 
@@ -477,7 +552,10 @@ class _DischargeWorkspaceContentState
                       for (final DischargeDeskSection section
                           in DischargeDeskSection.values) {
                         if (section.name == tabId) {
-                          setState(() => _section = section);
+                          setState(() {
+                            _section = section;
+                            _selectedAdmission = null;
+                          });
                           _updateUrlForSection(section);
                           break;
                         }
@@ -492,14 +570,7 @@ class _DischargeWorkspaceContentState
                   onPressed: rows.isEmpty
                       ? null
                       : () {
-                          unawaited(
-                            _openDischargeDetailDialog(
-                              context,
-                              ref,
-                              state,
-                              rows.first,
-                            ),
-                          );
+                          unawaited(_handlePrimaryAction(state, rows));
                         },
                 ),
               ],
@@ -516,6 +587,7 @@ class _DischargeWorkspaceContentState
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               onRowSelected: (IpdAdmissionSummary item) {
+                setState(() => _selectedAdmission = item);
                 unawaited(
                   _openDischargeDetailDialog(context, ref, state, item),
                 );

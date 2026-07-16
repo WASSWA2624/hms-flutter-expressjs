@@ -8,7 +8,7 @@ void main() {
 
     for (final file in _workspacePageFiles()) {
       final source = file.readAsStringSync();
-      if (!source.contains('AppWorkspace(')) {
+      if (!_usesSharedWorkspaceShell(source)) {
         offenders.add(file.path);
       }
     }
@@ -16,7 +16,9 @@ void main() {
     expect(
       offenders,
       isEmpty,
-      reason: 'Module workspace pages must use AppWorkspace.',
+      reason:
+          'Module workspace pages must use AppWorkspace or the standardized '
+          'ResponsivePage + AppTabStrip/AppListTable shell.',
     );
   });
 
@@ -54,6 +56,17 @@ Iterable<File> _workspacePageFiles() {
         file.path.endsWith('patient_registry_page.dart') ||
         file.path.endsWith('tenant_facility_setup_page.dart');
   });
+}
+
+bool _usesSharedWorkspaceShell(String source) {
+  if (source.contains('AppWorkspace(')) {
+    return true;
+  }
+  // Reception-style tab-and-table workspaces.
+  final bool hasTable = source.contains('AppListTable<');
+  final bool hasTabs = source.contains('AppTabStrip(');
+  final bool hasResponsivePage = source.contains('ResponsivePage(');
+  return hasTable && (hasTabs || hasResponsivePage);
 }
 
 Iterable<File> _featurePresentationPageFiles() {
