@@ -2196,22 +2196,13 @@ class _TransferRequestDialogState extends ConsumerState<TransferRequestDialog> {
           ],
         ),
       ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !_isSaving,
-          onPressed: _isSaving
-              ? null
-              : () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.ipdRequestTransferAction,
-          leadingIcon: Icons.swap_horiz,
-          isLoading: _isSaving,
-          onPressed: _isSaving ? null : _submit,
-        ),
-      ],
+      actions: clinicalActionDialogActions(
+        context,
+        l10n.ipdRequestTransferAction,
+        _isSaving,
+        _isSaving ? null : _submit,
+        submitLeadingIcon: Icons.swap_horiz,
+      ),
     );
   }
 
@@ -2288,91 +2279,79 @@ class _TransferUpdateDialogState extends ConsumerState<TransferUpdateDialog> {
     return AppDialog(
       title: Text(l10n.ipdManageTransferAction),
       icon: const Icon(Icons.move_down_outlined),
+      scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: !_isSaving,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null)
-              AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
+      content: AppFormShell(
+        formKey: _formKey,
+        enabled: !_isSaving,
+        formStatus: appFormFailureStatus(context, _failure),
+        children: <Widget>[
+          AppSelectField<String>(
+            value: _action,
+            labelText: l10n.ipdTransferActionFieldLabel,
+            enabled: !_isSaving,
+            options: <AppSelectOption<String>>[
+              AppSelectOption<String>(
+                value: _transferApprove,
+                label: l10n.ipdTransferApproveAction,
               ),
-            AppSelectField<String>(
-              value: _action,
-              labelText: l10n.ipdTransferActionFieldLabel,
+              AppSelectOption<String>(
+                value: _transferStart,
+                label: l10n.ipdTransferStartAction,
+              ),
+              AppSelectOption<String>(
+                value: _transferComplete,
+                label: l10n.ipdTransferCompleteAction,
+              ),
+              AppSelectOption<String>(
+                value: _transferCancel,
+                label: l10n.ipdTransferCancelAction,
+              ),
+            ],
+            onChanged: _isSaving
+                ? null
+                : (String? value) {
+                    if (value != null) {
+                      setState(() => _action = value);
+                    }
+                  },
+          ),
+          if (_action == _transferComplete)
+            AppSelectField<String>.searchable(
+              value: _bedId,
+              labelText: l10n.ipdDestinationBedFieldLabel,
+              hintText: l10n.ipdSelectBedHint,
               enabled: !_isSaving,
+              isRequired: true,
+              validator: AppValidators.requiredValue<String>(
+                l10n.validationRequired,
+              ),
               options: <AppSelectOption<String>>[
-                AppSelectOption<String>(
-                  value: _transferApprove,
-                  label: l10n.ipdTransferApproveAction,
-                ),
-                AppSelectOption<String>(
-                  value: _transferStart,
-                  label: l10n.ipdTransferStartAction,
-                ),
-                AppSelectOption<String>(
-                  value: _transferComplete,
-                  label: l10n.ipdTransferCompleteAction,
-                ),
-                AppSelectOption<String>(
-                  value: _transferCancel,
-                  label: l10n.ipdTransferCancelAction,
-                ),
+                for (final IpdBedOption bed in widget.beds)
+                  AppSelectOption<String>(
+                    value: bed.id,
+                    label:
+                        _joinDisplay(<String?>[
+                          bed.displayTitle,
+                          bed.displaySubtitle,
+                        ]) ??
+                        bed.id,
+                  ),
               ],
               onChanged: _isSaving
                   ? null
-                  : (String? value) {
-                      if (value != null) {
-                        setState(() => _action = value);
-                      }
-                    },
+                  : (String? value) => setState(() => _bedId = value),
             ),
-            if (_action == _transferComplete)
-              AppSelectField<String>.searchable(
-                value: _bedId,
-                labelText: l10n.ipdDestinationBedFieldLabel,
-                hintText: l10n.ipdSelectBedHint,
-                enabled: !_isSaving,
-                isRequired: true,
-                validator: AppValidators.requiredValue<String>(
-                  l10n.validationRequired,
-                ),
-                options: <AppSelectOption<String>>[
-                  for (final IpdBedOption bed in widget.beds)
-                    AppSelectOption<String>(
-                      value: bed.id,
-                      label:
-                          _joinDisplay(<String?>[
-                            bed.displayTitle,
-                            bed.displaySubtitle,
-                          ]) ??
-                          bed.id,
-                    ),
-                ],
-                onChanged: _isSaving
-                    ? null
-                    : (String? value) => setState(() => _bedId = value),
-              ),
-          ],
-        ),
+        ],
       ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !_isSaving,
-          onPressed: _isSaving
-              ? null
-              : () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.ipdManageTransferAction,
-          leadingIcon: Icons.move_down_outlined,
-          isLoading: _isSaving,
-          onPressed: _isSaving ? null : _submit,
-        ),
-      ],
+      actions: clinicalActionDialogActions(
+        context,
+        l10n.ipdManageTransferAction,
+        _isSaving,
+        _isSaving ? null : _submit,
+        submitLeadingIcon: Icons.move_down_outlined,
+      ),
     );
   }
 
@@ -2380,7 +2359,7 @@ class _TransferUpdateDialogState extends ConsumerState<TransferUpdateDialog> {
     if (_isSaving) {
       return;
     }
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
     if (_action == _transferComplete && _bedId == null) {

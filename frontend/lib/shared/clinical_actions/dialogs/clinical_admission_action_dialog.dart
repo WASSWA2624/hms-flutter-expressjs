@@ -86,57 +86,65 @@ class _ClinicalAdmissionActionDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final String title = widget.title ?? l10n.clinicalRequestAdmissionAction;
+    final String submitLabel =
+        widget.submitLabel ?? l10n.clinicalRequestAdmissionAction;
+    final IconData? submitLeadingIcon =
+        widget.submitLeadingIcon ?? Icons.local_hospital_outlined;
+
     if (!widget.requiresBed) {
       return AppDialog(
-        title: Text(widget.title ?? l10n.clinicalRequestAdmissionAction),
+        title: Text(title),
         icon: widget.icon,
         closeEnabled: !_isSaving,
         initialMaximized: widget.initialMaximized,
         maxWidth: widget.maxWidth,
         scrollable: true,
-        content: Form(
-          key: _formKey,
-          child: AppFormSection(
-            children: <Widget>[
-              ...?widget.leadingSectionsBuilder?.call(context, !_isSaving),
-              AppFormSection(
-                title: l10n.clinicalAdmissionDetailsTitle,
-                children: <Widget>[
-                  if (_failure != null)
-                    AppFormInformationBanner.failure(
-                      context: context,
-                      failure: _failure!,
-                    ),
-                  if (widget.reasonLabel != null)
-                    AppTextField(
-                      controller: _reasonController,
-                      labelText: widget.reasonLabel!,
-                      enabled: !_isSaving,
-                      isRequired: widget.reasonRequired,
-                      maxLines: 4,
-                      validator: widget.reasonRequired
-                          ? AppValidators.requiredText(l10n.validationRequired)
-                          : null,
-                    ),
-                  if (widget.notesLabel != null)
-                    AppTextField(
-                      controller: _notesController,
-                      labelText: widget.notesLabel!,
-                      enabled: !_isSaving,
-                      maxLines: 3,
-                    ),
-                ],
-              ),
-            ],
-          ),
+        pinActionsToBottom: true,
+        content: AppFormShell(
+          formKey: _formKey,
+          enabled: !_isSaving,
+          density: AppFormSectionDensity.compact,
+          formStatus: appFormFailureStatus(context, _failure),
+          children: <Widget>[
+            ...?widget.leadingSectionsBuilder?.call(context, !_isSaving),
+            AppFormSection(
+              title: l10n.clinicalAdmissionDetailsTitle,
+              density: AppFormSectionDensity.compact,
+              children: <Widget>[
+                if (widget.reasonLabel != null)
+                  AppTextField(
+                    controller: _reasonController,
+                    labelText: widget.reasonLabel!,
+                    enabled: !_isSaving,
+                    isRequired: widget.reasonRequired,
+                    maxLines: 4,
+                    textCapitalization: TextCapitalization.sentences,
+                    prefixIcon: const Icon(Icons.notes_outlined),
+                    validator: widget.reasonRequired
+                        ? AppValidators.requiredText(l10n.validationRequired)
+                        : null,
+                  ),
+                if (widget.notesLabel != null)
+                  AppTextField(
+                    controller: _notesController,
+                    labelText: widget.notesLabel!,
+                    enabled: !_isSaving,
+                    maxLines: 3,
+                    textCapitalization: TextCapitalization.sentences,
+                    prefixIcon: const Icon(Icons.edit_note_outlined),
+                  ),
+              ],
+            ),
+          ],
         ),
         actions: clinicalActionDialogActions(
           context,
-          widget.submitLabel ?? l10n.clinicalRequestAdmissionAction,
+          submitLabel,
           _isSaving,
-          _submitRequestOnly,
+          _isSaving ? null : _submitRequestOnly,
           showCancel: widget.showCancelButton,
-          submitLeadingIcon: widget.submitLeadingIcon,
+          submitLeadingIcon: submitLeadingIcon,
         ),
       );
     }
@@ -169,133 +177,135 @@ class _ClinicalAdmissionActionDialogState
         !_isSaving && _roomId != null && bedOptions.isNotEmpty;
 
     return AppDialog(
-      title: Text(widget.title ?? l10n.clinicalRequestAdmissionAction),
+      title: Text(title),
       icon: widget.icon,
       closeEnabled: !_isSaving,
       initialMaximized: widget.initialMaximized,
       maxWidth: widget.maxWidth,
       scrollable: true,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            ...?widget.leadingSectionsBuilder?.call(context, !_isSaving),
-            AppFormSection(
-              title: l10n.clinicalAdmissionDetailsTitle,
-              children: <Widget>[
-                if (_failure != null)
-                  AppFormInformationBanner.failure(
-                    context: context,
-                    failure: _failure!,
-                  ),
-                if (availableBeds.isEmpty)
-                  AppStateView(
-                    title: l10n.clinicalAdmissionNoBedsTitle,
-                    body: l10n.clinicalAdmissionNoBedsMessage,
-                    icon: Icons.bed_outlined,
-                    variant: AppStateViewVariant.empty,
-                  )
-                else ...<Widget>[
-                  AppResponsiveFieldRow.two(
-                    gap: AppResponsiveFieldRowGap.form,
-                    left: AppSelectField<String>.searchable(
-                      value: _wardId,
-                      labelText: l10n.clinicalAdmissionWardLabel,
-                      enabled: wardEnabled,
-                      helperText: wardEnabled
-                          ? null
-                          : l10n.clinicalAdmissionNoWardsHelper,
-                      isRequired: true,
-                      menuHeight: 280,
-                      options: wardOptions,
-                      validator: AppValidators.requiredValue<String>(
-                        l10n.validationRequired,
-                      ),
-                      onChanged: _handleWardChanged,
-                    ),
-                    right: AppSelectField<String>.searchable(
-                      value: _roomId,
-                      labelText: l10n.clinicalAdmissionRoomLabel,
-                      enabled: roomEnabled,
-                      helperText: roomEnabled
-                          ? null
-                          : (_wardId == null
-                                ? l10n.clinicalAdmissionSelectWardFirstHint
-                                : l10n.clinicalAdmissionNoRoomsMessage),
-                      isRequired: true,
-                      menuHeight: 280,
-                      options: roomOptions,
-                      validator: AppValidators.requiredValue<String>(
-                        l10n.validationRequired,
-                      ),
-                      onChanged: _handleRoomChanged,
-                    ),
-                  ),
-                  AppSelectField<String>.searchable(
-                    value: _bedId,
-                    labelText: l10n.clinicalAdmissionBedLabel,
-                    enabled: bedEnabled,
-                    helperText: bedEnabled
+      pinActionsToBottom: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        enabled: !_isSaving,
+        density: AppFormSectionDensity.compact,
+        formStatus: appFormFailureStatus(context, _failure),
+        children: <Widget>[
+          ...?widget.leadingSectionsBuilder?.call(context, !_isSaving),
+          AppFormSection(
+            title: l10n.clinicalAdmissionDetailsTitle,
+            density: AppFormSectionDensity.compact,
+            children: <Widget>[
+              if (availableBeds.isEmpty)
+                AppStateView(
+                  title: l10n.clinicalAdmissionNoBedsTitle,
+                  body: l10n.clinicalAdmissionNoBedsMessage,
+                  icon: Icons.bed_outlined,
+                  variant: AppStateViewVariant.empty,
+                )
+              else ...<Widget>[
+                AppResponsiveFieldRow.two(
+                  gap: AppResponsiveFieldRowGap.form,
+                  left: AppSelectField<String>.searchable(
+                    value: _wardId,
+                    labelText: l10n.clinicalAdmissionWardLabel,
+                    enabled: wardEnabled,
+                    helperText: wardEnabled
                         ? null
-                        : (_roomId == null
-                              ? l10n.clinicalAdmissionSelectRoomFirstHint
-                              : l10n.clinicalAdmissionNoBedsForRoomMessage),
+                        : l10n.clinicalAdmissionNoWardsHelper,
                     isRequired: true,
-                    menuHeight: 320,
-                    options: bedOptions,
+                    menuHeight: 280,
+                    options: wardOptions,
                     validator: AppValidators.requiredValue<String>(
                       l10n.validationRequired,
                     ),
-                    onChanged: (String? value) =>
-                        _handleBedChanged(value, availableBeds),
+                    onChanged: _handleWardChanged,
                   ),
-                  if (_bedWarning != null)
-                    AppFormInformationBanner.message(
-                      message: _bedWarning!,
-                      variant: AppFormInformationVariant.warning,
-                      icon: Icons.warning_amber_outlined,
+                  right: AppSelectField<String>.searchable(
+                    value: _roomId,
+                    labelText: l10n.clinicalAdmissionRoomLabel,
+                    enabled: roomEnabled,
+                    helperText: roomEnabled
+                        ? null
+                        : (_wardId == null
+                              ? l10n.clinicalAdmissionSelectWardFirstHint
+                              : l10n.clinicalAdmissionNoRoomsMessage),
+                    isRequired: true,
+                    menuHeight: 280,
+                    options: roomOptions,
+                    validator: AppValidators.requiredValue<String>(
+                      l10n.validationRequired,
                     ),
-                  AppInfoTileGrid(
-                    items: _admissionDetailTiles(
-                      context,
-                      widget.referenceData,
-                      wardId: _wardId,
-                      roomId: _roomId,
-                      selectedBed: selectedBed,
-                    ),
-                    minItemWidth: 180,
+                    onChanged: _handleRoomChanged,
                   ),
-                  if (widget.reasonLabel != null)
-                    AppTextField(
-                      controller: _reasonController,
-                      labelText: widget.reasonLabel!,
-                      enabled: !_isSaving,
-                      isRequired: widget.reasonRequired,
-                      maxLines: 4,
-                      validator: widget.reasonRequired
-                          ? AppValidators.requiredText(l10n.validationRequired)
-                          : null,
-                    ),
-                  if (widget.notesLabel != null)
-                    AppTextField(
-                      controller: _notesController,
-                      labelText: widget.notesLabel!,
-                      enabled: !_isSaving,
-                      maxLines: 3,
-                    ),
-                ],
+                ),
+                AppSelectField<String>.searchable(
+                  value: _bedId,
+                  labelText: l10n.clinicalAdmissionBedLabel,
+                  enabled: bedEnabled,
+                  helperText: bedEnabled
+                      ? null
+                      : (_roomId == null
+                            ? l10n.clinicalAdmissionSelectRoomFirstHint
+                            : l10n.clinicalAdmissionNoBedsForRoomMessage),
+                  isRequired: true,
+                  menuHeight: 320,
+                  options: bedOptions,
+                  validator: AppValidators.requiredValue<String>(
+                    l10n.validationRequired,
+                  ),
+                  onChanged: (String? value) =>
+                      _handleBedChanged(value, availableBeds),
+                ),
+                if (_bedWarning != null)
+                  AppFormInformationBanner.message(
+                    message: _bedWarning!,
+                    variant: AppFormInformationVariant.warning,
+                    icon: Icons.warning_amber_outlined,
+                  ),
+                AppInfoTileGrid(
+                  items: _admissionDetailTiles(
+                    context,
+                    widget.referenceData,
+                    wardId: _wardId,
+                    roomId: _roomId,
+                    selectedBed: selectedBed,
+                  ),
+                  minItemWidth: 180,
+                ),
+                if (widget.reasonLabel != null)
+                  AppTextField(
+                    controller: _reasonController,
+                    labelText: widget.reasonLabel!,
+                    enabled: !_isSaving,
+                    isRequired: widget.reasonRequired,
+                    maxLines: 4,
+                    textCapitalization: TextCapitalization.sentences,
+                    prefixIcon: const Icon(Icons.notes_outlined),
+                    validator: widget.reasonRequired
+                        ? AppValidators.requiredText(l10n.validationRequired)
+                        : null,
+                  ),
+                if (widget.notesLabel != null)
+                  AppTextField(
+                    controller: _notesController,
+                    labelText: widget.notesLabel!,
+                    enabled: !_isSaving,
+                    maxLines: 3,
+                    textCapitalization: TextCapitalization.sentences,
+                    prefixIcon: const Icon(Icons.edit_note_outlined),
+                  ),
               ],
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
       actions: clinicalActionDialogActions(
         context,
-        widget.submitLabel ?? l10n.clinicalRequestAdmissionAction,
+        submitLabel,
         _isSaving,
-        availableBeds.isEmpty ? null : _submit,
+        availableBeds.isEmpty || _isSaving ? null : _submit,
         showCancel: widget.showCancelButton,
-        submitLeadingIcon: widget.submitLeadingIcon,
+        submitLeadingIcon: submitLeadingIcon,
       ),
     );
   }
@@ -336,7 +346,10 @@ class _ClinicalAdmissionActionDialogState
   }
 
   Future<void> _submitRequestOnly() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    if (_isSaving) {
+      return;
+    }
+    if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
     setState(() {
@@ -353,7 +366,10 @@ class _ClinicalAdmissionActionDialogState
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    if (_isSaving) {
+      return;
+    }
+    if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
 

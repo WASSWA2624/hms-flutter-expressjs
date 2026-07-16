@@ -465,72 +465,68 @@ class _TransferRequestDialogState
       title: Text(l10n.icuTransferDialogTitle),
       icon: const Icon(Icons.compare_arrows_outlined),
       scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: !_isSaving,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null)
-              AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
+      content: AppFormShell(
+        formKey: _formKey,
+        enabled: !_isSaving,
+        formStatus: appFormFailureStatus(context, _failure),
+        children: <Widget>[
+          if (wards.isEmpty)
+            AppTextField(
+              controller: _wardController,
+              labelText: l10n.icuTransferTargetWardIdLabel,
+              enabled: !_isSaving,
+              isRequired: true,
+              validator: AppValidators.requiredText(l10n.validationRequired),
+            )
+          else
+            AppSelectField<String>.searchable(
+              value: _wardId,
+              labelText: l10n.icuTransferTargetWardLabel,
+              enabled: !_isSaving,
+              isRequired: true,
+              options: <AppSelectOption<String>>[
+                for (final IcuWardOption ward in wards)
+                  AppSelectOption<String>(
+                    value: ward.id,
+                    label: joinDisplay(<String?>[
+                      ward.displayTitle,
+                      apiLabel(ward.wardType ?? ''),
+                    ]),
+                  ),
+              ],
+              onChanged: _isSaving
+                  ? null
+                  : (String? value) => setState(() => _wardId = value),
+              validator: AppValidators.requiredValue<String>(
+                l10n.validationRequired,
               ),
-            if (wards.isEmpty)
-              AppTextField(
-                controller: _wardController,
-                labelText: l10n.icuTransferTargetWardIdLabel,
-                enabled: !_isSaving,
-                isRequired: true,
-                validator: AppValidators.requiredText(l10n.validationRequired),
-              )
-            else
-              AppSelectField<String>.searchable(
-                value: _wardId,
-                labelText: l10n.icuTransferTargetWardLabel,
-                enabled: !_isSaving,
-                options: <AppSelectOption<String>>[
-                  for (final IcuWardOption ward in wards)
-                    AppSelectOption<String>(
-                      value: ward.id,
-                      label: joinDisplay(<String?>[
-                        ward.displayTitle,
-                        apiLabel(ward.wardType ?? ''),
-                      ]),
-                    ),
-                ],
-                onChanged: (String? value) => setState(() => _wardId = value),
-                validator: (String? value) {
-                  if ((value ?? '').trim().isEmpty) {
-                    return l10n.validationRequired;
-                  }
-                  return null;
-                },
-              ),
-          ],
-        ),
+            ),
+        ],
       ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !_isSaving,
-          onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.icuTransferRequestActionLabel,
-          leadingIcon: Icons.compare_arrows_outlined,
-          isLoading: _isSaving,
-          onPressed: _isSaving ? null : _submit,
-        ),
-      ],
+      actions: clinicalActionDialogActions(
+        context,
+        l10n.icuTransferRequestActionLabel,
+        _isSaving,
+        _isSaving ? null : _submit,
+        submitLeadingIcon: Icons.compare_arrows_outlined,
+      ),
     );
   }
 
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    if (_isSaving) {
       return;
     }
-    final String toWardId = _wardId ?? _wardController.text.trim();
+    if (!validateAndSaveAppForm(_formKey)) {
+      return;
+    }
+    final String toWardId = (_wardId ?? _wardController.text).trim();
+    if (toWardId.isEmpty) {
+      setState(() => _failure = AppFailure.validation());
+      return;
+    }
     setState(() {
       _isSaving = true;
       _failure = null;
@@ -849,15 +845,9 @@ class _AssignBedDialogState extends ConsumerState<_AssignBedDialog> {
   void initState() {
     super.initState();
     _bedController = TextEditingController();
-    final IcuWorkspaceState? state = readIcuWorkspaceState(ref);
-    if (state != null && state.bedBoard.beds.isEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) {
-          return;
-        }
-        ref.read(icuWorkspaceControllerProvider.notifier).loadBedBoard();
-      });
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(_loadBeds());
+    });
   }
 
   @override
@@ -878,7 +868,8 @@ class _AssignBedDialogState extends ConsumerState<_AssignBedDialog> {
         .where((IcuBed bed) => bed.isAvailable)
         .toList(growable: false);
     final bool isLoadingBeds = state?.isRefreshingBeds ?? false;
-    final bool isBusy = _isSaving || isLoadingBeds;
+    final bool isInitialBedLoad = isLoadingBeds && beds.isEmpty;
+    final bool isBusy = _isSaving || isInitialBedLoad;
 
     return AppDialog(
       title: Text(l10n.icuAssignBedDialogTitle),
@@ -894,7 +885,7 @@ class _AssignBedDialogState extends ConsumerState<_AssignBedDialog> {
                 context: context,
                 failure: _failure!,
               ),
-            if (isLoadingBeds)
+            if (isInitialBedLoad)
               const AppLoadingIndicator.compact()
             else if (beds.isEmpty)
               AppTextField(
@@ -938,11 +929,24 @@ class _AssignBedDialogState extends ConsumerState<_AssignBedDialog> {
           label: l10n.icuActionAssignBed,
           leadingIcon: Icons.bed_outlined,
           isLoading: _isSaving,
-          enabled: !isLoadingBeds,
+          enabled: !isBusy,
           onPressed: isBusy ? null : _submit,
         ),
       ],
     );
+  }
+
+  Future<void> _loadBeds() async {
+    if (!mounted) {
+      return;
+    }
+    final AppFailure? failure = await ref
+        .read(icuWorkspaceControllerProvider.notifier)
+        .loadBedBoard();
+    if (!mounted || failure == null) {
+      return;
+    }
+    setState(() => _failure = failure);
   }
 
   Future<void> _submit() async {

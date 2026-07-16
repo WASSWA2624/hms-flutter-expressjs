@@ -5,6 +5,7 @@ import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities
 import 'package:hosspi_hms/features/emergency/presentation/widgets/emergency_workspace_widgets.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
@@ -77,28 +78,28 @@ class _QuickArrivalDialogState extends State<QuickArrivalDialog> {
         children: <Widget>[
           AppTextField(
             controller: _firstNameController,
-            labelText: 'First name',
+            labelText: l10n.patientsFirstNameLabel,
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.next,
           ),
           AppTextField(
             controller: _lastNameController,
-            labelText: 'Last name',
+            labelText: l10n.patientsLastNameLabel,
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.next,
           ),
           AppPhoneField(
             controller: _phoneController,
-            labelText: 'Phone',
-            countryLabelText: 'Country',
-            countrySearchLabelText: 'Search country',
-            countryNoResultsText: 'No countries found',
-            numberLabelText: 'Phone number',
-            invalidPhoneMessage: 'Enter a valid phone number',
+            labelText: l10n.patientsPhoneLabel,
+            countryLabelText: l10n.appPhoneCountryLabel,
+            countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
+            countryNoResultsText: l10n.appPhoneCountryNoResults,
+            numberLabelText: l10n.appPhoneNumberLabel,
+            invalidPhoneMessage: l10n.appPhoneInvalidMessage,
           ),
           AppSelectField<String>(
             value: _severity,
-            labelText: 'Priority',
+            labelText: EmergencyText.priority,
             isRequired: true,
             options: severityOptions(),
             validator: requiredSelect,
@@ -112,7 +113,7 @@ class _QuickArrivalDialogState extends State<QuickArrivalDialog> {
           ),
           AppSelectField<String>(
             value: _triageLevel,
-            labelText: 'Initial triage',
+            labelText: EmergencyText.initialTriage,
             options: triageOptions(),
             onChanged: (String? value) {
               setState(() {
@@ -122,33 +123,27 @@ class _QuickArrivalDialogState extends State<QuickArrivalDialog> {
           ),
           AppTextField(
             controller: _notesController,
-            labelText: 'Arrival notes',
+            labelText: EmergencyText.arrivalNotes,
             minLines: 3,
             maxLines: 5,
             textCapitalization: TextCapitalization.sentences,
           ),
         ],
       ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !_isSubmitting,
-          onPressed: _isSubmitting
-              ? null
-              : () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: EmergencyText.openCase,
-          leadingIcon: AppActionIcons.add,
-          isLoading: _isSubmitting,
-          onPressed: _isSubmitting ? null : _submit,
-        ),
-      ],
+      actions: clinicalActionDialogActions(
+        context,
+        EmergencyText.openCase,
+        _isSubmitting,
+        _isSubmitting ? null : _submit,
+        submitLeadingIcon: AppActionIcons.add,
+      ),
     );
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) {
+      return;
+    }
     if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
@@ -187,12 +182,33 @@ class _QuickArrivalDialogState extends State<QuickArrivalDialog> {
 
 typedef DispatchSubmit = Future<AppFailure?> Function(DispatchInput input);
 
+Future<bool?> showEmergencyDispatchDialog({
+  required BuildContext context,
+  required EmergencyReferenceData referenceData,
+  required DispatchSubmit onSubmit,
+  String title = EmergencyText.dispatchAmbulance,
+  String submitLabel = EmergencyText.dispatch,
+  String defaultStatus = 'DISPATCHED',
+}) {
+  return showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => DispatchDialog(
+      referenceData: referenceData,
+      onSubmit: onSubmit,
+      title: title,
+      submitLabel: submitLabel,
+      defaultStatus: defaultStatus,
+    ),
+  );
+}
+
 class DispatchDialog extends StatefulWidget {
   const DispatchDialog({
     required this.referenceData,
     required this.onSubmit,
-    this.title = 'Dispatch ambulance',
-    this.submitLabel = 'Dispatch',
+    this.title = EmergencyText.dispatchAmbulance,
+    this.submitLabel = EmergencyText.dispatch,
     this.defaultStatus = 'DISPATCHED',
     super.key,
   });
@@ -233,7 +249,6 @@ class _DispatchDialogState extends State<DispatchDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
     final List<EmergencyAmbulance> ambulances =
         widget.referenceData.availableAmbulances;
     return AppDialog(
@@ -271,7 +286,7 @@ class _DispatchDialogState extends State<DispatchDialog> {
           else
             AppTextField(
               controller: _ambulanceIdController,
-              labelText: 'Ambulance ID',
+              labelText: EmergencyText.ambulanceId,
               isRequired: true,
               validator: requiredText,
               inputFormatters: <TextInputFormatter>[
@@ -294,26 +309,20 @@ class _DispatchDialogState extends State<DispatchDialog> {
           ),
         ],
       ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !_isSubmitting,
-          onPressed: _isSubmitting
-              ? null
-              : () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: widget.submitLabel,
-          leadingIcon: Icons.airport_shuttle_outlined,
-          isLoading: _isSubmitting,
-          onPressed: _isSubmitting ? null : _submit,
-        ),
-      ],
+      actions: clinicalActionDialogActions(
+        context,
+        widget.submitLabel,
+        _isSubmitting,
+        _isSubmitting ? null : _submit,
+        submitLeadingIcon: Icons.airport_shuttle_outlined,
+      ),
     );
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) {
+      return;
+    }
     if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
@@ -375,9 +384,8 @@ class _HandoffDialogState extends State<HandoffDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
     return AppDialog(
-      title: const Text(EmergencyText.recordHandoff),
+      title: const Text(EmergencyText.handoff),
       icon: const Icon(Icons.output_outlined),
       scrollable: true,
       pinActionsToBottom: true,
@@ -409,10 +417,10 @@ class _HandoffDialogState extends State<HandoffDialog> {
             textCapitalization: TextCapitalization.sentences,
           ),
           AppCheckboxField(
-            title: 'Close emergency case',
-            subtitle:
-                'Use this after the receiving unit has accepted the patient.',
+            title: EmergencyText.closeEmergencyCase,
+            subtitle: EmergencyText.closeEmergencyCaseSubtitle,
             value: _closeCase,
+            enabled: !_isSubmitting,
             onChanged: (bool value) {
               setState(() {
                 _closeCase = value;
@@ -421,26 +429,20 @@ class _HandoffDialogState extends State<HandoffDialog> {
           ),
         ],
       ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !_isSubmitting,
-          onPressed: _isSubmitting
-              ? null
-              : () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: EmergencyText.recordHandoff,
-          leadingIcon: Icons.output_outlined,
-          isLoading: _isSubmitting,
-          onPressed: _isSubmitting ? null : _submit,
-        ),
-      ],
+      actions: clinicalActionDialogActions(
+        context,
+        EmergencyText.recordHandoff,
+        _isSubmitting,
+        _isSubmitting ? null : _submit,
+        submitLeadingIcon: Icons.output_outlined,
+      ),
     );
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) {
+      return;
+    }
     if (!validateAndSaveAppForm(_formKey)) {
       return;
     }

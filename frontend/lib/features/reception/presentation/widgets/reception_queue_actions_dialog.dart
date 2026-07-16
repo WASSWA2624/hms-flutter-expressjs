@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
-import 'package:hosspi_hms/features/opd/presentation/pages/opd_workspace_page.dart'
-    show QueueActionsDialog;
 import 'package:hosspi_hms/features/reception/presentation/reception_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
@@ -39,20 +36,22 @@ class ReceptionQueueActionsDialog extends ConsumerStatefulWidget {
 class _ReceptionQueueActionsDialogState
     extends ConsumerState<ReceptionQueueActionsDialog> {
   bool _isSaving = false;
+  bool _isStartingConsultation = false;
   AppFailure? _failure;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final Locale locale = Localizations.localeOf(context);
-    final bool terminal = _isTerminalStatus(widget.entry.status);
+    final bool terminal = isOpdQueueTerminalStatus(widget.entry.status);
 
     return AppDialog(
       title: Text(l10n.opdQueueActionsTitle),
       icon: const Icon(Icons.queue_outlined),
       scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: !_isSaving,
-      maxWidth: 860,
+      maxWidth: 680,
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
         children: <Widget>[
@@ -93,15 +92,39 @@ class _ReceptionQueueActionsDialogState
             ],
             emptyValue: l10n.profileUnknownValue,
           ),
-          AppActionSection(
-            title: l10n.opdActionsColumnLabel,
-            minItemWidth: 170,
-            maxColumns: 4,
-            permissionActions: _actions(context, terminal),
-          ),
         ],
       ),
       actions: <Widget>[
+        if (!terminal)
+          AppAccessActionGate(
+            requirement: receptionFrontDeskWriteRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              return AppButton.secondary(
+                label: l10n.opdPrioritizeAction,
+                leadingIcon: Icons.priority_high_outlined,
+                enabled: isAllowed && !_isSaving,
+                onPressed: !isAllowed || _isSaving
+                    ? null
+                    : () => _run(
+                        () => ref
+                            .read(opdWorkspaceControllerProvider.notifier)
+                            .prioritizeQueueEntry(widget.entry, null),
+                      ),
+              );
+            },
+          ),
+        if (!terminal)
+          AppAccessActionGate(
+            requirement: receptionFrontDeskWriteRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              return AppButton.secondary(
+                label: l10n.opdMoveQueueAction,
+                leadingIcon: Icons.sync_alt_outlined,
+                enabled: isAllowed && !_isSaving,
+                onPressed: !isAllowed || _isSaving ? null : _openMoveQueue,
+              );
+            },
+          ),
         AppButton.secondary(
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
@@ -110,90 +133,53 @@ class _ReceptionQueueActionsDialogState
               ? null
               : () => Navigator.of(context).pop(false),
         ),
+        if (!terminal)
+          AppAccessActionGate(
+            requirement: receptionFrontDeskWriteRequirement,
+            builder: (BuildContext context, bool isAllowed) {
+              return AppButton.primary(
+                label: l10n.opdStartConsultationAction,
+                leadingIcon: Icons.play_arrow_outlined,
+                isLoading: _isStartingConsultation,
+                enabled: isAllowed && !_isSaving,
+                onPressed: !isAllowed || _isSaving
+                    ? null
+                    : () => _run(
+                        () => ref
+                            .read(opdWorkspaceControllerProvider.notifier)
+                            .startOpdFromQueue(widget.entry),
+                        startingConsultation: true,
+                      ),
+              );
+            },
+          ),
       ],
     );
-  }
-
-  List<AppPermissionActionItem> _actions(BuildContext context, bool terminal) {
-    final AppLocalizations l10n = context.l10n;
-    final String inactiveReason = l10n.opdInactiveEncounterActionReason;
-
-    AppPermissionActionItem action({
-      required AccessRequirement requirement,
-      required String label,
-      required IconData icon,
-      required VoidCallback? onPressed,
-      AppButtonVariant variant = AppButtonVariant.secondary,
-      bool enabled = true,
-      String? tooltip,
-    }) {
-      final bool isEnabled = enabled && !_isSaving && onPressed != null;
-      return AppPermissionActionItem(
-        requirement: requirement,
-        label: label,
-        icon: icon,
-        fullWidth: true,
-        variant: variant,
-        enabled: isEnabled,
-        tooltip: isEnabled ? null : tooltip ?? inactiveReason,
-        onPressed: isEnabled ? onPressed : null,
-      );
-    }
-
-    return <AppPermissionActionItem>[
-      action(
-        requirement: receptionFrontDeskWriteRequirement,
-        label: l10n.opdStartConsultationAction,
-        icon: Icons.play_arrow_outlined,
-        variant: AppButtonVariant.primary,
-        enabled: !terminal,
-        onPressed: () => _run(
-          () => ref
-              .read(opdWorkspaceControllerProvider.notifier)
-              .startOpdFromQueue(widget.entry),
-        ),
-      ),
-      action(
-        requirement: receptionFrontDeskWriteRequirement,
-        label: l10n.opdPrioritizeAction,
-        icon: Icons.priority_high_outlined,
-        enabled: !terminal,
-        onPressed: () => _run(
-          () => ref
-              .read(opdWorkspaceControllerProvider.notifier)
-              .prioritizeQueueEntry(widget.entry, null),
-        ),
-      ),
-      action(
-        requirement: receptionFrontDeskWriteRequirement,
-        label: l10n.opdMoveQueueAction,
-        icon: Icons.sync_alt_outlined,
-        enabled: !terminal,
-        onPressed: _openMoveQueue,
-      ),
-    ];
   }
 
   Future<void> _openMoveQueue() async {
     if (_isSaving) {
       return;
     }
-    final bool? changed = await showAppDialog<bool>(
+    final bool? changed = await showQueueActionsDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => QueueActionsDialog(entry: widget.entry),
+      entry: widget.entry,
     );
     if (changed == true && mounted) {
       Navigator.of(context).pop(true);
     }
   }
 
-  Future<void> _run(Future<AppFailure?> Function() action) async {
+  Future<void> _run(
+    Future<AppFailure?> Function() action, {
+    bool startingConsultation = false,
+  }) async {
     if (_isSaving) {
       return;
     }
     setState(() {
       _isSaving = true;
+      _isStartingConsultation = startingConsultation;
       _failure = null;
     });
     final AppFailure? failure = await action();
@@ -207,18 +193,7 @@ class _ReceptionQueueActionsDialogState
     setState(() {
       _failure = failure;
       _isSaving = false;
+      _isStartingConsultation = false;
     });
-  }
-
-  bool _isTerminalStatus(String? status) {
-    return switch ((status ?? '').toUpperCase()) {
-      'COMPLETED' ||
-      'CANCELLED' ||
-      'NO_SHOW' ||
-      'DISCHARGED' ||
-      'ADMITTED' ||
-      'CLOSED' => true,
-      _ => false,
-    };
   }
 }

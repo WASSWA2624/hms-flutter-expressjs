@@ -1774,7 +1774,9 @@ class _AssignFormState extends State<_AssignForm> {
 }
 
 class _TriageForm extends StatefulWidget {
-  const _TriageForm({super.key});
+  const _TriageForm({required this.item, super.key});
+
+  final HousekeepingWorkItem item;
 
   @override
   State<_TriageForm> createState() => _TriageFormState();
@@ -1783,7 +1785,7 @@ class _TriageForm extends StatefulWidget {
 class _TriageFormState extends State<_TriageForm> {
   final TextEditingController _summaryController = TextEditingController();
   final TextEditingController _slaController = TextEditingController();
-  String _status = 'IN_PROGRESS';
+  late String _status = _triageStatusFromItem(widget.item);
 
   HousekeepingMaintenanceTriageDraft toDraft() {
     return HousekeepingMaintenanceTriageDraft(
@@ -1803,8 +1805,35 @@ class _TriageFormState extends State<_TriageForm> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final HousekeepingWorkItem item = widget.item;
     return AppFormSection(
       children: <Widget>[
+        AppInfoTileGrid(
+          maxColumns: 2,
+          items: <AppInfoTileData>[
+            AppInfoTileData(
+              label: l10n.housekeepingReferenceLabel,
+              value: item.effectiveDisplayId,
+              icon: Icons.tag_outlined,
+              copyable: true,
+            ),
+            AppInfoTileData(
+              label: l10n.housekeepingLocationLabel,
+              value: _locationLabel(l10n, item),
+              icon: Icons.meeting_room_outlined,
+            ),
+            AppInfoTileData(
+              label: l10n.housekeepingStatusFieldLabel,
+              value: _statusLabel(l10n, item),
+              icon: _statusIcon(item),
+            ),
+            AppInfoTileData(
+              label: l10n.housekeepingDueLabel,
+              value: _dateTimeLabel(context, _primaryDate(item)),
+              icon: Icons.schedule_outlined,
+            ),
+          ],
+        ),
         AppSelectField<String>(
           value: _status,
           labelText: l10n.housekeepingStatusFieldLabel,
@@ -1840,6 +1869,14 @@ class _TriageFormState extends State<_TriageForm> {
       ],
     );
   }
+}
+
+String _triageStatusFromItem(HousekeepingWorkItem item) {
+  final String normalized = (item.status ?? '').trim().toUpperCase();
+  if (normalized == 'OPEN' || normalized == 'IN_PROGRESS') {
+    return normalized;
+  }
+  return 'IN_PROGRESS';
 }
 
 class _ConfirmationForm extends StatelessWidget {
@@ -2023,6 +2060,10 @@ Future<void> _showTriageDialog(
   WidgetRef ref,
   HousekeepingWorkItem item,
 ) async {
+  if (!item.isMaintenanceRequest || _isMaintenanceTerminal(item)) {
+    return;
+  }
+
   final l10n = context.l10n;
   final GlobalKey<_TriageFormState> fieldsKey = GlobalKey<_TriageFormState>();
 
@@ -2033,15 +2074,15 @@ Future<void> _showTriageDialog(
     cancelLabel: l10n.commonCancelActionLabel,
     cancelIcon: AppActionIcons.cancel,
     submitLabel: l10n.housekeepingTriageSubmitAction,
-    submitIcon: Icons.rule_outlined,
+    submitIcon: AppActionIcons.save,
     buildFields:
         (
           BuildContext context,
           GlobalKey<FormState> formKey,
-          bool isSubmitting, [
+          bool _, [
           AppFailure? failure,
         ]) {
-          return _TriageForm(key: fieldsKey);
+          return _TriageForm(key: fieldsKey, item: item);
         },
     onSubmit: () {
       final _TriageFormState? fields = fieldsKey.currentState;

@@ -18,7 +18,7 @@ class AppConfirmActionDialog extends StatefulWidget {
     this.highlightedText,
     this.destructive = false,
     this.submitLeadingIcon,
-    this.cancelLeadingIcon = Icons.close,
+    this.cancelLeadingIcon = AppActionIcons.cancel,
     this.maxWidth = 600,
     super.key,
   });
@@ -151,6 +151,7 @@ class AppTextActionDialog extends StatefulWidget {
     this.maxWidth = 720,
     this.autofocus = true,
     this.isRequired = true,
+    this.submitLeadingIcon,
     super.key,
   });
 
@@ -167,6 +168,7 @@ class AppTextActionDialog extends StatefulWidget {
   final double maxWidth;
   final bool autofocus;
   final bool isRequired;
+  final IconData? submitLeadingIcon;
   final Future<AppFailure?> Function(String value) onSubmit;
 
   @override
@@ -497,46 +499,63 @@ class _AppTextActionDialogState extends State<AppTextActionDialog> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     return AppDialog(
       title: Text(widget.title),
       icon: widget.icon,
       maxWidth: widget.maxWidth,
       scrollable: true,
+      initialMaximized: false,
       closeEnabled: !_isSaving,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          title: widget.sectionTitle,
-          description: widget.description,
-          density: AppFormSectionDensity.spacious,
-          children: <Widget>[
-            if (_failure != null)
-              AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
-              ),
-            AppTextField(
-              controller: _controller,
-              labelText: widget.fieldLabel,
-              prefixIcon: widget.prefixIcon,
-              minLines: widget.minLines,
-              maxLines: widget.maxLines,
-              enabled: !_isSaving,
-              isRequired: widget.isRequired,
-              autofocus: widget.autofocus,
-              textCapitalization: TextCapitalization.sentences,
-              validator: widget.isRequired
-                  ? AppValidators.requiredText(l10n.validationRequired)
-                  : null,
+      content: AppFormShell(
+        formKey: _formKey,
+        density: AppFormSectionDensity.spacious,
+        children: <Widget>[
+          if (_failure != null)
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _failure!,
             ),
-          ],
-        ),
+          if (widget.sectionTitle != null &&
+              widget.sectionTitle!.trim().isNotEmpty)
+            Text(
+              widget.sectionTitle!,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          if (widget.description != null &&
+              widget.description!.trim().isNotEmpty)
+            Text(
+              widget.description!,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                height: 1.45,
+              ),
+            ),
+          AppTextField(
+            controller: _controller,
+            labelText: widget.fieldLabel,
+            prefixIcon: widget.prefixIcon,
+            minLines: widget.minLines,
+            maxLines: widget.maxLines,
+            enabled: !_isSaving,
+            isRequired: widget.isRequired,
+            autofocus: widget.autofocus,
+            textCapitalization: TextCapitalization.sentences,
+            validator: widget.isRequired
+                ? AppValidators.requiredText(l10n.validationRequired)
+                : null,
+          ),
+        ],
       ),
       actions: _actionDialogButtons(
         context,
         submitLabel: widget.submitLabel,
         isSaving: _isSaving,
         onSubmit: _submit,
+        submitLeadingIcon: widget.submitLeadingIcon ?? AppActionIcons.save,
       ),
     );
   }
@@ -571,7 +590,7 @@ List<Widget> _actionDialogButtons(
   required VoidCallback onSubmit,
   bool destructive = false,
   IconData? submitLeadingIcon,
-  IconData cancelLeadingIcon = Icons.close,
+  IconData cancelLeadingIcon = AppActionIcons.cancel,
 }) {
   final AppLocalizations l10n = context.l10n;
   final ColorScheme colorScheme = Theme.of(context).colorScheme;
@@ -586,7 +605,8 @@ List<Widget> _actionDialogButtons(
     AppButton.primary(
       label: submitLabel,
       leadingIcon:
-          submitLeadingIcon ?? (destructive ? Icons.delete_outline : null),
+          submitLeadingIcon ??
+          (destructive ? AppActionIcons.delete : null),
       color: destructive ? colorScheme.error : null,
       isLoading: isSaving,
       onPressed: onSubmit,

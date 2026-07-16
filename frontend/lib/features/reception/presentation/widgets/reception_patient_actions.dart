@@ -103,13 +103,10 @@ Future<bool> openReceptionScheduleAppointment({
     return false;
   }
 
-  final bool? saved = await showAppDialog<bool>(
+  final bool? saved = await showPatientAppointmentQuickDialog(
     context: context,
-    barrierDismissible: false,
-    builder: (_) => PatientAppointmentQuickDialog(
-      patient: selected,
-      referenceData: registry!.referenceData,
-    ),
+    patient: selected,
+    referenceData: registry.referenceData,
   );
   return saved == true;
 }
@@ -129,6 +126,7 @@ class _ReceptionPatientPickerDialogState
   bool _isLoading = false;
   AppFailure? _failure;
   List<Patient> _patients = const <Patient>[];
+  Patient? _selected;
 
   @override
   void initState() {
@@ -161,8 +159,19 @@ class _ReceptionPatientPickerDialogState
     }
     result.when(
       success: (AppPage<Patient> page) {
+        final String? selectedId = _selected?.id;
+        Patient? nextSelected;
+        if (selectedId != null) {
+          for (final Patient patient in page.items) {
+            if (patient.id == selectedId) {
+              nextSelected = patient;
+              break;
+            }
+          }
+        }
         setState(() {
           _patients = page.items;
+          _selected = nextSelected;
           _isLoading = false;
         });
       },
@@ -170,21 +179,32 @@ class _ReceptionPatientPickerDialogState
         setState(() {
           _failure = failure;
           _patients = const <Patient>[];
+          _selected = null;
           _isLoading = false;
         });
       },
     );
   }
 
+  void _confirmSelection() {
+    final Patient? selected = _selected;
+    if (_isLoading || selected == null) {
+      return;
+    }
+    Navigator.of(context).pop(selected);
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final bool canConfirm = !_isLoading && _selected != null;
 
     return AppDialog(
-      title: Text(l10n.receptionScheduleAppointmentAction),
-      icon: const Icon(Icons.event_available_outlined),
+      title: Text(l10n.receptionPatientPickerTitle),
+      icon: const Icon(AppActionIcons.person),
       scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: !_isLoading,
       maxWidth: 560,
       content: AppFormSection(
@@ -219,27 +239,47 @@ class _ReceptionPatientPickerDialogState
               ),
             )
           else
-            ..._patients.map(
-              (Patient patient) => ListTile(
+            ..._patients.map((Patient patient) {
+              final bool selected = _selected?.id == patient.id;
+              return ListTile(
                 contentPadding: EdgeInsets.zero,
+                selected: selected,
+                leading: Icon(
+                  selected
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_off,
+                  color: selected
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
                 title: Text(patient.effectiveDisplayName),
                 subtitle: Text(
                   patient.publicId ?? patient.id,
                   style: theme.textTheme.bodySmall,
                 ),
-                onTap: () => Navigator.of(context).pop(patient),
-              ),
-            ),
+                onTap: () {
+                  setState(() {
+                    _selected = patient;
+                  });
+                },
+              );
+            }),
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.secondary(
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: !_isLoading,
           onPressed: _isLoading
               ? null
               : () => Navigator.of(context).maybePop(),
+        ),
+        AppButton.primary(
+          label: l10n.commonSelectActionLabel,
+          leadingIcon: AppActionIcons.person,
+          enabled: canConfirm,
+          onPressed: canConfirm ? _confirmSelection : null,
         ),
       ],
     );

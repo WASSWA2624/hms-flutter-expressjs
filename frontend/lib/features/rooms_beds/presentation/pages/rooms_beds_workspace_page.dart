@@ -19,6 +19,7 @@ import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facil
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -1191,87 +1192,75 @@ class _TransferUpdateDialogState extends State<_TransferUpdateDialog> {
       title: Text(l10n.roomsBedsManageTransferAction),
       icon: const Icon(Icons.move_down_outlined),
       scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: !_isSubmitting,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null)
-              AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
+      content: AppFormShell(
+        formKey: _formKey,
+        enabled: !_isSubmitting,
+        formStatus: appFormFailureStatus(context, _failure),
+        children: <Widget>[
+          AppSelectField<String>(
+            labelText: l10n.ipdTransferActionFieldLabel,
+            value: _action,
+            enabled: !_isSubmitting,
+            options: <AppSelectOption<String>>[
+              AppSelectOption<String>(
+                value: 'APPROVE',
+                label: l10n.ipdTransferApproveAction,
               ),
-            AppSelectField<String>(
-              labelText: l10n.ipdTransferActionFieldLabel,
-              value: _action,
+              AppSelectOption<String>(
+                value: 'START',
+                label: l10n.ipdTransferStartAction,
+              ),
+              AppSelectOption<String>(
+                value: 'COMPLETE',
+                label: l10n.ipdTransferCompleteAction,
+              ),
+              AppSelectOption<String>(
+                value: 'CANCEL',
+                label: l10n.ipdTransferCancelAction,
+              ),
+            ],
+            onChanged: _isSubmitting
+                ? null
+                : (String? value) {
+                    if (value != null) {
+                      setState(() => _action = value);
+                    }
+                  },
+          ),
+          if (roomsBedsTransferRequiresDestinationBed(_action))
+            AppSelectField<String>.searchable(
+              labelText: l10n.ipdDestinationBedFieldLabel,
+              hintText: l10n.ipdSelectBedHint,
+              value: _bedId,
               enabled: !_isSubmitting,
+              isRequired: true,
               options: <AppSelectOption<String>>[
-                AppSelectOption<String>(
-                  value: 'APPROVE',
-                  label: l10n.ipdTransferApproveAction,
-                ),
-                AppSelectOption<String>(
-                  value: 'START',
-                  label: l10n.ipdTransferStartAction,
-                ),
-                AppSelectOption<String>(
-                  value: 'COMPLETE',
-                  label: l10n.ipdTransferCompleteAction,
-                ),
-                AppSelectOption<String>(
-                  value: 'CANCEL',
-                  label: l10n.ipdTransferCancelAction,
-                ),
+                for (final BedBoardItem bed in destinationBeds)
+                  AppSelectOption<String>(
+                    value: bed.id,
+                    label: _joinDisplay(<String?>[bed.label, bed.ward?.name]),
+                  ),
               ],
+              validator: AppValidators.requiredValue<String>(
+                l10n.roomsBedsRequiredMessage(
+                  l10n.ipdDestinationBedFieldLabel,
+                ),
+              ),
               onChanged: _isSubmitting
                   ? null
-                  : (String? value) {
-                      if (value != null) {
-                        setState(() => _action = value);
-                      }
-                    },
+                  : (String? value) => setState(() => _bedId = value),
             ),
-            if (roomsBedsTransferRequiresDestinationBed(_action))
-              AppSelectField<String>(
-                labelText: l10n.ipdDestinationBedFieldLabel,
-                value: _bedId,
-                enabled: !_isSubmitting,
-                isRequired: true,
-                options: <AppSelectOption<String>>[
-                  for (final BedBoardItem bed in destinationBeds)
-                    AppSelectOption<String>(
-                      value: bed.id,
-                      label: _joinDisplay(<String?>[bed.label, bed.ward?.name]),
-                    ),
-                ],
-                validator: AppValidators.requiredValue<String>(
-                  l10n.roomsBedsRequiredMessage(
-                    l10n.ipdDestinationBedFieldLabel,
-                  ),
-                ),
-                onChanged: _isSubmitting
-                    ? null
-                    : (String? value) => setState(() => _bedId = value),
-              ),
-          ],
-        ),
+        ],
       ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !_isSubmitting,
-          onPressed: _isSubmitting
-              ? null
-              : () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.roomsBedsManageTransferAction,
-          leadingIcon: Icons.move_down_outlined,
-          isLoading: _isSubmitting,
-          onPressed: _isSubmitting ? null : _submit,
-        ),
-      ],
+      actions: clinicalActionDialogActions(
+        context,
+        l10n.roomsBedsManageTransferAction,
+        _isSubmitting,
+        _isSubmitting ? null : _submit,
+        submitLeadingIcon: Icons.move_down_outlined,
+      ),
     );
   }
 

@@ -956,7 +956,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Request admission'), findsWidgets);
-    expect(find.text('Cancel'), findsNothing);
+    expect(find.text('Cancel'), findsOneWidget);
     expect(find.byIcon(Icons.fullscreen_exit), findsWidgets);
     expect(find.byType(PatientFacilitySelectField), findsNothing);
   });

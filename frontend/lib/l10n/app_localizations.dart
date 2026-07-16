@@ -4762,6 +4762,12 @@ abstract class AppLocalizations {
   /// **'Assign doctor'**
   String get receptionRoutePatientAction;
 
+  /// Dialog title for choosing a patient before scheduling an appointment.
+  ///
+  /// In en, this message translates to:
+  /// **'Select patient'**
+  String get receptionPatientPickerTitle;
+
   /// Search field for picking a patient before scheduling.
   ///
   /// In en, this message translates to:

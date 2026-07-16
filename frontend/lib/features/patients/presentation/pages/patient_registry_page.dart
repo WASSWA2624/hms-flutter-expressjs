@@ -25,6 +25,7 @@ import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.da
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
+import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
@@ -1689,13 +1690,10 @@ Future<void> _openPatientQuickAction(
       );
     case PatientQuickAction.appointment:
       await refreshIfChanged(
-        await showAppDialog<bool>(
+        await showPatientAppointmentQuickDialog(
           context: context,
-          barrierDismissible: false,
-          builder: (_) => PatientAppointmentQuickDialog(
-            patient: patient,
-            referenceData: referenceData,
-          ),
+          patient: patient,
+          referenceData: referenceData,
         ),
       );
     case PatientQuickAction.triage:
@@ -1716,13 +1714,10 @@ Future<void> _openPatientQuickAction(
       );
     case PatientQuickAction.admission:
       await refreshIfChanged(
-        await showAppDialog<bool>(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => _PatientAdmissionQuickDialog(
-            patient: patient,
-            referenceData: referenceData,
-          ),
+        await _openPatientAdmissionQuickDialog(
+          context,
+          patient: patient,
+          referenceData: referenceData,
         ),
       );
     case PatientQuickAction.report:
@@ -1914,6 +1909,21 @@ Future<void> _openActiveOpdActions(
   }
 }
 
+Future<bool?> showPatientAppointmentQuickDialog({
+  required BuildContext context,
+  required Patient patient,
+  required PatientReferenceData referenceData,
+}) {
+  return showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => PatientAppointmentQuickDialog(
+      patient: patient,
+      referenceData: referenceData,
+    ),
+  );
+}
+
 class PatientAppointmentQuickDialog extends ConsumerStatefulWidget {
   const PatientAppointmentQuickDialog({
     required this.patient,
@@ -2045,18 +2055,19 @@ class _PatientAppointmentQuickDialogState
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.secondary(
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: !_isBusy,
           onPressed: _isBusy
               ? null
-              : () => Navigator.of(context).maybePop(false),
+              : () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
           label: l10n.patientsQuickAppointmentAction,
           leadingIcon: AppActionIcons.calendar,
           isLoading: _isSaving,
+          enabled: !_isBusy,
           onPressed: _isBusy ? null : _submit,
         ),
       ],
@@ -2130,6 +2141,9 @@ class _PatientAppointmentQuickDialogState
   }
 
   Future<void> _submit() async {
+    if (_isBusy) {
+      return;
+    }
     if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
@@ -2234,6 +2248,7 @@ class _PatientTriageQuickDialogState
     final l10n = context.l10n;
     return AppTriageActionDialog(
       title: l10n.patientsTriageDialogTitle,
+      cancelLabel: l10n.commonCancelActionLabel,
       submitLabel: l10n.patientsQuickTriageAction,
       requiredMessage: l10n.validationRequired,
       prioritySectionTitle: l10n.patientsTriagePrioritySectionTitle,
@@ -2354,9 +2369,13 @@ class _PatientTriageQuickDialogState
       return AppFailure.validation(validationFields: const <String>{'vitals'});
     }
 
-    final Result<OpdFlowDetail> flowResult = await ref
-        .read(opdRepositoryProvider)
-        .startOpdFlow(
+    final OpdWorkspaceController opdController = ref.read(
+      opdWorkspaceControllerProvider.notifier,
+    );
+
+    // Persist through the OPD controller so flows/triage queues patch on success.
+    final Result<OpdFlowDetail> flowResult = await opdController
+        .submitOpdEncounter(
           _baseFlowPayload(input, <String, Object?>{
             'arrival_mode': 'EMERGENCY',
             'emergency': _emergencyPayload(input),
@@ -2371,34 +2390,26 @@ class _PatientTriageQuickDialogState
       return _failureOrNull(flowResult);
     }
 
-    final Result<OpdFlowDetail> vitalsResult = await ref
-        .read(opdRepositoryProvider)
-        .recordVitals(
-          flow.summary.apiId,
-          _withoutEmptyPayload(<String, Object?>{
-            'vitals': vitals,
-            'triage_level': input.triageLevel,
-            'triage_priority': input.triageLevel,
-            'chief_complaint': input.chiefComplaint,
-            'emergency': true,
-            'triage_notes': input.notes,
-          }),
-        );
-    final OpdFlowDetail? triaged = _successOrNull(vitalsResult);
-    if (triaged == null) {
-      return _failureOrNull(vitalsResult);
+    final AppFailure? vitalsFailure = await opdController.recordVitals(
+      flow.summary,
+      _withoutEmptyPayload(<String, Object?>{
+        'vitals': vitals,
+        'triage_level': input.triageLevel,
+        'triage_priority': input.triageLevel,
+        'chief_complaint': input.chiefComplaint,
+        'emergency': true,
+        'triage_notes': input.notes,
+      }),
+    );
+    if (vitalsFailure != null) {
+      return vitalsFailure;
     }
 
     if (_providerId == null) {
       return null;
     }
 
-    final Result<OpdFlowDetail> assignResult = await ref
-        .read(opdRepositoryProvider)
-        .assignDoctor(triaged.summary.apiId, <String, Object?>{
-          'provider_user_id': _providerId,
-        });
-    return _failureOrNull(assignResult);
+    return opdController.assignDoctor(flow.summary, _providerId!);
   }
 
   Map<String, Object?> _baseFlowPayload(
@@ -2512,6 +2523,21 @@ class _PatientTriageQuickDialogState
   }
 }
 
+Future<bool?> _openPatientAdmissionQuickDialog(
+  BuildContext context, {
+  required Patient patient,
+  required PatientReferenceData referenceData,
+}) {
+  return showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _PatientAdmissionQuickDialog(
+      patient: patient,
+      referenceData: referenceData,
+    ),
+  );
+}
+
 class _PatientAdmissionQuickDialog extends ConsumerStatefulWidget {
   const _PatientAdmissionQuickDialog({
     required this.patient,
@@ -2528,6 +2554,8 @@ class _PatientAdmissionQuickDialog extends ConsumerStatefulWidget {
 
 class _PatientAdmissionQuickDialogState
     extends ConsumerState<_PatientAdmissionQuickDialog> {
+  static const IconData _dialogIcon = Icons.local_hospital_outlined;
+
   String? _facilityId;
 
   @override
@@ -2554,14 +2582,13 @@ class _PatientAdmissionQuickDialogState
       key: ValueKey<String?>(_facilityId),
       title: l10n.patientsAdmissionDialogTitle,
       submitLabel: l10n.patientsQuickAdmissionAction,
-      icon: const Icon(Icons.local_hospital_outlined),
-      referenceData: _clinicalAdmissionReferenceData(),
+      icon: const Icon(_dialogIcon),
+      referenceData: const ClinicalActionReferenceData(),
       requiresBed: false,
       reasonLabel: l10n.patientsAdmissionReasonLabel,
       reasonRequired: true,
       notesLabel: l10n.opdFieldOptionalLabel(l10n.patientsNotesLabel),
-      initialMaximized: false,
-      submitLeadingIcon: Icons.local_hospital_outlined,
+      submitLeadingIcon: _dialogIcon,
       leadingSectionsBuilder: _workflowFields,
       onSubmit: _submitAdmission,
     );
@@ -2588,98 +2615,6 @@ class _PatientAdmissionQuickDialogState
         ],
       ),
     ];
-  }
-
-  ClinicalActionReferenceData _clinicalAdmissionReferenceData() {
-    final List<PatientReferenceOption> filteredBeds = _facilityFiltered(
-      widget.referenceData.beds,
-    );
-    final Map<String, PatientReferenceOption> wardCatalog =
-        <String, PatientReferenceOption>{
-          for (final PatientReferenceOption ward in _facilityFiltered(
-            widget.referenceData.wards,
-          ))
-            ward.id: ward,
-        };
-    final Map<String, PatientReferenceOption> roomCatalog =
-        <String, PatientReferenceOption>{
-          for (final PatientReferenceOption room in _facilityFiltered(
-            widget.referenceData.rooms,
-          ))
-            room.id: room,
-        };
-
-    final Map<String, ClinicalActionCatalogOption> wards =
-        <String, ClinicalActionCatalogOption>{};
-    final Map<String, ClinicalActionCatalogOption> rooms =
-        <String, ClinicalActionCatalogOption>{};
-    final List<ClinicalActionCatalogOption> beds =
-        <ClinicalActionCatalogOption>[];
-
-    for (final PatientReferenceOption bedOption in filteredBeds) {
-      final String? wardId = bedOption.wardId;
-      final String? roomId = bedOption.roomId;
-      if (wardId == null ||
-          wardId.isEmpty ||
-          roomId == null ||
-          roomId.isEmpty) {
-        continue;
-      }
-
-      final PatientReferenceOption? ward = wardCatalog[wardId];
-      final PatientReferenceOption? room = roomCatalog[roomId];
-      wards.putIfAbsent(
-        wardId,
-        () => ClinicalActionCatalogOption(
-          id: wardId,
-          name: ward?.label ?? wardId,
-          status: ward?.status,
-          parentId: ward?.facilityId,
-        ),
-      );
-      rooms.putIfAbsent(
-        roomId,
-        () => ClinicalActionCatalogOption(
-          id: roomId,
-          name: room?.label ?? roomId,
-          status: room?.status,
-          parentId: wardId,
-          secondaryId: room?.facilityId,
-        ),
-      );
-      beds.add(
-        ClinicalActionCatalogOption(
-          id: bedOption.id,
-          name: bedOption.label,
-          category: bedOption.type,
-          status: bedOption.status,
-          parentId: wardId,
-          secondaryId: roomId,
-        ),
-      );
-    }
-
-    return ClinicalActionReferenceData(
-      wards: wards.values.toList(growable: false),
-      rooms: rooms.values.toList(growable: false),
-      availableBeds: beds,
-    );
-  }
-
-  List<PatientReferenceOption> _facilityFiltered(
-    List<PatientReferenceOption> options,
-  ) {
-    if (_facilityId == null || _facilityId!.trim().isEmpty) {
-      return options;
-    }
-    return options
-        .where(
-          (PatientReferenceOption option) =>
-              option.facilityId == null ||
-              option.facilityId!.isEmpty ||
-              option.facilityId == _facilityId,
-        )
-        .toList(growable: false);
   }
 
   Future<AppFailure?> _submitAdmission(
@@ -2757,12 +2692,12 @@ class _PatientFlowQuickDialogState
   bool _isSaving = false;
   AppFailure? _failure;
 
-  static const IconData _dialogIcon = Icons.receipt_long_outlined;
+  static const IconData _dialogIcon = Icons.payments_outlined;
 
   @override
   void initState() {
     super.initState();
-    _facilityId = widget.patient.facilityId;
+    _facilityId = _initialFacilityId();
     _currency = ref.read(effectiveDefaultCurrencyProvider);
   }
 
@@ -2772,6 +2707,27 @@ class _PatientFlowQuickDialogState
     _feeController.dispose();
     _transactionRefController.dispose();
     super.dispose();
+  }
+
+  String? _initialFacilityId() {
+    if (widget.patient.facilityId != null &&
+        widget.patient.facilityId!.trim().isNotEmpty) {
+      return widget.patient.facilityId;
+    }
+    if (widget.referenceData.facilities.length == 1) {
+      return widget.referenceData.facilities.first.id;
+    }
+    return null;
+  }
+
+  String? _resolvedFacilityId() {
+    if (_facilityId != null && _facilityId!.trim().isNotEmpty) {
+      return _facilityId;
+    }
+    if (widget.referenceData.facilities.length == 1) {
+      return widget.referenceData.facilities.first.id;
+    }
+    return widget.patient.facilityId;
   }
 
   @override
@@ -2844,22 +2800,13 @@ class _PatientFlowQuickDialogState
           ),
         ],
       ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !_isSaving,
-          onPressed: _isSaving
-              ? null
-              : () => Navigator.of(context).maybePop(false),
-        ),
-        AppButton.primary(
-          label: l10n.patientsQuickBillingAction,
-          leadingIcon: _dialogIcon,
-          isLoading: _isSaving,
-          onPressed: _isSaving ? null : _submit,
-        ),
-      ],
+      actions: clinicalActionDialogActions(
+        context,
+        l10n.patientsQuickBillingAction,
+        _isSaving,
+        _isSaving ? null : _submit,
+        submitLeadingIcon: _dialogIcon,
+      ),
     );
   }
 
@@ -2894,6 +2841,9 @@ class _PatientFlowQuickDialogState
   }
 
   Future<void> _submit() async {
+    if (_isSaving) {
+      return;
+    }
     if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
@@ -2937,16 +2887,22 @@ class _PatientFlowQuickDialogState
   }
 
   Future<AppFailure?> _startFlow(Map<String, Object?> payload) async {
+    // Persist through the OPD controller so flows/queues patch on success only.
     final Result<OpdFlowDetail> result = await ref
-        .read(opdRepositoryProvider)
-        .startOpdFlow(_baseFlowPayload(payload));
-    return _failureOrNull(result);
+        .read(opdWorkspaceControllerProvider.notifier)
+        .submitOpdEncounter(_baseFlowPayload(payload));
+    final OpdFlowDetail? flow = _successOrNull(result);
+    if (flow == null) {
+      return _failureOrNull(result);
+    }
+    // Parent also refreshes patient detail via refreshIfChanged(true).
+    return null;
   }
 
   Map<String, Object?> _baseFlowPayload(Map<String, Object?> extra) {
     return _withoutEmptyPayload(<String, Object?>{
       'tenant_id': widget.patient.tenantId,
-      'facility_id': _facilityId,
+      'facility_id': _resolvedFacilityId(),
       'patient_id': widget.patient.id,
       'queued_at': DateTime.now().toUtc().toIso8601String(),
       'reuse_open_encounter': true,

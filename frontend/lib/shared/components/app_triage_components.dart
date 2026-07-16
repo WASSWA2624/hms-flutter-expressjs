@@ -388,11 +388,14 @@ class _AppTriageActionDialogState extends State<AppTriageActionDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        // Cancel left of primary (established clinical/mutation helper order).
+        AppButton.secondary(
           label: cancelLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: enabled,
-          onPressed: enabled ? () => Navigator.of(context).pop(false) : null,
+          onPressed: enabled
+              ? () => Navigator.of(context).maybePop(false)
+              : null,
         ),
         AppButton.primary(
           label: widget.submitLabel,

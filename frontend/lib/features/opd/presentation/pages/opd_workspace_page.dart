@@ -12,7 +12,6 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
-import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -2525,14 +2524,6 @@ String _nextStepLabel(BuildContext context, _OpdTableItem item) {
   return label;
 }
 
-String _opdRequiredFieldLabel(AppLocalizations l10n, String label) {
-  return l10n.opdFieldRequiredLabel(label);
-}
-
-String _opdOptionalFieldLabel(AppLocalizations l10n, String label) {
-  return l10n.opdFieldOptionalLabel(label);
-}
-
 Color _opdTableRowColor(BuildContext context, _OpdTableItem item) {
   final ThemeData theme = Theme.of(context);
   final AppStatusColors statusColors = theme.statusColors;
@@ -2555,49 +2546,6 @@ String _categoryLabel(BuildContext context, String category) {
     _opdCategoryActiveFlow => l10n.opdActiveFlowSummaryLabel,
     _ => _apiLabel(category),
   };
-}
-
-class _ProviderSelectField extends StatelessWidget {
-  const _ProviderSelectField({
-    required this.value,
-    required this.providers,
-    required this.schedules,
-    required this.labelText,
-    required this.helperText,
-    required this.emptyHelperText,
-    required this.enabled,
-    required this.isLoading,
-    required this.onChanged,
-  });
-
-  final String? value;
-  final List<OpdProviderOption> providers;
-  final List<OpdProviderSchedule> schedules;
-  final String labelText;
-  final String helperText;
-  final String emptyHelperText;
-  final bool enabled;
-  final bool isLoading;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final List<AppSelectOption<String>> options = _providerSelectOptions(
-      providers: providers,
-      schedules: schedules,
-    );
-
-    return AppSelectField<String>.searchable(
-      value: value,
-      options: options,
-      labelText: labelText,
-      helperText: options.isEmpty && !isLoading ? emptyHelperText : helperText,
-      semanticLabel: labelText,
-      enabled: enabled,
-      isLoading: isLoading,
-      onChanged: onChanged,
-    );
-  }
 }
 
 class _OpdPatientActionsDialog extends ConsumerStatefulWidget {
@@ -2784,7 +2732,7 @@ class _OpdPatientActionsDialogState
           label: l10n.opdMoveQueueAction,
           icon: Icons.sync_alt_outlined,
           enabled: !terminal,
-          onPressed: () => _openNested(QueueActionsDialog(entry: queueEntry)),
+          onPressed: () => _openQueueActions(queueEntry),
         ),
       ]);
     }
@@ -2845,229 +2793,17 @@ class _OpdPatientActionsDialogState
     }
   }
 
-  Future<void> _run(Future<AppFailure?> Function() action) async {
-    if (_isSaving) {
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await action();
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
+  Future<void> _openQueueActions(OpdQueueEntry entry) async {
+    final bool? changed = await showQueueActionsDialog(
+      context: context,
+      entry: entry,
+    );
+    if (changed == true && mounted) {
       Navigator.of(context).pop(true);
-      return;
     }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
-  }
-}
-
-class QueueActionsDialog extends ConsumerStatefulWidget {
-  const QueueActionsDialog({required this.entry, super.key});
-
-  final OpdQueueEntry entry;
-
-  @override
-  ConsumerState<QueueActionsDialog> createState() => _QueueActionsDialogState();
-}
-
-class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _reasonController;
-  List<OpdProviderOption> _providerOptions = const <OpdProviderOption>[];
-  String? _status;
-  String? _providerId;
-  bool _isLoadingProviders = false;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  bool get _isBusy => _isSaving || _isLoadingProviders;
-
-  @override
-  void initState() {
-    super.initState();
-    _reasonController = TextEditingController();
-    _status = widget.entry.status;
-    _providerId = widget.entry.providerUserId;
-    unawaited(_loadProviderOptions());
   }
 
-  @override
-  void dispose() {
-    _reasonController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final bool terminal = _isCompletedStatus(widget.entry.status);
-
-    return AppDialog(
-      title: Text(l10n.opdQueueActionsTitle),
-      icon: const Icon(Icons.queue_outlined),
-      scrollable: true,
-      closeEnabled: !_isBusy,
-      maxWidth: 680,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            if (_failure != null)
-              AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
-              ),
-            AppTriageSummaryPanel(
-              items: <AppInfoTileData>[
-                AppInfoTileData(
-                  label: l10n.opdQueueStatusLabel,
-                  value: _apiLabel(_status ?? widget.entry.status ?? ''),
-                ),
-                AppInfoTileData(
-                  label: l10n.opdProviderColumnLabel,
-                  value:
-                      widget.entry.providerDisplayName ??
-                      l10n.profileUnknownValue,
-                ),
-                AppInfoTileData(
-                  label: l10n.opdTimeColumnLabel,
-                  value: _formatDateTime(context, widget.entry.queuedAt),
-                ),
-              ],
-              emptyValue: l10n.profileUnknownValue,
-            ),
-            AppSelectField<String>(
-              value: _status,
-              labelText: _opdRequiredFieldLabel(l10n, l10n.opdQueueStatusLabel),
-              enabled: !terminal && !_isBusy,
-              onChanged: (String? value) => setState(() => _status = value),
-              options: _statusOptions(_queueStatuses),
-            ),
-            _ProviderSelectField(
-              value: _providerId,
-              providers: _providerOptions,
-              schedules: const <OpdProviderSchedule>[],
-              labelText: _opdOptionalFieldLabel(
-                l10n,
-                l10n.opdSearchProviderLabel,
-              ),
-              helperText: l10n.opdSearchProviderHelper,
-              emptyHelperText: l10n.opdNoProvidersHelper,
-              enabled: !_isBusy,
-              isLoading: _isLoadingProviders,
-              onChanged: (String? value) {
-                setState(() {
-                  _providerId = value;
-                });
-              },
-            ),
-            AppTextField(
-              controller: _reasonController,
-              labelText: _opdOptionalFieldLabel(l10n, l10n.opdReasonLabel),
-              enabled: !_isBusy,
-              maxLines: 3,
-            ),
-          ],
-        ),
-      ),
-      actions: <Widget>[
-        if (!terminal)
-          AppButton.secondary(
-            label: l10n.opdPrioritizeAction,
-            leadingIcon: Icons.priority_high_outlined,
-            enabled: !_isBusy,
-            onPressed: _isBusy
-                ? null
-                : () => _runInModal(
-                    () => ref
-                        .read(opdWorkspaceControllerProvider.notifier)
-                        .prioritizeQueueEntry(
-                          widget.entry,
-                          _reasonController.text.trim(),
-                        ),
-                  ),
-          ),
-        if (!terminal)
-          AppButton.secondary(
-            label: l10n.opdStartConsultationAction,
-            leadingIcon: Icons.play_arrow_outlined,
-            enabled: !_isBusy,
-            onPressed: _isBusy
-                ? null
-                : () => _runInModal(
-                    () => ref
-                        .read(opdWorkspaceControllerProvider.notifier)
-                        .startOpdFromQueue(widget.entry),
-                  ),
-          ),
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !_isBusy,
-          onPressed: _isBusy ? null : () => Navigator.of(context).pop(false),
-        ),
-        if (!terminal)
-          AppButton.primary(
-            label: l10n.opdMoveQueueAction,
-            leadingIcon: Icons.sync_alt_outlined,
-            isLoading: _isSaving,
-            onPressed: _isBusy ? null : _submitMove,
-          ),
-      ],
-    );
-  }
-
-  Future<void> _loadProviderOptions() async {
-    setState(() {
-      _isLoadingProviders = true;
-    });
-    final Result<List<OpdProviderOption>> result = await ref
-        .read(opdRepositoryProvider)
-        .listProviders();
-    if (!mounted) {
-      return;
-    }
-
-    result.when(
-      success: (List<OpdProviderOption> providers) {
-        setState(() {
-          _providerOptions = dedupeOpdProviderOptions(providers);
-          _isLoadingProviders = false;
-        });
-      },
-      failure: (AppFailure failure) {
-        setState(() {
-          _failure = failure;
-          _isLoadingProviders = false;
-        });
-      },
-    );
-  }
-
-  Future<void> _submitMove() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-    await _runInModal(
-      () => ref.read(opdWorkspaceControllerProvider.notifier).moveQueueEntry(
-        widget.entry,
-        <String, Object?>{
-          'status': _status,
-          'provider_user_id': _providerId,
-        },
-      ),
-    );
-  }
-
-  Future<void> _runInModal(Future<AppFailure?> Function() action) async {
+  Future<void> _run(Future<AppFailure?> Function() action) async {
     if (_isSaving) {
       return;
     }
@@ -3093,20 +2829,6 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
 bool _isSameFlow(OpdFlowSummary left, OpdFlowSummary right) {
   return left.id == right.id ||
       (left.publicId != null && left.publicId == right.publicId);
-}
-
-List<AppSelectOption<String>> _statusOptions(List<String> values) {
-  return <AppSelectOption<String>>[
-    for (final String value in values)
-      AppSelectOption<String>(value: value, label: _apiLabel(value)),
-  ];
-}
-
-List<AppSelectOption<String>> _providerSelectOptions({
-  required List<OpdProviderOption> providers,
-  required List<OpdProviderSchedule> schedules,
-}) {
-  return opdProviderSelectOptions(providers: providers, schedules: schedules);
 }
 
 bool _isNonEmpty(String? value) {
@@ -3218,12 +2940,3 @@ const Set<String> _serviceOnlyRoutes = <String>{
   'OTHER_SERVICE',
   'MINOR_PROCEDURE',
 };
-
-const List<String> _queueStatuses = <String>[
-  'SCHEDULED',
-  'CONFIRMED',
-  'IN_PROGRESS',
-  'COMPLETED',
-  'CANCELLED',
-  'NO_SHOW',
-];

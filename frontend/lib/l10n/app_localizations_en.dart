@@ -2460,6 +2460,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receptionRoutePatientAction => 'Assign doctor';
 
   @override
+  String get receptionPatientPickerTitle => 'Select patient';
+
+  @override
   String get receptionPatientPickerSearchHint => 'Search patient to schedule';
 
   @override

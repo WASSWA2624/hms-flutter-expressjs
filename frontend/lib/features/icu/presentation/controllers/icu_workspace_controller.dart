@@ -288,12 +288,16 @@ final class IcuWorkspaceController
     );
   }
 
-  Future<AppFailure?> assignBed(String bedId) {
-    return _mutateSelected(
+  Future<AppFailure?> assignBed(String bedId) async {
+    final AppFailure? failure = await _mutateSelected(
       (IcuPatientDetail detail) =>
           _repository.assignBed(detail: detail, bedId: bedId),
       refreshBoardAfter: true,
     );
+    if (failure == null) {
+      unawaited(loadBedBoard());
+    }
+    return failure;
   }
 
   Future<AppFailure?> updateTransfer({
@@ -502,6 +506,7 @@ final class IcuWorkspaceController
         toWardId: toWardId,
         fromWardId: fromWardId,
       ),
+      refreshBoardAfter: true,
     );
   }
 

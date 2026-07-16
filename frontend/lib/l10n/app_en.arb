@@ -3206,6 +3206,10 @@
   "@receptionRoutePatientAction": {
     "description": "Reception routing action to assign or change the doctor."
   },
+  "receptionPatientPickerTitle": "Select patient",
+  "@receptionPatientPickerTitle": {
+    "description": "Dialog title for choosing a patient before scheduling an appointment."
+  },
   "receptionPatientPickerSearchHint": "Search patient to schedule",
   "@receptionPatientPickerSearchHint": {
     "description": "Search field for picking a patient before scheduling."
@@ -3214,6 +3218,7 @@
   "@receptionPatientPickerEmpty": {
     "description": "Empty state when reception patient picker finds no rows."
   },
+
   "receptionInsuranceLookupFailed": "Could not load insurance lookups for enrollment.",
   "@receptionInsuranceLookupFailed": {
     "description": "Error when claims lookups fail during reception insurance capture."

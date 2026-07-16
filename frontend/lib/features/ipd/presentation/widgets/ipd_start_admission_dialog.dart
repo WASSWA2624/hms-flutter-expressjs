@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
@@ -11,6 +10,7 @@ import 'package:hosspi_hms/features/patients/data/repositories/patient_repositor
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -29,7 +29,6 @@ class IpdStartAdmissionDialog extends ConsumerStatefulWidget {
 class _IpdStartAdmissionDialogState
     extends ConsumerState<IpdStartAdmissionDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _searchController;
   Timer? _debounce;
 
   List<Patient> _results = <Patient>[];
@@ -41,15 +40,8 @@ class _IpdStartAdmissionDialogState
   AppFailure? _failure;
 
   @override
-  void initState() {
-    super.initState();
-    _searchController = TextEditingController();
-  }
-
-  @override
   void dispose() {
     _debounce?.cancel();
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -86,6 +78,7 @@ class _IpdStartAdmissionDialogState
         setState(() {
           _results = page.items;
           _isSearching = false;
+          _failure = null;
         });
       },
       failure: (AppFailure failure) {
@@ -101,122 +94,128 @@ class _IpdStartAdmissionDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
 
     return AppDialog(
       title: Text(l10n.ipdStartAdmissionTitle),
       icon: const Icon(Icons.person_add_alt_1_outlined),
       scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: !_isSaving,
       maxWidth: 560,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null)
-              AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
-              ),
-            AppTextField(
-              controller: _searchController,
-              labelText: l10n.ipdStartAdmissionPatientLabel,
-              hintText: l10n.ipdStartAdmissionPatientHint,
-              enabled: !_isSaving,
-              prefixIcon: const Icon(AppActionIcons.search),
-              onChanged: _onSearchChanged,
-            ),
-            if (_selectedPatient != null)
-              _SelectedPatientTile(
-                patient: _selectedPatient!,
-                onClear: _isSaving
-                    ? null
-                    : () => setState(() => _selectedPatient = null),
-              )
-            else if (_isSearching)
-              const Padding(
-                padding: EdgeInsets.all(12),
-                child: Center(child: AppLoadingIndicator.compact()),
-              )
-            else if (_results.isEmpty &&
-                _searchController.text.trim().length >= 2)
-              Padding(
-                padding: EdgeInsets.all(theme.spacing.sm),
-                child: Text(
-                  l10n.ipdStartAdmissionNoPatients,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+      content: AppFormShell(
+        formKey: _formKey,
+        enabled: !_isSaving,
+        formStatus: appFormFailureStatus(context, _failure),
+        children: <Widget>[
+          AppSelectField<String>.searchable(
+            value: _selectedPatient?.id,
+            labelText: l10n.ipdStartAdmissionPatientLabel,
+            hintText: l10n.ipdStartAdmissionPatientHint,
+            isRequired: true,
+            isLoading: _isSearching,
+            enabled: !_isSaving,
+            options: _patientSelectOptions(),
+            validator: AppValidators.requiredValue(l10n.validationRequired),
+            onSearchTextChanged: _onSearchChanged,
+            onChanged: _selectPatient,
+          ),
+          AppSelectField<String>.searchable(
+            value: _wardId,
+            labelText: l10n.ipdStartAdmissionWardLabel,
+            hintText: l10n.ipdSelectWardHint,
+            enabled: !_isSaving,
+            options: <AppSelectOption<String>>[
+              for (final IpdWardOption ward in widget.referenceData.wards)
+                AppSelectOption<String>(
+                  value: ward.id,
+                  label: ward.displayTitle,
                 ),
-              )
-            else
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  for (final Patient patient in _results)
-                    _PatientResultTile(
-                      patient: patient,
-                      onTap: _isSaving
-                          ? null
-                          : () => setState(() {
-                                _selectedPatient = patient;
-                                _results = <Patient>[];
-                              }),
-                    ),
-                ],
-              ),
-            AppSelectField<String>.searchable(
-              value: _wardId,
-              labelText: l10n.ipdStartAdmissionWardLabel,
-              hintText: l10n.ipdSelectWardHint,
-              enabled: !_isSaving,
-              options: <AppSelectOption<String>>[
-                for (final IpdWardOption ward in widget.referenceData.wards)
-                  AppSelectOption<String>(
-                    value: ward.id,
-                    label: ward.displayTitle,
-                  ),
-              ],
-              onChanged: (String? value) => setState(() {
-                _wardId = value;
-                _bedId = null;
-              }),
-            ),
-            AppSelectField<String>.searchable(
-              value: _bedId,
-              labelText: l10n.ipdStartAdmissionBedLabel,
-              hintText: l10n.ipdSelectBedHint,
-              enabled: !_isSaving,
-              options: <AppSelectOption<String>>[
-                for (final IpdBedOption bed in _bedsForWard())
-                  AppSelectOption<String>(
-                    value: bed.id,
-                    label: <String?>[bed.displayTitle, bed.displaySubtitle]
-                        .where((String? v) => v != null && v.trim().isNotEmpty)
-                        .join(' • '),
-                  ),
-              ],
-              onChanged: (String? value) => setState(() => _bedId = value),
-            ),
-          ],
-        ),
+            ],
+            onChanged: (String? value) => setState(() {
+              _wardId = value;
+              _bedId = null;
+            }),
+          ),
+          AppSelectField<String>.searchable(
+            value: _bedId,
+            labelText: l10n.ipdStartAdmissionBedLabel,
+            hintText: l10n.ipdSelectBedHint,
+            enabled: !_isSaving,
+            options: <AppSelectOption<String>>[
+              for (final IpdBedOption bed in _bedsForWard())
+                AppSelectOption<String>(
+                  value: bed.id,
+                  label: <String?>[bed.displayTitle, bed.displaySubtitle]
+                      .where((String? v) => v != null && v.trim().isNotEmpty)
+                      .join(' • '),
+                ),
+            ],
+            onChanged: (String? value) => setState(() => _bedId = value),
+          ),
+        ],
       ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !_isSaving,
-          onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.ipdStartAdmissionAction,
-          leadingIcon: AppActionIcons.add,
-          isLoading: _isSaving,
-          enabled: _selectedPatient != null && !_isSaving,
-          onPressed: _isSaving || _selectedPatient == null ? null : _submit,
-        ),
-      ],
+      actions: clinicalActionDialogActions(
+        context,
+        l10n.ipdStartAdmissionAction,
+        _isSaving,
+        _isSaving ? null : _submit,
+        submitLeadingIcon: AppActionIcons.add,
+      ),
     );
+  }
+
+  List<AppSelectOption<String>> _patientSelectOptions() {
+    final Map<String, Patient> byId = <String, Patient>{
+      for (final Patient patient in _results) patient.id: patient,
+    };
+    final Patient? selected = _selectedPatient;
+    if (selected != null) {
+      byId[selected.id] = selected;
+    }
+    return <AppSelectOption<String>>[
+      for (final Patient patient in byId.values)
+        AppSelectOption<String>(
+          value: patient.id,
+          label: _patientOptionLabel(patient),
+          searchText: <String?>[
+            patient.effectiveDisplayName,
+            patient.effectiveIdentifier,
+          ].whereType<String>().join(' '),
+        ),
+    ];
+  }
+
+  String _patientOptionLabel(Patient patient) {
+    final String name = patient.effectiveDisplayName;
+    final String? identifier = patient.effectiveIdentifier?.trim();
+    if (identifier == null || identifier.isEmpty) {
+      return name;
+    }
+    return '$name • $identifier';
+  }
+
+  void _selectPatient(String? patientId) {
+    setState(() {
+      if (patientId == null || patientId.trim().isEmpty) {
+        _selectedPatient = null;
+        return;
+      }
+      _selectedPatient = _patientById(patientId);
+      _failure = null;
+    });
+  }
+
+  Patient? _patientById(String patientId) {
+    final Patient? selected = _selectedPatient;
+    if (selected != null && selected.id == patientId) {
+      return selected;
+    }
+    for (final Patient patient in _results) {
+      if (patient.id == patientId) {
+        return patient;
+      }
+    }
+    return null;
   }
 
   List<IpdBedOption> _bedsForWard() {
@@ -230,6 +229,12 @@ class _IpdStartAdmissionDialogState
   }
 
   Future<void> _submit() async {
+    if (_isSaving) {
+      return;
+    }
+    if (!validateAndSaveAppForm(_formKey)) {
+      return;
+    }
     final Patient? patient = _selectedPatient;
     if (patient == null) {
       return;
@@ -256,120 +261,5 @@ class _IpdStartAdmissionDialogState
       _failure = failure;
       _isSaving = false;
     });
-  }
-}
-
-class _PatientResultTile extends StatelessWidget {
-  const _PatientResultTile({required this.patient, required this.onTap});
-
-  final Patient patient;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          vertical: theme.spacing.sm,
-          horizontal: theme.spacing.xs,
-        ),
-        child: Row(
-          children: <Widget>[
-            const Icon(AppActionIcons.person, size: 20),
-            SizedBox(width: theme.spacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    patient.effectiveDisplayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if ((patient.effectiveIdentifier ?? '').trim().isNotEmpty)
-                    Text(
-                      patient.effectiveIdentifier!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SelectedPatientTile extends StatelessWidget {
-  const _SelectedPatientTile({required this.patient, required this.onClear});
-
-  final Patient patient;
-  final VoidCallback? onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.colorScheme.primary),
-        borderRadius: BorderRadius.circular(theme.radius.md),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(theme.spacing.sm),
-        child: Row(
-          children: <Widget>[
-            Icon(
-              AppActionIcons.success,
-              color: theme.colorScheme.primary,
-              size: 20,
-            ),
-            SizedBox(width: theme.spacing.sm),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    patient.effectiveDisplayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  if ((patient.effectiveIdentifier ?? '').trim().isNotEmpty)
-                    Text(
-                      patient.effectiveIdentifier!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            if (onClear != null)
-              AppButton(
-                iconOnly: true,
-                icon: AppActionIcons.cancel,
-                label: context.l10n.commonCancelActionLabel,
-                semanticLabel: context.l10n.commonCancelActionLabel,
-                tooltip: context.l10n.commonCancelActionLabel,
-                onPressed: onClear,
-              ),
-          ],
-        ),
-      ),
-    );
   }
 }

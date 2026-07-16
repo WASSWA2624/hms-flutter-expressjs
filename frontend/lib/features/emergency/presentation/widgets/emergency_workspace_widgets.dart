@@ -31,7 +31,9 @@ abstract final class EmergencyText {
   static const String all = 'All';
   static const String allBoard = 'All emergency records';
   static const String ambulance = 'Ambulance';
+  static const String ambulanceId = 'Ambulance ID';
   static const String arrival = 'Arrival';
+  static const String arrivalNotes = 'Arrival notes';
   static const String available = 'Available';
   static const String billingDeferred = 'Billing deferred';
   static const String billingDeferredMessage =
@@ -41,10 +43,14 @@ abstract final class EmergencyText {
   static const String careBeforeBilling = 'Care before billing';
   static const String caseLabel = 'Case';
   static const String closed = 'Closed';
+  static const String closeEmergencyCase = 'Close emergency case';
+  static const String closeEmergencyCaseSubtitle =
+      'Use this after the receiving unit has accepted the patient.';
   static const String completeTrip = 'Complete trip';
   static const String critical = 'Critical';
   static const String discharge = 'Discharge';
   static const String dispatch = 'Dispatch';
+  static const String dispatchAmbulance = 'Dispatch ambulance';
   static const String dispatched = 'Dispatched';
   static const String dispatchStatus = 'Dispatch status';
   static const String enRoute = 'En route';
@@ -56,11 +62,13 @@ abstract final class EmergencyText {
   static const String handoffOutcomeDescription =
       'The receiving workflow created when this case was handed off.';
   static const String handoffReady = 'Handoff ready';
+  static const String handoffRecorded = 'Handoff recorded';
   static const String handoffTerminalDescription =
       'This case was closed at handoff. No downstream encounter was created.';
   static const String handoffTime = 'Handoff time';
   static const String high = 'High';
   static const String icu = 'ICU';
+  static const String initialTriage = 'Initial triage';
   static const String ipd = 'IPD';
   static const String level1 = 'Level 1';
   static const String level2 = 'Level 2';
@@ -94,6 +102,7 @@ abstract final class EmergencyText {
   static const String responseNotes = 'Response notes';
   static const String saveTriage = 'Save triage';
   static const String searchHint = 'Search patient, case, ambulance, or status';
+  static const String selectAmbulance = 'Select ambulance';
   static const String startTrip = 'Start trip';
   static const String theater = 'Theater';
   static const String scheduleTheater = 'Schedule in Theater';
@@ -954,7 +963,11 @@ class EmergencyHandoffActionCell extends ConsumerWidget {
       ),
     );
     if (saved == true && context.mounted) {
-      showFailureIfNeeded(context, null, successMessage: 'Handoff recorded');
+      showFailureIfNeeded(
+        context,
+        null,
+        successMessage: EmergencyText.handoffRecorded,
+      );
     }
   }
 }
@@ -1054,20 +1067,17 @@ class EmergencyAmbulanceActionCell extends ConsumerWidget {
       return;
     }
 
-    final bool? saved = await showAppDialog<bool>(
+    final bool? saved = await showEmergencyDispatchDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => DispatchDialog(
-        referenceData: referenceData,
-        onSubmit: (DispatchInput input) {
-          return ref
-              .read(emergencyWorkspaceControllerProvider.notifier)
-              .dispatchAmbulance(
-                ambulanceId: input.ambulanceId,
-                status: input.status,
-              );
-        },
-      ),
+      referenceData: referenceData,
+      onSubmit: (DispatchInput input) {
+        return ref
+            .read(emergencyWorkspaceControllerProvider.notifier)
+            .dispatchAmbulance(
+              ambulanceId: input.ambulanceId,
+              status: input.status,
+            );
+      },
     );
     if (saved == true && context.mounted) {
       showFailureIfNeeded(
@@ -1096,20 +1106,17 @@ class EmergencyAmbulanceActionCell extends ConsumerWidget {
       ambulanceId = referenceData.availableAmbulances.first.id;
     }
     if (ambulanceId == null) {
-      final bool? saved = await showAppDialog<bool>(
+      final bool? saved = await showEmergencyDispatchDialog(
         context: context,
-        barrierDismissible: false,
-        builder: (_) => DispatchDialog(
-          referenceData: referenceData,
-          title: 'Select ambulance',
-          submitLabel: 'Start trip',
-          defaultStatus: 'EN_ROUTE',
-          onSubmit: (DispatchInput input) {
-            return controller.startAmbulanceTrip(
-              ambulanceId: input.ambulanceId,
-            );
-          },
-        ),
+        referenceData: referenceData,
+        title: EmergencyText.selectAmbulance,
+        submitLabel: EmergencyText.startTrip,
+        defaultStatus: 'EN_ROUTE',
+        onSubmit: (DispatchInput input) {
+          return controller.startAmbulanceTrip(
+            ambulanceId: input.ambulanceId,
+          );
+        },
       );
       if (saved == true && context.mounted) {
         showFailureIfNeeded(context, null, successMessage: 'Trip started');
@@ -1436,7 +1443,7 @@ class EmergencyActionPanel extends ConsumerWidget {
       context: context,
       barrierDismissible: false,
       builder: (_) => AppSelectActionDialog<String>(
-        title: EmergencyText.updatePriority,
+        title: EmergencyText.priority,
         icon: const Icon(Icons.priority_high_outlined),
         fieldLabel: EmergencyText.priority,
         initialValue: normalizedOption(
@@ -1496,10 +1503,11 @@ class EmergencyActionPanel extends ConsumerWidget {
       context: context,
       barrierDismissible: false,
       builder: (_) => AppTextActionDialog(
-        title: EmergencyText.markResponse,
+        title: EmergencyText.response,
         icon: const Icon(Icons.medical_services_outlined),
         fieldLabel: EmergencyText.responseNotes,
         submitLabel: EmergencyText.markResponse,
+        submitLeadingIcon: AppActionIcons.save,
         onSubmit: (String notes) {
           return _controller(context).markResponse(notes: notes);
         },
@@ -1517,18 +1525,15 @@ class EmergencyActionPanel extends ConsumerWidget {
     EmergencyReferenceData referenceData,
   ) async {
     final EmergencyWorkspaceController controller = _controller(context);
-    final bool? saved = await showAppDialog<bool>(
+    final bool? saved = await showEmergencyDispatchDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => DispatchDialog(
-        referenceData: referenceData,
-        onSubmit: (DispatchInput input) {
-          return controller.dispatchAmbulance(
-            ambulanceId: input.ambulanceId,
-            status: input.status,
-          );
-        },
-      ),
+      referenceData: referenceData,
+      onSubmit: (DispatchInput input) {
+        return controller.dispatchAmbulance(
+          ambulanceId: input.ambulanceId,
+          status: input.status,
+        );
+      },
     );
     if (saved == true && context.mounted) {
       showFailureIfNeeded(
@@ -1540,7 +1545,9 @@ class EmergencyActionPanel extends ConsumerWidget {
   }
 
   Future<void> _openDispatchStatusDialog(BuildContext context) async {
-    final String? status = await showAppDialog<String>(
+    final AppLocalizations l10n = context.l10n;
+    final EmergencyWorkspaceController controller = _controller(context);
+    final bool? saved = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (_) => AppSelectActionDialog<String>(
@@ -1552,22 +1559,19 @@ class EmergencyActionPanel extends ConsumerWidget {
           fallback: 'EN_ROUTE',
         ),
         options: ambulanceStatusOptions(),
-        cancelLabel: EmergencyText.cancel,
+        cancelLabel: l10n.commonCancelActionLabel,
         submitLabel: EmergencyText.update,
         requiredMessage: EmergencyText.required,
+        submitLeadingIcon: AppActionIcons.edit,
+        onSubmit: (String status) {
+          return controller.updateLatestDispatchStatus(status);
+        },
       ),
     );
-    if (status == null || !context.mounted) {
-      return;
-    }
-
-    final AppFailure? failure = await _controller(
-      context,
-    ).updateLatestDispatchStatus(status);
-    if (context.mounted) {
+    if (saved == true && context.mounted) {
       showFailureIfNeeded(
         context,
-        failure,
+        null,
         successMessage: 'Dispatch status updated',
       );
     }
@@ -1583,20 +1587,17 @@ class EmergencyActionPanel extends ConsumerWidget {
       ambulanceId = referenceData.availableAmbulances.first.id;
     }
     if (ambulanceId == null) {
-      final bool? saved = await showAppDialog<bool>(
+      final bool? saved = await showEmergencyDispatchDialog(
         context: context,
-        barrierDismissible: false,
-        builder: (_) => DispatchDialog(
-          referenceData: referenceData,
-          title: 'Select ambulance',
-          submitLabel: 'Start trip',
-          defaultStatus: 'EN_ROUTE',
-          onSubmit: (DispatchInput input) {
-            return controller.startAmbulanceTrip(
-              ambulanceId: input.ambulanceId,
-            );
-          },
-        ),
+        referenceData: referenceData,
+        title: EmergencyText.selectAmbulance,
+        submitLabel: EmergencyText.startTrip,
+        defaultStatus: 'EN_ROUTE',
+        onSubmit: (DispatchInput input) {
+          return controller.startAmbulanceTrip(
+            ambulanceId: input.ambulanceId,
+          );
+        },
       );
       if (saved == true && context.mounted) {
         showFailureIfNeeded(context, null, successMessage: 'Trip started');
@@ -1651,7 +1652,11 @@ class EmergencyActionPanel extends ConsumerWidget {
       ),
     );
     if (saved == true && context.mounted) {
-      showFailureIfNeeded(context, null, successMessage: 'Handoff recorded');
+      showFailureIfNeeded(
+        context,
+        null,
+        successMessage: EmergencyText.handoffRecorded,
+      );
     }
   }
 
