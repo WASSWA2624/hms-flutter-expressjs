@@ -10,7 +10,6 @@ import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
-import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/radiology/data/repositories/radiology_repository_impl.dart';
 import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
@@ -73,7 +72,7 @@ final class RadiologyWorkspaceController
   }
 
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(showLoading: true, plan: WorkspaceRefreshPlan.full);
+    return _syncVisibleData(showLoading: true);
   }
 
   Future<AppFailure?> applySearch(String value) async {
@@ -950,7 +949,7 @@ final class RadiologyWorkspaceController
     bool showLoading = false,
     WorkspaceRefreshPlan plan = WorkspaceRefreshPlan.full,
   }) async {
-    if (plan.isEmpty) {
+    if (!ref.mounted || plan.isEmpty) {
       return null;
     }
     final RadiologyWorkspaceState? current = _currentState;
@@ -1192,6 +1191,9 @@ final class RadiologyWorkspaceController
   }
 
   RadiologyWorkspaceState? get _currentState {
+    if (!ref.mounted) {
+      return null;
+    }
     final Result<RadiologyWorkspaceState>? currentResult = state.asData?.value;
     return switch (currentResult) {
       ResultSuccess<RadiologyWorkspaceState>(value: final value) => value,
@@ -1200,6 +1202,9 @@ final class RadiologyWorkspaceController
   }
 
   void _emit(RadiologyWorkspaceState nextState) {
+    if (!ref.mounted) {
+      return;
+    }
     state = AsyncData<Result<RadiologyWorkspaceState>>(
       Result<RadiologyWorkspaceState>.success(nextState),
     );

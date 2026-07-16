@@ -192,6 +192,10 @@ void main() {
         (_) async =>
             Result<RadiologyWorkflow>.success(_workflow(status: 'COMPLETED')),
       );
+      when(() => repository.getWorkflow(any())).thenAnswer(
+        (_) async =>
+            Result<RadiologyWorkflow>.success(_workflow(status: 'COMPLETED')),
+      );
       final ProviderContainer container = buildContainer(repository);
 
       await container.read(radiologyWorkspaceControllerProvider.future);

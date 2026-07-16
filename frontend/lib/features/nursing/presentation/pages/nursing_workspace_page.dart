@@ -156,7 +156,9 @@ class _NursingWorkspaceContentState
     final NursingQueueScope? scope = nursingScopeFromQueryValue(query.scope);
     if (scope != null && scope != _scope) {
       setState(() => _scope = scope);
-      ref.read(nursingWorkspaceControllerProvider.notifier).applyScope(scope);
+      unawaited(
+        ref.read(nursingWorkspaceControllerProvider.notifier).applyScope(scope),
+      );
     }
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;
@@ -278,6 +280,7 @@ class _NursingWorkspaceContentState
     return AppWorkspace(
       title: l10n.nursingTitle,
       leadingIcon: AppRouteIcons.nursing,
+      scrollable: false,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
         summaryNotifications: nursingSummaryNotifications(

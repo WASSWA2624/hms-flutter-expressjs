@@ -474,12 +474,6 @@ IconData _orderStatusIcon(String? status) {
   };
 }
 
-String _formatDateTime(BuildContext context, DateTime? value) {
-  return value == null
-      ? context.l10n.profileUnknownValue
-      : AppFormatters.dateTime(value, Localizations.localeOf(context));
-}
-
 String? _formatDateTimeOrNull(BuildContext context, DateTime? value) {
   return value == null
       ? null

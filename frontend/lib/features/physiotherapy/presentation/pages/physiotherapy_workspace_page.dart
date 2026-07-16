@@ -90,14 +90,20 @@ class _PhysiotherapyWorkspacePageState
   }
 
   Future<void> _applyRouteQuery(PhysiotherapyWorkspaceQuery query) async {
+    // Wait for the initial workspace load so applyScope can update query.scope.
+    await ref.read(physiotherapyWorkspaceControllerProvider.future);
+    if (!mounted) return;
+
     final controller = ref.read(
       physiotherapyWorkspaceControllerProvider.notifier,
     );
 
     final PhysiotherapyQueueScope? section = _sectionFromQuery(query);
-    if (section != null && section != _section) {
-      setState(() => _section = section);
-      unawaited(controller.applyScope(section));
+    if (section != null) {
+      if (section != _section) {
+        setState(() => _section = section);
+      }
+      await controller.applyScope(section);
     }
 
     if (query.search.isNotEmpty) {
@@ -262,52 +268,51 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
       physiotherapyWorkspaceControllerProvider.notifier,
     );
 
-    return Scaffold(
-      body: AppWorkspace(
-        title: l10n.physiotherapyTitle,
-        leadingIcon: Icons.accessibility_new_outlined,
-        toolbar: appWorkspaceToolbarWithLabels(
-          l10n,
-          onRefresh: () async {
-            await controller.refresh();
-          },
-          isRefreshing: state.isRefreshing,
-        ),
-        body: Column(
-          children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: AppTabStrip(
-                    tabs: <AppTabItem>[
-                      for (final PhysiotherapyQueueScope scope in _tabScopes)
-                        AppTabItem(
-                          id: scope.name,
-                          icon: _sectionIcon(scope),
-                          label:
-                              '${_sectionLabel(l10n, scope)} (${_sectionCount(state, scope)})',
-                        ),
-                    ],
-                    selectedId: section.name,
-                    onTabTapped: (String tabId) {
-                      for (final PhysiotherapyQueueScope scope
-                          in PhysiotherapyQueueScope.values) {
-                        if (scope.name == tabId) {
-                          onTabChanged(scope);
-                          break;
-                        }
+    return AppWorkspace(
+      title: l10n.physiotherapyTitle,
+      leadingIcon: Icons.accessibility_new_outlined,
+      toolbar: appWorkspaceToolbarWithLabels(
+        l10n,
+        onRefresh: () async {
+          await controller.refresh();
+        },
+        isRefreshing: state.isRefreshing,
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: AppTabStrip(
+                  tabs: <AppTabItem>[
+                    for (final PhysiotherapyQueueScope scope in _tabScopes)
+                      AppTabItem(
+                        id: scope.name,
+                        icon: _sectionIcon(scope),
+                        label:
+                            '${_sectionLabel(l10n, scope)} (${_sectionCount(state, scope)})',
+                      ),
+                  ],
+                  selectedId: section.name,
+                  onTabTapped: (String tabId) {
+                    for (final PhysiotherapyQueueScope scope
+                        in PhysiotherapyQueueScope.values) {
+                      if (scope.name == tabId) {
+                        onTabChanged(scope);
+                        break;
                       }
-                    },
-                  ),
+                    }
+                  },
                 ),
-                SizedBox(width: theme.spacing.md),
-                _primaryActionForSection(context, ref, section, state),
-              ],
-            ),
-            SizedBox(height: theme.spacing.md),
-            Expanded(child: _buildWorklist(context, ref, controller)),
-          ],
-        ),
+              ),
+              SizedBox(width: theme.spacing.md),
+              _primaryActionForSection(context, ref, section, state),
+            ],
+          ),
+          SizedBox(height: theme.spacing.md),
+          _buildWorklist(context, ref, controller),
+        ],
       ),
     );
   }
@@ -413,7 +418,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
             l10n.physiotherapyPrintInstructionsAction,
             Icons.print_outlined,
             currentState.selectedDetail != null
-                ? () => _printInstructionsFromToolbar(
+                ? () => _printInstructions(
                     context,
                     ref,
                     currentState.selectedDetail!,
@@ -522,14 +527,6 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
     if (failure != null) _showFailure(context, failure);
   }
 
-  void _printInstructionsFromToolbar(
-    BuildContext context,
-    WidgetRef ref,
-    PhysiotherapyDetail detail,
-  ) {
-    _printInstructions(context, ref, detail);
-  }
-
   Widget _buildWorklist(
     BuildContext context,
     WidgetRef ref,
@@ -544,6 +541,8 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
     return AppListTable<TherapyWorkItem>(
       page: state.worklist,
       isLoading: state.isRefreshing,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       columns: _columns(context, locale),
       columnChoices: _optionalColumns(context, locale),
       columnVisibilityController: columnVisibilityController,

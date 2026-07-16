@@ -2576,7 +2576,6 @@ class _OpdPatientActionsDialogState
         fullWidth: true,
         variant: variant,
         enabled: isEnabled,
-        hideWhenDenied: true,
         tooltip: isEnabled ? null : tooltip ?? inactiveReason,
         onPressed: isEnabled ? onPressed : null,
       );

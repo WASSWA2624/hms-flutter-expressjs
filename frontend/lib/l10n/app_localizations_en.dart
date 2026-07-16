@@ -9250,6 +9250,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyTotalOrdersSummaryLabel => 'Total orders';
 
   @override
+  String get radiologyWorklistSummaryLabel => 'Worklist';
+
+  @override
+  String get radiologyAllOrdersSummaryLabel => 'All orders';
+
+  @override
   String get radiologyWaitingImagingSummaryLabel => 'Waiting imaging';
 
   @override

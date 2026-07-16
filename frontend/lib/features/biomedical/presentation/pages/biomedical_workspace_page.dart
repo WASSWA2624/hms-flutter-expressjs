@@ -670,6 +670,19 @@ class _BiomedicalWorkspaceContentState
   ) {
     for (final BiomedicalQueueSummary summary in state.workbench.queues) {
       if (summary.queue == queue) {
+        final String? panel = summary.panel;
+        if (panel != null &&
+            panel.isNotEmpty &&
+            panel != _currentPanel &&
+            BiomedicalPanels.values.contains(panel)) {
+          _tableColumnController.dispose();
+          setState(() {
+            _currentPanel = panel;
+            _tableColumnController =
+                AppListTableColumnVisibilityController<BiomedicalAsset>();
+          });
+          _updateUrlForPanel(panel);
+        }
         unawaited(controller.applyQueue(summary));
         return;
       }

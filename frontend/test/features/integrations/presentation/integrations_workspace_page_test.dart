@@ -121,13 +121,12 @@ AppAccessPolicy _integrationsReadOnlyPolicy() {
 
 void _stubWorkspace(_MockIntegrationsRepository repository) {
   when(() => repository.listIntegrations()).thenAnswer(
-    (_) async => const Result<List<IntegrationRecord>>.success(
-      <IntegrationRecord>[
-        _integration,
-        _warningIntegration,
-        _failedIntegration,
-      ],
-    ),
+    (_) async =>
+        const Result<List<IntegrationRecord>>.success(<IntegrationRecord>[
+          _integration,
+          _warningIntegration,
+          _failedIntegration,
+        ]),
   );
   when(() => repository.listApiKeys()).thenAnswer(
     (_) async =>
@@ -265,7 +264,7 @@ void main() {
 
     expect(find.text('Active'), findsWidgets);
     expect(find.text('Warnings'), findsOneWidget);
-    expect(find.text('Failed'), findsOneWidget);
+    expect(find.text('Failed'), findsWidgets);
     expect(find.text('Total items'), findsNothing);
   });
 

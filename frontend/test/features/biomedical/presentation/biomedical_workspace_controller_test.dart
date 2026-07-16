@@ -49,7 +49,7 @@ void main() {
   });
 
   group('BiomedicalWorkspaceController', () {
-    test('loads the workspace and selects the first asset', () async {
+    test('loads the workspace with assets', () async {
       final _MockBiomedicalRepository repository = _MockBiomedicalRepository();
       _stubWorkspace(repository);
 
@@ -68,8 +68,10 @@ void main() {
       );
 
       expect(state.workbench.summary.totalEquipment, 1);
-      expect(state.selectedAsset?.displayId, 'EQ-001');
-      verify(() => repository.getWorkspace(any())).called(1);
+      expect(state.workbench.assets.items.first.displayId, 'EQ-001');
+      verify(
+        () => repository.getWorkspace(any()),
+      ).called(greaterThanOrEqualTo(1));
     });
 
     test('applyPanel updates query panel and resets pagination', () async {

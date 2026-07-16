@@ -17146,6 +17146,18 @@ abstract class AppLocalizations {
   /// **'Total orders'**
   String get radiologyTotalOrdersSummaryLabel;
 
+  /// Radiology desk tab label for the active imaging worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Worklist'**
+  String get radiologyWorklistSummaryLabel;
+
+  /// Radiology desk tab label for all imaging orders.
+  ///
+  /// In en, this message translates to:
+  /// **'All orders'**
+  String get radiologyAllOrdersSummaryLabel;
+
   /// Localized text for radiologyWaitingImagingSummaryLabel.
   ///
   /// In en, this message translates to:

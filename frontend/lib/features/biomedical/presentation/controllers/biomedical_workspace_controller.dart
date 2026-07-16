@@ -10,7 +10,6 @@ import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
-import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/biomedical/data/repositories/biomedical_repository_impl.dart';
 import 'package:hosspi_hms/features/biomedical/domain/entities/biomedical_entities.dart';
@@ -71,7 +70,7 @@ final class BiomedicalWorkspaceController
   }
 
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(showLoading: true, plan: WorkspaceRefreshPlan.full);
+    return _syncVisibleData(showLoading: true);
   }
 
   Future<AppFailure?> applySearch(String value) {

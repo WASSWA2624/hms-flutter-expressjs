@@ -11795,6 +11795,14 @@
   "@radiologyTotalOrdersSummaryLabel": {
     "description": "Localized text for radiologyTotalOrdersSummaryLabel."
   },
+  "radiologyWorklistSummaryLabel": "Worklist",
+  "@radiologyWorklistSummaryLabel": {
+    "description": "Radiology desk tab label for the active imaging worklist."
+  },
+  "radiologyAllOrdersSummaryLabel": "All orders",
+  "@radiologyAllOrdersSummaryLabel": {
+    "description": "Radiology desk tab label for all imaging orders."
+  },
   "radiologyWaitingImagingSummaryLabel": "Waiting imaging",
   "@radiologyWaitingImagingSummaryLabel": {
     "description": "Localized text for radiologyWaitingImagingSummaryLabel."
