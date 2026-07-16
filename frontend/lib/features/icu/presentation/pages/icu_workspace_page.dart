@@ -256,6 +256,64 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
     };
   }
 
+  Widget? _buildPrimaryAction(
+    AppLocalizations l10n,
+    IcuWorkspaceState state,
+    IcuWorkspaceController controller,
+  ) {
+    if (_section.isBedBoard) {
+      return null;
+    }
+    return AppAccessActionGate(
+      requirement: _IcuWorkspaceContent.writeRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        final bool canStartStay =
+            state.selectedDetail?.isEligibleToStartStay ?? false;
+        return AppTabToolbarPrimary(
+          label: l10n.icuActionStartStay,
+          icon: Icons.play_circle_outline,
+          enabled: isAllowed && canStartStay && !state.isSaving,
+          onPressed: () => _confirmAction(
+            context: context,
+            title: l10n.icuStartStayTitle,
+            body: l10n.icuStartStayBody,
+            actionLabel: l10n.icuStartStayActionLabel,
+            onConfirmed: controller.startIcuStay,
+          ),
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildSecondaryActions(
+    AppLocalizations l10n,
+    IcuWorkspaceState state,
+    IcuWorkspaceController controller,
+  ) {
+    final bool isBedView = _section.isBedBoard;
+    final bool isRefreshing = isBedView
+        ? state.isRefreshingBeds
+        : state.isRefreshingBoard;
+    return <Widget>[
+      AppTabToolbarAction(
+        label: l10n.commonRefreshActionLabel,
+        icon: Icons.refresh,
+        tooltip: l10n.commonRefreshActionLabel,
+        semanticLabel: l10n.commonRefreshActionLabel,
+        enabled: !isRefreshing,
+        onPressed: isRefreshing
+            ? null
+            : () {
+                if (isBedView) {
+                  unawaited(controller.loadBedBoard());
+                } else {
+                  unawaited(controller.refresh());
+                }
+              },
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -303,35 +361,12 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
                   }
                 }
               },
-              primaryAction: !isBedView
-                  ? AppAccessActionGate(
-                      requirement: _IcuWorkspaceContent.writeRequirement,
-                      builder: (BuildContext context, bool isAllowed) {
-                        final bool canStartStay =
-                            state.selectedDetail?.isEligibleToStartStay ??
-                            false;
-                        return AppTabToolbarPrimary(
-                          label: l10n.icuActionStartStay,
-                          icon: Icons.play_circle_outline,
-                          enabled: isAllowed && canStartStay && !state.isSaving,
-                          onPressed: () => _confirmAction(
-                            context: context,
-                            title: l10n.icuStartStayTitle,
-                            body: l10n.icuStartStayBody,
-                            actionLabel: l10n.icuStartStayActionLabel,
-                            onConfirmed: controller.startIcuStay,
-                          ),
-                        );
-                      },
-                    )
-                  : null,
+              primaryAction: _buildPrimaryAction(l10n, state, controller),
+              secondaryActions: _buildSecondaryActions(l10n, state, controller),
             ),
             SizedBox(height: theme.spacing.sm),
             if (isBedView)
-              IcuBedBoardPanel(
-                state: state,
-                writeRequirement: _IcuWorkspaceContent.writeRequirement,
-              )
+              IcuBedBoardPanel(state: state)
             else
               _IcuBoardPanel(
                 state: state,

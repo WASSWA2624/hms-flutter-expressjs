@@ -206,6 +206,7 @@ void main() {
     expect(find.text('Ada Active'), findsOneWidget);
     expect(find.text('Chris Critical'), findsOneWidget);
     expect(find.byTooltip('Start ICU stay'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
   });
 
   testWidgets('deep link section=critical selects Critical tab', (
@@ -227,6 +228,7 @@ void main() {
     );
     expect(find.text('Chris Critical'), findsOneWidget);
     expect(find.byTooltip('Start ICU stay'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
   });
 
   testWidgets('deep link section=beds shows bed board and hides start action', (
@@ -241,8 +243,9 @@ void main() {
 
     expect(find.byType(IcuBedBoardPanel), findsOneWidget);
     expect(find.byType(AppListTable<IcuPatientSummary>), findsNothing);
-    expect(find.text('ICU bed board'), findsOneWidget);
+    expect(find.text('ICU bed board'), findsNothing);
     expect(find.byTooltip('Start ICU stay'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
     verify(() => repository.loadBedBoard()).called(greaterThanOrEqualTo(1));
   });
 
@@ -275,7 +278,9 @@ void main() {
 
     expect(find.byType(IcuBedBoardPanel), findsOneWidget);
     expect(find.byType(AppListTable<IcuPatientSummary>), findsNothing);
+    expect(find.text('ICU bed board'), findsNothing);
     expect(find.byTooltip('Start ICU stay'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
   });
 
   testWidgets('search submits call applySearch via repository refresh', (

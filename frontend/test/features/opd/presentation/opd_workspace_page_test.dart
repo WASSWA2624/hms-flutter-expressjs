@@ -233,7 +233,7 @@ void main() {
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
     expect(find.text('Refresh'), findsOneWidget);
     expect(find.byTooltip('Filters'), findsOneWidget);
-    expect(find.byTooltip('Table settings'), findsOneWidget);
+    expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
   });
 
   testWidgets('switching tabs filters by category and updates URL', (

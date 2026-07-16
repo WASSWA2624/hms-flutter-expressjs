@@ -1246,7 +1246,7 @@ void main() {
       expect(find.byTooltip('Register patient'), findsOneWidget);
       expect(find.byTooltip('Filters'), findsOneWidget);
       expect(find.text('Advanced filters'), findsNothing);
-      expect(find.byTooltip('Table settings'), findsOneWidget);
+      expect(find.byTooltip('Settings'), findsOneWidget);
       expect(find.byType(AppListTable<Patient>), findsOneWidget);
     },
   );

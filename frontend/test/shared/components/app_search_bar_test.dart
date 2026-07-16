@@ -60,7 +60,7 @@ void main() {
         trailingActions: <AppSearchBarAction>[
           AppSearchBarAction(
             icon: Icons.settings_outlined,
-            label: 'Table settings',
+            label: 'Settings',
             onPressed: () {},
           ),
         ],
@@ -69,7 +69,7 @@ void main() {
     );
 
     expect(find.text('Filters'), findsOneWidget);
-    expect(find.text('Table settings'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
   });
 
   testWidgets('attached toolbar actions stay icon-only on compact screens', (
@@ -88,7 +88,7 @@ void main() {
         trailingActions: <AppSearchBarAction>[
           AppSearchBarAction(
             icon: Icons.settings_outlined,
-            label: 'Table settings',
+            label: 'Settings',
             onPressed: () {},
           ),
         ],
@@ -97,9 +97,9 @@ void main() {
     );
 
     expect(find.text('Filters'), findsNothing);
-    expect(find.text('Table settings'), findsNothing);
+    expect(find.text('Settings'), findsNothing);
     expect(find.byTooltip('Filters'), findsOneWidget);
-    expect(find.byTooltip('Table settings'), findsOneWidget);
+    expect(find.byTooltip('Settings'), findsOneWidget);
   });
 
   testWidgets('filter dialog clear leaves placeholder instead of All option', (
