@@ -62,9 +62,10 @@ class _ClinicalReferralActionDialogState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final String title = widget.title ?? l10n.opdReferAction;
     final String submitLabel = widget.submitLabel ?? l10n.opdReferAction;
     return AppDialog(
-      title: Text(widget.title ?? l10n.opdReferralsTitle),
+      title: Text(title),
       icon: widget.icon,
       maxWidth: 720,
       scrollable: true,
@@ -72,7 +73,7 @@ class _ClinicalReferralActionDialogState
       content: Form(
         key: _formKey,
         child: AppFormSection(
-          density: AppFormSectionDensity.spacious,
+          density: AppFormSectionDensity.compact,
           children: <Widget>[
             if (_failure != null)
               AppFormInformationBanner.failure(
@@ -86,7 +87,9 @@ class _ClinicalReferralActionDialogState
               children: <Widget>[
                 AppTextField(
                   controller: _facilityController,
-                  labelText: l10n.opdExternalFacilityLabel,
+                  labelText: l10n.opdFieldRequiredLabel(
+                    l10n.opdExternalFacilityLabel,
+                  ),
                   enabled: !_isSaving,
                   isRequired: true,
                   textCapitalization: TextCapitalization.words,
@@ -97,7 +100,7 @@ class _ClinicalReferralActionDialogState
                 ),
                 AppTextField(
                   controller: _reasonController,
-                  labelText: l10n.opdReasonLabel,
+                  labelText: l10n.opdFieldRequiredLabel(l10n.opdReasonLabel),
                   enabled: !_isSaving,
                   isRequired: true,
                   maxLines: 3,
@@ -116,7 +119,7 @@ class _ClinicalReferralActionDialogState
               children: <Widget>[
                 AppTextField(
                   controller: _notesController,
-                  labelText: l10n.opdNotesLabel,
+                  labelText: l10n.opdFieldOptionalLabel(l10n.opdNotesLabel),
                   enabled: !_isSaving,
                   maxLines: 4,
                   textCapitalization: TextCapitalization.sentences,

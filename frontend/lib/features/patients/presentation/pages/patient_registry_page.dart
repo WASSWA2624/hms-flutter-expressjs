@@ -358,26 +358,23 @@ class _PatientRegistryContentState
     BuildContext context,
     WidgetRef ref,
   ) async {
-    final Patient? createdPatient = await showAppDialog<Patient>(
+    final Patient? createdPatient = await showRegisterNewPatientDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => RegisterNewPatientDialog(
+      referenceData: widget.state.referenceData,
+      registrationScope: PatientRegistrationScope.resolve(
         referenceData: widget.state.referenceData,
-        registrationScope: PatientRegistrationScope.resolve(
-          referenceData: widget.state.referenceData,
-          accessPolicy: ref.read(appAccessPolicyProvider),
-        ),
-        onLookupDuplicates: (PatientDuplicateQuery query) {
-          return ref
-              .read(patientRegistryControllerProvider.notifier)
-              .loadDuplicateCandidates(query);
-        },
-        onSubmit: (Map<String, Object?> payload) {
-          return ref
-              .read(patientRegistryControllerProvider.notifier)
-              .createPatient(payload);
-        },
+        accessPolicy: ref.read(appAccessPolicyProvider),
       ),
+      onLookupDuplicates: (PatientDuplicateQuery query) {
+        return ref
+            .read(patientRegistryControllerProvider.notifier)
+            .loadDuplicateCandidates(query);
+      },
+      onSubmit: (Map<String, Object?> payload) {
+        return ref
+            .read(patientRegistryControllerProvider.notifier)
+            .createPatient(payload);
+      },
     );
 
     if (createdPatient == null || !context.mounted) {
@@ -1897,10 +1894,9 @@ Future<void> _openActiveOpdActions(
   if (detail == null || !context.mounted) {
     return;
   }
-  final bool? changed = await showAppDialog<bool>(
+  final bool? changed = await showFlowActionsDialog(
     context: context,
-    barrierDismissible: false,
-    builder: (_) => FlowActionsDialog(flow: detail.summary),
+    flow: detail.summary,
   );
   if (changed == true && context.mounted) {
     await ref

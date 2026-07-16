@@ -2780,7 +2780,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdOpenAdmissionAction => 'Open inpatient admission';
 
   @override
-  String get opdAdmissionHandoffTitle => 'Patient admitted';
+  String get opdAdmissionHandoffTitle => 'Admission handoff';
 
   @override
   String get opdAdmissionHandoffBody =>
@@ -3239,7 +3239,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdRescheduleAction => 'Reschedule';
 
   @override
-  String get opdCancelAction => 'Cancel';
+  String get opdCancelAction => 'Cancel appointment';
 
   @override
   String get opdCheckInAction => 'Start OPD encounter';
@@ -3273,6 +3273,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opdQueueActionsTitle => 'Queue actions';
+
+  @override
+  String get opdFlowActionsTitle => 'Flow actions';
 
   @override
   String get opdStartConsultationAction => 'Start consultation';

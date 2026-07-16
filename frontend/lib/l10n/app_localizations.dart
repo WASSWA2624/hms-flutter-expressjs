@@ -5398,10 +5398,10 @@ abstract class AppLocalizations {
   /// **'Open inpatient admission'**
   String get opdOpenAdmissionAction;
 
-  /// Title of the dialog confirming the OPD to IPD admission handoff.
+  /// Role-based title of the dialog offering to continue an OPD admit into the IPD workspace.
   ///
   /// In en, this message translates to:
-  /// **'Patient admitted'**
+  /// **'Admission handoff'**
   String get opdAdmissionHandoffTitle;
 
   /// Explanation shown when an OPD patient is admitted and can be handed off to the IPD workspace.
@@ -6253,7 +6253,7 @@ abstract class AppLocalizations {
   /// Action label to cancel an appointment.
   ///
   /// In en, this message translates to:
-  /// **'Cancel'**
+  /// **'Cancel appointment'**
   String get opdCancelAction;
 
   /// Action label to check in an appointment.
@@ -6321,6 +6321,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Queue actions'**
   String get opdQueueActionsTitle;
+
+  /// Dialog title for the OPD queue/flow stage actions hub.
+  ///
+  /// In en, this message translates to:
+  /// **'Flow actions'**
+  String get opdFlowActionsTitle;
 
   /// Action label to start consultation.
   ///

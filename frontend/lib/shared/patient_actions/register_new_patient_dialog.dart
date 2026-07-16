@@ -463,6 +463,26 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
   }
 }
 
+/// Opens [RegisterNewPatientDialog] with mutating-dialog dismiss rules.
+Future<Patient?> showRegisterNewPatientDialog({
+  required BuildContext context,
+  required PatientReferenceData referenceData,
+  required RegisterNewPatientSubmit onSubmit,
+  PatientRegistrationScope registrationScope = const PatientRegistrationScope(),
+  RegisterNewPatientDuplicateLookup? onLookupDuplicates,
+}) {
+  return showAppDialog<Patient>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => RegisterNewPatientDialog(
+      referenceData: referenceData,
+      registrationScope: registrationScope,
+      onLookupDuplicates: onLookupDuplicates,
+      onSubmit: onSubmit,
+    ),
+  );
+}
+
 /// Create-only patient master-record registration dialog.
 class RegisterNewPatientDialog extends StatefulWidget {
   const RegisterNewPatientDialog({
@@ -500,7 +520,9 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
     return AppDialog(
       title: Text(l10n.patientsRegisterNewPatientTitle),
       icon: const Icon(Icons.person_add_alt_1_outlined),
+      pinActionsToBottom: true,
       closeEnabled: !isBusy,
+      maxWidth: 720,
       content: SizedBox(
         height: _formBodyHeight(context),
         child: AppFormShell(
@@ -524,7 +546,7 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.secondary(
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: !isBusy,
@@ -532,7 +554,7 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
         ),
         AppButton.primary(
           label: _duplicateSaveAnywayLabel(l10n),
-          leadingIcon: Icons.person_add_alt_1_outlined,
+          leadingIcon: AppActionIcons.add,
           isLoading: isBusy,
           onPressed: isBusy ? null : _submit,
         ),

@@ -6,18 +6,18 @@ Refactor **`FlowActionsDialog`** (OPD queue/flow stage actions hub.) so it fully
 
 ## Compliance checklist (from `prompt.md` - this dialog only)
 
-- [ ] Opens only through `AppDialog` / `showAppDialog` / approved helpers (`showAppWorkspaceMutationDialog`, `AppConfirmActionDialog` / text / select / text-input variants). **No** raw `AlertDialog` / `showDialog` in feature presentation code.
-- [ ] Footer actions use `AppButton` (`primary` / `secondary` / `tertiary`) + `AppActionIcons` where icons apply; labels via `context.l10n` (e.g. `commonCancelActionLabel`).
-- [ ] Footer order matches §1: dialog-specific secondary actions (left) -> mutating Create/Edit/Delete when present (Edit labeled **Edit**, not Update) -> **Cancel** dismiss/abort. Committing primary sits immediately left of Cancel when Cancel is present; destructive confirms use existing error/delete patterns.
-- [ ] Confirm dialogs: one Confirm (or domain verb) + Cancel - no duplicate save-then-confirm pairs in the same footer.
-- [ ] Title is **role-based / general** (not the patient's personal name); passed through `AppDialog` so `toDialogTitleUppercase` keeps casing consistent; meaningful `icon` when siblings in this flow already use one.
-- [ ] Loading / mutation in flight: shared loading primitives; `closeEnabled: false` when needed; `barrierDismissible: false` on mutating openers; competing footer actions disabled until work finishes.
-- [ ] After success or failure: refresh dialog state; on success only, patch/invalidate Riverpod so parent workspaces stay current; Cancel/failure must not patch.
-- [ ] Body reuses shared components where equivalents exist (patient chrome, encounter hubs, triage/vitals, status/forms). Extract under `frontend/lib/shared/` if two inventory dialogs need the same section - do not fork per feature.
-- [ ] Opens with contextual IDs already resolved (patient, encounter, queue item, bed, appointment); permission-aware actions stay behind existing wrappers.
-- [ ] Every load/mutation HTTP call succeeds on the happy path against the real backend contract; failures surface via shared failure banner/helper; no silent ignore / fake local success.
-- [ ] Still reachable from every *Used from* / opener site listed below.
-- [ ] `frontend/test/shared/layout/workspace_ui_pattern_test.dart` stays green for this module's presentation code.
+- [x] Opens only through `AppDialog` / `showAppDialog` / approved helpers (`showAppWorkspaceMutationDialog`, `AppConfirmActionDialog` / text / select / text-input variants). **No** raw `AlertDialog` / `showDialog` in feature presentation code.
+- [x] Footer actions use `AppButton` (`primary` / `secondary` / `tertiary`) + `AppActionIcons` where icons apply; labels via `context.l10n` (e.g. `commonCancelActionLabel`).
+- [x] Footer order matches §1: dialog-specific secondary actions (left) -> mutating Create/Edit/Delete when present (Edit labeled **Edit**, not Update) -> **Cancel** dismiss/abort. Committing primary sits immediately left of Cancel when Cancel is present; destructive confirms use existing error/delete patterns.
+- [x] Confirm dialogs: one Confirm (or domain verb) + Cancel - no duplicate save-then-confirm pairs in the same footer.
+- [x] Title is **role-based / general** (not the patient's personal name); passed through `AppDialog` so `toDialogTitleUppercase` keeps casing consistent; meaningful `icon` when siblings in this flow already use one.
+- [x] Loading / mutation in flight: shared loading primitives; `closeEnabled: false` when needed; `barrierDismissible: false` on mutating openers; competing footer actions disabled until work finishes.
+- [x] After success or failure: refresh dialog state; on success only, patch/invalidate Riverpod so parent workspaces stay current; Cancel/failure must not patch.
+- [x] Body reuses shared components where equivalents exist (patient chrome, encounter hubs, triage/vitals, status/forms). Extract under `frontend/lib/shared/` if two inventory dialogs need the same section - do not fork per feature.
+- [x] Opens with contextual IDs already resolved (patient, encounter, queue item, bed, appointment); permission-aware actions stay behind existing wrappers.
+- [x] Every load/mutation HTTP call succeeds on the happy path against the real backend contract; failures surface via shared failure banner/helper; no silent ignore / fake local success.
+- [x] Still reachable from every *Used from* / opener site listed below.
+- [x] `frontend/test/shared/layout/workspace_ui_pattern_test.dart` stays green for this module's presentation code.
 
 ## Context for the executing agent
 
@@ -33,9 +33,9 @@ You are a coding AI agent with full read/write access to this Flutter HMS repo. 
 | --- | --- |
 | Symbol | `FlowActionsDialog` |
 | Purpose | OPD queue/flow stage actions hub. |
-| Defined in | `frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart:98` |
+| Defined in | `frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart:110` |
 | Kind | `shared` |
-| Paired opener(s) | `—` |
+| Paired opener(s) | `showFlowActionsDialog` |
 | Used from | see list below |
 
 ### Used from
@@ -85,7 +85,7 @@ Prefer existing openers in `shared/opd_actions`, `shared/patient_actions`, and `
 
 1. **Read contract + source**
    - Read `prompt.md` end-to-end (especially §1 Footer, §2 Titles, §3 Loading, §4 Reuse, §5 Behavior, §6 Backend sync, Acceptance checklist).
-   - Read `FlowActionsDialog` at `frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart:98` and every paired opener / *Used from* call site above.
+   - Read `FlowActionsDialog` at `frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart:110` and every paired opener / *Used from* call site above.
    - Trace the mutation path: widget -> controller/repository -> REST route -> response DTO -> Riverpod patch.
 
 2. **Normalize shell**

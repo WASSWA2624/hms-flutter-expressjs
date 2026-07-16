@@ -3508,9 +3508,9 @@
   "@opdOpenAdmissionAction": {
     "description": "OPD action that deep-links to the inpatient (IPD) workspace for the admitted patient."
   },
-  "opdAdmissionHandoffTitle": "Patient admitted",
+  "opdAdmissionHandoffTitle": "Admission handoff",
   "@opdAdmissionHandoffTitle": {
-    "description": "Title of the dialog confirming the OPD to IPD admission handoff."
+    "description": "Role-based title of the dialog offering to continue an OPD admit into the IPD workspace."
   },
   "opdAdmissionHandoffBody": "Admitted to IPD. Open inpatient care to assign a bed. OPD visit stays linked.",
   "@opdAdmissionHandoffBody": {
@@ -3777,7 +3777,7 @@
   "opdNotesLabel": "Notes",
   "opdQueueAction": "Queue",
   "opdRescheduleAction": "Reschedule",
-  "opdCancelAction": "Cancel",
+  "opdCancelAction": "Cancel appointment",
   "opdCheckInAction": "Start OPD encounter",
   "opdAppointmentStartLabel": "Start time",
   "opdAppointmentEndLabel": "End time",
@@ -3789,6 +3789,7 @@
   "opdPrioritizeAction": "Prioritize",
   "opdMoveQueueAction": "Move",
   "opdQueueActionsTitle": "Queue actions",
+  "opdFlowActionsTitle": "Flow actions",
   "opdStartConsultationAction": "Start consultation",
   "opdAssignDoctorAction": "Assign doctor",
   "opdChangeDoctorAction": "Change doctor",
@@ -4468,6 +4469,9 @@
   },
   "@opdQueueActionsTitle": {
     "description": "Dialog title for OPD queue actions (move / prioritize / start)."
+  },
+  "@opdFlowActionsTitle": {
+    "description": "Dialog title for the OPD queue/flow stage actions hub."
   },
   "@opdStartConsultationAction": {
     "description": "Action label to start consultation."

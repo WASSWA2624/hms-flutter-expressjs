@@ -77,8 +77,10 @@ class _ClinicalFollowUpActionDialogState
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final DateTime today = _dateOnly(DateTime.now());
+    final String title = widget.title ?? l10n.opdFollowUpAction;
+    final String submitLabel = widget.submitLabel ?? l10n.opdFollowUpAction;
     return AppDialog(
-      title: Text(widget.title ?? l10n.opdFollowUpAction),
+      title: Text(title),
       icon: widget.icon,
       maxWidth: 720,
       scrollable: true,
@@ -86,7 +88,7 @@ class _ClinicalFollowUpActionDialogState
       content: Form(
         key: _formKey,
         child: AppFormSection(
-          density: AppFormSectionDensity.spacious,
+          density: AppFormSectionDensity.compact,
           children: <Widget>[
             if (_failure != null)
               AppFormInformationBanner.failure(
@@ -102,7 +104,9 @@ class _ClinicalFollowUpActionDialogState
                   gap: AppResponsiveFieldRowGap.form,
                   left: AppDateField(
                     value: _followUpDate,
-                    labelText: widget.dateLabel ?? l10n.opdFollowUpDateLabel,
+                    labelText: l10n.opdFieldRequiredLabel(
+                      widget.dateLabel ?? l10n.opdFollowUpDateLabel,
+                    ),
                     hintText: l10n.appDateFormatHint,
                     firstDate: today,
                     lastDate:
@@ -127,7 +131,9 @@ class _ClinicalFollowUpActionDialogState
                   ),
                   right: AppTimeField(
                     value: _followUpTime,
-                    labelText: widget.timeLabel ?? l10n.opdFollowUpTimeLabel,
+                    labelText: l10n.opdFieldRequiredLabel(
+                      widget.timeLabel ?? l10n.opdFollowUpTimeLabel,
+                    ),
                     hintText: l10n.appTimeFormatHint,
                     hourLabelText: l10n.appTimeHourLabel,
                     minuteLabelText: l10n.appTimeMinuteLabel,
@@ -155,7 +161,9 @@ class _ClinicalFollowUpActionDialogState
               children: <Widget>[
                 AppTextField(
                   controller: _notesController,
-                  labelText: widget.notesLabel ?? l10n.opdNotesLabel,
+                  labelText: l10n.opdFieldOptionalLabel(
+                    widget.notesLabel ?? l10n.opdNotesLabel,
+                  ),
                   enabled: !_isSaving,
                   maxLines: 4,
                   textCapitalization: TextCapitalization.sentences,
@@ -168,7 +176,7 @@ class _ClinicalFollowUpActionDialogState
       ),
       actions: clinicalActionDialogActions(
         context,
-        widget.submitLabel ?? l10n.opdFollowUpAction,
+        submitLabel,
         _isSaving,
         _isSaving ? null : _submit,
         submitLeadingIcon: Icons.event_repeat_outlined,

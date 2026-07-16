@@ -40,13 +40,14 @@ Future<Result<OpdFlowDetail>> submitPatientOpdEncounter(
   WidgetRef ref,
   Patient patient,
   Map<String, Object?> payload,
-) {
+) async {
   final bool forceNewEncounter = payload['force_new_encounter'] == true;
   final Object? existingEncounterId = payload['existing_encounter_id'];
+  final Result<OpdFlowDetail> result;
   if (!forceNewEncounter &&
       existingEncounterId is String &&
       existingEncounterId.trim().isNotEmpty) {
-    return ref
+    result = await ref
         .read(opdRepositoryProvider)
         .updateActiveEncounter(
           existingEncounterId.trim(),
@@ -58,17 +59,44 @@ Future<Result<OpdFlowDetail>> submitPatientOpdEncounter(
             }..remove('existing_encounter_id'),
           ),
         );
+  } else {
+    result = await ref
+        .read(opdRepositoryProvider)
+        .startOpdFlow(
+          withoutEmptyOpdPayload(<String, Object?>{
+            'tenant_id': patient.tenantId,
+            'facility_id': patient.facilityId,
+            ...payload,
+          }),
+        );
   }
+  return _patchOpdWorkspaceOnSuccess(ref, result);
+}
 
-  return ref
-      .read(opdRepositoryProvider)
-      .startOpdFlow(
-        withoutEmptyOpdPayload(<String, Object?>{
-          'tenant_id': patient.tenantId,
-          'facility_id': patient.facilityId,
-          ...payload,
-        }),
-      );
+Future<Result<OpdFlowDetail>> _persistPatientPinnedOpdMutation(
+  WidgetRef ref,
+  Future<Result<OpdFlowDetail>> Function() action,
+) async {
+  return _patchOpdWorkspaceOnSuccess(ref, await action());
+}
+
+Result<OpdFlowDetail> _patchOpdWorkspaceOnSuccess(
+  WidgetRef ref,
+  Result<OpdFlowDetail> result,
+) {
+  result.when(
+    success: (OpdFlowDetail detail) {
+      // Only patch when OPD workspace is already alive — do not bootstrap it
+      // from patient-registry so Cancel/failure and unloaded workspaces stay clean.
+      if (ref.exists(opdWorkspaceControllerProvider)) {
+        ref
+            .read(opdWorkspaceControllerProvider.notifier)
+            .applyFlowDetailPatchIfLoaded(detail);
+      }
+    },
+    failure: (_) {},
+  );
+  return result;
 }
 
 class PatientPinnedOpdEncounterDialog extends ConsumerStatefulWidget {
@@ -146,6 +174,7 @@ class _PatientPinnedOpdEncounterDialogState
         title: Text(l10n.opdWalkInDialogTitle),
         icon: const Icon(opdEncounterIcon),
         scrollable: true,
+        pinActionsToBottom: true,
         closeEnabled: !_isLoading,
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -164,7 +193,7 @@ class _PatientPinnedOpdEncounterDialogState
           ],
         ),
         actions: <Widget>[
-          AppButton.tertiary(
+          AppButton.secondary(
             label: l10n.commonCancelActionLabel,
             leadingIcon: AppActionIcons.cancel,
             enabled: !_isLoading,
@@ -188,10 +217,19 @@ class _PatientPinnedOpdEncounterDialogState
       source: 'patient_registry',
       onExistingActiveEncounter: widget.onExistingActiveEncounter,
       onCancelEncounter: (String flowId, Map<String, Object?> payload) {
-        return ref.read(opdRepositoryProvider).cancelEncounter(flowId, payload);
+        return _persistPatientPinnedOpdMutation(
+          ref,
+          () => ref
+              .read(opdRepositoryProvider)
+              .cancelEncounter(flowId, payload),
+        );
       },
       onCloseEncounter: (String flowId, Map<String, Object?> payload) {
-        return ref.read(opdRepositoryProvider).closeEncounter(flowId, payload);
+        return _persistPatientPinnedOpdMutation(
+          ref,
+          () =>
+              ref.read(opdRepositoryProvider).closeEncounter(flowId, payload),
+        );
       },
       onSubmit: (Map<String, Object?> payload) {
         return submitPatientOpdEncounter(ref, widget.patient, payload);
@@ -240,10 +278,9 @@ Future<void> openPatientOpdEncounterFlow(
     if (!context.mounted) {
       return;
     }
-    await showAppDialog<bool>(
+    await showFlowActionsDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => FlowActionsDialog(flow: result.flow!),
+      flow: result.flow!,
     );
     if (!context.mounted) {
       return;
@@ -271,10 +308,9 @@ Future<void> openPatientOpdEncounterFlow(
     return;
   }
 
-  await showAppDialog<bool>(
+  await showFlowActionsDialog(
     context: context,
-    barrierDismissible: false,
-    builder: (_) => FlowActionsDialog(flow: activeEncounter),
+    flow: activeEncounter,
   );
 }
 
@@ -354,10 +390,9 @@ Future<void> openOpdWorkspaceEncounterFlow(
 
   if (result.action == OpdEncounterDialogAction.continueWorkflow &&
       result.flow != null) {
-    final bool? changed = await showAppDialog<bool>(
+    final bool? changed = await showFlowActionsDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => FlowActionsDialog(flow: result.flow!),
+      flow: result.flow!,
     );
     if (changed == true && context.mounted) {
       showSavedMessage();
@@ -373,10 +408,9 @@ Future<void> openOpdWorkspaceEncounterFlow(
 
   final OpdFlowSummary? existingFlow = result.flow ?? activeEncounterToOpen;
   if (existingFlow != null) {
-    final bool? changed = await showAppDialog<bool>(
+    final bool? changed = await showFlowActionsDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => FlowActionsDialog(flow: existingFlow),
+      flow: existingFlow,
     );
     if (changed == true && context.mounted) {
       showSavedMessage();

@@ -5,7 +5,6 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
-import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_feedback.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action.dart';
@@ -53,11 +52,7 @@ Future<bool?> _openAssignDoctorDialog(
     return null;
   }
 
-  return showAppDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => AssignDoctorDialog(flow: flow!),
-  );
+  return showAssignDoctorDialog(context: context, flow: flow!);
 }
 
 void _invalidateOpdWorkspace(WidgetRef ref) {

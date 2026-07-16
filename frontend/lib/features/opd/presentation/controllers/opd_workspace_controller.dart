@@ -470,9 +470,9 @@ final class OpdWorkspaceController
     );
   }
 
-  Future<AppFailure?> checkInAppointment(OpdAppointment appointment) {
+  Future<AppFailure?> checkInAppointment(OpdAppointment appointment) async {
     final String key = createIdempotencyKey();
-    return _mutateFlow(
+    final AppFailure? failure = await _mutateFlow(
       () => _repository.startOpdFlow(<String, Object?>{
         'arrival_mode': 'ONLINE_APPOINTMENT',
         'appointment_id': appointment.apiId,
@@ -481,6 +481,30 @@ final class OpdWorkspaceController
         'queued_at': DateTime.now().toUtc().toIso8601String(),
         'reuse_open_encounter': true,
       }, idempotencyKey: key),
+    );
+    if (failure != null) {
+      return failure;
+    }
+    // Backend marks the appointment IN_PROGRESS; patch local appointments so
+    // reception/OPD desks stay in sync without a full reload.
+    markAppointmentInProgress(appointment);
+    return null;
+  }
+
+  /// Patches the appointment row to [IN_PROGRESS] after a successful check-in /
+  /// start-OPD flow that the backend already persisted with that status.
+  void markAppointmentInProgress(OpdAppointment appointment) {
+    final OpdWorkspaceState? latest = _currentState;
+    if (latest == null) {
+      return;
+    }
+    _emit(
+      latest.copyWith(
+        appointments: _upsertAppointment(
+          latest.appointments,
+          appointment.copyWith(status: 'IN_PROGRESS'),
+        ),
+      ),
     );
   }
 
@@ -1276,6 +1300,27 @@ final class OpdWorkspaceController
   ) {
     return _mutateFlowDetail(
       () => _repository.closeEncounter(flowId, payload),
+    );
+  }
+
+  /// Patches flows/triage from an already-persisted detail when this workspace
+  /// is loaded. No-op when unloaded so patient-registry callers do not bootstrap
+  /// OPD solely to sync.
+  void applyFlowDetailPatchIfLoaded(OpdFlowDetail detail) {
+    final OpdWorkspaceState? latest = _currentState;
+    if (latest == null) {
+      return;
+    }
+    _emit(
+      latest.copyWith(
+        selectedFlow: detail.summary.isTerminal ? null : detail,
+        clearSelectedFlow: detail.summary.isTerminal,
+        flows: _upsertOrRemoveFlow(latest.flows, detail.summary),
+        triageQueue: _upsertOrRemoveTriageFlow(
+          latest.triageQueue,
+          detail.summary,
+        ),
+      ),
     );
   }
 

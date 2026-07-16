@@ -6,18 +6,18 @@ Refactor **`ConsultationPaymentDialog`** (Patient/encounter flow: Consultation P
 
 ## Compliance checklist (from `prompt.md` - this dialog only)
 
-- [ ] Opens only through `AppDialog` / `showAppDialog` / approved helpers (`showAppWorkspaceMutationDialog`, `AppConfirmActionDialog` / text / select / text-input variants). **No** raw `AlertDialog` / `showDialog` in feature presentation code.
-- [ ] Footer actions use `AppButton` (`primary` / `secondary` / `tertiary`) + `AppActionIcons` where icons apply; labels via `context.l10n` (e.g. `commonCancelActionLabel`).
-- [ ] Footer order matches §1: dialog-specific secondary actions (left) -> mutating Create/Edit/Delete when present (Edit labeled **Edit**, not Update) -> **Cancel** dismiss/abort. Committing primary sits immediately left of Cancel when Cancel is present; destructive confirms use existing error/delete patterns.
-- [ ] Confirm dialogs: one Confirm (or domain verb) + Cancel - no duplicate save-then-confirm pairs in the same footer.
-- [ ] Title is **role-based / general** (not the patient's personal name); passed through `AppDialog` so `toDialogTitleUppercase` keeps casing consistent; meaningful `icon` when siblings in this flow already use one.
-- [ ] Loading / mutation in flight: shared loading primitives; `closeEnabled: false` when needed; `barrierDismissible: false` on mutating openers; competing footer actions disabled until work finishes.
-- [ ] After success or failure: refresh dialog state; on success only, patch/invalidate Riverpod so parent workspaces stay current; Cancel/failure must not patch.
-- [ ] Body reuses shared components where equivalents exist (patient chrome, encounter hubs, triage/vitals, status/forms). Extract under `frontend/lib/shared/` if two inventory dialogs need the same section - do not fork per feature.
-- [ ] Opens with contextual IDs already resolved (patient, encounter, queue item, bed, appointment); permission-aware actions stay behind existing wrappers.
-- [ ] Every load/mutation HTTP call succeeds on the happy path against the real backend contract; failures surface via shared failure banner/helper; no silent ignore / fake local success.
-- [ ] Still reachable from every *Used from* / opener site listed below.
-- [ ] `frontend/test/shared/layout/workspace_ui_pattern_test.dart` stays green for this module's presentation code.
+- [x] Opens only through `AppDialog` / `showAppDialog` / approved helpers (`showAppWorkspaceMutationDialog`, `AppConfirmActionDialog` / text / select / text-input variants). **No** raw `AlertDialog` / `showDialog` in feature presentation code.
+- [x] Footer actions use `AppButton` (`primary` / `secondary` / `tertiary`) + `AppActionIcons` where icons apply; labels via `context.l10n` (e.g. `commonCancelActionLabel`).
+- [x] Footer order matches §1: dialog-specific secondary actions (left) -> mutating Create/Edit/Delete when present (Edit labeled **Edit**, not Update) -> **Cancel** dismiss/abort. Committing primary sits immediately left of Cancel when Cancel is present; destructive confirms use existing error/delete patterns.
+- [x] Confirm dialogs: one Confirm (or domain verb) + Cancel - no duplicate save-then-confirm pairs in the same footer.
+- [x] Title is **role-based / general** (not the patient's personal name); passed through `AppDialog` so `toDialogTitleUppercase` keeps casing consistent; meaningful `icon` when siblings in this flow already use one.
+- [x] Loading / mutation in flight: shared loading primitives; `closeEnabled: false` when needed; `barrierDismissible: false` on mutating openers; competing footer actions disabled until work finishes.
+- [x] After success or failure: refresh dialog state; on success only, patch/invalidate Riverpod so parent workspaces stay current; Cancel/failure must not patch.
+- [x] Body reuses shared components where equivalents exist (patient chrome, encounter hubs, triage/vitals, status/forms). Extract under `frontend/lib/shared/` if two inventory dialogs need the same section - do not fork per feature.
+- [x] Opens with contextual IDs already resolved (patient, encounter, queue item, bed, appointment); permission-aware actions stay behind existing wrappers.
+- [x] Every load/mutation HTTP call succeeds on the happy path against the real backend contract; failures surface via shared failure banner/helper; no silent ignore / fake local success.
+- [x] Still reachable from every *Used from* / opener site listed below.
+- [x] `frontend/test/shared/layout/workspace_ui_pattern_test.dart` stays green for this module's presentation code.
 
 ## Context for the executing agent
 
@@ -35,30 +35,29 @@ You are a coding AI agent with full read/write access to this Flutter HMS repo. 
 | Purpose | Patient/encounter flow: Consultation Payment (shared/opd_actions). |
 | Defined in | `frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart:1109` |
 | Kind | `shared` |
-| Paired opener(s) | `—` |
+| Paired opener(s) | `showConsultationPaymentDialog` |
 | Used from | see list below |
 
 ### Used from
 
-- `—`
+- `frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart` (`FlowActionsDialog`)
 
 ### Source peek (heuristic - verify in code)
 
 | Signal | Observation |
 | --- | --- |
 | `AppDialog` in region | yes |
-| `showAppDialog` / workspace helpers | no / unclear |
+| `showAppDialog` / workspace helpers | `showConsultationPaymentDialog` |
 | Raw `showDialog` / `AlertDialog` | not seen in peek |
-| Title snippets | `actionLabel` |
-| `AppButton` variants (order seen) | primary |
-| `barrierDismissible: false` | not seen |
-| `closeEnabled: false` | not seen |
-| Loading primitives | seen |
+| Title snippets | `opdManageConsultationBillingAction` |
+| `AppButton` variants (order seen) | Cancel secondary -> primary |
+| `barrierDismissible: false` | yes (opener) |
+| `closeEnabled: false` | yes while saving |
+| Loading primitives | `AppButton.isLoading` + disabled Cancel/close |
 
 ### Likely gaps vs `prompt.md`
 
-- Confirm mutating openers set `barrierDismissible: false` while submit is in flight / for mutating dialogs.
-- Loading path exists - ensure `closeEnabled: false` and disabled Cancel while mutation/load is in flight.
+- None remaining after standardization.
 
 ## Shared building blocks (mandatory reuse)
 

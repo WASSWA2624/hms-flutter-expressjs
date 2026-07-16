@@ -9,6 +9,7 @@ import 'package:hosspi_hms/shared/components/app_time_field.dart';
 import 'package:hosspi_hms/shared/components/app_time_value.dart';
 import 'package:hosspi_hms/shared/components/app_vitals_form.dart';
 import 'package:hosspi_hms/shared/forms/app_form_section.dart';
+import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 
 @immutable
 final class AppRecordVitalsInitialValues {
@@ -149,6 +150,7 @@ class _AppRecordVitalsDialogState extends State<AppRecordVitalsDialog> {
       title: Text(widget.title),
       icon: const Icon(Icons.monitor_heart_outlined),
       scrollable: true,
+      closeEnabled: !_isSaving,
       maxWidth: 760,
       content: Form(
         key: _formKey,
@@ -267,18 +269,28 @@ class _AppRecordVitalsDialogState extends State<AppRecordVitalsDialog> {
         ),
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        // Cancel left of primary (matches confirm helpers / RecordVitalsDialog).
+        AppButton.secondary(
           label: widget.cancelLabel,
+          leadingIcon: AppActionIcons.cancel,
           enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: _isSaving
+              ? null
+              : () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
           label: widget.submitLabel,
+          leadingIcon: _isEditing ? AppActionIcons.edit : AppActionIcons.save,
           isLoading: _isSaving,
-          onPressed: _submit,
+          onPressed: _isSaving ? null : _submit,
         ),
       ],
     );
+  }
+
+  bool get _isEditing {
+    final String? id = widget.initialValues?.id?.trim();
+    return id != null && id.isNotEmpty;
   }
 
   void _populateInitialValues(AppRecordVitalsInitialValues? initialValues) {
@@ -326,6 +338,9 @@ class _AppRecordVitalsDialogState extends State<AppRecordVitalsDialog> {
   }
 
   Future<void> _submit() async {
+    if (_isSaving) {
+      return;
+    }
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }

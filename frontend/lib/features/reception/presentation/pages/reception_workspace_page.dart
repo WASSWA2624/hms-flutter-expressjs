@@ -1163,26 +1163,23 @@ class _ReceptionWorkspaceContentState
       return;
     }
 
-    final Patient? created = await showAppDialog<Patient>(
+    final Patient? created = await showRegisterNewPatientDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => RegisterNewPatientDialog(
+      referenceData: loaded.referenceData,
+      registrationScope: PatientRegistrationScope.resolve(
         referenceData: loaded.referenceData,
-        registrationScope: PatientRegistrationScope.resolve(
-          referenceData: loaded.referenceData,
-          accessPolicy: ref.read(appAccessPolicyProvider),
-        ),
-        onLookupDuplicates: (PatientDuplicateQuery query) {
-          return ref
-              .read(patientRegistryControllerProvider.notifier)
-              .loadDuplicateCandidates(query);
-        },
-        onSubmit: (Map<String, Object?> payload) {
-          return ref
-              .read(patientRegistryControllerProvider.notifier)
-              .createPatient(payload);
-        },
+        accessPolicy: ref.read(appAccessPolicyProvider),
       ),
+      onLookupDuplicates: (PatientDuplicateQuery query) {
+        return ref
+            .read(patientRegistryControllerProvider.notifier)
+            .loadDuplicateCandidates(query);
+      },
+      onSubmit: (Map<String, Object?> payload) {
+        return ref
+            .read(patientRegistryControllerProvider.notifier)
+            .createPatient(payload);
+      },
     );
 
     if (created == null || !mounted) {
@@ -1194,10 +1191,9 @@ class _ReceptionWorkspaceContentState
   }
 
   Future<void> _openFlowActions(OpdFlowSummary flow) async {
-    final bool? changed = await showAppDialog<bool>(
+    final bool? changed = await showFlowActionsDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => FlowActionsDialog(flow: flow),
+      flow: flow,
     );
     if (changed == true && mounted) {
       ScaffoldMessenger.of(

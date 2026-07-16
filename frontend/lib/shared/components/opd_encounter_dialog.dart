@@ -290,6 +290,13 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   bool get _showPatientSection =>
       !_pinPatientContext && !_pinAppointmentContext;
 
+  bool get _isInitialLoading =>
+      _isLoadingPatients || _isLoadingAppointments || _isLoadingProviders;
+
+  /// Blocks dismiss/close and competing footer actions while initial option
+  /// loads or a mutation is in flight.
+  bool get _blocksDismiss => _isSaving || _isInitialLoading;
+
   @override
   void initState() {
     super.initState();
@@ -507,13 +514,15 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       title: Text(l10n.opdWalkInDialogTitle),
       icon: const Icon(opdEncounterIcon),
       scrollable: true,
-      closeEnabled: !_isSaving,
+      pinActionsToBottom: true,
+      closeEnabled: !_blocksDismiss,
       maxWidth: 880,
       content: AppFormShell(
         formKey: _formKey,
-        enabled: !_isSaving,
+        enabled: !_blocksDismiss,
         formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
+          if (_isInitialLoading) const LinearProgressIndicator(),
           if (_shouldShowActiveEncounterNotice()) _activeEncounterNotice(l10n),
           if (_showPatientSection)
             AppSectionPanel(
@@ -522,7 +531,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
               children: <Widget>[
                 _WalkInModeSelector(
                   value: _patientMode,
-                  enabled: !_isSaving && !hasActiveEncounter,
+                  enabled: !_blocksDismiss && !hasActiveEncounter,
                   existingLabel: l10n.opdExistingPatientModeLabel,
                   appointmentLabel: l10n.opdAppointmentPatientModeLabel,
                   newPatientLabel: l10n.opdNewPatientModeLabel,
@@ -547,41 +556,43 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
             AppButton.secondary(
               label: l10n.opdStartNewEncounterAction,
               leadingIcon: AppActionIcons.add,
-              enabled: !_isSaving,
+              enabled: !_blocksDismiss,
               onPressed: _promptStartNewEncounter,
             ),
           AppButton.secondary(
             label: l10n.opdContinueEncounterAction,
             leadingIcon: Icons.play_arrow_outlined,
-            enabled: !_isSaving,
+            enabled: !_blocksDismiss,
             onPressed: _continueWorkflow,
           ),
           if (widget.onCloseEncounter != null)
             AppButton.secondary(
               label: l10n.opdCloseEncounterAction,
               leadingIcon: AppActionIcons.success,
-              enabled: !_isSaving,
+              enabled: !_blocksDismiss,
               onPressed: _promptCloseEncounter,
             ),
           if (widget.onCancelEncounter != null)
             AppButton.secondary(
               label: l10n.opdCancelEncounterAction,
               leadingIcon: AppActionIcons.delete,
-              enabled: !_isSaving,
+              enabled: !_blocksDismiss,
               onPressed: _promptCancelEncounter,
             ),
         ],
-        AppButton.tertiary(
+        AppButton.secondary(
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
-          enabled: !_isSaving,
-          onPressed: _isSaving ? null : () => Navigator.of(context).maybePop(),
+          enabled: !_blocksDismiss,
+          onPressed: _blocksDismiss
+              ? null
+              : () => Navigator.of(context).maybePop(),
         ),
         AppButton.primary(
           label: primaryActionLabel,
           leadingIcon: primaryActionIcon,
           enabled:
-              !_isSaving &&
+              !_blocksDismiss &&
               (!_isResolvingActiveEncounter || _activeEncounter != null),
           isLoading: _isSaving,
           onPressed: _submit,
@@ -606,7 +617,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
             helperText: _lockArrivalMode
                 ? l10n.opdEncounterArrivalModeLockedHelper
                 : null,
-            enabled: !_isSaving && !_lockArrivalMode,
+            enabled: !_blocksDismiss && !_lockArrivalMode,
             onChanged: (String? value) {
               setState(() {
                 _arrivalMode = value ?? 'WALK_IN';
@@ -633,7 +644,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
                   l10n,
                   l10n.opdEmergencySeverityLabel,
                 ),
-                enabled: !_isSaving,
+                enabled: !_blocksDismiss,
                 onChanged: (String? value) {
                   setState(() {
                     _emergencySeverity = value ?? _emergencySeverity;
@@ -651,7 +662,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
                   l10n,
                   l10n.opdTriageLevelLabel,
                 ),
-                enabled: !_isSaving,
+                enabled: !_blocksDismiss,
                 onChanged: (String? value) {
                   setState(() {
                     _triageLevel = value;
@@ -668,7 +679,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           labelText: _opdOptionalFieldLabel(l10n, l10n.opdSearchProviderLabel),
           helperText: l10n.opdSearchProviderHelper,
           emptyHelperText: l10n.opdNoProvidersHelper,
-          enabled: !_isSaving,
+          enabled: !_blocksDismiss,
           isLoading: _isLoadingProviders,
           onChanged: (String? value) {
             setState(() {
@@ -707,7 +718,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
             l10n,
             l10n.opdCurrencyLabel,
           ),
-          enabled: !_isSaving,
+          enabled: !_blocksDismiss,
           isRequired: _payNow,
           allowZero: !_payNow,
           onCurrencyChanged: (String? value) {
@@ -731,13 +742,13 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         AppTextField(
           controller: _notesController,
           labelText: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
-          enabled: !_isSaving,
+          enabled: !_blocksDismiss,
           maxLines: 3,
         ),
         AppSwitchField(
           title: l10n.opdPaymentRequiredLabel,
           value: _requireConsultationPayment,
-          enabled: !_isSaving && !billingAlreadyPaid,
+          enabled: !_blocksDismiss && !billingAlreadyPaid,
           secondary: const Icon(Icons.payments_outlined),
           onChanged: (bool value) {
             setState(() {
@@ -751,7 +762,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         AppCheckboxField(
           title: l10n.patientsMarkPaymentReceivedLabel,
           value: _payNow,
-          enabled: !_isSaving && !billingAlreadyPaid,
+          enabled: !_blocksDismiss && !billingAlreadyPaid,
           secondary: const Icon(Icons.point_of_sale_outlined),
           onChanged: (bool value) {
             setState(() {
@@ -774,7 +785,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
                 l10n,
                 l10n.opdPaymentMethodLabel,
               ),
-              enabled: !_isSaving,
+              enabled: !_blocksDismiss,
               onChanged: (String? value) {
                 setState(() {
                   _paymentMethod = value ?? 'CASH';
@@ -793,7 +804,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
                 l10n,
                 l10n.opdTransactionReferenceLabel,
               ),
-              enabled: !_isSaving,
+              enabled: !_blocksDismiss,
             ),
             breakpoint: 520,
             gap: AppResponsiveFieldRowGap.form,
@@ -999,7 +1010,11 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           _applyProviderDefaultsToState(_providerId);
         });
       },
-      failure: (_) {},
+      failure: (AppFailure failure) {
+        setState(() {
+          _failure = failure;
+        });
+      },
     );
   }
 
@@ -1211,7 +1226,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         labelText: _opdRequiredFieldLabel(l10n, l10n.opdSearchPatientLabel),
         semanticLabel: _opdRequiredFieldLabel(l10n, l10n.opdSearchPatientLabel),
         isLoading: _isLoadingPatients,
-        enabled: !_isSaving,
+        enabled: !_blocksDismiss,
         onChanged: _selectExistingPatient,
         validator: (String? value) =>
             _patientMode != _WalkInPatientMode.existing || _isNonEmpty(value)
@@ -1231,7 +1246,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           l10n.opdAppointmentPatientLabel,
         ),
         isLoading: _isLoadingAppointments,
-        enabled: !_isSaving,
+        enabled: !_blocksDismiss,
         onChanged: _selectAppointmentPatient,
         validator: (String? value) =>
             _patientMode != _WalkInPatientMode.appointment || _isNonEmpty(value)
@@ -1245,7 +1260,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           referenceData: _patientReferenceData,
           accessPolicy: ref.watch(appAccessPolicyProvider),
         ),
-        enabled: !_isSaving,
+        enabled: !_blocksDismiss,
         includeNotes: false,
         includeActiveToggle: false,
         requireGender: false,
@@ -1400,10 +1415,13 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           _applyActiveEncounterToState(remoteMatch ?? localMatch);
         });
       },
-      failure: (_) {
+      failure: (AppFailure failure) {
         setState(() {
           _isResolvingActiveEncounter = false;
           _applyActiveEncounterToState(localMatch);
+          if (localMatch == null) {
+            _failure = failure;
+          }
         });
       },
     );
@@ -1607,7 +1625,11 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           _patientReferenceData = data;
         });
       },
-      failure: (_) {},
+      failure: (AppFailure failure) {
+        setState(() {
+          _failure = failure;
+        });
+      },
     );
   }
 
@@ -1672,8 +1694,9 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         _applyInitialContext(force: true);
         _refreshActiveEncounterForSelection();
       },
-      failure: (_) {
+      failure: (AppFailure failure) {
         setState(() {
+          _failure = failure;
           _isLoadingAppointments = false;
         });
       },
@@ -1699,8 +1722,9 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           _isLoadingProviders = false;
         });
       },
-      failure: (_) {
+      failure: (AppFailure failure) {
         setState(() {
+          _failure = failure;
           _isLoadingProviders = false;
         });
       },
@@ -1931,6 +1955,7 @@ class _CloseEncounterDialog extends StatefulWidget {
 }
 
 class _CloseEncounterDialogState extends State<_CloseEncounterDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _reasonController;
   bool _isSaving = false;
   AppFailure? _failure;
@@ -1982,13 +2007,13 @@ class _CloseEncounterDialogState extends State<_CloseEncounterDialog> {
       title: Text(l10n.opdCloseEncounterAction),
       icon: const Icon(AppActionIcons.success),
       closeEnabled: !_isSaving,
-      content: AppFormSection(
+      pinActionsToBottom: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        enabled: !_isSaving,
+        density: AppFormSectionDensity.compact,
+        formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
-          if (_failure != null)
-            AppFormInformationBanner.failure(
-              context: context,
-              failure: _failure!,
-            ),
           AppFormInformationBanner.message(
             title: l10n.clinicalEncounterNumberLabel,
             message: widget.flow.apiId,
@@ -1998,21 +2023,25 @@ class _CloseEncounterDialogState extends State<_CloseEncounterDialog> {
             labelText: l10n.opdEncounterCloseReasonLabel,
             maxLines: 3,
             enabled: !_isSaving,
+            textCapitalization: TextCapitalization.sentences,
+            prefixIcon: const Icon(Icons.notes_outlined),
           ),
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.secondary(
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: !_isSaving,
-          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+          onPressed: _isSaving
+              ? null
+              : () => Navigator.of(context).maybePop(),
         ),
         AppButton.primary(
           label: l10n.opdCloseEncounterAction,
           leadingIcon: AppActionIcons.success,
           isLoading: _isSaving,
-          onPressed: _submit,
+          onPressed: _isSaving ? null : _submit,
         ),
       ],
     );
@@ -2034,6 +2063,7 @@ class _CancelEncounterDialog extends StatefulWidget {
 }
 
 class _CancelEncounterDialogState extends State<_CancelEncounterDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _notesController;
   String _reasonCode = _opdEncounterCancelReasonCodes.first;
   bool _isSaving = false;
@@ -2110,13 +2140,13 @@ class _CancelEncounterDialogState extends State<_CancelEncounterDialog> {
       title: Text(l10n.opdCancelEncounterAction),
       icon: Icon(AppActionIcons.delete, color: colorScheme.error),
       closeEnabled: !_isSaving,
-      content: AppFormSection(
+      pinActionsToBottom: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        enabled: !_isSaving,
+        density: AppFormSectionDensity.compact,
+        formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
-          if (_failure != null)
-            AppFormInformationBanner.failure(
-              context: context,
-              failure: _failure!,
-            ),
           if (_validationMessage != null)
             AppFormInformationBanner.message(
               message: _validationMessage!,
@@ -2152,6 +2182,8 @@ class _CancelEncounterDialogState extends State<_CancelEncounterDialog> {
               labelText: l10n.opdEncounterCancelReasonNotesLabel,
               maxLines: 3,
               enabled: !_isSaving,
+              textCapitalization: TextCapitalization.sentences,
+              prefixIcon: const Icon(Icons.notes_outlined),
               onChanged: (_) {
                 if (_validationMessage != null) {
                   setState(() => _validationMessage = null);
@@ -2161,18 +2193,20 @@ class _CancelEncounterDialogState extends State<_CancelEncounterDialog> {
         ],
       ),
       actions: <Widget>[
-        AppButton.tertiary(
+        AppButton.secondary(
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: !_isSaving,
-          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+          onPressed: _isSaving
+              ? null
+              : () => Navigator.of(context).maybePop(),
         ),
         AppButton.primary(
           label: l10n.opdCancelEncounterAction,
           leadingIcon: AppActionIcons.delete,
           color: colorScheme.error,
           isLoading: _isSaving,
-          onPressed: _submit,
+          onPressed: _isSaving ? null : _submit,
         ),
       ],
     );
@@ -2181,8 +2215,10 @@ class _CancelEncounterDialogState extends State<_CancelEncounterDialog> {
 
 /// Opens [OpdEncounterDialog] through the shared [showAppDialog] shell.
 ///
-/// Barrier dismiss is always disabled so encounter mutations cannot be
-/// abandoned mid-flight without an explicit Cancel action.
+/// Canonical entry point for OPD encounter start/check-in from workspace,
+/// appointment actions, and related flows. Barrier dismiss is always disabled
+/// so in-flight loads/mutations cannot be abandoned without an explicit Cancel;
+/// the dialog disables close and competing footer actions while busy.
 Future<OpdEncounterDialogResult?> showOpdEncounterDialog({
   required BuildContext context,
   required OpdEncounterDialog dialog,

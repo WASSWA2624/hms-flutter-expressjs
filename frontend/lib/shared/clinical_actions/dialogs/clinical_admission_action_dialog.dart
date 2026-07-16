@@ -89,7 +89,7 @@ class _ClinicalAdmissionActionDialogState
     final String title = widget.title ?? l10n.clinicalRequestAdmissionAction;
     final String submitLabel =
         widget.submitLabel ?? l10n.clinicalRequestAdmissionAction;
-    final IconData? submitLeadingIcon =
+    final IconData submitLeadingIcon =
         widget.submitLeadingIcon ?? Icons.local_hospital_outlined;
 
     if (!widget.requiresBed) {

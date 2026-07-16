@@ -317,10 +317,9 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     if (!mounted || flow == null) {
       return;
     }
-    final bool? changed = await showAppDialog<bool>(
+    final bool? changed = await showFlowActionsDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => FlowActionsDialog(flow: flow),
+      flow: flow,
     );
     if (changed == true && mounted) {
       ScaffoldMessenger.of(
@@ -2696,8 +2695,15 @@ class _OpdPatientActionsDialogState
           label: l10n.opdCancelAction,
           icon: Icons.cancel_outlined,
           enabled: !terminal && status != 'CANCELLED',
-          onPressed: () =>
-              _openNested(OpdCancelAppointmentDialog(appointment: appointment)),
+          onPressed: () async {
+            final bool? changed = await showOpdCancelAppointmentDialog(
+              context: context,
+              appointment: appointment,
+            );
+            if (changed == true && context.mounted) {
+              Navigator.of(context).pop(true);
+            }
+          },
         ),
       ]);
     }
@@ -2772,24 +2778,12 @@ class _OpdPatientActionsDialogState
     if (!mounted) {
       return;
     }
-    final bool? activeChanged = await showAppDialog<bool>(
+    final bool? activeChanged = await showFlowActionsDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => FlowActionsDialog(flow: activeEncounter),
+      flow: activeEncounter,
     );
     if (mounted) {
       Navigator.of(context).pop(activeChanged == true);
-    }
-  }
-
-  Future<void> _openNested(Widget dialog) async {
-    final bool? changed = await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => dialog,
-    );
-    if (changed == true && mounted) {
-      Navigator.of(context).pop(true);
     }
   }
 

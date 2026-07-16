@@ -1469,10 +1469,12 @@ class EmergencyActionPanel extends ConsumerWidget {
 
   Future<void> _openTriageDialog(BuildContext context) async {
     final EmergencyWorkspaceController controller = _controller(context);
+    final AppLocalizations l10n = context.l10n;
     final bool? changed = await showAppTriageActionDialog<bool>(
       context: context,
       builder: (_) => AppTriageActionDialog(
         title: EmergencyText.recordTriage,
+        cancelLabel: l10n.commonCancelActionLabel,
         submitLabel: EmergencyText.saveTriage,
         requiredMessage: EmergencyText.required,
         triageLevelLabel: 'Triage level',

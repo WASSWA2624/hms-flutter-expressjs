@@ -73,41 +73,39 @@ void main() {
               label: 'Open register dialog',
               onPressed: () {
                 unawaited(
-                  showAppDialog<Patient>(
+                  showRegisterNewPatientDialog(
                     context: context,
-                    builder: (_) => RegisterNewPatientDialog(
-                      referenceData: const PatientReferenceData(),
-                      onLookupDuplicates: (PatientDuplicateQuery query) async {
-                        lookupCount += 1;
-                        expect(query.firstName, 'Jane');
-                        expect(query.lastName, 'Doe');
-                        return const Result<
-                          AppPage<PatientDuplicateCandidate>
-                        >.success(
-                          AppPage<PatientDuplicateCandidate>(
-                            items: <PatientDuplicateCandidate>[
-                              PatientDuplicateCandidate(
-                                reviewId: 'review-1',
-                                confidenceScore: 92,
-                                classification: 'STRONG_MATCH',
-                                matchReasons: <String>['name', 'phone'],
-                                candidatePatient: Patient(
-                                  id: 'patient-1',
-                                  displayName: 'Jane Doe',
-                                  primaryPhone: '+256700000000',
-                                ),
+                    referenceData: const PatientReferenceData(),
+                    onLookupDuplicates: (PatientDuplicateQuery query) async {
+                      lookupCount += 1;
+                      expect(query.firstName, 'Jane');
+                      expect(query.lastName, 'Doe');
+                      return const Result<
+                        AppPage<PatientDuplicateCandidate>
+                      >.success(
+                        AppPage<PatientDuplicateCandidate>(
+                          items: <PatientDuplicateCandidate>[
+                            PatientDuplicateCandidate(
+                              reviewId: 'review-1',
+                              confidenceScore: 92,
+                              classification: 'STRONG_MATCH',
+                              matchReasons: <String>['name', 'phone'],
+                              candidatePatient: Patient(
+                                id: 'patient-1',
+                                displayName: 'Jane Doe',
+                                primaryPhone: '+256700000000',
                               ),
-                            ],
-                            request: AppPageRequest(pageSize: 8),
-                            totalItemCount: 1,
-                          ),
-                        );
-                      },
-                      onSubmit: (Map<String, Object?> payload) async {
-                        submitCount += 1;
-                        return _registeredPatientResult(payload);
-                      },
-                    ),
+                            ),
+                          ],
+                          request: AppPageRequest(pageSize: 8),
+                          totalItemCount: 1,
+                        ),
+                      );
+                    },
+                    onSubmit: (Map<String, Object?> payload) async {
+                      submitCount += 1;
+                      return _registeredPatientResult(payload);
+                    },
                   ),
                 );
               },
