@@ -1,14 +1,51 @@
-# Standardize `FollowUpDialog` — Follow Up (shared/opd_actions).
+# Standardize `FollowUpDialog` — Follow Up
 
-## Objective
+## Mission
 
-Deeply refactor **`FollowUpDialog`** (Patient/encounter flow: Follow Up (shared/opd_actions).) so it **100% complies** with [`prompt.md`](../prompt.md) — the patient-encounter dialog standardization contract. This is structural, not cosmetic: consolidate onto the established product surface used by the rest of [`dialog-inventory/02-patient-encounter-flow.md`](../dialog-inventory/02-patient-encounter-flow.md). UI state and backend persistence must stay aligned per [`frontend/.cursor/instant_ui_sync.mdc`](../frontend/.cursor/instant_ui_sync.mdc) and [`.cursor/api-contract.mdc`](../.cursor/api-contract.mdc).
+Schedule or record a follow-up from OPD/clinical/physiotherapy flows.
 
-## Compliance checklist (from `prompt.md` — this dialog only)
+Bring **`FollowUpDialog`** to **100% compliance** with [`prompt.md`](../prompt.md) (patient-encounter dialog standardization). This is **structural**, not cosmetic: consolidate onto the established product surface used across [`dialog-inventory/02-patient-encounter-flow.md`](../dialog-inventory/02-patient-encounter-flow.md). Do not invent another dialog shell, use raw `AlertDialog` / `showDialog`, or keep duplication merely to shrink the diff.
+
+## Normative contracts (read before editing)
+
+| Contract | Path | Authority |
+| --- | --- | --- |
+| Dialog standardization | [`prompt.md`](../prompt.md) | Shells, reuse, loading/actions, titles, verification |
+| API envelopes / IDs | [`.cursor/api-contract.mdc`](../.cursor/api-contract.mdc) | `snake_case`, `human_friendly_id`, success/error envelopes |
+| Instant UI sync | [`frontend/.cursor/instant_ui_sync.mdc`](../frontend/.cursor/instant_ui_sync.mdc) | HTTP mutate, Riverpod patch on success, WS reconcile only |
+| Shared components | [`frontend/.cursor/components.mdc`](../frontend/.cursor/components.mdc) | Reuse under `frontend/lib/shared/`; no feature forks of shared UI |
+| Localization | [`frontend/.cursor/localization_i18n.mdc`](../frontend/.cursor/localization_i18n.mdc) | All user-facing strings via l10n |
+| Permissions | [`frontend/.cursor/permissions.mdc`](../frontend/.cursor/permissions.mdc) | Preserve RBAC/ABAC wrappers; never expose unauthorized actions |
+
+## Target
+
+| Field | Value |
+| --- | --- |
+| Symbol | `FollowUpDialog` |
+| Purpose | Follow Up |
+| Module / surface | `shared/opd_actions` |
+| Inventory kind | `shared` |
+| Presentation shape | `widget_dialog` |
+| Defined in | `frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart:1856` |
+| Extends / uses | AppDialog / showAppDialog (typical) |
+| Paired opener(s) | _none listed in inventory_ |
+| Primary commit | Save follow-up |
+| Slices to keep in sync | follow-up appointment/task, encounter disposition cues |
+| Sibling reuse targets | `ReferralDialog`, `PatientAppointmentQuickDialog` |
+| Action helper peek | _none detected — adopt an approved action helper when the footer fits_ |
+| Controllers (region) | _not detected in peek — trace widget → workspace controller → repository → backend route_ |
+| Mutations (region) | `mutation: createFollowUp` |
+
+### Used from
+
+- `frontend/lib/features/physiotherapy/presentation/pages/physiotherapy_workspace_page.dart`
+- `frontend/lib/features/clinical/presentation/pages/clinical_workspace_page.dart`
+
+## Compliance checklist (`prompt.md` — this dialog only)
 
 ### 1. Established shells
-- [ ] Composed through `AppDialog` and opened with `showAppDialog`, or an approved helper: `showAppWorkspaceMutationDialog`, `showAppWorkspaceActionDialog`, `AppConfirmActionDialog` variants, or an existing `show*` / `open*` encounter helper.
-- [ ] **No** raw `AlertDialog` / `showDialog` on this dialog's presentation path.
+- [ ] Composed through `AppDialog` via `showAppDialog`, or an approved helper: `showAppWorkspaceMutationDialog`, `showAppWorkspaceActionDialog`, `AppConfirmActionDialog` / `AppSelectActionDialog` / `AppTextActionDialog` / `AppTriageActionDialog`, or an existing `show*` / `open*` encounter helper.
+- [ ] **No** raw `AlertDialog` / `showDialog` on this presentation path.
 - [ ] Purpose, listed call sites, resolved contextual IDs, and permission wrappers are preserved.
 
 ### 2. Reuse before creating
@@ -21,7 +58,8 @@ Deeply refactor **`FollowUpDialog`** (Patient/encounter flow: Follow Up (shared/
 - [ ] Loading uses only `AppLoadingIndicator` or `AppLoadingSurface`; submission uses `AppButton.isLoading`. **No** `CircularProgressIndicator` or other loaders.
 - [ ] While loading or saving: Cancel, close, and competing actions are disabled; `closeEnabled: false`; mutating openers use `barrierDismissible: false`.
 - [ ] Footer order left→right: dialog-specific **secondary** actions, then **Cancel**, then the **primary** commit. Prefer one commit; use Create → Edit → Delete only when multiple mutations are essential.
-- [ ] Actions use `AppButton` + `AppActionIcons` + localized labels. Label is **Cancel** (not Close) and **Edit** (not Update). Confirmation dialogs: one domain verb/Confirm + Cancel.
+- [ ] Every `AppButton` has a leading icon and localized label. Use `AppActionIcons` for shared verbs; match sibling encounter flows for domain actions.
+- [ ] Labels: **Cancel** (not Close), **Edit** (not Update). Confirmation dialogs: one domain verb/Confirm + Cancel.
 - [ ] Prefer `clinicalActionDialogActions` / `buildAppDialogFormActions` / `buildAppDialogWizardActions` when they fit instead of a hand-rolled footer.
 
 ### 4. Titles
@@ -37,69 +75,50 @@ Deeply refactor **`FollowUpDialog`** (Patient/encounter flow: Follow Up (shared/
 - [ ] Cancel / failure neither patches nor dismisses as if saved.
 
 ### 6. Reachability and verification
-- [ ] Still reachable from every paired opener and *Used from* site listed below.
+- [ ] Still reachable from every paired opener and *Used from* site listed above.
 - [ ] `frontend/test/shared/layout/workspace_ui_pattern_test.dart` stays green. Add focused widget, controller, DTO, and (when the stack is touched) backend route/schema/service tests for this dialog's path.
 
-## Context for the executing agent
-
-You are a coding AI agent with full read/write access to this Flutter HMS repo. Execute every step below. Do not ask for clarification. Treat [`prompt.md`](../prompt.md) as normative for dialog structure/UX, [`.cursor/api-contract.mdc`](../.cursor/api-contract.mdc) as normative for HTTP contracts, and [`frontend/.cursor/instant_ui_sync.mdc`](../frontend/.cursor/instant_ui_sync.mdc) as normative for Riverpod/realtime sync.
-
-**Scope:** only `FollowUpDialog` and the minimum call-site / shared-helper edits required for compilation and compliance. Do **not** expand to unrelated inventory rows or invent a new dialog shell. Do not retain duplication merely to minimize the diff.
-
-**Module / surface:** `shared/opd_actions`  
-**Inventory kind:** `shared`  
-**Extends / uses (inventory):** AppDialog / showAppDialog (typical)  
-**Action helper peek:** _none detected — adopt an approved action helper when the footer fits_  
-**Controller / mutation peek:** `mutation-ish call: createFollowUp`
-
-## Current inventory row
-
-| Field | Value |
-| --- | --- |
-| Symbol | `FollowUpDialog` |
-| Purpose | Patient/encounter flow: Follow Up (shared/opd_actions). |
-| Defined in | `frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart:1856` |
-| Kind | `shared` |
-| Paired opener(s) | _none listed — discover call sites from *Used from* and keep them working_ |
-| Used from | see list below |
-
-### Used from
-
-- `frontend/lib/features/physiotherapy/presentation/pages/physiotherapy_workspace_page.dart`
-- `frontend/lib/features/clinical/presentation/pages/clinical_workspace_page.dart`
-
-### Source peek (heuristic — verify in code)
+## Compliance snapshot (heuristic — verify in code)
 
 | Signal | Observation |
 | --- | --- |
-| `AppDialog` in region | no / unclear |
-| `showAppDialog` / workspace helpers | no / unclear |
+| Approved shell signals | unclear — verify in source |
 | Raw `showDialog` / `AlertDialog` | not seen in peek |
 | `CircularProgressIndicator` | not seen |
-| Title snippets | _not detected in peek — inspect source_ |
-| `AppButton` variants (order seen) | _not detected — inspect `AppDialog.actions`_ |
+| Title snippets | `l10n.opdFollowUpAction` |
+| `AppButton` variants (order seen) | _not detected — inspect `AppDialog.actions` / helper actions_ |
+| `AppActionIcons` | not seen |
 | `barrierDismissible: false` | not seen |
 | `closeEnabled: false` | not seen |
 | Loading primitives | not seen |
+| Peek region size | 685 chars |
 
-### Likely gaps vs `prompt.md`
+### Priority gaps to close
 
-- No clear `AppDialog` / `showAppDialog` / workspace-helper usage found near the symbol — verify the shell and migrate if needed.
-- Confirm mutating openers set `barrierDismissible: false` for mutating dialogs / while submit is in flight.
-- No obvious loading primitive (`isLoading` / `AppLoadingIndicator` / `AppLoadingSurface`) near the symbol — add shared loading UX for async open/submit.
+1. No clear approved shell usage near the symbol — verify and migrate to `AppDialog` / `showAppDialog` / workspace helpers / confirm-select-text-triage helpers.
+2. Confirm mutating openers set `barrierDismissible: false` while the dialog can mutate.
+3. No obvious loading primitive near the symbol — add shared loading UX for async open/submit.
+
+### Dialog-specific focus
+
+- Reuse appointment/date primitives where the follow-up is appointment-like.
+- Keep clinical and physiotherapy entry points working with the same dialog.
 
 ## Shared building blocks (mandatory reuse)
 
-Prefer these over new one-offs (from `prompt.md` Requirement 2):
+Prefer these over new one-offs (`prompt.md` Requirement 2):
 
 - **Details / layout:** `AppPatientDetails`, `AppPatientDetailDialog`, `AppSectionPanel`, `AppContentPanel`, `AppInfoSheetGrid` / `AppInfoSheetRow`, `AppInfoTileGrid`, `AppExpandableRecordSection`
 - **Action groups:** `AppActionPanel` / `AppActionSection`, permission action components, `clinicalActionDialogActions`, `buildAppDialogFormActions`, `buildAppDialogWizardActions`
 - **Clinical UI:** `OpdEncounterDialog`, `FlowActionsDialog`, shared OPD openers, triage components, `AppRecordVitalsDialog`, `AppVitalsForm`, `AppStatusBadge`, shared fields, `AppFormInformationBanner`
-- **Approved shells / openers:** `showAppDialog`, `showAppWorkspaceMutationDialog`, `showAppWorkspaceActionDialog`, `AppConfirmActionDialog` variants, and existing `show*` / `open*` encounter helpers
+- **Approved shells / openers:** `showAppDialog`, `showAppWorkspaceMutationDialog`, `showAppWorkspaceActionDialog`, `AppConfirmActionDialog` / `AppSelectActionDialog` / `AppTextActionDialog` / `AppTriageActionDialog`, and existing `show*` / `open*` encounter helpers
 
 Shell / chrome references:
 
-- `AppDialog` — `frontend/lib/shared/components/app_dialog.dart`
+- `AppDialog` / `showAppDialog` — `frontend/lib/shared/components/app_dialog.dart`
+- `showAppWorkspaceMutationDialog` — `frontend/lib/shared/layout/app_workspace_mutation_dialog.dart`
+- `showAppWorkspaceActionDialog` — `frontend/lib/shared/layout/app_workspace.dart`
+- `AppConfirmActionDialog` (+ select/text helpers) — `frontend/lib/shared/actions/app_action_dialogs.dart`
 - `AppButton` — `frontend/lib/shared/components/app_button.dart`
 - `AppActionIcons` — `frontend/lib/shared/icons/app_action_icons.dart`
 - Loading — `frontend/lib/shared/components/app_loading_indicator.dart` (+ `AppLoadingSurface` if used by siblings)
@@ -109,82 +128,94 @@ Shell / chrome references:
 
 Prefer existing openers in `shared/opd_actions`, `shared/patient_actions`, `shared/clinical_actions`, and `shared/components` over copying chrome into a feature folder.
 
-## Implementation steps
+## Execution plan
 
-1. **Read contract + source**
-   - Read [`prompt.md`](../prompt.md) end-to-end (Scope + Requirements 1–5 + Verification).
-   - Skim [`.cursor/api-contract.mdc`](../.cursor/api-contract.mdc) and [`frontend/.cursor/instant_ui_sync.mdc`](../frontend/.cursor/instant_ui_sync.mdc) for payload/envelope and patch/reconcile rules.
-   - Read `FollowUpDialog` at `frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart:1856` and every paired opener / *Used from* call site above.
-   - Trace each load and mutation: dialog → workspace controller → repository/DTO → backend route/schema/service → response decode → Riverpod patch.
+You are a coding agent with full read/write access to this repo. Execute every step. Do not ask for clarification. Treat the normative contracts table as binding.
 
-2. **Normalize shell (Requirement 1)**
-   - Compose with `AppDialog` (or an approved higher helper) and open with `showAppDialog` / `showAppWorkspaceMutationDialog` / `showAppWorkspaceActionDialog` / confirm helpers as appropriate.
-   - Remove any raw `AlertDialog` / `showDialog` on this presentation path.
-   - Keep maximize/resize/close behavior consistent with sibling encounter dialogs unless the helper already owns it.
+**Scope lock:** only `FollowUpDialog` and the minimum call-site / shared-helper edits required for compilation and compliance. Do **not** expand to unrelated inventory rows. Shared extracts are allowed only when required for reuse and must stay domain-neutral under `frontend/lib/shared/`.
+
+### Shape rules for `widget_dialog`
+
+- Compose through approved shells only — never raw `AlertDialog` / `showDialog`.
+- Titles are general/role-based, passed through `AppDialog` for uppercase normalization — never patient names.
+- Loading uses only `AppLoadingIndicator` / `AppLoadingSurface` / `AppButton.isLoading`.
+- While loading/saving: disable Cancel, close, and competing actions; `closeEnabled: false`; mutating openers use `barrierDismissible: false`.
+- Footer L→R: secondary actions → **Cancel** → primary commit. Prefer one commit.
+- Every `AppButton` needs a leading icon (`AppActionIcons` when mapped) and localized label.
+- Widgets never call APIs; mutate over HTTP; WebSockets only reconcile; patch Riverpod only after persisted success.
+- Standard widget dialog: prefer `clinicalActionDialogActions` / form/wizard action builders over a hand-rolled footer.
+
+### Steps
+
+1. **Read contracts + source**
+   - Read [`prompt.md`](../prompt.md) (Scope + Requirements 1–5 + Verification).
+   - Skim [`.cursor/api-contract.mdc`](../.cursor/api-contract.mdc) and [`frontend/.cursor/instant_ui_sync.mdc`](../frontend/.cursor/instant_ui_sync.mdc).
+   - Read `FollowUpDialog` at `frontend/lib/shared/opd_actions/opd_flow_actions_dialog.dart:1856` and every paired opener / *Used from* site.
+   - Trace each load/mutation: dialog → controller → repository/DTO → backend route/schema/service → decode → Riverpod patch.
+
+2. **Normalize shell (Req 1)**
+   - Compose with `AppDialog` or an approved higher helper; open with `showAppDialog` / workspace helpers / confirm-select-text-triage helpers as appropriate.
+   - Remove raw `AlertDialog` / `showDialog` on this path.
    - Preserve purpose, contextual IDs, and permission wrappers.
 
-3. **Normalize title + icon (Requirement 4)**
-   - Use a general, role-based title for **Follow Up (shared/opd_actions).** (flow/action name — never the patient display name as `AppDialog` title).
-   - Pass the title through the shell so uppercase normalization applies.
-   - Add/keep a meaningful `icon` if peer dialogs in `shared/opd_actions` already use icons.
+3. **Normalize title + icon (Req 4)**
+   - General role/flow title for **Follow Up** — never patient display name.
+   - Pass title through the shell for uppercase normalization.
+   - Match sibling icon conventions in `shared/opd_actions`.
 
-4. **Normalize loading + footer actions (Requirement 3)**
-   - Use only `AppLoadingIndicator` / `AppLoadingSurface` / `AppButton.isLoading`.
-   - Rebuild `actions` with `AppButton` + `AppActionIcons` + `context.l10n`, or an approved action helper.
-   - Enforce left→right order: secondary actions → **Cancel** → primary commit. Cancel aborts without committing and is never labeled Close. Edit is never labeled Update.
-   - While in flight: disable Cancel/close/competing actions; `closeEnabled: false`; `barrierDismissible: false` on mutating openers.
-   - Confirm dialogs: one domain verb/Confirm + Cancel.
+4. **Normalize loading + footer (Req 3)**
+   - Shared loading primitives only; rebuild actions with `AppButton` + `AppActionIcons` + l10n (or approved action helper).
+   - Order: secondary → **Cancel** → primary (`Save follow-up`).
+   - In flight: disable Cancel/close/competitors; `closeEnabled: false`; `barrierDismissible: false` on mutating openers.
 
-5. **Component reuse (Requirement 2)**
-   - Replace bespoke patient/encounter/triage/vitals/status/section/action blocks with the shared primitives listed above when equivalents exist.
-   - Inventory duplicates across encounter dialogs; migrate every applicable flow to the canonical implementation and delete superseded locals.
-   - If this dialog duplicates UI also needed by another inventory row and no shared primitive exists, extract once under `frontend/lib/shared/` (domain-neutral, configurable) and reuse. Keep domain logic in controllers.
+5. **Reuse (Req 2)**
+   - Replace bespoke blocks with shared primitives; migrate duplicates; delete superseded locals.
+   - Cross-check sibling reuse targets: `ReferralDialog`, `PatientAppointmentQuickDialog`.
+   - Extract under `frontend/lib/shared/` only when multiple inventory flows need the same UI.
 
 6. **Behavior + permissions**
-   - Openers must pass already-resolved contextual IDs (patient, encounter, queue item, bed, appointment, etc.); do not re-derive identity with blocking logic inside the dialog body.
-   - Preserve permission wrappers already used by the parent workspace.
+   - Openers pass already-resolved contextual IDs (`human_friendly_id` / domain IDs).
+   - Preserve parent permission wrappers; do not expose unauthorized actions.
 
-7. **Backend / frontend sync (Requirement 5 — hard requirement)**
-   - Widgets read from Riverpod and delegate to controllers; widgets never call APIs.
-   - Mutations go through repositories over existing REST APIs only; WebSockets reconcile only.
-   - Happy path: every load/mutation API used by this dialog must succeed against the real contract; fix DTO/route/schema/call site if broken.
-   - On `AppFailure` / non-success: show shared failure UI, leave data unpatched, keep the dialog open for retry or Cancel.
-   - On persisted success only (`saved == true` or equivalent): patch every affected Riverpod slice (encounter, queue, bed, appointment, patient, badges, lists, details) from the response or a typed delta, then apply the smallest targeted refresh/realtime reconciliation.
-   - After close, parent workspaces / pinned encounter surfaces must reflect backend truth without a full-app reload.
-   - Cancel and failure must neither patch nor present a false success.
+7. **Backend + sync (Req 5 — hard)**
+   - Widgets read Riverpod and delegate to controllers; no widget API calls.
+   - Happy-path APIs must succeed against the real contract; fix either side on mismatch.
+   - Failure → shared `AppFailure` UI, no patch, dialog stays open.
+   - Persisted success only → patch follow-up appointment/task, encounter disposition cues, then apply the smallest targeted reconciliation.
+   - Cancel/failure never present false success.
 
 8. **Preserve reachability**
-   - Do not break _none listed — discover call sites from *Used from* and keep them working_ or the *Used from* sites. Update signatures only when required; fix all call sites in the same change.
+   - Do not break existing private call sites / *Used from* sites. Update all call sites in the same change when signatures move.
 
-9. **Verify (Verification section of `prompt.md`)**
-   - Run analyzer on touched files.
-   - Keep `frontend/test/shared/layout/workspace_ui_pattern_test.dart` green.
-   - Add or update focused widget, controller, DTO, and (if touched) backend route/schema/service tests.
-   - Confirm happy-path APIs succeed; cancel/failure neither patches nor dismisses as saved.
-   - Confirm equivalent flows share primitives, spacing, sections, actions, loading/error behavior, and responsive layout without duplicate UI.
-   - Walk the acceptance checklist below and fix any miss before finishing.
+9. **Verify**
+   - Analyzer clean on touched files.
+   - `frontend/test/shared/layout/workspace_ui_pattern_test.dart` green.
+   - Focused widget/controller/DTO/(backend) tests for this path.
+   - Happy-path succeeds; cancel/failure neither patches nor dismisses as saved.
+   - Equivalent flows share primitives, spacing, sections, action icons/labels, loading/error behavior, and responsive layout.
+   - Tick every checklist item above before finishing.
 
-## Acceptance criteria (must all pass)
+## Acceptance criteria (all must pass)
 
 1. `FollowUpDialog` opens only through `AppDialog` / approved helpers — no raw Material dialog APIs.
 2. Footer order is secondary → Cancel → primary; labels are Cancel/Edit (not Close/Update); confirmations are one domain verb + Cancel.
 3. Loading uses only shared spinner primitives; dismiss and competing actions are blocked while in flight.
 4. Title is general, uppercase-normalized, and never a patient name.
-5. Body sections and action groups reuse canonical shared primitives; no unjustified local forks.
+5. Body sections and action groups reuse canonical shared primitives; no unjustified local forks (siblings considered: `ReferralDialog`, `PatientAppointmentQuickDialog`).
 6. Still reachable from inventory openers / *Used from* sites with contextual IDs and permissions intact.
 7. Every load and mutation API succeeds on the happy path against the real backend contract; failures surface via `AppFailure` UI and patch nothing.
-8. After persisted success only, Riverpod + targeted reconciliation make dialog and parent surfaces match backend truth (no stale encounter/queue/bed/patient/badge data; no full reload required).
+8. After persisted success only, Riverpod + targeted reconciliation keep dialog and parent surfaces aligned with backend truth for: follow-up appointment/task, encounter disposition cues.
 9. `frontend/test/shared/layout/workspace_ui_pattern_test.dart` remains green; focused tests cover this dialog's critical path.
 
 ## Out of scope
 
-- Other inventory rows (unless a shared extract is required for reuse — then keep the extract minimal, shared, and domain-neutral).
-- New dialog frameworks, redesigns unrelated to compliance, or drive-by refactors outside `FollowUpDialog`'s path.
-- Inventing client-only "saved" state that is not backed by HTTP success.
+- Other inventory rows (unless a minimal shared extract is required for reuse).
+- New dialog frameworks, unrelated redesigns, or drive-by refactors outside `FollowUpDialog`'s path.
+- Client-only "saved" state not backed by HTTP success.
 - Retaining duplicate local UI solely to shrink the diff.
 
 ## Deliverable
 
-Implement the compliance fixes in the repo. Summarize: files changed; shell/title/footer/loading/reuse/sync fixes; any shared extracts; API/DTO/route fixes; tests added or run; and how verification was performed.
+Implement the compliance fixes in the repo. Summarize: files changed; shell/title/footer/loading/reuse/sync fixes; shared extracts; API/DTO/route fixes; tests added or run; how verification was performed.
 
-<!-- generator: encounter-dialog prompt 38 slug=follow-up-dialog symbol=FollowUpDialog -->
+<!-- generator: encounter-dialog prompt 38 slug=follow-up-dialog symbol=FollowUpDialog shape=widget_dialog -->
