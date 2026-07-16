@@ -1,6 +1,6 @@
 # Patient / encounter flow
 
-[Index](README.md)
+[Index](README.md) · [Agent prompts](02-patient-encounter-flow-prompts.md)
 
 _Patient / encounter flow (41)_
 

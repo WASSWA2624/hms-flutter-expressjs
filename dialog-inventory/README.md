@@ -9,6 +9,7 @@ Source of truth: [`../prompt.md`](../prompt.md). Scope: entire repo. UI dialogs 
 | [00-summary.md](00-summary.md) | Counts, category/feature breakdown, counting method |
 | [01-base-dialogs.md](01-base-dialogs.md) | Root/shared dialog infrastructure (`AppDialog`, helpers) |
 | [02-patient-encounter-flow.md](02-patient-encounter-flow.md) | Patient / encounter flow dialogs |
+| [02-patient-encounter-flow-prompts.md](02-patient-encounter-flow-prompts.md) | Agent prompts (one per row) → [`../prompts/NN-*.md`](../prompts/) |
 | [03-detail-viewers.md](03-detail-viewers.md) | Detail viewer dialogs |
 | [04-actions-confirmations.md](04-actions-confirmations.md) | Action / confirmation dialogs |
 | [05-forms-editors.md](05-forms-editors.md) | Form / editor dialogs |
