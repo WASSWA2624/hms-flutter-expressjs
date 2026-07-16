@@ -24,6 +24,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _MockCommunicationsRepository extends Mock
     implements CommunicationsRepository {}
 
+Finder _tab(String label) =>
+    find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
+
 const CommunicationsConversation _conversation = CommunicationsConversation(
   id: 'conversation-1',
   title: 'Critical lab follow-up',
@@ -229,10 +232,10 @@ void main() {
     await _pumpCommunicationsWorkspace(tester, repository: repository);
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.text('Messages'), findsOneWidget);
-    expect(find.text('Notifications'), findsOneWidget);
-    expect(find.text('Deliveries'), findsOneWidget);
-    expect(find.text('Templates'), findsOneWidget);
+    expect(_tab('Messages'), findsOneWidget);
+    expect(_tab('Notifications'), findsOneWidget);
+    expect(_tab('Deliveries'), findsOneWidget);
+    expect(_tab('Templates'), findsOneWidget);
     expect(find.text('Critical lab follow-up'), findsOneWidget);
     expect(find.byTooltip('New message'), findsOneWidget);
   });
@@ -244,7 +247,7 @@ void main() {
 
     expect(find.byTooltip('New message'), findsOneWidget);
 
-    await tester.tap(find.text('Notifications').first);
+    await tester.tap(_tab('Notifications'));
     await tester.pumpAndSettle();
 
     expect(find.byTooltip('New message'), findsNothing);
@@ -261,7 +264,7 @@ void main() {
     );
 
     expect(find.byTooltip('New message'), findsNothing);
-    expect(find.text('Messages'), findsOneWidget);
+    expect(_tab('Messages'), findsOneWidget);
   });
 
   testWidgets('switching tabs updates the panel query parameter', (
@@ -272,7 +275,7 @@ void main() {
       repository: repository,
     );
 
-    await tester.tap(find.text('Deliveries').first);
+    await tester.tap(_tab('Deliveries'));
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['panel'], 'deliveries');
@@ -304,7 +307,7 @@ void main() {
       repository: repository,
     );
 
-    await tester.tap(find.text('Templates').first);
+    await tester.tap(_tab('Templates'));
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['panel'], 'templates');

@@ -230,7 +230,7 @@ void main() {
     expect(find.text('Quinn Queue'), findsOneWidget);
     expect(find.text('Tina Triage'), findsOneWidget);
     expect(find.text('Alex Active'), findsOneWidget);
-    expect(find.byTooltip('Start OPD encounter'), findsOneWidget);
+    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
   });
 
   testWidgets('switching tabs filters by category and updates URL', (
@@ -326,6 +326,6 @@ void main() {
 
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.text('Ann Arrival'), findsOneWidget);
-    expect(find.byTooltip('Start OPD encounter'), findsOneWidget);
+    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
   });
 }

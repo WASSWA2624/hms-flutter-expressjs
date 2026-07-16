@@ -24,6 +24,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockPharmacyRepository extends Mock implements PharmacyRepository {}
 
+Finder _tab(String label) =>
+    find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
+
 const PharmacyOrder _readyOrder = PharmacyOrder(
   id: 'order-ready',
   displayId: 'PHO-READY',
@@ -265,17 +268,17 @@ void main() {
     await _pumpPharmacyWorkspace(tester, repository: repository);
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.text('Ready'), findsOneWidget);
-    expect(find.text('Partial'), findsOneWidget);
-    expect(find.text('Pending payment'), findsOneWidget);
-    expect(find.text('Completed'), findsOneWidget);
-    expect(find.text('All orders'), findsOneWidget);
+    expect(_tab('Ready'), findsOneWidget);
+    expect(_tab('Partial'), findsOneWidget);
+    expect(_tab('Pending payment'), findsOneWidget);
+    expect(_tab('Completed'), findsOneWidget);
+    expect(_tab('All orders'), findsOneWidget);
     expect(find.text('Noah Ready'), findsOneWidget);
     expect(find.text('Amina Partial'), findsNothing);
     expect(find.textContaining('Dispense'), findsWidgets);
     // Inventory alerts live in the toolbar overflow (showsNotifications).
-    expect(find.text('Ready'), findsOneWidget);
-    expect(find.text('All orders'), findsOneWidget);
+    expect(_tab('Ready'), findsOneWidget);
+    expect(_tab('All orders'), findsOneWidget);
   });
 
   testWidgets('switching tabs updates URL and applies filter', (
@@ -286,7 +289,7 @@ void main() {
       repository: repository,
     );
 
-    await tester.tap(find.text('Partial'));
+    await tester.tap(_tab('Partial'));
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['section'], 'in-progress');
@@ -294,7 +297,7 @@ void main() {
     expect(find.text('Noah Ready'), findsNothing);
     expect(find.textContaining('Dispense'), findsWidgets);
 
-    await tester.tap(find.text('Completed'));
+    await tester.tap(_tab('Completed'));
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['section'], 'completed');
@@ -397,7 +400,7 @@ void main() {
   ) async {
     await _pumpPharmacyWorkspace(tester, repository: repository);
 
-    await tester.tap(find.text('Pending payment'));
+    await tester.tap(_tab('Pending payment'));
     await tester.pumpAndSettle();
 
     expect(
@@ -432,7 +435,7 @@ void main() {
       repository: repository,
     );
 
-    await tester.tap(find.text('All orders'));
+    await tester.tap(_tab('All orders'));
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['section'], 'all');

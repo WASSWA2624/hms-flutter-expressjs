@@ -28,6 +28,9 @@ class _MockOpdRepository extends Mock implements OpdRepository {}
 
 class _MockIpdRepository extends Mock implements IpdRepository {}
 
+Finder _tab(String label) =>
+    find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
+
 void main() {
   setUpAll(() {
     registerFallbackValue(const ClinicalWorklistQuery());
@@ -49,12 +52,12 @@ void main() {
     final _Harness harness = await _pumpClinicalWorkspace(tester);
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.text('All'), findsOneWidget);
-    expect(find.text('Waiting review'), findsOneWidget);
-    expect(find.text('Urgent'), findsOneWidget);
-    expect(find.text('Results ready'), findsOneWidget);
-    expect(find.text('In consultation'), findsOneWidget);
-    expect(find.text('Completed'), findsOneWidget);
+    expect(_tab('All'), findsOneWidget);
+    expect(_tab('Waiting review'), findsOneWidget);
+    expect(_tab('Urgent'), findsOneWidget);
+    expect(_tab('Results ready'), findsOneWidget);
+    expect(_tab('In consultation'), findsOneWidget);
+    expect(_tab('Completed'), findsOneWidget);
     expect(find.text('Current step'), findsWidgets);
     expect(find.text('Queue scope'), findsNothing);
     expect(find.text('Sarah Clinical'), findsOneWidget);
@@ -104,7 +107,7 @@ void main() {
     final _Harness harness = await _pumpClinicalWorkspace(tester);
 
     clearInteractions(harness.clinicalRepository);
-    await tester.tap(find.text('Urgent'));
+    await tester.tap(_tab('Urgent'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -125,7 +128,7 @@ void main() {
   ) async {
     final _Harness harness = await _pumpClinicalWorkspace(tester);
 
-    await tester.tap(find.text('Waiting review'));
+    await tester.tap(_tab('Waiting review'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -154,7 +157,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Urgent'), findsOneWidget);
+    expect(_tab('Urgent'), findsOneWidget);
 
     final List<Object?> captured = verify(
       () => harness.clinicalRepository.listEncounters(captureAny()),
@@ -192,7 +195,7 @@ void main() {
       ],
     );
 
-    await tester.tap(find.text('Results ready'));
+    await tester.tap(_tab('Results ready'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -210,7 +213,7 @@ void main() {
   ) async {
     await _pumpClinicalWorkspace(tester);
 
-    await tester.tap(find.text('In consultation'));
+    await tester.tap(_tab('In consultation'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -359,7 +362,7 @@ Future<_Harness> _pumpClinicalWorkspace(
       ),
     ),
   );
-  await _pumpUntilFound(tester, find.text('All'));
+  await _pumpUntilFound(tester, _tab('All'));
 
   return _Harness(clinicalRepository: clinicalRepository, router: router);
 }

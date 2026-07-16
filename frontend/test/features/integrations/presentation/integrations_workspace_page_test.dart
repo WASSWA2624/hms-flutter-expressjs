@@ -23,6 +23,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _MockIntegrationsRepository extends Mock
     implements IntegrationsRepository {}
 
+Finder _tab(String label) =>
+    find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
+
 const IntegrationRecord _integration = IntegrationRecord(
   id: 'integration-1',
   name: 'Lab HL7 Feed',
@@ -242,11 +245,11 @@ void main() {
     await _pumpIntegrationsWorkspace(tester, repository: repository);
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.text('Integrations'), findsOneWidget);
-    expect(find.text('API keys'), findsOneWidget);
-    expect(find.text('Webhooks'), findsOneWidget);
-    expect(find.text('Logs'), findsOneWidget);
-    expect(find.text('Interop'), findsOneWidget);
+    expect(_tab('Integrations'), findsOneWidget);
+    expect(_tab('API keys'), findsOneWidget);
+    expect(_tab('Webhooks'), findsOneWidget);
+    expect(_tab('Logs'), findsOneWidget);
+    expect(_tab('Interop'), findsOneWidget);
     expect(find.text('Lab HL7 Feed'), findsOneWidget);
     expect(find.byTooltip('Create integration'), findsOneWidget);
   });
@@ -287,7 +290,7 @@ void main() {
       containsAll(<String>['name', 'type', 'has_config', 'webhook_count']),
     );
 
-    await tester.tap(find.text('API keys').first);
+    await tester.tap(_tab('API keys'));
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['section'], 'api-keys');
@@ -302,7 +305,7 @@ void main() {
       containsAll(<String>['name', 'key_id', 'permissions', 'expires_at']),
     );
 
-    await tester.tap(find.text('Webhooks').first);
+    await tester.tap(_tab('Webhooks'));
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['section'], 'webhooks');
@@ -315,7 +318,7 @@ void main() {
       containsAll(<String>['event', 'target_host', 'integration_status']),
     );
 
-    await tester.tap(find.text('Logs').first);
+    await tester.tap(_tab('Logs'));
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['section'], 'logs');
@@ -330,7 +333,7 @@ void main() {
       containsAll(<String>['integration', 'message', 'integration_type']),
     );
 
-    await tester.tap(find.text('Interop').first);
+    await tester.tap(_tab('Interop'));
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['section'], 'interop');
@@ -392,7 +395,7 @@ void main() {
       accessPolicy: _integrationsReadOnlyPolicy(),
     );
 
-    expect(find.text('Integrations'), findsOneWidget);
+    expect(_tab('Integrations'), findsOneWidget);
     expect(find.byTooltip('Create integration'), findsNothing);
   });
 
@@ -406,7 +409,7 @@ void main() {
     );
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.text('Integrations'), findsOneWidget);
+    expect(_tab('Integrations'), findsOneWidget);
     expect(find.text('Lab HL7 Feed'), findsOneWidget);
   });
 }

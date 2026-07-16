@@ -219,7 +219,7 @@ Future<_Harness> _pumpHousekeepingWorkspace(
 }
 
 Finder _tabLabel(String label) {
-  return find.text(label);
+  return find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 }
 
 void main() {
