@@ -16,16 +16,6 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
 
-/// Payment methods shared with [ConsultationPaymentDialog] / OPD start billing.
-const List<String> patientBillingQuickPaymentMethods = <String>[
-  'CASH',
-  'MOBILE_MONEY',
-  'BANK_TRANSFER',
-  'CREDIT_CARD',
-  'INSURANCE',
-  'OTHER',
-];
-
 /// Opens the patient-registry quick consultation billing / walk-in OPD flow.
 ///
 /// Mutating opener: not barrier-dismissible. Returns `true` only after a
@@ -172,7 +162,7 @@ class _PatientBillingQuickDialogState
                               () => _paymentMethod = value ?? 'CASH',
                             ),
                             options: buildAppPaymentMethodSelectOptions(
-                              methods: patientBillingQuickPaymentMethods,
+                              methods: opdConsultationPaymentMethods,
                             ),
                           ),
                           right: AppTextField(

@@ -3556,6 +3556,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdSaveDispositionAction => 'Save disposition';
 
   @override
+  String get opdSaveRoutingDecisionAction => 'Save routing decision';
+
+  @override
   String get opdAmountLabel => 'Amount';
 
   @override

@@ -4091,6 +4091,7 @@
   "opdFollowUpAction": "Follow up",
   "opdDispositionAction": "Disposition",
   "opdSaveDispositionAction": "Save disposition",
+  "opdSaveRoutingDecisionAction": "Save routing decision",
   "opdAmountLabel": "Amount",
   "opdPaymentMethodLabel": "Payment method",
   "opdTransactionReferenceLabel": "Transaction reference",
@@ -4814,6 +4815,9 @@
   },
   "@opdSaveDispositionAction": {
     "description": "Primary commit label for saving an OPD disposition decision."
+  },
+  "@opdSaveRoutingDecisionAction": {
+    "description": "Primary commit label for saving an OPD/triage routing decision."
   },
   "@opdAmountLabel": {
     "description": "Amount field label."

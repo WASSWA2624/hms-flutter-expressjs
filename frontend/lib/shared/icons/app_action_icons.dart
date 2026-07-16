@@ -41,6 +41,9 @@ abstract final class AppActionIcons {
   static const IconData complete = Icons.task_alt_outlined;
   static const IconData decision = Icons.fact_check_outlined;
 
+  /// Triage / OPD routing destination decision.
+  static const IconData route = Icons.alt_route_outlined;
+
   /// Operational / maintenance triage (not clinical patient triage).
   static const IconData triage = Icons.rule_outlined;
 
@@ -83,4 +86,7 @@ abstract final class AppActionIcons {
 
   /// Start consultation / begin an encounter from queue.
   static const IconData start = Icons.play_arrow_outlined;
+
+  /// Assign or reassign the attending doctor on an encounter/queue item.
+  static const IconData assignDoctor = Icons.assignment_ind_outlined;
 }

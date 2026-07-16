@@ -735,6 +735,241 @@ void main() {
       verifyNever(() => repository.updateVitals(detail, any()));
     });
 
+    test(
+      'assignDoctor posts provider_user_id and patches flow plus queue row',
+      () async {
+        final _MockOpdRepository repository = _MockOpdRepository();
+        const OpdQueueEntry queued = OpdQueueEntry(
+          id: 'queue-internal',
+          publicId: 'QUE000001',
+          status: 'WAITING',
+          providerUserId: 'DOC000000',
+          providerDisplayName: 'Old Doctor',
+        );
+        const OpdFlowSummary flow = OpdFlowSummary(
+          id: 'encounter-1',
+          publicId: 'ENC000001',
+          stage: 'WAITING_DOCTOR_ASSIGNMENT',
+          visitQueueId: 'QUE000001',
+          patientDisplayName: 'Patient Example',
+        );
+        const OpdFlowDetail assigned = OpdFlowDetail(
+          summary: OpdFlowSummary(
+            id: 'encounter-1',
+            publicId: 'ENC000001',
+            stage: 'WAITING_DOCTOR_REVIEW',
+            visitQueueId: 'QUE000001',
+            providerUserId: 'DOC000001',
+            providerDisplayName: 'Dr Assigned',
+            patientDisplayName: 'Patient Example',
+          ),
+        );
+        Map<String, Object?>? submittedPayload;
+
+        _stubInitialLoad(
+          repository,
+          flows: <OpdFlowSummary>[flow],
+          queueEntries: <OpdQueueEntry>[queued],
+        );
+        when(
+          () => repository.getOpdFlow(any()),
+        ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(assigned));
+        when(
+          () => repository.assignDoctor(
+            any(),
+            any(),
+            idempotencyKey: any(named: 'idempotencyKey'),
+          ),
+        ).thenAnswer((Invocation invocation) async {
+          submittedPayload =
+              invocation.positionalArguments[1] as Map<String, Object?>;
+          return const Result<OpdFlowDetail>.success(assigned);
+        });
+
+        final ProviderContainer container = _testContainer(repository);
+        addTearDown(container.dispose);
+        await container.read(opdWorkspaceControllerProvider.future);
+        clearInteractions(repository);
+
+        final AppFailure? failure = await container
+            .read(opdWorkspaceControllerProvider.notifier)
+            .assignDoctor(flow, 'DOC000001');
+
+        expect(failure, isNull);
+        expect(submittedPayload, containsPair('provider_user_id', 'DOC000001'));
+        verify(
+          () => repository.assignDoctor(
+            'ENC000001',
+            any(),
+            idempotencyKey: any(named: 'idempotencyKey'),
+          ),
+        ).called(1);
+
+        final OpdWorkspaceState state = _workspaceState(container);
+        expect(state.selectedFlow?.summary.providerUserId, 'DOC000001');
+        expect(state.selectedFlow?.summary.stage, 'WAITING_DOCTOR_REVIEW');
+        expect(
+          state.flows.items.single.providerUserId,
+          'DOC000001',
+        );
+        final OpdQueueEntry queueRow = state.queueEntries.items.single;
+        expect(queueRow.providerUserId, 'DOC000001');
+        expect(queueRow.providerDisplayName, 'Dr Assigned');
+        expect(queueRow.status, 'IN_PROGRESS');
+      },
+    );
+
+    test('assignDoctor failure patches neither flow nor queue', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      const OpdQueueEntry queued = OpdQueueEntry(
+        id: 'queue-internal',
+        publicId: 'QUE000001',
+        status: 'WAITING',
+      );
+      const OpdFlowSummary flow = OpdFlowSummary(
+        id: 'encounter-1',
+        publicId: 'ENC000001',
+        stage: 'WAITING_DOCTOR_ASSIGNMENT',
+        visitQueueId: 'QUE000001',
+      );
+
+      _stubInitialLoad(
+        repository,
+        flows: <OpdFlowSummary>[flow],
+        queueEntries: <OpdQueueEntry>[queued],
+      );
+      when(
+        () => repository.assignDoctor(
+          any(),
+          any(),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<OpdFlowDetail>.failure(AppFailure.network()),
+      );
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .assignDoctor(flow, 'DOC000001');
+
+      expect(failure, isNotNull);
+      final OpdWorkspaceState state = _workspaceState(container);
+      expect(state.selectedFlow, isNull);
+      expect(state.flows.items.single.stage, 'WAITING_DOCTOR_ASSIGNMENT');
+      expect(state.queueEntries.items.single, same(queued));
+    });
+
+    test('payConsultation posts to pay-consultation and patches flow slices',
+        () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      const OpdFlowSummary unpaid = OpdFlowSummary(
+        id: 'encounter-1',
+        publicId: 'ENC000001',
+        stage: 'WAITING_CONSULTATION_PAYMENT',
+        consultationPaymentRequired: true,
+        consultationPaid: false,
+        consultationFee: 25000,
+        consultationCurrency: 'UGX',
+      );
+      const OpdFlowDetail paid = OpdFlowDetail(
+        summary: OpdFlowSummary(
+          id: 'encounter-1',
+          publicId: 'ENC000001',
+          stage: 'WAITING_VITALS',
+          consultationPaymentRequired: true,
+          consultationPaid: true,
+          consultationPaymentStatus: 'PAID',
+          consultationFee: 25000,
+          consultationPaidAmount: 25000,
+          consultationCurrency: 'UGX',
+        ),
+        consultationPaymentRequired: true,
+        consultationPaid: true,
+        consultationPaymentStatus: 'PAID',
+        consultationPaidAmount: 25000,
+      );
+      Map<String, Object?>? submittedPayload;
+
+      _stubInitialLoad(repository, flows: <OpdFlowSummary>[unpaid]);
+      when(() => repository.payConsultation(any(), any())).thenAnswer((
+        Invocation invocation,
+      ) async {
+        submittedPayload =
+            invocation.positionalArguments[1] as Map<String, Object?>;
+        return const Result<OpdFlowDetail>.success(paid);
+      });
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+      clearInteractions(repository);
+
+      final AppFailure? failure = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .payConsultation(unpaid, <String, Object?>{
+            'amount': '25000',
+            'currency': 'UGX',
+            'method': 'CASH',
+            'status': 'COMPLETED',
+          });
+
+      expect(failure, isNull);
+      expect(submittedPayload, containsPair('method', 'CASH'));
+      expect(submittedPayload, containsPair('status', 'COMPLETED'));
+      verify(() => repository.payConsultation('ENC000001', any())).called(1);
+      expect(
+        _workspaceState(container).selectedFlow?.summary.stage,
+        'WAITING_VITALS',
+      );
+      expect(
+        _workspaceState(container).flows.items.single.consultationPaid,
+        isTrue,
+      );
+    });
+
+    test('failed payConsultation leaves flow payment state unchanged',
+        () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      const OpdFlowSummary unpaid = OpdFlowSummary(
+        id: 'encounter-1',
+        publicId: 'ENC000001',
+        stage: 'WAITING_CONSULTATION_PAYMENT',
+        consultationPaymentRequired: true,
+        consultationPaid: false,
+      );
+      _stubInitialLoad(repository, flows: <OpdFlowSummary>[unpaid]);
+      when(() => repository.payConsultation(any(), any())).thenAnswer(
+        (_) async => const Result<OpdFlowDetail>.failure(AppFailure.network()),
+      );
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .payConsultation(unpaid, <String, Object?>{
+            'amount': '25000',
+            'currency': 'UGX',
+            'method': 'CASH',
+            'status': 'COMPLETED',
+          });
+
+      expect(failure, isNotNull);
+      expect(
+        _workspaceState(container).flows.items.single.consultationPaid,
+        isFalse,
+      );
+      expect(
+        _workspaceState(container).flows.items.single.stage,
+        'WAITING_CONSULTATION_PAYMENT',
+      );
+    });
+
     test('correctStage uses the canonical OPD correction endpoint', () async {
       final _MockOpdRepository repository = _MockOpdRepository();
       const OpdFlowSummary flow = OpdFlowSummary(
@@ -775,8 +1010,58 @@ void main() {
       expect(failure, isNull);
       expect(submittedPayload, containsPair('stage_to', 'WAITING_DISPOSITION'));
       expect(submittedPayload, containsPair('reason', 'Ready for discharge'));
+      expect(
+        _workspaceState(container).selectedFlow?.summary.stage,
+        'WAITING_DISPOSITION',
+      );
+      expect(
+        _workspaceState(container).flows.items.single.stage,
+        'WAITING_DISPOSITION',
+      );
       verify(() => repository.correctStage('ENC000001', any())).called(1);
       verifyNever(() => repository.correctTriageStage(any(), any()));
+    });
+
+    test('correctStage failure does not patch encounter stage', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      const OpdFlowSummary flow = OpdFlowSummary(
+        id: 'encounter-1',
+        publicId: 'ENC000001',
+        stage: 'WAITING_DOCTOR_REVIEW',
+      );
+
+      _stubInitialLoad(repository, flows: <OpdFlowSummary>[flow]);
+      when(() => repository.getOpdFlow(any())).thenAnswer(
+        (_) async => const Result<OpdFlowDetail>.success(
+          OpdFlowDetail(summary: flow),
+        ),
+      );
+      when(() => repository.correctStage(any(), any())).thenAnswer(
+        (_) async => const Result<OpdFlowDetail>.failure(AppFailure.network()),
+      );
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+      await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .selectFlow(flow);
+      clearInteractions(repository);
+
+      final AppFailure? failure = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .correctStage(flow, 'WAITING_DISPOSITION', 'Should not apply');
+
+      expect(failure, isNotNull);
+      expect(
+        _workspaceState(container).selectedFlow?.summary.stage,
+        'WAITING_DOCTOR_REVIEW',
+      );
+      expect(
+        _workspaceState(container).flows.items.single.stage,
+        'WAITING_DOCTOR_REVIEW',
+      );
+      verify(() => repository.correctStage('ENC000001', any())).called(1);
     });
 
     test(

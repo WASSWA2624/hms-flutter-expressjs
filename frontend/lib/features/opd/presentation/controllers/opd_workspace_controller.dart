@@ -674,12 +674,55 @@ final class OpdWorkspaceController
     return null;
   }
 
-  Future<AppFailure?> assignDoctor(OpdFlowSummary flow, String providerUserId) {
+  Future<AppFailure?> assignDoctor(
+    OpdFlowSummary flow,
+    String providerUserId,
+  ) async {
     final String key = createIdempotencyKey();
-    return _mutateFlow(
+    final AppFailure? failure = await _mutateFlow(
       () => _repository.assignDoctor(flow.apiId, <String, Object?>{
         'provider_user_id': providerUserId,
       }, idempotencyKey: key),
+    );
+    if (failure != null) {
+      return failure;
+    }
+    final OpdWorkspaceState? latest = _currentState;
+    final OpdFlowSummary? patched = latest?.selectedFlow?.summary;
+    final OpdFlowSummary syncSource =
+        patched != null && _isSameFlow(patched, flow)
+        ? patched.copyWith(
+            visitQueueId: patched.visitQueueId ?? flow.visitQueueId,
+          )
+        : flow.copyWith(providerUserId: providerUserId);
+    _syncQueueProviderFromFlow(syncSource);
+    return null;
+  }
+
+  /// After assign-doctor persistence, keep the linked queue row's provider
+  /// fields aligned with the patched encounter summary (status is already
+  /// synced by [_patchLinkedEncounterSources]).
+  void _syncQueueProviderFromFlow(OpdFlowSummary flow) {
+    final OpdWorkspaceState? latest = _currentState;
+    final String? queueId = flow.visitQueueId;
+    if (latest == null || queueId == null || queueId.trim().isEmpty) {
+      return;
+    }
+    final String? providerUserId = flow.providerUserId;
+    if (providerUserId == null || providerUserId.trim().isEmpty) {
+      return;
+    }
+    final String? providerDisplayName =
+        flow.assignedStaffLabel ?? flow.providerDisplayName;
+    _emit(
+      latest.copyWith(
+        queueEntries: _patchLinkedQueueProvider(
+          latest.queueEntries,
+          queueId,
+          providerUserId: providerUserId,
+          providerDisplayName: providerDisplayName,
+        ),
+      ),
     );
   }
 
@@ -761,7 +804,6 @@ final class OpdWorkspaceController
     return _mutateFlow(
       () => _repository.routeTriage(flow.apiId, <String, Object?>{
         'route_to': decision,
-        'decision': decision,
         'notes': notes,
         'provider_user_id': providerUserId,
         'triage_level': triageLevel,
@@ -1478,6 +1520,38 @@ final class OpdWorkspaceController
           }
           changed = true;
           return entry.copyWith(status: status);
+        })
+        .toList(growable: false);
+    return changed
+        ? AppPage<OpdQueueEntry>(
+            items: items,
+            request: page.request,
+            totalItemCount: page.totalItemCount,
+          )
+        : page;
+  }
+
+  AppPage<OpdQueueEntry> _patchLinkedQueueProvider(
+    AppPage<OpdQueueEntry> page,
+    String queueId, {
+    required String providerUserId,
+    String? providerDisplayName,
+  }) {
+    var changed = false;
+    final List<OpdQueueEntry> items = page.items
+        .map((OpdQueueEntry entry) {
+          if (!_matchesPublicIdentifier(queueId, <String?>[
+            entry.id,
+            entry.publicId,
+            entry.apiId,
+          ])) {
+            return entry;
+          }
+          changed = true;
+          return entry.copyWith(
+            providerUserId: providerUserId,
+            providerDisplayName: providerDisplayName,
+          );
         })
         .toList(growable: false);
     return changed

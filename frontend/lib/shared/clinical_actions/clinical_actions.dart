@@ -25,3 +25,4 @@ export 'dialogs/clinical_radiology_order_action_dialog.dart';
 export 'dialogs/clinical_radiology_request_catalog_dialog.dart';
 export 'dialogs/clinical_referral_action_dialog.dart';
 export 'dialogs/clinical_request_flow_dialogs.dart';
+export 'dialogs/clinical_routing_action_dialog.dart';

@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
-import 'package:hosspi_hms/core/currency/effective_default_currency_provider.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
@@ -27,8 +26,7 @@ import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_feedback.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
-import 'package:hosspi_hms/shared/opd_actions/opd_consultation_billing_breakdown.dart';
-import 'package:hosspi_hms/shared/opd_actions/opd_coverage_verification_panel.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_consultation_payment_dialog.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_encounter_clinical_services.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
@@ -282,13 +280,16 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     AppPermissionActionItem routeDecisionAction() => AppPermissionActionItem(
       requirement: opdVitalsActionRequirement,
       label: l10n.opdRouteDecisionLabel,
-      icon: Icons.alt_route_outlined,
+      icon: AppActionIcons.route,
       fullWidth: true,
       hideWhenDenied: true,
       enabled: actionsEnabled && !terminal,
       onPressed: terminal
           ? null
-          : () => _openNested(context, RoutingDecisionDialog(flow: flow)),
+          : () => _openNestedOpener(
+              context,
+              () => showRoutingDecisionDialog(context: context, flow: flow),
+            ),
     );
 
     AppPermissionActionItem assignDoctorAction() => AppPermissionActionItem(
@@ -296,13 +297,16 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       label: _isNonEmpty(flow.providerUserId)
           ? l10n.opdChangeDoctorAction
           : l10n.opdAssignDoctorAction,
-      icon: Icons.assignment_ind_outlined,
+      icon: AppActionIcons.assignDoctor,
       fullWidth: true,
       hideWhenDenied: true,
       enabled: actionsEnabled && !terminal,
       onPressed: terminal
           ? null
-          : () => _openNested(context, AssignDoctorDialog(flow: flow)),
+          : () => _openNestedOpener(
+              context,
+              () => showAssignDoctorDialog(context: context, flow: flow),
+            ),
     );
 
     AppPermissionActionItem doctorReviewAction() => AppPermissionActionItem(
@@ -649,7 +653,10 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       hideWhenDenied: true,
       enabled: actionsEnabled,
       onPressed: actionsEnabled
-          ? () => _openNested(context, CorrectStageDialog(flow: flow))
+          ? () => _openNestedOpener(
+              context,
+              () => showCorrectStageDialog(context: context, flow: flow),
+            )
           : null,
     );
   }
@@ -1184,277 +1191,16 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
   }
 }
 
-/// Opens the consultation payment dialog (mutating; not barrier-dismissible).
-Future<bool?> showConsultationPaymentDialog({
+/// Opens [CorrectStageDialog] with mutating-dialog dismiss rules.
+Future<bool?> showCorrectStageDialog({
   required BuildContext context,
   required OpdFlowSummary flow,
 }) {
   return showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => ConsultationPaymentDialog(flow: flow),
+    builder: (_) => CorrectStageDialog(flow: flow),
   );
-}
-
-class ConsultationPaymentDialog extends ConsumerStatefulWidget {
-  const ConsultationPaymentDialog({required this.flow, super.key});
-
-  final OpdFlowSummary flow;
-
-  @override
-  ConsumerState<ConsultationPaymentDialog> createState() =>
-      _ConsultationPaymentDialogState();
-}
-
-class _ConsultationPaymentDialogState
-    extends ConsumerState<ConsultationPaymentDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _amountController;
-  late final TextEditingController _referenceController;
-  late final TextEditingController _notesController;
-  String _currency = appDefaultCurrencyCode;
-  String _method = 'CASH';
-  bool _isSaving = false;
-  bool _coverageVerified = false;
-  String? _selectedInsuranceCompanyId;
-  String? _selectedInsuranceCompanyName;
-  String? _selectedCoveragePlanId;
-  String? _selectedCoveragePlanName;
-  int? _selectedCoveragePercentage;
-  AppFailure? _failure;
-
-  OpdFlowSummary get _currentFlow {
-    final OpdWorkspaceState? workspaceState = _workspaceState(ref);
-    final OpdFlowDetail? selected = workspaceState?.selectedFlow;
-    if (selected != null && _isSameFlow(selected.summary, widget.flow)) {
-      return selected.summary;
-    }
-    return widget.flow;
-  }
-
-  OpdFlowDetail? get _currentDetail {
-    final OpdWorkspaceState? workspaceState = _workspaceState(ref);
-    final OpdFlowDetail? selected = workspaceState?.selectedFlow;
-    if (selected != null && _isSameFlow(selected.summary, widget.flow)) {
-      return selected;
-    }
-    return null;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    final OpdFlowSummary flow = widget.flow;
-    final OpdBillingState billingState = opdFlowBillingState(flow);
-    _amountController = TextEditingController(
-      text: opdCurrencyAmountInput(
-        billingState == OpdBillingState.paid
-            ? flow.consultationPaidAmount ?? flow.consultationFee
-            : flow.consultationFee,
-      ),
-    );
-    _referenceController = TextEditingController();
-    _notesController = TextEditingController();
-    _currency =
-        flow.consultationCurrency?.trim().toUpperCase() ??
-        ref.read(effectiveDefaultCurrencyProvider);
-  }
-
-  @override
-  void dispose() {
-    _amountController.dispose();
-    _referenceController.dispose();
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final OpdFlowSummary flow = _currentFlow;
-    final OpdFlowDetail? detail = _currentDetail;
-    final bool alreadyPaid = opdFlowBillingState(flow) == OpdBillingState.paid;
-    final String submitLabel = alreadyPaid
-        ? l10n.opdUpdateConsultationBillingAction
-        : l10n.opdPayConsultationAction;
-    return AppDialog(
-      title: Text(l10n.opdManageConsultationBillingAction),
-      icon: const Icon(Icons.payments_outlined),
-      scrollable: true,
-      closeEnabled: !_isSaving,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null)
-              AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
-              ),
-            OpdActionContextPanel(flow: flow, detail: detail, showTitle: false),
-            OpdConsultationBillingBreakdownPanel(flow: flow, detail: detail),
-            AppCurrencyAmountField(
-              amountController: _amountController,
-              currency: _currency,
-              amountLabelText: _opdRequiredFieldLabel(
-                l10n,
-                l10n.opdAmountLabel,
-              ),
-              currencyLabelText: _opdRequiredFieldLabel(
-                l10n,
-                l10n.opdCurrencyLabel,
-              ),
-              enabled: !_isSaving,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-              onCurrencyChanged: (String? value) {
-                setState(() {
-                  _currency = value ?? appDefaultCurrencyCode;
-                });
-              },
-            ),
-            AppSelectField<String>(
-              value: _method,
-              labelText: _opdRequiredFieldLabel(
-                l10n,
-                l10n.opdPaymentMethodLabel,
-              ),
-              enabled: !_isSaving,
-              onChanged: (String? value) {
-                setState(() {
-                  _method = value ?? _method;
-                  _coverageVerified = false;
-                  _selectedInsuranceCompanyId = null;
-                  _selectedInsuranceCompanyName = null;
-                  _selectedCoveragePlanId = null;
-                  _selectedCoveragePlanName = null;
-                  _selectedCoveragePercentage = null;
-                });
-              },
-              options: buildAppPaymentMethodSelectOptions(
-                methods: _paymentMethods,
-              ),
-            ),
-            if (_method == 'INSURANCE') ...<Widget>[
-              OpdCoverageVerificationPanel(
-                patientId: flow.patientId,
-                encounterId: flow.apiId,
-                enabled: !_isSaving,
-                onVerifiedChanged:
-                    (
-                      ({
-                        bool verified,
-                        String? insuranceCompanyId,
-                        String? insuranceCompanyName,
-                        String? coveragePlanId,
-                        String? coveragePlanName,
-                        int? coveragePercentage,
-                        String? copayType,
-                        num? copayValue,
-                      })
-                      result,
-                    ) {
-                      setState(() {
-                        _coverageVerified = result.verified;
-                        _selectedInsuranceCompanyId = result.insuranceCompanyId;
-                        _selectedInsuranceCompanyName =
-                            result.insuranceCompanyName;
-                        _selectedCoveragePlanId = result.coveragePlanId;
-                        _selectedCoveragePlanName = result.coveragePlanName;
-                        _selectedCoveragePercentage = result.coveragePercentage;
-                      });
-                    },
-              ),
-            ],
-            AppTextField(
-              controller: _referenceController,
-              labelText: _opdOptionalFieldLabel(
-                l10n,
-                l10n.opdTransactionReferenceLabel,
-              ),
-              enabled: !_isSaving,
-            ),
-            AppTextField(
-              controller: _notesController,
-              labelText: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
-              enabled: !_isSaving,
-              maxLines: 3,
-            ),
-          ],
-        ),
-      ),
-      actions: clinicalActionDialogActions(
-        context,
-        submitLabel,
-        _isSaving,
-        _isSaving ? null : _submit,
-        submitLeadingIcon: Icons.payments_outlined,
-      ),
-    );
-  }
-
-  Future<void> _submit() async {
-    if (_isSaving) {
-      return;
-    }
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-    if (_method == 'INSURANCE' && !_coverageVerified) {
-      setState(() {
-        _failure = AppFailure.validation(
-          detailMessage: context.l10n.opdCoverageVerificationRequiredMessage,
-        );
-      });
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .payConsultation(_currentFlow, <String, Object?>{
-          'amount': normalizeCurrencyAmount(_amountController.text),
-          'currency': _currency,
-          'method': _method,
-          'status': 'COMPLETED',
-          'transaction_ref': _referenceController.text.trim(),
-          'notes': _joinPaymentNotes(),
-          'paid_at': DateTime.now().toUtc().toIso8601String(),
-        });
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
-  }
-
-  String _joinPaymentNotes() {
-    final String manualNotes = _notesController.text.trim();
-    if (_method != 'INSURANCE') {
-      return manualNotes;
-    }
-    final String coveragePlanId = (_selectedCoveragePlanId ?? '').trim();
-    final String coveragePlanName = (_selectedCoveragePlanName ?? '').trim();
-    final String companyId = (_selectedInsuranceCompanyId ?? '').trim();
-    final String companyName = (_selectedInsuranceCompanyName ?? '').trim();
-    final List<String> parts = <String>[
-      if (companyId.isNotEmpty) 'insurance_company_id=$companyId',
-      if (companyName.isNotEmpty) 'insurance_company=$companyName',
-      if (coveragePlanId.isNotEmpty) 'coverage_plan_id=$coveragePlanId',
-      if (coveragePlanName.isNotEmpty) 'coverage_plan=$coveragePlanName',
-      if (_selectedCoveragePercentage != null)
-        'coverage_percentage=$_selectedCoveragePercentage',
-      if (manualNotes.isNotEmpty) manualNotes,
-    ];
-    return parts.join(' | ');
-  }
 }
 
 class CorrectStageDialog extends ConsumerStatefulWidget {
@@ -1516,7 +1262,7 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
     );
     return AppDialog(
       title: Text(l10n.opdCorrectStageAction),
-      icon: const Icon(Icons.sync_alt_outlined),
+      icon: const Icon(AppActionIcons.move),
       scrollable: true,
       closeEnabled: !_isSaving,
       content: Form(
@@ -1580,7 +1326,7 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
         l10n.opdCorrectStageAction,
         _isSaving,
         _isSaving ? null : _submit,
-        submitLeadingIcon: Icons.sync_alt_outlined,
+        submitLeadingIcon: AppActionIcons.move,
       ),
     );
   }
@@ -1666,6 +1412,8 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
     return null;
   }
 
+  bool get _isBusy => _isSaving || _isLoadingProviders;
+
   @override
   void initState() {
     super.initState();
@@ -1680,10 +1428,10 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
     final String actionLabel = _isNonEmpty(flow.providerUserId)
         ? l10n.opdChangeDoctorAction
         : l10n.opdAssignDoctorAction;
-    final bool isBusy = _isSaving || _isLoadingProviders;
+    final bool isBusy = _isBusy;
     return AppDialog(
       title: Text(actionLabel),
-      icon: const Icon(Icons.assignment_ind_outlined),
+      icon: const Icon(AppActionIcons.assignDoctor),
       scrollable: true,
       closeEnabled: !isBusy,
       content: Form(
@@ -1721,23 +1469,14 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
           ],
         ),
       ),
-      actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !isBusy,
-          onPressed: isBusy
-              ? null
-              : () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: actionLabel,
-          leadingIcon: Icons.assignment_ind_outlined,
-          isLoading: _isSaving,
-          enabled: !isBusy,
-          onPressed: isBusy ? null : _submit,
-        ),
-      ],
+      actions: clinicalActionDialogActions(
+        context,
+        actionLabel,
+        _isSaving,
+        isBusy ? null : _submit,
+        submitLeadingIcon: AppActionIcons.assignDoctor,
+        enabled: !_isLoadingProviders,
+      ),
     );
   }
 
@@ -1746,9 +1485,12 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
       _isLoadingProviders = true;
       _failure = null;
     });
+    final OpdEncounterDialogController dialogController = ref.read(
+      opdEncounterDialogControllerProvider,
+    );
     final List<Object> results = await Future.wait(<Future<Object>>[
-      ref.read(opdRepositoryProvider).listProviders(),
-      ref.read(opdRepositoryProvider).listProviderSchedules(),
+      dialogController.listProviders(),
+      dialogController.listProviderSchedules(),
     ]);
     if (!mounted) {
       return;
@@ -1783,7 +1525,7 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
   }
 
   Future<void> _submit() async {
-    if (_isSaving || _isLoadingProviders) {
+    if (_isBusy) {
       return;
     }
     if (!(_formKey.currentState?.validate() ?? false)) {
@@ -1827,155 +1569,61 @@ Future<bool?> showRoutingDecisionDialog({
   );
 }
 
-class RoutingDecisionDialog extends ConsumerStatefulWidget {
+/// OPD routing decision dialog — reuses [ClinicalRoutingActionDialog].
+class RoutingDecisionDialog extends ConsumerWidget {
   const RoutingDecisionDialog({required this.flow, super.key});
 
   final OpdFlowSummary flow;
 
   @override
-  ConsumerState<RoutingDecisionDialog> createState() =>
-      _RoutingDecisionDialogState();
-}
-
-class _RoutingDecisionDialogState extends ConsumerState<RoutingDecisionDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _notesController;
-  late String _decision;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  OpdFlowSummary get _currentFlow {
-    final OpdWorkspaceState? workspaceState = _workspaceState(ref);
-    final OpdFlowDetail? selected = workspaceState?.selectedFlow;
-    if (selected != null && _isSameFlow(selected.summary, widget.flow)) {
-      return selected.summary;
-    }
-    return widget.flow;
-  }
-
-  OpdFlowDetail? get _currentDetail {
-    final OpdWorkspaceState? workspaceState = _workspaceState(ref);
-    final OpdFlowDetail? selected = workspaceState?.selectedFlow;
-    if (selected != null && _isSameFlow(selected.summary, widget.flow)) {
-      return selected;
-    }
-    return null;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _notesController = TextEditingController();
-    final String existingRoute = (widget.flow.lastRouteTo ?? '')
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final OpdFlowSummary currentFlow = _routingCurrentFlow(ref, flow);
+    final OpdFlowDetail? currentDetail = _routingCurrentDetail(ref, flow);
+    final String existingRoute = (currentFlow.lastRouteTo ?? '')
         .trim()
         .toUpperCase();
-    _decision = _triageRouteOptions.contains(existingRoute)
-        ? existingRoute
-        : 'CONSULTATION';
-  }
-
-  @override
-  void dispose() {
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final OpdFlowSummary flow = _currentFlow;
-    return AppDialog(
-      title: Text(l10n.opdRouteDecisionLabel),
-      icon: const Icon(Icons.alt_route_outlined),
-      scrollable: true,
-      closeEnabled: !_isSaving,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null)
-              AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
-              ),
-            OpdActionContextPanel(
-              flow: flow,
-              detail: _currentDetail,
-              showTitle: false,
-            ),
-            AppTriageDecisionField(
-              value: _decision,
-              labelText: _opdRequiredFieldLabel(
-                l10n,
-                l10n.opdRouteDecisionLabel,
-              ),
-              enabled: !_isSaving,
-              searchable: false,
-              isRequired: true,
-              onChanged: (String? value) =>
-                  setState(() => _decision = value ?? _decision),
-              options: _triageRouteFieldOptions(),
-            ),
-            AppTextField(
-              controller: _notesController,
-              labelText: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
-              enabled: !_isSaving,
-              maxLines: 3,
-            ),
-          ],
-        ),
-      ),
-      actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !_isSaving,
-          onPressed: _isSaving
-              ? null
-              : () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.opdRouteDecisionLabel,
-          leadingIcon: Icons.alt_route_outlined,
-          isLoading: _isSaving,
-          enabled: !_isSaving,
-          onPressed: _isSaving ? null : _submit,
+    return ClinicalRoutingActionDialog(
+      title: l10n.opdRouteDecisionLabel,
+      submitLabel: l10n.opdSaveRoutingDecisionAction,
+      submitLeadingIcon: AppActionIcons.save,
+      icon: const Icon(AppActionIcons.route),
+      routeOptions: _triageRouteFieldOptions(),
+      initialRoute: existingRoute,
+      routeLabel: _opdRequiredFieldLabel(l10n, l10n.opdRouteDecisionLabel),
+      notesLabel: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
+      leadingContent: <Widget>[
+        OpdActionContextPanel(
+          flow: currentFlow,
+          detail: currentDetail,
+          showTitle: false,
         ),
       ],
+      onSubmit: ({required String routeTo, required String notes}) {
+        return ref
+            .read(opdWorkspaceControllerProvider.notifier)
+            .disposeFlow(currentFlow, routeTo, notes);
+      },
     );
   }
+}
 
-  Future<void> _submit() async {
-    if (_isSaving) {
-      return;
-    }
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-    final String decision = _decision.trim();
-    if (decision.isEmpty) {
-      setState(() => _failure = AppFailure.validation());
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .disposeFlow(_currentFlow, decision, _notesController.text.trim());
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
+OpdFlowSummary _routingCurrentFlow(WidgetRef ref, OpdFlowSummary flow) {
+  final OpdWorkspaceState? workspaceState = _workspaceState(ref);
+  final OpdFlowDetail? selected = workspaceState?.selectedFlow;
+  if (selected != null && _isSameFlow(selected.summary, flow)) {
+    return selected.summary;
   }
+  return flow;
+}
+
+OpdFlowDetail? _routingCurrentDetail(WidgetRef ref, OpdFlowSummary flow) {
+  final OpdWorkspaceState? workspaceState = _workspaceState(ref);
+  final OpdFlowDetail? selected = workspaceState?.selectedFlow;
+  if (selected != null && _isSameFlow(selected.summary, flow)) {
+    return selected;
+  }
+  return null;
 }
 
 /// Opens [OpdDispositionDialog] with mutating-dialog dismiss rules.
@@ -3604,15 +3252,6 @@ const List<String> _flowStages = <String>[
 ];
 
 const Set<String> _terminalFlowStages = <String>{'ADMITTED', 'DISCHARGED'};
-
-const List<String> _paymentMethods = <String>[
-  'CASH',
-  'MOBILE_MONEY',
-  'BANK_TRANSFER',
-  'CREDIT_CARD',
-  'INSURANCE',
-  'OTHER',
-];
 
 const List<String> _triageRouteOptions = <String>[
   'CONSULTATION',

@@ -6856,6 +6856,12 @@ abstract class AppLocalizations {
   /// **'Save disposition'**
   String get opdSaveDispositionAction;
 
+  /// Primary commit label for saving an OPD/triage routing decision.
+  ///
+  /// In en, this message translates to:
+  /// **'Save routing decision'**
+  String get opdSaveRoutingDecisionAction;
+
   /// Amount field label.
   ///
   /// In en, this message translates to:
