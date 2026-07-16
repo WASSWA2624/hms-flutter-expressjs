@@ -120,6 +120,110 @@ void main() {
         () => repository.loadSetup(facilityId: any(named: 'facilityId')),
       ).called(1);
     });
+
+    test('updateTransfer reloads bed board only after HTTP success', () async {
+      final _MockRoomsBedsRepository repository = _MockRoomsBedsRepository();
+      _stubSetup(repository);
+      _stubAssignments(repository);
+      when(
+        () => repository.updateTransfer(
+          admissionId: any(named: 'admissionId'),
+          action: any(named: 'action'),
+          transferRequestId: any(named: 'transferRequestId'),
+          toBedId: any(named: 'toBedId'),
+        ),
+      ).thenAnswer((_) async => const Result<void>.success(null));
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [roomsBedsRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(roomsBedsWorkspaceControllerProvider.future);
+
+      final RoomsBedsWorkspaceState before = container
+          .read(roomsBedsWorkspaceControllerProvider)
+          .requireValue
+          .when(
+            success: (RoomsBedsWorkspaceState value) => value,
+            failure: (AppFailure failure) => fail(failure.code),
+          );
+      final BedBoardItem occupied = before.beds.items.last;
+
+      final AppFailure? failure = await container
+          .read(roomsBedsWorkspaceControllerProvider.notifier)
+          .updateTransfer(
+            item: occupied,
+            admissionId: 'ADM-001',
+            action: 'APPROVE',
+            transferRequestId: 'TR-1',
+          );
+
+      expect(failure, isNull);
+      verify(
+        () => repository.updateTransfer(
+          admissionId: 'ADM-001',
+          action: 'APPROVE',
+          transferRequestId: 'TR-1',
+          toBedId: null,
+        ),
+      ).called(1);
+      // Initial load + post-success reload.
+      verify(
+        () => repository.loadSetup(facilityId: any(named: 'facilityId')),
+      ).called(2);
+    });
+
+    test('updateTransfer failure does not reload bed board', () async {
+      final _MockRoomsBedsRepository repository = _MockRoomsBedsRepository();
+      _stubSetup(repository);
+      _stubAssignments(repository);
+      when(
+        () => repository.updateTransfer(
+          admissionId: any(named: 'admissionId'),
+          action: any(named: 'action'),
+          transferRequestId: any(named: 'transferRequestId'),
+          toBedId: any(named: 'toBedId'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<void>.failure(AppFailure.network()),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [roomsBedsRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(roomsBedsWorkspaceControllerProvider.future);
+
+      final RoomsBedsWorkspaceState before = container
+          .read(roomsBedsWorkspaceControllerProvider)
+          .requireValue
+          .when(
+            success: (RoomsBedsWorkspaceState value) => value,
+            failure: (AppFailure failure) => fail(failure.code),
+          );
+
+      final AppFailure? failure = await container
+          .read(roomsBedsWorkspaceControllerProvider.notifier)
+          .updateTransfer(
+            item: before.beds.items.last,
+            admissionId: 'ADM-001',
+            action: 'START',
+          );
+
+      expect(failure, isNotNull);
+      final RoomsBedsWorkspaceState after = container
+          .read(roomsBedsWorkspaceControllerProvider)
+          .requireValue
+          .when(
+            success: (RoomsBedsWorkspaceState value) => value,
+            failure: (AppFailure value) => fail(value.code),
+          );
+      expect(after.isSaving, isFalse);
+      expect(after.lastFailure, isNotNull);
+      verify(
+        () => repository.loadSetup(facilityId: any(named: 'facilityId')),
+      ).called(1);
+    });
   });
 }
 

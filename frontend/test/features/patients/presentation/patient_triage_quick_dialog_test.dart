@@ -18,7 +18,6 @@ import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockOpdRepository extends Mock implements OpdRepository {}
@@ -34,7 +33,6 @@ const Patient _patient = Patient(
   facilityId: 'facility-1',
   firstName: 'Amina',
   lastName: 'Kato',
-  dateOfBirth: null,
   gender: 'FEMALE',
 );
 

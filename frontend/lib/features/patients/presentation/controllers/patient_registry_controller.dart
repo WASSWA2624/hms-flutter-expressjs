@@ -433,9 +433,16 @@ final class PatientRegistryController
       return AppFailure.validation();
     }
 
-    final PatientRegistryState? current = _currentState;
+    PatientRegistryState? current = _currentState;
     if (current == null) {
-      return refresh();
+      final AppFailure? refreshFailure = await refresh();
+      if (refreshFailure != null) {
+        return refreshFailure;
+      }
+      current = _currentState;
+      if (current == null) {
+        return AppFailure.validation();
+      }
     }
 
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));

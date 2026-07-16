@@ -29,6 +29,8 @@ class ReceptionQueueActionsDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return QueueActionsDialog(
       entry: entry,
+      // Explicit reception gate (alias of OPD front-desk write) for RBAC clarity.
+      // ignore: avoid_redundant_argument_values
       actionRequirement: receptionFrontDeskWriteRequirement,
     );
   }

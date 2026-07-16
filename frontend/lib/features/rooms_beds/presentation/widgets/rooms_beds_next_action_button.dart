@@ -208,7 +208,7 @@ class RoomsBedsNextActionButton extends ConsumerWidget {
     return switch (kind) {
       RoomsBedsNextActionKind.assign => Icons.login_outlined,
       RoomsBedsNextActionKind.release => Icons.logout_outlined,
-      RoomsBedsNextActionKind.completeTransfer => Icons.move_down_outlined,
+      RoomsBedsNextActionKind.completeTransfer => AppActionIcons.transfer,
       RoomsBedsNextActionKind.markAvailable => Icons.check_circle_outline,
       RoomsBedsNextActionKind.openHousekeeping =>
         Icons.cleaning_services_outlined,

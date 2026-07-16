@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 
 const String ipdUnknownWardId = '__ipd_unknown_ward__';
 const String ipdUnknownRoomIdPrefix = '__ipd_unknown_room__:';

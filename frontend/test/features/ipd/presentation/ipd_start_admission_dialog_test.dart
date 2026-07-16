@@ -17,10 +17,11 @@ import 'package:hosspi_hms/features/patients/data/repositories/patient_repositor
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
-import 'package:hosspi_hms/shared/actions/actions.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
-import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_admission_action_dialog.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockIpdRepository extends Mock implements IpdRepository {}
@@ -193,6 +194,11 @@ void main() {
   testWidgets('successful save posts patient and optional bed then pops true', (
     WidgetTester tester,
   ) async {
+    tester.view.physicalSize = const Size(1200, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     final _MockIpdRepository ipdRepository = _MockIpdRepository();
     final _MockPatientRepository patientRepository = _MockPatientRepository();
     Map<String, Object?>? payload;
@@ -239,6 +245,50 @@ void main() {
     expect(payload?['ward_id'], 'ward-a');
     expect(payload?['room_id'], 'room-1');
     expect(payload?['bed_id'], 'bed-1');
+    verify(() => ipdRepository.startAdmission(any())).called(1);
+  });
+
+  testWidgets('successful save can omit bed assignment', (
+    WidgetTester tester,
+  ) async {
+    final _MockIpdRepository ipdRepository = _MockIpdRepository();
+    final _MockPatientRepository patientRepository = _MockPatientRepository();
+    Map<String, Object?>? payload;
+    when(() => ipdRepository.startAdmission(any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      payload = invocation.positionalArguments.single as Map<String, Object?>;
+      return Result<IpdAdmissionDetail>.success(
+        IpdAdmissionDetail(
+          summary: IpdAdmissionSummary(
+            id: 'adm-1',
+            displayId: 'ADM-1',
+            patientId: 'pat-1',
+            patientDisplayName: 'Ada Active',
+            stage: 'ADMITTED_PENDING_BED',
+            admissionStatus: 'ADMITTED',
+          ),
+        ),
+      );
+    });
+    _stubWorkspaceLoad(ipdRepository);
+    _stubPatientSearch(patientRepository);
+    bool? result;
+
+    await _pumpDialog(
+      tester,
+      ipdRepository: ipdRepository,
+      patientRepository: patientRepository,
+      onResult: (bool? value) => result = value,
+    );
+
+    await _selectPatient(tester);
+    await tester.tap(find.widgetWithText(AppButton, 'Start admission'));
+    await tester.pumpAndSettle();
+
+    expect(result, isTrue);
+    expect(payload?['patient_id'], 'pat-1');
+    expect(payload?['bed_id'], isNull);
     verify(() => ipdRepository.startAdmission(any())).called(1);
   });
 
@@ -466,16 +516,20 @@ Future<void> _selectSearchableOption(
   int fieldIndex,
   String optionLabel,
 ) async {
-  await tester.tap(find.byType(EditableText).at(fieldIndex));
+  final Finder fieldFinder = find.byType(EditableText).at(fieldIndex);
+  await tester.ensureVisible(fieldFinder);
   await tester.pumpAndSettle();
-  await tester.tap(
-    find
-        .descendant(
-          of: find.byType(MenuItemButton),
-          matching: find.textContaining(optionLabel),
-        )
-        .first,
-  );
+  await tester.tap(fieldFinder);
+  await tester.pumpAndSettle();
+  final Finder optionFinder = find
+      .descendant(
+        of: find.byType(MenuItemButton),
+        matching: find.textContaining(optionLabel),
+      )
+      .first;
+  await tester.ensureVisible(optionFinder);
+  await tester.pumpAndSettle();
+  await tester.tap(optionFinder);
   await tester.pumpAndSettle();
 }
 

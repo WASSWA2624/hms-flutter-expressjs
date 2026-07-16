@@ -16330,9 +16330,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get roomsBedsManageTransferAction => 'Manage transfer';
 
   @override
-  String get roomsBedsTransferUpdateDialogTitle => 'Update transfer';
-
-  @override
   String get roomsBedsOpenHousekeepingAction => 'Open housekeeping';
 
   @override

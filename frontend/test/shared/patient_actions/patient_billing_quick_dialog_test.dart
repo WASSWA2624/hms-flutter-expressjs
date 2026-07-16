@@ -19,8 +19,6 @@ import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.da
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/patient_actions/patient_actions.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockOpdRepository extends Mock implements OpdRepository {}
@@ -103,11 +101,7 @@ void main() {
     final _MockOpdRepository repository = _MockOpdRepository();
     _stubOpdWorkspaceLoad(repository);
 
-    await _pumpDialog(
-      tester,
-      repository: repository,
-      canRecordPayment: false,
-    );
+    await _pumpDialog(tester, repository: repository);
 
     expect(find.text('Payment received'), findsNothing);
   });
@@ -314,7 +308,7 @@ Future<void> _pumpDialog(
 }) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: <Override>[
+      overrides: [
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
         ),

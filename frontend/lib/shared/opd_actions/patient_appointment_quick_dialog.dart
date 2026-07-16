@@ -14,7 +14,6 @@ import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialo
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
-import 'package:hosspi_hms/shared/patient_actions/patient_clinical_quick_actions.dart';
 
 /// Opens the patient appointment quick-schedule dialog (mutating).
 Future<bool?> showPatientAppointmentQuickDialog({
@@ -68,7 +67,14 @@ class _PatientAppointmentQuickDialogState
   void initState() {
     super.initState();
     _facilityId = widget.patient.facilityId;
-    unawaited(_loadFormOptions());
+    // Defer controller writes until after the first frame so Riverpod does not
+    // see a provider mutation during dialog mount/build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_loadFormOptions());
+    });
   }
 
   @override
@@ -95,8 +101,6 @@ class _PatientAppointmentQuickDialogState
         workspace?.queueProviderOptions ?? const <OpdProviderOption>[];
     final List<OpdProviderSchedule> schedules =
         workspace?.providerSchedules ?? const <OpdProviderSchedule>[];
-    final bool providersRefreshing =
-        workspace?.isRefreshingQueueProviders ?? false;
 
     return AppDialog(
       title: Text(l10n.patientsAppointmentDialogTitle),
@@ -184,7 +188,6 @@ class _PatientAppointmentQuickDialogState
               labelText: l10n.patientsProviderLabel,
               helperText: l10n.patientsProviderOptionalHelper,
               enabled: !_isBusy,
-              isLoading: _isLoadingProviders || providersRefreshing,
               onChanged: (String? value) => setState(() => _providerId = value),
               options: opdProviderSelectOptions(
                 providers: providers,

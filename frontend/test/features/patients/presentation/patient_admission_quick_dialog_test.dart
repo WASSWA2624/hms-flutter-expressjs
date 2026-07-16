@@ -16,7 +16,9 @@ import 'package:hosspi_hms/features/ipd/domain/repositories/ipd_repository.dart'
 import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
+import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_admission_quick_dialog.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -125,10 +127,10 @@ void main() {
       ),
     );
 
-    await pumpLocalizedWidget(
-      tester,
+    setTestViewport(tester, const Size(1100, 900));
+    await tester.pumpWidget(
       ProviderScope(
-        overrides: <Override>[
+        overrides: [
           initialSessionStateProvider.overrideWithValue(
             SessionState.authenticated(
               session: AuthSession(
@@ -151,23 +153,31 @@ void main() {
           patientRepositoryProvider.overrideWithValue(patients),
           ipdRepositoryProvider.overrideWithValue(ipd),
         ],
-        child: Builder(
-          builder: (BuildContext context) {
-            return AppButton.primary(
-              label: 'Open admission',
-              onPressed: () {
-                showPatientAdmissionQuickDialog(
-                  context,
-                  patient: patient,
-                  referenceData: referenceData,
+        child: MaterialApp(
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: Scaffold(
+            body: Builder(
+              builder: (BuildContext context) {
+                return AppButton.primary(
+                  label: 'Open admission',
+                  onPressed: () {
+                    showPatientAdmissionQuickDialog(
+                      context,
+                      patient: patient,
+                      referenceData: referenceData,
+                    );
+                  },
                 );
               },
-            );
-          },
+            ),
+          ),
         ),
       ),
-      size: const Size(1100, 900),
     );
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Open admission'));
     await tester.pumpAndSettle();

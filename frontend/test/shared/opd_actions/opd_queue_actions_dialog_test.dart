@@ -14,6 +14,7 @@ import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.da
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_queue_actions_dialog.dart';
@@ -211,7 +212,7 @@ void _stubWorkspaceLoad(_MockOpdRepository repository) {
       ),
     ),
   );
-  when(() => repository.listVisitQueue(any())).thenAnswer(
+  when(() => repository.listVisitQueues(any())).thenAnswer(
     (_) async => const Result<AppPage<OpdQueueEntry>>.success(
       AppPage<OpdQueueEntry>(
         items: <OpdQueueEntry>[],
@@ -233,6 +234,19 @@ void _stubWorkspaceLoad(_MockOpdRepository repository) {
         items: <OpdFlowSummary>[],
         request: AppPageRequest(pageSize: 12),
       ),
+    ),
+  );
+  when(() => repository.getOpdSummaryCounts()).thenAnswer(
+    (_) async =>
+        const Result<OpdFlowAggregateCounts>.success(OpdFlowAggregateCounts()),
+  );
+  when(
+    () => repository.listClinicalAlertThresholds(
+      vitalType: any(named: 'vitalType'),
+    ),
+  ).thenAnswer(
+    (_) async => const Result<List<OpdClinicalAlertThreshold>>.success(
+      <OpdClinicalAlertThreshold>[],
     ),
   );
   when(() => repository.listProviderSchedules()).thenAnswer(

@@ -5,9 +5,11 @@ import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.da
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_form_fields.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
-import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_admission_action_dialog.dart';
+import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 import 'package:hosspi_hms/shared/patient_actions/patient_clinical_quick_actions.dart';
 
 /// Opens the patient-registry quick admission request dialog.
@@ -76,7 +78,6 @@ class _PatientAdmissionQuickDialogState
       key: ValueKey<String?>(_facilityId),
       title: l10n.patientsAdmissionDialogTitle,
       submitLabel: l10n.patientsQuickAdmitPatientAction,
-      icon: const Icon(AppActionIcons.bed),
       referenceData: const ClinicalActionReferenceData(),
       requiresBed: false,
       reasonLabel: l10n.patientsAdmissionReasonLabel,

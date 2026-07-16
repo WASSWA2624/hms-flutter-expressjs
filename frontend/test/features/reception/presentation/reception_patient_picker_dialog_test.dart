@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -179,7 +177,7 @@ Future<void> _pumpOpenPicker(
 }) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: <Override>[
+      overrides: [
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
         ),

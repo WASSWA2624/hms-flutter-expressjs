@@ -13,7 +13,6 @@ import 'package:hosspi_hms/features/reception/presentation/widgets/reception_que
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_queue_actions_dialog.dart';
 
 void main() {

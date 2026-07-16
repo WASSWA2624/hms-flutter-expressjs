@@ -30493,12 +30493,6 @@ abstract class AppLocalizations {
   /// **'Manage transfer'**
   String get roomsBedsManageTransferAction;
 
-  /// Dialog title for completing an IPD transfer from the bed board.
-  ///
-  /// In en, this message translates to:
-  /// **'Update transfer'**
-  String get roomsBedsTransferUpdateDialogTitle;
-
   /// Action label to open housekeeping workspace for bed turnover.
   ///
   /// In en, this message translates to:

@@ -15,7 +15,6 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
-import 'package:hosspi_hms/shared/patient_actions/patient_actions.dart';
 
 Future<void> openReceptionPatientEditor(
   BuildContext context,

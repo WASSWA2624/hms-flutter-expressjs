@@ -21036,10 +21036,6 @@
   "@roomsBedsManageTransferAction": {
     "description": "Action label to approve, start, complete, or cancel an IPD transfer."
   },
-  "roomsBedsTransferUpdateDialogTitle": "Update transfer",
-  "@roomsBedsTransferUpdateDialogTitle": {
-    "description": "Dialog title for completing an IPD transfer from the bed board."
-  },
   "roomsBedsOpenHousekeepingAction": "Open housekeeping",
   "@roomsBedsOpenHousekeepingAction": {
     "description": "Action label to open housekeeping workspace for bed turnover."

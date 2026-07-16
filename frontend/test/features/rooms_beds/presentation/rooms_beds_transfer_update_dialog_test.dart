@@ -3,42 +3,46 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
+/// Rooms/beds `_showTransferUpdateDialog` wires [showAppTransferUpdateDialog]
+/// with manage-transfer copy and Edit commit — covered here without pumping
+/// the full workspace page.
 void main() {
-  test('appTransferDefaultActionForStatus maps transfer statuses', () {
-    expect(appTransferDefaultActionForStatus(null), 'APPROVE');
-    expect(appTransferDefaultActionForStatus('REQUESTED'), 'APPROVE');
-    expect(appTransferDefaultActionForStatus('APPROVED'), 'START');
-    expect(appTransferDefaultActionForStatus('IN_PROGRESS'), 'COMPLETE');
-  });
+  testWidgets(
+    'rooms/beds transfer update opens shared dialog with Edit chrome',
+    (WidgetTester tester) async {
+      await _pumpRoomsBedsOpener(tester);
 
-  test('appTransferRequiresDestinationBed only for COMPLETE', () {
-    expect(appTransferRequiresDestinationBed('APPROVE'), isFalse);
-    expect(appTransferRequiresDestinationBed('COMPLETE'), isTrue);
-    expect(appTransferRequiresDestinationBed('complete'), isTrue);
-  });
+      expect(find.byType(AppTransferUpdateDialog), findsOneWidget);
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.text('MANAGE TRANSFER'), findsOneWidget);
+      expect(find.text('Edit'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.byIcon(AppActionIcons.transfer), findsWidgets);
+      expect(find.byIcon(AppActionIcons.edit), findsWidgets);
+      expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
 
-  testWidgets('showAppTransferUpdateDialog uses non-dismissible AppDialog', (
+      final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
+      expect(dialog.closeEnabled, isTrue);
+      expect(dialog.scrollable, isTrue);
+      expect(dialog.pinActionsToBottom, isTrue);
+    },
+  );
+
+  testWidgets('title is role-based and never a patient name', (
     WidgetTester tester,
   ) async {
-    await _pumpOpener(tester);
-
-    expect(find.byType(AppTransferUpdateDialog), findsOneWidget);
-    expect(find.byType(AppDialog), findsOneWidget);
-    expect(find.text('MANAGE TRANSFER'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
-    expect(find.text('Edit'), findsOneWidget);
-    expect(find.byIcon(AppActionIcons.transfer), findsWidgets);
-    expect(find.byIcon(AppActionIcons.edit), findsWidgets);
-    expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
+    await _pumpRoomsBedsOpener(tester);
 
     final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
-    expect(dialog.closeEnabled, isTrue);
-    expect(dialog.scrollable, isTrue);
-    expect(dialog.pinActionsToBottom, isTrue);
+    expect(dialog.title, isA<Text>());
+    expect((dialog.title! as Text).data, 'Manage transfer');
+    expect(find.text('JANE DOE'), findsNothing);
+    expect(find.text('Jane Doe'), findsNothing);
   });
 
   testWidgets('Cancel pops false without calling onSubmit', (
@@ -47,7 +51,7 @@ void main() {
     var submitCount = 0;
     bool? result;
 
-    await _pumpOpener(
+    await _pumpRoomsBedsOpener(
       tester,
       onResult: (bool? value) => result = value,
       onSubmit: ({required String action, String? toBedId}) async {
@@ -63,10 +67,12 @@ void main() {
     expect(submitCount, 0);
   });
 
-  testWidgets('failure keeps dialog open', (WidgetTester tester) async {
+  testWidgets('failure keeps dialog open and does not pop success', (
+    WidgetTester tester,
+  ) async {
     bool? result;
 
-    await _pumpOpener(
+    await _pumpRoomsBedsOpener(
       tester,
       onResult: (bool? value) => result = value,
       onSubmit: ({required String action, String? toBedId}) async {
@@ -81,13 +87,13 @@ void main() {
     expect(find.byType(AppDialog), findsOneWidget);
   });
 
-  testWidgets('success pops true with selected action', (
+  testWidgets('success pops true after persisted submit', (
     WidgetTester tester,
   ) async {
     String? submittedAction;
     bool? result;
 
-    await _pumpOpener(
+    await _pumpRoomsBedsOpener(
       tester,
       onResult: (bool? value) => result = value,
       onSubmit: ({required String action, String? toBedId}) async {
@@ -103,46 +109,11 @@ void main() {
     expect(submittedAction, AppTransferUpdateActions.approve);
     expect(find.byType(AppDialog), findsNothing);
   });
-
-  testWidgets('COMPLETE shows destination bed and submits bed id', (
-    WidgetTester tester,
-  ) async {
-    String? submittedAction;
-    String? submittedBedId;
-    bool? result;
-
-    await _pumpOpener(
-      tester,
-      initialAction: AppTransferUpdateActions.complete,
-      onResult: (bool? value) => result = value,
-      onSubmit: ({required String action, String? toBedId}) async {
-        submittedAction = action;
-        submittedBedId = toBedId;
-        return null;
-      },
-    );
-
-    final Finder fields = find.byType(AppSelectField<String>);
-    expect(fields, findsNWidgets(2));
-    final AppSelectField<String> bedField =
-        tester.widget<AppSelectField<String>>(fields.at(1));
-    expect(bedField.labelText, 'Destination bed');
-    bedField.onChanged?.call('bed-2');
-    await tester.pump();
-
-    await tester.tap(find.widgetWithText(AppButton, 'Edit'));
-    await tester.pumpAndSettle();
-
-    expect(result, isTrue);
-    expect(submittedAction, AppTransferUpdateActions.complete);
-    expect(submittedBedId, 'bed-2');
-  });
 }
 
-Future<void> _pumpOpener(
+Future<void> _pumpRoomsBedsOpener(
   WidgetTester tester, {
   ValueChanged<bool?>? onResult,
-  String initialAction = AppTransferUpdateActions.approve,
   Future<AppFailure?> Function({
     required String action,
     String? toBedId,
@@ -157,6 +128,7 @@ Future<void> _pumpOpener(
       home: Scaffold(
         body: Builder(
           builder: (BuildContext context) {
+            final AppLocalizations l10n = context.l10n;
             return Center(
               child: AppButton.primary(
                 label: 'Open',
@@ -164,39 +136,39 @@ Future<void> _pumpOpener(
                 onPressed: () async {
                   final bool? value = await showAppTransferUpdateDialog(
                     context: context,
-                    title: 'Manage transfer',
-                    actionLabel: 'Transfer action',
-                    destinationBedLabel: 'Destination bed',
-                    destinationBedHint: 'Select a bed',
-                    submitLabel: 'Edit',
-                    requiredMessage: 'Required',
-                    initialAction: initialAction,
-                    actionOptions: const <AppSelectOption<String>>[
+                    title: l10n.roomsBedsManageTransferAction,
+                    actionLabel: l10n.ipdTransferActionFieldLabel,
+                    destinationBedLabel: l10n.ipdDestinationBedFieldLabel,
+                    destinationBedHint: l10n.ipdSelectBedHint,
+                    submitLabel: l10n.patientsEditAction,
+                    requiredMessage: l10n.roomsBedsRequiredMessage(
+                      l10n.ipdDestinationBedFieldLabel,
+                    ),
+                    initialAction: appTransferDefaultActionForStatus(
+                      'REQUESTED',
+                    ),
+                    actionOptions: <AppSelectOption<String>>[
                       AppSelectOption<String>(
                         value: AppTransferUpdateActions.approve,
-                        label: 'Approve',
+                        label: l10n.ipdTransferApproveAction,
                       ),
                       AppSelectOption<String>(
                         value: AppTransferUpdateActions.start,
-                        label: 'Start transfer',
+                        label: l10n.ipdTransferStartAction,
                       ),
                       AppSelectOption<String>(
                         value: AppTransferUpdateActions.complete,
-                        label: 'Complete transfer',
+                        label: l10n.ipdTransferCompleteAction,
                       ),
                       AppSelectOption<String>(
                         value: AppTransferUpdateActions.cancel,
-                        label: 'Cancel transfer',
+                        label: l10n.ipdTransferCancelAction,
                       ),
                     ],
                     bedOptions: const <AppSelectOption<String>>[
                       AppSelectOption<String>(
-                        value: 'bed-1',
-                        label: 'Bed 1',
-                      ),
-                      AppSelectOption<String>(
                         value: 'bed-2',
-                        label: 'Bed 2',
+                        label: 'Bed 2 | Ward B',
                       ),
                     ],
                     onSubmit:

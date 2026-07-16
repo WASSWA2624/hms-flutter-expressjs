@@ -10,8 +10,8 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_disposition_actions.dart';
-import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/components/opd_encounter_dialog.dart';
+import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 
 enum PatientQuickAction {
   appointment,

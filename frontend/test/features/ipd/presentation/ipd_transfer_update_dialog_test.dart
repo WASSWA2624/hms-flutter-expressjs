@@ -274,16 +274,18 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    final AppSelectField<String> actionField =
-        tester.widget<AppSelectField<String>>(
-      find.byType(AppSelectField<String>).first,
-    );
-    expect(actionField.value, AppTransferUpdateActions.complete);
-    expect(find.text('Destination bed'), findsOneWidget);
+    final Finder fields = find.byType(AppSelectField<String>);
+    expect(fields, findsNWidgets(2));
 
-    final AppSelectField<String> bedField = tester.widget<AppSelectField<String>>(
-      find.byType(AppSelectField<String>).at(1),
-    );
+    final AppSelectField<String> actionField =
+        tester.widget<AppSelectField<String>>(fields.first);
+    expect(actionField.value, AppTransferUpdateActions.complete);
+    expect(actionField.labelText, 'Transfer action');
+
+    final AppSelectField<String> bedField =
+        tester.widget<AppSelectField<String>>(fields.at(1));
+    expect(bedField.labelText, 'Destination bed');
+    expect(bedField.hintText, 'Select a bed');
     bedField.onChanged?.call('bed-2');
     await tester.pump();
 

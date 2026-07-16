@@ -70,7 +70,6 @@ class QueueActionsDialog extends ConsumerWidget {
       icon: const Icon(AppActionIcons.queue),
       scrollable: true,
       pinActionsToBottom: true,
-      closeEnabled: true,
       maxWidth: 680,
       content: AppFormSection(
         density: AppFormSectionDensity.compact,

@@ -146,6 +146,78 @@ void main() {
       },
     );
 
+    test('createAppointment patches the persisted appointment row', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      final DateTime scheduledStart = DateTime.utc(2026, 7, 20, 9);
+      final DateTime scheduledEnd = DateTime.utc(2026, 7, 20, 9, 30);
+      final OpdAppointment created = OpdAppointment(
+        id: 'appointment-internal',
+        publicId: 'APT000099',
+        patientId: 'PAT000001',
+        status: 'SCHEDULED',
+        scheduledStart: scheduledStart,
+        scheduledEnd: scheduledEnd,
+      );
+      Map<String, Object?>? submittedPayload;
+      _stubInitialLoad(repository);
+      when(() => repository.createAppointment(any())).thenAnswer((
+        Invocation invocation,
+      ) async {
+        submittedPayload =
+            invocation.positionalArguments.single as Map<String, Object?>;
+        return Result<OpdAppointment>.success(created);
+      });
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .createAppointment(<String, Object?>{
+            'tenant_id': 'TEN000001',
+            'facility_id': 'FAC000001',
+            'patient_id': 'PAT000001',
+            'status': 'SCHEDULED',
+            'scheduled_start': scheduledStart.toIso8601String(),
+            'scheduled_end': scheduledEnd.toIso8601String(),
+            'reason': 'Follow-up',
+          });
+
+      expect(failure, isNull);
+      expect(
+        _workspaceState(container).appointments.items.single.publicId,
+        'APT000099',
+      );
+      expect(submittedPayload, containsPair('patient_id', 'PAT000001'));
+      expect(submittedPayload, containsPair('reason', 'Follow-up'));
+      verify(() => repository.createAppointment(any())).called(1);
+    });
+
+    test('createAppointment failure leaves appointments unpatched', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      _stubInitialLoad(repository);
+      when(() => repository.createAppointment(any())).thenAnswer(
+        (_) async => Result<OpdAppointment>.failure(AppFailure.network()),
+      );
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .createAppointment(<String, Object?>{
+            'patient_id': 'PAT000001',
+            'status': 'SCHEDULED',
+            'scheduled_start': DateTime.utc(2026, 7, 20, 9).toIso8601String(),
+            'scheduled_end': DateTime.utc(2026, 7, 20, 9, 30).toIso8601String(),
+          });
+
+      expect(failure, isA<AppFailure>());
+      expect(_workspaceState(container).appointments.items, isEmpty);
+    });
+
     test('rescheduleAppointment patches only the persisted response', () async {
       final _MockOpdRepository repository = _MockOpdRepository();
       final DateTime originalStart = DateTime.utc(2026, 7, 20, 8);

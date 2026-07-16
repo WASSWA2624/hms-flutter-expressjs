@@ -10,10 +10,13 @@ import 'package:hosspi_hms/features/ipd/presentation/ipd_admission_reference_dat
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
-import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_admission_action_dialog.dart';
+import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/forms/app_form_section.dart';
+import 'package:hosspi_hms/shared/forms/app_validators.dart';
+import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 
 /// Admission-desk dialog to start a new IPD admission (flow §2/§3).
 class IpdStartAdmissionDialog extends ConsumerStatefulWidget {
@@ -52,7 +55,6 @@ class _IpdStartAdmissionDialogState
       icon: const Icon(_dialogIcon),
       submitLeadingIcon: AppActionIcons.add,
       referenceData: ipdAdmissionReferenceData(context, widget.referenceData),
-      requiresBed: true,
       bedRequired: false,
       maxWidth: 560,
       initialMaximized: false,

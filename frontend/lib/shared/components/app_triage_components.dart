@@ -3,6 +3,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';

@@ -119,7 +119,7 @@ void main() {
     );
 
     return ProviderContainer(
-      overrides: <Override>[
+      overrides: [
         initialSessionStateProvider.overrideWithValue(
           SessionState.authenticated(
             session: AuthSession(
