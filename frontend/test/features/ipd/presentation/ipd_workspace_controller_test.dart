@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
@@ -217,6 +218,179 @@ void main() {
     );
     expect(failure, isNull);
     verify(() => repo.approveAdmission('adm-1', any())).called(1);
+  });
+
+  test('releaseBed patches admission and refreshes reference data', () async {
+    final _MockIpdRepository repo = _MockIpdRepository();
+    final IpdAdmissionSummary occupied = _summary(
+      stage: 'DISCHARGE_PLANNED',
+    ).copyWith(hasActiveBed: true);
+    final IpdAdmissionSummary released = occupied.copyWith(
+      hasActiveBed: false,
+      stage: 'DISCHARGE_PLANNED',
+    );
+    final ProviderContainer container = buildContainer(
+      repo,
+      admissions: <IpdAdmissionSummary>[occupied],
+    );
+    when(() => repo.releaseBed(any(), any())).thenAnswer(
+      (_) async => Result<IpdAdmissionDetail>.success(
+        IpdAdmissionDetail(summary: released),
+      ),
+    );
+
+    await container.read(ipdWorkspaceControllerProvider.future);
+    final IpdWorkspaceController controller = container.read(
+      ipdWorkspaceControllerProvider.notifier,
+    );
+
+    final failure = await controller.releaseBed(occupied);
+    expect(failure, isNull);
+
+    final IpdWorkspaceState? state = readState(container);
+    expect(state, isNotNull);
+    expect(state!.selectedAdmission?.summary.hasActiveBed, isFalse);
+    expect(state.admissions.items.single.hasActiveBed, isFalse);
+    verify(() => repo.releaseBed('adm-1', any())).called(1);
+    verify(() => repo.listWards(search: any(named: 'search'))).called(greaterThan(0));
+    verify(
+      () => repo.listBeds(
+        search: any(named: 'search'),
+        status: any(named: 'status'),
+        wardId: any(named: 'wardId'),
+      ),
+    ).called(greaterThan(0));
+  });
+
+  test('releaseBed failure patches nothing', () async {
+    final _MockIpdRepository repo = _MockIpdRepository();
+    final IpdAdmissionSummary occupied = _summary(
+      stage: 'DISCHARGE_PLANNED',
+    ).copyWith(hasActiveBed: true);
+    final ProviderContainer container = buildContainer(
+      repo,
+      admissions: <IpdAdmissionSummary>[occupied],
+    );
+    when(() => repo.releaseBed(any(), any())).thenAnswer(
+      (_) async => Result<IpdAdmissionDetail>.failure(AppFailure.network()),
+    );
+
+    await container.read(ipdWorkspaceControllerProvider.future);
+    final IpdWorkspaceController controller = container.read(
+      ipdWorkspaceControllerProvider.notifier,
+    );
+
+    final failure = await controller.releaseBed(occupied);
+    expect(failure, isNotNull);
+
+    final IpdWorkspaceState? state = readState(container);
+    expect(state!.selectedAdmission, isNull);
+    expect(state.admissions.items.single.hasActiveBed, isTrue);
+    expect(state.isSaving, isFalse);
+    expect(state.lastFailure, isNotNull);
+  });
+
+  test('requestTransfer patches admission detail and transfer queue stage',
+      () async {
+    final _MockIpdRepository repo = _MockIpdRepository();
+    final IpdAdmissionSummary admitted = _summary(stage: 'ADMITTED_IN_BED');
+    final IpdAdmissionSummary transferred = IpdAdmissionSummary(
+      id: admitted.id,
+      displayId: admitted.displayId,
+      patientId: admitted.patientId,
+      patientDisplayName: admitted.patientDisplayName,
+      stage: 'TRANSFER_REQUESTED',
+      transferStatus: 'REQUESTED',
+      admissionStatus: admitted.admissionStatus,
+      openTransferRequestId: 'tr-1',
+    );
+    Map<String, Object?>? payload;
+    final ProviderContainer container = buildContainer(
+      repo,
+      admissions: <IpdAdmissionSummary>[admitted],
+    );
+    when(() => repo.requestTransfer(any(), any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      payload = invocation.positionalArguments[1] as Map<String, Object?>;
+      when(() => repo.listAdmissions(any())).thenAnswer(
+        (Invocation listInvocation) async =>
+            Result<AppPage<IpdAdmissionSummary>>.success(
+              AppPage<IpdAdmissionSummary>(
+                items: <IpdAdmissionSummary>[transferred],
+                request:
+                    (listInvocation.positionalArguments.single
+                            as IpdAdmissionQuery)
+                        .pageRequest,
+                totalItemCount: 1,
+              ),
+            ),
+      );
+      return Result<IpdAdmissionDetail>.success(
+        IpdAdmissionDetail(
+          summary: transferred,
+          openTransferRequest: const IpdTransferRequest(
+            id: 'tr-1',
+            status: 'REQUESTED',
+          ),
+        ),
+      );
+    });
+
+    await container.read(ipdWorkspaceControllerProvider.future);
+    final IpdWorkspaceController controller = container.read(
+      ipdWorkspaceControllerProvider.notifier,
+    );
+
+    final failure = await controller.requestTransfer(
+      admission: admitted,
+      fromWardId: 'ward-a',
+      toWardId: 'ward-b',
+    );
+    expect(failure, isNull);
+    expect(payload?['from_ward_id'], 'ward-a');
+    expect(payload?['to_ward_id'], 'ward-b');
+    expect(payload?['requested_at'], isA<String>());
+
+    await Future<void>.delayed(Duration.zero);
+
+    final IpdWorkspaceState? state = readState(container);
+    expect(state!.selectedAdmission?.summary.stage, 'TRANSFER_REQUESTED');
+    expect(state.selectedAdmission?.openTransferRequest?.id, 'tr-1');
+    expect(state.admissions.items.first.stage, 'TRANSFER_REQUESTED');
+    expect(state.transferPendingCount, 1);
+    verify(() => repo.requestTransfer('adm-1', any())).called(1);
+  });
+
+  test('requestTransfer failure patches nothing', () async {
+    final _MockIpdRepository repo = _MockIpdRepository();
+    final IpdAdmissionSummary admitted = _summary(stage: 'ADMITTED_IN_BED');
+    final ProviderContainer container = buildContainer(
+      repo,
+      admissions: <IpdAdmissionSummary>[admitted],
+    );
+    when(() => repo.requestTransfer(any(), any())).thenAnswer(
+      (_) async => const Result<IpdAdmissionDetail>.failure(
+        AppFailure.network(),
+      ),
+    );
+
+    await container.read(ipdWorkspaceControllerProvider.future);
+    final IpdWorkspaceController controller = container.read(
+      ipdWorkspaceControllerProvider.notifier,
+    );
+
+    final failure = await controller.requestTransfer(
+      admission: admitted,
+      fromWardId: 'ward-a',
+      toWardId: 'ward-b',
+    );
+    expect(failure, isNotNull);
+
+    final IpdWorkspaceState? state = readState(container);
+    expect(state!.selectedAdmission, isNull);
+    expect(state.admissions.items.first.stage, 'ADMITTED_IN_BED');
+    expect(state.transferPendingCount, 0);
   });
 
   test('admissionQueueCount includes requested and pending bed stages', () {

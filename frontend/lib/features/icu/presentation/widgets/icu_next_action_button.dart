@@ -11,6 +11,7 @@ import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_c
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_action_dialogs.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action_registry.dart';
 
@@ -163,7 +164,7 @@ class IcuNextActionButton extends ConsumerWidget {
       _IcuResolvedAction.acknowledgeAlert => Icons.done_all_outlined,
       _IcuResolvedAction.manageTransfer =>
         Icons.published_with_changes_outlined,
-      _IcuResolvedAction.requestTransfer => Icons.compare_arrows_outlined,
+      _IcuResolvedAction.requestTransfer => AppActionIcons.transfer,
       _IcuResolvedAction.openDischargeClearance =>
         Icons.assignment_turned_in_outlined,
       _IcuResolvedAction.markReadiness => Icons.fact_check_outlined,

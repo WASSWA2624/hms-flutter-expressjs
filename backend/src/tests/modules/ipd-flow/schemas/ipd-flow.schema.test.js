@@ -5,6 +5,7 @@ const {
   getIpdFlowQuerySchema,
   startIpdFlowSchema,
   assignBedSchema,
+  releaseBedSchema,
   requestTransferSchema,
   updateTransferSchema,
   planDischargeSchema,
@@ -89,12 +90,35 @@ describe('ipd-flow.schema', () => {
     expect(result.success).toBe(true);
   });
 
+  it('validates release bed payload with optional released_at', () => {
+    const empty = releaseBedSchema.safeParse({});
+    const withTimestamp = releaseBedSchema.safeParse({
+      released_at: '2026-01-01T10:00:00.000Z',
+    });
+
+    expect(empty.success).toBe(true);
+    expect(withTimestamp.success).toBe(true);
+  });
+
+  it('rejects invalid release bed released_at', () => {
+    const result = releaseBedSchema.safeParse({ released_at: 'not-a-date' });
+    expect(result.success).toBe(false);
+  });
+
   it('validates transfer request payload', () => {
     const result = requestTransferSchema.safeParse({
       from_ward_id: 'WRD0000001',
       to_ward_id: 'WRD0000002',
+      requested_at: '2026-01-01T10:00:00.000Z',
     });
     expect(result.success).toBe(true);
+  });
+
+  it('rejects transfer request payload without destination ward', () => {
+    const result = requestTransferSchema.safeParse({
+      from_ward_id: 'WRD0000001',
+    });
+    expect(result.success).toBe(false);
   });
 
   it('validates discharge planning payload', () => {

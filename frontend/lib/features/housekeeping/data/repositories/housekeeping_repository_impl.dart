@@ -119,11 +119,11 @@ final class HousekeepingRepositoryImpl implements HousekeepingRepository {
   }
 
   @override
-  Future<Result<void>> triageMaintenanceRequest(
+  Future<Result<HousekeepingWorkItem>> triageMaintenanceRequest(
     String requestId,
     HousekeepingMaintenanceTriageDraft draft,
   ) {
-    return _apiClient.post<void>(
+    return _apiClient.post<HousekeepingWorkItem>(
       ApiEndpoints.nested(
         HmsApiResource.maintenanceRequests,
         requestId,
@@ -134,7 +134,11 @@ final class HousekeepingRepositoryImpl implements HousekeepingRepository {
         'triage_summary': draft.summary,
         'sla_hours': draft.slaHours,
       }),
-      decoder: (_) {},
+      decoder: (Object? data) {
+        return HousekeepingWorkItemDto.fromMaintenanceRequestResponse(
+          data,
+        ).toEntity();
+      },
     );
   }
 }

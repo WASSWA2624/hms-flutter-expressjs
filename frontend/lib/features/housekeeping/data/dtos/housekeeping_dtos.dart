@@ -128,6 +128,38 @@ final class HousekeepingWorkItemDto {
 
   final HousekeepingJsonMap json;
 
+  /// Maps a maintenance-request CRUD/triage payload into a workspace work item.
+  factory HousekeepingWorkItemDto.fromMaintenanceRequestResponse(
+    Object? responseData,
+  ) {
+    final HousekeepingJsonMap json = _map(responseData);
+    final String id = _firstString(<Object?>[
+      json['human_friendly_id'],
+      json['id'],
+      json['display_id'],
+    ]);
+    return HousekeepingWorkItemDto(<String, Object?>{
+      ...json,
+      'resource': HousekeepingResource.maintenanceRequests.serverValue,
+      'display_id':
+          _string(json['display_id']) ??
+          _string(json['human_friendly_id']) ??
+          id,
+      'title': _firstString(<Object?>[
+        json['title'],
+        json['asset_label'],
+        json['facility_label'],
+        id,
+      ]),
+      'subtitle': _string(json['subtitle']) ?? _string(json['description']),
+      'timeline_at':
+          json['timeline_at'] ?? json['updated_at'] ?? json['reported_at'],
+      'target_path':
+          _string(json['target_path']) ??
+          (id.isEmpty ? null : '/housekeeping/maintenance-requests/$id'),
+    });
+  }
+
   HousekeepingWorkItem toEntity() {
     final HousekeepingResource resource = HousekeepingResource.fromServer(
       _string(json['resource']),

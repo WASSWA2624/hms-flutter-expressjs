@@ -162,6 +162,7 @@ final class IcuBed {
     this.wardId,
     this.wardName,
     this.wardType,
+    this.roomId,
     this.roomName,
     this.floor,
     this.occupantAdmissionId,
@@ -176,6 +177,7 @@ final class IcuBed {
   final String? wardId;
   final String? wardName;
   final String? wardType;
+  final String? roomId;
   final String? roomName;
   final String? floor;
   final String? occupantAdmissionId;

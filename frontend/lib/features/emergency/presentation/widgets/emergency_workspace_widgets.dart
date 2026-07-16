@@ -77,7 +77,6 @@ abstract final class EmergencyText {
   static const String level5 = 'Level 5';
   static const String location = 'Location';
   static const String low = 'Low';
-  static const String markResponse = 'Mark response';
   static const String medium = 'Medium';
   static const String next = 'Next';
   static const String onScene = 'On scene';
@@ -99,7 +98,6 @@ abstract final class EmergencyText {
   static const String required = 'Required';
   static const String responded = 'Responded';
   static const String response = 'Response';
-  static const String responseNotes = 'Response notes';
   static const String saveTriage = 'Save triage';
   static const String searchHint = 'Search patient, case, ambulance, or status';
   static const String selectAmbulance = 'Select ambulance';
@@ -294,12 +292,24 @@ Color? rowColor(BuildContext context, EmergencyCaseSummary item) {
   return Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.20);
 }
 
-List<AppSelectOption<String>> severityOptions() {
-  return const <AppSelectOption<String>>[
-    AppSelectOption<String>(value: 'CRITICAL', label: EmergencyText.critical),
-    AppSelectOption<String>(value: 'HIGH', label: EmergencyText.high),
-    AppSelectOption<String>(value: 'MEDIUM', label: EmergencyText.medium),
-    AppSelectOption<String>(value: 'LOW', label: EmergencyText.low),
+List<AppSelectOption<String>> severityOptions(AppLocalizations l10n) {
+  return <AppSelectOption<String>>[
+    AppSelectOption<String>(
+      value: 'CRITICAL',
+      label: l10n.emergencyPriorityCriticalLabel,
+    ),
+    AppSelectOption<String>(
+      value: 'HIGH',
+      label: l10n.emergencyPriorityHighLabel,
+    ),
+    AppSelectOption<String>(
+      value: 'MEDIUM',
+      label: l10n.emergencyPriorityMediumLabel,
+    ),
+    AppSelectOption<String>(
+      value: 'LOW',
+      label: l10n.emergencyPriorityLowLabel,
+    ),
   ];
 }
 
@@ -339,17 +349,6 @@ List<AppSelectOption<String>> ambulanceStatusOptions() {
       value: 'OUT_OF_SERVICE',
       label: EmergencyText.outOfService,
     ),
-  ];
-}
-
-List<AppSelectOption<String>> handoffOptions() {
-  return const <AppSelectOption<String>>[
-    AppSelectOption<String>(value: 'OPD', label: EmergencyText.opd),
-    AppSelectOption<String>(value: 'IPD', label: EmergencyText.ipd),
-    AppSelectOption<String>(value: 'ICU', label: EmergencyText.icu),
-    AppSelectOption<String>(value: 'THEATER', label: EmergencyText.theater),
-    AppSelectOption<String>(value: 'REFERRAL', label: EmergencyText.referral),
-    AppSelectOption<String>(value: 'DISCHARGE', label: EmergencyText.discharge),
   ];
 }
 
@@ -925,8 +924,8 @@ class EmergencyHandoffActionCell extends ConsumerWidget {
       requirement: writeRequirement,
       builder: (BuildContext context, bool isAllowed) {
         return AppButton.primary(
-          label: EmergencyText.recordHandoff,
-          leadingIcon: Icons.output_outlined,
+          label: context.l10n.emergencyHandoffRecordAction,
+          leadingIcon: AppActionIcons.handoff,
           enabled: isAllowed && item.isOpen,
           onPressed: isAllowed && item.isOpen
               ? () => unawaited(_openHandoff(context, ref))
@@ -949,24 +948,21 @@ class EmergencyHandoffActionCell extends ConsumerWidget {
       return;
     }
 
-    final bool? saved = await showAppDialog<bool>(
+    final bool? saved = await showEmergencyHandoffDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => HandoffDialog(
-        onSubmit: (HandoffInput input) {
-          return controller.handoff(
-            destination: input.destination,
-            notes: input.notes,
-            closeCase: input.closeCase,
-          );
-        },
-      ),
+      onSubmit: (HandoffInput input) {
+        return controller.handoff(
+          destination: input.destination,
+          notes: input.notes,
+          closeCase: input.closeCase,
+        );
+      },
     );
     if (saved == true && context.mounted) {
       showFailureIfNeeded(
         context,
         null,
-        successMessage: EmergencyText.handoffRecorded,
+        successMessage: context.l10n.emergencyHandoffRecordedMessage,
       );
     }
   }
@@ -1352,8 +1348,8 @@ class EmergencyActionPanel extends ConsumerWidget {
       title: 'Actions',
       actions: <AppActionItem>[
         AppActionItem(
-          label: EmergencyText.priority,
-          leadingIcon: Icons.priority_high_outlined,
+          label: context.l10n.emergencyPriorityDialogTitle,
+          leadingIcon: AppActionIcons.priority,
           enabled: canWriteEmergency && detail.summary.isOpen,
           onPressed: () => _openPriorityDialog(context),
         ),
@@ -1364,7 +1360,7 @@ class EmergencyActionPanel extends ConsumerWidget {
           onPressed: () => _openTriageDialog(context),
         ),
         AppActionItem(
-          label: EmergencyText.response,
+          label: context.l10n.emergencyResponseAction,
           leadingIcon: Icons.medical_services_outlined,
           enabled: canWriteEmergency && detail.summary.isOpen,
           onPressed: () => _openResponseDialog(context),
@@ -1401,8 +1397,8 @@ class EmergencyActionPanel extends ConsumerWidget {
           ),
         ),
         AppActionItem(
-          label: EmergencyText.handoff,
-          leadingIcon: Icons.output_outlined,
+          label: context.l10n.emergencyHandoffAction,
+          leadingIcon: AppActionIcons.handoff,
           enabled: canHandoff && detail.summary.isOpen,
           onPressed: () => _openHandoffDialog(context),
         ),
@@ -1444,33 +1440,22 @@ class EmergencyActionPanel extends ConsumerWidget {
   }
 
   Future<void> _openPriorityDialog(BuildContext context) async {
-    final AppLocalizations l10n = context.l10n;
-    final bool? saved = await showAppDialog<bool>(
+    final bool? saved = await showEmergencyPriorityDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => AppSelectActionDialog<String>(
-        title: EmergencyText.priority,
-        icon: const Icon(Icons.priority_high_outlined),
-        fieldLabel: EmergencyText.priority,
-        initialValue: normalizedOption(
-          detail.summary.severity,
-          fallback: 'HIGH',
-        ),
-        options: severityOptions(),
-        cancelLabel: l10n.commonCancelActionLabel,
-        submitLabel: l10n.patientsEditAction,
-        requiredMessage: l10n.validationRequired,
-        submitLeadingIcon: AppActionIcons.edit,
-        onSubmit: (String severity) {
-          return _controller(context).updatePriority(severity);
-        },
-      ),
+      initialSeverity: detail.summary.severity,
+      onSubmit: (String severity) {
+        return _controller(context).updatePriority(severity);
+      },
     );
     if (saved != true || !context.mounted) {
       return;
     }
 
-    showFailureIfNeeded(context, null, successMessage: 'Priority updated');
+    showFailureIfNeeded(
+      context,
+      null,
+      successMessage: context.l10n.emergencyPriorityEditedMessage,
+    );
   }
 
   Future<void> _openTriageDialog(BuildContext context) async {
@@ -1507,25 +1492,21 @@ class EmergencyActionPanel extends ConsumerWidget {
   }
 
   Future<void> _openResponseDialog(BuildContext context) async {
-    final bool? saved = await showAppDialog<bool>(
+    final bool? saved = await showEmergencyResponseDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => AppTextActionDialog(
-        title: EmergencyText.response,
-        icon: const Icon(Icons.medical_services_outlined),
-        fieldLabel: EmergencyText.responseNotes,
-        submitLabel: EmergencyText.markResponse,
-        submitLeadingIcon: AppActionIcons.save,
-        onSubmit: (String notes) {
-          return _controller(context).markResponse(notes: notes);
-        },
-      ),
+      onSubmit: (String notes) {
+        return _controller(context).markResponse(notes: notes);
+      },
     );
     if (saved != true || !context.mounted) {
       return;
     }
 
-    showFailureIfNeeded(context, null, successMessage: 'Response marked');
+    showFailureIfNeeded(
+      context,
+      null,
+      successMessage: context.l10n.emergencyResponseMarkedMessage,
+    );
   }
 
   Future<void> _openDispatchDialog(
@@ -1642,24 +1623,21 @@ class EmergencyActionPanel extends ConsumerWidget {
 
   Future<void> _openHandoffDialog(BuildContext context) async {
     final EmergencyWorkspaceController controller = _controller(context);
-    final bool? saved = await showAppDialog<bool>(
+    final bool? saved = await showEmergencyHandoffDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => HandoffDialog(
-        onSubmit: (HandoffInput input) {
-          return controller.handoff(
-            destination: input.destination,
-            notes: input.notes,
-            closeCase: input.closeCase,
-          );
-        },
-      ),
+      onSubmit: (HandoffInput input) {
+        return controller.handoff(
+          destination: input.destination,
+          notes: input.notes,
+          closeCase: input.closeCase,
+        );
+      },
     );
     if (saved == true && context.mounted) {
       showFailureIfNeeded(
         context,
         null,
-        successMessage: EmergencyText.handoffRecorded,
+        successMessage: context.l10n.emergencyHandoffRecordedMessage,
       );
     }
   }

@@ -22,7 +22,7 @@ abstract interface class HousekeepingRepository {
     Map<String, Object?> payload,
   );
 
-  Future<Result<void>> triageMaintenanceRequest(
+  Future<Result<HousekeepingWorkItem>> triageMaintenanceRequest(
     String requestId,
     HousekeepingMaintenanceTriageDraft draft,
   );

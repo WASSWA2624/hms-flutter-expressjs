@@ -61,6 +61,30 @@ void main() {
     });
   });
 
+  group('IcuBedDto', () {
+    test('maps public ward and room identifiers from bed payload', () {
+      final IcuBed bed = const IcuBedDto(<String, Object?>{
+        'id': 'internal-bed',
+        'human_friendly_id': 'BED0000001',
+        'label': 'Bed A',
+        'status': 'AVAILABLE',
+        'ward_human_friendly_id': 'WRD0000001',
+        'ward_name': 'Medical ICU',
+        'ward_type': 'ICU',
+        'room_human_friendly_id': 'ROM0000001',
+        'room_name': 'Room 1',
+        'floor': '2',
+      }).toEntity();
+
+      expect(bed.id, 'BED0000001');
+      expect(bed.wardId, 'WRD0000001');
+      expect(bed.roomId, 'ROM0000001');
+      expect(bed.roomName, 'Room 1');
+      expect(bed.floor, '2');
+      expect(bed.isAvailable, isTrue);
+    });
+  });
+
   group('IcuPatientDetailDto', () {
     test('maps source context and ICU overlay on detail', () {
       final IcuPatientDetail detail = IcuPatientDetailDto.fromResponse(

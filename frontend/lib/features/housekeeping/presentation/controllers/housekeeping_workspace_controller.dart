@@ -329,15 +329,33 @@ final class HousekeepingWorkspaceController
   Future<AppFailure?> triageMaintenanceRequest(
     HousekeepingWorkItem item,
     HousekeepingMaintenanceTriageDraft draft,
-  ) {
+  ) async {
     if (!item.isMaintenanceRequest) {
-      return Future<AppFailure?>.value(
-        _invalidItemFailure('maintenance_request_id'),
-      );
+      return _invalidItemFailure('maintenance_request_id');
     }
-    return _submitAction(
-      () => _repository.triageMaintenanceRequest(item.id, draft),
-      preferredSelectedId: item.id,
+    final HousekeepingWorkspaceState? current = _currentState;
+    if (current == null) {
+      return _invalidItemFailure('workspace');
+    }
+
+    _emit(
+      current.copyWith(isSaving: true, clearLastFailure: true),
+    );
+    final Result<HousekeepingWorkItem> result = await _repository
+        .triageMaintenanceRequest(item.id, draft);
+    return result.when<Future<AppFailure?>>(
+      success: (HousekeepingWorkItem persisted) async {
+        _applyWorkItemPatch(_mergeMaintenanceWorkItem(item, persisted));
+        await _flushPendingRealtimeRefresh();
+        return null;
+      },
+      failure: (AppFailure failure) async {
+        _emit(
+          _currentState!.copyWith(isSaving: false, lastFailure: failure),
+        );
+        await _flushPendingRealtimeRefresh();
+        return failure;
+      },
     );
   }
 
@@ -476,6 +494,54 @@ final class HousekeepingWorkspaceController
       }
     }
     return null;
+  }
+
+  void _applyWorkItemPatch(HousekeepingWorkItem item) {
+    final HousekeepingWorkspaceState current = _currentState!;
+    final List<HousekeepingWorkItem> nextItems = current.items.items
+        .map(
+          (HousekeepingWorkItem existing) =>
+              existing.id == item.id ? item : existing,
+        )
+        .toList(growable: false);
+    final HousekeepingWorkItem? selected =
+        current.selectedItem?.id == item.id ? item : current.selectedItem;
+    _emit(
+      current.copyWith(
+        items: AppPage<HousekeepingWorkItem>(
+          items: nextItems,
+          request: current.items.request,
+          totalItemCount: current.items.totalItemCount,
+        ),
+        selectedItem: selected,
+        isSaving: false,
+        clearLastFailure: true,
+      ),
+    );
+  }
+
+  HousekeepingWorkItem _mergeMaintenanceWorkItem(
+    HousekeepingWorkItem previous,
+    HousekeepingWorkItem persisted,
+  ) {
+    return previous.copyWith(
+      id: persisted.id.isNotEmpty ? persisted.id : previous.id,
+      displayId: persisted.displayId ?? previous.displayId,
+      resource: HousekeepingResource.maintenanceRequests,
+      title: persisted.title.isNotEmpty ? persisted.title : previous.title,
+      subtitle: persisted.subtitle ?? previous.subtitle,
+      status: persisted.status ?? previous.status,
+      facilityId: persisted.facilityId ?? previous.facilityId,
+      facilityLabel: persisted.facilityLabel ?? previous.facilityLabel,
+      roomId: persisted.roomId ?? previous.roomId,
+      roomLabel: persisted.roomLabel ?? previous.roomLabel,
+      assetId: persisted.assetId ?? previous.assetId,
+      assetLabel: persisted.assetLabel ?? previous.assetLabel,
+      reportedAt: persisted.reportedAt ?? previous.reportedAt,
+      resolvedAt: persisted.resolvedAt ?? previous.resolvedAt,
+      timelineAt: persisted.timelineAt ?? previous.timelineAt,
+      targetPath: persisted.targetPath ?? previous.targetPath,
+    );
   }
 
   HousekeepingWorkspaceState? get _currentState {

@@ -472,6 +472,7 @@ final class IcuBedDto {
 
   IcuBed toEntity() {
     final IcuJsonMap admission = _map(json['current_admission']);
+    final IcuJsonMap room = _map(json['room']);
     return IcuBed(
       id: _string(json['human_friendly_id']) ?? _string(json['id']) ?? '',
       label: _string(json['label']),
@@ -480,8 +481,13 @@ final class IcuBedDto {
           _string(json['ward_human_friendly_id']) ?? _string(json['ward_id']),
       wardName: _string(json['ward_name']),
       wardType: _string(json['ward_type']),
-      roomName: _string(json['room_name']),
-      floor: _string(json['floor']),
+      roomId:
+          _string(json['room_human_friendly_id']) ??
+          _string(json['room_id']) ??
+          _string(room['human_friendly_id']) ??
+          _string(room['id']),
+      roomName: _string(json['room_name']) ?? _string(room['name']),
+      floor: _string(json['floor']) ?? _string(room['floor']),
       occupantAdmissionId:
           _string(admission['admission_display_id']) ??
           _string(admission['admission_id']),

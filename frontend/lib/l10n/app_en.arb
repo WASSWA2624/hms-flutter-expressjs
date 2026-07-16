@@ -373,6 +373,66 @@
   "@emergencyDispatchStatusUnknown": {
     "description": "Fallback label when an ambulance status is unavailable."
   },
+  "emergencyHandoffDialogTitle": "Handoff",
+  "@emergencyHandoffDialogTitle": {
+    "description": "Title for the emergency case handoff dialog."
+  },
+  "emergencyHandoffDialogSemanticLabel": "Record an emergency case handoff",
+  "@emergencyHandoffDialogSemanticLabel": {
+    "description": "Accessibility label for the emergency handoff dialog."
+  },
+  "emergencyHandoffAction": "Handoff",
+  "@emergencyHandoffAction": {
+    "description": "Primary action that persists an emergency case handoff."
+  },
+  "emergencyHandoffRecordAction": "Record handoff",
+  "@emergencyHandoffRecordAction": {
+    "description": "Board action that opens the emergency handoff dialog."
+  },
+  "emergencyHandoffDestinationLabel": "Destination",
+  "@emergencyHandoffDestinationLabel": {
+    "description": "Destination field label in the emergency handoff dialog."
+  },
+  "emergencyHandoffNotesLabel": "Handoff notes",
+  "@emergencyHandoffNotesLabel": {
+    "description": "Notes field label in the emergency handoff dialog."
+  },
+  "emergencyHandoffCloseCaseLabel": "Close emergency case",
+  "@emergencyHandoffCloseCaseLabel": {
+    "description": "Checkbox label to close the emergency case after handoff."
+  },
+  "emergencyHandoffCloseCaseSubtitle": "Use this after the receiving unit has accepted the patient.",
+  "@emergencyHandoffCloseCaseSubtitle": {
+    "description": "Helper text for closing the emergency case at handoff."
+  },
+  "emergencyHandoffRecordedMessage": "Handoff recorded",
+  "@emergencyHandoffRecordedMessage": {
+    "description": "Success message after an emergency handoff is persisted."
+  },
+  "emergencyHandoffDestinationOpd": "OPD",
+  "@emergencyHandoffDestinationOpd": {
+    "description": "Emergency handoff destination option for outpatient care."
+  },
+  "emergencyHandoffDestinationIpd": "IPD",
+  "@emergencyHandoffDestinationIpd": {
+    "description": "Emergency handoff destination option for inpatient admission."
+  },
+  "emergencyHandoffDestinationIcu": "ICU",
+  "@emergencyHandoffDestinationIcu": {
+    "description": "Emergency handoff destination option for intensive care."
+  },
+  "emergencyHandoffDestinationTheater": "Theater",
+  "@emergencyHandoffDestinationTheater": {
+    "description": "Emergency handoff destination option for theater."
+  },
+  "emergencyHandoffDestinationReferral": "Referral",
+  "@emergencyHandoffDestinationReferral": {
+    "description": "Emergency handoff destination option for external referral."
+  },
+  "emergencyHandoffDestinationDischarge": "Discharge",
+  "@emergencyHandoffDestinationDischarge": {
+    "description": "Emergency handoff destination option for discharge from emergency."
+  },
   "emergencyPriorityCriticalLabel": "Critical",
   "@emergencyPriorityCriticalLabel": {
     "description": "Critical emergency priority option."
@@ -388,6 +448,22 @@
   "emergencyPriorityLowLabel": "Low",
   "@emergencyPriorityLowLabel": {
     "description": "Low emergency priority option."
+  },
+  "emergencyPriorityDialogTitle": "Priority",
+  "@emergencyPriorityDialogTitle": {
+    "description": "Title for the emergency priority dialog."
+  },
+  "emergencyPriorityDialogSemanticLabel": "Edit emergency case priority",
+  "@emergencyPriorityDialogSemanticLabel": {
+    "description": "Accessibility label for the emergency priority dialog."
+  },
+  "emergencyPriorityFieldLabel": "Priority",
+  "@emergencyPriorityFieldLabel": {
+    "description": "Priority field label in the emergency priority dialog."
+  },
+  "emergencyPriorityEditedMessage": "Priority edited",
+  "@emergencyPriorityEditedMessage": {
+    "description": "Success message after emergency case priority is persisted."
   },
   "emergencyTriageLevel1Label": "Level 1",
   "@emergencyTriageLevel1Label": {
@@ -408,6 +484,30 @@
   "emergencyTriageLevel5Label": "Level 5",
   "@emergencyTriageLevel5Label": {
     "description": "Emergency triage level 5 option."
+  },
+  "emergencyResponseAction": "Response",
+  "@emergencyResponseAction": {
+    "description": "Action that opens the emergency clinical response dialog."
+  },
+  "emergencyResponseDialogTitle": "Response",
+  "@emergencyResponseDialogTitle": {
+    "description": "Title for the emergency clinical response dialog."
+  },
+  "emergencyResponseDialogSemanticLabel": "Mark emergency clinical response",
+  "@emergencyResponseDialogSemanticLabel": {
+    "description": "Accessibility label for the emergency clinical response dialog."
+  },
+  "emergencyResponseNotesLabel": "Response notes",
+  "@emergencyResponseNotesLabel": {
+    "description": "Response notes field label in the emergency response dialog."
+  },
+  "emergencyResponseMarkAction": "Mark response",
+  "@emergencyResponseMarkAction": {
+    "description": "Primary action that persists an emergency clinical response note."
+  },
+  "emergencyResponseMarkedMessage": "Response marked",
+  "@emergencyResponseMarkedMessage": {
+    "description": "Success message after an emergency clinical response is persisted."
   },
   "emergencySearchSemanticLabel": "Search emergency cases",
   "@emergencySearchSemanticLabel": {
@@ -19457,9 +19557,17 @@
   "@housekeepingSlaHoursFieldLabel": {
     "description": "Localized text for housekeepingSlaHoursFieldLabel."
   },
-  "housekeepingTriageSubmitAction": "Save triage",
+  "housekeepingTriageSubmitAction": "Triage maintenance request",
   "@housekeepingTriageSubmitAction": {
-    "description": "Localized text for housekeepingTriageSubmitAction."
+    "description": "Primary commit label for the housekeeping maintenance triage dialog."
+  },
+  "housekeepingTriageSummaryMaxLengthMessage": "Triage note must be at most 10000 characters.",
+  "@housekeepingTriageSummaryMaxLengthMessage": {
+    "description": "Validation message when the housekeeping triage note exceeds the max length."
+  },
+  "housekeepingSlaHoursInvalidMessage": "Enter a positive number of SLA hours.",
+  "@housekeepingSlaHoursInvalidMessage": {
+    "description": "Validation message when housekeeping SLA hours are missing or not a positive integer."
   },
   "housekeepingPickDateAction": "Pick date",
   "@housekeepingPickDateAction": {

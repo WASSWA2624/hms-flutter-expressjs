@@ -282,6 +282,150 @@ void main() {
       expect(failure, isNull);
       verify(() => repository.loadIcuDetail(any())).called(1);
     });
+
+    test(
+      'requestTransfer patches selected detail and refresh board on success',
+      () async {
+        final _MockIcuRepository repository = _MockIcuRepository();
+        const IcuPatientSummary summary = IcuPatientSummary(
+          id: 'ADM-1',
+          admissionId: 'ADM-1',
+          displayId: 'ADM0001',
+          wardName: 'ICU-1',
+          icuStatus: 'ACTIVE',
+        );
+        const IcuPatientDetail detail = IcuPatientDetail(
+          summary: summary,
+          activeStay: IcuStaySummary(id: 'ICU-1'),
+        );
+        const IcuPatientDetail transferred = IcuPatientDetail(
+          summary: IcuPatientSummary(
+            id: 'ADM-1',
+            admissionId: 'ADM-1',
+            displayId: 'ADM0001',
+            wardName: 'ICU-1',
+            icuStatus: 'ACTIVE',
+            transferStatus: 'REQUESTED',
+          ),
+          activeStay: IcuStaySummary(id: 'ICU-1'),
+          transferRequests: <IcuTransferRequest>[
+            IcuTransferRequest(
+              id: 'TR-1',
+              status: 'REQUESTED',
+              toWardName: 'Ward B',
+            ),
+          ],
+        );
+
+        _stubInitialLoad(repository, board: const <IcuPatientSummary>[summary]);
+        when(() => repository.loadIcuDetail(any())).thenAnswer(
+          (_) async => const Result<IcuPatientDetail>.success(detail),
+        );
+        when(
+          () => repository.requestTransfer(
+            detail: any(named: 'detail'),
+            toWardId: any(named: 'toWardId'),
+            fromWardId: any(named: 'fromWardId'),
+          ),
+        ).thenAnswer(
+          (_) async => const Result<IcuPatientDetail>.success(transferred),
+        );
+
+        final ProviderContainer container = ProviderContainer(
+          overrides: [icuRepositoryProvider.overrideWithValue(repository)],
+        );
+        addTearDown(container.dispose);
+        await container.read(icuWorkspaceControllerProvider.future);
+
+        final IcuWorkspaceController controller = container.read(
+          icuWorkspaceControllerProvider.notifier,
+        );
+        await controller.selectPatient(summary);
+        final AppFailure? failure = await controller.requestTransfer(
+          toWardId: 'ward-b',
+          fromWardId: 'ward-a',
+        );
+
+        expect(failure, isNull);
+        final Result<IcuWorkspaceState> result = container
+            .read(icuWorkspaceControllerProvider)
+            .requireValue;
+        final IcuWorkspaceState state = result.when(
+          success: (IcuWorkspaceState value) => value,
+          failure: (AppFailure f) => fail(f.code),
+        );
+        expect(state.selectedDetail?.summary.transferStatus, 'REQUESTED');
+        expect(state.selectedDetail?.transferRequests.single.id, 'TR-1');
+        verify(
+          () => repository.requestTransfer(
+            detail: any(named: 'detail'),
+            toWardId: 'ward-b',
+            fromWardId: 'ward-a',
+          ),
+        ).called(1);
+        verify(
+          () => repository.listIcuBoard(any()),
+        ).called(greaterThanOrEqualTo(2));
+      },
+    );
+
+    test(
+      'requestTransfer failure patches nothing and returns AppFailure',
+      () async {
+        final _MockIcuRepository repository = _MockIcuRepository();
+        const IcuPatientSummary summary = IcuPatientSummary(
+          id: 'ADM-1',
+          admissionId: 'ADM-1',
+          displayId: 'ADM0001',
+          icuStatus: 'ACTIVE',
+        );
+        const IcuPatientDetail detail = IcuPatientDetail(
+          summary: summary,
+          activeStay: IcuStaySummary(id: 'ICU-1'),
+        );
+
+        _stubInitialLoad(repository, board: const <IcuPatientSummary>[summary]);
+        when(() => repository.loadIcuDetail(any())).thenAnswer(
+          (_) async => const Result<IcuPatientDetail>.success(detail),
+        );
+        when(
+          () => repository.requestTransfer(
+            detail: any(named: 'detail'),
+            toWardId: any(named: 'toWardId'),
+            fromWardId: any(named: 'fromWardId'),
+          ),
+        ).thenAnswer(
+          (_) async => const Result<IcuPatientDetail>.failure(
+            AppFailure.network(),
+          ),
+        );
+
+        final ProviderContainer container = ProviderContainer(
+          overrides: [icuRepositoryProvider.overrideWithValue(repository)],
+        );
+        addTearDown(container.dispose);
+        await container.read(icuWorkspaceControllerProvider.future);
+
+        final IcuWorkspaceController controller = container.read(
+          icuWorkspaceControllerProvider.notifier,
+        );
+        await controller.selectPatient(summary);
+        final AppFailure? failure = await controller.requestTransfer(
+          toWardId: 'ward-b',
+        );
+
+        expect(failure, isNotNull);
+        final Result<IcuWorkspaceState> result = container
+            .read(icuWorkspaceControllerProvider)
+            .requireValue;
+        final IcuWorkspaceState state = result.when(
+          success: (IcuWorkspaceState value) => value,
+          failure: (AppFailure f) => fail(f.code),
+        );
+        expect(state.selectedDetail?.transferRequests, isEmpty);
+        expect(state.selectedDetail?.summary.transferStatus, isNull);
+      },
+    );
   });
 }
 

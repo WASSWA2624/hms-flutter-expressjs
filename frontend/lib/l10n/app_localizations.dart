@@ -616,6 +616,96 @@ abstract class AppLocalizations {
   /// **'Status unavailable'**
   String get emergencyDispatchStatusUnknown;
 
+  /// Title for the emergency case handoff dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Handoff'**
+  String get emergencyHandoffDialogTitle;
+
+  /// Accessibility label for the emergency handoff dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Record an emergency case handoff'**
+  String get emergencyHandoffDialogSemanticLabel;
+
+  /// Primary action that persists an emergency case handoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Handoff'**
+  String get emergencyHandoffAction;
+
+  /// Board action that opens the emergency handoff dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Record handoff'**
+  String get emergencyHandoffRecordAction;
+
+  /// Destination field label in the emergency handoff dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination'**
+  String get emergencyHandoffDestinationLabel;
+
+  /// Notes field label in the emergency handoff dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Handoff notes'**
+  String get emergencyHandoffNotesLabel;
+
+  /// Checkbox label to close the emergency case after handoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Close emergency case'**
+  String get emergencyHandoffCloseCaseLabel;
+
+  /// Helper text for closing the emergency case at handoff.
+  ///
+  /// In en, this message translates to:
+  /// **'Use this after the receiving unit has accepted the patient.'**
+  String get emergencyHandoffCloseCaseSubtitle;
+
+  /// Success message after an emergency handoff is persisted.
+  ///
+  /// In en, this message translates to:
+  /// **'Handoff recorded'**
+  String get emergencyHandoffRecordedMessage;
+
+  /// Emergency handoff destination option for outpatient care.
+  ///
+  /// In en, this message translates to:
+  /// **'OPD'**
+  String get emergencyHandoffDestinationOpd;
+
+  /// Emergency handoff destination option for inpatient admission.
+  ///
+  /// In en, this message translates to:
+  /// **'IPD'**
+  String get emergencyHandoffDestinationIpd;
+
+  /// Emergency handoff destination option for intensive care.
+  ///
+  /// In en, this message translates to:
+  /// **'ICU'**
+  String get emergencyHandoffDestinationIcu;
+
+  /// Emergency handoff destination option for theater.
+  ///
+  /// In en, this message translates to:
+  /// **'Theater'**
+  String get emergencyHandoffDestinationTheater;
+
+  /// Emergency handoff destination option for external referral.
+  ///
+  /// In en, this message translates to:
+  /// **'Referral'**
+  String get emergencyHandoffDestinationReferral;
+
+  /// Emergency handoff destination option for discharge from emergency.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge'**
+  String get emergencyHandoffDestinationDischarge;
+
   /// Critical emergency priority option.
   ///
   /// In en, this message translates to:
@@ -639,6 +729,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Low'**
   String get emergencyPriorityLowLabel;
+
+  /// Title for the emergency priority dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get emergencyPriorityDialogTitle;
+
+  /// Accessibility label for the emergency priority dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit emergency case priority'**
+  String get emergencyPriorityDialogSemanticLabel;
+
+  /// Priority field label in the emergency priority dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get emergencyPriorityFieldLabel;
+
+  /// Success message after emergency case priority is persisted.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority edited'**
+  String get emergencyPriorityEditedMessage;
 
   /// Emergency triage level 1 option.
   ///
@@ -669,6 +783,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Level 5'**
   String get emergencyTriageLevel5Label;
+
+  /// Action that opens the emergency clinical response dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Response'**
+  String get emergencyResponseAction;
+
+  /// Title for the emergency clinical response dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Response'**
+  String get emergencyResponseDialogTitle;
+
+  /// Accessibility label for the emergency clinical response dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark emergency clinical response'**
+  String get emergencyResponseDialogSemanticLabel;
+
+  /// Response notes field label in the emergency response dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Response notes'**
+  String get emergencyResponseNotesLabel;
+
+  /// Primary action that persists an emergency clinical response note.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark response'**
+  String get emergencyResponseMarkAction;
+
+  /// Success message after an emergency clinical response is persisted.
+  ///
+  /// In en, this message translates to:
+  /// **'Response marked'**
+  String get emergencyResponseMarkedMessage;
 
   /// Semantic label for the emergency worklist search field.
   ///

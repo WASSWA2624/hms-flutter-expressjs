@@ -20,6 +20,7 @@ import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_c
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_bed_board_panel.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_clinical_order_actions.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_start_admission_dialog.dart';
+import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_transfer_request_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -27,6 +28,7 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/ipd_actions/ipd_actions.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 
@@ -1050,7 +1052,7 @@ class _IpdDetailActions extends ConsumerWidget {
         if (canOperate && activeBed && dischargePlanned && !terminal)
           AppActionItem(
             label: l10n.ipdReleaseBedAction,
-            leadingIcon: Icons.cleaning_services_outlined,
+            leadingIcon: AppActionIcons.cleaning,
             enabled: canOperate && actionsEnabled,
             onPressed: () => _openReleaseBedDialog(context, ref),
           ),
@@ -1061,7 +1063,7 @@ class _IpdDetailActions extends ConsumerWidget {
             !terminal)
           AppActionItem(
             label: l10n.ipdRequestTransferAction,
-            leadingIcon: Icons.swap_horiz,
+            leadingIcon: AppActionIcons.transfer,
             enabled: canOperate && actionsEnabled,
             onPressed: () => _openTransferRequestDialog(context, ref),
           ),
@@ -1354,21 +1356,12 @@ class _IpdDetailActions extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) async {
-    final AppLocalizations l10n = context.l10n;
     final IpdAdmissionSummary summary = admission.summary;
-    final bool? saved = await showAppDialog<bool>(
+    final bool? saved = await showIpdReleaseBedDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => AppConfirmActionDialog(
-        title: l10n.ipdReleaseBedAction,
-        body: l10n.ipdReleaseBedConfirmationBody,
-        submitLabel: l10n.ipdReleaseBedAction,
-        icon: const Icon(Icons.cleaning_services_outlined),
-        submitLeadingIcon: Icons.cleaning_services_outlined,
-        onConfirm: () => ref
-            .read(ipdWorkspaceControllerProvider.notifier)
-            .releaseBed(summary),
-      ),
+      onConfirm: () => ref
+          .read(ipdWorkspaceControllerProvider.notifier)
+          .releaseBed(summary),
     );
     if (saved == true && context.mounted) {
       _showSaved(context);
@@ -1387,7 +1380,10 @@ class _IpdDetailActions extends ConsumerWidget {
         wards: state.referenceData.wards,
       ),
     );
-    if (saved == true && context.mounted) {
+    if (!context.mounted) {
+      return;
+    }
+    if (saved == true) {
       _showSaved(context);
     }
   }
@@ -2126,115 +2122,6 @@ class _RequestTherapyDialogState extends ConsumerState<RequestTherapyDialog> {
       return;
     }
     Navigator.of(context).pop(true);
-  }
-}
-
-class TransferRequestDialog extends ConsumerStatefulWidget {
-  const TransferRequestDialog({
-    required this.admission,
-    required this.wards,
-    super.key,
-  });
-
-  final IpdAdmissionDetail admission;
-  final List<IpdWardOption> wards;
-
-  @override
-  ConsumerState<TransferRequestDialog> createState() =>
-      _TransferRequestDialogState();
-}
-
-class _TransferRequestDialogState extends ConsumerState<TransferRequestDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  String? _wardId;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppDialog(
-      title: Text(l10n.ipdRequestTransferAction),
-      icon: const Icon(Icons.swap_horiz),
-      closeEnabled: !_isSaving,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null)
-              AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
-              ),
-            AppSelectField<String>.searchable(
-              value: _wardId,
-              labelText: l10n.ipdTargetWardFieldLabel,
-              hintText: l10n.ipdSelectWardHint,
-              enabled: !_isSaving,
-              isRequired: true,
-              validator: AppValidators.requiredValue<String>(
-                l10n.validationRequired,
-              ),
-              options: <AppSelectOption<String>>[
-                for (final IpdWardOption ward in widget.wards)
-                  AppSelectOption<String>(
-                    value: ward.id,
-                    label:
-                        _joinDisplay(<String?>[
-                          ward.displayTitle,
-                          ward.wardType == null
-                              ? null
-                              : _apiLabel(ward.wardType!),
-                        ]) ??
-                        ward.id,
-                  ),
-              ],
-              onChanged: _isSaving
-                  ? null
-                  : (String? value) => setState(() => _wardId = value),
-            ),
-          ],
-        ),
-      ),
-      actions: clinicalActionDialogActions(
-        context,
-        l10n.ipdRequestTransferAction,
-        _isSaving,
-        _isSaving ? null : _submit,
-        submitLeadingIcon: Icons.swap_horiz,
-      ),
-    );
-  }
-
-  Future<void> _submit() async {
-    if (_isSaving) {
-      return;
-    }
-    if (!(_formKey.currentState?.validate() ?? false) || _wardId == null) {
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(ipdWorkspaceControllerProvider.notifier)
-        .requestTransfer(
-          admission: widget.admission.summary,
-          fromWardId: widget.admission.activeBedAssignment?.bed?.wardId,
-          toWardId: _wardId!,
-        );
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
   }
 }
 

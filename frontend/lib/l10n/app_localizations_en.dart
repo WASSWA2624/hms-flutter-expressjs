@@ -289,6 +289,53 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emergencyDispatchStatusUnknown => 'Status unavailable';
 
   @override
+  String get emergencyHandoffDialogTitle => 'Handoff';
+
+  @override
+  String get emergencyHandoffDialogSemanticLabel =>
+      'Record an emergency case handoff';
+
+  @override
+  String get emergencyHandoffAction => 'Handoff';
+
+  @override
+  String get emergencyHandoffRecordAction => 'Record handoff';
+
+  @override
+  String get emergencyHandoffDestinationLabel => 'Destination';
+
+  @override
+  String get emergencyHandoffNotesLabel => 'Handoff notes';
+
+  @override
+  String get emergencyHandoffCloseCaseLabel => 'Close emergency case';
+
+  @override
+  String get emergencyHandoffCloseCaseSubtitle =>
+      'Use this after the receiving unit has accepted the patient.';
+
+  @override
+  String get emergencyHandoffRecordedMessage => 'Handoff recorded';
+
+  @override
+  String get emergencyHandoffDestinationOpd => 'OPD';
+
+  @override
+  String get emergencyHandoffDestinationIpd => 'IPD';
+
+  @override
+  String get emergencyHandoffDestinationIcu => 'ICU';
+
+  @override
+  String get emergencyHandoffDestinationTheater => 'Theater';
+
+  @override
+  String get emergencyHandoffDestinationReferral => 'Referral';
+
+  @override
+  String get emergencyHandoffDestinationDischarge => 'Discharge';
+
+  @override
   String get emergencyPriorityCriticalLabel => 'Critical';
 
   @override
@@ -299,6 +346,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emergencyPriorityLowLabel => 'Low';
+
+  @override
+  String get emergencyPriorityDialogTitle => 'Priority';
+
+  @override
+  String get emergencyPriorityDialogSemanticLabel =>
+      'Edit emergency case priority';
+
+  @override
+  String get emergencyPriorityFieldLabel => 'Priority';
+
+  @override
+  String get emergencyPriorityEditedMessage => 'Priority edited';
 
   @override
   String get emergencyTriageLevel1Label => 'Level 1';
@@ -314,6 +374,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emergencyTriageLevel5Label => 'Level 5';
+
+  @override
+  String get emergencyResponseAction => 'Response';
+
+  @override
+  String get emergencyResponseDialogTitle => 'Response';
+
+  @override
+  String get emergencyResponseDialogSemanticLabel =>
+      'Mark emergency clinical response';
+
+  @override
+  String get emergencyResponseNotesLabel => 'Response notes';
+
+  @override
+  String get emergencyResponseMarkAction => 'Mark response';
+
+  @override
+  String get emergencyResponseMarkedMessage => 'Response marked';
 
   @override
   String get emergencySearchSemanticLabel => 'Search emergency cases';

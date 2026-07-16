@@ -256,7 +256,7 @@ class IcuActionPanel extends ConsumerWidget {
             ),
           AppActionItem(
             label: l10n.icuActionRequestTransfer,
-            leadingIcon: Icons.compare_arrows_outlined,
+            leadingIcon: AppActionIcons.transfer,
             enabled: isAllowed && !hasOpenTransfer,
             onPressed: () =>
                 openIcuTransferDialog(context, state.referenceData),

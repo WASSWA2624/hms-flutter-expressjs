@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_reposi
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/domain/repositories/ipd_repository.dart';
+import 'package:hosspi_hms/features/rooms_beds/presentation/controllers/rooms_beds_workspace_controller.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
@@ -448,6 +449,7 @@ final class IpdWorkspaceController
         'released_at': DateTime.now().toUtc().toIso8601String(),
       }),
       refreshReferenceData: true,
+      reconcileRoomsBeds: true,
     );
   }
 
@@ -912,6 +914,7 @@ final class IpdWorkspaceController
     IpdAdmissionSummary admission,
     Future<Result<IpdAdmissionDetail>> Function() action, {
     bool refreshReferenceData = false,
+    bool reconcileRoomsBeds = false,
   }) async {
     final IpdWorkspaceState? current = _currentState;
     if (current == null) {
@@ -940,6 +943,9 @@ final class IpdWorkspaceController
           }
           unawaited(_loadBedBoardIfActive());
         }
+        if (reconcileRoomsBeds) {
+          _reconcileRoomsBedsWorkspace();
+        }
         unawaited(_refreshWorklist(showLoading: false));
         return null;
       },
@@ -950,6 +956,19 @@ final class IpdWorkspaceController
         }
         return failure;
       },
+    );
+  }
+
+  /// Acting-user rooms/beds sync after bed occupancy mutations.
+  ///
+  /// Realtime excludes the mutating user, so an already-mounted rooms/beds
+  /// workspace must refresh from HTTP success rather than waiting on WS.
+  void _reconcileRoomsBedsWorkspace() {
+    if (!ref.exists(roomsBedsWorkspaceControllerProvider)) {
+      return;
+    }
+    unawaited(
+      ref.read(roomsBedsWorkspaceControllerProvider.notifier).refresh(),
     );
   }
 

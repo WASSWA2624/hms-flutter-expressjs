@@ -36,6 +36,10 @@ abstract final class AppActionIcons {
   static const IconData success = Icons.check_circle_outline;
   static const IconData complete = Icons.task_alt_outlined;
   static const IconData decision = Icons.fact_check_outlined;
+
+  /// Operational / maintenance triage (not clinical patient triage).
+  static const IconData triage = Icons.rule_outlined;
+
   static const IconData help = Icons.help_outline;
   static const IconData openInNew = Icons.open_in_new;
   static const IconData copy = Icons.copy_outlined;
@@ -45,4 +49,16 @@ abstract final class AppActionIcons {
   static const IconData expandLess = Icons.expand_less;
   /// Inpatient / bed / admission handoff actions.
   static const IconData bed = Icons.bed_outlined;
+
+  /// Bed release / housekeeping cleaning actions.
+  static const IconData cleaning = Icons.cleaning_services_outlined;
+
+  /// Emergency / clinical handoff to a receiving care surface.
+  static const IconData handoff = Icons.output_outlined;
+
+  /// Emergency / triage priority severity actions.
+  static const IconData priority = Icons.priority_high_outlined;
+
+  /// Ward / unit transfer request actions (ICU, IPD, rooms & beds).
+  static const IconData transfer = Icons.swap_horiz_outlined;
 }

@@ -159,6 +159,7 @@ class AppTextActionDialog extends StatefulWidget {
     required this.submitLabel,
     required this.onSubmit,
     this.icon = const Icon(Icons.edit_note_outlined),
+    this.semanticLabel,
     this.description,
     this.sectionTitle,
     this.initialValue,
@@ -168,11 +169,13 @@ class AppTextActionDialog extends StatefulWidget {
     this.maxWidth = 720,
     this.autofocus = true,
     this.isRequired = true,
+    this.pinActionsToBottom = true,
     this.submitLeadingIcon,
     super.key,
   });
 
   final String title;
+  final String? semanticLabel;
   final String? sectionTitle;
   final String? description;
   final String fieldLabel;
@@ -185,6 +188,7 @@ class AppTextActionDialog extends StatefulWidget {
   final double maxWidth;
   final bool autofocus;
   final bool isRequired;
+  final bool pinActionsToBottom;
   final IconData? submitLeadingIcon;
   final Future<AppFailure?> Function(String value) onSubmit;
 
@@ -207,6 +211,7 @@ class AppSelectActionDialog<T> extends StatefulWidget {
     required this.requiredMessage,
     this.initialValue,
     this.icon = const Icon(Icons.tune_outlined),
+    this.semanticLabel,
     this.searchable = false,
     this.isRequired = true,
     this.scrollable = false,
@@ -224,6 +229,7 @@ class AppSelectActionDialog<T> extends StatefulWidget {
   final String requiredMessage;
   final T? initialValue;
   final Widget icon;
+  final String? semanticLabel;
   final bool searchable;
   final bool isRequired;
   final bool scrollable;
@@ -255,12 +261,14 @@ class _AppSelectActionDialogState<T> extends State<AppSelectActionDialog<T>> {
     return AppDialog(
       title: Text(widget.title),
       icon: widget.icon,
+      semanticLabel: widget.semanticLabel,
       scrollable: widget.scrollable,
       maxWidth: widget.maxWidth,
       initialMaximized: false,
       closeEnabled: !_isSaving,
       content: AppFormShell(
         formKey: _formKey,
+        enabled: !_isSaving,
         children: <Widget>[
           if (_failure != null)
             AppFormInformationBanner.failure(
@@ -283,11 +291,13 @@ class _AppSelectActionDialogState<T> extends State<AppSelectActionDialog<T>> {
               AppButton.secondary(
                 label: widget.cancelLabel,
                 leadingIcon: AppActionIcons.cancel,
+                enabled: !_isSaving,
                 onPressed: () => Navigator.of(context).pop(),
               ),
               AppButton.primary(
                 label: widget.submitLabel,
                 leadingIcon: widget.submitLeadingIcon ?? AppActionIcons.save,
+                isLoading: _isSaving,
                 onPressed: _submit,
               ),
             ],
@@ -521,13 +531,16 @@ class _AppTextActionDialogState extends State<AppTextActionDialog> {
     return AppDialog(
       title: Text(widget.title),
       icon: widget.icon,
+      semanticLabel: widget.semanticLabel,
       maxWidth: widget.maxWidth,
       scrollable: true,
+      pinActionsToBottom: widget.pinActionsToBottom,
       initialMaximized: false,
       closeEnabled: !_isSaving,
       content: AppFormShell(
         formKey: _formKey,
         density: AppFormSectionDensity.spacious,
+        enabled: !_isSaving,
         children: <Widget>[
           if (_failure != null)
             AppFormInformationBanner.failure(

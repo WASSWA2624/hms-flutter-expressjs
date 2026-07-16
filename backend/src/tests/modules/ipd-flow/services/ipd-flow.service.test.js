@@ -246,6 +246,101 @@ describe("ipd-flow.service", () => {
     });
   });
 
+  it("rejects releasing a bed when no active assignment exists", async () => {
+    const tx = {
+      admission: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({ id: "adm-1" })
+          .mockResolvedValueOnce(buildAdmission()),
+      },
+    };
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      ipdFlowService.releaseBed("ADM0000001", {}, {}),
+    ).rejects.toMatchObject({
+      messageKey: "errors.ipd_flow.active_bed_required",
+    });
+  });
+
+  it("releases the active bed and marks it cleaning", async () => {
+    const activeBed = buildActiveBedAssignment();
+    const tx = {
+      admission: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({ id: "adm-1" })
+          .mockResolvedValueOnce(
+            buildAdmission({ bed_assignments: [activeBed] }),
+          ),
+      },
+      bed_assignment: {
+        update: jest.fn().mockResolvedValue({
+          ...activeBed,
+          released_at: now,
+        }),
+      },
+      bed: {
+        update: jest.fn().mockResolvedValue({
+          id: "bed-1",
+          status: "CLEANING",
+        }),
+      },
+    };
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+    prisma.admission.findFirst.mockResolvedValue({ id: "adm-1" });
+    prisma.user_role.findMany.mockResolvedValue([
+      { user_id: "actor-1" },
+      { user_id: "nurse-2" },
+    ]);
+    ipdFlowRepository.findById.mockResolvedValue(
+      buildAdmission({
+        bed_assignments: [
+          {
+            ...activeBed,
+            released_at: now,
+            bed: {
+              ...activeBed.bed,
+              status: "CLEANING",
+            },
+          },
+        ],
+      }),
+    );
+
+    const flow = await ipdFlowService.releaseBed(
+      "ADM0000001",
+      { released_at: now.toISOString() },
+      {
+        user_id: "actor-1",
+        tenant_id: "tenant-1",
+        facility_id: "facility-1",
+      },
+    );
+
+    expect(tx.bed_assignment.update).toHaveBeenCalledWith({
+      where: { id: "ba-1" },
+      data: { released_at: now },
+    });
+    expect(tx.bed.update).toHaveBeenCalledWith({
+      where: { id: "bed-1" },
+      data: { status: "CLEANING" },
+    });
+    expect(flow).toEqual(
+      expect.objectContaining({
+        id: "adm-1",
+        human_friendly_id: "ADM0000001",
+      }),
+    );
+
+    const emittedEvents = emitToUsers.mock.calls.map((call) => call[1]);
+    expect(emittedEvents).toContain("ipd.flow.updated");
+    expect(emittedEvents).toContain("admission.bed_assignment_changed");
+  });
+
   it("rejects invalid transfer transitions", async () => {
     const tx = {
       admission: {
@@ -273,6 +368,71 @@ describe("ipd-flow.service", () => {
       ipdFlowService.updateTransfer("ADM0000001", { action: "START" }, {}),
     ).rejects.toMatchObject({
       messageKey: "errors.ipd_flow.invalid_transfer_transition",
+    });
+  });
+
+  it("rejects request transfer when an open transfer already exists", async () => {
+    const tx = {
+      admission: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({ id: "adm-1" })
+          .mockResolvedValueOnce(
+            buildAdmission({
+              bed_assignments: [buildActiveBedAssignment()],
+              transfer_requests: [
+                {
+                  id: "tr-1",
+                  status: "REQUESTED",
+                  requested_at: now,
+                  deleted_at: null,
+                },
+              ],
+            }),
+          ),
+      },
+    };
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      ipdFlowService.requestTransfer(
+        "ADM0000001",
+        { to_ward_id: "WRD0000002" },
+        {},
+      ),
+    ).rejects.toMatchObject({
+      messageKey: "errors.ipd_flow.invalid_transfer_transition",
+    });
+  });
+
+  it("rejects request transfer when destination ward is missing", async () => {
+    const tx = {
+      admission: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce({ id: "adm-1" })
+          .mockResolvedValueOnce(
+            buildAdmission({
+              bed_assignments: [buildActiveBedAssignment()],
+            }),
+          ),
+      },
+      ward: {
+        findFirst: jest.fn().mockResolvedValue(null),
+      },
+    };
+
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    await expect(
+      ipdFlowService.requestTransfer(
+        "ADM0000001",
+        { to_ward_id: "WRD9999999" },
+        {},
+      ),
+    ).rejects.toMatchObject({
+      messageKey: "errors.ward.not_found",
     });
   });
 

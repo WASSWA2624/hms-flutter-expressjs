@@ -427,129 +427,82 @@ class _CriticalAlertDialogState extends ConsumerState<_CriticalAlertDialog> {
   }
 }
 
-class _TransferRequestDialog extends ConsumerStatefulWidget {
+class _TransferRequestDialog extends ConsumerWidget {
   const _TransferRequestDialog({required this.referenceData});
 
   final IcuReferenceData referenceData;
 
   @override
-  ConsumerState<_TransferRequestDialog> createState() =>
-      _TransferRequestDialogState();
-}
-
-class _TransferRequestDialogState
-    extends ConsumerState<_TransferRequestDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _wardController;
-  String? _wardId;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    _wardController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _wardController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final List<IcuWardOption> wards = widget.referenceData.wards;
-    return AppDialog(
-      title: Text(l10n.icuTransferDialogTitle),
-      icon: const Icon(Icons.compare_arrows_outlined),
-      scrollable: true,
-      pinActionsToBottom: true,
-      closeEnabled: !_isSaving,
-      content: AppFormShell(
-        formKey: _formKey,
-        enabled: !_isSaving,
-        formStatus: appFormFailureStatus(context, _failure),
-        children: <Widget>[
-          if (wards.isEmpty)
-            AppTextField(
-              controller: _wardController,
-              labelText: l10n.icuTransferTargetWardIdLabel,
-              enabled: !_isSaving,
-              isRequired: true,
-              validator: AppValidators.requiredText(l10n.validationRequired),
-            )
-          else
-            AppSelectField<String>.searchable(
-              value: _wardId,
-              labelText: l10n.icuTransferTargetWardLabel,
-              enabled: !_isSaving,
-              isRequired: true,
-              options: <AppSelectOption<String>>[
-                for (final IcuWardOption ward in wards)
-                  AppSelectOption<String>(
-                    value: ward.id,
-                    label: joinDisplay(<String?>[
-                      ward.displayTitle,
-                      apiLabel(ward.wardType ?? ''),
-                    ]),
-                  ),
-              ],
-              onChanged: _isSaving
-                  ? null
-                  : (String? value) => setState(() => _wardId = value),
-              validator: AppValidators.requiredValue<String>(
-                l10n.validationRequired,
-              ),
-            ),
-        ],
-      ),
-      actions: clinicalActionDialogActions(
-        context,
-        l10n.icuTransferRequestActionLabel,
-        _isSaving,
-        _isSaving ? null : _submit,
-        submitLeadingIcon: Icons.compare_arrows_outlined,
-      ),
+    final IcuWorkspaceState? state = ref.watch(icuWorkspaceControllerProvider)
+        .asData
+        ?.value
+        .when(success: (IcuWorkspaceState s) => s, failure: (_) => null);
+    final String? fromWardId = _resolveIcuFromWardId(
+      state?.selectedDetail,
+      referenceData.wards,
+    );
+
+    final List<IcuWardOption> destinationWards = _icuDestinationWards(
+      referenceData.wards,
+      fromWardId,
+    );
+
+    return AppTransferRequestDialog(
+      title: l10n.icuTransferDialogTitle,
+      wardLabel: l10n.icuTransferTargetWardLabel,
+      wardIdLabel: l10n.icuTransferTargetWardIdLabel,
+      submitLabel: l10n.icuActionRequestTransfer,
+      requiredMessage: l10n.validationRequired,
+      wardOptions: <AppSelectOption<String>>[
+        for (final IcuWardOption ward in destinationWards)
+          AppSelectOption<String>(
+            value: ward.id,
+            label: joinDisplay(<String?>[
+              ward.displayTitle,
+              apiLabel(ward.wardType ?? ''),
+            ]),
+          ),
+      ],
+      onSubmit: (String toWardId) {
+        return ref
+            .read(icuWorkspaceControllerProvider.notifier)
+            .requestTransfer(toWardId: toWardId, fromWardId: fromWardId);
+      },
     );
   }
+}
 
-  Future<void> _submit() async {
-    if (_isSaving) {
-      return;
-    }
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    final String toWardId = (_wardId ?? _wardController.text).trim();
-    if (toWardId.isEmpty) {
-      setState(() => _failure = AppFailure.validation());
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(icuWorkspaceControllerProvider.notifier)
-        .requestTransfer(toWardId: toWardId);
-    _finishSubmit(failure);
+List<IcuWardOption> _icuDestinationWards(
+  List<IcuWardOption> wards,
+  String? currentWardId,
+) {
+  if (currentWardId == null || currentWardId.isEmpty) {
+    return wards;
   }
+  return wards
+      .where((IcuWardOption ward) => ward.id != currentWardId)
+      .toList(growable: false);
+}
 
-  void _finishSubmit(AppFailure? failure) {
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
+String? _resolveIcuFromWardId(
+  IcuPatientDetail? detail,
+  List<IcuWardOption> wards,
+) {
+  final String? wardName = detail?.summary.wardName?.trim();
+  if (wardName == null || wardName.isEmpty || wards.isEmpty) {
+    return null;
   }
+  for (final IcuWardOption ward in wards) {
+    final String name = (ward.name ?? '').trim();
+    if (ward.id == wardName ||
+        (name.isNotEmpty && name.toLowerCase() == wardName.toLowerCase()) ||
+        ward.displayTitle.toLowerCase() == wardName.toLowerCase()) {
+      return ward.id;
+    }
+  }
+  return null;
 }
 
 class _ManageTransferDialog extends ConsumerStatefulWidget {
@@ -835,25 +788,16 @@ class _AssignBedDialog extends ConsumerStatefulWidget {
 }
 
 class _AssignBedDialogState extends ConsumerState<_AssignBedDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _bedController;
-  String? _bedId;
-  bool _isSaving = false;
-  AppFailure? _failure;
+  final GlobalKey<FormState> _loadFailureFormKey = GlobalKey<FormState>();
+  bool _isLoadingBeds = false;
+  AppFailure? _loadFailure;
 
   @override
   void initState() {
     super.initState();
-    _bedController = TextEditingController();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      unawaited(_loadBeds());
+      unawaited(_ensureBedsLoaded());
     });
-  }
-
-  @override
-  void dispose() {
-    _bedController.dispose();
-    super.dispose();
   }
 
   @override
@@ -864,123 +808,199 @@ class _AssignBedDialogState extends ConsumerState<_AssignBedDialog> {
         .asData
         ?.value
         .when(success: (IcuWorkspaceState s) => s, failure: (_) => null);
-    final List<IcuBed> beds = (state?.bedBoard.beds ?? const <IcuBed>[])
-        .where((IcuBed bed) => bed.isAvailable)
-        .toList(growable: false);
-    final bool isLoadingBeds = state?.isRefreshingBeds ?? false;
-    final bool isInitialBedLoad = isLoadingBeds && beds.isEmpty;
-    final bool isBusy = _isSaving || isInitialBedLoad;
+    final IcuBedBoard bedBoard = state?.bedBoard ?? const IcuBedBoard();
+    final bool isRefreshingBeds = state?.isRefreshingBeds ?? false;
+    final bool isInitialBedLoad =
+        (_isLoadingBeds || isRefreshingBeds) && bedBoard.beds.isEmpty;
 
-    return AppDialog(
-      title: Text(l10n.icuAssignBedDialogTitle),
+    if (isInitialBedLoad) {
+      return AppDialog(
+        title: Text(l10n.icuAssignBedDialogTitle),
+        icon: const Icon(Icons.bed_outlined),
+        closeEnabled: false,
+        scrollable: true,
+        pinActionsToBottom: true,
+        content: const Center(child: AppLoadingIndicator.compact()),
+        actions: clinicalActionDialogActions(
+          context,
+          l10n.icuActionAssignBed,
+          true,
+          null,
+          submitLeadingIcon: Icons.bed_outlined,
+        ),
+      );
+    }
+
+    if (_loadFailure != null && bedBoard.beds.isEmpty) {
+      return AppDialog(
+        title: Text(l10n.icuAssignBedDialogTitle),
+        icon: const Icon(Icons.bed_outlined),
+        closeEnabled: true,
+        scrollable: true,
+        pinActionsToBottom: true,
+        content: AppFormShell(
+          formKey: _loadFailureFormKey,
+          enabled: true,
+          formStatus: appFormFailureStatus(context, _loadFailure),
+          children: const <Widget>[],
+        ),
+        actions: clinicalActionDialogActions(
+          context,
+          l10n.icuActionAssignBed,
+          false,
+          null,
+          submitLeadingIcon: Icons.bed_outlined,
+        ),
+      );
+    }
+
+    return ClinicalAdmissionActionDialog(
+      title: l10n.icuAssignBedDialogTitle,
+      submitLabel: l10n.icuActionAssignBed,
       icon: const Icon(Icons.bed_outlined),
-      scrollable: true,
-      closeEnabled: !isBusy,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          children: <Widget>[
-            if (_failure != null)
-              AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
-              ),
-            if (isInitialBedLoad)
-              const AppLoadingIndicator.compact()
-            else if (beds.isEmpty)
-              AppTextField(
-                controller: _bedController,
-                labelText: l10n.icuTransferSelectBedLabel,
-                enabled: !_isSaving,
-                isRequired: true,
-                validator: AppValidators.requiredText(l10n.validationRequired),
-              )
-            else
-              AppSelectField<String>.searchable(
-                value: _bedId,
-                labelText: l10n.icuTransferSelectBedLabel,
-                enabled: !_isSaving,
-                options: <AppSelectOption<String>>[
-                  for (final IcuBed bed in beds)
-                    AppSelectOption<String>(
-                      value: bed.id,
-                      label: bed.locationLabel,
-                    ),
-                ],
-                onChanged: (String? value) => setState(() => _bedId = value),
-                validator: (String? value) {
-                  if ((value ?? '').trim().isEmpty) {
-                    return l10n.validationRequired;
-                  }
-                  return null;
-                },
-              ),
-          ],
-        ),
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !isBusy,
-          onPressed: isBusy ? null : () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.icuActionAssignBed,
-          leadingIcon: Icons.bed_outlined,
-          isLoading: _isSaving,
-          enabled: !isBusy,
-          onPressed: isBusy ? null : _submit,
-        ),
-      ],
+      submitLeadingIcon: Icons.bed_outlined,
+      initialMaximized: false,
+      maxWidth: 560,
+      referenceData: _icuAssignBedReferenceData(context, bedBoard),
+      onSubmit: (ClinicalActionAdmissionInput input) {
+        final ClinicalActionCatalogOption? bed = input.bed;
+        if (bed == null) {
+          return Future<AppFailure?>.value(AppFailure.validation());
+        }
+        return ref
+            .read(icuWorkspaceControllerProvider.notifier)
+            .assignBed(bed.apiId);
+      },
     );
   }
 
-  Future<void> _loadBeds() async {
+  Future<void> _ensureBedsLoaded() async {
     if (!mounted) {
       return;
     }
+    final IcuWorkspaceState? state = ref
+        .read(icuWorkspaceControllerProvider)
+        .asData
+        ?.value
+        .when(success: (IcuWorkspaceState s) => s, failure: (_) => null);
+    if (state != null && state.bedBoard.beds.isNotEmpty) {
+      return;
+    }
+    setState(() {
+      _isLoadingBeds = true;
+      _loadFailure = null;
+    });
     final AppFailure? failure = await ref
         .read(icuWorkspaceControllerProvider.notifier)
         .loadBedBoard();
-    if (!mounted || failure == null) {
-      return;
-    }
-    setState(() => _failure = failure);
-  }
-
-  Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-    final String bedId = _bedId ?? _bedController.text.trim();
-    if (bedId.isEmpty) {
-      setState(() => _failure = AppFailure.validation());
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(icuWorkspaceControllerProvider.notifier)
-        .assignBed(bedId);
-    _finishSubmit(failure);
-  }
-
-  void _finishSubmit(AppFailure? failure) {
     if (!mounted) {
       return;
     }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
     setState(() {
-      _failure = failure;
-      _isSaving = false;
+      _isLoadingBeds = false;
+      _loadFailure = failure;
     });
   }
+}
+
+ClinicalActionReferenceData _icuAssignBedReferenceData(
+  BuildContext context,
+  IcuBedBoard bedBoard,
+) {
+  final AppLocalizations l10n = context.l10n;
+  final Map<String, ClinicalActionCatalogOption> wards =
+      <String, ClinicalActionCatalogOption>{
+        for (final IcuBedWard ward in bedBoard.wards)
+          ward.id: ClinicalActionCatalogOption(
+            id: ward.id,
+            name: ward.displayTitle,
+            category: ward.wardType,
+            status: 'ACTIVE',
+          ),
+      };
+  final Map<String, ClinicalActionCatalogOption> rooms =
+      <String, ClinicalActionCatalogOption>{};
+  final List<ClinicalActionCatalogOption> beds =
+      <ClinicalActionCatalogOption>[];
+
+  for (final IcuBed bed in bedBoard.beds) {
+    if (!bed.isAvailable) {
+      continue;
+    }
+    final String wardId = _icuAssignBedWardId(bed);
+    final String roomId = _icuAssignBedRoomId(bed, wardId);
+    wards.putIfAbsent(
+      wardId,
+      () => ClinicalActionCatalogOption(
+        id: wardId,
+        name: _icuAssignBedFirstDisplay(<String?>[
+          bed.wardName,
+          bed.wardId,
+          l10n.profileUnknownValue,
+        ]),
+        category: bed.wardType,
+      ),
+    );
+    rooms.putIfAbsent(
+      roomId,
+      () => ClinicalActionCatalogOption(
+        id: roomId,
+        name: _icuAssignBedFirstDisplay(<String?>[
+          bed.roomName,
+          bed.roomId,
+          l10n.profileUnknownValue,
+        ]),
+        secondaryText: bed.floor,
+        parentId: wardId,
+      ),
+    );
+    beds.add(
+      ClinicalActionCatalogOption(
+        id: bed.id,
+        name: bed.label ?? bed.id,
+        status: bed.status,
+        parentId: wardId,
+        secondaryId: roomId,
+        secondaryText: bed.locationLabel,
+      ),
+    );
+  }
+
+  return ClinicalActionReferenceData(
+    wards: wards.values.toList(growable: false),
+    rooms: rooms.values.toList(growable: false),
+    availableBeds: beds,
+  );
+}
+
+const String _icuAssignBedUnknownWardId = 'icu-unknown-ward';
+const String _icuAssignBedUnknownRoomIdPrefix = 'icu-unknown-room:';
+
+String _icuAssignBedWardId(IcuBed bed) {
+  final String? wardId = bed.wardId?.trim();
+  if (wardId == null || wardId.isEmpty) {
+    return _icuAssignBedUnknownWardId;
+  }
+  return wardId;
+}
+
+String _icuAssignBedRoomId(IcuBed bed, String wardId) {
+  final String? roomId = bed.roomId?.trim();
+  if (roomId != null && roomId.isNotEmpty) {
+    return roomId;
+  }
+  final String? roomName = bed.roomName?.trim();
+  return '$_icuAssignBedUnknownRoomIdPrefix$wardId:${roomName ?? 'room'}';
+}
+
+String _icuAssignBedFirstDisplay(Iterable<String?> values) {
+  for (final String? value in values) {
+    final String normalized = value?.trim() ?? '';
+    if (normalized.isNotEmpty) {
+      return normalized;
+    }
+  }
+  return '';
 }
 
 List<Widget> _dialogActions(

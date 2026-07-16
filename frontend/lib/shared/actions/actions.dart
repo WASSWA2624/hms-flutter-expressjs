@@ -5,4 +5,5 @@ export 'app_action_panel.dart';
 export 'app_global_fault_report_action.dart';
 export 'app_global_housekeeping_request_action.dart';
 export 'app_permission_action_item.dart';
+export 'app_transfer_request_dialog.dart';
 export 'app_workspace_refresh_action.dart';

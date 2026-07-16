@@ -5,6 +5,7 @@ import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities
 import 'package:hosspi_hms/features/emergency/presentation/widgets/emergency_workspace_widgets.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -194,27 +195,59 @@ class _QuickArrivalDialogState extends State<QuickArrivalDialog> {
   }
 }
 
+Future<bool?> showEmergencyPriorityDialog({
+  required BuildContext context,
+  required Future<AppFailure?> Function(String severity) onSubmit,
+  String? initialSeverity,
+}) {
+  final AppLocalizations l10n = context.l10n;
+  return showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => AppSelectActionDialog<String>(
+      title: l10n.emergencyPriorityDialogTitle,
+      semanticLabel: l10n.emergencyPriorityDialogSemanticLabel,
+      icon: const Icon(AppActionIcons.priority),
+      fieldLabel: l10n.emergencyPriorityFieldLabel,
+      initialValue: normalizedOption(initialSeverity, fallback: 'HIGH'),
+      options: severityOptions(l10n),
+      cancelLabel: l10n.commonCancelActionLabel,
+      submitLabel: l10n.patientsEditAction,
+      requiredMessage: l10n.validationRequired,
+      submitLeadingIcon: AppActionIcons.edit,
+      onSubmit: onSubmit,
+    ),
+  );
+}
+
+typedef EmergencyResponseSubmit = Future<AppFailure?> Function(String notes);
+
+Future<bool?> showEmergencyResponseDialog({
+  required BuildContext context,
+  required EmergencyResponseSubmit onSubmit,
+  String? initialNotes,
+}) {
+  final AppLocalizations l10n = context.l10n;
+  return showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => AppTextActionDialog(
+      title: l10n.emergencyResponseDialogTitle,
+      semanticLabel: l10n.emergencyResponseDialogSemanticLabel,
+      icon: const Icon(Icons.medical_services_outlined),
+      fieldLabel: l10n.emergencyResponseNotesLabel,
+      submitLabel: l10n.emergencyResponseMarkAction,
+      submitLeadingIcon: AppActionIcons.save,
+      initialValue: initialNotes,
+      onSubmit: onSubmit,
+    ),
+  );
+}
+
 List<AppSelectOption<String>> _quickArrivalSeverityOptions(
   AppLocalizations l10n,
 ) {
-  return <AppSelectOption<String>>[
-    AppSelectOption<String>(
-      value: 'CRITICAL',
-      label: l10n.emergencyPriorityCriticalLabel,
-    ),
-    AppSelectOption<String>(
-      value: 'HIGH',
-      label: l10n.emergencyPriorityHighLabel,
-    ),
-    AppSelectOption<String>(
-      value: 'MEDIUM',
-      label: l10n.emergencyPriorityMediumLabel,
-    ),
-    AppSelectOption<String>(
-      value: 'LOW',
-      label: l10n.emergencyPriorityLowLabel,
-    ),
-  ];
+  return severityOptions(l10n);
 }
 
 List<AppSelectOption<String>> _quickArrivalTriageOptions(
@@ -515,6 +548,17 @@ String _ambulanceStatusLabel(AppLocalizations l10n, String? status) {
 
 typedef HandoffSubmit = Future<AppFailure?> Function(HandoffInput input);
 
+Future<bool?> showEmergencyHandoffDialog({
+  required BuildContext context,
+  required HandoffSubmit onSubmit,
+}) {
+  return showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => HandoffDialog(onSubmit: onSubmit),
+  );
+}
+
 class HandoffDialog extends StatefulWidget {
   const HandoffDialog({required this.onSubmit, super.key});
 
@@ -540,9 +584,11 @@ class _HandoffDialogState extends State<HandoffDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     return AppDialog(
-      title: const Text(EmergencyText.handoff),
-      icon: const Icon(Icons.output_outlined),
+      title: Text(l10n.emergencyHandoffDialogTitle),
+      icon: const Icon(AppActionIcons.handoff),
+      semanticLabel: l10n.emergencyHandoffDialogSemanticLabel,
       scrollable: true,
       pinActionsToBottom: true,
       closeEnabled: !_isSubmitting,
@@ -553,10 +599,11 @@ class _HandoffDialogState extends State<HandoffDialog> {
         children: <Widget>[
           AppSelectField<String>(
             value: _destination,
-            labelText: EmergencyText.handoffDestination,
+            labelText: l10n.emergencyHandoffDestinationLabel,
             isRequired: true,
-            options: handoffOptions(),
-            validator: requiredSelect,
+            options: _handoffDestinationOptions(l10n),
+            validator: (String? value) =>
+                value == null ? l10n.validationRequired : null,
             onChanged: (String? value) {
               if (value != null) {
                 setState(() {
@@ -567,14 +614,14 @@ class _HandoffDialogState extends State<HandoffDialog> {
           ),
           AppTextField(
             controller: _notesController,
-            labelText: EmergencyText.handoffNotes,
+            labelText: l10n.emergencyHandoffNotesLabel,
             minLines: 3,
             maxLines: 5,
             textCapitalization: TextCapitalization.sentences,
           ),
           AppCheckboxField(
-            title: EmergencyText.closeEmergencyCase,
-            subtitle: EmergencyText.closeEmergencyCaseSubtitle,
+            title: l10n.emergencyHandoffCloseCaseLabel,
+            subtitle: l10n.emergencyHandoffCloseCaseSubtitle,
             value: _closeCase,
             enabled: !_isSubmitting,
             onChanged: (bool value) {
@@ -587,10 +634,10 @@ class _HandoffDialogState extends State<HandoffDialog> {
       ),
       actions: clinicalActionDialogActions(
         context,
-        EmergencyText.recordHandoff,
+        l10n.emergencyHandoffAction,
         _isSubmitting,
         _isSubmitting ? null : _submit,
-        submitLeadingIcon: Icons.output_outlined,
+        submitLeadingIcon: AppActionIcons.handoff,
       ),
     );
   }
@@ -630,4 +677,33 @@ class _HandoffDialogState extends State<HandoffDialog> {
       _isSubmitting = false;
     });
   }
+}
+
+List<AppSelectOption<String>> _handoffDestinationOptions(AppLocalizations l10n) {
+  return <AppSelectOption<String>>[
+    AppSelectOption<String>(
+      value: 'OPD',
+      label: l10n.emergencyHandoffDestinationOpd,
+    ),
+    AppSelectOption<String>(
+      value: 'IPD',
+      label: l10n.emergencyHandoffDestinationIpd,
+    ),
+    AppSelectOption<String>(
+      value: 'ICU',
+      label: l10n.emergencyHandoffDestinationIcu,
+    ),
+    AppSelectOption<String>(
+      value: 'THEATER',
+      label: l10n.emergencyHandoffDestinationTheater,
+    ),
+    AppSelectOption<String>(
+      value: 'REFERRAL',
+      label: l10n.emergencyHandoffDestinationReferral,
+    ),
+    AppSelectOption<String>(
+      value: 'DISCHARGE',
+      label: l10n.emergencyHandoffDestinationDischarge,
+    ),
+  ];
 }

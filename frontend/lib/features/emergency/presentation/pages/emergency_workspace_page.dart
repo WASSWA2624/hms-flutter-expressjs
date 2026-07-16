@@ -444,7 +444,7 @@ class _EmergencyWorkspaceContentState
       EmergencyBoardTab.active => Icons.emergency_outlined,
       EmergencyBoardTab.critical => Icons.priority_high_outlined,
       EmergencyBoardTab.ambulance => Icons.airport_shuttle_outlined,
-      EmergencyBoardTab.handoff => Icons.output_outlined,
+      EmergencyBoardTab.handoff => AppActionIcons.handoff,
       EmergencyBoardTab.closed => Icons.check_circle_outlined,
       EmergencyBoardTab.all => Icons.inventory_2_outlined,
     };

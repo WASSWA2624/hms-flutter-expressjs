@@ -303,6 +303,63 @@ final class HousekeepingWorkItem {
         ]) ??
         '';
   }
+
+  HousekeepingWorkItem copyWith({
+    String? id,
+    String? displayId,
+    HousekeepingResource? resource,
+    String? title,
+    String? subtitle,
+    String? status,
+    String? priority,
+    String? facilityId,
+    String? facilityLabel,
+    String? roomId,
+    String? roomLabel,
+    String? assigneeId,
+    String? assigneeLabel,
+    String? assetId,
+    String? assetLabel,
+    DateTime? scheduledAt,
+    DateTime? completedAt,
+    DateTime? startDate,
+    DateTime? endDate,
+    DateTime? reportedAt,
+    DateTime? resolvedAt,
+    DateTime? servicedAt,
+    DateTime? timelineAt,
+    String? targetPath,
+    bool clearSubtitle = false,
+    bool clearStatus = false,
+    bool clearResolvedAt = false,
+  }) {
+    return HousekeepingWorkItem(
+      id: id ?? this.id,
+      displayId: displayId ?? this.displayId,
+      resource: resource ?? this.resource,
+      title: title ?? this.title,
+      subtitle: clearSubtitle ? null : subtitle ?? this.subtitle,
+      status: clearStatus ? null : status ?? this.status,
+      priority: priority ?? this.priority,
+      facilityId: facilityId ?? this.facilityId,
+      facilityLabel: facilityLabel ?? this.facilityLabel,
+      roomId: roomId ?? this.roomId,
+      roomLabel: roomLabel ?? this.roomLabel,
+      assigneeId: assigneeId ?? this.assigneeId,
+      assigneeLabel: assigneeLabel ?? this.assigneeLabel,
+      assetId: assetId ?? this.assetId,
+      assetLabel: assetLabel ?? this.assetLabel,
+      scheduledAt: scheduledAt ?? this.scheduledAt,
+      completedAt: completedAt ?? this.completedAt,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      reportedAt: reportedAt ?? this.reportedAt,
+      resolvedAt: clearResolvedAt ? null : resolvedAt ?? this.resolvedAt,
+      servicedAt: servicedAt ?? this.servicedAt,
+      timelineAt: timelineAt ?? this.timelineAt,
+      targetPath: targetPath ?? this.targetPath,
+    );
+  }
 }
 
 @immutable

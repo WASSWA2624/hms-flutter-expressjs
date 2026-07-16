@@ -1,8 +1,31 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/emergency/data/dtos/emergency_dtos.dart';
+import 'package:hosspi_hms/features/emergency/data/repositories/emergency_repository_impl.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
+import 'package:hosspi_hms/features/emergency/domain/repositories/emergency_repository.dart';
+import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
+import 'package:hosspi_hms/features/emergency/presentation/widgets/emergency_dialogs.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../helpers/test_harness.dart';
+
+class _MockEmergencyRepository extends Mock implements EmergencyRepository {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(const EmergencyBoardQuery());
+    registerFallbackValue(_openDetail());
+    registerFallbackValue(_openDetail().summary);
+  });
+
   group('EmergencyWorkspaceQuery.fromUri', () {
     test('parses id and panel deep-link parameters', () {
       final EmergencyWorkspaceQuery query = EmergencyWorkspaceQuery.fromUri(
@@ -178,4 +201,320 @@ void main() {
       expect(summary.handoff, isNull);
     });
   });
+
+  group('EmergencyWorkspaceController handoff', () {
+    test(
+      'patches detail, board row, and handoff count after persistence',
+      () async {
+        final _MockEmergencyRepository repository = _MockEmergencyRepository();
+        _stubInitialLoad(repository);
+        var persisted = false;
+        when(() => repository.loadEmergencyDetail(any())).thenAnswer(
+          (_) async => Result<EmergencyCaseDetail>.success(
+            persisted ? _handedOffDetail() : _openDetail(),
+          ),
+        );
+        when(
+          () => repository.recordHandoff(
+            detail: any(named: 'detail'),
+            destination: 'OPD',
+            notes: 'Ready for clinic',
+            closeCase: true,
+          ),
+        ).thenAnswer((_) async {
+          persisted = true;
+          return Result<EmergencyCaseDetail>.success(_handedOffDetail());
+        });
+        when(() => repository.listEmergencyBoard(any())).thenAnswer((
+          invocation,
+        ) {
+          final EmergencyBoardQuery query =
+              invocation.positionalArguments.single as EmergencyBoardQuery;
+          final EmergencyCaseSummary item = persisted
+              ? _handedOffDetail().summary
+              : _openDetail().summary;
+          return Future<Result<AppPage<EmergencyCaseSummary>>>.value(
+            Result<AppPage<EmergencyCaseSummary>>.success(
+              AppPage<EmergencyCaseSummary>(
+                items: <EmergencyCaseSummary>[item],
+                request: query.pageRequest,
+                totalItemCount: 1,
+              ),
+            ),
+          );
+        });
+
+        final ProviderContainer container = _container(repository);
+        await container.read(emergencyWorkspaceControllerProvider.future);
+        await container
+            .read(emergencyWorkspaceControllerProvider.notifier)
+            .selectCase(_openDetail().summary);
+
+        final AppFailure? failure = await container
+            .read(emergencyWorkspaceControllerProvider.notifier)
+            .handoff(destination: 'OPD', notes: 'Ready for clinic');
+
+        final EmergencyWorkspaceState state = _state(container);
+        expect(failure, isNull);
+        expect(state.selectedDetail?.summary.handoff?.destination, 'OPD');
+        expect(state.board.items.single.handoff?.destination, 'OPD');
+        expect(state.board.items.single.status, 'CLOSED');
+        expect(state.isSaving, isFalse);
+      },
+    );
+
+    test('keeps detail and board unchanged when persistence fails', () async {
+      final _MockEmergencyRepository repository = _MockEmergencyRepository();
+      _stubInitialLoad(repository);
+      const AppFailure expectedFailure = AppFailure.network();
+      when(
+        () => repository.recordHandoff(
+          detail: any(named: 'detail'),
+          destination: 'IPD',
+          notes: any(named: 'notes'),
+          closeCase: any(named: 'closeCase'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<EmergencyCaseDetail>.failure(expectedFailure),
+      );
+      final ProviderContainer container = _container(repository);
+      await container.read(emergencyWorkspaceControllerProvider.future);
+      await container
+          .read(emergencyWorkspaceControllerProvider.notifier)
+          .selectCase(_openDetail().summary);
+
+      final AppFailure? failure = await container
+          .read(emergencyWorkspaceControllerProvider.notifier)
+          .handoff(destination: 'IPD');
+
+      final EmergencyWorkspaceState state = _state(container);
+      expect(failure, expectedFailure);
+      expect(state.selectedDetail?.summary.handoff, isNull);
+      expect(state.board.items.single.handoff, isNull);
+      expect(state.board.items.single.status, 'OPEN');
+      expect(state.lastFailure, expectedFailure);
+      expect(state.isSaving, isFalse);
+    });
+  });
+
+  testWidgets(
+    'handoff dialog uses AppDialog with Cancel then Handoff and blocks dismissal',
+    (WidgetTester tester) async {
+      final Completer<AppFailure?> completer = Completer<AppFailure?>();
+      HandoffInput? submitted;
+
+      await pumpLocalizedWidget(
+        tester,
+        HandoffDialog(
+          onSubmit: (HandoffInput input) {
+            submitted = input;
+            return completer.future;
+          },
+        ),
+        size: const Size(390, 700),
+        padding: EdgeInsets.zero,
+      );
+
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.text('HANDOFF'), findsOneWidget);
+      expect(find.text('Destination'), findsOneWidget);
+      expect(find.text('Handoff notes'), findsOneWidget);
+      expect(find.text('Close emergency case'), findsOneWidget);
+      expect(find.byIcon(AppActionIcons.handoff), findsWidgets);
+      expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
+
+      final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
+      expect(dialog.closeEnabled, isTrue);
+      expect(dialog.scrollable, isTrue);
+      expect(dialog.pinActionsToBottom, isTrue);
+
+      await tester.enterText(find.byType(TextFormField).first, 'Ready for OPD');
+      await tester.tap(find.text('Handoff'));
+      await tester.pump();
+
+      expect(submitted?.destination, 'OPD');
+      expect(submitted?.notes, 'Ready for OPD');
+      expect(submitted?.closeCase, isTrue);
+      expect(_button(tester, 'Cancel').enabled, isFalse);
+      expect(_button(tester, 'Handoff').isLoading, isTrue);
+      expect(
+        tester.widget<AppDialog>(find.byType(AppDialog)).closeEnabled,
+        isFalse,
+      );
+
+      completer.complete(const AppFailure.network());
+      await tester.pumpAndSettle();
+
+      expect(find.byType(HandoffDialog), findsOneWidget);
+      expect(find.text('Ready for OPD'), findsOneWidget);
+      expect(_button(tester, 'Cancel').enabled, isTrue);
+    },
+  );
+
+  testWidgets('title is role-based and never the patient display name', (
+    WidgetTester tester,
+  ) async {
+    await pumpLocalizedWidget(
+      tester,
+      HandoffDialog(onSubmit: (_) async => null),
+      size: const Size(800, 500),
+      padding: EdgeInsets.zero,
+    );
+
+    final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
+    expect(dialog.title, isA<Text>());
+    expect((dialog.title! as Text).data, 'Handoff');
+    expect(find.text('HANDOFF'), findsOneWidget);
+    expect(find.text('JANE DOE'), findsNothing);
+  });
+
+  testWidgets('Cancel dismisses without submitting', (WidgetTester tester) async {
+    var submitted = false;
+    await pumpLocalizedWidget(
+      tester,
+      Builder(
+        builder: (BuildContext context) {
+          return AppButton.primary(
+            label: 'Open',
+            leadingIcon: AppActionIcons.handoff,
+            onPressed: () {
+              unawaited(
+                showEmergencyHandoffDialog(
+                  context: context,
+                  onSubmit: (_) async {
+                    submitted = true;
+                    return null;
+                  },
+                ),
+              );
+            },
+          );
+        },
+      ),
+      size: const Size(800, 500),
+      padding: EdgeInsets.zero,
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(submitted, isFalse);
+    expect(find.byType(HandoffDialog), findsNothing);
+  });
+
+  testWidgets('remains usable on a compact high-text-scale surface', (
+    WidgetTester tester,
+  ) async {
+    await pumpLocalizedWidget(
+      tester,
+      MediaQuery(
+        data: const MediaQueryData(textScaler: TextScaler.linear(1.8)),
+        child: HandoffDialog(onSubmit: (_) async => null),
+      ),
+      size: const Size(320, 568),
+      padding: EdgeInsets.zero,
+    );
+
+    expect(find.byType(HandoffDialog), findsOneWidget);
+    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('Handoff'), findsOneWidget);
+    expect(find.byType(AppDialog), findsOneWidget);
+  });
+}
+
+AppButton _button(WidgetTester tester, String label) {
+  return tester.widget<AppButton>(
+    find.byWidgetPredicate(
+      (Widget widget) => widget is AppButton && widget.label == label,
+    ),
+  );
+}
+
+ProviderContainer _container(_MockEmergencyRepository repository) {
+  final ProviderContainer container = ProviderContainer(
+    overrides: <Object?>[
+      emergencyRepositoryProvider.overrideWithValue(repository),
+    ].cast(),
+  );
+  addTearDown(container.dispose);
+  return container;
+}
+
+void _stubInitialLoad(_MockEmergencyRepository repository) {
+  when(() => repository.listEmergencyBoard(any())).thenAnswer((invocation) {
+    final EmergencyBoardQuery query =
+        invocation.positionalArguments.single as EmergencyBoardQuery;
+    return Future<Result<AppPage<EmergencyCaseSummary>>>.value(
+      Result<AppPage<EmergencyCaseSummary>>.success(
+        AppPage<EmergencyCaseSummary>(
+          items: <EmergencyCaseSummary>[_openDetail().summary],
+          request: query.pageRequest,
+          totalItemCount: 1,
+        ),
+      ),
+    );
+  });
+  when(() => repository.loadReferenceData()).thenAnswer(
+    (_) async =>
+        const Result<EmergencyReferenceData>.success(EmergencyReferenceData()),
+  );
+  when(() => repository.loadEmergencyDetail(any())).thenAnswer(
+    (_) async => Result<EmergencyCaseDetail>.success(_openDetail()),
+  );
+}
+
+EmergencyWorkspaceState _state(ProviderContainer container) {
+  return container
+      .read(emergencyWorkspaceControllerProvider)
+      .requireValue
+      .when(
+        success: (EmergencyWorkspaceState state) => state,
+        failure: (AppFailure failure) => throw StateError(failure.code),
+      );
+}
+
+EmergencyCaseDetail _openDetail() {
+  return const EmergencyCaseDetail(
+    summary: EmergencyCaseSummary(
+      id: 'EME000001',
+      displayId: 'EME000001',
+      patientId: 'PAT000001',
+      patientDisplayId: 'PAT000001',
+      patientDisplayName: 'Jane Doe',
+      severity: 'HIGH',
+      status: 'OPEN',
+    ),
+    triageAssessments: <EmergencyTriageAssessment>[
+      EmergencyTriageAssessment(
+        id: 'TRA000001',
+        emergencyCaseId: 'EME000001',
+        triageLevel: 'LEVEL_2',
+      ),
+    ],
+    responses: <EmergencyResponseRecord>[
+      EmergencyResponseRecord(
+        id: 'ERS000001',
+        emergencyCaseId: 'EME000001',
+        notes: 'Stabilized',
+      ),
+    ],
+  );
+}
+
+EmergencyCaseDetail _handedOffDetail() {
+  final EmergencyCaseDetail original = _openDetail();
+  const EmergencyHandoffOutcome handoff = EmergencyHandoffOutcome(
+    destination: 'OPD',
+    route: 'opd',
+    receivingDisplayId: 'ENC000001',
+    encounterDisplayId: 'ENC000001',
+    stage: 'WAITING_VITALS',
+    notes: 'Ready for clinic',
+  );
+  return original.copyWith(
+    summary: original.summary.copyWith(status: 'CLOSED', handoff: handoff),
+  );
 }

@@ -73,6 +73,17 @@ describe('Emergency Response Schema Validation', () => {
       expect(result.success).toBe(false);
     });
 
+    it('should accept a public human_friendly_id for emergency_case_id', () => {
+      const validData = {
+        emergency_case_id: 'EME000001',
+        response_at: '2026-07-16T12:00:00.000Z',
+        notes: 'Airway secured'
+      };
+
+      const result = createEmergencyResponseSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
     it('should reject invalid UUID format', () => {
       const invalidData = {
         emergency_case_id: 'invalid-uuid'
