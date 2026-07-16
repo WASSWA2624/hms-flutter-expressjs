@@ -62,6 +62,19 @@ const ComplianceLogItem _auditLog = ComplianceLogItem(
   action: 'EXPORT',
 );
 
+AppAccessPolicy _reportsReadPolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['REPORTING']),
+      permissions: <AppPermission>{AppPermissions.reportsRead},
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(code: 'reports', licenseStatus: 'ACTIVE'),
+      ],
+    ),
+  );
+}
+
 AppAccessPolicy _reportsWritePolicy() {
   return AppAccessPolicy.fromSession(
     AuthSession(
@@ -80,7 +93,9 @@ AppAccessPolicy _reportsWritePolicy() {
 
 void _stubWorkspace(
   _MockReportsRepository repository, {
-  List<ReportsWorkspaceItem> items = const <ReportsWorkspaceItem>[_definitionItem],
+  List<ReportsWorkspaceItem> items = const <ReportsWorkspaceItem>[
+    _definitionItem,
+  ],
 }) {
   when(() => repository.getWorkspace(any())).thenAnswer((invocation) async {
     final ReportsWorkspaceQuery query =
@@ -150,7 +165,7 @@ Future<void> _pumpReportsWorkspace(
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
         ),
-        appAccessPolicyProvider.overrideWithValue(_reportsWritePolicy()),
+        appAccessPolicyProvider.overrideWithValue(_reportsReadPolicy()),
       ],
       child: MaterialApp.router(
         routerConfig: router,
