@@ -662,6 +662,30 @@ final class PatientWorkspaceSnapshot {
   final List<PatientSummaryRecord> pharmacyOrders;
   final List<PatientDuplicateCandidate> duplicateCandidates;
   final Map<String, int> summaryCounts;
+
+  PatientWorkspaceSnapshot copyWith({
+    List<PatientSummaryRecord>? appointments,
+    List<PatientSummaryRecord>? queueEntries,
+    List<PatientSummaryRecord>? encounters,
+    List<PatientSummaryRecord>? admissions,
+    List<PatientSummaryRecord>? invoices,
+    List<PatientSummaryRecord>? payments,
+    List<PatientSummaryRecord>? pharmacyOrders,
+    List<PatientDuplicateCandidate>? duplicateCandidates,
+    Map<String, int>? summaryCounts,
+  }) {
+    return PatientWorkspaceSnapshot(
+      appointments: appointments ?? this.appointments,
+      queueEntries: queueEntries ?? this.queueEntries,
+      encounters: encounters ?? this.encounters,
+      admissions: admissions ?? this.admissions,
+      invoices: invoices ?? this.invoices,
+      payments: payments ?? this.payments,
+      pharmacyOrders: pharmacyOrders ?? this.pharmacyOrders,
+      duplicateCandidates: duplicateCandidates ?? this.duplicateCandidates,
+      summaryCounts: summaryCounts ?? this.summaryCounts,
+    );
+  }
 }
 
 @immutable

@@ -21,10 +21,9 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/claims/data/repositories/claims_repository_impl.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 import 'package:hosspi_hms/features/claims/presentation/widgets/claims_insurance_config_dialogs.dart';
-import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
-import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
+import 'package:hosspi_hms/features/opd/presentation/controllers/opd_encounter_dialog_controller.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
@@ -1695,8 +1694,8 @@ Future<void> _openPatientQuickAction(
       );
     case PatientQuickAction.triage:
       await refreshIfChanged(
-        await _openPatientTriageQuickDialog(
-          context,
+        await showPatientTriageQuickDialog(
+          context: context,
           patient: patient,
           referenceData: referenceData,
         ),
@@ -1711,7 +1710,7 @@ Future<void> _openPatientQuickAction(
       );
     case PatientQuickAction.admission:
       await refreshIfChanged(
-        await _openPatientAdmissionQuickDialog(
+        await showPatientAdmissionQuickDialog(
           context,
           patient: patient,
           referenceData: referenceData,
@@ -2196,36 +2195,39 @@ class _PatientAppointmentQuickDialogState
   }
 }
 
-class _PatientTriageQuickDialog extends ConsumerStatefulWidget {
-  const _PatientTriageQuickDialog({
-    required this.patient,
-    required this.referenceData,
-  });
-
-  final Patient patient;
-  final PatientReferenceData referenceData;
-
-  @override
-  ConsumerState<_PatientTriageQuickDialog> createState() =>
-      _PatientTriageQuickDialogState();
-}
-
-Future<bool?> _openPatientTriageQuickDialog(
-  BuildContext context, {
+Future<bool?> showPatientTriageQuickDialog({
+  required BuildContext context,
   required Patient patient,
   required PatientReferenceData referenceData,
 }) {
   return showAppTriageActionDialog<bool>(
     context: context,
-    builder: (_) => _PatientTriageQuickDialog(
+    builder: (_) => PatientTriageQuickDialog(
       patient: patient,
       referenceData: referenceData,
     ),
   );
 }
 
+class PatientTriageQuickDialog extends ConsumerStatefulWidget {
+  const PatientTriageQuickDialog({
+    required this.patient,
+    required this.referenceData,
+    super.key,
+  });
+
+  final Patient patient;
+  final PatientReferenceData referenceData;
+
+  @override
+  ConsumerState<PatientTriageQuickDialog> createState() =>
+      _PatientTriageQuickDialogState();
+}
+
 class _PatientTriageQuickDialogState
-    extends ConsumerState<_PatientTriageQuickDialog> {
+    extends ConsumerState<PatientTriageQuickDialog> {
+  static const IconData _dialogIcon = Icons.monitor_heart_outlined;
+
   String? _facilityId;
   String? _providerId;
   List<OpdProviderOption> _providers = const <OpdProviderOption>[];
@@ -2244,8 +2246,10 @@ class _PatientTriageQuickDialogState
     final l10n = context.l10n;
     return AppTriageActionDialog(
       title: l10n.patientsTriageDialogTitle,
+      icon: const Icon(_dialogIcon),
       cancelLabel: l10n.commonCancelActionLabel,
-      submitLabel: l10n.patientsQuickTriageAction,
+      submitLabel: l10n.patientsSaveTriageAction,
+      submitLeadingIcon: AppActionIcons.save,
       requiredMessage: l10n.validationRequired,
       prioritySectionTitle: l10n.patientsTriagePrioritySectionTitle,
       severityLabel: l10n.patientsEmergencySeverityLabel,
@@ -2337,7 +2341,7 @@ class _PatientTriageQuickDialogState
   Future<void> _loadProviders() async {
     setState(() => _isLoadingProviders = true);
     final Result<List<OpdProviderOption>> result = await ref
-        .read(opdRepositoryProvider)
+        .read(opdEncounterDialogControllerProvider)
         .listProviders();
     if (!mounted) {
       return;
@@ -2516,132 +2520,6 @@ class _PatientTriageQuickDialogState
         ? parsed / AppVitalsUnits.bloodPressureKpaFactor
         : parsed;
     return formatAppVitalNumber(mmHg, decimals: 2);
-  }
-}
-
-Future<bool?> _openPatientAdmissionQuickDialog(
-  BuildContext context, {
-  required Patient patient,
-  required PatientReferenceData referenceData,
-}) {
-  return showAppDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => _PatientAdmissionQuickDialog(
-      patient: patient,
-      referenceData: referenceData,
-    ),
-  );
-}
-
-class _PatientAdmissionQuickDialog extends ConsumerStatefulWidget {
-  const _PatientAdmissionQuickDialog({
-    required this.patient,
-    required this.referenceData,
-  });
-
-  final Patient patient;
-  final PatientReferenceData referenceData;
-
-  @override
-  ConsumerState<_PatientAdmissionQuickDialog> createState() =>
-      _PatientAdmissionQuickDialogState();
-}
-
-class _PatientAdmissionQuickDialogState
-    extends ConsumerState<_PatientAdmissionQuickDialog> {
-  static const IconData _dialogIcon = Icons.local_hospital_outlined;
-
-  String? _facilityId;
-
-  @override
-  void initState() {
-    super.initState();
-    _facilityId = _initialFacilityId();
-  }
-
-  String? _initialFacilityId() {
-    if (widget.patient.facilityId != null &&
-        widget.patient.facilityId!.trim().isNotEmpty) {
-      return widget.patient.facilityId;
-    }
-    if (widget.referenceData.facilities.length == 1) {
-      return widget.referenceData.facilities.first.id;
-    }
-    return null;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return ClinicalAdmissionActionDialog(
-      key: ValueKey<String?>(_facilityId),
-      title: l10n.patientsAdmissionDialogTitle,
-      submitLabel: l10n.patientsQuickAdmissionAction,
-      icon: const Icon(_dialogIcon),
-      referenceData: const ClinicalActionReferenceData(),
-      requiresBed: false,
-      reasonLabel: l10n.patientsAdmissionReasonLabel,
-      reasonRequired: true,
-      notesLabel: l10n.opdFieldOptionalLabel(l10n.patientsNotesLabel),
-      submitLeadingIcon: _dialogIcon,
-      leadingSectionsBuilder: _workflowFields,
-      onSubmit: _submitAdmission,
-    );
-  }
-
-  List<Widget> _workflowFields(BuildContext context, bool enabled) {
-    if (widget.referenceData.facilities.length <= 1) {
-      return const <Widget>[];
-    }
-    return <Widget>[
-      AppFormSection(
-        title: context.l10n.patientsWorkflowSectionTitle,
-        density: AppFormSectionDensity.compact,
-        children: <Widget>[
-          PatientFacilitySelectField(
-            facilities: widget.referenceData.facilities,
-            value: _facilityId,
-            labelText: context.l10n.opdFieldOptionalLabel(
-              context.l10n.patientsFacilityLabel,
-            ),
-            enabled: enabled,
-            onChanged: (String? value) => setState(() => _facilityId = value),
-          ),
-        ],
-      ),
-    ];
-  }
-
-  Future<AppFailure?> _submitAdmission(
-    ClinicalActionAdmissionInput input,
-  ) async {
-    final Result<IpdAdmissionDetail> admissionResult = await ref
-        .read(ipdRepositoryProvider)
-        .requestAdmission(
-          _withoutEmptyPayload(<String, Object?>{
-            'tenant_id': widget.patient.tenantId,
-            'facility_id': _resolvedFacilityId(),
-            'patient_id': widget.patient.id,
-            'reason': input.reason,
-            'notes': input.notes,
-          }),
-        );
-    final IpdAdmissionDetail? admission = _successOrNull(admissionResult);
-    if (admission == null) {
-      return _failureOrNull(admissionResult);
-    }
-    return null;
-  }
-
-  String? _resolvedFacilityId() {
-    if (_facilityId != null && _facilityId!.trim().isNotEmpty) {
-      return _facilityId;
-    }
-    if (widget.referenceData.facilities.length == 1) {
-      return widget.referenceData.facilities.first.id;
-    }
-    return widget.patient.facilityId;
   }
 }
 

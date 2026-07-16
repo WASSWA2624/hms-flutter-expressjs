@@ -18,6 +18,9 @@ import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_reposi
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/domain/repositories/ipd_repository.dart';
+import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
+import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
+import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
 import 'package:hosspi_hms/features/rooms_beds/presentation/controllers/rooms_beds_workspace_controller.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -35,6 +38,9 @@ final class IpdWorkspaceController
 
   ClinicalRepository get _clinicalRepository =>
       ref.read(clinicalRepositoryProvider);
+
+  PatientRepository get _patientRepository =>
+      ref.read(patientRepositoryProvider);
 
   final WorkspaceAdaptivePolling _adaptivePolling = WorkspaceAdaptivePolling();
   final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
@@ -263,6 +269,13 @@ final class IpdWorkspaceController
     if (current != null) {
       _emit(current.copyWith(clearSelectedAdmission: true));
     }
+  }
+
+  /// Patient lookup for start-admission dialog search fields.
+  ///
+  /// Keeps repository access out of widgets per instant-UI sync rules.
+  Future<Result<AppPage<Patient>>> searchPatients(PatientListQuery query) {
+    return _patientRepository.listPatients(query);
   }
 
   Future<AppFailure?> startAdmission(Map<String, Object?> payload) async {
@@ -519,6 +532,8 @@ final class IpdWorkspaceController
         'to_bed_id': toBedId,
       }),
       refreshReferenceData: action == 'COMPLETE',
+      // Transfer status / bed occupancy also appear on rooms & beds boards.
+      reconcileRoomsBeds: true,
     );
   }
 

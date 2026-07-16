@@ -5539,6 +5539,10 @@
   "@patientsQuickTriageAction": {
     "description": "Patient quick triage action label."
   },
+  "patientsSaveTriageAction": "Save triage",
+  "@patientsSaveTriageAction": {
+    "description": "Primary commit label for the patient triage quick dialog."
+  },
   "patientsQuickClinicalAction": "Clinical visit",
   "@patientsQuickClinicalAction": {
     "description": "Patient quick clinical visit action label."

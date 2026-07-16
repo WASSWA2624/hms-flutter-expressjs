@@ -11,14 +11,16 @@ import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_c
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
 
-List<Override> _icuOverrides(IcuRepository repository) {
-  return <Override>[
-    initialSessionStateProvider.overrideWithValue(const SessionState.ready()),
-    icuRepositoryProvider.overrideWithValue(repository),
-  ];
-}
-
 class _MockIcuRepository extends Mock implements IcuRepository {}
+
+ProviderContainer _icuContainer(IcuRepository repository) {
+  return ProviderContainer(
+    overrides: [
+      initialSessionStateProvider.overrideWithValue(const SessionState.ready()),
+      icuRepositoryProvider.overrideWithValue(repository),
+    ],
+  );
+}
 
 void main() {
   setUpAll(() {
@@ -153,9 +155,7 @@ void main() {
         ],
       );
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: _icuOverrides(repository),
-      );
+      final ProviderContainer container = _icuContainer(repository);
       addTearDown(container.dispose);
 
       final Result<IcuWorkspaceState> result = await container.read(
@@ -205,9 +205,7 @@ void main() {
         (_) async => const Result<IcuPatientDetail>.success(started),
       );
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: _icuOverrides(repository),
-      );
+      final ProviderContainer container = _icuContainer(repository);
       addTearDown(container.dispose);
       await container.read(icuWorkspaceControllerProvider.future);
 
@@ -240,9 +238,7 @@ void main() {
         ],
       );
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: _icuOverrides(repository),
-      );
+      final ProviderContainer container = _icuContainer(repository);
       addTearDown(container.dispose);
       await container.read(icuWorkspaceControllerProvider.future);
 
@@ -278,9 +274,7 @@ void main() {
         ),
       );
 
-      final ProviderContainer container = ProviderContainer(
-        overrides: _icuOverrides(repository),
-      );
+      final ProviderContainer container = _icuContainer(repository);
       addTearDown(container.dispose);
       await container.read(icuWorkspaceControllerProvider.future);
 
@@ -340,9 +334,7 @@ void main() {
           (_) async => const Result<IcuPatientDetail>.success(transferred),
         );
 
-        final ProviderContainer container = ProviderContainer(
-          overrides: _icuOverrides(repository),
-        );
+        final ProviderContainer container = _icuContainer(repository);
         addTearDown(container.dispose);
         await container.read(icuWorkspaceControllerProvider.future);
 
@@ -412,9 +404,7 @@ void main() {
           ),
         );
 
-        final ProviderContainer container = ProviderContainer(
-          overrides: _icuOverrides(repository),
-        );
+        final ProviderContainer container = _icuContainer(repository);
         addTearDown(container.dispose);
         await container.read(icuWorkspaceControllerProvider.future);
 

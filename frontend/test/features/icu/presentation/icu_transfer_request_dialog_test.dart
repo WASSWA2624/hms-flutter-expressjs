@@ -208,7 +208,7 @@ Future<void> _pumpOpenTransfer(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: <Override>[
+      overrides: [
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
         ),

@@ -10,6 +10,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_disposition_actions.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/components/opd_encounter_dialog.dart';
 
 enum PatientQuickAction {
@@ -123,7 +124,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
       if (!hasActiveAdmission)
         AppPermissionActionItem(
           label: l10n.patientsQuickAdmitPatientAction,
-          icon: Icons.local_hospital_outlined,
+          icon: AppActionIcons.bed,
           tooltip: l10n.patientsQuickAdmitPatientTooltip,
           onPressed: () => onAction(PatientQuickAction.admission),
           requirement: const AccessRequirement(

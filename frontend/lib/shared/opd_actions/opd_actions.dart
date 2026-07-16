@@ -6,3 +6,4 @@ export 'opd_encounter_flow.dart';
 export 'opd_flow_actions_dialog.dart';
 export 'opd_queue_actions_dialog.dart';
 export 'opd_status_display.dart';
+export 'patient_appointment_quick_dialog.dart';

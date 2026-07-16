@@ -17,10 +17,12 @@ import 'package:hosspi_hms/features/claims/presentation/widgets/insurance_author
 import 'package:hosspi_hms/features/discharge/presentation/widgets/show_discharge_planning_dialog.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
+import 'package:hosspi_hms/features/ipd/presentation/ipd_admission_reference_data.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_bed_board_panel.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_clinical_order_actions.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_start_admission_dialog.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_transfer_request_dialog.dart';
+import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_transfer_update_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -1335,7 +1337,7 @@ class _IpdDetailActions extends ConsumerWidget {
       builder: (_) => ClinicalAdmissionActionDialog(
         title: l10n.ipdAssignBedAction,
         submitLabel: l10n.ipdAssignBedAction,
-        referenceData: _ipdAdmissionReferenceData(context, state.referenceData),
+        referenceData: ipdAdmissionReferenceData(context, state.referenceData),
         onSubmit: (ClinicalActionAdmissionInput input) {
           final ClinicalActionCatalogOption? bed = input.bed;
           if (bed == null) {
@@ -2125,159 +2127,6 @@ class _RequestTherapyDialogState extends ConsumerState<RequestTherapyDialog> {
   }
 }
 
-class TransferUpdateDialog extends ConsumerStatefulWidget {
-  const TransferUpdateDialog({
-    required this.admission,
-    required this.beds,
-    super.key,
-  });
-
-  final IpdAdmissionDetail admission;
-  final List<IpdBedOption> beds;
-
-  @override
-  ConsumerState<TransferUpdateDialog> createState() =>
-      _TransferUpdateDialogState();
-}
-
-class _TransferUpdateDialogState extends ConsumerState<TransferUpdateDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  String _action = _transferApprove;
-  String? _bedId;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    final String status =
-        widget.admission.openTransferRequest?.status?.toUpperCase() ?? '';
-    if (status == _transferApproved) {
-      _action = _transferStart;
-    }
-    if (status == _transferInProgress) {
-      _action = _transferComplete;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppDialog(
-      title: Text(l10n.ipdManageTransferAction),
-      icon: const Icon(Icons.move_down_outlined),
-      scrollable: true,
-      pinActionsToBottom: true,
-      closeEnabled: !_isSaving,
-      content: AppFormShell(
-        formKey: _formKey,
-        enabled: !_isSaving,
-        formStatus: appFormFailureStatus(context, _failure),
-        children: <Widget>[
-          AppSelectField<String>(
-            value: _action,
-            labelText: l10n.ipdTransferActionFieldLabel,
-            enabled: !_isSaving,
-            options: <AppSelectOption<String>>[
-              AppSelectOption<String>(
-                value: _transferApprove,
-                label: l10n.ipdTransferApproveAction,
-              ),
-              AppSelectOption<String>(
-                value: _transferStart,
-                label: l10n.ipdTransferStartAction,
-              ),
-              AppSelectOption<String>(
-                value: _transferComplete,
-                label: l10n.ipdTransferCompleteAction,
-              ),
-              AppSelectOption<String>(
-                value: _transferCancel,
-                label: l10n.ipdTransferCancelAction,
-              ),
-            ],
-            onChanged: _isSaving
-                ? null
-                : (String? value) {
-                    if (value != null) {
-                      setState(() => _action = value);
-                    }
-                  },
-          ),
-          if (_action == _transferComplete)
-            AppSelectField<String>.searchable(
-              value: _bedId,
-              labelText: l10n.ipdDestinationBedFieldLabel,
-              hintText: l10n.ipdSelectBedHint,
-              enabled: !_isSaving,
-              isRequired: true,
-              validator: AppValidators.requiredValue<String>(
-                l10n.validationRequired,
-              ),
-              options: <AppSelectOption<String>>[
-                for (final IpdBedOption bed in widget.beds)
-                  AppSelectOption<String>(
-                    value: bed.id,
-                    label:
-                        _joinDisplay(<String?>[
-                          bed.displayTitle,
-                          bed.displaySubtitle,
-                        ]) ??
-                        bed.id,
-                  ),
-              ],
-              onChanged: _isSaving
-                  ? null
-                  : (String? value) => setState(() => _bedId = value),
-            ),
-        ],
-      ),
-      actions: clinicalActionDialogActions(
-        context,
-        l10n.ipdManageTransferAction,
-        _isSaving,
-        _isSaving ? null : _submit,
-        submitLeadingIcon: Icons.move_down_outlined,
-      ),
-    );
-  }
-
-  Future<void> _submit() async {
-    if (_isSaving) {
-      return;
-    }
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    if (_action == _transferComplete && _bedId == null) {
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(ipdWorkspaceControllerProvider.notifier)
-        .updateTransfer(
-          admission: widget.admission.summary,
-          action: _action,
-          transferRequestId: widget.admission.openTransferRequest?.id,
-          toBedId: _bedId,
-        );
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
-  }
-}
-
 class MedicationAdministrationDialog extends ConsumerStatefulWidget {
   const MedicationAdministrationDialog({required this.admission, super.key});
 
@@ -2781,96 +2630,6 @@ String _lengthOfStayLabel(BuildContext context, IpdAdmissionSummary item) {
   return context.l10n.ipdLengthOfStayDays(stay.inDays);
 }
 
-ClinicalActionReferenceData _ipdAdmissionReferenceData(
-  BuildContext context,
-  IpdReferenceData referenceData,
-) {
-  final AppLocalizations l10n = context.l10n;
-  final Map<String, ClinicalActionCatalogOption> wards =
-      <String, ClinicalActionCatalogOption>{
-        for (final IpdWardOption ward in referenceData.wards)
-          ward.id: ClinicalActionCatalogOption(
-            id: ward.id,
-            name: ward.displayTitle,
-            category: ward.wardType,
-            status: ward.isActive ? 'ACTIVE' : 'INACTIVE',
-          ),
-      };
-  final Map<String, ClinicalActionCatalogOption> rooms =
-      <String, ClinicalActionCatalogOption>{};
-  final List<ClinicalActionCatalogOption> beds =
-      <ClinicalActionCatalogOption>[];
-
-  for (final IpdBedOption bed in referenceData.availableBeds) {
-    final String wardId = _ipdBedWardId(bed);
-    final String roomId = _ipdBedRoomId(bed, wardId);
-    wards.putIfAbsent(
-      wardId,
-      () => ClinicalActionCatalogOption(
-        id: wardId,
-        name: _firstDisplayValue(<String?>[
-          bed.wardName,
-          bed.wardId,
-          l10n.profileUnknownValue,
-        ]),
-      ),
-    );
-    rooms.putIfAbsent(
-      roomId,
-      () => ClinicalActionCatalogOption(
-        id: roomId,
-        name: _firstDisplayValue(<String?>[
-          bed.roomName,
-          bed.roomId,
-          l10n.profileUnknownValue,
-        ]),
-        secondaryText: bed.roomFloor,
-        parentId: wardId,
-      ),
-    );
-    beds.add(
-      ClinicalActionCatalogOption(
-        id: bed.id,
-        name: bed.displayTitle,
-        status: bed.status,
-        parentId: wardId,
-        secondaryId: roomId,
-        secondaryText: bed.displaySubtitle,
-      ),
-    );
-  }
-
-  return ClinicalActionReferenceData(
-    wards: wards.values.toList(growable: false),
-    rooms: rooms.values.toList(growable: false),
-    availableBeds: beds,
-  );
-}
-
-String _ipdBedWardId(IpdBedOption bed) {
-  return _trimmedValue(bed.wardId) ?? _ipdUnknownWardId;
-}
-
-String _ipdBedRoomId(IpdBedOption bed, String wardId) {
-  return _trimmedValue(bed.roomId) ??
-      '$_ipdUnknownRoomIdPrefix$wardId:${_trimmedValue(bed.roomName) ?? 'room'}';
-}
-
-String _firstDisplayValue(Iterable<String?> values) {
-  for (final String? value in values) {
-    final String? normalized = _trimmedValue(value);
-    if (normalized != null) {
-      return normalized;
-    }
-  }
-  return '';
-}
-
-String? _trimmedValue(String? value) {
-  final String normalized = value?.trim() ?? '';
-  return normalized.isEmpty ? null : normalized;
-}
-
 String _apiLabel(String value) {
   final String normalized = value.trim();
   if (normalized.isEmpty) {
@@ -2913,14 +2672,6 @@ const String _stageTransferInProgress = 'TRANSFER_IN_PROGRESS';
 const String _stageDischargePlanned = 'DISCHARGE_PLANNED';
 const String _stageDischarged = 'DISCHARGED';
 const String _stageCancelled = 'CANCELLED';
-const String _ipdUnknownWardId = '__ipd_unknown_ward__';
-const String _ipdUnknownRoomIdPrefix = '__ipd_unknown_room__:';
-const String _transferApprove = 'APPROVE';
-const String _transferStart = 'START';
-const String _transferComplete = 'COMPLETE';
-const String _transferCancel = 'CANCEL';
-const String _transferApproved = 'APPROVED';
-const String _transferInProgress = 'IN_PROGRESS';
 const String _ipdTransferKind = 'transfer';
 const String _medRouteOral = 'ORAL';
 const String _medRouteIv = 'IV';

@@ -11,6 +11,9 @@ import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
+import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
+import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
+import 'package:hosspi_hms/features/ipd/domain/repositories/ipd_repository.dart';
 import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
@@ -25,6 +28,7 @@ final patientRegistryControllerProvider =
 final class PatientRegistryController
     extends AsyncNotifier<Result<PatientRegistryState>> {
   PatientRepository get _repository => ref.read(patientRepositoryProvider);
+  IpdRepository get _ipdRepository => ref.read(ipdRepositoryProvider);
 
   static const Duration _syncInterval = Duration(seconds: 8);
 
@@ -399,6 +403,64 @@ final class PatientRegistryController
       },
       failure: (AppFailure failure) async {
         _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
+        await _flushPendingRefresh();
+        return failure;
+      },
+    );
+  }
+
+  /// Request IPD admission from patient registry quick actions.
+  ///
+  /// Mutates over HTTP via [IpdRepository.requestAdmission]. On persisted
+  /// success, immediately patches admission / visit cues on the selected
+  /// patient detail and list row, then reconciles with a targeted detail load.
+  Future<AppFailure?> requestAdmission({
+    required String patientId,
+    String? tenantId,
+    String? facilityId,
+    String? reason,
+    String? notes,
+  }) async {
+    final String normalizedPatientId = patientId.trim();
+    if (normalizedPatientId.isEmpty) {
+      return AppFailure.validation();
+    }
+
+    final PatientRegistryState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    final Result<IpdAdmissionDetail> result = await _ipdRepository
+        .requestAdmission(<String, Object?>{
+          if (tenantId != null && tenantId.trim().isNotEmpty)
+            'tenant_id': tenantId.trim(),
+          if (facilityId != null && facilityId.trim().isNotEmpty)
+            'facility_id': facilityId.trim(),
+          'patient_id': normalizedPatientId,
+          if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+          if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
+        });
+
+    return result.when(
+      success: (IpdAdmissionDetail admission) async {
+        _patchAdmissionRequest(admission, normalizedPatientId);
+        final AppFailure? detailFailure = await selectPatient(
+          normalizedPatientId,
+        );
+        final PatientRegistryState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false));
+        }
+        await _flushPendingRefresh();
+        return detailFailure;
+      },
+      failure: (AppFailure failure) async {
+        final PatientRegistryState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+        }
         await _flushPendingRefresh();
         return failure;
       },
@@ -862,6 +924,104 @@ final class PatientRegistryController
       }
     }
 
+    return null;
+  }
+
+  void _patchAdmissionRequest(
+    IpdAdmissionDetail admission,
+    String patientId,
+  ) {
+    final PatientRegistryState? latest = _currentState;
+    if (latest == null) {
+      return;
+    }
+
+    final IpdAdmissionSummary summary = admission.summary;
+    final String admissionId =
+        _firstNonEmpty(<String?>[summary.displayId, summary.id]) ?? summary.id;
+    final String? admissionStatus = _firstNonEmpty(<String?>[
+      summary.admissionStatus,
+      'REQUESTED',
+    ]);
+    final PatientSummaryRecord admissionRecord = PatientSummaryRecord(
+      id: admissionId,
+      kind: 'admission',
+      status: admissionStatus,
+      title: _firstNonEmpty(<String?>[
+        summary.displayId,
+        summary.displayTitle,
+        summary.stage,
+      ]),
+      subtitle: summary.location,
+      occurredAt: summary.admittedAt,
+    );
+    final PatientVisitContext visit = PatientVisitContext(
+      kind: 'admission',
+      publicId: admissionId,
+      status: admissionStatus,
+      title: _firstNonEmpty(<String?>[
+        summary.location,
+        summary.stage,
+        summary.displayId,
+      ]),
+      occurredAt: summary.admittedAt,
+    );
+
+    final PatientDetail? selectedDetail = latest.selectedDetail;
+    if (selectedDetail != null && selectedDetail.patient.id == patientId) {
+      final Patient patchedPatient = selectedDetail.patient.copyWith(
+        currentVisit: visit,
+      );
+      _emit(
+        latest.copyWith(
+          selectedDetail: selectedDetail.copyWith(
+            patient: patchedPatient,
+            workspace: selectedDetail.workspace.copyWith(
+              admissions: _upsertAdmissionRecord(
+                selectedDetail.workspace.admissions,
+                admissionRecord,
+              ),
+            ),
+          ),
+          page: _replacePatientInPage(latest.page, patchedPatient),
+        ),
+      );
+      return;
+    }
+
+    final Patient? listPatient = _findPatientInState(latest, patientId);
+    if (listPatient == null) {
+      return;
+    }
+    _emit(
+      latest.copyWith(
+        page: _replacePatientInPage(
+          latest.page,
+          listPatient.copyWith(currentVisit: visit),
+        ),
+      ),
+    );
+  }
+
+  List<PatientSummaryRecord> _upsertAdmissionRecord(
+    List<PatientSummaryRecord> admissions,
+    PatientSummaryRecord record,
+  ) {
+    final List<PatientSummaryRecord> next = <PatientSummaryRecord>[
+      for (final PatientSummaryRecord item in admissions)
+        if (item.id != record.id) item,
+    ];
+    next.insert(0, record);
+    return next;
+  }
+
+  String? _firstNonEmpty(Iterable<String?> values) {
+    for (final String? value in values) {
+      final String normalized = value?.trim() ?? '';
+      if (normalized.isNotEmpty) {
+        return normalized;
+      }
+    }
     return null;
   }
 

@@ -505,6 +505,10 @@ final class OpdWorkspaceController
     );
   }
 
+  Future<AppFailure?> createAppointment(Map<String, Object?> payload) {
+    return _mutateAppointment(() => _repository.createAppointment(payload));
+  }
+
   Future<AppFailure?> rescheduleAppointment(
     OpdAppointment appointment,
     DateTime scheduledStart,
@@ -530,6 +534,18 @@ final class OpdWorkspaceController
     return _mutateAppointment(
       () => _repository.cancelAppointment(appointment.apiId, normalizedReason),
     );
+  }
+
+  /// Ensures provider options (and workspace schedules) are available for
+  /// appointment scheduling forms opened outside the OPD desk.
+  Future<AppFailure?> ensureAppointmentFormOptionsLoaded() async {
+    if (_currentState == null) {
+      final AppFailure? failure = await refresh();
+      if (failure != null) {
+        return failure;
+      }
+    }
+    return ensureQueueProviderOptionsLoaded();
   }
 
   Future<AppFailure?> assignAppointmentToQueue(
@@ -1231,25 +1247,34 @@ final class OpdWorkspaceController
   ) async {
     final OpdWorkspaceState? current = _currentState;
     if (current == null) {
-      return refresh();
+      final AppFailure? failure = await refresh();
+      if (failure != null) {
+        return failure;
+      }
+      return _mutateAppointment(action);
     }
 
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
     final Result<OpdAppointment> result = await action();
     return result.when(
       success: (OpdAppointment appointment) async {
-        final OpdWorkspaceState latest = _currentState!;
-        _emit(
-          latest.copyWith(
-            appointments: _upsertAppointment(latest.appointments, appointment),
-            isSaving: false,
-          ),
-        );
+        final OpdWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              appointments: _upsertAppointment(latest.appointments, appointment),
+              isSaving: false,
+            ),
+          );
+        }
         await _flushPendingRefresh();
         return null;
       },
       failure: (AppFailure failure) async {
-        _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
+        final OpdWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(latest.copyWith(isSaving: false, lastFailure: failure));
+        }
         await _flushPendingRefresh();
         return failure;
       },

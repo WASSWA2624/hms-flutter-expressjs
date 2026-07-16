@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart';
 import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
@@ -387,21 +387,15 @@ class _AppTriageActionDialogState extends State<AppTriageActionDialog> {
             ),
         ],
       ),
-      actions: <Widget>[
-        // Cancel left of primary (matches `_actionDialogButtons` / confirm helpers).
-        AppButton.secondary(
-          label: cancelLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: enabled,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: widget.submitLabel,
-          leadingIcon: widget.submitLeadingIcon,
-          isLoading: _isSaving,
-          onPressed: enabled ? _submit : null,
-        ),
-      ],
+      actions: clinicalActionDialogActions(
+        context,
+        widget.submitLabel,
+        _isSaving,
+        enabled ? _submit : null,
+        cancelLabel: cancelLabel,
+        submitLeadingIcon: widget.submitLeadingIcon,
+        enabled: enabled,
+      ),
     );
   }
 

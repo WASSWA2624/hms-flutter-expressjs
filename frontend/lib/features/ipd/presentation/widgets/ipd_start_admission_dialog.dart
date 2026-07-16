@@ -6,11 +6,11 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
-import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
+import 'package:hosspi_hms/features/ipd/presentation/ipd_admission_reference_data.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -28,21 +28,61 @@ class IpdStartAdmissionDialog extends ConsumerStatefulWidget {
 
 class _IpdStartAdmissionDialogState
     extends ConsumerState<IpdStartAdmissionDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  static const IconData _dialogIcon = Icons.person_add_alt_1_outlined;
+
   Timer? _debounce;
 
   List<Patient> _results = <Patient>[];
   Patient? _selectedPatient;
-  String? _wardId;
-  String? _bedId;
   bool _isSearching = false;
-  bool _isSaving = false;
-  AppFailure? _failure;
 
   @override
   void dispose() {
     _debounce?.cancel();
     super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+
+    return ClinicalAdmissionActionDialog(
+      title: l10n.ipdStartAdmissionTitle,
+      submitLabel: l10n.ipdStartAdmissionAction,
+      icon: const Icon(_dialogIcon),
+      submitLeadingIcon: AppActionIcons.add,
+      referenceData: ipdAdmissionReferenceData(context, widget.referenceData),
+      requiresBed: true,
+      bedRequired: false,
+      maxWidth: 560,
+      initialMaximized: false,
+      leadingSectionsBuilder: _patientSection,
+      onSubmit: _submit,
+    );
+  }
+
+  List<Widget> _patientSection(BuildContext context, bool enabled) {
+    final AppLocalizations l10n = context.l10n;
+    return <Widget>[
+      AppFormSection(
+        title: l10n.ipdStartAdmissionPatientLabel,
+        density: AppFormSectionDensity.compact,
+        children: <Widget>[
+          AppSelectField<String>.searchable(
+            value: _selectedPatient?.id,
+            labelText: l10n.ipdStartAdmissionPatientLabel,
+            hintText: l10n.ipdStartAdmissionPatientHint,
+            isRequired: true,
+            isLoading: _isSearching,
+            enabled: enabled,
+            options: _patientSelectOptions(),
+            validator: AppValidators.requiredValue(l10n.validationRequired),
+            onSearchTextChanged: _onSearchChanged,
+            onChanged: _selectPatient,
+          ),
+        ],
+      ),
+    ];
   }
 
   void _onSearchChanged(String value) {
@@ -63,8 +103,8 @@ class _IpdStartAdmissionDialogState
     }
     setState(() => _isSearching = true);
     final Result<AppPage<Patient>> result = await ref
-        .read(patientRepositoryProvider)
-        .listPatients(
+        .read(ipdWorkspaceControllerProvider.notifier)
+        .searchPatients(
           PatientListQuery(
             search: term,
             pageRequest: const AppPageRequest(pageSize: 12),
@@ -78,89 +118,14 @@ class _IpdStartAdmissionDialogState
         setState(() {
           _results = page.items;
           _isSearching = false;
-          _failure = null;
         });
       },
       failure: (AppFailure failure) {
         setState(() {
           _results = <Patient>[];
           _isSearching = false;
-          _failure = failure;
         });
       },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppDialog(
-      title: Text(l10n.ipdStartAdmissionTitle),
-      icon: const Icon(Icons.person_add_alt_1_outlined),
-      scrollable: true,
-      pinActionsToBottom: true,
-      closeEnabled: !_isSaving,
-      maxWidth: 560,
-      content: AppFormShell(
-        formKey: _formKey,
-        enabled: !_isSaving,
-        formStatus: appFormFailureStatus(context, _failure),
-        children: <Widget>[
-          AppSelectField<String>.searchable(
-            value: _selectedPatient?.id,
-            labelText: l10n.ipdStartAdmissionPatientLabel,
-            hintText: l10n.ipdStartAdmissionPatientHint,
-            isRequired: true,
-            isLoading: _isSearching,
-            enabled: !_isSaving,
-            options: _patientSelectOptions(),
-            validator: AppValidators.requiredValue(l10n.validationRequired),
-            onSearchTextChanged: _onSearchChanged,
-            onChanged: _selectPatient,
-          ),
-          AppSelectField<String>.searchable(
-            value: _wardId,
-            labelText: l10n.ipdStartAdmissionWardLabel,
-            hintText: l10n.ipdSelectWardHint,
-            enabled: !_isSaving,
-            options: <AppSelectOption<String>>[
-              for (final IpdWardOption ward in widget.referenceData.wards)
-                AppSelectOption<String>(
-                  value: ward.id,
-                  label: ward.displayTitle,
-                ),
-            ],
-            onChanged: (String? value) => setState(() {
-              _wardId = value;
-              _bedId = null;
-            }),
-          ),
-          AppSelectField<String>.searchable(
-            value: _bedId,
-            labelText: l10n.ipdStartAdmissionBedLabel,
-            hintText: l10n.ipdSelectBedHint,
-            enabled: !_isSaving,
-            options: <AppSelectOption<String>>[
-              for (final IpdBedOption bed in _bedsForWard())
-                AppSelectOption<String>(
-                  value: bed.id,
-                  label: <String?>[bed.displayTitle, bed.displaySubtitle]
-                      .where((String? v) => v != null && v.trim().isNotEmpty)
-                      .join(' • '),
-                ),
-            ],
-            onChanged: (String? value) => setState(() => _bedId = value),
-          ),
-        ],
-      ),
-      actions: clinicalActionDialogActions(
-        context,
-        l10n.ipdStartAdmissionAction,
-        _isSaving,
-        _isSaving ? null : _submit,
-        submitLeadingIcon: AppActionIcons.add,
-      ),
     );
   }
 
@@ -201,7 +166,6 @@ class _IpdStartAdmissionDialogState
         return;
       }
       _selectedPatient = _patientById(patientId);
-      _failure = null;
     });
   }
 
@@ -218,48 +182,18 @@ class _IpdStartAdmissionDialogState
     return null;
   }
 
-  List<IpdBedOption> _bedsForWard() {
-    final List<IpdBedOption> beds = widget.referenceData.availableBeds;
-    if (_wardId == null) {
-      return beds;
-    }
-    return beds
-        .where((IpdBedOption bed) => bed.wardId == _wardId)
-        .toList(growable: false);
-  }
-
-  Future<void> _submit() async {
-    if (_isSaving) {
-      return;
-    }
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
+  Future<AppFailure?> _submit(ClinicalActionAdmissionInput input) async {
     final Patient? patient = _selectedPatient;
     if (patient == null) {
-      return;
+      return AppFailure.validation();
     }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(ipdWorkspaceControllerProvider.notifier)
-        .startAdmission(<String, Object?>{
-          'patient_id': patient.id,
-          'ward_id': _wardId,
-          'bed_id': _bedId,
-        });
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
+    return ref.read(ipdWorkspaceControllerProvider.notifier).startAdmission(
+      <String, Object?>{
+        'patient_id': patient.id,
+        'ward_id': ipdApiCatalogId(input.wardId),
+        'room_id': ipdApiCatalogId(input.roomId),
+        'bed_id': input.bed?.apiId,
+      },
+    );
   }
 }

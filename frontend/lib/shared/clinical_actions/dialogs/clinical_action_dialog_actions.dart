@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 
 List<Widget> clinicalActionDialogActions(
   BuildContext context,
@@ -11,18 +11,22 @@ List<Widget> clinicalActionDialogActions(
   bool showCancel = true,
   IconData? submitLeadingIcon,
   bool destructive = false,
+  /// When false, Cancel and primary stay disabled without a submit spinner
+  /// (e.g. parent reference-data load). [isSaving] still drives isLoading.
+  bool enabled = true,
+  String? cancelLabel,
 }) {
-  final AppLocalizations l10n = context.l10n;
+  final bool canInteract = enabled && !isSaving;
   final ColorScheme colorScheme = Theme.of(context).colorScheme;
   return <Widget>[
     if (showCancel)
       AppButton.secondary(
-        label: l10n.commonCancelActionLabel,
+        label: cancelLabel ?? context.l10n.commonCancelActionLabel,
         leadingIcon: AppActionIcons.cancel,
-        enabled: !isSaving,
-        onPressed: isSaving
-            ? null
-            : () => Navigator.of(context).pop(false),
+        enabled: canInteract,
+        onPressed: canInteract
+            ? () => Navigator.of(context).pop(false)
+            : null,
       ),
     AppButton.primary(
       label: submitLabel,
@@ -30,8 +34,8 @@ List<Widget> clinicalActionDialogActions(
           submitLeadingIcon ?? (destructive ? AppActionIcons.delete : null),
       color: destructive ? colorScheme.error : null,
       isLoading: isSaving,
-      enabled: onSubmit != null,
-      onPressed: onSubmit,
+      enabled: canInteract && onSubmit != null,
+      onPressed: canInteract ? onSubmit : null,
     ),
   ];
 }

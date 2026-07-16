@@ -19,6 +19,7 @@ class ClinicalAdmissionActionDialog extends StatefulWidget {
     this.reasonRequired = false,
     this.notesLabel,
     this.requiresBed = true,
+    this.bedRequired = true,
     this.maxWidth = 900,
     this.initialMaximized = true,
     this.showCancelButton = true,
@@ -37,6 +38,12 @@ class ClinicalAdmissionActionDialog extends StatefulWidget {
   final bool reasonRequired;
   final String? notesLabel;
   final bool requiresBed;
+
+  /// When [requiresBed] is true, whether ward/room/bed must be selected.
+  ///
+  /// Start-admission flows can show the shared bed picker while still allowing
+  /// admission without an immediate bed assignment.
+  final bool bedRequired;
   final double maxWidth;
   final bool initialMaximized;
   final bool showCancelButton;
@@ -64,6 +71,12 @@ class _ClinicalAdmissionActionDialogState
   @override
   void didUpdateWidget(covariant ClinicalAdmissionActionDialog oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Only clear a previously chosen bed when it disappears from reference data.
+    // Leaving `_bedId` null (optional / in-progress selection) must not wipe
+    // ward/room choices when a parent rebuilds (e.g. patient search results).
+    if (_bedId == null) {
+      return;
+    }
     if (_selectedAdmissionBed(
           _availableAdmissionBeds(widget.referenceData),
           _bedId,
@@ -93,64 +106,25 @@ class _ClinicalAdmissionActionDialogState
         widget.submitLeadingIcon ?? Icons.local_hospital_outlined;
 
     if (!widget.requiresBed) {
-      return AppDialog(
-        title: Text(title),
-        icon: widget.icon,
-        closeEnabled: !_isSaving,
-        initialMaximized: widget.initialMaximized,
-        maxWidth: widget.maxWidth,
-        scrollable: true,
-        pinActionsToBottom: true,
-        content: AppFormShell(
-          formKey: _formKey,
-          enabled: !_isSaving,
-          density: AppFormSectionDensity.compact,
-          formStatus: appFormFailureStatus(context, _failure),
-          children: <Widget>[
-            ...?widget.leadingSectionsBuilder?.call(context, !_isSaving),
-            AppFormSection(
-              title: l10n.clinicalAdmissionDetailsTitle,
-              density: AppFormSectionDensity.compact,
-              children: <Widget>[
-                if (widget.reasonLabel != null)
-                  AppTextField(
-                    controller: _reasonController,
-                    labelText: widget.reasonLabel!,
-                    enabled: !_isSaving,
-                    isRequired: widget.reasonRequired,
-                    maxLines: 4,
-                    textCapitalization: TextCapitalization.sentences,
-                    prefixIcon: const Icon(Icons.notes_outlined),
-                    validator: widget.reasonRequired
-                        ? AppValidators.requiredText(l10n.validationRequired)
-                        : null,
-                  ),
-                if (widget.notesLabel != null)
-                  AppTextField(
-                    controller: _notesController,
-                    labelText: widget.notesLabel!,
-                    enabled: !_isSaving,
-                    maxLines: 3,
-                    textCapitalization: TextCapitalization.sentences,
-                    prefixIcon: const Icon(Icons.edit_note_outlined),
-                  ),
-              ],
-            ),
-          ],
-        ),
-        actions: clinicalActionDialogActions(
-          context,
-          submitLabel,
-          _isSaving,
-          _isSaving ? null : _submitRequestOnly,
-          showCancel: widget.showCancelButton,
-          submitLeadingIcon: submitLeadingIcon,
-        ),
+      return _buildRequestOnlyDialog(
+        context,
+        title: title,
+        submitLabel: submitLabel,
+        submitLeadingIcon: submitLeadingIcon,
       );
     }
 
     final List<ClinicalActionCatalogOption> availableBeds =
         _availableAdmissionBeds(widget.referenceData);
+    if (availableBeds.isEmpty && !widget.bedRequired) {
+      return _buildRequestOnlyDialog(
+        context,
+        title: title,
+        submitLabel: submitLabel,
+        submitLeadingIcon: submitLeadingIcon,
+      );
+    }
+
     final List<AppSelectOption<String>> wardOptions = _admissionWardOptions(
       widget.referenceData,
       availableBeds,
@@ -170,6 +144,7 @@ class _ClinicalAdmissionActionDialogState
       availableBeds,
       _bedId,
     );
+    final bool selectionRequired = widget.bedRequired;
     final bool wardEnabled = !_isSaving && wardOptions.isNotEmpty;
     final bool roomEnabled =
         !_isSaving && _wardId != null && roomOptions.isNotEmpty;
@@ -212,12 +187,14 @@ class _ClinicalAdmissionActionDialogState
                     helperText: wardEnabled
                         ? null
                         : l10n.clinicalAdmissionNoWardsHelper,
-                    isRequired: true,
+                    isRequired: selectionRequired,
                     menuHeight: 280,
                     options: wardOptions,
-                    validator: AppValidators.requiredValue<String>(
-                      l10n.validationRequired,
-                    ),
+                    validator: selectionRequired
+                        ? AppValidators.requiredValue<String>(
+                            l10n.validationRequired,
+                          )
+                        : null,
                     onChanged: _handleWardChanged,
                   ),
                   right: AppSelectField<String>.searchable(
@@ -229,12 +206,14 @@ class _ClinicalAdmissionActionDialogState
                         : (_wardId == null
                               ? l10n.clinicalAdmissionSelectWardFirstHint
                               : l10n.clinicalAdmissionNoRoomsMessage),
-                    isRequired: true,
+                    isRequired: selectionRequired,
                     menuHeight: 280,
                     options: roomOptions,
-                    validator: AppValidators.requiredValue<String>(
-                      l10n.validationRequired,
-                    ),
+                    validator: selectionRequired
+                        ? AppValidators.requiredValue<String>(
+                            l10n.validationRequired,
+                          )
+                        : null,
                     onChanged: _handleRoomChanged,
                   ),
                 ),
@@ -247,12 +226,14 @@ class _ClinicalAdmissionActionDialogState
                       : (_roomId == null
                             ? l10n.clinicalAdmissionSelectRoomFirstHint
                             : l10n.clinicalAdmissionNoBedsForRoomMessage),
-                  isRequired: true,
+                  isRequired: selectionRequired,
                   menuHeight: 320,
                   options: bedOptions,
-                  validator: AppValidators.requiredValue<String>(
-                    l10n.validationRequired,
-                  ),
+                  validator: selectionRequired
+                      ? AppValidators.requiredValue<String>(
+                          l10n.validationRequired,
+                        )
+                      : null,
                   onChanged: (String? value) =>
                       _handleBedChanged(value, availableBeds),
                 ),
@@ -310,6 +291,70 @@ class _ClinicalAdmissionActionDialogState
     );
   }
 
+  Widget _buildRequestOnlyDialog(
+    BuildContext context, {
+    required String title,
+    required String submitLabel,
+    required IconData submitLeadingIcon,
+  }) {
+    final AppLocalizations l10n = context.l10n;
+    return AppDialog(
+      title: Text(title),
+      icon: widget.icon,
+      closeEnabled: !_isSaving,
+      initialMaximized: widget.initialMaximized,
+      maxWidth: widget.maxWidth,
+      scrollable: true,
+      pinActionsToBottom: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        enabled: !_isSaving,
+        density: AppFormSectionDensity.compact,
+        formStatus: appFormFailureStatus(context, _failure),
+        children: <Widget>[
+          ...?widget.leadingSectionsBuilder?.call(context, !_isSaving),
+          if (widget.reasonLabel != null || widget.notesLabel != null)
+            AppFormSection(
+              title: l10n.clinicalAdmissionDetailsTitle,
+              density: AppFormSectionDensity.compact,
+              children: <Widget>[
+                if (widget.reasonLabel != null)
+                  AppTextField(
+                    controller: _reasonController,
+                    labelText: widget.reasonLabel!,
+                    enabled: !_isSaving,
+                    isRequired: widget.reasonRequired,
+                    maxLines: 4,
+                    textCapitalization: TextCapitalization.sentences,
+                    prefixIcon: const Icon(Icons.notes_outlined),
+                    validator: widget.reasonRequired
+                        ? AppValidators.requiredText(l10n.validationRequired)
+                        : null,
+                  ),
+                if (widget.notesLabel != null)
+                  AppTextField(
+                    controller: _notesController,
+                    labelText: widget.notesLabel!,
+                    enabled: !_isSaving,
+                    maxLines: 3,
+                    textCapitalization: TextCapitalization.sentences,
+                    prefixIcon: const Icon(Icons.edit_note_outlined),
+                  ),
+              ],
+            ),
+        ],
+      ),
+      actions: clinicalActionDialogActions(
+        context,
+        submitLabel,
+        _isSaving,
+        _isSaving ? null : _submitRequestOnly,
+        showCancel: widget.showCancelButton,
+        submitLeadingIcon: submitLeadingIcon,
+      ),
+    );
+  }
+
   void _handleWardChanged(String? value) {
     setState(() {
       _wardId = value;
@@ -358,6 +403,8 @@ class _ClinicalAdmissionActionDialogState
     });
     final AppFailure? failure = await widget.onSubmit(
       ClinicalActionAdmissionInput(
+        wardId: _wardId,
+        roomId: _roomId,
         reason: clinicalActionNonEmpty(_reasonController.text),
         notes: clinicalActionNonEmpty(_notesController.text),
       ),
@@ -377,7 +424,15 @@ class _ClinicalAdmissionActionDialogState
       _availableAdmissionBeds(widget.referenceData),
       _bedId,
     );
-    if (bed == null || !_isAdmissionBedAvailable(bed)) {
+    if (widget.bedRequired) {
+      if (bed == null || !_isAdmissionBedAvailable(bed)) {
+        setState(() {
+          _failure = AppFailure.validation();
+          _bedWarning = context.l10n.clinicalAdmissionBedUnavailableMessage;
+        });
+        return;
+      }
+    } else if (bed != null && !_isAdmissionBedAvailable(bed)) {
       setState(() {
         _failure = AppFailure.validation();
         _bedWarning = context.l10n.clinicalAdmissionBedUnavailableMessage;
@@ -391,6 +446,8 @@ class _ClinicalAdmissionActionDialogState
     final AppFailure? failure = await widget.onSubmit(
       ClinicalActionAdmissionInput(
         bed: bed,
+        wardId: bed?.parentId ?? _wardId,
+        roomId: bed?.secondaryId ?? _roomId,
         reason: clinicalActionNonEmpty(_reasonController.text),
         notes: clinicalActionNonEmpty(_notesController.text),
       ),

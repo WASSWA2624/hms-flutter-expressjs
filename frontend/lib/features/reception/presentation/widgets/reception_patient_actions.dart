@@ -9,12 +9,13 @@ import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart'
 import 'package:hosspi_hms/features/claims/presentation/widgets/claims_insurance_config_dialogs.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
-import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
+import 'package:hosspi_hms/shared/patient_actions/patient_actions.dart';
 
 Future<void> openReceptionPatientEditor(
   BuildContext context,
@@ -54,18 +55,24 @@ Future<bool> openReceptionInsuranceCapture({
   return true;
 }
 
+/// Opens the reception patient picker (search + select, no mutation).
+Future<Patient?> showReceptionPatientPickerDialog({
+  required BuildContext context,
+}) {
+  return showAppDialog<Patient>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const _ReceptionPatientPickerDialog(),
+  );
+}
+
 Future<bool> openReceptionScheduleAppointment({
   required BuildContext context,
   required WidgetRef ref,
   Patient? patient,
 }) async {
   final Patient? selected =
-      patient ??
-      await showAppDialog<Patient>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const _ReceptionPatientPickerDialog(),
-      );
+      patient ?? await showReceptionPatientPickerDialog(context: context);
   if (selected == null || !context.mounted) {
     return false;
   }
@@ -121,8 +128,11 @@ class _ReceptionPatientPickerDialog extends ConsumerStatefulWidget {
 
 class _ReceptionPatientPickerDialogState
     extends ConsumerState<_ReceptionPatientPickerDialog> {
-  final TextEditingController _searchController = TextEditingController();
+  static const Duration _searchDebounce = Duration(milliseconds: 250);
+
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   Timer? _debounce;
+  int _searchGeneration = 0;
   bool _isLoading = false;
   AppFailure? _failure;
   List<Patient> _patients = const <Patient>[];
@@ -137,11 +147,21 @@ class _ReceptionPatientPickerDialogState
   @override
   void dispose() {
     _debounce?.cancel();
-    _searchController.dispose();
     super.dispose();
   }
 
+  void _scheduleSearch(String raw) {
+    _debounce?.cancel();
+    _debounce = Timer(_searchDebounce, () {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_search(raw));
+    });
+  }
+
   Future<void> _search(String raw) async {
+    final int generation = ++_searchGeneration;
     setState(() {
       _isLoading = true;
       _failure = null;
@@ -154,25 +174,29 @@ class _ReceptionPatientPickerDialogState
             pageRequest: const AppPageRequest(pageSize: 12),
           ),
         );
-    if (!mounted) {
+    if (!mounted || generation != _searchGeneration) {
       return;
     }
     result.when(
       success: (AppPage<Patient> page) {
-        final String? selectedId = _selected?.id;
-        Patient? nextSelected;
-        if (selectedId != null) {
+        final String? selectedKey = _patientOptionValue(_selected);
+        Patient? nextSelected = _selected;
+        if (selectedKey != null) {
+          nextSelected = null;
           for (final Patient patient in page.items) {
-            if (patient.id == selectedId) {
+            if (_patientOptionValue(patient) == selectedKey) {
               nextSelected = patient;
               break;
             }
           }
+          // Keep the prior selection visible when it falls outside this page.
+          nextSelected ??= _selected;
         }
         setState(() {
           _patients = page.items;
           _selected = nextSelected;
           _isLoading = false;
+          _failure = null;
         });
       },
       failure: (AppFailure failure) {
@@ -186,19 +210,105 @@ class _ReceptionPatientPickerDialogState
     );
   }
 
+  void _selectPatient(String? value) {
+    setState(() {
+      _selected = _patientByOptionValue(value);
+      if (_selected != null) {
+        _failure = null;
+      }
+    });
+  }
+
   void _confirmSelection() {
+    if (_isLoading) {
+      return;
+    }
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
     final Patient? selected = _selected;
-    if (_isLoading || selected == null) {
+    if (selected == null) {
       return;
     }
     Navigator.of(context).pop(selected);
   }
 
+  List<AppSelectOption<String>> _patientSelectOptions() {
+    final Map<String, Patient> byKey = <String, Patient>{
+      for (final Patient patient in _patients)
+        if (_patientOptionValue(patient) != null)
+          _patientOptionValue(patient)!: patient,
+    };
+    final Patient? selected = _selected;
+    final String? selectedKey = _patientOptionValue(selected);
+    if (selected != null && selectedKey != null) {
+      byKey[selectedKey] = selected;
+    }
+    return <AppSelectOption<String>>[
+      for (final Patient patient in byKey.values)
+        AppSelectOption<String>(
+          value: _patientOptionValue(patient)!,
+          label: _patientOptionLabel(patient),
+          searchText: <String?>[
+            patient.effectiveDisplayName,
+            patient.effectiveIdentifier,
+            patient.primaryPhone,
+            patient.publicId,
+            patient.id,
+          ].whereType<String>().join(' '),
+        ),
+    ];
+  }
+
+  Patient? _patientByOptionValue(String? value) {
+    final String? key = value?.trim();
+    if (key == null || key.isEmpty) {
+      return null;
+    }
+    final Patient? selected = _selected;
+    if (_patientOptionValue(selected) == key) {
+      return selected;
+    }
+    for (final Patient patient in _patients) {
+      if (_patientOptionValue(patient) == key) {
+        return patient;
+      }
+    }
+    return null;
+  }
+
+  static String? _patientOptionValue(Patient? patient) {
+    if (patient == null) {
+      return null;
+    }
+    final String? publicId = patient.publicId?.trim();
+    if (publicId != null && publicId.isNotEmpty) {
+      return publicId;
+    }
+    final String id = patient.id.trim();
+    return id.isEmpty ? null : id;
+  }
+
+  static String _patientOptionLabel(Patient patient) {
+    final String name = patient.effectiveDisplayName.trim();
+    final String? identifier = patient.effectiveIdentifier?.trim();
+    if (identifier == null || identifier.isEmpty) {
+      return name;
+    }
+    if (name.isEmpty) {
+      return identifier;
+    }
+    return '$name • $identifier';
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
     final bool canConfirm = !_isLoading && _selected != null;
+    final String? emptyHelper =
+        !_isLoading && _failure == null && _patients.isEmpty
+        ? l10n.receptionPatientPickerEmpty
+        : null;
 
     return AppDialog(
       title: Text(l10n.receptionPatientPickerTitle),
@@ -207,7 +317,8 @@ class _ReceptionPatientPickerDialogState
       pinActionsToBottom: true,
       closeEnabled: !_isLoading,
       maxWidth: 560,
-      content: AppFormSection(
+      content: AppFormShell(
+        formKey: _formKey,
         density: AppFormSectionDensity.compact,
         children: <Widget>[
           if (_failure != null)
@@ -215,55 +326,17 @@ class _ReceptionPatientPickerDialogState
               context: context,
               failure: _failure!,
             ),
-          AppTextField(
-            controller: _searchController,
+          AppSelectField<String>.searchable(
+            value: _patientOptionValue(_selected),
             labelText: l10n.receptionPatientPickerSearchHint,
-            prefixIcon: const Icon(AppActionIcons.search),
-            onChanged: (String value) {
-              _debounce?.cancel();
-              _debounce = Timer(const Duration(milliseconds: 250), () {
-                unawaited(_search(value));
-              });
-            },
+            helperText: emptyHelper,
+            isRequired: true,
+            isLoading: _isLoading,
+            options: _patientSelectOptions(),
+            validator: AppValidators.requiredValue(l10n.validationRequired),
+            onSearchTextChanged: _scheduleSearch,
+            onChanged: _selectPatient,
           ),
-          if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.all(12),
-              child: Center(child: AppLoadingIndicator.compact()),
-            )
-          else if (_patients.isEmpty)
-            Text(
-              l10n.receptionPatientPickerEmpty,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            )
-          else
-            ..._patients.map((Patient patient) {
-              final bool selected = _selected?.id == patient.id;
-              return ListTile(
-                contentPadding: EdgeInsets.zero,
-                selected: selected,
-                leading: Icon(
-                  selected
-                      ? Icons.radio_button_checked
-                      : Icons.radio_button_off,
-                  color: selected
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurfaceVariant,
-                ),
-                title: Text(patient.effectiveDisplayName),
-                subtitle: Text(
-                  patient.publicId ?? patient.id,
-                  style: theme.textTheme.bodySmall,
-                ),
-                onTap: () {
-                  setState(() {
-                    _selected = patient;
-                  });
-                },
-              );
-            }),
         ],
       ),
       actions: <Widget>[

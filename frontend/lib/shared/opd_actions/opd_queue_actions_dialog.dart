@@ -55,9 +55,10 @@ class QueueActionsDialog extends ConsumerWidget {
 
     return AppDialog(
       title: Text(l10n.opdQueueActionsTitle),
-      icon: const Icon(Icons.queue_outlined),
+      icon: const Icon(AppActionIcons.queue),
       scrollable: true,
       pinActionsToBottom: true,
+      closeEnabled: true,
       maxWidth: 680,
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
@@ -93,21 +94,21 @@ class QueueActionsDialog extends ConsumerWidget {
                 AppPermissionActionItem(
                   requirement: opdFrontDeskActionRequirement,
                   label: l10n.opdPrioritizeAction,
-                  icon: Icons.priority_high_outlined,
+                  icon: AppActionIcons.priority,
                   fullWidth: true,
                   onPressed: () => _openPrioritize(context, ref),
                 ),
                 AppPermissionActionItem(
                   requirement: opdFrontDeskActionRequirement,
                   label: l10n.opdMoveQueueAction,
-                  icon: Icons.sync_alt_outlined,
+                  icon: AppActionIcons.move,
                   fullWidth: true,
                   onPressed: () => _openMove(context),
                 ),
                 AppPermissionActionItem(
                   requirement: opdFrontDeskActionRequirement,
                   label: l10n.opdStartConsultationAction,
-                  icon: Icons.play_arrow_outlined,
+                  icon: AppActionIcons.start,
                   variant: AppButtonVariant.primary,
                   fullWidth: true,
                   onPressed: () => _openStart(context, ref),
@@ -136,8 +137,8 @@ class QueueActionsDialog extends ConsumerWidget {
         description: l10n.opdPrioritizeQueueDescription,
         fieldLabel: l10n.opdFieldOptionalLabel(l10n.opdReasonLabel),
         submitLabel: l10n.opdPrioritizeAction,
-        submitLeadingIcon: Icons.priority_high_outlined,
-        icon: const Icon(Icons.priority_high_outlined),
+        submitLeadingIcon: AppActionIcons.priority,
+        icon: const Icon(AppActionIcons.priority),
         isRequired: false,
         onSubmit: (String reason) => ref
             .read(opdWorkspaceControllerProvider.notifier)
@@ -158,8 +159,8 @@ class QueueActionsDialog extends ConsumerWidget {
         title: l10n.opdStartConsultationAction,
         body: l10n.opdStartConsultationConfirmationMessage,
         submitLabel: l10n.opdStartConsultationAction,
-        submitLeadingIcon: Icons.play_arrow_outlined,
-        icon: const Icon(Icons.play_arrow_outlined),
+        submitLeadingIcon: AppActionIcons.start,
+        icon: const Icon(AppActionIcons.start),
         onConfirm: () => ref
             .read(opdWorkspaceControllerProvider.notifier)
             .startOpdFromQueue(entry),
@@ -244,8 +245,9 @@ class _MoveQueueDialogState extends ConsumerState<_MoveQueueDialog> {
 
     return AppDialog(
       title: Text(l10n.opdMoveQueueTitle),
-      icon: const Icon(Icons.sync_alt_outlined),
+      icon: const Icon(AppActionIcons.move),
       scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: !isBusy,
       maxWidth: 680,
       content: Form(
@@ -298,7 +300,8 @@ class _MoveQueueDialogState extends ConsumerState<_MoveQueueDialog> {
                 l10n.opdSearchProviderLabel,
               ),
               enabled: !isBusy,
-              isLoading: isLoadingProviders,
+              // Provider loading is shown via [AppLoadingIndicator] above —
+              // do not use AppSelectField.isLoading (raw Material spinner).
               onChanged: (String? value) {
                 setState(() {
                   _providerId = value;
@@ -313,7 +316,7 @@ class _MoveQueueDialogState extends ConsumerState<_MoveQueueDialog> {
         l10n.opdMoveQueueAction,
         isBusy,
         isBusy ? null : _submit,
-        submitLeadingIcon: Icons.sync_alt_outlined,
+        submitLeadingIcon: AppActionIcons.move,
       ),
     );
   }

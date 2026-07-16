@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -116,15 +117,11 @@ BedSetupStatus? roomsBedsStatusFromFilter(String? value) {
 }
 
 String roomsBedsTransferActionForStatus(String? transferStatus) {
-  return switch ((transferStatus ?? '').trim().toUpperCase()) {
-    'APPROVED' => 'START',
-    'IN_PROGRESS' => 'COMPLETE',
-    _ => 'APPROVE',
-  };
+  return appTransferDefaultActionForStatus(transferStatus);
 }
 
 bool roomsBedsTransferRequiresDestinationBed(String action) {
-  return action.trim().toUpperCase() == 'COMPLETE';
+  return appTransferRequiresDestinationBed(action);
 }
 
 bool roomsBedsSectionMatchesStatus(

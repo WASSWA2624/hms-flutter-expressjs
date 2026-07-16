@@ -10,7 +10,7 @@ import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.da
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/domain/repositories/ipd_repository.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
-import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_transfer_request_dialog.dart';
+import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_transfer_update_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -25,13 +25,19 @@ const IpdAdmissionSummary _admissionSummary = IpdAdmissionSummary(
   displayId: 'ADM-1',
   patientId: 'pat-1',
   patientDisplayName: 'Jane Doe',
-  stage: 'ADMITTED_IN_BED',
+  stage: 'TRANSFER_REQUESTED',
+  transferStatus: 'REQUESTED',
   admissionStatus: 'ADMITTED',
   hasActiveBed: true,
+  openTransferRequestId: 'tr-1',
 );
 
 const IpdAdmissionDetail _admission = IpdAdmissionDetail(
   summary: _admissionSummary,
+  openTransferRequest: IpdTransferRequest(
+    id: 'tr-1',
+    status: 'REQUESTED',
+  ),
   activeBedAssignment: IpdBedAssignment(
     id: 'ba-1',
     bed: IpdBedOption(
@@ -43,10 +49,19 @@ const IpdAdmissionDetail _admission = IpdAdmissionDetail(
   ),
 );
 
-const List<IpdWardOption> _wards = <IpdWardOption>[
-  IpdWardOption(id: 'ward-a', name: 'Ward A', wardType: 'GENERAL'),
-  IpdWardOption(id: 'ward-b', name: 'Ward B', wardType: 'SURGICAL'),
-  IpdWardOption(id: 'ward-c', name: 'Ward C', wardType: 'ICU'),
+const List<IpdBedOption> _beds = <IpdBedOption>[
+  IpdBedOption(
+    id: 'bed-2',
+    label: 'Bed 2',
+    wardId: 'ward-b',
+    wardName: 'Ward B',
+  ),
+  IpdBedOption(
+    id: 'bed-3',
+    label: 'Bed 3',
+    wardId: 'ward-c',
+    wardName: 'Ward C',
+  ),
 ];
 
 void main() {
@@ -56,17 +71,20 @@ void main() {
   });
 
   testWidgets(
-    'uses AppTransferRequestDialog with Cancel and Request transfer chrome',
+    'uses AppTransferUpdateDialog with Cancel and Edit chrome',
     (WidgetTester tester) async {
       final _MockIpdRepository repository = _MockIpdRepository();
+      _stubWorkspaceLoad(repository);
+
       await _pumpDialog(tester, repository: repository);
 
-      expect(find.byType(AppTransferRequestDialog), findsOneWidget);
+      expect(find.byType(AppTransferUpdateDialog), findsOneWidget);
       expect(find.byType(AppDialog), findsOneWidget);
-      expect(find.text('REQUEST TRANSFER'), findsOneWidget);
-      expect(find.text('Request transfer'), findsOneWidget);
+      expect(find.text('MANAGE TRANSFER'), findsOneWidget);
+      expect(find.text('Edit'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.transfer), findsWidgets);
+      expect(find.byIcon(AppActionIcons.edit), findsWidgets);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
 
       final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
@@ -75,18 +93,10 @@ void main() {
       expect(dialog.pinActionsToBottom, isTrue);
 
       final AppSelectField<String> field = tester.widget<AppSelectField<String>>(
-        find.byType(AppSelectField<String>),
+        find.byType(AppSelectField<String>).first,
       );
-      expect(field.labelText, 'Target ward');
-      expect(field.hintText, 'Select a ward');
-      expect(
-        field.options.map((AppSelectOption<String> option) => option.value),
-        <String>['ward-b', 'ward-c'],
-      );
-      expect(field.options.map((AppSelectOption<String> o) => o.label), [
-        'Ward B | Surgical',
-        'Ward C | Icu',
-      ]);
+      expect(field.labelText, 'Transfer action');
+      expect(field.value, AppTransferUpdateActions.approve);
     },
   );
 
@@ -94,12 +104,14 @@ void main() {
     WidgetTester tester,
   ) async {
     final _MockIpdRepository repository = _MockIpdRepository();
+    _stubWorkspaceLoad(repository);
+
     await _pumpDialog(tester, repository: repository);
 
     final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
     expect(dialog.title, isA<Text>());
-    expect((dialog.title! as Text).data, 'Request transfer');
-    expect(find.text('REQUEST TRANSFER'), findsOneWidget);
+    expect((dialog.title! as Text).data, 'Manage transfer');
+    expect(find.text('MANAGE TRANSFER'), findsOneWidget);
     expect(find.text('JANE DOE'), findsNothing);
     expect(find.text('Jane Doe'), findsNothing);
   });
@@ -108,6 +120,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final _MockIpdRepository repository = _MockIpdRepository();
+    _stubWorkspaceLoad(repository);
     bool? result;
 
     await _pumpDialog(
@@ -117,17 +130,18 @@ void main() {
     );
 
     await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
-    await tester.pumpAndSettle();
+    await _pumpDialogFrames(tester);
 
     expect(result, isFalse);
-    verifyNever(() => repository.requestTransfer(any(), any()));
+    verifyNever(() => repository.updateTransfer(any(), any()));
   });
 
   testWidgets('failure keeps the dialog open and patches nothing', (
     WidgetTester tester,
   ) async {
     final _MockIpdRepository repository = _MockIpdRepository();
-    when(() => repository.requestTransfer(any(), any())).thenAnswer(
+    _stubWorkspaceLoad(repository);
+    when(() => repository.updateTransfer(any(), any())).thenAnswer(
       (_) async => const Result<IpdAdmissionDetail>.failure(
         AppFailure.network(),
       ),
@@ -140,37 +154,32 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    final AppSelectField<String> field = tester.widget<AppSelectField<String>>(
-      find.byType(AppSelectField<String>),
-    );
-    field.onChanged?.call('ward-b');
-    await tester.pump();
-
-    await tester.tap(find.widgetWithText(AppButton, 'Request transfer'));
-    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(AppButton, 'Edit'));
+    await _pumpDialogFrames(tester);
 
     expect(result, isNull);
     expect(find.byType(AppDialog), findsOneWidget);
-    expect(find.text('Request transfer'), findsOneWidget);
-    verify(() => repository.requestTransfer('adm-1', any())).called(1);
+    expect(find.text('Edit'), findsOneWidget);
+    verify(() => repository.updateTransfer('adm-1', any())).called(1);
   });
 
-  testWidgets('successful save pops true after persisted transfer request', (
+  testWidgets('successful save pops true after persisted transfer update', (
     WidgetTester tester,
   ) async {
     final _MockIpdRepository repository = _MockIpdRepository();
     Map<String, Object?>? payload;
-    when(() => repository.requestTransfer(any(), any())).thenAnswer((
+    _stubWorkspaceLoad(repository);
+    when(() => repository.updateTransfer(any(), any())).thenAnswer((
       Invocation invocation,
     ) async {
       payload = invocation.positionalArguments[1] as Map<String, Object?>;
-      final IpdAdmissionSummary transferred = IpdAdmissionSummary(
+      final IpdAdmissionSummary approved = IpdAdmissionSummary(
         id: 'adm-1',
         displayId: 'ADM-1',
         patientId: 'pat-1',
         patientDisplayName: 'Jane Doe',
         stage: 'TRANSFER_REQUESTED',
-        transferStatus: 'REQUESTED',
+        transferStatus: 'APPROVED',
         admissionStatus: 'ADMITTED',
         hasActiveBed: true,
         openTransferRequestId: 'tr-1',
@@ -179,7 +188,7 @@ void main() {
         (Invocation listInvocation) async =>
             Result<AppPage<IpdAdmissionSummary>>.success(
               AppPage<IpdAdmissionSummary>(
-                items: <IpdAdmissionSummary>[transferred],
+                items: <IpdAdmissionSummary>[approved],
                 request:
                     (listInvocation.positionalArguments.single
                             as IpdAdmissionQuery)
@@ -190,10 +199,10 @@ void main() {
       );
       return Result<IpdAdmissionDetail>.success(
         IpdAdmissionDetail(
-          summary: transferred,
+          summary: approved,
           openTransferRequest: const IpdTransferRequest(
             id: 'tr-1',
-            status: 'REQUESTED',
+            status: 'APPROVED',
           ),
         ),
       );
@@ -206,21 +215,84 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    final AppSelectField<String> field = tester.widget<AppSelectField<String>>(
-      find.byType(AppSelectField<String>),
-    );
-    field.onChanged?.call('ward-b');
-    await tester.pump();
-
-    await tester.tap(find.widgetWithText(AppButton, 'Request transfer'));
-    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(AppButton, 'Edit'));
+    await _pumpDialogFrames(tester);
 
     expect(result, isTrue);
     expect(find.byType(AppDialog), findsNothing);
-    expect(payload?['from_ward_id'], 'ward-a');
-    expect(payload?['to_ward_id'], 'ward-b');
-    expect(payload?['requested_at'], isA<String>());
-    verify(() => repository.requestTransfer('adm-1', any())).called(1);
+    expect(payload?['action'], AppTransferUpdateActions.approve);
+    expect(payload?['transfer_request_id'], 'tr-1');
+    verify(() => repository.updateTransfer('adm-1', any())).called(1);
+  });
+
+  testWidgets('defaults to COMPLETE for in-progress transfer and requires bed', (
+    WidgetTester tester,
+  ) async {
+    final _MockIpdRepository repository = _MockIpdRepository();
+    Map<String, Object?>? payload;
+    _stubWorkspaceLoad(repository);
+    when(() => repository.updateTransfer(any(), any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      payload = invocation.positionalArguments[1] as Map<String, Object?>;
+      return const Result<IpdAdmissionDetail>.success(
+        IpdAdmissionDetail(
+          summary: IpdAdmissionSummary(
+            id: 'adm-1',
+            displayId: 'ADM-1',
+            patientId: 'pat-1',
+            patientDisplayName: 'Jane Doe',
+            stage: 'ADMITTED_IN_BED',
+            admissionStatus: 'ADMITTED',
+            hasActiveBed: true,
+          ),
+        ),
+      );
+    });
+    bool? result;
+
+    await _pumpDialog(
+      tester,
+      repository: repository,
+      admission: const IpdAdmissionDetail(
+        summary: IpdAdmissionSummary(
+          id: 'adm-1',
+          displayId: 'ADM-1',
+          patientId: 'pat-1',
+          patientDisplayName: 'Jane Doe',
+          stage: 'TRANSFER_IN_PROGRESS',
+          transferStatus: 'IN_PROGRESS',
+          admissionStatus: 'ADMITTED',
+          hasActiveBed: true,
+          openTransferRequestId: 'tr-1',
+        ),
+        openTransferRequest: IpdTransferRequest(
+          id: 'tr-1',
+          status: 'IN_PROGRESS',
+        ),
+      ),
+      onResult: (bool? value) => result = value,
+    );
+
+    final AppSelectField<String> actionField =
+        tester.widget<AppSelectField<String>>(
+      find.byType(AppSelectField<String>).first,
+    );
+    expect(actionField.value, AppTransferUpdateActions.complete);
+    expect(find.text('Destination bed'), findsOneWidget);
+
+    final AppSelectField<String> bedField = tester.widget<AppSelectField<String>>(
+      find.byType(AppSelectField<String>).at(1),
+    );
+    bedField.onChanged?.call('bed-2');
+    await tester.pump();
+
+    await tester.tap(find.widgetWithText(AppButton, 'Edit'));
+    await _pumpDialogFrames(tester);
+
+    expect(result, isTrue);
+    expect(payload?['action'], AppTransferUpdateActions.complete);
+    expect(payload?['to_bed_id'], 'bed-2');
   });
 
   testWidgets('remains usable on a compact dark high-text-scale surface', (
@@ -232,6 +304,8 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final _MockIpdRepository repository = _MockIpdRepository();
+    _stubWorkspaceLoad(repository);
+
     await _pumpDialog(
       tester,
       repository: repository,
@@ -240,22 +314,59 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
-    expect(find.byType(AppTransferRequestDialog), findsOneWidget);
-    expect(find.text('REQUEST TRANSFER'), findsOneWidget);
+    expect(find.byType(AppTransferUpdateDialog), findsOneWidget);
+    expect(find.text('MANAGE TRANSFER'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
-    expect(find.text('Request transfer'), findsOneWidget);
+    expect(find.text('Edit'), findsOneWidget);
   });
+}
+
+void _stubWorkspaceLoad(_MockIpdRepository repository) {
+  when(() => repository.listAdmissions(any())).thenAnswer(
+    (Invocation invocation) async => Result<AppPage<IpdAdmissionSummary>>.success(
+      AppPage<IpdAdmissionSummary>(
+        items: const <IpdAdmissionSummary>[_admissionSummary],
+        request:
+            (invocation.positionalArguments.single as IpdAdmissionQuery)
+                .pageRequest,
+        totalItemCount: 1,
+      ),
+    ),
+  );
+  when(() => repository.listWards(search: any(named: 'search'))).thenAnswer(
+    (_) async => const Result<List<IpdWardOption>>.success(<IpdWardOption>[]),
+  );
+  when(
+    () => repository.listBeds(
+      search: any(named: 'search'),
+      status: any(named: 'status'),
+      wardId: any(named: 'wardId'),
+    ),
+  ).thenAnswer(
+    (_) async => const Result<List<IpdBedOption>>.success(_beds),
+  );
+  when(
+    () => repository.listBedBoard(
+      wardId: any(named: 'wardId'),
+      status: any(named: 'status'),
+      statusAny: any(named: 'statusAny'),
+      limit: any(named: 'limit'),
+    ),
+  ).thenAnswer(
+    (_) async => const Result<List<IpdBedBoardEntry>>.success(
+      <IpdBedBoardEntry>[],
+    ),
+  );
 }
 
 Future<void> _pumpDialog(
   WidgetTester tester, {
-  required IpdRepository repository,
+  required _MockIpdRepository repository,
+  IpdAdmissionDetail admission = _admission,
   ValueChanged<bool?>? onResult,
   bool dark = false,
   TextScaler textScaler = TextScaler.noScaling,
 }) async {
-  _stubWorkspaceLoad(repository as _MockIpdRepository);
-
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -281,7 +392,7 @@ Future<void> _pumpDialog(
             builder: (BuildContext context, WidgetRef ref, _) {
               return Center(
                 child: AppButton.primary(
-                  label: 'Open transfer',
+                  label: 'Open transfer update',
                   leadingIcon: AppActionIcons.transfer,
                   onPressed: () async {
                     await ref.read(ipdWorkspaceControllerProvider.future);
@@ -291,9 +402,9 @@ Future<void> _pumpDialog(
                     final bool? value = await showAppDialog<bool>(
                       context: context,
                       barrierDismissible: false,
-                      builder: (_) => const TransferRequestDialog(
-                        admission: _admission,
-                        wards: _wards,
+                      builder: (_) => TransferUpdateDialog(
+                        admission: admission,
+                        beds: _beds,
                       ),
                     );
                     onResult?.call(value);
@@ -307,44 +418,12 @@ Future<void> _pumpDialog(
     ),
   );
   await tester.pumpAndSettle();
-  await tester.tap(find.widgetWithText(AppButton, 'Open transfer'));
+  await tester.tap(find.widgetWithText(AppButton, 'Open transfer update'));
   await tester.pumpAndSettle();
 }
 
-void _stubWorkspaceLoad(_MockIpdRepository repository) {
-  when(() => repository.listAdmissions(any())).thenAnswer(
-    (Invocation invocation) async => Result<AppPage<IpdAdmissionSummary>>.success(
-      AppPage<IpdAdmissionSummary>(
-        items: const <IpdAdmissionSummary>[_admissionSummary],
-        request:
-            (invocation.positionalArguments.single as IpdAdmissionQuery)
-                .pageRequest,
-        totalItemCount: 1,
-      ),
-    ),
-  );
-  when(() => repository.listWards(search: any(named: 'search'))).thenAnswer(
-    (_) async => const Result<List<IpdWardOption>>.success(_wards),
-  );
-  when(
-    () => repository.listBeds(
-      search: any(named: 'search'),
-      status: any(named: 'status'),
-      wardId: any(named: 'wardId'),
-    ),
-  ).thenAnswer(
-    (_) async => const Result<List<IpdBedOption>>.success(<IpdBedOption>[]),
-  );
-  when(
-    () => repository.listBedBoard(
-      wardId: any(named: 'wardId'),
-      status: any(named: 'status'),
-      statusAny: any(named: 'statusAny'),
-      limit: any(named: 'limit'),
-    ),
-  ).thenAnswer(
-    (_) async => const Result<List<IpdBedBoardEntry>>.success(
-      <IpdBedBoardEntry>[],
-    ),
-  );
+Future<void> _pumpDialogFrames(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 50));
+  await tester.pumpAndSettle();
 }

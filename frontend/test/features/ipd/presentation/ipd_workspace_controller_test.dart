@@ -6,10 +6,15 @@ import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.da
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/domain/repositories/ipd_repository.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
+import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
+import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
+import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockIpdRepository extends Mock implements IpdRepository {}
+
+class _MockPatientRepository extends Mock implements PatientRepository {}
 
 IpdAdmissionSummary _summary({
   String id = 'adm-1',
@@ -34,12 +39,16 @@ void main() {
   setUpAll(() {
     registerFallbackValue(const IpdAdmissionQuery());
     registerFallbackValue(<String, Object?>{});
+    registerFallbackValue(
+      const PatientListQuery(pageRequest: AppPageRequest(pageSize: 12)),
+    );
   });
 
   ProviderContainer buildContainer(
     _MockIpdRepository repo, {
     List<IpdAdmissionSummary> admissions = const <IpdAdmissionSummary>[],
     List<IpdBedBoardEntry> beds = const <IpdBedBoardEntry>[],
+    PatientRepository? patientRepository,
   }) {
     when(() => repo.listAdmissions(any())).thenAnswer(
       (invocation) async => Result<AppPage<IpdAdmissionSummary>>.success(
@@ -73,7 +82,11 @@ void main() {
     ).thenAnswer((_) async => Result<List<IpdBedBoardEntry>>.success(beds));
 
     final ProviderContainer container = ProviderContainer(
-      overrides: [ipdRepositoryProvider.overrideWithValue(repo)],
+      overrides: [
+        ipdRepositoryProvider.overrideWithValue(repo),
+        if (patientRepository != null)
+          patientRepositoryProvider.overrideWithValue(patientRepository),
+      ],
     );
     addTearDown(container.dispose);
     return container;
@@ -194,6 +207,45 @@ void main() {
     expect(state!.selectedAdmission, isNotNull);
     expect(state.selectedAdmission!.summary.id, 'adm-1');
     verify(() => repo.startAdmission(any())).called(1);
+  });
+
+  test('searchPatients delegates to the patient repository', () async {
+    final _MockIpdRepository repo = _MockIpdRepository();
+    final _MockPatientRepository patients = _MockPatientRepository();
+    final ProviderContainer container = buildContainer(
+      repo,
+      patientRepository: patients,
+    );
+    when(() => patients.listPatients(any())).thenAnswer(
+      (Invocation invocation) async => Result<AppPage<Patient>>.success(
+        AppPage<Patient>(
+          items: const <Patient>[
+            Patient(id: 'pat-1', displayName: 'Ada Active'),
+          ],
+          request: (invocation.positionalArguments.single as PatientListQuery)
+              .pageRequest,
+          totalItemCount: 1,
+        ),
+      ),
+    );
+
+    await container.read(ipdWorkspaceControllerProvider.future);
+    final IpdWorkspaceController controller = container.read(
+      ipdWorkspaceControllerProvider.notifier,
+    );
+
+    final Result<AppPage<Patient>> result = await controller.searchPatients(
+      const PatientListQuery(
+        search: 'Ada',
+        pageRequest: AppPageRequest(pageSize: 12),
+      ),
+    );
+
+    expect(
+      result.when(success: (AppPage<Patient> page) => page.items.single.id, failure: (_) => null),
+      'pat-1',
+    );
+    verify(() => patients.listPatients(any())).called(1);
   });
 
   test('approveAdmission refreshes admission detail', () async {
@@ -423,20 +475,94 @@ void main() {
     expect(state.transferPendingCount, 0);
   });
 
-  test('admissionQueueCount includes requested and pending bed stages', () {
-    final IpdWorkspaceState state = IpdWorkspaceState(
-      query: const IpdAdmissionQuery(),
-      admissions: AppPage<IpdAdmissionSummary>(
-        items: <IpdAdmissionSummary>[
-          _summary(stage: 'ADMISSION_REQUESTED'),
-          _summary(),
-          _summary(stage: 'ADMITTED_IN_BED', id: 'adm-3'),
-        ],
-        request: const AppPageRequest(),
-        totalItemCount: 3,
-      ),
+  test('updateTransfer patches admission transfer status', () async {
+    final _MockIpdRepository repo = _MockIpdRepository();
+    final IpdAdmissionSummary requested = IpdAdmissionSummary(
+      id: 'adm-1',
+      displayId: 'ADM-1',
+      patientId: 'pat-1',
+      patientDisplayName: 'Jane Doe',
+      stage: 'TRANSFER_REQUESTED',
+      transferStatus: 'REQUESTED',
+      admissionStatus: 'ADMITTED',
+      openTransferRequestId: 'tr-1',
+    );
+    final IpdAdmissionSummary approved = IpdAdmissionSummary(
+      id: 'adm-1',
+      displayId: 'ADM-1',
+      patientId: 'pat-1',
+      patientDisplayName: 'Jane Doe',
+      stage: 'TRANSFER_REQUESTED',
+      transferStatus: 'APPROVED',
+      admissionStatus: 'ADMITTED',
+      openTransferRequestId: 'tr-1',
+    );
+    Map<String, Object?>? payload;
+    final ProviderContainer container = buildContainer(
+      repo,
+      admissions: <IpdAdmissionSummary>[requested],
+    );
+    when(() => repo.updateTransfer(any(), any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      payload = invocation.positionalArguments[1] as Map<String, Object?>;
+      when(() => repo.listAdmissions(any())).thenAnswer(
+        (Invocation listInvocation) async =>
+            Result<AppPage<IpdAdmissionSummary>>.success(
+              AppPage<IpdAdmissionSummary>(
+                items: <IpdAdmissionSummary>[approved],
+                request:
+                    (listInvocation.positionalArguments.single
+                            as IpdAdmissionQuery)
+                        .pageRequest,
+                totalItemCount: 1,
+              ),
+            ),
+      );
+      return Result<IpdAdmissionDetail>.success(
+        IpdAdmissionDetail(
+          summary: approved,
+          openTransferRequest: const IpdTransferRequest(
+            id: 'tr-1',
+            status: 'APPROVED',
+          ),
+        ),
+      );
+    });
+
+    await container.read(ipdWorkspaceControllerProvider.future);
+    final IpdWorkspaceController controller = container.read(
+      ipdWorkspaceControllerProvider.notifier,
     );
 
-    expect(state.admissionQueueCount, 2);
+    final failure = await controller.updateTransfer(
+      admission: requested,
+      action: 'APPROVE',
+      transferRequestId: 'tr-1',
+    );
+    expect(failure, isNull);
+    expect(payload?['action'], 'APPROVE');
+    expect(payload?['transfer_request_id'], 'tr-1');
+
+    await Future<void>.delayed(Duration.zero);
+
+    final IpdWorkspaceState? state = readState(container);
+    expect(state!.selectedAdmission?.openTransferRequest?.status, 'APPROVED');
+    expect(state.admissions.items.first.transferStatus, 'APPROVED');
+    verify(() => repo.updateTransfer('adm-1', any())).called(1);
   });
-}
+
+  test('updateTransfer failure patches nothing', () async {
+    final _MockIpdRepository repo = _MockIpdRepository();
+    final IpdAdmissionSummary requested = IpdAdmissionSummary(
+      id: 'adm-1',
+      displayId: 'ADM-1',
+      patientId: 'pat-1',
+      patientDisplayName: 'Jane Doe',
+      stage: 'TRANSFER_REQUESTED',
+      transferStatus: 'REQUESTED',
+      admissionStatus: 'ADMITTED',
+      openTransferRequestId: 'tr-1',
+    );
+    final ProviderContainer container = buildContainer(
+   

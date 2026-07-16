@@ -61,4 +61,16 @@ abstract final class AppActionIcons {
 
   /// Ward / unit transfer request actions (ICU, IPD, rooms & beds).
   static const IconData transfer = Icons.swap_horiz_outlined;
+
+  /// Consultation / cashier payment and billing quick actions.
+  static const IconData payment = Icons.payments_outlined;
+
+  /// Visit-queue / worklist row actions hub.
+  static const IconData queue = Icons.queue_outlined;
+
+  /// Move / reassign a queue entry (stage or provider).
+  static const IconData move = Icons.sync_alt_outlined;
+
+  /// Start consultation / begin an encounter from queue.
+  static const IconData start = Icons.play_arrow_outlined;
 }

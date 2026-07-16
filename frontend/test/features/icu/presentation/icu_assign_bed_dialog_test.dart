@@ -3,19 +3,19 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/icu/data/repositories/icu_repository_impl.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/domain/repositories/icu_repository.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
-import 'package:hosspi_hms/features/icu/presentation/widgets/icu_action_dialogs.dart';
-import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_admission_action_dialog.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../helpers/test_harness.dart';
 
 class _MockIcuRepository extends Mock implements IcuRepository {}
 
@@ -43,23 +43,35 @@ const IcuPatientDetail _assignedDetail = IcuPatientDetail(
   summary: _assignedSummary,
 );
 
-const IcuBedBoard _bedBoard = IcuBedBoard(
-  wards: <IcuBedWard>[
-    IcuBedWard(id: 'ward-icu-1', name: 'Medical ICU', wardType: 'ICU'),
-  ],
-  beds: <IcuBed>[
-    IcuBed(
-      id: 'BED0000001',
-      label: 'Bed A',
-      status: 'AVAILABLE',
-      wardId: 'ward-icu-1',
-      wardName: 'Medical ICU',
-      wardType: 'ICU',
-      roomId: 'room-1',
-      roomName: 'Room 1',
-    ),
-  ],
-);
+/// Mirrors the ICU assign-bed dialog mapping into the shared admission picker.
+const ClinicalActionReferenceData _icuAssignBedReferenceData =
+    ClinicalActionReferenceData(
+      wards: <ClinicalActionCatalogOption>[
+        ClinicalActionCatalogOption(
+          id: 'ward-icu-1',
+          name: 'Medical ICU',
+          category: 'ICU',
+          status: 'ACTIVE',
+        ),
+      ],
+      rooms: <ClinicalActionCatalogOption>[
+        ClinicalActionCatalogOption(
+          id: 'room-1',
+          name: 'Room 1',
+          parentId: 'ward-icu-1',
+        ),
+      ],
+      availableBeds: <ClinicalActionCatalogOption>[
+        ClinicalActionCatalogOption(
+          id: 'BED0000001',
+          name: 'Bed A',
+          status: 'AVAILABLE',
+          parentId: 'ward-icu-1',
+          secondaryId: 'room-1',
+          secondaryText: 'Medical ICU · Room 1 · Bed A',
+        ),
+      ],
+    );
 
 void main() {
   setUpAll(() {
@@ -88,10 +100,12 @@ void main() {
         return const Result<IcuPatientDetail>.success(_assignedDetail);
       });
       when(() => repository.loadBedBoard()).thenAnswer(
-        (_) async => Result<IcuBedBoard>.success(
+        (_) async => const Result<IcuBedBoard>.success(
           IcuBedBoard(
-            wards: _bedBoard.wards,
-            beds: const <IcuBed>[
+            wards: <IcuBedWard>[
+              IcuBedWard(id: 'ward-icu-1', name: 'Medical ICU', wardType: 'ICU'),
+            ],
+            beds: <IcuBed>[
               IcuBed(
                 id: 'BED0000001',
                 label: 'Bed A',
@@ -186,18 +200,22 @@ void main() {
   });
 
   testWidgets(
-    'assign bed dialog reuses ClinicalAdmissionActionDialog with Cancel/primary',
+    'ICU assign-bed surface reuses ClinicalAdmissionActionDialog shell',
     (WidgetTester tester) async {
-      final _MockIcuRepository repository = _MockIcuRepository();
-      _stubInitialLoad(repository);
-      when(() => repository.loadBedBoard()).thenAnswer(
-        (_) async => const Result<IcuBedBoard>.success(_bedBoard),
+      await pumpLocalizedWidget(
+        tester,
+        ClinicalAdmissionActionDialog(
+          title: 'Assign ICU bed',
+          submitLabel: 'Assign ICU bed',
+          submitLeadingIcon: Icons.bed_outlined,
+          initialMaximized: false,
+          maxWidth: 560,
+          referenceData: _icuAssignBedReferenceData,
+          onSubmit: (_) async => null,
+        ),
+        size: const Size(900, 800),
+        padding: EdgeInsets.zero,
       );
-
-      final ProviderContainer container = await _warmContainer(repository);
-      await _pumpOpenButton(tester, container);
-      await tester.tap(find.text('Open assign bed'));
-      await _pumpFrames(tester);
 
       expect(find.byType(ClinicalAdmissionActionDialog), findsOneWidget);
       expect(find.text('ASSIGN ICU BED'), findsOneWidget);
@@ -211,28 +229,24 @@ void main() {
   );
 
   testWidgets(
-    'assign bed dialog stays open and preserves selection after failure',
+    'ICU assign-bed surface keeps dialog open after mutation failure',
     (WidgetTester tester) async {
-      final _MockIcuRepository repository = _MockIcuRepository();
-      _stubInitialLoad(repository);
-      when(() => repository.loadBedBoard()).thenAnswer(
-        (_) async => const Result<IcuBedBoard>.success(_bedBoard),
-      );
-      final Completer<AppFailure> completer = Completer<AppFailure>();
-      when(
-        () => repository.assignBed(
-          detail: any(named: 'detail'),
-          bedId: 'BED0000001',
-        ),
-      ).thenAnswer((_) async {
-        final AppFailure failure = await completer.future;
-        return Result<IcuPatientDetail>.failure(failure);
-      });
+      final Completer<AppFailure?> completer = Completer<AppFailure?>();
 
-      final ProviderContainer container = await _warmContainer(repository);
-      await _pumpOpenButton(tester, container);
-      await tester.tap(find.text('Open assign bed'));
-      await _pumpFrames(tester);
+      await pumpLocalizedWidget(
+        tester,
+        ClinicalAdmissionActionDialog(
+          title: 'Assign ICU bed',
+          submitLabel: 'Assign ICU bed',
+          submitLeadingIcon: Icons.bed_outlined,
+          initialMaximized: false,
+          maxWidth: 560,
+          referenceData: _icuAssignBedReferenceData,
+          onSubmit: (_) => completer.future,
+        ),
+        size: const Size(900, 800),
+        padding: EdgeInsets.zero,
+      );
 
       await _selectSearchableOption(tester, 0, 'Medical ICU');
       await _selectSearchableOption(tester, 1, 'Room 1');
@@ -245,71 +259,13 @@ void main() {
       expect(_button(tester, 'Assign ICU bed').isLoading, isTrue);
 
       completer.complete(const AppFailure.network());
-      await _pumpFrames(tester);
+      await tester.pumpAndSettle();
 
       expect(find.byType(ClinicalAdmissionActionDialog), findsOneWidget);
       expect(find.text('ASSIGN ICU BED'), findsOneWidget);
       expect(_button(tester, 'Cancel').enabled, isTrue);
     },
   );
-}
-
-Future<void> _pumpFrames(WidgetTester tester) async {
-  // Avoid pumpAndSettle: ICU workspace adaptive polling schedules forever.
-  await tester.pump();
-  await tester.pump(const Duration(milliseconds: 50));
-  await tester.pump(const Duration(milliseconds: 50));
-}
-
-Future<ProviderContainer> _warmContainer(_MockIcuRepository repository) async {
-  final ProviderContainer container = ProviderContainer(
-    overrides: [
-      icuRepositoryProvider.overrideWithValue(repository),
-    ],
-  );
-  addTearDown(container.dispose);
-  await container.read(icuWorkspaceControllerProvider.future);
-  final IcuWorkspaceController controller = container.read(
-    icuWorkspaceControllerProvider.notifier,
-  );
-  await controller.selectPatient(_summary);
-  await controller.loadBedBoard();
-  return container;
-}
-
-Future<void> _pumpOpenButton(
-  WidgetTester tester,
-  ProviderContainer container,
-) async {
-  tester.view.physicalSize = const Size(900, 800);
-  tester.view.devicePixelRatio = 1;
-  addTearDown(tester.view.resetPhysicalSize);
-  addTearDown(tester.view.resetDevicePixelRatio);
-
-  await tester.pumpWidget(
-    UncontrolledProviderScope(
-      container: container,
-      child: MaterialApp(
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        supportedLocales: AppLocalizations.supportedLocales,
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: Scaffold(
-          body: Builder(
-            builder: (BuildContext context) {
-              return AppButton.primary(
-                label: 'Open assign bed',
-                onPressed: () {
-                  unawaited(openIcuAssignBedDialog(context));
-                },
-              );
-            },
-          ),
-        ),
-      ),
-    ),
-  );
-  await tester.pump();
 }
 
 void _stubInitialLoad(
@@ -348,7 +304,7 @@ Future<void> _selectSearchableOption(
   String optionLabel,
 ) async {
   await tester.tap(find.byType(EditableText).at(fieldIndex));
-  await _pumpFrames(tester);
+  await tester.pumpAndSettle();
   await tester.tap(
     find
         .descendant(
@@ -357,7 +313,7 @@ Future<void> _selectSearchableOption(
         )
         .first,
   );
-  await _pumpFrames(tester);
+  await tester.pumpAndSettle();
 }
 
 AppButton _button(WidgetTester tester, String label) {
