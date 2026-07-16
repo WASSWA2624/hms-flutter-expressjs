@@ -18,10 +18,43 @@ import 'package:hosspi_hms/features/theater/presentation/pages/theater_workspace
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockTheaterRepository extends Mock implements TheaterRepository {}
+
+Finder _toolbarPrimary(String label) => find.descendant(
+  of: find.byType(AppTabToolbarPrimary),
+  matching: find.text(label),
+);
+
+Finder _toolbarAction(String label) => find.descendant(
+  of: find.byType(AppTabToolbarAction),
+  matching: find.text(label),
+);
+
+AppListTable<TheaterCase> _table(WidgetTester tester) {
+  return tester.widget<AppListTable<TheaterCase>>(
+    find.byType(AppListTable<TheaterCase>),
+  );
+}
+
+AppAccessPolicy _theaterReadOnlyPolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['NURSE']),
+      permissions: <AppPermission>{AppPermissions.clinicalRead},
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(
+          code: 'theatre-anesthesia',
+          licenseStatus: 'ACTIVE',
+        ),
+      ],
+    ),
+  );
+}
 
 const TheaterCase _scheduledCase = TheaterCase(
   id: 'TC-SCHED',
@@ -132,6 +165,7 @@ Future<GoRouter> _pumpTheaterWorkspace(
   TheaterBoardQuery? initialQuery,
   String initialLocation = '/theater',
   Size viewport = const Size(1440, 900),
+  AppAccessPolicy? accessPolicy,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -166,7 +200,9 @@ Future<GoRouter> _pumpTheaterWorkspace(
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
         ),
-        appAccessPolicyProvider.overrideWithValue(_theaterWritePolicy()),
+        appAccessPolicyProvider.overrideWithValue(
+          accessPolicy ?? _theaterWritePolicy(),
+        ),
       ],
       child: MaterialApp.router(
         routerConfig: router,
@@ -200,6 +236,7 @@ void main() {
     await _pumpTheaterWorkspace(tester, repository: repository);
 
     expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.byType(AppWorkspace), findsNothing);
     expect(find.byType(AppListTable<TheaterCase>), findsOneWidget);
     expect(find.textContaining('Scheduled'), findsWidgets);
     expect(find.textContaining('In theater'), findsWidgets);
@@ -208,7 +245,13 @@ void main() {
     expect(find.text('Sam Scheduled'), findsOneWidget);
     expect(find.text('Ira InTheater'), findsOneWidget);
     expect(find.text('Riley Recovery'), findsOneWidget);
-    expect(find.textContaining('Schedule case'), findsOneWidget);
+    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(_toolbarPrimary('Schedule case'), findsOneWidget);
+    expect(_toolbarAction('Refresh'), findsOneWidget);
+    expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+    expect(_table(tester).columnVisibilityLabel, 'Settings');
+    expect(find.text('Filters'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
   });
 
   testWidgets('switching tabs applies status/stage filters and updates URL', (
@@ -277,7 +320,8 @@ void main() {
       queries.any((TheaterCaseQuery q) => q.status == null && q.stage == null),
       isTrue,
     );
-    expect(find.textContaining('Schedule case'), findsOneWidget);
+    expect(_toolbarPrimary('Schedule case'), findsOneWidget);
+    expect(_toolbarAction('Refresh'), findsOneWidget);
   });
 
   testWidgets('deep link section=in-theater selects In theater tab', (
@@ -301,7 +345,8 @@ void main() {
     );
     expect(find.text('Ira InTheater'), findsOneWidget);
     expect(find.text('Sam Scheduled'), findsNothing);
-    expect(find.textContaining('Schedule case'), findsOneWidget);
+    expect(_toolbarPrimary('Schedule case'), findsOneWidget);
+    expect(_toolbarAction('Refresh'), findsOneWidget);
   });
 
   testWidgets('deep link focusCaseId still opens case detail dialog', (
@@ -318,6 +363,21 @@ void main() {
 
     expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
     verify(() => repository.getCase(any())).called(greaterThanOrEqualTo(1));
+  });
+
+  testWidgets('read-only users see refresh-only tab toolbar', (
+    WidgetTester tester,
+  ) async {
+    await _pumpTheaterWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: _theaterReadOnlyPolicy(),
+    );
+
+    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(_toolbarPrimary('Schedule case'), findsNothing);
+    expect(_toolbarPrimary('Refresh'), findsOneWidget);
+    expect(find.byType(AppTabToolbarAction), findsNothing);
   });
 
   testWidgets('AppTabStrip renders on narrow mobile viewport', (

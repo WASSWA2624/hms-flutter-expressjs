@@ -3,8 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
 import 'package:hosspi_hms/features/discharge/data/repositories/discharge_repository_impl.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
@@ -18,6 +23,29 @@ import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockDischargeRepository extends Mock implements DischargeRepository {}
+
+AppAccessPolicy _dischargeWritePolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['DOCTOR']),
+      permissions: <AppPermission>{
+        AppPermissions.clinicalRead,
+        AppPermissions.clinicalWrite,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(
+          code: 'inpatient-bed-management',
+          licenseStatus: 'ACTIVE',
+        ),
+        AppModuleEntitlement(
+          code: 'encounters-vitals',
+          licenseStatus: 'ACTIVE',
+        ),
+      ],
+    ),
+  );
+}
 
 const IpdAdmissionSummary _planned = IpdAdmissionSummary(
   id: 'adm-planned',
@@ -122,6 +150,7 @@ Future<void> _pumpDischargeWorkspace(
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
         ),
+        appAccessPolicyProvider.overrideWithValue(_dischargeWritePolicy()),
       ],
       child: MaterialApp.router(
         routerConfig: router,
@@ -161,6 +190,9 @@ void main() {
     expect(find.text('Bob Pending'), findsOneWidget);
     expect(find.text('Carol Completed'), findsOneWidget);
     expect(find.byTooltip('Start discharge plan'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.text('Filters'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
   });
 
   testWidgets('deep link section=planned selects Planned tab', (
@@ -179,6 +211,25 @@ void main() {
     expect(find.text('Bob Pending'), findsNothing);
     expect(find.text('Carol Completed'), findsNothing);
     expect(find.byTooltip('Manage clearance'), findsOneWidget);
+  });
+
+  testWidgets('deep link section=completed selects Completed tab with Print', (
+    WidgetTester tester,
+  ) async {
+    await _pumpDischargeWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/discharge?section=completed',
+      initialQuery: DischargeWorklistQuery.fromUri(
+        Uri.parse('/discharge?section=completed'),
+      ),
+    );
+
+    expect(find.text('Carol Completed'), findsOneWidget);
+    expect(find.text('Alice Planned'), findsNothing);
+    expect(find.text('Bob Pending'), findsNothing);
+    expect(find.byTooltip('Print discharge summary'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
   });
 
   testWidgets('switching tabs filters rows and updates primary action', (
@@ -258,6 +309,7 @@ void main() {
           initialSessionStateProvider.overrideWithValue(
             const SessionState.ready(),
           ),
+          appAccessPolicyProvider.overrideWithValue(_dischargeWritePolicy()),
         ],
         child: MaterialApp.router(
           routerConfig: router,

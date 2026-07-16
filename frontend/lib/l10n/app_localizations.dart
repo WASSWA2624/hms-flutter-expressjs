@@ -3565,7 +3565,7 @@ abstract class AppLocalizations {
   /// Accessibility label for theater filters.
   ///
   /// In en, this message translates to:
-  /// **'Theater filters'**
+  /// **'Filters'**
   String get theaterFiltersLabel;
 
   /// Label for theater search field.
@@ -16228,6 +16228,12 @@ abstract class AppLocalizations {
   /// **'Discharge status'**
   String get dischargeStatusFilterLabel;
 
+  /// Discharge queue advanced filter button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get dischargeFiltersLabel;
+
   /// Discharge status filter option for all statuses.
   ///
   /// In en, this message translates to:
@@ -22891,7 +22897,7 @@ abstract class AppLocalizations {
   /// Title and label for operations filters.
   ///
   /// In en, this message translates to:
-  /// **'Operations filters'**
+  /// **'Filters'**
   String get operationsFiltersLabel;
 
   /// Label for choosing operations search fields.

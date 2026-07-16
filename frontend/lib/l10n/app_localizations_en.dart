@@ -1835,7 +1835,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get theaterRoleCoordinator => 'Theater coordinator';
 
   @override
-  String get theaterFiltersLabel => 'Theater filters';
+  String get theaterFiltersLabel => 'Filters';
 
   @override
   String get theaterSearchLabel => 'Search theater';
@@ -8754,6 +8754,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dischargeStatusFilterLabel => 'Discharge status';
 
   @override
+  String get dischargeFiltersLabel => 'Filters';
+
+  @override
   String get dischargeStatusAll => 'All discharges';
 
   @override
@@ -12340,7 +12343,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get operationsClearFiltersAction => 'Clear filters';
 
   @override
-  String get operationsFiltersLabel => 'Operations filters';
+  String get operationsFiltersLabel => 'Filters';
 
   @override
   String get operationsSearchFieldsLabel => 'Search fields';

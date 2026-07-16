@@ -8,6 +8,10 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
@@ -23,6 +27,19 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
+
+const AccessRequirement _dischargeClinicalWriteRequirement = AccessRequirement(
+  anyRoles: <AppRole>[
+    AppRole.superAdmin,
+    AppRole.tenantAdmin,
+    AppRole.facilityAdmin,
+    AppRole.doctor,
+    AppRole.nurse,
+    AppRole.icuManager,
+  ],
+  anyPermissions: <AppPermission>[AppPermissions.clinicalWrite],
+  activeModules: <String>['inpatient-bed-management'],
+);
 
 class DischargeWorkspacePage extends ConsumerStatefulWidget {
   const DischargeWorkspacePage({super.key, this.initialQuery});
@@ -522,6 +539,104 @@ class _DischargeWorkspaceContentState
     );
   }
 
+  Future<void> _handleCompletedPrintAction(
+    DischargeWorkspaceState state,
+    List<IpdAdmissionSummary> rows,
+  ) async {
+    final IpdAdmissionSummary? admission =
+        _resolveSelectedAdmission(rows) ?? (rows.isEmpty ? null : rows.first);
+    if (admission == null) {
+      return;
+    }
+    setState(() => _selectedAdmission = admission);
+
+    final DischargeWorkspaceController controller = ref.read(
+      dischargeWorkspaceControllerProvider.notifier,
+    );
+    final AppFailure? failure = await controller.selectAdmission(admission);
+    if (!mounted) {
+      return;
+    }
+    _showFailureIfNeeded(context, failure);
+    if (failure != null) {
+      return;
+    }
+
+    final DischargeAdmissionDetail? detail = _readDischargeState(
+      ref,
+    )?.selectedDetail;
+    if (detail == null) {
+      return;
+    }
+    if (detail.hasSummary) {
+      await _printDischargeSummary(context, ref, detail);
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+    await _openDischargeDetailDialog(context, ref, state, admission);
+  }
+
+  Widget _buildPrimaryAction(
+    AppLocalizations l10n,
+    DischargeWorkspaceState state,
+    List<IpdAdmissionSummary> rows,
+  ) {
+    if (_section == DischargeDeskSection.completed) {
+      return AppTabToolbarPrimary(
+        label: _primaryActionLabel(l10n, _section),
+        icon: _primaryActionIcon(_section),
+        onPressed: rows.isEmpty
+            ? null
+            : () {
+                unawaited(_handleCompletedPrintAction(state, rows));
+              },
+      );
+    }
+
+    return AppAccessActionGate(
+      requirement: _dischargeClinicalWriteRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        return AppTabToolbarPrimary(
+          label: _primaryActionLabel(l10n, _section),
+          icon: _primaryActionIcon(_section),
+          enabled: isAllowed && rows.isNotEmpty,
+          onPressed: isAllowed && rows.isNotEmpty
+              ? () {
+                  unawaited(_handlePrimaryAction(state, rows));
+                }
+              : null,
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildSecondaryActions(
+    AppLocalizations l10n,
+    DischargeWorkspaceState state,
+    DischargeWorkspaceController controller,
+  ) {
+    return <Widget>[
+      AppTabToolbarAction(
+        label: l10n.commonRefreshActionLabel,
+        icon: Icons.refresh,
+        isLoading: state.isRefreshing,
+        onPressed: state.isRefreshing
+            ? null
+            : () {
+                unawaited(() async {
+                  final AppFailure? failure = await controller.refresh();
+                  if (!mounted) {
+                    return;
+                  }
+                  _showFailureIfNeeded(context, failure);
+                }());
+              },
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -568,15 +683,8 @@ class _DischargeWorkspaceContentState
                   }
                 }
               },
-              primaryAction: AppTabToolbarPrimary(
-                label: _primaryActionLabel(l10n, _section),
-                icon: _primaryActionIcon(_section),
-                onPressed: rows.isEmpty
-                    ? null
-                    : () {
-                        unawaited(_handlePrimaryAction(state, rows));
-                      },
-              ),
+              primaryAction: _buildPrimaryAction(l10n, state, rows),
+              secondaryActions: _buildSecondaryActions(l10n, state, controller),
             ),
             SizedBox(height: theme.spacing.sm),
             AppListTable<IpdAdmissionSummary>(
@@ -615,8 +723,8 @@ class _DischargeWorkspaceContentState
                   }
                 },
                 showAdvancedFilterButton: true,
-                advancedFilterButtonLabel: l10n.dischargeStatusFilterLabel,
-                advancedFilterTitle: l10n.dischargeStatusFilterLabel,
+                advancedFilterButtonLabel: l10n.dischargeFiltersLabel,
+                advancedFilterTitle: l10n.dischargeFiltersLabel,
                 advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
                 advancedFilterResetLabel: l10n.opdClearFiltersAction,
                 enableDateFilter: false,
@@ -698,29 +806,7 @@ Future<void> _openDischargeDetailDialog(
         AppReportActionButton.print(
           label: l10n.dischargePrintSummaryAction,
           onPressed: detail.hasSummary
-              ? () async {
-                  await printFormTemplateDocument(
-                    ref: ref,
-                    context: context,
-                    title: l10n.dischargeReportTitle,
-                    patientContext: buildPrintFormPatientContext(
-                      l10n,
-                      patientName: detail.ipd.patientDisplayName,
-                      patientId: detail.patientId,
-                      encounterId: detail.encounterId,
-                      patientNameLabel: l10n.dischargeReportPatientLabel,
-                      patientIdLabel: l10n.dischargeReportPatientNoLabel,
-                    ),
-                    contextReference: PrintFormContextReference(
-                      label: l10n.dischargeReportAdmissionLabel,
-                      value:
-                          detail.summary.displayId ?? l10n.profileUnknownValue,
-                    ),
-                    bodyHtml: _dischargeSummaryHtml(context, detail),
-                    footerNote: l10n.dischargeReportFooter,
-                    includeSignatures: true,
-                  );
-                }
+              ? () => unawaited(_printDischargeSummary(context, ref, detail))
               : null,
         ),
       ],
@@ -1762,6 +1848,34 @@ void _showSaved(BuildContext context) {
   ScaffoldMessenger.of(
     context,
   ).showSnackBar(SnackBar(content: Text(context.l10n.dischargeSavedMessage)));
+}
+
+Future<void> _printDischargeSummary(
+  BuildContext context,
+  WidgetRef ref,
+  DischargeAdmissionDetail detail,
+) async {
+  final AppLocalizations l10n = context.l10n;
+  await printFormTemplateDocument(
+    ref: ref,
+    context: context,
+    title: l10n.dischargeReportTitle,
+    patientContext: buildPrintFormPatientContext(
+      l10n,
+      patientName: detail.ipd.patientDisplayName,
+      patientId: detail.patientId,
+      encounterId: detail.encounterId,
+      patientNameLabel: l10n.dischargeReportPatientLabel,
+      patientIdLabel: l10n.dischargeReportPatientNoLabel,
+    ),
+    contextReference: PrintFormContextReference(
+      label: l10n.dischargeReportAdmissionLabel,
+      value: detail.summary.displayId ?? l10n.profileUnknownValue,
+    ),
+    bodyHtml: _dischargeSummaryHtml(context, detail),
+    footerNote: l10n.dischargeReportFooter,
+    includeSignatures: true,
+  );
 }
 
 String _dischargeSummaryHtml(

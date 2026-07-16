@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/operations/domain/entities/operations_entiti
 import 'package:hosspi_hms/features/operations/presentation/controllers/operations_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -81,16 +82,22 @@ class _OperationsWorkspaceContentState
 
   late OperationsDeskSection _section;
   late final TextEditingController _searchController;
+  late final TextEditingController _assetsSearchController;
   late final AppListTableColumnVisibilityController<OperationsWorkItem>
   _tableColumnController;
+  late final AppListTableColumnVisibilityController<OperationsAsset>
+  _assetsColumnController;
 
   @override
   void initState() {
     super.initState();
     _section = _sectionFromQuery(widget.initialQuery.section);
     _searchController = TextEditingController(text: widget.state.query.search);
+    _assetsSearchController = TextEditingController();
     _tableColumnController =
         AppListTableColumnVisibilityController<OperationsWorkItem>();
+    _assetsColumnController =
+        AppListTableColumnVisibilityController<OperationsAsset>();
     _scheduleDeepLink(widget.initialQuery);
   }
 
@@ -110,7 +117,9 @@ class _OperationsWorkspaceContentState
   @override
   void dispose() {
     _searchController.dispose();
+    _assetsSearchController.dispose();
     _tableColumnController.dispose();
+    _assetsColumnController.dispose();
     super.dispose();
   }
 
@@ -151,24 +160,73 @@ class _OperationsWorkspaceContentState
       if (!mounted) {
         return;
       }
-      _applyDeepLink(query);
+      unawaited(_applyDeepLink(query));
     });
   }
 
-  void _applyDeepLink(OperationsWorkspaceQuery query) {
+  Future<void> _applyDeepLink(OperationsWorkspaceQuery query) async {
     if (!query.hasRouteTargeting) {
       return;
     }
     // Apply section filters first, then search, so clearFilters cannot wipe q=.
     _applySectionFilter(_section);
+    final OperationsWorkspaceController controller = ref.read(
+      operationsWorkspaceControllerProvider.notifier,
+    );
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;
-      unawaited(
-        ref
-            .read(operationsWorkspaceControllerProvider.notifier)
-            .applySearch(query.search),
+      await controller.applySearch(query.search);
+      if (!mounted) {
+        return;
+      }
+    }
+
+    final String requestId = query.requestId.trim();
+    if (requestId.isEmpty) {
+      return;
+    }
+
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    final bool canMutate = _mutationRequirement.isAllowed(policy);
+    OperationsWorkItem? item = _findWorkItem(
+      _operationsStateFromAsync(
+            ref.read(operationsWorkspaceControllerProvider),
+          ) ??
+          widget.state,
+      requestId,
+    );
+    if (item == null) {
+      _searchController.text = requestId;
+      await controller.applySearch(requestId);
+      if (!mounted) {
+        return;
+      }
+      item = _findWorkItem(
+        _operationsStateFromAsync(
+              ref.read(operationsWorkspaceControllerProvider),
+            ) ??
+            widget.state,
+        requestId,
       );
     }
+    if (item != null && mounted) {
+      await _openRequestDetailDialog(context, item, canMutate);
+    }
+  }
+
+  OperationsWorkItem? _findWorkItem(OperationsWorkspaceState state, String id) {
+    final String needle = id.trim().toLowerCase();
+    if (needle.isEmpty) {
+      return null;
+    }
+    for (final OperationsWorkItem item in state.workItems.items) {
+      if (item.id.toLowerCase() == needle ||
+          (item.displayId ?? '').toLowerCase() == needle ||
+          item.effectiveDisplayId.toLowerCase() == needle) {
+        return item;
+      }
+    }
+    return null;
   }
 
   void _onTabChanged(OperationsDeskSection section) {
@@ -247,6 +305,7 @@ class _OperationsWorkspaceContentState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final OperationsWorkspaceState state = widget.state;
     final OperationsWorkspaceController controller = ref.read(
       operationsWorkspaceControllerProvider.notifier,
@@ -255,150 +314,150 @@ class _OperationsWorkspaceContentState
     final bool canMutate = _mutationRequirement.isAllowed(policy);
     final AppFailure? lastFailure = state.lastFailure;
 
-    return AppWorkspace(
-      title: l10n.operationsTitle,
-      leadingIcon: AppRouteIcons.operations,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        summaryNotifications: _summaryNotifications(context, state, _section),
-        secondary: <Widget>[
-          AppButton.secondary(
-            label: l10n.operationsOpenReportAction,
-            leadingIcon: Icons.summarize_outlined,
-            onPressed: () => _showOperationsReportDialog(context, state),
-          ),
-        ],
-        primary: canMutate
-            ? AppButton.primary(
-                label: l10n.operationsCreateRequestAction,
-                leadingIcon: Icons.add,
-                enabled: !state.isMutating,
-                onPressed: () => _showCreateRequestDialog(context, ref, state),
-              )
-            : null,
-        onRefresh: () async {
-          final AppFailure? failure = await controller.refresh();
-          if (context.mounted) {
-            _showFailureIfNeeded(context, failure);
-          }
-        },
-        isRefreshing: state.isRefreshing,
-      ),
-
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (lastFailure != null) ...<Widget>[
-            AppFailureStateView(
-              failure: lastFailure,
-              onRetry: controller.refresh,
-            ),
-            SizedBox(height: Theme.of(context).spacing.md),
-          ],
-          AppTabStrip(
-            tabs: <AppTabItem>[
-              for (final OperationsDeskSection section
-                  in OperationsDeskSection.values)
-                AppTabItem(
-                  id: section.name,
-                  icon: _sectionIcon(section),
-                  label: _sectionLabel(l10n, section),
-                  count: _sectionCount(state, section),
-                  countTone: _sectionCountTone(section),
-                ),
-            ],
-            selectedId: _section.name,
-            onTabTapped: (String tabId) {
-              for (final OperationsDeskSection section
-                  in OperationsDeskSection.values) {
-                if (section.name == tabId) {
-                  _onTabChanged(section);
-                  break;
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            AppTabStrip(
+              tabs: <AppTabItem>[
+                for (final OperationsDeskSection section
+                    in OperationsDeskSection.values)
+                  AppTabItem(
+                    id: section.name,
+                    icon: _sectionIcon(section),
+                    label: _sectionLabel(l10n, section),
+                    count: _sectionCount(state, section),
+                    countTone: _sectionCountTone(section),
+                  ),
+              ],
+              selectedId: _section.name,
+              onTabTapped: (String tabId) {
+                for (final OperationsDeskSection section
+                    in OperationsDeskSection.values) {
+                  if (section.name == tabId) {
+                    _onTabChanged(section);
+                    break;
+                  }
                 }
-              }
-            },
-          ),
-          SizedBox(height: Theme.of(context).spacing.sm),
-          if (_section == OperationsDeskSection.assets)
-            _OperationsAssetsPanel(state: state)
-          else
-            _OperationsQueuePanel(
-              state: state,
-              searchController: _searchController,
-              columnVisibilityController: _tableColumnController,
-              onItemSelected: (OperationsWorkItem item) {
-                unawaited(_openRequestDetailDialog(context, item, canMutate));
               },
-              section: _section,
+              primaryAction: _buildPrimaryAction(l10n, state),
+              secondaryActions: _buildSecondaryActions(
+                context,
+                l10n,
+                state,
+                controller,
+              ),
             ),
-        ],
+            SizedBox(height: theme.spacing.sm),
+            if (lastFailure != null) ...<Widget>[
+              AppFailureStateView(
+                failure: lastFailure,
+                onRetry: controller.refresh,
+              ),
+              SizedBox(height: theme.spacing.md),
+            ],
+            if (_section == OperationsDeskSection.assets)
+              _OperationsAssetsPanel(
+                state: state,
+                searchController: _assetsSearchController,
+                columnVisibilityController: _assetsColumnController,
+              )
+            else
+              _OperationsQueuePanel(
+                state: state,
+                searchController: _searchController,
+                columnVisibilityController: _tableColumnController,
+                onItemSelected: (OperationsWorkItem item) {
+                  unawaited(_openRequestDetailDialog(context, item, canMutate));
+                },
+                section: _section,
+              ),
+          ],
+        ),
       ),
     );
   }
 
-  List<AppWorkspaceSummaryNotification> _summaryNotifications(
-    BuildContext context,
+  Widget _buildPrimaryAction(
+    AppLocalizations l10n,
     OperationsWorkspaceState state,
-    OperationsDeskSection selectedSection,
   ) {
-    final AppLocalizations l10n = context.l10n;
-    final int total =
-        state.workItems.totalItemCount ?? state.workItems.items.length;
+    if (_section == OperationsDeskSection.completed) {
+      return AppTabToolbarPrimary(
+        label: l10n.operationsOpenReportAction,
+        icon: Icons.summarize_outlined,
+        enabled: !state.isMutating,
+        onPressed: state.isMutating
+            ? null
+            : () => _showOperationsReportDialog(context, state),
+      );
+    }
+    return AppAccessActionGate(
+      requirement: _mutationRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        return AppTabToolbarPrimary(
+          label: l10n.operationsCreateRequestAction,
+          icon: Icons.add,
+          enabled: isAllowed && !state.isMutating,
+          onPressed: isAllowed && !state.isMutating
+              ? () => _showCreateRequestDialog(context, ref, state)
+              : null,
+        );
+      },
+    );
+  }
 
-    // Summary badges mirror tab selection; AppTabStrip remains the primary nav.
-    return <AppWorkspaceSummaryNotification>[
-      if (total > 0)
-        AppWorkspaceSummaryNotification(
-          label: l10n.operationsAllRequestsSummaryLabel,
-          count: total,
-          icon: Icons.inventory_2_outlined,
-          isSelected: selectedSection == OperationsDeskSection.allRequests,
-          onSelected: () => _onTabChanged(OperationsDeskSection.allRequests),
+  List<Widget> _buildSecondaryActions(
+    BuildContext context,
+    AppLocalizations l10n,
+    OperationsWorkspaceState state,
+    OperationsWorkspaceController controller,
+  ) {
+    final Widget refreshAction = AppWorkspaceRefreshAction(
+      label: l10n.commonRefreshActionLabel,
+      isLoading: state.isRefreshing,
+      onPressed: state.isRefreshing
+          ? null
+          : () async {
+              final AppFailure? failure = await controller.refresh();
+              if (context.mounted) {
+                _showFailureIfNeeded(context, failure);
+              }
+            },
+    );
+
+    if (_section == OperationsDeskSection.completed) {
+      return <Widget>[
+        AppAccessActionGate(
+          requirement: _mutationRequirement,
+          builder: (BuildContext context, bool isAllowed) {
+            return AppTabToolbarAction(
+              label: l10n.operationsCreateRequestAction,
+              icon: Icons.add,
+              enabled: isAllowed && !state.isMutating,
+              onPressed: isAllowed && !state.isMutating
+                  ? () => _showCreateRequestDialog(context, ref, state)
+                  : null,
+            );
+          },
         ),
-      if (state.openCount > 0)
-        AppWorkspaceSummaryNotification(
-          label: l10n.operationsOpenSummaryLabel,
-          count: state.openCount,
-          icon: Icons.pending_actions_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          isSelected: selectedSection == OperationsDeskSection.open,
-          onSelected: () => _onTabChanged(OperationsDeskSection.open),
-        ),
-      if (state.inProgressCount > 0)
-        AppWorkspaceSummaryNotification(
-          label: l10n.operationsInProgressSummaryLabel,
-          count: state.inProgressCount,
-          icon: Icons.engineering_outlined,
-          tone: AppWorkspaceStatusTone.info,
-          isSelected: selectedSection == OperationsDeskSection.inProgress,
-          onSelected: () => _onTabChanged(OperationsDeskSection.inProgress),
-        ),
-      if (state.completedCount > 0)
-        AppWorkspaceSummaryNotification(
-          label: l10n.operationsCompletedSummaryLabel,
-          count: state.completedCount,
-          icon: Icons.task_alt_outlined,
-          tone: AppWorkspaceStatusTone.success,
-          isSelected: selectedSection == OperationsDeskSection.completed,
-          onSelected: () => _onTabChanged(OperationsDeskSection.completed),
-        ),
-      if (state.cancelledCount > 0)
-        AppWorkspaceSummaryNotification(
-          label: l10n.operationsCancelledSummaryLabel,
-          count: state.cancelledCount,
-          icon: Icons.cancel_outlined,
-          tone: AppWorkspaceStatusTone.error,
-          isSelected: selectedSection == OperationsDeskSection.completed,
-          onSelected: () => _onTabChanged(OperationsDeskSection.completed),
-        ),
-      if (state.assetCount > 0)
-        AppWorkspaceSummaryNotification(
-          label: l10n.operationsAssetsSummaryLabel,
-          count: state.assetCount,
-          icon: Icons.precision_manufacturing_outlined,
-          isSelected: selectedSection == OperationsDeskSection.assets,
-          onSelected: () => _onTabChanged(OperationsDeskSection.assets),
-        ),
+        refreshAction,
+      ];
+    }
+
+    return <Widget>[
+      AppTabToolbarAction(
+        label: l10n.operationsOpenReportAction,
+        icon: Icons.summarize_outlined,
+        enabled: !state.isMutating,
+        onPressed: state.isMutating
+            ? null
+            : () => _showOperationsReportDialog(context, state),
+      ),
+      refreshAction,
     ];
   }
 
@@ -558,22 +617,89 @@ class _OperationsQueuePanel extends ConsumerWidget {
   }
 }
 
-class _OperationsAssetsPanel extends StatelessWidget {
-  const _OperationsAssetsPanel({required this.state});
+class _OperationsAssetsPanel extends StatefulWidget {
+  const _OperationsAssetsPanel({
+    required this.state,
+    required this.searchController,
+    required this.columnVisibilityController,
+  });
 
   final OperationsWorkspaceState state;
+  final TextEditingController searchController;
+  final AppListTableColumnVisibilityController<OperationsAsset>
+  columnVisibilityController;
+
+  @override
+  State<_OperationsAssetsPanel> createState() => _OperationsAssetsPanelState();
+}
+
+class _OperationsAssetsPanelState extends State<_OperationsAssetsPanel> {
+  AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
+
+  List<OperationsAsset> get _filteredAssets {
+    final String query = widget.searchController.text.trim().toLowerCase();
+    final String? status = _filterValue.option(_operationsAssetStatusFilterKey);
+    return widget.state.assets.items
+        .where((OperationsAsset asset) {
+          if (status != null &&
+              status.isNotEmpty &&
+              (asset.status ?? '').trim().toUpperCase() != status) {
+            return false;
+          }
+          if (query.isEmpty) {
+            return true;
+          }
+          final String haystack =
+              '${asset.name} ${asset.assetTag} ${asset.facilityLabel} '
+                      '${asset.status} ${asset.effectiveDisplayId}'
+                  .toLowerCase();
+          return haystack.contains(query);
+        })
+        .toList(growable: false);
+  }
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final List<OperationsAsset> items = _filteredAssets;
     return AppListTable<OperationsAsset>(
-      page: state.assets,
-      isLoading: state.isRefreshing,
+      items: items,
+      isLoading: widget.state.isRefreshing,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      columnVisibilityController: widget.columnVisibilityController,
       columnVisibilityStorageKey: 'operations_assets',
       columnWidthStorageKey: 'operations_cw_assets',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      search: AppListTableSearch<OperationsAsset>(
+        controller: widget.searchController,
+        semanticLabel: l10n.operationsSearchLabel,
+        hintText: l10n.operationsSearchHint,
+        clearLabel: l10n.operationsClearFiltersAction,
+        matcher: (OperationsAsset asset, String query) =>
+            _assetMatchesSearch(asset, query),
+        onChanged: (_) => setState(() {}),
+        onClear: () => setState(() {}),
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.operationsFiltersLabel,
+        advancedFilterTitle: l10n.operationsFiltersLabel,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.operationsClearFiltersAction,
+        filterGroups: <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: _operationsAssetStatusFilterKey,
+            label: l10n.operationsStatusFilterLabel,
+            allLabel: l10n.operationsAllFilterOption,
+            choices: _statusFilterChoices(l10n),
+          ),
+        ],
+        filterValue: _filterValue,
+        hasActiveFilters:
+            _filterValue.option(_operationsAssetStatusFilterKey) != null,
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          setState(() => _filterValue = value);
+        },
+      ),
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.operationsNoAssetsTitle,
         body: l10n.operationsNoAssetsBody,
@@ -634,6 +760,18 @@ class _OperationsAssetsPanel extends StatelessWidget {
       },
     );
   }
+}
+
+bool _assetMatchesSearch(OperationsAsset asset, String query) {
+  final String needle = query.trim().toLowerCase();
+  if (needle.isEmpty) {
+    return true;
+  }
+  final String haystack =
+      '${asset.name} ${asset.assetTag} ${asset.facilityLabel} '
+              '${asset.status} ${asset.effectiveDisplayId}'
+          .toLowerCase();
+  return haystack.contains(needle);
 }
 
 class _OperationsDetailPanel extends ConsumerWidget {
@@ -2193,6 +2331,7 @@ void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
 }
 
 const String _operationsStatusFilterKey = 'status';
+const String _operationsAssetStatusFilterKey = 'asset_status';
 const String _operationsPriorityFilterKey = 'priority';
 const String _operationsFacilityFilterKey = 'facility';
 const String _operationsAssetFilterKey = 'asset';

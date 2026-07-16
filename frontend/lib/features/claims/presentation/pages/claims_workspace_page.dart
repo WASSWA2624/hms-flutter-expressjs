@@ -528,9 +528,10 @@ class _ClaimsWorkspaceContentState
     ClaimsWorkspaceController controller,
   ) async {
     final AppFailure? failure = await controller.refresh();
-    if (mounted) {
-      _showFailureIfNeeded(context, failure);
+    if (!context.mounted) {
+      return;
     }
+    _showFailureIfNeeded(context, failure);
   }
 
   Future<void> _applySummaryFilter(

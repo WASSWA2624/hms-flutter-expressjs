@@ -2394,7 +2394,7 @@
   "@theaterRoleCoordinator": {
     "description": "Responsible role label for theater coordinator."
   },
-  "theaterFiltersLabel": "Theater filters",
+  "theaterFiltersLabel": "Filters",
   "@theaterFiltersLabel": {
     "description": "Accessibility label for theater filters."
   },
@@ -11164,6 +11164,10 @@
   "@dischargeStatusFilterLabel": {
     "description": "Discharge queue status filter label."
   },
+  "dischargeFiltersLabel": "Filters",
+  "@dischargeFiltersLabel": {
+    "description": "Discharge queue advanced filter button label."
+  },
   "dischargeStatusAll": "All discharges",
   "@dischargeStatusAll": {
     "description": "Discharge status filter option for all statuses."
@@ -15821,7 +15825,7 @@
   "@operationsClearFiltersAction": {
     "description": "Action label for clearing operations filters."
   },
-  "operationsFiltersLabel": "Operations filters",
+  "operationsFiltersLabel": "Filters",
   "@operationsFiltersLabel": {
     "description": "Title and label for operations filters."
   },

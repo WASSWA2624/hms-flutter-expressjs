@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -267,122 +266,163 @@ class _TheaterWorkspaceContentState
     };
   }
 
+  Widget _buildPrimaryAction(
+    AppLocalizations l10n,
+    TheaterWorkspaceState state,
+    TheaterWorkspaceController controller,
+    bool canWrite,
+  ) {
+    if (!canWrite) {
+      return _buildRefreshPrimaryAction(l10n, state, controller);
+    }
+    return switch (_section) {
+      TheaterSection.scheduled ||
+      TheaterSection.inTheater ||
+      TheaterSection.recovery ||
+      TheaterSection.all => AppTabToolbarPrimary(
+        label: l10n.theaterScheduleCaseAction,
+        icon: Icons.add,
+        semanticLabel: l10n.theaterScheduleCaseAction,
+        tooltip: l10n.theaterScheduleCaseAction,
+        enabled: !state.isMutating,
+        onPressed: state.isMutating
+            ? null
+            : () => _showScheduleCaseDialog(
+                context,
+                ref,
+                initialPatientId: widget.initialQuery?.initialPatientId,
+                initialEncounterId: widget.initialQuery?.initialEncounterId,
+                initialEmergencyCaseId:
+                    widget.initialQuery?.initialEmergencyCaseId,
+              ),
+      ),
+    };
+  }
+
+  List<Widget> _buildSecondaryActions(
+    AppLocalizations l10n,
+    TheaterWorkspaceState state,
+    TheaterWorkspaceController controller,
+    bool canWrite,
+  ) {
+    if (!canWrite) {
+      return const <Widget>[];
+    }
+    return switch (_section) {
+      TheaterSection.scheduled ||
+      TheaterSection.inTheater ||
+      TheaterSection.recovery ||
+      TheaterSection.all => <Widget>[
+        _buildRefreshSecondaryAction(l10n, state, controller),
+      ],
+    };
+  }
+
+  AppTabToolbarPrimary _buildRefreshPrimaryAction(
+    AppLocalizations l10n,
+    TheaterWorkspaceState state,
+    TheaterWorkspaceController controller,
+  ) {
+    return AppTabToolbarPrimary(
+      label: l10n.commonRefreshActionLabel,
+      icon: Icons.refresh,
+      semanticLabel: l10n.commonRefreshActionLabel,
+      tooltip: l10n.commonRefreshActionLabel,
+      isLoading: state.isRefreshing,
+      enabled: !state.isRefreshing,
+      onPressed: state.isRefreshing
+          ? null
+          : () => unawaited(controller.refresh()),
+    );
+  }
+
+  AppTabToolbarAction _buildRefreshSecondaryAction(
+    AppLocalizations l10n,
+    TheaterWorkspaceState state,
+    TheaterWorkspaceController controller,
+  ) {
+    return AppTabToolbarAction(
+      label: l10n.commonRefreshActionLabel,
+      icon: Icons.refresh,
+      semanticLabel: l10n.commonRefreshActionLabel,
+      tooltip: l10n.commonRefreshActionLabel,
+      isLoading: state.isRefreshing,
+      enabled: !state.isRefreshing,
+      onPressed: state.isRefreshing
+          ? null
+          : () => unawaited(controller.refresh()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final TheaterWorkspaceState state = widget.state;
     final controller = ref.read(theaterWorkspaceControllerProvider.notifier);
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final bool canWrite = accessPolicy.grants(AppPermissions.clinicalWrite);
     final AppFailure? lastFailure = state.lastFailure;
 
-    return AppWorkspace(
-      title: l10n.theaterTitle,
-      leadingIcon: AppRouteIcons.theater,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        summaryNotifications: <AppWorkspaceSummaryNotification>[
-          if (_pageTotal(state.cases) > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.theaterAllCasesSummaryLabel,
-              count: _pageTotal(state.cases),
-              icon: Icons.inventory_2_outlined,
-              onSelected: controller.clearFilters,
-            ),
-          if (state.scheduledCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.theaterScheduledSummaryLabel,
-              count: state.scheduledCount,
-              icon: Icons.event_available_outlined,
-              onSelected: () => controller.applyStatus('SCHEDULED'),
-            ),
-          if (state.inTheaterCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.theaterInTheaterSummaryLabel,
-              count: state.inTheaterCount,
-              icon: Icons.meeting_room_outlined,
-              tone: AppWorkspaceStatusTone.info,
-              onSelected: () => controller.applyStatus('IN_PROGRESS'),
-            ),
-          if (state.readyCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.theaterReadySummaryLabel,
-              count: state.readyCount,
-              icon: Icons.fact_check_outlined,
-              tone: AppWorkspaceStatusTone.success,
-              onSelected: () => controller.applyStage('PRE_OP'),
-            ),
-          if (state.completedCount > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.theaterCompletedSummaryLabel,
-              count: state.completedCount,
-              icon: Icons.task_alt_outlined,
-              onSelected: () => controller.applyStatus('COMPLETED'),
-            ),
-        ],
-        primary: canWrite
-            ? AppButton.primary(
-                label: l10n.theaterScheduleCaseAction,
-                leadingIcon: Icons.add,
-                enabled: !state.isMutating,
-                onPressed: () => _showScheduleCaseDialog(
-                  context,
-                  ref,
-                  initialPatientId: widget.initialQuery?.initialPatientId,
-                  initialEncounterId: widget.initialQuery?.initialEncounterId,
-                  initialEmergencyCaseId:
-                      widget.initialQuery?.initialEmergencyCaseId,
-                ),
-              )
-            : null,
-        onRefresh: () async {
-          await controller.refresh();
-        },
-        isRefreshing: state.isRefreshing,
-      ),
-
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppTabStrip(
-            tabs: <AppTabItem>[
-              for (final TheaterSection section in TheaterSection.values)
-                AppTabItem(
-                  id: section.name,
-                  icon: _sectionIcon(section),
-                  label: _sectionLabel(l10n, section),
-                  count: _sectionCount(state, section),
-                  countTone: _sectionCountTone(section),
-                ),
-            ],
-            selectedId: _section.name,
-            onTabTapped: (String tabId) {
-              for (final TheaterSection section in TheaterSection.values) {
-                if (section.name == tabId) {
-                  setState(() => _section = section);
-                  _applyTabFilter(section);
-                  _updateUrlForSection(section);
-                  break;
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            AppTabStrip(
+              tabs: <AppTabItem>[
+                for (final TheaterSection section in TheaterSection.values)
+                  AppTabItem(
+                    id: section.name,
+                    icon: _sectionIcon(section),
+                    label: _sectionLabel(l10n, section),
+                    count: _sectionCount(state, section),
+                    countTone: _sectionCountTone(section),
+                  ),
+              ],
+              selectedId: _section.name,
+              onTabTapped: (String tabId) {
+                for (final TheaterSection section in TheaterSection.values) {
+                  if (section.name == tabId) {
+                    setState(() => _section = section);
+                    _applyTabFilter(section);
+                    _updateUrlForSection(section);
+                    break;
+                  }
                 }
-              }
-            },
-          ),
-          SizedBox(height: Theme.of(context).spacing.sm),
-          if (lastFailure != null) ...<Widget>[
-            AppFailureStateView(
-              failure: lastFailure,
-              onRetry: controller.refresh,
+              },
+              primaryAction: _buildPrimaryAction(
+                l10n,
+                state,
+                controller,
+                canWrite,
+              ),
+              secondaryActions: _buildSecondaryActions(
+                l10n,
+                state,
+                controller,
+                canWrite,
+              ),
             ),
-            SizedBox(height: Theme.of(context).spacing.md),
+            SizedBox(height: theme.spacing.sm),
+            if (lastFailure != null) ...<Widget>[
+              AppFailureStateView(
+                failure: lastFailure,
+                onRetry: controller.refresh,
+              ),
+              SizedBox(height: theme.spacing.md),
+            ],
+            _TheaterCaseBoard(
+              state: state,
+              canWrite: canWrite,
+              searchController: _searchController,
+              columnVisibilityController: _tableColumnController,
+              onPageChanged: controller.changePage,
+            ),
           ],
-          _TheaterCaseBoard(
-            state: state,
-            canWrite: canWrite,
-            searchController: _searchController,
-            columnVisibilityController: _tableColumnController,
-            onPageChanged: controller.changePage,
-          ),
-        ],
+        ),
       ),
     );
   }

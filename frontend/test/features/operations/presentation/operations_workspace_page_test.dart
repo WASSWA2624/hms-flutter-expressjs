@@ -249,6 +249,10 @@ void main() {
     expect(find.text('Pump seal leak'), findsOneWidget);
     expect(find.text('Filter replaced'), findsOneWidget);
     expect(find.textContaining('Create request'), findsOneWidget);
+    expect(find.text('Report'), findsOneWidget);
+    expect(find.text('Refresh'), findsOneWidget);
+    expect(find.text('Filters'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
   });
 
   testWidgets('deep link section=open selects Open tab and filters rows', (
@@ -339,5 +343,36 @@ void main() {
     expect(find.text('Backup Generator (GEN-01)'), findsOneWidget);
     expect(find.text('GEN-01'), findsWidgets);
     expect(find.text('Generator alarm'), findsNothing);
+    expect(find.text('Filters'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+  });
+
+  testWidgets('Completed tab shows Report as primary toolbar action', (
+    WidgetTester tester,
+  ) async {
+    await _pumpOperationsWorkspace(tester, repository: repository);
+
+    await tester.tap(find.textContaining('Completed').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Report'), findsOneWidget);
+    expect(find.textContaining('Create request'), findsOneWidget);
+    expect(find.text('Refresh'), findsOneWidget);
+  });
+
+  testWidgets('requestId deep link opens request detail dialog', (
+    WidgetTester tester,
+  ) async {
+    await _pumpOperationsWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/operations?requestId=MR-OPEN',
+      initialQuery: OperationsWorkspaceQuery.fromUri(
+        Uri.parse('/operations?requestId=MR-OPEN'),
+      ),
+    );
+
+    expect(find.text('Request detail'), findsOneWidget);
+    expect(find.text('Generator alarm'), findsWidgets);
   });
 }
