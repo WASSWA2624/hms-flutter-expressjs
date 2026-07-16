@@ -9,26 +9,38 @@ Future<void> showHrWorkQueueDialog(
   columnVisibilityController,
 }) async {
   final AppLocalizations l10n = context.l10n;
+  final HrWorkspaceState? state = readHrWorkspaceState(ref);
+  final TextEditingController searchController = TextEditingController(
+    text: state?.workItemsQuery.search ?? '',
+  );
   final AppListTableColumnVisibilityController<HrWorkItem> columns =
       columnVisibilityController ??
       AppListTableColumnVisibilityController<HrWorkItem>();
 
-  await showAppDialog<void>(
-    context: context,
-    builder: (BuildContext dialogContext) => AppDialog(
-      title: Text(l10n.hrWorkQueuesTitle),
-      icon: const Icon(Icons.pending_actions_outlined),
-      scrollable: true,
-      maxWidth: 980,
-      initialMaximized: maximize,
-      content: _HrWorkQueuePanel(
-        columnVisibilityController: columns,
-        onPageChanged: ref
-            .read(hrWorkspaceControllerProvider.notifier)
-            .changeWorkItemsPage,
+  try {
+    await showAppDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) => AppDialog(
+        title: Text(l10n.hrWorkQueuesTitle),
+        icon: const Icon(Icons.pending_actions_outlined),
+        scrollable: true,
+        maxWidth: 980,
+        initialMaximized: maximize,
+        content: _HrWorkQueuePanel(
+          searchController: searchController,
+          columnVisibilityController: columns,
+          onPageChanged: ref
+              .read(hrWorkspaceControllerProvider.notifier)
+              .changeWorkItemsPage,
+        ),
       ),
-    ),
-  );
+    );
+  } finally {
+    searchController.dispose();
+    if (columnVisibilityController == null) {
+      columns.dispose();
+    }
+  }
 }
 
 /// Applies a queue filter then opens the work-queue dialog.

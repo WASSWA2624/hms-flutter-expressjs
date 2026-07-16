@@ -235,6 +235,17 @@ Future<_Harness> _pumpBillingWorkspace(
   return _Harness(repository: repository, router: router);
 }
 
+String billingQueueTabLabel(BillingQueueType queue) {
+  return switch (queue) {
+    BillingQueueType.all => 'All billing work items',
+    BillingQueueType.needsIssue => 'Needs issue',
+    BillingQueueType.pendingPayment => 'Awaiting payment',
+    BillingQueueType.claimsPending => 'Claims pending',
+    BillingQueueType.approvalRequired => 'Approval required',
+    BillingQueueType.overdue => 'Overdue',
+  };
+}
+
 void main() {
   late _MockBillingRepository repository;
 
@@ -266,7 +277,11 @@ void main() {
     expect(_toolbarAction('Close day'), findsOneWidget);
     expect(_toolbarAction('Refresh'), findsOneWidget);
     expect(_table(tester).columnVisibilityLabel, 'Settings');
+    expect(_table(tester).columnVisibilityTitle, 'Table Settings');
     expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+    expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
+    expect(_table(tester).displayMode, AppListTableDisplayMode.adaptive);
+    expect(_table(tester).columns.length, 5);
   });
 
   testWidgets('does not paint a dedicated billing title header', (
@@ -381,7 +396,23 @@ void main() {
     expect(_toolbarAction('Close day'), findsOneWidget);
   });
 
-  testWidgets('All tab shows full columns while Needs Issue is draft-focused', (
+  testWidgets('each tab exposes five default columns', (
+    WidgetTester tester,
+  ) async {
+    await _pumpBillingWorkspace(tester, repository: repository);
+
+    for (final BillingQueueType queue in BillingQueueType.values) {
+      if (queue != BillingQueueType.all) {
+        await tester.tap(
+          find.textContaining(billingQueueTabLabel(queue)).first,
+        );
+        await tester.pumpAndSettle();
+      }
+      expect(_table(tester).columns.length, 5);
+    }
+  });
+
+  testWidgets('All tab shows status while Needs issue prioritizes encounter', (
     WidgetTester tester,
   ) async {
     await _pumpBillingWorkspace(tester, repository: repository);
@@ -391,12 +422,19 @@ void main() {
         of: find.byType(DataTable),
         matching: find.text('Patient ID'),
       ),
-      findsOneWidget,
+      findsNothing,
     );
     expect(
       find.descendant(
         of: find.byType(DataTable),
         matching: find.text('Status'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Next action'),
       ),
       findsOneWidget,
     );
@@ -430,8 +468,9 @@ void main() {
         of: find.byType(DataTable),
         matching: find.text('Status'),
       ),
-      findsNothing,
+      findsOneWidget,
     );
+    expect(find.byTooltip('Issue'), findsWidgets);
   });
 
   testWidgets('search filters visible work items', (WidgetTester tester) async {
@@ -456,7 +495,7 @@ void main() {
     expect(find.text('Filters'), findsWidgets);
   });
 
-  testWidgets('mobile breakpoint uses list tiles instead of data table', (
+  testWidgets('mobile breakpoint shows status badge and next action', (
     WidgetTester tester,
   ) async {
     await _pumpBillingWorkspace(
@@ -469,6 +508,8 @@ void main() {
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(_toolbarPrimary('Close shift'), findsOneWidget);
+    expect(find.byType(AppWorkspaceStatusBadge), findsWidgets);
+    expect(find.byTooltip('Issue'), findsWidgets);
   });
 
   testWidgets('tab switch applies queue filter via repository', (

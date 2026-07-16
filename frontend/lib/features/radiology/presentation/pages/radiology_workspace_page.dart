@@ -23,6 +23,7 @@ import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_lookups.
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
 import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities.dart';
 import 'package:hosspi_hms/features/radiology/presentation/controllers/radiology_workspace_controller.dart';
+import 'package:hosspi_hms/features/radiology/presentation/widgets/radiology_next_action_cell.dart';
 import 'package:hosspi_hms/features/radiology/presentation/widgets/radiology_workflow_progress_section.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -497,6 +498,7 @@ class _RadiologyWorkspaceContentState
               SizedBox(height: theme.spacing.md),
             ],
             _RadiologyOrderBoard(
+              section: _section,
               state: state,
               canWork: canWork,
               canRequest: canRequest,
@@ -514,6 +516,7 @@ class _RadiologyWorkspaceContentState
 
 class _RadiologyOrderBoard extends ConsumerWidget {
   const _RadiologyOrderBoard({
+    required this.section,
     required this.state,
     required this.canWork,
     required this.canRequest,
@@ -523,6 +526,7 @@ class _RadiologyOrderBoard extends ConsumerWidget {
     required this.onSearchSubmitted,
   });
 
+  final RadiologyDeskSection section;
   final RadiologyWorkspaceState state;
   final bool canWork;
   final bool canRequest;
@@ -536,28 +540,32 @@ class _RadiologyOrderBoard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final controller = ref.read(radiologyWorkspaceControllerProvider.notifier);
+    final String storageSuffix = '${section.name}_${state.query.view.name}';
 
     return AppListTable<RadiologyOrder>(
       page: state.orders,
       isLoading: state.isRefreshing,
       columnVisibilityController: columnVisibilityController,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-      columnVisibilityTitle: l10n.radiologyTableColumnsTitle,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityStorageKey: 'radiology_$storageSuffix',
+      columnWidthStorageKey: 'radiology_cw_$storageSuffix',
       columnVisibilityApplyLabel: l10n.radiologyApplyColumnsAction,
       columnVisibilityResetLabel: l10n.radiologyResetColumnsAction,
       search: AppListTableSearch<RadiologyOrder>(
         controller: searchController,
         semanticLabel: l10n.radiologySearchLabel,
         hintText: l10n.radiologySearchHint,
-        matcher: (_, _) => true,
+        matcher: (RadiologyOrder item, String query) =>
+            _radiologyWorklistSearchMatcher(context, item, query),
         onChanged: onSearchChanged,
         onSubmitted: onSearchSubmitted,
         onClear: () {
           onSearchSubmitted('');
         },
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.radiologyFiltersLabel,
-        advancedFilterTitle: l10n.radiologyFiltersLabel,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.radiologyClearFiltersAction,
         dateFilterLabel: l10n.radiologyOrderDateFilterLabel,
@@ -680,23 +688,49 @@ class _RadiologyOrderBoard extends ConsumerWidget {
         );
       },
       columns: state.query.view == RadiologyWorkbenchView.patients
-          ? _patientViewWorklistColumns(context)
-          : _orderViewWorklistColumns(context),
+          ? _patientViewWorklistColumns(
+              context,
+              state: state,
+              canWork: canWork,
+              canRequest: canRequest,
+            )
+          : _orderViewWorklistColumns(
+              context,
+              state: state,
+              canWork: canWork,
+              canRequest: canRequest,
+            ),
       columnChoices: _optionalRadiologyWorklistColumns(context),
       mobileItemBuilder: (BuildContext context, RadiologyOrder item) {
-        return _RadiologyOrderListTile(order: item);
+        return _RadiologyOrderListTile(
+          order: item,
+          view: state.query.view,
+          state: state,
+          canWork: canWork,
+          canRequest: canRequest,
+        );
       },
     );
   }
 }
 
-class _RadiologyOrderListTile extends StatelessWidget {
-  const _RadiologyOrderListTile({required this.order});
+class _RadiologyOrderListTile extends ConsumerWidget {
+  const _RadiologyOrderListTile({
+    required this.order,
+    required this.view,
+    required this.state,
+    required this.canWork,
+    required this.canRequest,
+  });
 
   final RadiologyOrder order;
+  final RadiologyWorkbenchView view;
+  final RadiologyWorkspaceState state;
+  final bool canWork;
+  final bool canRequest;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
 
@@ -705,14 +739,25 @@ class _RadiologyOrderListTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
+          if (view == RadiologyWorkbenchView.orders &&
+              !order.isPatientGroup) ...<Widget>[
+            Text(
+              order.effectiveDisplayId.ifEmpty(l10n.profileUnknownValue),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            SizedBox(height: theme.spacing.xs),
+          ],
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Expanded(
-                child: Text(
-                  order.patientDisplayName ?? l10n.profileUnknownValue,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall,
+                child: AppListItemText(
+                  title: order.patientDisplayName ?? l10n.profileUnknownValue,
+                  subtitle: order.patientId,
                 ),
               ),
               SizedBox(width: theme.spacing.sm),
@@ -723,18 +768,21 @@ class _RadiologyOrderListTile extends StatelessWidget {
           Text(
             _joinDisplay(<String?>[
               _radiologyStudyLabel(order, l10n),
-              _radiologyPriorityDisplayLabel(l10n, order.priority),
+              if (view == RadiologyWorkbenchView.patients)
+                _radiologyPriorityDisplayLabel(l10n, order.priority),
             ]),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodyMedium,
           ),
-          SizedBox(height: theme.spacing.xs),
-          Text(
-            _nextActionLabel(context, order),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          SizedBox(height: theme.spacing.sm),
+          RadiologyNextActionCell(
+            order: order,
+            state: state,
+            canWork: canWork,
+            canRequest: canRequest,
+            resolveLabel: _nextActionLabel,
+            openDetailDialog: _openRadiologyDetailDialog,
           ),
         ],
       ),
@@ -4105,27 +4153,42 @@ RadiologyWorkspaceState? _watchState(WidgetRef ref) {
 }
 
 List<AppListTableColumn<RadiologyOrder>> _patientViewWorklistColumns(
-  BuildContext context,
-) {
+  BuildContext context, {
+  required RadiologyWorkspaceState state,
+  required bool canWork,
+  required bool canRequest,
+}) {
   return <AppListTableColumn<RadiologyOrder>>[
     _radiologyPatientNameColumn(context),
     _radiologyStudyColumn(context),
     _radiologyPriorityColumn(context),
-    _radiologyNextActionColumn(context),
     _radiologyStatusColumn(context),
+    _radiologyNextActionColumn(
+      context,
+      state: state,
+      canWork: canWork,
+      canRequest: canRequest,
+    ),
   ];
 }
 
 List<AppListTableColumn<RadiologyOrder>> _orderViewWorklistColumns(
-  BuildContext context,
-) {
+  BuildContext context, {
+  required RadiologyWorkspaceState state,
+  required bool canWork,
+  required bool canRequest,
+}) {
   return <AppListTableColumn<RadiologyOrder>>[
     _radiologyOrderIdentifierColumn(context, RadiologyWorkbenchView.orders),
     _radiologyPatientNameColumn(context),
     _radiologyStudyColumn(context),
-    _radiologyPriorityColumn(context),
-    _radiologyNextActionColumn(context),
     _radiologyStatusColumn(context),
+    _radiologyNextActionColumn(
+      context,
+      state: state,
+      canWork: canWork,
+      canRequest: canRequest,
+    ),
   ];
 }
 
@@ -4135,6 +4198,7 @@ List<AppListTableColumn<RadiologyOrder>> _optionalRadiologyWorklistColumns(
   return <AppListTableColumn<RadiologyOrder>>[
     _radiologyPatientIdColumn(context),
     _radiologyOrderIdentifierColumn(context, RadiologyWorkbenchView.patients),
+    _radiologyPriorityColumn(context),
     _radiologyModalityColumn(context),
     _radiologyBodyRegionColumn(context),
     _radiologyLateralityColumn(context),
@@ -4157,7 +4221,11 @@ AppListTableColumn<RadiologyOrder> _radiologyPatientNameColumn(
           right.patientDisplayName,
         ),
     cellBuilder: (BuildContext context, RadiologyOrder item) {
-      return _radiologyWorklistTextCell(context, item.patientDisplayName);
+      final AppLocalizations l10n = context.l10n;
+      return AppListItemText(
+        title: item.patientDisplayName ?? l10n.profileUnknownValue,
+        subtitle: item.patientId,
+      );
     },
   );
 }
@@ -4215,20 +4283,28 @@ AppListTableColumn<RadiologyOrder> _radiologyPriorityColumn(
 }
 
 AppListTableColumn<RadiologyOrder> _radiologyNextActionColumn(
-  BuildContext context,
-) {
+  BuildContext context, {
+  required RadiologyWorkspaceState state,
+  required bool canWork,
+  required bool canRequest,
+}) {
   return AppListTableColumn<RadiologyOrder>(
     id: 'next_action',
     label: context.l10n.radiologyNextActionColumnLabel,
+    alwaysVisible: true,
     sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
         appListTableCompareText(
           _nextActionLabel(context, left),
           _nextActionLabel(context, right),
         ),
     cellBuilder: (BuildContext context, RadiologyOrder item) {
-      return _radiologyWorklistTextCell(
-        context,
-        _nextActionLabel(context, item),
+      return RadiologyNextActionCell(
+        order: item,
+        state: state,
+        canWork: canWork,
+        canRequest: canRequest,
+        resolveLabel: _nextActionLabel,
+        openDetailDialog: _openRadiologyDetailDialog,
       );
     },
   );

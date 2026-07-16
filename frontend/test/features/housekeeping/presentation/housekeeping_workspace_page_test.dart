@@ -225,6 +225,12 @@ Finder _tabLabel(String label) {
   );
 }
 
+AppListTable<HousekeepingWorkItem> _table(WidgetTester tester) {
+  return tester.widget<AppListTable<HousekeepingWorkItem>>(
+    find.byType(AppListTable<HousekeepingWorkItem>),
+  );
+}
+
 void main() {
   late _MockHousekeepingRepository repository;
 
@@ -251,9 +257,21 @@ void main() {
     expect(find.text('Task'), findsOneWidget);
     expect(find.text('Location'), findsOneWidget);
     expect(find.text('Assignee'), findsOneWidget);
-    expect(find.text('Due time'), findsOneWidget);
     expect(find.text('Status'), findsOneWidget);
-    // Default visible column limit is 5; "Next action" is available via table settings.
+    expect(find.text('Next action'), findsOneWidget);
+    expect(find.text('Due time'), findsNothing);
+    expect(_table(tester).columns.length, 5);
+    expect(
+      _table(tester).columns.any(
+        (AppListTableColumn<HousekeepingWorkItem> column) =>
+            column.id == 'next_action' && column.alwaysVisible,
+      ),
+      isTrue,
+    );
+    expect(_table(tester).columnVisibilityLabel, 'Settings');
+    expect(_table(tester).columnVisibilityTitle, 'Table Settings');
+    expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+    expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
     expect(find.text('Clean ward 2B'), findsOneWidget);
   });
 
@@ -275,8 +293,10 @@ void main() {
     expect(find.byTooltip('Create task'), findsNothing);
     expect(find.text('Schedule'), findsOneWidget);
     expect(find.text('Frequency'), findsOneWidget);
-    expect(find.text('Start date'), findsOneWidget);
-    expect(find.text('End date'), findsOneWidget);
+    expect(find.text('Next action'), findsOneWidget);
+    expect(find.text('Start date'), findsNothing);
+    expect(find.text('End date'), findsNothing);
+    expect(_table(tester).columns.length, 5);
     expect(find.text('Daily corridor sweep'), findsOneWidget);
 
     final List<HousekeepingWorkspaceQuery> queries = verify(
@@ -305,7 +325,9 @@ void main() {
     expect(find.byTooltip('Create task'), findsNothing);
     expect(find.text('Request'), findsOneWidget);
     expect(find.text('Asset'), findsOneWidget);
-    expect(find.text('Reported'), findsOneWidget);
+    expect(find.text('Next action'), findsOneWidget);
+    expect(find.text('Reported'), findsNothing);
+    expect(_table(tester).columns.length, 5);
     expect(find.text('Fix leaking tap'), findsOneWidget);
 
     final List<HousekeepingWorkspaceQuery> queries = verify(
@@ -342,6 +364,7 @@ void main() {
     await tester.tap(find.byTooltip('Filters'));
     await tester.pumpAndSettle();
 
+    expect(find.text('ADVANCED FILTERS'), findsOneWidget);
     expect(find.text('Queue'), findsWidgets);
     expect(find.text('Status'), findsWidgets);
     expect(find.text('Facility'), findsWidgets);
@@ -350,6 +373,28 @@ void main() {
     expect(find.text('Date'), findsWidgets);
     // Resource is selected via tabs, not the advanced filter dialog.
     expect(find.text('Resource'), findsNothing);
+  });
+
+  testWidgets('settings opens table settings dialog', (
+    WidgetTester tester,
+  ) async {
+    await _pumpHousekeepingWorkspace(tester, repository: repository);
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('TABLE SETTINGS'), findsOneWidget);
+  });
+
+  testWidgets('next action opens assign dialog for unassigned task', (
+    WidgetTester tester,
+  ) async {
+    await _pumpHousekeepingWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Assign staff or team'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ASSIGN HOUSEKEEPING TASK'), findsOneWidget);
   });
 
   testWidgets('search submits applySearch to repository', (
@@ -395,6 +440,7 @@ void main() {
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.byType(AppListItemRow), findsWidgets);
     expect(find.text('Clean ward 2B'), findsOneWidget);
+    expect(find.text('Assign staff or team'), findsWidgets);
     expect(_tabLabel('Tasks'), findsOneWidget);
   });
 }

@@ -249,9 +249,14 @@ void main() {
     expect(_toolbarPrimary('Schedule case'), findsOneWidget);
     expect(_toolbarAction('Refresh'), findsOneWidget);
     expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+    expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
     expect(_table(tester).columnVisibilityLabel, 'Settings');
+    expect(_table(tester).columnVisibilityTitle, 'Table Settings');
+    expect(_table(tester).columnVisibilityStorageKey, 'theater_all');
+    expect(_table(tester).columns.length, lessThanOrEqualTo(5));
     expect(find.text('Filters'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Update readiness'), findsWidgets);
   });
 
   testWidgets('switching tabs applies status/stage filters and updates URL', (
@@ -268,6 +273,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'scheduled');
+    expect(_table(tester).columnVisibilityStorageKey, 'theater_scheduled');
     List<TheaterCaseQuery> queries = verify(
       () => repository.listCases(captureAny()),
     ).captured.cast<TheaterCaseQuery>();
@@ -392,5 +398,6 @@ void main() {
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.textContaining('Scheduled'), findsWidgets);
     expect(find.textContaining('Recovery'), findsWidgets);
+    expect(find.widgetWithText(AppButton, 'Update readiness'), findsWidgets);
   });
 }

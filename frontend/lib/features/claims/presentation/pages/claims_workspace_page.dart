@@ -746,11 +746,13 @@ class _ClaimsQueuePanel extends ConsumerWidget {
       columnVisibilityStorageKey: 'claims_${section.name}',
       columnWidthStorageKey: 'claims_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
       search: AppListTableSearch<ClaimsQueueItem>(
         controller: searchController,
         semanticLabel: l10n.claimsSearchSemanticLabel,
         hintText: l10n.claimsSearchHint,
-        matcher: (_, _) => true,
+        matcher: (ClaimsQueueItem item, String query) =>
+            _claimsQueueSearchMatcher(context, l10n, section, item, query),
         onSubmitted: (String value) async {
           final AppFailure? failure = await controller.applySearch(value);
           if (context.mounted) {
@@ -764,8 +766,8 @@ class _ClaimsQueuePanel extends ConsumerWidget {
           }
         },
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.claimsFiltersLabel,
-        advancedFilterTitle: l10n.claimsFiltersLabel,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
         enableDateFilter: false,
@@ -809,242 +811,455 @@ class _ClaimsQueuePanel extends ConsumerWidget {
         body: l10n.claimsEmptyQueueBody,
         icon: Icons.inbox_outlined,
       ),
-      columns: _columnsForSection(context, l10n, section),
+      columns: _defaultColumnsForSection(context, ref, l10n, section, state),
+      columnChoices: _columnChoicesForSection(context, l10n, section),
       mobileItemBuilder: (BuildContext context, ClaimsQueueItem item) {
-        return _MobileQueueItem(item: item);
+        return _MobileQueueItem(item: item, section: section, state: state);
       },
     );
   }
+}
 
-  static List<AppListTableColumn<ClaimsQueueItem>> _columnsForSection(
-    BuildContext context,
-    AppLocalizations l10n,
-    ClaimsDeskSection section,
-  ) {
-    return switch (section) {
-      ClaimsDeskSection.authorizations => <AppListTableColumn<ClaimsQueueItem>>[
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'auth_reference',
-          label: l10n.claimsReferenceColumnLabel,
-          alwaysVisible: true,
-          sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
-              appListTableCompareText(a.displayId, b.displayId),
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
-              Text(item.displayId),
+List<AppListTableColumn<ClaimsQueueItem>> _defaultColumnsForSection(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n,
+  ClaimsDeskSection section,
+  ClaimsWorkspaceState state,
+) {
+  return switch (section) {
+    ClaimsDeskSection.authorizations => <AppListTableColumn<ClaimsQueueItem>>[
+      _claimsReferenceColumn(l10n, id: 'auth_reference'),
+      _claimsPatientColumn(l10n, id: 'auth_patient'),
+      _claimsCoverageColumn(l10n, id: 'auth_coverage'),
+      _claimsStatusColumn(l10n),
+      _claimsNextActionColumn(context, ref, state, section),
+    ],
+    ClaimsDeskSection.activeClaims => <AppListTableColumn<ClaimsQueueItem>>[
+      _claimsReferenceColumn(l10n, id: 'claim_reference'),
+      _claimsPatientColumn(l10n, id: 'claim_patient'),
+      _claimsCoverageColumn(l10n, id: 'claim_coverage'),
+      _claimsStatusColumn(l10n),
+      _claimsNextActionColumn(context, ref, state, section),
+    ],
+    ClaimsDeskSection.settled => <AppListTableColumn<ClaimsQueueItem>>[
+      _claimsReferenceColumn(l10n, id: 'settled_reference'),
+      _claimsPatientColumn(l10n, id: 'settled_patient'),
+      _claimsCoverageColumn(l10n, id: 'settled_coverage'),
+      _claimsSettlementAmountColumn(l10n),
+      _claimsStatusColumn(l10n),
+    ],
+    ClaimsDeskSection.insuranceSetup =>
+      const <AppListTableColumn<ClaimsQueueItem>>[],
+  };
+}
+
+List<AppListTableColumn<ClaimsQueueItem>> _columnChoicesForSection(
+  BuildContext context,
+  AppLocalizations l10n,
+  ClaimsDeskSection section,
+) {
+  return switch (section) {
+    ClaimsDeskSection.authorizations => <AppListTableColumn<ClaimsQueueItem>>[
+      _claimsApprovedAmountColumn(l10n, id: 'auth_approved_amount'),
+      _claimsRequestedAtColumn(l10n, id: 'auth_requested_at'),
+    ],
+    ClaimsDeskSection.activeClaims => <AppListTableColumn<ClaimsQueueItem>>[
+      _claimsInvoiceColumn(l10n, id: 'claim_invoice'),
+      _claimsClaimAmountColumn(l10n, id: 'claim_amount'),
+      _claimsSubmittedAtColumn(l10n, id: 'claim_submitted_at'),
+    ],
+    ClaimsDeskSection.settled => <AppListTableColumn<ClaimsQueueItem>>[
+      _claimsInvoiceColumn(l10n, id: 'settled_invoice'),
+      _claimsClaimAmountColumn(l10n, id: 'settled_claim_amount'),
+      _claimsTimelineColumn(l10n, id: 'settled_timeline'),
+    ],
+    ClaimsDeskSection.insuranceSetup =>
+      const <AppListTableColumn<ClaimsQueueItem>>[],
+  };
+}
+
+AppListTableColumn<ClaimsQueueItem> _claimsReferenceColumn(
+  AppLocalizations l10n, {
+  required String id,
+}) {
+  return AppListTableColumn<ClaimsQueueItem>(
+    id: id,
+    label: l10n.claimsReferenceColumnLabel,
+    alwaysVisible: true,
+    sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+        appListTableCompareText(a.displayId, b.displayId),
+    cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+        Text(item.displayId),
+  );
+}
+
+AppListTableColumn<ClaimsQueueItem> _claimsPatientColumn(
+  AppLocalizations l10n, {
+  required String id,
+}) {
+  return AppListTableColumn<ClaimsQueueItem>(
+    id: id,
+    label: l10n.claimsPatientColumnLabel,
+    sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+        appListTableCompareText(a.patientDisplayId, b.patientDisplayId),
+    cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+        Text(_fallback(context, item.patientDisplayId)),
+  );
+}
+
+AppListTableColumn<ClaimsQueueItem> _claimsCoverageColumn(
+  AppLocalizations l10n, {
+  required String id,
+}) {
+  return AppListTableColumn<ClaimsQueueItem>(
+    id: id,
+    label: l10n.claimsCoverageColumnLabel,
+    sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+        appListTableCompareText(
+          a.coveragePlanDisplayId,
+          b.coveragePlanDisplayId,
         ),
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'auth_patient',
-          label: l10n.claimsPatientColumnLabel,
-          sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
-              appListTableCompareText(a.patientDisplayId, b.patientDisplayId),
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
-              Text(_fallback(context, item.patientDisplayId)),
+    cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+        Text(_fallback(context, item.coveragePlanDisplayId)),
+  );
+}
+
+AppListTableColumn<ClaimsQueueItem> _claimsStatusColumn(AppLocalizations l10n) {
+  return AppListTableColumn<ClaimsQueueItem>(
+    id: 'status',
+    label: l10n.claimsStatusColumnLabel,
+    sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+        appListTableCompareText(a.status, b.status),
+    cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+        AppWorkspaceStatusBadge(status: _statusFor(context, item)),
+  );
+}
+
+AppListTableColumn<ClaimsQueueItem> _claimsInvoiceColumn(
+  AppLocalizations l10n, {
+  required String id,
+}) {
+  return AppListTableColumn<ClaimsQueueItem>(
+    id: id,
+    label: l10n.claimsInvoiceColumnLabel,
+    sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+        appListTableCompareText(a.invoiceDisplayId, b.invoiceDisplayId),
+    cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+        Text(_fallback(context, item.invoiceDisplayId)),
+  );
+}
+
+AppListTableColumn<ClaimsQueueItem> _claimsClaimAmountColumn(
+  AppLocalizations l10n, {
+  required String id,
+}) {
+  return AppListTableColumn<ClaimsQueueItem>(
+    id: id,
+    label: l10n.claimsAmountColumnLabel,
+    numeric: true,
+    cellBuilder: (BuildContext context, ClaimsQueueItem item) {
+      final num? amount = item.claim?.claimAmount;
+      if (amount == null) return Text(_fallback(context, null));
+      return Text(
+        AppFormatters.currency(amount, Localizations.localeOf(context)),
+      );
+    },
+  );
+}
+
+AppListTableColumn<ClaimsQueueItem> _claimsApprovedAmountColumn(
+  AppLocalizations l10n, {
+  required String id,
+}) {
+  return AppListTableColumn<ClaimsQueueItem>(
+    id: id,
+    label: l10n.claimsAmountColumnLabel,
+    numeric: true,
+    cellBuilder: (BuildContext context, ClaimsQueueItem item) {
+      final num? amount = item.authorization?.approvedAmount;
+      if (amount == null) return Text(_fallback(context, null));
+      return Text(
+        AppFormatters.currency(amount, Localizations.localeOf(context)),
+      );
+    },
+  );
+}
+
+AppListTableColumn<ClaimsQueueItem> _claimsSettlementAmountColumn(
+  AppLocalizations l10n,
+) {
+  return AppListTableColumn<ClaimsQueueItem>(
+    id: 'settled_settlement_amount',
+    label: l10n.claimsSettlementAmountColumnLabel,
+    numeric: true,
+    cellBuilder: (BuildContext context, ClaimsQueueItem item) {
+      final num? amount = item.claim?.settlementAmount;
+      if (amount == null) return Text(_fallback(context, null));
+      return Text(
+        AppFormatters.currency(amount, Localizations.localeOf(context)),
+      );
+    },
+  );
+}
+
+AppListTableColumn<ClaimsQueueItem> _claimsRequestedAtColumn(
+  AppLocalizations l10n, {
+  required String id,
+}) {
+  return AppListTableColumn<ClaimsQueueItem>(
+    id: id,
+    label: l10n.claimsRequestedAtColumnLabel,
+    sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+        appListTableCompareDateTime(
+          a.authorization?.requestedAt,
+          b.authorization?.requestedAt,
         ),
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'auth_coverage',
-          label: l10n.claimsCoverageColumnLabel,
-          sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
-              appListTableCompareText(
-                a.coveragePlanDisplayId,
-                b.coveragePlanDisplayId,
-              ),
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
-              Text(_fallback(context, item.coveragePlanDisplayId)),
+    cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+        Text(_dateTimeLabel(context, item.authorization?.requestedAt)),
+  );
+}
+
+AppListTableColumn<ClaimsQueueItem> _claimsSubmittedAtColumn(
+  AppLocalizations l10n, {
+  required String id,
+}) {
+  return AppListTableColumn<ClaimsQueueItem>(
+    id: id,
+    label: l10n.claimsSubmittedAtColumnLabel,
+    sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+        appListTableCompareDateTime(a.claim?.submittedAt, b.claim?.submittedAt),
+    cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+        Text(_dateTimeLabel(context, item.claim?.submittedAt)),
+  );
+}
+
+AppListTableColumn<ClaimsQueueItem> _claimsTimelineColumn(
+  AppLocalizations l10n, {
+  required String id,
+}) {
+  return AppListTableColumn<ClaimsQueueItem>(
+    id: id,
+    label: l10n.claimsTimelineColumnLabel,
+    sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+        appListTableCompareDateTime(a.timelineAt, b.timelineAt),
+    cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
+        Text(_dateTimeLabel(context, item.timelineAt)),
+  );
+}
+
+AppListTableColumn<ClaimsQueueItem> _claimsNextActionColumn(
+  BuildContext context,
+  WidgetRef ref,
+  ClaimsWorkspaceState state,
+  ClaimsDeskSection section,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<ClaimsQueueItem>(
+    id: 'next_action',
+    label: l10n.claimsNextActionColumnLabel,
+    alwaysVisible: true,
+    sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
+        appListTableCompareText(
+          _claimsNextActionLabel(l10n, a),
+          _claimsNextActionLabel(l10n, b),
         ),
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'auth_status',
-          label: l10n.claimsStatusColumnLabel,
-          sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
-              appListTableCompareText(a.status, b.status),
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
-              AppWorkspaceStatusBadge(status: _statusFor(context, item)),
-        ),
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'auth_approved_amount',
-          label: l10n.claimsAmountColumnLabel,
-          numeric: true,
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) {
-            final num? amount = item.authorization?.approvedAmount;
-            if (amount == null) return Text(_fallback(context, null));
-            return Text(
-              AppFormatters.currency(amount, Localizations.localeOf(context)),
-            );
-          },
-        ),
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'auth_requested_at',
-          label: l10n.claimsRequestedAtColumnLabel,
-          sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
-              appListTableCompareDateTime(
-                a.authorization?.requestedAt,
-                b.authorization?.requestedAt,
-              ),
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
-              Text(_dateTimeLabel(context, item.authorization?.requestedAt)),
-        ),
-      ],
-      ClaimsDeskSection.activeClaims => <AppListTableColumn<ClaimsQueueItem>>[
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'claim_reference',
-          label: l10n.claimsReferenceColumnLabel,
-          alwaysVisible: true,
-          sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
-              appListTableCompareText(a.displayId, b.displayId),
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
-              Text(item.displayId),
-        ),
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'claim_patient',
-          label: l10n.claimsPatientColumnLabel,
-          sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
-              appListTableCompareText(a.patientDisplayId, b.patientDisplayId),
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
-              Text(_fallback(context, item.patientDisplayId)),
-        ),
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'claim_coverage',
-          label: l10n.claimsCoverageColumnLabel,
-          sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
-              appListTableCompareText(
-                a.coveragePlanDisplayId,
-                b.coveragePlanDisplayId,
-              ),
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
-              Text(_fallback(context, item.coveragePlanDisplayId)),
-        ),
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'claim_invoice',
-          label: l10n.claimsInvoiceColumnLabel,
-          sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
-              appListTableCompareText(a.invoiceDisplayId, b.invoiceDisplayId),
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
-              Text(_fallback(context, item.invoiceDisplayId)),
-        ),
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'claim_amount',
-          label: l10n.claimsAmountColumnLabel,
-          numeric: true,
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) {
-            final num? amount = item.claim?.claimAmount;
-            if (amount == null) return Text(_fallback(context, null));
-            return Text(
-              AppFormatters.currency(amount, Localizations.localeOf(context)),
-            );
-          },
-        ),
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'claim_status',
-          label: l10n.claimsStatusColumnLabel,
-          sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
-              appListTableCompareText(a.status, b.status),
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
-              AppWorkspaceStatusBadge(status: _statusFor(context, item)),
-        ),
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'claim_submitted_at',
-          label: l10n.claimsSubmittedAtColumnLabel,
-          sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
-              appListTableCompareDateTime(
-                a.claim?.submittedAt,
-                b.claim?.submittedAt,
-              ),
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
-              Text(_dateTimeLabel(context, item.claim?.submittedAt)),
-        ),
-      ],
-      ClaimsDeskSection.settled => <AppListTableColumn<ClaimsQueueItem>>[
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'settled_reference',
-          label: l10n.claimsReferenceColumnLabel,
-          alwaysVisible: true,
-          sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
-              appListTableCompareText(a.displayId, b.displayId),
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
-              Text(item.displayId),
-        ),
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'settled_patient',
-          label: l10n.claimsPatientColumnLabel,
-          sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
-              appListTableCompareText(a.patientDisplayId, b.patientDisplayId),
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
-              Text(_fallback(context, item.patientDisplayId)),
-        ),
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'settled_coverage',
-          label: l10n.claimsCoverageColumnLabel,
-          sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
-              appListTableCompareText(
-                a.coveragePlanDisplayId,
-                b.coveragePlanDisplayId,
-              ),
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
-              Text(_fallback(context, item.coveragePlanDisplayId)),
-        ),
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'settled_invoice',
-          label: l10n.claimsInvoiceColumnLabel,
-          sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
-              appListTableCompareText(a.invoiceDisplayId, b.invoiceDisplayId),
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
-              Text(_fallback(context, item.invoiceDisplayId)),
-        ),
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'settled_claim_amount',
-          label: l10n.claimsAmountColumnLabel,
-          numeric: true,
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) {
-            final num? amount = item.claim?.claimAmount;
-            if (amount == null) return Text(_fallback(context, null));
-            return Text(
-              AppFormatters.currency(amount, Localizations.localeOf(context)),
-            );
-          },
-        ),
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'settled_settlement_amount',
-          label: l10n.claimsSettlementAmountColumnLabel,
-          numeric: true,
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) {
-            final num? amount = item.claim?.settlementAmount;
-            if (amount == null) return Text(_fallback(context, null));
-            return Text(
-              AppFormatters.currency(amount, Localizations.localeOf(context)),
-            );
-          },
-        ),
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'settled_status',
-          label: l10n.claimsStatusColumnLabel,
-          sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
-              appListTableCompareText(a.status, b.status),
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
-              AppWorkspaceStatusBadge(status: _statusFor(context, item)),
-        ),
-        AppListTableColumn<ClaimsQueueItem>(
-          id: 'settled_timeline',
-          label: l10n.claimsTimelineColumnLabel,
-          sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
-              appListTableCompareDateTime(a.timelineAt, b.timelineAt),
-          cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
-              Text(_dateTimeLabel(context, item.timelineAt)),
-        ),
-      ],
-      ClaimsDeskSection.insuranceSetup =>
-        const <AppListTableColumn<ClaimsQueueItem>>[],
-    };
+    cellBuilder: (BuildContext context, ClaimsQueueItem item) {
+      return _ClaimsNextActionButton(
+        item: item,
+        section: section,
+        state: state,
+      );
+    },
+  );
+}
+
+String _claimsNextActionLabel(AppLocalizations l10n, ClaimsQueueItem item) {
+  if (item.isAuthorization) {
+    return l10n.claimsUpdateStatusAction;
+  }
+  final String status = item.status.toUpperCase();
+  if (status == 'PAID' || status == 'CANCELLED') {
+    return '';
+  }
+  return switch (status) {
+    'REJECTED' => l10n.claimsResubmitClaimAction,
+    'SUBMITTED' => l10n.claimsRecordResponseAction,
+    'APPROVED' => l10n.claimsCloseClaimAction,
+    'PARTIAL' => l10n.claimsRecordResponseAction,
+    _ => l10n.claimsSubmitClaimAction,
+  };
+}
+
+bool _claimsQueueSearchMatcher(
+  BuildContext context,
+  AppLocalizations l10n,
+  ClaimsDeskSection section,
+  ClaimsQueueItem item,
+  String query,
+) {
+  final String needle = query.trim().toLowerCase();
+  if (needle.isEmpty) {
+    return true;
+  }
+
+  final Locale locale = Localizations.localeOf(context);
+  final List<String> haystack = <String>[
+    item.displayId,
+    item.patientDisplayId ?? '',
+    item.coveragePlanDisplayId,
+    item.invoiceDisplayId ?? '',
+    _statusLabel(context, item),
+    _kindLabel(context, item.kind),
+    _claimsNextActionLabel(l10n, item),
+  ];
+
+  final num? approvedAmount = item.authorization?.approvedAmount;
+  if (approvedAmount != null) {
+    haystack.add(AppFormatters.currency(approvedAmount, locale));
+  }
+  final num? claimAmount = item.claim?.claimAmount;
+  if (claimAmount != null) {
+    haystack.add(AppFormatters.currency(claimAmount, locale));
+  }
+  final num? settlementAmount = item.claim?.settlementAmount;
+  if (settlementAmount != null) {
+    haystack.add(AppFormatters.currency(settlementAmount, locale));
+  }
+
+  final DateTime? requestedAt = item.authorization?.requestedAt;
+  if (requestedAt != null) {
+    haystack.add(_dateTimeLabel(context, requestedAt));
+  }
+  final DateTime? submittedAt = item.claim?.submittedAt;
+  if (submittedAt != null) {
+    haystack.add(_dateTimeLabel(context, submittedAt));
+  }
+  if (item.timelineAt != null) {
+    haystack.add(_dateTimeLabel(context, item.timelineAt));
+  }
+
+  return haystack.any(
+    (String value) =>
+        value.trim().isNotEmpty && value.toLowerCase().contains(needle),
+  );
+}
+
+class _ClaimsNextActionButton extends ConsumerWidget {
+  const _ClaimsNextActionButton({
+    required this.item,
+    required this.section,
+    required this.state,
+  });
+
+  final ClaimsQueueItem item;
+  final ClaimsDeskSection section;
+  final ClaimsWorkspaceState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (section == ClaimsDeskSection.settled) {
+      return const SizedBox.shrink();
+    }
+
+    final AppLocalizations l10n = context.l10n;
+    final String label = _claimsNextActionLabel(l10n, item);
+    if (label.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return AppAccessActionGate(
+      requirement: claimsWorkspaceWriteRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        return AppButton.tertiary(
+          label: label,
+          enabled: isAllowed,
+          onPressed: isAllowed
+              ? () => unawaited(
+                  _handleClaimsNextAction(context, ref, state, item),
+                )
+              : null,
+        );
+      },
+    );
   }
 }
 
-class _MobileQueueItem extends StatelessWidget {
-  const _MobileQueueItem({required this.item});
+Future<void> _handleClaimsNextAction(
+  BuildContext context,
+  WidgetRef ref,
+  ClaimsWorkspaceState state,
+  ClaimsQueueItem item,
+) async {
+  final ClaimsWorkspaceController controller = ref.read(
+    claimsWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? selectFailure = await controller.selectItem(item);
+  if (!context.mounted || selectFailure != null) {
+    if (context.mounted) {
+      _showFailureIfNeeded(context, selectFailure);
+    }
+    return;
+  }
+
+  final AppLocalizations l10n = context.l10n;
+
+  if (item.isAuthorization) {
+    final ClaimsQueueDetail? detail = _readClaimsState(ref)?.selectedDetail;
+    if (detail != null) {
+      await _openAuthorizationStatusDialog(context, controller, detail);
+    }
+    return;
+  }
+
+  final String status = item.status.toUpperCase();
+  if (status == 'PAID' || status == 'CANCELLED') {
+    return;
+  }
+
+  switch (status) {
+    case 'REJECTED':
+      await _openSubmitClaimDialog(context, controller);
+    case 'SUBMITTED':
+    case 'PARTIAL':
+      await _openClaimResponseDialog(
+        context,
+        controller,
+        initialStatus: 'APPROVED',
+        title: l10n.claimsRecordResponseDialogTitle,
+        submitLabel: l10n.claimsRecordResponseSubmitAction,
+      );
+    case 'APPROVED':
+      await _openClaimResponseDialog(
+        context,
+        controller,
+        initialStatus: 'PAID',
+        title: l10n.claimsCloseClaimDialogTitle,
+        submitLabel: l10n.claimsCloseClaimSubmitAction,
+      );
+    default:
+      await _openSubmitClaimDialog(context, controller);
+  }
+}
+
+class _MobileQueueItem extends ConsumerWidget {
+  const _MobileQueueItem({
+    required this.item,
+    required this.section,
+    required this.state,
+  });
 
   final ClaimsQueueItem item;
+  final ClaimsDeskSection section;
+  final ClaimsWorkspaceState state;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
+    final String nextActionLabel = _claimsNextActionLabel(l10n, item);
+    final bool showNextAction =
+        section != ClaimsDeskSection.settled && nextActionLabel.isNotEmpty;
 
     return Padding(
       padding: EdgeInsets.all(theme.spacing.md),
@@ -1057,7 +1272,7 @@ class _MobileQueueItem extends StatelessWidget {
               SizedBox(width: theme.spacing.xs),
               Expanded(
                 child: Text(
-                  '${_kindLabel(context, item.kind)} ${item.displayId}',
+                  item.displayId,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall,
@@ -1069,11 +1284,8 @@ class _MobileQueueItem extends StatelessWidget {
           SizedBox(height: theme.spacing.xs),
           Text(
             l10n.claimsMobileQueueSubtitle(
+              _fallback(context, item.patientDisplayId),
               _fallback(context, item.coveragePlanDisplayId),
-              _fallback(
-                context,
-                item.invoiceDisplayId ?? item.patientDisplayId,
-              ),
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -1082,12 +1294,22 @@ class _MobileQueueItem extends StatelessWidget {
             ),
           ),
           SizedBox(height: theme.spacing.xs),
-          Text(
-            _dateTimeLabel(context, item.timelineAt),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+          if (showNextAction)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _ClaimsNextActionButton(
+                item: item,
+                section: section,
+                state: state,
+              ),
+            )
+          else
+            Text(
+              _dateTimeLabel(context, item.timelineAt),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
         ],
       ),
     );

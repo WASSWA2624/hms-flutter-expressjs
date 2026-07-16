@@ -364,15 +364,27 @@ class _OperationsWorkspaceContentState
                 state: state,
                 searchController: _assetsSearchController,
                 columnVisibilityController: _assetsColumnController,
+                onAssetSelected: (OperationsAsset asset) {
+                  unawaited(_openAssetDetailDialog(context, asset));
+                },
               )
             else
               _OperationsQueuePanel(
                 state: state,
                 searchController: _searchController,
                 columnVisibilityController: _tableColumnController,
+                canMutate: canMutate,
                 onItemSelected: (OperationsWorkItem item) {
                   unawaited(_openRequestDetailDialog(context, item, canMutate));
                 },
+                onOpenDetail:
+                    (BuildContext detailContext, OperationsWorkItem item) {
+                      return _openRequestDetailDialog(
+                        detailContext,
+                        item,
+                        canMutate,
+                      );
+                    },
                 section: _section,
               ),
           ],
@@ -501,6 +513,24 @@ class _OperationsWorkspaceContentState
       ),
     );
   }
+
+  Future<void> _openAssetDetailDialog(
+    BuildContext context,
+    OperationsAsset asset,
+  ) async {
+    await showAppDialog<void>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AppDialog(
+          title: Text(asset.effectiveLabel),
+          icon: const Icon(Icons.precision_manufacturing_outlined),
+          scrollable: true,
+          maxWidth: 720,
+          content: _OperationsAssetDetailPanel(asset: asset),
+        );
+      },
+    );
+  }
 }
 
 class _OperationsQueuePanel extends ConsumerWidget {
@@ -508,7 +538,9 @@ class _OperationsQueuePanel extends ConsumerWidget {
     required this.state,
     required this.searchController,
     required this.columnVisibilityController,
+    required this.canMutate,
     required this.onItemSelected,
+    required this.onOpenDetail,
     required this.section,
   });
 
@@ -516,7 +548,10 @@ class _OperationsQueuePanel extends ConsumerWidget {
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<OperationsWorkItem>
   columnVisibilityController;
+  final bool canMutate;
   final ValueChanged<OperationsWorkItem> onItemSelected;
+  final Future<void> Function(BuildContext context, OperationsWorkItem item)
+  onOpenDetail;
   final OperationsDeskSection section;
 
   @override
@@ -535,17 +570,19 @@ class _OperationsQueuePanel extends ConsumerWidget {
       columnVisibilityStorageKey: 'operations_${section.name}',
       columnWidthStorageKey: 'operations_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
       search: AppListTableSearch<OperationsWorkItem>(
         controller: searchController,
         semanticLabel: l10n.operationsSearchLabel,
         hintText: l10n.operationsSearchHint,
         clearLabel: l10n.operationsClearFiltersAction,
-        matcher: (_, _) => true,
+        matcher: (OperationsWorkItem item, String query) =>
+            _operationsWorkItemMatchesSearch(l10n, item, query),
         onSubmitted: controller.applySearch,
         onClear: () => controller.applySearch(''),
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.operationsFiltersLabel,
-        advancedFilterTitle: l10n.operationsFiltersLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.operationsClearFiltersAction,
         searchFieldLabel: l10n.operationsSearchFieldsLabel,
@@ -608,10 +645,20 @@ class _OperationsQueuePanel extends ConsumerWidget {
         title: l10n.operationsNoRequestsTitle,
         body: l10n.operationsNoRequestsBody,
       ),
-      columns: _operationColumns(l10n),
+      columns: _operationColumns(
+        l10n,
+        state: state,
+        canMutate: canMutate,
+        onOpenDetail: onOpenDetail,
+      ),
       columnChoices: _operationColumnChoices(l10n),
       mobileItemBuilder: (BuildContext context, OperationsWorkItem item) {
-        return _OperationsRequestListTile(item: item);
+        return _OperationsRequestListTile(
+          item: item,
+          state: state,
+          canMutate: canMutate,
+          onOpenDetail: onOpenDetail,
+        );
       },
     );
   }
@@ -622,12 +669,14 @@ class _OperationsAssetsPanel extends StatefulWidget {
     required this.state,
     required this.searchController,
     required this.columnVisibilityController,
+    required this.onAssetSelected,
   });
 
   final OperationsWorkspaceState state;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<OperationsAsset>
   columnVisibilityController;
+  final ValueChanged<OperationsAsset> onAssetSelected;
 
   @override
   State<_OperationsAssetsPanel> createState() => _OperationsAssetsPanelState();
@@ -637,7 +686,7 @@ class _OperationsAssetsPanelState extends State<_OperationsAssetsPanel> {
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
 
   List<OperationsAsset> get _filteredAssets {
-    final String query = widget.searchController.text.trim().toLowerCase();
+    final String query = widget.searchController.text.trim();
     final String? status = _filterValue.option(_operationsAssetStatusFilterKey);
     return widget.state.assets.items
         .where((OperationsAsset asset) {
@@ -646,14 +695,7 @@ class _OperationsAssetsPanelState extends State<_OperationsAssetsPanel> {
               (asset.status ?? '').trim().toUpperCase() != status) {
             return false;
           }
-          if (query.isEmpty) {
-            return true;
-          }
-          final String haystack =
-              '${asset.name} ${asset.assetTag} ${asset.facilityLabel} '
-                      '${asset.status} ${asset.effectiveDisplayId}'
-                  .toLowerCase();
-          return haystack.contains(query);
+          return _assetMatchesSearch(context.l10n, asset, query);
         })
         .toList(growable: false);
   }
@@ -671,18 +713,19 @@ class _OperationsAssetsPanelState extends State<_OperationsAssetsPanel> {
       columnVisibilityStorageKey: 'operations_assets',
       columnWidthStorageKey: 'operations_cw_assets',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
       search: AppListTableSearch<OperationsAsset>(
         controller: widget.searchController,
         semanticLabel: l10n.operationsSearchLabel,
         hintText: l10n.operationsSearchHint,
         clearLabel: l10n.operationsClearFiltersAction,
         matcher: (OperationsAsset asset, String query) =>
-            _assetMatchesSearch(asset, query),
+            _assetMatchesSearch(l10n, asset, query),
         onChanged: (_) => setState(() {}),
         onClear: () => setState(() {}),
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.operationsFiltersLabel,
-        advancedFilterTitle: l10n.operationsFiltersLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.operationsClearFiltersAction,
         filterGroups: <AppSearchBarFilterGroup>[
@@ -705,6 +748,7 @@ class _OperationsAssetsPanelState extends State<_OperationsAssetsPanel> {
         body: l10n.operationsNoAssetsBody,
       ),
       itemKeyBuilder: (OperationsAsset asset) => ValueKey<String>(asset.id),
+      onRowSelected: widget.onAssetSelected,
       columns: <AppListTableColumn<OperationsAsset>>[
         AppListTableColumn<OperationsAsset>(
           id: 'asset_name',
@@ -755,6 +799,13 @@ class _OperationsAssetsPanelState extends State<_OperationsAssetsPanel> {
               value: asset.effectiveDisplayId,
               textStyle: Theme.of(context).textTheme.bodySmall,
             ),
+            AppInlineMetaText(
+              icon: Icons.location_on_outlined,
+              label: _display(
+                asset.facilityLabel,
+                asset.facilityId ?? l10n.operationsUnknownValue,
+              ),
+            ),
           ],
         );
       },
@@ -762,16 +813,101 @@ class _OperationsAssetsPanelState extends State<_OperationsAssetsPanel> {
   }
 }
 
-bool _assetMatchesSearch(OperationsAsset asset, String query) {
+class _OperationsAssetDetailPanel extends StatelessWidget {
+  const _OperationsAssetDetailPanel({required this.asset});
+
+  final OperationsAsset asset;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    return AppWorkspaceDetailPanel(
+      title: asset.effectiveLabel,
+      description: asset.effectiveDisplayId,
+      child: AppInfoTileGrid(
+        maxColumns: 2,
+        items: <AppInfoTileData>[
+          AppInfoTileData(
+            label: l10n.operationsAssetNameColumnLabel,
+            value: asset.effectiveLabel,
+            icon: Icons.precision_manufacturing_outlined,
+          ),
+          AppInfoTileData(
+            label: l10n.operationsAssetTagColumnLabel,
+            value: _display(asset.assetTag, l10n.operationsUnknownValue),
+            icon: Icons.sell_outlined,
+            copyable: _hasValue(asset.assetTag),
+          ),
+          AppInfoTileData(
+            label: l10n.operationsStatusColumnLabel,
+            value: _statusLabel(l10n, asset.status),
+            icon: Icons.fact_check_outlined,
+          ),
+          AppInfoTileData(
+            label: l10n.operationsLocationColumnLabel,
+            value: _display(
+              asset.facilityLabel,
+              asset.facilityId ?? l10n.operationsUnknownValue,
+            ),
+            icon: Icons.location_on_outlined,
+          ),
+          AppInfoTileData(
+            label: l10n.operationsRequestColumnLabel,
+            value: asset.effectiveDisplayId,
+            icon: Icons.confirmation_number_outlined,
+            copyable: true,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+bool _assetMatchesSearch(
+  AppLocalizations l10n,
+  OperationsAsset asset,
+  String query,
+) {
   final String needle = query.trim().toLowerCase();
   if (needle.isEmpty) {
     return true;
   }
-  final String haystack =
-      '${asset.name} ${asset.assetTag} ${asset.facilityLabel} '
-              '${asset.status} ${asset.effectiveDisplayId}'
-          .toLowerCase();
-  return haystack.contains(needle);
+  return _assetSearchHaystack(l10n, asset).contains(needle);
+}
+
+String _assetSearchHaystack(AppLocalizations l10n, OperationsAsset asset) {
+  return '${asset.name} ${asset.assetTag} ${asset.facilityLabel} '
+          '${asset.facilityId} ${_statusLabel(l10n, asset.status)} '
+          '${asset.effectiveDisplayId} ${asset.effectiveLabel}'
+      .toLowerCase();
+}
+
+bool _operationsWorkItemMatchesSearch(
+  AppLocalizations l10n,
+  OperationsWorkItem item,
+  String query,
+) {
+  final String normalized = query.trim().toLowerCase();
+  if (normalized.isEmpty) {
+    return true;
+  }
+  final String? dueAt = item.dueAt?.toIso8601String();
+  return <String>[
+    _issueLabel(l10n, item),
+    item.effectiveDisplayId,
+    item.displayId ?? '',
+    _categoryLabel(l10n, item.metadata.category),
+    item.assetLabel ?? '',
+    item.assetId ?? '',
+    _priorityLabel(l10n, item.metadata.priority),
+    _locationLabel(l10n, item),
+    item.facilityLabel ?? '',
+    item.facilityId ?? '',
+    _statusLabel(l10n, item.status),
+    _display(item.metadata.assignee, ''),
+    _nextActionLabel(l10n, item),
+    ?dueAt,
+  ].any((String value) => value.toLowerCase().contains(normalized));
 }
 
 class _OperationsDetailPanel extends ConsumerWidget {
@@ -1139,13 +1275,22 @@ class _ServiceLogTile extends StatelessWidget {
   }
 }
 
-class _OperationsRequestListTile extends StatelessWidget {
-  const _OperationsRequestListTile({required this.item});
+class _OperationsRequestListTile extends ConsumerWidget {
+  const _OperationsRequestListTile({
+    required this.item,
+    required this.state,
+    required this.canMutate,
+    required this.onOpenDetail,
+  });
 
   final OperationsWorkItem item;
+  final OperationsWorkspaceState state;
+  final bool canMutate;
+  final Future<void> Function(BuildContext context, OperationsWorkItem item)
+  onOpenDetail;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     return AppListItemRow(
       leadingIcon: _statusIcon(item.status),
@@ -1160,12 +1305,123 @@ class _OperationsRequestListTile extends StatelessWidget {
           value: item.effectiveDisplayId,
           textStyle: Theme.of(context).textTheme.bodySmall,
         ),
-        AppInlineMetaText(
-          icon: Icons.next_plan_outlined,
-          label: _nextActionLabel(l10n, item),
+        _OperationsNextActionButton(
+          item: item,
+          state: state,
+          canMutate: canMutate,
+          onOpenDetail: onOpenDetail,
         ),
       ],
     );
+  }
+}
+
+class _OperationsNextActionButton extends ConsumerWidget {
+  const _OperationsNextActionButton({
+    required this.item,
+    required this.state,
+    required this.canMutate,
+    required this.onOpenDetail,
+  });
+
+  final OperationsWorkItem item;
+  final OperationsWorkspaceState state;
+  final bool canMutate;
+  final Future<void> Function(BuildContext context, OperationsWorkItem item)
+  onOpenDetail;
+
+  bool get _enabled {
+    return switch (item.normalizedStatus) {
+      'CANCELLED' => true,
+      'COMPLETED' => canMutate,
+      _ => canMutate && !item.isTerminal,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final String label = _nextActionLabel(l10n, item);
+    final OperationsWorkspaceState? workspaceState = _operationsStateFromAsync(
+      ref.watch(operationsWorkspaceControllerProvider),
+    );
+    final bool isMutating = workspaceState?.isMutating ?? false;
+    final bool enabled = _enabled && !isMutating;
+
+    if (item.normalizedStatus == 'CANCELLED') {
+      return AppButton.tertiary(
+        label: label,
+        enabled: enabled,
+        onPressed: enabled
+            ? () => unawaited(onOpenDetail(context, item))
+            : null,
+      );
+    }
+
+    return AppButton.secondary(
+      label: label,
+      enabled: enabled,
+      onPressed: enabled ? () => unawaited(_handlePressed(context, ref)) : null,
+    );
+  }
+
+  Future<void> _handlePressed(BuildContext context, WidgetRef ref) async {
+    final OperationsWorkspaceController controller = ref.read(
+      operationsWorkspaceControllerProvider.notifier,
+    );
+    final OperationsWorkspaceState workspaceState =
+        _operationsStateFromAsync(
+          ref.read(operationsWorkspaceControllerProvider),
+        ) ??
+        state;
+
+    switch (item.normalizedStatus) {
+      case 'OPEN':
+        final AppFailure? selectFailure = await controller.selectItem(item);
+        if (!context.mounted) {
+          return;
+        }
+        if (selectFailure != null) {
+          _showFailureIfNeeded(context, selectFailure);
+          return;
+        }
+        await _showAssignDialog(context, ref);
+      case 'IN_PROGRESS':
+        final AppFailure? selectFailure = await controller.selectItem(item);
+        if (!context.mounted) {
+          return;
+        }
+        if (selectFailure != null) {
+          _showFailureIfNeeded(context, selectFailure);
+          return;
+        }
+        if (_hasValue(item.assetId)) {
+          await _showServiceLogDialog(context, ref, workspaceState);
+        } else {
+          await _showStatusDialog(context, ref, item);
+        }
+      case 'COMPLETED':
+        final AppFailure? selectFailure = await controller.selectItem(item);
+        if (!context.mounted) {
+          return;
+        }
+        if (selectFailure != null) {
+          _showFailureIfNeeded(context, selectFailure);
+          return;
+        }
+        await _showNoteDialog(
+          context,
+          title: context.l10n.operationsCloseoutNoteAction,
+          fieldLabel: context.l10n.operationsCloseoutNoteLabel,
+          submitLabel: context.l10n.operationsSaveNoteAction,
+          kind: _noteKindCloseout,
+          controller: controller,
+        );
+      case 'CANCELLED':
+        await onOpenDetail(context, item);
+      default:
+        await onOpenDetail(context, item);
+    }
   }
 }
 
@@ -1879,11 +2135,17 @@ class _OperationsReportDialog extends StatelessWidget {
 }
 
 List<AppListTableColumn<OperationsWorkItem>> _operationColumns(
-  AppLocalizations l10n,
-) {
+  AppLocalizations l10n, {
+  required OperationsWorkspaceState state,
+  required bool canMutate,
+  required Future<void> Function(BuildContext context, OperationsWorkItem item)
+  onOpenDetail,
+}) {
   return <AppListTableColumn<OperationsWorkItem>>[
     AppListTableColumn<OperationsWorkItem>(
+      id: 'request',
       label: l10n.operationsRequestColumnLabel,
+      alwaysVisible: true,
       sortComparator: (OperationsWorkItem left, OperationsWorkItem right) =>
           appListTableCompareText(
             _issueLabel(l10n, left),
@@ -1897,6 +2159,7 @@ List<AppListTableColumn<OperationsWorkItem>> _operationColumns(
       },
     ),
     AppListTableColumn<OperationsWorkItem>(
+      id: 'area',
       label: l10n.operationsAreaColumnLabel,
       sortComparator: (OperationsWorkItem left, OperationsWorkItem right) =>
           appListTableCompareText(
@@ -1916,6 +2179,7 @@ List<AppListTableColumn<OperationsWorkItem>> _operationColumns(
       },
     ),
     AppListTableColumn<OperationsWorkItem>(
+      id: 'priority',
       label: l10n.operationsPriorityColumnLabel,
       sortComparator: (OperationsWorkItem left, OperationsWorkItem right) =>
           appListTableCompareText(
@@ -1927,6 +2191,41 @@ List<AppListTableColumn<OperationsWorkItem>> _operationColumns(
       },
     ),
     AppListTableColumn<OperationsWorkItem>(
+      id: 'status',
+      label: l10n.operationsStatusColumnLabel,
+      sortComparator: (OperationsWorkItem left, OperationsWorkItem right) =>
+          appListTableCompareText(left.status, right.status),
+      cellBuilder: (BuildContext context, OperationsWorkItem item) {
+        return _OperationStatusBadge(status: item.status);
+      },
+    ),
+    AppListTableColumn<OperationsWorkItem>(
+      id: 'next_action',
+      label: l10n.operationsNextActionColumnLabel,
+      alwaysVisible: true,
+      sortComparator: (OperationsWorkItem left, OperationsWorkItem right) =>
+          appListTableCompareText(
+            _nextActionLabel(l10n, left),
+            _nextActionLabel(l10n, right),
+          ),
+      cellBuilder: (BuildContext context, OperationsWorkItem item) {
+        return _OperationsNextActionButton(
+          item: item,
+          state: state,
+          canMutate: canMutate,
+          onOpenDetail: onOpenDetail,
+        );
+      },
+    ),
+  ];
+}
+
+List<AppListTableColumn<OperationsWorkItem>> _operationColumnChoices(
+  AppLocalizations l10n,
+) {
+  return <AppListTableColumn<OperationsWorkItem>>[
+    AppListTableColumn<OperationsWorkItem>(
+      id: 'location',
       label: l10n.operationsLocationColumnLabel,
       sortComparator: (OperationsWorkItem left, OperationsWorkItem right) =>
           appListTableCompareText(
@@ -1938,22 +2237,7 @@ List<AppListTableColumn<OperationsWorkItem>> _operationColumns(
       },
     ),
     AppListTableColumn<OperationsWorkItem>(
-      label: l10n.operationsStatusColumnLabel,
-      sortComparator: (OperationsWorkItem left, OperationsWorkItem right) =>
-          appListTableCompareText(left.status, right.status),
-      cellBuilder: (BuildContext context, OperationsWorkItem item) {
-        return _OperationStatusBadge(status: item.status);
-      },
-    ),
-  ];
-}
-
-List<AppListTableColumn<OperationsWorkItem>> _operationColumnChoices(
-  AppLocalizations l10n,
-) {
-  return <AppListTableColumn<OperationsWorkItem>>[
-    ..._operationColumns(l10n),
-    AppListTableColumn<OperationsWorkItem>(
+      id: 'assignee',
       label: l10n.operationsAssigneeColumnLabel,
       sortComparator: (OperationsWorkItem left, OperationsWorkItem right) =>
           appListTableCompareText(
@@ -1967,6 +2251,7 @@ List<AppListTableColumn<OperationsWorkItem>> _operationColumnChoices(
       },
     ),
     AppListTableColumn<OperationsWorkItem>(
+      id: 'due',
       label: l10n.operationsDueColumnLabel,
       sortComparator: (OperationsWorkItem left, OperationsWorkItem right) =>
           appListTableCompareDateTime(left.dueAt, right.dueAt),
@@ -1978,17 +2263,6 @@ List<AppListTableColumn<OperationsWorkItem>> _operationColumnChoices(
             l10n.operationsNoDueTimeValue,
           ),
         );
-      },
-    ),
-    AppListTableColumn<OperationsWorkItem>(
-      label: l10n.operationsNextActionColumnLabel,
-      sortComparator: (OperationsWorkItem left, OperationsWorkItem right) =>
-          appListTableCompareText(
-            _nextActionLabel(l10n, left),
-            _nextActionLabel(l10n, right),
-          ),
-      cellBuilder: (BuildContext context, OperationsWorkItem item) {
-        return Text(_nextActionLabel(l10n, item));
       },
     ),
   ];

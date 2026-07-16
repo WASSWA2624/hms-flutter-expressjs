@@ -2140,6 +2140,12 @@ abstract class AppLocalizations {
   /// **'Status'**
   String get billingStatusColumn;
 
+  /// Next action column label on billing workspace tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get billingNextActionColumnLabel;
+
   /// Amount column label in billing table.
   ///
   /// In en, this message translates to:
@@ -3795,6 +3801,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Filters'**
   String get theaterFiltersLabel;
+
+  /// Advanced filters modal title for the theater worklist table chrome.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced filters'**
+  String get theaterAdvancedFiltersTitle;
+
+  /// Table Settings modal title for the theater worklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Table Settings'**
+  String get theaterTableSettingsTitle;
 
   /// Label for theater search field.
   ///
@@ -19228,6 +19246,12 @@ abstract class AppLocalizations {
   /// **'Confirm billing'**
   String get pharmacyNextActionConfirmBilling;
 
+  /// Pharmacy worklist next action column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get pharmacyNextActionColumnLabel;
+
   /// Pharmacy dispense blocked due to unpaid billing.
   ///
   /// In en, this message translates to:
@@ -20415,6 +20439,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Status'**
   String get claimsStatusColumnLabel;
+
+  /// Localized text for claimsNextActionColumnLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get claimsNextActionColumnLabel;
 
   /// Localized text for claimsTimelineColumnLabel.
   ///

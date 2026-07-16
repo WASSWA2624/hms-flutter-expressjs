@@ -24,6 +24,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockDischargeRepository extends Mock implements DischargeRepository {}
 
+AppListTable<IpdAdmissionSummary> _table(WidgetTester tester) {
+  return tester.widget<AppListTable<IpdAdmissionSummary>>(
+    find.byType(AppListTable<IpdAdmissionSummary>),
+  );
+}
+
 AppAccessPolicy _dischargeWritePolicy() {
   return AppAccessPolicy.fromSession(
     AuthSession(
@@ -193,6 +199,29 @@ void main() {
     expect(find.byTooltip('Refresh'), findsOneWidget);
     expect(find.text('Filters'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
+    expect(_table(tester).columnVisibilityLabel, 'Settings');
+    expect(_table(tester).columnVisibilityTitle, 'Table Settings');
+    expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+    expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
+    expect(_table(tester).columns.length, lessThanOrEqualTo(5));
+    expect(
+      _table(tester).columns.any((
+        AppListTableColumn<IpdAdmissionSummary> column,
+      ) {
+        return column.id == 'status' && column.alwaysVisible;
+      }),
+      isTrue,
+    );
+    expect(
+      _table(tester).columns.any((
+        AppListTableColumn<IpdAdmissionSummary> column,
+      ) {
+        return column.id == 'next_action' && column.alwaysVisible;
+      }),
+      isTrue,
+    );
+    expect(_table(tester).columnVisibilityStorageKey, 'discharge_all');
+    expect(_table(tester).columnWidthStorageKey, 'discharge_cw_all');
   });
 
   testWidgets('deep link section=planned selects Planned tab', (
@@ -324,5 +353,52 @@ void main() {
 
     expect(find.text('Alice Planned'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
+  });
+
+  testWidgets('pending clearance tab shows status and next-action columns', (
+    WidgetTester tester,
+  ) async {
+    await _pumpDischargeWorkspace(tester, repository: repository);
+
+    await tester.tap(find.textContaining('Pending clearance').first);
+    await tester.pumpAndSettle();
+
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+    expect(find.text(l10n.dischargeStatusColumnLabel), findsOneWidget);
+    expect(find.text(l10n.dischargeNextActionColumnLabel), findsOneWidget);
+    expect(
+      _table(tester).columnVisibilityStorageKey,
+      'discharge_pendingClearance',
+    );
+    expect(_table(tester).columns.length, 5);
+  });
+
+  testWidgets('advanced filters modal uses Advanced filters title', (
+    WidgetTester tester,
+  ) async {
+    await _pumpDischargeWorkspace(tester, repository: repository);
+
+    await tester.tap(find.byTooltip('Filters'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+  });
+
+  testWidgets('settings modal uses Table Settings title', (
+    WidgetTester tester,
+  ) async {
+    await _pumpDischargeWorkspace(tester, repository: repository);
+
+    final Finder settingsButton = find.descendant(
+      of: find.byType(AppSearchBar),
+      matching: find.byIcon(Icons.settings_outlined),
+    );
+    await tester.tap(settingsButton);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppDialog), findsOneWidget);
+    expect(find.text('TABLE SETTINGS'), findsOneWidget);
   });
 }

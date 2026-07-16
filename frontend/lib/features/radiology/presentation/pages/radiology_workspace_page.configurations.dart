@@ -333,9 +333,14 @@ class _RadiologyConfigurationsDialogState
           shrinkWrap: true,
           columnVisibilityController: _testColumnController,
           columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-          columnVisibilityTitle: l10n.radiologyTableColumnsTitle,
+          columnVisibilityTitle: l10n.commonTableSettingsTitle,
+          columnVisibilityStorageKey: 'radiology_catalog_tests',
+          columnWidthStorageKey: 'radiology_catalog_cw_tests',
           columnVisibilityApplyLabel: l10n.radiologyApplyColumnsAction,
           columnVisibilityResetLabel: l10n.radiologyResetColumnsAction,
+          onRowSelected: (RadiologyCatalogTest item) {
+            unawaited(_openEditOfferingDialog(context, item));
+          },
           search: AppListTableSearch<RadiologyCatalogTest>(
             controller: _searchController,
             semanticLabel: l10n.radiologyConfigurationSearchLabel,
@@ -344,8 +349,8 @@ class _RadiologyConfigurationsDialogState
                 item.matchesSearch(query),
             onChanged: (_) => setState(() {}),
             showAdvancedFilterButton: true,
-            advancedFilterButtonLabel: l10n.radiologyFiltersLabel,
-            advancedFilterTitle: l10n.radiologyFiltersLabel,
+            advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+            advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
             advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
             advancedFilterResetLabel: l10n.radiologyClearFiltersAction,
             enableDateFilter: false,
@@ -370,7 +375,6 @@ class _RadiologyConfigurationsDialogState
             minHeight: 180,
           ),
           columns: <AppListTableColumn<RadiologyCatalogTest>>[
-            _offeringSelectionColumn(context, tests, tableBusy),
             AppListTableColumn<RadiologyCatalogTest>(
               id: 'name',
               label: l10n.radiologyTestNameLabel,
@@ -381,10 +385,7 @@ class _RadiologyConfigurationsDialogState
                 final ThemeData theme = Theme.of(context);
                 return AppListItemRow(
                   title: item.name,
-                  subtitle: _joinDisplay(<String?>[
-                    item.effectiveId,
-                    item.code,
-                  ]),
+                  subtitle: item.code,
                   leadingIcon: _radiologyModalityIcon(item.modality),
                   padding: EdgeInsets.zero,
                   titleStyle: theme.textTheme.bodyMedium?.copyWith(
@@ -420,15 +421,20 @@ class _RadiologyConfigurationsDialogState
               cellBuilder: (BuildContext context, RadiologyCatalogTest item) =>
                   Text(_formatRadiologyCatalogUnitPrice(context, item, l10n)),
             ),
-            _testActionsColumn(context, tableBusy),
-          ],
-          columnChoices: <AppListTableColumn<RadiologyCatalogTest>>[
             AppListTableColumn<RadiologyCatalogTest>(
               id: 'body_region',
               label: l10n.radiologyBodyRegionLabel,
+              sortComparator:
+                  (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
+                      appListTableCompareText(
+                        left.bodyRegion,
+                        right.bodyRegion,
+                      ),
               cellBuilder: (_, RadiologyCatalogTest item) =>
                   Text(item.bodyRegion ?? l10n.profileUnknownValue),
             ),
+          ],
+          columnChoices: <AppListTableColumn<RadiologyCatalogTest>>[
             AppListTableColumn<RadiologyCatalogTest>(
               id: 'laterality',
               label: l10n.radiologyLateralityLabel,
@@ -486,21 +492,6 @@ class _RadiologyConfigurationsDialogState
           },
         ),
       ],
-    );
-  }
-
-  AppListTableColumn<RadiologyCatalogTest> _testActionsColumn(
-    BuildContext context,
-    bool isBusy,
-  ) {
-    final AppLocalizations l10n = context.l10n;
-    return AppListTableColumn<RadiologyCatalogTest>(
-      id: 'actions',
-      label: l10n.radiologyActionColumnLabel,
-      alwaysVisible: true,
-      cellBuilder: (BuildContext context, RadiologyCatalogTest item) {
-        return _testActionButtons(context, item, isBusy);
-      },
     );
   }
 
@@ -707,56 +698,6 @@ class _RadiologyConfigurationsDialogState
     }
   }
 
-  AppListTableColumn<RadiologyCatalogTest> _offeringSelectionColumn(
-    BuildContext context,
-    List<RadiologyCatalogTest> visibleTests,
-    bool isBusy,
-  ) {
-    final bool allSelected =
-        visibleTests.isNotEmpty &&
-        visibleTests.every(
-          (RadiologyCatalogTest item) =>
-              _selectedOfferingIds.contains(_offeringSelectionKey(item)),
-        );
-    final bool someSelected = visibleTests.any(
-      (RadiologyCatalogTest item) =>
-          _selectedOfferingIds.contains(_offeringSelectionKey(item)),
-    );
-
-    return AppListTableColumn<RadiologyCatalogTest>(
-      id: 'select',
-      label: '',
-      alwaysVisible: true,
-      headerBuilder: (BuildContext context) {
-        return Checkbox(
-          tristate: true,
-          value: allSelected
-              ? true
-              : someSelected
-              ? null
-              : false,
-          onChanged: !isBusy && visibleTests.isNotEmpty
-              ? (_) => _toggleAllOfferingSelections(
-                  visibleTests,
-                  selected: !allSelected,
-                )
-              : null,
-          visualDensity: VisualDensity.compact,
-        );
-      },
-      cellBuilder: (BuildContext context, RadiologyCatalogTest item) {
-        return Checkbox(
-          value: _selectedOfferingIds.contains(_offeringSelectionKey(item)),
-          onChanged: isBusy
-              ? null
-              : (bool? value) =>
-                    _toggleOfferingSelection(item, selected: value ?? false),
-          visualDensity: VisualDensity.compact,
-        );
-      },
-    );
-  }
-
   String _offeringSelectionKey(RadiologyCatalogTest item) => item.apiId;
 
   void _toggleOfferingSelection(
@@ -769,23 +710,6 @@ class _RadiologyConfigurationsDialogState
         _selectedOfferingIds.add(key);
       } else {
         _selectedOfferingIds.remove(key);
-      }
-    });
-  }
-
-  void _toggleAllOfferingSelections(
-    List<RadiologyCatalogTest> visibleTests, {
-    required bool selected,
-  }) {
-    setState(() {
-      if (!selected) {
-        for (final RadiologyCatalogTest item in visibleTests) {
-          _selectedOfferingIds.remove(_offeringSelectionKey(item));
-        }
-        return;
-      }
-      for (final RadiologyCatalogTest item in visibleTests) {
-        _selectedOfferingIds.add(_offeringSelectionKey(item));
       }
     });
   }

@@ -439,7 +439,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('pending payment tab shows Billing primary and ordered_at', (
+  testWidgets('pending payment tab shows billing, ordered_at, and status', (
     WidgetTester tester,
   ) async {
     final _Harness harness = await _pumpPharmacyWorkspace(
@@ -456,17 +456,46 @@ void main() {
     );
     expect(_toolbarPrimary('Billing'), findsOneWidget);
     expect(_toolbarAction('Catalog and stock'), findsOneWidget);
+    final Finder table = find.byType(DataTable);
     expect(
-      find.descendant(
-        of: find.byType(DataTable),
-        matching: find.text('Ordered at'),
-      ),
+      find.descendant(of: table, matching: find.text('Ordered at')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: table, matching: find.text('Payment')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: table, matching: find.text('Status')),
       findsOneWidget,
     );
     expect(find.text('Cathy Payment'), findsOneWidget);
   });
 
-  testWidgets('mobile breakpoint uses list tiles instead of data table', (
+  testWidgets('ready queue table exposes at most five data columns', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPharmacyWorkspace(tester, repository: repository);
+
+    final DataTable table = tester.widget<DataTable>(find.byType(DataTable));
+    expect(table.columns.length, lessThanOrEqualTo(6));
+  });
+
+  testWidgets('ready queue shows next action for ordered worklist row', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPharmacyWorkspace(tester, repository: repository);
+
+    expect(
+      find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Cancel order'),
+      ),
+      findsAtLeastNWidgets(1),
+    );
+  });
+
+  testWidgets('mobile breakpoint uses list tiles with status and next action', (
     WidgetTester tester,
   ) async {
     await _pumpPharmacyWorkspace(
@@ -477,6 +506,8 @@ void main() {
 
     expect(find.byType(DataTable), findsNothing);
     expect(find.text('Noah Ready'), findsOneWidget);
+    expect(find.text('Ordered'), findsAtLeastNWidgets(1));
+    expect(find.text('Cancel order'), findsAtLeastNWidgets(1));
     expect(find.byType(AppTabStrip), findsOneWidget);
   });
 

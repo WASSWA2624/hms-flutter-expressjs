@@ -1085,6 +1085,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingStatusColumn => 'Status';
 
   @override
+  String get billingNextActionColumnLabel => 'Next action';
+
+  @override
   String get billingAmountColumn => 'Amount';
 
   @override
@@ -1951,6 +1954,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get theaterFiltersLabel => 'Filters';
+
+  @override
+  String get theaterAdvancedFiltersTitle => 'Advanced filters';
+
+  @override
+  String get theaterTableSettingsTitle => 'Table Settings';
 
   @override
   String get theaterSearchLabel => 'Search theater';
@@ -10351,6 +10360,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyNextActionConfirmBilling => 'Confirm billing';
 
   @override
+  String get pharmacyNextActionColumnLabel => 'Next action';
+
+  @override
   String get pharmacyDispenseBlockedPaymentBody =>
       'Collect or confirm payment before dispensing this order.';
 
@@ -11010,6 +11022,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get claimsStatusColumnLabel => 'Status';
+
+  @override
+  String get claimsNextActionColumnLabel => 'Next action';
 
   @override
   String get claimsTimelineColumnLabel => 'Updated';

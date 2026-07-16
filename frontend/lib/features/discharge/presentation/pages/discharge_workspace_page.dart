@@ -278,16 +278,6 @@ class _DischargeWorkspaceContentState
     };
   }
 
-  static bool _searchMatcher(IpdAdmissionSummary item, String query) {
-    if (query.isEmpty) {
-      return true;
-    }
-    final String needle = query.trim().toLowerCase();
-    return <String?>[item.displayTitle, item.displayId, item.location]
-        .whereType<String>()
-        .any((String value) => value.toLowerCase().contains(needle));
-  }
-
   String _primaryActionLabel(
     AppLocalizations l10n,
     DischargeDeskSection section,
@@ -308,197 +298,6 @@ class _DischargeWorkspaceContentState
       DischargeDeskSection.pendingClearance => Icons.fact_check_outlined,
       DischargeDeskSection.completed => Icons.print_outlined,
     };
-  }
-
-  List<AppListTableColumn<IpdAdmissionSummary>> _columnsForSection(
-    AppLocalizations l10n,
-  ) {
-    switch (_section) {
-      case DischargeDeskSection.all:
-        return <AppListTableColumn<IpdAdmissionSummary>>[
-          _patientColumn(l10n),
-          _locationColumn(l10n),
-          _statusColumn(l10n),
-          _nextActionColumn(l10n),
-          _targetDateColumn(l10n),
-        ];
-      case DischargeDeskSection.planned:
-        return <AppListTableColumn<IpdAdmissionSummary>>[
-          _patientColumn(l10n),
-          _locationColumn(l10n),
-          _clearancePhaseColumn(l10n),
-          _nextActionColumn(l10n),
-          _targetDateColumn(l10n),
-        ];
-      case DischargeDeskSection.pendingClearance:
-        return <AppListTableColumn<IpdAdmissionSummary>>[
-          _patientColumn(l10n),
-          _locationColumn(l10n),
-          _blockingItemColumn(l10n),
-          _nextActionColumn(l10n),
-        ];
-      case DischargeDeskSection.completed:
-        return <AppListTableColumn<IpdAdmissionSummary>>[
-          _patientColumn(l10n),
-          _locationColumn(l10n),
-          _dischargedAtColumn(l10n),
-        ];
-    }
-  }
-
-  AppListTableColumn<IpdAdmissionSummary> _patientColumn(
-    AppLocalizations l10n,
-  ) {
-    return AppListTableColumn<IpdAdmissionSummary>(
-      id: 'patient_name',
-      label: l10n.dischargePatientColumnLabel,
-      alwaysVisible: true,
-      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-          appListTableCompareText(left.displayTitle, right.displayTitle),
-      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-        return _QueuePatientCell(item: item);
-      },
-    );
-  }
-
-  AppListTableColumn<IpdAdmissionSummary> _locationColumn(
-    AppLocalizations l10n,
-  ) {
-    return AppListTableColumn<IpdAdmissionSummary>(
-      id: 'location',
-      label: l10n.dischargeLocationColumnLabel,
-      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-          appListTableCompareText(
-            _locationLabel(context, left),
-            _locationLabel(context, right),
-          ),
-      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-        return Text(_locationLabel(context, item));
-      },
-    );
-  }
-
-  AppListTableColumn<IpdAdmissionSummary> _statusColumn(AppLocalizations l10n) {
-    return AppListTableColumn<IpdAdmissionSummary>(
-      id: 'status',
-      label: l10n.dischargeStatusColumnLabel,
-      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-          appListTableCompareText(
-            left.dischargeStatus ?? left.stage,
-            right.dischargeStatus ?? right.stage,
-          ),
-      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-        return AppWorkspaceStatusBadge(status: _statusFor(context, item));
-      },
-    );
-  }
-
-  AppListTableColumn<IpdAdmissionSummary> _nextActionColumn(
-    AppLocalizations l10n,
-  ) {
-    return AppListTableColumn<IpdAdmissionSummary>(
-      id: 'next_action',
-      label: l10n.dischargeNextActionColumnLabel,
-      alwaysVisible: true,
-      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-          appListTableCompareText(
-            _nextActionLabel(context, left),
-            _nextActionLabel(context, right),
-          ),
-      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-        final String encounterId = item.encounterId ?? item.id;
-        if (encounterId.trim().isEmpty) {
-          return Text(_nextActionLabel(context, item));
-        }
-        return WorkflowActionButton(
-          encounterId: encounterId,
-          patientId: item.patientId,
-          admissionId: item.id,
-          nextStep: _dischargeNextStepCode(item),
-          stage: item.stage,
-          sourceModule: 'discharge',
-          compact: true,
-        );
-      },
-    );
-  }
-
-  AppListTableColumn<IpdAdmissionSummary> _targetDateColumn(
-    AppLocalizations l10n,
-  ) {
-    return AppListTableColumn<IpdAdmissionSummary>(
-      id: 'target_date',
-      label: l10n.dischargeTargetColumnLabel,
-      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-          appListTableCompareDateTime(left.dischargedAt, right.dischargedAt),
-      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-        return Text(_dateLabel(context, item.dischargedAt));
-      },
-    );
-  }
-
-  AppListTableColumn<IpdAdmissionSummary> _clearancePhaseColumn(
-    AppLocalizations l10n,
-  ) {
-    return AppListTableColumn<IpdAdmissionSummary>(
-      id: 'clearance_phase',
-      label: l10n.ipdDischargeClearancePhaseLabel,
-      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-          appListTableCompareText(left.clearancePhase, right.clearancePhase),
-      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-        final String phase = item.clearancePhase ?? '';
-        if (phase.isEmpty) {
-          return const SizedBox.shrink();
-        }
-        return AppWorkspaceStatusBadge(
-          status: AppWorkspaceStatus(
-            label: _apiLabel(phase),
-            tone: AppWorkspaceStatusTone.info,
-          ),
-        );
-      },
-    );
-  }
-
-  AppListTableColumn<IpdAdmissionSummary> _blockingItemColumn(
-    AppLocalizations l10n,
-  ) {
-    return AppListTableColumn<IpdAdmissionSummary>(
-      id: 'blocking_item',
-      label: l10n.dischargeStatusSummaryPending,
-      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-          appListTableCompareText(
-            left.clearancePhase ?? left.nextStep,
-            right.clearancePhase ?? right.nextStep,
-          ),
-      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-        final String blocker =
-            item.clearancePhase ?? item.nextStep ?? item.stage ?? '';
-        if (blocker.isEmpty) {
-          return Text(l10n.dischargeStatusSummaryPending);
-        }
-        return AppWorkspaceStatusBadge(
-          status: AppWorkspaceStatus(
-            label: _apiLabel(blocker),
-            tone: AppWorkspaceStatusTone.warning,
-          ),
-        );
-      },
-    );
-  }
-
-  AppListTableColumn<IpdAdmissionSummary> _dischargedAtColumn(
-    AppLocalizations l10n,
-  ) {
-    return AppListTableColumn<IpdAdmissionSummary>(
-      id: 'discharged_at',
-      label: l10n.ipdDischargedAtLabel,
-      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-          appListTableCompareDateTime(left.dischargedAt, right.dischargedAt),
-      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-        return Text(_dateLabel(context, item.dischargedAt));
-      },
-    );
   }
 
   IpdAdmissionSummary? _resolveSelectedAdmission(
@@ -647,8 +446,10 @@ class _DischargeWorkspaceContentState
     );
 
     final List<IpdAdmissionSummary> rows = _buildRows(state);
-    final List<AppListTableColumn<IpdAdmissionSummary>> columns =
-        _columnsForSection(l10n);
+    final List<AppListTableColumn<IpdAdmissionSummary>> allColumns =
+        _dischargeTableColumns(context);
+    final List<AppListTableColumn<IpdAdmissionSummary>> defaultColumns =
+        _dischargeDefaultColumns(context, section: _section);
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -689,11 +490,13 @@ class _DischargeWorkspaceContentState
             SizedBox(height: theme.spacing.sm),
             AppListTable<IpdAdmissionSummary>(
               items: rows,
-              columns: columns,
+              columns: defaultColumns,
+              columnChoices: allColumns,
               columnVisibilityController: _columnVisibilityController,
               columnVisibilityStorageKey: 'discharge_${_section.name}',
               columnWidthStorageKey: 'discharge_cw_${_section.name}',
               columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+              columnVisibilityTitle: l10n.commonTableSettingsTitle,
               isLoading: state.isRefreshing,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -707,7 +510,8 @@ class _DischargeWorkspaceContentState
                 controller: _searchController,
                 semanticLabel: l10n.dischargeQueueSearchLabel,
                 hintText: l10n.dischargeQueueSearchHint,
-                matcher: _searchMatcher,
+                matcher: (IpdAdmissionSummary item, String query) =>
+                    _dischargeMatchesSearch(context, item, query),
                 onSubmitted: (String value) async {
                   final AppFailure? failure = await controller.applySearch(
                     value,
@@ -724,7 +528,7 @@ class _DischargeWorkspaceContentState
                 },
                 showAdvancedFilterButton: true,
                 advancedFilterButtonLabel: l10n.dischargeFiltersLabel,
-                advancedFilterTitle: l10n.dischargeFiltersLabel,
+                advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
                 advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
                 advancedFilterResetLabel: l10n.opdClearFiltersAction,
                 enableDateFilter: false,
@@ -758,7 +562,7 @@ class _DischargeWorkspaceContentState
               ),
               mobileItemBuilder:
                   (BuildContext context, IpdAdmissionSummary item) {
-                    return _MobileQueueItem(item: item);
+                    return _MobileQueueItem(item: item, section: _section);
                   },
             ),
           ],
@@ -1266,36 +1070,20 @@ class _QueuePatientCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          item.displayTitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.labelLarge,
-        ),
-        Text(
-          item.displayId ?? l10n.profileUnknownValue,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
+    return AppListItemText(
+      title: item.displayTitle,
+      subtitle: item.displayId ?? l10n.profileUnknownValue,
     );
   }
 }
 
 class _MobileQueueItem extends StatelessWidget {
-  const _MobileQueueItem({required this.item});
+  const _MobileQueueItem({required this.item, required this.section});
 
   final IpdAdmissionSummary item;
+  final DischargeDeskSection section;
 
   @override
   Widget build(BuildContext context) {
@@ -1315,10 +1103,29 @@ class _MobileQueueItem extends StatelessWidget {
           SizedBox(height: theme.spacing.xs),
           Text(_locationLabel(context, item)),
           SizedBox(height: theme.spacing.xs),
-          Text(_nextActionLabel(context, item)),
+          _mobileTabField(context),
+          SizedBox(height: theme.spacing.xs),
+          _dischargeNextActionWidget(context, item),
         ],
       ),
     );
+  }
+
+  Widget _mobileTabField(BuildContext context) {
+    return switch (section) {
+      DischargeDeskSection.all => Text(_dateLabel(context, item.dischargedAt)),
+      DischargeDeskSection.planned => _dischargeClearancePhaseCell(
+        context,
+        item,
+      ),
+      DischargeDeskSection.pendingClearance => _dischargeBlockingItemCell(
+        context,
+        item,
+      ),
+      DischargeDeskSection.completed => Text(
+        _dateLabel(context, item.dischargedAt),
+      ),
+    };
   }
 }
 
@@ -1645,6 +1452,242 @@ Future<void> _openPharmacyDialog(
 }
 
 const String _dischargeStatusFilterKey = 'status';
+
+List<AppListTableColumn<IpdAdmissionSummary>> _dischargeTableColumns(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return <AppListTableColumn<IpdAdmissionSummary>>[
+    AppListTableColumn<IpdAdmissionSummary>(
+      id: 'patient',
+      label: l10n.dischargePatientColumnLabel,
+      alwaysVisible: true,
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareText(left.displayTitle, right.displayTitle),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return _QueuePatientCell(item: item);
+      },
+    ),
+    AppListTableColumn<IpdAdmissionSummary>(
+      id: 'location',
+      label: l10n.dischargeLocationColumnLabel,
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareText(
+            _locationLabel(context, left),
+            _locationLabel(context, right),
+          ),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return Text(_locationLabel(context, item));
+      },
+    ),
+    AppListTableColumn<IpdAdmissionSummary>(
+      id: 'target_date',
+      label: l10n.dischargeTargetColumnLabel,
+      // API maps target discharge date onto dischargedAt on the summary.
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareDateTime(left.dischargedAt, right.dischargedAt),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return Text(_dateLabel(context, item.dischargedAt));
+      },
+    ),
+    AppListTableColumn<IpdAdmissionSummary>(
+      id: 'clearance_phase',
+      label: l10n.ipdDischargeClearancePhaseLabel,
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareText(left.clearancePhase, right.clearancePhase),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return _dischargeClearancePhaseCell(context, item);
+      },
+    ),
+    AppListTableColumn<IpdAdmissionSummary>(
+      id: 'blocking_item',
+      label: l10n.dischargeStatusSummaryPending,
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareText(
+            left.clearancePhase ?? left.nextStep,
+            right.clearancePhase ?? right.nextStep,
+          ),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return _dischargeBlockingItemCell(context, item);
+      },
+    ),
+    AppListTableColumn<IpdAdmissionSummary>(
+      id: 'discharged_at',
+      label: l10n.ipdDischargedAtLabel,
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareDateTime(left.dischargedAt, right.dischargedAt),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return Text(_dateLabel(context, item.dischargedAt));
+      },
+    ),
+    AppListTableColumn<IpdAdmissionSummary>(
+      id: 'admitted_at',
+      label: l10n.ipdAdmittedAtColumnLabel,
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareDateTime(left.admittedAt, right.admittedAt),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return Text(_dateLabel(context, item.admittedAt));
+      },
+    ),
+    AppListTableColumn<IpdAdmissionSummary>(
+      id: 'status',
+      label: l10n.dischargeStatusColumnLabel,
+      alwaysVisible: true,
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareText(
+            left.dischargeStatus ?? left.stage,
+            right.dischargeStatus ?? right.stage,
+          ),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return AppWorkspaceStatusBadge(status: _statusFor(context, item));
+      },
+    ),
+    AppListTableColumn<IpdAdmissionSummary>(
+      id: 'next_action',
+      label: l10n.dischargeNextActionColumnLabel,
+      alwaysVisible: true,
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareText(
+            _nextActionLabel(context, left),
+            _nextActionLabel(context, right),
+          ),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return _dischargeNextActionWidget(context, item);
+      },
+    ),
+  ];
+}
+
+List<AppListTableColumn<IpdAdmissionSummary>> _dischargeDefaultColumns(
+  BuildContext context, {
+  required DischargeDeskSection section,
+}) {
+  final Map<String, AppListTableColumn<IpdAdmissionSummary>> columnsById =
+      <String, AppListTableColumn<IpdAdmissionSummary>>{
+        for (final AppListTableColumn<IpdAdmissionSummary> column
+            in _dischargeTableColumns(context))
+          if (column.id != null) column.id!: column,
+      };
+  final List<String> columnIds = switch (section) {
+    DischargeDeskSection.all => <String>[
+      'patient',
+      'location',
+      'target_date',
+      'status',
+      'next_action',
+    ],
+    DischargeDeskSection.planned => <String>[
+      'patient',
+      'location',
+      'clearance_phase',
+      'status',
+      'next_action',
+    ],
+    DischargeDeskSection.pendingClearance => <String>[
+      'patient',
+      'location',
+      'blocking_item',
+      'status',
+      'next_action',
+    ],
+    DischargeDeskSection.completed => <String>[
+      'patient',
+      'location',
+      'discharged_at',
+      'status',
+      'next_action',
+    ],
+  };
+  return columnIds.map((String id) => columnsById[id]!).toList(growable: false);
+}
+
+Widget _dischargeClearancePhaseCell(
+  BuildContext context,
+  IpdAdmissionSummary item,
+) {
+  final String phase = item.clearancePhase ?? '';
+  if (phase.isEmpty) {
+    return const SizedBox.shrink();
+  }
+  return AppWorkspaceStatusBadge(
+    status: AppWorkspaceStatus(
+      label: _apiLabel(phase),
+      tone: AppWorkspaceStatusTone.info,
+    ),
+  );
+}
+
+Widget _dischargeBlockingItemCell(
+  BuildContext context,
+  IpdAdmissionSummary item,
+) {
+  final AppLocalizations l10n = context.l10n;
+  final String blocker =
+      item.clearancePhase ?? item.nextStep ?? item.stage ?? '';
+  if (blocker.isEmpty) {
+    return Text(l10n.dischargeStatusSummaryPending);
+  }
+  return AppWorkspaceStatusBadge(
+    status: AppWorkspaceStatus(
+      label: _apiLabel(blocker),
+      tone: AppWorkspaceStatusTone.warning,
+    ),
+  );
+}
+
+Widget _dischargeNextActionWidget(
+  BuildContext context,
+  IpdAdmissionSummary item,
+) {
+  final String encounterId = item.encounterId ?? item.id;
+  if (encounterId.trim().isEmpty) {
+    return Text(_nextActionLabel(context, item));
+  }
+  return WorkflowActionButton(
+    encounterId: encounterId,
+    patientId: item.patientId,
+    admissionId: item.id,
+    nextStep: _dischargeNextStepCode(item),
+    stage: item.stage,
+    sourceModule: 'discharge',
+    compact: true,
+  );
+}
+
+bool _dischargeMatchesSearch(
+  BuildContext context,
+  IpdAdmissionSummary item,
+  String query,
+) {
+  if (item.matchesSearch(query)) {
+    return true;
+  }
+  final String needle = query.trim().toLowerCase();
+  if (needle.isEmpty) {
+    return true;
+  }
+  return <String>[
+    _locationLabel(context, item),
+    _statusFor(context, item).label,
+    _nextActionLabel(context, item),
+    _dateLabel(context, item.dischargedAt),
+    _dateLabel(context, item.admittedAt),
+    _blockingItemLabel(context, item),
+    if (item.clearancePhase != null) _apiLabel(item.clearancePhase!),
+    if (item.nextStep != null) _apiLabel(item.nextStep!),
+    if (item.stage != null) _apiLabel(item.stage!),
+  ].any((String value) => value.toLowerCase().contains(needle));
+}
+
+String _blockingItemLabel(BuildContext context, IpdAdmissionSummary item) {
+  final AppLocalizations l10n = context.l10n;
+  final String blocker =
+      item.clearancePhase ?? item.nextStep ?? item.stage ?? '';
+  if (blocker.isEmpty) {
+    return l10n.dischargeStatusSummaryPending;
+  }
+  return _apiLabel(blocker);
+}
 
 AppSearchBarFilterValue _dischargeFilterValue(DischargeWorklistQuery query) {
   if (query.status == DischargeStatusFilter.all) {

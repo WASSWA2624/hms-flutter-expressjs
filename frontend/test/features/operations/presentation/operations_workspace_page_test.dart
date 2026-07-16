@@ -210,6 +210,18 @@ Future<GoRouter> _pumpOperationsWorkspace(
   return router;
 }
 
+AppListTable<OperationsWorkItem> _queueTable(WidgetTester tester) {
+  return tester.widget<AppListTable<OperationsWorkItem>>(
+    find.byType(AppListTable<OperationsWorkItem>),
+  );
+}
+
+AppListTable<OperationsAsset> _assetsTable(WidgetTester tester) {
+  return tester.widget<AppListTable<OperationsAsset>>(
+    find.byType(AppListTable<OperationsAsset>),
+  );
+}
+
 void main() {
   late _MockOperationsRepository repository;
 
@@ -253,6 +265,18 @@ void main() {
     expect(find.text('Refresh'), findsOneWidget);
     expect(find.text('Filters'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
+    expect(_queueTable(tester).columnVisibilityTitle, 'Table Settings');
+    expect(_queueTable(tester).search?.advancedFilterTitle, 'Advanced filters');
+    expect(_queueTable(tester).columns.length, lessThanOrEqualTo(5));
+    expect(
+      _queueTable(tester).columns.any((
+        AppListTableColumn<OperationsWorkItem> column,
+      ) {
+        return column.id == 'next_action' && column.alwaysVisible;
+      }),
+      isTrue,
+    );
+    expect(find.text('Assign technician or team'), findsOneWidget);
   });
 
   testWidgets('deep link section=open selects Open tab and filters rows', (
@@ -374,5 +398,27 @@ void main() {
 
     expect(find.text('Request detail'), findsOneWidget);
     expect(find.text('Generator alarm'), findsWidgets);
+  });
+
+  testWidgets('assets row tap opens asset detail dialog', (
+    WidgetTester tester,
+  ) async {
+    await _pumpOperationsWorkspace(tester, repository: repository);
+
+    await tester.tap(find.textContaining('Assets').first);
+    await tester.pumpAndSettle();
+
+    expect(_assetsTable(tester).columnVisibilityTitle, 'Table Settings');
+    expect(
+      _assetsTable(tester).search?.advancedFilterTitle,
+      'Advanced filters',
+    );
+
+    await tester.tap(find.text('Backup Generator (GEN-01)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Backup Generator (GEN-01)'), findsWidgets);
+    expect(find.text('GEN-01'), findsWidgets);
+    expect(find.text('Main Campus'), findsAtLeastNWidgets(1));
   });
 }

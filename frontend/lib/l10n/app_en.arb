@@ -1418,6 +1418,10 @@
   "@billingStatusColumn": {
     "description": "Status column label in billing table."
   },
+  "billingNextActionColumnLabel": "Next action",
+  "@billingNextActionColumnLabel": {
+    "description": "Next action column label on billing workspace tables."
+  },
   "billingAmountColumn": "Amount",
   "@billingAmountColumn": {
     "description": "Amount column label in billing table."
@@ -2549,6 +2553,14 @@
   "theaterFiltersLabel": "Filters",
   "@theaterFiltersLabel": {
     "description": "Accessibility label for theater filters."
+  },
+  "theaterAdvancedFiltersTitle": "Advanced filters",
+  "@theaterAdvancedFiltersTitle": {
+    "description": "Advanced filters modal title for the theater worklist table chrome."
+  },
+  "theaterTableSettingsTitle": "Table Settings",
+  "@theaterTableSettingsTitle": {
+    "description": "Table Settings modal title for the theater worklist."
   },
   "theaterSearchLabel": "Search theater",
   "@theaterSearchLabel": {
@@ -13207,6 +13219,10 @@
   "@pharmacyNextActionConfirmBilling": {
     "description": "Pharmacy next action when billing is not configured."
   },
+  "pharmacyNextActionColumnLabel": "Next action",
+  "@pharmacyNextActionColumnLabel": {
+    "description": "Pharmacy worklist next action column label."
+  },
   "pharmacyDispenseBlockedPaymentBody": "Collect or confirm payment before dispensing this order.",
   "@pharmacyDispenseBlockedPaymentBody": {
     "description": "Pharmacy dispense blocked due to unpaid billing."
@@ -14069,6 +14085,10 @@
   "claimsStatusColumnLabel": "Status",
   "@claimsStatusColumnLabel": {
     "description": "Localized text for claimsStatusColumnLabel."
+  },
+  "claimsNextActionColumnLabel": "Next action",
+  "@claimsNextActionColumnLabel": {
+    "description": "Localized text for claimsNextActionColumnLabel."
   },
   "claimsTimelineColumnLabel": "Updated",
   "@claimsTimelineColumnLabel": {

@@ -327,7 +327,14 @@ void main() {
     expect(find.byTooltip('Orders view'), findsOneWidget);
     expect(find.byTooltip('Refresh'), findsOneWidget);
     expect(_table(tester).columnVisibilityLabel, 'Settings');
+    expect(_table(tester).columnVisibilityTitle, 'Table Settings');
+    expect(
+      _table(tester).columnVisibilityStorageKey,
+      'radiology_worklist_patients',
+    );
     expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+    expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
+    expect(_table(tester).columns.length, 5);
   });
 
   testWidgets('switching tabs applies stage filters and updates URL', (
@@ -474,6 +481,11 @@ void main() {
       isTrue,
     );
     expect(find.byTooltip('Patients view'), findsOneWidget);
+    expect(
+      _table(tester).columnVisibilityStorageKey,
+      'radiology_worklist_orders',
+    );
+    expect(_table(tester).columns.length, 5);
   });
 
   testWidgets('search filters table rows via controller', (

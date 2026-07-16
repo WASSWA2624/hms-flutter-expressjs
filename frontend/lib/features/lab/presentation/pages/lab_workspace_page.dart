@@ -559,20 +559,20 @@ class _LabWorklistPanel extends ConsumerWidget {
           columnVisibilityStorageKey: 'lab_$sectionName',
           columnWidthStorageKey: 'lab_cw_$sectionName',
           columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-          columnVisibilityTitle: l10n.labTableColumnsTitle,
+          columnVisibilityTitle: l10n.commonTableSettingsTitle,
           columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
           columnVisibilityResetLabel: l10n.labResetColumnsAction,
           search: AppListTableSearch<LabOrderSummary>(
             controller: searchController,
             semanticLabel: l10n.labSearchLabel,
             hintText: l10n.labSearchHint,
-            matcher: (_, _) => true,
+            matcher: _labWorklistSearchMatcher(context),
             onChanged: onSearchChanged,
             onSubmitted: onSearchSubmitted,
             onClear: onSearchCleared,
             showAdvancedFilterButton: true,
-            advancedFilterButtonLabel: l10n.labWorklistFiltersLabel,
-            advancedFilterTitle: l10n.labWorklistFiltersLabel,
+            advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+            advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
             advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
             advancedFilterResetLabel: l10n.opdClearFiltersAction,
             enableDateFilter: false,
@@ -620,15 +620,54 @@ class _LabWorklistPanel extends ConsumerWidget {
               : _orderViewWorklistColumns(context),
           columnChoices: _optionalWorklistColumns(context),
           mobileItemBuilder: (BuildContext context, LabOrderSummary item) {
-            return AppListItemRow(
-              title: item.displayTitle,
-              subtitle: item.isPatientGroup ? item.patientId : item.apiId,
-              details: <Widget>[
-                AppWorkspaceStatusBadge(
-                  status: _orderStatus(context, item.status),
-                ),
-              ],
-              trailing: const Icon(Icons.chevron_right),
+            final ThemeData theme = Theme.of(context);
+            final String? patientId = item.patientId?.trim();
+            final String orderTestsLine = item.isPatientGroup
+                ? (item.testsLabel ?? l10n.profileUnknownValue)
+                : '${item.displayId ?? item.apiId} · ${item.testsLabel ?? l10n.profileUnknownValue}';
+
+            return Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: theme.spacing.sm,
+                vertical: theme.spacing.sm,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        AppListItemText(
+                          title: item.patientDisplayName ?? item.displayTitle,
+                          subtitle: patientId?.isNotEmpty == true
+                              ? patientId
+                              : null,
+                        ),
+                        SizedBox(height: theme.spacing.xs),
+                        if (item.isPatientGroup) ...<Widget>[
+                          _LabOrderIdentifier(order: item),
+                          SizedBox(height: theme.spacing.xs),
+                        ],
+                        Text(
+                          orderTestsLine,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        SizedBox(height: theme.spacing.sm),
+                        AppWorkspaceStatusBadge(
+                          status: _orderStatus(context, item.status),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: theme.spacing.sm),
+                  _labNextActionCell(context, item),
+                ],
+              ),
             );
           },
         ),
@@ -642,6 +681,39 @@ class _LabWorklistPanel extends ConsumerWidget {
       ],
     );
   }
+}
+
+bool Function(LabOrderSummary, String) _labWorklistSearchMatcher(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return (LabOrderSummary item, String query) {
+    final String needle = query.trim().toLowerCase();
+    if (needle.isEmpty) {
+      return true;
+    }
+    if (item.matchesSearch(query)) {
+      return true;
+    }
+
+    return <String?>[
+      labStatusLabel(context, item.status),
+      _entryStatus(context, item).label,
+      _resultStatus(context, item).label,
+      _labBillingGateLabel(context, item),
+      _nextActionLabel(context, item),
+      clinicalRequestPaymentStatusDisplayLabel(
+        l10n,
+        item.effectivePaymentStatus,
+      ),
+      _labOrderEncounterLabel(item),
+      _sourceLocationLabel(item),
+      item.encounterSourceLabel,
+      item.encounterLocationLabel,
+    ].whereType<String>().any(
+      (String value) => value.toLowerCase().contains(needle),
+    );
+  };
 }
 
 List<LabOrderSummary> _filterWorklistItems(
@@ -736,14 +808,10 @@ List<AppListTableColumn<LabOrderSummary>> _patientViewWorklistColumns(
 ) {
   return <AppListTableColumn<LabOrderSummary>>[
     _patientNameWorklistColumn(context),
-    _patientIdWorklistColumn(context),
-    _encounterWorklistColumn(context),
-    _labEncounterWorklistColumn(context),
-    _sourceLocationWorklistColumn(context),
     _orderWorklistColumn(context, LabWorkbenchView.patients),
-    _entryStatusWorklistColumn(context),
-    _billingWorklistColumn(context),
-    _resultStatusWorklistColumn(context),
+    _testsWorklistColumn(context),
+    _labWorkflowStatusColumn(context),
+    _labNextActionColumn(context),
   ];
 }
 
@@ -753,56 +821,23 @@ List<AppListTableColumn<LabOrderSummary>> _orderViewWorklistColumns(
   return <AppListTableColumn<LabOrderSummary>>[
     _orderWorklistColumn(context, LabWorkbenchView.orders),
     _patientNameWorklistColumn(context),
-    _entryStatusWorklistColumn(context),
-    _billingWorklistColumn(context),
-    _resultStatusWorklistColumn(context),
+    _testsWorklistColumn(context),
+    _labWorkflowStatusColumn(context),
+    _labNextActionColumn(context),
   ];
 }
 
 List<AppListTableColumn<LabOrderSummary>> _optionalWorklistColumns(
   BuildContext context,
 ) {
-  final AppLocalizations l10n = context.l10n;
   return <AppListTableColumn<LabOrderSummary>>[
     _patientIdWorklistColumn(context),
     _encounterWorklistColumn(context),
     _labEncounterWorklistColumn(context),
     _sourceLocationWorklistColumn(context),
-    AppListTableColumn<LabOrderSummary>(
-      id: 'tests',
-      label: l10n.labTestsColumnLabel,
-      sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
-          appListTableCompareText(left.testsLabel, right.testsLabel),
-      cellBuilder: (BuildContext context, LabOrderSummary item) {
-        return _labWorklistTextCell(
-          context,
-          item.testsLabel ?? l10n.profileUnknownValue,
-        );
-      },
-    ),
-    AppListTableColumn<LabOrderSummary>(
-      id: 'next_action',
-      label: l10n.labNextActionColumnLabel,
-      sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
-          appListTableCompareText(
-            _nextActionLabel(context, left),
-            _nextActionLabel(context, right),
-          ),
-      cellBuilder: (BuildContext context, LabOrderSummary item) {
-        final String encounterId = item.encounterId ?? '';
-        if (encounterId.trim().isEmpty) {
-          return _labWorklistTextCell(context, _nextActionLabel(context, item));
-        }
-        return WorkflowActionButton(
-          encounterId: encounterId,
-          patientId: item.patientId,
-          orderId: item.id,
-          nextStep: item.status,
-          sourceModule: 'laboratory',
-          compact: true,
-        );
-      },
-    ),
+    _billingWorklistColumn(context),
+    _entryStatusWorklistColumn(context),
+    _resultStatusWorklistColumn(context),
   ];
 }
 
@@ -816,11 +851,77 @@ AppListTableColumn<LabOrderSummary> _patientNameWorklistColumn(
     sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
         appListTableCompareText(_patientSortKey(left), _patientSortKey(right)),
     cellBuilder: (BuildContext context, LabOrderSummary item) {
-      return _labWorklistTextCell(
-        context,
-        item.patientDisplayName ?? item.displayTitle,
+      final String? patientId = item.patientId?.trim();
+      return AppListItemText(
+        title: item.patientDisplayName ?? item.displayTitle,
+        subtitle: patientId?.isNotEmpty == true ? patientId : null,
       );
     },
+  );
+}
+
+AppListTableColumn<LabOrderSummary> _testsWorklistColumn(BuildContext context) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<LabOrderSummary>(
+    id: 'tests',
+    label: l10n.labTestsColumnLabel,
+    sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+        appListTableCompareText(left.testsLabel, right.testsLabel),
+    cellBuilder: (BuildContext context, LabOrderSummary item) {
+      return _labWorklistTextCell(
+        context,
+        item.testsLabel ?? l10n.profileUnknownValue,
+      );
+    },
+  );
+}
+
+AppListTableColumn<LabOrderSummary> _labWorkflowStatusColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<LabOrderSummary>(
+    id: 'workflow_status',
+    label: l10n.labEntryStatusColumnLabel,
+    sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+        appListTableCompareText(left.status, right.status),
+    cellBuilder: (BuildContext context, LabOrderSummary item) {
+      return AppWorkspaceStatusBadge(
+        status: _orderStatus(context, item.status),
+      );
+    },
+  );
+}
+
+AppListTableColumn<LabOrderSummary> _labNextActionColumn(BuildContext context) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<LabOrderSummary>(
+    id: 'next_action',
+    label: l10n.labNextActionColumnLabel,
+    alwaysVisible: true,
+    sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
+        appListTableCompareText(
+          _nextActionLabel(context, left),
+          _nextActionLabel(context, right),
+        ),
+    cellBuilder: (BuildContext context, LabOrderSummary item) {
+      return _labNextActionCell(context, item);
+    },
+  );
+}
+
+Widget _labNextActionCell(BuildContext context, LabOrderSummary item) {
+  final String encounterId = item.encounterId ?? '';
+  if (encounterId.trim().isEmpty) {
+    return _labWorklistTextCell(context, _nextActionLabel(context, item));
+  }
+  return WorkflowActionButton(
+    encounterId: encounterId,
+    patientId: item.patientId,
+    orderId: item.id,
+    nextStep: item.status,
+    sourceModule: 'laboratory',
+    compact: true,
   );
 }
 
@@ -1433,8 +1534,14 @@ class _LabConfigurationsDialogState
                     physics: const NeverScrollableScrollPhysics(),
                     tableHorizontalMargin: 0,
                     columnVisibilityController: _columnVisibilityController,
+                    columnVisibilityStorageKey: showingTests
+                        ? 'lab_catalog_tests'
+                        : 'lab_catalog_panels',
+                    columnWidthStorageKey: showingTests
+                        ? 'lab_catalog_cw_tests'
+                        : 'lab_catalog_cw_panels',
                     columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-                    columnVisibilityTitle: l10n.labTableColumnsTitle,
+                    columnVisibilityTitle: l10n.commonTableSettingsTitle,
                     columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
                     columnVisibilityResetLabel: l10n.labResetColumnsAction,
                     search: AppListTableSearch<LabCatalogItem>(
@@ -1444,8 +1551,8 @@ class _LabConfigurationsDialogState
                       matcher: (LabCatalogItem item, String query) =>
                           item.matchesSearch(query),
                       showAdvancedFilterButton: true,
-                      advancedFilterButtonLabel: l10n.labWorklistFiltersLabel,
-                      advancedFilterTitle: l10n.labWorklistFiltersLabel,
+                      advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+                      advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
                       advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
                       advancedFilterResetLabel: l10n.opdClearFiltersAction,
                       enableDateFilter: false,
@@ -1484,8 +1591,21 @@ class _LabConfigurationsDialogState
                           ? l10n.labNoOfferedTestsLabel
                           : l10n.labNoOfferedPanelsLabel,
                     ),
+                    onRowSelected: (LabCatalogItem item) {
+                      if (showingTests) {
+                        unawaited(
+                          _openLabTestConfigurationDialog(context, state, item),
+                        );
+                      } else {
+                        unawaited(_openLabPanelDialog(context, state, item));
+                      }
+                    },
                     columns: _defaultColumns(context, state, showingTests),
-                    columnChoices: _additionalColumns(context, showingTests),
+                    columnChoices: _additionalColumns(
+                      context,
+                      showingTests,
+                      state,
+                    ),
                     mobileItemBuilder:
                         (BuildContext context, LabCatalogItem item) {
                           return _CompactRecordRow(
@@ -1808,16 +1928,33 @@ class _LabConfigurationsDialogState
         cellBuilder: (BuildContext context, LabCatalogItem item) =>
             Text(_formatCatalogUnitPrice(context, item, l10n)),
       ),
-      _actionsColumn(context, state, showingTests),
+      AppListTableColumn<LabCatalogItem>(
+        id: 'specimen_or_tests',
+        label: showingTests
+            ? l10n.labSpecimenTypeLabel
+            : l10n.labTestsColumnLabel,
+        sortComparator: showingTests
+            ? (LabCatalogItem left, LabCatalogItem right) =>
+                  appListTableCompareText(left.specimenType, right.specimenType)
+            : (LabCatalogItem left, LabCatalogItem right) =>
+                  (left.testCount).compareTo(right.testCount),
+        cellBuilder: (_, LabCatalogItem item) => Text(
+          showingTests
+              ? (item.specimenType ?? l10n.profileUnknownValue)
+              : l10n.clinicalLabOrderItemCount(item.testCount),
+        ),
+      ),
     ];
   }
 
   List<AppListTableColumn<LabCatalogItem>> _additionalColumns(
     BuildContext context,
     bool showingTests,
+    LabWorkspaceState state,
   ) {
     final AppLocalizations l10n = context.l10n;
     return <AppListTableColumn<LabCatalogItem>>[
+      _actionsColumn(context, state, showingTests),
       if (showingTests)
         AppListTableColumn<LabCatalogItem>(
           id: 'specimen',
@@ -1869,7 +2006,6 @@ class _LabConfigurationsDialogState
     return AppListTableColumn<LabCatalogItem>(
       id: 'actions',
       label: l10n.labActionColumnLabel,
-      alwaysVisible: true,
       cellBuilder: (BuildContext context, LabCatalogItem item) {
         return Wrap(
           spacing: Theme.of(context).spacing.xs,

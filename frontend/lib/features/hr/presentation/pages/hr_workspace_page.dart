@@ -81,6 +81,7 @@ class _HrWorkspaceContent extends ConsumerStatefulWidget {
 
 class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
   late final TextEditingController _searchController;
+  late final TextEditingController _workQueueSearchController;
   late final AppListTableColumnVisibilityController<HrStaffProfile>
   _staffColumnController;
   late final AppListTableColumnVisibilityController<HrWorkItem>
@@ -98,6 +99,9 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         HrDeskSection.staffDirectory;
     _searchController = TextEditingController(
       text: widget.state.staffQuery.search,
+    );
+    _workQueueSearchController = TextEditingController(
+      text: widget.state.workItemsQuery.search,
     );
     _staffColumnController =
         AppListTableColumnVisibilityController<HrStaffProfile>();
@@ -211,11 +215,16 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     if (_searchController.text != search) {
       _searchController.text = search;
     }
+    final String workQueueSearch = widget.state.workItemsQuery.search;
+    if (_workQueueSearchController.text != workQueueSearch) {
+      _workQueueSearchController.text = workQueueSearch;
+    }
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _workQueueSearchController.dispose();
     _staffColumnController.dispose();
     _queueColumnController.dispose();
     super.dispose();
@@ -413,6 +422,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         },
       ),
       HrDeskSection.leaveRequests => _HrWorkQueueTable(
+        searchController: _workQueueSearchController,
         columnVisibilityController: _queueColumnController,
         onPageChanged: controller.changeWorkItemsPage,
       ),
@@ -423,12 +433,14 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
           const _HrWorkQueueSwitcherRow(),
           SizedBox(height: Theme.of(context).spacing.md),
           _HrWorkQueueTable(
+            searchController: _workQueueSearchController,
             columnVisibilityController: _queueColumnController,
             onPageChanged: controller.changeWorkItemsPage,
           ),
         ],
       ),
       HrDeskSection.payroll => _HrWorkQueueTable(
+        searchController: _workQueueSearchController,
         columnVisibilityController: _queueColumnController,
         onPageChanged: controller.changeWorkItemsPage,
       ),
@@ -521,21 +533,24 @@ class _HrStaffDirectory extends ConsumerWidget {
       page: staffPage,
       isLoading: state.isRefreshingStaff,
       columnVisibilityController: columnVisibilityController,
+      columnVisibilityStorageKey: 'hr_staff_directory',
+      columnWidthStorageKey: 'hr_staff_directory_cw',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
       search: AppListTableSearch<HrStaffProfile>(
         controller: searchController,
         semanticLabel: l10n.hrSearchLabel,
         hintText: l10n.hrSearchHint,
         clearLabel: l10n.hrClearFiltersAction,
-        matcher: (_, _) => true,
+        matcher: (HrStaffProfile item, String query) =>
+            _staffSearchMatcher(context, item, query),
         onSubmitted: controller.applyStaffSearch,
         onClear: () => controller.applyStaffSearch(''),
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.hrFiltersLabel,
-        advancedFilterTitle: l10n.hrFiltersLabel,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.hrClearFiltersAction,
-        enableDateFilter: false,
         allFieldsLabel: l10n.opdAllFieldsFilterLabel,
         textFilters: <AppSearchBarTextFilter>[
           AppSearchBarTextFilter(
@@ -593,73 +608,17 @@ class _HrStaffDirectory extends ConsumerWidget {
         title: l10n.hrNoStaffTitle,
         body: l10n.hrNoStaffBody,
       ),
-      columns: <AppListTableColumn<HrStaffProfile>>[
-        AppListTableColumn<HrStaffProfile>(
-          label: l10n.hrStaffColumnLabel,
-          sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
-              appListTableCompareText(left.displayName, right.displayName),
-          cellBuilder: (BuildContext context, HrStaffProfile item) {
-            return AppCopyableIdentifierCell(
-              title: item.displayName,
-              identifier: item.staffNumber ?? item.displayId,
-            );
-          },
-        ),
-        AppListTableColumn<HrStaffProfile>(
-          label: l10n.hrRolePositionColumnLabel,
-          sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
-              appListTableCompareText(
-                left.assignmentLine,
-                right.assignmentLine,
-              ),
-          cellBuilder: (BuildContext context, HrStaffProfile item) {
-            final ThemeData theme = Theme.of(context);
-            return AppListItemText(
-              title: item.position ?? context.l10n.profileUnknownValue,
-              subtitle: item.practitionerType == null
-                  ? null
-                  : _apiLabel(context, item.practitionerType),
-              titleStyle: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            );
-          },
-        ),
-        AppListTableColumn<HrStaffProfile>(
-          label: l10n.hrDepartmentColumnLabel,
-          sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
-              appListTableCompareText(
-                left.departmentName,
-                right.departmentName,
-              ),
-          cellBuilder: (BuildContext context, HrStaffProfile item) {
-            return Text(
-              (item.departmentName ?? '').trim().isNotEmpty
-                  ? item.departmentName!
-                  : context.l10n.profileUnknownValue,
-            );
-          },
-        ),
-        AppListTableColumn<HrStaffProfile>(
-          label: l10n.hrStatusColumnLabel,
-          sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
-              appListTableCompareText(left.status, right.status),
-          cellBuilder: (BuildContext context, HrStaffProfile item) {
-            return _StatusBadge(status: item.status);
-          },
-        ),
-        AppListTableColumn<HrStaffProfile>(
-          label: l10n.hrNextActionColumnLabel,
-          cellBuilder: (BuildContext context, HrStaffProfile item) {
-            return AppButton.tertiary(
-              label: _staffNextAction(context, item),
-              onPressed: () => onStaffSelected(item),
-            );
-          },
-        ),
-      ],
+      columns: _staffDefaultColumns(
+        context,
+        l10n,
+        onStaffSelected: onStaffSelected,
+      ),
+      columnChoices: _staffColumnChoices(context, l10n),
       mobileItemBuilder: (BuildContext context, HrStaffProfile item) {
-        return _HrStaffListTile(staff: item);
+        return _HrStaffListTile(
+          staff: item,
+          onAction: () => onStaffSelected(item),
+        );
       },
     );
   }
@@ -1086,10 +1045,12 @@ class _HrStaffDetailBody extends ConsumerWidget {
 
 class _HrWorkQueuePanel extends ConsumerWidget {
   const _HrWorkQueuePanel({
+    required this.searchController,
     required this.columnVisibilityController,
     required this.onPageChanged,
   });
 
+  final TextEditingController searchController;
   final AppListTableColumnVisibilityController<HrWorkItem>
   columnVisibilityController;
   final ValueChanged<AppPageRequest> onPageChanged;
@@ -1103,6 +1064,7 @@ class _HrWorkQueuePanel extends ConsumerWidget {
         const _HrWorkQueueSwitcherRow(),
         SizedBox(height: Theme.of(context).spacing.md),
         _HrWorkQueueTable(
+          searchController: searchController,
           columnVisibilityController: columnVisibilityController,
           onPageChanged: onPageChanged,
         ),
@@ -1137,10 +1099,12 @@ class _HrWorkQueueSwitcherRow extends ConsumerWidget {
 
 class _HrWorkQueueTable extends ConsumerWidget {
   const _HrWorkQueueTable({
+    required this.searchController,
     required this.columnVisibilityController,
     required this.onPageChanged,
   });
 
+  final TextEditingController searchController;
   final AppListTableColumnVisibilityController<HrWorkItem>
   columnVisibilityController;
   final ValueChanged<AppPageRequest> onPageChanged;
@@ -1155,16 +1119,59 @@ class _HrWorkQueueTable extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    final HrWorkspaceController controller = ref.read(
+      hrWorkspaceControllerProvider.notifier,
+    );
+    final HrQueue queue = state.workItemsQuery.queue;
+    void onRowAction(HrWorkItem item) =>
+        _showWorkItemDialog(context, ref, item);
+
     return AppListTable<HrWorkItem>(
       page: state.workItems,
       isLoading: state.isRefreshingWorkItems,
       columnVisibilityController: columnVisibilityController,
+      columnVisibilityStorageKey: 'hr_work_queue_${queue.name}',
+      columnWidthStorageKey: 'hr_work_queue_cw_${queue.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      search: AppListTableSearch<HrWorkItem>(
+        controller: searchController,
+        semanticLabel: l10n.hrSearchLabel,
+        hintText: l10n.hrSearchHint,
+        clearLabel: l10n.hrClearFiltersAction,
+        matcher: (HrWorkItem item, String query) =>
+            _workItemSearchMatcher(context, item, query),
+        onSubmitted: controller.applyWorkItemsSearch,
+        onClear: () => controller.applyWorkItemsSearch(''),
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.hrClearFiltersAction,
+        allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+        filterGroups: <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: _hrWorkItemStatusFilterKey,
+            label: l10n.hrStatusColumnLabel,
+            allLabel: l10n.opdAllFieldsFilterLabel,
+            choices: _workItemStatusFilterChoices(context),
+          ),
+        ],
+        filterValue: _workItemFilterValue(state.workItemsQuery),
+        hasActiveFilters: _hasWorkItemFilters(state.workItemsQuery),
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          controller.applyWorkItemsScope(
+            queue: queue,
+            status: value.option(_hrWorkItemStatusFilterKey),
+            from: state.workItemsQuery.from,
+            to: state.workItemsQuery.to,
+          );
+        },
+      ),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemKeyBuilder: (HrWorkItem item) => ValueKey<String>(item.id),
-      onRowSelected: (HrWorkItem item) =>
-          _showWorkItemDialog(context, ref, item),
+      onRowSelected: onRowAction,
       previousPageLabel: l10n.hrPreviousQueuePageLabel,
       nextPageLabel: l10n.hrNextQueuePageLabel,
       pageLabelBuilder: (AppPage<HrWorkItem> page) {
@@ -1179,49 +1186,10 @@ class _HrWorkQueueTable extends ConsumerWidget {
         title: l10n.hrNoQueueItemsTitle,
         body: l10n.hrNoQueueItemsBody,
       ),
-      columns: <AppListTableColumn<HrWorkItem>>[
-        AppListTableColumn<HrWorkItem>(
-          label: l10n.hrQueueItemColumnLabel,
-          cellBuilder: (BuildContext context, HrWorkItem item) {
-            return AppCopyableIdentifierCell(
-              title: _workItemTitle(context, item),
-              identifier: item.effectiveId,
-            );
-          },
-        ),
-        AppListTableColumn<HrWorkItem>(
-          label: l10n.hrQueueColumnLabel,
-          sortComparator: (HrWorkItem left, HrWorkItem right) =>
-              appListTableCompareText(left.queue.value, right.queue.value),
-          cellBuilder: (BuildContext context, HrWorkItem item) {
-            return Text(hrQueueLabel(context.l10n, item.queue));
-          },
-        ),
-        AppListTableColumn<HrWorkItem>(
-          label: l10n.hrStatusColumnLabel,
-          sortComparator: (HrWorkItem left, HrWorkItem right) =>
-              appListTableCompareText(left.status, right.status),
-          cellBuilder: (BuildContext context, HrWorkItem item) {
-            return _StatusBadge(status: item.status);
-          },
-        ),
-        AppListTableColumn<HrWorkItem>(
-          label: l10n.hrPeriodColumnLabel,
-          sortComparator: (HrWorkItem left, HrWorkItem right) =>
-              appListTableCompareDateTime(left.startAt, right.startAt),
-          cellBuilder: (BuildContext context, HrWorkItem item) {
-            return Text(_workItemPeriod(context, item));
-          },
-        ),
-        AppListTableColumn<HrWorkItem>(
-          label: l10n.hrNextActionColumnLabel,
-          cellBuilder: (BuildContext context, HrWorkItem item) {
-            return Text(_workItemNextAction(context, item));
-          },
-        ),
-      ],
+      columns: _workQueueColumns(context, queue, onRowAction: onRowAction),
+      columnChoices: _workQueueColumnChoices(context, queue),
       mobileItemBuilder: (BuildContext context, HrWorkItem item) {
-        return _HrWorkItemTile(item: item);
+        return _HrWorkItemTile(item: item, onAction: () => onRowAction(item));
       },
     );
   }
@@ -1460,34 +1428,43 @@ class _StatusBadge extends StatelessWidget {
 }
 
 class _HrStaffListTile extends StatelessWidget {
-  const _HrStaffListTile({required this.staff});
+  const _HrStaffListTile({required this.staff, required this.onAction});
 
   final HrStaffProfile staff;
+  final VoidCallback onAction;
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     return Padding(
       padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Expanded(
-            child: AppCopyableIdentifierCell(
-              title: staff.displayName,
-              identifier: staff.staffNumber ?? staff.displayId,
-              subtitle: hrJoinDisplay(<String?>[
-                staff.position,
-                staff.departmentName ?? staff.departmentDisplayId,
-              ]),
-            ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: AppCopyableIdentifierCell(
+                  title: staff.displayName,
+                  identifier: staff.staffNumber ?? staff.displayId,
+                  subtitle: hrJoinDisplay(<String?>[
+                    staff.position,
+                    staff.departmentName ?? staff.departmentDisplayId,
+                  ]),
+                ),
+              ),
+              SizedBox(width: theme.spacing.sm),
+              _StatusBadge(status: staff.status),
+            ],
           ),
-          SizedBox(width: theme.spacing.sm),
-          Text(_staffNextAction(context, staff), maxLines: 2),
-          Semantics(
-            label: l10n.hrStaffColumnLabel,
-            child: const SizedBox.shrink(),
+          SizedBox(height: theme.spacing.xs),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: AppButton.tertiary(
+              label: _staffNextAction(context, staff),
+              onPressed: onAction,
+            ),
           ),
         ],
       ),
@@ -1496,32 +1473,46 @@ class _HrStaffListTile extends StatelessWidget {
 }
 
 class _HrWorkItemTile extends StatelessWidget {
-  const _HrWorkItemTile({required this.item});
+  const _HrWorkItemTile({required this.item, required this.onAction});
 
   final HrWorkItem item;
+  final VoidCallback onAction;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return Padding(
       padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Expanded(
-            child: AppListItemText(
-              title: _workItemTitle(context, item),
-              subtitle: hrJoinDisplay(<String?>[
-                hrQueueLabel(context.l10n, item.queue),
-                _workItemPeriod(context, item),
-              ]),
-              titleStyle: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Expanded(
+                child: AppListItemText(
+                  title: _workItemTitle(context, item),
+                  subtitle: hrJoinDisplay(<String?>[
+                    hrQueueLabel(context.l10n, item.queue),
+                    _workItemPeriod(context, item),
+                  ]),
+                  titleStyle: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
+              SizedBox(width: theme.spacing.sm),
+              _StatusBadge(status: item.status),
+            ],
+          ),
+          SizedBox(height: theme.spacing.xs),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: AppButton.tertiary(
+              label: _workItemNextAction(context, item),
+              onPressed: onAction,
             ),
           ),
-          SizedBox(width: theme.spacing.sm),
-          _StatusBadge(status: item.status),
         ],
       ),
     );
@@ -2227,6 +2218,568 @@ String _formatDateTime(BuildContext context, DateTime? value) {
 const String _hrPositionFilterKey = 'position';
 const String _hrDepartmentFilterKey = 'department';
 const String _hrPractitionerFilterKey = 'practitioner';
+const String _hrWorkItemStatusFilterKey = 'status';
+
+bool _staffSearchMatcher(
+  BuildContext context,
+  HrStaffProfile item,
+  String query,
+) {
+  final String needle = query.trim().toLowerCase();
+  if (needle.isEmpty) {
+    return true;
+  }
+  final String hireDate = item.hireDate == null
+      ? ''
+      : AppFormatters.shortDate(
+          item.hireDate!,
+          Localizations.localeOf(context),
+        );
+  final String consultationFee = item.consultationFee == null
+      ? ''
+      : '${item.consultationFee}'
+            '${item.consultationCurrency != null ? ' ${item.consultationCurrency}' : ''}';
+  final String practitionerRaw = item.practitionerType ?? '';
+  final String practitionerLabel = _apiLabel(context, item.practitionerType);
+
+  return <String?>[
+    item.displayName,
+    item.staffNumber,
+    item.displayId,
+    item.id,
+    item.position,
+    item.departmentName,
+    item.departmentDisplayId,
+    practitionerRaw,
+    practitionerLabel,
+    item.status,
+    _apiLabel(context, item.status),
+    item.userEmail,
+    item.userFullName,
+    hireDate,
+    consultationFee,
+    _staffNextAction(context, item),
+  ].whereType<String>().any(
+    (String value) => value.toLowerCase().contains(needle),
+  );
+}
+
+List<AppListTableColumn<HrStaffProfile>> _staffDefaultColumns(
+  BuildContext context,
+  AppLocalizations l10n, {
+  required ValueChanged<HrStaffProfile> onStaffSelected,
+}) {
+  return <AppListTableColumn<HrStaffProfile>>[
+    AppListTableColumn<HrStaffProfile>(
+      id: 'staff',
+      label: l10n.hrStaffColumnLabel,
+      sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
+          appListTableCompareText(left.displayName, right.displayName),
+      cellBuilder: (BuildContext context, HrStaffProfile item) {
+        return AppCopyableIdentifierCell(
+          title: item.displayName,
+          identifier: item.staffNumber ?? item.displayId,
+        );
+      },
+    ),
+    AppListTableColumn<HrStaffProfile>(
+      id: 'position',
+      label: l10n.hrRolePositionColumnLabel,
+      sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
+          appListTableCompareText(left.position, right.position),
+      cellBuilder: (BuildContext context, HrStaffProfile item) {
+        return Text(
+          (item.position ?? '').trim().isNotEmpty
+              ? item.position!
+              : context.l10n.profileUnknownValue,
+        );
+      },
+    ),
+    AppListTableColumn<HrStaffProfile>(
+      id: 'department',
+      label: l10n.hrDepartmentColumnLabel,
+      sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
+          appListTableCompareText(left.departmentName, right.departmentName),
+      cellBuilder: (BuildContext context, HrStaffProfile item) {
+        return Text(
+          (item.departmentName ?? '').trim().isNotEmpty
+              ? item.departmentName!
+              : context.l10n.profileUnknownValue,
+        );
+      },
+    ),
+    AppListTableColumn<HrStaffProfile>(
+      id: 'status',
+      label: l10n.hrStatusColumnLabel,
+      sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
+          appListTableCompareText(left.status, right.status),
+      cellBuilder: (BuildContext context, HrStaffProfile item) {
+        return _StatusBadge(status: item.status);
+      },
+    ),
+    AppListTableColumn<HrStaffProfile>(
+      id: 'next_action',
+      label: l10n.hrNextActionColumnLabel,
+      alwaysVisible: true,
+      cellBuilder: (BuildContext context, HrStaffProfile item) {
+        return AppButton.tertiary(
+          label: _staffNextAction(context, item),
+          onPressed: () => onStaffSelected(item),
+        );
+      },
+    ),
+  ];
+}
+
+List<AppListTableColumn<HrStaffProfile>> _staffColumnChoices(
+  BuildContext context,
+  AppLocalizations l10n,
+) {
+  return <AppListTableColumn<HrStaffProfile>>[
+    AppListTableColumn<HrStaffProfile>(
+      id: 'practitioner_type',
+      label: l10n.hrPractitionerTypeLabel,
+      sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
+          appListTableCompareText(
+            left.practitionerType,
+            right.practitionerType,
+          ),
+      cellBuilder: (BuildContext context, HrStaffProfile item) {
+        return Text(
+          _apiLabel(
+            context,
+            item.practitionerType,
+          ).ifEmpty(context.l10n.profileUnknownValue),
+        );
+      },
+    ),
+    AppListTableColumn<HrStaffProfile>(
+      id: 'hire_date',
+      label: l10n.hrHireDateLabel,
+      sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
+          appListTableCompareDateTime(left.hireDate, right.hireDate),
+      cellBuilder: (BuildContext context, HrStaffProfile item) {
+        return Text(
+          item.hireDate == null
+              ? context.l10n.profileUnknownValue
+              : AppFormatters.shortDate(
+                  item.hireDate!,
+                  Localizations.localeOf(context),
+                ),
+        );
+      },
+    ),
+    AppListTableColumn<HrStaffProfile>(
+      id: 'email',
+      label: l10n.hrEmailLabel,
+      sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
+          appListTableCompareText(left.userEmail, right.userEmail),
+      cellBuilder: (BuildContext context, HrStaffProfile item) {
+        return Text(
+          (item.userEmail ?? '').trim().isNotEmpty
+              ? item.userEmail!
+              : context.l10n.profileUnknownValue,
+        );
+      },
+    ),
+    AppListTableColumn<HrStaffProfile>(
+      id: 'staff_number',
+      label: l10n.hrStaffNumberLabel,
+      sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
+          appListTableCompareText(left.staffNumber, right.staffNumber),
+      cellBuilder: (BuildContext context, HrStaffProfile item) {
+        return Text(
+          (item.staffNumber ?? '').trim().isNotEmpty
+              ? item.staffNumber!
+              : context.l10n.profileUnknownValue,
+        );
+      },
+    ),
+    AppListTableColumn<HrStaffProfile>(
+      id: 'consultation_fee',
+      label: l10n.hrConsultationFeeLabel,
+      sortComparator: (HrStaffProfile left, HrStaffProfile right) =>
+          appListTableCompareNumber(
+            left.consultationFee,
+            right.consultationFee,
+          ),
+      cellBuilder: (BuildContext context, HrStaffProfile item) {
+        return Text(
+          item.consultationFee == null
+              ? context.l10n.profileUnknownValue
+              : '${item.consultationFee}'
+                    '${item.consultationCurrency != null ? ' ${item.consultationCurrency}' : ''}',
+        );
+      },
+    ),
+  ];
+}
+
+bool _workItemSearchMatcher(
+  BuildContext context,
+  HrWorkItem item,
+  String query,
+) {
+  final String needle = query.trim().toLowerCase();
+  if (needle.isEmpty) {
+    return true;
+  }
+
+  return <String?>[
+    item.effectiveId,
+    item.displayId,
+    item.id,
+    item.backendIdentifier,
+    item.status,
+    _apiLabel(context, item.status),
+    item.staffName,
+    item.staffNumber,
+    item.staffPosition,
+    item.staffProfileId,
+    item.leaveType,
+    _apiLabel(context, item.leaveType),
+    item.shiftId,
+    item.shiftType,
+    _apiLabel(context, item.shiftType),
+    item.rosterId,
+    item.payrollRunId,
+    item.periodLabel,
+    _workItemPeriod(context, item),
+    _workItemTitle(context, item),
+    _workItemNextAction(context, item),
+    hrQueueLabel(context.l10n, item.queue),
+    item.reason,
+    item.assignmentCount.toString(),
+  ].whereType<String>().any(
+    (String value) => value.toLowerCase().contains(needle),
+  );
+}
+
+List<AppListTableColumn<HrWorkItem>> _workQueueColumns(
+  BuildContext context,
+  HrQueue queue, {
+  required void Function(HrWorkItem item) onRowAction,
+}) {
+  final AppLocalizations l10n = context.l10n;
+  final List<AppListTableColumn<HrWorkItem>> dataColumns = switch (queue) {
+    HrQueue.leaveRequests => <AppListTableColumn<HrWorkItem>>[
+      _workItemLeaveTypeColumn(l10n, context),
+      _workItemStaffColumn(l10n),
+      _workItemPeriodColumn(l10n, context),
+    ],
+    HrQueue.swapRequests => <AppListTableColumn<HrWorkItem>>[
+      _workItemShiftTypeColumn(l10n, context),
+      _workItemStaffColumn(l10n),
+      _workItemPeriodColumn(l10n, context),
+    ],
+    HrQueue.rosterDrafts => <AppListTableColumn<HrWorkItem>>[
+      _workItemRosterColumn(l10n, context),
+      _workItemAssignmentsColumn(l10n),
+      _workItemPeriodColumn(l10n, context),
+    ],
+    HrQueue.unassignedShifts ||
+    HrQueue.overdueShifts => <AppListTableColumn<HrWorkItem>>[
+      _workItemShiftTypeColumn(l10n, context),
+      _workItemShiftIdColumn(l10n),
+      _workItemPeriodColumn(l10n, context),
+    ],
+    HrQueue.payrollDrafts => <AppListTableColumn<HrWorkItem>>[
+      _workItemPayrollColumn(l10n, context),
+      _workItemPayrollRunColumn(l10n),
+      _workItemPeriodColumn(l10n, context),
+    ],
+  };
+
+  return <AppListTableColumn<HrWorkItem>>[
+    ...dataColumns,
+    _workItemStatusColumn(l10n),
+    _workItemNextActionColumn(l10n, context, onRowAction: onRowAction),
+  ];
+}
+
+List<AppListTableColumn<HrWorkItem>> _workQueueColumnChoices(
+  BuildContext context,
+  HrQueue queue,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return <AppListTableColumn<HrWorkItem>>[
+    AppListTableColumn<HrWorkItem>(
+      id: 'queue',
+      label: l10n.hrQueueColumnLabel,
+      sortComparator: (HrWorkItem left, HrWorkItem right) =>
+          appListTableCompareText(left.queue.value, right.queue.value),
+      cellBuilder: (BuildContext context, HrWorkItem item) {
+        return Text(hrQueueLabel(context.l10n, item.queue));
+      },
+    ),
+    AppListTableColumn<HrWorkItem>(
+      id: 'staff_position',
+      label: l10n.hrPositionLabel,
+      sortComparator: (HrWorkItem left, HrWorkItem right) =>
+          appListTableCompareText(left.staffPosition, right.staffPosition),
+      cellBuilder: (BuildContext context, HrWorkItem item) {
+        return Text(
+          (item.staffPosition ?? '').trim().isNotEmpty
+              ? item.staffPosition!
+              : context.l10n.profileUnknownValue,
+        );
+      },
+    ),
+    AppListTableColumn<HrWorkItem>(
+      id: 'reason',
+      label: l10n.hrReasonLabel,
+      sortComparator: (HrWorkItem left, HrWorkItem right) =>
+          appListTableCompareText(left.reason, right.reason),
+      cellBuilder: (BuildContext context, HrWorkItem item) {
+        return Text(
+          (item.reason ?? '').trim().isNotEmpty
+              ? item.reason!
+              : context.l10n.profileUnknownValue,
+        );
+      },
+    ),
+    AppListTableColumn<HrWorkItem>(
+      id: 'effective_id',
+      label: l10n.hrQueueItemColumnLabel,
+      sortComparator: (HrWorkItem left, HrWorkItem right) =>
+          appListTableCompareText(left.effectiveId, right.effectiveId),
+      cellBuilder: (BuildContext context, HrWorkItem item) {
+        return AppCopyableIdentifierCell(
+          title: item.effectiveId,
+          identifier: item.displayId,
+        );
+      },
+    ),
+  ];
+}
+
+AppListTableColumn<HrWorkItem> _workItemLeaveTypeColumn(
+  AppLocalizations l10n,
+  BuildContext context,
+) {
+  return AppListTableColumn<HrWorkItem>(
+    id: 'leave_type',
+    label: l10n.hrLeaveTypeLabel,
+    sortComparator: (HrWorkItem left, HrWorkItem right) =>
+        appListTableCompareText(left.leaveType, right.leaveType),
+    cellBuilder: (BuildContext context, HrWorkItem item) {
+      return Text(
+        _apiLabel(
+          context,
+          item.leaveType,
+        ).ifEmpty(context.l10n.profileUnknownValue),
+      );
+    },
+  );
+}
+
+AppListTableColumn<HrWorkItem> _workItemStaffColumn(AppLocalizations l10n) {
+  return AppListTableColumn<HrWorkItem>(
+    id: 'staff',
+    label: l10n.hrStaffColumnLabel,
+    sortComparator: (HrWorkItem left, HrWorkItem right) =>
+        appListTableCompareText(left.staffName, right.staffName),
+    cellBuilder: (BuildContext context, HrWorkItem item) {
+      final ThemeData theme = Theme.of(context);
+      return AppListItemText(
+        title: (item.staffName ?? '').trim().isNotEmpty
+            ? item.staffName!
+            : context.l10n.profileUnknownValue,
+        subtitle: item.staffNumber,
+        titleStyle: theme.textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+        ),
+      );
+    },
+  );
+}
+
+AppListTableColumn<HrWorkItem> _workItemPeriodColumn(
+  AppLocalizations l10n,
+  BuildContext context,
+) {
+  return AppListTableColumn<HrWorkItem>(
+    id: 'period',
+    label: l10n.hrPeriodColumnLabel,
+    sortComparator: (HrWorkItem left, HrWorkItem right) =>
+        appListTableCompareDateTime(left.startAt, right.startAt),
+    cellBuilder: (BuildContext context, HrWorkItem item) {
+      return Text(_workItemPeriod(context, item));
+    },
+  );
+}
+
+AppListTableColumn<HrWorkItem> _workItemShiftTypeColumn(
+  AppLocalizations l10n,
+  BuildContext context,
+) {
+  return AppListTableColumn<HrWorkItem>(
+    id: 'shift',
+    label: l10n.hrShiftTypeLabel,
+    sortComparator: (HrWorkItem left, HrWorkItem right) =>
+        appListTableCompareText(left.shiftType, right.shiftType),
+    cellBuilder: (BuildContext context, HrWorkItem item) {
+      return Text(
+        _apiLabel(
+          context,
+          item.shiftType,
+        ).ifEmpty(context.l10n.profileUnknownValue),
+      );
+    },
+  );
+}
+
+AppListTableColumn<HrWorkItem> _workItemShiftIdColumn(AppLocalizations l10n) {
+  return AppListTableColumn<HrWorkItem>(
+    id: 'shift_id',
+    label: l10n.hrShiftIdLabel,
+    sortComparator: (HrWorkItem left, HrWorkItem right) =>
+        appListTableCompareText(left.shiftId, right.shiftId),
+    cellBuilder: (BuildContext context, HrWorkItem item) {
+      return AppCopyableIdentifierCell(
+        title: (item.shiftId ?? '').trim().isNotEmpty
+            ? item.shiftId!
+            : context.l10n.profileUnknownValue,
+        identifier: item.effectiveId,
+      );
+    },
+  );
+}
+
+AppListTableColumn<HrWorkItem> _workItemRosterColumn(
+  AppLocalizations l10n,
+  BuildContext context,
+) {
+  return AppListTableColumn<HrWorkItem>(
+    id: 'roster',
+    label: l10n.hrRosterDraftTitle,
+    sortComparator: (HrWorkItem left, HrWorkItem right) =>
+        appListTableCompareText(left.periodLabel, right.periodLabel),
+    cellBuilder: (BuildContext context, HrWorkItem item) {
+      return AppCopyableIdentifierCell(
+        title: (item.periodLabel ?? item.rosterId ?? '').ifEmpty(
+          context.l10n.hrRosterDraftTitle,
+        ),
+        identifier: item.rosterId ?? item.effectiveId,
+      );
+    },
+  );
+}
+
+AppListTableColumn<HrWorkItem> _workItemAssignmentsColumn(
+  AppLocalizations l10n,
+) {
+  return AppListTableColumn<HrWorkItem>(
+    id: 'assignments',
+    label: l10n.hrAssignmentsSectionTitle,
+    sortComparator: (HrWorkItem left, HrWorkItem right) =>
+        appListTableCompareNumber(left.assignmentCount, right.assignmentCount),
+    cellBuilder: (BuildContext context, HrWorkItem item) {
+      return Text(item.assignmentCount.toString());
+    },
+  );
+}
+
+AppListTableColumn<HrWorkItem> _workItemPayrollColumn(
+  AppLocalizations l10n,
+  BuildContext context,
+) {
+  return AppListTableColumn<HrWorkItem>(
+    id: 'payroll',
+    label: l10n.hrPayrollDraftTitle,
+    sortComparator: (HrWorkItem left, HrWorkItem right) =>
+        appListTableCompareText(left.periodLabel, right.periodLabel),
+    cellBuilder: (BuildContext context, HrWorkItem item) {
+      return Text(
+        (item.periodLabel ?? '').trim().isNotEmpty
+            ? item.periodLabel!
+            : context.l10n.profileUnknownValue,
+      );
+    },
+  );
+}
+
+AppListTableColumn<HrWorkItem> _workItemPayrollRunColumn(
+  AppLocalizations l10n,
+) {
+  return AppListTableColumn<HrWorkItem>(
+    id: 'run_id',
+    label: l10n.hrPayrollRunDialogTitle,
+    sortComparator: (HrWorkItem left, HrWorkItem right) =>
+        appListTableCompareText(left.payrollRunId, right.payrollRunId),
+    cellBuilder: (BuildContext context, HrWorkItem item) {
+      return AppCopyableIdentifierCell(
+        title: item.payrollRunId ?? item.displayId ?? item.effectiveId,
+        identifier: item.effectiveId,
+      );
+    },
+  );
+}
+
+AppListTableColumn<HrWorkItem> _workItemStatusColumn(AppLocalizations l10n) {
+  return AppListTableColumn<HrWorkItem>(
+    id: 'status',
+    label: l10n.hrStatusColumnLabel,
+    sortComparator: (HrWorkItem left, HrWorkItem right) =>
+        appListTableCompareText(left.status, right.status),
+    cellBuilder: (BuildContext context, HrWorkItem item) {
+      return _StatusBadge(status: item.status);
+    },
+  );
+}
+
+AppListTableColumn<HrWorkItem> _workItemNextActionColumn(
+  AppLocalizations l10n,
+  BuildContext context, {
+  required void Function(HrWorkItem item) onRowAction,
+}) {
+  return AppListTableColumn<HrWorkItem>(
+    id: 'next_action',
+    label: l10n.hrNextActionColumnLabel,
+    alwaysVisible: true,
+    cellBuilder: (BuildContext context, HrWorkItem item) {
+      return AppButton.tertiary(
+        label: _workItemNextAction(context, item),
+        onPressed: () => onRowAction(item),
+      );
+    },
+  );
+}
+
+List<AppSearchBarFilterChoice> _workItemStatusFilterChoices(
+  BuildContext context,
+) {
+  return <AppSearchBarFilterChoice>[
+    for (final String status in <String>[
+      'REQUESTED',
+      'APPROVED',
+      'REJECTED',
+      'DRAFT',
+      'PUBLISHED',
+      'COMPLETED',
+      'PROCESSED',
+      'PAID',
+      'ACTIVE',
+    ])
+      AppSearchBarFilterChoice(
+        value: status,
+        label: _apiLabel(context, status),
+        icon: Icons.radio_button_checked,
+      ),
+  ];
+}
+
+AppSearchBarFilterValue _workItemFilterValue(HrWorkItemsQuery query) {
+  return AppSearchBarFilterValue(
+    options: <String, String>{
+      if (query.status != null) _hrWorkItemStatusFilterKey: query.status!,
+    },
+  );
+}
+
+bool _hasWorkItemFilters(HrWorkItemsQuery query) {
+  return query.status != null;
+}
 
 extension on String {
   String ifEmpty(String fallback) {

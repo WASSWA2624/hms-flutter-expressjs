@@ -201,7 +201,16 @@ void main() {
     expect(find.byTooltip('Refresh'), findsOneWidget);
     expect(find.byTooltip('Orders view'), findsOneWidget);
     expect(_table(tester).columnVisibilityLabel, 'Settings');
+    expect(_table(tester).columnVisibilityTitle, 'Table Settings');
     expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+    expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
+    expect(_table(tester).columns.length, lessThanOrEqualTo(5));
+    expect(
+      _table(tester).columns.any((AppListTableColumn<LabOrderSummary> column) {
+        return column.id == 'next_action' && column.alwaysVisible;
+      }),
+      isTrue,
+    );
   });
 
   testWidgets('does not paint a dedicated laboratory title header', (

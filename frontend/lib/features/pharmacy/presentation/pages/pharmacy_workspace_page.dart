@@ -555,15 +555,17 @@ class _PharmacyQueuePanel extends ConsumerWidget {
       columnVisibilityStorageKey: 'pharmacy_${section.name}',
       columnWidthStorageKey: 'pharmacy_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
       search: AppListTableSearch<PharmacyOrder>(
         controller: searchController,
         semanticLabel: l10n.pharmacySearchLabel,
         hintText: l10n.pharmacySearchHint,
-        matcher: (_, _) => true,
+        matcher: (PharmacyOrder item, String query) =>
+            pharmacyOrderSearchMatcher(context, item, query),
         onSubmitted: controller.applySearch,
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.pharmacyQueueFilterLabel,
-        advancedFilterTitle: l10n.pharmacyFiltersSemanticLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
         dateFilterLabel: l10n.pharmacyOrderDateFilterLabel,
@@ -646,10 +648,19 @@ class _PharmacyQueuePanel extends ConsumerWidget {
         body: l10n.pharmacyNoOrdersBody,
         icon: Icons.medication_liquid_outlined,
       ),
-      columns: _columnsForSection(context, section),
+      columns: _columnsForSection(
+        context,
+        section,
+        state: state,
+        writeRequirement: writeRequirement,
+      ),
       columnChoices: _optionalPharmacyWorklistColumns(context),
       mobileItemBuilder: (BuildContext context, PharmacyOrder item) {
-        return _PharmacyOrderListTile(order: item);
+        return _PharmacyOrderListTile(
+          order: item,
+          state: state,
+          writeRequirement: writeRequirement,
+        );
       },
     );
   }
@@ -664,31 +675,19 @@ class _PharmacyQueuePanel extends ConsumerWidget {
   }
 }
 
-class _PharmacyOrderPatientCell extends StatelessWidget {
-  const _PharmacyOrderPatientCell({required this.order});
+class _PharmacyOrderListTile extends ConsumerWidget {
+  const _PharmacyOrderListTile({
+    required this.order,
+    required this.state,
+    required this.writeRequirement,
+  });
 
   final PharmacyOrder order;
+  final PharmacyWorkspaceState state;
+  final AccessRequirement writeRequirement;
 
   @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Text(
-      order.displayTitle,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-    );
-  }
-}
-
-class _PharmacyOrderListTile extends StatelessWidget {
-  const _PharmacyOrderListTile({required this.order});
-
-  final PharmacyOrder order;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -698,14 +697,7 @@ class _PharmacyOrderListTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            order.displayTitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          AppListItemText(title: order.displayTitle, subtitle: order.displayId),
           SizedBox(height: theme.spacing.xs),
           Text(
             _locationLabel(context, order),
@@ -721,21 +713,16 @@ class _PharmacyOrderListTile extends StatelessWidget {
             children: <Widget>[
               AppWorkspaceStatusBadge(status: _orderStatus(context, order)),
               Text(
-                _billingGateLabel(context, order),
-                style: theme.textTheme.bodySmall,
-              ),
-              Text(
                 _dispenseProgressLabel(context, order),
                 style: theme.textTheme.bodySmall,
               ),
-              if (order.hasPendingAttestation)
-                AppWorkspaceStatusBadge(
-                  status: AppWorkspaceStatus(
-                    label: l10n.pharmacyPendingBatchLabel,
-                    tone: AppWorkspaceStatusTone.warning,
-                  ),
-                ),
             ],
+          ),
+          SizedBox(height: theme.spacing.sm),
+          _PharmacyOrderNextActionButton(
+            order: order,
+            state: state,
+            writeRequirement: writeRequirement,
           ),
         ],
       ),
@@ -1030,7 +1017,7 @@ class _PharmacyActionPanel extends ConsumerWidget {
   }
 }
 
-class _MedicationItemsPanel extends ConsumerWidget {
+class _MedicationItemsPanel extends ConsumerStatefulWidget {
   const _MedicationItemsPanel({
     required this.workflow,
     required this.writeRequirement,
@@ -1040,8 +1027,33 @@ class _MedicationItemsPanel extends ConsumerWidget {
   final AccessRequirement writeRequirement;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_MedicationItemsPanel> createState() =>
+      _MedicationItemsPanelState();
+}
+
+class _MedicationItemsPanelState extends ConsumerState<_MedicationItemsPanel> {
+  late final TextEditingController _searchController;
+  late final AppListTableColumnVisibilityController<PharmacyOrderItem>
+  _columnVisibilityController;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+    _columnVisibilityController =
+        AppListTableColumnVisibilityController<PharmacyOrderItem>();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final PharmacyOrderWorkflow workflow = widget.workflow;
     final PharmacyOrder order = workflow.order;
     final List<PharmacyOrderItem> items = workflow.items.isEmpty
         ? workflow.order.items
@@ -1052,6 +1064,17 @@ class _MedicationItemsPanel extends ConsumerWidget {
         items: items,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
+        columnVisibilityController: _columnVisibilityController,
+        columnVisibilityStorageKey: 'pharmacy_order_items',
+        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        columnVisibilityTitle: l10n.commonTableSettingsTitle,
+        search: AppListTableSearch<PharmacyOrderItem>(
+          controller: _searchController,
+          semanticLabel: l10n.pharmacyMedicationColumnLabel,
+          hintText: l10n.pharmacySearchHint,
+          matcher: (PharmacyOrderItem item, String query) =>
+              _medicationItemSearchMatcher(context, order, item, query),
+        ),
         emptyBuilder: (_) => AppWorkspaceStatePanel.state(
           variant: AppStateViewVariant.empty,
           title: l10n.pharmacyNoMedicationTitle,
@@ -1061,6 +1084,7 @@ class _MedicationItemsPanel extends ConsumerWidget {
         ),
         columns: <AppListTableColumn<PharmacyOrderItem>>[
           AppListTableColumn<PharmacyOrderItem>(
+            id: 'medication',
             label: l10n.pharmacyMedicationColumnLabel,
             cellBuilder: (BuildContext context, PharmacyOrderItem item) {
               return Align(
@@ -1070,6 +1094,7 @@ class _MedicationItemsPanel extends ConsumerWidget {
             },
           ),
           AppListTableColumn<PharmacyOrderItem>(
+            id: 'dose',
             label: l10n.pharmacyDoseColumnLabel,
             cellBuilder: (BuildContext context, PharmacyOrderItem item) {
               return Align(
@@ -1079,6 +1104,7 @@ class _MedicationItemsPanel extends ConsumerWidget {
             },
           ),
           AppListTableColumn<PharmacyOrderItem>(
+            id: 'quantity',
             label: l10n.pharmacyQuantityColumnLabel,
             cellBuilder: (BuildContext context, PharmacyOrderItem item) {
               return Align(
@@ -1088,6 +1114,7 @@ class _MedicationItemsPanel extends ConsumerWidget {
             },
           ),
           AppListTableColumn<PharmacyOrderItem>(
+            id: 'line_price',
             label: l10n.pharmacyLinePriceColumnLabel,
             cellBuilder: (BuildContext context, PharmacyOrderItem item) {
               return Align(
@@ -1097,14 +1124,16 @@ class _MedicationItemsPanel extends ConsumerWidget {
             },
           ),
           AppListTableColumn<PharmacyOrderItem>(
+            id: 'line_action',
             label: l10n.pharmacyLineActionsColumnLabel,
+            alwaysVisible: true,
             cellBuilder: (BuildContext context, PharmacyOrderItem item) {
               return Align(
                 alignment: Alignment.topLeft,
-                child: _MedicationLineActions(
+                child: _MedicationPrimaryLineAction(
                   workflow: workflow,
                   item: item,
-                  writeRequirement: writeRequirement,
+                  writeRequirement: widget.writeRequirement,
                 ),
               );
             },
@@ -1128,7 +1157,7 @@ class _MedicationItemsPanel extends ConsumerWidget {
                 _MedicationLineActions(
                   workflow: workflow,
                   item: item,
-                  writeRequirement: writeRequirement,
+                  writeRequirement: widget.writeRequirement,
                 ),
               ],
             ),
@@ -1162,6 +1191,41 @@ class _MedicationCell extends StatelessWidget {
           SizedBox(height: theme.spacing.xs),
           Text(
             item.instructions!,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _ReturnLineMedicationCell extends StatelessWidget {
+  const _ReturnLineMedicationCell({required this.item});
+
+  final PharmacyOrderItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          item.medicationLabel,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        if (item.doseLine.trim().isNotEmpty) ...<Widget>[
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            item.doseLine,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.bodySmall?.copyWith(
@@ -1244,6 +1308,90 @@ class _MedicationPriceCell extends StatelessWidget {
         ],
       ],
     );
+  }
+}
+
+class _MedicationPrimaryLineAction extends ConsumerWidget {
+  const _MedicationPrimaryLineAction({
+    required this.workflow,
+    required this.item,
+    required this.writeRequirement,
+  });
+
+  final PharmacyOrderWorkflow workflow;
+  final PharmacyOrderItem item;
+  final AccessRequirement writeRequirement;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final PharmacyOrder order = workflow.order;
+    final bool canWrite = writeRequirement.isAllowed(
+      ref.watch(appAccessPolicyProvider),
+    );
+
+    if (pharmacyItemIsCancelled(item)) {
+      return Text(
+        l10n.pharmacyItemCancelledLabel,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.error,
+          fontWeight: FontWeight.w700,
+        ),
+      );
+    }
+
+    if (pharmacyItemNeedsStockMapping(item)) {
+      return AppButton.tertiary(
+        label: l10n.pharmacyMapStockAction,
+        leadingIcon: Icons.inventory_2_outlined,
+        enabled: canWrite,
+        onPressed: canWrite
+            ? () => openPharmacyCatalogDialog(context, ref)
+            : null,
+      );
+    }
+
+    final PharmacyItemPriceSource activeSource = resolvePharmacyItemPriceSource(
+      order: order,
+      item: item,
+    );
+    if (pharmacyItemHasSelectablePrices(item)) {
+      if (activeSource != PharmacyItemPriceSource.pharmacy) {
+        return AppButton.tertiary(
+          label: l10n.pharmacyUsePharmacyPriceAction,
+          leadingIcon: Icons.local_pharmacy_outlined,
+          enabled: canWrite,
+          onPressed: canWrite
+              ? () => _switchItemPriceSource(
+                  context,
+                  ref,
+                  order,
+                  item,
+                  PharmacyItemPriceSource.pharmacy,
+                )
+              : null,
+        );
+      }
+      if (activeSource != PharmacyItemPriceSource.facility) {
+        return AppButton.tertiary(
+          label: l10n.pharmacyUseFacilityPriceAction,
+          leadingIcon: Icons.account_balance_outlined,
+          enabled: canWrite,
+          onPressed: canWrite
+              ? () => _switchItemPriceSource(
+                  context,
+                  ref,
+                  order,
+                  item,
+                  PharmacyItemPriceSource.facility,
+                )
+              : null,
+        );
+      }
+    }
+
+    return const SizedBox.shrink();
   }
 }
 
@@ -1472,6 +1620,8 @@ class _DrugStockPanel extends ConsumerStatefulWidget {
 
 class _DrugStockPanelState extends ConsumerState<_DrugStockPanel> {
   late final TextEditingController _searchController;
+  late final AppListTableColumnVisibilityController<PharmacyDrug>
+  _columnVisibilityController;
 
   @override
   void initState() {
@@ -1479,6 +1629,8 @@ class _DrugStockPanelState extends ConsumerState<_DrugStockPanel> {
     _searchController = TextEditingController(
       text: widget.state.drugQuery.search,
     );
+    _columnVisibilityController =
+        AppListTableColumnVisibilityController<PharmacyDrug>();
   }
 
   @override
@@ -1510,19 +1662,23 @@ class _DrugStockPanelState extends ConsumerState<_DrugStockPanel> {
       child: AppListTable<PharmacyDrug>(
         page: state.drugs,
         isLoading: state.isRefreshingDrugs,
+        columnVisibilityController: _columnVisibilityController,
+        columnVisibilityStorageKey: 'pharmacy_drug_stock',
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        columnVisibilityTitle: l10n.commonTableSettingsTitle,
         search: AppListTableSearch<PharmacyDrug>(
           controller: _searchController,
           semanticLabel: l10n.pharmacyDrugSearchLabel,
           hintText: l10n.pharmacyDrugSearchHint,
-          matcher: (_, _) => true,
+          matcher: (PharmacyDrug item, String query) =>
+              _pharmacyDrugSearchMatcher(context, item, query),
           onSubmitted: controller.applyDrugSearch,
           onClear: () {
             unawaited(controller.applyDrugSearch(''));
           },
           showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.pharmacyDrugFiltersSemanticLabel,
-          advancedFilterTitle: l10n.pharmacyDrugFiltersSemanticLabel,
+          advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+          advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.opdClearFiltersAction,
           enableDateFilter: false,
@@ -1551,6 +1707,11 @@ class _DrugStockPanelState extends ConsumerState<_DrugStockPanel> {
           return _pageLabel(context, page);
         },
         onPageChanged: controller.changeDrugPage,
+        onRowSelected: (_) {
+          unawaited(
+            openPharmacyCatalogDialog(context, ref),
+          );
+        },
         emptyBuilder: (_) => AppWorkspaceStatePanel.state(
           variant: AppStateViewVariant.empty,
           title: l10n.pharmacyNoDrugsTitle,
@@ -1560,12 +1721,14 @@ class _DrugStockPanelState extends ConsumerState<_DrugStockPanel> {
         ),
         columns: <AppListTableColumn<PharmacyDrug>>[
           AppListTableColumn<PharmacyDrug>(
+            id: 'drug',
             label: l10n.pharmacyDrugColumnLabel,
             cellBuilder: (BuildContext context, PharmacyDrug item) {
               return _DrugCell(drug: item);
             },
           ),
           AppListTableColumn<PharmacyDrug>(
+            id: 'available',
             label: l10n.pharmacyAvailableColumnLabel,
             numeric: true,
             cellBuilder: (BuildContext context, PharmacyDrug item) {
@@ -1573,6 +1736,7 @@ class _DrugStockPanelState extends ConsumerState<_DrugStockPanel> {
             },
           ),
           AppListTableColumn<PharmacyDrug>(
+            id: 'stock_status',
             label: l10n.pharmacyStockStatusColumnLabel,
             cellBuilder: (BuildContext context, PharmacyDrug item) {
               return AppWorkspaceStatusBadge(
@@ -1581,6 +1745,7 @@ class _DrugStockPanelState extends ConsumerState<_DrugStockPanel> {
             },
           ),
         ],
+        columnChoices: _optionalPharmacyDrugColumns(context),
         mobileItemBuilder: (BuildContext context, PharmacyDrug item) {
           final ThemeData theme = Theme.of(context);
           return Padding(
@@ -2057,10 +2222,9 @@ class _ReturnDialogState extends ConsumerState<_ReturnDialog> {
 
 const String _returnTableSelectColumnKey = 'select';
 const String _returnTableMedicationColumnKey = 'medication';
-const String _returnTableDoseColumnKey = 'dose';
 const String _returnTableQuantityColumnKey = 'quantity';
 const String _returnTableReturnQuantityColumnKey = 'return_quantity';
-const String _returnTableActionsColumnKey = 'actions';
+const String _returnTableEditLineColumnKey = 'edit_line';
 
 class _ReturnMedicationsTable extends StatelessWidget {
   const _ReturnMedicationsTable({
@@ -2083,6 +2247,7 @@ class _ReturnMedicationsTable extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
+    // Search omitted: return dialog lines are typically short (≤8 rows).
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border.all(color: colorScheme.outlineVariant),
@@ -2091,7 +2256,6 @@ class _ReturnMedicationsTable extends StatelessWidget {
         items: lines,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        displayMode: AppListTableDisplayMode.table,
         tableHorizontalMargin: theme.spacing.sm,
         itemKeyBuilder: (_LineEditState line) => ValueKey<String>(line.item.id),
         columns: _columns(context),
@@ -2126,11 +2290,9 @@ class _ReturnMedicationsTable extends StatelessWidget {
                                 _toggleLine(line.item.id, value ?? false),
                       visualDensity: VisualDensity.compact,
                     ),
-                    Expanded(child: _MedicationCell(item: line.item)),
+                    Expanded(child: _ReturnLineMedicationCell(item: line.item)),
                   ],
                 ),
-                SizedBox(height: theme.spacing.xs),
-                Text(line.item.doseLine, style: theme.textTheme.bodySmall),
                 SizedBox(height: theme.spacing.xs),
                 Text(line.item.quantityLine, style: theme.textTheme.bodySmall),
                 SizedBox(height: theme.spacing.xs),
@@ -2167,17 +2329,7 @@ class _ReturnMedicationsTable extends StatelessWidget {
         cellBuilder: (BuildContext context, _LineEditState line) {
           return Align(
             alignment: Alignment.topLeft,
-            child: _MedicationCell(item: line.item),
-          );
-        },
-      ),
-      AppListTableColumn<_LineEditState>(
-        id: _returnTableDoseColumnKey,
-        label: l10n.pharmacyDoseColumnLabel,
-        cellBuilder: (BuildContext context, _LineEditState line) {
-          return Align(
-            alignment: Alignment.topLeft,
-            child: Text(line.item.doseLine),
+            child: _ReturnLineMedicationCell(item: line.item),
           );
         },
       ),
@@ -2207,7 +2359,7 @@ class _ReturnMedicationsTable extends StatelessWidget {
         },
       ),
       AppListTableColumn<_LineEditState>(
-        id: _returnTableActionsColumnKey,
+        id: _returnTableEditLineColumnKey,
         label: l10n.pharmacyLineActionsColumnLabel,
         alwaysVisible: true,
         cellBuilder: (BuildContext context, _LineEditState line) {
@@ -2677,94 +2829,502 @@ const String _pharmacyUrgentFilterKey = 'urgent';
 
 List<AppListTableColumn<PharmacyOrder>> _columnsForSection(
   BuildContext context,
-  PharmacyDeskSection section,
-) {
-  final List<AppListTableColumn<PharmacyOrder>> base =
-      _defaultPharmacyWorklistColumns(context);
+  PharmacyDeskSection section, {
+  required PharmacyWorkspaceState state,
+  required AccessRequirement writeRequirement,
+}) {
   return switch (section) {
-    PharmacyDeskSection.queue => base,
-    PharmacyDeskSection.inProgress => base,
     PharmacyDeskSection.pendingPayment => <AppListTableColumn<PharmacyOrder>>[
-      ...base.take(4),
-      ..._optionalPharmacyWorklistColumns(
+      _pharmacyPatientColumn(context),
+      _pharmacyBillingColumn(context),
+      _pharmacyOrderedAtColumn(context),
+      _pharmacyStatusColumn(context),
+      _pharmacyNextActionColumn(
         context,
-      ).where((AppListTableColumn<PharmacyOrder> c) => c.id == 'ordered_at'),
+        state: state,
+        writeRequirement: writeRequirement,
+      ),
     ],
-    PharmacyDeskSection.completed => base,
-    PharmacyDeskSection.allOrders => base,
+    PharmacyDeskSection.allOrders => <AppListTableColumn<PharmacyOrder>>[
+      _pharmacyPatientColumn(context),
+      _pharmacyLocationColumn(context),
+      _pharmacyItemsColumn(context),
+      _pharmacyStatusColumn(context),
+      _pharmacyNextActionColumn(
+        context,
+        state: state,
+        writeRequirement: writeRequirement,
+      ),
+    ],
+    PharmacyDeskSection.queue ||
+    PharmacyDeskSection.inProgress ||
+    PharmacyDeskSection.completed => <AppListTableColumn<PharmacyOrder>>[
+      _pharmacyPatientColumn(context),
+      _pharmacyLocationColumn(context),
+      _pharmacyDispenseProgressColumn(context),
+      _pharmacyStatusColumn(context),
+      _pharmacyNextActionColumn(
+        context,
+        state: state,
+        writeRequirement: writeRequirement,
+      ),
+    ],
   };
 }
 
-List<AppListTableColumn<PharmacyOrder>> _defaultPharmacyWorklistColumns(
+AppListTableColumn<PharmacyOrder> _pharmacyPatientColumn(BuildContext context) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<PharmacyOrder>(
+    id: 'patient',
+    label: l10n.pharmacyPatientColumnLabel,
+    sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
+        appListTableCompareText(left.displayTitle, right.displayTitle),
+    cellBuilder: (BuildContext context, PharmacyOrder item) {
+      return AppListItemText(
+        title: item.displayTitle,
+        subtitle: item.displayId,
+      );
+    },
+  );
+}
+
+AppListTableColumn<PharmacyOrder> _pharmacyLocationColumn(
   BuildContext context,
 ) {
   final AppLocalizations l10n = context.l10n;
-  return <AppListTableColumn<PharmacyOrder>>[
-    AppListTableColumn<PharmacyOrder>(
-      label: l10n.pharmacyPatientColumnLabel,
-      sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
-          appListTableCompareText(left.displayTitle, right.displayTitle),
-      cellBuilder: (BuildContext context, PharmacyOrder item) {
-        return _PharmacyOrderPatientCell(order: item);
+  return AppListTableColumn<PharmacyOrder>(
+    id: 'location',
+    label: l10n.pharmacyLocationFieldLabel,
+    sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
+        appListTableCompareText(
+          _locationLabel(context, left),
+          _locationLabel(context, right),
+        ),
+    cellBuilder: (BuildContext context, PharmacyOrder item) {
+      return Text(_locationLabel(context, item));
+    },
+  );
+}
+
+AppListTableColumn<PharmacyOrder> _pharmacyDispenseProgressColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<PharmacyOrder>(
+    id: 'dispense_progress',
+    label: l10n.pharmacyDispenseColumnLabel,
+    sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
+        appListTableCompareNumber(
+          left.quantityDispensedTotal,
+          right.quantityDispensedTotal,
+        ),
+    cellBuilder: (BuildContext context, PharmacyOrder item) {
+      return Text(_dispenseProgressLabel(context, item));
+    },
+  );
+}
+
+AppListTableColumn<PharmacyOrder> _pharmacyItemsColumn(BuildContext context) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<PharmacyOrder>(
+    id: 'items',
+    label: l10n.pharmacyItemsColumnLabel,
+    numeric: true,
+    sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
+        appListTableCompareNumber(left.itemCount, right.itemCount),
+    cellBuilder: (BuildContext context, PharmacyOrder item) {
+      return Text(_numberLabel(item.itemCount));
+    },
+  );
+}
+
+AppListTableColumn<PharmacyOrder> _pharmacyBillingColumn(BuildContext context) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<PharmacyOrder>(
+    id: 'billing',
+    label: l10n.pharmacyPaymentColumnLabel,
+    sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
+        appListTableCompareText(
+          left.effectivePaymentStatus,
+          right.effectivePaymentStatus,
+        ),
+    cellBuilder: (BuildContext context, PharmacyOrder item) {
+      return Text(_billingGateLabel(context, item));
+    },
+  );
+}
+
+AppListTableColumn<PharmacyOrder> _pharmacyOrderedAtColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<PharmacyOrder>(
+    id: 'ordered_at',
+    label: l10n.pharmacyOrderedAtColumnLabel,
+    sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
+        appListTableCompareText(
+          _dateTimeLabel(context, left.orderedAt),
+          _dateTimeLabel(context, right.orderedAt),
+        ),
+    cellBuilder: (BuildContext context, PharmacyOrder item) {
+      return Text(_dateTimeLabel(context, item.orderedAt));
+    },
+  );
+}
+
+AppListTableColumn<PharmacyOrder> _pharmacyStatusColumn(BuildContext context) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<PharmacyOrder>(
+    id: 'status',
+    label: l10n.pharmacyStatusColumnLabel,
+    sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
+        appListTableCompareText(left.status, right.status),
+    cellBuilder: (BuildContext context, PharmacyOrder item) {
+      return AppWorkspaceStatusBadge(status: _orderStatus(context, item));
+    },
+  );
+}
+
+AppListTableColumn<PharmacyOrder> _pharmacyNextActionColumn(
+  BuildContext context, {
+  required PharmacyWorkspaceState state,
+  required AccessRequirement writeRequirement,
+}) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<PharmacyOrder>(
+    id: 'next_action',
+    label: l10n.pharmacyNextActionColumnLabel,
+    alwaysVisible: true,
+    sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
+        appListTableCompareText(
+          pharmacyOrderNextActionLabel(context, left),
+          pharmacyOrderNextActionLabel(context, right),
+        ),
+    cellBuilder: (BuildContext context, PharmacyOrder item) {
+      return _PharmacyOrderNextActionButton(
+        order: item,
+        state: state,
+        writeRequirement: writeRequirement,
+      );
+    },
+  );
+}
+
+enum _PharmacyResolvedAction {
+  recordPayment,
+  attest,
+  dispense,
+  returnItems,
+  cancel,
+  confirmBilling,
+  viewDetails,
+}
+
+String pharmacyOrderNextActionLabel(BuildContext context, PharmacyOrder order) {
+  final AppLocalizations l10n = context.l10n;
+  return switch (_resolvePharmacyNextAction(order)) {
+    _PharmacyResolvedAction.recordPayment => l10n.pharmacyRecordPaymentAction,
+    _PharmacyResolvedAction.attest => l10n.pharmacyAttestAction,
+    _PharmacyResolvedAction.dispense => l10n.pharmacyDispenseAction,
+    _PharmacyResolvedAction.returnItems => l10n.pharmacyReturnAction,
+    _PharmacyResolvedAction.cancel => l10n.pharmacyCancelOrderAction,
+    _PharmacyResolvedAction.confirmBilling =>
+      l10n.pharmacyNextActionConfirmBilling,
+    _PharmacyResolvedAction.viewDetails => l10n.housekeepingNextActionView,
+  };
+}
+
+_PharmacyResolvedAction _resolvePharmacyNextAction(PharmacyOrder order) {
+  final bool paymentBlocksDispense =
+      order.requiresPaymentBeforeDispense && order.canPrepareDispense;
+
+  if (order.requiresPaymentBeforeDispense) {
+    return _PharmacyResolvedAction.recordPayment;
+  }
+  if (order.canAttestDispense) {
+    return _PharmacyResolvedAction.attest;
+  }
+  if (order.canPrepareDispense && !paymentBlocksDispense) {
+    return _PharmacyResolvedAction.dispense;
+  }
+  if (order.canReturn) {
+    return _PharmacyResolvedAction.returnItems;
+  }
+  if (order.canCancel) {
+    return _PharmacyResolvedAction.cancel;
+  }
+  if (!order.hasBillingGate) {
+    return _PharmacyResolvedAction.confirmBilling;
+  }
+  return _PharmacyResolvedAction.viewDetails;
+}
+
+class _PharmacyOrderNextActionButton extends ConsumerWidget {
+  const _PharmacyOrderNextActionButton({
+    required this.order,
+    required this.state,
+    required this.writeRequirement,
+  });
+
+  final PharmacyOrder order;
+  final PharmacyWorkspaceState state;
+  final AccessRequirement writeRequirement;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final _PharmacyResolvedAction action = _resolvePharmacyNextAction(order);
+    final String label = pharmacyOrderNextActionLabel(context, order);
+    final bool requiresBillingWrite =
+        action == _PharmacyResolvedAction.recordPayment ||
+        action == _PharmacyResolvedAction.confirmBilling;
+    final bool canBill = ref
+        .watch(appAccessPolicyProvider)
+        .grants(AppPermissions.billingWrite);
+    final bool requiresWrite = action != _PharmacyResolvedAction.viewDetails;
+
+    return AppAccessActionGate(
+      requirement: writeRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        final bool enabled =
+            (!requiresWrite || isAllowed) && (!requiresBillingWrite || canBill);
+        return AppButton.tertiary(
+          label: label,
+          enabled: enabled,
+          onPressed: enabled
+              ? () => unawaited(_handlePressed(context, ref, action))
+              : null,
+        );
+      },
+    );
+  }
+
+  Future<void> _handlePressed(
+    BuildContext context,
+    WidgetRef ref,
+    _PharmacyResolvedAction action,
+  ) async {
+    switch (action) {
+      case _PharmacyResolvedAction.recordPayment:
+      case _PharmacyResolvedAction.confirmBilling:
+        await _openRecordPaymentDialog(context, ref, order);
+      case _PharmacyResolvedAction.attest:
+        await _ensureWorkflowAnd(
+          context,
+          ref,
+          order,
+          (PharmacyOrderWorkflow workflow) =>
+              _openAttestDialog(context, workflow),
+        );
+      case _PharmacyResolvedAction.dispense:
+        await _ensureWorkflowAnd(
+          context,
+          ref,
+          order,
+          (PharmacyOrderWorkflow workflow) =>
+              _openDispenseDialog(context, workflow),
+        );
+      case _PharmacyResolvedAction.returnItems:
+        await _ensureWorkflowAnd(
+          context,
+          ref,
+          order,
+          (PharmacyOrderWorkflow workflow) =>
+              _openReturnDialog(context, workflow),
+        );
+      case _PharmacyResolvedAction.cancel:
+        await _ensureWorkflowAnd(
+          context,
+          ref,
+          order,
+          (_) => _openCancelDialog(context),
+        );
+      case _PharmacyResolvedAction.viewDetails:
+        await _openPharmacyDetailDialog(
+          context,
+          ref,
+          state,
+          order,
+          writeRequirement,
+        );
+    }
+  }
+}
+
+Future<void> _ensureWorkflowAnd(
+  BuildContext context,
+  WidgetRef ref,
+  PharmacyOrder order,
+  Future<void> Function(PharmacyOrderWorkflow workflow) action,
+) async {
+  final PharmacyWorkspaceController controller = ref.read(
+    pharmacyWorkspaceControllerProvider.notifier,
+  );
+  final AppFailure? failure = await controller.selectOrder(order);
+  if (context.mounted) {
+    _showFailureIfNeeded(context, failure);
+  }
+  if (failure != null || !context.mounted) {
+    return;
+  }
+  final PharmacyOrderWorkflow? workflow = _readPharmacyState(
+    ref,
+  )?.selectedWorkflow;
+  if (workflow == null) {
+    return;
+  }
+  await action(workflow);
+}
+
+bool pharmacyOrderSearchMatcher(
+  BuildContext context,
+  PharmacyOrder order,
+  String query,
+) {
+  final String needle = query.trim().toLowerCase();
+  if (needle.isEmpty) {
+    return true;
+  }
+
+  final AppLocalizations l10n = context.l10n;
+  final Iterable<String?> values = <String?>[
+    order.displayTitle,
+    order.displayId,
+    order.patientId,
+    order.encounterId,
+    order.status,
+    order.location,
+    order.priority,
+    order.prescriberDisplayName,
+    order.orderSource,
+    order.effectivePaymentStatus,
+    order.firstPendingBatchRef,
+    _locationLabel(context, order),
+    _priorityLabel(context, order),
+    _orderSourceLabel(context, order),
+    _billingGateLabel(context, order),
+    _dispenseProgressLabel(context, order),
+    _orderStatus(context, order).label,
+    pharmacyOrderNextActionLabel(context, order),
+    clinicalRequestPaymentStatusDisplayLabel(
+      l10n,
+      order.effectivePaymentStatus,
+    ),
+    _dateTimeLabel(context, order.orderedAt),
+    _numberLabel(order.itemCount),
+    _numberLabel(order.quantityDispensedTotal),
+    _numberLabel(order.quantityPrescribedTotal),
+    _numberLabel(order.quantityRemainingTotal),
+    order.hasPendingAttestation ? l10n.pharmacyPendingBatchLabel : null,
+  ];
+
+  return values
+      .whereType<String>()
+      .map((String value) => value.toLowerCase())
+      .any((String value) => value.contains(needle));
+}
+
+bool _medicationItemSearchMatcher(
+  BuildContext context,
+  PharmacyOrder order,
+  PharmacyOrderItem item,
+  String query,
+) {
+  final String needle = query.trim().toLowerCase();
+  if (needle.isEmpty) {
+    return true;
+  }
+
+  final num? unitPrice = resolvePharmacyItemUnitPrice(order: order, item: item);
+  final String? currency = resolvePharmacyItemCurrency(
+    order: order,
+    item: item,
+  );
+  final String? priceText = unitPrice == null || unitPrice <= 0
+      ? null
+      : clinicalRequestPriceLabel(context, unitPrice, currency);
+
+  return <String?>[
+    item.medicationLabel,
+    item.instructions,
+    item.doseLine,
+    item.quantityLine,
+    priceText,
+  ].whereType<String>().any(
+    (String value) => value.toLowerCase().contains(needle),
+  );
+}
+
+bool _pharmacyDrugSearchMatcher(
+  BuildContext context,
+  PharmacyDrug item,
+  String query,
+) {
+  final String needle = query.trim().toLowerCase();
+  if (needle.isEmpty) {
+    return true;
+  }
+
+  return <String?>[
+    item.displayTitle,
+    item.code,
+    item.displayId,
+    item.stockStatus,
+    item.storageLocationLabel,
+    _stockStatus(context, item.stockStatus).label,
+    _numberLabel(item.availableQuantity),
+  ].whereType<String>().any(
+    (String value) => value.toLowerCase().contains(needle),
+  );
+}
+
+List<AppListTableColumn<PharmacyDrug>> _optionalPharmacyDrugColumns(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return <AppListTableColumn<PharmacyDrug>>[
+    AppListTableColumn<PharmacyDrug>(
+      id: 'code',
+      label: l10n.pharmacyDrugColumnLabel,
+      cellBuilder: (BuildContext context, PharmacyDrug item) {
+        return Text(item.code ?? '');
       },
     ),
-    AppListTableColumn<PharmacyOrder>(
-      label: l10n.pharmacyOrderColumnLabel,
-      sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
-          appListTableCompareText(left.displayId, right.displayId),
-      cellBuilder: (BuildContext context, PharmacyOrder item) {
-        return Text(item.displayId ?? '');
+    AppListTableColumn<PharmacyDrug>(
+      id: 'form',
+      label: l10n.pharmacyDrugFormLabel,
+      cellBuilder: (BuildContext context, PharmacyDrug item) {
+        return Text(item.form ?? '');
       },
     ),
-    AppListTableColumn<PharmacyOrder>(
-      label: l10n.pharmacyLocationFieldLabel,
-      sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
-          appListTableCompareText(
-            _locationLabel(context, left),
-            _locationLabel(context, right),
+    AppListTableColumn<PharmacyDrug>(
+      id: 'strength',
+      label: l10n.pharmacyDrugStrengthLabel,
+      cellBuilder: (BuildContext context, PharmacyDrug item) {
+        return Text(item.strength ?? '');
+      },
+    ),
+    AppListTableColumn<PharmacyDrug>(
+      id: 'unit_price',
+      label: l10n.pharmacyLinePriceColumnLabel,
+      cellBuilder: (BuildContext context, PharmacyDrug item) {
+        final num? price = item.unitPrice ?? item.pharmacyUnitPrice;
+        if (price == null) {
+          return Text(l10n.pharmacyPriceUnavailableLabel);
+        }
+        return Text(
+          clinicalRequestPriceLabel(
+            context,
+            price,
+            item.currency ?? item.pharmacyCurrency,
           ),
-      cellBuilder: (BuildContext context, PharmacyOrder item) {
-        return Text(_locationLabel(context, item));
+        );
       },
     ),
-    AppListTableColumn<PharmacyOrder>(
-      label: l10n.pharmacyItemsColumnLabel,
-      numeric: true,
-      sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
-          appListTableCompareNumber(left.itemCount, right.itemCount),
-      cellBuilder: (BuildContext context, PharmacyOrder item) {
-        return Text(_numberLabel(item.itemCount));
-      },
-    ),
-    AppListTableColumn<PharmacyOrder>(
-      label: l10n.pharmacyDispenseColumnLabel,
-      sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
-          appListTableCompareNumber(
-            left.quantityDispensedTotal,
-            right.quantityDispensedTotal,
-          ),
-      cellBuilder: (BuildContext context, PharmacyOrder item) {
-        return Text(_dispenseProgressLabel(context, item));
-      },
-    ),
-    AppListTableColumn<PharmacyOrder>(
-      label: l10n.pharmacyPaymentColumnLabel,
-      id: 'billing',
-      sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
-          appListTableCompareText(
-            left.effectivePaymentStatus,
-            right.effectivePaymentStatus,
-          ),
-      cellBuilder: (BuildContext context, PharmacyOrder item) {
-        return Text(_billingGateLabel(context, item));
-      },
-    ),
-    AppListTableColumn<PharmacyOrder>(
-      label: l10n.pharmacyStatusColumnLabel,
-      sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
-          appListTableCompareText(left.status, right.status),
-      cellBuilder: (BuildContext context, PharmacyOrder item) {
-        return AppWorkspaceStatusBadge(status: _orderStatus(context, item));
+    AppListTableColumn<PharmacyDrug>(
+      id: 'storage_location',
+      label: l10n.pharmacyStorageLocationColumnLabel,
+      cellBuilder: (BuildContext context, PharmacyDrug item) {
+        return Text(item.storageLocationLabel ?? '');
       },
     ),
   ];
@@ -2775,6 +3335,19 @@ List<AppListTableColumn<PharmacyOrder>> _optionalPharmacyWorklistColumns(
 ) {
   final AppLocalizations l10n = context.l10n;
   return <AppListTableColumn<PharmacyOrder>>[
+    AppListTableColumn<PharmacyOrder>(
+      id: 'order',
+      label: l10n.pharmacyOrderColumnLabel,
+      sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
+          appListTableCompareText(left.displayId, right.displayId),
+      cellBuilder: (BuildContext context, PharmacyOrder item) {
+        return Text(item.displayId ?? '');
+      },
+    ),
+    _pharmacyItemsColumn(context),
+    _pharmacyDispenseProgressColumn(context),
+    _pharmacyBillingColumn(context),
+    _pharmacyOrderedAtColumn(context),
     AppListTableColumn<PharmacyOrder>(
       id: 'patient_id',
       label: l10n.labPatientIdColumnLabel,
@@ -2795,18 +3368,6 @@ List<AppListTableColumn<PharmacyOrder>> _optionalPharmacyWorklistColumns(
           tooltip: context.l10n.opdCopyEncounterIdAction,
           copiedMessage: context.l10n.opdEncounterIdCopiedMessage,
         );
-      },
-    ),
-    AppListTableColumn<PharmacyOrder>(
-      id: 'ordered_at',
-      label: l10n.pharmacyOrderedAtColumnLabel,
-      sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
-          appListTableCompareText(
-            _dateTimeLabel(context, left.orderedAt),
-            _dateTimeLabel(context, right.orderedAt),
-          ),
-      cellBuilder: (BuildContext context, PharmacyOrder item) {
-        return Text(_dateTimeLabel(context, item.orderedAt));
       },
     ),
     AppListTableColumn<PharmacyOrder>(

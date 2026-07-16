@@ -179,13 +179,6 @@ void _stubClaimsRepository(_MockClaimsRepository repository) {
   });
 }
 
-class _Harness {
-  const _Harness({required this.repository, required this.router});
-
-  final _MockClaimsRepository repository;
-  final GoRouter router;
-}
-
 Future<_Harness> _pumpClaimsWorkspace(
   WidgetTester tester, {
   required _MockClaimsRepository repository,
@@ -240,6 +233,19 @@ Future<_Harness> _pumpClaimsWorkspace(
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
   return _Harness(repository: repository, router: router);
+}
+
+class _Harness {
+  const _Harness({required this.repository, required this.router});
+
+  final _MockClaimsRepository repository;
+  final GoRouter router;
+}
+
+AppListTable<ClaimsQueueItem> _table(WidgetTester tester) {
+  return tester.widget<AppListTable<ClaimsQueueItem>>(
+    find.byType(AppListTable<ClaimsQueueItem>),
+  );
 }
 
 void main() {
@@ -297,6 +303,23 @@ void main() {
       ),
       findsNothing,
     );
+    expect(
+      find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Next action'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Update status'),
+      ),
+      findsOneWidget,
+    );
+    expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
+    expect(_table(tester).columnVisibilityTitle, 'Table Settings');
+    expect(_table(tester).columns.length, 5);
   });
 
   testWidgets('switching tabs updates the section query parameter', (
@@ -322,6 +345,20 @@ void main() {
         of: find.byType(DataTable),
         matching: find.text('Invoice'),
       ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Next action'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Record response'),
+      ),
       findsOneWidget,
     );
     expect(
@@ -329,7 +366,7 @@ void main() {
         of: find.byType(DataTable),
         matching: find.text('Amount'),
       ),
-      findsOneWidget,
+      findsNothing,
     );
 
     await tester.tap(find.textContaining('Settled').first);
@@ -343,9 +380,23 @@ void main() {
     expect(
       find.descendant(
         of: find.byType(DataTable),
-        matching: find.text('Invoice'),
+        matching: find.text('Settlement'),
       ),
       findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Invoice'),
+      ),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Next action'),
+      ),
+      findsNothing,
     );
   });
 

@@ -393,6 +393,46 @@ bool _isSameFilterDate(DateTime? left, DateTime? right) {
       left.day == right.day;
 }
 
+bool _radiologyWorklistSearchMatcher(
+  BuildContext context,
+  RadiologyOrder item,
+  String query,
+) {
+  final String needle = query.trim().toLowerCase();
+  if (needle.isEmpty) {
+    return true;
+  }
+
+  final AppLocalizations l10n = context.l10n;
+  final int activeOrders = item.activeOrderCount > 0
+      ? item.activeOrderCount
+      : item.orderCount;
+  final Iterable<String?> values = <String?>[
+    item.patientDisplayName,
+    item.patientId,
+    item.effectiveDisplayId,
+    item.displayId,
+    item.id,
+    item.testsSummary,
+    item.testDisplayName,
+    item.modality,
+    _modalityLabelOrNull(l10n, item.modality),
+    _orderStatusLabel(l10n, item.status),
+    _radiologyPriorityDisplayLabel(l10n, item.priority),
+    _billingGateLabel(context, item),
+    _nextActionLabel(context, item),
+    item.bodyRegion,
+    item.laterality,
+    item.encounterId,
+    _formatDateTimeOrNull(context, item.orderedAt),
+    if (item.isPatientGroup) _activeOrderCountLabel(l10n, activeOrders),
+  ];
+
+  return values.any(
+    (String? value) => (value ?? '').trim().toLowerCase().contains(needle),
+  );
+}
+
 String _nextActionLabel(BuildContext context, RadiologyOrder order) {
   final AppLocalizations l10n = context.l10n;
   if (order.normalizedStatus == 'CANCELLED') {

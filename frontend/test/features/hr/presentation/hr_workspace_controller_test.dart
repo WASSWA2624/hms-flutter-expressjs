@@ -188,6 +188,35 @@ void main() {
       verify(() => repository.loadOverview()).called(greaterThan(1));
     });
 
+    test(
+      'applyWorkItemsSearch updates query and refreshes work items',
+      () async {
+        final _MockHrRepository repository = _MockHrRepository();
+        _stubInitialLoad(repository);
+
+        final ProviderContainer container = _createContainer(repository);
+        addTearDown(container.dispose);
+        await container.read(hrWorkspaceControllerProvider.future);
+
+        final AppFailure? failure = await container
+            .read(hrWorkspaceControllerProvider.notifier)
+            .applyWorkItemsSearch('leave');
+
+        expect(failure, isNull);
+        final HrWorkspaceState state = _readState(container);
+        expect(state.workItemsQuery.search, 'leave');
+        verify(
+          () => repository.listWorkItems(
+            any(
+              that: predicate<HrWorkItemsQuery>(
+                (HrWorkItemsQuery query) => query.search == 'leave',
+              ),
+            ),
+          ),
+        ).called(greaterThan(0));
+      },
+    );
+
     test('createStaffProfile failure is surfaced without crashing', () async {
       final _MockHrRepository repository = _MockHrRepository();
       _stubInitialLoad(repository);

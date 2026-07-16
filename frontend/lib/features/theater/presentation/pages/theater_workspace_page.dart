@@ -21,6 +21,8 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
+part '../widgets/theater_workspace_widgets.dart';
+
 class TheaterWorkspacePage extends ConsumerStatefulWidget {
   const TheaterWorkspacePage({super.key, this.initialQuery});
 
@@ -416,6 +418,7 @@ class _TheaterWorkspaceContentState
             ],
             _TheaterCaseBoard(
               state: state,
+              section: _section,
               canWrite: canWrite,
               searchController: _searchController,
               columnVisibilityController: _tableColumnController,
@@ -431,6 +434,7 @@ class _TheaterWorkspaceContentState
 class _TheaterCaseBoard extends ConsumerWidget {
   const _TheaterCaseBoard({
     required this.state,
+    required this.section,
     required this.canWrite,
     required this.searchController,
     required this.columnVisibilityController,
@@ -438,6 +442,7 @@ class _TheaterCaseBoard extends ConsumerWidget {
   });
 
   final TheaterWorkspaceState state;
+  final TheaterSection section;
   final bool canWrite;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<TheaterCase>
@@ -455,18 +460,22 @@ class _TheaterCaseBoard extends ConsumerWidget {
       page: state.cases,
       isLoading: state.isRefreshing,
       columnVisibilityController: columnVisibilityController,
+      columnVisibilityStorageKey: 'theater_${section.name}',
+      columnWidthStorageKey: 'theater_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.theaterTableSettingsTitle,
       search: AppListTableSearch<TheaterCase>(
         controller: searchController,
         semanticLabel: l10n.theaterSearchLabel,
         hintText: l10n.theaterSearchHint,
         clearLabel: l10n.theaterClearFiltersAction,
-        matcher: (_, _) => true,
+        matcher: (TheaterCase item, String query) =>
+            theaterTableSearchMatcher(context, item, query),
         onSubmitted: controller.applySearch,
         onClear: () => controller.applySearch(''),
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.theaterFiltersLabel,
-        advancedFilterTitle: l10n.theaterFiltersLabel,
+        advancedFilterTitle: l10n.theaterAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.theaterClearFiltersAction,
         dateFilterLabel: l10n.theaterScheduleDateFilterLabel,
@@ -569,106 +578,10 @@ class _TheaterCaseBoard extends ConsumerWidget {
         title: l10n.theaterNoCasesTitle,
         body: l10n.theaterNoCasesBody,
       ),
-      columns: <AppListTableColumn<TheaterCase>>[
-        AppListTableColumn<TheaterCase>(
-          label: l10n.theaterCaseIdColumnLabel,
-          sortComparator: (TheaterCase left, TheaterCase right) =>
-              appListTableCompareText(
-                left.effectiveDisplayId,
-                right.effectiveDisplayId,
-              ),
-          cellBuilder: (BuildContext context, TheaterCase item) {
-            return Text(item.effectiveDisplayId);
-          },
-        ),
-        AppListTableColumn<TheaterCase>(
-          label: l10n.theaterProcedureColumnLabel,
-          sortComparator: (TheaterCase left, TheaterCase right) =>
-              appListTableCompareText(left.procedureName, right.procedureName),
-          cellBuilder: (BuildContext context, TheaterCase item) {
-            return Text(item.procedureName ?? l10n.profileUnknownValue);
-          },
-        ),
-        AppListTableColumn<TheaterCase>(
-          label: l10n.theaterPatientColumnLabel,
-          sortComparator: (TheaterCase left, TheaterCase right) =>
-              appListTableCompareText(
-                left.patientDisplayName ?? left.patientDisplayId,
-                right.patientDisplayName ?? right.patientDisplayId,
-              ),
-          cellBuilder: (BuildContext context, TheaterCase item) {
-            return _TwoLineCell(
-              title: item.patientDisplayName ?? l10n.profileUnknownValue,
-              subtitle: _joinDisplay(<String?>[
-                item.patientDisplayId,
-                item.encounterDisplayId,
-              ]),
-            );
-          },
-        ),
-        AppListTableColumn<TheaterCase>(
-          label: l10n.theaterTimeColumnLabel,
-          sortComparator: (TheaterCase left, TheaterCase right) =>
-              appListTableCompareDateTime(left.scheduledAt, right.scheduledAt),
-          cellBuilder: (BuildContext context, TheaterCase item) {
-            return Text(_formatDateTime(context, item.scheduledAt));
-          },
-        ),
-        AppListTableColumn<TheaterCase>(
-          label: l10n.theaterRoomColumnLabel,
-          sortComparator: (TheaterCase left, TheaterCase right) =>
-              appListTableCompareText(
-                _roomLabel(context, left),
-                _roomLabel(context, right),
-              ),
-          cellBuilder: (BuildContext context, TheaterCase item) {
-            return Text(_roomLabel(context, item));
-          },
-        ),
-        AppListTableColumn<TheaterCase>(
-          label: l10n.theaterStatusColumnLabel,
-          sortComparator: (TheaterCase left, TheaterCase right) =>
-              appListTableCompareText(left.status, right.status),
-          cellBuilder: (BuildContext context, TheaterCase item) {
-            return _TheaterStatusBadge(status: item.status);
-          },
-        ),
-        AppListTableColumn<TheaterCase>(
-          label: l10n.theaterReadinessColumnLabel,
-          sortComparator: (TheaterCase left, TheaterCase right) =>
-              appListTableCompareNumber(
-                left.checklistCompleted,
-                right.checklistCompleted,
-              ),
-          cellBuilder: (BuildContext context, TheaterCase item) {
-            return Text(_readinessLabel(context, item));
-          },
-        ),
-        AppListTableColumn<TheaterCase>(
-          label: l10n.theaterResponsibleRoleColumnLabel,
-          sortComparator: (TheaterCase left, TheaterCase right) =>
-              appListTableCompareText(
-                _responsibleRoleLabel(l10n, left),
-                _responsibleRoleLabel(l10n, right),
-              ),
-          cellBuilder: (BuildContext context, TheaterCase item) {
-            return Text(_responsibleRoleLabel(l10n, item));
-          },
-        ),
-        AppListTableColumn<TheaterCase>(
-          label: l10n.theaterNextActionColumnLabel,
-          sortComparator: (TheaterCase left, TheaterCase right) =>
-              appListTableCompareText(
-                _nextActionLabel(context, left),
-                _nextActionLabel(context, right),
-              ),
-          cellBuilder: (BuildContext context, TheaterCase item) {
-            return Text(_nextActionLabel(context, item));
-          },
-        ),
-      ],
+      columns: defaultTheaterColumnsForSection(context, section, canWrite),
+      columnChoices: theaterColumnChoicesForSection(context, section, canWrite),
       mobileItemBuilder: (BuildContext context, TheaterCase item) {
-        return _TheaterCaseListTile(theaterCase: item);
+        return _TheaterCaseListTile(theaterCase: item, canWrite: canWrite);
       },
     );
   }
@@ -1305,52 +1218,6 @@ class _StatusLine extends StatelessWidget {
   }
 }
 
-class _TheaterCaseListTile extends StatelessWidget {
-  const _TheaterCaseListTile({required this.theaterCase});
-
-  final TheaterCase theaterCase;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return Padding(
-      padding: EdgeInsets.all(Theme.of(context).spacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: _TwoLineCell(
-                  title:
-                      theaterCase.patientDisplayName ??
-                      l10n.profileUnknownValue,
-                  subtitle: _joinDisplay(<String?>[
-                    theaterCase.patientDisplayId,
-                    theaterCase.encounterDisplayId,
-                  ]),
-                ),
-              ),
-              SizedBox(width: Theme.of(context).spacing.sm),
-              _TheaterStatusBadge(status: theaterCase.status),
-            ],
-          ),
-          SizedBox(height: Theme.of(context).spacing.xs),
-          Text(_formatDateTime(context, theaterCase.scheduledAt)),
-          Text(
-            _joinDisplay(<String?>[
-              _roomLabel(context, theaterCase),
-              _stageLabel(l10n, theaterCase.workflowStage),
-              _readinessLabel(context, theaterCase),
-            ]),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _TwoLineCell extends StatelessWidget {
   const _TwoLineCell({required this.title, required this.subtitle});
 
@@ -1383,20 +1250,6 @@ class _TwoLineCell extends StatelessWidget {
             ),
           ),
       ],
-    );
-  }
-}
-
-class _TheaterStatusBadge extends StatelessWidget {
-  const _TheaterStatusBadge({required this.status});
-
-  final String? status;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppStatusBadge(
-      label: _caseStatusLabel(context.l10n, status),
-      tone: _statusTone(status),
     );
   }
 }

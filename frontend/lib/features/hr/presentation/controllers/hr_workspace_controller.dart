@@ -108,6 +108,25 @@ final class HrWorkspaceController
     return _refreshStaff(showLoading: true);
   }
 
+  Future<AppFailure?> applyWorkItemsSearch(String value) async {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        workItemsQuery: current.workItemsQuery.copyWith(
+          search: value.trim(),
+          pageRequest: current.workItemsQuery.pageRequest.first(),
+        ),
+        isRefreshingWorkItems: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshWorkItems(showLoading: true);
+  }
+
   Future<AppFailure?> applyStaffFilters({
     String? departmentId,
     String? position,
