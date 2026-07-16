@@ -7,7 +7,6 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/forms/forms.dart';
 
 void main() {
   test('appTransferDefaultActionForStatus maps transfer statuses', () {
@@ -72,7 +71,7 @@ void main() {
       tester,
       onResult: (bool? value) => result = value,
       onSubmit: ({required String action, String? toBedId}) async {
-        return AppFailure.network();
+        return const AppFailure.network();
       },
     );
 

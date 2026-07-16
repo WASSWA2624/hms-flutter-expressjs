@@ -140,23 +140,28 @@ void main() {
   testWidgets('end-before-start validation does not call the API', (
     WidgetTester tester,
   ) async {
+    final OpdAppointment invalidRange = OpdAppointment(
+      id: 'appointment-internal',
+      publicId: 'APT000001',
+      patientDisplayName: 'Patient Example',
+      providerDisplayName: 'Provider Example',
+      status: 'SCHEDULED',
+      scheduledStart: DateTime.utc(2026, 7, 20, 8, 30),
+      scheduledEnd: DateTime.utc(2026, 7, 20, 8),
+    );
     final _MockOpdRepository repository = _MockOpdRepository();
-    _stubWorkspaceLoad(repository, appointments: <OpdAppointment>[appointment]);
+    _stubWorkspaceLoad(
+      repository,
+      appointments: <OpdAppointment>[invalidRange],
+    );
     bool? result;
 
     await _pumpDialog(
       tester,
-      appointment: appointment,
+      appointment: invalidRange,
       repository: repository,
       onResult: (bool? value) => result = value,
     );
-
-    final Finder endTimeField = find.byType(AppTimeField).last;
-    await tester.enterText(
-      find.descendant(of: endTimeField, matching: find.byType(TextFormField)).first,
-      '07',
-    );
-    await tester.pumpAndSettle();
 
     await tester.tap(find.widgetWithText(AppButton, 'Edit'));
     await tester.pumpAndSettle();

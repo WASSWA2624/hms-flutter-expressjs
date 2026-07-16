@@ -161,14 +161,12 @@ class _OpdAppointmentActionsDialogState
                     fullWidth: true,
                     isLoading: _activeAction == _AppointmentFooterAction.queue,
                     enabled: !_isSaving,
-                    onPressed: _isSaving
-                        ? null
-                        : () => _run(
-                            _AppointmentFooterAction.queue,
-                            () => ref
-                                .read(opdWorkspaceControllerProvider.notifier)
-                                .assignAppointmentToQueue(widget.appointment),
-                          ),
+                    onPressed: () => _run(
+                      _AppointmentFooterAction.queue,
+                      () => ref
+                          .read(opdWorkspaceControllerProvider.notifier)
+                          .assignAppointmentToQueue(widget.appointment),
+                    ),
                   ),
                 if (canReschedule)
                   AppPermissionActionItem(
@@ -177,7 +175,7 @@ class _OpdAppointmentActionsDialogState
                     icon: AppActionIcons.reschedule,
                     fullWidth: true,
                     enabled: !_isSaving,
-                    onPressed: _isSaving ? null : _openReschedule,
+                    onPressed: _openReschedule,
                   ),
                 if (canCancelAppointment)
                   AppPermissionActionItem(
@@ -187,7 +185,7 @@ class _OpdAppointmentActionsDialogState
                     fullWidth: true,
                     destructive: true,
                     enabled: !_isSaving,
-                    onPressed: _isSaving ? null : _openCancel,
+                    onPressed: _openCancel,
                   ),
                 if (canCheckIn)
                   AppPermissionActionItem(
@@ -199,7 +197,7 @@ class _OpdAppointmentActionsDialogState
                     isLoading:
                         _activeAction == _AppointmentFooterAction.checkIn,
                     enabled: !_isSaving,
-                    onPressed: _isSaving ? null : _openCheckIn,
+                    onPressed: _openCheckIn,
                   ),
               ],
             ),
@@ -401,8 +399,7 @@ class OpdCancelAppointmentDialog extends ConsumerWidget {
       noteFieldLabel: l10n.opdFieldOptionalLabel(
         l10n.opdCancellationReasonLabel,
       ),
-      notePrefixIcon: const Icon(Icons.notes_outlined),
-      noteMaxLines: 3,
+      notePrefixIcon: const Icon(AppActionIcons.edit),
       onConfirmWithNote: (String note) {
         return ref
             .read(opdWorkspaceControllerProvider.notifier)

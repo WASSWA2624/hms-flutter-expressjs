@@ -810,7 +810,11 @@ class _SelectTrailingIcon extends StatelessWidget {
               padding: EdgeInsetsDirectional.only(end: theme.spacing.xs),
               child: SizedBox.square(
                 dimension: theme.appTokens.listIconSize * 0.78,
-                child: const AppLoadingIndicator.compact(),
+                child: const FittedBox(
+                  child: AppLoadingIndicator(
+                    size: AppLoadingIndicatorSize.compact,
+                  ),
+                ),
               ),
             ),
           Padding(

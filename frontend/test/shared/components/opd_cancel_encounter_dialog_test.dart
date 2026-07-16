@@ -27,7 +27,14 @@ void main() {
       expect(find.byType(AppDialog), findsOneWidget);
       expect(find.text('CANCEL ENCOUNTER'), findsOneWidget);
       expect(find.text('ENC000001'), findsOneWidget);
-      expect(find.text('Cancellation reason'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppSelectField<String> &&
+              widget.labelText == 'Cancellation reason',
+        ),
+        findsOneWidget,
+      );
       expect(find.widgetWithText(AppButton, 'Cancel encounter'), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.delete), findsWidgets);
@@ -155,7 +162,16 @@ void main() {
     );
     tester.widget<AppSelectField<String>>(reasonField).onChanged?.call('OTHER');
     await tester.pump();
-    await tester.enterText(find.byType(TextField), 'Left for another facility');
+    final Finder notesField = find.byWidgetPredicate(
+      (Widget widget) =>
+          widget is AppTextField &&
+          widget.labelText == 'Additional details',
+    );
+    expect(notesField, findsOneWidget);
+    await tester.enterText(
+      find.descendant(of: notesField, matching: find.byType(TextField)),
+      'Left for another facility',
+    );
     final Finder commit = find.widgetWithText(AppButton, 'Cancel encounter');
     await tester.ensureVisible(commit);
     await tester.tap(commit);

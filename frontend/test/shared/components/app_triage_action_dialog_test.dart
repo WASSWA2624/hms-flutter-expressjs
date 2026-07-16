@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
+import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/components/app_triage_components.dart';
 import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 
@@ -109,7 +110,11 @@ void main() {
 
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(EditableText), 'Should not save');
+    final Finder notesField = find.byWidgetPredicate(
+      (Widget widget) =>
+          widget is AppTextField && widget.labelText == 'Triage notes',
+    );
+    await tester.enterText(notesField, 'Should not save');
     await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
     await tester.pumpAndSettle();
 
@@ -162,7 +167,11 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byType(EditableText), 'Chest pain');
+      final Finder notesField = find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppTextField && widget.labelText == 'Triage notes',
+      );
+      await tester.enterText(notesField, 'Chest pain');
       await tester.tap(find.widgetWithText(AppButton, 'Save triage'));
       await tester.pump();
 
@@ -270,9 +279,27 @@ void main() {
       size: const Size(900, 900),
     );
 
-    expect(find.text('Temperature'), findsWidgets);
-    expect(find.text('Heart rate'), findsWidgets);
-    expect(find.text('Oxygen saturation'), findsWidgets);
+    expect(
+      find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppTextField && widget.labelText == 'Temperature',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppTextField && widget.labelText == 'Heart rate',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppTextField && widget.labelText == 'Oxygen saturation',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('remains usable on a compact dark high-text-scale surface', (

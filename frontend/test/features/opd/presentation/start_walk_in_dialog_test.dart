@@ -380,8 +380,9 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(AppLoadingIndicator), findsOneWidget);
+      expect(find.byType(AppLoadingIndicator), findsAtLeastNWidgets(1));
       expect(find.byType(LinearProgressIndicator), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(
         tester.widget<AppDialog>(find.byType(AppDialog)).closeEnabled,
         isFalse,

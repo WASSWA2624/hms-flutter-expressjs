@@ -70,11 +70,6 @@ abstract final class EmergencyText {
   static const String icu = 'ICU';
   static const String initialTriage = 'Initial triage';
   static const String ipd = 'IPD';
-  static const String level1 = 'Level 1';
-  static const String level2 = 'Level 2';
-  static const String level3 = 'Level 3';
-  static const String level4 = 'Level 4';
-  static const String level5 = 'Level 5';
   static const String location = 'Location';
   static const String low = 'Low';
   static const String medium = 'Medium';
@@ -93,12 +88,10 @@ abstract final class EmergencyText {
   static const String quickArrival = 'Quick arrival';
   static const String quickEmergencyArrival = 'Quick emergency arrival';
   static const String recordHandoff = 'Record handoff';
-  static const String recordTriage = 'Record triage';
   static const String referral = 'Referral';
   static const String required = 'Required';
   static const String responded = 'Responded';
   static const String response = 'Response';
-  static const String saveTriage = 'Save triage';
   static const String searchHint = 'Search patient, case, ambulance, or status';
   static const String selectAmbulance = 'Select ambulance';
   static const String startTrip = 'Start trip';
@@ -1481,7 +1474,6 @@ class EmergencyActionPanel extends ConsumerWidget {
       builder: (_) => AppTriageActionDialog(
         title: l10n.emergencyTriageDialogTitle,
         semanticLabel: l10n.emergencyTriageDialogSemanticLabel,
-        icon: const Icon(Icons.monitor_heart_outlined),
         cancelLabel: l10n.commonCancelActionLabel,
         submitLabel: l10n.emergencySaveTriageAction,
         requiredMessage: l10n.validationRequired,

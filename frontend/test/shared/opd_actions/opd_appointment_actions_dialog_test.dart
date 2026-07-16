@@ -66,6 +66,7 @@ void main() {
     expect(find.text('Patient Example'), findsOneWidget);
     expect(find.byIcon(AppActionIcons.appointment), findsOneWidget);
     expect(find.byIcon(AppActionIcons.queue), findsWidgets);
+    expect(find.byIcon(AppActionIcons.reschedule), findsWidgets);
     expect(find.byIcon(AppActionIcons.start), findsWidgets);
     expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
     expect(find.byType(CircularProgressIndicator), findsNothing);

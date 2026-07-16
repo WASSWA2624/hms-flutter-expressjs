@@ -12,6 +12,7 @@ import 'package:hosspi_hms/features/emergency/domain/repositories/emergency_repo
 import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
+import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/components/app_triage_components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
@@ -172,7 +173,11 @@ void main() {
       expect(find.byIcon(AppActionIcons.save), findsWidgets);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
 
-      await tester.enterText(find.byType(EditableText), 'Airway risk');
+      final Finder notesField = find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppTextField && widget.labelText == 'Triage notes',
+      );
+      await tester.enterText(notesField, 'Airway risk');
       await tester.tap(find.text('Save triage'));
       await tester.pump();
 
@@ -233,7 +238,11 @@ void main() {
 
     await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(EditableText), 'Should not save');
+    final Finder notesField = find.byWidgetPredicate(
+      (Widget widget) =>
+          widget is AppTextField && widget.labelText == 'Triage notes',
+    );
+    await tester.enterText(notesField, 'Should not save');
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
 

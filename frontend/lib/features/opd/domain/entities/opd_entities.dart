@@ -479,7 +479,7 @@ final class OpdFlowSummary {
   String? get patientDisplayId => patientIdentifier ?? patientId;
 
   bool get isTerminal {
-    return stage == 'ADMITTED' || stage == 'DISCHARGED' || status == 'CLOSED';
+    return isOpdTerminalStatus(status) || isOpdTerminalStatus(stage);
   }
 
   String get displayTitle {

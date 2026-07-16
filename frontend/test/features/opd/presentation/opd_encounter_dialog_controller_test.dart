@@ -451,10 +451,7 @@ void main() {
             });
 
         expect(result.isSuccess, isTrue);
-        final OpdWorkspaceState state = container
-            .read(opdWorkspaceControllerProvider)
-            .requireValue
-            .requireValue;
+        final OpdWorkspaceState state = _requireWorkspaceState(container);
         expect(
           state.flows.items.any(
             (OpdFlowSummary flow) => flow.publicId == 'ENC000001',
@@ -497,16 +494,82 @@ void main() {
             });
 
         expect(result.isFailure, isTrue);
-        final OpdWorkspaceState state = container
-            .read(opdWorkspaceControllerProvider)
-            .requireValue
-            .requireValue;
+        final OpdWorkspaceState state = _requireWorkspaceState(container);
         expect(state.flows.items, hasLength(1));
         expect(state.flows.items.single.status, 'OPEN');
         expect(state.flows.items.single.stage, 'WAITING_VITALS');
       },
     );
+
+    test(
+      'cancelEncounter success patches loaded OPD workspace terminal flow',
+      () async {
+        final _MockOpdRepository opdRepository = _MockOpdRepository();
+        const OpdFlowSummary existing = OpdFlowSummary(
+          id: 'encounter-1',
+          publicId: 'ENC000001',
+          facilityId: 'FAC000001',
+          patientId: 'PAT000001',
+          status: 'OPEN',
+          stage: 'WAITING_VITALS',
+        );
+        const OpdFlowDetail cancelled = OpdFlowDetail(
+          summary: OpdFlowSummary(
+            id: 'encounter-1',
+            publicId: 'ENC000001',
+            facilityId: 'FAC000001',
+            patientId: 'PAT000001',
+            status: 'CANCELLED',
+            stage: 'CANCELLED',
+          ),
+        );
+        _stubWorkspaceInitialLoad(
+          opdRepository,
+          flows: <OpdFlowSummary>[existing],
+        );
+        when(() => opdRepository.cancelEncounter(any(), any())).thenAnswer(
+          (_) async => const Result<OpdFlowDetail>.success(cancelled),
+        );
+
+        final ProviderContainer container = _testContainer(
+          opdRepository: opdRepository,
+          seedWorkspace: true,
+        );
+        addTearDown(container.dispose);
+        await container.read(opdWorkspaceControllerProvider.future);
+
+        final Result<OpdFlowDetail> result = await container
+            .read(opdEncounterDialogControllerProvider)
+            .cancelEncounter('ENC000001', <String, Object?>{
+              'reason_code': 'PATIENT_LEFT',
+            });
+
+        expect(result.isSuccess, isTrue);
+        final OpdWorkspaceState state = _requireWorkspaceState(container);
+        expect(
+          state.flows.items.any(
+            (OpdFlowSummary flow) => flow.publicId == 'ENC000001',
+          ),
+          isFalse,
+        );
+        expect(state.selectedFlow, isNull);
+      },
+    );
   });
+}
+
+OpdWorkspaceState _requireWorkspaceState(ProviderContainer container) {
+  final AsyncValue<Result<OpdWorkspaceState>> asyncValue = container.read(
+    opdWorkspaceControllerProvider,
+  );
+  final Result<OpdWorkspaceState>? result = asyncValue.asData?.value;
+  if (result == null) {
+    throw StateError('workspace not loaded');
+  }
+  return switch (result) {
+    ResultSuccess<OpdWorkspaceState>(:final OpdWorkspaceState value) => value,
+    ResultFailure<OpdWorkspaceState>() => throw StateError('workspace failed'),
+  };
 }
 
 ProviderContainer _testContainer({
@@ -596,17 +659,5 @@ void _stubWorkspaceInitialLoad(
     (_) async => const Result<List<OpdProviderSchedule>>.success(
       <OpdProviderSchedule>[],
     ),
-  );
-}
-
-extension on AsyncValue<Result<OpdWorkspaceState>> {
-  Result<OpdWorkspaceState> get requireValue =>
-      asData?.value ?? (throw StateError('workspace not loaded'));
-}
-
-extension on Result<OpdWorkspaceState> {
-  OpdWorkspaceState get requireValue => this.when(
-    success: (OpdWorkspaceState value) => value,
-    failure: (_) => throw StateError('workspace failed'),
   );
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
-import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/reception/presentation/reception_access.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_appointment_actions_dialog.dart';
