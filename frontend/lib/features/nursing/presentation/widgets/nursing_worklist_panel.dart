@@ -7,6 +7,7 @@ import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_wor
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_patient_cell.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_patient_detail_dialog.dart';
+import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_actions.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_columns.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_filters.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -22,6 +23,7 @@ class NursingWorklistPanel extends ConsumerWidget {
     required this.searchController,
     required this.filterValue,
     required this.onFilterChanged,
+    required this.columnVisibilityController,
     super.key,
   });
 
@@ -30,6 +32,8 @@ class NursingWorklistPanel extends ConsumerWidget {
   final TextEditingController searchController;
   final AppSearchBarFilterValue filterValue;
   final ValueChanged<AppSearchBarFilterValue> onFilterChanged;
+  final AppListTableColumnVisibilityController<NursingWorkItem>
+  columnVisibilityController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,7 +45,9 @@ class NursingWorklistPanel extends ConsumerWidget {
     return AppListTable<NursingWorkItem>(
       page: state.worklist,
       isLoading: state.isRefreshing,
+      columnVisibilityController: columnVisibilityController,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
       columnVisibilityStorageKey: 'nursing_${scope.name}',
       columnWidthStorageKey: 'nursing_cw_${scope.name}',
       previousPageLabel: l10n.opdPreviousPageLabel,
@@ -57,14 +63,12 @@ class NursingWorklistPanel extends ConsumerWidget {
         controller: searchController,
         semanticLabel: l10n.nursingSearchLabel,
         hintText: l10n.nursingSearchHint,
-        matcher: (NursingWorkItem item, String query) {
-          return item.matchesSearchField(state.query.searchField, query);
-        },
+        matcher: nursingWorklistSearchMatcher,
         onSubmitted: controller.applySearch,
         onClear: () => controller.applySearch(''),
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.nursingAdvancedFiltersLabel,
-        advancedFilterTitle: l10n.nursingAdvancedFiltersTitle,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.nursingApplyFiltersLabel,
         advancedFilterResetLabel: l10n.nursingResetFiltersLabel,
         searchFieldLabel: l10n.nursingSearchFieldLabel,
@@ -91,40 +95,60 @@ class NursingWorklistPanel extends ConsumerWidget {
       columnChoices: nursingColumnChoicesForScope(l10n, scope),
       columns: nursingColumnsForScope(l10n, scope),
       mobileItemBuilder: (BuildContext context, NursingWorkItem item) {
-        final ThemeData theme = Theme.of(context);
-        return Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: theme.spacing.sm,
-            vertical: theme.spacing.sm,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        return _NursingMobileListItem(item: item, scope: scope);
+      },
+    );
+  }
+}
+
+class _NursingMobileListItem extends ConsumerWidget {
+  const _NursingMobileListItem({required this.item, required this.scope});
+
+  final NursingWorkItem item;
+  final NursingQueueScope scope;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ThemeData theme = Theme.of(context);
+    final String subtitle = nursingJoinDisplay(<String?>[
+      item.locationLabel,
+      nursingTaskTypeLabel(context, item),
+      nursingDueTimeLabel(context, item),
+    ]);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.sm,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          NursingPatientCell(item: item),
+          SizedBox(height: theme.spacing.xs),
+          Wrap(
+            spacing: theme.spacing.xs,
+            runSpacing: theme.spacing.xs,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: <Widget>[
-              NursingPatientCell(item: item),
-              SizedBox(height: theme.spacing.xs),
-              Wrap(
-                spacing: theme.spacing.xs,
-                runSpacing: theme.spacing.xs,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: <Widget>[
-                  AppWorkspaceStatusBadge(
-                    status: nursingPriorityStatus(context, item),
-                  ),
-                  AppWorkspaceStatusBadge(status: nursingSummaryStatus(item)),
-                  Text(
-                    nursingJoinDisplay(<String?>[
-                      item.locationLabel,
-                      nursingTaskTypeLabel(context, item),
-                      nursingDueTimeLabel(context, item),
-                    ]),
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ],
-              ),
+              if (scope == NursingQueueScope.urgent ||
+                  scope == NursingQueueScope.all ||
+                  scope == NursingQueueScope.assignedWard)
+                AppWorkspaceStatusBadge(
+                  status: nursingPriorityStatus(context, item),
+                ),
+              AppWorkspaceStatusBadge(status: nursingSummaryStatus(item)),
+              if (subtitle.isNotEmpty)
+                Text(subtitle, style: theme.textTheme.bodySmall),
             ],
           ),
-        );
-      },
+          SizedBox(height: theme.spacing.xs),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: NursingNextActionCell(item: item, scope: scope),
+          ),
+        ],
+      ),
     );
   }
 }

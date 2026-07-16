@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_scope_navigation.dart';
+import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_actions.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_columns.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -115,6 +116,10 @@ void main() {
         contains(l10n.nursingTaskTypeColumnLabel),
       );
       expect(
+        labels(NursingQueueScope.all),
+        isNot(contains(l10n.nursingPriorityColumnLabel)),
+      );
+      expect(
         labels(NursingQueueScope.urgent),
         contains(l10n.nursingPriorityColumnLabel),
       );
@@ -135,6 +140,10 @@ void main() {
         contains(l10n.dischargeStatusFilterLabel),
       );
 
+      for (final NursingQueueScope scope in NursingQueueScope.values) {
+        expect(labels(scope), contains(l10n.nursingNextActionColumnLabel));
+      }
+
       expect(
         labels(NursingQueueScope.all),
         isNot(equals(labels(NursingQueueScope.medicationDue))),
@@ -151,6 +160,46 @@ void main() {
       final List<AppListTableColumn<NursingWorkItem>> choices =
           nursingColumnChoicesForScope(l10n, NursingQueueScope.urgent);
       expect(choices.length, greaterThan(defaults.length));
+    });
+  });
+
+  group('nursingResolveNextActionLabel', () {
+    late AppLocalizations l10n;
+
+    setUpAll(() async {
+      l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    });
+
+    test('resolves task-type actions on the all scope', () {
+      const NursingPatientSummary medicationPatient = NursingPatientSummary(
+        id: 'adm-med',
+        admissionId: 'adm-med',
+        medicationDueCount: 2,
+      );
+      expect(
+        nursingResolveNextActionLabel(
+          l10n,
+          medicationPatient,
+          NursingQueueScope.all,
+        ),
+        l10n.nursingActionAdministerMedication,
+      );
+    });
+
+    test('escalates urgent critical patients', () {
+      const NursingPatientSummary urgentPatient = NursingPatientSummary(
+        id: 'adm-urgent',
+        admissionId: 'adm-urgent',
+        hasCriticalAlert: true,
+      );
+      expect(
+        nursingResolveNextActionLabel(
+          l10n,
+          urgentPatient,
+          NursingQueueScope.urgent,
+        ),
+        l10n.nursingActionEscalate,
+      );
     });
   });
 

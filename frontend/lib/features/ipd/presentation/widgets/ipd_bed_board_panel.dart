@@ -49,7 +49,6 @@ class _IpdBedBoardPanelState extends ConsumerState<IpdBedBoardPanel> {
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<IpdBedBoardEntry>
   _columnVisibilityController;
-  String _search = '';
 
   @override
   void initState() {
@@ -74,29 +73,42 @@ class _IpdBedBoardPanelState extends ConsumerState<IpdBedBoardPanel> {
       ipdWorkspaceControllerProvider.notifier,
     );
 
-    final List<IpdBedBoardEntry> beds = state.bedBoard
-        .where((IpdBedBoardEntry bed) => bed.matchesSearch(_search))
-        .toList(growable: false);
+    final List<AppListTableColumn<IpdBedBoardEntry>> defaultColumns =
+        _ipdBedBoardDefaultColumns(
+          context,
+          canManageBeds: widget.canManageBeds,
+          enabled: !state.isSaving,
+          onAction: (_BedAction action, IpdBedBoardEntry bed) =>
+              _runAction(context, controller, bed, action),
+        );
+    final List<AppListTableColumn<IpdBedBoardEntry>> optionalColumns =
+        _ipdBedBoardOptionalColumns(context);
 
     return AppListTable<IpdBedBoardEntry>(
-      items: beds,
+      items: state.bedBoard,
       isLoading: state.isLoadingBedBoard,
       itemKeyBuilder: (IpdBedBoardEntry bed) => ValueKey<String>(bed.id),
       columnVisibilityController: _columnVisibilityController,
       columnVisibilityStorageKey: 'ipd_bed_board',
       columnWidthStorageKey: 'ipd_bed_board_cw',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columns: defaultColumns,
+      columnChoices: optionalColumns,
+      onRowSelected: (IpdBedBoardEntry bed) {
+        if (bed.occupantAdmissionId != null) {
+          widget.onOpenAdmission(bed);
+        }
+      },
       search: AppListTableSearch<IpdBedBoardEntry>(
         controller: _searchController,
         semanticLabel: l10n.ipdBedBoardSearchLabel,
         hintText: l10n.ipdBedBoardSearchHint,
-        matcher: (_, _) => true,
-        onSubmitted: (String value) => setState(() => _search = value),
-        onChanged: (String value) => setState(() => _search = value),
-        onClear: () => setState(() => _search = ''),
+        matcher: (IpdBedBoardEntry bed, String query) =>
+            bed.matchesSearch(query),
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.ipdFiltersLabel,
-        advancedFilterTitle: l10n.ipdFiltersLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
         enableDateFilter: false,
@@ -159,76 +171,6 @@ class _IpdBedBoardPanelState extends ConsumerState<IpdBedBoardPanel> {
         body: l10n.ipdBedBoardEmptyBody,
         icon: Icons.bed_outlined,
       ),
-      columns: <AppListTableColumn<IpdBedBoardEntry>>[
-        AppListTableColumn<IpdBedBoardEntry>(
-          label: l10n.ipdBedColumnLabel,
-          sortComparator: (IpdBedBoardEntry a, IpdBedBoardEntry b) =>
-              appListTableCompareText(a.bedLabel, b.bedLabel),
-          cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
-            return Text(
-              bed.bedLabel,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
-            );
-          },
-        ),
-        AppListTableColumn<IpdBedBoardEntry>(
-          label: l10n.ipdWardColumnLabel,
-          sortComparator: (IpdBedBoardEntry a, IpdBedBoardEntry b) =>
-              appListTableCompareText(a.wardDisplayName, b.wardDisplayName),
-          cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
-            return Text(
-              bed.wardDisplayName ?? context.l10n.profileUnknownValue,
-            );
-          },
-        ),
-        AppListTableColumn<IpdBedBoardEntry>(
-          label: l10n.ipdRoomColumnLabel,
-          cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
-            return Text(
-              bed.roomDisplayName ?? context.l10n.profileUnknownValue,
-            );
-          },
-        ),
-        AppListTableColumn<IpdBedBoardEntry>(
-          label: l10n.opdStatusColumnLabel,
-          sortComparator: (IpdBedBoardEntry a, IpdBedBoardEntry b) =>
-              appListTableCompareText(a.status, b.status),
-          cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
-            return AppWorkspaceStatusBadge(
-              status: AppWorkspaceStatus(
-                label: bedStatusLabel(context, bed.status),
-                tone: _bedStatusTone(bed.status),
-              ),
-            );
-          },
-        ),
-        AppListTableColumn<IpdBedBoardEntry>(
-          label: l10n.ipdCurrentPatientColumnLabel,
-          cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
-            if (bed.occupantPatientName == null &&
-                bed.occupantAdmissionDisplayId == null) {
-              return const Text('—');
-            }
-            return _BedOccupantCell(bed: bed);
-          },
-        ),
-        AppListTableColumn<IpdBedBoardEntry>(
-          label: l10n.ipdNextActionColumnLabel,
-          cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
-            return _BedActionMenu(
-              bed: bed,
-              canManageBeds: widget.canManageBeds,
-              enabled: !state.isSaving,
-              onAction: (_BedAction action) =>
-                  _runAction(context, controller, bed, action),
-            );
-          },
-        ),
-      ],
       mobileItemBuilder: (BuildContext context, IpdBedBoardEntry bed) {
         return _BedBoardMobileRow(
           bed: bed,
@@ -442,6 +384,96 @@ class _BedBoardMobileRow extends StatelessWidget {
 
 const String _wardFilterKey = 'ward';
 const String _statusFilterKey = 'status';
+
+List<AppListTableColumn<IpdBedBoardEntry>> _ipdBedBoardDefaultColumns(
+  BuildContext context, {
+  required bool canManageBeds,
+  required bool enabled,
+  required void Function(_BedAction action, IpdBedBoardEntry bed) onAction,
+}) {
+  final AppLocalizations l10n = context.l10n;
+  return <AppListTableColumn<IpdBedBoardEntry>>[
+    AppListTableColumn<IpdBedBoardEntry>(
+      id: 'bed',
+      label: l10n.ipdBedColumnLabel,
+      sortComparator: (IpdBedBoardEntry a, IpdBedBoardEntry b) =>
+          appListTableCompareText(a.bedLabel, b.bedLabel),
+      cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
+        return Text(
+          bed.bedLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+        );
+      },
+    ),
+    AppListTableColumn<IpdBedBoardEntry>(
+      id: 'ward',
+      label: l10n.ipdWardColumnLabel,
+      sortComparator: (IpdBedBoardEntry a, IpdBedBoardEntry b) =>
+          appListTableCompareText(a.wardDisplayName, b.wardDisplayName),
+      cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
+        return Text(bed.wardDisplayName ?? context.l10n.profileUnknownValue);
+      },
+    ),
+    AppListTableColumn<IpdBedBoardEntry>(
+      id: 'current_patient',
+      label: l10n.ipdCurrentPatientColumnLabel,
+      cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
+        if (bed.occupantPatientName == null &&
+            bed.occupantAdmissionDisplayId == null) {
+          return const Text('—');
+        }
+        return _BedOccupantCell(bed: bed);
+      },
+    ),
+    AppListTableColumn<IpdBedBoardEntry>(
+      id: 'status',
+      label: l10n.opdStatusColumnLabel,
+      alwaysVisible: true,
+      sortComparator: (IpdBedBoardEntry a, IpdBedBoardEntry b) =>
+          appListTableCompareText(a.status, b.status),
+      cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
+        return AppWorkspaceStatusBadge(
+          status: AppWorkspaceStatus(
+            label: bedStatusLabel(context, bed.status),
+            tone: _bedStatusTone(bed.status),
+          ),
+        );
+      },
+    ),
+    AppListTableColumn<IpdBedBoardEntry>(
+      id: 'next_action',
+      label: l10n.ipdNextActionColumnLabel,
+      alwaysVisible: true,
+      cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
+        return _BedActionMenu(
+          bed: bed,
+          canManageBeds: canManageBeds,
+          enabled: enabled,
+          onAction: (_BedAction action) => onAction(action, bed),
+        );
+      },
+    ),
+  ];
+}
+
+List<AppListTableColumn<IpdBedBoardEntry>> _ipdBedBoardOptionalColumns(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return <AppListTableColumn<IpdBedBoardEntry>>[
+    AppListTableColumn<IpdBedBoardEntry>(
+      id: 'room',
+      label: l10n.ipdRoomColumnLabel,
+      cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
+        return Text(bed.roomDisplayName ?? context.l10n.profileUnknownValue);
+      },
+    ),
+  ];
+}
 
 const List<String> _bedStatuses = <String>[
   'AVAILABLE',

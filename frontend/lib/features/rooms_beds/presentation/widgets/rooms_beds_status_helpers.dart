@@ -6,6 +6,16 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
+enum RoomsBedsNextActionKind {
+  assign,
+  release,
+  completeTransfer,
+  markAvailable,
+  openHousekeeping,
+  openOperations,
+  viewDetail,
+}
+
 String roomsBedsStatusLabel(AppLocalizations l10n, BedSetupStatus status) {
   return switch (status) {
     BedSetupStatus.available => l10n.tenantFacilityBedStatusAvailable,
@@ -167,3 +177,232 @@ AppPage<BedBoardItem> roomsBedsSectionFilteredPage(
     totalItemCount: filtered.length,
   );
 }
+
+RoomsBedsNextActionKind roomsBedsPrimaryNextActionKind(BedBoardItem item) {
+  return switch (item.status) {
+    BedSetupStatus.available => RoomsBedsNextActionKind.assign,
+    BedSetupStatus.occupied =>
+      item.hasOpenTransfer
+          ? RoomsBedsNextActionKind.completeTransfer
+          : RoomsBedsNextActionKind.release,
+    BedSetupStatus.reserved => RoomsBedsNextActionKind.assign,
+    BedSetupStatus.cleaning => RoomsBedsNextActionKind.markAvailable,
+    BedSetupStatus.maintenance => RoomsBedsNextActionKind.openOperations,
+    BedSetupStatus.blocked => RoomsBedsNextActionKind.markAvailable,
+    BedSetupStatus.outOfService => RoomsBedsNextActionKind.openOperations,
+  };
+}
+
+String roomsBedsPrimaryNextActionLabel(
+  AppLocalizations l10n,
+  BedBoardItem item,
+) {
+  return switch (roomsBedsPrimaryNextActionKind(item)) {
+    RoomsBedsNextActionKind.assign => l10n.roomsBedsAssignAction,
+    RoomsBedsNextActionKind.release => l10n.roomsBedsReleaseAction,
+    RoomsBedsNextActionKind.completeTransfer =>
+      l10n.roomsBedsManageTransferAction,
+    RoomsBedsNextActionKind.markAvailable => l10n.roomsBedsMarkAvailableAction,
+    RoomsBedsNextActionKind.openHousekeeping =>
+      l10n.roomsBedsOpenHousekeepingAction,
+    RoomsBedsNextActionKind.openOperations =>
+      l10n.roomsBedsOpenOperationsAction,
+    RoomsBedsNextActionKind.viewDetail => l10n.roomsBedsDetailTitle,
+  };
+}
+
+String roomsBedsLocationLabel(AppLocalizations l10n, BedBoardItem item) {
+  final String joined = _roomsBedsJoinDisplay(<String?>[
+    item.ward?.name,
+    item.room?.name,
+    item.room?.floor,
+  ]);
+  return joined.isEmpty ? l10n.profileUnknownValue : joined;
+}
+
+String roomsBedsAssignmentLabel(AppLocalizations l10n, BedBoardItem item) {
+  final String? admissionId = _roomsBedsReadableDisplayText(
+    item.currentAdmissionDisplayId,
+  );
+  if (admissionId != null) {
+    return l10n.roomsBedsAdmissionAssignment(admissionId);
+  }
+  if (item.currentAdmissionId != null) {
+    return l10n.roomsBedsCurrentAssignmentLabel;
+  }
+  if (item.isOccupied || item.isReserved) {
+    return l10n.roomsBedsAssignmentNotLinked;
+  }
+  return l10n.profileUnknownValue;
+}
+
+bool Function(BedBoardItem, String) roomsBedsBedBoardSearchMatcher(
+  AppLocalizations l10n,
+) {
+  return (BedBoardItem item, String query) {
+    final String needle = query.trim().toLowerCase();
+    if (needle.isEmpty) {
+      return true;
+    }
+    return <String?>[
+      item.id,
+      item.label,
+      item.facility?.name,
+      item.ward?.name,
+      item.room?.name,
+      item.room?.floor,
+      item.currentAdmissionDisplayId,
+      item.currentAdmissionId,
+      item.status.apiValue,
+      roomsBedsStatusLabel(l10n, item.status),
+      roomsBedsReadinessLabel(l10n, item),
+      roomsBedsPrimaryNextActionLabel(l10n, item),
+      roomsBedsAssignmentLabel(l10n, item),
+      roomsBedsLocationLabel(l10n, item),
+    ].whereType<String>().any(
+      (String value) => value.toLowerCase().contains(needle),
+    );
+  };
+}
+
+typedef RoomsBedsNextActionCellBuilder =
+    Widget Function(BuildContext context, BedBoardItem item);
+
+List<AppListTableColumn<BedBoardItem>> roomsBedsBedBoardColumns({
+  required AppLocalizations l10n,
+  required RoomsBedsNextActionCellBuilder nextActionCellBuilder,
+}) {
+  return <AppListTableColumn<BedBoardItem>>[
+    AppListTableColumn<BedBoardItem>(
+      id: 'bed',
+      label: l10n.roomsBedsBedColumnLabel,
+      sortComparator: (BedBoardItem left, BedBoardItem right) {
+        return appListTableCompareText(left.label, right.label);
+      },
+      cellBuilder: (BuildContext context, BedBoardItem item) {
+        return AppListItemText(title: item.label);
+      },
+    ),
+    AppListTableColumn<BedBoardItem>(
+      id: 'location',
+      label: l10n.roomsBedsLocationColumnLabel,
+      sortComparator: (BedBoardItem left, BedBoardItem right) {
+        return appListTableCompareText(
+          roomsBedsLocationLabel(l10n, left),
+          roomsBedsLocationLabel(l10n, right),
+        );
+      },
+      cellBuilder: (BuildContext context, BedBoardItem item) {
+        return Text(roomsBedsLocationLabel(l10n, item));
+      },
+    ),
+    AppListTableColumn<BedBoardItem>(
+      id: 'assignment',
+      label: l10n.roomsBedsAssignmentColumnLabel,
+      sortComparator: (BedBoardItem left, BedBoardItem right) {
+        return appListTableCompareText(
+          roomsBedsAssignmentLabel(l10n, left),
+          roomsBedsAssignmentLabel(l10n, right),
+        );
+      },
+      cellBuilder: (BuildContext context, BedBoardItem item) {
+        return Text(roomsBedsAssignmentLabel(l10n, item));
+      },
+    ),
+    AppListTableColumn<BedBoardItem>(
+      id: 'status',
+      label: l10n.roomsBedsStatusColumnLabel,
+      sortComparator: (BedBoardItem left, BedBoardItem right) {
+        return appListTableCompareText(
+          left.status.apiValue,
+          right.status.apiValue,
+        );
+      },
+      cellBuilder: (BuildContext context, BedBoardItem item) {
+        return AppWorkspaceStatusBadge(
+          status: roomsBedsStatusBadge(l10n, item.status),
+        );
+      },
+    ),
+    AppListTableColumn<BedBoardItem>(
+      id: 'next_action',
+      label: l10n.roomsBedsNextActionColumnLabel,
+      alwaysVisible: true,
+      sortComparator: (BedBoardItem left, BedBoardItem right) {
+        return appListTableCompareText(
+          roomsBedsPrimaryNextActionLabel(l10n, left),
+          roomsBedsPrimaryNextActionLabel(l10n, right),
+        );
+      },
+      cellBuilder: nextActionCellBuilder,
+    ),
+  ];
+}
+
+List<AppListTableColumn<BedBoardItem>> roomsBedsBedBoardColumnChoices(
+  AppLocalizations l10n,
+) {
+  return <AppListTableColumn<BedBoardItem>>[
+    AppListTableColumn<BedBoardItem>(
+      id: 'facility',
+      label: l10n.roomsBedsFacilityFilterLabel,
+      sortComparator: (BedBoardItem left, BedBoardItem right) {
+        return appListTableCompareText(
+          left.facility?.name,
+          right.facility?.name,
+        );
+      },
+      cellBuilder: (BuildContext context, BedBoardItem item) {
+        return Text(item.facility?.name ?? l10n.profileUnknownValue);
+      },
+    ),
+    AppListTableColumn<BedBoardItem>(
+      id: 'readiness',
+      label: l10n.roomsBedsReadinessLabel,
+      sortComparator: (BedBoardItem left, BedBoardItem right) {
+        return appListTableCompareText(
+          roomsBedsReadinessLabel(l10n, left),
+          roomsBedsReadinessLabel(l10n, right),
+        );
+      },
+      cellBuilder: (BuildContext context, BedBoardItem item) {
+        return Text(roomsBedsReadinessLabel(l10n, item));
+      },
+    ),
+    AppListTableColumn<BedBoardItem>(
+      id: 'room_floor',
+      label: l10n.roomsBedsFloorColumnLabel,
+      sortComparator: (BedBoardItem left, BedBoardItem right) {
+        return appListTableCompareText(left.room?.floor, right.room?.floor);
+      },
+      cellBuilder: (BuildContext context, BedBoardItem item) {
+        return Text(item.room?.floor ?? l10n.profileUnknownValue);
+      },
+    ),
+  ];
+}
+
+String _roomsBedsJoinDisplay(Iterable<String?> values) {
+  return values
+      .map((String? value) => value?.trim() ?? '')
+      .where((String value) => value.isNotEmpty)
+      .join(' | ');
+}
+
+String? _roomsBedsReadableDisplayText(String? value) {
+  final String normalized = value?.trim() ?? '';
+  if (normalized.isEmpty || _roomsBedsIsNonHumanReadableId(normalized)) {
+    return null;
+  }
+  return normalized;
+}
+
+bool _roomsBedsIsNonHumanReadableId(String value) {
+  return _roomsBedsUuidPattern.hasMatch(value) ||
+      _roomsBedsLongHexPattern.hasMatch(value);
+}
+
+final RegExp _roomsBedsUuidPattern = RegExp(
+  r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+);
+final RegExp _roomsBedsLongHexPattern = RegExp(r'^[0-9a-fA-F]{24,}$');

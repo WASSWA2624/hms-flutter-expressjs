@@ -456,6 +456,11 @@ class _IpdBoardPanel extends ConsumerWidget {
       ipdWorkspaceControllerProvider.notifier,
     );
 
+    final List<AppListTableColumn<IpdAdmissionSummary>> defaultColumns =
+        _ipdAdmissionDefaultColumns(context);
+    final List<AppListTableColumn<IpdAdmissionSummary>> optionalColumns =
+        _ipdAdmissionOptionalColumns(context);
+
     return AppListTable<IpdAdmissionSummary>(
       page: state.admissions,
       isLoading: state.isRefreshing,
@@ -463,16 +468,20 @@ class _IpdBoardPanel extends ConsumerWidget {
       columnVisibilityStorageKey: 'ipd_${section.name}',
       columnWidthStorageKey: 'ipd_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columns: defaultColumns,
+      columnChoices: optionalColumns,
       search: AppListTableSearch<IpdAdmissionSummary>(
         controller: searchController,
         semanticLabel: l10n.ipdSearchLabel,
         hintText: l10n.ipdSearchHint,
-        matcher: (_, _) => true,
+        matcher: (IpdAdmissionSummary admission, String query) =>
+            _ipdAdmissionMatchesSearch(context, admission, query),
         onSubmitted: controller.applySearch,
         onClear: () => controller.applySearch(''),
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.ipdFiltersLabel,
-        advancedFilterTitle: l10n.ipdFiltersLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
         enableDateFilter: false,
@@ -516,100 +525,140 @@ class _IpdBoardPanel extends ConsumerWidget {
         body: l10n.ipdNoAdmissionsBody,
         icon: Icons.bed_outlined,
       ),
-      columns: <AppListTableColumn<IpdAdmissionSummary>>[
-        AppListTableColumn<IpdAdmissionSummary>(
-          label: l10n.opdPatientColumnLabel,
-          sortComparator:
-              (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-                  appListTableCompareText(
-                    left.displayTitle,
-                    right.displayTitle,
-                  ),
-          cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-            return _IpdPatientCell(admission: item);
-          },
-        ),
-        AppListTableColumn<IpdAdmissionSummary>(
-          label: l10n.opdStatusColumnLabel,
-          sortComparator:
-              (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-                  appListTableCompareText(left.stage, right.stage),
-          cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-            return AppWorkspaceStatusBadge(
-              status: _stageStatus(context, item.stage),
-            );
-          },
-        ),
-        AppListTableColumn<IpdAdmissionSummary>(
-          label: l10n.ipdLocationColumnLabel,
-          sortComparator:
-              (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-                  appListTableCompareText(left.location, right.location),
-          cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-            return Text(item.location ?? context.l10n.profileUnknownValue);
-          },
-        ),
-        AppListTableColumn<IpdAdmissionSummary>(
-          label: l10n.ipdPendingActionColumnLabel,
-          sortComparator:
-              (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-                  appListTableCompareText(left.nextStep, right.nextStep),
-          cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-            final String encounterId = item.encounterId ?? item.id;
-            if (encounterId.trim().isEmpty) {
-              return Text(_nextStepLabel(context, item.nextStep));
-            }
-            return WorkflowActionButton(
-              encounterId: encounterId,
-              patientId: item.patientId,
-              admissionId: item.id,
-              nextStep: item.nextStep,
-              stage: item.stage,
-              sourceModule: 'ipd',
-              compact: true,
-            );
-          },
-        ),
-        AppListTableColumn<IpdAdmissionSummary>(
-          label: l10n.settingsWorkspaceModuleRole,
-          sortComparator:
-              (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-                  appListTableCompareText(
-                    _ipdOwnerRoleLabel(context, left.stage),
-                    _ipdOwnerRoleLabel(context, right.stage),
-                  ),
-          cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-            return Text(_ipdOwnerRoleLabel(context, item.stage));
-          },
-        ),
-        AppListTableColumn<IpdAdmissionSummary>(
-          label: l10n.ipdAdmittedAtColumnLabel,
-          sortComparator:
-              (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-                  appListTableCompareDateTime(
-                    left.admittedAt,
-                    right.admittedAt,
-                  ),
-          cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-            return Text(_dateTimeLabel(context, item.admittedAt));
-          },
-        ),
-        AppListTableColumn<IpdAdmissionSummary>(
-          label: l10n.ipdLengthOfStayColumnLabel,
-          sortComparator:
-              (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-                  appListTableCompareDateTime(
-                    left.admittedAt,
-                    right.admittedAt,
-                  ),
-          cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-            return Text(_lengthOfStayLabel(context, item));
-          },
-        ),
-      ],
       mobileItemBuilder: (BuildContext context, IpdAdmissionSummary item) {
         return _IpdMobileAdmissionRow(admission: item);
       },
+    );
+  }
+}
+
+List<AppListTableColumn<IpdAdmissionSummary>> _ipdAdmissionDefaultColumns(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return <AppListTableColumn<IpdAdmissionSummary>>[
+    AppListTableColumn<IpdAdmissionSummary>(
+      id: 'patient',
+      label: l10n.opdPatientColumnLabel,
+      alwaysVisible: true,
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareText(left.displayTitle, right.displayTitle),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return _IpdPatientCell(admission: item);
+      },
+    ),
+    AppListTableColumn<IpdAdmissionSummary>(
+      id: 'location',
+      label: l10n.ipdLocationColumnLabel,
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareText(left.location, right.location),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return Text(item.location ?? context.l10n.profileUnknownValue);
+      },
+    ),
+    AppListTableColumn<IpdAdmissionSummary>(
+      id: 'admitted_at',
+      label: l10n.ipdAdmittedAtColumnLabel,
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareDateTime(left.admittedAt, right.admittedAt),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return Text(_dateTimeLabel(context, item.admittedAt));
+      },
+    ),
+    AppListTableColumn<IpdAdmissionSummary>(
+      id: 'status',
+      label: l10n.opdStatusColumnLabel,
+      alwaysVisible: true,
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareText(left.stage, right.stage),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return AppWorkspaceStatusBadge(
+          status: _stageStatus(context, item.stage),
+        );
+      },
+    ),
+    AppListTableColumn<IpdAdmissionSummary>(
+      id: 'next_action',
+      label: l10n.ipdNextActionColumnLabel,
+      alwaysVisible: true,
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareText(left.nextStep, right.nextStep),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return _IpdAdmissionNextActionCell(admission: item);
+      },
+    ),
+  ];
+}
+
+List<AppListTableColumn<IpdAdmissionSummary>> _ipdAdmissionOptionalColumns(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return <AppListTableColumn<IpdAdmissionSummary>>[
+    AppListTableColumn<IpdAdmissionSummary>(
+      id: 'owner_role',
+      label: l10n.settingsWorkspaceModuleRole,
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareText(
+            _ipdOwnerRoleLabel(context, left.stage),
+            _ipdOwnerRoleLabel(context, right.stage),
+          ),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return Text(_ipdOwnerRoleLabel(context, item.stage));
+      },
+    ),
+    AppListTableColumn<IpdAdmissionSummary>(
+      id: 'length_of_stay',
+      label: l10n.ipdLengthOfStayColumnLabel,
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareDateTime(left.admittedAt, right.admittedAt),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return Text(_lengthOfStayLabel(context, item));
+      },
+    ),
+  ];
+}
+
+bool _ipdAdmissionMatchesSearch(
+  BuildContext context,
+  IpdAdmissionSummary admission,
+  String query,
+) {
+  if (admission.matchesSearch(query)) {
+    return true;
+  }
+  final String needle = query.trim().toLowerCase();
+  if (needle.isEmpty) {
+    return true;
+  }
+  return <String>[
+    _ipdOwnerRoleLabel(context, admission.stage),
+    _dateTimeLabel(context, admission.admittedAt),
+    _lengthOfStayLabel(context, admission),
+    _stageLabel(context, admission.stage),
+    _nextStepLabel(context, admission.nextStep),
+  ].any((String value) => value.toLowerCase().contains(needle));
+}
+
+class _IpdAdmissionNextActionCell extends StatelessWidget {
+  const _IpdAdmissionNextActionCell({required this.admission});
+
+  final IpdAdmissionSummary admission;
+
+  @override
+  Widget build(BuildContext context) {
+    final String encounterId = admission.encounterId ?? admission.id;
+    if (encounterId.trim().isEmpty) {
+      return Text(_nextStepLabel(context, admission.nextStep));
+    }
+    return WorkflowActionButton(
+      encounterId: encounterId,
+      patientId: admission.patientId,
+      admissionId: admission.id,
+      nextStep: admission.nextStep,
+      stage: admission.stage,
+      sourceModule: 'ipd',
+      compact: true,
     );
   }
 }
@@ -676,14 +725,14 @@ class _IpdMobileAdmissionRow extends StatelessWidget {
           ),
           SizedBox(height: theme.spacing.xs),
           Text(
-            _joinDisplay(<String?>[
-                  admission.location,
-                  _nextStepLabel(context, admission.nextStep),
-                  _ipdOwnerRoleLabel(context, admission.stage),
-                ]) ??
-                context.l10n.profileUnknownValue,
+            admission.location ?? context.l10n.profileUnknownValue,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
+          ),
+          SizedBox(height: theme.spacing.xs),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _IpdAdmissionNextActionCell(admission: admission),
           ),
         ],
       ),
@@ -2733,6 +2782,7 @@ AppWorkspaceStatus _stageStatus(BuildContext context, String? stage) {
 String _stageLabel(BuildContext context, String? stage) {
   final AppLocalizations l10n = context.l10n;
   return switch ((stage ?? '').toUpperCase()) {
+    _stageAdmissionRequested => l10n.ipdStatusAdmissionRequested,
     _stageAdmittedPendingBed => l10n.ipdStatusAdmittedPendingBed,
     _stageAdmittedInBed => l10n.ipdStatusAdmittedInBed,
     _stageInProcedureOt => l10n.ipdStatusInProcedureOt,

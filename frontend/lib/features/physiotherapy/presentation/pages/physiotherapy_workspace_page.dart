@@ -14,6 +14,7 @@ import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/physiotherapy/domain/entities/physiotherapy_entities.dart';
 import 'package:hosspi_hms/features/physiotherapy/presentation/controllers/physiotherapy_workspace_controller.dart';
+import 'package:hosspi_hms/features/physiotherapy/presentation/widgets/physiotherapy_workspace_widgets.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_panel.dart';
@@ -542,6 +543,117 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
     if (failure != null) _showFailure(context, failure);
   }
 
+  Future<void> _runTherapyNextAction(
+    BuildContext context,
+    WidgetRef ref,
+    TherapyWorkItem item,
+  ) async {
+    final PhysiotherapyWorkspaceController controller = ref.read(
+      physiotherapyWorkspaceControllerProvider.notifier,
+    );
+    final AppFailure? failure = await controller.selectWorkItem(item);
+    if (!context.mounted) {
+      return;
+    }
+    if (failure != null) {
+      _showFailure(context, failure);
+      return;
+    }
+
+    final AppLocalizations l10n = context.l10n;
+    final PhysiotherapyWorkspaceState? workspaceState = ref
+        .read(physiotherapyWorkspaceControllerProvider)
+        .asData
+        ?.value
+        .when(
+          success: (PhysiotherapyWorkspaceState state) => state,
+          failure: (_) => null,
+        );
+    if (workspaceState == null) {
+      return;
+    }
+
+    switch (item.status.toUpperCase()) {
+      case 'REFERRAL':
+        await _openAcceptReferral(context, controller, l10n, item);
+      case 'ACCEPTED':
+        await _openRecordAssessment(context, controller);
+      case 'ASSESSMENT':
+        if (item.apiPatientId != null) {
+          await _openScheduleSession(context, controller, l10n);
+        }
+      case 'TODAY':
+      case 'IN_TREATMENT':
+        await _openRecordSession(context, controller);
+      case 'ACTIVE_PLAN':
+      case 'FOLLOW_UP_DUE':
+        await _openScheduleFollowUp(context, controller, l10n);
+      case 'MISSED':
+        if (item.hasAppointment) {
+          await _openMarkAttendance(context, controller);
+        }
+      case 'COMPLETED':
+        final PhysiotherapyDetail? detail = workspaceState.selectedDetail;
+        if (detail != null) {
+          await _printInstructions(context, ref, detail);
+        }
+      default:
+        await _openAcceptReferral(context, controller, l10n, item);
+    }
+  }
+
+  Future<void> _openAcceptReferral(
+    BuildContext context,
+    PhysiotherapyWorkspaceController controller,
+    AppLocalizations l10n,
+    TherapyWorkItem item,
+  ) async {
+    final bool? saved = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ClinicalFreeTextActionDialog(
+        title: l10n.physiotherapyAcceptReferralDialogTitle,
+        label: l10n.physiotherapyNoteFieldLabel,
+        submitLabel: l10n.physiotherapySaveAction,
+        initialValue: item.referralReason,
+        minLines: 3,
+        maxLines: 4,
+        isRequired: false,
+        onSubmit: controller.acceptReferral,
+      ),
+    );
+    if (saved == true && context.mounted) {
+      _showSaved(context);
+    }
+  }
+
+  Future<void> _openRecordAssessment(
+    BuildContext context,
+    PhysiotherapyWorkspaceController controller,
+  ) async {
+    final _AssessmentPayload? payload = await showAppDialog<_AssessmentPayload>(
+      context: context,
+      builder: (_) => const _AssessmentDialog(),
+    );
+    if (payload == null || !context.mounted) {
+      return;
+    }
+    final AppFailure? failure = await controller.recordAssessment(
+      assessment: payload.assessment,
+      goals: payload.goals,
+      plan: payload.plan,
+      instructions: payload.instructions,
+    );
+    if (!context.mounted) {
+      return;
+    }
+    if (failure != null) {
+      _showFailure(context, failure);
+      return;
+    }
+    _showSaved(context);
+  }
+
   Widget _buildWorklist(
     BuildContext context,
     WidgetRef ref,
@@ -558,13 +670,13 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
       isLoading: state.isRefreshing,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      columns: _columns(context, locale),
+      columns: _columns(context, locale, ref),
       columnChoices: _optionalColumns(context, locale),
       columnVisibilityController: columnVisibilityController,
       columnVisibilityStorageKey: 'physiotherapy_${section.name}',
       columnWidthStorageKey: 'physiotherapy_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-      columnVisibilityTitle: l10n.physiotherapyTableColumnsTitle,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
       columnVisibilityApplyLabel: l10n.physiotherapyApplyColumnsAction,
       columnVisibilityResetLabel: l10n.physiotherapyResetColumnsAction,
       itemKeyBuilder: (TherapyWorkItem item) => ValueKey<String>(item.id),
@@ -585,7 +697,10 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
         minHeight: 220,
       ),
       mobileItemBuilder: (BuildContext context, TherapyWorkItem item) {
-        return _TherapyWorklistMobileItem(item: item);
+        return _TherapyWorklistMobileItem(
+          item: item,
+          onNextAction: () => _runTherapyNextAction(context, ref, item),
+        );
       },
       search: AppListTableSearch<TherapyWorkItem>(
         controller: searchController,
@@ -599,8 +714,8 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
           controller.applySearch('');
         },
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.physiotherapyFiltersLabel,
-        advancedFilterTitle: l10n.physiotherapyFiltersLabel,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.physiotherapyApplyFiltersAction,
         advancedFilterResetLabel: l10n.physiotherapyClearFiltersAction,
         searchFields: _searchFields(l10n),
@@ -793,12 +908,14 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
   List<AppListTableColumn<TherapyWorkItem>> _columns(
     BuildContext context,
     Locale locale,
+    WidgetRef ref,
   ) {
     final l10n = context.l10n;
     return <AppListTableColumn<TherapyWorkItem>>[
       AppListTableColumn<TherapyWorkItem>(
         id: 'patient',
         label: l10n.physiotherapyPatientColumnLabel,
+        alwaysVisible: true,
         sortComparator: (TherapyWorkItem left, TherapyWorkItem right) =>
             appListTableCompareText(left.displayTitle, right.displayTitle),
         cellBuilder: (BuildContext context, TherapyWorkItem item) =>
@@ -829,16 +946,27 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
       AppListTableColumn<TherapyWorkItem>(
         id: 'status',
         label: l10n.physiotherapyStatusColumnLabel,
+        alwaysVisible: true,
         cellBuilder: (BuildContext context, TherapyWorkItem item) =>
             AppWorkspaceStatusBadge(
               status: _workspaceStatusForStatus(l10n, item.status),
             ),
       ),
       AppListTableColumn<TherapyWorkItem>(
-        id: 'next',
+        id: 'next_action',
         label: l10n.physiotherapyNextActionColumnLabel,
-        cellBuilder: (BuildContext context, TherapyWorkItem item) =>
-            Text(_nextActionLabel(l10n, item.status)),
+        alwaysVisible: true,
+        sortComparator: (TherapyWorkItem left, TherapyWorkItem right) =>
+            appListTableCompareText(
+              therapyNextActionLabel(l10n, left.status),
+              therapyNextActionLabel(l10n, right.status),
+            ),
+        cellBuilder: (BuildContext context, TherapyWorkItem item) {
+          return TherapyNextActionButton(
+            item: item,
+            onPressed: () => _runTherapyNextAction(context, ref, item),
+          );
+        },
       ),
     ];
   }
@@ -883,20 +1011,57 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
 }
 
 class _TherapyWorklistMobileItem extends StatelessWidget {
-  const _TherapyWorklistMobileItem({required this.item});
+  const _TherapyWorklistMobileItem({
+    required this.item,
+    required this.onNextAction,
+  });
 
   final TherapyWorkItem item;
+  final Future<void> Function() onNextAction;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return AppListItemRow(
-      title: item.displayTitle,
-      subtitle: item.displaySubtitle,
-      leadingIcon: Icons.accessibility_new_outlined,
-      trailing: AppWorkspaceStatusBadge(
-        status: _workspaceStatusForStatus(l10n, item.status),
-      ),
+    final ThemeData theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        AppListItemText(
+          title: item.displayTitle,
+          subtitle: item.displaySubtitle,
+          subtitleMaxLines: 2,
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(
+          _sourceLabel(l10n, item.source),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(
+          _formatDateTime(context, item.sessionAt, l10n),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: theme.spacing.sm),
+        Wrap(
+          spacing: theme.spacing.xs,
+          runSpacing: theme.spacing.xs,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: <Widget>[
+            AppWorkspaceStatusBadge(
+              status: _workspaceStatusForStatus(l10n, item.status),
+            ),
+            TherapyNextActionButton(item: item, onPressed: onNextAction),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -2144,21 +2309,6 @@ String _billingLabel(AppLocalizations l10n, String? status) {
   return switch ((status ?? '').toUpperCase()) {
     'UNAVAILABLE' => l10n.physiotherapyBillingBackendGap,
     _ => l10n.physiotherapyMissingValueLabel,
-  };
-}
-
-String _nextActionLabel(AppLocalizations l10n, String status) {
-  return switch (status.toUpperCase()) {
-    'REFERRAL' => l10n.physiotherapyAcceptReferralAction,
-    'ACCEPTED' => l10n.physiotherapyRecordAssessmentAction,
-    'ASSESSMENT' => l10n.physiotherapyScheduleSessionAction,
-    'TODAY' => l10n.physiotherapyRecordSessionAction,
-    'IN_TREATMENT' => l10n.physiotherapyRecordSessionAction,
-    'ACTIVE_PLAN' => l10n.physiotherapyScheduleFollowUpAction,
-    'FOLLOW_UP_DUE' => l10n.physiotherapyScheduleFollowUpAction,
-    'MISSED' => l10n.physiotherapyMarkAttendanceAction,
-    'COMPLETED' => l10n.physiotherapyPrintInstructionsAction,
-    _ => l10n.physiotherapyAcceptReferralAction,
   };
 }
 

@@ -181,7 +181,86 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonTableSettingsActionLabel => 'Settings';
 
   @override
+  String get commonTableSettingsTitle => 'Table Settings';
+
+  @override
+  String get commonAdvancedFiltersTitle => 'Advanced filters';
+
+  @override
+  String get receptionAppointmentIdLabel => 'Appointment ID';
+
+  @override
+  String get receptionQueueIdLabel => 'Queue ID';
+
+  @override
+  String get commonFiltersActionLabel => 'Filters';
+
+  @override
   String get emergencyCaseDialogTitle => 'Emergency case';
+
+  @override
+  String get emergencySearchSemanticLabel => 'Search emergency cases';
+
+  @override
+  String get emergencySearchHint =>
+      'Search patient, case, ambulance, or status';
+
+  @override
+  String get emergencyClearSearchAction => 'Clear search';
+
+  @override
+  String get emergencyFiltersLabel => 'Filters';
+
+  @override
+  String get emergencyAdvancedFiltersTitle => 'Advanced filters';
+
+  @override
+  String get emergencyApplyFiltersAction => 'Apply filters';
+
+  @override
+  String get emergencyResetFiltersAction => 'Reset filters';
+
+  @override
+  String get emergencyAllFieldsFilterLabel => 'All fields';
+
+  @override
+  String get emergencyTableSettingsTitle => 'Table Settings';
+
+  @override
+  String get emergencyStatusColumnLabel => 'Status';
+
+  @override
+  String get emergencyNextActionColumnLabel => 'Next action';
+
+  @override
+  String get emergencyTripStatusColumnLabel => 'Trip status';
+
+  @override
+  String get emergencyNoTripLabel => 'No trip';
+
+  @override
+  String get emergencyInTransitLabel => 'In transit';
+
+  @override
+  String get emergencyTripCompleteLabel => 'Complete';
+
+  @override
+  String get emergencyClosedAtColumnLabel => 'Closed at';
+
+  @override
+  String get emergencySeverityFilterLabel => 'Priority';
+
+  @override
+  String get emergencyTriageFilterLabel => 'Triage';
+
+  @override
+  String get emergencyCaseStatusFilterLabel => 'Case status';
+
+  @override
+  String get emergencyDispatchStatusFilterLabel => 'Dispatch status';
+
+  @override
+  String get emergencyDestinationFilterLabel => 'Destination';
 
   @override
   String get icuStayDialogTitle => 'ICU stay';
@@ -239,6 +318,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get icuBoardFiltersTitle => 'ICU board filters';
+
+  @override
+  String get icuAdvancedFiltersLabel => 'Filters';
+
+  @override
+  String get icuAdvancedFiltersTitle => 'Advanced filters';
+
+  @override
+  String get icuApplyFiltersLabel => 'Apply filters';
+
+  @override
+  String get icuResetFiltersLabel => 'Reset filters';
+
+  @override
+  String get icuTableSettingsTitle => 'Table Settings';
+
+  @override
+  String get icuNextActionColumnLabel => 'Next action';
+
+  @override
+  String get icuBoardFilterHasAlertLabel => 'Has alert';
+
+  @override
+  String get icuBoardFilterNoAlertLabel => 'No alert';
+
+  @override
+  String get icuBoardFilterHasBedLabel => 'Has bed';
+
+  @override
+  String get icuBoardFilterNoBedLabel => 'No bed';
+
+  @override
+  String get icuBoardFilterEmergencySourceLabel => 'Emergency';
+
+  @override
+  String get icuBoardFilterOtherSourceLabel => 'Other';
 
   @override
   String get icuColumnBedLabel => 'Bed';
@@ -2802,6 +2917,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdNextStepColumnLabel => 'Next step';
 
   @override
+  String get opdNextActionColumnLabel => 'Next action';
+
+  @override
   String get opdOpenActions => 'Open actions';
 
   @override
@@ -3695,6 +3813,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get patientsAgeSexColumnLabel => 'Age / sex';
+
+  @override
+  String get patientsAgeColumnLabel => 'Age';
+
+  @override
+  String get patientsGenderColumnLabel => 'Gender';
 
   @override
   String get patientsPhoneIdentifierColumnLabel => 'Phone';
@@ -6825,6 +6949,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalFiltersLabel => 'Filters';
 
   @override
+  String get clinicalNextActionColumnLabel => 'Next action';
+
+  @override
+  String get clinicalOpenEncounterAction => 'Review encounter';
+
+  @override
   String get clinicalSearchLabel => 'Search clinical worklist';
 
   @override
@@ -8241,6 +8371,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get nursingLocationColumnLabel => 'Location';
+
+  @override
+  String get nursingNextActionColumnLabel => 'Next action';
 
   @override
   String get nursingDueActionColumnLabel => 'Due action';
@@ -16018,6 +16151,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get roomsBedsBedColumnLabel => 'Bed';
+
+  @override
+  String get roomsBedsFloorColumnLabel => 'Floor';
 
   @override
   String get roomsBedsLocationColumnLabel => 'Location';

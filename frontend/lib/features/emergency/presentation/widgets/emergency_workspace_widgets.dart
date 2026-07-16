@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +7,7 @@ import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
@@ -13,6 +16,7 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
 import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
 import 'package:hosspi_hms/features/emergency/presentation/widgets/emergency_dialogs.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -526,10 +530,198 @@ AppListTableColumn<EmergencyCaseSummary> emergencyLocationColumn() {
   );
 }
 
-AppListTableColumn<EmergencyCaseSummary> emergencyNextActionColumn() {
+AppListTableColumn<EmergencyCaseSummary> emergencyCaseStatusColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<EmergencyCaseSummary>(
+    id: 'status',
+    label: l10n.emergencyStatusColumnLabel,
+    sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+        appListTableCompareText(left.status, right.status),
+    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
+      return AppWorkspaceStatusBadge(status: caseStatus(item));
+    },
+  );
+}
+
+AppListTableColumn<EmergencyCaseSummary> emergencyTriageColumn() {
+  return AppListTableColumn<EmergencyCaseSummary>(
+    id: 'triage',
+    label: EmergencyText.triage,
+    sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+        appListTableCompareText(left.triageLevel, right.triageLevel),
+    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
+      return AppWorkspaceStatusBadge(status: triageStatus(item.triageLevel));
+    },
+  );
+}
+
+AppListTableColumn<EmergencyCaseSummary> emergencyFacilityColumn() {
+  return AppListTableColumn<EmergencyCaseSummary>(
+    id: 'facility',
+    label: EmergencyText.facility,
+    sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+        appListTableCompareText(left.facilityLabel, right.facilityLabel),
+    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
+      return Text(item.facilityLabel ?? '');
+    },
+  );
+}
+
+AppListTableColumn<EmergencyCaseSummary> emergencyAmbulanceColumn() {
+  return AppListTableColumn<EmergencyCaseSummary>(
+    id: 'ambulance',
+    label: EmergencyText.ambulance,
+    sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+        appListTableCompareText(
+          left.latestDispatch?.ambulanceLabel ??
+              left.activeTrip?.ambulanceLabel,
+          right.latestDispatch?.ambulanceLabel ??
+              right.activeTrip?.ambulanceLabel,
+        ),
+    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
+      return Text(
+        item.latestDispatch?.ambulanceLabel ??
+            item.activeTrip?.ambulanceLabel ??
+            '',
+      );
+    },
+  );
+}
+
+AppListTableColumn<EmergencyCaseSummary> emergencyAmbulanceWorkflowStatusColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<EmergencyCaseSummary>(
+    id: 'status',
+    label: l10n.emergencyStatusColumnLabel,
+    sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) {
+      final String leftValue = left.activeTrip != null
+          ? (left.activeTrip!.isActive ? 'IN_TRANSIT' : 'COMPLETE')
+          : (left.latestDispatch?.status ?? '');
+      final String rightValue = right.activeTrip != null
+          ? (right.activeTrip!.isActive ? 'IN_TRANSIT' : 'COMPLETE')
+          : (right.latestDispatch?.status ?? '');
+      return appListTableCompareText(leftValue, rightValue);
+    },
+    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
+      final EmergencyAmbulanceTrip? trip = item.activeTrip;
+      if (trip != null) {
+        return AppWorkspaceStatusBadge(
+          status: AppWorkspaceStatus(
+            label: trip.isActive
+                ? l10n.emergencyInTransitLabel
+                : l10n.emergencyTripCompleteLabel,
+            tone: trip.isActive
+                ? AppWorkspaceStatusTone.warning
+                : AppWorkspaceStatusTone.success,
+          ),
+        );
+      }
+      final String? status = item.latestDispatch?.status;
+      if (status == null || status.isEmpty) {
+        return const SizedBox.shrink();
+      }
+      return AppWorkspaceStatusBadge(
+        status: AppWorkspaceStatus(
+          label: apiLabel(status),
+          tone: ambulanceTone(status),
+        ),
+      );
+    },
+  );
+}
+
+AppListTableColumn<EmergencyCaseSummary> emergencyDispatchStatusColumn() {
+  return AppListTableColumn<EmergencyCaseSummary>(
+    id: 'dispatch_status',
+    label: EmergencyText.dispatchStatus,
+    sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+        appListTableCompareText(
+          left.latestDispatch?.status,
+          right.latestDispatch?.status,
+        ),
+    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
+      final String? status = item.latestDispatch?.status;
+      if (status == null || status.isEmpty) {
+        return const SizedBox.shrink();
+      }
+      return AppWorkspaceStatusBadge(
+        status: AppWorkspaceStatus(
+          label: apiLabel(status),
+          tone: ambulanceTone(status),
+        ),
+      );
+    },
+  );
+}
+
+AppListTableColumn<EmergencyCaseSummary> emergencyTripStatusColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<EmergencyCaseSummary>(
+    id: 'trip_status',
+    label: l10n.emergencyTripStatusColumnLabel,
+    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
+      final EmergencyAmbulanceTrip? trip = item.activeTrip;
+      if (trip == null) {
+        return Text(l10n.emergencyNoTripLabel);
+      }
+      return AppWorkspaceStatusBadge(
+        status: AppWorkspaceStatus(
+          label: trip.isActive
+              ? l10n.emergencyInTransitLabel
+              : l10n.emergencyTripCompleteLabel,
+          tone: trip.isActive
+              ? AppWorkspaceStatusTone.warning
+              : AppWorkspaceStatusTone.success,
+        ),
+      );
+    },
+  );
+}
+
+AppListTableColumn<EmergencyCaseSummary> emergencyHandoffDestinationColumn() {
+  return AppListTableColumn<EmergencyCaseSummary>(
+    id: 'handoff_destination',
+    label: EmergencyText.handoffDestination,
+    sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+        appListTableCompareText(
+          left.handoff?.destination,
+          right.handoff?.destination,
+        ),
+    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
+      return Text(apiLabel(item.handoff?.destination ?? ''));
+    },
+  );
+}
+
+AppListTableColumn<EmergencyCaseSummary> emergencyClosedAtColumn(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<EmergencyCaseSummary>(
+    id: 'closed_at',
+    label: l10n.emergencyClosedAtColumnLabel,
+    sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+        appListTableCompareDateTime(left.updatedAt, right.updatedAt),
+    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
+      return Text(dateTimeLabel(context, item.updatedAt));
+    },
+  );
+}
+
+AppListTableColumn<EmergencyCaseSummary> emergencyNextActionColumn(
+  BuildContext context, {
+  String? label,
+}) {
+  final AppLocalizations l10n = context.l10n;
   return AppListTableColumn<EmergencyCaseSummary>(
     id: 'next_action',
-    label: EmergencyText.next,
+    label: label ?? l10n.emergencyNextActionColumnLabel,
     alwaysVisible: true,
     sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
         appListTableCompareText(left.nextAction, right.nextAction),
@@ -544,6 +736,424 @@ AppListTableColumn<EmergencyCaseSummary> emergencyNextActionColumn() {
       );
     },
   );
+}
+
+AppListTableColumn<EmergencyCaseSummary> emergencyHandoffNextActionColumn(
+  BuildContext context, {
+  required AccessRequirement writeRequirement,
+}) {
+  return AppListTableColumn<EmergencyCaseSummary>(
+    id: 'next_action',
+    label: EmergencyText.recordHandoff,
+    alwaysVisible: true,
+    sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+        appListTableCompareText(left.nextAction, right.nextAction),
+    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
+      return EmergencyHandoffActionCell(
+        item: item,
+        writeRequirement: writeRequirement,
+      );
+    },
+  );
+}
+
+AppListTableColumn<EmergencyCaseSummary> emergencyAmbulanceNextActionColumn(
+  BuildContext context, {
+  required AccessRequirement writeRequirement,
+}) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<EmergencyCaseSummary>(
+    id: 'next_action',
+    label: l10n.emergencyNextActionColumnLabel,
+    alwaysVisible: true,
+    sortComparator: (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
+        appListTableCompareText(left.nextAction, right.nextAction),
+    cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
+      return EmergencyAmbulanceActionCell(
+        item: item,
+        writeRequirement: writeRequirement,
+      );
+    },
+  );
+}
+
+bool emergencyTableSearchMatcher(EmergencyCaseSummary item, String query) {
+  final String needle = query.trim().toLowerCase();
+  if (needle.isEmpty) {
+    return true;
+  }
+  if (item.matchesSearch(query)) {
+    return true;
+  }
+
+  final EmergencyAmbulanceTrip? trip = item.activeTrip;
+  return <String?>[
+    item.caseLabel,
+    item.displayTitle,
+    item.currentLocation,
+    item.facilityLabel,
+    item.nextAction,
+    item.triageLevel,
+    item.responseStatus,
+    apiLabel(item.status ?? ''),
+    apiLabel(item.severity ?? ''),
+    apiLabel(item.triageLevel),
+    apiLabel(item.latestDispatch?.status ?? ''),
+    apiLabel(item.handoff?.destination ?? ''),
+    trip == null ? null : (trip.isActive ? 'In transit' : 'Complete'),
+    item.createdAt?.toIso8601String(),
+    item.updatedAt?.toIso8601String(),
+  ].whereType<String>().any(
+    (String value) => value.toLowerCase().contains(needle),
+  );
+}
+
+Widget emergencyMobileListItem(
+  BuildContext context,
+  WidgetRef ref,
+  EmergencyCaseSummary item, {
+  required EmergencyBoardTab tab,
+  required AccessRequirement writeRequirement,
+}) {
+  final ThemeData theme = Theme.of(context);
+  final String contextLine = switch (tab) {
+    EmergencyBoardTab.critical ||
+    EmergencyBoardTab.closed ||
+    EmergencyBoardTab.ambulance => dateTimeLabel(context, item.createdAt),
+    _ => item.currentLocation,
+  };
+
+  return Padding(
+    padding: EdgeInsets.symmetric(
+      horizontal: theme.spacing.sm,
+      vertical: theme.spacing.sm,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        EmergencyCaseCell(item: item),
+        SizedBox(height: theme.spacing.sm),
+        Wrap(
+          spacing: theme.spacing.xs,
+          runSpacing: theme.spacing.xs,
+          children: <Widget>[
+            AppWorkspaceStatusBadge(status: severityStatus(item)),
+            AppWorkspaceStatusBadge(
+              status: tab == EmergencyBoardTab.ambulance
+                  ? _ambulanceWorkflowStatus(context, item)
+                  : caseStatus(item),
+            ),
+          ],
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(contextLine, style: theme.textTheme.bodySmall),
+        SizedBox(height: theme.spacing.sm),
+        switch (tab) {
+          EmergencyBoardTab.ambulance => EmergencyAmbulanceActionCell(
+            item: item,
+            writeRequirement: writeRequirement,
+          ),
+          EmergencyBoardTab.handoff => EmergencyHandoffActionCell(
+            item: item,
+            writeRequirement: writeRequirement,
+          ),
+          EmergencyBoardTab.closed => const SizedBox.shrink(),
+          _ => WorkflowActionButton(
+            encounterId: item.id,
+            patientId: item.patientId,
+            stage: item.status,
+            nextStep: emergencyNextStepCode(item),
+            sourceModule: 'emergency',
+            compact: true,
+          ),
+        },
+      ],
+    ),
+  );
+}
+
+AppWorkspaceStatus _ambulanceWorkflowStatus(
+  BuildContext context,
+  EmergencyCaseSummary item,
+) {
+  final AppLocalizations l10n = context.l10n;
+  final EmergencyAmbulanceTrip? trip = item.activeTrip;
+  if (trip != null) {
+    return AppWorkspaceStatus(
+      label: trip.isActive
+          ? l10n.emergencyInTransitLabel
+          : l10n.emergencyTripCompleteLabel,
+      tone: trip.isActive
+          ? AppWorkspaceStatusTone.warning
+          : AppWorkspaceStatusTone.success,
+    );
+  }
+  final String? status = item.latestDispatch?.status;
+  if (status == null || status.isEmpty) {
+    return caseStatus(item);
+  }
+  return AppWorkspaceStatus(
+    label: apiLabel(status),
+    tone: ambulanceTone(status),
+  );
+}
+
+class EmergencyHandoffActionCell extends ConsumerWidget {
+  const EmergencyHandoffActionCell({
+    required this.item,
+    required this.writeRequirement,
+    this.compact = true,
+    super.key,
+  });
+
+  final EmergencyCaseSummary item;
+  final AccessRequirement writeRequirement;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AppAccessActionGate(
+      requirement: writeRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        return AppButton.primary(
+          label: EmergencyText.recordHandoff,
+          leadingIcon: Icons.output_outlined,
+          enabled: isAllowed && item.isOpen,
+          onPressed: isAllowed && item.isOpen
+              ? () => unawaited(_openHandoff(context, ref))
+              : null,
+        );
+      },
+    );
+  }
+
+  Future<void> _openHandoff(BuildContext context, WidgetRef ref) async {
+    final HandoffInput? input = await showAppDialog<HandoffInput>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const HandoffDialog(),
+    );
+    if (input == null || !context.mounted) {
+      return;
+    }
+
+    final EmergencyWorkspaceController controller = ref.read(
+      emergencyWorkspaceControllerProvider.notifier,
+    );
+    final AppFailure? selectFailure = await controller.selectCase(item);
+    if (!context.mounted) {
+      return;
+    }
+    if (selectFailure != null) {
+      showFailureIfNeeded(context, selectFailure);
+      return;
+    }
+
+    final AppFailure? failure = await controller.handoff(
+      destination: input.destination,
+      notes: input.notes,
+      closeCase: input.closeCase,
+    );
+    if (context.mounted) {
+      showFailureIfNeeded(context, failure, successMessage: 'Handoff recorded');
+    }
+  }
+}
+
+class EmergencyAmbulanceActionCell extends ConsumerWidget {
+  const EmergencyAmbulanceActionCell({
+    required this.item,
+    required this.writeRequirement,
+    this.compact = true,
+    super.key,
+  });
+
+  final EmergencyCaseSummary item;
+  final AccessRequirement writeRequirement;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (item.latestTriage == null || item.latestResponse == null) {
+      return WorkflowActionButton(
+        encounterId: item.id,
+        patientId: item.patientId,
+        stage: item.status,
+        nextStep: emergencyNextStepCode(item),
+        sourceModule: 'emergency',
+        compact: compact,
+      );
+    }
+
+    final EmergencyWorkspaceState? state = readEmergencyState(ref);
+    final EmergencyReferenceData referenceData =
+        state?.referenceData ?? const EmergencyReferenceData();
+
+    if (item.activeTrip != null) {
+      return AppAccessActionGate(
+        requirement: writeRequirement,
+        builder: (BuildContext context, bool isAllowed) {
+          return AppButton.primary(
+            label: EmergencyText.completeTrip,
+            leadingIcon: Icons.flag_outlined,
+            enabled: isAllowed,
+            onPressed: isAllowed
+                ? () => unawaited(_completeTrip(context, ref))
+                : null,
+          );
+        },
+      );
+    }
+
+    if (item.latestDispatch == null) {
+      return AppAccessActionGate(
+        requirement: writeRequirement,
+        builder: (BuildContext context, bool isAllowed) {
+          return AppButton.primary(
+            label: EmergencyText.dispatch,
+            leadingIcon: Icons.airport_shuttle_outlined,
+            enabled: isAllowed && item.isOpen,
+            onPressed: isAllowed && item.isOpen
+                ? () => unawaited(_openDispatch(context, ref, referenceData))
+                : null,
+          );
+        },
+      );
+    }
+
+    return AppAccessActionGate(
+      requirement: writeRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        return AppButton.primary(
+          label: EmergencyText.startTrip,
+          leadingIcon: Icons.play_arrow_outlined,
+          enabled: isAllowed && item.isOpen,
+          onPressed: isAllowed && item.isOpen
+              ? () => unawaited(_startTrip(context, ref, referenceData))
+              : null,
+        );
+      },
+    );
+  }
+
+  Future<void> _ensureCaseSelected(BuildContext context, WidgetRef ref) async {
+    final AppFailure? failure = await ref
+        .read(emergencyWorkspaceControllerProvider.notifier)
+        .selectCase(item);
+    if (context.mounted && failure != null) {
+      showFailureIfNeeded(context, failure);
+    }
+  }
+
+  Future<void> _openDispatch(
+    BuildContext context,
+    WidgetRef ref,
+    EmergencyReferenceData referenceData,
+  ) async {
+    await _ensureCaseSelected(context, ref);
+    if (!context.mounted) {
+      return;
+    }
+
+    final DispatchInput? input = await showAppDialog<DispatchInput>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => DispatchDialog(referenceData: referenceData),
+    );
+    if (input == null || !context.mounted) {
+      return;
+    }
+
+    final AppFailure? failure = await ref
+        .read(emergencyWorkspaceControllerProvider.notifier)
+        .dispatchAmbulance(
+          ambulanceId: input.ambulanceId,
+          status: input.status,
+        );
+    if (context.mounted) {
+      showFailureIfNeeded(
+        context,
+        failure,
+        successMessage: 'Ambulance dispatched',
+      );
+    }
+  }
+
+  Future<void> _startTrip(
+    BuildContext context,
+    WidgetRef ref,
+    EmergencyReferenceData referenceData,
+  ) async {
+    await _ensureCaseSelected(context, ref);
+    if (!context.mounted) {
+      return;
+    }
+
+    final EmergencyWorkspaceController controller = ref.read(
+      emergencyWorkspaceControllerProvider.notifier,
+    );
+    String? ambulanceId = item.latestDispatch?.ambulanceId;
+    if (ambulanceId == null && referenceData.availableAmbulances.length == 1) {
+      ambulanceId = referenceData.availableAmbulances.first.id;
+    }
+    if (ambulanceId == null) {
+      final DispatchInput? input = await showAppDialog<DispatchInput>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => DispatchDialog(
+          referenceData: referenceData,
+          title: 'Select ambulance',
+          submitLabel: 'Start trip',
+          defaultStatus: 'EN_ROUTE',
+        ),
+      );
+      if (input == null) {
+        return;
+      }
+      ambulanceId = input.ambulanceId;
+    }
+    if (!context.mounted) {
+      return;
+    }
+
+    final AppFailure? failure = await controller.startAmbulanceTrip(
+      ambulanceId: ambulanceId,
+    );
+    if (context.mounted) {
+      showFailureIfNeeded(context, failure, successMessage: 'Trip started');
+    }
+  }
+
+  Future<void> _completeTrip(BuildContext context, WidgetRef ref) async {
+    await _ensureCaseSelected(context, ref);
+    if (!context.mounted) {
+      return;
+    }
+
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const AppConfirmActionDialog(
+        title: 'Complete ambulance trip',
+        body: 'This records ambulance arrival for the active emergency trip.',
+        submitLabel: 'Complete trip',
+      ),
+    );
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+
+    final AppFailure? failure = await ref
+        .read(emergencyWorkspaceControllerProvider.notifier)
+        .completeTrip();
+    if (context.mounted) {
+      showFailureIfNeeded(
+        context,
+        failure,
+        successMessage: 'Complete trip done',
+      );
+    }
+  }
 }
 
 class EmergencyCaseCell extends StatelessWidget {

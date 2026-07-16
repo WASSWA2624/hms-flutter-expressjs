@@ -13,6 +13,7 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
 import 'package:hosspi_hms/features/rooms_beds/presentation/controllers/rooms_beds_workspace_controller.dart';
+import 'package:hosspi_hms/features/rooms_beds/presentation/widgets/rooms_beds_next_action_button.dart';
 import 'package:hosspi_hms/features/rooms_beds/presentation/widgets/rooms_beds_status_helpers.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
@@ -183,6 +184,44 @@ class _RoomsBedsWorkspaceContentState
       state.beds,
       _section,
     );
+    final RoomsBedsNextActionCallbacks nextActionCallbacks =
+        RoomsBedsNextActionCallbacks(
+          onAssign: (BedBoardItem item) =>
+              _showAssignDialog(context, controller, item),
+          onRelease: (BedBoardItem item) => _showReleaseDialog(
+            context,
+            controller,
+            item,
+            item.currentAdmissionId,
+            admissionDisplayId: item.currentAdmissionDisplayId,
+          ),
+          onCompleteTransfer: (BedBoardItem item) {
+            final String? admissionId = item.currentAdmissionId;
+            if (admissionId == null) {
+              return Future<void>.value();
+            }
+            return _showTransferUpdateDialog(
+              context,
+              controller,
+              item,
+              admissionId,
+            );
+          },
+          onMarkAvailable: (BedBoardItem item) => _updateBedStatus(
+            context,
+            controller,
+            item,
+            BedSetupStatus.available,
+          ),
+          onOpenDetail: (BedBoardItem item) => _openBedDetailDialog(
+            context,
+            ref,
+            state,
+            item,
+            canAdminBeds: canAdminBeds,
+            canIpdWrite: canIpdWrite,
+          ),
+        );
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -240,13 +279,15 @@ class _RoomsBedsWorkspaceContentState
               columnVisibilityStorageKey: 'rooms_beds_${_section.name}',
               columnWidthStorageKey: 'rooms_beds_cw_${_section.name}',
               columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+              columnVisibilityTitle: l10n.commonTableSettingsTitle,
+              columnChoices: roomsBedsBedBoardColumnChoices(l10n),
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               search: AppListTableSearch<BedBoardItem>(
                 controller: _searchController,
                 semanticLabel: l10n.roomsBedsSearchLabel,
                 hintText: l10n.roomsBedsSearchHint,
-                matcher: (_, _) => true,
+                matcher: roomsBedsBedBoardSearchMatcher(l10n),
                 onSubmitted: (String value) async {
                   final AppFailure? failure = await controller.applySearch(
                     value,
@@ -262,8 +303,8 @@ class _RoomsBedsWorkspaceContentState
                   }
                 },
                 showAdvancedFilterButton: true,
-                advancedFilterButtonLabel: l10n.roomsBedsFiltersLabel,
-                advancedFilterTitle: l10n.roomsBedsFiltersLabel,
+                advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+                advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
                 advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
                 advancedFilterResetLabel: l10n.opdClearFiltersAction,
                 enableDateFilter: false,
@@ -351,72 +392,27 @@ class _RoomsBedsWorkspaceContentState
                 body: l10n.roomsBedsEmptyBody,
                 icon: Icons.bed_outlined,
               ),
-              columns: <AppListTableColumn<BedBoardItem>>[
-                AppListTableColumn<BedBoardItem>(
-                  label: l10n.roomsBedsBedColumnLabel,
-                  sortComparator: (BedBoardItem left, BedBoardItem right) {
-                    return appListTableCompareText(left.label, right.label);
-                  },
-                  cellBuilder: (BuildContext context, BedBoardItem item) {
-                    return _TwoLineCell(
-                      title: item.label,
-                      subtitle: _joinDisplay(<String?>[item.facility?.name]),
-                    );
-                  },
-                ),
-                AppListTableColumn<BedBoardItem>(
-                  label: l10n.roomsBedsLocationColumnLabel,
-                  sortComparator: (BedBoardItem left, BedBoardItem right) {
-                    return appListTableCompareText(
-                      _locationLabel(context, left),
-                      _locationLabel(context, right),
-                    );
-                  },
-                  cellBuilder: (BuildContext context, BedBoardItem item) {
-                    return Text(_locationLabel(context, item));
-                  },
-                ),
-                AppListTableColumn<BedBoardItem>(
-                  label: l10n.roomsBedsStatusColumnLabel,
-                  sortComparator: (BedBoardItem left, BedBoardItem right) {
-                    return appListTableCompareText(
-                      left.status.apiValue,
-                      right.status.apiValue,
-                    );
-                  },
-                  cellBuilder: (BuildContext context, BedBoardItem item) {
-                    return AppWorkspaceStatusBadge(
-                      status: roomsBedsStatusBadge(context.l10n, item.status),
-                    );
-                  },
-                ),
-                AppListTableColumn<BedBoardItem>(
-                  label: l10n.roomsBedsAssignmentColumnLabel,
-                  sortComparator: (BedBoardItem left, BedBoardItem right) {
-                    return appListTableCompareText(
-                      _assignmentLabel(context, left),
-                      _assignmentLabel(context, right),
-                    );
-                  },
-                  cellBuilder: (BuildContext context, BedBoardItem item) {
-                    return Text(_assignmentLabel(context, item));
-                  },
-                ),
-                AppListTableColumn<BedBoardItem>(
-                  label: l10n.roomsBedsNextActionColumnLabel,
-                  sortComparator: (BedBoardItem left, BedBoardItem right) {
-                    return appListTableCompareText(
-                      roomsBedsNextActionLabel(context.l10n, left),
-                      roomsBedsNextActionLabel(context.l10n, right),
-                    );
-                  },
-                  cellBuilder: (BuildContext context, BedBoardItem item) {
-                    return Text(roomsBedsNextActionLabel(context.l10n, item));
-                  },
-                ),
-              ],
+              columns: roomsBedsBedBoardColumns(
+                l10n: l10n,
+                nextActionCellBuilder:
+                    (BuildContext context, BedBoardItem item) {
+                      return RoomsBedsNextActionButton(
+                        item: item,
+                        state: state,
+                        canAdminBeds: canAdminBeds,
+                        canIpdWrite: canIpdWrite,
+                        callbacks: nextActionCallbacks,
+                      );
+                    },
+              ),
               mobileItemBuilder: (BuildContext context, BedBoardItem item) {
-                return _BedMobileItem(item: item);
+                return RoomsBedsBedMobileItem(
+                  item: item,
+                  state: state,
+                  canAdminBeds: canAdminBeds,
+                  canIpdWrite: canIpdWrite,
+                  callbacks: nextActionCallbacks,
+                );
               },
             ),
           ],
@@ -924,72 +920,6 @@ class _AssignmentListItem extends StatelessWidget {
               : AppWorkspaceStatusTone.neutral,
         ),
       ),
-    );
-  }
-}
-
-class _BedMobileItem extends StatelessWidget {
-  const _BedMobileItem({required this.item});
-
-  final BedBoardItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(item.label),
-      subtitle: Text(
-        _joinDisplay(<String?>[
-          _locationLabel(context, item),
-          _assignmentLabel(context, item),
-        ]),
-      ),
-      trailing: AppWorkspaceStatusBadge(
-        status: roomsBedsStatusBadge(l10n, item.status),
-      ),
-      leading: Icon(
-        item.isOccupied ? Icons.person_pin_circle_outlined : Icons.bed_outlined,
-        semanticLabel: roomsBedsStatusLabel(l10n, item.status),
-      ),
-    );
-  }
-}
-
-class _TwoLineCell extends StatelessWidget {
-  const _TwoLineCell({required this.title, this.subtitle});
-
-  final String title;
-  final String? subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final String? subtitle = this.subtitle;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        if (subtitle != null && subtitle.isNotEmpty)
-          Text(
-            subtitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-      ],
     );
   }
 }
@@ -1531,30 +1461,6 @@ String _roomsBedsSectionQueryValue(RoomsBedsSection section) {
   };
 }
 
-String _locationLabel(BuildContext context, BedBoardItem item) {
-  return _joinDisplay(<String?>[
-    item.ward?.name,
-    item.room?.name,
-    item.room?.floor,
-  ]).ifEmpty(context.l10n.profileUnknownValue);
-}
-
-String _assignmentLabel(BuildContext context, BedBoardItem item) {
-  final String? admissionId = _readableDisplayText(
-    item.currentAdmissionDisplayId,
-  );
-  if (admissionId != null) {
-    return context.l10n.roomsBedsAdmissionAssignment(admissionId);
-  }
-  if (item.currentAdmissionId != null) {
-    return context.l10n.roomsBedsCurrentAssignmentLabel;
-  }
-  if (item.isOccupied || item.isReserved) {
-    return context.l10n.roomsBedsAssignmentNotLinked;
-  }
-  return context.l10n.profileUnknownValue;
-}
-
 String _dateLabel(BuildContext context, DateTime? value) {
   if (value == null) {
     return context.l10n.profileUnknownValue;
@@ -1666,9 +1572,3 @@ const String _facilityFilterKey = 'facility';
 const String _wardFilterKey = 'ward';
 const String _roomFilterKey = 'room';
 const String _statusFilterKey = 'status';
-
-extension on String {
-  String ifEmpty(String fallback) {
-    return trim().isEmpty ? fallback : this;
-  }
-}

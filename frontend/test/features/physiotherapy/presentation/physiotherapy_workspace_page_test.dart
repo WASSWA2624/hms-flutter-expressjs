@@ -249,7 +249,10 @@ void main() {
       'physiotherapy_referrals',
     );
     expect(_table(tester).columnVisibilityLabel, 'Settings');
+    expect(_table(tester).columnVisibilityTitle, 'Table Settings');
     expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+    expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
+    expect(find.text('Accept referral'), findsWidgets);
   });
 
   testWidgets('does not paint a dedicated physiotherapy title header', (
@@ -424,5 +427,6 @@ void main() {
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.textContaining('Referrals'), findsWidgets);
     expect(find.textContaining('Completed'), findsWidgets);
+    expect(find.text('Accept referral'), findsWidgets);
   });
 }

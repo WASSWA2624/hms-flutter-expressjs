@@ -222,7 +222,7 @@ void main() {
 
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.textContaining('All worklist'), findsOneWidget);
-    expect(find.textContaining('Arrivals'), findsOneWidget);
+    expect(find.textContaining('Arrivals'), findsWidgets);
     expect(find.textContaining('Queue'), findsWidgets);
     expect(find.textContaining('Triage'), findsWidgets);
     expect(find.textContaining('Active'), findsWidgets);
@@ -233,7 +233,8 @@ void main() {
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
     expect(find.text('Refresh'), findsOneWidget);
     expect(find.byTooltip('Filters'), findsOneWidget);
-    expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+    expect(find.byTooltip('Settings'), findsOneWidget);
+    expect(find.text('Next action'), findsWidgets);
   });
 
   testWidgets('switching tabs filters by category and updates URL', (
@@ -343,5 +344,20 @@ void main() {
     expect(find.text('Ann Arrival'), findsOneWidget);
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
     expect(find.text('Refresh'), findsOneWidget);
+  });
+
+  testWidgets('settings modal uses Table Settings title', (
+    WidgetTester tester,
+  ) async {
+    await _pumpOpdWorkspace(tester, repository: repository);
+
+    final Finder settingsButton = find.descendant(
+      of: find.byType(AppSearchBar),
+      matching: find.byIcon(Icons.settings_outlined),
+    );
+    await tester.tap(settingsButton);
+    await tester.pumpAndSettle();
+    expect(find.byType(AppDialog), findsOneWidget);
+    expect(find.text('TABLE SETTINGS'), findsOneWidget);
   });
 }

@@ -259,6 +259,37 @@ List<AppSearchBarFilterGroup> nursingWorklistFilterGroups(
   ];
 }
 
+bool nursingWorklistSearchMatcher(NursingWorkItem item, String query) {
+  if (item.matchesSearch(query)) {
+    return true;
+  }
+  return _matchesNursingWorklistExtraFields(item, query);
+}
+
+bool _matchesNursingWorklistExtraFields(NursingWorkItem item, String query) {
+  final String needle = query.trim().toLowerCase();
+  if (needle.isEmpty) {
+    return true;
+  }
+
+  final Iterable<String> extraValues = <String?>[
+    item.medicationDueCount > 0 ? item.medicationDueCount.toString() : null,
+    item.pendingHandoverCount > 0 ? item.pendingHandoverCount.toString() : null,
+    item.locationLabel,
+    item.taskTypeCode,
+    item.priorityCode,
+    item.transferStatus,
+    item.dischargeStatus,
+  ].whereType<String>();
+
+  for (final String value in extraValues) {
+    if (value.trim().toLowerCase().contains(needle)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 List<AppSearchBarFilterChoice> nursingScopeFilterChoices(
   AppLocalizations l10n,
 ) {

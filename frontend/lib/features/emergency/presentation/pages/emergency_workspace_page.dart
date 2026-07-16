@@ -15,6 +15,7 @@ import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities
 import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';
 import 'package:hosspi_hms/features/emergency/presentation/widgets/emergency_dialogs.dart';
 import 'package:hosspi_hms/features/emergency/presentation/widgets/emergency_workspace_widgets.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -77,6 +78,7 @@ class _EmergencyWorkspaceContentState
   _columnVisibilityController;
   late EmergencyBoardTab _currentTab;
   String? _appliedDeepLinkSignature;
+  AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
 
   @override
   void initState() {
@@ -186,12 +188,13 @@ class _EmergencyWorkspaceContentState
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
     final EmergencyWorkspaceState state = widget.state;
     final EmergencyWorkspaceController controller = ref.read(
       emergencyWorkspaceControllerProvider.notifier,
     );
 
-    final List<EmergencyCaseSummary> rows = _buildRows(state);
+    final List<EmergencyCaseSummary> rows = _filteredRows(state);
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -215,7 +218,10 @@ class _EmergencyWorkspaceContentState
               onTabTapped: (String tabId) {
                 for (final EmergencyBoardTab tab in EmergencyBoardTab.values) {
                   if (tab.name == tabId) {
-                    setState(() => _currentTab = tab);
+                    setState(() {
+                      _currentTab = tab;
+                      _filterValue = AppSearchBarFilterValue.empty;
+                    });
                     _updateUrlForTab(tab);
                     controller.applyScope(emergencyBoardScopeForTab(tab));
                     break;
@@ -232,23 +238,49 @@ class _EmergencyWorkspaceContentState
             SizedBox(height: theme.spacing.sm),
             AppListTable<EmergencyCaseSummary>(
               items: rows,
-              columns: _columnsForTab(_currentTab),
+              columns: emergencyDefaultColumnsForTab(
+                context,
+                _currentTab,
+                writeRequirement: _writeRequirement,
+              ),
+              columnChoices: emergencyColumnChoicesForTab(
+                context,
+                _currentTab,
+                writeRequirement: _writeRequirement,
+              ),
               columnVisibilityController: _columnVisibilityController,
               columnVisibilityStorageKey: 'emergency_${_currentTab.name}',
               columnWidthStorageKey: 'emergency_cw_${_currentTab.name}',
-              columnVisibilityLabel:
-                  context.l10n.commonTableSettingsActionLabel,
+              columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+              columnVisibilityTitle: l10n.emergencyTableSettingsTitle,
               isLoading: state.isRefreshingBoard,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               search: AppListTableSearch<EmergencyCaseSummary>(
                 controller: _searchController,
-                semanticLabel: 'Search emergency cases',
-                hintText: EmergencyText.searchHint,
-                matcher: (EmergencyCaseSummary item, String query) =>
-                    item.matchesSearch(query),
+                semanticLabel: l10n.emergencySearchSemanticLabel,
+                hintText: l10n.emergencySearchHint,
+                clearLabel: l10n.emergencyClearSearchAction,
+                matcher: emergencyTableSearchMatcher,
                 onSubmitted: controller.applySearch,
                 onClear: () => controller.applySearch(''),
+                showAdvancedFilterButton: true,
+                advancedFilterButtonLabel: l10n.emergencyFiltersLabel,
+                advancedFilterTitle: l10n.emergencyAdvancedFiltersTitle,
+                advancedFilterApplyLabel: l10n.emergencyApplyFiltersAction,
+                advancedFilterResetLabel: l10n.emergencyResetFiltersAction,
+                enableDateFilter: false,
+                allFieldsLabel: l10n.emergencyAllFieldsFilterLabel,
+                filterGroups: emergencyFilterGroupsForTab(
+                  l10n,
+                  _currentTab,
+                  _buildRows(state),
+                ),
+                filterValue: _filterValue,
+                hasActiveFilters: _filterValue.isActive,
+                onFilterChanged: (AppSearchBarFilterValue value) {
+                  setState(() => _filterValue = value);
+                },
               ),
               onRowSelected: (EmergencyCaseSummary summary) {
                 unawaited(
@@ -269,7 +301,16 @@ class _EmergencyWorkspaceContentState
                     'Emergency arrivals and ambulance calls will appear here.',
                 icon: Icons.emergency_outlined,
               ),
-              mobileItemBuilder: _mobileItemBuilder,
+              mobileItemBuilder:
+                  (BuildContext context, EmergencyCaseSummary item) {
+                    return emergencyMobileListItem(
+                      context,
+                      ref,
+                      item,
+                      tab: _currentTab,
+                      writeRequirement: _writeRequirement,
+                    );
+                  },
             ),
           ],
         ),
@@ -311,6 +352,14 @@ class _EmergencyWorkspaceContentState
     ];
   }
 
+  List<EmergencyCaseSummary> _filteredRows(EmergencyWorkspaceState state) {
+    return emergencyApplyClientFilters(
+      _buildRows(state),
+      _filterValue,
+      _currentTab,
+    );
+  }
+
   List<EmergencyCaseSummary> _buildRows(EmergencyWorkspaceState state) {
     final List<EmergencyCaseSummary> items = state.board.items;
     switch (_currentTab) {
@@ -339,191 +388,6 @@ class _EmergencyWorkspaceContentState
       case EmergencyBoardTab.all:
         return items.toList(growable: false);
     }
-  }
-
-  List<AppListTableColumn<EmergencyCaseSummary>> _columnsForTab(
-    EmergencyBoardTab tab,
-  ) {
-    switch (tab) {
-      case EmergencyBoardTab.active:
-      case EmergencyBoardTab.critical:
-      case EmergencyBoardTab.all:
-        return <AppListTableColumn<EmergencyCaseSummary>>[
-          _patientColumn(),
-          _priorityColumn(),
-          _arrivalColumn(),
-          _responseColumn(),
-          _locationColumn(),
-          _nextActionColumn(),
-        ];
-      case EmergencyBoardTab.ambulance:
-        return <AppListTableColumn<EmergencyCaseSummary>>[
-          _patientColumn(),
-          _priorityColumn(),
-          AppListTableColumn<EmergencyCaseSummary>(
-            id: 'dispatch_status',
-            label: EmergencyText.dispatchStatus,
-            sortComparator:
-                (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
-                    appListTableCompareText(
-                      left.latestDispatch?.status,
-                      right.latestDispatch?.status,
-                    ),
-            cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
-              final String? status = item.latestDispatch?.status;
-              if (status == null || status.isEmpty) {
-                return const SizedBox.shrink();
-              }
-              return AppWorkspaceStatusBadge(
-                status: AppWorkspaceStatus(
-                  label: apiLabel(status),
-                  tone: ambulanceTone(status),
-                ),
-              );
-            },
-          ),
-          AppListTableColumn<EmergencyCaseSummary>(
-            id: 'ambulance',
-            label: EmergencyText.ambulance,
-            sortComparator:
-                (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
-                    appListTableCompareText(
-                      left.latestDispatch?.ambulanceLabel,
-                      right.latestDispatch?.ambulanceLabel,
-                    ),
-            cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
-              return Text(
-                item.latestDispatch?.ambulanceLabel ??
-                    item.activeTrip?.ambulanceLabel ??
-                    '',
-              );
-            },
-          ),
-          AppListTableColumn<EmergencyCaseSummary>(
-            id: 'trip_status',
-            label: 'Trip status',
-            cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
-              final EmergencyAmbulanceTrip? trip = item.activeTrip;
-              if (trip == null) {
-                return const Text('No trip');
-              }
-              return AppWorkspaceStatusBadge(
-                status: AppWorkspaceStatus(
-                  label: trip.isActive ? 'In transit' : 'Complete',
-                  tone: trip.isActive
-                      ? AppWorkspaceStatusTone.warning
-                      : AppWorkspaceStatusTone.success,
-                ),
-              );
-            },
-          ),
-          _arrivalColumn(),
-        ];
-      case EmergencyBoardTab.handoff:
-        return <AppListTableColumn<EmergencyCaseSummary>>[
-          _patientColumn(),
-          _priorityColumn(),
-          AppListTableColumn<EmergencyCaseSummary>(
-            id: 'triage_level',
-            label: EmergencyText.triage,
-            sortComparator:
-                (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
-                    appListTableCompareText(
-                      left.triageLevel,
-                      right.triageLevel,
-                    ),
-            cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
-              return AppWorkspaceStatusBadge(
-                status: triageStatus(item.triageLevel),
-              );
-            },
-          ),
-          _responseColumn(),
-          _nextActionColumn(),
-        ];
-      case EmergencyBoardTab.closed:
-        return <AppListTableColumn<EmergencyCaseSummary>>[
-          _patientColumn(),
-          _priorityColumn(),
-          _arrivalColumn(),
-          AppListTableColumn<EmergencyCaseSummary>(
-            id: 'handoff_destination',
-            label: EmergencyText.handoffDestination,
-            sortComparator:
-                (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
-                    appListTableCompareText(
-                      left.handoff?.destination,
-                      right.handoff?.destination,
-                    ),
-            cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
-              return Text(apiLabel(item.handoff?.destination ?? ''));
-            },
-          ),
-          AppListTableColumn<EmergencyCaseSummary>(
-            id: 'closed_at',
-            label: 'Closed at',
-            sortComparator:
-                (EmergencyCaseSummary left, EmergencyCaseSummary right) =>
-                    appListTableCompareDateTime(
-                      left.updatedAt,
-                      right.updatedAt,
-                    ),
-            cellBuilder: (BuildContext context, EmergencyCaseSummary item) {
-              return Text(dateTimeLabel(context, item.updatedAt));
-            },
-          ),
-        ];
-    }
-  }
-
-  AppListTableColumn<EmergencyCaseSummary> _patientColumn() =>
-      emergencyPatientColumn();
-
-  AppListTableColumn<EmergencyCaseSummary> _priorityColumn() =>
-      emergencyPriorityColumn();
-
-  AppListTableColumn<EmergencyCaseSummary> _arrivalColumn() =>
-      emergencyArrivalColumn();
-
-  AppListTableColumn<EmergencyCaseSummary> _responseColumn() =>
-      emergencyResponseColumn();
-
-  AppListTableColumn<EmergencyCaseSummary> _locationColumn() =>
-      emergencyLocationColumn();
-
-  AppListTableColumn<EmergencyCaseSummary> _nextActionColumn() =>
-      emergencyNextActionColumn();
-
-  Widget _mobileItemBuilder(BuildContext context, EmergencyCaseSummary item) {
-    final ThemeData theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.sm,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          EmergencyCaseCell(item: item),
-          SizedBox(height: theme.spacing.sm),
-          Wrap(
-            spacing: theme.spacing.xs,
-            runSpacing: theme.spacing.xs,
-            children: <Widget>[
-              AppWorkspaceStatusBadge(status: severityStatus(item)),
-              AppWorkspaceStatusBadge(status: responseStatus(item)),
-              Text(
-                joinDisplay(<String?>[
-                  item.currentLocation,
-                  dateTimeLabel(context, item.createdAt),
-                ]),
-                style: theme.textTheme.bodySmall,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
   }
 
   void _updateUrlForTab(EmergencyBoardTab tab) {
@@ -630,4 +494,327 @@ EmergencyBoardTab? emergencyTabFromScopeValue(String value) {
     }
   }
   return null;
+}
+
+const String emergencySeverityFilterKey = 'severity';
+const String emergencyTriageFilterKey = 'triage';
+const String emergencyCaseStatusFilterKey = 'case_status';
+const String emergencyDispatchStatusFilterKey = 'dispatch_status';
+const String emergencyDestinationFilterKey = 'destination';
+
+/// Default visible columns (max five) for an emergency board tab.
+List<AppListTableColumn<EmergencyCaseSummary>> emergencyDefaultColumnsForTab(
+  BuildContext context,
+  EmergencyBoardTab tab, {
+  required AccessRequirement writeRequirement,
+}) {
+  return switch (tab) {
+    EmergencyBoardTab.active ||
+    EmergencyBoardTab.all => <AppListTableColumn<EmergencyCaseSummary>>[
+      emergencyPatientColumn(),
+      emergencyPriorityColumn(),
+      emergencyLocationColumn(),
+      emergencyCaseStatusColumn(context),
+      emergencyNextActionColumn(context),
+    ],
+    EmergencyBoardTab.critical => <AppListTableColumn<EmergencyCaseSummary>>[
+      emergencyPatientColumn(),
+      emergencyPriorityColumn(),
+      emergencyArrivalColumn(),
+      emergencyCaseStatusColumn(context),
+      emergencyNextActionColumn(context),
+    ],
+    EmergencyBoardTab.ambulance => <AppListTableColumn<EmergencyCaseSummary>>[
+      emergencyPatientColumn(),
+      emergencyPriorityColumn(),
+      emergencyAmbulanceColumn(),
+      emergencyAmbulanceWorkflowStatusColumn(context),
+      emergencyAmbulanceNextActionColumn(
+        context,
+        writeRequirement: writeRequirement,
+      ),
+    ],
+    EmergencyBoardTab.handoff => <AppListTableColumn<EmergencyCaseSummary>>[
+      emergencyPatientColumn(),
+      emergencyPriorityColumn(),
+      emergencyTriageColumn(),
+      emergencyCaseStatusColumn(context),
+      emergencyHandoffNextActionColumn(
+        context,
+        writeRequirement: writeRequirement,
+      ),
+    ],
+    EmergencyBoardTab.closed => <AppListTableColumn<EmergencyCaseSummary>>[
+      emergencyPatientColumn(),
+      emergencyPriorityColumn(),
+      emergencyCaseStatusColumn(context),
+      emergencyHandoffDestinationColumn(),
+      emergencyClosedAtColumn(context),
+    ],
+  };
+}
+
+/// Hidden column choices for the table settings modal per tab.
+List<AppListTableColumn<EmergencyCaseSummary>> emergencyColumnChoicesForTab(
+  BuildContext context,
+  EmergencyBoardTab tab, {
+  required AccessRequirement writeRequirement,
+}) {
+  final Set<String> defaultIds =
+      emergencyDefaultColumnsForTab(
+            context,
+            tab,
+            writeRequirement: writeRequirement,
+          )
+          .map((AppListTableColumn<EmergencyCaseSummary> column) => column.id)
+          .whereType<String>()
+          .toSet();
+
+  final Set<String> allowedIds = switch (tab) {
+    EmergencyBoardTab.active || EmergencyBoardTab.all => <String>{
+      'arrival',
+      'response',
+      'triage',
+      'facility',
+      'dispatch_status',
+      'ambulance',
+      'handoff_destination',
+      'closed_at',
+    },
+    EmergencyBoardTab.critical => <String>{
+      'location',
+      'response',
+      'triage',
+      'facility',
+      'dispatch_status',
+      'ambulance',
+      'handoff_destination',
+      'closed_at',
+    },
+    EmergencyBoardTab.ambulance => <String>{
+      'dispatch_status',
+      'trip_status',
+      'arrival',
+      'location',
+      'response',
+    },
+    EmergencyBoardTab.handoff => <String>{
+      'response',
+      'arrival',
+      'location',
+      'facility',
+    },
+    EmergencyBoardTab.closed => <String>{
+      'arrival',
+      'location',
+      'triage',
+      'response',
+    },
+  };
+
+  final List<AppListTableColumn<EmergencyCaseSummary>> allChoices =
+      <AppListTableColumn<EmergencyCaseSummary>>[
+        emergencyArrivalColumn(),
+        emergencyResponseColumn(),
+        emergencyTriageColumn(),
+        emergencyFacilityColumn(),
+        emergencyDispatchStatusColumn(),
+        emergencyAmbulanceColumn(),
+        emergencyTripStatusColumn(context),
+        emergencyHandoffDestinationColumn(),
+        emergencyClosedAtColumn(context),
+        emergencyLocationColumn(),
+      ];
+
+  return <AppListTableColumn<EmergencyCaseSummary>>[
+    for (final AppListTableColumn<EmergencyCaseSummary> column in allChoices)
+      if (allowedIds.contains(column.id) && !defaultIds.contains(column.id))
+        column,
+  ];
+}
+
+/// Advanced filter groups for the emergency worklist search chrome.
+List<AppSearchBarFilterGroup> emergencyFilterGroupsForTab(
+  AppLocalizations l10n,
+  EmergencyBoardTab tab,
+  List<EmergencyCaseSummary> rows,
+) {
+  final List<AppSearchBarFilterGroup> groups = <AppSearchBarFilterGroup>[];
+
+  switch (tab) {
+    case EmergencyBoardTab.active:
+    case EmergencyBoardTab.critical:
+    case EmergencyBoardTab.all:
+      groups.addAll(<AppSearchBarFilterGroup>[
+        AppSearchBarFilterGroup(
+          key: emergencySeverityFilterKey,
+          label: l10n.emergencySeverityFilterLabel,
+          allLabel: l10n.emergencyAllFieldsFilterLabel,
+          choices: _emergencyDistinctFilterChoices(
+            rows,
+            (EmergencyCaseSummary item) => item.severity,
+            apiLabel,
+          ),
+        ),
+        AppSearchBarFilterGroup(
+          key: emergencyTriageFilterKey,
+          label: l10n.emergencyTriageFilterLabel,
+          allLabel: l10n.emergencyAllFieldsFilterLabel,
+          choices: _emergencyDistinctFilterChoices(
+            rows,
+            (EmergencyCaseSummary item) =>
+                item.triageLevel.isEmpty ? 'TRIAGE_PENDING' : item.triageLevel,
+            (String value) =>
+                value == 'TRIAGE_PENDING' ? 'Triage pending' : apiLabel(value),
+          ),
+        ),
+      ]);
+    case EmergencyBoardTab.handoff:
+      groups.add(
+        AppSearchBarFilterGroup(
+          key: emergencyTriageFilterKey,
+          label: l10n.emergencyTriageFilterLabel,
+          allLabel: l10n.emergencyAllFieldsFilterLabel,
+          choices: _emergencyDistinctFilterChoices(
+            rows,
+            (EmergencyCaseSummary item) =>
+                item.triageLevel.isEmpty ? 'TRIAGE_PENDING' : item.triageLevel,
+            (String value) =>
+                value == 'TRIAGE_PENDING' ? 'Triage pending' : apiLabel(value),
+          ),
+        ),
+      );
+    case EmergencyBoardTab.ambulance:
+      groups.add(
+        AppSearchBarFilterGroup(
+          key: emergencyDispatchStatusFilterKey,
+          label: l10n.emergencyDispatchStatusFilterLabel,
+          allLabel: l10n.emergencyAllFieldsFilterLabel,
+          choices: _emergencyDistinctFilterChoices(
+            rows,
+            (EmergencyCaseSummary item) => item.latestDispatch?.status,
+            apiLabel,
+          ),
+        ),
+      );
+    case EmergencyBoardTab.closed:
+      groups.add(
+        AppSearchBarFilterGroup(
+          key: emergencyDestinationFilterKey,
+          label: l10n.emergencyDestinationFilterLabel,
+          allLabel: l10n.emergencyAllFieldsFilterLabel,
+          choices: _emergencyDistinctFilterChoices(
+            rows,
+            (EmergencyCaseSummary item) => item.handoff?.destination,
+            apiLabel,
+          ),
+        ),
+      );
+  }
+
+  groups.add(
+    AppSearchBarFilterGroup(
+      key: emergencyCaseStatusFilterKey,
+      label: l10n.emergencyCaseStatusFilterLabel,
+      allLabel: l10n.emergencyAllFieldsFilterLabel,
+      choices: _emergencyDistinctFilterChoices(
+        rows,
+        (EmergencyCaseSummary item) => item.status,
+        apiLabel,
+      ),
+    ),
+  );
+
+  return groups;
+}
+
+List<AppSearchBarFilterChoice> _emergencyDistinctFilterChoices(
+  List<EmergencyCaseSummary> rows,
+  String? Function(EmergencyCaseSummary item) valueForItem,
+  String Function(String value) labelForValue,
+) {
+  final Set<String> seen = <String>{};
+  final List<AppSearchBarFilterChoice> choices = <AppSearchBarFilterChoice>[];
+  for (final EmergencyCaseSummary item in rows) {
+    final String? raw = valueForItem(item)?.trim();
+    if (raw == null || raw.isEmpty) {
+      continue;
+    }
+    final String key = raw.toUpperCase();
+    if (!seen.add(key)) {
+      continue;
+    }
+    choices.add(
+      AppSearchBarFilterChoice(value: key, label: labelForValue(raw)),
+    );
+  }
+  choices.sort(
+    (AppSearchBarFilterChoice left, AppSearchBarFilterChoice right) =>
+        left.label.compareTo(right.label),
+  );
+  return choices;
+}
+
+/// Applies client-side advanced filters to tab-scoped emergency rows.
+List<EmergencyCaseSummary> emergencyApplyClientFilters(
+  List<EmergencyCaseSummary> rows,
+  AppSearchBarFilterValue filterValue,
+  EmergencyBoardTab tab,
+) {
+  if (!filterValue.isActive) {
+    return rows;
+  }
+
+  List<EmergencyCaseSummary> filtered = rows;
+
+  final String? severity = filterValue.option(emergencySeverityFilterKey);
+  if (severity != null && severity.isNotEmpty) {
+    filtered = <EmergencyCaseSummary>[
+      for (final EmergencyCaseSummary item in filtered)
+        if ((item.severity ?? '').toUpperCase() == severity) item,
+    ];
+  }
+
+  final String? triage = filterValue.option(emergencyTriageFilterKey);
+  if (triage != null && triage.isNotEmpty) {
+    filtered = <EmergencyCaseSummary>[
+      for (final EmergencyCaseSummary item in filtered)
+        if (triage == 'TRIAGE_PENDING'
+            ? item.triageLevel.isEmpty
+            : item.triageLevel.toUpperCase() == triage)
+          item,
+    ];
+  }
+
+  final String? dispatchStatus = filterValue.option(
+    emergencyDispatchStatusFilterKey,
+  );
+  if (dispatchStatus != null && dispatchStatus.isNotEmpty) {
+    filtered = <EmergencyCaseSummary>[
+      for (final EmergencyCaseSummary item in filtered)
+        if ((item.latestDispatch?.status ?? '').toUpperCase() == dispatchStatus)
+          item,
+    ];
+  }
+
+  final String? destination = filterValue.option(emergencyDestinationFilterKey);
+  if (destination != null && destination.isNotEmpty) {
+    filtered = <EmergencyCaseSummary>[
+      for (final EmergencyCaseSummary item in filtered)
+        if ((item.handoff?.destination ?? '').toUpperCase() == destination)
+          item,
+    ];
+  }
+
+  final String? selectedCaseStatus = filterValue.option(
+    emergencyCaseStatusFilterKey,
+  );
+  if (selectedCaseStatus != null && selectedCaseStatus.isNotEmpty) {
+    filtered = <EmergencyCaseSummary>[
+      for (final EmergencyCaseSummary item in filtered)
+        if ((item.status ?? '').toUpperCase() == selectedCaseStatus) item,
+    ];
+  }
+
+  return filtered;
 }

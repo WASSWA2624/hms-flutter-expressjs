@@ -274,17 +274,29 @@ final class EmergencyCaseSummary {
       return true;
     }
 
+    final EmergencyAmbulanceTrip? trip = activeTrip;
     return <String?>[
       id,
       displayId,
+      caseLabel,
       patientDisplayId,
       patientDisplayName,
+      displayTitle,
       severity,
       status,
+      facilityLabel,
+      currentLocation,
+      triageLevel,
+      responseStatus,
+      nextAction,
       latestTriage?.triageLevel,
       latestDispatch?.ambulanceLabel,
       latestDispatch?.status,
       activeTrip?.ambulanceLabel,
+      handoff?.destination,
+      trip == null ? null : (trip.isActive ? 'IN_TRANSIT' : 'COMPLETE'),
+      createdAt?.toIso8601String(),
+      updatedAt?.toIso8601String(),
     ].whereType<String>().any(
       (String value) => value.toLowerCase().contains(needle),
     );

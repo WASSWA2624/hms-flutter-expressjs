@@ -538,19 +538,23 @@ void main() {
       size: const Size(1280, 900),
     );
 
-    expect(find.text('Patient no.'), findsOneWidget);
     expect(find.text('Patient name'), findsOneWidget);
-    expect(find.text('Age / sex'), findsOneWidget);
     expect(find.text('Phone'), findsOneWidget);
     expect(find.text('Alerts'), findsOneWidget);
+    expect(find.text('Status'), findsOneWidget);
+    expect(find.text('Next action'), findsOneWidget);
+    expect(find.text('Patient no.'), findsNothing);
+    expect(find.text('Age / sex'), findsNothing);
     expect(find.text('Visit'), findsNothing);
-    expect(find.text('Next action'), findsNothing);
     expect(find.text('MRN MRN-10024'), findsOneWidget);
     expect(find.text('+256700000000'), findsOneWidget);
-    expect(find.textContaining('Female'), findsOneWidget);
     expect(find.text('Penicillin - Severe'), findsOneWidget);
     expect(find.text('OPD - In Progress'), findsNothing);
-    expect(find.text('Open record'), findsNothing);
+    expect(find.text('Open record'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    expect(find.text('Table Settings'), findsOneWidget);
   });
 
   testWidgets(

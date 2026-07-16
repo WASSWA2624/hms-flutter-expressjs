@@ -406,11 +406,167 @@ abstract class AppLocalizations {
   /// **'Settings'**
   String get commonTableSettingsActionLabel;
 
+  /// Title for the worklist table column settings dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Table Settings'**
+  String get commonTableSettingsTitle;
+
+  /// Title for the advanced filters modal in worklist table search chrome.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced filters'**
+  String get commonAdvancedFiltersTitle;
+
+  /// Optional reception appointments table column for the appointment identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment ID'**
+  String get receptionAppointmentIdLabel;
+
+  /// Optional reception queue table column for the queue entry identifier.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue ID'**
+  String get receptionQueueIdLabel;
+
+  /// Label for opening a worklist table advanced filters dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get commonFiltersActionLabel;
+
   /// Title for the emergency case detail dialog.
   ///
   /// In en, this message translates to:
   /// **'Emergency case'**
   String get emergencyCaseDialogTitle;
+
+  /// Semantic label for the emergency worklist search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search emergency cases'**
+  String get emergencySearchSemanticLabel;
+
+  /// Hint text for the emergency worklist search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Search patient, case, ambulance, or status'**
+  String get emergencySearchHint;
+
+  /// Label for clearing the emergency worklist search field.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search'**
+  String get emergencyClearSearchAction;
+
+  /// Label for opening emergency worklist advanced filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get emergencyFiltersLabel;
+
+  /// Title for the emergency worklist advanced filters modal.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced filters'**
+  String get emergencyAdvancedFiltersTitle;
+
+  /// Label for applying emergency worklist advanced filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply filters'**
+  String get emergencyApplyFiltersAction;
+
+  /// Label for resetting emergency worklist advanced filters.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset filters'**
+  String get emergencyResetFiltersAction;
+
+  /// Label for the all-fields option in emergency advanced filters.
+  ///
+  /// In en, this message translates to:
+  /// **'All fields'**
+  String get emergencyAllFieldsFilterLabel;
+
+  /// Title for the emergency worklist table settings modal.
+  ///
+  /// In en, this message translates to:
+  /// **'Table Settings'**
+  String get emergencyTableSettingsTitle;
+
+  /// Column header for emergency case workflow status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get emergencyStatusColumnLabel;
+
+  /// Column header for the emergency worklist next-action column.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get emergencyNextActionColumnLabel;
+
+  /// Column header for ambulance trip status on the emergency board.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip status'**
+  String get emergencyTripStatusColumnLabel;
+
+  /// Label when no ambulance trip is active for an emergency case.
+  ///
+  /// In en, this message translates to:
+  /// **'No trip'**
+  String get emergencyNoTripLabel;
+
+  /// Label for an ambulance trip that is in transit.
+  ///
+  /// In en, this message translates to:
+  /// **'In transit'**
+  String get emergencyInTransitLabel;
+
+  /// Label for a completed ambulance trip.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete'**
+  String get emergencyTripCompleteLabel;
+
+  /// Column header for when an emergency case was closed.
+  ///
+  /// In en, this message translates to:
+  /// **'Closed at'**
+  String get emergencyClosedAtColumnLabel;
+
+  /// Advanced filter group label for emergency case priority.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get emergencySeverityFilterLabel;
+
+  /// Advanced filter group label for emergency triage level.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage'**
+  String get emergencyTriageFilterLabel;
+
+  /// Advanced filter group label for emergency case status.
+  ///
+  /// In en, this message translates to:
+  /// **'Case status'**
+  String get emergencyCaseStatusFilterLabel;
+
+  /// Advanced filter group label for ambulance dispatch status.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispatch status'**
+  String get emergencyDispatchStatusFilterLabel;
+
+  /// Advanced filter group label for handoff destination.
+  ///
+  /// In en, this message translates to:
+  /// **'Destination'**
+  String get emergencyDestinationFilterLabel;
 
   /// Title for the ICU stay detail dialog.
   ///
@@ -525,6 +681,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'ICU board filters'**
   String get icuBoardFiltersTitle;
+
+  /// ICU board advanced filters button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get icuAdvancedFiltersLabel;
+
+  /// ICU board advanced filters dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced filters'**
+  String get icuAdvancedFiltersTitle;
+
+  /// ICU board apply filters action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply filters'**
+  String get icuApplyFiltersLabel;
+
+  /// ICU board reset filters action label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset filters'**
+  String get icuResetFiltersLabel;
+
+  /// ICU board table settings dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Table Settings'**
+  String get icuTableSettingsTitle;
+
+  /// ICU board next action column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get icuNextActionColumnLabel;
+
+  /// ICU board filter option for patients with critical alerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Has alert'**
+  String get icuBoardFilterHasAlertLabel;
+
+  /// ICU board filter option for patients without critical alerts.
+  ///
+  /// In en, this message translates to:
+  /// **'No alert'**
+  String get icuBoardFilterNoAlertLabel;
+
+  /// ICU board filter option for patients with an assigned bed.
+  ///
+  /// In en, this message translates to:
+  /// **'Has bed'**
+  String get icuBoardFilterHasBedLabel;
+
+  /// ICU board filter option for patients without an assigned bed.
+  ///
+  /// In en, this message translates to:
+  /// **'No bed'**
+  String get icuBoardFilterNoBedLabel;
+
+  /// ICU board filter option for emergency admissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency'**
+  String get icuBoardFilterEmergencySourceLabel;
+
+  /// ICU board filter option for non-emergency admissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get icuBoardFilterOtherSourceLabel;
 
   /// ICU board column: bed / location.
   ///
@@ -5422,6 +5650,12 @@ abstract class AppLocalizations {
   /// **'Next step'**
   String get opdNextStepColumnLabel;
 
+  /// Next action column label on OPD worklist tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get opdNextActionColumnLabel;
+
   /// Tooltip for opening OPD row actions.
   ///
   /// In en, this message translates to:
@@ -7143,6 +7377,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Age / sex'**
   String get patientsAgeSexColumnLabel;
+
+  /// Patient list age column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Age'**
+  String get patientsAgeColumnLabel;
+
+  /// Patient list gender column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Gender'**
+  String get patientsGenderColumnLabel;
 
   /// Patient list phone column label.
   ///
@@ -12628,6 +12874,18 @@ abstract class AppLocalizations {
   /// **'Filters'**
   String get clinicalFiltersLabel;
 
+  /// Column label for the clinical worklist next-action column.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get clinicalNextActionColumnLabel;
+
+  /// Fallback next-action label to open the clinical encounter dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Review encounter'**
+  String get clinicalOpenEncounterAction;
+
   /// Clinical worklist search field label.
   ///
   /// In en, this message translates to:
@@ -15273,6 +15531,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Location'**
   String get nursingLocationColumnLabel;
+
+  /// Column label for the nursing worklist next-action column.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get nursingNextActionColumnLabel;
 
   /// Nursing worklist due action column label.
   ///
@@ -29894,6 +30158,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Bed'**
   String get roomsBedsBedColumnLabel;
+
+  /// Column label for room floor in the bed board table.
+  ///
+  /// In en, this message translates to:
+  /// **'Floor'**
+  String get roomsBedsFloorColumnLabel;
 
   /// Column label for bed location.
   ///

@@ -1760,42 +1760,68 @@ String _queueStatusLabel(BuildContext context, _OpdTableItem item) {
   return label.isEmpty ? context.l10n.profileUnknownValue : label;
 }
 
+String _opdTableColumnStorageId(_OpdTableColumnId column) {
+  return switch (column) {
+    _OpdTableColumnId.patient => 'patient',
+    _OpdTableColumnId.category => 'category',
+    _OpdTableColumnId.arrivalMode => 'arrival_mode',
+    _OpdTableColumnId.visitType => 'visit_type',
+    _OpdTableColumnId.status => 'status',
+    _OpdTableColumnId.provider => 'provider',
+    _OpdTableColumnId.waitingTime => 'waiting_time',
+    _OpdTableColumnId.arrivalTime => 'arrival_time',
+    _OpdTableColumnId.nextAction => 'next_action',
+    _OpdTableColumnId.encounter => 'encounter',
+  };
+}
+
 String _opdTableColumnLabel(BuildContext context, _OpdTableColumnId column) {
   final l10n = context.l10n;
   return switch (column) {
-    _OpdTableColumnId.patientNumber => l10n.patientsPatientNumberColumnLabel,
-    _OpdTableColumnId.patientName => l10n.opdPatientColumnLabel,
+    _OpdTableColumnId.patient => l10n.opdPatientColumnLabel,
+    _OpdTableColumnId.category => l10n.opdCategoryFilterLabel,
     _OpdTableColumnId.arrivalMode => l10n.opdArrivalModeColumnLabel,
     _OpdTableColumnId.visitType => l10n.opdVisitTypeColumnLabel,
-    _OpdTableColumnId.queueStatus => l10n.opdQueueStatusColumnLabel,
+    _OpdTableColumnId.status => l10n.opdStatusColumnLabel,
     _OpdTableColumnId.provider => l10n.opdProviderColumnLabel,
     _OpdTableColumnId.waitingTime => l10n.opdWaitingTimeColumnLabel,
     _OpdTableColumnId.arrivalTime => l10n.opdTimeColumnLabel,
-    _OpdTableColumnId.nextStep => l10n.opdNextStepColumnLabel,
+    _OpdTableColumnId.nextAction => l10n.opdNextActionColumnLabel,
     _OpdTableColumnId.encounter => l10n.opdEncounterColumnLabel,
   };
 }
 
+Widget _opdStatusBadge(BuildContext context, _OpdTableItem item) {
+  return AppWorkspaceStatusBadge(
+    status: AppWorkspaceStatus(
+      label: _queueStatusLabel(context, item),
+      tone: item.category == _opdCategoryTriage
+          ? appTriageToneForValue(item.status)
+          : _stageTone(item.status ?? item.flow?.stage),
+    ),
+  );
+}
+
 AppListTableColumn<_OpdTableItem> _opdDataColumn(
   BuildContext context,
-  _OpdTableColumnId column,
-) {
+  _OpdTableColumnId column, {
+  required OpdWorkspaceState state,
+}) {
   final String label = _opdTableColumnLabel(context, column);
 
   return AppListTableColumn<_OpdTableItem>(
-    id: column.name,
+    id: _opdTableColumnStorageId(column),
     label: label,
+    alwaysVisible: column == _OpdTableColumnId.nextAction,
     sortComparator: _opdSortComparator(column),
     cellBuilder: (BuildContext context, _OpdTableItem item) {
       return switch (column) {
-        _OpdTableColumnId.patientNumber => Text(
-          item.patientNumber ?? context.l10n.profileUnknownValue,
-          maxLines: 1,
-          softWrap: false,
-          overflow: TextOverflow.ellipsis,
+        _OpdTableColumnId.patient => AppListItemText(
+          title: item.patientName ?? item.title,
+          subtitle: item.patientNumber,
         ),
-        _OpdTableColumnId.patientName => Text(
-          item.patientName ?? item.title,
+        _OpdTableColumnId.category => Text(
+          _categoryLabel(context, item.category),
           maxLines: 1,
           softWrap: false,
           overflow: TextOverflow.ellipsis,
@@ -1812,7 +1838,7 @@ AppListTableColumn<_OpdTableItem> _opdDataColumn(
           softWrap: false,
           overflow: TextOverflow.ellipsis,
         ),
-        _OpdTableColumnId.queueStatus => _QueueStatusCell(item: item),
+        _OpdTableColumnId.status => _opdStatusBadge(context, item),
         _OpdTableColumnId.provider => _ProviderCell(item: item),
         _OpdTableColumnId.waitingTime => Text(
           _waitingTimeLabel(context, item, now: DateTime.now()),
@@ -1826,7 +1852,10 @@ AppListTableColumn<_OpdTableItem> _opdDataColumn(
           softWrap: false,
           overflow: TextOverflow.ellipsis,
         ),
-        _OpdTableColumnId.nextStep => _NextStepCell(item: item),
+        _OpdTableColumnId.nextAction => _OpdNextActionCell(
+          item: item,
+          state: state,
+        ),
         _OpdTableColumnId.encounter => _OpdEncounterCell(item: item),
       };
     },
@@ -1839,13 +1868,13 @@ AppListTableSortComparator<_OpdTableItem> _opdSortComparator(
 ) {
   return (_OpdTableItem left, _OpdTableItem right) {
     return switch (column) {
-      _OpdTableColumnId.patientNumber => appListTableCompareText(
-        left.patientNumber,
-        right.patientNumber,
-      ),
-      _OpdTableColumnId.patientName => appListTableCompareText(
+      _OpdTableColumnId.patient => appListTableCompareText(
         left.patientName ?? left.title,
         right.patientName ?? right.title,
+      ),
+      _OpdTableColumnId.category => appListTableCompareText(
+        left.category,
+        right.category,
       ),
       _OpdTableColumnId.arrivalMode => appListTableCompareText(
         left.arrivalMode ?? left.flow?.arrivalMode,
@@ -1855,7 +1884,7 @@ AppListTableSortComparator<_OpdTableItem> _opdSortComparator(
         left.visitType,
         right.visitType,
       ),
-      _OpdTableColumnId.queueStatus => appListTableCompareText(
+      _OpdTableColumnId.status => appListTableCompareText(
         left.status ?? left.queue,
         right.status ?? right.queue,
       ),
@@ -1870,7 +1899,7 @@ AppListTableSortComparator<_OpdTableItem> _opdSortComparator(
         left.time,
         right.time,
       ),
-      _OpdTableColumnId.nextStep => appListTableCompareText(
+      _OpdTableColumnId.nextAction => appListTableCompareText(
         left.nextStep,
         right.nextStep,
       ),
@@ -1883,15 +1912,15 @@ AppListTableSortComparator<_OpdTableItem> _opdSortComparator(
 }
 
 enum _OpdTableColumnId {
-  patientNumber,
-  patientName,
+  patient,
+  category,
   arrivalMode,
   visitType,
-  queueStatus,
+  status,
   provider,
   waitingTime,
   arrivalTime,
-  nextStep,
+  nextAction,
   encounter,
 }
 
@@ -1899,11 +1928,11 @@ const int _defaultUrgencyRank = 99;
 final DateTime _unknownArrivalTime = DateTime(9999);
 
 const List<_OpdTableColumnId> _defaultOpdTableColumns = <_OpdTableColumnId>[
-  _OpdTableColumnId.patientNumber,
-  _OpdTableColumnId.patientName,
-  _OpdTableColumnId.queueStatus,
-  _OpdTableColumnId.nextStep,
+  _OpdTableColumnId.patient,
+  _OpdTableColumnId.category,
   _OpdTableColumnId.provider,
+  _OpdTableColumnId.status,
+  _OpdTableColumnId.nextAction,
 ];
 
 String? _opdSectionCategory(OpdWorkspaceSection section) {
@@ -1979,50 +2008,78 @@ List<_OpdTableColumnId> _opdDefaultColumnsForSection(
   return switch (section) {
     OpdWorkspaceSection.all => _defaultOpdTableColumns,
     OpdWorkspaceSection.arrivals => const <_OpdTableColumnId>[
-      _OpdTableColumnId.patientNumber,
-      _OpdTableColumnId.patientName,
+      _OpdTableColumnId.patient,
       _OpdTableColumnId.visitType,
       _OpdTableColumnId.arrivalTime,
-      _OpdTableColumnId.nextStep,
+      _OpdTableColumnId.status,
+      _OpdTableColumnId.nextAction,
     ],
     OpdWorkspaceSection.queue => const <_OpdTableColumnId>[
-      _OpdTableColumnId.patientNumber,
-      _OpdTableColumnId.patientName,
-      _OpdTableColumnId.queueStatus,
+      _OpdTableColumnId.patient,
       _OpdTableColumnId.provider,
-      _OpdTableColumnId.nextStep,
+      _OpdTableColumnId.waitingTime,
+      _OpdTableColumnId.status,
+      _OpdTableColumnId.nextAction,
     ],
     OpdWorkspaceSection.triage => const <_OpdTableColumnId>[
-      _OpdTableColumnId.patientNumber,
-      _OpdTableColumnId.patientName,
-      _OpdTableColumnId.queueStatus,
+      _OpdTableColumnId.patient,
       _OpdTableColumnId.waitingTime,
       _OpdTableColumnId.provider,
-      _OpdTableColumnId.nextStep,
+      _OpdTableColumnId.status,
+      _OpdTableColumnId.nextAction,
     ],
     OpdWorkspaceSection.active => const <_OpdTableColumnId>[
-      _OpdTableColumnId.patientNumber,
-      _OpdTableColumnId.patientName,
-      _OpdTableColumnId.queueStatus,
-      _OpdTableColumnId.nextStep,
+      _OpdTableColumnId.patient,
       _OpdTableColumnId.provider,
-      _OpdTableColumnId.encounter,
+      _OpdTableColumnId.visitType,
+      _OpdTableColumnId.status,
+      _OpdTableColumnId.nextAction,
     ],
   };
 }
 
-const List<_OpdTableColumnId> _availableOpdTableColumns = <_OpdTableColumnId>[
-  _OpdTableColumnId.patientNumber,
-  _OpdTableColumnId.patientName,
-  _OpdTableColumnId.arrivalMode,
-  _OpdTableColumnId.waitingTime,
-  _OpdTableColumnId.queueStatus,
-  _OpdTableColumnId.nextStep,
-  _OpdTableColumnId.provider,
-  _OpdTableColumnId.encounter,
-  _OpdTableColumnId.arrivalTime,
-  _OpdTableColumnId.visitType,
-];
+List<_OpdTableColumnId> _opdColumnChoicesForSection(
+  OpdWorkspaceSection section,
+) {
+  final Set<_OpdTableColumnId> defaults = _opdDefaultColumnsForSection(
+    section,
+  ).toSet();
+  final List<_OpdTableColumnId> pool = switch (section) {
+    OpdWorkspaceSection.all => const <_OpdTableColumnId>[
+      _OpdTableColumnId.arrivalMode,
+      _OpdTableColumnId.visitType,
+      _OpdTableColumnId.waitingTime,
+      _OpdTableColumnId.arrivalTime,
+      _OpdTableColumnId.encounter,
+    ],
+    OpdWorkspaceSection.arrivals => const <_OpdTableColumnId>[
+      _OpdTableColumnId.arrivalMode,
+      _OpdTableColumnId.provider,
+      _OpdTableColumnId.waitingTime,
+      _OpdTableColumnId.encounter,
+      _OpdTableColumnId.category,
+    ],
+    OpdWorkspaceSection.queue => const <_OpdTableColumnId>[
+      _OpdTableColumnId.visitType,
+      _OpdTableColumnId.arrivalTime,
+      _OpdTableColumnId.arrivalMode,
+      _OpdTableColumnId.encounter,
+    ],
+    OpdWorkspaceSection.triage => const <_OpdTableColumnId>[
+      _OpdTableColumnId.visitType,
+      _OpdTableColumnId.arrivalMode,
+      _OpdTableColumnId.arrivalTime,
+      _OpdTableColumnId.encounter,
+    ],
+    OpdWorkspaceSection.active => const <_OpdTableColumnId>[
+      _OpdTableColumnId.encounter,
+      _OpdTableColumnId.waitingTime,
+      _OpdTableColumnId.arrivalTime,
+      _OpdTableColumnId.arrivalMode,
+    ],
+  };
+  return pool.where((column) => !defaults.contains(column)).toList();
+}
 
 int _categorySort(String category) {
   return switch (category) {
@@ -2181,6 +2238,7 @@ class _OpdMainTable extends ConsumerWidget {
         columnVisibilityStorageKey: 'opd_${section.name}',
         columnWidthStorageKey: 'opd_cw_${section.name}',
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        columnVisibilityTitle: l10n.commonTableSettingsTitle,
         isLoading: isLoading,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -2194,14 +2252,16 @@ class _OpdMainTable extends ConsumerWidget {
           for (final _OpdTableColumnId column in _opdDefaultColumnsForSection(
             section,
           ))
-            _opdDataColumn(context, column),
+            _opdDataColumn(context, column, state: state),
         ],
         columnChoices: <AppListTableColumn<_OpdTableItem>>[
-          for (final _OpdTableColumnId column in _availableOpdTableColumns)
-            _opdDataColumn(context, column),
+          for (final _OpdTableColumnId column in _opdColumnChoicesForSection(
+            section,
+          ))
+            _opdDataColumn(context, column, state: state),
         ],
         onRowSelected: (_OpdTableItem item) =>
-            _openTableItemActions(context, item),
+            _openOpdTableItemActions(context, item, state: state),
         onPageChanged: onPageChanged,
         pageLabelBuilder: (AppPage<_OpdTableItem> page) =>
             _opdPageLabel(context, page),
@@ -2221,8 +2281,8 @@ class _OpdMainTable extends ConsumerWidget {
             onFilterChanged(filter.copyWith(clearSearch: true));
           },
           showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.opdFilterAction,
-          advancedFilterTitle: l10n.opdFiltersLabel,
+          advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+          advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.opdClearFiltersAction,
           searchFields: _opdTableSearchFields(context),
@@ -2249,28 +2309,29 @@ class _OpdMainTable extends ConsumerWidget {
           hasActiveFilters: filter.hasAdvancedFilters,
         ),
         mobileItemBuilder: (_, _OpdTableItem item) =>
-            _OpdTableMobileRow(item: item),
+            _OpdTableMobileRow(item: item, state: state),
         itemKeyBuilder: (_OpdTableItem item) =>
             ValueKey<String>('opd-${item.stableKey}'),
         rowColorBuilder: _opdTableRowColor,
       ),
     );
   }
+}
 
-  Future<void> _openTableItemActions(
-    BuildContext context,
-    _OpdTableItem item,
-  ) async {
-    final bool? changed = await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => _OpdPatientActionsDialog(item: item, state: state),
-    );
-    if (changed == true && context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
-    }
+Future<void> _openOpdTableItemActions(
+  BuildContext context,
+  _OpdTableItem item, {
+  required OpdWorkspaceState state,
+}) async {
+  final bool? changed = await showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _OpdPatientActionsDialog(item: item, state: state),
+  );
+  if (changed == true && context.mounted) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
   }
 }
 
@@ -2285,13 +2346,14 @@ String _opdPageLabel(BuildContext context, AppPage<_OpdTableItem> page) {
   return context.l10n.opdPageLabel(from, to, total);
 }
 
-class _OpdTableMobileRow extends StatelessWidget {
-  const _OpdTableMobileRow({required this.item});
+class _OpdTableMobileRow extends ConsumerWidget {
+  const _OpdTableMobileRow({required this.item, required this.state});
 
   final _OpdTableItem item;
+  final OpdWorkspaceState state;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return AppListItemRow(
       title: item.patientName ?? item.title,
       subtitle: _joinDisplay(<String?>[
@@ -2300,28 +2362,19 @@ class _OpdTableMobileRow extends StatelessWidget {
         _waitingTimeLabel(context, item, now: DateTime.now()),
       ]),
       details: <Widget>[
-        AppStatusText(
-          label: _queueStatusLabel(context, item),
-          tone: item.category == _opdCategoryTriage
-              ? appTriageToneForValue(item.status)
-              : _stageTone(item.status),
-        ),
-        Text(
-          _nextStepLabel(context, item),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
+        _opdStatusBadge(context, item),
+        _OpdNextActionCell(item: item, state: state),
       ],
       trailing: const Icon(Icons.chevron_right),
     );
   }
 }
 
-class _NextStepCell extends ConsumerWidget {
-  const _NextStepCell({required this.item});
+class _OpdNextActionCell extends ConsumerWidget {
+  const _OpdNextActionCell({required this.item, required this.state});
 
   final _OpdTableItem item;
+  final OpdWorkspaceState state;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2329,45 +2382,67 @@ class _NextStepCell extends ConsumerWidget {
     final String encounterId =
         flow?.publicId ?? flow?.id ?? item.encounterId ?? item.id;
 
-    if (encounterId.trim().isEmpty) {
-      return Text(
-        _nextStepLabel(context, item),
-        maxLines: 1,
-        softWrap: false,
-        overflow: TextOverflow.ellipsis,
+    if (encounterId.trim().isNotEmpty) {
+      return WorkflowActionButton(
+        encounterId: encounterId,
+        patientId:
+            flow?.patientId ??
+            item.appointment?.patientId ??
+            item.queueEntry?.patientId,
+        queueEntryId: item.queueEntry?.id,
+        stage: flow?.stage ?? item.status,
+        nextStep: item.nextStep,
+        displayNextStep: flow?.displayNextStep,
+        assignedStaffId: flow?.providerUserId,
+        sourceModule: 'opd',
+        compact: true,
       );
     }
 
-    return WorkflowActionButton(
-      encounterId: encounterId,
-      patientId: flow?.patientId ?? item.patientNumber,
-      stage: flow?.stage ?? item.status,
-      nextStep: item.nextStep,
-      displayNextStep: flow?.displayNextStep,
-      assignedStaffId: flow?.providerUserId,
-      compact: true,
-    );
+    return _opdFallbackNextActionButton(context, ref, item);
   }
-}
 
-class _QueueStatusCell extends StatelessWidget {
-  const _QueueStatusCell({required this.item});
+  Widget _opdFallbackNextActionButton(
+    BuildContext context,
+    WidgetRef ref,
+    _OpdTableItem item,
+  ) {
+    final AppLocalizations l10n = context.l10n;
+    final OpdAppointment? appointment = item.appointment;
+    final OpdQueueEntry? queueEntry = item.queueEntry;
+    final bool terminal = _isCompletedStatus(item.status);
 
-  final _OpdTableItem item;
+    if (appointment != null) {
+      final String status = (appointment.status ?? '').toUpperCase();
+      final bool canCheckIn =
+          !terminal && status != 'IN_PROGRESS' && status != 'COMPLETED';
+      if (canCheckIn) {
+        return AppButton.secondary(
+          label: l10n.opdCheckInAction,
+          onPressed: () =>
+              _openOpdTableItemActions(context, item, state: state),
+        );
+      }
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    final String label = _queueStatusLabel(context, item);
-    if (item.category == _opdCategoryTriage) {
-      return AppStatusText(
-        label: label,
-        tone: appTriageToneForValue(item.status),
+    if (queueEntry != null && !terminal) {
+      return AppButton.secondary(
+        label: l10n.opdStartConsultationAction,
+        onPressed: () => ref
+            .read(opdWorkspaceControllerProvider.notifier)
+            .startOpdFromQueue(queueEntry),
       );
     }
-    return AppStatusText(
-      label: label,
-      tone: _stageTone(item.status ?? item.flow?.stage),
-    );
+
+    final String label = _nextStepLabel(context, item);
+    if (label != l10n.profileUnknownValue) {
+      return AppButton.secondary(
+        label: label,
+        onPressed: () => _openOpdTableItemActions(context, item, state: state),
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 }
 

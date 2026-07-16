@@ -58,7 +58,9 @@ void main() {
     expect(_tab('Results ready'), findsOneWidget);
     expect(_tab('In consultation'), findsOneWidget);
     expect(_tab('Completed'), findsOneWidget);
-    expect(find.text('Current step'), findsWidgets);
+    expect(find.text('Status'), findsWidgets);
+    expect(find.text('Next action'), findsWidgets);
+    expect(find.text('Current step'), findsNothing);
     expect(find.text('Queue scope'), findsNothing);
     expect(find.text('Sarah Clinical'), findsOneWidget);
     expect(find.text('John Other'), findsOneWidget);
@@ -290,6 +292,13 @@ void main() {
     );
     expect(find.text('Filters'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
+    final AppListTable<ClinicalWorklistEntry> table = tester.widget(
+      find.byWidgetPredicate(
+        (Widget widget) => widget is AppListTable<ClinicalWorklistEntry>,
+      ),
+    );
+    expect(table.columnVisibilityTitle, 'Table Settings');
+    expect(table.search?.advancedFilterTitle, 'Advanced filters');
     expect(find.text('Clinical workspace'), findsNothing);
     expect(find.text('Provider worklist'), findsNothing);
   });

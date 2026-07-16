@@ -12,6 +12,7 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/clinical/presentation/controllers/clinical_workspace_controller.dart';
@@ -26,6 +27,9 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
+import 'package:hosspi_hms/shared/workflow_actions/workflow_action.dart';
+import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
+import 'package:hosspi_hms/shared/workflow_actions/workflow_action_registry.dart';
 
 class ClinicalWorkspacePage extends ConsumerWidget {
   const ClinicalWorkspacePage({this.initialQuery, super.key});
@@ -442,33 +446,38 @@ String _clinicalSectionQueryValue(ClinicalWorkspaceSection section) {
 List<_ClinicalTableColumnId> _clinicalDefaultColumnsForSection(
   ClinicalWorkspaceSection section,
 ) {
+  const List<_ClinicalTableColumnId> standardDefaults =
+      <_ClinicalTableColumnId>[
+        _ClinicalTableColumnId.patient,
+        _ClinicalTableColumnId.queue,
+        _ClinicalTableColumnId.provider,
+        _ClinicalTableColumnId.status,
+        _ClinicalTableColumnId.nextAction,
+      ];
   return switch (section) {
-    ClinicalWorkspaceSection.all => _defaultClinicalTableColumns,
-    ClinicalWorkspaceSection.waitingReview => _defaultClinicalTableColumns,
-    ClinicalWorkspaceSection.urgent => _defaultClinicalTableColumns,
+    ClinicalWorkspaceSection.all => standardDefaults,
+    ClinicalWorkspaceSection.waitingReview => standardDefaults,
+    ClinicalWorkspaceSection.urgent => standardDefaults,
     ClinicalWorkspaceSection.resultsReady => const <_ClinicalTableColumnId>[
       _ClinicalTableColumnId.patient,
-      _ClinicalTableColumnId.queue,
-      _ClinicalTableColumnId.statusStep,
       _ClinicalTableColumnId.encounterType,
-      _ClinicalTableColumnId.provider,
-      _ClinicalTableColumnId.lastUpdated,
+      _ClinicalTableColumnId.queue,
+      _ClinicalTableColumnId.status,
+      _ClinicalTableColumnId.nextAction,
     ],
     ClinicalWorkspaceSection.inConsultation => const <_ClinicalTableColumnId>[
       _ClinicalTableColumnId.patient,
-      _ClinicalTableColumnId.queue,
-      _ClinicalTableColumnId.statusStep,
-      _ClinicalTableColumnId.provider,
       _ClinicalTableColumnId.location,
-      _ClinicalTableColumnId.lastUpdated,
+      _ClinicalTableColumnId.provider,
+      _ClinicalTableColumnId.status,
+      _ClinicalTableColumnId.nextAction,
     ],
     ClinicalWorkspaceSection.completed => const <_ClinicalTableColumnId>[
       _ClinicalTableColumnId.patient,
       _ClinicalTableColumnId.queue,
-      _ClinicalTableColumnId.statusStep,
       _ClinicalTableColumnId.encounterType,
-      _ClinicalTableColumnId.provider,
-      _ClinicalTableColumnId.lastUpdated,
+      _ClinicalTableColumnId.status,
+      _ClinicalTableColumnId.nextAction,
     ],
   };
 }
@@ -504,6 +513,8 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
       columnVisibilityStorageKey: 'clinical_${section.name}',
       columnWidthStorageKey: 'clinical_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      displayMode: AppListTableDisplayMode.adaptive,
       isLoading: state.isRefreshing,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -524,6 +535,7 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
       ),
       search: _worklistSearch(
         context,
+        ref,
         controller,
         searchController,
         filters: state.query.filters,
@@ -542,7 +554,7 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
             in _availableClinicalTableColumns)
           _clinicalDataColumn(context, column),
       ],
-      mobileItemBuilder: _clinicalWorklistMobileItemBuilder,
+      mobileItemBuilder: _clinicalWorklistMobileItemBuilderFor(section),
       itemKeyBuilder: _clinicalWorklistItemKey,
       rowColorBuilder: _clinicalRowColor,
     );
@@ -551,6 +563,7 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
 
 AppListTableSearch<ClinicalWorklistEntry> _worklistSearch(
   BuildContext context,
+  WidgetRef ref,
   ClinicalWorkspaceController controller,
   TextEditingController searchController, {
   required ClinicalWorklistFilters filters,
@@ -566,13 +579,24 @@ AppListTableSearch<ClinicalWorklistEntry> _worklistSearch(
     hintText: l10n.clinicalSearchHint,
     clearLabel: l10n.opdClearFiltersAction,
     matcher: (ClinicalWorklistEntry item, String query) {
-      return item.matchesSearch(query, filters: filters);
+      if (item.matchesSearch(query, filters: filters)) {
+        return true;
+      }
+      final String needle = query.trim().toLowerCase();
+      if (needle.isEmpty) {
+        return true;
+      }
+      return clinicalWorklistSearchHaystack(
+        context,
+        ref,
+        item,
+      ).any((String value) => value.toLowerCase().contains(needle));
     },
     onChanged: onSearchChanged,
     onSubmitted: onSearchSubmitted,
     showAdvancedFilterButton: true,
     advancedFilterButtonLabel: l10n.clinicalFiltersLabel,
-    advancedFilterTitle: l10n.clinicalFiltersLabel,
+    advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
     advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
     advancedFilterResetLabel: l10n.opdClearFiltersAction,
     textFilters: _clinicalTextFilters(l10n),
@@ -610,7 +634,8 @@ enum _ClinicalTableColumnId {
   phone,
   ageSex,
   queue,
-  statusStep,
+  status,
+  nextAction,
   provider,
   lastUpdated,
   encounter,
@@ -619,15 +644,6 @@ enum _ClinicalTableColumnId {
   location,
 }
 
-const List<_ClinicalTableColumnId> _defaultClinicalTableColumns =
-    <_ClinicalTableColumnId>[
-      _ClinicalTableColumnId.patient,
-      _ClinicalTableColumnId.queue,
-      _ClinicalTableColumnId.statusStep,
-      _ClinicalTableColumnId.provider,
-      _ClinicalTableColumnId.lastUpdated,
-    ];
-
 const List<_ClinicalTableColumnId> _availableClinicalTableColumns =
     <_ClinicalTableColumnId>[
       _ClinicalTableColumnId.patient,
@@ -635,7 +651,8 @@ const List<_ClinicalTableColumnId> _availableClinicalTableColumns =
       _ClinicalTableColumnId.phone,
       _ClinicalTableColumnId.ageSex,
       _ClinicalTableColumnId.queue,
-      _ClinicalTableColumnId.statusStep,
+      _ClinicalTableColumnId.status,
+      _ClinicalTableColumnId.nextAction,
       _ClinicalTableColumnId.provider,
       _ClinicalTableColumnId.lastUpdated,
       _ClinicalTableColumnId.encounter,
@@ -655,7 +672,8 @@ String _clinicalTableColumnLabel(
     _ClinicalTableColumnId.phone => l10n.patientsPhoneLabel,
     _ClinicalTableColumnId.ageSex => l10n.patientsAgeSexColumnLabel,
     _ClinicalTableColumnId.queue => l10n.clinicalSourceQueueLabel,
-    _ClinicalTableColumnId.statusStep => l10n.clinicalStepColumnLabel,
+    _ClinicalTableColumnId.status => l10n.opdStatusColumnLabel,
+    _ClinicalTableColumnId.nextAction => l10n.clinicalNextActionColumnLabel,
     _ClinicalTableColumnId.provider => l10n.opdProviderColumnLabel,
     _ClinicalTableColumnId.lastUpdated => l10n.clinicalLastUpdatedLabel,
     _ClinicalTableColumnId.encounter => l10n.clinicalEncounterNumberLabel,
@@ -675,10 +693,16 @@ AppListTableColumn<ClinicalWorklistEntry> _clinicalDataColumn(
   return AppListTableColumn<ClinicalWorklistEntry>(
     id: column.name,
     label: label,
+    alwaysVisible:
+        column == _ClinicalTableColumnId.status ||
+        column == _ClinicalTableColumnId.nextAction,
     sortComparator: _clinicalSortComparator(column),
     cellBuilder: (BuildContext context, ClinicalWorklistEntry item) {
       return switch (column) {
-        _ClinicalTableColumnId.patient => _ClinicalPatientCell(item: item),
+        _ClinicalTableColumnId.patient => AppListItemText(
+          title: item.displayTitle,
+          subtitle: item.worklistPatientSecondaryLine,
+        ),
         _ClinicalTableColumnId.patientId => Text(
           item.apiPatientId ?? l10n.profileUnknownValue,
           maxLines: 1,
@@ -695,7 +719,10 @@ AppListTableColumn<ClinicalWorklistEntry> _clinicalDataColumn(
           overflow: TextOverflow.ellipsis,
         ),
         _ClinicalTableColumnId.queue => _ClinicalQueueCell(item: item),
-        _ClinicalTableColumnId.statusStep => _ClinicalStatusCell(item: item),
+        _ClinicalTableColumnId.status => _ClinicalStatusColumnCell(item: item),
+        _ClinicalTableColumnId.nextAction => _ClinicalWorklistNextActionCell(
+          item: item,
+        ),
         _ClinicalTableColumnId.provider => Text(
           _clinicalProviderLabel(l10n, item),
           maxLines: 1,
@@ -757,9 +784,13 @@ AppListTableSortComparator<ClinicalWorklistEntry> _clinicalSortComparator(
         left.sourceQueue,
         right.sourceQueue,
       ),
-      _ClinicalTableColumnId.statusStep => appListTableCompareText(
-        left.stage ?? left.status ?? left.nextStep,
-        right.stage ?? right.status ?? right.nextStep,
+      _ClinicalTableColumnId.status => appListTableCompareText(
+        left.stage ?? left.status,
+        right.stage ?? right.status,
+      ),
+      _ClinicalTableColumnId.nextAction => appListTableCompareText(
+        left.nextStep,
+        right.nextStep,
       ),
       _ClinicalTableColumnId.provider => appListTableCompareText(
         left.providerDisplayName,
@@ -830,8 +861,8 @@ class _ClinicalQueueCell extends StatelessWidget {
   }
 }
 
-class _ClinicalStatusCell extends StatelessWidget {
-  const _ClinicalStatusCell({required this.item});
+class _ClinicalStatusColumnCell extends StatelessWidget {
+  const _ClinicalStatusColumnCell({required this.item});
 
   final ClinicalWorklistEntry item;
 
@@ -844,9 +875,9 @@ class _ClinicalStatusCell extends StatelessWidget {
       runSpacing: Theme.of(context).spacing.xs,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
-        _ClinicalStatusText(status: _entryStatus(item)),
+        AppWorkspaceStatusBadge(status: _entryStatus(item)),
         if (item.isUrgent)
-          _ClinicalStatusText(
+          AppWorkspaceStatusBadge(
             status: AppWorkspaceStatus(
               label: l10n.clinicalUrgentSummaryLabel,
               tone: AppWorkspaceStatusTone.error,
@@ -854,7 +885,7 @@ class _ClinicalStatusCell extends StatelessWidget {
             ),
           ),
         if (item.resultsReady)
-          _ClinicalStatusText(
+          AppWorkspaceStatusBadge(
             status: AppWorkspaceStatus(
               label: l10n.clinicalResultsReadySummaryLabel,
               tone: AppWorkspaceStatusTone.success,
@@ -864,6 +895,328 @@ class _ClinicalStatusCell extends StatelessWidget {
       ],
     );
   }
+}
+
+class _ClinicalWorklistNextActionCell extends ConsumerWidget {
+  const _ClinicalWorklistNextActionCell({required this.item});
+
+  final ClinicalWorklistEntry item;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final String encounterId = item.apiEncounterId.trim();
+    if (encounterId.isNotEmpty) {
+      final WorkflowActionContext actionContext = WorkflowActionContext(
+        encounterId: encounterId,
+        patientId: item.apiPatientId,
+        admissionId: item.apiAdmissionId,
+        stage: item.stage ?? item.status,
+        nextStep: item.nextStep,
+        sourceModule: _clinicalWorkflowSourceModule(item.sourceQueue),
+      );
+      final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+      final WorkflowAction? action = WorkflowActionRegistry.instance.resolve(
+        context,
+        actionContext,
+        policy: policy,
+      );
+      if (action != null) {
+        return WorkflowActionButton(
+          encounterId: encounterId,
+          patientId: item.apiPatientId,
+          admissionId: item.apiAdmissionId,
+          stage: item.stage ?? item.status,
+          nextStep: item.nextStep,
+          sourceModule: _clinicalWorkflowSourceModule(item.sourceQueue),
+          compact: true,
+        );
+      }
+    }
+
+    final String dispositionLabel = clinicalDispositionActionLabel(
+      l10n,
+      sourceQueue: item.sourceQueue,
+      status: item.status,
+      stage: item.stage,
+      location: item.currentLocation,
+      hasAdmission: item.admissionId?.trim().isNotEmpty ?? false,
+    );
+    final bool canCompleteDisposition =
+        !item.isTerminal &&
+        isClinicalDispositionActionAvailable(
+          sourceQueue: item.sourceQueue,
+          status: item.status,
+          stage: item.stage,
+          location: item.currentLocation,
+          hasAdmission: item.admissionId?.trim().isNotEmpty ?? false,
+          hasOpdFlow: item.opdFlowApiId?.trim().isNotEmpty ?? false,
+        );
+    if (canCompleteDisposition) {
+      return AppAccessActionGate(
+        requirement: _ClinicalWorkspaceContentState._writeRequirement,
+        builder: (BuildContext context, bool isAllowed) {
+          return _ClinicalCompactFallbackAction(
+            label: dispositionLabel,
+            icon: Icons.task_alt_outlined,
+            enabled: isAllowed,
+            onPressed: isAllowed
+                ? () => _openCompleteDispositionDialog(
+                    context,
+                    ref,
+                    ref.read(clinicalWorkspaceControllerProvider.notifier),
+                    entry: item,
+                    actionLabel: dispositionLabel,
+                  )
+                : null,
+          );
+        },
+      );
+    }
+
+    return _ClinicalCompactFallbackAction(
+      label: l10n.clinicalOpenEncounterAction,
+      icon: Icons.open_in_new,
+      onPressed: () => _openClinicalEntryDialog(context, ref, item),
+    );
+  }
+}
+
+class _ClinicalCompactFallbackAction extends StatelessWidget {
+  const _ClinicalCompactFallbackAction({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    this.enabled = true,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color primaryColor = enabled
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurface.withValues(alpha: 0.38);
+
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: label,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: enabled ? onPressed : null,
+        child: MouseRegion(
+          cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: theme.spacing.xs,
+              vertical: 2,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Icon(icon, size: 14, color: primaryColor),
+                SizedBox(width: theme.spacing.xs),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: primaryColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (!enabled) ...<Widget>[
+                  SizedBox(width: theme.spacing.xs),
+                  Icon(
+                    Icons.lock_outlined,
+                    size: 10,
+                    color: primaryColor.withValues(alpha: 0.5),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+String? _clinicalWorkflowSourceModule(String sourceQueue) {
+  return switch (sourceQueue.toUpperCase()) {
+    'OPD' => 'opd',
+    'TRIAGE' => 'triage',
+    'IPD' || 'ADMISSION' => 'ipd',
+    _ => null,
+  };
+}
+
+List<String> clinicalWorklistSearchHaystack(
+  BuildContext context,
+  WidgetRef ref,
+  ClinicalWorklistEntry item,
+) {
+  final AppLocalizations l10n = context.l10n;
+  final List<String> values = <String>[
+    item.displayTitle,
+    item.worklistPatientSecondaryLine ?? '',
+    item.apiPatientId ?? '',
+    item.patientPhone ?? '',
+    _clinicalWorklistAgeSexLabel(context, item),
+    _apiLabel(item.sourceQueue),
+    _entryStatus(item).label,
+    _clinicalProviderLabel(l10n, item),
+    _dateTimeLabel(context, item.updatedAt ?? item.startedAt),
+    item.apiEncounterId,
+    item.apiAdmissionId ?? '',
+    _apiLabel(item.encounterType ?? ''),
+    item.currentLocation ?? '',
+    if (item.isUrgent) l10n.clinicalUrgentSummaryLabel,
+    if (item.resultsReady) l10n.clinicalResultsReadySummaryLabel,
+    l10n.clinicalOpenEncounterAction,
+  ];
+
+  final String encounterId = item.apiEncounterId.trim();
+  if (encounterId.isNotEmpty) {
+    final String workflowLabel = workflowActionLabel(
+      context,
+      ref,
+      WorkflowActionContext(
+        encounterId: encounterId,
+        patientId: item.apiPatientId,
+        admissionId: item.apiAdmissionId,
+        stage: item.stage ?? item.status,
+        nextStep: item.nextStep,
+        sourceModule: _clinicalWorkflowSourceModule(item.sourceQueue),
+      ),
+    );
+    if (workflowLabel != l10n.profileUnknownValue) {
+      values.add(workflowLabel);
+    }
+  }
+
+  if (!item.isTerminal &&
+      isClinicalDispositionActionAvailable(
+        sourceQueue: item.sourceQueue,
+        status: item.status,
+        stage: item.stage,
+        location: item.currentLocation,
+        hasAdmission: item.admissionId?.trim().isNotEmpty ?? false,
+        hasOpdFlow: item.opdFlowApiId?.trim().isNotEmpty ?? false,
+      )) {
+    values.add(
+      clinicalDispositionActionLabel(
+        l10n,
+        sourceQueue: item.sourceQueue,
+        status: item.status,
+        stage: item.stage,
+        location: item.currentLocation,
+        hasAdmission: item.admissionId?.trim().isNotEmpty ?? false,
+      ),
+    );
+  }
+
+  return values
+      .map((String value) => value.trim())
+      .where((String value) => value.isNotEmpty)
+      .toList(growable: false);
+}
+
+Widget Function(BuildContext context, ClinicalWorklistEntry item)
+_clinicalWorklistMobileItemBuilderFor(ClinicalWorkspaceSection section) {
+  return (BuildContext context, ClinicalWorklistEntry item) {
+    return _ClinicalWorklistMobileItem(section: section, item: item);
+  };
+}
+
+class _ClinicalWorklistMobileItem extends ConsumerWidget {
+  const _ClinicalWorklistMobileItem({
+    required this.section,
+    required this.item,
+  });
+
+  final ClinicalWorkspaceSection section;
+  final ClinicalWorklistEntry item;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: AppListItemText(
+                  title: item.displayTitle,
+                  subtitle: item.worklistPatientSecondaryLine,
+                ),
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Flexible(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: AppWorkspaceStatusBadge(status: _entryStatus(item)),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacing.xs),
+          ..._clinicalMobileDetailWidgets(context, l10n, section, item),
+          SizedBox(height: theme.spacing.xs),
+          _ClinicalWorklistNextActionCell(item: item),
+        ],
+      ),
+    );
+  }
+}
+
+List<Widget> _clinicalMobileDetailWidgets(
+  BuildContext context,
+  AppLocalizations l10n,
+  ClinicalWorkspaceSection section,
+  ClinicalWorklistEntry item,
+) {
+  final ThemeData theme = Theme.of(context);
+  final TextStyle? detailStyle = theme.textTheme.bodySmall?.copyWith(
+    color: theme.colorScheme.onSurfaceVariant,
+  );
+
+  return switch (section) {
+    ClinicalWorkspaceSection.resultsReady => <Widget>[
+      Text(_apiLabel(item.encounterType ?? ''), style: detailStyle),
+      _ClinicalQueueCell(item: item),
+    ],
+    ClinicalWorkspaceSection.inConsultation => <Widget>[
+      Text(
+        item.currentLocation ?? l10n.profileUnknownValue,
+        style: detailStyle,
+      ),
+      Text(_clinicalProviderLabel(l10n, item), style: detailStyle),
+    ],
+    ClinicalWorkspaceSection.completed => <Widget>[
+      _ClinicalQueueCell(item: item),
+      Text(_apiLabel(item.encounterType ?? ''), style: detailStyle),
+    ],
+    _ => <Widget>[
+      _ClinicalQueueCell(item: item),
+      Text(_clinicalProviderLabel(l10n, item), style: detailStyle),
+    ],
+  };
 }
 
 class _ClinicalStatusText extends StatelessWidget {
@@ -902,36 +1255,6 @@ class _ClinicalStatusText extends StatelessWidget {
       ),
     );
   }
-}
-
-Widget _clinicalWorklistMobileItemBuilder(
-  BuildContext context,
-  ClinicalWorklistEntry item,
-) {
-  final ThemeData theme = Theme.of(context);
-  final AppLocalizations l10n = context.l10n;
-  return Padding(
-    padding: EdgeInsets.symmetric(
-      horizontal: theme.spacing.sm,
-      vertical: theme.spacing.xs,
-    ),
-    child: AppListItemRow(
-      title: item.displayTitle,
-      subtitle: item.worklistPatientSecondaryLine,
-      padding: EdgeInsets.zero,
-      details: <Widget>[
-        _ClinicalQueueCell(item: item),
-        _ClinicalStatusCell(item: item),
-        Text(
-          _clinicalProviderLabel(l10n, item),
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-      trailing: Icon(Icons.chevron_right, size: theme.appTokens.listIconSize),
-    ),
-  );
 }
 
 LocalKey _clinicalWorklistItemKey(ClinicalWorklistEntry item) {
@@ -2043,39 +2366,6 @@ class _ClinicalPharmacyOrderItemRow extends StatelessWidget {
           _ClinicalInfoGrid(fields: facts),
         ],
       ),
-    );
-  }
-}
-
-class _ClinicalPatientCell extends StatelessWidget {
-  const _ClinicalPatientCell({required this.item});
-
-  final ClinicalWorklistEntry item;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text(
-          item.displayTitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        if (item.worklistPatientSecondaryLine != null)
-          Text(
-            item.worklistPatientSecondaryLine!,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-      ],
     );
   }
 }

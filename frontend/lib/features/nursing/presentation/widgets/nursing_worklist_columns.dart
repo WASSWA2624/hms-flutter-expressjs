@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_patient_cell.dart';
+import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_actions.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -17,42 +18,42 @@ List<AppListTableColumn<NursingWorkItem>> nursingColumnsForScope(
       nursingPriorityColumn(l10n),
       nursingLocationColumn(l10n),
       nursingStatusColumn(l10n),
-      nursingDueTimeColumn(l10n),
+      nursingNextActionColumn(l10n, scope),
     ],
     NursingQueueScope.medicationDue => <AppListTableColumn<NursingWorkItem>>[
       nursingPatientColumn(l10n),
       nursingMedicationDueCountColumn(l10n),
       nursingLocationColumn(l10n),
-      nursingDueTimeColumn(l10n),
       nursingStatusColumn(l10n),
+      nursingNextActionColumn(l10n, scope),
     ],
     NursingQueueScope.handoverPending => <AppListTableColumn<NursingWorkItem>>[
       nursingPatientColumn(l10n),
       nursingResponsibleNurseColumn(l10n),
       nursingLocationColumn(l10n),
       nursingStatusColumn(l10n),
-      nursingObservationsColumn(l10n),
+      nursingNextActionColumn(l10n, scope),
     ],
     NursingQueueScope.transferPending => <AppListTableColumn<NursingWorkItem>>[
       nursingPatientColumn(l10n),
       nursingLocationColumn(l10n),
       nursingTransferStatusColumn(l10n),
-      nursingAdmissionColumn(l10n),
       nursingStatusColumn(l10n),
+      nursingNextActionColumn(l10n, scope),
     ],
     NursingQueueScope.dischargePending => <AppListTableColumn<NursingWorkItem>>[
       nursingPatientColumn(l10n),
       nursingLocationColumn(l10n),
       nursingDischargeStatusColumn(l10n),
-      nursingAdmissionColumn(l10n),
-      nursingDueTimeColumn(l10n),
+      nursingStatusColumn(l10n),
+      nursingNextActionColumn(l10n, scope),
     ],
     _ => <AppListTableColumn<NursingWorkItem>>[
       nursingPatientColumn(l10n),
       nursingLocationColumn(l10n),
       nursingTaskTypeColumn(l10n),
-      nursingPriorityColumn(l10n),
       nursingStatusColumn(l10n),
+      nursingNextActionColumn(l10n, scope),
     ],
   };
 }
@@ -61,33 +62,58 @@ List<AppListTableColumn<NursingWorkItem>> nursingColumnChoicesForScope(
   AppLocalizations l10n,
   NursingQueueScope scope,
 ) {
-  final Set<String> defaultLabels = nursingColumnsForScope(
+  final Set<String> defaultIds = nursingColumnsForScope(
     l10n,
     scope,
-  ).map((AppListTableColumn<NursingWorkItem> c) => c.label).toSet();
+  ).map((AppListTableColumn<NursingWorkItem> c) => c.id ?? c.label).toSet();
+
+  final List<AppListTableColumn<NursingWorkItem>> pool =
+      <AppListTableColumn<NursingWorkItem>>[
+        nursingPatientColumn(l10n),
+        nursingLocationColumn(l10n),
+        nursingTaskTypeColumn(l10n),
+        nursingPriorityColumn(l10n),
+        nursingStatusColumn(l10n),
+        nursingAdmissionColumn(l10n),
+        nursingDueTimeColumn(l10n),
+        nursingResponsibleNurseColumn(l10n),
+        nursingObservationsColumn(l10n),
+        nursingMedicationDueCountColumn(l10n),
+        nursingTransferStatusColumn(l10n),
+        nursingDischargeStatusColumn(l10n),
+      ];
+
   return <AppListTableColumn<NursingWorkItem>>[
     ...nursingColumnsForScope(l10n, scope),
-    if (!defaultLabels.contains(l10n.nursingAdmissionColumnLabel))
-      nursingAdmissionColumn(l10n),
-    if (!defaultLabels.contains(l10n.nursingDueTimeColumnLabel))
-      nursingDueTimeColumn(l10n),
-    if (!defaultLabels.contains(l10n.nursingResponsibleNurseColumnLabel))
-      nursingResponsibleNurseColumn(l10n),
-    if (!defaultLabels.contains(l10n.nursingObservationsTitle))
-      nursingObservationsColumn(l10n),
-    if (!defaultLabels.contains(l10n.nursingTaskTypeColumnLabel))
-      nursingTaskTypeColumn(l10n),
-    if (!defaultLabels.contains(l10n.nursingPriorityColumnLabel))
-      nursingPriorityColumn(l10n),
-    if (!defaultLabels.contains(l10n.nursingLocationColumnLabel))
-      nursingLocationColumn(l10n),
+    for (final AppListTableColumn<NursingWorkItem> column in pool)
+      if (!defaultIds.contains(column.id ?? column.label)) column,
   ];
+}
+
+AppListTableColumn<NursingWorkItem> nursingNextActionColumn(
+  AppLocalizations l10n,
+  NursingQueueScope scope,
+) {
+  return AppListTableColumn<NursingWorkItem>(
+    id: 'next_action',
+    label: l10n.nursingNextActionColumnLabel,
+    alwaysVisible: true,
+    sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
+        appListTableCompareText(
+          nursingResolveNextActionLabel(l10n, left, scope),
+          nursingResolveNextActionLabel(l10n, right, scope),
+        ),
+    cellBuilder: (BuildContext context, NursingWorkItem item) {
+      return NursingNextActionCell(item: item, scope: scope);
+    },
+  );
 }
 
 AppListTableColumn<NursingWorkItem> nursingPatientColumn(
   AppLocalizations l10n,
 ) {
   return AppListTableColumn<NursingWorkItem>(
+    id: 'patient',
     label: l10n.opdPatientColumnLabel,
     sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
         appListTableCompareText(left.displayTitle, right.displayTitle),
@@ -101,6 +127,7 @@ AppListTableColumn<NursingWorkItem> nursingLocationColumn(
   AppLocalizations l10n,
 ) {
   return AppListTableColumn<NursingWorkItem>(
+    id: 'location',
     label: l10n.nursingLocationColumnLabel,
     sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
         appListTableCompareText(left.locationLabel, right.locationLabel),
@@ -118,6 +145,7 @@ AppListTableColumn<NursingWorkItem> nursingTaskTypeColumn(
   AppLocalizations l10n,
 ) {
   return AppListTableColumn<NursingWorkItem>(
+    id: 'task_type',
     label: l10n.nursingTaskTypeColumnLabel,
     sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
         appListTableCompareText(left.taskTypeCode, right.taskTypeCode),
@@ -131,6 +159,7 @@ AppListTableColumn<NursingWorkItem> nursingPriorityColumn(
   AppLocalizations l10n,
 ) {
   return AppListTableColumn<NursingWorkItem>(
+    id: 'priority',
     label: l10n.nursingPriorityColumnLabel,
     sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
         appListTableCompareText(left.priorityCode, right.priorityCode),
@@ -144,6 +173,7 @@ AppListTableColumn<NursingWorkItem> nursingPriorityColumn(
 
 AppListTableColumn<NursingWorkItem> nursingStatusColumn(AppLocalizations l10n) {
   return AppListTableColumn<NursingWorkItem>(
+    id: 'status',
     label: l10n.opdStatusColumnLabel,
     sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
         appListTableCompareText(left.admissionStatus, right.admissionStatus),
@@ -157,6 +187,7 @@ AppListTableColumn<NursingWorkItem> nursingAdmissionColumn(
   AppLocalizations l10n,
 ) {
   return AppListTableColumn<NursingWorkItem>(
+    id: 'admission',
     label: l10n.nursingAdmissionColumnLabel,
     sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
         appListTableCompareText(left.displayId, right.displayId),
@@ -170,6 +201,7 @@ AppListTableColumn<NursingWorkItem> nursingDueTimeColumn(
   AppLocalizations l10n,
 ) {
   return AppListTableColumn<NursingWorkItem>(
+    id: 'due_time',
     label: l10n.nursingDueTimeColumnLabel,
     sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
         appListTableCompareDateTime(left.dueReferenceAt, right.dueReferenceAt),
@@ -183,6 +215,7 @@ AppListTableColumn<NursingWorkItem> nursingResponsibleNurseColumn(
   AppLocalizations l10n,
 ) {
   return AppListTableColumn<NursingWorkItem>(
+    id: 'responsible_nurse',
     label: l10n.nursingResponsibleNurseColumnLabel,
     sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
         appListTableCompareText(
@@ -199,6 +232,7 @@ AppListTableColumn<NursingWorkItem> nursingObservationsColumn(
   AppLocalizations l10n,
 ) {
   return AppListTableColumn<NursingWorkItem>(
+    id: 'observations',
     label: l10n.nursingObservationsTitle,
     sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
         appListTableCompareDateTime(
@@ -215,6 +249,7 @@ AppListTableColumn<NursingWorkItem> nursingMedicationDueCountColumn(
   AppLocalizations l10n,
 ) {
   return AppListTableColumn<NursingWorkItem>(
+    id: 'medication_due_count',
     label: l10n.nursingMedicationDueSummaryLabel,
     sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
         left.medicationDueCount.compareTo(right.medicationDueCount),
@@ -228,6 +263,7 @@ AppListTableColumn<NursingWorkItem> nursingTransferStatusColumn(
   AppLocalizations l10n,
 ) {
   return AppListTableColumn<NursingWorkItem>(
+    id: 'transfer_status',
     label: l10n.nursingTransferPendingSummaryLabel,
     sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
         appListTableCompareText(left.transferStatus, right.transferStatus),
@@ -250,6 +286,7 @@ AppListTableColumn<NursingWorkItem> nursingDischargeStatusColumn(
   AppLocalizations l10n,
 ) {
   return AppListTableColumn<NursingWorkItem>(
+    id: 'discharge_status',
     label: l10n.dischargeStatusFilterLabel,
     sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
         appListTableCompareText(left.dischargeStatus, right.dischargeStatus),

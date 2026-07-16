@@ -928,13 +928,20 @@ class _PatientList extends ConsumerWidget {
       columnVisibilityStorageKey: 'patients_${section.name}',
       columnWidthStorageKey: 'patients_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      displayMode: AppListTableDisplayMode.adaptive,
       search: AppListTableSearch<Patient>(
         controller: searchController,
         semanticLabel: l10n.patientsSearchLabel,
         hintText: l10n.patientsSearchHint,
         clearLabel: l10n.patientsClearFiltersAction,
         matcher: (Patient patient, String query) {
-          return _matchesPatientTableSearch(context, patient, query);
+          return _matchesPatientTableSearch(
+            context,
+            patient,
+            query,
+            section: section,
+          );
         },
         onClear: () {
           unawaited(
@@ -949,6 +956,7 @@ class _PatientList extends ConsumerWidget {
         },
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.patientsAdvancedFiltersAction,
+        advancedFilterTitle: l10n.patientsAdvancedFiltersTitle,
         hasActiveFilters: _hasPatientAdvancedFilters(state.query),
         onAdvancedFilterPressed: () {
           unawaited(
@@ -959,9 +967,17 @@ class _PatientList extends ConsumerWidget {
       isLoading: state.isRefreshingList,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      columns: _columnsForSection(context, ref, section, l10n),
-      mobileItemBuilder: (_, Patient patient) =>
-          _PatientMobileRow(patient: patient),
+      columns: _defaultPatientColumns(context, ref, section, l10n),
+      columnChoices: _optionalPatientColumns(context, ref, section, l10n),
+      mobileItemBuilder: (BuildContext context, Patient patient) {
+        return _PatientMobileRow(
+          patient: patient,
+          section: section,
+          onNextAction: () {
+            unawaited(showPatientDetailDialog(context, ref, patient.id));
+          },
+        );
+      },
       itemKeyBuilder: (Patient patient) => ValueKey<String>(patient.id),
       onRowSelected: (Patient patient) async {
         await showPatientDetailDialog(context, ref, patient.id);
@@ -998,177 +1014,272 @@ class _PatientList extends ConsumerWidget {
   }
 }
 
-List<AppListTableColumn<Patient>> _columnsForSection(
+List<AppListTableColumn<Patient>> _defaultPatientColumns(
   BuildContext context,
   WidgetRef ref,
   PatientRegistrySection section,
   AppLocalizations l10n,
 ) {
-  final AppListTableColumn<Patient> numberCol = AppListTableColumn<Patient>(
-    label: l10n.patientsPatientNumberColumnLabel,
-    sortComparator: (Patient left, Patient right) => appListTableCompareText(
-      left.effectiveIdentifier ?? left.publicId,
-      right.effectiveIdentifier ?? right.publicId,
+  final Map<String, AppListTableColumn<Patient>> columns =
+      _patientColumnDefinitions(context, ref, section, l10n);
+  final List<String> ids = switch (section) {
+    PatientRegistrySection.all => <String>[
+      'patient',
+      'contact',
+      'alerts',
+      'status',
+      'next_action',
+    ],
+    PatientRegistrySection.active ||
+    PatientRegistrySection.admitted ||
+    PatientRegistrySection.balanceDue => <String>[
+      'patient',
+      'contact',
+      'visit',
+      'status',
+      'next_action',
+    ],
+  };
+  return ids.map((String id) => columns[id]!).toList(growable: false);
+}
+
+List<AppListTableColumn<Patient>> _optionalPatientColumns(
+  BuildContext context,
+  WidgetRef ref,
+  PatientRegistrySection section,
+  AppLocalizations l10n,
+) {
+  final Map<String, AppListTableColumn<Patient>> columns =
+      _patientColumnDefinitions(context, ref, section, l10n);
+  final List<String> ids = switch (section) {
+    PatientRegistrySection.all => <String>[
+      'visit',
+      'patient_number',
+      'age',
+      'gender',
+    ],
+    PatientRegistrySection.active ||
+    PatientRegistrySection.admitted ||
+    PatientRegistrySection.balanceDue => <String>[
+      'alerts',
+      'patient_number',
+      'age',
+      'gender',
+    ],
+  };
+  return ids.map((String id) => columns[id]!).toList(growable: false);
+}
+
+Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(
+  BuildContext context,
+  WidgetRef ref,
+  PatientRegistrySection section,
+  AppLocalizations l10n,
+) {
+  return <String, AppListTableColumn<Patient>>{
+    'patient': AppListTableColumn<Patient>(
+      id: 'patient',
+      label: l10n.patientsPatientColumnLabel,
+      alwaysVisible: true,
+      sortComparator: (Patient left, Patient right) => appListTableCompareText(
+        left.effectiveDisplayName,
+        right.effectiveDisplayName,
+      ),
+      cellBuilder: (_, Patient patient) => AppListItemText(
+        title: patient.effectiveDisplayName,
+        subtitle:
+            patient.effectiveIdentifier ??
+            patient.publicId ??
+            l10n.profileUnknownValue,
+      ),
     ),
-    cellBuilder: (_, Patient patient) => _PatientNumberCell(patient: patient),
-  );
-  final AppListTableColumn<Patient> nameCol = AppListTableColumn<Patient>(
-    label: l10n.patientsPatientColumnLabel,
-    sortComparator: (Patient left, Patient right) => appListTableCompareText(
-      left.effectiveDisplayName,
-      right.effectiveDisplayName,
+    'contact': AppListTableColumn<Patient>(
+      id: 'contact',
+      label: l10n.patientsPhoneIdentifierColumnLabel,
+      sortComparator: (Patient left, Patient right) => appListTableCompareText(
+        left.primaryPhone ?? left.primaryEmail,
+        right.primaryPhone ?? right.primaryEmail,
+      ),
+      cellBuilder: (_, Patient patient) =>
+          _PatientContactIdentifierCell(patient: patient),
     ),
-    cellBuilder: (_, Patient patient) => _PatientNameCell(patient: patient),
-  );
-  final AppListTableColumn<Patient> ageSexCol = AppListTableColumn<Patient>(
-    label: l10n.patientsAgeSexColumnLabel,
-    sortComparator: (Patient left, Patient right) =>
-        appListTableCompareDateTime(left.dateOfBirth, right.dateOfBirth),
-    cellBuilder: (_, Patient patient) => _AgeSexText(patient: patient),
-  );
-  final AppListTableColumn<Patient> phoneCol = AppListTableColumn<Patient>(
-    label: l10n.patientsPhoneIdentifierColumnLabel,
-    sortComparator: (Patient left, Patient right) => appListTableCompareText(
-      left.primaryPhone ?? left.primaryEmail,
-      right.primaryPhone ?? right.primaryEmail,
+    'alerts': AppListTableColumn<Patient>(
+      id: 'alerts',
+      label: l10n.patientsAlertColumnLabel,
+      sortComparator: (Patient left, Patient right) => appListTableCompareText(
+        _patientAlertSortValue(left),
+        _patientAlertSortValue(right),
+      ),
+      cellBuilder: (_, Patient patient) => _PatientAlertCell(patient: patient),
     ),
-    cellBuilder: (_, Patient patient) =>
-        _PatientContactIdentifierCell(patient: patient),
-  );
-  final AppListTableColumn<Patient> alertCol = AppListTableColumn<Patient>(
-    label: l10n.patientsAlertColumnLabel,
-    sortComparator: (Patient left, Patient right) => appListTableCompareText(
-      _patientAlertSortValue(left),
-      _patientAlertSortValue(right),
+    'visit': AppListTableColumn<Patient>(
+      id: 'visit',
+      label: l10n.patientsVisitColumnLabel,
+      sortComparator: (Patient left, Patient right) =>
+          appListTableCompareDateTime(
+            left.currentVisit?.occurredAt,
+            right.currentVisit?.occurredAt,
+          ),
+      cellBuilder: (_, Patient patient) => _VisitContextCell(patient: patient),
     ),
-    cellBuilder: (_, Patient patient) => _PatientAlertCell(patient: patient),
-  );
-  final AppListTableColumn<Patient> visitCol = AppListTableColumn<Patient>(
-    label: l10n.patientsVisitColumnLabel,
-    sortComparator: (Patient left, Patient right) =>
-        appListTableCompareDateTime(
-          left.currentVisit?.occurredAt,
-          right.currentVisit?.occurredAt,
-        ),
-    cellBuilder: (_, Patient patient) => _VisitContextCell(patient: patient),
-  );
-  final AppListTableColumn<Patient> statusCol = AppListTableColumn<Patient>(
-    label: l10n.patientsStatusColumnLabel,
-    sortComparator: (Patient left, Patient right) => appListTableCompareText(
-      left.isActive ? 'active' : 'inactive',
-      right.isActive ? 'active' : 'inactive',
-    ),
-    cellBuilder: (BuildContext context, Patient patient) =>
-        _patientActiveStatusText(context, patient.isActive),
-  );
-  final AppListTableColumn<Patient> nextActionCol = AppListTableColumn<Patient>(
-    label: l10n.patientsNextActionColumnLabel,
-    cellBuilder: (_, Patient patient) => _NextActionCell(
-      patient: patient,
-      onPressed: () {
-        unawaited(showPatientDetailDialog(context, ref, patient.id));
+    'status': AppListTableColumn<Patient>(
+      id: 'status',
+      label: l10n.patientsStatusColumnLabel,
+      alwaysVisible: true,
+      sortComparator: (Patient left, Patient right) => appListTableCompareText(
+        _patientRegistryStatusLabel(context, left, section),
+        _patientRegistryStatusLabel(context, right, section),
+      ),
+      cellBuilder: (BuildContext context, Patient patient) {
+        return _PatientRegistryStatusBadge(patient: patient, section: section);
       },
     ),
+    'next_action': AppListTableColumn<Patient>(
+      id: 'next_action',
+      label: l10n.patientsNextActionColumnLabel,
+      alwaysVisible: true,
+      cellBuilder: (_, Patient patient) => _NextActionCell(
+        patient: patient,
+        onPressed: () {
+          unawaited(showPatientDetailDialog(context, ref, patient.id));
+        },
+      ),
+    ),
+    'patient_number': AppListTableColumn<Patient>(
+      id: 'patient_number',
+      label: l10n.patientsPatientNumberColumnLabel,
+      sortComparator: (Patient left, Patient right) => appListTableCompareText(
+        left.effectiveIdentifier ?? left.publicId,
+        right.effectiveIdentifier ?? right.publicId,
+      ),
+      cellBuilder: (_, Patient patient) => Text(
+        patient.effectiveIdentifier ??
+            patient.publicId ??
+            l10n.profileUnknownValue,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
+    'age': AppListTableColumn<Patient>(
+      id: 'age',
+      label: l10n.patientsAgeColumnLabel,
+      sortComparator: (Patient left, Patient right) =>
+          appListTableCompareDateTime(left.dateOfBirth, right.dateOfBirth),
+      cellBuilder: (BuildContext context, Patient patient) => Text(
+        _patientAgeLabel(context, patient.dateOfBirth),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
+    'gender': AppListTableColumn<Patient>(
+      id: 'gender',
+      label: l10n.patientsGenderColumnLabel,
+      sortComparator: (Patient left, Patient right) =>
+          appListTableCompareText(left.gender, right.gender),
+      cellBuilder: (BuildContext context, Patient patient) => Text(
+        patient.gender == null
+            ? l10n.profileUnknownValue
+            : _genderLabel(l10n, patient.gender!),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    ),
+  };
+}
+
+class _PatientRegistryStatusBadge extends StatelessWidget {
+  const _PatientRegistryStatusBadge({
+    required this.patient,
+    required this.section,
+  });
+
+  final Patient patient;
+  final PatientRegistrySection section;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppWorkspaceStatusBadge(
+      status: _patientRegistryStatus(context, patient, section),
+    );
+  }
+}
+
+AppWorkspaceStatus _patientRegistryStatus(
+  BuildContext context,
+  Patient patient,
+  PatientRegistrySection section,
+) {
+  final AppLocalizations l10n = context.l10n;
+
+  if (patient.requiresCompletion) {
+    return AppWorkspaceStatus(
+      label: l10n.patientsRegistrationIncompleteValue,
+      tone: AppWorkspaceStatusTone.warning,
+      icon: Icons.error_outline,
+    );
+  }
+
+  final PatientVisitContext? visit = patient.currentVisit;
+
+  if (section == PatientRegistrySection.admitted &&
+      visit != null &&
+      visit.kind == 'admission' &&
+      visit.status != null) {
+    return AppWorkspaceStatus(
+      label: _apiLabel(visit.status!),
+      tone: appTriageToneForValue(visit.status),
+      icon: Icons.local_hospital_outlined,
+    );
+  }
+
+  if (section == PatientRegistrySection.balanceDue && visit != null) {
+    if (visit.status != null) {
+      return AppWorkspaceStatus(
+        label: _apiLabel(visit.status!),
+        tone: AppWorkspaceStatusTone.warning,
+        icon: Icons.account_balance_wallet_outlined,
+      );
+    }
+  }
+
+  if (!patient.isActive) {
+    return AppWorkspaceStatus(
+      label: l10n.patientsInactiveFilter,
+      tone: AppWorkspaceStatusTone.neutral,
+      icon: Icons.block_outlined,
+    );
+  }
+
+  return AppWorkspaceStatus(
+    label: l10n.patientsActiveFilter,
+    tone: AppWorkspaceStatusTone.success,
+    icon: Icons.check_circle_outline,
   );
-
-  switch (section) {
-    case PatientRegistrySection.all:
-      return <AppListTableColumn<Patient>>[
-        numberCol,
-        nameCol,
-        ageSexCol,
-        phoneCol,
-        alertCol,
-        visitCol,
-        statusCol,
-        nextActionCol,
-      ];
-    case PatientRegistrySection.active:
-      return <AppListTableColumn<Patient>>[
-        numberCol,
-        nameCol,
-        ageSexCol,
-        phoneCol,
-        alertCol,
-        visitCol,
-        nextActionCol,
-      ];
-    case PatientRegistrySection.admitted:
-      return <AppListTableColumn<Patient>>[
-        numberCol,
-        nameCol,
-        ageSexCol,
-        phoneCol,
-        alertCol,
-        visitCol,
-        nextActionCol,
-      ];
-    case PatientRegistrySection.balanceDue:
-      return <AppListTableColumn<Patient>>[
-        numberCol,
-        nameCol,
-        ageSexCol,
-        phoneCol,
-        visitCol,
-        statusCol,
-        nextActionCol,
-      ];
-  }
 }
 
-class _PatientNameCell extends StatelessWidget {
-  const _PatientNameCell({required this.patient});
-
-  final Patient patient;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      patient.effectiveDisplayName,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: Theme.of(context).textTheme.titleSmall,
-    );
-  }
+String _patientRegistryStatusLabel(
+  BuildContext context,
+  Patient patient,
+  PatientRegistrySection section,
+) {
+  return _patientRegistryStatus(context, patient, section).label;
 }
 
-class _PatientNumberCell extends StatelessWidget {
-  const _PatientNumberCell({required this.patient});
-
-  final Patient patient;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return Text(
-      patient.effectiveIdentifier ??
-          patient.publicId ??
-          l10n.profileUnknownValue,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-    );
-  }
+String _patientNextActionLabel(AppLocalizations l10n, Patient patient) {
+  return patient.requiresCompletion
+      ? l10n.patientsCompleteRecordAction
+      : l10n.patientsOpenRecordAction;
 }
 
-class _AgeSexText extends StatelessWidget {
-  const _AgeSexText({required this.patient});
+String? _visitTitleLine(PatientVisitContext visit) {
+  return _joinDisplay(<String?>[
+    visit.title,
+    visit.status == null ? null : _apiLabel(visit.status!),
+  ]);
+}
 
-  final Patient patient;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final String age = _patientAgeLabel(context, patient.dateOfBirth);
-    final String sex = patient.gender == null
-        ? l10n.profileUnknownValue
-        : _genderLabel(l10n, patient.gender!);
-
-    return Text(
-      _ageSexLabel(age, sex),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-    );
-  }
+bool _sectionShowsVisitByDefault(PatientRegistrySection section) {
+  return section != PatientRegistrySection.all;
 }
 
 Patient? _cachedPatientFromState(
@@ -1329,58 +1440,57 @@ class _NextActionCell extends StatelessWidget {
 }
 
 class _PatientMobileRow extends StatelessWidget {
-  const _PatientMobileRow({required this.patient});
+  const _PatientMobileRow({
+    required this.patient,
+    required this.section,
+    required this.onNextAction,
+  });
 
   final Patient patient;
+  final PatientRegistrySection section;
+  final VoidCallback onNextAction;
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final l10n = context.l10n;
+    final AppLocalizations l10n = context.l10n;
+    final List<Widget> details = <Widget>[
+      _PatientRegistryStatusBadge(patient: patient, section: section),
+      if (patient.hasAllergyAlert || patient.requiresCompletion)
+        _PatientAlertCell(patient: patient),
+    ];
+    if (_sectionShowsVisitByDefault(section) && patient.currentVisit != null) {
+      details.add(_VisitContextCell(patient: patient));
+    }
 
     return AppListItemRow(
       leadingIcon: Icons.account_circle_outlined,
       title: patient.effectiveDisplayName,
       subtitle: patient.effectiveIdentifier ?? l10n.profileUnknownValue,
-      details: <Widget>[
-        if (patient.hasAllergyAlert || patient.requiresCompletion)
-          _PatientAlertCell(patient: patient)
-        else
-          _patientActiveStatusText(context, patient.isActive),
-      ],
-      trailing: Icon(Icons.chevron_right, size: theme.appTokens.listIconSize),
+      details: details,
+      trailing: _NextActionCell(patient: patient, onPressed: onNextAction),
     );
   }
-}
-
-Widget _patientActiveStatusText(BuildContext context, bool isActive) {
-  final l10n = context.l10n;
-  return AppStatusText(
-    label: isActive ? l10n.patientsActiveFilter : l10n.patientsInactiveFilter,
-    tone: isActive
-        ? AppWorkspaceStatusTone.success
-        : AppWorkspaceStatusTone.neutral,
-    icon: isActive ? Icons.check_circle_outline : Icons.block_outlined,
-    fontWeight: FontWeight.w500,
-  );
 }
 
 bool _matchesPatientTableSearch(
   BuildContext context,
   Patient patient,
-  String query,
-) {
+  String query, {
+  required PatientRegistrySection section,
+}) {
   final List<String> tokens = _searchTokens(query);
   if (tokens.isEmpty) {
     return true;
   }
 
-  final l10n = context.l10n;
+  final AppLocalizations l10n = context.l10n;
   final Locale locale = Localizations.localeOf(context);
   final DateTime? dateOfBirth = patient.dateOfBirth;
-  final String status = patient.isActive
-      ? l10n.patientsActiveFilter
-      : l10n.patientsInactiveFilter;
+  final String age = _patientAgeLabel(context, dateOfBirth);
+  final String gender = patient.gender == null
+      ? l10n.profileUnknownValue
+      : _genderLabel(l10n, patient.gender!);
+  final PatientVisitContext? visit = patient.currentVisit;
   final String haystack = <String?>[
     patient.effectiveDisplayName,
     patient.displayName,
@@ -1395,17 +1505,33 @@ bool _matchesPatientTableSearch(
     patient.primaryEmail,
     dateOfBirth == null ? null : AppFormatters.mediumDate(dateOfBirth, locale),
     dateOfBirth?.toIso8601String(),
-    status,
+    age,
+    gender,
+    _ageSexLabel(age, gender),
+    _patientRegistryStatusLabel(context, patient, section),
+    _patientNextActionLabel(l10n, patient),
+    patient.isActive ? l10n.patientsActiveFilter : l10n.patientsInactiveFilter,
     patient.isActive ? 'active' : 'inactive',
+    patient.requiresCompletion
+        ? l10n.patientsRegistrationIncompleteValue
+        : null,
     patient.requiresCompletion ? 'incomplete registration emergency' : null,
     patient.registrationSource,
     patient.registrationStatus,
-    patient.hasAllergyAlert ? context.l10n.patientsAllergyAlertLabel : null,
+    patient.hasAllergyAlert ? l10n.patientsAllergyAlertLabel : null,
     patient.allergyAlertLabel,
-    patient.currentVisit?.title,
-    patient.currentVisit?.status,
-    patient.currentVisit?.publicId,
-    patient.currentVisit?.occurredAt?.toIso8601String(),
+    patient.hasAllergyAlert || patient.requiresCompletion
+        ? null
+        : l10n.patientsNoAlertsLabel,
+    visit == null ? l10n.patientsNoVisitLabel : null,
+    visit?.title,
+    visit?.status,
+    visit?.publicId,
+    visit == null ? null : _visitTitleLine(visit),
+    visit?.occurredAt == null
+        ? null
+        : AppFormatters.mediumDate(visit!.occurredAt!, locale),
+    visit?.occurredAt?.toIso8601String(),
     patient.facilityLabel,
     patient.tenantLabel,
   ].whereType<String>().join(' ').toLowerCase();

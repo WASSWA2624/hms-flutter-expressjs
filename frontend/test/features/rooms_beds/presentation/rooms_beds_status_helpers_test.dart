@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
 import 'package:hosspi_hms/features/rooms_beds/presentation/widgets/rooms_beds_status_helpers.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 void main() {
@@ -285,4 +286,170 @@ void main() {
       expect(roomsBedsSectionCount(state, RoomsBedsSection.outOfService), 1);
     });
   });
+
+  group('roomsBedsPrimaryNextActionKind', () {
+    BedBoardItem bedWithStatus(
+      BedSetupStatus status, {
+      bool hasOpenTransfer = false,
+    }) {
+      return BedBoardItem(
+        bed: BedProfile(
+          id: 'BED-1',
+          tenantId: 'TEN-001',
+          facilityId: 'FAC-001',
+          wardId: 'WRD-001',
+          label: 'A1',
+          status: status,
+        ),
+        admissionContext: hasOpenTransfer
+            ? const BedAdmissionContext(
+                admissionId: 'ADM-1',
+                transferRequestId: 'TR-1',
+                transferStatus: 'REQUESTED',
+              )
+            : null,
+      );
+    }
+
+    test('available resolves to assign', () {
+      expect(
+        roomsBedsPrimaryNextActionKind(bedWithStatus(BedSetupStatus.available)),
+        RoomsBedsNextActionKind.assign,
+      );
+    });
+
+    test('occupied without transfer resolves to release', () {
+      expect(
+        roomsBedsPrimaryNextActionKind(bedWithStatus(BedSetupStatus.occupied)),
+        RoomsBedsNextActionKind.release,
+      );
+    });
+
+    test('occupied with open transfer resolves to completeTransfer', () {
+      expect(
+        roomsBedsPrimaryNextActionKind(
+          bedWithStatus(BedSetupStatus.occupied, hasOpenTransfer: true),
+        ),
+        RoomsBedsNextActionKind.completeTransfer,
+      );
+    });
+
+    test('reserved resolves to assign', () {
+      expect(
+        roomsBedsPrimaryNextActionKind(bedWithStatus(BedSetupStatus.reserved)),
+        RoomsBedsNextActionKind.assign,
+      );
+    });
+
+    test('cleaning resolves to markAvailable', () {
+      expect(
+        roomsBedsPrimaryNextActionKind(bedWithStatus(BedSetupStatus.cleaning)),
+        RoomsBedsNextActionKind.markAvailable,
+      );
+    });
+
+    test('maintenance resolves to openOperations', () {
+      expect(
+        roomsBedsPrimaryNextActionKind(
+          bedWithStatus(BedSetupStatus.maintenance),
+        ),
+        RoomsBedsNextActionKind.openOperations,
+      );
+    });
+
+    test('blocked resolves to markAvailable', () {
+      expect(
+        roomsBedsPrimaryNextActionKind(bedWithStatus(BedSetupStatus.blocked)),
+        RoomsBedsNextActionKind.markAvailable,
+      );
+    });
+
+    test('outOfService resolves to openOperations', () {
+      expect(
+        roomsBedsPrimaryNextActionKind(
+          bedWithStatus(BedSetupStatus.outOfService),
+        ),
+        RoomsBedsNextActionKind.openOperations,
+      );
+    });
+  });
+
+  group('roomsBedsBedBoardSearchMatcher', () {
+    late BedBoardItem item;
+    late bool Function(BedBoardItem, String) matcher;
+
+    setUp(() {
+      item = BedBoardItem(
+        bed: BedProfile(
+          id: 'BED-SEARCH',
+          tenantId: 'TEN-001',
+          facilityId: 'FAC-001',
+          wardId: 'WRD-001',
+          label: 'ICU Bed 3',
+          status: BedSetupStatus.available,
+        ),
+        facility: const FacilityProfile(
+          id: 'FAC-001',
+          tenantId: 'TEN-001',
+          name: 'Central Hospital',
+          type: FacilitySetupType.hospital,
+        ),
+        ward: const WardProfile(
+          id: 'WRD-001',
+          tenantId: 'TEN-001',
+          facilityId: 'FAC-001',
+          name: 'ICU Ward',
+          type: WardSetupType.icu,
+        ),
+        room: const RoomProfile(
+          id: 'RM-001',
+          tenantId: 'TEN-001',
+          facilityId: 'FAC-001',
+          wardId: 'WRD-001',
+          name: 'Room 12',
+          floor: 'Level 4',
+        ),
+      );
+      matcher = roomsBedsBedBoardSearchMatcher(_FakeL10n());
+    });
+
+    test('empty query matches all', () {
+      expect(matcher(item, ''), isTrue);
+      expect(matcher(item, '   '), isTrue);
+    });
+
+    test('matches bed label', () {
+      expect(matcher(item, 'icu bed'), isTrue);
+    });
+
+    test('matches facility name', () {
+      expect(matcher(item, 'central'), isTrue);
+    });
+
+    test('matches ward and room location', () {
+      expect(matcher(item, 'icu ward'), isTrue);
+      expect(matcher(item, 'room 12'), isTrue);
+    });
+
+    test('matches floor hidden column value', () {
+      expect(matcher(item, 'level 4'), isTrue);
+    });
+
+    test('no match returns false', () {
+      expect(matcher(item, 'pediatrics'), isFalse);
+    });
+  });
+}
+
+class _FakeL10n implements AppLocalizations {
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    final String name = invocation.memberName.toString();
+    if (name.contains('roomsBeds') ||
+        name.contains('tenantFacility') ||
+        name.contains('profileUnknown')) {
+      return 'label';
+    }
+    return '';
+  }
 }

@@ -16,6 +16,7 @@ import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/domain/repositories/icu_repository.dart';
 import 'package:hosspi_hms/features/icu/presentation/pages/icu_workspace_page.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_bed_board_panel.dart';
+import 'package:hosspi_hms/features/icu/presentation/widgets/icu_board_panel.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -84,6 +85,12 @@ void _stubBoard(
     if (query.scope == IcuBoardScope.critical) {
       items = board
           .where((IcuPatientSummary item) => item.hasCriticalAlert)
+          .toList(growable: false);
+    }
+    if (query.search.trim().isNotEmpty) {
+      final String needle = query.search.trim().toLowerCase();
+      items = items
+          .where((IcuPatientSummary item) => item.matchesSearch(needle))
           .toList(growable: false);
     }
     return Result<AppPage<IcuPatientSummary>>.success(
@@ -174,6 +181,12 @@ Future<void> _pumpIcuWorkspace(
   await tester.pumpAndSettle();
 }
 
+AppListTable<IcuPatientSummary> _table(WidgetTester tester) {
+  return tester.widget<AppListTable<IcuPatientSummary>>(
+    find.byType(AppListTable<IcuPatientSummary>),
+  );
+}
+
 void main() {
   late _MockIcuRepository repository;
 
@@ -196,6 +209,7 @@ void main() {
 
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.byType(AppListTable<IcuPatientSummary>), findsOneWidget);
+    expect(find.byType(IcuBoardPanel), findsOneWidget);
     expect(find.textContaining('Active ICU'), findsWidgets);
     expect(find.textContaining('Critical alerts'), findsWidgets);
     expect(find.textContaining('Transfers'), findsWidgets);
@@ -207,6 +221,9 @@ void main() {
     expect(find.text('Chris Critical'), findsOneWidget);
     expect(find.byTooltip('Start ICU stay'), findsOneWidget);
     expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(_table(tester).columnVisibilityLabel, 'Settings');
+    expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+    expect(_table(tester).columns.length, lessThanOrEqualTo(5));
   });
 
   testWidgets('deep link section=critical selects Critical tab', (
@@ -227,6 +244,8 @@ void main() {
       isTrue,
     );
     expect(find.text('Chris Critical'), findsOneWidget);
+    expect(find.text('Ada Active'), findsNothing);
+    expect(find.text('Alert'), findsWidgets);
     expect(find.byTooltip('Start ICU stay'), findsOneWidget);
     expect(find.byTooltip('Refresh'), findsOneWidget);
   });
@@ -243,6 +262,7 @@ void main() {
 
     expect(find.byType(IcuBedBoardPanel), findsOneWidget);
     expect(find.byType(AppListTable<IcuPatientSummary>), findsNothing);
+    expect(find.byType(IcuBoardPanel), findsNothing);
     expect(find.text('ICU bed board'), findsNothing);
     expect(find.byTooltip('Start ICU stay'), findsNothing);
     expect(find.byTooltip('Refresh'), findsOneWidget);
@@ -298,6 +318,20 @@ void main() {
       () => repository.listIcuBoard(captureAny()),
     ).captured.cast<IcuBoardQuery>();
     expect(queries.any((IcuBoardQuery q) => q.search == 'Ada'), isTrue);
+    expect(find.text('Ada Active'), findsOneWidget);
+    expect(find.text('Chris Critical'), findsNothing);
+  });
+
+  testWidgets('row tap opens ICU detail dialog', (WidgetTester tester) async {
+    await _pumpIcuWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Ada Active'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+    verify(
+      () => repository.loadIcuDetail(any()),
+    ).called(greaterThanOrEqualTo(1));
   });
 
   testWidgets('existing deep links open detail dialog on vitals panel', (
@@ -323,12 +357,12 @@ void main() {
   ) async {
     await _pumpIcuWorkspace(tester, repository: repository);
 
-    final AppListTable<IcuPatientSummary> table = tester
-        .widget<AppListTable<IcuPatientSummary>>(
-          find.byType(AppListTable<IcuPatientSummary>),
-        );
+    final AppListTable<IcuPatientSummary> table = _table(tester);
     expect(table.columnVisibilityStorageKey, 'icu_board');
     expect(table.columnWidthStorageKey, 'icu_cw_board');
     expect(table.columnVisibilityController, isNotNull);
+    expect(table.columnVisibilityTitle, 'Table Settings');
+    expect(table.search?.matcher(_activePatient, 'Ada'), isTrue);
+    expect(table.search?.matcher(_criticalPatient, 'zzz'), isFalse);
   });
 }

@@ -69,6 +69,16 @@ const IpdBedBoardEntry _availableBed = IpdBedBoardEntry(
   wardName: 'Medical Ward',
 );
 
+const IpdBedBoardEntry _occupiedBed = IpdBedBoardEntry(
+  id: 'bed-2',
+  label: 'Bed 102',
+  status: 'OCCUPIED',
+  wardName: 'Medical Ward',
+  occupantPatientName: 'Ada Active',
+  occupantAdmissionId: 'adm-active',
+  occupantAdmissionDisplayId: 'ADM-ACTIVE',
+);
+
 AppAccessPolicy _ipdWritePolicy() {
   return AppAccessPolicy.fromSession(
     AuthSession(
@@ -198,7 +208,7 @@ void _stubRepository(_MockIpdRepository repository) {
     ),
   ).thenAnswer(
     (_) async => const Result<List<IpdBedBoardEntry>>.success(
-      <IpdBedBoardEntry>[_availableBed],
+      <IpdBedBoardEntry>[_availableBed, _occupiedBed],
     ),
   );
   when(() => repository.getAdmission(any())).thenAnswer((
@@ -499,6 +509,99 @@ void main() {
     expect(find.byTooltip('Refresh'), findsOneWidget);
     expect(find.byTooltip('Start admission'), findsOneWidget);
     expect(find.byTooltip('Filters'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+  });
+
+  testWidgets('admission worklist shows five default column headers', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIpdWorkspace(tester, repository: repository);
+
+    for (final String label in <String>[
+      'Patient name',
+      'Ward and bed',
+      'Admitted',
+      'Status',
+      'Next action',
+    ]) {
+      expect(
+        find.descendant(of: find.byType(DataTable), matching: find.text(label)),
+        findsOneWidget,
+      );
+    }
+    expect(
+      find.descendant(of: find.byType(DataTable), matching: find.text('Role')),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(DataTable),
+        matching: find.text('Length of stay'),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('admission row tap opens detail dialog', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIpdWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Quinn Queue'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Admission detail'), findsOneWidget);
+    verify(() => repository.getAdmission('adm-queue')).called(1);
+  });
+
+  testWidgets('bed board shows five default column headers', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIpdWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/ipd?section=bed-board',
+      initialQuery: IpdAdmissionQuery.fromUri(
+        Uri.parse('/ipd?section=bed-board'),
+      ),
+    );
+
+    for (final String label in <String>[
+      'Bed',
+      'Ward',
+      'Current patient',
+      'Status',
+      'Next action',
+    ]) {
+      expect(
+        find.descendant(of: find.byType(DataTable), matching: find.text(label)),
+        findsOneWidget,
+      );
+    }
+    expect(
+      find.descendant(of: find.byType(DataTable), matching: find.text('Room')),
+      findsNothing,
+    );
+    expect(find.text('Settings'), findsOneWidget);
+  });
+
+  testWidgets('occupied bed board row tap opens admission detail dialog', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIpdWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/ipd?section=bed-board',
+      initialQuery: IpdAdmissionQuery.fromUri(
+        Uri.parse('/ipd?section=bed-board'),
+      ),
+    );
+
+    await tester.tap(find.text('Ada Active'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Admission detail'), findsOneWidget);
+    verify(() => repository.getAdmission('adm-active')).called(1);
   });
 
   testWidgets('search filters table rows via applySearch', (

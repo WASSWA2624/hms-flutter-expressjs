@@ -233,9 +233,113 @@
   "@commonTableSettingsActionLabel": {
     "description": "Label for opening a worklist table column settings dialog."
   },
+  "commonTableSettingsTitle": "Table Settings",
+  "@commonTableSettingsTitle": {
+    "description": "Title for the worklist table column settings dialog."
+  },
+  "commonAdvancedFiltersTitle": "Advanced filters",
+  "@commonAdvancedFiltersTitle": {
+    "description": "Title for the advanced filters modal in worklist table search chrome."
+  },
+  "receptionAppointmentIdLabel": "Appointment ID",
+  "@receptionAppointmentIdLabel": {
+    "description": "Optional reception appointments table column for the appointment identifier."
+  },
+  "receptionQueueIdLabel": "Queue ID",
+  "@receptionQueueIdLabel": {
+    "description": "Optional reception queue table column for the queue entry identifier."
+  },
+  "commonFiltersActionLabel": "Filters",
+  "@commonFiltersActionLabel": {
+    "description": "Label for opening a worklist table advanced filters dialog."
+  },
   "emergencyCaseDialogTitle": "Emergency case",
   "@emergencyCaseDialogTitle": {
     "description": "Title for the emergency case detail dialog."
+  },
+  "emergencySearchSemanticLabel": "Search emergency cases",
+  "@emergencySearchSemanticLabel": {
+    "description": "Semantic label for the emergency worklist search field."
+  },
+  "emergencySearchHint": "Search patient, case, ambulance, or status",
+  "@emergencySearchHint": {
+    "description": "Hint text for the emergency worklist search field."
+  },
+  "emergencyClearSearchAction": "Clear search",
+  "@emergencyClearSearchAction": {
+    "description": "Label for clearing the emergency worklist search field."
+  },
+  "emergencyFiltersLabel": "Filters",
+  "@emergencyFiltersLabel": {
+    "description": "Label for opening emergency worklist advanced filters."
+  },
+  "emergencyAdvancedFiltersTitle": "Advanced filters",
+  "@emergencyAdvancedFiltersTitle": {
+    "description": "Title for the emergency worklist advanced filters modal."
+  },
+  "emergencyApplyFiltersAction": "Apply filters",
+  "@emergencyApplyFiltersAction": {
+    "description": "Label for applying emergency worklist advanced filters."
+  },
+  "emergencyResetFiltersAction": "Reset filters",
+  "@emergencyResetFiltersAction": {
+    "description": "Label for resetting emergency worklist advanced filters."
+  },
+  "emergencyAllFieldsFilterLabel": "All fields",
+  "@emergencyAllFieldsFilterLabel": {
+    "description": "Label for the all-fields option in emergency advanced filters."
+  },
+  "emergencyTableSettingsTitle": "Table Settings",
+  "@emergencyTableSettingsTitle": {
+    "description": "Title for the emergency worklist table settings modal."
+  },
+  "emergencyStatusColumnLabel": "Status",
+  "@emergencyStatusColumnLabel": {
+    "description": "Column header for emergency case workflow status."
+  },
+  "emergencyNextActionColumnLabel": "Next action",
+  "@emergencyNextActionColumnLabel": {
+    "description": "Column header for the emergency worklist next-action column."
+  },
+  "emergencyTripStatusColumnLabel": "Trip status",
+  "@emergencyTripStatusColumnLabel": {
+    "description": "Column header for ambulance trip status on the emergency board."
+  },
+  "emergencyNoTripLabel": "No trip",
+  "@emergencyNoTripLabel": {
+    "description": "Label when no ambulance trip is active for an emergency case."
+  },
+  "emergencyInTransitLabel": "In transit",
+  "@emergencyInTransitLabel": {
+    "description": "Label for an ambulance trip that is in transit."
+  },
+  "emergencyTripCompleteLabel": "Complete",
+  "@emergencyTripCompleteLabel": {
+    "description": "Label for a completed ambulance trip."
+  },
+  "emergencyClosedAtColumnLabel": "Closed at",
+  "@emergencyClosedAtColumnLabel": {
+    "description": "Column header for when an emergency case was closed."
+  },
+  "emergencySeverityFilterLabel": "Priority",
+  "@emergencySeverityFilterLabel": {
+    "description": "Advanced filter group label for emergency case priority."
+  },
+  "emergencyTriageFilterLabel": "Triage",
+  "@emergencyTriageFilterLabel": {
+    "description": "Advanced filter group label for emergency triage level."
+  },
+  "emergencyCaseStatusFilterLabel": "Case status",
+  "@emergencyCaseStatusFilterLabel": {
+    "description": "Advanced filter group label for emergency case status."
+  },
+  "emergencyDispatchStatusFilterLabel": "Dispatch status",
+  "@emergencyDispatchStatusFilterLabel": {
+    "description": "Advanced filter group label for ambulance dispatch status."
+  },
+  "emergencyDestinationFilterLabel": "Destination",
+  "@emergencyDestinationFilterLabel": {
+    "description": "Advanced filter group label for handoff destination."
   },
   "icuStayDialogTitle": "ICU stay",
   "@icuStayDialogTitle": {
@@ -312,6 +416,54 @@
   "icuBoardFiltersTitle": "ICU board filters",
   "@icuBoardFiltersTitle": {
     "description": "Title for the ICU board filters dialog."
+  },
+  "icuAdvancedFiltersLabel": "Filters",
+  "@icuAdvancedFiltersLabel": {
+    "description": "ICU board advanced filters button label."
+  },
+  "icuAdvancedFiltersTitle": "Advanced filters",
+  "@icuAdvancedFiltersTitle": {
+    "description": "ICU board advanced filters dialog title."
+  },
+  "icuApplyFiltersLabel": "Apply filters",
+  "@icuApplyFiltersLabel": {
+    "description": "ICU board apply filters action label."
+  },
+  "icuResetFiltersLabel": "Reset filters",
+  "@icuResetFiltersLabel": {
+    "description": "ICU board reset filters action label."
+  },
+  "icuTableSettingsTitle": "Table Settings",
+  "@icuTableSettingsTitle": {
+    "description": "ICU board table settings dialog title."
+  },
+  "icuNextActionColumnLabel": "Next action",
+  "@icuNextActionColumnLabel": {
+    "description": "ICU board next action column label."
+  },
+  "icuBoardFilterHasAlertLabel": "Has alert",
+  "@icuBoardFilterHasAlertLabel": {
+    "description": "ICU board filter option for patients with critical alerts."
+  },
+  "icuBoardFilterNoAlertLabel": "No alert",
+  "@icuBoardFilterNoAlertLabel": {
+    "description": "ICU board filter option for patients without critical alerts."
+  },
+  "icuBoardFilterHasBedLabel": "Has bed",
+  "@icuBoardFilterHasBedLabel": {
+    "description": "ICU board filter option for patients with an assigned bed."
+  },
+  "icuBoardFilterNoBedLabel": "No bed",
+  "@icuBoardFilterNoBedLabel": {
+    "description": "ICU board filter option for patients without an assigned bed."
+  },
+  "icuBoardFilterEmergencySourceLabel": "Emergency",
+  "@icuBoardFilterEmergencySourceLabel": {
+    "description": "ICU board filter option for emergency admissions."
+  },
+  "icuBoardFilterOtherSourceLabel": "Other",
+  "@icuBoardFilterOtherSourceLabel": {
+    "description": "ICU board filter option for non-emergency admissions."
   },
   "icuColumnBedLabel": "Bed",
   "@icuColumnBedLabel": {
@@ -3403,6 +3555,7 @@
   "opdActionsColumnLabel": "Actions",
   "opdStageColumnLabel": "Stage",
   "opdNextStepColumnLabel": "Next step",
+  "opdNextActionColumnLabel": "Next action",
   "opdOpenActions": "Open actions",
   "opdQueueEmptyColumnLabel": "No patients",
   "opdNoRelatedRecordsLabel": "No related records",
@@ -4058,6 +4211,9 @@
   },
   "@opdNextStepColumnLabel": {
     "description": "Next step column label."
+  },
+  "@opdNextActionColumnLabel": {
+    "description": "Next action column label on OPD worklist tables."
   },
   "@opdOpenActions": {
     "description": "Tooltip for opening OPD row actions."
@@ -4784,6 +4940,14 @@
   "patientsAgeSexColumnLabel": "Age / sex",
   "@patientsAgeSexColumnLabel": {
     "description": "Patient list age and sex column label."
+  },
+  "patientsAgeColumnLabel": "Age",
+  "@patientsAgeColumnLabel": {
+    "description": "Patient list age column label."
+  },
+  "patientsGenderColumnLabel": "Gender",
+  "@patientsGenderColumnLabel": {
+    "description": "Patient list gender column label."
   },
   "patientsPhoneIdentifierColumnLabel": "Phone",
   "@patientsPhoneIdentifierColumnLabel": {
@@ -8663,6 +8827,14 @@
   "@clinicalFiltersLabel": {
     "description": "Semantic label for clinical workspace filters."
   },
+  "clinicalNextActionColumnLabel": "Next action",
+  "@clinicalNextActionColumnLabel": {
+    "description": "Column label for the clinical worklist next-action column."
+  },
+  "clinicalOpenEncounterAction": "Review encounter",
+  "@clinicalOpenEncounterAction": {
+    "description": "Fallback next-action label to open the clinical encounter dialog."
+  },
   "clinicalSearchLabel": "Search clinical worklist",
   "@clinicalSearchLabel": {
     "description": "Clinical worklist search field label."
@@ -10527,6 +10699,10 @@
   "nursingLocationColumnLabel": "Location",
   "@nursingLocationColumnLabel": {
     "description": "Nursing worklist location column label."
+  },
+  "nursingNextActionColumnLabel": "Next action",
+  "@nursingNextActionColumnLabel": {
+    "description": "Column label for the nursing worklist next-action column."
   },
   "nursingDueActionColumnLabel": "Due action",
   "@nursingDueActionColumnLabel": {
@@ -20638,6 +20814,10 @@
   "roomsBedsBedColumnLabel": "Bed",
   "@roomsBedsBedColumnLabel": {
     "description": "Column label for bed identity."
+  },
+  "roomsBedsFloorColumnLabel": "Floor",
+  "@roomsBedsFloorColumnLabel": {
+    "description": "Column label for room floor in the bed board table."
   },
   "roomsBedsLocationColumnLabel": "Location",
   "@roomsBedsLocationColumnLabel": {

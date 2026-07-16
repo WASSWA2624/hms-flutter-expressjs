@@ -8,9 +8,6 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
-import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/access_requirement.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_discharge_clearance_dialog.dart';
@@ -23,6 +20,7 @@ import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_scope_n
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_shift_context_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_transfer_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_vitals_dialog.dart';
+import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_actions.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_filters.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_panel.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -74,25 +72,9 @@ class _NursingWorkspaceContent extends ConsumerStatefulWidget {
 
 class _NursingWorkspaceContentState
     extends ConsumerState<_NursingWorkspaceContent> {
-  static const AccessRequirement writeRequirement = AccessRequirement(
-    anyPermissions: <AppPermission>[
-      AppPermissions.clinicalWrite,
-      AppPermissions.patientWrite,
-      AppPermissions.lastOfficeWrite,
-    ],
-    anyRoles: <AppRole>[
-      AppRole.nurse,
-      AppRole.wardManager,
-      AppRole.icuManager,
-      AppRole.theatreManager,
-      AppRole.facilityAdmin,
-      AppRole.tenantAdmin,
-      AppRole.superAdmin,
-    ],
-    activeModules: <String>['inpatient-bed-management'],
-  );
-
   late final TextEditingController _searchController;
+  late final AppListTableColumnVisibilityController<NursingWorkItem>
+  _columnVisibilityController;
   late AppSearchBarFilterValue _filterValue;
   NursingQueueScope _scope = NursingQueueScope.all;
   String? _appliedRouteSignature;
@@ -105,6 +87,8 @@ class _NursingWorkspaceContentState
           ? widget.initialQuery!.search
           : widget.state.query.search,
     );
+    _columnVisibilityController =
+        AppListTableColumnVisibilityController<NursingWorkItem>();
     _filterValue = nursingFilterValueFromQuery(widget.state.query);
     _scope =
         nursingScopeFromQueryValue(widget.initialQuery?.scope) ??
@@ -130,6 +114,7 @@ class _NursingWorkspaceContentState
   @override
   void dispose() {
     _searchController.dispose();
+    _columnVisibilityController.dispose();
     super.dispose();
   }
 
@@ -298,7 +283,7 @@ class _NursingWorkspaceContentState
               selectedId: nursingScopeToQueryValue(_scope),
               onTabTapped: _onTabTapped,
               primaryAction: AppAccessActionGate(
-                requirement: writeRequirement,
+                requirement: nursingWriteRequirement,
                 builder: (BuildContext context, bool isAllowed) {
                   return AppTabToolbarPrimary(
                     label: nursingPrimaryActionLabel(l10n, _scope),
@@ -317,7 +302,7 @@ class _NursingWorkspaceContentState
                   onPressed: _openShiftContextDialog,
                 ),
                 AppAccessActionGate(
-                  requirement: writeRequirement,
+                  requirement: nursingWriteRequirement,
                   builder: (BuildContext context, bool isAllowed) {
                     return AppTabToolbarAction(
                       label: l10n.nursingActionAddNote,
@@ -355,6 +340,7 @@ class _NursingWorkspaceContentState
                 scope: _scope,
                 searchController: _searchController,
                 filterValue: _filterValue,
+                columnVisibilityController: _columnVisibilityController,
                 onFilterChanged: (AppSearchBarFilterValue value) {
                   setState(() {
                     _filterValue = value;

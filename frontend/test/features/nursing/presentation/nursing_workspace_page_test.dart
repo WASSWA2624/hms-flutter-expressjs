@@ -234,6 +234,20 @@ void main() {
     repository = _MockNursingRepository();
   });
 
+  testWidgets('renders table search chrome with Filters and Settings', (
+    WidgetTester tester,
+  ) async {
+    await _pumpNursingWorkspace(tester, repository: repository);
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+
+    expect(find.text(l10n.nursingAdvancedFiltersLabel), findsOneWidget);
+    expect(find.text(l10n.commonTableSettingsActionLabel), findsOneWidget);
+    expect(find.text(l10n.nursingNextActionColumnLabel), findsWidgets);
+    expect(find.byTooltip(l10n.nursingActionRecordVitals), findsWidgets);
+  });
+
   testWidgets('renders tab strip and default primary action', (
     WidgetTester tester,
   ) async {
@@ -244,7 +258,7 @@ void main() {
     expect(find.textContaining('All'), findsWidgets);
     expect(find.textContaining('Urgent'), findsWidgets);
     expect(find.textContaining('Medication due'), findsWidgets);
-    expect(find.byTooltip('Record vitals'), findsOneWidget);
+    expect(find.byTooltip('Record vitals'), findsWidgets);
     expect(find.byTooltip('Shift context'), findsOneWidget);
     expect(find.byTooltip('Add note'), findsOneWidget);
     expect(find.byTooltip('Refresh'), findsOneWidget);
@@ -276,7 +290,7 @@ void main() {
     await _pumpAfterAction(tester);
 
     expect(harness.router.state.uri.queryParameters['scope'], 'urgent');
-    expect(find.byTooltip('Record vitals'), findsOneWidget);
+    expect(find.byTooltip('Record vitals'), findsWidgets);
     expect(find.text('Urgent Patient'), findsOneWidget);
     expect(find.text('Routine Patient'), findsNothing);
   });
@@ -293,7 +307,7 @@ void main() {
     await _pumpAfterAction(tester);
 
     expect(harness.router.state.uri.queryParameters['scope'], 'medication-due');
-    expect(find.byTooltip('Administer medication'), findsOneWidget);
+    expect(find.byTooltip('Administer medication'), findsWidgets);
     expect(find.text('Med Due Patient'), findsOneWidget);
     expect(find.text('Routine Patient'), findsNothing);
   });
@@ -327,7 +341,7 @@ void main() {
       harness.router.state.uri.queryParameters.containsKey('scope'),
       isFalse,
     );
-    expect(find.byTooltip('Record vitals'), findsOneWidget);
+    expect(find.byTooltip('Record vitals'), findsWidgets);
   });
 
   testWidgets('tab switch applies scope via repository', (
