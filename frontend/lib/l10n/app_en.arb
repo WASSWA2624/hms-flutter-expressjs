@@ -18717,6 +18717,34 @@
   "@housekeepingNextActionColumnLabel": {
     "description": "Localized text for housekeepingNextActionColumnLabel."
   },
+  "housekeepingScheduleColumnLabel": "Schedule",
+  "@housekeepingScheduleColumnLabel": {
+    "description": "Column header for the schedule name in the Schedules tab."
+  },
+  "housekeepingFrequencyColumnLabel": "Frequency",
+  "@housekeepingFrequencyColumnLabel": {
+    "description": "Column header for the frequency in the Schedules tab."
+  },
+  "housekeepingStartDateColumnLabel": "Start date",
+  "@housekeepingStartDateColumnLabel": {
+    "description": "Column header for the start date in the Schedules tab."
+  },
+  "housekeepingEndDateColumnLabel": "End date",
+  "@housekeepingEndDateColumnLabel": {
+    "description": "Column header for the end date in the Schedules tab."
+  },
+  "housekeepingRequestColumnLabel": "Request",
+  "@housekeepingRequestColumnLabel": {
+    "description": "Column header for the request title in the Maintenance tab."
+  },
+  "housekeepingAssetColumnLabel": "Asset",
+  "@housekeepingAssetColumnLabel": {
+    "description": "Column header for the asset in the Maintenance tab."
+  },
+  "housekeepingReportedColumnLabel": "Reported",
+  "@housekeepingReportedColumnLabel": {
+    "description": "Column header for the reported date in the Maintenance tab."
+  },
   "housekeepingNoSelectionTitle": "Select a housekeeping item",
   "@housekeepingNoSelectionTitle": {
     "description": "Localized text for housekeepingNoSelectionTitle."

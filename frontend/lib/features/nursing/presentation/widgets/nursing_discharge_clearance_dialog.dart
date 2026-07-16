@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
@@ -70,8 +69,9 @@ class _NursingDischargeClearanceDialogState
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-            for (final MapEntry<String, String> entry
-                in _clearanceLabels(l10n).entries)
+            for (final MapEntry<String, String> entry in _clearanceLabels(
+              l10n,
+            ).entries)
               AppCheckboxField(
                 title: entry.value,
                 value: _checks[entry.key] ?? false,

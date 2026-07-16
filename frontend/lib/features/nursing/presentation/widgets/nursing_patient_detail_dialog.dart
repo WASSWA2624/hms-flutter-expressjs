@@ -7,6 +7,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
@@ -21,9 +22,9 @@ import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_transfe
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_discharge_clearance_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:go_router/go_router.dart';
 
@@ -484,8 +485,8 @@ Future<void> _openPrescriptionDialog(
   BuildContext context,
   NursingWorkspaceController controller,
 ) async {
-  final ClinicalReferenceData referenceData =
-      await controller.prescriptionReferenceData();
+  final ClinicalReferenceData referenceData = await controller
+      .prescriptionReferenceData();
   if (!context.mounted) {
     return;
   }
@@ -577,8 +578,8 @@ Future<void> _openLabOrderDialog(
   BuildContext context,
   NursingWorkspaceController controller,
 ) async {
-  final ClinicalReferenceData referenceData =
-      await controller.prescriptionReferenceData();
+  final ClinicalReferenceData referenceData = await controller
+      .prescriptionReferenceData();
   if (!context.mounted) {
     return;
   }
@@ -651,8 +652,8 @@ Future<void> _openRadiologyOrderDialog(
   BuildContext context,
   NursingWorkspaceController controller,
 ) async {
-  final ClinicalReferenceData referenceData =
-      await controller.prescriptionReferenceData();
+  final ClinicalReferenceData referenceData = await controller
+      .prescriptionReferenceData();
   if (!context.mounted) {
     return;
   }

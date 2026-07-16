@@ -19,8 +19,7 @@ class NursingTransferDialog extends ConsumerStatefulWidget {
       _NursingTransferDialogState();
 }
 
-class _NursingTransferDialogState
-    extends ConsumerState<NursingTransferDialog> {
+class _NursingTransferDialogState extends ConsumerState<NursingTransferDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _bedController;
   late String _action;

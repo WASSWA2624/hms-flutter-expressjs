@@ -285,13 +285,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: AppRoutes.housekeeping.path,
             name: AppRoutes.housekeeping.name,
             builder: (_, GoRouterState state) {
-              final String? section =
-                  state.uri.queryParameters['section'];
-              final String? search =
-                  state.uri.queryParameters['search'];
+              final String? section = state.uri.queryParameters['section'];
+              final String? search = state.uri.queryParameters['search'];
               return HousekeepingWorkspacePage(
-                initialSection:
-                    HousekeepingSection.fromQueryValue(section),
+                initialSection: HousekeepingSection.fromQueryValue(section),
                 initialSearch: search ?? '',
               );
             },

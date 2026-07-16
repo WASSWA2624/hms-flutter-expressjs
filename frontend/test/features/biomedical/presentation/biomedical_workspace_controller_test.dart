@@ -17,6 +17,37 @@ void main() {
     registerFallbackValue(<String, Object?>{});
   });
 
+  group('BiomedicalRouteQuery', () {
+    test('fromUri parses panel, search, and asset query parameters', () {
+      final Uri uri = Uri.parse(
+        '/biomedical?panel=work-orders&search=pump&asset=EQ-001',
+      );
+      final BiomedicalRouteQuery query = BiomedicalRouteQuery.fromUri(uri);
+
+      expect(query.panel, 'work-orders');
+      expect(query.search, 'pump');
+      expect(query.assetId, 'EQ-001');
+      expect(query.hasRouteTargeting, isTrue);
+    });
+
+    test('fromUri returns empty strings when no parameters', () {
+      final Uri uri = Uri.parse('/biomedical');
+      final BiomedicalRouteQuery query = BiomedicalRouteQuery.fromUri(uri);
+
+      expect(query.panel, isEmpty);
+      expect(query.search, isEmpty);
+      expect(query.assetId, isEmpty);
+      expect(query.hasRouteTargeting, isFalse);
+    });
+
+    test('signature differentiates distinct queries', () {
+      const BiomedicalRouteQuery a = BiomedicalRouteQuery(panel: 'registry');
+      const BiomedicalRouteQuery b = BiomedicalRouteQuery(panel: 'compliance');
+
+      expect(a.signature, isNot(equals(b.signature)));
+    });
+  });
+
   group('BiomedicalWorkspaceController', () {
     test('loads the workspace and selects the first asset', () async {
       final _MockBiomedicalRepository repository = _MockBiomedicalRepository();
@@ -39,6 +70,33 @@ void main() {
       expect(state.workbench.summary.totalEquipment, 1);
       expect(state.selectedAsset?.displayId, 'EQ-001');
       verify(() => repository.getWorkspace(any())).called(1);
+    });
+
+    test('applyPanel updates query panel and resets pagination', () async {
+      final _MockBiomedicalRepository repository = _MockBiomedicalRepository();
+      _stubWorkspace(repository);
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [biomedicalRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(biomedicalWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(biomedicalWorkspaceControllerProvider.notifier)
+          .applyPanel(BiomedicalPanels.workOrders);
+
+      expect(failure, isNull);
+
+      final Result<BiomedicalWorkspaceState> result = await container.read(
+        biomedicalWorkspaceControllerProvider.future,
+      );
+      final BiomedicalWorkspaceState state = result.when(
+        success: (BiomedicalWorkspaceState value) => value,
+        failure: (AppFailure failure) => fail(failure.code),
+      );
+      expect(state.query.panel, BiomedicalPanels.workOrders);
+      expect(state.query.pageRequest.offset, 0);
     });
 
     test('registers an asset and refreshes visible workspace data', () async {

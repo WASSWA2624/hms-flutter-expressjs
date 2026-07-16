@@ -89,7 +89,8 @@ enum HousekeepingSection {
     return switch (this) {
       HousekeepingSection.tasks => HousekeepingResource.tasks,
       HousekeepingSection.schedules => HousekeepingResource.schedules,
-      HousekeepingSection.maintenance => HousekeepingResource.maintenanceRequests,
+      HousekeepingSection.maintenance =>
+        HousekeepingResource.maintenanceRequests,
     };
   }
 

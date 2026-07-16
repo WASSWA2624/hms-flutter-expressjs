@@ -4,7 +4,6 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
-import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -118,13 +117,12 @@ String nursingDueTimeLabel(BuildContext context, NursingPatientSummary item) {
   return nursingDateTimeLabel(context, item.dueReferenceAt);
 }
 
-String nursingAdmissionLabel(
-  BuildContext context,
-  NursingPatientSummary item,
-) {
+String nursingAdmissionLabel(BuildContext context, NursingPatientSummary item) {
   final String label = nursingJoinDisplay(<String?>[
     item.displayId,
-    item.admissionStatus == null ? null : nursingApiLabel(item.admissionStatus!),
+    item.admissionStatus == null
+        ? null
+        : nursingApiLabel(item.admissionStatus!),
   ]);
   return label.trim().isEmpty ? context.l10n.profileUnknownValue : label;
 }
@@ -602,8 +600,9 @@ List<AppWardActivityEntry> nursingActivityEntries(
   return <AppWardActivityEntry>[
     for (final NursingCriticalAlert alert in detail.criticalAlerts)
       AppWardActivityEntry(
-        title:
-            alert.severity == null ? alert.id : nursingApiLabel(alert.severity!),
+        title: alert.severity == null
+            ? alert.id
+            : nursingApiLabel(alert.severity!),
         subtitle: nursingDateTimeLabel(context, alert.createdAt),
         body: alert.message,
         icon: Icons.report_problem_outlined,

@@ -14539,6 +14539,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get housekeepingNextActionColumnLabel => 'Next action';
 
   @override
+  String get housekeepingScheduleColumnLabel => 'Schedule';
+
+  @override
+  String get housekeepingFrequencyColumnLabel => 'Frequency';
+
+  @override
+  String get housekeepingStartDateColumnLabel => 'Start date';
+
+  @override
+  String get housekeepingEndDateColumnLabel => 'End date';
+
+  @override
+  String get housekeepingRequestColumnLabel => 'Request';
+
+  @override
+  String get housekeepingAssetColumnLabel => 'Asset';
+
+  @override
+  String get housekeepingReportedColumnLabel => 'Reported';
+
+  @override
   String get housekeepingNoSelectionTitle => 'Select a housekeeping item';
 
   @override

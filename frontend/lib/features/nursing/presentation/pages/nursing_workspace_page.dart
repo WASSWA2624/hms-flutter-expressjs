@@ -9,6 +9,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
@@ -23,6 +24,7 @@ import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_shift_c
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_transfer_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -99,8 +101,8 @@ class _NursingWorkspaceContentState
     super.initState();
     _searchController = TextEditingController(text: widget.state.query.search);
     _filterValue = _filterValueFromQuery(widget.state.query);
-    _scope = _scopeFromQuery(widget.initialQuery?.scope) ??
-        widget.state.query.scope;
+    _scope =
+        _scopeFromQuery(widget.initialQuery?.scope) ?? widget.state.query.scope;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
@@ -121,8 +123,8 @@ class _NursingWorkspaceContentState
     final NursingWorkspaceController controller = ref.read(
       nursingWorkspaceControllerProvider.notifier,
     );
-    final NursingPatientSummary? summary =
-        await controller.selectPatientByDisplayId(id);
+    final NursingPatientSummary? summary = await controller
+        .selectPatientByDisplayId(id);
     if (!mounted || summary == null) {
       return;
     }
@@ -192,17 +194,22 @@ class _NursingWorkspaceContentState
   static NursingQueueScope? _scopeFromQuery(String? raw) {
     return switch (raw?.trim().toLowerCase()) {
       'all' || '' || null => NursingQueueScope.all,
-      'assigned-ward' || 'assigned_ward' || 'ward' =>
-        NursingQueueScope.assignedWard,
+      'assigned-ward' ||
+      'assigned_ward' ||
+      'ward' => NursingQueueScope.assignedWard,
       'urgent' || 'critical' => NursingQueueScope.urgent,
-      'medication-due' || 'medication_due' || 'medication' =>
-        NursingQueueScope.medicationDue,
-      'handover-pending' || 'handover_pending' || 'handover' =>
-        NursingQueueScope.handoverPending,
-      'transfer-pending' || 'transfer_pending' || 'transfer' =>
-        NursingQueueScope.transferPending,
-      'discharge-pending' || 'discharge_pending' || 'discharge' =>
-        NursingQueueScope.dischargePending,
+      'medication-due' ||
+      'medication_due' ||
+      'medication' => NursingQueueScope.medicationDue,
+      'handover-pending' ||
+      'handover_pending' ||
+      'handover' => NursingQueueScope.handoverPending,
+      'transfer-pending' ||
+      'transfer_pending' ||
+      'transfer' => NursingQueueScope.transferPending,
+      'discharge-pending' ||
+      'discharge_pending' ||
+      'discharge' => NursingQueueScope.dischargePending,
       _ => null,
     };
   }
@@ -355,7 +362,6 @@ class _NursingWorkspaceContentState
               label: l10n.nursingHandoverPendingSummaryLabel,
               count: state.handoverPendingCount,
               icon: Icons.swap_horiz_outlined,
-              tone: AppWorkspaceStatusTone.neutral,
               onSelected: () {
                 _onTabTapped(
                   _scopeToQueryValue(NursingQueueScope.handoverPending),
@@ -800,8 +806,10 @@ List<AppListTableColumn<NursingWorkItem>> _columnChoicesForScope(
   AppLocalizations l10n,
   NursingQueueScope scope,
 ) {
-  final Set<String> defaultLabels =
-      _columnsForScope(l10n, scope).map((AppListTableColumn<NursingWorkItem> c) => c.label).toSet();
+  final Set<String> defaultLabels = _columnsForScope(
+    l10n,
+    scope,
+  ).map((AppListTableColumn<NursingWorkItem> c) => c.label).toSet();
   return <AppListTableColumn<NursingWorkItem>>[
     ..._columnsForScope(l10n, scope),
     if (!defaultLabels.contains(l10n.nursingAdmissionColumnLabel))
@@ -920,9 +928,7 @@ AppListTableColumn<NursingWorkItem> _responsibleNurseColumn(
   );
 }
 
-AppListTableColumn<NursingWorkItem> _observationsColumn(
-  AppLocalizations l10n,
-) {
+AppListTableColumn<NursingWorkItem> _observationsColumn(AppLocalizations l10n) {
   return AppListTableColumn<NursingWorkItem>(
     label: l10n.nursingObservationsTitle,
     sortComparator: (NursingWorkItem left, NursingWorkItem right) =>
@@ -1050,7 +1056,10 @@ AppSearchBarFilterValue _filterValueFromQuery(NursingWorklistQuery query) {
 
 List<AppSearchBarFieldChoice> _worklistSearchFields(AppLocalizations l10n) {
   return <AppSearchBarFieldChoice>[
-    AppSearchBarFieldChoice(field: 'patient', label: l10n.opdPatientColumnLabel),
+    AppSearchBarFieldChoice(
+      field: 'patient',
+      label: l10n.opdPatientColumnLabel,
+    ),
     AppSearchBarFieldChoice(
       field: 'admission',
       label: l10n.nursingAdmissionColumnLabel,

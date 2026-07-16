@@ -172,9 +172,11 @@ class _RadiologyWorkspaceContentState
     }
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;
-      ref
-          .read(radiologyWorkspaceControllerProvider.notifier)
-          .applySearch(query.search);
+      unawaited(
+        ref
+            .read(radiologyWorkspaceControllerProvider.notifier)
+            .applySearch(query.search),
+      );
     }
     final String encounterId = query.encounterId ?? '';
     final String orderId = query.orderId ?? '';

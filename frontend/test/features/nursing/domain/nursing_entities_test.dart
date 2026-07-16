@@ -52,9 +52,7 @@ void main() {
 
   group('NursingWorkspaceQuery', () {
     test('fromUri parses scope, id, and panel correctly', () {
-      final Uri uri = Uri.parse(
-        '/nursing?scope=urgent&id=abc&panel=vitals',
-      );
+      final Uri uri = Uri.parse('/nursing?scope=urgent&id=abc&panel=vitals');
       final NursingWorkspaceQuery query = NursingWorkspaceQuery.fromUri(uri);
       expect(query.scope, 'urgent');
       expect(query.admissionId, 'abc');
@@ -125,9 +123,7 @@ void main() {
     });
 
     test('fromUri picks first matching key from alias list', () {
-      final Uri uri = Uri.parse(
-        '/nursing?encounterId=ENC1&admissionId=ADM1',
-      );
+      final Uri uri = Uri.parse('/nursing?encounterId=ENC1&admissionId=ADM1');
       final NursingWorkspaceQuery query = NursingWorkspaceQuery.fromUri(uri);
       expect(query.admissionId, 'ADM1');
     });

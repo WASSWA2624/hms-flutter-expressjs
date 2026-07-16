@@ -12,6 +12,15 @@ enum LabQueueScope {
   cancelled,
 }
 
+enum LabDeskSection {
+  worklist,
+  collection,
+  processing,
+  verification,
+  critical,
+  completed,
+}
+
 enum LabWorkbenchView { patients, orders }
 
 @immutable
@@ -1283,6 +1292,7 @@ String? _joinDisplay(Iterable<String?> values) {
 @immutable
 final class LabWorkspaceQuery {
   const LabWorkspaceQuery({
+    this.section = '',
     this.encounterId = '',
     this.orderId = '',
     this.search = '',
@@ -1299,18 +1309,23 @@ final class LabWorkspaceQuery {
     }
 
     return LabWorkspaceQuery(
+      section: pick(<String>['section', 'panel', 'filter', 'scope']),
       encounterId: pick(<String>['encounterId', 'encounter_id', 'encounter']),
       orderId: pick(<String>['orderId', 'order_id', 'order']),
       search: pick(<String>['search', 'q']),
     );
   }
 
+  final String section;
   final String encounterId;
   final String orderId;
   final String search;
 
   bool get hasRouteTargeting =>
-      encounterId.isNotEmpty || orderId.isNotEmpty || search.isNotEmpty;
+      section.isNotEmpty ||
+      encounterId.isNotEmpty ||
+      orderId.isNotEmpty ||
+      search.isNotEmpty;
 
-  String get signature => '$encounterId|$orderId|$search';
+  String get signature => '$section|$encounterId|$orderId|$search';
 }

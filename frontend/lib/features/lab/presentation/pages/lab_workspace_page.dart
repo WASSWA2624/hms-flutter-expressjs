@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -24,13 +24,13 @@ import 'package:hosspi_hms/features/lab/presentation/pages/lab_result_entry_dial
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
-import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/facility_catalog/facility_catalog_scope_section.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 
 class LabWorkspacePage extends ConsumerWidget {
   const LabWorkspacePage({this.initialQuery, super.key});
@@ -80,36 +80,18 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<LabOrderSummary>
   _tableColumnController;
+  late LabDeskSection _section;
   Timer? _searchDebounce;
   String? _appliedRouteSignature;
 
   @override
   void initState() {
     super.initState();
+    _section = LabDeskSection.worklist;
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<LabOrderSummary>();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _applyScopeFromRoute());
     _scheduleRouteQuery(widget.initialQuery);
-  }
-
-  void _applyScopeFromRoute() {
-    if (!mounted) {
-      return;
-    }
-    final String? scopeParam = GoRouterState.of(
-      context,
-    ).uri.queryParameters[_labScopeFilterKey];
-    if (scopeParam == null || scopeParam.isEmpty) {
-      return;
-    }
-    final LabQueueScope scope = _labScopeFromFilter(scopeParam);
-    if (scope == widget.state.query.scope) {
-      return;
-    }
-    unawaited(
-      ref.read(labWorkspaceControllerProvider.notifier).applyScope(scope),
-    );
   }
 
   @override
@@ -135,6 +117,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final LabWorkspaceState state = widget.state;
     final LabWorkspaceController controller = ref.read(
       labWorkspaceControllerProvider.notifier,
@@ -142,133 +125,96 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final bool canMutate = _mutationRequirement.isAllowed(policy);
 
-    return AppWorkspace(
-      title: l10n.labTitle,
-      leadingIcon: AppRouteIcons.lab,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        summaryNotifications: <AppWorkspaceSummaryNotification>[
-          if (state.summary.totalForView(state.query.view) > 0)
-            _summaryNotification(
-              context,
-              label: state.query.view == LabWorkbenchView.patients
-                  ? l10n.labPatientsSummaryLabel
-                  : l10n.labTotalOrdersSummaryLabel,
-              value: state.summary.totalForView(state.query.view),
-              icon: Icons.assignment_outlined,
-              tone: AppWorkspaceStatusTone.info,
-              onPressed: () => controller.applyScope(LabQueueScope.all),
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: AppTabStrip(
+                    tabs: <AppTabItem>[
+                      for (final LabDeskSection section
+                          in LabDeskSection.values)
+                        AppTabItem(
+                          id: section.name,
+                          icon: _sectionIcon(section),
+                          label:
+                              '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
+                        ),
+                    ],
+                    selectedId: _section.name,
+                    onTabTapped: (String tabId) {
+                      for (final LabDeskSection section
+                          in LabDeskSection.values) {
+                        if (section.name == tabId) {
+                          setState(() => _section = section);
+                          _updateUrlForSection(section);
+                          unawaited(
+                            controller.applyScope(_scopeForSection(section)),
+                          );
+                          break;
+                        }
+                      }
+                    },
+                  ),
+                ),
+                SizedBox(width: theme.spacing.sm),
+                AppWorkspaceViewToggle(
+                  label: state.query.view == LabWorkbenchView.patients
+                      ? l10n.labOrdersViewAction
+                      : l10n.labPatientsViewAction,
+                  icon: Icons.swap_horiz_outlined,
+                  semanticLabel: state.query.view == LabWorkbenchView.patients
+                      ? l10n.labOrdersViewAction
+                      : l10n.labPatientsViewAction,
+                  tooltip: state.query.view == LabWorkbenchView.patients
+                      ? l10n.labOrdersViewAction
+                      : l10n.labPatientsViewAction,
+                  onPressed: () => controller.applyView(
+                    state.query.view == LabWorkbenchView.patients
+                        ? LabWorkbenchView.orders
+                        : LabWorkbenchView.patients,
+                  ),
+                ),
+                if (canMutate) ...<Widget>[
+                  SizedBox(width: theme.spacing.sm),
+                  AppButton.secondary(
+                    label: l10n.labReferenceRangesAction,
+                    leadingIcon: Icons.tune_outlined,
+                    semanticLabel: l10n.labReferenceRangesAction,
+                    tooltip: l10n.labReferenceRangesAction,
+                    onPressed: () =>
+                        _openLabConfigurationsDialog(context, state),
+                  ),
+                  SizedBox(width: theme.spacing.sm),
+                  AppButton.primary(
+                    label: l10n.labCreateAction,
+                    leadingIcon: Icons.add_circle_outline,
+                    semanticLabel: l10n.labCreateAction,
+                    tooltip: l10n.labCreateAction,
+                    enabled: !state.isSaving,
+                    onPressed: () => _openCreateLabOrderDialog(context, state),
+                  ),
+                ],
+              ],
             ),
-          if (state.summary.collectionForView(state.query.view) > 0)
-            _summaryNotification(
-              context,
-              label: state.query.view == LabWorkbenchView.patients
-                  ? l10n.labPatientsAwaitingResultsSummaryLabel
-                  : l10n.labWaitingSampleSummaryLabel,
-              value: state.summary.collectionForView(state.query.view),
-              icon: Icons.biotech_outlined,
-              tone: AppWorkspaceStatusTone.warning,
-              onPressed: () => controller.applyScope(LabQueueScope.collection),
+            SizedBox(height: theme.spacing.md),
+            _LabWorklistPanel(
+              state: state,
+              canMutate: canMutate,
+              searchController: _searchController,
+              columnVisibilityController: _tableColumnController,
+              onSearchChanged: _scheduleWorklistSearch,
+              onSearchSubmitted: _submitWorklistSearch,
+              onSearchCleared: _clearWorklistSearch,
+              sectionName: _section.name,
             ),
-          if (state.summary.processingForView(state.query.view) > 0)
-            _summaryNotification(
-              context,
-              label: state.query.view == LabWorkbenchView.patients
-                  ? l10n.labPatientsProcessingSummaryLabel
-                  : l10n.labProcessingSummaryLabel,
-              value: state.summary.processingForView(state.query.view),
-              icon: Icons.sync_outlined,
-              tone: AppWorkspaceStatusTone.info,
-              onPressed: () => controller.applyScope(LabQueueScope.processing),
-            ),
-          if (state.summary.resultsForView(state.query.view) > 0)
-            _summaryNotification(
-              context,
-              label: state.query.view == LabWorkbenchView.patients
-                  ? l10n.labPatientsPendingVerificationSummaryLabel
-                  : l10n.labResultPendingSummaryLabel,
-              value: state.summary.resultsForView(state.query.view),
-              icon: Icons.pending_actions_outlined,
-              tone: AppWorkspaceStatusTone.warning,
-              onPressed: () => controller.applyScope(LabQueueScope.results),
-            ),
-          if (state.summary.criticalForView(state.query.view) > 0)
-            _summaryNotification(
-              context,
-              label: state.query.view == LabWorkbenchView.patients
-                  ? l10n.labPatientsCriticalSummaryLabel
-                  : l10n.labCriticalSummaryLabel,
-              value: state.summary.criticalForView(state.query.view),
-              icon: Icons.priority_high_outlined,
-              tone: AppWorkspaceStatusTone.error,
-              onPressed: () => controller.applyScope(LabQueueScope.critical),
-            ),
-          if (state.summary.completedForView(state.query.view) > 0)
-            _summaryNotification(
-              context,
-              label: state.query.view == LabWorkbenchView.patients
-                  ? l10n.labPatientsCompletedSummaryLabel
-                  : l10n.labCompletedSummaryLabel,
-              value: state.summary.completedForView(state.query.view),
-              icon: Icons.verified_outlined,
-              tone: AppWorkspaceStatusTone.success,
-              onPressed: () => controller.applyScope(LabQueueScope.completed),
-            ),
-        ],
-        secondary: <Widget>[
-          AppWorkspaceViewToggle(
-            label: state.query.view == LabWorkbenchView.patients
-                ? l10n.labOrdersViewAction
-                : l10n.labPatientsViewAction,
-            icon: Icons.swap_horiz_outlined,
-            semanticLabel: state.query.view == LabWorkbenchView.patients
-                ? l10n.labOrdersViewAction
-                : l10n.labPatientsViewAction,
-            tooltip: state.query.view == LabWorkbenchView.patients
-                ? l10n.labOrdersViewAction
-                : l10n.labPatientsViewAction,
-            onPressed: () => controller.applyView(
-              state.query.view == LabWorkbenchView.patients
-                  ? LabWorkbenchView.orders
-                  : LabWorkbenchView.patients,
-            ),
-          ),
-          if (canMutate)
-            AppButton.secondary(
-              label: l10n.labReferenceRangesAction,
-              leadingIcon: Icons.tune_outlined,
-              semanticLabel: l10n.labReferenceRangesAction,
-              tooltip: l10n.labReferenceRangesAction,
-              onPressed: () => _openLabConfigurationsDialog(context, state),
-            ),
-        ],
-        primary: canMutate
-            ? AppButton.primary(
-                label: l10n.labCreateAction,
-                leadingIcon: Icons.add_circle_outline,
-                semanticLabel: l10n.labCreateAction,
-                tooltip: l10n.labCreateAction,
-                enabled: !state.isSaving,
-                onPressed: () => _openCreateLabOrderDialog(context, state),
-              )
-            : null,
-        onRefresh: () async {
-          final AppFailure? failure = await controller.refresh();
-          if (context.mounted) {
-            _showFailureIfNeeded(context, failure);
-          }
-        },
-        isRefreshing: state.isRefreshing,
-      ),
-
-      body: _LabWorklistPanel(
-        state: state,
-        canMutate: canMutate,
-        searchController: _searchController,
-        columnVisibilityController: _tableColumnController,
-        onSearchChanged: _scheduleWorklistSearch,
-        onSearchSubmitted: _submitWorklistSearch,
-        onSearchCleared: _clearWorklistSearch,
+          ],
+        ),
       ),
     );
   }
@@ -303,6 +249,96 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
     );
   }
 
+  LabQueueScope _scopeForSection(LabDeskSection section) {
+    return switch (section) {
+      LabDeskSection.worklist => LabQueueScope.all,
+      LabDeskSection.collection => LabQueueScope.collection,
+      LabDeskSection.processing => LabQueueScope.processing,
+      LabDeskSection.verification => LabQueueScope.results,
+      LabDeskSection.critical => LabQueueScope.critical,
+      LabDeskSection.completed => LabQueueScope.completed,
+    };
+  }
+
+  LabDeskSection? _sectionFromQuery(String raw) {
+    switch (raw.trim().toLowerCase()) {
+      case 'worklist':
+      case 'all':
+        return LabDeskSection.worklist;
+      case 'collection':
+      case 'sample':
+        return LabDeskSection.collection;
+      case 'processing':
+      case 'in-process':
+        return LabDeskSection.processing;
+      case 'verification':
+      case 'results':
+      case 'pending':
+        return LabDeskSection.verification;
+      case 'critical':
+        return LabDeskSection.critical;
+      case 'completed':
+      case 'done':
+        return LabDeskSection.completed;
+      default:
+        return null;
+    }
+  }
+
+  static String _sectionToQueryValue(LabDeskSection section) {
+    return switch (section) {
+      LabDeskSection.worklist => 'worklist',
+      LabDeskSection.collection => 'collection',
+      LabDeskSection.processing => 'processing',
+      LabDeskSection.verification => 'verification',
+      LabDeskSection.critical => 'critical',
+      LabDeskSection.completed => 'completed',
+    };
+  }
+
+  void _updateUrlForSection(LabDeskSection section) {
+    if (!mounted) return;
+    final String tab = _sectionToQueryValue(section);
+    final String location = AppRoutes.lab.location(
+      queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
+    );
+    GoRouter.of(context).replace<void>(location);
+  }
+
+  String _sectionLabel(AppLocalizations l10n, LabDeskSection section) {
+    return switch (section) {
+      LabDeskSection.worklist => l10n.labScopeAll,
+      LabDeskSection.collection => l10n.labScopeCollection,
+      LabDeskSection.processing => l10n.labScopeProcessing,
+      LabDeskSection.verification => l10n.labScopeResults,
+      LabDeskSection.critical => l10n.labScopeCritical,
+      LabDeskSection.completed => l10n.labScopeCompleted,
+    };
+  }
+
+  static IconData _sectionIcon(LabDeskSection section) {
+    return switch (section) {
+      LabDeskSection.worklist => Icons.assignment_outlined,
+      LabDeskSection.collection => Icons.biotech_outlined,
+      LabDeskSection.processing => Icons.sync_outlined,
+      LabDeskSection.verification => Icons.pending_actions_outlined,
+      LabDeskSection.critical => Icons.priority_high_outlined,
+      LabDeskSection.completed => Icons.verified_outlined,
+    };
+  }
+
+  int _sectionCount(LabWorkspaceState state, LabDeskSection section) {
+    final LabWorkbenchView view = state.query.view;
+    return switch (section) {
+      LabDeskSection.worklist => state.summary.totalForView(view),
+      LabDeskSection.collection => state.summary.collectionForView(view),
+      LabDeskSection.processing => state.summary.processingForView(view),
+      LabDeskSection.verification => state.summary.resultsForView(view),
+      LabDeskSection.critical => state.summary.criticalForView(view),
+      LabDeskSection.completed => state.summary.completedForView(view),
+    };
+  }
+
   void _scheduleRouteQuery(LabWorkspaceQuery? query) {
     if (query == null || !query.hasRouteTargeting) return;
     if (_appliedRouteSignature == query.signature) return;
@@ -314,11 +350,23 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
   }
 
   Future<void> _applyRouteQuery(LabWorkspaceQuery query) async {
+    final LabDeskSection? section = _sectionFromQuery(query.section);
+    if (section != null && section != _section) {
+      setState(() => _section = section);
+      unawaited(
+        ref
+            .read(labWorkspaceControllerProvider.notifier)
+            .applyScope(_scopeForSection(section)),
+      );
+    }
+
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;
-      ref
-          .read(labWorkspaceControllerProvider.notifier)
-          .applySearch(query.search);
+      unawaited(
+        ref
+            .read(labWorkspaceControllerProvider.notifier)
+            .applySearch(query.search),
+      );
     }
     final LabOrderSummary? order = _findOrderByQuery(query);
     if (order != null) {
@@ -343,23 +391,6 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
     }
     return null;
   }
-
-  AppWorkspaceSummaryNotification _summaryNotification(
-    BuildContext context, {
-    required String label,
-    required int value,
-    required IconData icon,
-    required AppWorkspaceStatusTone tone,
-    required VoidCallback onPressed,
-  }) {
-    return AppWorkspaceSummaryNotification(
-      label: label,
-      count: value,
-      icon: icon,
-      tone: tone,
-      onSelected: onPressed,
-    );
-  }
 }
 
 class _LabWorklistPanel extends ConsumerWidget {
@@ -371,6 +402,7 @@ class _LabWorklistPanel extends ConsumerWidget {
     required this.onSearchChanged,
     required this.onSearchSubmitted,
     required this.onSearchCleared,
+    required this.sectionName,
   });
 
   final LabWorkspaceState state;
@@ -381,6 +413,7 @@ class _LabWorklistPanel extends ConsumerWidget {
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String> onSearchSubmitted;
   final VoidCallback onSearchCleared;
+  final String sectionName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -394,6 +427,8 @@ class _LabWorklistPanel extends ConsumerWidget {
         AppListTable<LabOrderSummary>(
           page: state.worklist,
           columnVisibilityController: columnVisibilityController,
+          columnVisibilityStorageKey: 'lab_$sectionName',
+          columnWidthStorageKey: 'lab_cw_$sectionName',
           columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
           columnVisibilityTitle: l10n.labTableColumnsTitle,
           columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
@@ -406,28 +441,6 @@ class _LabWorklistPanel extends ConsumerWidget {
             onChanged: onSearchChanged,
             onSubmitted: onSearchSubmitted,
             onClear: onSearchCleared,
-            showAdvancedFilterButton: true,
-            advancedFilterButtonLabel: l10n.labFiltersLabel,
-            advancedFilterTitle: l10n.labFiltersLabel,
-            advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-            advancedFilterResetLabel: l10n.opdClearFiltersAction,
-            enableDateFilter: false,
-            allFieldsLabel: l10n.labScopeAll,
-            filterGroups: <AppSearchBarFilterGroup>[
-              AppSearchBarFilterGroup(
-                key: _labScopeFilterKey,
-                label: l10n.labScopeFilterLabel,
-                allLabel: l10n.labScopeAll,
-                choices: _labScopeFilterChoices(l10n),
-              ),
-            ],
-            filterValue: _labFilterValue(state.query),
-            hasActiveFilters: state.query.scope != LabQueueScope.all,
-            onFilterChanged: (AppSearchBarFilterValue value) {
-              controller.applyScope(
-                _labScopeFromFilter(value.option(_labScopeFilterKey)),
-              );
-            },
           ),
           previousPageLabel: l10n.labPreviousPageLabel,
           nextPageLabel: l10n.labNextPageLabel,
@@ -2527,83 +2540,6 @@ String _unitRangeSummary(BuildContext context, LabCatalogItem item) {
       item.referenceRange,
   ]);
   return summary.isEmpty ? context.l10n.profileUnknownValue : summary;
-}
-
-List<AppSelectOption<LabQueueScope>> _scopeOptions(AppLocalizations l10n) {
-  return <AppSelectOption<LabQueueScope>>[
-    AppSelectOption<LabQueueScope>(
-      value: LabQueueScope.all,
-      label: l10n.labScopeAll,
-    ),
-    AppSelectOption<LabQueueScope>(
-      value: LabQueueScope.collection,
-      label: l10n.labScopeCollection,
-    ),
-    AppSelectOption<LabQueueScope>(
-      value: LabQueueScope.processing,
-      label: l10n.labScopeProcessing,
-    ),
-    AppSelectOption<LabQueueScope>(
-      value: LabQueueScope.results,
-      label: l10n.labScopeResults,
-    ),
-    AppSelectOption<LabQueueScope>(
-      value: LabQueueScope.critical,
-      label: l10n.labScopeCritical,
-    ),
-    AppSelectOption<LabQueueScope>(
-      value: LabQueueScope.completed,
-      label: l10n.labScopeCompleted,
-    ),
-    AppSelectOption<LabQueueScope>(
-      value: LabQueueScope.cancelled,
-      label: l10n.labScopeCancelled,
-    ),
-  ];
-}
-
-const String _labScopeFilterKey = 'scope';
-
-AppSearchBarFilterValue _labFilterValue(LabWorkbenchQuery query) {
-  if (query.scope == LabQueueScope.all) {
-    return AppSearchBarFilterValue.empty;
-  }
-  return AppSearchBarFilterValue(
-    options: <String, String>{_labScopeFilterKey: query.scope.name},
-  );
-}
-
-LabQueueScope _labScopeFromFilter(String? value) {
-  for (final LabQueueScope scope in LabQueueScope.values) {
-    if (scope.name == value) {
-      return scope;
-    }
-  }
-  return LabQueueScope.all;
-}
-
-List<AppSearchBarFilterChoice> _labScopeFilterChoices(AppLocalizations l10n) {
-  return <AppSearchBarFilterChoice>[
-    for (final AppSelectOption<LabQueueScope> option in _scopeOptions(l10n))
-      if (option.value != LabQueueScope.all)
-        AppSearchBarFilterChoice(
-          value: option.value.name,
-          label: option.label,
-          icon: _labScopeIcon(option.value),
-        ),
-  ];
-}
-
-IconData _labScopeIcon(LabQueueScope scope) {
-  return switch (scope) {
-    LabQueueScope.all => Icons.assignment_outlined,
-    LabQueueScope.collection => Icons.pending_actions_outlined,
-    LabQueueScope.processing => Icons.sync_outlined,
-    LabQueueScope.results => Icons.pending_actions_outlined,
-    LabQueueScope.critical => Icons.priority_high_outlined,
-    LabQueueScope.completed => Icons.verified_outlined,
-    LabQueueScope.cancelled => Icons.block_outlined,
-  };
 }
 
 String _pageLabel(BuildContext context, AppPage<LabOrderSummary> page) {

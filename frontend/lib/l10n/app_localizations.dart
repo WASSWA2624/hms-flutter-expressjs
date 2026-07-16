@@ -27045,6 +27045,48 @@ abstract class AppLocalizations {
   /// **'Next action'**
   String get housekeepingNextActionColumnLabel;
 
+  /// Column header for the schedule name in the Schedules tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get housekeepingScheduleColumnLabel;
+
+  /// Column header for the frequency in the Schedules tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Frequency'**
+  String get housekeepingFrequencyColumnLabel;
+
+  /// Column header for the start date in the Schedules tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get housekeepingStartDateColumnLabel;
+
+  /// Column header for the end date in the Schedules tab.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get housekeepingEndDateColumnLabel;
+
+  /// Column header for the request title in the Maintenance tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Request'**
+  String get housekeepingRequestColumnLabel;
+
+  /// Column header for the asset in the Maintenance tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Asset'**
+  String get housekeepingAssetColumnLabel;
+
+  /// Column header for the reported date in the Maintenance tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Reported'**
+  String get housekeepingReportedColumnLabel;
+
   /// Localized text for housekeepingNoSelectionTitle.
   ///
   /// In en, this message translates to:

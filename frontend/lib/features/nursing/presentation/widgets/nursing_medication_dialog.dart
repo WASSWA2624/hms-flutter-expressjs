@@ -37,8 +37,8 @@ class _NursingMedicationDialogState
     super.initState();
     final MedicationSuggestion? firstSuggestion =
         widget.detail.medicationSuggestions.isEmpty
-            ? null
-            : widget.detail.medicationSuggestions.first;
+        ? null
+        : widget.detail.medicationSuggestions.first;
     final DateTime now = DateTime.now();
     _prescriptionId = firstSuggestion?.id;
     _doseController = TextEditingController(text: firstSuggestion?.dose ?? '');
