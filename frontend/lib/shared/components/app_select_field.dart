@@ -3,6 +3,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
+import 'package:hosspi_hms/shared/components/app_loading_indicator.dart';
 
 class AppSelectOption<T> {
   const AppSelectOption({
@@ -809,7 +810,7 @@ class _SelectTrailingIcon extends StatelessWidget {
               padding: EdgeInsetsDirectional.only(end: theme.spacing.xs),
               child: SizedBox.square(
                 dimension: theme.appTokens.listIconSize * 0.78,
-                child: const CircularProgressIndicator(strokeWidth: 2),
+                child: const AppLoadingIndicator.compact(),
               ),
             ),
           Padding(

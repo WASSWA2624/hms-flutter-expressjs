@@ -169,4 +169,47 @@ void main() {
 
     expect(submitCount, 1);
   });
+
+  testWidgets('optional bed mode submits without ward room or bed', (
+    WidgetTester tester,
+  ) async {
+    ClinicalActionAdmissionInput? submitted;
+    await pumpLocalizedWidget(
+      tester,
+      Builder(
+        builder: (BuildContext context) {
+          return AppButton.primary(
+            label: 'Open admission dialog',
+            onPressed: () {
+              showAppDialog<void>(
+                context: context,
+                builder: (_) => ClinicalAdmissionActionDialog(
+                  title: 'Start admission',
+                  submitLabel: 'Start admission',
+                  referenceData: referenceData,
+                  bedRequired: false,
+                  initialMaximized: false,
+                  submitLeadingIcon: Icons.person_add_alt_1_outlined,
+                  onSubmit: (ClinicalActionAdmissionInput input) async {
+                    submitted = input;
+                    return null;
+                  },
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+    await tester.tap(find.text('Open admission dialog'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Start admission').last);
+    await tester.pumpAndSettle();
+
+    expect(submitted, isNotNull);
+    expect(submitted!.bed, isNull);
+    expect(submitted!.wardId, isNull);
+    expect(submitted!.roomId, isNull);
+  });
 }

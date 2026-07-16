@@ -8,7 +8,6 @@ import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/core/currency/effective_default_currency_provider.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
@@ -41,6 +40,7 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
+import 'package:hosspi_hms/shared/patient_actions/patient_actions.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 part '../widgets/patient_detail_dialog_body.dart';
@@ -2528,262 +2528,11 @@ Future<bool?> _openPatientFlowQuickDialog(
   required Patient patient,
   required PatientReferenceData referenceData,
 }) {
-  return showAppDialog<bool>(
+  return showPatientBillingQuickDialog(
     context: context,
-    barrierDismissible: false,
-    builder: (_) => _PatientFlowQuickDialog(
-      patient: patient,
-      referenceData: referenceData,
-    ),
+    patient: patient,
+    referenceData: referenceData,
   );
-}
-
-class _PatientFlowQuickDialog extends ConsumerStatefulWidget {
-  const _PatientFlowQuickDialog({
-    required this.patient,
-    required this.referenceData,
-  });
-
-  final Patient patient;
-  final PatientReferenceData referenceData;
-
-  @override
-  ConsumerState<_PatientFlowQuickDialog> createState() =>
-      _PatientFlowQuickDialogState();
-}
-
-class _PatientFlowQuickDialogState
-    extends ConsumerState<_PatientFlowQuickDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _notesController = TextEditingController();
-  final TextEditingController _feeController = TextEditingController();
-  final TextEditingController _transactionRefController =
-      TextEditingController();
-  String? _facilityId;
-  String _currency = appDefaultCurrencyCode;
-  String _paymentMethod = 'CASH';
-  bool _markPaid = false;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  static const IconData _dialogIcon = Icons.payments_outlined;
-
-  @override
-  void initState() {
-    super.initState();
-    _facilityId = _initialFacilityId();
-    _currency = ref.read(effectiveDefaultCurrencyProvider);
-  }
-
-  @override
-  void dispose() {
-    _notesController.dispose();
-    _feeController.dispose();
-    _transactionRefController.dispose();
-    super.dispose();
-  }
-
-  String? _initialFacilityId() {
-    if (widget.patient.facilityId != null &&
-        widget.patient.facilityId!.trim().isNotEmpty) {
-      return widget.patient.facilityId;
-    }
-    if (widget.referenceData.facilities.length == 1) {
-      return widget.referenceData.facilities.first.id;
-    }
-    return null;
-  }
-
-  String? _resolvedFacilityId() {
-    if (_facilityId != null && _facilityId!.trim().isNotEmpty) {
-      return _facilityId;
-    }
-    if (widget.referenceData.facilities.length == 1) {
-      return widget.referenceData.facilities.first.id;
-    }
-    return widget.patient.facilityId;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    return AppDialog(
-      title: Text(l10n.patientsBillingDialogTitle),
-      icon: const Icon(_dialogIcon),
-      scrollable: true,
-      pinActionsToBottom: true,
-      closeEnabled: !_isSaving,
-      maxWidth: 780,
-      content: AppFormShell(
-        formKey: _formKey,
-        enabled: !_isSaving,
-        density: AppFormSectionDensity.compact,
-        formStatus: appFormFailureStatus(
-          context,
-          _failure,
-          messageBuilder: (AppFailure failure) =>
-              _workflowFailureMessage(context, failure),
-        ),
-        children: <Widget>[
-          if (widget.referenceData.facilities.length > 1)
-            AppFormSection(
-              title: l10n.patientsWorkflowSectionTitle,
-              density: AppFormSectionDensity.compact,
-              children: <Widget>[_facilitySelect(context)],
-            ),
-          AppFormSection(
-            title: l10n.patientsBillingSectionTitle,
-            density: AppFormSectionDensity.compact,
-            children: <Widget>[
-              _consultationFeeField(context),
-              AppCheckboxField(
-                title: l10n.patientsMarkPaymentReceivedLabel,
-                value: _markPaid,
-                enabled: !_isSaving,
-                onChanged: (bool value) => setState(() => _markPaid = value),
-              ),
-              if (_markPaid)
-                AppResponsiveFieldRow.two(
-                  left: AppSelectField<String>.searchable(
-                    value: _paymentMethod,
-                    labelText: l10n.patientsPaymentMethodLabel,
-                    enabled: !_isSaving,
-                    onChanged: (String? value) =>
-                        setState(() => _paymentMethod = value ?? 'CASH'),
-                    options: _paymentMethodSelectOptions(),
-                  ),
-                  right: AppTextField(
-                    controller: _transactionRefController,
-                    labelText: l10n.patientsTransactionReferenceLabel,
-                    enabled: !_isSaving,
-                  ),
-                ),
-            ],
-          ),
-          AppFormSection(
-            title: l10n.patientsNotesSectionTitle,
-            density: AppFormSectionDensity.compact,
-            children: <Widget>[
-              AppTextField(
-                controller: _notesController,
-                labelText: l10n.patientsNotesLabel,
-                enabled: !_isSaving,
-                maxLines: 3,
-              ),
-            ],
-          ),
-        ],
-      ),
-      actions: clinicalActionDialogActions(
-        context,
-        l10n.patientsQuickBillingAction,
-        _isSaving,
-        _isSaving ? null : _submit,
-        submitLeadingIcon: _dialogIcon,
-      ),
-    );
-  }
-
-  Widget _consultationFeeField(BuildContext context) {
-    final l10n = context.l10n;
-    return AppCurrencyAmountField(
-      amountController: _feeController,
-      currency: _currency,
-      amountLabelText: l10n.patientsConsultationFeeLabel,
-      currencyLabelText: l10n.patientsCurrencyLabel,
-      enabled: !_isSaving,
-      isRequired: true,
-      validator: AppValidators.requiredText(l10n.validationRequired),
-      onCurrencyChanged: (String? value) {
-        setState(() {
-          _currency = value ?? appDefaultCurrencyCode;
-        });
-      },
-    );
-  }
-
-  Widget _facilitySelect(BuildContext context) {
-    return PatientFacilitySelectField(
-      facilities: widget.referenceData.facilities,
-      value: _facilityId,
-      labelText: context.l10n.patientsFacilityLabel,
-      enabled: !_isSaving,
-      onChanged: (String? value) {
-        setState(() => _facilityId = value);
-      },
-    );
-  }
-
-  Future<void> _submit() async {
-    if (_isSaving) {
-      return;
-    }
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-
-    final AppFailure? failure = await _submitBilling();
-
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _isSaving = false;
-      _failure = failure;
-    });
-  }
-
-  Future<AppFailure?> _submitBilling() {
-    final String amount = normalizeCurrencyAmount(_feeController.text);
-    return _startFlow(<String, Object?>{
-      'arrival_mode': 'WALK_IN',
-      'consultation_fee': amount,
-      'currency': _currency,
-      'create_consultation_invoice': true,
-      'require_consultation_payment': true,
-      if (_markPaid)
-        'pay_now': _withoutEmptyPayload(<String, Object?>{
-          'method': _paymentMethod,
-          'amount': amount,
-          'status': 'COMPLETED',
-          'transaction_ref': _transactionRefController.text.trim(),
-          'paid_at': DateTime.now().toUtc().toIso8601String(),
-        }),
-    });
-  }
-
-  Future<AppFailure?> _startFlow(Map<String, Object?> payload) async {
-    // Persist through the OPD controller so flows/queues patch on success only.
-    final Result<OpdFlowDetail> result = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .submitOpdEncounter(_baseFlowPayload(payload));
-    final OpdFlowDetail? flow = _successOrNull(result);
-    if (flow == null) {
-      return _failureOrNull(result);
-    }
-    // Parent also refreshes patient detail via refreshIfChanged(true).
-    return null;
-  }
-
-  Map<String, Object?> _baseFlowPayload(Map<String, Object?> extra) {
-    return _withoutEmptyPayload(<String, Object?>{
-      'tenant_id': widget.patient.tenantId,
-      'facility_id': _resolvedFacilityId(),
-      'patient_id': widget.patient.id,
-      'queued_at': DateTime.now().toUtc().toIso8601String(),
-      'reuse_open_encounter': true,
-      'notes': _notesController.text.trim(),
-      ...extra,
-    });
-  }
 }
 
 class _PatientReportPrintPreviewDialog extends ConsumerStatefulWidget {
@@ -5977,10 +5726,6 @@ List<AppSelectOption<String>> _consentTypeSelectOptions(
   ];
 }
 
-List<AppSelectOption<String>> _paymentMethodSelectOptions() {
-  return buildAppPaymentMethodSelectOptions(methods: _paymentMethods);
-}
-
 List<AppSelectOption<bool>> _booleanFilterOptions(AppLocalizations l10n) {
   return <AppSelectOption<bool>>[
     AppSelectOption<bool>(
@@ -6142,15 +5887,6 @@ const List<String> _triageLevelOptions = <String>[
   'URGENT',
   'LESS_URGENT',
   'NON_URGENT',
-];
-const List<String> _paymentMethods = <String>[
-  'CASH',
-  'CREDIT_CARD',
-  'DEBIT_CARD',
-  'MOBILE_MONEY',
-  'BANK_TRANSFER',
-  'INSURANCE',
-  'OTHER',
 ];
 const List<String> _consentStates = <String>['GRANTED', 'REVOKED', 'PENDING'];
 const List<String> _consentTypes = <String>[

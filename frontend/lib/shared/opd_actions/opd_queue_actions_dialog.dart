@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
@@ -22,11 +23,15 @@ import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 Future<bool?> showQueueActionsDialog({
   required BuildContext context,
   required OpdQueueEntry entry,
+  AccessRequirement actionRequirement = opdFrontDeskActionRequirement,
 }) {
   return showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => QueueActionsDialog(entry: entry),
+    builder: (_) => QueueActionsDialog(
+      entry: entry,
+      actionRequirement: actionRequirement,
+    ),
   );
 }
 
@@ -43,9 +48,16 @@ bool isOpdQueueTerminalStatus(String? status) {
 }
 
 class QueueActionsDialog extends ConsumerWidget {
-  const QueueActionsDialog({required this.entry, super.key});
+  const QueueActionsDialog({
+    required this.entry,
+    this.actionRequirement = opdFrontDeskActionRequirement,
+    super.key,
+  });
 
   final OpdQueueEntry entry;
+
+  /// Front-desk write gate. Reception passes `receptionFrontDeskWriteRequirement`.
+  final AccessRequirement actionRequirement;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -92,21 +104,21 @@ class QueueActionsDialog extends ConsumerWidget {
               minItemWidth: 180,
               permissionActions: <AppPermissionActionItem>[
                 AppPermissionActionItem(
-                  requirement: opdFrontDeskActionRequirement,
+                  requirement: actionRequirement,
                   label: l10n.opdPrioritizeAction,
                   icon: AppActionIcons.priority,
                   fullWidth: true,
                   onPressed: () => _openPrioritize(context, ref),
                 ),
                 AppPermissionActionItem(
-                  requirement: opdFrontDeskActionRequirement,
+                  requirement: actionRequirement,
                   label: l10n.opdMoveQueueAction,
                   icon: AppActionIcons.move,
                   fullWidth: true,
                   onPressed: () => _openMove(context),
                 ),
                 AppPermissionActionItem(
-                  requirement: opdFrontDeskActionRequirement,
+                  requirement: actionRequirement,
                   label: l10n.opdStartConsultationAction,
                   icon: AppActionIcons.start,
                   variant: AppButtonVariant.primary,

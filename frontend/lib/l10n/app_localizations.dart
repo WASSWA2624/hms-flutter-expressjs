@@ -8248,6 +8248,12 @@ abstract class AppLocalizations {
   /// **'Triage'**
   String get patientsQuickTriageAction;
 
+  /// Primary commit label for the patient triage quick dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Save triage'**
+  String get patientsSaveTriageAction;
+
   /// Patient quick clinical visit action label.
   ///
   /// In en, this message translates to:

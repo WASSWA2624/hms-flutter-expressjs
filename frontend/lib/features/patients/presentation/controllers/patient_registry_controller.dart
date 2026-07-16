@@ -414,15 +414,22 @@ final class PatientRegistryController
   /// Mutates over HTTP via [IpdRepository.requestAdmission]. On persisted
   /// success, immediately patches admission / visit cues on the selected
   /// patient detail and list row, then reconciles with a targeted detail load.
+  ///
+  /// [patientId] is the registry entity id used for Riverpod patches.
+  /// [apiPatientId] is the public `human_friendly_id` sent to the API when it
+  /// differs from [patientId].
   Future<AppFailure?> requestAdmission({
     required String patientId,
+    String? apiPatientId,
     String? tenantId,
     String? facilityId,
     String? reason,
     String? notes,
   }) async {
     final String normalizedPatientId = patientId.trim();
-    if (normalizedPatientId.isEmpty) {
+    final String normalizedApiPatientId =
+        (apiPatientId ?? patientId).trim();
+    if (normalizedPatientId.isEmpty || normalizedApiPatientId.isEmpty) {
       return AppFailure.validation();
     }
 
@@ -438,7 +445,7 @@ final class PatientRegistryController
             'tenant_id': tenantId.trim(),
           if (facilityId != null && facilityId.trim().isNotEmpty)
             'facility_id': facilityId.trim(),
-          'patient_id': normalizedPatientId,
+          'patient_id': normalizedApiPatientId,
           if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
           if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
         });

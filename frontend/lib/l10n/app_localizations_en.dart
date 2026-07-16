@@ -4271,6 +4271,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsQuickTriageAction => 'Triage';
 
   @override
+  String get patientsSaveTriageAction => 'Save triage';
+
+  @override
   String get patientsQuickClinicalAction => 'Clinical visit';
 
   @override

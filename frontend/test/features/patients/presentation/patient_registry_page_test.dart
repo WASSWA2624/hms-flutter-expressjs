@@ -29,6 +29,7 @@ import 'package:hosspi_hms/features/patients/domain/repositories/patient_reposit
 import 'package:hosspi_hms/features/patients/presentation/pages/patient_registry_page.dart';
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_widgets.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:go_router/go_router.dart';
@@ -953,9 +954,12 @@ void main() {
     await tester.tap(find.text('Request admission'));
     await tester.pumpAndSettle();
 
+    expect(find.byType(PatientAdmissionQuickDialog), findsOneWidget);
+    expect(find.byType(ClinicalAdmissionActionDialog), findsOneWidget);
     expect(find.text('Request admission'), findsWidgets);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.byIcon(Icons.fullscreen_exit), findsWidgets);
+    expect(find.byIcon(AppActionIcons.bed), findsWidgets);
     expect(find.byType(PatientFacilitySelectField), findsNothing);
   });
 

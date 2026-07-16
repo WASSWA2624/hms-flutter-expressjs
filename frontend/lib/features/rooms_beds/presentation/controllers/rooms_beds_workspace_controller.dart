@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -8,6 +10,7 @@ import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/realtime/realtime_scope.dart';
 import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
+import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
 import 'package:hosspi_hms/features/rooms_beds/data/repositories/rooms_beds_repository_impl.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
 import 'package:hosspi_hms/features/rooms_beds/domain/repositories/rooms_beds_repository.dart';
@@ -340,6 +343,8 @@ final class RoomsBedsWorkspaceController
 
     return result.when(
       success: (_) async {
+        // Transfer status / bed occupancy also appear on IPD transfer views.
+        _reconcileIpdWorkspace();
         final Result<RoomsBedsWorkspaceState> reload = await _loadState(
           current.query,
           selectedBedId: item.id,
@@ -358,6 +363,17 @@ final class RoomsBedsWorkspaceController
         return failure;
       },
     );
+  }
+
+  /// Acting-user IPD sync after transfer mutations.
+  ///
+  /// Realtime excludes the mutating user, so an already-mounted IPD workspace
+  /// must refresh from HTTP success rather than waiting on WS.
+  void _reconcileIpdWorkspace() {
+    if (!ref.exists(ipdWorkspaceControllerProvider)) {
+      return;
+    }
+    unawaited(ref.read(ipdWorkspaceControllerProvider.notifier).refresh());
   }
 
   List<BedBoardItem> availableDestinationBeds({String? excludeBedId}) {

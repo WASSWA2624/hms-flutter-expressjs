@@ -858,7 +858,7 @@ class _BedDetailContent extends ConsumerWidget {
               if (canIpdWrite && item.hasOpenTransfer && admissionId != null)
                 AppButton.secondary(
                   label: l10n.roomsBedsManageTransferAction,
-                  leadingIcon: Icons.move_down_outlined,
+                  leadingIcon: AppActionIcons.transfer,
                   enabled: !state.isSaving,
                   onPressed: () => _showTransferUpdateDialog(
                     context,

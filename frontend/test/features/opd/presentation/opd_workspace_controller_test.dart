@@ -1070,6 +1070,96 @@ void main() {
       );
       verify(() => repository.listProviders()).called(1);
     });
+
+    test(
+      'startOpdFromQueue patches the queue row to IN_PROGRESS on success',
+      () async {
+        final _MockOpdRepository repository = _MockOpdRepository();
+        const OpdQueueEntry queued = OpdQueueEntry(
+          id: 'queue-internal',
+          publicId: 'QUE000001',
+          providerUserId: 'USR000001',
+          status: 'CONFIRMED',
+        );
+        const OpdFlowDetail detail = OpdFlowDetail(
+          summary: OpdFlowSummary(
+            id: 'encounter-1',
+            publicId: 'ENC000001',
+            patientId: 'PAT000001',
+            providerUserId: 'USR000001',
+            status: 'OPEN',
+            stage: 'WAITING_VITALS',
+            visitQueueId: 'QUE000001',
+          ),
+        );
+        Map<String, Object?>? submittedPayload;
+        _stubInitialLoad(repository, queueEntries: <OpdQueueEntry>[queued]);
+        when(
+          () => repository.startOpdFlow(
+            any(),
+            idempotencyKey: any(named: 'idempotencyKey'),
+          ),
+        ).thenAnswer((Invocation invocation) async {
+          submittedPayload =
+              invocation.positionalArguments.single as Map<String, Object?>;
+          return const Result<OpdFlowDetail>.success(detail);
+        });
+
+        final ProviderContainer container = _testContainer(repository);
+        addTearDown(container.dispose);
+        await container.read(opdWorkspaceControllerProvider.future);
+
+        final AppFailure? failure = await container
+            .read(opdWorkspaceControllerProvider.notifier)
+            .startOpdFromQueue(queued);
+
+        expect(failure, isNull);
+        expect(submittedPayload, containsPair('arrival_mode', 'WALK_IN'));
+        expect(submittedPayload, containsPair('visit_queue_id', 'QUE000001'));
+        expect(submittedPayload, containsPair('provider_user_id', 'USR000001'));
+        expect(submittedPayload, containsPair('reuse_open_encounter', true));
+        expect(
+          _workspaceState(container).queueEntries.items.single.status,
+          'IN_PROGRESS',
+        );
+        expect(
+          _workspaceState(container).flows.items,
+          contains(detail.summary),
+        );
+      },
+    );
+
+    test('failed startOpdFromQueue leaves the queue row unchanged', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      const OpdQueueEntry queued = OpdQueueEntry(
+        id: 'queue-internal',
+        publicId: 'QUE000001',
+        status: 'CONFIRMED',
+      );
+      _stubInitialLoad(repository, queueEntries: <OpdQueueEntry>[queued]);
+      when(
+        () => repository.startOpdFlow(
+          any(),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<OpdFlowDetail>.failure(AppFailure.network()),
+      );
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .startOpdFromQueue(queued);
+
+      expect(failure, isNotNull);
+      expect(
+        _workspaceState(container).queueEntries.items.single,
+        same(queued),
+      );
+    });
   });
 }
 

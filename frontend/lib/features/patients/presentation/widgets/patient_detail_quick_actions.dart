@@ -93,7 +93,7 @@ class PatientDetailQuickActions extends ConsumerWidget {
       if (!hasActiveOpdEncounter && !hasActiveOpdWorkItem)
         AppPermissionActionItem(
           label: l10n.patientsQuickBillingAction,
-          icon: Icons.payments_outlined,
+          icon: AppActionIcons.payment,
           tooltip: l10n.patientsBillingDialogTitle,
           onPressed: () => onAction(PatientQuickAction.billing),
           requirement: opdEncounterPermissionRequirement,

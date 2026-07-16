@@ -14,7 +14,7 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
 
 /// Payment methods shared with [ConsultationPaymentDialog] / OPD start billing.
 const List<String> patientBillingQuickPaymentMethods = <String>[
@@ -270,9 +270,9 @@ class _PatientBillingQuickDialogState
 
   Future<AppFailure?> _submitBilling() {
     final String amount = normalizeCurrencyAmount(_feeController.text);
-    final bool canRecordPayment = ref
-        .read(appAccessPolicyProvider)
-        .allows(opdBillingActionRequirement);
+    final bool canRecordPayment = opdBillingActionRequirement.isAllowed(
+      ref.read(appAccessPolicyProvider),
+    );
     final bool markPaid = _markPaid && canRecordPayment;
     return _startFlow(<String, Object?>{
       'arrival_mode': 'WALK_IN',
@@ -331,4 +331,9 @@ bool _payloadValueIsEmpty(Object? value) {
   }
   if (value is Iterable) {
     return value.isEmpty;
-  
+  }
+  if (value is Map) {
+    return value.isEmpty;
+  }
+  return false;
+}

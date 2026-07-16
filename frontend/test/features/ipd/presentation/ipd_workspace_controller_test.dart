@@ -565,4 +565,46 @@ void main() {
       openTransferRequestId: 'tr-1',
     );
     final ProviderContainer container = buildContainer(
-   
+      repo,
+      admissions: <IpdAdmissionSummary>[requested],
+    );
+    when(() => repo.updateTransfer(any(), any())).thenAnswer(
+      (_) async => const Result<IpdAdmissionDetail>.failure(
+        AppFailure.network(),
+      ),
+    );
+
+    await container.read(ipdWorkspaceControllerProvider.future);
+    final IpdWorkspaceController controller = container.read(
+      ipdWorkspaceControllerProvider.notifier,
+    );
+
+    final failure = await controller.updateTransfer(
+      admission: requested,
+      action: 'APPROVE',
+      transferRequestId: 'tr-1',
+    );
+    expect(failure, isNotNull);
+
+    final IpdWorkspaceState? state = readState(container);
+    expect(state!.selectedAdmission, isNull);
+    expect(state.admissions.items.first.transferStatus, 'REQUESTED');
+  });
+
+  test('admissionQueueCount includes requested and pending bed stages', () {
+    final IpdWorkspaceState state = IpdWorkspaceState(
+      query: const IpdAdmissionQuery(),
+      admissions: AppPage<IpdAdmissionSummary>(
+        items: <IpdAdmissionSummary>[
+          _summary(stage: 'ADMISSION_REQUESTED'),
+          _summary(),
+          _summary(stage: 'ADMITTED_IN_BED', id: 'adm-3'),
+        ],
+        request: const AppPageRequest(),
+        totalItemCount: 3,
+      ),
+    );
+
+    expect(state.admissionQueueCount, 2);
+  });
+}

@@ -117,7 +117,8 @@ class _PatientAdmissionQuickDialogState
     return ref
         .read(patientRegistryControllerProvider.notifier)
         .requestAdmission(
-          patientId: patientApiId(widget.patient),
+          patientId: widget.patient.id,
+          apiPatientId: patientApiId(widget.patient),
           tenantId: widget.patient.tenantId,
           facilityId: _resolvedFacilityId(),
           reason: input.reason,
