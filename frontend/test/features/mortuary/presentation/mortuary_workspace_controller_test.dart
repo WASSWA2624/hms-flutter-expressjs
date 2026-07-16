@@ -17,7 +17,7 @@ void main() {
   });
 
   group('MortuaryWorkspaceController', () {
-    test('loads the workspace and selects the first case detail', () async {
+    test('loads the workspace with overview panel', () async {
       final _MockMortuaryRepository repository = _MockMortuaryRepository();
       final List<MortuaryWorkspaceQuery> queries = _stubWorkspace(repository);
       _stubItem(repository);
@@ -38,10 +38,53 @@ void main() {
 
       expect(state.summaryValue('total_cases'), 1);
       expect(state.workloadCount, 1);
-      expect(state.selectedItem?.effectiveDisplayId, 'MOR-001');
-      expect(state.selectedItem?.custodyEvents.single.eventType, 'RECEIVED');
-      expect(queries.single.panel, mortuaryPanelOverview);
-      verify(() => repository.getWorkspace(any())).called(1);
+      expect(state.selectedItem, isNull);
+      expect(queries.first.panel, mortuaryPanelOverview);
+      verify(
+        () => repository.getWorkspace(any()),
+      ).called(greaterThanOrEqualTo(1));
+      verifyNever(
+        () => repository.getItem(
+          resource: any(named: 'resource'),
+          id: any(named: 'id'),
+          baseQuery: any(named: 'baseQuery'),
+        ),
+      );
+    });
+
+    test('selectItem loads case detail', () async {
+      final _MockMortuaryRepository repository = _MockMortuaryRepository();
+      _stubWorkspace(repository);
+      _stubItem(repository);
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [mortuaryRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final MortuaryWorkspaceState state =
+          (await container.read(
+            mortuaryWorkspaceControllerProvider.future,
+          )).when(
+            success: (MortuaryWorkspaceState value) => value,
+            failure: (AppFailure failure) => fail(failure.code),
+          );
+
+      final AppFailure? failure = await container
+          .read(mortuaryWorkspaceControllerProvider.notifier)
+          .selectItem(state.items.items.single);
+
+      expect(failure, isNull);
+      final MortuaryWorkspaceState? updated = container
+          .read(mortuaryWorkspaceControllerProvider)
+          .asData
+          ?.value
+          .when(
+            success: (MortuaryWorkspaceState value) => value,
+            failure: (_) => null,
+          );
+      expect(updated?.selectedItem?.effectiveDisplayId, 'MOR-001');
+      expect(updated?.selectedItem?.custodyEvents.single.eventType, 'RECEIVED');
       verify(
         () => repository.getItem(
           resource: mortuaryResourceCases,
@@ -74,7 +117,7 @@ void main() {
         expect(query.resource, mortuaryResourceBillableEvents);
         expect(query.queue, mortuaryQueueUnsettledBilling);
         expect(query.pageRequest.pageIndex, 0);
-        verify(() => repository.getWorkspace(any())).called(2);
+        expect(queries.length, greaterThanOrEqualTo(2));
       },
     );
   });

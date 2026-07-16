@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -335,28 +334,108 @@ class _PharmacyWorkspaceContentState
   Widget _primaryActionForSection(
     AppLocalizations l10n,
     PharmacyDeskSection section,
-    PharmacyWorkspaceController controller,
   ) {
     return switch (section) {
       PharmacyDeskSection.queue ||
-      PharmacyDeskSection.inProgress => AppTabToolbarPrimary(
-        label: l10n.pharmacyDispenseAction,
-        icon: Icons.medication_liquid_outlined,
-        onPressed: () => controller.applyFilter(PharmacyOrderFilter.ready),
-      ),
-      PharmacyDeskSection.pendingPayment => AppTabToolbarPrimary(
-        label: l10n.pharmacyQueueFilterLabel,
-        icon: Icons.payments_outlined,
-        onPressed: () =>
-            controller.applyFilter(PharmacyOrderFilter.pendingPayment),
-      ),
+      PharmacyDeskSection.inProgress ||
       PharmacyDeskSection.completed ||
       PharmacyDeskSection.allOrders => AppTabToolbarPrimary(
         label: l10n.pharmacyCatalogPanelTitle,
         icon: Icons.inventory_2_outlined,
         onPressed: () => unawaited(openPharmacyCatalogDialog(context, ref)),
       ),
+      PharmacyDeskSection.pendingPayment => AppTabToolbarPrimary(
+        label: l10n.navigationBillingLabel,
+        icon: Icons.payments_outlined,
+        onPressed: () => context.go(AppRoutes.billing.location()),
+      ),
     };
+  }
+
+  List<Widget> _secondaryActionsForSection(
+    AppLocalizations l10n,
+    PharmacyWorkspaceState state,
+    PharmacyWorkspaceController controller,
+    PharmacyDeskSection section,
+  ) {
+    final List<Widget> actions = <Widget>[];
+
+    if (section == PharmacyDeskSection.pendingPayment) {
+      actions.add(
+        AppTabToolbarAction(
+          label: l10n.pharmacyCatalogPanelTitle,
+          icon: Icons.inventory_2_outlined,
+          onPressed: () => unawaited(openPharmacyCatalogDialog(context, ref)),
+        ),
+      );
+    }
+
+    actions.add(
+      AppTabToolbarAction(
+        label: l10n.commonRefreshActionLabel,
+        icon: Icons.refresh,
+        isLoading: state.isRefreshingOrders,
+        enabled: !state.isRefreshingOrders,
+        onPressed: state.isRefreshingOrders
+            ? null
+            : () {
+                unawaited(
+                  controller.refresh().then((AppFailure? failure) {
+                    if (!mounted) {
+                      return;
+                    }
+                    _showFailureIfNeeded(context, failure);
+                  }),
+                );
+              },
+      ),
+    );
+
+    if (section == PharmacyDeskSection.queue ||
+        section == PharmacyDeskSection.inProgress ||
+        section == PharmacyDeskSection.allOrders) {
+      final PharmacyInventoryStockSummary summary =
+          state.inventoryWorkbench.summary;
+      if (summary.criticalStockRows > 0) {
+        actions.add(
+          AppTabToolbarAction(
+            label: l10n.pharmacySummaryLowStockLabel,
+            icon: Icons.warning_amber_outlined,
+            onPressed: () => unawaited(
+              _openCatalogForInventoryAlert(PharmacyInventoryFilter.lowStock),
+            ),
+          ),
+        );
+      }
+      if (summary.almostOutOfStockRows > 0) {
+        actions.add(
+          AppTabToolbarAction(
+            label: l10n.pharmacySummaryAlmostOutLabel,
+            icon: Icons.inventory_outlined,
+            onPressed: () => unawaited(
+              _openCatalogForInventoryAlert(
+                PharmacyInventoryFilter.almostOutOfStock,
+              ),
+            ),
+          ),
+        );
+      }
+      if (summary.expiringSoonRows > 0) {
+        actions.add(
+          AppTabToolbarAction(
+            label: l10n.pharmacySummaryExpiringSoonLabel,
+            icon: Icons.event_busy_outlined,
+            onPressed: () => unawaited(
+              _openCatalogForInventoryAlert(
+                PharmacyInventoryFilter.expiringSoon,
+              ),
+            ),
+          ),
+        );
+      }
+    }
+
+    return actions;
   }
 
   // ─── End tab helpers ──────────────────────────────────────────────────
@@ -390,114 +469,57 @@ class _PharmacyWorkspaceContentState
     );
     final ThemeData theme = Theme.of(context);
 
-    return AppWorkspace(
-      title: l10n.pharmacyTitle,
-      leadingIcon: AppRouteIcons.pharmacy,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        summaryNotifications: <AppWorkspaceSummaryNotification>[
-          if (state.inventoryWorkbench.summary.criticalStockRows > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.pharmacySummaryLowStockLabel,
-              count: state.inventoryWorkbench.summary.criticalStockRows,
-              icon: Icons.warning_amber_outlined,
-              tone: AppWorkspaceStatusTone.error,
-              onSelected: () => unawaited(
-                _openCatalogForInventoryAlert(PharmacyInventoryFilter.lowStock),
-              ),
-            ),
-          if (state.inventoryWorkbench.summary.almostOutOfStockRows > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.pharmacySummaryAlmostOutLabel,
-              count: state.inventoryWorkbench.summary.almostOutOfStockRows,
-              icon: Icons.inventory_outlined,
-              tone: AppWorkspaceStatusTone.warning,
-              onSelected: () => unawaited(
-                _openCatalogForInventoryAlert(
-                  PharmacyInventoryFilter.almostOutOfStock,
-                ),
-              ),
-            ),
-          if (state.inventoryWorkbench.summary.expiringSoonRows > 0)
-            AppWorkspaceSummaryNotification(
-              label: l10n.pharmacySummaryExpiringSoonLabel,
-              count: state.inventoryWorkbench.summary.expiringSoonRows,
-              icon: Icons.event_busy_outlined,
-              tone: AppWorkspaceStatusTone.warning,
-              onSelected: () => unawaited(
-                _openCatalogForInventoryAlert(
-                  PharmacyInventoryFilter.expiringSoon,
-                ),
-              ),
-            ),
-        ],
-        maxVisibleScreenActions: 1,
-        overflowSections: <AppToolbarOverflowSection>[
-          AppToolbarOverflowSection(
-            headerLabel: l10n.pharmacyCatalogPanelTitle,
-            actions: <Widget>[
-              AppButton.secondary(
-                label: l10n.pharmacyCatalogPanelTitle,
-                leadingIcon: Icons.inventory_2_outlined,
-                onPressed: () {
-                  unawaited(openPharmacyCatalogDialog(context, ref));
-                },
-              ),
-            ],
-          ),
-          const AppToolbarOverflowSection(showsNotifications: true),
-        ],
-        onRefresh: () async {
-          final AppFailure? failure = await controller.refresh();
-          if (context.mounted) {
-            _showFailureIfNeeded(context, failure);
-          }
-        },
-        isRefreshing: state.isRefreshingOrders,
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppTabStrip(
-            tabs: <AppTabItem>[
-              for (final PharmacyDeskSection section
-                  in PharmacyDeskSection.values)
-                AppTabItem(
-                  id: section.name,
-                  icon: _sectionIcon(section),
-                  label: _sectionLabel(l10n, section),
-                  count: _sectionCount(state.workbench.summary, section),
-                  countTone: _sectionCountTone(section),
-                ),
-            ],
-            selectedId: _section.name,
-            onTabTapped: (String tabId) {
-              for (final PharmacyDeskSection section
-                  in PharmacyDeskSection.values) {
-                if (section.name == tabId) {
-                  setState(() => _section = section);
-                  _updateUrlForSection(section);
-                  unawaited(controller.applyFilter(_filterForSection(section)));
-                  break;
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            AppTabStrip(
+              tabs: <AppTabItem>[
+                for (final PharmacyDeskSection section
+                    in PharmacyDeskSection.values)
+                  AppTabItem(
+                    id: section.name,
+                    icon: _sectionIcon(section),
+                    label: _sectionLabel(l10n, section),
+                    count: _sectionCount(state.workbench.summary, section),
+                    countTone: _sectionCountTone(section),
+                  ),
+              ],
+              selectedId: _section.name,
+              onTabTapped: (String tabId) {
+                for (final PharmacyDeskSection section
+                    in PharmacyDeskSection.values) {
+                  if (section.name == tabId) {
+                    setState(() => _section = section);
+                    _updateUrlForSection(section);
+                    unawaited(
+                      controller.applyFilter(_filterForSection(section)),
+                    );
+                    break;
+                  }
                 }
-              }
-            },
-            primaryAction: AppAccessActionGate(
-              requirement: _writeRequirement,
-              builder: (BuildContext context, bool isAllowed) {
-                return _primaryActionForSection(l10n, _section, controller);
               },
+              primaryAction: _primaryActionForSection(l10n, _section),
+              secondaryActions: _secondaryActionsForSection(
+                l10n,
+                state,
+                controller,
+                _section,
+              ),
             ),
-          ),
-          SizedBox(height: theme.spacing.sm),
-          _PharmacyQueuePanel(
-            state: state,
-            section: _section,
-            writeRequirement: _writeRequirement,
-            searchController: _searchController,
-            columnVisibilityController: _tableColumnController,
-          ),
-        ],
+            SizedBox(height: theme.spacing.sm),
+            _PharmacyQueuePanel(
+              state: state,
+              section: _section,
+              writeRequirement: _writeRequirement,
+              searchController: _searchController,
+              columnVisibilityController: _tableColumnController,
+            ),
+          ],
+        ),
       ),
     );
   }

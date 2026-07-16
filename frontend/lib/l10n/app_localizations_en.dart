@@ -12693,7 +12693,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Search asset tag, equipment, category, location, status, date, or provider';
 
   @override
-  String get biomedicalFiltersLabel => 'Biomedical filters';
+  String get biomedicalFiltersLabel => 'Filters';
 
   @override
   String get biomedicalPanelFilterLabel => 'Panel';
@@ -14054,10 +14054,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get communicationsClearSearchAction => 'Clear communications search';
 
   @override
-  String get communicationsAdvancedFiltersLabel => 'Communication filters';
+  String get communicationsAdvancedFiltersLabel => 'Filters';
 
   @override
-  String get communicationsAdvancedFiltersTitle => 'Communication filters';
+  String get communicationsAdvancedFiltersTitle => 'Filters';
 
   @override
   String get communicationsApplyFiltersAction => 'Apply filters';

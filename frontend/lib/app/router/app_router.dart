@@ -53,6 +53,7 @@ import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/pages/ipd_workspace_page.dart';
 import 'package:hosspi_hms/features/lab/domain/entities/lab_entities.dart';
 import 'package:hosspi_hms/features/lab/presentation/pages/lab_workspace_page.dart';
+import 'package:hosspi_hms/features/mortuary/domain/entities/mortuary_entities.dart';
 import 'package:hosspi_hms/features/mortuary/presentation/pages/mortuary_workspace_page.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/pages/nursing_workspace_page.dart';
@@ -339,7 +340,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.mortuary.path,
             name: AppRoutes.mortuary.name,
-            builder: (_, GoRouterState state) => const MortuaryWorkspacePage(),
+            builder: (_, GoRouterState state) => MortuaryWorkspacePage(
+              initialQuery: MortuaryRouteQuery.fromUri(state.uri),
+            ),
           ),
           GoRoute(
             path: AppRoutes.theater.path,

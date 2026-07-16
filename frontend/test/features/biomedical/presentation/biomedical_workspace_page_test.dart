@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/biomedical/presentation/pages/biomedical_wor
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -178,6 +179,7 @@ void main() {
 
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.byType(AppListTable<BiomedicalAsset>), findsOneWidget);
+    expect(find.byType(AppWorkspace), findsNothing);
     expect(find.text('Overview'), findsWidgets);
     expect(find.text('Registry'), findsWidgets);
     expect(find.text('Preventive'), findsWidgets);
@@ -271,11 +273,13 @@ void main() {
     expect(find.byTooltip('Create work order'), findsNothing);
     expect(find.byTooltip('Schedule maintenance'), findsNothing);
     expect(find.byTooltip('Record calibration'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsWidgets);
 
     await tester.tap(find.text('Analytics').first);
     await tester.pumpAndSettle();
     expect(find.byTooltip('Register asset'), findsNothing);
     expect(find.byTooltip('Create work order'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsWidgets);
   });
 
   testWidgets('filter dialog excludes panel filter', (
@@ -283,7 +287,7 @@ void main() {
   ) async {
     await _pumpBiomedicalWorkspace(tester, repository: repository);
 
-    await tester.tap(find.byTooltip('Biomedical filters'));
+    await tester.tap(find.byTooltip('Filters'));
     await tester.pumpAndSettle();
 
     expect(find.text('Status'), findsWidgets);

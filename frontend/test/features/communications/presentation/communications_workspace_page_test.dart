@@ -27,6 +27,15 @@ class _MockCommunicationsRepository extends Mock
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
+Finder _tabToolbarRefresh() => find.descendant(
+  of: find.byType(AppTabStrip),
+  matching: find.byWidgetPredicate(
+    (Widget widget) =>
+        (widget is AppTabToolbarAction && widget.label == 'Refresh') ||
+        (widget is AppTabToolbarPrimary && widget.label == 'Refresh'),
+  ),
+);
+
 const CommunicationsConversation _conversation = CommunicationsConversation(
   id: 'conversation-1',
   title: 'Critical lab follow-up',
@@ -238,6 +247,10 @@ void main() {
     expect(_tab('Templates'), findsOneWidget);
     expect(find.text('Critical lab follow-up'), findsOneWidget);
     expect(find.byTooltip('New message'), findsOneWidget);
+    expect(find.byTooltip('New group'), findsOneWidget);
+    expect(_tabToolbarRefresh(), findsOneWidget);
+    expect(find.text('Unread threads'), findsNothing);
+    expect(find.text('Failed deliveries'), findsNothing);
   });
 
   testWidgets('New message primary action only shows on inbox with write', (
@@ -246,11 +259,14 @@ void main() {
     await _pumpCommunicationsWorkspace(tester, repository: repository);
 
     expect(find.byTooltip('New message'), findsOneWidget);
+    expect(find.byTooltip('New group'), findsOneWidget);
 
     await tester.tap(_tab('Notifications'));
     await tester.pumpAndSettle();
 
     expect(find.byTooltip('New message'), findsNothing);
+    expect(find.byTooltip('New group'), findsNothing);
+    expect(_tabToolbarRefresh(), findsOneWidget);
     expect(find.text('Critical lab result'), findsWidgets);
   });
 
@@ -264,6 +280,8 @@ void main() {
     );
 
     expect(find.byTooltip('New message'), findsNothing);
+    expect(find.byTooltip('New group'), findsNothing);
+    expect(_tabToolbarRefresh(), findsOneWidget);
     expect(_tab('Messages'), findsOneWidget);
   });
 
@@ -327,5 +345,41 @@ void main() {
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.text('Critical lab follow-up'), findsOneWidget);
     expect(find.byTooltip('New message'), findsOneWidget);
+    expect(_tabToolbarRefresh(), findsOneWidget);
+  });
+
+  testWidgets('notifications tab exposes Filters and Settings labels', (
+    WidgetTester tester,
+  ) async {
+    await _pumpCommunicationsWorkspace(tester, repository: repository);
+
+    await tester.tap(_tab('Notifications'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Filters'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Communication filters'), findsNothing);
+    expect(find.text('Table settings'), findsNothing);
+  });
+
+  testWidgets('New group appears in tab toolbar not conversation list', (
+    WidgetTester tester,
+  ) async {
+    await _pumpCommunicationsWorkspace(tester, repository: repository);
+
+    expect(
+      find.descendant(
+        of: find.byType(AppTabStrip),
+        matching: find.byTooltip('New group'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppSearchBar),
+        matching: find.byTooltip('New group'),
+      ),
+      findsNothing,
+    );
   });
 }

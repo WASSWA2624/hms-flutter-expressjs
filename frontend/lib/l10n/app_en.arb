@@ -16299,7 +16299,7 @@
   "@biomedicalSearchHint": {
     "description": "Search field hint for the biomedical workspace."
   },
-  "biomedicalFiltersLabel": "Biomedical filters",
+  "biomedicalFiltersLabel": "Filters",
   "@biomedicalFiltersLabel": {
     "description": "Advanced filter label for the biomedical workspace."
   },

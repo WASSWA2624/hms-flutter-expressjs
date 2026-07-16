@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -202,182 +201,132 @@ class _BiomedicalWorkspaceContentState
     final bool canWrite = _writeRequirement.isAllowed(accessPolicy);
     final bool canPrint = _printRequirement.isAllowed(accessPolicy);
 
-    return AppWorkspace(
-      title: l10n.biomedicalTitle,
-      leadingIcon: AppRouteIcons.biomedical,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        summaryNotifications: <AppWorkspaceSummaryNotification>[
-          _summaryNotification(
-            context,
-            label: l10n.biomedicalTotalEquipmentSummaryLabel,
-            value: state.workbench.summary.totalEquipment,
-            icon: Icons.medical_services_outlined,
-            tone: AppWorkspaceStatusTone.info,
-            onPressed: () {
-              _switchPanel(BiomedicalPanels.registry);
-              _updateUrlForPanel(BiomedicalPanels.registry);
-            },
-          ),
-          _summaryNotification(
-            context,
-            label: l10n.biomedicalOverduePmSummaryLabel,
-            value: state.workbench.summary.overduePm,
-            icon: Icons.event_busy_outlined,
-            tone: AppWorkspaceStatusTone.warning,
-            onPressed: () =>
-                _applyQueue(controller, state, BiomedicalQueues.overduePm),
-          ),
-          _summaryNotification(
-            context,
-            label: l10n.biomedicalOpenWorkOrdersSummaryLabel,
-            value: state.workbench.summary.openWorkOrders,
-            icon: Icons.build_outlined,
-            tone: AppWorkspaceStatusTone.info,
-            onPressed: () =>
-                _applyQueue(controller, state, BiomedicalQueues.openWorkOrders),
-          ),
-          _summaryNotification(
-            context,
-            label: l10n.biomedicalCriticalDowntimeSummaryLabel,
-            value: state.workbench.summary.criticalDowntime,
-            icon: Icons.power_settings_new_outlined,
-            tone: AppWorkspaceStatusTone.error,
-            onPressed: () => _applyQueue(
-              controller,
-              state,
-              BiomedicalQueues.criticalDowntime,
-            ),
-          ),
-          _summaryNotification(
-            context,
-            label: l10n.biomedicalActiveRecallsSummaryLabel,
-            value: state.workbench.summary.activeRecalls,
-            icon: Icons.campaign_outlined,
-            tone: AppWorkspaceStatusTone.warning,
-            onPressed: () =>
-                _applyQueue(controller, state, BiomedicalQueues.recallActions),
-          ),
-        ],
-        showFaultReport: false,
-        onRefresh: () async {
-          final AppFailure? failure = await controller.refresh();
-          if (context.mounted) {
-            _showFailureIfNeeded(context, failure);
-          }
-        },
-        isRefreshing: state.isRefreshing,
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppTabStrip(
-            tabs: <AppTabItem>[
-              for (final String panel in BiomedicalPanels.values)
-                AppTabItem(
-                  id: panel,
-                  icon: _panelIcon(panel),
-                  label: _panelLabel(l10n, panel),
-                ),
-            ],
-            selectedId: _currentPanel,
-            onTabTapped: (String tabId) {
-              _switchPanel(tabId);
-              _updateUrlForPanel(tabId);
-            },
-            primaryAction: _primaryActionWidget(l10n, state),
-          ),
-          SizedBox(height: theme.spacing.sm),
-          AppListTable<BiomedicalAsset>(
-            page: state.workbench.assets,
-            isLoading: state.isRefreshing,
-            columnVisibilityController: _tableColumnController,
-            columnVisibilityStorageKey: 'biomedical_$_currentPanel',
-            columnWidthStorageKey: 'biomedical_cw_$_currentPanel',
-            columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-            search: AppListTableSearch<BiomedicalAsset>(
-              controller: _searchController,
-              semanticLabel: l10n.biomedicalSearchLabel,
-              hintText: l10n.biomedicalSearchHint,
-              matcher: (_, _) => true,
-              onSubmitted: controller.applySearch,
-              onClear: () => controller.applySearch(''),
-              showAdvancedFilterButton: true,
-              advancedFilterButtonLabel: l10n.biomedicalFiltersLabel,
-              advancedFilterTitle: l10n.biomedicalFiltersLabel,
-              advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-              advancedFilterResetLabel: l10n.opdClearFiltersAction,
-              enableDateFilter: false,
-              filterGroups: <AppSearchBarFilterGroup>[
-                AppSearchBarFilterGroup(
-                  key: _statusFilterKey,
-                  label: l10n.biomedicalStatusFilterLabel,
-                  choices: _lookupChoices(
-                    state.workbench.lookups.statuses,
-                    fallbackValues: _fallbackStatuses,
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            AppTabStrip(
+              tabs: <AppTabItem>[
+                for (final String panel in BiomedicalPanels.values)
+                  AppTabItem(
+                    id: panel,
+                    icon: _panelIcon(panel),
+                    label: _panelLabel(l10n, panel),
+                    count:
+                        panel == BiomedicalPanels.registry &&
+                            state.workbench.summary.totalEquipment > 0
+                        ? state.workbench.summary.totalEquipment
+                        : null,
                   ),
-                ),
-                AppSearchBarFilterGroup(
-                  key: _priorityFilterKey,
-                  label: l10n.biomedicalPriorityFilterLabel,
-                  choices: _lookupChoices(
-                    state.workbench.lookups.priorities,
-                    fallbackValues: _fallbackPriorities,
-                  ),
-                ),
-                AppSearchBarFilterGroup(
-                  key: _facilityFilterKey,
-                  label: l10n.biomedicalFacilityFilterLabel,
-                  choices: _lookupChoices(state.workbench.lookups.facilities),
-                ),
-                AppSearchBarFilterGroup(
-                  key: _datePresetFilterKey,
-                  label: l10n.biomedicalDatePresetFilterLabel,
-                  choices: _datePresetChoices(l10n),
-                ),
               ],
-              filterValue: _filterValue(state.query),
-              hasActiveFilters: state.query.hasActiveFilters,
-              onFilterChanged: (AppSearchBarFilterValue value) {
-                unawaited(
-                  controller.applyFilters(
-                    panel: _currentPanel,
-                    status: value.option(_statusFilterKey),
-                    priority: value.option(_priorityFilterKey),
-                    facilityId: value.option(_facilityFilterKey),
-                    datePreset: value.option(_datePresetFilterKey),
+              selectedId: _currentPanel,
+              onTabTapped: (String tabId) {
+                _switchPanel(tabId);
+                _updateUrlForPanel(tabId);
+              },
+              primaryAction: _primaryActionWidget(l10n, state, controller),
+              secondaryActions: _secondaryActionsForPanel(
+                context,
+                l10n,
+                state,
+                controller,
+              ),
+            ),
+            SizedBox(height: theme.spacing.sm),
+            AppListTable<BiomedicalAsset>(
+              page: state.workbench.assets,
+              isLoading: state.isRefreshing,
+              columnVisibilityController: _tableColumnController,
+              columnVisibilityStorageKey: 'biomedical_$_currentPanel',
+              columnWidthStorageKey: 'biomedical_cw_$_currentPanel',
+              columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+              search: AppListTableSearch<BiomedicalAsset>(
+                controller: _searchController,
+                semanticLabel: l10n.biomedicalSearchLabel,
+                hintText: l10n.biomedicalSearchHint,
+                matcher: (_, _) => true,
+                onSubmitted: controller.applySearch,
+                onClear: () => controller.applySearch(''),
+                showAdvancedFilterButton: true,
+                advancedFilterButtonLabel: l10n.biomedicalFiltersLabel,
+                advancedFilterTitle: l10n.biomedicalFiltersLabel,
+                advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                enableDateFilter: false,
+                filterGroups: <AppSearchBarFilterGroup>[
+                  AppSearchBarFilterGroup(
+                    key: _statusFilterKey,
+                    label: l10n.biomedicalStatusFilterLabel,
+                    choices: _lookupChoices(
+                      state.workbench.lookups.statuses,
+                      fallbackValues: _fallbackStatuses,
+                    ),
                   ),
+                  AppSearchBarFilterGroup(
+                    key: _priorityFilterKey,
+                    label: l10n.biomedicalPriorityFilterLabel,
+                    choices: _lookupChoices(
+                      state.workbench.lookups.priorities,
+                      fallbackValues: _fallbackPriorities,
+                    ),
+                  ),
+                  AppSearchBarFilterGroup(
+                    key: _facilityFilterKey,
+                    label: l10n.biomedicalFacilityFilterLabel,
+                    choices: _lookupChoices(state.workbench.lookups.facilities),
+                  ),
+                  AppSearchBarFilterGroup(
+                    key: _datePresetFilterKey,
+                    label: l10n.biomedicalDatePresetFilterLabel,
+                    choices: _datePresetChoices(l10n),
+                  ),
+                ],
+                filterValue: _filterValue(state.query),
+                hasActiveFilters: state.query.hasActiveFilters,
+                onFilterChanged: (AppSearchBarFilterValue value) {
+                  unawaited(
+                    controller.applyFilters(
+                      panel: _currentPanel,
+                      status: value.option(_statusFilterKey),
+                      priority: value.option(_priorityFilterKey),
+                      facilityId: value.option(_facilityFilterKey),
+                      datePreset: value.option(_datePresetFilterKey),
+                    ),
+                  );
+                },
+              ),
+              previousPageLabel: l10n.biomedicalPreviousPageLabel,
+              nextPageLabel: l10n.biomedicalNextPageLabel,
+              pageLabelBuilder: (AppPage<BiomedicalAsset> page) {
+                return l10n.biomedicalPageLabel(
+                  page.firstItemNumber,
+                  page.lastItemNumber,
+                  page.totalItemCount ?? page.items.length,
                 );
               },
+              onPageChanged: controller.changePage,
+              onRowSelected: (BiomedicalAsset asset) {
+                unawaited(
+                  _openAssetDetailDialog(context, asset, canWrite, canPrint),
+                );
+              },
+              itemKeyBuilder: (BiomedicalAsset item) =>
+                  ValueKey<String>('${item.resource}:${item.displayId}'),
+              emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+                title: l10n.biomedicalNoAssetsTitle,
+                body: l10n.biomedicalNoAssetsBody,
+                icon: Icons.medical_services_outlined,
+              ),
+              mobileItemBuilder: (BuildContext context, BiomedicalAsset item) {
+                return _BiomedicalAssetListTile(asset: item);
+              },
+              columns: _columnsForPanel(l10n),
             ),
-            previousPageLabel: l10n.biomedicalPreviousPageLabel,
-            nextPageLabel: l10n.biomedicalNextPageLabel,
-            pageLabelBuilder: (AppPage<BiomedicalAsset> page) {
-              return l10n.biomedicalPageLabel(
-                page.firstItemNumber,
-                page.lastItemNumber,
-                page.totalItemCount ?? page.items.length,
-              );
-            },
-            onPageChanged: controller.changePage,
-            onRowSelected: (BiomedicalAsset asset) {
-              unawaited(
-                _openAssetDetailDialog(context, asset, canWrite, canPrint),
-              );
-            },
-            itemKeyBuilder: (BiomedicalAsset item) =>
-                ValueKey<String>('${item.resource}:${item.displayId}'),
-            emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-              title: l10n.biomedicalNoAssetsTitle,
-              body: l10n.biomedicalNoAssetsBody,
-              icon: Icons.medical_services_outlined,
-            ),
-            mobileItemBuilder: (BuildContext context, BiomedicalAsset item) {
-              return _BiomedicalAssetListTile(asset: item);
-            },
-            columns: _columnsForPanel(l10n),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -385,7 +334,27 @@ class _BiomedicalWorkspaceContentState
   Widget? _primaryActionWidget(
     AppLocalizations l10n,
     BiomedicalWorkspaceState state,
+    BiomedicalWorkspaceController controller,
   ) {
+    if (_currentPanel == BiomedicalPanels.support ||
+        _currentPanel == BiomedicalPanels.analytics) {
+      return AppTabToolbarPrimary(
+        label: l10n.commonRefreshActionLabel,
+        icon: Icons.refresh,
+        isLoading: state.isRefreshing,
+        enabled: !state.isRefreshing,
+        onPressed: state.isRefreshing
+            ? null
+            : () async {
+                final AppFailure? failure = await controller.refresh();
+                if (!mounted) {
+                  return;
+                }
+                _showFailureIfNeeded(context, failure);
+              },
+      );
+    }
+
     final _PanelAction? action = _primaryActionForPanel(l10n, _currentPanel);
     if (action == null) {
       return null;
@@ -404,6 +373,120 @@ class _BiomedicalWorkspaceContentState
               : null,
         );
       },
+    );
+  }
+
+  List<Widget> _secondaryActionsForPanel(
+    BuildContext context,
+    AppLocalizations l10n,
+    BiomedicalWorkspaceState state,
+    BiomedicalWorkspaceController controller,
+  ) {
+    final List<Widget> actions = <Widget>[];
+    final BiomedicalSummary summary = state.workbench.summary;
+
+    void addQueueAction({
+      required int count,
+      required String label,
+      required IconData icon,
+      required String queue,
+    }) {
+      if (count <= 0) {
+        return;
+      }
+      actions.add(
+        AppTabToolbarAction(
+          label: label,
+          icon: icon,
+          semanticLabel: label,
+          tooltip: label,
+          onPressed: () => _applyQueue(controller, state, queue),
+        ),
+      );
+    }
+
+    addQueueAction(
+      count: summary.overduePm,
+      label: l10n.biomedicalOverduePmSummaryLabel,
+      icon: Icons.event_busy_outlined,
+      queue: BiomedicalQueues.overduePm,
+    );
+    addQueueAction(
+      count: summary.openWorkOrders,
+      label: l10n.biomedicalOpenWorkOrdersSummaryLabel,
+      icon: Icons.build_outlined,
+      queue: BiomedicalQueues.openWorkOrders,
+    );
+    addQueueAction(
+      count: summary.criticalDowntime,
+      label: l10n.biomedicalCriticalDowntimeSummaryLabel,
+      icon: Icons.power_settings_new_outlined,
+      queue: BiomedicalQueues.criticalDowntime,
+    );
+    addQueueAction(
+      count: summary.activeRecalls,
+      label: l10n.biomedicalActiveRecallsSummaryLabel,
+      icon: Icons.campaign_outlined,
+      queue: BiomedicalQueues.recallActions,
+    );
+
+    if (_currentPanel == BiomedicalPanels.registry ||
+        _currentPanel == BiomedicalPanels.support) {
+      actions.add(
+        AppAccessActionGate(
+          requirement: _writeRequirement,
+          builder: (BuildContext gateContext, bool isAllowed) {
+            return AppTabToolbarAction(
+              label: l10n.biomedicalReportFaultAction,
+              icon: Icons.report_problem_outlined,
+              semanticLabel: l10n.biomedicalReportFaultAction,
+              tooltip: l10n.biomedicalReportFaultAction,
+              enabled: isAllowed && !state.isMutating,
+              onPressed: isAllowed && !state.isMutating
+                  ? () => unawaited(
+                      _openActionDialog(
+                        context,
+                        ref,
+                        state,
+                        _BiomedicalActionKind.fault,
+                      ),
+                    )
+                  : null,
+            );
+          },
+        ),
+      );
+    }
+
+    if (_currentPanel != BiomedicalPanels.support &&
+        _currentPanel != BiomedicalPanels.analytics) {
+      actions.add(_refreshSecondaryAction(context, l10n, state, controller));
+    }
+
+    return actions;
+  }
+
+  AppTabToolbarAction _refreshSecondaryAction(
+    BuildContext context,
+    AppLocalizations l10n,
+    BiomedicalWorkspaceState state,
+    BiomedicalWorkspaceController controller,
+  ) {
+    return AppTabToolbarAction(
+      label: l10n.commonRefreshActionLabel,
+      icon: Icons.refresh,
+      semanticLabel: l10n.commonRefreshActionLabel,
+      tooltip: l10n.commonRefreshActionLabel,
+      enabled: !state.isRefreshing,
+      isLoading: state.isRefreshing,
+      onPressed: state.isRefreshing
+          ? null
+          : () async {
+              final AppFailure? failure = await controller.refresh();
+              if (context.mounted) {
+                _showFailureIfNeeded(context, failure);
+              }
+            },
     );
   }
 
@@ -635,23 +718,6 @@ class _BiomedicalWorkspaceContentState
       BiomedicalPanels.analytics => l10n.biomedicalPanelAnalytics,
       _ => panel,
     };
-  }
-
-  AppWorkspaceSummaryNotification _summaryNotification(
-    BuildContext context, {
-    required String label,
-    required int value,
-    required IconData icon,
-    required AppWorkspaceStatusTone tone,
-    required VoidCallback onPressed,
-  }) {
-    return AppWorkspaceSummaryNotification(
-      label: label,
-      count: value,
-      icon: icon,
-      tone: tone,
-      onSelected: onPressed,
-    );
   }
 
   void _applyQueue(

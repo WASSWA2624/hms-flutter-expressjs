@@ -23568,7 +23568,7 @@ abstract class AppLocalizations {
   /// Advanced filter label for the biomedical workspace.
   ///
   /// In en, this message translates to:
-  /// **'Biomedical filters'**
+  /// **'Filters'**
   String get biomedicalFiltersLabel;
 
   /// Filter label for biomedical panel.
@@ -26160,13 +26160,13 @@ abstract class AppLocalizations {
   /// Action label for communications filters.
   ///
   /// In en, this message translates to:
-  /// **'Communication filters'**
+  /// **'Filters'**
   String get communicationsAdvancedFiltersLabel;
 
   /// Dialog title for communications filters.
   ///
   /// In en, this message translates to:
-  /// **'Communication filters'**
+  /// **'Filters'**
   String get communicationsAdvancedFiltersTitle;
 
   /// Action label for applying communications filters.

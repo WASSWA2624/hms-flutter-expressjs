@@ -2,8 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -22,7 +23,9 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 class MortuaryWorkspacePage extends ConsumerWidget {
-  const MortuaryWorkspacePage({super.key});
+  const MortuaryWorkspacePage({this.initialQuery, super.key});
+
+  final MortuaryRouteQuery? initialQuery;
 
   static const AccessRequirement _readRequirement = AccessRequirement(
     anyPermissions: <AppPermission>[
@@ -50,7 +53,6 @@ class MortuaryWorkspacePage extends ConsumerWidget {
       ),
       child: AsyncStateScaffold<MortuaryWorkspaceState>(
         value: workspace,
-        appBarTitle: l10n.mortuaryTitle,
         loadingTitle: l10n.mortuaryLoadingTitle,
         loadingBody: l10n.mortuaryLoadingBody,
         maxWidth: PageMaxWidth.dataHeavy,
@@ -59,7 +61,10 @@ class MortuaryWorkspacePage extends ConsumerWidget {
           ref.read(mortuaryWorkspaceControllerProvider.notifier).refresh();
         },
         dataBuilder: (BuildContext context, MortuaryWorkspaceState state) {
-          return _MortuaryWorkspaceContent(state: state);
+          return _MortuaryWorkspaceContent(
+            state: state,
+            initialQuery: initialQuery,
+          );
         },
       ),
     );
@@ -67,9 +72,10 @@ class MortuaryWorkspacePage extends ConsumerWidget {
 }
 
 class _MortuaryWorkspaceContent extends ConsumerStatefulWidget {
-  const _MortuaryWorkspaceContent({required this.state});
+  const _MortuaryWorkspaceContent({required this.state, this.initialQuery});
 
   final MortuaryWorkspaceState state;
+  final MortuaryRouteQuery? initialQuery;
 
   @override
   ConsumerState<_MortuaryWorkspaceContent> createState() {
@@ -80,15 +86,22 @@ class _MortuaryWorkspaceContent extends ConsumerStatefulWidget {
 class _MortuaryWorkspaceContentState
     extends ConsumerState<_MortuaryWorkspaceContent> {
   late final TextEditingController _searchController;
-  late final AppListTableColumnVisibilityController<MortuaryWorkspaceItem>
+  late AppListTableColumnVisibilityController<MortuaryWorkspaceItem>
   _tableColumnController;
+  late String _currentPanel;
+  String? _appliedRouteSignature;
 
   @override
   void initState() {
     super.initState();
+    _currentPanel = _initialPanel(
+      widget.initialQuery,
+      widget.state.query.panel,
+    );
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<MortuaryWorkspaceItem>();
+    _scheduleRouteQuery(widget.initialQuery);
   }
 
   @override
@@ -97,6 +110,12 @@ class _MortuaryWorkspaceContentState
     final String search = widget.state.query.search;
     if (_searchController.text != search) {
       _searchController.value = TextEditingValue(text: search);
+    }
+    if (widget.state.query.panel != _currentPanel) {
+      _currentPanel = widget.state.query.panel;
+    }
+    if (oldWidget.initialQuery?.signature != widget.initialQuery?.signature) {
+      _scheduleRouteQuery(widget.initialQuery);
     }
   }
 
@@ -107,71 +126,362 @@ class _MortuaryWorkspaceContentState
     super.dispose();
   }
 
+  static String _initialPanel(MortuaryRouteQuery? query, String fallback) {
+    if (query != null && query.panel.isNotEmpty) {
+      return query.normalizedPanel;
+    }
+    return fallback;
+  }
+
+  void _scheduleRouteQuery(MortuaryRouteQuery? query) {
+    if (query == null || !query.hasRouteTargeting) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_applyDeepLink(query));
+    });
+  }
+
+  Future<void> _applyDeepLink(MortuaryRouteQuery query) async {
+    if (_appliedRouteSignature == query.signature) {
+      return;
+    }
+    _appliedRouteSignature = query.signature;
+
+    final MortuaryWorkspaceController controller = ref.read(
+      mortuaryWorkspaceControllerProvider.notifier,
+    );
+
+    if (query.queue.isNotEmpty) {
+      final AppFailure? failure = await controller.applyQueue(query.queue);
+      if (!mounted) {
+        return;
+      }
+      _showFailureIfNeeded(context, failure);
+      final MortuaryWorkspaceState? next = _mortuaryStateFromAsync(
+        ref.read(mortuaryWorkspaceControllerProvider),
+      );
+      if (next != null) {
+        setState(() => _currentPanel = next.query.panel);
+      }
+    } else if (query.panel.isNotEmpty) {
+      final String panel = query.normalizedPanel;
+      setState(() => _currentPanel = panel);
+      final AppFailure? failure = await controller.switchPanel(panel);
+      if (!mounted) {
+        return;
+      }
+      _showFailureIfNeeded(context, failure);
+    }
+
+    if (query.search.isNotEmpty) {
+      _searchController.text = query.search;
+      final AppFailure? failure = await controller.applySearch(query.search);
+      if (!mounted) {
+        return;
+      }
+      _showFailureIfNeeded(context, failure);
+    }
+
+    if (query.id.isNotEmpty && mounted) {
+      final MortuaryWorkspaceState state = widget.state;
+      final MortuaryWorkspaceState? latest = _mortuaryStateFromAsync(
+        ref.read(mortuaryWorkspaceControllerProvider),
+      );
+      final List<MortuaryWorkspaceItem> items = (latest ?? state).items.items;
+      for (final MortuaryWorkspaceItem item in items) {
+        if (item.id == query.id) {
+          await _openMortuaryDetailDialog(context, item);
+          break;
+        }
+      }
+    }
+  }
+
+  void _switchPanel(String panel) {
+    if (panel == _currentPanel) {
+      return;
+    }
+    final MortuaryWorkspaceController controller = ref.read(
+      mortuaryWorkspaceControllerProvider.notifier,
+    );
+    _tableColumnController.dispose();
+    setState(() {
+      _currentPanel = panel;
+      _tableColumnController =
+          AppListTableColumnVisibilityController<MortuaryWorkspaceItem>();
+    });
+    unawaited(controller.switchPanel(panel));
+  }
+
+  void _updateUrl({String? panel, String? queue}) {
+    if (!mounted) {
+      return;
+    }
+    final String effectivePanel = panel ?? _currentPanel;
+    final String location = AppRoutes.mortuary.location(
+      queryParameters: <String, String>{
+        if (effectivePanel != mortuaryPanelOverview) 'panel': effectivePanel,
+        if (queue != null && queue.isNotEmpty) 'queue': queue,
+      },
+    );
+    GoRouter.of(context).replace<void>(location);
+  }
+
+  Future<void> _applyQueueShortcut(String queue) async {
+    final MortuaryWorkspaceController controller = ref.read(
+      mortuaryWorkspaceControllerProvider.notifier,
+    );
+    final AppFailure? failure = await controller.applyQueue(queue);
+    if (!mounted) {
+      return;
+    }
+    _showFailureIfNeeded(context, failure);
+    final MortuaryWorkspaceState? next = _mortuaryStateFromAsync(
+      ref.read(mortuaryWorkspaceControllerProvider),
+    );
+    final String panel = next?.query.panel ?? _currentPanel;
+    setState(() => _currentPanel = panel);
+    _updateUrl(panel: panel, queue: queue);
+  }
+
+  Future<void> _switchToStoragePanel() async {
+    _switchPanel(mortuaryPanelStorage);
+    _updateUrl(panel: mortuaryPanelStorage);
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final MortuaryWorkspaceState state = widget.state;
     final MortuaryWorkspaceController controller = ref.read(
       mortuaryWorkspaceControllerProvider.notifier,
     );
 
-    return AppWorkspace(
-      title: l10n.mortuaryTitle,
-      leadingIcon: AppRouteIcons.mortuary,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        summaryNotifications: <AppWorkspaceSummaryNotification>[
-          for (final MortuarySummaryItem item in state.summary)
-            AppWorkspaceSummaryNotification(
-              label: _summaryLabel(l10n, item.id),
-              count: item.value,
-              icon: _summaryIcon(item.id),
-              tone: _summaryTone(item.id),
-              onSelected: item.id == 'total_cases'
-                  ? () {
-                      unawaited(controller.switchPanel(mortuaryPanelOverview));
-                    }
-                  : () {},
-            ),
-          for (final MortuaryQueueSummary queue in state.spotlight)
-            if (queue.count > 0)
-              AppWorkspaceSummaryNotification(
-                label: _queueLabel(l10n, queue.queue),
-                count: queue.count,
-                icon: _queueIcon(queue.queue),
-                tone: _queueTone(queue.queue),
-                onSelected: () {
-                  unawaited(controller.applyQueue(queue.queue));
-                },
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            AppTabStrip(
+              tabs: <AppTabItem>[
+                for (final String panel in mortuaryPanels)
+                  AppTabItem(
+                    id: panel,
+                    icon: _panelIcon(panel),
+                    label: _panelLabel(l10n, panel),
+                    count: _panelCount(state, panel),
+                  ),
+              ],
+              selectedId: _currentPanel,
+              onTabTapped: (String tabId) {
+                _switchPanel(tabId);
+                _updateUrl(panel: tabId);
+              },
+              primaryAction: _buildPrimaryAction(l10n, _currentPanel),
+              secondaryActions: _buildSecondaryActions(
+                context,
+                l10n,
+                state,
+                controller,
+                _currentPanel,
               ),
-        ],
-        primary: AppPermissionActionButton(
-          requirement: _writeRequirement,
-          label: l10n.mortuaryReceiveCaseAction,
-          icon: Icons.inbox_outlined,
+            ),
+            SizedBox(height: theme.spacing.sm),
+            _MortuaryWorklist(
+              state: state,
+              controller: controller,
+              searchController: _searchController,
+              tableColumnController: _tableColumnController,
+              onItemSelected: (MortuaryWorkspaceItem item) {
+                unawaited(_openMortuaryDetailDialog(context, item));
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrimaryAction(AppLocalizations l10n, String panel) {
+    final ({String label, IconData icon, AccessRequirement requirement})
+    action = switch (panel) {
+      mortuaryPanelStorage => (
+        label: l10n.mortuaryAssignStorageAction,
+        icon: Icons.inventory_2_outlined,
+        requirement: _storageRequirement,
+      ),
+      mortuaryPanelCustody => (
+        label: l10n.mortuaryRecordCustodyAction,
+        icon: Icons.swap_horiz_outlined,
+        requirement: _writeRequirement,
+      ),
+      mortuaryPanelRelease => (
+        label: l10n.mortuaryApproveReleaseAction,
+        icon: Icons.verified_outlined,
+        requirement: _approveRequirement,
+      ),
+      mortuaryPanelReporting => (
+        label: l10n.mortuaryPostMortemAction,
+        icon: Icons.fact_check_outlined,
+        requirement: _postMortemRequirement,
+      ),
+      _ => (
+        label: l10n.mortuaryReceiveCaseAction,
+        icon: Icons.inbox_outlined,
+        requirement: _writeRequirement,
+      ),
+    };
+
+    return AppAccessActionGate(
+      requirement: action.requirement,
+      hideWhenDenied: false,
+      builder: (BuildContext context, bool isAllowed) {
+        return AppTabToolbarPrimary(
+          label: action.label,
+          icon: action.icon,
           enabled: false,
           tooltip: l10n.mortuaryActionsUnavailableTooltip,
           onPressed: null,
-        ),
-        onRefresh: () async {
-          final AppFailure? failure = await controller.refresh();
-          if (context.mounted) {
-            _showFailureIfNeeded(context, failure);
-          }
-        },
-        isRefreshing: state.isRefreshing,
-      ),
+        );
+      },
+    );
+  }
 
-      body: _MortuaryWorklist(
-        state: state,
-        controller: controller,
-        searchController: _searchController,
-        tableColumnController: _tableColumnController,
-        onItemSelected: (MortuaryWorkspaceItem item) {
-          unawaited(_openMortuaryDetailDialog(context, item));
-        },
+  List<Widget> _buildSecondaryActions(
+    BuildContext context,
+    AppLocalizations l10n,
+    MortuaryWorkspaceState state,
+    MortuaryWorkspaceController controller,
+    String panel,
+  ) {
+    final List<Widget> actions = <Widget>[];
+
+    void addQueueAction({
+      required String queue,
+      required String label,
+      required IconData icon,
+    }) {
+      if (state.queueCount(queue) <= 0) {
+        return;
+      }
+      actions.add(
+        AppTabToolbarAction(
+          label: label,
+          icon: icon,
+          semanticLabel: label,
+          tooltip: label,
+          onPressed: () => unawaited(_applyQueueShortcut(queue)),
+        ),
+      );
+    }
+
+    void addSummaryNavigateAction({
+      required String summaryId,
+      required String label,
+      required IconData icon,
+      required VoidCallback onPressed,
+    }) {
+      if (state.summaryValue(summaryId) <= 0) {
+        return;
+      }
+      actions.add(
+        AppTabToolbarAction(
+          label: label,
+          icon: icon,
+          semanticLabel: label,
+          tooltip: label,
+          onPressed: onPressed,
+        ),
+      );
+    }
+
+    switch (panel) {
+      case mortuaryPanelOverview:
+      case mortuaryPanelIntake:
+        addQueueAction(
+          queue: mortuaryQueueIdentificationPending,
+          label: l10n.mortuaryIdentificationPendingSummaryLabel,
+          icon: _queueIcon(mortuaryQueueIdentificationPending),
+        );
+        addSummaryNavigateAction(
+          summaryId: 'in_storage',
+          label: l10n.mortuaryInStorageSummaryLabel,
+          icon: _summaryIcon('in_storage'),
+          onPressed: () => unawaited(_switchToStoragePanel()),
+        );
+        addQueueAction(
+          queue: mortuaryQueueReleaseReady,
+          label: l10n.mortuaryReleaseReadySummaryLabel,
+          icon: _queueIcon(mortuaryQueueReleaseReady),
+        );
+        addQueueAction(
+          queue: mortuaryQueueUnsettledBilling,
+          label: l10n.mortuaryUnsettledBillingSummaryLabel,
+          icon: _queueIcon(mortuaryQueueUnsettledBilling),
+        );
+      case mortuaryPanelStorage:
+        addQueueAction(
+          queue: mortuaryQueueStorageExceptions,
+          label: l10n.mortuaryQueueStorageExceptionsLabel,
+          icon: _queueIcon(mortuaryQueueStorageExceptions),
+        );
+        addSummaryNavigateAction(
+          summaryId: 'in_storage',
+          label: l10n.mortuaryInStorageSummaryLabel,
+          icon: _summaryIcon('in_storage'),
+          onPressed: () => unawaited(_switchToStoragePanel()),
+        );
+      case mortuaryPanelCustody:
+        addQueueAction(
+          queue: mortuaryQueueIdentificationPending,
+          label: l10n.mortuaryIdentificationPendingSummaryLabel,
+          icon: _queueIcon(mortuaryQueueIdentificationPending),
+        );
+      case mortuaryPanelRelease:
+        addQueueAction(
+          queue: mortuaryQueueReleaseReady,
+          label: l10n.mortuaryReleaseReadySummaryLabel,
+          icon: _queueIcon(mortuaryQueueReleaseReady),
+        );
+        addQueueAction(
+          queue: mortuaryQueueUnsettledBilling,
+          label: l10n.mortuaryUnsettledBillingSummaryLabel,
+          icon: _queueIcon(mortuaryQueueUnsettledBilling),
+        );
+      case mortuaryPanelReporting:
+        addQueueAction(
+          queue: mortuaryQueuePostMortemPending,
+          label: l10n.mortuaryQueuePostMortemPendingLabel,
+          icon: _queueIcon(mortuaryQueuePostMortemPending),
+        );
+    }
+
+    actions.add(
+      AppTabToolbarAction(
+        label: l10n.commonRefreshActionLabel,
+        icon: Icons.refresh,
+        semanticLabel: l10n.commonRefreshActionLabel,
+        tooltip: l10n.commonRefreshActionLabel,
+        enabled: !state.isRefreshing,
+        isLoading: state.isRefreshing,
+        onPressed: state.isRefreshing
+            ? null
+            : () async {
+                final AppFailure? failure = await controller.refresh();
+                if (context.mounted) {
+                  _showFailureIfNeeded(context, failure);
+                }
+              },
       ),
     );
+    return actions;
   }
 
   Future<void> _openMortuaryDetailDialog(
@@ -218,6 +528,18 @@ class _MortuaryWorkspaceContentState
       ),
     );
   }
+}
+
+int _panelCount(MortuaryWorkspaceState state, String panel) {
+  for (final MortuaryPanelSummary item in state.panels) {
+    if (item.id == panel) {
+      return item.count;
+    }
+  }
+  if (panel == mortuaryPanelOverview) {
+    return state.summaryValue('total_cases');
+  }
+  return 0;
 }
 
 class _MortuaryWorklist extends StatelessWidget {
@@ -1104,7 +1426,6 @@ Future<void> _applyFilterValue(
   AppSearchBarFilterValue value,
 ) {
   return controller.applyFilters(
-    panel: value.option('panel'),
     resource: value.option('resource'),
     queue: value.option('queue'),
     status: value.option('status'),
@@ -1119,7 +1440,6 @@ Future<void> _applyFilterValue(
 AppSearchBarFilterValue _filterValueForQuery(MortuaryWorkspaceQuery query) {
   return AppSearchBarFilterValue(
     options: <String, String>{
-      'panel': query.panel,
       'resource': query.resource,
       if (query.queue != null) 'queue': query.queue!,
       if (query.status != null) 'status': query.status!,
@@ -1134,8 +1454,9 @@ AppSearchBarFilterValue _filterValueForQuery(MortuaryWorkspaceQuery query) {
 }
 
 bool _hasActiveFilters(MortuaryWorkspaceQuery query) {
-  return query.panel != mortuaryPanelOverview ||
-      query.resource != mortuaryResourceCases ||
+  final String defaultResource =
+      mortuaryDefaultResourceByPanel[query.panel] ?? mortuaryResourceCases;
+  return query.resource != defaultResource ||
       query.queue != null ||
       query.status != null ||
       query.identificationStatus != null ||
@@ -1150,19 +1471,6 @@ List<AppSearchBarFilterGroup> _filterGroups(
   MortuaryLookupData lookups,
 ) {
   return <AppSearchBarFilterGroup>[
-    AppSearchBarFilterGroup(
-      key: 'panel',
-      label: l10n.mortuaryPanelFilterLabel,
-      allLabel: l10n.mortuaryAllFieldsLabel,
-      choices: <AppSearchBarFilterChoice>[
-        for (final String panel in mortuaryPanels)
-          AppSearchBarFilterChoice(
-            value: panel,
-            label: _panelLabel(l10n, panel),
-            icon: _panelIcon(panel),
-          ),
-      ],
-    ),
     AppSearchBarFilterGroup(
       key: 'resource',
       label: l10n.mortuaryResourceFilterLabel,
@@ -1297,17 +1605,6 @@ bool _matchesSearch(MortuaryWorkspaceItem item, String query) {
   });
 }
 
-String _summaryLabel(AppLocalizations l10n, String id) {
-  return switch (id) {
-    'total_cases' => l10n.mortuaryTotalCasesSummaryLabel,
-    'identification_pending' => l10n.mortuaryIdentificationPendingSummaryLabel,
-    'in_storage' => l10n.mortuaryInStorageSummaryLabel,
-    'release_ready' => l10n.mortuaryReleaseReadySummaryLabel,
-    'unsettled_billing' => l10n.mortuaryUnsettledBillingSummaryLabel,
-    _ => _displayCode(id) ?? id,
-  };
-}
-
 String _panelLabel(AppLocalizations l10n, String id) {
   return switch (id) {
     mortuaryPanelOverview => l10n.mortuaryPanelOverviewLabel,
@@ -1403,27 +1700,6 @@ IconData _queueIcon(String queue) {
     mortuaryQueueUnsettledBilling => Icons.receipt_long_outlined,
     mortuaryQueuePostMortemPending => Icons.fact_check_outlined,
     _ => Icons.flag_outlined,
-  };
-}
-
-AppWorkspaceStatusTone _summaryTone(String id) {
-  return switch (id) {
-    'identification_pending' ||
-    'unsettled_billing' => AppWorkspaceStatusTone.warning,
-    'release_ready' => AppWorkspaceStatusTone.success,
-    'in_storage' => AppWorkspaceStatusTone.info,
-    _ => AppWorkspaceStatusTone.neutral,
-  };
-}
-
-AppWorkspaceStatusTone _queueTone(String queue) {
-  return switch (queue) {
-    mortuaryQueueReleaseReady => AppWorkspaceStatusTone.success,
-    mortuaryQueueStorageExceptions ||
-    mortuaryQueueUnsettledBilling ||
-    mortuaryQueuePostMortemPending ||
-    mortuaryQueueIdentificationPending => AppWorkspaceStatusTone.warning,
-    _ => AppWorkspaceStatusTone.neutral,
   };
 }
 

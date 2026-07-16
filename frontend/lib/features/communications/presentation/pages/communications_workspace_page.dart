@@ -221,7 +221,9 @@ class _CommunicationsWorkspaceContentState
         icon: Icons.refresh,
         isLoading: state.isRefreshing,
         enabled: !state.isRefreshing,
-        onPressed: state.isRefreshing ? null : () => unawaited(_refreshWorkspace()),
+        onPressed: state.isRefreshing
+            ? null
+            : () => unawaited(_refreshWorkspace()),
       ),
     };
   }
@@ -246,7 +248,9 @@ class _CommunicationsWorkspaceContentState
         icon: Icons.refresh,
         isLoading: state.isRefreshing,
         enabled: !state.isRefreshing,
-        onPressed: state.isRefreshing ? null : () => unawaited(_refreshWorkspace()),
+        onPressed: state.isRefreshing
+            ? null
+            : () => unawaited(_refreshWorkspace()),
       ),
     ];
   }
@@ -264,8 +268,6 @@ class _CommunicationsWorkspaceContentState
 
     return AppWorkspace(
       title: l10n.communicationsWorkspaceTitle,
-      showHeader: false,
-      toolbar: null,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -1459,6 +1461,5 @@ const String _queueFilterKey = 'queue';
 const String _flagFilterKey = 'flag';
 const String _unreadFlagValue = 'unread';
 const String _sensitiveFlagValue = 'sensitive';
-const String _failedFilterValue = 'failed';
 const String _listSeparator = ' | ';
 const String _signatureSeparator = '::';
