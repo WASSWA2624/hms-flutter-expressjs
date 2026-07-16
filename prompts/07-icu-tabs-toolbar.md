@@ -131,7 +131,7 @@ Defined as `_IcuWorkspaceContent.writeRequirement`.
 4. **Bed board has dedicated title/header chrome.** `IcuBedBoardPanel` wraps content in
    `AppWorkspaceDetailPanel(title: l10n.icuBedBoardTitle, description: l10n.icuBedBoardDescription)`.
    That title row violates “no dedicated screen title/header” for the tab body (same gap as IPD
-   bed board in `prompts/01-standardize-ipd-tabs-toolbar.md`).
+   bed board in `prompts/05-ipd-tabs-toolbar.md`).
 5. **Start ICU stay in the screen toolbar is selection-gated**
    (`state.selectedDetail?.isEligibleToStartStay`) and is **duplicated** inside `_IcuActionPanel`
    in the stay detail dialog. Keep the existing board primary for patient tabs (do not invent a
@@ -164,7 +164,7 @@ Read these files (do NOT modify them unless fixing shared bugs that block compli
   — Refresh as `AppTabToolbarAction` in `secondaryActions` with `l10n.commonRefreshActionLabel`
 - `frontend/lib/features/housekeeping/presentation/pages/housekeeping_workspace_page.dart`
   — contextual `primaryAction` via `switch` on section (pattern reference)
-- `prompts/01-standardize-ipd-tabs-toolbar.md` / `prompts/02-standardize-emergency-tabs-toolbar.md`
+- `prompts/05-ipd-tabs-toolbar.md` / `prompts/04-emergency-tabs-toolbar.md`
   — sibling screen standardization contracts (bed-board title removal + Refresh secondary)
 - `frontend/lib/shared/components/app_tab_strip.dart`
   — `AppTabStrip`, `AppTabItem`, `AppTabToolbarPrimary`, `AppTabToolbarAction`
