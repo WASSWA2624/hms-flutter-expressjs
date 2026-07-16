@@ -185,7 +185,7 @@ void main() {
     expect(find.text('Compliance'), findsWidgets);
     expect(find.text('Support'), findsWidgets);
     expect(find.text('Analytics'), findsWidgets);
-    expect(find.text('Register asset'), findsOneWidget);
+    expect(find.byTooltip('Register asset'), findsOneWidget);
     expect(find.text('Asset tag'), findsOneWidget);
     expect(find.text('Risk'), findsOneWidget);
     // Default max visible columns is 5; registry's 6th/7th stay hidden.
@@ -208,8 +208,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['panel'], 'work-orders');
-    expect(find.text('Create work order'), findsOneWidget);
-    expect(find.text('Register asset'), findsNothing);
+    expect(find.byTooltip('Create work order'), findsOneWidget);
+    expect(find.byTooltip('Register asset'), findsNothing);
     expect(find.text('Risk'), findsOneWidget);
 
     final List<BiomedicalWorkspaceQuery> queries = verify(
@@ -235,8 +235,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Create work order'), findsOneWidget);
-    expect(find.text('Register asset'), findsNothing);
+    expect(find.byTooltip('Create work order'), findsOneWidget);
+    expect(find.byTooltip('Register asset'), findsNothing);
 
     final List<BiomedicalWorkspaceQuery> queries = verify(
       () => repository.getWorkspace(captureAny()),
@@ -254,28 +254,28 @@ void main() {
   ) async {
     await _pumpBiomedicalWorkspace(tester, repository: repository);
 
-    expect(find.text('Register asset'), findsOneWidget);
+    expect(find.byTooltip('Register asset'), findsOneWidget);
 
     await tester.tap(find.text('Preventive').first);
     await tester.pumpAndSettle();
-    expect(find.text('Schedule maintenance'), findsOneWidget);
+    expect(find.byTooltip('Schedule maintenance'), findsOneWidget);
     expect(find.text('Next due'), findsOneWidget);
 
     await tester.tap(find.text('Compliance').first);
     await tester.pumpAndSettle();
-    expect(find.text('Record calibration'), findsOneWidget);
+    expect(find.byTooltip('Record calibration'), findsOneWidget);
 
     await tester.tap(find.text('Support').first);
     await tester.pumpAndSettle();
-    expect(find.text('Register asset'), findsNothing);
-    expect(find.text('Create work order'), findsNothing);
-    expect(find.text('Schedule maintenance'), findsNothing);
-    expect(find.text('Record calibration'), findsNothing);
+    expect(find.byTooltip('Register asset'), findsNothing);
+    expect(find.byTooltip('Create work order'), findsNothing);
+    expect(find.byTooltip('Schedule maintenance'), findsNothing);
+    expect(find.byTooltip('Record calibration'), findsNothing);
 
     await tester.tap(find.text('Analytics').first);
     await tester.pumpAndSettle();
-    expect(find.text('Register asset'), findsNothing);
-    expect(find.text('Create work order'), findsNothing);
+    expect(find.byTooltip('Register asset'), findsNothing);
+    expect(find.byTooltip('Create work order'), findsNothing);
   });
 
   testWidgets('filter dialog excludes panel filter', (

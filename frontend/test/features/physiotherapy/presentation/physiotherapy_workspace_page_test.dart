@@ -239,7 +239,7 @@ void main() {
     expect(find.textContaining('Missed'), findsWidgets);
     expect(find.textContaining('Completed'), findsWidgets);
     expect(find.text('Rita Referral'), findsOneWidget);
-    expect(find.textContaining('Schedule session'), findsOneWidget);
+    expect(find.byTooltip('Schedule session'), findsOneWidget);
     expect(
       _table(tester).columnVisibilityStorageKey,
       'physiotherapy_referrals',
@@ -271,7 +271,7 @@ void main() {
 
     expect(router.state.uri.queryParameters['section'], 'today');
     expect(_table(tester).columnVisibilityStorageKey, 'physiotherapy_today');
-    expect(find.textContaining('Record session'), findsWidgets);
+    expect(find.byTooltip('Record session'), findsWidgets);
     final List<PhysiotherapyWorklistQuery> todayQueries = verify(
       () => repository.listWorkItems(captureAny()),
     ).captured.cast<PhysiotherapyWorklistQuery>();
@@ -297,7 +297,7 @@ void main() {
       _table(tester).columnVisibilityStorageKey,
       'physiotherapy_activePlans',
     );
-    expect(find.textContaining('Schedule session'), findsWidgets);
+    expect(find.byTooltip('Schedule session'), findsWidgets);
 
     clearInteractions(repository);
     _stubWorkItems(repository, items: <TherapyWorkItem>[_followUpItem]);
@@ -306,7 +306,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'follow-up');
-    expect(find.textContaining('Schedule follow-up'), findsWidgets);
+    expect(find.byTooltip('Schedule follow-up'), findsWidgets);
 
     clearInteractions(repository);
     _stubWorkItems(repository, items: <TherapyWorkItem>[_missedItem]);
@@ -315,7 +315,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'missed');
-    expect(find.textContaining('Mark attendance'), findsWidgets);
+    expect(find.byTooltip('Mark attendance'), findsWidgets);
 
     clearInteractions(repository);
     _stubWorkItems(repository, items: <TherapyWorkItem>[_completedItem]);
@@ -324,7 +324,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'completed');
-    expect(find.textContaining('Print instructions'), findsWidgets);
+    expect(find.byTooltip('Print instructions'), findsWidgets);
   });
 
   testWidgets('deep link section=today selects Today tab', (
@@ -349,7 +349,7 @@ void main() {
       ),
       isTrue,
     );
-    expect(find.textContaining('Record session'), findsWidgets);
+    expect(find.byTooltip('Record session'), findsWidgets);
     expect(_table(tester).columnVisibilityStorageKey, 'physiotherapy_today');
   });
 
@@ -362,7 +362,7 @@ void main() {
     );
 
     expect(router.state.uri.queryParameters.containsKey('section'), isFalse);
-    expect(find.textContaining('Schedule session'), findsOneWidget);
+    expect(find.byTooltip('Schedule session'), findsOneWidget);
     expect(
       _table(tester).columnVisibilityStorageKey,
       'physiotherapy_referrals',

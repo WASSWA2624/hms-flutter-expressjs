@@ -218,8 +218,8 @@ Future<_Harness> _pumpHousekeepingWorkspace(
   return _Harness(repository: repository, router: router);
 }
 
-Finder _tabLabel(String label, int count) {
-  return find.text('$label ($count)');
+Finder _tabLabel(String label) {
+  return find.text(label);
 }
 
 void main() {
@@ -241,10 +241,10 @@ void main() {
 
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.byType(AppListTable<HousekeepingWorkItem>), findsOneWidget);
-    expect(_tabLabel('Tasks', 3), findsOneWidget);
-    expect(_tabLabel('Schedules', 2), findsOneWidget);
-    expect(_tabLabel('Maintenance requests', 1), findsOneWidget);
-    expect(find.text('Create task'), findsOneWidget);
+    expect(_tabLabel('Tasks'), findsOneWidget);
+    expect(_tabLabel('Schedules'), findsOneWidget);
+    expect(_tabLabel('Maintenance requests'), findsOneWidget);
+    expect(find.byTooltip('Create task'), findsOneWidget);
     expect(find.text('Task'), findsOneWidget);
     expect(find.text('Location'), findsOneWidget);
     expect(find.text('Assignee'), findsOneWidget);
@@ -264,12 +264,12 @@ void main() {
     clearInteractions(repository);
     _stubWorkspace(repository);
 
-    await tester.tap(_tabLabel('Schedules', 2));
+    await tester.tap(_tabLabel('Schedules'));
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['section'], 'schedules');
-    expect(find.text('Create schedule'), findsOneWidget);
-    expect(find.text('Create task'), findsNothing);
+    expect(find.byTooltip('Create schedule'), findsOneWidget);
+    expect(find.byTooltip('Create task'), findsNothing);
     expect(find.text('Schedule'), findsOneWidget);
     expect(find.text('Frequency'), findsOneWidget);
     expect(find.text('Start date'), findsOneWidget);
@@ -298,8 +298,8 @@ void main() {
       initialSection: HousekeepingSection.maintenance,
     );
 
-    expect(find.text('Request maintenance'), findsOneWidget);
-    expect(find.text('Create task'), findsNothing);
+    expect(find.byTooltip('Request maintenance'), findsOneWidget);
+    expect(find.byTooltip('Create task'), findsNothing);
     expect(find.text('Request'), findsOneWidget);
     expect(find.text('Asset'), findsOneWidget);
     expect(find.text('Reported'), findsOneWidget);
@@ -320,15 +320,15 @@ void main() {
   testWidgets('primary action changes per tab', (WidgetTester tester) async {
     await _pumpHousekeepingWorkspace(tester, repository: repository);
 
-    expect(find.text('Create task'), findsOneWidget);
+    expect(find.byTooltip('Create task'), findsOneWidget);
 
-    await tester.tap(_tabLabel('Schedules', 2));
+    await tester.tap(_tabLabel('Schedules'));
     await tester.pumpAndSettle();
-    expect(find.text('Create schedule'), findsOneWidget);
+    expect(find.byTooltip('Create schedule'), findsOneWidget);
 
-    await tester.tap(_tabLabel('Maintenance requests', 1));
+    await tester.tap(_tabLabel('Maintenance requests'));
     await tester.pumpAndSettle();
-    expect(find.text('Request maintenance'), findsOneWidget);
+    expect(find.byTooltip('Request maintenance'), findsOneWidget);
   });
 
   testWidgets('filter dialog excludes resource filter', (
@@ -392,6 +392,6 @@ void main() {
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.byType(AppListItemRow), findsWidgets);
     expect(find.text('Clean ward 2B'), findsOneWidget);
-    expect(_tabLabel('Tasks', 3), findsOneWidget);
+    expect(_tabLabel('Tasks'), findsOneWidget);
   });
 }

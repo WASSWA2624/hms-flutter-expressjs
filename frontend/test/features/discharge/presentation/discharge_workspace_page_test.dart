@@ -160,7 +160,7 @@ void main() {
     expect(find.text('Alice Planned'), findsOneWidget);
     expect(find.text('Bob Pending'), findsOneWidget);
     expect(find.text('Carol Completed'), findsOneWidget);
-    expect(find.textContaining('Start discharge plan'), findsOneWidget);
+    expect(find.byTooltip('Start discharge plan'), findsOneWidget);
   });
 
   testWidgets('deep link section=planned selects Planned tab', (
@@ -178,7 +178,7 @@ void main() {
     expect(find.text('Alice Planned'), findsOneWidget);
     expect(find.text('Bob Pending'), findsNothing);
     expect(find.text('Carol Completed'), findsNothing);
-    expect(find.textContaining('Manage clearance'), findsOneWidget);
+    expect(find.byTooltip('Manage clearance'), findsOneWidget);
   });
 
   testWidgets('switching tabs filters rows and updates primary action', (
@@ -192,14 +192,14 @@ void main() {
     expect(find.text('Carol Completed'), findsOneWidget);
     expect(find.text('Alice Planned'), findsNothing);
     expect(find.text('Bob Pending'), findsNothing);
-    expect(find.textContaining('Print discharge summary'), findsOneWidget);
+    expect(find.byTooltip('Print discharge summary'), findsOneWidget);
 
     await tester.tap(find.textContaining('Pending clearance').first);
     await tester.pumpAndSettle();
 
     expect(find.text('Bob Pending'), findsOneWidget);
     expect(find.text('Alice Planned'), findsNothing);
-    expect(find.textContaining('Manage clearance'), findsOneWidget);
+    expect(find.byTooltip('Manage clearance'), findsOneWidget);
   });
 
   testWidgets('search matcher filters visible rows client-side', (

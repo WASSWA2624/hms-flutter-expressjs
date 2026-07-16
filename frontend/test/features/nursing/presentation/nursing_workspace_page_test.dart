@@ -242,7 +242,7 @@ void main() {
     expect(find.textContaining('All'), findsWidgets);
     expect(find.textContaining('Urgent'), findsWidgets);
     expect(find.textContaining('Medication due'), findsWidgets);
-    expect(find.textContaining('Record vitals'), findsOneWidget);
+    expect(find.byTooltip('Record vitals'), findsOneWidget);
     expect(find.text('Routine Patient'), findsOneWidget);
     expect(find.text('Med Due Patient'), findsOneWidget);
   });
@@ -259,7 +259,7 @@ void main() {
     await _pumpAfterAction(tester);
 
     expect(harness.router.state.uri.queryParameters['scope'], 'urgent');
-    expect(find.textContaining('Record vitals'), findsOneWidget);
+    expect(find.byTooltip('Record vitals'), findsOneWidget);
     expect(find.text('Urgent Patient'), findsOneWidget);
     expect(find.text('Routine Patient'), findsNothing);
   });
@@ -276,7 +276,7 @@ void main() {
     await _pumpAfterAction(tester);
 
     expect(harness.router.state.uri.queryParameters['scope'], 'medication-due');
-    expect(find.textContaining('Administer medication'), findsOneWidget);
+    expect(find.byTooltip('Administer medication'), findsOneWidget);
     expect(find.text('Med Due Patient'), findsOneWidget);
     expect(find.text('Routine Patient'), findsNothing);
   });
@@ -310,7 +310,7 @@ void main() {
       harness.router.state.uri.queryParameters.containsKey('scope'),
       isFalse,
     );
-    expect(find.textContaining('Record vitals'), findsOneWidget);
+    expect(find.byTooltip('Record vitals'), findsOneWidget);
   });
 
   testWidgets('tab switch applies scope via repository', (

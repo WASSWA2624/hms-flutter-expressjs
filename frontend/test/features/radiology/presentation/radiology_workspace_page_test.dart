@@ -290,9 +290,9 @@ void main() {
     expect(find.textContaining('Released'), findsWidgets);
     expect(find.textContaining('All orders'), findsWidgets);
     expect(find.text('Olivia Ordered'), findsOneWidget);
-    expect(find.textContaining('Request imaging'), findsOneWidget);
-    expect(find.textContaining('Configurations'), findsOneWidget);
-    expect(find.textContaining('Orders view'), findsOneWidget);
+    expect(find.byTooltip('Request imaging'), findsOneWidget);
+    expect(find.byTooltip('Configurations'), findsOneWidget);
+    expect(find.byTooltip('Orders view'), findsOneWidget);
   });
 
   testWidgets('switching tabs applies stage filters and updates URL', (
@@ -375,7 +375,7 @@ void main() {
     );
     expect(find.text('Rita Reporting'), findsOneWidget);
     expect(find.text('Olivia Ordered'), findsNothing);
-    expect(find.textContaining('Request imaging'), findsOneWidget);
+    expect(find.byTooltip('Request imaging'), findsOneWidget);
   });
 
   testWidgets('view toggle switches between patients and orders labels', (
@@ -383,11 +383,11 @@ void main() {
   ) async {
     await _pumpRadiologyWorkspace(tester, repository: repository);
 
-    expect(find.textContaining('Orders view'), findsOneWidget);
+    expect(find.byTooltip('Orders view'), findsOneWidget);
     clearInteractions(repository);
     _stubRadiologyRepository(repository);
 
-    await tester.tap(find.textContaining('Orders view'));
+    await tester.tap(find.byTooltip('Orders view'));
     await tester.pumpAndSettle();
 
     final List<RadiologyWorkspaceQuery> queries = verify(
@@ -399,7 +399,7 @@ void main() {
       ),
       isTrue,
     );
-    expect(find.textContaining('Patients view'), findsOneWidget);
+    expect(find.byTooltip('Patients view'), findsOneWidget);
   });
 
   testWidgets('search filters table rows via controller', (
