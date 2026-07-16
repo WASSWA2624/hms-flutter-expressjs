@@ -17,6 +17,7 @@ import 'package:hosspi_hms/features/integrations/domain/repositories/integration
 import 'package:hosspi_hms/features/integrations/presentation/pages/integrations_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace_toolbar.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -254,21 +255,43 @@ void main() {
     expect(find.byTooltip('Create integration'), findsOneWidget);
   });
 
-  testWidgets('toolbar shows only status-based summary badges', (
+  testWidgets('tab toolbar shows status filters and refresh without overflow', (
     WidgetTester tester,
   ) async {
     await _pumpIntegrationsWorkspace(tester, repository: repository);
 
-    await tester.tap(find.byIcon(Icons.more_vert));
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Notifications').first);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Active'), findsWidgets);
-    expect(find.text('Warnings'), findsOneWidget);
-    expect(find.text('Failed'), findsWidgets);
+    expect(find.byType(AppWorkspaceToolbar), findsNothing);
+    expect(find.byIcon(Icons.more_vert), findsNothing);
+    expect(find.byTooltip('Active'), findsOneWidget);
+    expect(find.byTooltip('Warnings'), findsOneWidget);
+    expect(find.byTooltip('Failed'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
     expect(find.text('Total items'), findsNothing);
+  });
+
+  testWidgets('logs and interop tabs keep refresh and status toolbar actions', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIntegrationsWorkspace(tester, repository: repository);
+
+    await tester.tap(_tab('Logs'));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Create integration'), findsNothing);
+    expect(find.byTooltip('Create API key'), findsNothing);
+    expect(find.byTooltip('Create webhook'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Active'), findsOneWidget);
+    expect(find.byTooltip('Warnings'), findsOneWidget);
+    expect(find.byTooltip('Failed'), findsOneWidget);
+
+    await tester.tap(_tab('Interop'));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Active'), findsOneWidget);
+    expect(find.byTooltip('Warnings'), findsOneWidget);
+    expect(find.byTooltip('Failed'), findsOneWidget);
   });
 
   testWidgets('switching tabs updates section query and columns', (
@@ -397,6 +420,7 @@ void main() {
 
     expect(_tab('Integrations'), findsOneWidget);
     expect(find.byTooltip('Create integration'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
   });
 
   testWidgets('narrow viewport keeps tab strip and list', (

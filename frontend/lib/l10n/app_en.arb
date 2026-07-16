@@ -18078,11 +18078,11 @@
   "@communicationsClearSearchAction": {
     "description": "Action label for clearing communications search."
   },
-  "communicationsAdvancedFiltersLabel": "Communication filters",
+  "communicationsAdvancedFiltersLabel": "Filters",
   "@communicationsAdvancedFiltersLabel": {
     "description": "Action label for communications filters."
   },
-  "communicationsAdvancedFiltersTitle": "Communication filters",
+  "communicationsAdvancedFiltersTitle": "Filters",
   "@communicationsAdvancedFiltersTitle": {
     "description": "Dialog title for communications filters."
   },

@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -223,8 +223,8 @@ class _IntegrationsWorkspaceContentState
     return switch (section) {
       IntegrationDeskSection.integrations =>
         l10n.integrationsFilterIntegrations,
-      IntegrationDeskSection.apiKeys => l10n.integrationsApiKeysSummaryLabel,
-      IntegrationDeskSection.webhooks => l10n.integrationsWebhooksSummaryLabel,
+      IntegrationDeskSection.apiKeys => l10n.integrationsFilterApiKeys,
+      IntegrationDeskSection.webhooks => l10n.integrationsFilterWebhooks,
       IntegrationDeskSection.logs => l10n.integrationsFilterLogs,
       IntegrationDeskSection.interop => l10n.integrationsFilterInterop,
     };
@@ -300,6 +300,61 @@ class _IntegrationsWorkspaceContentState
     };
   }
 
+  List<Widget> _buildSecondaryActions(
+    BuildContext context,
+    AppLocalizations l10n,
+    IntegrationWorkspaceState state,
+    IntegrationsWorkspaceController controller,
+  ) {
+    return <Widget>[
+      AppTabToolbarAction(
+        label: l10n.integrationsActiveSummaryLabel,
+        icon: Icons.check_circle_outline,
+        semanticLabel: l10n.integrationsActiveSummaryLabel,
+        tooltip: l10n.integrationsActiveSummaryLabel,
+        onPressed: () {
+          unawaited(
+            _applyFilter(controller, IntegrationWorkspaceFilter.active),
+          );
+        },
+      ),
+      AppTabToolbarAction(
+        label: l10n.integrationsWarningsSummaryLabel,
+        icon: Icons.warning_amber_outlined,
+        semanticLabel: l10n.integrationsWarningsSummaryLabel,
+        tooltip: l10n.integrationsWarningsSummaryLabel,
+        onPressed: () {
+          unawaited(
+            _applyFilter(controller, IntegrationWorkspaceFilter.warning),
+          );
+        },
+      ),
+      AppTabToolbarAction(
+        label: l10n.integrationsFailedSummaryLabel,
+        icon: Icons.error_outline,
+        semanticLabel: l10n.integrationsFailedSummaryLabel,
+        tooltip: l10n.integrationsFailedSummaryLabel,
+        onPressed: () {
+          unawaited(
+            _applyFilter(controller, IntegrationWorkspaceFilter.failed),
+          );
+        },
+      ),
+      AppWorkspaceRefreshAction(
+        label: l10n.commonRefreshActionLabel,
+        isLoading: state.isRefreshing,
+        onPressed: state.isRefreshing
+            ? null
+            : () async {
+                final AppFailure? failure = await controller.refresh();
+                if (context.mounted) {
+                  _showFailureIfNeeded(context, failure);
+                }
+              },
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -313,93 +368,60 @@ class _IntegrationsWorkspaceContentState
       accessPolicy,
     );
 
-    return AppWorkspace(
-      title: l10n.integrationsWorkspaceTitle,
-      leadingIcon: AppRouteIcons.integrations,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        summaryNotifications: <AppWorkspaceSummaryNotification>[
-          AppWorkspaceSummaryNotification(
-            label: l10n.integrationsActiveSummaryLabel,
-            count: state.activeCount,
-            icon: Icons.check_circle_outline,
-            tone: AppWorkspaceStatusTone.success,
-            onSelected: () {
-              unawaited(
-                _applyFilter(controller, IntegrationWorkspaceFilter.active),
-              );
-            },
-          ),
-          AppWorkspaceSummaryNotification(
-            label: l10n.integrationsWarningsSummaryLabel,
-            count: state.warningCount,
-            icon: Icons.warning_amber_outlined,
-            tone: AppWorkspaceStatusTone.warning,
-            onSelected: () {
-              unawaited(
-                _applyFilter(controller, IntegrationWorkspaceFilter.warning),
-              );
-            },
-          ),
-          AppWorkspaceSummaryNotification(
-            label: l10n.integrationsFailedSummaryLabel,
-            count: state.failedCount,
-            icon: Icons.error_outline,
-            tone: AppWorkspaceStatusTone.error,
-            onSelected: () {
-              unawaited(
-                _applyFilter(controller, IntegrationWorkspaceFilter.failed),
-              );
-            },
-          ),
-        ],
-        onRefresh: () async {
-          final AppFailure? failure = await controller.refresh();
-          if (context.mounted) {
-            _showFailureIfNeeded(context, failure);
-          }
-        },
-        isRefreshing: state.isRefreshing,
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppTabStrip(
-            tabs: <AppTabItem>[
-              for (final IntegrationDeskSection section
-                  in IntegrationDeskSection.values)
-                AppTabItem(
-                  id: section.name,
-                  icon: _sectionIcon(section),
-                  label: _sectionLabel(l10n, section),
-                  count: _sectionCount(state, section),
-                ),
-            ],
-            selectedId: _section.name,
-            onTabTapped: (String tabId) {
-              for (final IntegrationDeskSection section
-                  in IntegrationDeskSection.values) {
-                if (section.name == tabId) {
-                  setState(() => _section = section);
-                  _updateUrlForSection(section);
-                  unawaited(controller.applyFilter(_filterForSection(section)));
-                  break;
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            AppTabStrip(
+              tabs: <AppTabItem>[
+                for (final IntegrationDeskSection section
+                    in IntegrationDeskSection.values)
+                  AppTabItem(
+                    id: section.name,
+                    icon: _sectionIcon(section),
+                    label: _sectionLabel(l10n, section),
+                    count: _sectionCount(state, section),
+                  ),
+              ],
+              selectedId: _section.name,
+              onTabTapped: (String tabId) {
+                for (final IntegrationDeskSection section
+                    in IntegrationDeskSection.values) {
+                  if (section.name == tabId) {
+                    setState(() => _section = section);
+                    _updateUrlForSection(section);
+                    unawaited(
+                      controller.applyFilter(_filterForSection(section)),
+                    );
+                    break;
+                  }
                 }
-              }
-            },
-            primaryAction: _buildSectionPrimaryAction(l10n, state),
-          ),
-          SizedBox(height: theme.spacing.sm),
-          _IntegrationWorklistPanel(
-            state: state,
-            section: _section,
-            searchController: _searchController,
-            columnVisibilityController: _tableColumnController,
-            onItemSelected: (IntegrationWorkItem item) {
-              unawaited(_openIntegrationDetailDialog(context, item, canManage));
-            },
-          ),
-        ],
+              },
+              primaryAction: _buildSectionPrimaryAction(l10n, state),
+              secondaryActions: _buildSecondaryActions(
+                context,
+                l10n,
+                state,
+                controller,
+              ),
+            ),
+            SizedBox(height: theme.spacing.sm),
+            _IntegrationWorklistPanel(
+              state: state,
+              section: _section,
+              searchController: _searchController,
+              columnVisibilityController: _tableColumnController,
+              onItemSelected: (IntegrationWorkItem item) {
+                unawaited(
+                  _openIntegrationDetailDialog(context, item, canManage),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

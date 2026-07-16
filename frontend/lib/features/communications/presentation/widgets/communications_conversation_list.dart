@@ -5,7 +5,6 @@ import 'package:hosspi_hms/features/communications/domain/entities/communication
 import 'package:hosspi_hms/features/communications/presentation/config/communications_message_filters.dart';
 import 'package:hosspi_hms/features/communications/presentation/controllers/communications_workspace_controller.dart';
 import 'package:hosspi_hms/features/communications/presentation/widgets/communications_formatters.dart';
-import 'package:hosspi_hms/features/communications/presentation/widgets/communications_new_conversation_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -37,18 +36,6 @@ class CommunicationsConversationList extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        if (canWrite)
-          Padding(
-            padding: EdgeInsets.only(bottom: theme.spacing.sm),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: AppButton.secondary(
-                label: context.l10n.communicationsNewGroupAction,
-                leadingIcon: Icons.group_add_outlined,
-                onPressed: () => showCommunicationsNewGroupDialog(context, ref),
-              ),
-            ),
-          ),
         AppSearchBar(
           controller: searchController,
           hintText: context.l10n.communicationsSearchHint,

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -194,6 +193,64 @@ class _CommunicationsWorkspaceContentState
     await showCommunicationsNewDirectMessageDialog(context, ref);
   }
 
+  Future<void> _refreshWorkspace() async {
+    final AppFailure? failure = await ref
+        .read(communicationsWorkspaceControllerProvider.notifier)
+        .refresh();
+    if (mounted && context.mounted) {
+      _showFailureIfNeeded(context, failure);
+    }
+  }
+
+  Widget? _buildPrimaryAction(
+    AppLocalizations l10n,
+    CommunicationsWorkspaceState state,
+    bool canWrite,
+  ) {
+    return switch (state.query.panel) {
+      CommunicationsPanel.inbox when canWrite => AppTabToolbarPrimary(
+        label: l10n.communicationsNewMessageAction,
+        icon: Icons.add_comment_outlined,
+        onPressed: () => _openNewConversation(context, ref),
+      ),
+      CommunicationsPanel.inbox ||
+      CommunicationsPanel.notifications ||
+      CommunicationsPanel.deliveries ||
+      CommunicationsPanel.templates => AppTabToolbarPrimary(
+        label: l10n.commonRefreshActionLabel,
+        icon: Icons.refresh,
+        isLoading: state.isRefreshing,
+        enabled: !state.isRefreshing,
+        onPressed: state.isRefreshing ? null : () => unawaited(_refreshWorkspace()),
+      ),
+    };
+  }
+
+  List<Widget> _buildSecondaryActions(
+    AppLocalizations l10n,
+    CommunicationsWorkspaceState state,
+    bool canWrite,
+  ) {
+    if (state.query.panel != CommunicationsPanel.inbox || !canWrite) {
+      return const <Widget>[];
+    }
+
+    return <Widget>[
+      AppTabToolbarAction(
+        label: l10n.communicationsNewGroupAction,
+        icon: Icons.group_add_outlined,
+        onPressed: () => showCommunicationsNewGroupDialog(context, ref),
+      ),
+      AppTabToolbarAction(
+        label: l10n.commonRefreshActionLabel,
+        icon: Icons.refresh,
+        isLoading: state.isRefreshing,
+        enabled: !state.isRefreshing,
+        onPressed: state.isRefreshing ? null : () => unawaited(_refreshWorkspace()),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -207,29 +264,11 @@ class _CommunicationsWorkspaceContentState
 
     return AppWorkspace(
       title: l10n.communicationsWorkspaceTitle,
-      leadingIcon: AppRouteIcons.communications,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        summaryNotifications: _summaryNotifications(context, state, controller),
-        onRefresh: () async {
-          final AppFailure? failure = await controller.refresh();
-          if (context.mounted) {
-            _showFailureIfNeeded(context, failure);
-          }
-        },
-        isRefreshing: state.isRefreshing,
-      ),
-
+      showHeader: false,
+      toolbar: null,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          if (lastFailure is AppFailure) ...<Widget>[
-            AppFailureStateView(
-              failure: lastFailure,
-              onRetry: controller.refresh,
-            ),
-            SizedBox(height: Theme.of(context).spacing.md),
-          ],
           AppTabStrip(
             tabs: <AppTabItem>[
               for (final CommunicationsPanel panel
@@ -248,16 +287,17 @@ class _CommunicationsWorkspaceContentState
               );
               controller.applyPanel(panel);
             },
-            primaryAction:
-                state.query.panel == CommunicationsPanel.inbox && canWrite
-                ? AppTabToolbarPrimary(
-                    label: l10n.communicationsNewMessageAction,
-                    icon: Icons.add_comment_outlined,
-                    onPressed: () => _openNewConversation(context, ref),
-                  )
-                : null,
+            primaryAction: _buildPrimaryAction(l10n, state, canWrite),
+            secondaryActions: _buildSecondaryActions(l10n, state, canWrite),
           ),
           SizedBox(height: Theme.of(context).spacing.sm),
+          if (lastFailure is AppFailure) ...<Widget>[
+            AppFailureStateView(
+              failure: lastFailure,
+              onRetry: controller.refresh,
+            ),
+            SizedBox(height: Theme.of(context).spacing.md),
+          ],
           _CommunicationsListPanel(
             state: state,
             searchController: _searchController,
@@ -272,59 +312,6 @@ class _CommunicationsWorkspaceContentState
           ? null
           : _CommunicationsDetailPanel(state: state, canWrite: canWrite),
     );
-  }
-
-  List<AppWorkspaceSummaryNotification> _summaryNotifications(
-    BuildContext context,
-    CommunicationsWorkspaceState state,
-    CommunicationsWorkspaceController controller,
-  ) {
-    final AppLocalizations l10n = context.l10n;
-
-    return <AppWorkspaceSummaryNotification>[
-      AppWorkspaceSummaryNotification(
-        label: l10n.communicationsUnreadThreadsSummaryLabel,
-        count: state.summary.unreadThreads,
-        icon: Icons.mark_chat_unread_outlined,
-        tone: state.summary.unreadThreads > 0
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.neutral,
-        onSelected: () {
-          controller.applyPanel(CommunicationsPanel.inbox);
-          controller.applyFilter(unreadOnly: true);
-        },
-      ),
-      AppWorkspaceSummaryNotification(
-        label: l10n.communicationsUnreadNotificationsSummaryLabel,
-        count: state.metrics.unread,
-        icon: Icons.notifications_active_outlined,
-        tone: state.metrics.unread > 0
-            ? AppWorkspaceStatusTone.warning
-            : AppWorkspaceStatusTone.neutral,
-        onSelected: () {
-          controller.applyPanel(CommunicationsPanel.notifications);
-          controller.applyFilter(unreadOnly: true);
-        },
-      ),
-      AppWorkspaceSummaryNotification(
-        label: l10n.communicationsFailedDeliveriesSummaryLabel,
-        count: state.metrics.failedDeliveries,
-        icon: Icons.error_outline,
-        tone: state.metrics.failedDeliveries > 0
-            ? AppWorkspaceStatusTone.error
-            : AppWorkspaceStatusTone.neutral,
-        onSelected: () {
-          controller.applyPanel(CommunicationsPanel.deliveries);
-          controller.applyFilter(filter: _failedFilterValue);
-        },
-      ),
-      AppWorkspaceSummaryNotification(
-        label: l10n.communicationsTemplatesSummaryLabel,
-        count: state.summary.templates,
-        icon: Icons.description_outlined,
-        onSelected: () => controller.applyPanel(CommunicationsPanel.templates),
-      ),
-    ];
   }
 }
 
@@ -350,8 +337,6 @@ class _CommunicationsListPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-
     if (state.query.panel == CommunicationsPanel.inbox) {
       return CommunicationsInboxPanel(
         state: state,
@@ -360,11 +345,7 @@ class _CommunicationsListPanel extends ConsumerWidget {
       );
     }
 
-    return AppWorkspaceDetailPanel(
-      title: _panelTitle(l10n, state.query.panel),
-      description: l10n.communicationsListDescription,
-      child: _tableForPanel(context, ref),
-    );
+    return _tableForPanel(context, ref);
   }
 
   Widget _tableForPanel(BuildContext context, WidgetRef ref) {

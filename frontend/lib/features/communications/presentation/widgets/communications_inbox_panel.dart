@@ -42,16 +42,12 @@ class CommunicationsInboxPanel extends ConsumerWidget {
       );
     }
 
-    final Widget listPanel = AppWorkspaceDetailPanel(
-      title: context.l10n.communicationsMessagesPanelLabel,
-      description: context.l10n.communicationsListDescription,
-      child: SizedBox(
-        height: isWide ? 640 : 420,
-        child: CommunicationsConversationList(
-          state: state,
-          searchController: searchController,
-          canWrite: canWrite,
-        ),
+    final Widget listPanel = SizedBox(
+      height: isWide ? 640 : 420,
+      child: CommunicationsConversationList(
+        state: state,
+        searchController: searchController,
+        canWrite: canWrite,
       ),
     );
 
