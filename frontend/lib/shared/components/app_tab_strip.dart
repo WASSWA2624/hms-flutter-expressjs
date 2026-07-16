@@ -101,12 +101,11 @@ class AppTabStrip extends StatelessWidget {
                   Expanded(
                     child: Wrap(
                       spacing: theme.spacing.xs,
-                      runSpacing: 0,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: secondaryActions,
                     ),
                   ),
-                  if (primaryAction != null) primaryAction!,
+                  ?primaryAction,
                 ],
               ),
             ),

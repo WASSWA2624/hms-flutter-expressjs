@@ -265,17 +265,17 @@ void main() {
     await _pumpPharmacyWorkspace(tester, repository: repository);
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.textContaining('Ready ('), findsOneWidget);
-    expect(find.textContaining('Partial ('), findsOneWidget);
-    expect(find.textContaining('Pending payment ('), findsOneWidget);
-    expect(find.textContaining('Completed ('), findsOneWidget);
-    expect(find.textContaining('All orders ('), findsOneWidget);
+    expect(find.text('Ready'), findsOneWidget);
+    expect(find.text('Partial'), findsOneWidget);
+    expect(find.text('Pending payment'), findsOneWidget);
+    expect(find.text('Completed'), findsOneWidget);
+    expect(find.text('All orders'), findsOneWidget);
     expect(find.text('Noah Ready'), findsOneWidget);
     expect(find.text('Amina Partial'), findsNothing);
     expect(find.textContaining('Dispense'), findsWidgets);
     // Inventory alerts live in the toolbar overflow (showsNotifications).
-    expect(find.textContaining('Ready ('), findsOneWidget);
-    expect(find.textContaining('All orders ('), findsOneWidget);
+    expect(find.text('Ready'), findsOneWidget);
+    expect(find.text('All orders'), findsOneWidget);
   });
 
   testWidgets('switching tabs updates URL and applies filter', (
@@ -286,7 +286,7 @@ void main() {
       repository: repository,
     );
 
-    await tester.tap(find.textContaining('Partial ('));
+    await tester.tap(find.text('Partial'));
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['section'], 'in-progress');
@@ -294,7 +294,7 @@ void main() {
     expect(find.text('Noah Ready'), findsNothing);
     expect(find.textContaining('Dispense'), findsWidgets);
 
-    await tester.tap(find.textContaining('Completed ('));
+    await tester.tap(find.text('Completed'));
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['section'], 'completed');
@@ -397,7 +397,7 @@ void main() {
   ) async {
     await _pumpPharmacyWorkspace(tester, repository: repository);
 
-    await tester.tap(find.textContaining('Pending payment ('));
+    await tester.tap(find.text('Pending payment'));
     await tester.pumpAndSettle();
 
     expect(
@@ -432,7 +432,7 @@ void main() {
       repository: repository,
     );
 
-    await tester.tap(find.textContaining('All orders ('));
+    await tester.tap(find.text('All orders'));
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['section'], 'all');

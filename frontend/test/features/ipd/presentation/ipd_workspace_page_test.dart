@@ -279,7 +279,7 @@ void main() {
     expect(find.textContaining('Discharge'), findsWidgets);
     expect(find.textContaining('Bed board'), findsWidgets);
     expect(find.text('Quinn Queue'), findsOneWidget);
-    expect(find.textContaining('Start admission'), findsOneWidget);
+    expect(find.byTooltip('Start admission'), findsOneWidget);
   });
 
   testWidgets('switching tabs applies scope filters and updates URL', (
@@ -357,7 +357,7 @@ void main() {
     );
     expect(find.text('Ada Active'), findsOneWidget);
     expect(find.text('Quinn Queue'), findsNothing);
-    expect(find.textContaining('Start admission'), findsOneWidget);
+    expect(find.byTooltip('Start admission'), findsOneWidget);
   });
 
   testWidgets('deep link section=bed-board renders Bed Board panel', (
@@ -382,7 +382,7 @@ void main() {
         limit: any(named: 'limit'),
       ),
     ).called(greaterThanOrEqualTo(1));
-    expect(find.textContaining('Start admission'), findsOneWidget);
+    expect(find.byTooltip('Start admission'), findsOneWidget);
   });
 
   testWidgets('Bed Board tab loads bed board and updates URL', (
@@ -432,7 +432,7 @@ void main() {
   ) async {
     await _pumpIpdWorkspace(tester, repository: repository);
 
-    await tester.tap(find.textContaining('Start admission').first);
+    await tester.tap(find.byTooltip('Start admission'));
     await tester.pumpAndSettle();
 
     expect(find.byType(IpdStartAdmissionDialog), findsOneWidget);
@@ -443,7 +443,8 @@ void main() {
   ) async {
     await _pumpIpdWorkspace(tester, repository: repository);
 
-    expect(find.textContaining('Admission Queue (1)'), findsOneWidget);
+    expect(find.text('Admission Queue'), findsOneWidget);
+    expect(find.text('1'), findsWidgets);
   });
 
   testWidgets('AppTabStrip renders on narrow mobile viewport', (

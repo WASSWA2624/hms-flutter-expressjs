@@ -49,12 +49,12 @@ void main() {
     final _Harness harness = await _pumpClinicalWorkspace(tester);
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.textContaining('All ('), findsOneWidget);
-    expect(find.textContaining('Waiting review ('), findsOneWidget);
-    expect(find.textContaining('Urgent ('), findsOneWidget);
-    expect(find.textContaining('Results ready ('), findsOneWidget);
-    expect(find.textContaining('In consultation ('), findsOneWidget);
-    expect(find.textContaining('Completed ('), findsOneWidget);
+    expect(find.text('All'), findsOneWidget);
+    expect(find.text('Waiting review'), findsOneWidget);
+    expect(find.text('Urgent'), findsOneWidget);
+    expect(find.text('Results ready'), findsOneWidget);
+    expect(find.text('In consultation'), findsOneWidget);
+    expect(find.text('Completed'), findsOneWidget);
     expect(find.text('Current step'), findsWidgets);
     expect(find.text('Queue scope'), findsNothing);
     expect(find.text('Sarah Clinical'), findsOneWidget);
@@ -104,7 +104,7 @@ void main() {
     final _Harness harness = await _pumpClinicalWorkspace(tester);
 
     clearInteractions(harness.clinicalRepository);
-    await tester.tap(find.textContaining('Urgent ('));
+    await tester.tap(find.text('Urgent'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -125,7 +125,7 @@ void main() {
   ) async {
     final _Harness harness = await _pumpClinicalWorkspace(tester);
 
-    await tester.tap(find.textContaining('Waiting review ('));
+    await tester.tap(find.text('Waiting review'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -154,7 +154,7 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('Urgent ('), findsOneWidget);
+    expect(find.text('Urgent'), findsOneWidget);
 
     final List<Object?> captured = verify(
       () => harness.clinicalRepository.listEncounters(captureAny()),
@@ -192,7 +192,7 @@ void main() {
       ],
     );
 
-    await tester.tap(find.textContaining('Results ready ('));
+    await tester.tap(find.text('Results ready'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -210,7 +210,7 @@ void main() {
   ) async {
     await _pumpClinicalWorkspace(tester);
 
-    await tester.tap(find.textContaining('In consultation ('));
+    await tester.tap(find.text('In consultation'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -359,7 +359,7 @@ Future<_Harness> _pumpClinicalWorkspace(
       ),
     ),
   );
-  await _pumpUntilFound(tester, find.textContaining('All ('));
+  await _pumpUntilFound(tester, find.text('All'));
 
   return _Harness(clinicalRepository: clinicalRepository, router: router);
 }

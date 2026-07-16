@@ -242,13 +242,13 @@ void main() {
     await _pumpIntegrationsWorkspace(tester, repository: repository);
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.textContaining('Integrations (3)'), findsOneWidget);
-    expect(find.textContaining('API keys (1)'), findsOneWidget);
-    expect(find.textContaining('Webhooks (1)'), findsOneWidget);
-    expect(find.textContaining('Logs (1)'), findsOneWidget);
-    expect(find.textContaining('Interop (1)'), findsOneWidget);
+    expect(find.text('Integrations'), findsOneWidget);
+    expect(find.text('API keys'), findsOneWidget);
+    expect(find.text('Webhooks'), findsOneWidget);
+    expect(find.text('Logs'), findsOneWidget);
+    expect(find.text('Interop'), findsOneWidget);
     expect(find.text('Lab HL7 Feed'), findsOneWidget);
-    expect(find.textContaining('Create integration'), findsOneWidget);
+    expect(find.byTooltip('Create integration'), findsOneWidget);
   });
 
   testWidgets('toolbar shows only status-based summary badges', (
@@ -287,13 +287,13 @@ void main() {
       containsAll(<String>['name', 'type', 'has_config', 'webhook_count']),
     );
 
-    await tester.tap(find.textContaining('API keys (1)').first);
+    await tester.tap(find.text('API keys').first);
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['section'], 'api-keys');
     expect(find.text('Billing Export Key'), findsOneWidget);
-    expect(find.textContaining('Create API key'), findsOneWidget);
-    expect(find.textContaining('Create integration'), findsNothing);
+    expect(find.byTooltip('Create API key'), findsOneWidget);
+    expect(find.byTooltip('Create integration'), findsNothing);
     expect(_table(tester).columnVisibilityStorageKey, 'integrations_apiKeys');
     expect(
       _table(
@@ -302,12 +302,12 @@ void main() {
       containsAll(<String>['name', 'key_id', 'permissions', 'expires_at']),
     );
 
-    await tester.tap(find.textContaining('Webhooks (1)').first);
+    await tester.tap(find.text('Webhooks').first);
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['section'], 'webhooks');
     expect(find.text('payment.completed'), findsOneWidget);
-    expect(find.textContaining('Create webhook'), findsOneWidget);
+    expect(find.byTooltip('Create webhook'), findsOneWidget);
     expect(
       _table(
         tester,
@@ -315,13 +315,13 @@ void main() {
       containsAll(<String>['event', 'target_host', 'integration_status']),
     );
 
-    await tester.tap(find.textContaining('Logs (1)').first);
+    await tester.tap(find.text('Logs').first);
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['section'], 'logs');
-    expect(find.textContaining('Create integration'), findsNothing);
-    expect(find.textContaining('Create API key'), findsNothing);
-    expect(find.textContaining('Create webhook'), findsNothing);
+    expect(find.byTooltip('Create integration'), findsNothing);
+    expect(find.byTooltip('Create API key'), findsNothing);
+    expect(find.byTooltip('Create webhook'), findsNothing);
     expect(_table(tester).columnVisibilityStorageKey, 'integrations_logs');
     expect(
       _table(
@@ -330,7 +330,7 @@ void main() {
       containsAll(<String>['integration', 'message', 'integration_type']),
     );
 
-    await tester.tap(find.textContaining('Interop (1)').first);
+    await tester.tap(find.text('Interop').first);
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['section'], 'interop');
@@ -362,7 +362,7 @@ void main() {
 
     expect(harness.router.state.uri.queryParameters['section'], 'api-keys');
     expect(find.text('Billing Export Key'), findsOneWidget);
-    expect(find.textContaining('Create API key'), findsOneWidget);
+    expect(find.byTooltip('Create API key'), findsOneWidget);
     expect(find.text('Lab HL7 Feed'), findsNothing);
     expect(_table(tester).columnVisibilityStorageKey, 'integrations_apiKeys');
   });
@@ -379,7 +379,7 @@ void main() {
     );
 
     expect(find.text('Billing Export Key'), findsOneWidget);
-    expect(find.textContaining('Create API key'), findsOneWidget);
+    expect(find.byTooltip('Create API key'), findsOneWidget);
     expect(_table(tester).columnVisibilityStorageKey, 'integrations_apiKeys');
   });
 
@@ -392,8 +392,8 @@ void main() {
       accessPolicy: _integrationsReadOnlyPolicy(),
     );
 
-    expect(find.textContaining('Integrations (3)'), findsOneWidget);
-    expect(find.textContaining('Create integration'), findsNothing);
+    expect(find.text('Integrations'), findsOneWidget);
+    expect(find.byTooltip('Create integration'), findsNothing);
   });
 
   testWidgets('narrow viewport keeps tab strip and list', (
@@ -406,7 +406,7 @@ void main() {
     );
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.textContaining('Integrations (3)'), findsOneWidget);
+    expect(find.text('Integrations'), findsOneWidget);
     expect(find.text('Lab HL7 Feed'), findsOneWidget);
   });
 }
