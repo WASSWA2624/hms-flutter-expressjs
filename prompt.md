@@ -1,10 +1,10 @@
 # Patient encounter dialogs — standardization
 
-Deeply refactor the 41 definitions in [`dialog-inventory/02-patient-encounter-flow.md`](dialog-inventory/02-patient-encounter-flow.md) into one reusable product surface. This is structural, not cosmetic.
+Refactor the 41 definitions in [`dialog-inventory/02-patient-encounter-flow.md`](dialog-inventory/02-patient-encounter-flow.md) into one reusable product surface. This is structural, not cosmetic.
 
 ## Scope
 
-Change inventoried definitions, listed call sites, and shared primitives needed for consolidation. Do not touch unrelated dialogs, create another shell, use raw `AlertDialog`/`showDialog`, or retain duplication to minimize the diff.
+Change inventoried definitions, listed call sites, and shared primitives for consolidation. Do not touch unrelated dialogs, create another shell, use raw `AlertDialog`/`showDialog`, or keep duplication to shrink the diff.
 
 ## Requirements
 
@@ -25,18 +25,18 @@ Change inventoried definitions, listed call sites, and shared primitives needed 
    - Use the app’s existing spinner only: `AppLoadingIndicator` or `AppLoadingSurface`; use `AppButton.isLoading` for submission. Do not introduce `CircularProgressIndicator` or another loader.
    - While loading or saving, disable Cancel, close, and competing actions; apply `closeEnabled: false` and `barrierDismissible: false`.
    - Order actions left to right: secondary actions, **Cancel**, primary commit. Prefer one commit; use Create → Edit → Delete only when multiple mutations are essential.
-   - Use `AppButton`, `AppActionIcons`, and localized labels. Say **Cancel**, not Close, and **Edit**, not Update. Confirmation dialogs have one domain verb/Confirm plus Cancel.
+   - Every `AppButton` needs a leading icon and localized label. Use `AppActionIcons` for shared verbs; match sibling encounter flows for domain actions. No iconless buttons or one-off Material icons when a shared mapping exists. Say **Cancel**, not Close, and **Edit**, not Update. Confirmation dialogs have one domain verb/Confirm plus Cancel.
 
 4. **Titles**
    - Use general role-based titles, never patient names. Pass titles through `AppDialog` for uppercase normalization and reuse sibling icon conventions.
 
 5. **Backend correctness and sync**
    - Follow [the API contract](.cursor/api-contract.mdc) and [`instant_ui_sync.mdc`](frontend/.cursor/instant_ui_sync.mdc).
-   - Trace every loading and mutating action end to end: dialog → workspace controller → repository/DTO → real backend route/schema/service. Match IDs, `snake_case` payloads, auth, envelopes, and response decoding; fix either side when mismatched.
+   - Trace every load/mutate path end to end: dialog → workspace controller → repository/DTO → real backend route/schema/service. Match IDs, `snake_case` payloads, auth, envelopes, and response decoding; fix either side on mismatch.
    - Widgets never call APIs or own competing server data. Mutate over HTTP; WebSockets only reconcile.
    - On failure, keep the dialog open, show `AppFailure` through shared failure UI, and patch nothing. Never fake or silently ignore success.
-   - On persisted success only, immediately patch every affected Riverpod slice, then use the smallest targeted refresh/realtime reconciliation. Dialogs, parent workspaces, pinned views, lists, details, and badges must agree with backend truth without a full reload.
+   - On persisted success only, immediately patch every affected Riverpod slice, then apply the smallest targeted refresh/realtime reconciliation. Dialogs, parent workspaces, pinned views, lists, details, and badges must match backend truth without a full reload.
 
 ## Verification
 
-Keep the workspace pattern test green. Add focused widget, controller, DTO, backend route/schema, and service tests. Verify every happy-path API call succeeds and cancel/failure neither patches nor dismisses. Confirm equivalent flows share primitives, spacing, sections, actions, loading/error behavior, and responsive layout without duplicate UI.
+Keep the workspace pattern test green. Add focused widget, controller, DTO, backend route/schema, and service tests. Verify happy-path API calls succeed and cancel/failure neither patches nor dismisses. Confirm equivalent flows share primitives, spacing, sections, action icons/labels, loading/error behavior, and responsive layout without duplicates.
