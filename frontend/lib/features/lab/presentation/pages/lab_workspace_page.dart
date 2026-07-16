@@ -257,7 +257,9 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       tooltip: l10n.commonRefreshActionLabel,
       isLoading: state.isRefreshing,
       enabled: !state.isRefreshing,
-      onPressed: state.isRefreshing ? null : () => unawaited(_refreshWorkbench()),
+      onPressed: state.isRefreshing
+          ? null
+          : () => unawaited(_refreshWorkbench()),
     );
 
     return switch (_section) {

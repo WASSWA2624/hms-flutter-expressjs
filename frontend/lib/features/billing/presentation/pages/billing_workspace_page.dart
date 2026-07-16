@@ -5,7 +5,6 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -246,135 +245,230 @@ class _BillingWorkspaceContentState
     final BillingWorkspaceState state = widget.state;
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final bool canWrite = accessPolicy.grants(AppPermissions.billingWrite);
-    final controller = ref.read(billingWorkspaceControllerProvider.notifier);
+    final BillingWorkspaceController controller = ref.read(
+      billingWorkspaceControllerProvider.notifier,
+    );
     final AppFailure? lastFailure = state.lastFailure is AppFailure
         ? state.lastFailure! as AppFailure
         : null;
-
+    final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
 
-    return AppWorkspace(
-      title: l10n.billingWorkspaceTitle,
-      leadingIcon: AppRouteIcons.billing,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        summaryNotifications: _summaryNotifications(context, ref, state),
-        secondary: <Widget>[
-          AppButton.secondary(
-            label: l10n.billingCloseShift,
-            leadingIcon: Icons.schedule_send_outlined,
-            enabled: canWrite && !state.isSaving,
-            onPressed: () => _showShiftCloseDialog(context, ref),
-          ),
-          AppButton.secondary(
-            label: l10n.billingCloseDay,
-            leadingIcon: Icons.today_outlined,
-            enabled: canWrite && !state.isSaving,
-            onPressed: () => _showDayCloseDialog(context, ref),
-          ),
-        ],
-        onRefresh: controller.refresh,
-        isRefreshing: state.isRefreshing,
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (lastFailure != null) ...<Widget>[
-            AppFailureStateView(
-              failure: lastFailure,
-              onRetry: controller.refresh,
-            ),
-            SizedBox(height: Theme.of(context).spacing.md),
-          ],
-          AppTabStrip(
-            tabs: <AppTabItem>[
-              for (final BillingQueueType queue in BillingQueueType.values)
-                AppTabItem(
-                  id: queue.name,
-                  icon: billingQueueIcon(queue),
-                  label: billingQueueLabel(context, queue),
-                  count: state.overview.summary.countFor(queue),
-                  countTone: billingQueueCountTone(queue),
-                ),
-            ],
-            selectedId: _section.name,
-            onTabTapped: (String tabId) {
-              for (final BillingQueueType queue in BillingQueueType.values) {
-                if (queue.name == tabId) {
-                  _selectQueue(queue);
-                  break;
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            AppTabStrip(
+              tabs: <AppTabItem>[
+                for (final BillingQueueType queue in BillingQueueType.values)
+                  AppTabItem(
+                    id: queue.name,
+                    icon: billingQueueIcon(queue),
+                    label: billingQueueLabel(context, queue),
+                    count: state.overview.summary.countFor(queue),
+                    countTone: billingQueueCountTone(queue),
+                  ),
+              ],
+              selectedId: _section.name,
+              onTabTapped: (String tabId) {
+                for (final BillingQueueType queue in BillingQueueType.values) {
+                  if (queue.name == tabId) {
+                    _selectQueue(queue);
+                    break;
+                  }
                 }
-              }
-            },
-          ),
-          SizedBox(height: Theme.of(context).spacing.sm),
-          _BillingQueuePanel(
-            state: state,
-            canWrite: canWrite,
-            searchController: _searchController,
-            columnVisibilityController: _tableColumnController,
-            activeQueue: _section,
-          ),
-        ],
+              },
+              primaryAction: _buildPrimaryAction(
+                l10n,
+                state: state,
+                canWrite: canWrite,
+                controller: controller,
+              ),
+              secondaryActions: _buildSecondaryActions(
+                l10n,
+                state: state,
+                canWrite: canWrite,
+                controller: controller,
+              ),
+            ),
+            SizedBox(height: theme.spacing.sm),
+            if (lastFailure != null) ...<Widget>[
+              AppFailureStateView(
+                failure: lastFailure,
+                onRetry: controller.refresh,
+              ),
+              SizedBox(height: theme.spacing.md),
+            ],
+            _BillingQueuePanel(
+              state: state,
+              canWrite: canWrite,
+              searchController: _searchController,
+              columnVisibilityController: _tableColumnController,
+              activeQueue: _section,
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  List<AppWorkspaceSummaryNotification> _summaryNotifications(
-    BuildContext context,
-    WidgetRef ref,
-    BillingWorkspaceState state,
-  ) {
-    final AppLocalizations l10n = context.l10n;
-    final BillingSummary summary = state.overview.summary;
+  Widget _buildPrimaryAction(
+    AppLocalizations l10n, {
+    required BillingWorkspaceState state,
+    required bool canWrite,
+    required BillingWorkspaceController controller,
+  }) {
+    return switch (_section) {
+      BillingQueueType.all || BillingQueueType.pendingPayment =>
+        _closeShiftPrimary(l10n, state: state, canWrite: canWrite),
+      BillingQueueType.overdue => _closeDayPrimary(
+        l10n,
+        state: state,
+        canWrite: canWrite,
+      ),
+      BillingQueueType.needsIssue ||
+      BillingQueueType.claimsPending ||
+      BillingQueueType.approvalRequired => _refreshPrimary(
+        l10n,
+        state: state,
+        controller: controller,
+      ),
+    };
+  }
 
-    return <AppWorkspaceSummaryNotification>[
-      if (summary.workloadCount > 0)
-        AppWorkspaceSummaryNotification(
-          label: l10n.billingAllWorkItems,
-          count: summary.workloadCount,
-          icon: Icons.inventory_2_outlined,
-          onSelected: () => _selectQueue(BillingQueueType.all),
-        ),
-      if (summary.pendingPayment > 0)
-        AppWorkspaceSummaryNotification(
-          label: l10n.billingAwaitingPayment,
-          count: summary.pendingPayment,
-          icon: Icons.payments_outlined,
-          tone: AppWorkspaceStatusTone.warning,
-          onSelected: () => _selectQueue(BillingQueueType.pendingPayment),
-        ),
-      if (summary.needsIssue > 0)
-        AppWorkspaceSummaryNotification(
-          label: l10n.billingIssueQueue,
-          count: summary.needsIssue,
-          icon: Icons.receipt_long_outlined,
-          onSelected: () => _selectQueue(BillingQueueType.needsIssue),
-        ),
-      if (summary.claimsPending > 0)
-        AppWorkspaceSummaryNotification(
-          label: l10n.billingClaimsPending,
-          count: summary.claimsPending,
-          icon: Icons.health_and_safety_outlined,
-          tone: AppWorkspaceStatusTone.info,
-          onSelected: () => _selectQueue(BillingQueueType.claimsPending),
-        ),
-      if (summary.approvalRequired > 0)
-        AppWorkspaceSummaryNotification(
-          label: l10n.billingApprovals,
-          count: summary.approvalRequired,
-          icon: Icons.rule_outlined,
-          onSelected: () => _selectQueue(BillingQueueType.approvalRequired),
-        ),
-      if (summary.overdue > 0)
-        AppWorkspaceSummaryNotification(
-          label: l10n.billingOverdue,
-          count: summary.overdue,
-          icon: Icons.warning_amber_outlined,
-          tone: AppWorkspaceStatusTone.error,
-          onSelected: () => _selectQueue(BillingQueueType.overdue),
-        ),
-    ];
+  List<Widget> _buildSecondaryActions(
+    AppLocalizations l10n, {
+    required BillingWorkspaceState state,
+    required bool canWrite,
+    required BillingWorkspaceController controller,
+  }) {
+    final AppTabToolbarAction refresh = _refreshSecondary(
+      l10n,
+      state: state,
+      controller: controller,
+    );
+    final AppTabToolbarAction closeShift = _closeShiftSecondary(
+      l10n,
+      state: state,
+      canWrite: canWrite,
+    );
+    final AppTabToolbarAction closeDay = _closeDaySecondary(
+      l10n,
+      state: state,
+      canWrite: canWrite,
+    );
+
+    return switch (_section) {
+      BillingQueueType.all ||
+      BillingQueueType.pendingPayment => <Widget>[closeDay, refresh],
+      BillingQueueType.needsIssue ||
+      BillingQueueType.claimsPending ||
+      BillingQueueType.approvalRequired => <Widget>[closeShift, closeDay],
+      BillingQueueType.overdue => <Widget>[closeShift, refresh],
+    };
+  }
+
+  AppTabToolbarPrimary _closeShiftPrimary(
+    AppLocalizations l10n, {
+    required BillingWorkspaceState state,
+    required bool canWrite,
+  }) {
+    final bool enabled = canWrite && !state.isSaving;
+    return AppTabToolbarPrimary(
+      label: l10n.billingCloseShift,
+      icon: Icons.schedule_send_outlined,
+      semanticLabel: l10n.billingCloseShift,
+      tooltip: l10n.billingCloseShift,
+      enabled: enabled,
+      onPressed: enabled ? () => _showShiftCloseDialog(context, ref) : null,
+    );
+  }
+
+  AppTabToolbarPrimary _closeDayPrimary(
+    AppLocalizations l10n, {
+    required BillingWorkspaceState state,
+    required bool canWrite,
+  }) {
+    final bool enabled = canWrite && !state.isSaving;
+    return AppTabToolbarPrimary(
+      label: l10n.billingCloseDay,
+      icon: Icons.today_outlined,
+      semanticLabel: l10n.billingCloseDay,
+      tooltip: l10n.billingCloseDay,
+      enabled: enabled,
+      onPressed: enabled ? () => _showDayCloseDialog(context, ref) : null,
+    );
+  }
+
+  AppTabToolbarPrimary _refreshPrimary(
+    AppLocalizations l10n, {
+    required BillingWorkspaceState state,
+    required BillingWorkspaceController controller,
+  }) {
+    return AppTabToolbarPrimary(
+      label: l10n.commonRefreshActionLabel,
+      icon: Icons.refresh,
+      semanticLabel: l10n.commonRefreshActionLabel,
+      tooltip: l10n.commonRefreshActionLabel,
+      enabled: !state.isRefreshing,
+      isLoading: state.isRefreshing,
+      onPressed: state.isRefreshing
+          ? null
+          : () => unawaited(controller.refresh()),
+    );
+  }
+
+  AppTabToolbarAction _closeShiftSecondary(
+    AppLocalizations l10n, {
+    required BillingWorkspaceState state,
+    required bool canWrite,
+  }) {
+    final bool enabled = canWrite && !state.isSaving;
+    return AppTabToolbarAction(
+      label: l10n.billingCloseShift,
+      icon: Icons.schedule_send_outlined,
+      semanticLabel: l10n.billingCloseShift,
+      tooltip: l10n.billingCloseShift,
+      enabled: enabled,
+      onPressed: enabled ? () => _showShiftCloseDialog(context, ref) : null,
+    );
+  }
+
+  AppTabToolbarAction _closeDaySecondary(
+    AppLocalizations l10n, {
+    required BillingWorkspaceState state,
+    required bool canWrite,
+  }) {
+    final bool enabled = canWrite && !state.isSaving;
+    return AppTabToolbarAction(
+      label: l10n.billingCloseDay,
+      icon: Icons.today_outlined,
+      semanticLabel: l10n.billingCloseDay,
+      tooltip: l10n.billingCloseDay,
+      enabled: enabled,
+      onPressed: enabled ? () => _showDayCloseDialog(context, ref) : null,
+    );
+  }
+
+  AppTabToolbarAction _refreshSecondary(
+    AppLocalizations l10n, {
+    required BillingWorkspaceState state,
+    required BillingWorkspaceController controller,
+  }) {
+    return AppTabToolbarAction(
+      label: l10n.commonRefreshActionLabel,
+      icon: Icons.refresh,
+      semanticLabel: l10n.commonRefreshActionLabel,
+      tooltip: l10n.commonRefreshActionLabel,
+      enabled: !state.isRefreshing,
+      isLoading: state.isRefreshing,
+      onPressed: state.isRefreshing
+          ? null
+          : () => unawaited(controller.refresh()),
+    );
   }
 }
 
@@ -417,8 +511,8 @@ class _BillingQueuePanel extends ConsumerWidget {
         onSubmitted: controller.applySearch,
         onClear: () => controller.applySearch(''),
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.billingFiltersTitle,
-        advancedFilterTitle: l10n.billingFiltersTitle,
+        advancedFilterButtonLabel: l10n.billingFiltersLabel,
+        advancedFilterTitle: l10n.billingFiltersLabel,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.billingClearFilters,
         dateFilterLabel: l10n.billingIssuedDateFilterLabel,

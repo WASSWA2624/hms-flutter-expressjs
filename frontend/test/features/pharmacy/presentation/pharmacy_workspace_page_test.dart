@@ -19,6 +19,7 @@ import 'package:hosspi_hms/features/pharmacy/presentation/pages/pharmacy_workspa
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,6 +27,16 @@ class _MockPharmacyRepository extends Mock implements PharmacyRepository {}
 
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
+
+Finder _toolbarPrimary(String label) => find.descendant(
+  of: find.byType(AppTabToolbarPrimary),
+  matching: find.text(label),
+);
+
+Finder _toolbarAction(String label) => find.descendant(
+  of: find.byType(AppTabToolbarAction),
+  matching: find.text(label),
+);
 
 const PharmacyOrder _readyOrder = PharmacyOrder(
   id: 'order-ready',
@@ -222,6 +233,12 @@ Future<_Harness> _pumpPharmacyWorkspace(
           );
         },
       ),
+      GoRoute(
+        path: '/billing',
+        builder: (BuildContext context, GoRouterState state) {
+          return const Scaffold(body: Text('Billing workspace'));
+        },
+      ),
     ],
   );
 
@@ -268,6 +285,7 @@ void main() {
     await _pumpPharmacyWorkspace(tester, repository: repository);
 
     expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.byType(AppWorkspaceToolbar), findsNothing);
     expect(_tab('Ready'), findsOneWidget);
     expect(_tab('Partial'), findsOneWidget);
     expect(_tab('Pending payment'), findsOneWidget);
@@ -275,10 +293,11 @@ void main() {
     expect(_tab('All orders'), findsOneWidget);
     expect(find.text('Noah Ready'), findsOneWidget);
     expect(find.text('Amina Partial'), findsNothing);
-    expect(find.textContaining('Dispense'), findsWidgets);
-    // Inventory alerts live in the toolbar overflow (showsNotifications).
-    expect(_tab('Ready'), findsOneWidget);
-    expect(_tab('All orders'), findsOneWidget);
+    expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+    expect(_toolbarAction('Refresh'), findsOneWidget);
+    expect(_toolbarAction('Low stock'), findsOneWidget);
+    expect(_toolbarAction('Almost out'), findsOneWidget);
+    expect(_toolbarAction('Expiring soon'), findsOneWidget);
   });
 
   testWidgets('switching tabs updates URL and applies filter', (
@@ -295,14 +314,17 @@ void main() {
     expect(harness.router.state.uri.queryParameters['section'], 'in-progress');
     expect(find.text('Amina Partial'), findsOneWidget);
     expect(find.text('Noah Ready'), findsNothing);
-    expect(find.textContaining('Dispense'), findsWidgets);
+    expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+    expect(_toolbarAction('Refresh'), findsOneWidget);
 
     await tester.tap(_tab('Completed'));
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['section'], 'completed');
     expect(find.text('Brian Done'), findsOneWidget);
-    expect(find.textContaining('Catalog and stock'), findsWidgets);
+    expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+    expect(_toolbarAction('Refresh'), findsOneWidget);
+    expect(_toolbarAction('Low stock'), findsNothing);
   });
 
   testWidgets('deep link section=in-progress selects Partial tab', (
@@ -320,6 +342,7 @@ void main() {
     expect(find.text('Amina Partial'), findsOneWidget);
     expect(find.text('Noah Ready'), findsNothing);
     expect(find.text('Brian Done'), findsNothing);
+    expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
 
     final List<Object?> captured = verify(
       () => repository.loadWorkbench(captureAny()),
@@ -331,6 +354,25 @@ void main() {
       ),
       isTrue,
     );
+  });
+
+  testWidgets('deep link section=pending-payment selects Billing primary', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPharmacyWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/pharmacy?section=pending-payment',
+      initialQuery: PharmacyWorkspaceQuery.fromUri(
+        Uri.parse('/pharmacy?section=pending-payment'),
+      ),
+    );
+
+    expect(find.text('Cathy Payment'), findsOneWidget);
+    expect(_toolbarPrimary('Billing'), findsOneWidget);
+    expect(_toolbarAction('Catalog and stock'), findsOneWidget);
+    expect(_toolbarAction('Refresh'), findsOneWidget);
+    expect(_toolbarAction('Low stock'), findsNothing);
   });
 
   testWidgets('deep link section=inventory opens catalog dialog', (
@@ -355,15 +397,16 @@ void main() {
     expect(find.byType(AppDialog), findsNothing);
   });
 
-  testWidgets('PharmacyWorkspacePage opens catalog from overflow action', (
+  testWidgets('PharmacyWorkspacePage opens catalog from tab toolbar', (
     WidgetTester tester,
   ) async {
     await _pumpPharmacyWorkspace(tester, repository: repository);
 
     expect(find.text('Noah Ready'), findsOneWidget);
-    expect(find.text('Catalog and stock'), findsWidgets);
+    expect(find.byType(AppWorkspaceToolbar), findsNothing);
+    expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
 
-    await tester.tap(find.text('Catalog and stock').first);
+    await tester.tap(_toolbarPrimary('Catalog and stock'));
     await tester.pumpAndSettle();
 
     expect(find.text('CATALOG AND STOCK'), findsOneWidget);
@@ -383,7 +426,7 @@ void main() {
   ) async {
     await _pumpPharmacyWorkspace(tester, repository: repository);
 
-    await tester.tap(find.text('Catalog and stock').first);
+    await tester.tap(_toolbarPrimary('Catalog and stock'));
     await tester.pumpAndSettle();
     expect(find.byType(AppDialog), findsOneWidget);
 
@@ -391,18 +434,28 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDialog), findsNothing);
-    expect(find.text('Pharmacy'), findsOneWidget);
+    expect(_tab('Ready'), findsOneWidget);
+    expect(find.text('Noah Ready'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('pending payment tab shows ordered_at column by default', (
+  testWidgets('pending payment tab shows Billing primary and ordered_at', (
     WidgetTester tester,
   ) async {
-    await _pumpPharmacyWorkspace(tester, repository: repository);
+    final _Harness harness = await _pumpPharmacyWorkspace(
+      tester,
+      repository: repository,
+    );
 
     await tester.tap(_tab('Pending payment'));
     await tester.pumpAndSettle();
 
+    expect(
+      harness.router.state.uri.queryParameters['section'],
+      'pending-payment',
+    );
+    expect(_toolbarPrimary('Billing'), findsOneWidget);
+    expect(_toolbarAction('Catalog and stock'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byType(DataTable),
@@ -442,6 +495,7 @@ void main() {
     expect(find.text('Noah Ready'), findsOneWidget);
     expect(find.text('Amina Partial'), findsOneWidget);
     expect(find.text('Brian Done'), findsOneWidget);
-    expect(find.textContaining('Catalog and stock'), findsWidgets);
+    expect(_toolbarPrimary('Catalog and stock'), findsOneWidget);
+    expect(_toolbarAction('Refresh'), findsOneWidget);
   });
 }

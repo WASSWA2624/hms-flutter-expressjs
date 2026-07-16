@@ -18,10 +18,27 @@ import 'package:hosspi_hms/features/billing/presentation/pages/billing_workspace
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _MockBillingRepository extends Mock implements BillingRepository {}
+
+Finder _toolbarPrimary(String label) => find.descendant(
+  of: find.byType(AppTabToolbarPrimary),
+  matching: find.text(label),
+);
+
+Finder _toolbarAction(String label) => find.descendant(
+  of: find.byType(AppTabToolbarAction),
+  matching: find.text(label),
+);
+
+AppListTable<BillingWorkItem> _table(WidgetTester tester) {
+  return tester.widget<AppListTable<BillingWorkItem>>(
+    find.byType(AppListTable<BillingWorkItem>),
+  );
+}
 
 const BillingWorkItem _draftInvoice = BillingWorkItem(
   id: 'inv-draft',
@@ -235,6 +252,8 @@ void main() {
     await _pumpBillingWorkspace(tester, repository: repository);
 
     expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.byType(AppWorkspaceToolbar), findsNothing);
+    expect(find.byType(AppWorkspace), findsNothing);
     expect(find.textContaining('All billing work items'), findsWidgets);
     expect(find.textContaining('Needs issue'), findsWidgets);
     expect(find.textContaining('Awaiting payment'), findsWidgets);
@@ -243,6 +262,21 @@ void main() {
     expect(find.textContaining('Overdue'), findsWidgets);
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.text('Ben Payment'), findsOneWidget);
+    expect(_toolbarPrimary('Close shift'), findsOneWidget);
+    expect(_toolbarAction('Close day'), findsOneWidget);
+    expect(_toolbarAction('Refresh'), findsOneWidget);
+    expect(_table(tester).columnVisibilityLabel, 'Settings');
+    expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+  });
+
+  testWidgets('does not paint a dedicated billing title header', (
+    WidgetTester tester,
+  ) async {
+    await _pumpBillingWorkspace(tester, repository: repository);
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+    expect(find.text(l10n.billingWorkspaceTitle), findsNothing);
   });
 
   testWidgets('switching tabs updates the queue query parameter', (
@@ -262,6 +296,9 @@ void main() {
     );
     expect(find.text('Ben Payment'), findsOneWidget);
     expect(find.text('Ada Draft'), findsNothing);
+    expect(_toolbarPrimary('Close shift'), findsOneWidget);
+    expect(_toolbarAction('Close day'), findsOneWidget);
+    expect(_toolbarAction('Refresh'), findsOneWidget);
 
     await tester.tap(find.textContaining('Needs issue').first);
     await tester.pumpAndSettle();
@@ -269,6 +306,36 @@ void main() {
     expect(harness.router.state.uri.queryParameters['queue'], 'needs-issue');
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.text('Ben Payment'), findsNothing);
+    expect(_toolbarPrimary('Refresh'), findsOneWidget);
+    expect(_toolbarAction('Close shift'), findsOneWidget);
+    expect(_toolbarAction('Close day'), findsOneWidget);
+    expect(_toolbarPrimary('Close shift'), findsNothing);
+  });
+
+  testWidgets('toolbar primary changes across All, Needs issue, and Overdue', (
+    WidgetTester tester,
+  ) async {
+    await _pumpBillingWorkspace(tester, repository: repository);
+
+    expect(_toolbarPrimary('Close shift'), findsOneWidget);
+    expect(_toolbarAction('Close day'), findsOneWidget);
+    expect(_toolbarAction('Refresh'), findsOneWidget);
+
+    await tester.tap(find.textContaining('Needs issue').first);
+    await tester.pumpAndSettle();
+
+    expect(_toolbarPrimary('Refresh'), findsOneWidget);
+    expect(_toolbarAction('Close shift'), findsOneWidget);
+    expect(_toolbarAction('Close day'), findsOneWidget);
+
+    await tester.tap(find.textContaining('Overdue').first);
+    await tester.pumpAndSettle();
+
+    expect(_toolbarPrimary('Close day'), findsOneWidget);
+    expect(_toolbarAction('Close shift'), findsOneWidget);
+    expect(_toolbarAction('Refresh'), findsOneWidget);
+    expect(_toolbarPrimary('Close shift'), findsNothing);
+    expect(_toolbarPrimary('Refresh'), findsNothing);
   });
 
   testWidgets('deep link queue=pending-payment selects Awaiting Payment tab', (
@@ -290,6 +357,9 @@ void main() {
     expect(find.text('Ben Payment'), findsOneWidget);
     expect(find.text('Ada Draft'), findsNothing);
     expect(find.text('Cara Claim'), findsNothing);
+    expect(_toolbarPrimary('Close shift'), findsOneWidget);
+    expect(_toolbarAction('Close day'), findsOneWidget);
+    expect(_toolbarAction('Refresh'), findsOneWidget);
   });
 
   testWidgets('deep link queue=needs-issue selects Needs Issue tab', (
@@ -306,6 +376,9 @@ void main() {
 
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.text('Ben Payment'), findsNothing);
+    expect(_toolbarPrimary('Refresh'), findsOneWidget);
+    expect(_toolbarAction('Close shift'), findsOneWidget);
+    expect(_toolbarAction('Close day'), findsOneWidget);
   });
 
   testWidgets('All tab shows full columns while Needs Issue is draft-focused', (
@@ -372,15 +445,15 @@ void main() {
     expect(find.text('Ada Draft'), findsNothing);
   });
 
-  testWidgets('filter dialog opens from advanced filter button', (
+  testWidgets('filter dialog opens from Filters button', (
     WidgetTester tester,
   ) async {
     await _pumpBillingWorkspace(tester, repository: repository);
 
-    await tester.tap(find.textContaining('Billing filters').first);
+    await tester.tap(find.text('Filters').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Billing filters'), findsWidgets);
+    expect(find.text('Filters'), findsWidgets);
   });
 
   testWidgets('mobile breakpoint uses list tiles instead of data table', (
@@ -395,6 +468,7 @@ void main() {
     expect(find.byType(DataTable), findsNothing);
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(_toolbarPrimary('Close shift'), findsOneWidget);
   });
 
   testWidgets('tab switch applies queue filter via repository', (
@@ -419,5 +493,8 @@ void main() {
     );
     expect(find.text('Cara Claim'), findsOneWidget);
     expect(find.text('Dana Approval'), findsNothing);
+    expect(_toolbarPrimary('Refresh'), findsOneWidget);
+    expect(_toolbarAction('Close shift'), findsOneWidget);
+    expect(_toolbarAction('Close day'), findsOneWidget);
   });
 }

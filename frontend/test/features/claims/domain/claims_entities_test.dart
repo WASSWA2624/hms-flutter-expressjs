@@ -55,10 +55,22 @@ void main() {
         claimsDeskSectionFromQuery('active-claims'),
         ClaimsDeskSection.activeClaims,
       );
+      expect(
+        claimsDeskSectionFromQuery('active_claims'),
+        ClaimsDeskSection.activeClaims,
+      );
       expect(claimsDeskSectionFromQuery('settled'), ClaimsDeskSection.settled);
       expect(
         claimsDeskSectionFromQuery('insurance-setup'),
         ClaimsDeskSection.insuranceSetup,
+      );
+      expect(
+        claimsDeskSectionFromQuery('insurance_setup'),
+        ClaimsDeskSection.insuranceSetup,
+      );
+      expect(
+        claimsDeskSectionFromQuery('ACTIVE-CLAIMS'),
+        ClaimsDeskSection.activeClaims,
       );
       expect(
         claimsDeskSectionFromQuery('unknown'),

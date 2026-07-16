@@ -1246,6 +1246,10 @@
   "@billingFiltersTitle": {
     "description": "Title for billing advanced filters."
   },
+  "billingFiltersLabel": "Filters",
+  "@billingFiltersLabel": {
+    "description": "Billing workspace table Filters button label."
+  },
   "billingEmptyTitle": "No billing items",
   "@billingEmptyTitle": {
     "description": "Empty state title for billing worklist."
@@ -12674,7 +12678,7 @@
   "@pharmacySearchHint": {
     "description": "Pharmacy queue search hint."
   },
-  "pharmacyQueueFilterLabel": "Queue filter",
+  "pharmacyQueueFilterLabel": "Filters",
   "@pharmacyQueueFilterLabel": {
     "description": "Pharmacy queue filter field label."
   },
@@ -13823,6 +13827,10 @@
   "claimsQueueFilterLabel": "Queue",
   "@claimsQueueFilterLabel": {
     "description": "Localized text for claimsQueueFilterLabel."
+  },
+  "claimsFiltersLabel": "Filters",
+  "@claimsFiltersLabel": {
+    "description": "Claims workspace table Filters button label."
   },
   "claimsWorklistTitle": "Claims worklist",
   "@claimsWorklistTitle": {

@@ -954,6 +954,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingFiltersTitle => 'Billing filters';
 
   @override
+  String get billingFiltersLabel => 'Filters';
+
+  @override
   String get billingEmptyTitle => 'No billing items';
 
   @override
@@ -9933,7 +9936,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Search patient, order, encounter, medication, or batch';
 
   @override
-  String get pharmacyQueueFilterLabel => 'Queue filter';
+  String get pharmacyQueueFilterLabel => 'Filters';
 
   @override
   String get pharmacySummaryReadyLabel => 'Ready';
@@ -10828,6 +10831,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get claimsQueueFilterLabel => 'Queue';
+
+  @override
+  String get claimsFiltersLabel => 'Filters';
 
   @override
   String get claimsWorklistTitle => 'Claims worklist';

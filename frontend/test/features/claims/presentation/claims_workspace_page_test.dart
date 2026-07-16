@@ -339,6 +339,7 @@ void main() {
     expect(find.text('CLM-PAID'), findsOneWidget);
     expect(find.byTooltip('Prepare claim'), findsNothing);
     expect(find.byTooltip('Request authorization'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byType(DataTable),
@@ -472,7 +473,7 @@ void main() {
   ) async {
     await _pumpClaimsWorkspace(tester, repository: repository);
 
-    await tester.tap(find.textContaining('Queue').first);
+    await tester.tap(find.textContaining('Filters').first);
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Authorization pending'), findsWidgets);

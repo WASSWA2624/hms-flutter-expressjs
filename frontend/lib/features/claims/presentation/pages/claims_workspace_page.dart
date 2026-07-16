@@ -277,6 +277,12 @@ class _ClaimsWorkspaceContentState
         }
       },
       primaryAction: _buildPrimaryActionButton(l10n, state, controller),
+      secondaryActions: _buildSecondaryActions(
+        context,
+        l10n,
+        state,
+        controller,
+      ),
     );
 
     return ResponsivePage(
@@ -324,7 +330,7 @@ class _ClaimsWorkspaceContentState
     ClaimsWorkspaceController controller,
   ) {
     if (_section == ClaimsDeskSection.settled) {
-      return null;
+      return _refreshPrimaryAction(l10n, state, controller);
     }
     return AppAccessActionGate(
       requirement: claimsWorkspaceWriteRequirement,
@@ -333,6 +339,8 @@ class _ClaimsWorkspaceContentState
           ClaimsDeskSection.authorizations => AppTabToolbarPrimary(
             label: l10n.claimsRequestAuthorizationAction,
             icon: Icons.verified_user_outlined,
+            semanticLabel: l10n.claimsRequestAuthorizationAction,
+            tooltip: l10n.claimsRequestAuthorizationAction,
             isLoading: state.isSaving,
             enabled: isAllowed,
             onPressed: isAllowed
@@ -344,6 +352,8 @@ class _ClaimsWorkspaceContentState
           ClaimsDeskSection.activeClaims => AppTabToolbarPrimary(
             label: l10n.claimsPrepareClaimAction,
             icon: Icons.receipt_long_outlined,
+            semanticLabel: l10n.claimsPrepareClaimAction,
+            tooltip: l10n.claimsPrepareClaimAction,
             isLoading: state.isSaving,
             enabled: isAllowed,
             onPressed: isAllowed
@@ -352,10 +362,16 @@ class _ClaimsWorkspaceContentState
                   )
                 : null,
           ),
-          ClaimsDeskSection.settled => const SizedBox.shrink(),
+          ClaimsDeskSection.settled => _refreshPrimaryAction(
+            l10n,
+            state,
+            controller,
+          ),
           ClaimsDeskSection.insuranceSetup => AppTabToolbarPrimary(
             label: l10n.claimsAddCompanyAction,
             icon: Icons.business_outlined,
+            semanticLabel: l10n.claimsAddCompanyAction,
+            tooltip: l10n.claimsAddCompanyAction,
             enabled: isAllowed,
             onPressed: isAllowed
                 ? () => unawaited(
@@ -370,6 +386,151 @@ class _ClaimsWorkspaceContentState
         };
       },
     );
+  }
+
+  List<Widget> _buildSecondaryActions(
+    BuildContext context,
+    AppLocalizations l10n,
+    ClaimsWorkspaceState state,
+    ClaimsWorkspaceController controller,
+  ) {
+    final AppTabToolbarAction refresh = _refreshSecondaryAction(
+      l10n,
+      state,
+      controller,
+    );
+
+    return switch (_section) {
+      ClaimsDeskSection.authorizations ||
+      ClaimsDeskSection.activeClaims => <Widget>[refresh],
+      ClaimsDeskSection.settled => const <Widget>[],
+      ClaimsDeskSection.insuranceSetup => <Widget>[
+        _gatedInsuranceSetupAction(
+          context: context,
+          state: state,
+          label: l10n.claimsAddSchemeAction,
+          icon: Icons.account_balance_outlined,
+          onPressed: () => openClaimsSchemeDialog(
+            context: context,
+            ref: ref,
+            referenceData: state.referenceData,
+          ),
+        ),
+        _gatedInsuranceSetupAction(
+          context: context,
+          state: state,
+          label: l10n.claimsAddOfferAction,
+          icon: Icons.local_offer_outlined,
+          onPressed: () => openClaimsSchemeOfferDialog(
+            context: context,
+            ref: ref,
+            referenceData: state.referenceData,
+          ),
+        ),
+        _gatedInsuranceSetupAction(
+          context: context,
+          state: state,
+          label: l10n.claimsAddEnrollmentAction,
+          icon: Icons.badge_outlined,
+          onPressed: () => openClaimsEnrollmentDialog(
+            context: context,
+            ref: ref,
+            referenceData: state.referenceData,
+          ),
+        ),
+        _gatedInsuranceSetupAction(
+          context: context,
+          state: state,
+          label: l10n.claimsAddPriceBookAction,
+          icon: Icons.menu_book_outlined,
+          onPressed: () => openClaimsPriceBookEntryDialog(
+            context: context,
+            ref: ref,
+            referenceData: state.referenceData,
+          ),
+        ),
+        _gatedInsuranceSetupAction(
+          context: context,
+          state: state,
+          label: l10n.claimsAddInsurerIntegrationAction,
+          icon: Icons.vpn_key_outlined,
+          onPressed: () => openClaimsInsurerIntegrationDialog(
+            context: context,
+            ref: ref,
+            referenceData: state.referenceData,
+          ),
+        ),
+        refresh,
+      ],
+    };
+  }
+
+  Widget _gatedInsuranceSetupAction({
+    required BuildContext context,
+    required ClaimsWorkspaceState state,
+    required String label,
+    required IconData icon,
+    required Future<void> Function() onPressed,
+  }) {
+    return AppAccessActionGate(
+      requirement: claimsWorkspaceWriteRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        return AppTabToolbarAction(
+          label: label,
+          icon: icon,
+          semanticLabel: label,
+          tooltip: label,
+          enabled: isAllowed,
+          onPressed: isAllowed ? () => unawaited(onPressed()) : null,
+        );
+      },
+    );
+  }
+
+  AppTabToolbarPrimary _refreshPrimaryAction(
+    AppLocalizations l10n,
+    ClaimsWorkspaceState state,
+    ClaimsWorkspaceController controller,
+  ) {
+    return AppTabToolbarPrimary(
+      label: l10n.commonRefreshActionLabel,
+      icon: Icons.refresh,
+      semanticLabel: l10n.commonRefreshActionLabel,
+      tooltip: l10n.commonRefreshActionLabel,
+      enabled: !state.isRefreshing,
+      isLoading: state.isRefreshing,
+      onPressed: state.isRefreshing
+          ? null
+          : () => unawaited(_refreshWorkspace(context, controller)),
+    );
+  }
+
+  AppTabToolbarAction _refreshSecondaryAction(
+    AppLocalizations l10n,
+    ClaimsWorkspaceState state,
+    ClaimsWorkspaceController controller,
+  ) {
+    return AppTabToolbarAction(
+      label: l10n.commonRefreshActionLabel,
+      icon: Icons.refresh,
+      semanticLabel: l10n.commonRefreshActionLabel,
+      tooltip: l10n.commonRefreshActionLabel,
+      enabled: !state.isRefreshing,
+      isLoading: state.isRefreshing,
+      onPressed: state.isRefreshing
+          ? null
+          : () => unawaited(_refreshWorkspace(context, controller)),
+    );
+  }
+
+  Future<void> _refreshWorkspace(
+    BuildContext context,
+    ClaimsWorkspaceController controller,
+  ) async {
+    final AppFailure? failure = await controller.refresh();
+    if (mounted) {
+      _showFailureIfNeeded(context, failure);
+    }
   }
 
   Future<void> _applySummaryFilter(
@@ -535,117 +696,22 @@ class _ClaimsSummaryBar extends StatelessWidget {
   }
 }
 
-class _ClaimsInsuranceSetupPanel extends ConsumerWidget {
+class _ClaimsInsuranceSetupPanel extends StatelessWidget {
   const _ClaimsInsuranceSetupPanel({required this.state});
 
   final ClaimsWorkspaceState state;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
 
     return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            l10n.claimsSectionInsuranceSetup,
-            style: theme.textTheme.titleMedium,
-          ),
-          SizedBox(height: theme.spacing.xs),
-          Text(
-            l10n.claimsInsuranceSetupDescription,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          SizedBox(height: theme.spacing.lg),
-          Wrap(
-            spacing: theme.spacing.sm,
-            runSpacing: theme.spacing.sm,
-            children: <Widget>[
-              AppButton.secondary(
-                label: l10n.claimsAddCompanyAction,
-                leadingIcon: Icons.business_outlined,
-                onPressed: () {
-                  unawaited(
-                    openClaimsInsuranceCompanyDialog(
-                      context: context,
-                      ref: ref,
-                      referenceData: state.referenceData,
-                    ),
-                  );
-                },
-              ),
-              AppButton.secondary(
-                label: l10n.claimsAddSchemeAction,
-                leadingIcon: Icons.account_balance_outlined,
-                onPressed: () {
-                  unawaited(
-                    openClaimsSchemeDialog(
-                      context: context,
-                      ref: ref,
-                      referenceData: state.referenceData,
-                    ),
-                  );
-                },
-              ),
-              AppButton.secondary(
-                label: l10n.claimsAddOfferAction,
-                leadingIcon: Icons.local_offer_outlined,
-                onPressed: () {
-                  unawaited(
-                    openClaimsSchemeOfferDialog(
-                      context: context,
-                      ref: ref,
-                      referenceData: state.referenceData,
-                    ),
-                  );
-                },
-              ),
-              AppButton.secondary(
-                label: l10n.claimsAddEnrollmentAction,
-                leadingIcon: Icons.badge_outlined,
-                onPressed: () {
-                  unawaited(
-                    openClaimsEnrollmentDialog(
-                      context: context,
-                      ref: ref,
-                      referenceData: state.referenceData,
-                    ),
-                  );
-                },
-              ),
-              AppButton.secondary(
-                label: l10n.claimsAddPriceBookAction,
-                leadingIcon: Icons.menu_book_outlined,
-                onPressed: () {
-                  unawaited(
-                    openClaimsPriceBookEntryDialog(
-                      context: context,
-                      ref: ref,
-                      referenceData: state.referenceData,
-                    ),
-                  );
-                },
-              ),
-              AppButton.secondary(
-                label: l10n.claimsAddInsurerIntegrationAction,
-                leadingIcon: Icons.vpn_key_outlined,
-                onPressed: () {
-                  unawaited(
-                    openClaimsInsurerIntegrationDialog(
-                      context: context,
-                      ref: ref,
-                      referenceData: state.referenceData,
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ],
+      child: Text(
+        l10n.claimsInsuranceSetupDescription,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }
@@ -697,8 +763,8 @@ class _ClaimsQueuePanel extends ConsumerWidget {
           }
         },
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.claimsQueueFilterLabel,
-        advancedFilterTitle: l10n.claimsQueueFilterLabel,
+        advancedFilterButtonLabel: l10n.claimsFiltersLabel,
+        advancedFilterTitle: l10n.claimsFiltersLabel,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
         enableDateFilter: false,

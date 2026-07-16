@@ -62,10 +62,14 @@ bool _usesSharedWorkspaceShell(String source) {
   if (source.contains('AppWorkspace(')) {
     return true;
   }
-  // Reception-style tab-and-table workspaces.
+  // Reception-style tab-and-table workspaces. The table may live in a child
+  // panel (e.g. NursingWorklistPanel) as long as the page owns the tab chrome.
   final bool hasTable = source.contains('AppListTable<');
   final bool hasTabs = source.contains('AppTabStrip(');
   final bool hasResponsivePage = source.contains('ResponsivePage(');
+  if (hasResponsivePage && hasTabs) {
+    return true;
+  }
   return hasTable && (hasTabs || hasResponsivePage);
 }
 

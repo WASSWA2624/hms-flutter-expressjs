@@ -1882,6 +1882,12 @@ abstract class AppLocalizations {
   /// **'Billing filters'**
   String get billingFiltersTitle;
 
+  /// Billing workspace table Filters button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get billingFiltersLabel;
+
   /// Empty state title for billing worklist.
   ///
   /// In en, this message translates to:
@@ -18439,7 +18445,7 @@ abstract class AppLocalizations {
   /// Pharmacy queue filter field label.
   ///
   /// In en, this message translates to:
-  /// **'Queue filter'**
+  /// **'Filters'**
   String get pharmacyQueueFilterLabel;
 
   /// Pharmacy summary label for ready orders.
@@ -20061,6 +20067,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Queue'**
   String get claimsQueueFilterLabel;
+
+  /// Claims workspace table Filters button label.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get claimsFiltersLabel;
 
   /// Localized text for claimsWorklistTitle.
   ///

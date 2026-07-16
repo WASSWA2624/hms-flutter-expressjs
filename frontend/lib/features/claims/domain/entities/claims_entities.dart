@@ -50,13 +50,20 @@ final class ClaimsWorkspaceQuery {
 enum ClaimsDeskSection { authorizations, activeClaims, settled, insuranceSetup }
 
 ClaimsDeskSection claimsDeskSectionFromQuery(String value) {
-  return switch (value) {
-    'authorizations' => ClaimsDeskSection.authorizations,
-    'active-claims' => ClaimsDeskSection.activeClaims,
-    'settled' => ClaimsDeskSection.settled,
-    'insurance-setup' => ClaimsDeskSection.insuranceSetup,
-    _ => ClaimsDeskSection.authorizations,
-  };
+  switch (value.trim().toLowerCase()) {
+    case 'authorizations':
+      return ClaimsDeskSection.authorizations;
+    case 'active-claims':
+    case 'active_claims':
+      return ClaimsDeskSection.activeClaims;
+    case 'settled':
+      return ClaimsDeskSection.settled;
+    case 'insurance-setup':
+    case 'insurance_setup':
+      return ClaimsDeskSection.insuranceSetup;
+    default:
+      return ClaimsDeskSection.authorizations;
+  }
 }
 
 String claimsDeskSectionToQuery(ClaimsDeskSection section) {
