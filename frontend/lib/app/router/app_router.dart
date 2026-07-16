@@ -339,7 +339,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.mortuary.path,
             name: AppRoutes.mortuary.name,
-            builder: (_, _) => const MortuaryWorkspacePage(),
+            builder: (_, GoRouterState state) => const MortuaryWorkspacePage(),
           ),
           GoRoute(
             path: AppRoutes.theater.path,

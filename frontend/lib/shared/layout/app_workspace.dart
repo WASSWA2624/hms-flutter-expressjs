@@ -157,13 +157,14 @@ class AppWorkspace extends StatelessWidget {
         ..add(filters!);
     }
 
+    final Widget content = detail == null
+        ? body
+        : AppWorkspaceSplitContent(primary: body, detail: detail!);
     children
       ..add(SizedBox(height: contentGap))
-      ..add(
-        detail == null
-            ? body
-            : AppWorkspaceSplitContent(primary: body, detail: detail!),
-      );
+      // Non-scrollable workspaces must give [body] a bounded height so callers
+      // can use Expanded (e.g. tab strip + fill-height AppListTable).
+      ..add(scrollable ? content : Expanded(child: content));
 
     if (activity != null) {
       children
@@ -177,6 +178,7 @@ class AppWorkspace extends StatelessWidget {
       scrollable: scrollable,
       child: SizedBox(
         width: double.infinity,
+        height: scrollable ? null : double.infinity,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: children,

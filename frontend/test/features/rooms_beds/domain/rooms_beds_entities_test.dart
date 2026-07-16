@@ -142,16 +142,16 @@ void main() {
 
   group('RoomsBedsWorkspaceState section counts', () {
     test('tab badge counts match status groups', () {
-      final RoomsBedsWorkspaceState state = RoomsBedsWorkspaceState(
-        query: const RoomsBedsQuery(),
-        beds: const AppPage<BedBoardItem>(
+      const RoomsBedsWorkspaceState state = RoomsBedsWorkspaceState(
+        query: RoomsBedsQuery(),
+        beds: AppPage<BedBoardItem>(
           items: <BedBoardItem>[],
           request: AppPageRequest(),
         ),
         referenceData: RoomsBedsReferenceData(
           snapshot: FacilitySetupSnapshot(
-            tenant: const TenantProfile(id: 'TEN-001', name: 'Tenant'),
-            facilities: const <FacilityProfile>[
+            tenant: TenantProfile(id: 'TEN-001', name: 'Tenant'),
+            facilities: <FacilityProfile>[
               FacilityProfile(
                 id: 'FAC-001',
                 tenantId: 'TEN-001',
@@ -159,7 +159,7 @@ void main() {
                 type: FacilitySetupType.hospital,
               ),
             ],
-            wards: const <WardProfile>[
+            wards: <WardProfile>[
               WardProfile(
                 id: 'WRD-001',
                 tenantId: 'TEN-001',
@@ -168,8 +168,7 @@ void main() {
                 type: WardSetupType.general,
               ),
             ],
-            rooms: const <RoomProfile>[],
-            beds: const <BedProfile>[
+            beds: <BedProfile>[
               BedProfile(
                 id: 'BED-1',
                 tenantId: 'TEN-001',

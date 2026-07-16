@@ -19893,6 +19893,66 @@
   "@mortuaryNextActionColumnLabel": {
     "description": "Column label for the next mortuary action."
   },
+  "mortuaryUnitColumnLabel": "Unit",
+  "@mortuaryUnitColumnLabel": {
+    "description": "Column label for mortuary storage unit."
+  },
+  "mortuarySlotColumnLabel": "Slot",
+  "@mortuarySlotColumnLabel": {
+    "description": "Column label for mortuary storage slot."
+  },
+  "mortuaryZoneColumnLabel": "Zone",
+  "@mortuaryZoneColumnLabel": {
+    "description": "Column label for mortuary temperature zone."
+  },
+  "mortuarySlotStatusColumnLabel": "Slot status",
+  "@mortuarySlotStatusColumnLabel": {
+    "description": "Column label for mortuary storage slot status."
+  },
+  "mortuaryEventColumnLabel": "Event",
+  "@mortuaryEventColumnLabel": {
+    "description": "Column label for mortuary custody event type."
+  },
+  "mortuaryActorColumnLabel": "Actor",
+  "@mortuaryActorColumnLabel": {
+    "description": "Column label for mortuary custody actor."
+  },
+  "mortuaryLocationColumnLabel": "Location",
+  "@mortuaryLocationColumnLabel": {
+    "description": "Column label for mortuary custody location."
+  },
+  "mortuaryReasonColumnLabel": "Reason",
+  "@mortuaryReasonColumnLabel": {
+    "description": "Column label for mortuary reason or request reason."
+  },
+  "mortuaryRecipientColumnLabel": "Recipient",
+  "@mortuaryRecipientColumnLabel": {
+    "description": "Column label for mortuary release recipient."
+  },
+  "mortuaryFuneralServiceColumnLabel": "Funeral service",
+  "@mortuaryFuneralServiceColumnLabel": {
+    "description": "Column label for mortuary funeral service."
+  },
+  "mortuaryReleaseStatusColumnLabel": "Release status",
+  "@mortuaryReleaseStatusColumnLabel": {
+    "description": "Column label for mortuary release status."
+  },
+  "mortuaryBillingColumnLabel": "Billing",
+  "@mortuaryBillingColumnLabel": {
+    "description": "Column label for mortuary billing."
+  },
+  "mortuaryApprovedByColumnLabel": "Approved by",
+  "@mortuaryApprovedByColumnLabel": {
+    "description": "Column label for mortuary release approver."
+  },
+  "mortuaryRequestedByColumnLabel": "Requested by",
+  "@mortuaryRequestedByColumnLabel": {
+    "description": "Column label for mortuary post-mortem requester."
+  },
+  "mortuaryDiagnosticsRefColumnLabel": "Diagnostics ref",
+  "@mortuaryDiagnosticsRefColumnLabel": {
+    "description": "Column label for mortuary diagnostics reference."
+  },
   "mortuaryPreviousPageLabel": "Previous page",
   "@mortuaryPreviousPageLabel": {
     "description": "Label for previous page action in mortuary tables."

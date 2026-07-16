@@ -28809,6 +28809,96 @@ abstract class AppLocalizations {
   /// **'Next action'**
   String get mortuaryNextActionColumnLabel;
 
+  /// Column label for mortuary storage unit.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit'**
+  String get mortuaryUnitColumnLabel;
+
+  /// Column label for mortuary storage slot.
+  ///
+  /// In en, this message translates to:
+  /// **'Slot'**
+  String get mortuarySlotColumnLabel;
+
+  /// Column label for mortuary temperature zone.
+  ///
+  /// In en, this message translates to:
+  /// **'Zone'**
+  String get mortuaryZoneColumnLabel;
+
+  /// Column label for mortuary storage slot status.
+  ///
+  /// In en, this message translates to:
+  /// **'Slot status'**
+  String get mortuarySlotStatusColumnLabel;
+
+  /// Column label for mortuary custody event type.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get mortuaryEventColumnLabel;
+
+  /// Column label for mortuary custody actor.
+  ///
+  /// In en, this message translates to:
+  /// **'Actor'**
+  String get mortuaryActorColumnLabel;
+
+  /// Column label for mortuary custody location.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get mortuaryLocationColumnLabel;
+
+  /// Column label for mortuary reason or request reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Reason'**
+  String get mortuaryReasonColumnLabel;
+
+  /// Column label for mortuary release recipient.
+  ///
+  /// In en, this message translates to:
+  /// **'Recipient'**
+  String get mortuaryRecipientColumnLabel;
+
+  /// Column label for mortuary funeral service.
+  ///
+  /// In en, this message translates to:
+  /// **'Funeral service'**
+  String get mortuaryFuneralServiceColumnLabel;
+
+  /// Column label for mortuary release status.
+  ///
+  /// In en, this message translates to:
+  /// **'Release status'**
+  String get mortuaryReleaseStatusColumnLabel;
+
+  /// Column label for mortuary billing.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get mortuaryBillingColumnLabel;
+
+  /// Column label for mortuary release approver.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved by'**
+  String get mortuaryApprovedByColumnLabel;
+
+  /// Column label for mortuary post-mortem requester.
+  ///
+  /// In en, this message translates to:
+  /// **'Requested by'**
+  String get mortuaryRequestedByColumnLabel;
+
+  /// Column label for mortuary diagnostics reference.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics ref'**
+  String get mortuaryDiagnosticsRefColumnLabel;
+
   /// Label for previous page action in mortuary tables.
   ///
   /// In en, this message translates to:

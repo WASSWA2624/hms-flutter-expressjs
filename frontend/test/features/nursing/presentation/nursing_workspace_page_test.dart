@@ -72,6 +72,9 @@ const List<NursingPatientSummary> _allPatients = <NursingPatientSummary>[
 ];
 
 AppAccessPolicy _nursingWritePolicy() {
+  // Entitlements must cover both the nursing route module and the permission
+  // domain modules (clinical → encounters-vitals, patient → patient-registry)
+  // or fromSession strips write rights and AppAccessActionGate hides CTAs.
   return AppAccessPolicy.fromSession(
     AuthSession(
       tokens: SessionTokens(accessToken: 'access-token'),
@@ -87,6 +90,11 @@ AppAccessPolicy _nursingWritePolicy() {
           code: 'inpatient-bed-management',
           licenseStatus: 'ACTIVE',
         ),
+        AppModuleEntitlement(
+          code: 'encounters-vitals',
+          licenseStatus: 'ACTIVE',
+        ),
+        AppModuleEntitlement(code: 'patient-registry', licenseStatus: 'ACTIVE'),
       ],
     ),
   );

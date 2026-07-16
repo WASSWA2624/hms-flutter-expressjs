@@ -15457,6 +15457,51 @@ class AppLocalizationsEn extends AppLocalizations {
   String get mortuaryNextActionColumnLabel => 'Next action';
 
   @override
+  String get mortuaryUnitColumnLabel => 'Unit';
+
+  @override
+  String get mortuarySlotColumnLabel => 'Slot';
+
+  @override
+  String get mortuaryZoneColumnLabel => 'Zone';
+
+  @override
+  String get mortuarySlotStatusColumnLabel => 'Slot status';
+
+  @override
+  String get mortuaryEventColumnLabel => 'Event';
+
+  @override
+  String get mortuaryActorColumnLabel => 'Actor';
+
+  @override
+  String get mortuaryLocationColumnLabel => 'Location';
+
+  @override
+  String get mortuaryReasonColumnLabel => 'Reason';
+
+  @override
+  String get mortuaryRecipientColumnLabel => 'Recipient';
+
+  @override
+  String get mortuaryFuneralServiceColumnLabel => 'Funeral service';
+
+  @override
+  String get mortuaryReleaseStatusColumnLabel => 'Release status';
+
+  @override
+  String get mortuaryBillingColumnLabel => 'Billing';
+
+  @override
+  String get mortuaryApprovedByColumnLabel => 'Approved by';
+
+  @override
+  String get mortuaryRequestedByColumnLabel => 'Requested by';
+
+  @override
+  String get mortuaryDiagnosticsRefColumnLabel => 'Diagnostics ref';
+
+  @override
   String get mortuaryPreviousPageLabel => 'Previous page';
 
   @override

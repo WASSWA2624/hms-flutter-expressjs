@@ -91,6 +91,44 @@ const List<String> mortuaryDatePresets = <String>[
 ];
 
 @immutable
+final class MortuaryRouteQuery {
+  const MortuaryRouteQuery({
+    this.panel = '',
+    this.search = '',
+    this.queue = '',
+    this.id = '',
+  });
+
+  final String panel;
+  final String search;
+  final String queue;
+  final String id;
+
+  factory MortuaryRouteQuery.fromUri(Uri uri) {
+    final Map<String, String> q = uri.queryParameters;
+    return MortuaryRouteQuery(
+      panel: (q['panel'] ?? q['section'] ?? '').trim(),
+      search: (q['search'] ?? '').trim(),
+      queue: (q['queue'] ?? '').trim(),
+      id: (q['id'] ?? '').trim(),
+    );
+  }
+
+  String get normalizedPanel {
+    final String value = panel.trim().toLowerCase();
+    if (mortuaryPanels.contains(value)) {
+      return value;
+    }
+    return mortuaryPanelOverview;
+  }
+
+  bool get hasRouteTargeting =>
+      panel.isNotEmpty || search.isNotEmpty || queue.isNotEmpty || id.isNotEmpty;
+
+  String get signature => '$panel|$search|$queue|$id';
+}
+
+@immutable
 final class MortuaryWorkspaceQuery {
   const MortuaryWorkspaceQuery({
     this.panel = mortuaryPanelOverview,

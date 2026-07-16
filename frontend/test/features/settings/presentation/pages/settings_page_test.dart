@@ -50,7 +50,7 @@ void main() {
               ),
             ),
           ],
-          child: const SettingsPage(),
+          child: const SettingsPage(initialQuery: SettingsPageQuery()),
         ),
         size: const Size(1280, 1400),
       );

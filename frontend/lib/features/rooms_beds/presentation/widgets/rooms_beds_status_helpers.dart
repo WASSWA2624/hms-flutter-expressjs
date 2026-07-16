@@ -3,6 +3,7 @@ import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entiti
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
 String roomsBedsStatusLabel(AppLocalizations l10n, BedSetupStatus status) {
@@ -114,4 +115,55 @@ String roomsBedsTransferActionForStatus(String? transferStatus) {
 
 bool roomsBedsTransferRequiresDestinationBed(String action) {
   return action.trim().toUpperCase() == 'COMPLETE';
+}
+
+bool roomsBedsSectionMatchesStatus(
+  RoomsBedsSection section,
+  BedSetupStatus status,
+) {
+  return switch (section) {
+    RoomsBedsSection.all => true,
+    RoomsBedsSection.available => status == BedSetupStatus.available,
+    RoomsBedsSection.occupied => status == BedSetupStatus.occupied,
+    RoomsBedsSection.turnover =>
+      status == BedSetupStatus.reserved ||
+          status == BedSetupStatus.cleaning ||
+          status == BedSetupStatus.maintenance,
+    RoomsBedsSection.outOfService =>
+      status == BedSetupStatus.blocked || status == BedSetupStatus.outOfService,
+  };
+}
+
+int roomsBedsSectionCount(
+  RoomsBedsWorkspaceState state,
+  RoomsBedsSection section,
+) {
+  return switch (section) {
+    RoomsBedsSection.all => state.totalBedCount,
+    RoomsBedsSection.available => state.availableCount,
+    RoomsBedsSection.occupied => state.occupiedCount,
+    RoomsBedsSection.turnover =>
+      state.reservedCount + state.cleaningCount + state.maintenanceCount,
+    RoomsBedsSection.outOfService => state.blockedCount,
+  };
+}
+
+AppPage<BedBoardItem> roomsBedsSectionFilteredPage(
+  AppPage<BedBoardItem> page,
+  RoomsBedsSection section,
+) {
+  if (section == RoomsBedsSection.all) {
+    return page;
+  }
+  final List<BedBoardItem> filtered = page.items
+      .where(
+        (BedBoardItem item) =>
+            roomsBedsSectionMatchesStatus(section, item.status),
+      )
+      .toList(growable: false);
+  return AppPage<BedBoardItem>(
+    items: filtered,
+    request: page.request,
+    totalItemCount: filtered.length,
+  );
 }

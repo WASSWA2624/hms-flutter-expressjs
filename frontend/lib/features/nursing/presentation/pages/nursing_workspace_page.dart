@@ -153,12 +153,22 @@ class _NursingWorkspaceContentState
     }
     _appliedRouteSignature = query.signature;
 
+    final NursingWorkspaceController controller = ref.read(
+      nursingWorkspaceControllerProvider.notifier,
+    );
     final NursingQueueScope? scope = nursingScopeFromQueryValue(query.scope);
-    if (scope != null && scope != _scope) {
-      setState(() => _scope = scope);
-      unawaited(
-        ref.read(nursingWorkspaceControllerProvider.notifier).applyScope(scope),
-      );
+    if (scope != null) {
+      // Local tab state may already match (set in initState); still sync the
+      // controller so the worklist reflects the deep-linked scope.
+      if (scope != _scope) {
+        setState(() => _scope = scope);
+      }
+      if (scope != widget.state.query.scope) {
+        await controller.applyScope(scope);
+        if (!mounted) {
+          return;
+        }
+      }
     }
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;
@@ -168,9 +178,6 @@ class _NursingWorkspaceContentState
     if (id.isEmpty) {
       return;
     }
-    final NursingWorkspaceController controller = ref.read(
-      nursingWorkspaceControllerProvider.notifier,
-    );
     final NursingPatientSummary? summary = await controller
         .selectPatientByDisplayId(id);
     if (!mounted || summary == null) {

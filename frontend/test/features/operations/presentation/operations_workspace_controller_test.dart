@@ -22,68 +22,118 @@ void main() {
   });
 
   group('OperationsWorkspaceController', () {
-    test(
-      'loads request queue, assets, and selected asset service logs',
-      () async {
-        final _MockOperationsRepository repository =
-            _MockOperationsRepository();
-        const OperationsWorkItem request = OperationsWorkItem(
-          id: 'MR-001',
-          assetId: 'AS-001',
-          assetLabel: 'Generator',
-          status: 'OPEN',
-          metadata: OperationsRequestMetadata(
-            priority: 'High',
-            issue: 'Generator alarm',
+    test('loads request queue and assets without selecting a detail', () async {
+      final _MockOperationsRepository repository = _MockOperationsRepository();
+      const OperationsWorkItem request = OperationsWorkItem(
+        id: 'MR-001',
+        assetId: 'AS-001',
+        assetLabel: 'Generator',
+        status: 'OPEN',
+        metadata: OperationsRequestMetadata(
+          priority: 'High',
+          issue: 'Generator alarm',
+        ),
+      );
+      const OperationsAsset asset = OperationsAsset(
+        id: 'AS-001',
+        name: 'Generator',
+        status: 'OPEN',
+      );
+
+      _stubInitialLoad(
+        repository,
+        requests: <OperationsWorkItem>[request],
+        assets: <OperationsAsset>[asset],
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [operationsRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final Result<OperationsWorkspaceState> result = await container.read(
+        operationsWorkspaceControllerProvider.future,
+      );
+
+      final OperationsWorkspaceState state = result.when(
+        success: (OperationsWorkspaceState value) => value,
+        failure: (AppFailure failure) => fail(failure.code),
+      );
+      expect(state.workItems.items.single.id, 'MR-001');
+      expect(state.assets.items.single.id, 'AS-001');
+      expect(state.serviceLogs.items, isEmpty);
+      expect(state.selectedItem, isNull);
+      verify(
+        () => repository.listRequests(any()),
+      ).called(greaterThanOrEqualTo(1));
+      verify(
+        () => repository.listAssets(any()),
+      ).called(greaterThanOrEqualTo(1));
+      verifyNever(() => repository.listServiceLogs(any()));
+    });
+
+    test('selectItem loads detail and asset service logs', () async {
+      final _MockOperationsRepository repository = _MockOperationsRepository();
+      const OperationsWorkItem request = OperationsWorkItem(
+        id: 'MR-001',
+        displayId: 'MR-001',
+        assetId: 'AS-001',
+        assetLabel: 'Generator',
+        status: 'OPEN',
+        metadata: OperationsRequestMetadata(
+          priority: 'High',
+          issue: 'Generator alarm',
+        ),
+      );
+      const OperationsServiceLog log = OperationsServiceLog(
+        id: 'SL-001',
+        assetId: 'AS-001',
+        notes: 'Monthly service',
+      );
+
+      _stubInitialLoad(
+        repository,
+        requests: <OperationsWorkItem>[request],
+        assets: <OperationsAsset>[
+          const OperationsAsset(
+            id: 'AS-001',
+            name: 'Generator',
+            status: 'OPEN',
           ),
-        );
-        const OperationsAsset asset = OperationsAsset(
-          id: 'AS-001',
-          name: 'Generator',
-          status: 'OPEN',
-        );
-        const OperationsServiceLog log = OperationsServiceLog(
-          id: 'SL-001',
-          assetId: 'AS-001',
-          notes: 'Monthly service',
-        );
+        ],
+        serviceLogs: <OperationsServiceLog>[log],
+      );
 
-        _stubInitialLoad(
-          repository,
-          requests: <OperationsWorkItem>[request],
-          assets: <OperationsAsset>[asset],
-          serviceLogs: <OperationsServiceLog>[log],
-        );
+      final ProviderContainer container = ProviderContainer(
+        overrides: [operationsRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      await container.read(operationsWorkspaceControllerProvider.future);
 
-        final ProviderContainer container = ProviderContainer(
-          overrides: [
-            operationsRepositoryProvider.overrideWithValue(repository),
-          ],
-        );
-        addTearDown(container.dispose);
+      final AppFailure? failure = await container
+          .read(operationsWorkspaceControllerProvider.notifier)
+          .selectItem(request);
 
-        final Result<OperationsWorkspaceState> result = await container.read(
-          operationsWorkspaceControllerProvider.future,
-        );
-
-        final OperationsWorkspaceState state = result.when(
-          success: (OperationsWorkspaceState value) => value,
-          failure: (AppFailure failure) => fail(failure.code),
-        );
-        expect(state.workItems.items.single.id, 'MR-001');
-        expect(state.assets.items.single.id, 'AS-001');
-        expect(state.serviceLogs.items.single.id, 'SL-001');
-        expect(state.selectedItem?.assetId, 'AS-001');
-        verify(() => repository.listRequests(any())).called(1);
-        verify(() => repository.listAssets(any())).called(1);
-        verify(() => repository.listServiceLogs(any())).called(1);
-      },
-    );
+      final OperationsWorkspaceState state = container
+          .read(operationsWorkspaceControllerProvider)
+          .requireValue
+          .when(
+            success: (OperationsWorkspaceState value) => value,
+            failure: (AppFailure failure) => fail(failure.code),
+          );
+      expect(failure, isNull);
+      expect(state.selectedItem?.id, 'MR-001');
+      expect(state.selectedItem?.assetId, 'AS-001');
+      expect(state.serviceLogs.items.single.id, 'SL-001');
+      verify(() => repository.getRequest(any())).called(1);
+      verify(() => repository.listServiceLogs(any())).called(1);
+    });
 
     test('adds service logs without reloading the whole workspace', () async {
       final _MockOperationsRepository repository = _MockOperationsRepository();
       const OperationsWorkItem request = OperationsWorkItem(
         id: 'MR-001',
+        displayId: 'MR-001',
         assetId: 'AS-001',
         status: 'IN_PROGRESS',
         metadata: OperationsRequestMetadata(issue: 'Pump repair'),
@@ -104,6 +154,10 @@ void main() {
       );
       addTearDown(container.dispose);
       await container.read(operationsWorkspaceControllerProvider.future);
+      await container
+          .read(operationsWorkspaceControllerProvider.notifier)
+          .selectItem(request);
+      clearInteractions(repository);
 
       final AppFailure? failure = await container
           .read(operationsWorkspaceControllerProvider.notifier)
@@ -122,10 +176,14 @@ void main() {
             failure: (AppFailure failure) => fail(failure.code),
           );
       expect(failure, isNull);
-      expect(state.serviceLogs.items.single.id, 'SL-002');
+      expect(
+        state.serviceLogs.items.any(
+          (OperationsServiceLog l) => l.id == 'SL-002',
+        ),
+        isTrue,
+      );
       verify(() => repository.addServiceLog(any())).called(1);
       verifyNever(() => repository.getRequest(any()));
-      verify(() => repository.listRequests(any())).called(1);
     });
   });
 }

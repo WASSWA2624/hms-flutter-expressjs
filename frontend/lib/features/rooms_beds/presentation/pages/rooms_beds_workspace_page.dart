@@ -180,7 +180,7 @@ class _RoomsBedsWorkspaceContentState
     final bool canIpdWrite = accessPolicy.grants(AppPermissions.clinicalWrite);
     final AppFailure? lastFailure = state.lastFailure as AppFailure?;
 
-    final AppPage<BedBoardItem> sectionPage = _sectionFilteredPage(
+    final AppPage<BedBoardItem> sectionPage = roomsBedsSectionFilteredPage(
       state.beds,
       _section,
     );
@@ -201,7 +201,7 @@ class _RoomsBedsWorkspaceContentState
                         id: section.name,
                         icon: _roomsBedsSectionIcon(section),
                         label:
-                            '${_roomsBedsSectionLabel(l10n, section)} (${_roomsBedsSectionCount(state, section)})',
+                            '${_roomsBedsSectionLabel(l10n, section)} (${roomsBedsSectionCount(state, section)})',
                       ),
                   ],
                   selectedId: _section.name,
@@ -1368,20 +1368,6 @@ String _roomsBedsSectionLabel(AppLocalizations l10n, RoomsBedsSection section) {
   };
 }
 
-int _roomsBedsSectionCount(
-  RoomsBedsWorkspaceState state,
-  RoomsBedsSection section,
-) {
-  return switch (section) {
-    RoomsBedsSection.all => state.totalBedCount,
-    RoomsBedsSection.available => state.availableCount,
-    RoomsBedsSection.occupied => state.occupiedCount,
-    RoomsBedsSection.turnover =>
-      state.reservedCount + state.cleaningCount + state.maintenanceCount,
-    RoomsBedsSection.outOfService => state.blockedCount,
-  };
-}
-
 String _roomsBedsSectionQueryValue(RoomsBedsSection section) {
   return switch (section) {
     RoomsBedsSection.all => '',
@@ -1390,43 +1376,6 @@ String _roomsBedsSectionQueryValue(RoomsBedsSection section) {
     RoomsBedsSection.turnover => 'turnover',
     RoomsBedsSection.outOfService => 'out-of-service',
   };
-}
-
-bool _roomsBedsSectionMatchesStatus(
-  RoomsBedsSection section,
-  BedSetupStatus status,
-) {
-  return switch (section) {
-    RoomsBedsSection.all => true,
-    RoomsBedsSection.available => status == BedSetupStatus.available,
-    RoomsBedsSection.occupied => status == BedSetupStatus.occupied,
-    RoomsBedsSection.turnover =>
-      status == BedSetupStatus.reserved ||
-          status == BedSetupStatus.cleaning ||
-          status == BedSetupStatus.maintenance,
-    RoomsBedsSection.outOfService =>
-      status == BedSetupStatus.blocked || status == BedSetupStatus.outOfService,
-  };
-}
-
-AppPage<BedBoardItem> _sectionFilteredPage(
-  AppPage<BedBoardItem> page,
-  RoomsBedsSection section,
-) {
-  if (section == RoomsBedsSection.all) {
-    return page;
-  }
-  final List<BedBoardItem> filtered = page.items
-      .where(
-        (BedBoardItem item) =>
-            _roomsBedsSectionMatchesStatus(section, item.status),
-      )
-      .toList(growable: false);
-  return AppPage<BedBoardItem>(
-    items: filtered,
-    request: page.request,
-    totalItemCount: filtered.length,
-  );
 }
 
 String _locationLabel(BuildContext context, BedBoardItem item) {

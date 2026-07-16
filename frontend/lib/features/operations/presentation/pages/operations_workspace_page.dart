@@ -250,7 +250,7 @@ class _OperationsWorkspaceContentState
       leadingIcon: AppRouteIcons.operations,
       toolbar: appWorkspaceToolbarWithLabels(
         l10n,
-        summaryNotifications: _summaryNotifications(context, state),
+        summaryNotifications: _summaryNotifications(context, state, _section),
         secondary: <Widget>[
           AppButton.secondary(
             label: l10n.operationsOpenReportAction,
@@ -328,19 +328,21 @@ class _OperationsWorkspaceContentState
   List<AppWorkspaceSummaryNotification> _summaryNotifications(
     BuildContext context,
     OperationsWorkspaceState state,
+    OperationsDeskSection selectedSection,
   ) {
     final AppLocalizations l10n = context.l10n;
     final int total =
         state.workItems.totalItemCount ?? state.workItems.items.length;
 
-    // Summary badges are count indicators only; AppTabStrip owns navigation.
+    // Summary badges mirror tab selection; AppTabStrip remains the primary nav.
     return <AppWorkspaceSummaryNotification>[
       if (total > 0)
         AppWorkspaceSummaryNotification(
           label: l10n.operationsAllRequestsSummaryLabel,
           count: total,
           icon: Icons.inventory_2_outlined,
-          onSelected: () {},
+          isSelected: selectedSection == OperationsDeskSection.allRequests,
+          onSelected: () => _onTabChanged(OperationsDeskSection.allRequests),
         ),
       if (state.openCount > 0)
         AppWorkspaceSummaryNotification(
@@ -348,7 +350,8 @@ class _OperationsWorkspaceContentState
           count: state.openCount,
           icon: Icons.pending_actions_outlined,
           tone: AppWorkspaceStatusTone.warning,
-          onSelected: () {},
+          isSelected: selectedSection == OperationsDeskSection.open,
+          onSelected: () => _onTabChanged(OperationsDeskSection.open),
         ),
       if (state.inProgressCount > 0)
         AppWorkspaceSummaryNotification(
@@ -356,7 +359,8 @@ class _OperationsWorkspaceContentState
           count: state.inProgressCount,
           icon: Icons.engineering_outlined,
           tone: AppWorkspaceStatusTone.info,
-          onSelected: () {},
+          isSelected: selectedSection == OperationsDeskSection.inProgress,
+          onSelected: () => _onTabChanged(OperationsDeskSection.inProgress),
         ),
       if (state.completedCount > 0)
         AppWorkspaceSummaryNotification(
@@ -364,7 +368,8 @@ class _OperationsWorkspaceContentState
           count: state.completedCount,
           icon: Icons.task_alt_outlined,
           tone: AppWorkspaceStatusTone.success,
-          onSelected: () {},
+          isSelected: selectedSection == OperationsDeskSection.completed,
+          onSelected: () => _onTabChanged(OperationsDeskSection.completed),
         ),
       if (state.cancelledCount > 0)
         AppWorkspaceSummaryNotification(
@@ -372,14 +377,16 @@ class _OperationsWorkspaceContentState
           count: state.cancelledCount,
           icon: Icons.cancel_outlined,
           tone: AppWorkspaceStatusTone.error,
-          onSelected: () {},
+          isSelected: selectedSection == OperationsDeskSection.completed,
+          onSelected: () => _onTabChanged(OperationsDeskSection.completed),
         ),
       if (state.assetCount > 0)
         AppWorkspaceSummaryNotification(
           label: l10n.operationsAssetsSummaryLabel,
           count: state.assetCount,
           icon: Icons.precision_manufacturing_outlined,
-          onSelected: () {},
+          isSelected: selectedSection == OperationsDeskSection.assets,
+          onSelected: () => _onTabChanged(OperationsDeskSection.assets),
         ),
     ];
   }
