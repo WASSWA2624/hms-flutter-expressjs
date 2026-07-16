@@ -16,6 +16,13 @@ Bring **`_ReceptionPatientPickerDialog`** to **100% compliance** with [`prompt.m
 | Shared components | [`frontend/.cursor/components.mdc`](../frontend/.cursor/components.mdc) | Reuse under `frontend/lib/shared/`; no feature forks of shared UI |
 | Localization | [`frontend/.cursor/localization_i18n.mdc`](../frontend/.cursor/localization_i18n.mdc) | All user-facing strings via l10n |
 | Permissions | [`frontend/.cursor/permissions.mdc`](../frontend/.cursor/permissions.mdc) | Preserve RBAC/ABAC wrappers; never expose unauthorized actions |
+| Design system | [`frontend/.cursor/design-system.mdc`](../frontend/.cursor/design-system.mdc) | Tokens only; responsive light/dark UI |
+| Accessibility | [`frontend/.cursor/accessibility.mdc`](../frontend/.cursor/accessibility.mdc) | Focus, semantics, keyboard, scaling, contrast |
+| Feedback / failures | [`frontend/.cursor/ui-feedback.mdc`](../frontend/.cursor/ui-feedback.mdc) | Shared async/failure states; preserve input; safe errors |
+| Frontend tests | [`frontend/.cursor/testing.mdc`](../frontend/.cursor/testing.mdc) | Widget/controller/sync/responsive coverage |
+| Backend API | [`backend/.cursor/api.mdc`](../backend/.cursor/api.mdc) | Routes, middleware, authz, public IDs |
+| Backend tests | [`backend/.cursor/testing.mdc`](../backend/.cursor/testing.mdc) | Schema/service/controller/route/event coverage |
+| Module flow | [`.cursor/flows/opd-flow.mdc`](../.cursor/flows/opd-flow.mdc) | Domain workflow states, transitions, and handoffs |
 
 ## Target
 
@@ -25,20 +32,32 @@ Bring **`_ReceptionPatientPickerDialog`** to **100% compliance** with [`prompt.m
 | Purpose | Reception Patient Picker |
 | Module / surface | `reception` |
 | Inventory kind | `custom` |
-| Presentation shape | `widget_dialog` |
-| Defined in | `frontend/lib/features/reception/presentation/widgets/reception_patient_actions.dart:117` |
+| Presentation shape | `read_only_picker` |
+| Verified definition | `frontend/lib/features/reception/presentation/widgets/reception_patient_actions.dart:114` |
+| Inventory location note | Inventory and verified declaration agree at generation time. |
 | Extends / uses | AppDialog / showAppDialog (typical) |
-| Paired opener(s) | _none listed in inventory_ |
+| Paired opener(s) | `openReceptionScheduleAppointment` |
 | Primary commit | Select patient / Cancel |
 | Slices to keep in sync | reception selection context only (no fake patient create) |
 | Sibling reuse targets | `RegisterNewPatientDialog`, `OpdEncounterDialog` |
 | Action helper peek | _none detected — adopt an approved action helper when the footer fits_ |
-| Controllers (region) | _not detected in peek — trace widget → workspace controller → repository → backend route_ |
-| Mutations (region) | `mutation: cancel` |
+| Controllers (region) | `patientRegistryControllerProvider,` |
+| Mutations (region) | _not detected in symbol region — trace submit/onConfirm handlers_ |
 
 ### Used from
 
-- _Inventory lists no *Used from* sites — keep existing private openers reachable._
+- `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart`
+
+### Delegated/shared implementation evidence
+
+- `AppDialog — frontend/lib/shared/components/app_dialog.dart`
+- `AppFormSection — frontend/lib/shared/forms/app_form_section.dart`
+
+### Cross-stack trace candidates
+
+These files mention a detected mutation method and are starting points, not proof of ownership. Follow interfaces/imports and route registration until the persisted path is proven.
+
+- _No mutation-name matches were found automatically. Trace interfaces and route registrations manually; do not assume no backend path exists._
 
 ## Compliance checklist (`prompt.md` — this dialog only)
 
@@ -65,7 +84,13 @@ Bring **`_ReceptionPatientPickerDialog`** to **100% compliance** with [`prompt.m
 - [ ] Title is general / role-based — **never** the patient's personal name.
 - [ ] Title is passed through `AppDialog` for uppercase normalization; icon matches sibling conventions in this flow when peers already use icons.
 
-### 5. Backend correctness and sync
+### 5. Design, responsiveness, localization, and accessibility
+- [ ] No hard-coded user-facing copy or private feature string holder; labels, hints, validation, errors, tooltips, and semantics use generated l10n.
+- [ ] No hard-coded color, spacing, radius, elevation, typography, date, number, or currency formatting; use theme/design tokens and shared formatters.
+- [ ] Content and actions remain usable on mobile, tablet, desktop, dark mode, text scaling, and constrained-height/keyboard layouts without overflow.
+- [ ] Keyboard order is logical, focus is trapped/restored by the dialog shell, visible focus remains, icon-only controls have localized semantics, and status is not conveyed by color alone.
+
+### 6. Backend correctness and sync
 - [ ] Every load/mutation is traced end-to-end: dialog → workspace controller → repository/DTO → real backend route/schema/service.
 - [ ] IDs, `snake_case` payloads, auth, envelopes, and response decoding match [`.cursor/api-contract.mdc`](../.cursor/api-contract.mdc); either side is fixed when mismatched.
 - [ ] Widgets never call APIs or own competing server data. Mutations go over HTTP; WebSockets only reconcile ([`frontend/.cursor/instant_ui_sync.mdc`](../frontend/.cursor/instant_ui_sync.mdc)).
@@ -73,7 +98,7 @@ Bring **`_ReceptionPatientPickerDialog`** to **100% compliance** with [`prompt.m
 - [ ] On persisted success only: immediately patch every affected Riverpod slice, then apply the smallest targeted refresh/realtime reconciliation. Dialog, parent workspaces, pinned views, lists, details, and badges agree with backend truth without a full reload.
 - [ ] Cancel / failure neither patches nor dismisses as if saved.
 
-### 6. Reachability and verification
+### 7. Reachability and verification
 - [ ] Still reachable from every paired opener and *Used from* site listed above.
 - [ ] `frontend/test/shared/layout/workspace_ui_pattern_test.dart` stays green. Add focused widget, controller, DTO, and (when the stack is touched) backend route/schema/service tests for this dialog's path.
 
@@ -81,27 +106,29 @@ Bring **`_ReceptionPatientPickerDialog`** to **100% compliance** with [`prompt.m
 
 | Signal | Observation |
 | --- | --- |
-| Approved shell signals | `AppDialog` |
+| Approved shell signals | `AppDialog`, approved `show*` helper |
 | Raw `showDialog` / `AlertDialog` | not seen in peek |
-| `CircularProgressIndicator` | not seen |
-| Title snippets | `l10n.receptionPatientPickerTitle`, `patient.effectiveDisplayName`, `patient.publicId ?? patient.id` |
+| Raw Material progress indicator | not seen |
+| Title snippets | `l10n.receptionPatientPickerTitle`, `patient.effectiveDisplayName`, `patient.publicId ?? patient.id`, `widget.title` |
 | `AppButton` variants (order seen) | secondary -> primary |
 | `AppActionIcons` | seen |
-| `barrierDismissible: false` | not seen |
+| `barrierDismissible: false` | yes |
 | `closeEnabled: false` | yes |
 | Loading primitives | seen |
-| Peek region size | 5179 chars |
+| Direct widget repository read | not seen |
+| Delegated components scanned | 2 |
+| Cross-stack trace files found | 0 |
+| Peek region size | 5177 chars |
 
 ### Priority gaps to close
 
-1. Confirm mutating openers set `barrierDismissible: false` while the dialog can mutate.
-2. Footer may be hand-rolled — prefer `clinicalActionDialogActions`, `buildAppDialogFormActions`, or `buildAppDialogWizardActions` when they fit.
-3. Title may include patient name — must be role/flow based
+1. Peek did not flag obvious gaps — still complete every checklist item; peeks are heuristic.
 
 ### Dialog-specific focus
 
 - Reuse shared patient search/list primitives; do not build a reception-only picker table.
-- Selecting a patient must return resolved `human_friendly_id` context to the caller.
+- This dialog is non-mutating: search through the patient-registry controller and return the selected `Patient`; the caller resolves appointment IDs.
+- Search failure stays visible and selection/cancel must not patch server-backed state.
 
 ## Shared building blocks (mandatory reuse)
 
@@ -133,7 +160,7 @@ You are a coding agent with full read/write access to this repo. Execute every s
 
 **Scope lock:** only `_ReceptionPatientPickerDialog` and the minimum call-site / shared-helper edits required for compilation and compliance. Do **not** expand to unrelated inventory rows. Shared extracts are allowed only when required for reuse and must stay domain-neutral under `frontend/lib/shared/`.
 
-### Shape rules for `widget_dialog`
+### Shape rules for `read_only_picker`
 
 - Compose through approved shells only — never raw `AlertDialog` / `showDialog`.
 - Titles are general/role-based, passed through `AppDialog` for uppercase normalization — never patient names.
@@ -142,14 +169,15 @@ You are a coding agent with full read/write access to this repo. Execute every s
 - Footer L→R: secondary actions → **Cancel** → primary commit. Prefer one commit.
 - Every `AppButton` needs a leading icon (`AppActionIcons` when mapped) and localized label.
 - Widgets never call APIs; mutate over HTTP; WebSockets only reconcile; patch Riverpod only after persisted success.
-- Standard widget dialog: prefer `clinicalActionDialogActions` / form/wizard action builders over a hand-rolled footer.
+- Picker: loading/error rules apply to search; selection returns data to the caller and does not perform a mutation or patch server state.
+- Footer/action acceptance is Select + Cancel (or direct row selection + Cancel), not a generic mutation commit.
 
 ### Steps
 
 1. **Read contracts + source**
-   - Read [`prompt.md`](../prompt.md) (Scope + Requirements 1–5 + Verification).
-   - Skim [`.cursor/api-contract.mdc`](../.cursor/api-contract.mdc) and [`frontend/.cursor/instant_ui_sync.mdc`](../frontend/.cursor/instant_ui_sync.mdc).
-   - Read `_ReceptionPatientPickerDialog` at `frontend/lib/features/reception/presentation/widgets/reception_patient_actions.dart:117` and every paired opener / *Used from* site.
+   - Read every contract in the **Normative contracts** table. Apply each rule to files matching its scope; do not treat this prompt as a substitute for project rules.
+   - Read `_ReceptionPatientPickerDialog` at `frontend/lib/features/reception/presentation/widgets/reception_patient_actions.dart:114` and every paired opener / *Used from* site.
+   - Inspect every delegated/shared implementation and trace candidate above, then follow imports/interfaces/routes beyond those candidates as needed.
    - Trace each load/mutation: dialog → controller → repository/DTO → backend route/schema/service → decode → Riverpod patch.
 
 2. **Normalize shell (Req 1)**
@@ -176,35 +204,43 @@ You are a coding agent with full read/write access to this repo. Execute every s
    - Openers pass already-resolved contextual IDs (`human_friendly_id` / domain IDs).
    - Preserve parent permission wrappers; do not expose unauthorized actions.
 
-7. **Backend + sync (Req 5 — hard)**
+7. **Design + accessibility**
+   - Use generated l10n, theme/design tokens, shared formatters, and responsive layout primitives only.
+   - Verify keyboard/focus/semantics, text scaling, dark mode, constrained height, and mobile/tablet/desktop layouts.
+   - Preserve entered form data on recoverable failures and never expose raw exception text.
+
+8. **Backend + sync (Req 5 — hard)**
    - Widgets read Riverpod and delegate to controllers; no widget API calls.
    - Happy-path APIs must succeed against the real contract; fix either side on mismatch.
    - Failure → shared `AppFailure` UI, no patch, dialog stays open.
    - Persisted success only → patch reception selection context only (no fake patient create), then apply the smallest targeted reconciliation.
    - Cancel/failure never present false success.
 
-8. **Preserve reachability**
-   - Do not break existing private call sites / *Used from* sites. Update all call sites in the same change when signatures move.
+9. **Preserve reachability**
+   - Do not break `openReceptionScheduleAppointment`. Update all call sites in the same change when signatures move.
 
-9. **Verify**
+10. **Verify**
    - Analyzer clean on touched files.
    - `frontend/test/shared/layout/workspace_ui_pattern_test.dart` green.
-   - Focused widget/controller/DTO/(backend) tests for this path.
+   - Run focused Flutter widget/controller/DTO tests plus backend schema/service/controller/route/event tests for every touched stack layer. Add missing tests; never rely on production services or secrets.
    - Happy-path succeeds; cancel/failure neither patches nor dismisses as saved.
+   - Verify responsive, keyboard, focus, semantics, text-scale, and dark-mode behavior for changed dialog UI.
+   - Run localization/code generation when ARB or generated DTO/model inputs change, and verify generated output is clean.
    - Equivalent flows share primitives, spacing, sections, action icons/labels, loading/error behavior, and responsive layout.
    - Tick every checklist item above before finishing.
 
 ## Acceptance criteria (all must pass)
 
 1. `_ReceptionPatientPickerDialog` opens only through `AppDialog` / approved helpers — no raw Material dialog APIs.
-2. Footer order is secondary → Cancel → primary; labels are Cancel/Edit (not Close/Update); confirmations are one domain verb + Cancel.
+2. Picker supports Cancel plus selection/return semantics; it performs no server mutation.
 3. Loading uses only shared spinner primitives; dismiss and competing actions are blocked while in flight.
 4. Title is general, uppercase-normalized, and never a patient name.
-5. Body sections and action groups reuse canonical shared primitives; no unjustified local forks (siblings considered: `RegisterNewPatientDialog`, `OpdEncounterDialog`).
-6. Still reachable from inventory openers / *Used from* sites with contextual IDs and permissions intact.
-7. Every load and mutation API succeeds on the happy path against the real backend contract; failures surface via `AppFailure` UI and patch nothing.
-8. After persisted success only, Riverpod + targeted reconciliation keep dialog and parent surfaces aligned with backend truth for: reception selection context only (no fake patient create).
-9. `frontend/test/shared/layout/workspace_ui_pattern_test.dart` remains green; focused tests cover this dialog's critical path.
+5. All copy is localized; all styling/formatting uses shared tokens/formatters; responsive and accessible behavior is verified.
+6. Body sections and action groups reuse canonical shared primitives; no unjustified local forks (siblings considered: `RegisterNewPatientDialog`, `OpdEncounterDialog`).
+7. Still reachable from inventory openers / *Used from* sites with contextual IDs and permissions intact.
+8. Search/load paths use the real API contract; selection/cancel/local actions do not patch server state.
+9. No provider patch is introduced for a non-mutating/local-only action.
+10. `frontend/test/shared/layout/workspace_ui_pattern_test.dart` remains green; focused frontend/backend tests cover this dialog's critical path.
 
 ## Out of scope
 
@@ -215,6 +251,6 @@ You are a coding agent with full read/write access to this repo. Execute every s
 
 ## Deliverable
 
-Implement the compliance fixes in the repo. Summarize: files changed; shell/title/footer/loading/reuse/sync fixes; shared extracts; API/DTO/route fixes; tests added or run; how verification was performed.
+Implement the compliance fixes in the repo. Summarize: files changed; shell/title/footer/loading/reuse/sync fixes; design/localization/accessibility fixes; shared extracts; API/DTO/route fixes; tests added and run; exact commands and results; remaining risks (or explicitly state none). Append the project rule files applied and the model used.
 
-<!-- generator: encounter-dialog prompt 18 slug=reception-patient-picker-dialog symbol=_ReceptionPatientPickerDialog shape=widget_dialog -->
+<!-- generator: encounter-dialog prompt 18 slug=reception-patient-picker-dialog symbol=_ReceptionPatientPickerDialog shape=read_only_picker -->

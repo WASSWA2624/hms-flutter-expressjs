@@ -9,6 +9,8 @@ Regenerate after inventory or contract changes:
 from __future__ import annotations
 
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -20,9 +22,82 @@ SYNC_RULE = "frontend/.cursor/instant_ui_sync.mdc"
 COMPONENTS_RULE = "frontend/.cursor/components.mdc"
 LOCALIZATION_RULE = "frontend/.cursor/localization_i18n.mdc"
 PERMISSIONS_RULE = "frontend/.cursor/permissions.mdc"
+DESIGN_RULE = "frontend/.cursor/design-system.mdc"
+ACCESSIBILITY_RULE = "frontend/.cursor/accessibility.mdc"
+FEEDBACK_RULE = "frontend/.cursor/ui-feedback.mdc"
+FRONTEND_TESTING_RULE = "frontend/.cursor/testing.mdc"
+BACKEND_API_RULE = "backend/.cursor/api.mdc"
+BACKEND_TESTING_RULE = "backend/.cursor/testing.mdc"
 PATTERN_TEST = "frontend/test/shared/layout/workspace_ui_pattern_test.dart"
+MODULE_FLOW_RULES = {
+    "emergency": ".cursor/flows/emergency-flow.mdc",
+    "icu": ".cursor/flows/icu-flow.mdc",
+    "ipd": ".cursor/flows/ipd-flow.mdc",
+    "opd": ".cursor/flows/opd-flow.mdc",
+    "patients": ".cursor/flows/opd-flow.mdc",
+    "reception": ".cursor/flows/opd-flow.mdc",
+    "shared/components": ".cursor/flows/opd-flow.mdc",
+    "shared/opd_actions": ".cursor/flows/opd-flow.mdc",
+}
+PURPOSE_OVERRIDES = {
+    "_PatientFlowQuickDialog": "Patient/encounter flow: Patient Billing Quick (patients).",
+}
 
 EMPTY_MARKERS = {"-", "—", "–", "", "n/a", "none"}
+_SOURCE_CACHE: dict[tuple[str, tuple[str, ...]], list[tuple[Path, str]]] = {}
+
+
+def _cached_sources(base: Path, suffixes: set[str]) -> list[tuple[Path, str]]:
+    """Read a source tree once so 41 prompt audits remain fast and deterministic."""
+    key = (base.as_posix(), tuple(sorted(suffixes)))
+    if key not in _SOURCE_CACHE:
+        sources: list[tuple[Path, str]] = []
+        if base.exists():
+            for candidate in base.rglob("*"):
+                if not candidate.is_file() or candidate.suffix not in suffixes:
+                    continue
+                try:
+                    sources.append(
+                        (candidate, candidate.read_text(encoding="utf-8"))
+                    )
+                except (OSError, UnicodeDecodeError):
+                    continue
+        _SOURCE_CACHE[key] = sources
+    return _SOURCE_CACHE[key]
+
+
+def _matching_source_paths(
+    base: Path,
+    pattern: str,
+    suffixes: set[str],
+) -> list[Path]:
+    """Use ripgrep when available, with a deterministic pure-Python fallback."""
+    ripgrep = shutil.which("rg")
+    if ripgrep:
+        command = [ripgrep, "--files-with-matches", "--no-messages"]
+        for suffix in sorted(suffixes):
+            command.extend(["--glob", f"*{suffix}"])
+        command.extend([pattern, str(base)])
+        result = subprocess.run(
+            command,
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+        if result.returncode in {0, 1}:
+            return [
+                Path(line.strip())
+                for line in result.stdout.splitlines()
+                if line.strip()
+            ]
+    matches = []
+    compiled = re.compile(pattern, re.I)
+    for candidate, text in _cached_sources(base, suffixes):
+        if compiled.search(text):
+            matches.append(candidate)
+    return matches
 
 SHELL_REFS = {
     "AppDialog": "frontend/lib/shared/components/app_dialog.dart",
@@ -159,16 +234,18 @@ DIALOG_BRIEFS: dict[str, dict] = {
     },
     "_showTriageDialog": {
         "mission": (
-            "Open housekeeping triage for the selected item using the shared "
-            "triage action surface rather than a local fork."
+            "Triage a housekeeping maintenance request through the approved "
+            "workspace-mutation surface; this is operational maintenance triage, "
+            "not clinical patient triage."
         ),
-        "primary_commit": "Save triage",
-        "affected": "housekeeping triage state, related bed/room cues",
-        "siblings": ["AppTriageActionDialog", "_PatientTriageQuickDialog"],
+        "primary_commit": "Triage maintenance request",
+        "affected": "housekeeping maintenance worklist and selected request detail",
+        "siblings": ["showAppWorkspaceMutationDialog"],
         "shape": "inline_opener",
         "focus": [
-            "Prefer `showAppTriageActionDialog` / `AppTriageActionDialog` over a bespoke housekeeping-only triage UI.",
-            "Preserve whatever contextual IDs the workspace already resolves before open.",
+            "Keep `showAppWorkspaceMutationDialog` + `_TriageForm`; do not migrate this operational workflow to clinical `AppTriageActionDialog`.",
+            "Trace `triageMaintenanceRequest` to `POST /maintenance-requests/:human_friendly_id/triage` and patch the housekeeping selection/worklist only after success.",
+            "Preserve maintenance-request and non-terminal-state gates at both call sites.",
         ],
     },
     "_TransferRequestDialog": {
@@ -182,6 +259,8 @@ DIALOG_BRIEFS: dict[str, dict] = {
         "focus": [
             "Compare with IPD `TransferRequestDialog` and consolidate duplicated transfer chrome into one shared primitive if both still diverge.",
             "Keep `openIcuTransferDialog` and all ICU detail/next-action call sites compiling.",
+            "The current ICU form selects target ward/bed and has no clinical-rationale field; do not invent one without a backend requirement.",
+            "Trace `requestTransfer` to the IPD flow request-transfer action with public ward/bed identifiers.",
         ],
     },
     "_AssignBedDialog": {
@@ -192,9 +271,11 @@ DIALOG_BRIEFS: dict[str, dict] = {
         "primary_commit": "Assign bed",
         "affected": "ICU bed occupancy, admission detail, ward lists",
         "siblings": ["_TransferRequestDialog", "IpdStartAdmissionDialog"],
+        "shape": "widget_dialog",
         "focus": [
             "Reuse bed/ward selectors already used by IPD/ICU siblings; do not copy a third local picker.",
             "On success, patch bed + admission slices immediately; on failure keep dialog open with `AppFailure`.",
+            "Trace `loadBedBoard` and `assignBed`; the mutation posts `bed_id` to the IPD assign-bed action.",
         ],
     },
     "_openReleaseBedDialog": {
@@ -222,7 +303,8 @@ DIALOG_BRIEFS: dict[str, dict] = {
         "siblings": ["_TransferRequestDialog", "TransferUpdateDialog"],
         "focus": [
             "Consolidate with ICU `_TransferRequestDialog` if fields/chrome still diverge without domain cause.",
-            "Keep `_openTransferRequestDialog` and ICU cross-call sites working.",
+            "Keep IPD `_openTransferRequestDialog` working; ICU uses a separate private `_TransferRequestDialog`, not this class.",
+            "Trace `requestTransfer` to `POST /api/v1/ipd-flows/:human_friendly_id/request-transfer`; do not invent a reason field absent from the contract.",
         ],
     },
     "TransferUpdateDialog": {
@@ -230,11 +312,12 @@ DIALOG_BRIEFS: dict[str, dict] = {
             "Update an in-flight IPD transfer status/destination with audit-safe "
             "mutation semantics."
         ),
-        "primary_commit": "Update transfer (label as Edit if editing)",
+        "primary_commit": "Edit / manage transfer",
         "affected": "IPD transfer row, rooms/beds transfer views",
         "siblings": ["_showTransferUpdateDialog", "TransferRequestDialog"],
         "focus": [
-            "Align with rooms/beds `_showTransferUpdateDialog` — one canonical update UI.",
+            "Consolidate IPD `TransferUpdateDialog` with rooms/beds private `_TransferUpdateDialog`; rooms/beds does not call this IPD page-local class.",
+            "Trace `updateTransfer` to `POST /api/v1/ipd-flows/:human_friendly_id/update-transfer`.",
             "Never label Edit as Update in the footer.",
         ],
     },
@@ -245,10 +328,11 @@ DIALOG_BRIEFS: dict[str, dict] = {
         ),
         "primary_commit": "Start admission",
         "affected": "IPD admissions list, bed assignment, encounter stage",
-        "siblings": ["_OpdAdmissionHandoffDialog", "_PatientAdmissionQuickDialog"],
+        "siblings": ["_PatientAdmissionQuickDialog", "ClinicalAdmissionActionDialog"],
         "focus": [
-            "Reuse admission field/section primitives shared with OPD admission handoff and patient admission quick dialogs.",
+            "Reuse admission field/section primitives shared with patient admission quick and `ClinicalAdmissionActionDialog`.",
             "Trace start-admission API; patch admission + bed slices on success only.",
+            "Move patient search through a controller; the widget currently reads `patientRepositoryProvider.listPatients` directly.",
         ],
     },
     "QueueActionsDialog": {
@@ -263,6 +347,8 @@ DIALOG_BRIEFS: dict[str, dict] = {
         "focus": [
             "Do not fork a reception-only duplicate of queue actions — extend this shared dialog or extract a neutral primitive.",
             "Each nested mutation must follow loading lock + success-only patch rules.",
+            "Replace `LinearProgressIndicator`; route provider loading through a controller instead of reading `opdRepositoryProvider` in the widget.",
+            "Preserve prioritize, start OPD, cancel, and move actions plus `showQueueActionsDialog` barrier behavior.",
         ],
     },
     "PatientAppointmentQuickDialog": {
@@ -280,6 +366,7 @@ DIALOG_BRIEFS: dict[str, dict] = {
         "focus": [
             "Reuse appointment fields/actions from shared OPD appointment dialogs where the UX matches.",
             "Openers must pass resolved patient/appointment IDs — no blocking re-lookup in the body.",
+            "Replace the widget's direct `opdRepositoryProvider.createAppointment` write with controller delegation and an immediate provider patch; retain parent refresh only as targeted reconciliation.",
         ],
     },
     "_PatientTriageQuickDialog": {
@@ -293,6 +380,8 @@ DIALOG_BRIEFS: dict[str, dict] = {
         "focus": [
             "Must compose `AppTriageActionDialog` / `showAppTriageActionDialog` — delete any local triage form fork.",
             "Preserve `_openPatientTriageQuickDialog` and patient detail quick-action entry points.",
+            "Preserve the submit chain: submit OPD encounter → record vitals → optional assign doctor; do not collapse partial-failure handling into false success.",
+            "Move provider loading out of the widget repository read and retain `opdEncounterPermissionRequirement`.",
         ],
     },
     "_PatientAdmissionQuickDialog": {
@@ -302,24 +391,26 @@ DIALOG_BRIEFS: dict[str, dict] = {
         ),
         "primary_commit": "Start / request admission",
         "affected": "admission request, patient detail, IPD intake cues",
-        "siblings": ["IpdStartAdmissionDialog", "_OpdAdmissionHandoffDialog"],
+        "siblings": ["IpdStartAdmissionDialog", "ClinicalAdmissionActionDialog"],
         "focus": [
-            "Share admission section/field widgets with IPD start admission and OPD admission handoff.",
+            "Reuse `ClinicalAdmissionActionDialog`; do not replace its delegated loading/footer with a local shell.",
+            "Move `ipdRepositoryProvider.requestAdmission` behind the appropriate controller and patch on success.",
             "Permission wrappers on patient quick actions must remain intact.",
         ],
     },
     "_PatientFlowQuickDialog": {
         "mission": (
-            "Open patient flow/stage actions from registry without duplicating "
-            "`FlowActionsDialog` chrome."
+            "Create the patient registry's quick OPD billing/walk-in flow, "
+            "including consultation fee, invoice creation, and optional payment."
         ),
-        "primary_commit": "Apply flow action / Cancel",
-        "affected": "encounter stage, patient flow badges, OPD queue cues",
-        "siblings": ["FlowActionsDialog", "QueueActionsDialog"],
-        "shape": "action_hub",
+        "primary_commit": "Create billing / start OPD flow",
+        "affected": "OPD encounter, consultation invoice/payment, patient registry detail",
+        "siblings": ["ConsultationPaymentDialog"],
+        "shape": "widget_dialog",
         "focus": [
-            "Prefer delegating to `showFlowActionsDialog` / shared flow helpers instead of a parallel action matrix.",
-            "If a thin patient-scoped wrapper remains, it must reuse shared action groups only.",
+            "Do not refactor this as a stage-action hub; it is a billing mutation form despite its historical symbol name.",
+            "Trace `submitOpdEncounter` with `consultation_fee`, `create_consultation_invoice`, and optional `pay_now` through the OPD controller/repository/backend.",
+            "Preserve currency defaults, payment authorization, and parent patient-registry refresh-on-success behavior.",
         ],
     },
     "_ReceptionPatientPickerDialog": {
@@ -330,9 +421,11 @@ DIALOG_BRIEFS: dict[str, dict] = {
         "primary_commit": "Select patient / Cancel",
         "affected": "reception selection context only (no fake patient create)",
         "siblings": ["RegisterNewPatientDialog", "OpdEncounterDialog"],
+        "shape": "read_only_picker",
         "focus": [
             "Reuse shared patient search/list primitives; do not build a reception-only picker table.",
-            "Selecting a patient must return resolved `human_friendly_id` context to the caller.",
+            "This dialog is non-mutating: search through the patient-registry controller and return the selected `Patient`; the caller resolves appointment IDs.",
+            "Search failure stays visible and selection/cancel must not patch server-backed state.",
         ],
     },
     "ReceptionQueueActionsDialog": {
@@ -347,6 +440,7 @@ DIALOG_BRIEFS: dict[str, dict] = {
         "focus": [
             "Migrate duplicated action rows into `QueueActionsDialog` or a shared primitive; keep a thin reception opener if needed.",
             "Preserve `showReceptionQueueActionsDialog` call sites.",
+            "Replace `LinearProgressIndicator` and retain `receptionFrontDeskWriteRequirement` / `AppAccessActionGate`.",
         ],
     },
     "_showTransferUpdateDialog": {
@@ -359,7 +453,8 @@ DIALOG_BRIEFS: dict[str, dict] = {
         "siblings": ["TransferUpdateDialog", "TransferRequestDialog"],
         "shape": "inline_opener",
         "focus": [
-            "Inline opener should host `TransferUpdateDialog` (or one shared successor), not a rooms-only copy.",
+            "The opener hosts rooms/beds private `_TransferUpdateDialog`; consolidate that form with IPD `TransferUpdateDialog` through one domain-neutral shared successor.",
+            "Trace `RoomsBedsWorkspaceController.updateTransfer` to the IPD update-transfer endpoint and retain rooms/beds call sites.",
             "Keep barrierDismissible false for mutating open and success-only patches.",
         ],
     },
@@ -370,10 +465,11 @@ DIALOG_BRIEFS: dict[str, dict] = {
         ),
         "primary_commit": "Save triage",
         "affected": "triage records for the calling module's encounter/patient",
-        "siblings": ["_PatientTriageQuickDialog", "_showTriageDialog"],
+        "siblings": ["_PatientTriageQuickDialog", "EmergencyActionPanel._openTriageDialog"],
         "focus": [
             "This is a shared primitive — improve it in place; migrate callers off local triage dialogs.",
             "API must stay domain-neutral; callers supply labels, options, and `onSubmit`.",
+            "Audit each callback path separately: emergency uses `recordTriage`; patient quick triage uses OPD encounter/vitals/doctor mutations. Housekeeping maintenance triage is out of domain.",
         ],
     },
     "OpdEncounterDialog": {
@@ -408,6 +504,7 @@ DIALOG_BRIEFS: dict[str, dict] = {
         "focus": [
             "Chrome dismiss stays Cancel; the primary commit is the domain close verb.",
             "Preserve `_promptCloseEncounter` from encounter dialog and encounter flow.",
+            "Trace injected `onConfirm` through the parent callback to `POST /api/v1/opd-flows/:human_friendly_id/close` with `reason_notes`.",
         ],
     },
     "_CancelEncounterDialog": {
@@ -421,6 +518,7 @@ DIALOG_BRIEFS: dict[str, dict] = {
         "focus": [
             "Use error-styled primary with `AppActionIcons` delete/error mapping as siblings do.",
             "Cancel (abort) must not invoke the cancel-encounter mutation.",
+            "Trace injected `onConfirm` through the parent callback to `POST /api/v1/opd-flows/:human_friendly_id/cancel`.",
         ],
     },
     "showOpdEncounterDialog": {
@@ -531,6 +629,7 @@ DIALOG_BRIEFS: dict[str, dict] = {
         "siblings": ["FlowActionsDialog"],
         "focus": [
             "Trace pay/record payment path against real billing/OPD routes; fix DTO/schema mismatches either side.",
+            "Use `opdWorkspaceControllerProvider.payConsultation` and `POST /api/v1/opd-flows/:human_friendly_id/pay-consultation`; preserve insurance coverage verification and update-existing-billing mode.",
             "Never mark paid in UI without persisted success.",
         ],
     },
@@ -544,6 +643,7 @@ DIALOG_BRIEFS: dict[str, dict] = {
         "focus": [
             "Stage correction is a mutation — barrierDismissible false, success-only patch, shared failure UI.",
             "Reuse select/stage field primitives already used by flow siblings.",
+            "Trace `correctStage` to `POST /api/v1/opd-flows/:human_friendly_id/correct-stage` with `stage_to` and `reason`; preserve admin authorization.",
         ],
     },
     "AssignDoctorDialog": {
@@ -555,7 +655,8 @@ DIALOG_BRIEFS: dict[str, dict] = {
         "siblings": ["FlowActionsDialog", "CorrectStageDialog"],
         "focus": [
             "Keep `_openAssignDoctorDialog` and workflow opener call sites in sync.",
-            "Doctor picker must use shared select fields and `human_friendly_id` references.",
+            "Keep public `showAssignDoctorDialog` and workflow opener call sites in sync.",
+            "Trace assign-doctor to `POST /api/v1/opd-flows/:human_friendly_id/assign-doctor`; preserve the documented `provider_user_id` contract instead of blindly rewriting it.",
         ],
     },
     "RoutingDecisionDialog": {
@@ -567,6 +668,7 @@ DIALOG_BRIEFS: dict[str, dict] = {
         "siblings": ["OpdDispositionDialog", "FlowActionsDialog"],
         "focus": [
             "Align field chrome with disposition/referral siblings; extract shared decision sections if duplicated.",
+            "The submit method is `disposeFlow`, which calls triage routing at `POST /api/v1/triage/:human_friendly_id/route`; preserve route fields and optional provider/triage data.",
             "Patch routing-related slices only after HTTP success.",
         ],
     },
@@ -579,53 +681,59 @@ DIALOG_BRIEFS: dict[str, dict] = {
         "siblings": ["RoutingDecisionDialog", "FollowUpDialog", "ReferralDialog"],
         "focus": [
             "Reuse shared disposition/outcome fields with routing and referral dialogs where possible.",
+            "Trace `completeDisposition`, including optional doctor review, to the OPD disposition endpoint; preserve ADMIT handoff and physiotherapy side paths.",
             "Confirm dialogs opened from FlowActionsDialog still return success flags correctly.",
         ],
     },
     "_OpdAdmissionHandoffDialog": {
         "mission": (
-            "Hand off an OPD patient into admission intake with the shared "
-            "admission handoff fields."
+            "Offer navigation to IPD after an ADMIT disposition has already "
+            "persisted; this dialog performs no admission mutation."
         ),
-        "primary_commit": "Hand off to admission",
-        "affected": "admission handoff queue, OPD stage, IPD intake cues",
-        "siblings": ["IpdStartAdmissionDialog", "_PatientAdmissionQuickDialog"],
+        "primary_commit": "Open admission",
+        "affected": "navigation only; disposition state was patched before this dialog opens",
+        "siblings": ["FlowActionsDialog"],
+        "shape": "navigation_confirm",
         "focus": [
-            "Share admission handoff sections with IPD start admission / patient admission quick dialogs.",
-            "Do not create a fourth admission form — extract under `frontend/lib/shared/` if needed.",
+            "Keep `showOpdAdmissionHandoffDialog` and `FlowActionsDialog._promptIpdHandoff` reachable after persisted ADMIT disposition.",
+            "Do not add admission fields or HTTP writes; Cancel aborts routing and Open admission only navigates.",
         ],
     },
     "ReferralDialog": {
         "mission": (
-            "Create an external/internal referral from OPD/clinical/physiotherapy contexts."
+            "Create an OPD referral by adapting the canonical "
+            "`ClinicalReferralActionDialog` for the active OPD flow."
         ),
         "primary_commit": "Save referral",
         "affected": "referral record, encounter routing cues",
         "siblings": ["FollowUpDialog", "OpdDispositionDialog"],
         "focus": [
-            "Preserve physiotherapy and clinical workspace call sites.",
-            "Referral payloads must use `snake_case` + `human_friendly_id` per API contract.",
+            "Preserve `FlowActionsDialog` → `showReferralDialog`; clinical and physiotherapy pages use `ClinicalReferralActionDialog` directly and are not callers of this wrapper.",
+            "Trace `createReferral` to `POST /api/v1/referrals` with `encounter_id`, `external_facility_name`, `reason`, and `notes`.",
         ],
     },
     "FollowUpDialog": {
         "mission": (
-            "Schedule or record a follow-up from OPD/clinical/physiotherapy flows."
+            "Schedule an OPD follow-up by adapting the canonical "
+            "`ClinicalFollowUpActionDialog` for the active OPD flow."
         ),
         "primary_commit": "Save follow-up",
         "affected": "follow-up appointment/task, encounter disposition cues",
         "siblings": ["ReferralDialog", "PatientAppointmentQuickDialog"],
         "focus": [
             "Reuse appointment/date primitives where the follow-up is appointment-like.",
-            "Keep clinical and physiotherapy entry points working with the same dialog.",
+            "Preserve the `FlowActionsDialog` OPD entry; clinical and physiotherapy pages use the shared clinical dialog directly.",
+            "Trace `createFollowUp` to `POST /api/v1/follow-ups` and preserve UTC/date formatting rules.",
         ],
     },
     "PrintOpdSummaryDialog": {
         "mission": (
             "Preview/print the OPD summary using shared print/report primitives."
         ),
-        "primary_commit": "Print / Cancel",
+        "primary_commit": "Print (with Copy as the secondary action)",
         "affected": "no server mutation unless print audit exists — verify before patching",
         "siblings": ["OpdEncounterDialog", "FlowActionsDialog"],
+        "shape": "read_only_action",
         "focus": [
             "If print is local-only, do not fake Riverpod patches; if an audit/print API exists, sync it correctly.",
             "Reuse shared print/report section components and `AppActionIcons.print`.",
@@ -640,7 +748,8 @@ DIALOG_BRIEFS: dict[str, dict] = {
         "siblings": ["AppRecordVitalsDialog", "AppVitalsForm", "FlowActionsDialog"],
         "focus": [
             "Must compose `AppRecordVitalsDialog` / `AppVitalsForm` — remove local vitals form forks.",
-            "Align with nursing vitals dialog call sites so one form serves all modules.",
+            "Nursing already uses `AppRecordVitalsDialog`; consolidate OPD's larger bespoke vitals form without losing its triage/routing sections.",
+            "Trace create/edit vitals plus the optional `disposeFlow` → triage-route mutation; each persisted leg must patch independently and safely.",
         ],
     },
     "RegisterNewPatientDialog": {
@@ -654,7 +763,8 @@ DIALOG_BRIEFS: dict[str, dict] = {
         "focus": [
             "Mutating openers must set `barrierDismissible: false`; lock Cancel/close while submitting.",
             "Prefer `buildAppDialogFormActions` / wizard actions for multi-step registration footers.",
-            "Trace `createPatient` end-to-end; return `human_friendly_id` and patch registry slices on success only.",
+            "Trace callback injection: dialog `onSubmit` → `patientRegistryControllerProvider.createPatient` at reception/patient-registry call sites → patients repository → `POST /api/v1/patients`.",
+            "Return `human_friendly_id`, patch registry slices on success only, and preserve duplicate-override submit labeling.",
         ],
     },
 }
@@ -728,9 +838,127 @@ def parse_inventory() -> list[dict]:
     return rows
 
 
-def _brace_region(text: str, start: int) -> str:
+def _declaration_match(text: str, symbol: str) -> re.Match | None:
+    """Find the actual declaration, independent of stale inventory line numbers."""
+    patterns = [
+        rf"(?m)^(?:class|mixin)\s+{re.escape(symbol)}\b",
+        rf"(?m)^\s*(?:static\s+)?(?:Future\s*<[^>]*>|void|Widget|bool|String|int|double)\s+{re.escape(symbol)}\s*\(",
+        rf"(?m)^\s*(?:final|const|var)\s+.*=\s*{re.escape(symbol)}\s*[;(]",
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if match:
+            return match
+    return None
+
+
+def enrich_inventory_row(row: dict) -> dict:
+    """Verify source location and discover real call-site files across the frontend."""
+    enriched = dict(row)
+    source_line = row["line"]
+    source_exists = False
+    detected_openers: list[str] = []
+    if row["path"]:
+        source_path = ROOT / row["path"].replace("\\", "/")
+        if source_path.exists():
+            source_exists = True
+            text = source_path.read_text(encoding="utf-8")
+            declaration = _declaration_match(text, row["symbol"])
+            if declaration:
+                source_line = text.count("\n", 0, declaration.start()) + 1
+            for match in re.finditer(
+                r"(?m)^\s*(?:Future\s*<[^>]*>|void|Widget)\s+"
+                r"((?:_?(?:show|open))\w+)\s*\(",
+                text,
+            ):
+                name = match.group(1)
+                if (
+                    name != row["symbol"]
+                    and row["symbol"] in _function_region(text, match.start())
+                ):
+                    detected_openers.append(name)
+
+    needles = [row["symbol"], *row["openers"], *detected_openers]
+    invocation_pattern = (
+        rf"(?:\b{re.escape(row['symbol'])}\s*\(|"
+        rf"\b(?:{'|'.join(re.escape(needle) for needle in needles[1:])})\b)"
+        if len(needles) > 1
+        else rf"\b{re.escape(row['symbol'])}\s*\("
+    )
+    discovered: list[str] = []
+    frontend_lib = ROOT / "frontend" / "lib"
+    if frontend_lib.exists():
+        for candidate in _matching_source_paths(
+            frontend_lib, invocation_pattern, {".dart"}
+        ):
+            if not candidate.is_absolute():
+                candidate = ROOT / candidate
+            relative = candidate.relative_to(ROOT).as_posix()
+            if relative != (row["path"] or "").replace("\\", "/"):
+                discovered.append(relative)
+
+    validated_inventory_used: list[str] = []
+    for listed in row["used"]:
+        path_match = re.search(r"([^\s`]+\.dart)", listed)
+        if not path_match:
+            continue
+        listed_path = path_match.group(1).replace("\\", "/")
+        candidate = ROOT / listed_path
+        if not candidate.exists():
+            continue
+        try:
+            listed_text = candidate.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if re.search(invocation_pattern, listed_text):
+            validated_inventory_used.append(listed_path)
+
+    enriched["source_exists"] = source_exists
+    enriched["source_line"] = source_line
+    enriched["line_drift"] = (
+        source_line is not None
+        and row["line"] is not None
+        and source_line != row["line"]
+    )
+    enriched["detected_openers"] = sorted(set(detected_openers))
+    enriched["validated_used"] = sorted(set(validated_inventory_used))
+    enriched["discovered_used"] = sorted(set(discovered))
+    return enriched
+
+
+def refresh_inventory(rows: list[dict]) -> None:
+    """Keep inventory locations/reachability aligned with verified source evidence."""
+    by_symbol = {row["symbol"]: row for row in rows}
+    output = []
+    for line in INVENTORY.read_text(encoding="utf-8").splitlines():
+        if not line.startswith("| `"):
+            output.append(line)
+            continue
+        parts = [part.strip() for part in line.strip().strip("|").split("|")]
+        symbol = parts[0].strip("`") if parts else ""
+        row = by_symbol.get(symbol)
+        if row is None or len(parts) < 7:
+            output.append(line)
+            continue
+        if symbol in PURPOSE_OVERRIDES:
+            parts[1] = PURPOSE_OVERRIDES[symbol]
+        if row["path"] and row.get("source_line"):
+            parts[2] = f"`{row['path']}:{row['source_line']}`"
+        openers = sorted(
+            set(row["openers"] + row.get("detected_openers", []))
+        )
+        used = sorted(
+            set(row.get("validated_used", []) + row.get("discovered_used", []))
+        )
+        parts[5] = ", ".join(f"`{item}`" for item in openers) or "—"
+        parts[6] = "<br>".join(f"`{item}`" for item in used) or "—"
+        output.append("| " + " | ".join(parts) + " |")
+    INVENTORY.write_text("\n".join(output) + "\n", encoding="utf-8", newline="\n")
+
+
+def _brace_region(text: str, start: int, brace_start: int | None = None) -> str:
     """Return text from start through the matching closing brace of the first `{`."""
-    brace = text.find("{", start)
+    brace = text.find("{", start if brace_start is None else brace_start)
     if brace < 0:
         return text[start : start + 8000]
     depth = 0
@@ -759,6 +987,39 @@ def _brace_region(text: str, start: int) -> str:
                     return text[start : i + 1]
         i += 1
     return text[start : min(len(text), start + 40000)]
+
+
+def _function_region(text: str, start: int) -> str:
+    """Return a function body without mistaking named-parameter braces for it."""
+    open_paren = text.find("(", start)
+    if open_paren < 0:
+        return _brace_region(text, start)
+    depth = 0
+    in_str = False
+    str_ch = ""
+    escape = False
+    i = open_paren
+    while i < len(text):
+        ch = text[i]
+        if in_str:
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == str_ch:
+                in_str = False
+        else:
+            if ch in ("'", '"'):
+                in_str = True
+                str_ch = ch
+            elif ch == "(":
+                depth += 1
+            elif ch == ")":
+                depth -= 1
+                if depth == 0:
+                    return _brace_region(text, start, i + 1)
+        i += 1
+    return _brace_region(text, start)
 
 
 def _symbol_region(text: str, symbol: str, line_no: int | None) -> str:
@@ -795,33 +1056,20 @@ def _symbol_region(text: str, symbol: str, line_no: int | None) -> str:
         and "class " not in text[max(0, start - 40) : start]
     ):
         # Walk back to include leading annotations/docs on the same declaration block.
-        return _brace_region(text, start)
+        return _function_region(text, start)
 
-    # Class: include State class if present; stop before the next unrelated class.
-    tail = text[start:]
-    state_name = None
-    if re.match(rf"class\s+{re.escape(symbol)}\b", tail):
-        state_m = re.search(
-            rf"\nclass\s+(_?{re.escape(symbol.lstrip('_'))}State)\b",
-            tail,
-        )
-        if state_m:
-            state_name = state_m.group(1)
-
-    positions = [m.start() for m in re.finditer(r"(?m)^(?:class |mixin )", tail)]
-    end = min(len(tail), 40000)
-    if positions:
-        kept_state = False
-        for pos in positions[1:]:
-            header = tail[pos : pos + 120]
-            hm = re.match(r"(?:class |mixin )(\w+)", header)
-            name = hm.group(1) if hm else ""
-            if state_name and name == state_name and not kept_state:
-                kept_state = True
-                continue
-            end = min(pos, 40000)
-            break
-    return tail[:end]
+    # Class: brace-match the widget and its exact State implementation. This
+    # avoids leaking later top-level helpers/classes when the target is last.
+    widget_region = _brace_region(text, start)
+    tail_start = start + len(widget_region)
+    state_match = re.search(
+        rf"(?m)^class\s+(_?{re.escape(symbol.lstrip('_'))}State)\b",
+        text[tail_start:],
+    )
+    if state_match:
+        state_start = tail_start + state_match.start()
+        return widget_region + "\n" + _brace_region(text, state_start)
+    return widget_region
 
 
 def peek_dialog_context(
@@ -858,6 +1106,9 @@ def peek_dialog_context(
         "mutation_hints": [],
         "label_antipatterns": [],
         "uses_material_icons": False,
+        "widget_reads_repository": False,
+        "delegated_components": [],
+        "trace_files": [],
         "nearby_excerpt": "",
         "region_chars": 0,
     }
@@ -870,6 +1121,47 @@ def peek_dialog_context(
     region = _symbol_region(text, symbol, line_no)
     info["nearby_excerpt"] = region[:3000]
     info["region_chars"] = len(region)
+
+    # Thin wrappers often delegate all shell/loading/action behavior to a
+    # canonical shared dialog. Include those implementations in the evidence
+    # scan so prompts do not report false gaps against the wrapper alone.
+    delegated_regions: list[str] = []
+    delegated_names = []
+    for match in re.finditer(
+        r"\b([A-Z]\w*(?:Dialog|Form|Panel|Section|Picker))\s*\(",
+        region,
+    ):
+        name = match.group(1)
+        prefix = region[max(0, match.start() - 32) : match.start()]
+        if re.search(r"(?:class|mixin)\s+$", prefix):
+            continue
+        if name == symbol or name in delegated_names:
+            continue
+        delegated_names.append(name)
+        if len(delegated_names) >= 8:
+            break
+    frontend_lib = ROOT / "frontend" / "lib"
+    for name in delegated_names:
+        found = False
+        definition_pattern = rf"(?:class|mixin)\s+{re.escape(name)}\b"
+        for candidate in _matching_source_paths(
+            frontend_lib, definition_pattern, {".dart"}
+        ):
+            if not candidate.is_absolute():
+                candidate = ROOT / candidate
+            candidate_text = candidate.read_text(encoding="utf-8")
+            declaration = _declaration_match(candidate_text, name)
+            if declaration:
+                delegated_regions.append(
+                    _symbol_region(candidate_text, name, None)
+                )
+                info["delegated_components"].append(
+                    f"{name} — {candidate.relative_to(ROOT).as_posix()}"
+                )
+                found = True
+                break
+        if found and len(delegated_regions) >= 4:
+            break
 
     # Opener regions from the definition file and Used-from files (for shell detection only).
     search_blobs: list[str] = [text]
@@ -890,7 +1182,7 @@ def peek_dialog_context(
                 break
 
     # Shell/chrome: symbol region + paired openers only (not whole Used-from files).
-    scan = region + "\n".join(opener_regions)
+    scan = region + "\n".join(opener_regions + delegated_regions)
     # Mutations/controllers: symbol region + paired openers (callback-style dialogs
     # often mutate from the opener). Never scan whole Used-from files (sibling leakage).
     mut_scan = region + "\n".join(opener_regions)
@@ -911,7 +1203,9 @@ def peek_dialog_context(
     info["uses_workspace_action"] = "showAppWorkspaceActionDialog" in scan
     info["uses_raw_show_dialog"] = bool(re.search(r"(?<![A-Za-z])showDialog\s*\(", scan))
     info["uses_alert_dialog"] = "AlertDialog(" in scan
-    info["uses_circular_progress"] = "CircularProgressIndicator" in scan
+    info["uses_circular_progress"] = (
+        "CircularProgressIndicator" in scan or "LinearProgressIndicator" in scan
+    )
     info["uses_clinical_actions"] = "clinicalActionDialogActions" in scan
     info["uses_form_actions"] = "buildAppDialogFormActions" in scan
     info["uses_wizard_actions"] = "buildAppDialogWizardActions" in scan
@@ -924,6 +1218,13 @@ def peek_dialog_context(
     info["uses_app_button"] = "AppButton." in scan or "AppButton(" in scan
     info["uses_action_icons"] = "AppActionIcons." in scan
     info["uses_material_icons"] = bool(re.search(r"\bIcons\.\w+", scan))
+    info["widget_reads_repository"] = bool(
+        re.search(
+            r"ref\.(?:read|watch)\(\s*\w*RepositoryProvider\b",
+            region,
+            re.I | re.S,
+        )
+    )
     info["close_enabled_false"] = (
         "closeEnabled: false" in scan or "closeEnabled: !" in scan
     )
@@ -960,6 +1261,7 @@ def peek_dialog_context(
     for m in re.finditer(
         r"\b(?:ref\.read|ref\.watch)\(([^)]+(?:Controller|Repository|Provider)[^)]*)\)",
         mut_scan,
+        re.S,
     ):
         hint = m.group(1).strip()[:100]
         if hint not in info["controller_hints"]:
@@ -969,32 +1271,69 @@ def peek_dialog_context(
     for m in re.finditer(
         r"\.(create|update|delete|save|submit|assign|release|transfer|dispatch|"
         r"handoff|cancel|close|record|register|reschedule|admit|pay|mark|"
-        r"correct|request)\w*\s*\(",
+        r"correct|request|complete|dispose|route|prioritize|start|move)\w*\s*\(",
         mut_scan,
         re.I,
     ):
         call = m.group(0).rstrip("(").strip(".")
+        if call.lower() in {"cancel", "dispose"}:
+            continue
         key = f"mutation: {call}"
         if key not in info["mutation_hints"] and len(info["mutation_hints"]) < 8:
             info["mutation_hints"].append(key)
+
     # Also catch tear-offs / named callbacks: onSubmit: controller.createQuickArrival
     for m in re.finditer(
         r"(?:onSubmit|onConfirm|onSave|onPressed)\s*:\s*(?:\(\)\s*=>\s*)?"
         r"((?:[\w]+\.)+(?:create|update|delete|save|submit|assign|release|transfer|"
         r"dispatch|handoff|cancel|close|record|register|reschedule|admit|pay|"
-        r"mark|correct|request)\w*|"
+        r"mark|correct|request|complete|dispose|route|prioritize|start|move)\w*|"
         r"(?:create|update|delete|save|submit|assign|release|transfer|"
         r"dispatch|handoff|cancel|close|record|register|reschedule|admit|pay|"
-        r"mark|correct|request)\w*)",
+        r"mark|correct|request|complete|dispose|route|prioritize|start|move)\w*)",
         mut_scan,
         re.I,
     ):
         call = m.group(1).split(".")[-1]
-        if call.lower() in {"onsubmit", "onconfirm", "onsave", "onpressed"}:
+        if call.lower() in {
+            "cancel",
+            "dispose",
+            "onsubmit",
+            "onconfirm",
+            "onsave",
+            "onpressed",
+        }:
             continue
         key = f"mutation: {call}"
         if key not in info["mutation_hints"] and len(info["mutation_hints"]) < 8:
             info["mutation_hints"].append(key)
+
+    # Surface concrete cross-stack files that mention the detected mutation
+    # methods. These are candidates, not asserted ownership boundaries.
+    mutation_names = [
+        hint.removeprefix("mutation: ").strip()
+        for hint in info["mutation_hints"]
+    ]
+    if mutation_names:
+        for base, suffixes in (
+            (ROOT / "frontend" / "lib", {".dart"}),
+            (ROOT / "backend" / "src", {".js", ".ts"}),
+        ):
+            if not base.exists():
+                continue
+            trace_pattern = (
+                rf"\b(?:{'|'.join(re.escape(name) for name in mutation_names)})\b"
+            )
+            for candidate in _matching_source_paths(base, trace_pattern, suffixes):
+                if not candidate.is_absolute():
+                    candidate = ROOT / candidate
+                info["trace_files"].append(
+                    candidate.relative_to(ROOT).as_posix()
+                )
+                if len(info["trace_files"]) >= 16:
+                    break
+            if len(info["trace_files"]) >= 16:
+                break
 
     # Label antipatterns in region.
     if re.search(r"""['"]Close['"]|commonClose|closeActionLabel\b""", mut_scan):
@@ -1007,7 +1346,8 @@ def peek_dialog_context(
             "Possible Update label — editing actions must be Edit"
         )
     if re.search(
-        r"title:\s*[^\n]*(patient\.|displayName|fullName|patientName)",
+        r"AppDialog\s*\([\s\S]{0,500}?title:\s*[^\n]*"
+        r"(patient\.|displayName|fullName|patientName)",
         mut_scan,
         re.I,
     ):
@@ -1131,6 +1471,18 @@ def shape_guidance(shape: str) -> list[str]:
         "widget_dialog": [
             "Standard widget dialog: prefer `clinicalActionDialogActions` / form/wizard action builders over a hand-rolled footer.",
         ],
+        "read_only_picker": [
+            "Picker: loading/error rules apply to search; selection returns data to the caller and does not perform a mutation or patch server state.",
+            "Footer/action acceptance is Select + Cancel (or direct row selection + Cancel), not a generic mutation commit.",
+        ],
+        "read_only_action": [
+            "Read-only/local action: do not invent HTTP writes or Riverpod patches. Verify whether an audit API actually exists.",
+            "Order local secondary actions before Cancel and the primary local action.",
+        ],
+        "navigation_confirm": [
+            "Navigation confirmation: no HTTP write or provider patch belongs in this dialog; preserve the already-persisted parent result.",
+            "Use Cancel + one navigation verb and preserve focus/dismiss behavior.",
+        ],
     }
     return common + by_shape.get(shape, by_shape["widget_dialog"])
 
@@ -1149,7 +1501,7 @@ def gap_notes(peek: dict, shape: str) -> list[str]:
         )
     if peek["uses_circular_progress"]:
         gaps.append(
-            "`CircularProgressIndicator` detected — replace with "
+            "Raw Material progress indicator detected — replace with "
             "`AppLoadingIndicator` / `AppLoadingSurface` / `AppButton.isLoading` only."
         )
     if peek["button_snippets"]:
@@ -1162,7 +1514,12 @@ def gap_notes(peek: dict, shape: str) -> list[str]:
                     "Footer button order may place Cancel/secondary after primary — "
                     f"`{CONTRACT}` requires L→R: secondary actions, **Cancel**, primary commit."
                 )
-    if shape not in {"shared_opener"} and not peek["barrier_false"]:
+    if shape not in {
+        "shared_opener",
+        "read_only_picker",
+        "read_only_action",
+        "navigation_confirm",
+    } and not peek["barrier_false"]:
         gaps.append(
             "Confirm mutating openers set `barrierDismissible: false` while the dialog can mutate."
         )
@@ -1171,7 +1528,13 @@ def gap_notes(peek: dict, shape: str) -> list[str]:
             "Loading path exists — ensure `closeEnabled: false` and disabled Cancel/"
             "competing actions while mutation/load is in flight."
         )
-    if shape not in {"shared_opener", "inline_confirm", "confirm"} and not peek["is_loading"]:
+    if shape not in {
+        "shared_opener",
+        "inline_confirm",
+        "confirm",
+        "read_only_action",
+        "navigation_confirm",
+    } and not peek["is_loading"]:
         gaps.append(
             "No obvious loading primitive near the symbol — add shared loading UX for async open/submit."
         )
@@ -1201,6 +1564,11 @@ def gap_notes(peek: dict, shape: str) -> list[str]:
             "One-off `Icons.*` detected — prefer `AppActionIcons` (or sibling domain icon "
             "conventions) when a shared mapping exists."
         )
+    if peek.get("widget_reads_repository"):
+        gaps.append(
+            "Widget reads a repository provider directly — move load/mutation ownership "
+            "to a controller and keep server-backed UI state in Riverpod."
+        )
     for anti in peek["label_antipatterns"]:
         gaps.append(anti)
     return gaps
@@ -1210,14 +1578,25 @@ def build_prompt(idx: int, row: dict, peek: dict) -> str:
     symbol = row["symbol"]
     purpose = row["purpose"]
     path = row["path"] or "(locate in inventory / codebase — path missing from inventory cell)"
-    line = row["line"] if row["line"] is not None else "?"
+    inventory_line = row["line"] if row["line"] is not None else "?"
+    line = row.get("source_line")
+    line = line if line is not None else inventory_line
     kind = row["kind"]
     extends = row["extends"]
-    openers = row["openers"]
-    used = row["used"]
+    openers = sorted(set(row["openers"] + row.get("detected_openers", [])))
+    used = sorted(
+        set(row.get("validated_used", []) + row.get("discovered_used", []))
+    )
     title = human_title(symbol, purpose)
     purpose_clean = clean_purpose(purpose)
     module = module_hint(row["path"])
+    flow_rule = MODULE_FLOW_RULES.get(module)
+    flow_rule_row = (
+        f"| Module flow | [`{flow_rule}`](../{flow_rule}) | "
+        "Domain workflow states, transitions, and handoffs |"
+        if flow_rule
+        else ""
+    )
     slug = slugify(symbol, module)
     brief = DIALOG_BRIEFS.get(symbol, {})
     shape = detect_shape(symbol, peek, brief, extends)
@@ -1265,6 +1644,22 @@ def build_prompt(idx: int, row: dict, peek: dict) -> str:
         ", ".join(f"`{h}`" for h in peek["mutation_hints"][:6])
         if peek["mutation_hints"]
         else "_not detected in symbol region — trace submit/onConfirm handlers_"
+    )
+    delegated_md = (
+        "\n".join(f"- `{item}`" for item in peek["delegated_components"])
+        if peek["delegated_components"]
+        else "- _No delegated dialog/form/panel implementation detected; inspect the target body directly._"
+    )
+    trace_md = (
+        "\n".join(f"- `{item}`" for item in peek["trace_files"])
+        if peek["trace_files"]
+        else "- _No mutation-name matches were found automatically. Trace interfaces and route registrations manually; do not assume no backend path exists._"
+    )
+    location_note = (
+        f"Inventory says line {inventory_line}; verified declaration is line {line}. "
+        "Treat the verified declaration as authoritative and update the inventory if this task moves it."
+        if row.get("line_drift")
+        else "Inventory and verified declaration agree at generation time."
     )
     action_helper_md = ", ".join(
         label
@@ -1317,6 +1712,47 @@ def build_prompt(idx: int, row: dict, peek: dict) -> str:
         shell_bits.append("`AppTriageActionDialog`")
     shell_obs = ", ".join(shell_bits) if shell_bits else "unclear — verify in source"
 
+    action_acceptance = {
+        "shared_opener": (
+            "Opener preserves its argument/result API, uses the approved helper, "
+            "and enforces the correct barrier; hosted-dialog footer work stays in its owner."
+        ),
+        "action_hub": (
+            "Hub may be Cancel-only and delegates each domain mutation to one canonical "
+            "child; it does not invent a generic primary commit."
+        ),
+        "confirm": (
+            "Confirmation has exactly Cancel + one domain verb/Confirm, with destructive styling when applicable."
+        ),
+        "inline_confirm": (
+            "Confirmation has exactly Cancel + one domain verb/Confirm, with destructive styling when applicable."
+        ),
+        "read_only_picker": (
+            "Picker supports Cancel plus selection/return semantics; it performs no server mutation."
+        ),
+        "read_only_action": (
+            "Local secondary actions precede Cancel and the primary local action; no server mutation is invented."
+        ),
+        "navigation_confirm": (
+            "Navigation prompt has Cancel + one navigation verb and performs no persistence."
+        ),
+    }.get(
+        shape,
+        "Footer order is secondary → Cancel → primary; labels are Cancel/Edit "
+        "(not Close/Update); confirmations are one domain verb + Cancel.",
+    )
+    backend_acceptance = (
+        "Search/load paths use the real API contract; selection/cancel/local actions do not patch server state."
+        if shape in {"read_only_picker", "read_only_action", "navigation_confirm", "shared_opener"}
+        else "Every load and mutation API succeeds on the happy path against the real backend contract; "
+        "failures surface via `AppFailure` UI and patch nothing."
+    )
+    sync_acceptance = (
+        "No provider patch is introduced for a non-mutating/local-only action."
+        if shape in {"read_only_picker", "read_only_action", "navigation_confirm", "shared_opener"}
+        else f"After persisted success only, Riverpod + targeted reconciliation keep dialog and parent surfaces aligned with backend truth for: {affected}."
+    )
+
     return f"""# Standardize `{symbol}` — {title}
 
 ## Mission
@@ -1335,6 +1771,13 @@ Bring **`{symbol}`** to **100% compliance** with [`{CONTRACT}`](../{CONTRACT}) (
 | Shared components | [`{COMPONENTS_RULE}`](../{COMPONENTS_RULE}) | Reuse under `frontend/lib/shared/`; no feature forks of shared UI |
 | Localization | [`{LOCALIZATION_RULE}`](../{LOCALIZATION_RULE}) | All user-facing strings via l10n |
 | Permissions | [`{PERMISSIONS_RULE}`](../{PERMISSIONS_RULE}) | Preserve RBAC/ABAC wrappers; never expose unauthorized actions |
+| Design system | [`{DESIGN_RULE}`](../{DESIGN_RULE}) | Tokens only; responsive light/dark UI |
+| Accessibility | [`{ACCESSIBILITY_RULE}`](../{ACCESSIBILITY_RULE}) | Focus, semantics, keyboard, scaling, contrast |
+| Feedback / failures | [`{FEEDBACK_RULE}`](../{FEEDBACK_RULE}) | Shared async/failure states; preserve input; safe errors |
+| Frontend tests | [`{FRONTEND_TESTING_RULE}`](../{FRONTEND_TESTING_RULE}) | Widget/controller/sync/responsive coverage |
+| Backend API | [`{BACKEND_API_RULE}`](../{BACKEND_API_RULE}) | Routes, middleware, authz, public IDs |
+| Backend tests | [`{BACKEND_TESTING_RULE}`](../{BACKEND_TESTING_RULE}) | Schema/service/controller/route/event coverage |
+{flow_rule_row}
 
 ## Target
 
@@ -1345,7 +1788,8 @@ Bring **`{symbol}`** to **100% compliance** with [`{CONTRACT}`](../{CONTRACT}) (
 | Module / surface | `{module}` |
 | Inventory kind | `{kind}` |
 | Presentation shape | `{shape}` |
-| Defined in | {defined_loc} |
+| Verified definition | {defined_loc} |
+| Inventory location note | {location_note} |
 | Extends / uses | {extends} |
 | Paired opener(s) | {opener_md} |
 | Primary commit | {primary_commit} |
@@ -1358,6 +1802,16 @@ Bring **`{symbol}`** to **100% compliance** with [`{CONTRACT}`](../{CONTRACT}) (
 ### Used from
 
 {used_md}
+
+### Delegated/shared implementation evidence
+
+{delegated_md}
+
+### Cross-stack trace candidates
+
+These files mention a detected mutation method and are starting points, not proof of ownership. Follow interfaces/imports and route registration until the persisted path is proven.
+
+{trace_md}
 
 ## Compliance checklist (`{CONTRACT}` — this dialog only)
 
@@ -1384,7 +1838,13 @@ Bring **`{symbol}`** to **100% compliance** with [`{CONTRACT}`](../{CONTRACT}) (
 - [ ] Title is general / role-based — **never** the patient's personal name.
 - [ ] Title is passed through `AppDialog` for uppercase normalization; icon matches sibling conventions in this flow when peers already use icons.
 
-### 5. Backend correctness and sync
+### 5. Design, responsiveness, localization, and accessibility
+- [ ] No hard-coded user-facing copy or private feature string holder; labels, hints, validation, errors, tooltips, and semantics use generated l10n.
+- [ ] No hard-coded color, spacing, radius, elevation, typography, date, number, or currency formatting; use theme/design tokens and shared formatters.
+- [ ] Content and actions remain usable on mobile, tablet, desktop, dark mode, text scaling, and constrained-height/keyboard layouts without overflow.
+- [ ] Keyboard order is logical, focus is trapped/restored by the dialog shell, visible focus remains, icon-only controls have localized semantics, and status is not conveyed by color alone.
+
+### 6. Backend correctness and sync
 - [ ] Every load/mutation is traced end-to-end: dialog → workspace controller → repository/DTO → real backend route/schema/service.
 - [ ] IDs, `snake_case` payloads, auth, envelopes, and response decoding match [`{API_CONTRACT}`](../{API_CONTRACT}); either side is fixed when mismatched.
 - [ ] Widgets never call APIs or own competing server data. Mutations go over HTTP; WebSockets only reconcile ([`{SYNC_RULE}`](../{SYNC_RULE})).
@@ -1392,7 +1852,7 @@ Bring **`{symbol}`** to **100% compliance** with [`{CONTRACT}`](../{CONTRACT}) (
 - [ ] On persisted success only: immediately patch every affected Riverpod slice, then apply the smallest targeted refresh/realtime reconciliation. Dialog, parent workspaces, pinned views, lists, details, and badges agree with backend truth without a full reload.
 - [ ] Cancel / failure neither patches nor dismisses as if saved.
 
-### 6. Reachability and verification
+### 7. Reachability and verification
 - [ ] Still reachable from every paired opener and *Used from* site listed above.
 - [ ] `{PATTERN_TEST}` stays green. Add focused widget, controller, DTO, and (when the stack is touched) backend route/schema/service tests for this dialog's path.
 
@@ -1402,13 +1862,16 @@ Bring **`{symbol}`** to **100% compliance** with [`{CONTRACT}`](../{CONTRACT}) (
 | --- | --- |
 | Approved shell signals | {shell_obs} |
 | Raw `showDialog` / `AlertDialog` | {"yes — migrate" if peek["uses_raw_show_dialog"] or peek["uses_alert_dialog"] else "not seen in peek"} |
-| `CircularProgressIndicator` | {"yes — replace" if peek["uses_circular_progress"] else "not seen"} |
+| Raw Material progress indicator | {"yes — replace" if peek["uses_circular_progress"] else "not seen"} |
 | Title snippets | {title_snip} |
 | `AppButton` variants (order seen) | {buttons} |
 | `AppActionIcons` | {"seen" if peek["uses_action_icons"] else "not seen"} |
 | `barrierDismissible: false` | {"yes" if peek["barrier_false"] else "not seen"} |
 | `closeEnabled: false` | {"yes" if peek["close_enabled_false"] else "not seen"} |
 | Loading primitives | {"seen" if peek["is_loading"] else "not seen"} |
+| Direct widget repository read | {"yes — move to controller" if peek["widget_reads_repository"] else "not seen"} |
+| Delegated components scanned | {len(peek["delegated_components"])} |
+| Cross-stack trace files found | {len(peek["trace_files"])} |
 | Peek region size | {peek["region_chars"]} chars |
 
 ### Priority gaps to close
@@ -1453,9 +1916,9 @@ You are a coding agent with full read/write access to this repo. Execute every s
 ### Steps
 
 1. **Read contracts + source**
-   - Read [`{CONTRACT}`](../{CONTRACT}) (Scope + Requirements 1–5 + Verification).
-   - Skim [`{API_CONTRACT}`](../{API_CONTRACT}) and [`{SYNC_RULE}`](../{SYNC_RULE}).
+   - Read every contract in the **Normative contracts** table. Apply each rule to files matching its scope; do not treat this prompt as a substitute for project rules.
    - Read `{symbol}` at {defined_loc} and every paired opener / *Used from* site.
+   - Inspect every delegated/shared implementation and trace candidate above, then follow imports/interfaces/routes beyond those candidates as needed.
    - Trace each load/mutation: dialog → controller → repository/DTO → backend route/schema/service → decode → Riverpod patch.
 
 2. **Normalize shell (Req 1)**
@@ -1482,35 +1945,43 @@ You are a coding agent with full read/write access to this repo. Execute every s
    - Openers pass already-resolved contextual IDs (`human_friendly_id` / domain IDs).
    - Preserve parent permission wrappers; do not expose unauthorized actions.
 
-7. **Backend + sync (Req 5 — hard)**
+7. **Design + accessibility**
+   - Use generated l10n, theme/design tokens, shared formatters, and responsive layout primitives only.
+   - Verify keyboard/focus/semantics, text scaling, dark mode, constrained height, and mobile/tablet/desktop layouts.
+   - Preserve entered form data on recoverable failures and never expose raw exception text.
+
+8. **Backend + sync (Req 5 — hard)**
    - Widgets read Riverpod and delegate to controllers; no widget API calls.
    - Happy-path APIs must succeed against the real contract; fix either side on mismatch.
    - Failure → shared `AppFailure` UI, no patch, dialog stays open.
    - Persisted success only → patch {affected}, then apply the smallest targeted reconciliation.
    - Cancel/failure never present false success.
 
-8. **Preserve reachability**
+9. **Preserve reachability**
    - Do not break {reachability_md}. Update all call sites in the same change when signatures move.
 
-9. **Verify**
+10. **Verify**
    - Analyzer clean on touched files.
    - `{PATTERN_TEST}` green.
-   - Focused widget/controller/DTO/(backend) tests for this path.
+   - Run focused Flutter widget/controller/DTO tests plus backend schema/service/controller/route/event tests for every touched stack layer. Add missing tests; never rely on production services or secrets.
    - Happy-path succeeds; cancel/failure neither patches nor dismisses as saved.
+   - Verify responsive, keyboard, focus, semantics, text-scale, and dark-mode behavior for changed dialog UI.
+   - Run localization/code generation when ARB or generated DTO/model inputs change, and verify generated output is clean.
    - Equivalent flows share primitives, spacing, sections, action icons/labels, loading/error behavior, and responsive layout.
    - Tick every checklist item above before finishing.
 
 ## Acceptance criteria (all must pass)
 
 1. `{symbol}` opens only through `AppDialog` / approved helpers — no raw Material dialog APIs.
-2. Footer order is secondary → Cancel → primary; labels are Cancel/Edit (not Close/Update); confirmations are one domain verb + Cancel.
+2. {action_acceptance}
 3. Loading uses only shared spinner primitives; dismiss and competing actions are blocked while in flight.
 4. Title is general, uppercase-normalized, and never a patient name.
-5. Body sections and action groups reuse canonical shared primitives; no unjustified local forks (siblings considered: {siblings_md}).
-6. Still reachable from inventory openers / *Used from* sites with contextual IDs and permissions intact.
-7. Every load and mutation API succeeds on the happy path against the real backend contract; failures surface via `AppFailure` UI and patch nothing.
-8. After persisted success only, Riverpod + targeted reconciliation keep dialog and parent surfaces aligned with backend truth for: {affected}.
-9. `{PATTERN_TEST}` remains green; focused tests cover this dialog's critical path.
+5. All copy is localized; all styling/formatting uses shared tokens/formatters; responsive and accessible behavior is verified.
+6. Body sections and action groups reuse canonical shared primitives; no unjustified local forks (siblings considered: {siblings_md}).
+7. Still reachable from inventory openers / *Used from* sites with contextual IDs and permissions intact.
+8. {backend_acceptance}
+9. {sync_acceptance}
+10. `{PATTERN_TEST}` remains green; focused frontend/backend tests cover this dialog's critical path.
 
 ## Out of scope
 
@@ -1521,7 +1992,7 @@ You are a coding agent with full read/write access to this repo. Execute every s
 
 ## Deliverable
 
-Implement the compliance fixes in the repo. Summarize: files changed; shell/title/footer/loading/reuse/sync fixes; shared extracts; API/DTO/route fixes; tests added or run; how verification was performed.
+Implement the compliance fixes in the repo. Summarize: files changed; shell/title/footer/loading/reuse/sync fixes; design/localization/accessibility fixes; shared extracts; API/DTO/route fixes; tests added and run; exact commands and results; remaining risks (or explicitly state none). Append the project rule files applied and the model used.
 
 <!-- generator: encounter-dialog prompt {idx:02d} slug={slug} symbol={symbol} shape={shape} -->
 """
@@ -1544,9 +2015,15 @@ def main() -> None:
     if sample.exists():
         sample.unlink()
 
-    rows = parse_inventory()
+    rows = [enrich_inventory_row(row) for row in parse_inventory()]
     if len(rows) != 41:
         raise SystemExit(f"Expected 41 inventory rows, found {len(rows)}")
+    refresh_inventory(rows)
+    for row in rows:
+        row["line"] = row["source_line"]
+        row["line_drift"] = False
+        if row["symbol"] in PURPOSE_OVERRIDES:
+            row["purpose"] = PURPOSE_OVERRIDES[row["symbol"]]
 
     missing_briefs = [r["symbol"] for r in rows if r["symbol"] not in DIALOG_BRIEFS]
     if missing_briefs:
@@ -1586,9 +2063,14 @@ def main() -> None:
         peek = peek_dialog_context(
             row["path"],
             row["symbol"],
-            row["line"],
-            row["openers"],
-            row["used"],
+            row["source_line"],
+            sorted(set(row["openers"] + row.get("detected_openers", []))),
+            sorted(
+                set(
+                    row.get("validated_used", [])
+                    + row.get("discovered_used", [])
+                )
+            ),
         )
         body = build_prompt(i, row, peek)
         module = module_hint(row["path"])

@@ -31,7 +31,7 @@ python tool/generate_encounter_dialog_prompts.py
 | 14 | [`../prompts/14-patients-patient-appointment-quick-dialog.md`](../prompts/14-patients-patient-appointment-quick-dialog.md) | `PatientAppointmentQuickDialog` | Patient Appointment Quick |
 | 15 | [`../prompts/15-patients-patient-triage-quick-dialog.md`](../prompts/15-patients-patient-triage-quick-dialog.md) | `_PatientTriageQuickDialog` | Patient Triage Quick |
 | 16 | [`../prompts/16-patients-patient-admission-quick-dialog.md`](../prompts/16-patients-patient-admission-quick-dialog.md) | `_PatientAdmissionQuickDialog` | Patient Admission Quick |
-| 17 | [`../prompts/17-patients-patient-flow-quick-dialog.md`](../prompts/17-patients-patient-flow-quick-dialog.md) | `_PatientFlowQuickDialog` | Patient Flow Quick |
+| 17 | [`../prompts/17-patients-patient-flow-quick-dialog.md`](../prompts/17-patients-patient-flow-quick-dialog.md) | `_PatientFlowQuickDialog` | Patient Billing Quick |
 | 18 | [`../prompts/18-reception-patient-picker-dialog.md`](../prompts/18-reception-patient-picker-dialog.md) | `_ReceptionPatientPickerDialog` | Reception Patient Picker |
 | 19 | [`../prompts/19-reception-queue-actions-dialog.md`](../prompts/19-reception-queue-actions-dialog.md) | `ReceptionQueueActionsDialog` | Reception Queue Actions |
 | 20 | [`../prompts/20-rooms-beds-show-transfer-update-dialog.md`](../prompts/20-rooms-beds-show-transfer-update-dialog.md) | `_showTransferUpdateDialog` | Transfer Update |

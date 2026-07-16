@@ -16,6 +16,13 @@ Bring **`ReceptionQueueActionsDialog`** to **100% compliance** with [`prompt.md`
 | Shared components | [`frontend/.cursor/components.mdc`](../frontend/.cursor/components.mdc) | Reuse under `frontend/lib/shared/`; no feature forks of shared UI |
 | Localization | [`frontend/.cursor/localization_i18n.mdc`](../frontend/.cursor/localization_i18n.mdc) | All user-facing strings via l10n |
 | Permissions | [`frontend/.cursor/permissions.mdc`](../frontend/.cursor/permissions.mdc) | Preserve RBAC/ABAC wrappers; never expose unauthorized actions |
+| Design system | [`frontend/.cursor/design-system.mdc`](../frontend/.cursor/design-system.mdc) | Tokens only; responsive light/dark UI |
+| Accessibility | [`frontend/.cursor/accessibility.mdc`](../frontend/.cursor/accessibility.mdc) | Focus, semantics, keyboard, scaling, contrast |
+| Feedback / failures | [`frontend/.cursor/ui-feedback.mdc`](../frontend/.cursor/ui-feedback.mdc) | Shared async/failure states; preserve input; safe errors |
+| Frontend tests | [`frontend/.cursor/testing.mdc`](../frontend/.cursor/testing.mdc) | Widget/controller/sync/responsive coverage |
+| Backend API | [`backend/.cursor/api.mdc`](../backend/.cursor/api.mdc) | Routes, middleware, authz, public IDs |
+| Backend tests | [`backend/.cursor/testing.mdc`](../backend/.cursor/testing.mdc) | Schema/service/controller/route/event coverage |
+| Module flow | [`.cursor/flows/opd-flow.mdc`](../.cursor/flows/opd-flow.mdc) | Domain workflow states, transitions, and handoffs |
 
 ## Target
 
@@ -26,7 +33,8 @@ Bring **`ReceptionQueueActionsDialog`** to **100% compliance** with [`prompt.md`
 | Module / surface | `reception` |
 | Inventory kind | `custom` |
 | Presentation shape | `action_hub` |
-| Defined in | `frontend/lib/features/reception/presentation/widgets/reception_queue_actions_dialog.dart:29` |
+| Verified definition | `frontend/lib/features/reception/presentation/widgets/reception_queue_actions_dialog.dart:26` |
+| Inventory location note | Inventory and verified declaration agree at generation time. |
 | Extends / uses | AppDialog / showAppDialog (typical) |
 | Paired opener(s) | `showReceptionQueueActionsDialog` |
 | Primary commit | Execute queue action / Cancel |
@@ -34,11 +42,26 @@ Bring **`ReceptionQueueActionsDialog`** to **100% compliance** with [`prompt.md`
 | Sibling reuse targets | `QueueActionsDialog`, `FlowActionsDialog` |
 | Action helper peek | _none detected — adopt an approved action helper when the footer fits_ |
 | Controllers (region) | _not detected in peek — trace widget → workspace controller → repository → backend route_ |
-| Mutations (region) | _not detected in symbol region — trace submit/onConfirm handlers_ |
+| Mutations (region) | `mutation: prioritizeQueueEntry`, `mutation: startOpdFromQueue` |
 
 ### Used from
 
 - `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart`
+
+### Delegated/shared implementation evidence
+
+- `AppDialog — frontend/lib/shared/components/app_dialog.dart`
+- `AppFormSection — frontend/lib/shared/forms/app_form_section.dart`
+- `AppTriageSummaryPanel — frontend/lib/shared/components/app_triage_components.dart`
+
+### Cross-stack trace candidates
+
+These files mention a detected mutation method and are starting points, not proof of ownership. Follow interfaces/imports and route registration until the persisted path is proven.
+
+- `frontend/lib/shared/opd_actions/opd_queue_actions_dialog.dart`
+- `frontend/lib/features/opd/presentation/pages/opd_workspace_page.dart`
+- `frontend/lib/features/opd/presentation/controllers/opd_workspace_controller.dart`
+- `frontend/lib/features/reception/presentation/widgets/reception_queue_actions_dialog.dart`
 
 ## Compliance checklist (`prompt.md` — this dialog only)
 
@@ -65,7 +88,13 @@ Bring **`ReceptionQueueActionsDialog`** to **100% compliance** with [`prompt.md`
 - [ ] Title is general / role-based — **never** the patient's personal name.
 - [ ] Title is passed through `AppDialog` for uppercase normalization; icon matches sibling conventions in this flow when peers already use icons.
 
-### 5. Backend correctness and sync
+### 5. Design, responsiveness, localization, and accessibility
+- [ ] No hard-coded user-facing copy or private feature string holder; labels, hints, validation, errors, tooltips, and semantics use generated l10n.
+- [ ] No hard-coded color, spacing, radius, elevation, typography, date, number, or currency formatting; use theme/design tokens and shared formatters.
+- [ ] Content and actions remain usable on mobile, tablet, desktop, dark mode, text scaling, and constrained-height/keyboard layouts without overflow.
+- [ ] Keyboard order is logical, focus is trapped/restored by the dialog shell, visible focus remains, icon-only controls have localized semantics, and status is not conveyed by color alone.
+
+### 6. Backend correctness and sync
 - [ ] Every load/mutation is traced end-to-end: dialog → workspace controller → repository/DTO → real backend route/schema/service.
 - [ ] IDs, `snake_case` payloads, auth, envelopes, and response decoding match [`.cursor/api-contract.mdc`](../.cursor/api-contract.mdc); either side is fixed when mismatched.
 - [ ] Widgets never call APIs or own competing server data. Mutations go over HTTP; WebSockets only reconcile ([`frontend/.cursor/instant_ui_sync.mdc`](../frontend/.cursor/instant_ui_sync.mdc)).
@@ -73,7 +102,7 @@ Bring **`ReceptionQueueActionsDialog`** to **100% compliance** with [`prompt.md`
 - [ ] On persisted success only: immediately patch every affected Riverpod slice, then apply the smallest targeted refresh/realtime reconciliation. Dialog, parent workspaces, pinned views, lists, details, and badges agree with backend truth without a full reload.
 - [ ] Cancel / failure neither patches nor dismisses as if saved.
 
-### 6. Reachability and verification
+### 7. Reachability and verification
 - [ ] Still reachable from every paired opener and *Used from* site listed above.
 - [ ] `frontend/test/shared/layout/workspace_ui_pattern_test.dart` stays green. Add focused widget, controller, DTO, and (when the stack is touched) backend route/schema/service tests for this dialog's path.
 
@@ -81,26 +110,30 @@ Bring **`ReceptionQueueActionsDialog`** to **100% compliance** with [`prompt.md`
 
 | Signal | Observation |
 | --- | --- |
-| Approved shell signals | `AppDialog` |
+| Approved shell signals | `AppDialog`, approved `show*` helper |
 | Raw `showDialog` / `AlertDialog` | not seen in peek |
-| `CircularProgressIndicator` | not seen |
-| Title snippets | `l10n.opdQueueActionsTitle` |
+| Raw Material progress indicator | yes — replace |
+| Title snippets | `l10n.opdQueueActionsTitle`, `widget.title`, `title`, `notesLabel` |
 | `AppButton` variants (order seen) | secondary -> secondary -> secondary -> primary |
 | `AppActionIcons` | seen |
-| `barrierDismissible: false` | not seen |
+| `barrierDismissible: false` | yes |
 | `closeEnabled: false` | yes |
 | Loading primitives | seen |
-| Peek region size | 5765 chars |
+| Direct widget repository read | not seen |
+| Delegated components scanned | 3 |
+| Cross-stack trace files found | 4 |
+| Peek region size | 5763 chars |
 
 ### Priority gaps to close
 
-1. Confirm mutating openers set `barrierDismissible: false` while the dialog can mutate.
+1. Raw Material progress indicator detected — replace with `AppLoadingIndicator` / `AppLoadingSurface` / `AppButton.isLoading` only.
 2. Footer may be hand-rolled — prefer `clinicalActionDialogActions`, `buildAppDialogFormActions`, or `buildAppDialogWizardActions` when they fit.
 
 ### Dialog-specific focus
 
 - Migrate duplicated action rows into `QueueActionsDialog` or a shared primitive; keep a thin reception opener if needed.
 - Preserve `showReceptionQueueActionsDialog` call sites.
+- Replace `LinearProgressIndicator` and retain `receptionFrontDeskWriteRequirement` / `AppAccessActionGate`.
 
 ## Shared building blocks (mandatory reuse)
 
@@ -147,9 +180,9 @@ You are a coding agent with full read/write access to this repo. Execute every s
 ### Steps
 
 1. **Read contracts + source**
-   - Read [`prompt.md`](../prompt.md) (Scope + Requirements 1–5 + Verification).
-   - Skim [`.cursor/api-contract.mdc`](../.cursor/api-contract.mdc) and [`frontend/.cursor/instant_ui_sync.mdc`](../frontend/.cursor/instant_ui_sync.mdc).
-   - Read `ReceptionQueueActionsDialog` at `frontend/lib/features/reception/presentation/widgets/reception_queue_actions_dialog.dart:29` and every paired opener / *Used from* site.
+   - Read every contract in the **Normative contracts** table. Apply each rule to files matching its scope; do not treat this prompt as a substitute for project rules.
+   - Read `ReceptionQueueActionsDialog` at `frontend/lib/features/reception/presentation/widgets/reception_queue_actions_dialog.dart:26` and every paired opener / *Used from* site.
+   - Inspect every delegated/shared implementation and trace candidate above, then follow imports/interfaces/routes beyond those candidates as needed.
    - Trace each load/mutation: dialog → controller → repository/DTO → backend route/schema/service → decode → Riverpod patch.
 
 2. **Normalize shell (Req 1)**
@@ -176,35 +209,43 @@ You are a coding agent with full read/write access to this repo. Execute every s
    - Openers pass already-resolved contextual IDs (`human_friendly_id` / domain IDs).
    - Preserve parent permission wrappers; do not expose unauthorized actions.
 
-7. **Backend + sync (Req 5 — hard)**
+7. **Design + accessibility**
+   - Use generated l10n, theme/design tokens, shared formatters, and responsive layout primitives only.
+   - Verify keyboard/focus/semantics, text scaling, dark mode, constrained height, and mobile/tablet/desktop layouts.
+   - Preserve entered form data on recoverable failures and never expose raw exception text.
+
+8. **Backend + sync (Req 5 — hard)**
    - Widgets read Riverpod and delegate to controllers; no widget API calls.
    - Happy-path APIs must succeed against the real contract; fix either side on mismatch.
    - Failure → shared `AppFailure` UI, no patch, dialog stays open.
    - Persisted success only → patch reception queue rows, linked OPD encounter stage, then apply the smallest targeted reconciliation.
    - Cancel/failure never present false success.
 
-8. **Preserve reachability**
+9. **Preserve reachability**
    - Do not break `showReceptionQueueActionsDialog`. Update all call sites in the same change when signatures move.
 
-9. **Verify**
+10. **Verify**
    - Analyzer clean on touched files.
    - `frontend/test/shared/layout/workspace_ui_pattern_test.dart` green.
-   - Focused widget/controller/DTO/(backend) tests for this path.
+   - Run focused Flutter widget/controller/DTO tests plus backend schema/service/controller/route/event tests for every touched stack layer. Add missing tests; never rely on production services or secrets.
    - Happy-path succeeds; cancel/failure neither patches nor dismisses as saved.
+   - Verify responsive, keyboard, focus, semantics, text-scale, and dark-mode behavior for changed dialog UI.
+   - Run localization/code generation when ARB or generated DTO/model inputs change, and verify generated output is clean.
    - Equivalent flows share primitives, spacing, sections, action icons/labels, loading/error behavior, and responsive layout.
    - Tick every checklist item above before finishing.
 
 ## Acceptance criteria (all must pass)
 
 1. `ReceptionQueueActionsDialog` opens only through `AppDialog` / approved helpers — no raw Material dialog APIs.
-2. Footer order is secondary → Cancel → primary; labels are Cancel/Edit (not Close/Update); confirmations are one domain verb + Cancel.
+2. Hub may be Cancel-only and delegates each domain mutation to one canonical child; it does not invent a generic primary commit.
 3. Loading uses only shared spinner primitives; dismiss and competing actions are blocked while in flight.
 4. Title is general, uppercase-normalized, and never a patient name.
-5. Body sections and action groups reuse canonical shared primitives; no unjustified local forks (siblings considered: `QueueActionsDialog`, `FlowActionsDialog`).
-6. Still reachable from inventory openers / *Used from* sites with contextual IDs and permissions intact.
-7. Every load and mutation API succeeds on the happy path against the real backend contract; failures surface via `AppFailure` UI and patch nothing.
-8. After persisted success only, Riverpod + targeted reconciliation keep dialog and parent surfaces aligned with backend truth for: reception queue rows, linked OPD encounter stage.
-9. `frontend/test/shared/layout/workspace_ui_pattern_test.dart` remains green; focused tests cover this dialog's critical path.
+5. All copy is localized; all styling/formatting uses shared tokens/formatters; responsive and accessible behavior is verified.
+6. Body sections and action groups reuse canonical shared primitives; no unjustified local forks (siblings considered: `QueueActionsDialog`, `FlowActionsDialog`).
+7. Still reachable from inventory openers / *Used from* sites with contextual IDs and permissions intact.
+8. Every load and mutation API succeeds on the happy path against the real backend contract; failures surface via `AppFailure` UI and patch nothing.
+9. After persisted success only, Riverpod + targeted reconciliation keep dialog and parent surfaces aligned with backend truth for: reception queue rows, linked OPD encounter stage.
+10. `frontend/test/shared/layout/workspace_ui_pattern_test.dart` remains green; focused frontend/backend tests cover this dialog's critical path.
 
 ## Out of scope
 
@@ -215,6 +256,6 @@ You are a coding agent with full read/write access to this repo. Execute every s
 
 ## Deliverable
 
-Implement the compliance fixes in the repo. Summarize: files changed; shell/title/footer/loading/reuse/sync fixes; shared extracts; API/DTO/route fixes; tests added or run; how verification was performed.
+Implement the compliance fixes in the repo. Summarize: files changed; shell/title/footer/loading/reuse/sync fixes; design/localization/accessibility fixes; shared extracts; API/DTO/route fixes; tests added and run; exact commands and results; remaining risks (or explicitly state none). Append the project rule files applied and the model used.
 
 <!-- generator: encounter-dialog prompt 19 slug=reception-queue-actions-dialog symbol=ReceptionQueueActionsDialog shape=action_hub -->
