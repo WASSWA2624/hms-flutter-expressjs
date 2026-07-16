@@ -75,14 +75,17 @@ class _PharmacyCatalogPanelState extends ConsumerState<PharmacyCatalogPanel> {
       PharmacyCatalogTab.drugs => _DrugCatalogTab(
         state: state,
         writeRequirement: _writeRequirement,
+        fillHeight: widget.fillHeight,
       ),
       PharmacyCatalogTab.formulary => _FormularyCatalogTab(
         state: state,
         writeRequirement: _writeRequirement,
+        fillHeight: widget.fillHeight,
       ),
       PharmacyCatalogTab.inventory => _InventoryCatalogTab(
         state: state,
         writeRequirement: _writeRequirement,
+        fillHeight: widget.fillHeight,
       ),
       PharmacyCatalogTab.storage => PharmacyStoragePanel(
         state: state,
@@ -108,10 +111,15 @@ class _PharmacyCatalogPanelState extends ConsumerState<PharmacyCatalogPanel> {
 }
 
 class _DrugCatalogTab extends ConsumerStatefulWidget {
-  const _DrugCatalogTab({required this.state, required this.writeRequirement});
+  const _DrugCatalogTab({
+    required this.state,
+    required this.writeRequirement,
+    this.fillHeight = false,
+  });
 
   final PharmacyWorkspaceState state;
   final AccessRequirement writeRequirement;
+  final bool fillHeight;
 
   @override
   ConsumerState<_DrugCatalogTab> createState() => _DrugCatalogTabState();
@@ -138,15 +146,38 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final PharmacyWorkspaceController controller = ref.read(
       pharmacyWorkspaceControllerProvider.notifier,
     );
 
     final PharmacyDrugQuery drugQuery = widget.state.drugQuery;
+    final bool isBusy = widget.state.isRefreshingDrugs;
+    final bool hasSelection = _selectedDrugIds.isNotEmpty;
+    final Widget? toolbar = _catalogToolbar(
+      theme: theme,
+      ref: ref,
+      writeRequirement: widget.writeRequirement,
+      isBusy: isBusy,
+      hasSelection: hasSelection,
+      selectionAction: hasSelection
+          ? AppTabToolbarAction(
+              label: l10n.pharmacyDeleteSelectedDrugsAction,
+              icon: Icons.delete_outline,
+              tooltip: l10n.pharmacyDeleteSelectedDrugsAction,
+              enabled: !isBusy,
+              onPressed: isBusy
+                  ? null
+                  : () => _confirmDeleteSelectedDrugs(context),
+            )
+          : null,
+      addLabel: l10n.pharmacyAddDrugAction,
+      onAdd: () => _openDrugDialog(context),
+    );
 
-    return AppListTable<PharmacyDrug>(
+    final Widget table = AppListTable<PharmacyDrug>(
       page: widget.state.drugs,
-      isLoading: widget.state.isRefreshingDrugs,
+      isLoading: isBusy,
       search: AppListTableSearch<PharmacyDrug>(
         controller: _searchController,
         semanticLabel: l10n.pharmacyDrugSearchLabel,
@@ -171,27 +202,6 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
         onFilterChanged: (AppSearchBarFilterValue value) {
           unawaited(_applyDrugCatalogFilter(controller, value));
         },
-        trailingActions: _catalogSearchTrailingActions(
-          ref: ref,
-          writeRequirement: widget.writeRequirement,
-          isBusy: widget.state.isRefreshingDrugs,
-          selectionActions: _selectedDrugIds.isEmpty
-              ? const <AppSearchBarAction>[]
-              : <AppSearchBarAction>[
-                  AppSearchBarAction(
-                    icon: Icons.delete_outline,
-                    label: l10n.pharmacyDeleteSelectedDrugsAction,
-                    tooltip: l10n.pharmacyDeleteSelectedDrugsAction,
-                    destructive: true,
-                    enabled: !widget.state.isRefreshingDrugs,
-                    onPressed: widget.state.isRefreshingDrugs
-                        ? null
-                        : () => _confirmDeleteSelectedDrugs(context),
-                  ),
-                ],
-          addLabel: l10n.pharmacyAddDrugAction,
-          onAdd: () => _openDrugDialog(context),
-        ),
       ),
       onPageChanged: controller.changeDrugPage,
       emptyBuilder: (_) => AppWorkspaceStatePanel.state(
@@ -204,7 +214,7 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
         _selectionColumn<PharmacyDrug>(
           visibleItems: widget.state.drugs.items,
           selectedKeys: _selectedDrugIds,
-          isBusy: widget.state.isRefreshingDrugs,
+          isBusy: isBusy,
           itemKey: (PharmacyDrug item) => item.id,
           onToggle: (PharmacyDrug item, bool selected) {
             setState(() {
@@ -277,7 +287,7 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
             return _catalogRowActions(
               context: context,
               writeRequirement: widget.writeRequirement,
-              isBusy: widget.state.isRefreshingDrugs,
+              isBusy: isBusy,
               editLabel: l10n.pharmacyEditDrugAction,
               deleteLabel: l10n.pharmacyDeleteDrugAction,
               onEdit: () => _openDrugDialog(context, drug: item),
@@ -290,7 +300,7 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
         return ListTile(
           leading: Checkbox(
             value: _selectedDrugIds.contains(item.id),
-            onChanged: widget.state.isRefreshingDrugs
+            onChanged: isBusy
                 ? null
                 : (bool? value) {
                     setState(() {
@@ -307,6 +317,14 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
           subtitle: Text(item.code ?? ''),
         );
       },
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        ?toolbar,
+        if (widget.fillHeight) Expanded(child: table) else table,
+      ],
     );
   }
 
@@ -406,10 +424,12 @@ class _FormularyCatalogTab extends ConsumerStatefulWidget {
   const _FormularyCatalogTab({
     required this.state,
     required this.writeRequirement,
+    this.fillHeight = false,
   });
 
   final PharmacyWorkspaceState state;
   final AccessRequirement writeRequirement;
+  final bool fillHeight;
 
   @override
   ConsumerState<_FormularyCatalogTab> createState() =>
@@ -449,14 +469,36 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final PharmacyWorkspaceController controller = ref.read(
       pharmacyWorkspaceControllerProvider.notifier,
     );
     final bool isBusy = widget.state.isRefreshingFormulary;
 
     final PharmacyFormularyQuery formularyQuery = widget.state.formularyQuery;
+    final bool hasSelection = _selectedFormularyIds.isNotEmpty;
+    final Widget? toolbar = _catalogToolbar(
+      theme: theme,
+      ref: ref,
+      writeRequirement: widget.writeRequirement,
+      isBusy: isBusy,
+      hasSelection: hasSelection,
+      selectionAction: hasSelection
+          ? AppTabToolbarAction(
+              label: l10n.pharmacyDeleteSelectedFormularyAction,
+              icon: Icons.delete_outline,
+              tooltip: l10n.pharmacyDeleteSelectedFormularyAction,
+              enabled: !isBusy,
+              onPressed: isBusy
+                  ? null
+                  : () => _confirmDeleteSelectedFormulary(context),
+            )
+          : null,
+      addLabel: l10n.pharmacyAddFormularyAction,
+      onAdd: () => _openFormularyDialog(context),
+    );
 
-    return AppListTable<PharmacyFormularyItem>(
+    final Widget table = AppListTable<PharmacyFormularyItem>(
       page: widget.state.formularyItems,
       isLoading: isBusy,
       onPageChanged: controller.changeFormularyPage,
@@ -480,27 +522,6 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
         onFilterChanged: (AppSearchBarFilterValue value) {
           unawaited(_applyFormularyCatalogFilter(controller, value));
         },
-        trailingActions: _catalogSearchTrailingActions(
-          ref: ref,
-          writeRequirement: widget.writeRequirement,
-          isBusy: isBusy,
-          selectionActions: _selectedFormularyIds.isEmpty
-              ? const <AppSearchBarAction>[]
-              : <AppSearchBarAction>[
-                  AppSearchBarAction(
-                    icon: Icons.delete_outline,
-                    label: l10n.pharmacyDeleteSelectedFormularyAction,
-                    tooltip: l10n.pharmacyDeleteSelectedFormularyAction,
-                    destructive: true,
-                    enabled: !isBusy,
-                    onPressed: isBusy
-                        ? null
-                        : () => _confirmDeleteSelectedFormulary(context),
-                  ),
-                ],
-          addLabel: l10n.pharmacyAddFormularyAction,
-          onAdd: () => _openFormularyDialog(context),
-        ),
       ),
       emptyBuilder: (_) => AppWorkspaceStatePanel.state(
         variant: AppStateViewVariant.empty,
@@ -597,6 +618,14 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
           subtitle: item.drugCode == null ? null : Text(item.drugCode!),
         );
       },
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        ?toolbar,
+        if (widget.fillHeight) Expanded(child: table) else table,
+      ],
     );
   }
 
@@ -918,10 +947,12 @@ class _InventoryCatalogTab extends ConsumerStatefulWidget {
   const _InventoryCatalogTab({
     required this.state,
     required this.writeRequirement,
+    this.fillHeight = false,
   });
 
   final PharmacyWorkspaceState state;
   final AccessRequirement writeRequirement;
+  final bool fillHeight;
 
   @override
   ConsumerState<_InventoryCatalogTab> createState() =>
@@ -961,6 +992,7 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final PharmacyWorkspaceController controller = ref.read(
       pharmacyWorkspaceControllerProvider.notifier,
     );
@@ -968,8 +1000,27 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
 
     final PharmacyInventoryStockQuery inventoryQuery =
         widget.state.inventoryQuery;
+    final bool hasSelection = _selectedInventoryIds.isNotEmpty;
+    final Widget? toolbar = _catalogToolbar(
+      theme: theme,
+      ref: ref,
+      writeRequirement: widget.writeRequirement,
+      isBusy: isBusy,
+      hasSelection: hasSelection,
+      selectionAction: hasSelection
+          ? AppTabToolbarAction(
+              label: l10n.pharmacyClearSelectedInventoryAction,
+              icon: Icons.delete_outline,
+              tooltip: l10n.pharmacyClearSelectedInventoryAction,
+              enabled: !isBusy,
+              onPressed: isBusy
+                  ? null
+                  : () => _confirmClearSelectedInventory(context),
+            )
+          : null,
+    );
 
-    return AppListTable<PharmacyInventoryStock>(
+    final Widget table = AppListTable<PharmacyInventoryStock>(
       page: widget.state.inventoryWorkbench.stocks,
       isLoading: isBusy,
       search: AppListTableSearch<PharmacyInventoryStock>(
@@ -996,20 +1047,6 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
         onFilterChanged: (AppSearchBarFilterValue value) {
           unawaited(_applyInventoryCatalogFilter(controller, value));
         },
-        trailingActions: _selectedInventoryIds.isEmpty
-            ? const <AppSearchBarAction>[]
-            : <AppSearchBarAction>[
-                AppSearchBarAction(
-                  icon: Icons.delete_outline,
-                  label: l10n.pharmacyClearSelectedInventoryAction,
-                  tooltip: l10n.pharmacyClearSelectedInventoryAction,
-                  destructive: true,
-                  enabled: !isBusy,
-                  onPressed: isBusy
-                      ? null
-                      : () => _confirmClearSelectedInventory(context),
-                ),
-              ],
       ),
       onPageChanged: controller.changeInventoryPage,
       emptyBuilder: (_) => AppWorkspaceStatePanel.state(
@@ -1135,6 +1172,14 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
           trailing: _expiryCell(context, item),
         );
       },
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        ?toolbar,
+        if (widget.fillHeight) Expanded(child: table) else table,
+      ],
     );
   }
 
@@ -1670,30 +1715,51 @@ List<PharmacyStorageShelf> _shelfOptionsForRoom(
       .toList(growable: false);
 }
 
-List<AppSearchBarAction> _catalogSearchTrailingActions({
+Widget? _catalogToolbar({
+  required ThemeData theme,
   required WidgetRef ref,
   required AccessRequirement writeRequirement,
   required bool isBusy,
-  required List<AppSearchBarAction> selectionActions,
+  required bool hasSelection,
+  Widget? selectionAction,
   String? addLabel,
   VoidCallback? onAdd,
 }) {
-  if (selectionActions.isNotEmpty) {
-    return selectionActions;
+  final bool showSelection = hasSelection && selectionAction != null;
+  final bool showAdd =
+      !hasSelection &&
+      addLabel != null &&
+      onAdd != null &&
+      writeRequirement.allows(ref);
+
+  if (!showSelection && !showAdd) {
+    return null;
   }
-  if (addLabel == null || onAdd == null) {
-    return const <AppSearchBarAction>[];
-  }
-  final bool isAllowed = writeRequirement.allows(ref);
-  return <AppSearchBarAction>[
-    AppSearchBarAction(
-      icon: Icons.add,
-      label: addLabel,
-      tooltip: addLabel,
-      enabled: isAllowed && !isBusy,
-      onPressed: isAllowed && !isBusy ? onAdd : null,
+
+  return Padding(
+    padding: EdgeInsets.only(bottom: theme.spacing.sm),
+    child: Row(
+      children: <Widget>[
+        Expanded(
+          child: showSelection
+              ? Align(
+                  alignment: Alignment.centerLeft,
+                  child: selectionAction,
+                )
+              : const SizedBox.shrink(),
+        ),
+        if (showAdd)
+          AppTabToolbarPrimary(
+            label: addLabel,
+            icon: Icons.add,
+            tooltip: addLabel,
+            semanticLabel: addLabel,
+            enabled: !isBusy,
+            onPressed: isBusy ? null : onAdd,
+          ),
+      ],
     ),
-  ];
+  );
 }
 
 List<AppSearchBarFilterGroup> _storageLocationFilterGroups({

@@ -184,10 +184,7 @@ class AppTabToolbarAction extends StatelessWidget {
       child: button,
     );
 
-    if (tooltip == null) {
-      return semantic;
-    }
-    return Tooltip(message: tooltip!, child: semantic);
+    return Tooltip(message: tooltip ?? fullLabel, child: semantic);
   }
 }
 
@@ -270,10 +267,7 @@ class AppTabToolbarPrimary extends StatelessWidget {
       child: button,
     );
 
-    if (tooltip == null) {
-      return semantic;
-    }
-    return Tooltip(message: tooltip!, child: semantic);
+    return Tooltip(message: tooltip ?? fullLabel, child: semantic);
   }
 }
 
