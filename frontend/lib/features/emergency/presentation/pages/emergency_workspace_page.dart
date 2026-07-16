@@ -200,50 +200,43 @@ class _EmergencyWorkspaceContentState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: AppTabStrip(
-                    tabs: <AppTabItem>[
-                      for (final EmergencyBoardTab tab
-                          in EmergencyBoardTab.values)
-                        AppTabItem(
-                          id: tab.name,
-                          icon: _tabIcon(tab),
-                          label: '${_tabLabel(tab)} (${_tabCount(state, tab)})',
-                        ),
-                    ],
-                    selectedId: _currentTab.name,
-                    onTabTapped: (String tabId) {
-                      for (final EmergencyBoardTab tab
-                          in EmergencyBoardTab.values) {
-                        if (tab.name == tabId) {
-                          setState(() => _currentTab = tab);
-                          _updateUrlForTab(tab);
-                          controller.applyScope(_boardScopeForTab(tab));
-                          break;
-                        }
-                      }
-                    },
+            AppTabStrip(
+              tabs: <AppTabItem>[
+                for (final EmergencyBoardTab tab in EmergencyBoardTab.values)
+                  AppTabItem(
+                    id: tab.name,
+                    icon: _tabIcon(tab),
+                    label: _tabLabel(tab),
+                    count: _tabCount(state, tab),
                   ),
-                ),
-                if (_currentTab != EmergencyBoardTab.closed) ...<Widget>[
-                  SizedBox(width: theme.spacing.sm),
-                  AppAccessActionGate(
-                    requirement: _writeRequirement,
-                    builder: (BuildContext context, bool isAllowed) {
-                      return AppButton.primary(
-                        label: EmergencyText.quickArrival,
-                        leadingIcon: Icons.add_circle_outline,
-                        enabled: isAllowed,
-                        onPressed: () => _openQuickArrivalDialog(context),
-                      );
-                    },
-                  ),
-                ],
               ],
+              selectedId: _currentTab.name,
+              onTabTapped: (String tabId) {
+                for (final EmergencyBoardTab tab
+                    in EmergencyBoardTab.values) {
+                  if (tab.name == tabId) {
+                    setState(() => _currentTab = tab);
+                    _updateUrlForTab(tab);
+                    controller.applyScope(_boardScopeForTab(tab));
+                    break;
+                  }
+                }
+              },
+              primaryAction: _currentTab != EmergencyBoardTab.closed
+                  ? AppAccessActionGate(
+                      requirement: _writeRequirement,
+                      builder: (BuildContext context, bool isAllowed) {
+                        return AppTabToolbarPrimary(
+                          label: EmergencyText.quickArrival,
+                          icon: Icons.add_circle_outline,
+                          enabled: isAllowed,
+                          onPressed: () => _openQuickArrivalDialog(context),
+                        );
+                      },
+                    )
+                  : null,
             ),
-            SizedBox(height: theme.spacing.md),
+            SizedBox(height: theme.spacing.sm),
             AppListTable<EmergencyCaseSummary>(
               items: rows,
               columns: _columnsForTab(_currentTab),

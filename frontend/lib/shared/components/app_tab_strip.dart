@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 
-/// Maximum characters shown on tab and toolbar action labels.
-const int kAppTabLabelMaxLength = 10;
+/// Maximum characters shown on toolbar action button labels.
+const int kAppTabToolbarLabelMaxLength = 10;
 
-/// Shortens [label] to [kAppTabLabelMaxLength] characters for tab chrome.
-String appTabLabel(String label) {
+/// Shortens toolbar action [label] to [kAppTabToolbarLabelMaxLength] characters.
+String appTabToolbarLabel(String label) {
   final String trimmed = label.trim();
-  if (trimmed.length <= kAppTabLabelMaxLength) {
+  if (trimmed.length <= kAppTabToolbarLabelMaxLength) {
     return trimmed;
   }
-  return trimmed.substring(0, kAppTabLabelMaxLength);
+  return trimmed.substring(0, kAppTabToolbarLabelMaxLength);
 }
 
 @immutable
@@ -142,7 +142,7 @@ class AppTabToolbarAction extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final String fullLabel = label.trim();
-    final String shortLabel = appTabLabel(fullLabel);
+    final String shortLabel = appTabToolbarLabel(fullLabel);
     final bool canPress = enabled && !isLoading && onPressed != null;
 
     final Widget button = TextButton(
@@ -224,7 +224,7 @@ class AppTabToolbarPrimary extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final String fullLabel = label.trim();
-    final String shortLabel = appTabLabel(fullLabel);
+    final String shortLabel = appTabToolbarLabel(fullLabel);
     final bool canPress = enabled && !isLoading && onPressed != null;
 
     final Widget button = FilledButton(
@@ -307,7 +307,6 @@ class _AppTabChipState extends State<_AppTabChip> {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final String fullLabel = widget.label.trim();
-    final String shortLabel = appTabLabel(fullLabel);
     final String semanticsLabel = widget.count == null
         ? fullLabel
         : '$fullLabel (${widget.count})';
@@ -331,60 +330,57 @@ class _AppTabChipState extends State<_AppTabChip> {
       child: MouseRegion(
         onEnter: (_) => setState(() => _isHovered = true),
         onExit: (_) => setState(() => _isHovered = false),
-        child: Tooltip(
-          message: fullLabel,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 120),
-            decoration: BoxDecoration(
-              color: backgroundColor,
-              borderRadius: BorderRadius.circular(theme.radius.sm),
-              border: Border(
-                bottom: BorderSide(
-                  color: widget.isSelected
-                      ? colorScheme.primary
-                      : Colors.transparent,
-                  width: 3,
-                ),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(theme.radius.sm),
+            border: Border(
+              bottom: BorderSide(
+                color: widget.isSelected
+                    ? colorScheme.primary
+                    : Colors.transparent,
+                width: 3,
               ),
             ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                borderRadius: BorderRadius.circular(theme.radius.sm),
-                onTap: widget.onTap,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: theme.spacing.sm,
-                    vertical: theme.spacing.xs,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(theme.radius.sm),
+              onTap: widget.onTap,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: theme.spacing.sm,
+                  vertical: theme.spacing.xs,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      fullLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        color: foregroundColor,
+                        fontWeight: fontWeight,
+                      ),
+                    ),
+                    if (widget.count != null) ...<Widget>[
+                      SizedBox(width: theme.spacing.xs / 2),
                       Text(
-                        shortLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: foregroundColor,
+                        '${widget.count}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: widget.isSelected
+                              ? colorScheme.primary
+                              : colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.8,
+                                ),
                           fontWeight: fontWeight,
                         ),
                       ),
-                      if (widget.count != null) ...<Widget>[
-                        SizedBox(width: theme.spacing.xs / 2),
-                        Text(
-                          '${widget.count}',
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: widget.isSelected
-                                ? colorScheme.primary
-                                : colorScheme.onSurfaceVariant.withValues(
-                                    alpha: 0.8,
-                                  ),
-                            fontWeight: fontWeight,
-                          ),
-                        ),
-                      ],
                     ],
-                  ),
+                  ],
                 ),
               ),
             ),

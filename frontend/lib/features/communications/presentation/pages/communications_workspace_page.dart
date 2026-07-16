@@ -230,40 +230,34 @@ class _CommunicationsWorkspaceContentState
             ),
             SizedBox(height: Theme.of(context).spacing.md),
           ],
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: AppTabStrip(
-                  tabs: <AppTabItem>[
-                    for (final CommunicationsPanel panel
-                        in CommunicationsPanel.values)
-                      AppTabItem(
-                        id: panel.serverValue,
-                        icon: _panelIcon(panel),
-                        label:
-                            '${_panelTitle(l10n, panel)} (${_panelCount(state, panel)})',
-                      ),
-                  ],
-                  selectedId: state.query.panel.serverValue,
-                  onTabTapped: (String tabId) {
-                    final CommunicationsPanel panel =
-                        CommunicationsPanel.fromServer(tabId);
-                    controller.applyPanel(panel);
-                  },
+          AppTabStrip(
+            tabs: <AppTabItem>[
+              for (final CommunicationsPanel panel
+                  in CommunicationsPanel.values)
+                AppTabItem(
+                  id: panel.serverValue,
+                  icon: _panelIcon(panel),
+                  label: _panelTitle(l10n, panel),
+                  count: _panelCount(state, panel),
                 ),
-              ),
-              if (state.query.panel == CommunicationsPanel.inbox &&
-                  canWrite) ...<Widget>[
-                SizedBox(width: Theme.of(context).spacing.sm),
-                AppButton.primary(
-                  label: l10n.communicationsNewMessageAction,
-                  leadingIcon: Icons.add_comment_outlined,
-                  onPressed: () => _openNewConversation(context, ref),
-                ),
-              ],
             ],
+            selectedId: state.query.panel.serverValue,
+            onTabTapped: (String tabId) {
+              final CommunicationsPanel panel = CommunicationsPanel.fromServer(
+                tabId,
+              );
+              controller.applyPanel(panel);
+            },
+            primaryAction:
+                state.query.panel == CommunicationsPanel.inbox && canWrite
+                ? AppTabToolbarPrimary(
+                    label: l10n.communicationsNewMessageAction,
+                    icon: Icons.add_comment_outlined,
+                    onPressed: () => _openNewConversation(context, ref),
+                  )
+                : null,
           ),
-          SizedBox(height: Theme.of(context).spacing.md),
+          SizedBox(height: Theme.of(context).spacing.sm),
           _CommunicationsListPanel(
             state: state,
             searchController: _searchController,

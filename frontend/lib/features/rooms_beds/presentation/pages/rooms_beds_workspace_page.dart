@@ -190,53 +190,46 @@ class _RoomsBedsWorkspaceContentState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: AppTabStrip(
-                  tabs: <AppTabItem>[
-                    for (final RoomsBedsSection section
-                        in RoomsBedsSection.values)
-                      AppTabItem(
-                        id: section.name,
-                        icon: _roomsBedsSectionIcon(section),
-                        label:
-                            '${_roomsBedsSectionLabel(l10n, section)} (${roomsBedsSectionCount(state, section)})',
-                      ),
-                  ],
-                  selectedId: _section.name,
-                  onTabTapped: (String tabId) {
-                    for (final RoomsBedsSection section
-                        in RoomsBedsSection.values) {
-                      if (section.name == tabId) {
-                        _handleTabChanged(section);
-                        break;
-                      }
-                    }
-                  },
-                ),
-              ),
-              SizedBox(width: theme.spacing.sm),
-              if (canAdminBeds)
-                AppButton.primary(
-                  label: l10n.tenantFacilityAddRoomAction,
-                  leadingIcon: Icons.meeting_room_outlined,
-                  semanticLabel: l10n.tenantFacilityAddRoomAction,
-                  tooltip: l10n.tenantFacilityAddRoomAction,
-                  enabled: !state.isSaving,
-                  onPressed: () async {
-                    await showTenantFacilityRoomFormDialog(
-                      context,
-                      state.referenceData.snapshot,
-                    );
-                    if (context.mounted) {
-                      await controller.refresh();
-                    }
-                  },
+          AppTabStrip(
+            tabs: <AppTabItem>[
+              for (final RoomsBedsSection section in RoomsBedsSection.values)
+                AppTabItem(
+                  id: section.name,
+                  icon: _roomsBedsSectionIcon(section),
+                  label: _roomsBedsSectionLabel(l10n, section),
+                  count: roomsBedsSectionCount(state, section),
                 ),
             ],
+            selectedId: _section.name,
+            onTabTapped: (String tabId) {
+              for (final RoomsBedsSection section
+                  in RoomsBedsSection.values) {
+                if (section.name == tabId) {
+                  _handleTabChanged(section);
+                  break;
+                }
+              }
+            },
+            primaryAction: canAdminBeds
+                ? AppTabToolbarPrimary(
+                    label: l10n.tenantFacilityAddRoomAction,
+                    icon: Icons.meeting_room_outlined,
+                    semanticLabel: l10n.tenantFacilityAddRoomAction,
+                    tooltip: l10n.tenantFacilityAddRoomAction,
+                    enabled: !state.isSaving,
+                    onPressed: () async {
+                      await showTenantFacilityRoomFormDialog(
+                        context,
+                        state.referenceData.snapshot,
+                      );
+                      if (context.mounted) {
+                        await controller.refresh();
+                      }
+                    },
+                  )
+                : null,
           ),
-          SizedBox(height: theme.spacing.md),
+          SizedBox(height: theme.spacing.sm),
           if (lastFailure != null) ...<Widget>[
             AppFailureStateView(
               failure: lastFailure,

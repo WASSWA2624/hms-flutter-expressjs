@@ -262,44 +262,36 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: AppTabStrip(
-                    tabs: <AppTabItem>[
-                      for (final HrDeskSection section in HrDeskSection.values)
-                        AppTabItem(
-                          id: section.name,
-                          icon: _sectionIcon(section),
-                          label:
-                              '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
-                        ),
-                    ],
-                    selectedId: _section.name,
-                    onTabTapped: (String tabId) {
-                      for (final HrDeskSection section
-                          in HrDeskSection.values) {
-                        if (section.name == tabId) {
-                          setState(() => _section = section);
-                          _updateUrlForSection(section);
-                          _loadDataForSection(section);
-                          break;
-                        }
-                      }
-                    },
+            AppTabStrip(
+              tabs: <AppTabItem>[
+                for (final HrDeskSection section in HrDeskSection.values)
+                  AppTabItem(
+                    id: section.name,
+                    icon: _sectionIcon(section),
+                    label: _sectionLabel(l10n, section),
+                    count: _sectionCount(state, section),
                   ),
-                ),
-                SizedBox(width: theme.spacing.sm),
-                _buildPrimaryActionButton(l10n, state),
               ],
+              selectedId: _section.name,
+              onTabTapped: (String tabId) {
+                for (final HrDeskSection section in HrDeskSection.values) {
+                  if (section.name == tabId) {
+                    setState(() => _section = section);
+                    _updateUrlForSection(section);
+                    _loadDataForSection(section);
+                    break;
+                  }
+                }
+              },
+              primaryAction: _buildPrimaryActionButton(l10n, state),
+              secondaryActions: _buildSecondaryActionWidgets(
+                context,
+                l10n,
+                state,
+                controller,
+              ),
             ),
             SizedBox(height: theme.spacing.sm),
-            _SecondaryActionsRow(
-              state: state,
-              controller: controller,
-              onActivityPressed: () => _showActivityDialog(context),
-            ),
-            SizedBox(height: theme.spacing.md),
             if (lastFailure != null) ...<Widget>[
               AppFailureStateView(
                 failure: lastFailure,
@@ -319,30 +311,30 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     HrWorkspaceState state,
   ) {
     return switch (_section) {
-      HrDeskSection.staffDirectory => AppButton.primary(
+      HrDeskSection.staffDirectory => AppTabToolbarPrimary(
         label: l10n.hrAddStaffAction,
-        leadingIcon: Icons.person_add_outlined,
+        icon: Icons.person_add_outlined,
         onPressed: state.isRefreshing
             ? null
             : () => showHrStaffOnboardingDialog(context, ref),
       ),
-      HrDeskSection.leaveRequests => AppButton.primary(
+      HrDeskSection.leaveRequests => AppTabToolbarPrimary(
         label: l10n.hrRequestLeaveAction,
-        leadingIcon: Icons.event_busy_outlined,
+        icon: Icons.event_busy_outlined,
         onPressed: state.isRefreshing
             ? null
             : () => showHrRequestLeaveDialog(context, ref),
       ),
-      HrDeskSection.shiftRoster => AppButton.primary(
+      HrDeskSection.shiftRoster => AppTabToolbarPrimary(
         label: l10n.hrShiftTemplateAction,
-        leadingIcon: Icons.view_week_outlined,
+        icon: Icons.view_week_outlined,
         onPressed: state.isRefreshing
             ? null
             : () => showHrManageScheduleTemplatesDialog(context, ref),
       ),
-      HrDeskSection.payroll => AppButton.primary(
+      HrDeskSection.payroll => AppTabToolbarPrimary(
         label: l10n.hrRunPayrollAction,
-        leadingIcon: Icons.payments_outlined,
+        icon: Icons.payments_outlined,
         onPressed: state.isRefreshing
             ? null
             : () {
@@ -357,14 +349,54 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
                 unawaited(showHrPayrollWizardDialog(context, ref, staff));
               },
       ),
-      HrDeskSection.access => AppButton.primary(
+      HrDeskSection.access => AppTabToolbarPrimary(
         label: l10n.hrManageAccessAction,
-        leadingIcon: Icons.manage_accounts_outlined,
+        icon: Icons.manage_accounts_outlined,
         onPressed: state.isRefreshing
             ? null
             : () => showHrAccessWorkspaceDialog(context),
       ),
     };
+  }
+
+  List<Widget> _buildSecondaryActionWidgets(
+    BuildContext context,
+    AppLocalizations l10n,
+    HrWorkspaceState state,
+    HrWorkspaceController controller,
+  ) {
+    return <Widget>[
+      AppTabToolbarAction(
+        label: l10n.hrActivityTitle,
+        icon: Icons.timeline_outlined,
+        onPressed: state.isRefreshing
+            ? null
+            : () => _showActivityDialog(context),
+      ),
+      AppWorkspaceRefreshAction(
+        label: l10n.commonRefreshActionLabel,
+        isLoading: state.isRefreshing,
+        onPressed: state.isRefreshing
+            ? null
+            : () {
+                unawaited(
+                  controller.refresh().then((AppFailure? failure) {
+                    if (context.mounted && failure != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(l10n.failureMessage(failure))),
+                      );
+                    }
+                  }),
+                );
+              },
+      ),
+      AppGlobalHousekeepingRequestAction(
+        label: l10n.workspaceGlobalHousekeepingRequestAction,
+      ),
+      AppGlobalFaultReportAction(
+        label: l10n.workspaceGlobalFaultReportAction,
+      ),
+    ];
   }
 
   Widget _buildTabBody(
@@ -443,57 +475,6 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
           },
         ),
       ),
-    );
-  }
-}
-
-class _SecondaryActionsRow extends ConsumerWidget {
-  const _SecondaryActionsRow({
-    required this.state,
-    required this.controller,
-    required this.onActivityPressed,
-  });
-
-  final HrWorkspaceState state;
-  final HrWorkspaceController controller;
-  final VoidCallback onActivityPressed;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    return Wrap(
-      spacing: Theme.of(context).spacing.sm,
-      runSpacing: Theme.of(context).spacing.xs,
-      children: <Widget>[
-        AppButton.tertiary(
-          label: l10n.hrActivityTitle,
-          leadingIcon: Icons.timeline_outlined,
-          onPressed: state.isRefreshing ? null : onActivityPressed,
-        ),
-        AppWorkspaceRefreshAction(
-          label: l10n.commonRefreshActionLabel,
-          isLoading: state.isRefreshing,
-          onPressed: state.isRefreshing
-              ? null
-              : () {
-                  unawaited(
-                    controller.refresh().then((AppFailure? failure) {
-                      if (context.mounted && failure != null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(l10n.failureMessage(failure))),
-                        );
-                      }
-                    }),
-                  );
-                },
-        ),
-        AppGlobalHousekeepingRequestAction(
-          label: l10n.workspaceGlobalHousekeepingRequestAction,
-        ),
-        AppGlobalFaultReportAction(
-          label: l10n.workspaceGlobalFaultReportAction,
-        ),
-      ],
     );
   }
 }

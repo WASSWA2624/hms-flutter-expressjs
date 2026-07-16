@@ -271,29 +271,23 @@ class _BiomedicalWorkspaceContentState
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: AppTabStrip(
-                  tabs: <AppTabItem>[
-                    for (final String panel in BiomedicalPanels.values)
-                      AppTabItem(
-                        id: panel,
-                        icon: _panelIcon(panel),
-                        label: _panelLabel(l10n, panel),
-                      ),
-                  ],
-                  selectedId: _currentPanel,
-                  onTabTapped: (String tabId) {
-                    _switchPanel(tabId);
-                    _updateUrlForPanel(tabId);
-                  },
+          AppTabStrip(
+            tabs: <AppTabItem>[
+              for (final String panel in BiomedicalPanels.values)
+                AppTabItem(
+                  id: panel,
+                  icon: _panelIcon(panel),
+                  label: _panelLabel(l10n, panel),
                 ),
-              ),
-              ..._primaryActionWidgets(l10n, state),
             ],
+            selectedId: _currentPanel,
+            onTabTapped: (String tabId) {
+              _switchPanel(tabId);
+              _updateUrlForPanel(tabId);
+            },
+            primaryAction: _primaryActionWidget(l10n, state),
           ),
-          SizedBox(height: theme.spacing.md),
+          SizedBox(height: theme.spacing.sm),
           AppListTable<BiomedicalAsset>(
             page: state.workbench.assets,
             isLoading: state.isRefreshing,
@@ -388,32 +382,29 @@ class _BiomedicalWorkspaceContentState
     );
   }
 
-  List<Widget> _primaryActionWidgets(
+  Widget? _primaryActionWidget(
     AppLocalizations l10n,
     BiomedicalWorkspaceState state,
   ) {
     final _PanelAction? action = _primaryActionForPanel(l10n, _currentPanel);
     if (action == null) {
-      return const <Widget>[];
+      return null;
     }
-    return <Widget>[
-      SizedBox(width: Theme.of(context).spacing.sm),
-      AppAccessActionGate(
-        requirement: _writeRequirement,
-        builder: (BuildContext context, bool isAllowed) {
-          return AppButton.primary(
-            label: action.label,
-            leadingIcon: action.icon,
-            enabled: isAllowed && !state.isMutating,
-            onPressed: isAllowed && !state.isMutating
-                ? () => unawaited(
-                    _openActionDialog(context, ref, state, action.kind),
-                  )
-                : null,
-          );
-        },
-      ),
-    ];
+    return AppAccessActionGate(
+      requirement: _writeRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        return AppTabToolbarPrimary(
+          label: action.label,
+          icon: action.icon,
+          enabled: isAllowed && !state.isMutating,
+          onPressed: isAllowed && !state.isMutating
+              ? () => unawaited(
+                  _openActionDialog(context, ref, state, action.kind),
+                )
+              : null,
+        );
+      },
+    );
   }
 
   List<AppListTableColumn<BiomedicalAsset>> _columnsForPanel(

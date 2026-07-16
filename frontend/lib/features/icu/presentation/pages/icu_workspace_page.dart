@@ -261,66 +261,60 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: AppTabStrip(
-                    tabs: <AppTabItem>[
-                      for (final IcuWorkspaceSection section
-                          in IcuWorkspaceSection.values)
-                        AppTabItem(
-                          id: section.name,
-                          icon: _sectionIcon(section),
-                          label:
-                              '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
-                        ),
-                    ],
-                    selectedId: _section.name,
-                    onTabTapped: (String tabId) {
-                      for (final IcuWorkspaceSection section
-                          in IcuWorkspaceSection.values) {
-                        if (section.name == tabId) {
-                          setState(() => _section = section);
-                          _updateUrlForSection(section);
-                          final IcuBoardScope? scope = section.toBoardScope();
-                          if (scope != null) {
-                            controller.applyScope(scope);
-                          }
-                          if (section.isBedBoard &&
-                              state.bedBoard.beds.isEmpty) {
-                            controller.loadBedBoard();
-                          }
-                          break;
-                        }
-                      }
-                    },
+            AppTabStrip(
+              tabs: <AppTabItem>[
+                for (final IcuWorkspaceSection section
+                    in IcuWorkspaceSection.values)
+                  AppTabItem(
+                    id: section.name,
+                    icon: _sectionIcon(section),
+                    label: _sectionLabel(l10n, section),
+                    count: _sectionCount(state, section),
                   ),
-                ),
-                if (!isBedView) ...<Widget>[
-                  SizedBox(width: theme.spacing.sm),
-                  AppAccessActionGate(
-                    requirement: _IcuWorkspaceContent.writeRequirement,
-                    builder: (BuildContext context, bool isAllowed) {
-                      final bool canStartStay =
-                          state.selectedDetail?.isEligibleToStartStay ?? false;
-                      return AppButton.primary(
-                        label: l10n.icuActionStartStay,
-                        leadingIcon: Icons.play_circle_outline,
-                        enabled: isAllowed && canStartStay && !state.isSaving,
-                        onPressed: () => _confirmAction(
-                          context: context,
-                          title: l10n.icuStartStayTitle,
-                          body: l10n.icuStartStayBody,
-                          actionLabel: l10n.icuStartStayActionLabel,
-                          onConfirmed: controller.startIcuStay,
-                        ),
-                      );
-                    },
-                  ),
-                ],
               ],
+              selectedId: _section.name,
+              onTabTapped: (String tabId) {
+                for (final IcuWorkspaceSection section
+                    in IcuWorkspaceSection.values) {
+                  if (section.name == tabId) {
+                    setState(() => _section = section);
+                    _updateUrlForSection(section);
+                    final IcuBoardScope? scope = section.toBoardScope();
+                    if (scope != null) {
+                      controller.applyScope(scope);
+                    }
+                    if (section.isBedBoard && state.bedBoard.beds.isEmpty) {
+                      controller.loadBedBoard();
+                    }
+                    break;
+                  }
+                }
+              },
+              primaryAction: !isBedView
+                  ? AppAccessActionGate(
+                      requirement: _IcuWorkspaceContent.writeRequirement,
+                      builder: (BuildContext context, bool isAllowed) {
+                        final bool canStartStay =
+                            state.selectedDetail?.isEligibleToStartStay ??
+                            false;
+                        return AppTabToolbarPrimary(
+                          label: l10n.icuActionStartStay,
+                          icon: Icons.play_circle_outline,
+                          enabled:
+                              isAllowed && canStartStay && !state.isSaving,
+                          onPressed: () => _confirmAction(
+                            context: context,
+                            title: l10n.icuStartStayTitle,
+                            body: l10n.icuStartStayBody,
+                            actionLabel: l10n.icuStartStayActionLabel,
+                            onConfirmed: controller.startIcuStay,
+                          ),
+                        );
+                      },
+                    )
+                  : null,
             ),
-            SizedBox(height: theme.spacing.md),
+            SizedBox(height: theme.spacing.sm),
             if (isBedView)
               IcuBedBoardPanel(
                 state: state,

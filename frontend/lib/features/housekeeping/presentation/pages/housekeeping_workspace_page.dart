@@ -10,7 +10,6 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
-import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/housekeeping/domain/entities/housekeeping_entities.dart';
 import 'package:hosspi_hms/features/housekeeping/presentation/controllers/housekeeping_workspace_controller.dart';
@@ -134,7 +133,6 @@ class _HousekeepingWorkspaceContentState
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final bool isMobile = AppBreakpoints.of(context).isMobile;
     final HousekeepingWorkspaceState state = widget.state;
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final _HousekeepingCapabilities capabilities = _capabilities(accessPolicy);
@@ -145,41 +143,6 @@ class _HousekeepingWorkspaceContentState
         ? state.lastFailure! as AppFailure
         : null;
 
-    final Widget tabStrip = AppTabStrip(
-      tabs: <AppTabItem>[
-        for (final HousekeepingSection section in HousekeepingSection.values)
-          AppTabItem(
-            id: section.name,
-            icon: _sectionIcon(section),
-            label:
-                '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
-          ),
-      ],
-      selectedId: _section.name,
-      onTabTapped: (String tabId) {
-        for (final HousekeepingSection section in HousekeepingSection.values) {
-          if (section.name == tabId) {
-            setState(() => _section = section);
-            _updateUrlForSection(section);
-            controller.applyResource(section.resource);
-            break;
-          }
-        }
-      },
-    );
-
-    final List<Widget> actionButtons = <Widget>[
-      if (capabilities.canReport)
-        AppReportActionButton.preview(
-          label: l10n.housekeepingReportSummaryAction,
-          enabled: capabilities.canReport,
-          onPressed: capabilities.canReport
-              ? () => _showReportPreviewDialog(context, state)
-              : null,
-        ),
-      _primaryActionButton(l10n, capabilities, state),
-    ];
-
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
       child: SizedBox(
@@ -187,27 +150,42 @@ class _HousekeepingWorkspaceContentState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (isMobile) ...<Widget>[
-              tabStrip,
-              SizedBox(height: theme.spacing.sm),
-              Wrap(
-                spacing: theme.spacing.sm,
-                runSpacing: theme.spacing.sm,
-                alignment: WrapAlignment.end,
-                children: actionButtons,
-              ),
-            ] else
-              Row(
-                children: <Widget>[
-                  Expanded(child: tabStrip),
-                  SizedBox(width: theme.spacing.sm),
-                  for (int i = 0; i < actionButtons.length; i++) ...<Widget>[
-                    if (i > 0) SizedBox(width: theme.spacing.sm),
-                    actionButtons[i],
-                  ],
-                ],
-              ),
-            SizedBox(height: theme.spacing.md),
+            AppTabStrip(
+              tabs: <AppTabItem>[
+                for (final HousekeepingSection section
+                    in HousekeepingSection.values)
+                  AppTabItem(
+                    id: section.name,
+                    icon: _sectionIcon(section),
+                    label: _sectionLabel(l10n, section),
+                    count: _sectionCount(state, section),
+                  ),
+              ],
+              selectedId: _section.name,
+              onTabTapped: (String tabId) {
+                for (final HousekeepingSection section
+                    in HousekeepingSection.values) {
+                  if (section.name == tabId) {
+                    setState(() => _section = section);
+                    _updateUrlForSection(section);
+                    controller.applyResource(section.resource);
+                    break;
+                  }
+                }
+              },
+              secondaryActions: <Widget>[
+                if (capabilities.canReport)
+                  AppReportActionButton.preview(
+                    label: l10n.housekeepingReportSummaryAction,
+                    enabled: capabilities.canReport,
+                    onPressed: capabilities.canReport
+                        ? () => _showReportPreviewDialog(context, state)
+                        : null,
+                  ),
+              ],
+              primaryAction: _primaryActionButton(l10n, capabilities, state),
+            ),
+            SizedBox(height: theme.spacing.sm),
             if (lastFailure != null) ...<Widget>[
               AppFailureStateView(
                 failure: lastFailure,
@@ -237,25 +215,25 @@ class _HousekeepingWorkspaceContentState
     HousekeepingWorkspaceState state,
   ) {
     return switch (_section) {
-      HousekeepingSection.tasks => AppButton.primary(
+      HousekeepingSection.tasks => AppTabToolbarPrimary(
         label: l10n.housekeepingCreateTaskAction,
-        leadingIcon: Icons.add_task_outlined,
+        icon: Icons.add_task_outlined,
         enabled: capabilities.canManage && !state.isSaving,
         onPressed: capabilities.canManage
             ? () => _showTaskDialog(context, ref, state)
             : null,
       ),
-      HousekeepingSection.schedules => AppButton.primary(
+      HousekeepingSection.schedules => AppTabToolbarPrimary(
         label: l10n.housekeepingCreateScheduleAction,
-        leadingIcon: Icons.event_repeat_outlined,
+        icon: Icons.event_repeat_outlined,
         enabled: capabilities.canManage && !state.isSaving,
         onPressed: capabilities.canManage
             ? () => _showScheduleDialog(context, ref, state)
             : null,
       ),
-      HousekeepingSection.maintenance => AppButton.primary(
+      HousekeepingSection.maintenance => AppTabToolbarPrimary(
         label: l10n.housekeepingRequestMaintenanceAction,
-        leadingIcon: Icons.build_circle_outlined,
+        icon: Icons.build_circle_outlined,
         enabled: capabilities.canUpdateTasks && !state.isSaving,
         onPressed: capabilities.canUpdateTasks
             ? () => _showMaintenanceRequestDialog(context, ref, state)

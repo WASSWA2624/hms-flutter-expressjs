@@ -281,36 +281,29 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: AppTabStrip(
-                  tabs: <AppTabItem>[
-                    for (final PhysiotherapyQueueScope scope in _tabScopes)
-                      AppTabItem(
-                        id: scope.name,
-                        icon: _sectionIcon(scope),
-                        label:
-                            '${_sectionLabel(l10n, scope)} (${_sectionCount(state, scope)})',
-                      ),
-                  ],
-                  selectedId: section.name,
-                  onTabTapped: (String tabId) {
-                    for (final PhysiotherapyQueueScope scope
-                        in PhysiotherapyQueueScope.values) {
-                      if (scope.name == tabId) {
-                        onTabChanged(scope);
-                        break;
-                      }
-                    }
-                  },
+          AppTabStrip(
+            tabs: <AppTabItem>[
+              for (final PhysiotherapyQueueScope scope in _tabScopes)
+                AppTabItem(
+                  id: scope.name,
+                  icon: _sectionIcon(scope),
+                  label: _sectionLabel(l10n, scope),
+                  count: _sectionCount(state, scope),
                 ),
-              ),
-              SizedBox(width: theme.spacing.md),
-              _primaryActionForSection(context, ref, section, state),
             ],
+            selectedId: section.name,
+            onTabTapped: (String tabId) {
+              for (final PhysiotherapyQueueScope scope
+                  in PhysiotherapyQueueScope.values) {
+                if (scope.name == tabId) {
+                  onTabChanged(scope);
+                  break;
+                }
+              }
+            },
+            primaryAction: _primaryActionForSection(context, ref, section, state),
           ),
-          SizedBox(height: theme.spacing.md),
+          SizedBox(height: theme.spacing.sm),
           _buildWorklist(context, ref, controller),
         ],
       ),
@@ -434,9 +427,9 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
           ),
         };
 
-        return AppButton.primary(
+        return AppTabToolbarPrimary(
           label: label,
-          leadingIcon: icon,
+          icon: icon,
           enabled: onPressed != null,
           onPressed: onPressed,
         );

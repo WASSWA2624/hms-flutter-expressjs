@@ -175,51 +175,44 @@ class _PatientRegistryContentState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: AppTabStrip(
-                    tabs: <AppTabItem>[
-                      for (final PatientRegistrySection section
-                          in PatientRegistrySection.values)
-                        AppTabItem(
-                          id: section.name,
-                          icon: _sectionIcon(section),
-                          label:
-                              '${_sectionLabel(l10n, section)} (${_sectionCount(widget.state, section)})',
-                        ),
-                    ],
-                    selectedId: _section.name,
-                    onTabTapped: (String tabId) {
-                      for (final PatientRegistrySection section
-                          in PatientRegistrySection.values) {
-                        if (section.name == tabId) {
-                          unawaited(_handleTabChanged(section));
-                          break;
-                        }
-                      }
-                    },
+            AppTabStrip(
+              tabs: <AppTabItem>[
+                for (final PatientRegistrySection section
+                    in PatientRegistrySection.values)
+                  AppTabItem(
+                    id: section.name,
+                    icon: _sectionIcon(section),
+                    label: _sectionLabel(l10n, section),
+                    count: _sectionCount(widget.state, section),
                   ),
-                ),
-                SizedBox(width: theme.spacing.sm),
-                AppAccessActionGate(
-                  requirement: _PatientRegistryContent._writeRequirement,
-                  builder: (BuildContext context, bool isAllowed) {
-                    return AppButton.primary(
-                      leadingIcon: Icons.person_add_alt_1_outlined,
-                      label: l10n.patientsRegisterPatientAction,
-                      semanticLabel: l10n.patientsRegisterPatientAction,
-                      tooltip: l10n.patientsRegisterPatientAction,
-                      enabled: isAllowed,
-                      onPressed: () {
-                        _openRegisterPatientDialog(context, ref);
-                      },
-                    );
-                  },
-                ),
               ],
+              selectedId: _section.name,
+              onTabTapped: (String tabId) {
+                for (final PatientRegistrySection section
+                    in PatientRegistrySection.values) {
+                  if (section.name == tabId) {
+                    unawaited(_handleTabChanged(section));
+                    break;
+                  }
+                }
+              },
+              primaryAction: AppAccessActionGate(
+                requirement: _PatientRegistryContent._writeRequirement,
+                builder: (BuildContext context, bool isAllowed) {
+                  return AppTabToolbarPrimary(
+                    icon: Icons.person_add_alt_1_outlined,
+                    label: l10n.patientsRegisterPatientAction,
+                    semanticLabel: l10n.patientsRegisterPatientAction,
+                    tooltip: l10n.patientsRegisterPatientAction,
+                    enabled: isAllowed,
+                    onPressed: () {
+                      _openRegisterPatientDialog(context, ref);
+                    },
+                  );
+                },
+              ),
             ),
-            SizedBox(height: theme.spacing.md),
+            SizedBox(height: theme.spacing.sm),
             _PatientList(
               state: widget.state,
               section: _section,

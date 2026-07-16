@@ -329,21 +329,21 @@ class _PharmacyWorkspaceContentState
   ) {
     return switch (section) {
       PharmacyDeskSection.queue ||
-      PharmacyDeskSection.inProgress => AppButton.primary(
+      PharmacyDeskSection.inProgress => AppTabToolbarPrimary(
         label: l10n.pharmacyDispenseAction,
-        leadingIcon: Icons.medication_liquid_outlined,
+        icon: Icons.medication_liquid_outlined,
         onPressed: () => controller.applyFilter(PharmacyOrderFilter.ready),
       ),
-      PharmacyDeskSection.pendingPayment => AppButton.primary(
+      PharmacyDeskSection.pendingPayment => AppTabToolbarPrimary(
         label: l10n.pharmacyQueueFilterLabel,
-        leadingIcon: Icons.payments_outlined,
+        icon: Icons.payments_outlined,
         onPressed: () =>
             controller.applyFilter(PharmacyOrderFilter.pendingPayment),
       ),
       PharmacyDeskSection.completed ||
-      PharmacyDeskSection.allOrders => AppButton.primary(
+      PharmacyDeskSection.allOrders => AppTabToolbarPrimary(
         label: l10n.pharmacyCatalogPanelTitle,
-        leadingIcon: Icons.inventory_2_outlined,
+        icon: Icons.inventory_2_outlined,
         onPressed: () => unawaited(openPharmacyCatalogDialog(context, ref)),
       ),
     };
@@ -448,46 +448,39 @@ class _PharmacyWorkspaceContentState
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: AppTabStrip(
-                  tabs: <AppTabItem>[
-                    for (final PharmacyDeskSection section
-                        in PharmacyDeskSection.values)
-                      AppTabItem(
-                        id: section.name,
-                        icon: _sectionIcon(section),
-                        label:
-                            '${_sectionLabel(l10n, section)} (${_sectionCount(state.workbench.summary, section)})',
-                      ),
-                  ],
-                  selectedId: _section.name,
-                  onTabTapped: (String tabId) {
-                    for (final PharmacyDeskSection section
-                        in PharmacyDeskSection.values) {
-                      if (section.name == tabId) {
-                        setState(() => _section = section);
-                        _updateUrlForSection(section);
-                        unawaited(
-                          controller.applyFilter(_filterForSection(section)),
-                        );
-                        break;
-                      }
-                    }
-                  },
+          AppTabStrip(
+            tabs: <AppTabItem>[
+              for (final PharmacyDeskSection section
+                  in PharmacyDeskSection.values)
+                AppTabItem(
+                  id: section.name,
+                  icon: _sectionIcon(section),
+                  label: _sectionLabel(l10n, section),
+                  count: _sectionCount(state.workbench.summary, section),
                 ),
-              ),
-              SizedBox(width: theme.spacing.sm),
-              AppAccessActionGate(
-                requirement: _writeRequirement,
-                builder: (BuildContext context, bool isAllowed) {
-                  return _primaryActionForSection(l10n, _section, controller);
-                },
-              ),
             ],
+            selectedId: _section.name,
+            onTabTapped: (String tabId) {
+              for (final PharmacyDeskSection section
+                  in PharmacyDeskSection.values) {
+                if (section.name == tabId) {
+                  setState(() => _section = section);
+                  _updateUrlForSection(section);
+                  unawaited(
+                    controller.applyFilter(_filterForSection(section)),
+                  );
+                  break;
+                }
+              }
+            },
+            primaryAction: AppAccessActionGate(
+              requirement: _writeRequirement,
+              builder: (BuildContext context, bool isAllowed) {
+                return _primaryActionForSection(l10n, _section, controller);
+              },
+            ),
           ),
-          SizedBox(height: theme.spacing.md),
+          SizedBox(height: theme.spacing.sm),
           _PharmacyQueuePanel(
             state: state,
             section: _section,

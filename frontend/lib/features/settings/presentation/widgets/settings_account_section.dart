@@ -75,34 +75,26 @@ class _SettingsAccountSectionState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: AppTabStrip(
-                  tabs: <AppTabItem>[
-                    AppTabItem(
-                      id: SettingsAccountSection.profilePanel,
-                      icon: Icons.person_outline,
-                      label: l10n.settingsProfileActionTitle,
-                    ),
-                    AppTabItem(
-                      id: SettingsAccountSection.changePasswordPanel,
-                      icon: Icons.lock_reset_outlined,
-                      label: l10n.settingsChangePasswordActionTitle,
-                    ),
-                  ],
-                  selectedId: _activePanel,
-                  onTabTapped: _onPanelSelected,
-                ),
+          AppTabStrip(
+            tabs: <AppTabItem>[
+              AppTabItem(
+                id: SettingsAccountSection.profilePanel,
+                icon: Icons.person_outline,
+                label: l10n.settingsProfileActionTitle,
               ),
-              if (_activePanel == SettingsAccountSection.profilePanel)
-                Padding(
-                  padding: EdgeInsets.only(left: theme.spacing.sm),
-                  child: const _ProfileEditAction(),
-                ),
+              AppTabItem(
+                id: SettingsAccountSection.changePasswordPanel,
+                icon: Icons.lock_reset_outlined,
+                label: l10n.settingsChangePasswordActionTitle,
+              ),
             ],
+            selectedId: _activePanel,
+            onTabTapped: _onPanelSelected,
+            primaryAction: _activePanel == SettingsAccountSection.profilePanel
+                ? const _ProfileEditAction()
+                : null,
           ),
-          SizedBox(height: theme.spacing.lg),
+          SizedBox(height: theme.spacing.sm),
           if (_activePanel == SettingsAccountSection.profilePanel)
             const _ProfilePanel()
           else
@@ -145,9 +137,9 @@ class _ProfileEditAction extends ConsumerWidget {
       orElse: () => false,
     );
 
-    return AppButton.secondary(
+    return AppTabToolbarPrimary(
       label: l10n.profileEditActionTitle,
-      leadingIcon: Icons.edit_outlined,
+      icon: Icons.edit_outlined,
       enabled: !isSaving,
       onPressed: isSaving
           ? null

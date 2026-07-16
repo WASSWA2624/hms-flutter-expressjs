@@ -335,36 +335,29 @@ class _TheaterWorkspaceContentState
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: AppTabStrip(
-                  tabs: <AppTabItem>[
-                    for (final TheaterSection section in TheaterSection.values)
-                      AppTabItem(
-                        id: section.name,
-                        icon: _sectionIcon(section),
-                        label:
-                            '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
-                      ),
-                  ],
-                  selectedId: _section.name,
-                  onTabTapped: (String tabId) {
-                    for (final TheaterSection section
-                        in TheaterSection.values) {
-                      if (section.name == tabId) {
-                        setState(() => _section = section);
-                        _applyTabFilter(section);
-                        _updateUrlForSection(section);
-                        break;
-                      }
-                    }
-                  },
+          AppTabStrip(
+            tabs: <AppTabItem>[
+              for (final TheaterSection section in TheaterSection.values)
+                AppTabItem(
+                  id: section.name,
+                  icon: _sectionIcon(section),
+                  label: _sectionLabel(l10n, section),
+                  count: _sectionCount(state, section),
                 ),
-              ),
             ],
+            selectedId: _section.name,
+            onTabTapped: (String tabId) {
+              for (final TheaterSection section in TheaterSection.values) {
+                if (section.name == tabId) {
+                  setState(() => _section = section);
+                  _applyTabFilter(section);
+                  _updateUrlForSection(section);
+                  break;
+                }
+              }
+            },
           ),
-          SizedBox(height: Theme.of(context).spacing.md),
+          SizedBox(height: Theme.of(context).spacing.sm),
           if (lastFailure != null) ...<Widget>[
             AppFailureStateView(
               failure: lastFailure,

@@ -185,7 +185,7 @@ class _SettingsWorkspaceContentState
             widget.onPanelChanged?.call(id);
           },
         ),
-        SizedBox(height: theme.spacing.md),
+        SizedBox(height: theme.spacing.sm),
         if (_activeTab == 'overview') ...<Widget>[
           _SettingsContextSummary(state: widget.state),
           SizedBox(height: theme.spacing.md),

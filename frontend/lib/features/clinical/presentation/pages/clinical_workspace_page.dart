@@ -242,8 +242,8 @@ class _ClinicalWorkspaceContentState
                   AppTabItem(
                     id: section.name,
                     icon: _clinicalSectionIcon(section),
-                    label:
-                        '${_clinicalSectionLabel(l10n, section)} (${_clinicalSectionCount(state, section)})',
+                    label: _clinicalSectionLabel(l10n, section),
+                    count: _clinicalSectionCount(state, section),
                   ),
               ],
               selectedId: _section.name,
@@ -257,7 +257,7 @@ class _ClinicalWorkspaceContentState
                 }
               },
             ),
-            SizedBox(height: theme.spacing.md),
+            SizedBox(height: theme.spacing.sm),
             _ClinicalWorklistPanel(
               state: state,
               section: _section,

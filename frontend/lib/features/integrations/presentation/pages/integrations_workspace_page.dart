@@ -243,7 +243,7 @@ class _IntegrationsWorkspaceContentState
     };
   }
 
-  Widget _buildSectionPrimaryAction(
+  Widget? _buildSectionPrimaryAction(
     AppLocalizations l10n,
     IntegrationWorkspaceState state,
   ) {
@@ -254,9 +254,9 @@ class _IntegrationsWorkspaceContentState
       IntegrationDeskSection.integrations => AppAccessActionGate(
         requirement: _integrationsManageRequirement,
         builder: (BuildContext context, bool isAllowed) {
-          return AppButton.primary(
+          return AppTabToolbarPrimary(
             label: l10n.integrationsCreateIntegrationAction,
-            leadingIcon: Icons.add_link_outlined,
+            icon: Icons.add_link_outlined,
             enabled: isAllowed,
             isLoading: state.isSaving,
             onPressed: isAllowed
@@ -270,9 +270,9 @@ class _IntegrationsWorkspaceContentState
       IntegrationDeskSection.apiKeys => AppAccessActionGate(
         requirement: _integrationsManageRequirement,
         builder: (BuildContext context, bool isAllowed) {
-          return AppButton.primary(
+          return AppTabToolbarPrimary(
             label: l10n.integrationsCreateApiKeyAction,
-            leadingIcon: Icons.key_outlined,
+            icon: Icons.key_outlined,
             enabled: isAllowed,
             isLoading: state.isSaving,
             onPressed: isAllowed
@@ -284,9 +284,9 @@ class _IntegrationsWorkspaceContentState
       IntegrationDeskSection.webhooks => AppAccessActionGate(
         requirement: _integrationsManageRequirement,
         builder: (BuildContext context, bool isAllowed) {
-          return AppButton.primary(
+          return AppTabToolbarPrimary(
             label: l10n.integrationsCreateWebhookAction,
-            leadingIcon: Icons.webhook_outlined,
+            icon: Icons.webhook_outlined,
             enabled: isAllowed,
             isLoading: state.isSaving,
             onPressed: isAllowed
@@ -296,8 +296,7 @@ class _IntegrationsWorkspaceContentState
           );
         },
       ),
-      IntegrationDeskSection.logs ||
-      IntegrationDeskSection.interop => const SizedBox.shrink(),
+      IntegrationDeskSection.logs || IntegrationDeskSection.interop => null,
     };
   }
 
@@ -365,41 +364,34 @@ class _IntegrationsWorkspaceContentState
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: AppTabStrip(
-                  tabs: <AppTabItem>[
-                    for (final IntegrationDeskSection section
-                        in IntegrationDeskSection.values)
-                      AppTabItem(
-                        id: section.name,
-                        icon: _sectionIcon(section),
-                        label:
-                            '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
-                      ),
-                  ],
-                  selectedId: _section.name,
-                  onTabTapped: (String tabId) {
-                    for (final IntegrationDeskSection section
-                        in IntegrationDeskSection.values) {
-                      if (section.name == tabId) {
-                        setState(() => _section = section);
-                        _updateUrlForSection(section);
-                        unawaited(
-                          controller.applyFilter(_filterForSection(section)),
-                        );
-                        break;
-                      }
-                    }
-                  },
+          AppTabStrip(
+            tabs: <AppTabItem>[
+              for (final IntegrationDeskSection section
+                  in IntegrationDeskSection.values)
+                AppTabItem(
+                  id: section.name,
+                  icon: _sectionIcon(section),
+                  label: _sectionLabel(l10n, section),
+                  count: _sectionCount(state, section),
                 ),
-              ),
-              SizedBox(width: theme.spacing.sm),
-              _buildSectionPrimaryAction(l10n, state),
             ],
+            selectedId: _section.name,
+            onTabTapped: (String tabId) {
+              for (final IntegrationDeskSection section
+                  in IntegrationDeskSection.values) {
+                if (section.name == tabId) {
+                  setState(() => _section = section);
+                  _updateUrlForSection(section);
+                  unawaited(
+                    controller.applyFilter(_filterForSection(section)),
+                  );
+                  break;
+                }
+              }
+            },
+            primaryAction: _buildSectionPrimaryAction(l10n, state),
           ),
-          SizedBox(height: theme.spacing.md),
+          SizedBox(height: theme.spacing.sm),
           _IntegrationWorklistPanel(
             state: state,
             section: _section,

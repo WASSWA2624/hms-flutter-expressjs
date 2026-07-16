@@ -226,7 +226,7 @@ class _SubscriptionsWorkspaceContentState
               summaryNotifications: _summaryNotifications(context, state),
               primaryAction: _primaryAction(context, canWrite, state),
             ),
-            SizedBox(height: theme.spacing.md),
+            SizedBox(height: theme.spacing.sm),
             if (lastFailure != null) ...<Widget>[
               AppFailureStateView(
                 failure: lastFailure,
@@ -261,27 +261,27 @@ class _SubscriptionsWorkspaceContentState
       return null;
     }
     return switch (state.query.resource) {
-      SubscriptionResource.subscriptionPlans => AppButton.primary(
+      SubscriptionResource.subscriptionPlans => AppTabToolbarPrimary(
         label: _SubscriptionsText.createPlan,
-        leadingIcon: Icons.add,
+        icon: Icons.add,
         enabled: !state.isSaving,
         onPressed: () => _showPlanDialog(context, ref),
       ),
-      SubscriptionResource.subscriptions => AppButton.primary(
+      SubscriptionResource.subscriptions => AppTabToolbarPrimary(
         label: _SubscriptionsText.activateSubscription,
-        leadingIcon: Icons.play_circle_outline,
+        icon: Icons.play_circle_outline,
         enabled: !state.isSaving && state.lookups.tenants.isNotEmpty,
         onPressed: () => _showSubscriptionDialog(context, ref, state),
       ),
-      SubscriptionResource.moduleSubscriptions => AppButton.primary(
+      SubscriptionResource.moduleSubscriptions => AppTabToolbarPrimary(
         label: _SubscriptionsText.assignModule,
-        leadingIcon: Icons.extension_outlined,
+        icon: Icons.extension_outlined,
         enabled: !state.isSaving && state.lookups.modules.isNotEmpty,
         onPressed: () => _showModuleSubscriptionDialog(context, ref, state),
       ),
-      SubscriptionResource.licenses => AppButton.primary(
+      SubscriptionResource.licenses => AppTabToolbarPrimary(
         label: _SubscriptionsText.addLicense,
-        leadingIcon: Icons.key_outlined,
+        icon: Icons.key_outlined,
         enabled: !state.isSaving && state.lookups.tenants.isNotEmpty,
         onPressed: () => _showLicenseDialog(context, ref, state),
       ),
@@ -388,41 +388,28 @@ class _SubscriptionsPanelTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
     final int notificationCount = totalWorkspaceSummaryNotificationCount(
       summaryNotifications,
     );
 
-    final String notificationsLabel = notificationCount > 0
-        ? '${_SubscriptionsText.notifications} ($notificationCount)'
-        : _SubscriptionsText.notifications;
-
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: AppTabStrip(
-            tabs: <AppTabItem>[
-              for (final SubscriptionPanel panel in SubscriptionPanel.values)
-                AppTabItem(
-                  id: panel.serverValue,
-                  icon: _panelIcon(panel),
-                  label: _panelLabel(panel),
-                ),
-              AppTabItem(
-                id: _notificationsTabId,
-                icon: Icons.notifications_outlined,
-                label: notificationsLabel,
-              ),
-            ],
-            selectedId: activePanel.serverValue,
-            onTabTapped: isRefreshing ? (_) {} : _onTabTapped,
+    return AppTabStrip(
+      tabs: <AppTabItem>[
+        for (final SubscriptionPanel panel in SubscriptionPanel.values)
+          AppTabItem(
+            id: panel.serverValue,
+            icon: _panelIcon(panel),
+            label: _panelLabel(panel),
           ),
+        AppTabItem(
+          id: _notificationsTabId,
+          icon: Icons.notifications_outlined,
+          label: _SubscriptionsText.notifications,
+          count: notificationCount > 0 ? notificationCount : null,
         ),
-        if (primaryAction != null) ...<Widget>[
-          SizedBox(width: theme.spacing.sm),
-          primaryAction!,
-        ],
       ],
+      selectedId: activePanel.serverValue,
+      onTabTapped: isRefreshing ? (_) {} : _onTabTapped,
+      primaryAction: primaryAction,
     );
   }
 

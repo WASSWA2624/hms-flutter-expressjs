@@ -9,7 +9,6 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
-import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 import 'package:hosspi_hms/features/claims/presentation/claims_access.dart';
@@ -240,15 +239,9 @@ class _ClaimsWorkspaceContentState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    final bool isMobile = AppBreakpoints.of(context).isMobile;
     final ClaimsWorkspaceState state = widget.state;
     final ClaimsWorkspaceController controller = ref.read(
       claimsWorkspaceControllerProvider.notifier,
-    );
-    final Widget primaryAction = _buildPrimaryActionButton(
-      l10n,
-      state,
-      controller,
     );
     final Widget tabStrip = AppTabStrip(
       tabs: <AppTabItem>[
@@ -256,8 +249,8 @@ class _ClaimsWorkspaceContentState
           AppTabItem(
             id: section.name,
             icon: _sectionIcon(section),
-            label:
-                '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
+            label: _sectionLabel(l10n, section),
+            count: _sectionCount(state, section),
           ),
       ],
       selectedId: _section.name,
@@ -273,6 +266,7 @@ class _ClaimsWorkspaceContentState
           }
         }
       },
+      primaryAction: _buildPrimaryActionButton(l10n, state, controller),
     );
 
     return ResponsivePage(
@@ -284,21 +278,8 @@ class _ClaimsWorkspaceContentState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (isMobile) ...<Widget>[
-              tabStrip,
-              if (_section != ClaimsDeskSection.settled) ...<Widget>[
-                SizedBox(height: theme.spacing.sm),
-                Align(alignment: Alignment.centerRight, child: primaryAction),
-              ],
-            ] else
-              Row(
-                children: <Widget>[
-                  Expanded(child: tabStrip),
-                  SizedBox(width: theme.spacing.sm),
-                  primaryAction,
-                ],
-              ),
-            SizedBox(height: theme.spacing.md),
+            tabStrip,
+            SizedBox(height: theme.spacing.sm),
             if (_section == ClaimsDeskSection.authorizations ||
                 _section == ClaimsDeskSection.activeClaims) ...<Widget>[
               _ClaimsSummaryBar(
@@ -327,18 +308,21 @@ class _ClaimsWorkspaceContentState
     );
   }
 
-  Widget _buildPrimaryActionButton(
+  Widget? _buildPrimaryActionButton(
     AppLocalizations l10n,
     ClaimsWorkspaceState state,
     ClaimsWorkspaceController controller,
   ) {
+    if (_section == ClaimsDeskSection.settled) {
+      return null;
+    }
     return AppAccessActionGate(
       requirement: claimsWorkspaceWriteRequirement,
       builder: (BuildContext context, bool isAllowed) {
         return switch (_section) {
-          ClaimsDeskSection.authorizations => AppButton.primary(
+          ClaimsDeskSection.authorizations => AppTabToolbarPrimary(
             label: l10n.claimsRequestAuthorizationAction,
-            leadingIcon: Icons.verified_user_outlined,
+            icon: Icons.verified_user_outlined,
             isLoading: state.isSaving,
             enabled: isAllowed,
             onPressed: isAllowed
@@ -347,9 +331,9 @@ class _ClaimsWorkspaceContentState
                   )
                 : null,
           ),
-          ClaimsDeskSection.activeClaims => AppButton.primary(
+          ClaimsDeskSection.activeClaims => AppTabToolbarPrimary(
             label: l10n.claimsPrepareClaimAction,
-            leadingIcon: Icons.receipt_long_outlined,
+            icon: Icons.receipt_long_outlined,
             isLoading: state.isSaving,
             enabled: isAllowed,
             onPressed: isAllowed
@@ -359,9 +343,9 @@ class _ClaimsWorkspaceContentState
                 : null,
           ),
           ClaimsDeskSection.settled => const SizedBox.shrink(),
-          ClaimsDeskSection.insuranceSetup => AppButton.primary(
+          ClaimsDeskSection.insuranceSetup => AppTabToolbarPrimary(
             label: l10n.claimsAddCompanyAction,
-            leadingIcon: Icons.business_outlined,
+            icon: Icons.business_outlined,
             enabled: isAllowed,
             onPressed: isAllowed
                 ? () => unawaited(

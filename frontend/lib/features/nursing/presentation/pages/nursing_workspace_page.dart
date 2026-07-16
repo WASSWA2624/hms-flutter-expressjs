@@ -325,30 +325,23 @@ class _NursingWorkspaceContentState
       ),
       body: Column(
         children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: AppTabStrip(
-                  tabs: nursingTabItems(l10n),
-                  selectedId: nursingScopeToQueryValue(_scope),
-                  onTabTapped: _onTabTapped,
-                ),
-              ),
-              SizedBox(width: Theme.of(context).spacing.sm),
-              AppAccessActionGate(
-                requirement: writeRequirement,
-                builder: (BuildContext context, bool isAllowed) {
-                  return AppButton.primary(
-                    label: nursingPrimaryActionLabel(l10n, _scope),
-                    leadingIcon: nursingPrimaryActionIcon(_scope),
-                    enabled: isAllowed && !state.isSaving,
-                    onPressed: isAllowed ? _executePrimaryAction : null,
-                  );
-                },
-              ),
-            ],
+          AppTabStrip(
+            tabs: nursingTabItems(l10n),
+            selectedId: nursingScopeToQueryValue(_scope),
+            onTabTapped: _onTabTapped,
+            primaryAction: AppAccessActionGate(
+              requirement: writeRequirement,
+              builder: (BuildContext context, bool isAllowed) {
+                return AppTabToolbarPrimary(
+                  label: nursingPrimaryActionLabel(l10n, _scope),
+                  icon: nursingPrimaryActionIcon(_scope),
+                  enabled: isAllowed && !state.isSaving,
+                  onPressed: isAllowed ? _executePrimaryAction : null,
+                );
+              },
+            ),
           ),
-          SizedBox(height: Theme.of(context).spacing.md),
+          SizedBox(height: Theme.of(context).spacing.sm),
           Expanded(
             child: NursingWorklistPanel(
               state: state,

@@ -292,8 +292,8 @@ class _OperationsWorkspaceContentState
                 AppTabItem(
                   id: section.name,
                   icon: _sectionIcon(section),
-                  label:
-                      '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
+                  label: _sectionLabel(l10n, section),
+                  count: _sectionCount(state, section),
                 ),
             ],
             selectedId: _section.name,
@@ -307,7 +307,7 @@ class _OperationsWorkspaceContentState
               }
             },
           ),
-          SizedBox(height: Theme.of(context).spacing.md),
+          SizedBox(height: Theme.of(context).spacing.sm),
           if (_section == OperationsDeskSection.assets)
             _OperationsAssetsPanel(state: state)
           else

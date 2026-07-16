@@ -533,49 +533,42 @@ class _DischargeWorkspaceContentState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: AppTabStrip(
-                    tabs: <AppTabItem>[
-                      for (final DischargeDeskSection section
-                          in DischargeDeskSection.values)
-                        AppTabItem(
-                          id: section.name,
-                          icon: _sectionIcon(section),
-                          label:
-                              '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
-                        ),
-                    ],
-                    selectedId: _section.name,
-                    onTabTapped: (String tabId) {
-                      for (final DischargeDeskSection section
-                          in DischargeDeskSection.values) {
-                        if (section.name == tabId) {
-                          setState(() {
-                            _section = section;
-                            _selectedAdmission = null;
-                          });
-                          _updateUrlForSection(section);
-                          break;
-                        }
-                      }
-                    },
+            AppTabStrip(
+              tabs: <AppTabItem>[
+                for (final DischargeDeskSection section
+                    in DischargeDeskSection.values)
+                  AppTabItem(
+                    id: section.name,
+                    icon: _sectionIcon(section),
+                    label: _sectionLabel(l10n, section),
+                    count: _sectionCount(state, section),
                   ),
-                ),
-                SizedBox(width: theme.spacing.sm),
-                AppButton.primary(
-                  label: _primaryActionLabel(l10n, _section),
-                  leadingIcon: _primaryActionIcon(_section),
-                  onPressed: rows.isEmpty
-                      ? null
-                      : () {
-                          unawaited(_handlePrimaryAction(state, rows));
-                        },
-                ),
               ],
+              selectedId: _section.name,
+              onTabTapped: (String tabId) {
+                for (final DischargeDeskSection section
+                    in DischargeDeskSection.values) {
+                  if (section.name == tabId) {
+                    setState(() {
+                      _section = section;
+                      _selectedAdmission = null;
+                    });
+                    _updateUrlForSection(section);
+                    break;
+                  }
+                }
+              },
+              primaryAction: AppTabToolbarPrimary(
+                label: _primaryActionLabel(l10n, _section),
+                icon: _primaryActionIcon(_section),
+                onPressed: rows.isEmpty
+                    ? null
+                    : () {
+                        unawaited(_handlePrimaryAction(state, rows));
+                      },
+              ),
             ),
-            SizedBox(height: theme.spacing.md),
+            SizedBox(height: theme.spacing.sm),
             AppListTable<IpdAdmissionSummary>(
               items: rows,
               columns: columns,

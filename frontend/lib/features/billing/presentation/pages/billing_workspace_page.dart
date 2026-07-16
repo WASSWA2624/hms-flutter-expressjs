@@ -286,35 +286,27 @@ class _BillingWorkspaceContentState
             ),
             SizedBox(height: Theme.of(context).spacing.md),
           ],
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: AppTabStrip(
-                  tabs: <AppTabItem>[
-                    for (final BillingQueueType queue
-                        in BillingQueueType.values)
-                      AppTabItem(
-                        id: queue.name,
-                        icon: billingQueueIcon(queue),
-                        label:
-                            '${billingQueueLabel(context, queue)} (${state.overview.summary.countFor(queue)})',
-                      ),
-                  ],
-                  selectedId: _section.name,
-                  onTabTapped: (String tabId) {
-                    for (final BillingQueueType queue
-                        in BillingQueueType.values) {
-                      if (queue.name == tabId) {
-                        _selectQueue(queue);
-                        break;
-                      }
-                    }
-                  },
+          AppTabStrip(
+            tabs: <AppTabItem>[
+              for (final BillingQueueType queue in BillingQueueType.values)
+                AppTabItem(
+                  id: queue.name,
+                  icon: billingQueueIcon(queue),
+                  label: billingQueueLabel(context, queue),
+                  count: state.overview.summary.countFor(queue),
                 ),
-              ),
             ],
+            selectedId: _section.name,
+            onTabTapped: (String tabId) {
+              for (final BillingQueueType queue in BillingQueueType.values) {
+                if (queue.name == tabId) {
+                  _selectQueue(queue);
+                  break;
+                }
+              }
+            },
           ),
-          SizedBox(height: Theme.of(context).spacing.md),
+          SizedBox(height: Theme.of(context).spacing.sm),
           _BillingQueuePanel(
             state: state,
             canWrite: canWrite,

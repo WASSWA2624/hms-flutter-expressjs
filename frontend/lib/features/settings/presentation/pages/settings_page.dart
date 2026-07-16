@@ -400,7 +400,7 @@ class _SettingsAccordion extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         Padding(
-          padding: EdgeInsets.only(bottom: theme.spacing.md),
+          padding: EdgeInsets.only(bottom: theme.spacing.sm),
           child: AppTabStrip(
             tabs: <AppTabItem>[
               for (final _AccordionEntry section in sections)

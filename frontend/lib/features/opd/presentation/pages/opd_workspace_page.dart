@@ -120,57 +120,50 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: AppTabStrip(
-                    tabs: <AppTabItem>[
-                      for (final OpdWorkspaceSection section
-                          in OpdWorkspaceSection.values)
-                        AppTabItem(
-                          id: section.name,
-                          icon: _opdSectionIcon(section),
-                          label:
-                              '${_opdSectionLabel(l10n, section)} (${_opdSectionCount(state, section, allItems)})',
-                        ),
-                    ],
-                    selectedId: _section.name,
-                    onTabTapped: (String tabId) {
-                      for (final OpdWorkspaceSection section
-                          in OpdWorkspaceSection.values) {
-                        if (section.name == tabId) {
-                          _handleTabChanged(section);
-                          break;
-                        }
-                      }
-                    },
+            AppTabStrip(
+              tabs: <AppTabItem>[
+                for (final OpdWorkspaceSection section
+                    in OpdWorkspaceSection.values)
+                  AppTabItem(
+                    id: section.name,
+                    icon: _opdSectionIcon(section),
+                    label: _opdSectionLabel(l10n, section),
+                    count: _opdSectionCount(state, section, allItems),
                   ),
-                ),
-                SizedBox(width: theme.spacing.sm),
-                AppAccessActionGate(
-                  requirement: opdEncounterPermissionRequirement,
-                  builder: (BuildContext context, bool isAllowed) {
-                    return AppButton.primary(
-                      label: l10n.opdStartWalkInAction,
-                      leadingIcon: opdEncounterIcon,
-                      semanticLabel: l10n.opdStartWalkInAction,
-                      tooltip: l10n.opdStartEncounterTooltip,
-                      enabled: isAllowed,
-                      onPressed: () {
-                        unawaited(
-                          openOpdWorkspaceEncounterFlow(
-                            context,
-                            ref,
-                            widget.state,
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
               ],
+              selectedId: _section.name,
+              onTabTapped: (String tabId) {
+                for (final OpdWorkspaceSection section
+                    in OpdWorkspaceSection.values) {
+                  if (section.name == tabId) {
+                    _handleTabChanged(section);
+                    break;
+                  }
+                }
+              },
+              primaryAction: AppAccessActionGate(
+                requirement: opdEncounterPermissionRequirement,
+                builder: (BuildContext context, bool isAllowed) {
+                  return AppTabToolbarPrimary(
+                    label: l10n.opdStartWalkInAction,
+                    icon: opdEncounterIcon,
+                    semanticLabel: l10n.opdStartWalkInAction,
+                    tooltip: l10n.opdStartEncounterTooltip,
+                    enabled: isAllowed,
+                    onPressed: () {
+                      unawaited(
+                        openOpdWorkspaceEncounterFlow(
+                          context,
+                          ref,
+                          widget.state,
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
-            SizedBox(height: theme.spacing.md),
+            SizedBox(height: theme.spacing.sm),
             ValueListenableBuilder<_OpdTableFilter>(
               valueListenable: _filterNotifier,
               builder: (BuildContext context, _OpdTableFilter filter, _) {

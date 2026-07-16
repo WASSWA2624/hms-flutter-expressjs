@@ -175,7 +175,7 @@ class _AccessAdminWorkspaceContentState
                 controller,
               ),
             ),
-            SizedBox(height: theme.spacing.md),
+            SizedBox(height: theme.spacing.sm),
             if (lastFailure != null) ...<Widget>[
               AppFailureStateView(
                 failure: lastFailure,
@@ -220,16 +220,16 @@ class _AccessAdminWorkspaceContentState
 
     return switch (state.query.resource) {
       AccessAdminResource.users ||
-      AccessAdminResource.demoUsers => AppButton.primary(
+      AccessAdminResource.demoUsers => AppTabToolbarPrimary(
         label: context.l10n.accessAdminCreateUserAction,
-        leadingIcon: Icons.person_add_alt_1_outlined,
+        icon: Icons.person_add_alt_1_outlined,
         onPressed: state.isSaving
             ? null
             : () => unawaited(_showCreateUserDialog(context, state)),
       ),
-      AccessAdminResource.roles => AppButton.primary(
+      AccessAdminResource.roles => AppTabToolbarPrimary(
         label: context.l10n.accessAdminCreateRoleAction,
-        leadingIcon: Icons.badge_outlined,
+        icon: Icons.badge_outlined,
         onPressed: state.isSaving
             ? null
             : () => unawaited(_showCreateRoleDialog(context, state)),
@@ -532,7 +532,6 @@ class _AccessAdminPanelTabBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bool isSuperAdmin = ref.watch(appAccessPolicyProvider).isElevated;
-    final ThemeData theme = Theme.of(context);
     final List<AccessAdminPanel> panels = AccessAdminPanel.values
         .where(
           (AccessAdminPanel panel) =>
@@ -540,29 +539,20 @@ class _AccessAdminPanelTabBar extends ConsumerWidget {
         )
         .toList(growable: false);
 
-    return Row(
-      children: <Widget>[
-        Expanded(
-          child: AppTabStrip(
-            tabs: <AppTabItem>[
-              for (final AccessAdminPanel panel in panels)
-                AppTabItem(
-                  id: panel.serverValue,
-                  icon: _panelIcon(panel),
-                  label: _panelLabel(context, panel),
-                ),
-            ],
-            selectedId: state.query.panel.serverValue,
-            onTabTapped: state.isSaving
-                ? (_) {}
-                : (String tabId) => _onTabTapped(context, tabId),
+    return AppTabStrip(
+      tabs: <AppTabItem>[
+        for (final AccessAdminPanel panel in panels)
+          AppTabItem(
+            id: panel.serverValue,
+            icon: _panelIcon(panel),
+            label: _panelLabel(context, panel),
           ),
-        ),
-        if (primaryAction != null) ...<Widget>[
-          SizedBox(width: theme.spacing.sm),
-          primaryAction!,
-        ],
       ],
+      selectedId: state.query.panel.serverValue,
+      onTabTapped: state.isSaving
+          ? (_) {}
+          : (String tabId) => _onTabTapped(context, tabId),
+      primaryAction: primaryAction,
     );
   }
 

@@ -132,37 +132,30 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: AppTabStrip(
-                    tabs: <AppTabItem>[
-                      for (final LabDeskSection section
-                          in LabDeskSection.values)
-                        AppTabItem(
-                          id: section.name,
-                          icon: _sectionIcon(section),
-                          label:
-                              '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
-                        ),
-                    ],
-                    selectedId: _section.name,
-                    onTabTapped: (String tabId) {
-                      for (final LabDeskSection section
-                          in LabDeskSection.values) {
-                        if (section.name == tabId) {
-                          setState(() => _section = section);
-                          _updateUrlForSection(section);
-                          unawaited(
-                            controller.applyScope(_scopeForSection(section)),
-                          );
-                          break;
-                        }
-                      }
-                    },
+            AppTabStrip(
+              tabs: <AppTabItem>[
+                for (final LabDeskSection section in LabDeskSection.values)
+                  AppTabItem(
+                    id: section.name,
+                    icon: _sectionIcon(section),
+                    label: _sectionLabel(l10n, section),
+                    count: _sectionCount(state, section),
                   ),
-                ),
-                SizedBox(width: theme.spacing.sm),
+              ],
+              selectedId: _section.name,
+              onTabTapped: (String tabId) {
+                for (final LabDeskSection section in LabDeskSection.values) {
+                  if (section.name == tabId) {
+                    setState(() => _section = section);
+                    _updateUrlForSection(section);
+                    unawaited(
+                      controller.applyScope(_scopeForSection(section)),
+                    );
+                    break;
+                  }
+                }
+              },
+              secondaryActions: <Widget>[
                 AppWorkspaceViewToggle(
                   label: state.query.view == LabWorkbenchView.patients
                       ? l10n.labOrdersViewAction
@@ -180,29 +173,29 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
                         : LabWorkbenchView.patients,
                   ),
                 ),
-                if (canMutate) ...<Widget>[
-                  SizedBox(width: theme.spacing.sm),
-                  AppButton.secondary(
+                if (canMutate)
+                  AppTabToolbarAction(
                     label: l10n.labReferenceRangesAction,
-                    leadingIcon: Icons.tune_outlined,
+                    icon: Icons.tune_outlined,
                     semanticLabel: l10n.labReferenceRangesAction,
                     tooltip: l10n.labReferenceRangesAction,
                     onPressed: () =>
                         _openLabConfigurationsDialog(context, state),
                   ),
-                  SizedBox(width: theme.spacing.sm),
-                  AppButton.primary(
-                    label: l10n.labCreateAction,
-                    leadingIcon: Icons.add_circle_outline,
-                    semanticLabel: l10n.labCreateAction,
-                    tooltip: l10n.labCreateAction,
-                    enabled: !state.isSaving,
-                    onPressed: () => _openCreateLabOrderDialog(context, state),
-                  ),
-                ],
               ],
+              primaryAction: canMutate
+                  ? AppTabToolbarPrimary(
+                      label: l10n.labCreateAction,
+                      icon: Icons.add_circle_outline,
+                      semanticLabel: l10n.labCreateAction,
+                      tooltip: l10n.labCreateAction,
+                      enabled: !state.isSaving,
+                      onPressed: () =>
+                          _openCreateLabOrderDialog(context, state),
+                    )
+                  : null,
             ),
-            SizedBox(height: theme.spacing.md),
+            SizedBox(height: theme.spacing.sm),
             _LabWorklistPanel(
               state: state,
               canMutate: canMutate,

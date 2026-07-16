@@ -273,78 +273,62 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: AppTabStrip(
-                    tabs: <AppTabItem>[
-                      AppTabItem(
-                        id: IpdWorkspaceSection.admissionQueue.name,
-                        icon: Icons.bed_outlined,
-                        label: _tabLabel(
-                          l10n.ipdAdmissionQueueTabLabel,
-                          state.admissionQueueCount,
-                        ),
-                      ),
-                      AppTabItem(
-                        id: IpdWorkspaceSection.activePatients.name,
-                        icon: Icons.local_hospital_outlined,
-                        label: _tabLabel(
-                          l10n.ipdActivePatientsTabLabel,
-                          state.activePatientCount,
-                        ),
-                      ),
-                      AppTabItem(
-                        id: IpdWorkspaceSection.transferPending.name,
-                        icon: Icons.swap_horiz,
-                        label: _tabLabel(
-                          l10n.ipdTransfersTabLabel,
-                          state.transferPendingCount,
-                        ),
-                      ),
-                      AppTabItem(
-                        id: IpdWorkspaceSection.dischargePlanned.name,
-                        icon: Icons.fact_check_outlined,
-                        label: _tabLabel(
-                          l10n.ipdDischargeTabLabel,
-                          state.dischargePlannedCount,
-                        ),
-                      ),
-                      AppTabItem(
-                        id: IpdWorkspaceSection.bedBoard.name,
-                        icon: Icons.grid_view_outlined,
-                        label: l10n.ipdBedBoardTab,
-                      ),
-                    ],
-                    selectedId: _section.name,
-                    onTabTapped: (String id) {
-                      final IpdWorkspaceSection section = IpdWorkspaceSection
-                          .values
-                          .firstWhere(
-                            (IpdWorkspaceSection s) => s.name == id,
-                            orElse: () => IpdWorkspaceSection.admissionQueue,
-                          );
-                      _selectSection(section);
-                    },
-                  ),
+            AppTabStrip(
+              tabs: <AppTabItem>[
+                AppTabItem(
+                  id: IpdWorkspaceSection.admissionQueue.name,
+                  icon: Icons.bed_outlined,
+                  label: l10n.ipdAdmissionQueueTabLabel,
+                  count: _tabCount(state.admissionQueueCount),
                 ),
-                SizedBox(width: theme.spacing.sm),
-                AppAccessActionGate(
-                  requirement: _ipdOperationalWriteRequirement,
-                  builder: (BuildContext context, bool isAllowed) {
-                    return AppButton.primary(
-                      label: l10n.ipdStartAdmissionAction,
-                      leadingIcon: Icons.person_add_alt_1_outlined,
-                      enabled: isAllowed && !state.isSaving,
-                      onPressed: isAllowed
-                          ? () => unawaited(_openStartAdmissionDialog(context))
-                          : null,
-                    );
-                  },
+                AppTabItem(
+                  id: IpdWorkspaceSection.activePatients.name,
+                  icon: Icons.local_hospital_outlined,
+                  label: l10n.ipdActivePatientsTabLabel,
+                  count: _tabCount(state.activePatientCount),
+                ),
+                AppTabItem(
+                  id: IpdWorkspaceSection.transferPending.name,
+                  icon: Icons.swap_horiz,
+                  label: l10n.ipdTransfersTabLabel,
+                  count: _tabCount(state.transferPendingCount),
+                ),
+                AppTabItem(
+                  id: IpdWorkspaceSection.dischargePlanned.name,
+                  icon: Icons.fact_check_outlined,
+                  label: l10n.ipdDischargeTabLabel,
+                  count: _tabCount(state.dischargePlannedCount),
+                ),
+                AppTabItem(
+                  id: IpdWorkspaceSection.bedBoard.name,
+                  icon: Icons.grid_view_outlined,
+                  label: l10n.ipdBedBoardTab,
                 ),
               ],
+              selectedId: _section.name,
+              onTabTapped: (String id) {
+                final IpdWorkspaceSection section = IpdWorkspaceSection.values
+                    .firstWhere(
+                      (IpdWorkspaceSection s) => s.name == id,
+                      orElse: () => IpdWorkspaceSection.admissionQueue,
+                    );
+                _selectSection(section);
+              },
+              primaryAction: AppAccessActionGate(
+                requirement: _ipdOperationalWriteRequirement,
+                builder: (BuildContext context, bool isAllowed) {
+                  return AppTabToolbarPrimary(
+                    label: l10n.ipdStartAdmissionAction,
+                    icon: Icons.person_add_alt_1_outlined,
+                    enabled: isAllowed && !state.isSaving,
+                    onPressed: isAllowed
+                        ? () => unawaited(_openStartAdmissionDialog(context))
+                        : null,
+                  );
+                },
+              ),
             ),
-            SizedBox(height: theme.spacing.md),
+            SizedBox(height: theme.spacing.sm),
             if (_section.isBedBoard)
               IpdBedBoardPanel(
                 state: state,
@@ -372,9 +356,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
     );
   }
 
-  static String _tabLabel(String label, int count) {
-    return count > 0 ? '$label ($count)' : label;
-  }
+  static int? _tabCount(int count) => count > 0 ? count : null;
 
   Future<void> _openStartAdmissionDialog(BuildContext context) async {
     final IpdWorkspaceState state = widget.state;

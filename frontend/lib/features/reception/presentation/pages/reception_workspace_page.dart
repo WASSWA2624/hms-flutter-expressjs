@@ -236,50 +236,43 @@ class _ReceptionWorkspaceContentState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: AppTabStrip(
-                    tabs: <AppTabItem>[
-                      for (final ReceptionDeskSection section
-                          in ReceptionDeskSection.values)
-                        AppTabItem(
-                          id: section.name,
-                          icon: _sectionIcon(section),
-                          label:
-                              '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
-                        ),
-                    ],
-                    selectedId: _section.name,
-                    onTabTapped: (String tabId) {
-                      for (final ReceptionDeskSection section
-                          in ReceptionDeskSection.values) {
-                        if (section.name == tabId) {
-                          setState(() => _section = section);
-                          _updateUrlForSection(section);
-                          break;
-                        }
-                      }
-                    },
+            AppTabStrip(
+              tabs: <AppTabItem>[
+                for (final ReceptionDeskSection section
+                    in ReceptionDeskSection.values)
+                  AppTabItem(
+                    id: section.name,
+                    icon: _sectionIcon(section),
+                    label: _sectionLabel(l10n, section),
+                    count: _sectionCount(state, section),
                   ),
-                ),
-                SizedBox(width: theme.spacing.sm),
-                AppAccessActionGate(
-                  requirement: receptionFrontDeskWriteRequirement,
-                  builder: (BuildContext context, bool isAllowed) {
-                    return AppButton.primary(
-                      label: l10n.receptionRegisterPatientAction,
-                      leadingIcon: Icons.person_add_alt_1_outlined,
-                      enabled: isAllowed,
-                      onPressed: isAllowed
-                          ? () => unawaited(_openRegisterPatient())
-                          : null,
-                    );
-                  },
-                ),
               ],
+              selectedId: _section.name,
+              onTabTapped: (String tabId) {
+                for (final ReceptionDeskSection section
+                    in ReceptionDeskSection.values) {
+                  if (section.name == tabId) {
+                    setState(() => _section = section);
+                    _updateUrlForSection(section);
+                    break;
+                  }
+                }
+              },
+              primaryAction: AppAccessActionGate(
+                requirement: receptionFrontDeskWriteRequirement,
+                builder: (BuildContext context, bool isAllowed) {
+                  return AppTabToolbarPrimary(
+                    label: l10n.receptionRegisterPatientAction,
+                    icon: Icons.person_add_alt_1_outlined,
+                    enabled: isAllowed,
+                    onPressed: isAllowed
+                        ? () => unawaited(_openRegisterPatient())
+                        : null,
+                  );
+                },
+              ),
             ),
-            SizedBox(height: theme.spacing.md),
+            SizedBox(height: theme.spacing.sm),
             AppListTable<_ReceptionDeskRow>(
               items: rows,
               columns: columns,
