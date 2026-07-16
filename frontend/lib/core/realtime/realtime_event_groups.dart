@@ -5,6 +5,7 @@ import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 abstract final class RealtimeEventGroups {
   static const Set<String> appointments = <String>{
     RealtimeEvents.appointmentCreated,
+    RealtimeEvents.appointmentUpdated,
     RealtimeEvents.appointmentRescheduled,
     RealtimeEvents.appointmentCanceled,
   };

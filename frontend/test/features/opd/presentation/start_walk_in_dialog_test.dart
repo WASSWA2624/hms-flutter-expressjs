@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
@@ -250,7 +253,6 @@ void main() {
           providerSchedules: const <OpdProviderSchedule>[],
           appointments: const <OpdAppointment>[],
           initialPatient: patient,
-          source: 'patient_registry',
           onSubmit: (_) async => _successfulOpdSubmit(),
         ),
         size: const Size(1000, 820),
@@ -292,7 +294,6 @@ void main() {
           appointments: const <OpdAppointment>[],
           initialAppointment: appointment,
           initialAppointmentId: appointment.publicId,
-          source: 'opd_workspace',
           onSubmit: (_) async => _successfulOpdSubmit(),
         ),
         size: const Size(1000, 820),
@@ -322,7 +323,6 @@ void main() {
         dialog: OpdEncounterDialog(
           providerSchedules: const <OpdProviderSchedule>[],
           appointments: const <OpdAppointment>[],
-          source: 'opd_workspace',
           onSubmit: (_) async => _successfulOpdSubmit(),
         ),
       );
@@ -331,6 +331,144 @@ void main() {
       expect(find.text('Appointment patient'), findsOneWidget);
       expect(find.text('New patient'), findsOneWidget);
       expect(find.text('Search patient *'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'OpdEncounterDialog uses shared loading UI and locks dismissal while loading',
+    (WidgetTester tester) async {
+      final _MockPatientRepository patientRepository = _MockPatientRepository();
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+      final Completer<Result<AppPage<Patient>>> patientLoad =
+          Completer<Result<AppPage<Patient>>>();
+
+      _stubStartDialogLookups(
+        patientRepository: patientRepository,
+        opdRepository: opdRepository,
+      );
+      when(
+        () => patientRepository.listPatients(any()),
+      ).thenAnswer((_) => patientLoad.future);
+
+      await tester.binding.setSurfaceSize(const Size(800, 720));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            patientRepositoryProvider.overrideWithValue(patientRepository),
+            opdRepositoryProvider.overrideWithValue(opdRepository),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: Scaffold(
+              body: OpdEncounterDialog(
+                providerSchedules: const <OpdProviderSchedule>[],
+                appointments: const <OpdAppointment>[],
+                onSubmit: (_) async => _successfulOpdSubmit(),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(AppLoadingIndicator), findsOneWidget);
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+      expect(
+        tester.widget<AppDialog>(find.byType(AppDialog)).closeEnabled,
+        isFalse,
+      );
+      expect(
+        tester
+            .widget<AppButton>(find.widgetWithText(AppButton, 'Cancel'))
+            .enabled,
+        isFalse,
+      );
+
+      patientLoad.complete(
+        const Result<AppPage<Patient>>.success(
+          AppPage<Patient>(
+            items: <Patient>[],
+            request: AppPageRequest(pageSize: 50),
+            totalItemCount: 0,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppLoadingIndicator), findsNothing);
+      expect(
+        tester.widget<AppDialog>(find.byType(AppDialog)).closeEnabled,
+        isTrue,
+      );
+    },
+  );
+
+  testWidgets(
+    'showOpdEncounterDialog uses the app shell and blocks barrier dismissal',
+    (WidgetTester tester) async {
+      final _MockPatientRepository patientRepository = _MockPatientRepository();
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+      _stubStartDialogLookups(
+        patientRepository: patientRepository,
+        opdRepository: opdRepository,
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            patientRepositoryProvider.overrideWithValue(patientRepository),
+            opdRepositoryProvider.overrideWithValue(opdRepository),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: Builder(
+              builder: (BuildContext context) {
+                return Scaffold(
+                  body: AppButton.primary(
+                    label: 'Open encounter',
+                    leadingIcon: Icons.open_in_new,
+                    onPressed: () {
+                      unawaited(
+                        showOpdEncounterDialog(
+                          context: context,
+                          dialog: OpdEncounterDialog(
+                            providerSchedules: const <OpdProviderSchedule>[],
+                            appointments: const <OpdAppointment>[],
+                            onSubmit: (_) async => _successfulOpdSubmit(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open encounter'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.text('START OPD ENCOUNTER'), findsOneWidget);
+      expect(
+        tester
+            .widgetList<ModalBarrier>(find.byType(ModalBarrier))
+            .any((ModalBarrier barrier) => barrier.dismissible),
+        isFalse,
+      );
+
+      await tester.tapAt(Offset.zero);
+      await tester.pump();
+      expect(find.byType(AppDialog), findsOneWidget);
     },
   );
 
@@ -413,13 +551,113 @@ void main() {
       expect(find.text('Continue encounter'), findsOneWidget);
       expect(find.byType(AppCopyableIdentifier), findsWidgets);
 
-      await tester.tap(find.text('Update encounter').last);
+      await tester.tap(find.text('Edit encounter').last);
       await tester.pumpAndSettle();
 
       expect(submittedPayload?['existing_encounter_id'], 'ENC000001');
       expect(submittedPayload?['patient_id'], 'PAT000001');
     },
   );
+
+  testWidgets('OpdEncounterDialog keeps input open when submit fails', (
+    WidgetTester tester,
+  ) async {
+    final _MockPatientRepository patientRepository = _MockPatientRepository();
+    final _MockOpdRepository opdRepository = _MockOpdRepository();
+    const Patient patient = Patient(
+      id: 'patient-1',
+      publicId: 'PAT000001',
+      firstName: 'Jane',
+      lastName: 'Doe',
+    );
+    _stubStartDialogLookups(
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+      patients: const <Patient>[patient],
+    );
+
+    await _pumpStartDialog(
+      tester,
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+      dialog: OpdEncounterDialog(
+        providerSchedules: const <OpdProviderSchedule>[],
+        appointments: const <OpdAppointment>[],
+        initialPatient: patient,
+        onSubmit: (_) async =>
+            const Result<OpdFlowDetail>.failure(AppFailure.network()),
+      ),
+    );
+
+    await tester.enterText(find.byType(EditableText).last, 'Keep these notes');
+    await tester.tap(find.text('Start encounter').last);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(OpdEncounterDialog), findsOneWidget);
+    expect(find.text('Keep these notes'), findsOneWidget);
+    expect(find.byType(AppFormInformationBanner), findsWidgets);
+  });
+
+  testWidgets('cancel encounter requires notes for the Other reason', (
+    WidgetTester tester,
+  ) async {
+    final _MockPatientRepository patientRepository = _MockPatientRepository();
+    final _MockOpdRepository opdRepository = _MockOpdRepository();
+    const Patient patient = Patient(
+      id: 'patient-1',
+      publicId: 'PAT000001',
+      firstName: 'Jane',
+      lastName: 'Doe',
+    );
+    const OpdFlowSummary activeFlow = OpdFlowSummary(
+      id: 'encounter-1',
+      publicId: 'ENC000001',
+      patientId: 'patient-1',
+      patientIdentifier: 'PAT000001',
+      status: 'OPEN',
+      stage: 'WAITING_VITALS',
+    );
+    var mutationCalled = false;
+    _stubStartDialogLookups(
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+      patients: const <Patient>[patient],
+    );
+    await _pumpStartDialog(
+      tester,
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+      dialog: OpdEncounterDialog(
+        providerSchedules: const <OpdProviderSchedule>[],
+        appointments: const <OpdAppointment>[],
+        activeFlows: const <OpdFlowSummary>[activeFlow],
+        initialPatient: patient,
+        onSubmit: (_) async => _successfulOpdSubmit(),
+        onCancelEncounter: (_, _) async {
+          mutationCalled = true;
+          return const Result<OpdFlowDetail>.success(
+            OpdFlowDetail(summary: activeFlow),
+          );
+        },
+      ),
+    );
+
+    await tester.tap(find.text('Cancel encounter'));
+    await tester.pumpAndSettle();
+    final Finder reasonField = find.byWidgetPredicate(
+      (Widget widget) =>
+          widget is AppSelectField<String> &&
+          widget.labelText == 'Cancellation reason',
+    );
+    tester.widget<AppSelectField<String>>(reasonField).onChanged?.call('OTHER');
+    await tester.pump();
+    await tester.tap(find.text('Cancel encounter').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Enter details when selecting Other.'), findsOneWidget);
+    expect(mutationCalled, isFalse);
+    expect(find.byType(OpdEncounterDialog), findsOneWidget);
+  });
 
   testWidgets(
     'RecordVitalsDialog exposes triage assessment and routing fields',
@@ -668,7 +906,9 @@ void main() {
       expect(find.textContaining('Dizziness'), findsOneWidget);
       expect(find.textContaining('Fall risk'), findsOneWidget);
 
-      await tester.ensureVisible(find.widgetWithText(AppButton, 'Doctor review').last);
+      await tester.ensureVisible(
+        find.widgetWithText(AppButton, 'Doctor review').last,
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(AppButton, 'Doctor review').last);
       await tester.pump();

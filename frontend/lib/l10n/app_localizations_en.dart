@@ -2648,7 +2648,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdStartEncounterAction => 'Start encounter';
 
   @override
-  String get opdOpenActiveEncounterAction => 'Update encounter';
+  String get opdOpenActiveEncounterAction => 'Edit encounter';
 
   @override
   String get opdStartEncounterTooltip => 'Create or continue an OPD encounter';
@@ -11637,6 +11637,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get opdEngineResolvedFeeHint =>
       'Fee resolved from the price book for this patient.';
+
+  @override
+  String opdEngineResolvedFeeInsuredHint(
+    String payer,
+    String patientShare,
+    String insurerShare,
+  ) {
+    return 'Fee resolved from the price book for $payer. Patient share: $patientShare. Insurer share: $insurerShare.';
+  }
 
   @override
   String get claimsEligibilityPendingSummaryLabel => 'Eligibility pending';

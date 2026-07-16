@@ -5131,7 +5131,7 @@ abstract class AppLocalizations {
   /// Primary button label when a selected patient already has an active OPD encounter.
   ///
   /// In en, this message translates to:
-  /// **'Update encounter'**
+  /// **'Edit encounter'**
   String get opdOpenActiveEncounterAction;
 
   /// Tooltip for the shared OPD encounter start action.
@@ -21603,6 +21603,16 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Fee resolved from the price book for this patient.'**
   String get opdEngineResolvedFeeHint;
+
+  /// OPD consultation fee breakdown resolved for an insured patient.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee resolved from the price book for {payer}. Patient share: {patientShare}. Insurer share: {insurerShare}.'**
+  String opdEngineResolvedFeeInsuredHint(
+    String payer,
+    String patientShare,
+    String insurerShare,
+  );
 
   /// Summary badge for enrollments awaiting eligibility.
   ///

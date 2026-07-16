@@ -1353,16 +1353,118 @@ final class OpdWorkspaceController
       return;
     }
     _emit(
-      latest.copyWith(
-        selectedFlow: detail.summary.isTerminal ? null : detail,
-        clearSelectedFlow: detail.summary.isTerminal,
-        flows: _upsertOrRemoveFlow(latest.flows, detail.summary),
-        triageQueue: _upsertOrRemoveTriageFlow(
-          latest.triageQueue,
-          detail.summary,
+      _patchLinkedEncounterSources(
+        latest.copyWith(
+          selectedFlow: detail.summary.isTerminal ? null : detail,
+          clearSelectedFlow: detail.summary.isTerminal,
+          flows: _upsertOrRemoveFlow(latest.flows, detail.summary),
+          triageQueue: _upsertOrRemoveTriageFlow(
+            latest.triageQueue,
+            detail.summary,
+          ),
         ),
+        detail.summary,
       ),
     );
+  }
+
+  OpdWorkspaceState _patchLinkedEncounterSources(
+    OpdWorkspaceState state,
+    OpdFlowSummary flow,
+  ) {
+    final bool terminal =
+        flow.isTerminal || isOpdTerminalStatus(flow.status ?? flow.stage);
+    final bool cancelled = (flow.status ?? '').toUpperCase() == 'CANCELLED';
+    final String appointmentStatus = terminal
+        ? cancelled
+              ? 'NO_SHOW'
+              : 'COMPLETED'
+        : 'IN_PROGRESS';
+    final String queueStatus = terminal
+        ? cancelled
+              ? 'CANCELLED'
+              : 'COMPLETED'
+        : 'IN_PROGRESS';
+
+    return state.copyWith(
+      appointments: _patchLinkedAppointment(
+        state.appointments,
+        flow.appointmentId,
+        appointmentStatus,
+      ),
+      queueEntries: _patchLinkedQueueEntry(
+        state.queueEntries,
+        flow.visitQueueId,
+        queueStatus,
+      ),
+    );
+  }
+
+  AppPage<OpdAppointment> _patchLinkedAppointment(
+    AppPage<OpdAppointment> page,
+    String? appointmentId,
+    String status,
+  ) {
+    if (appointmentId == null || appointmentId.trim().isEmpty) {
+      return page;
+    }
+    var changed = false;
+    final List<OpdAppointment> items = page.items
+        .map((appointment) {
+          if (!_matchesPublicIdentifier(appointmentId, <String?>[
+            appointment.id,
+            appointment.publicId,
+            appointment.apiId,
+          ])) {
+            return appointment;
+          }
+          changed = true;
+          return appointment.copyWith(status: status);
+        })
+        .toList(growable: false);
+    return changed
+        ? AppPage<OpdAppointment>(
+            items: items,
+            request: page.request,
+            totalItemCount: page.totalItemCount,
+          )
+        : page;
+  }
+
+  AppPage<OpdQueueEntry> _patchLinkedQueueEntry(
+    AppPage<OpdQueueEntry> page,
+    String? queueId,
+    String status,
+  ) {
+    if (queueId == null || queueId.trim().isEmpty) {
+      return page;
+    }
+    var changed = false;
+    final List<OpdQueueEntry> items = page.items
+        .map((entry) {
+          if (!_matchesPublicIdentifier(queueId, <String?>[
+            entry.id,
+            entry.publicId,
+            entry.apiId,
+          ])) {
+            return entry;
+          }
+          changed = true;
+          return entry.copyWith(status: status);
+        })
+        .toList(growable: false);
+    return changed
+        ? AppPage<OpdQueueEntry>(
+            items: items,
+            request: page.request,
+            totalItemCount: page.totalItemCount,
+          )
+        : page;
+  }
+
+  bool _matchesPublicIdentifier(String expected, Iterable<String?> values) {
+    final String normalized = expected.trim().toUpperCase();
+    return values.any((value) => value?.trim().toUpperCase() == normalized);
   }
 
   Future<Result<OpdFlowDetail>> _mutateFlowDetail(
@@ -1385,15 +1487,18 @@ final class OpdWorkspaceController
           final OpdWorkspaceState? latest = _currentState;
           if (latest != null) {
             _emit(
-              latest.copyWith(
-                selectedFlow: detail.summary.isTerminal ? null : detail,
-                clearSelectedFlow: detail.summary.isTerminal,
-                flows: _upsertOrRemoveFlow(latest.flows, detail.summary),
-                triageQueue: _upsertOrRemoveTriageFlow(
-                  latest.triageQueue,
-                  detail.summary,
+              _patchLinkedEncounterSources(
+                latest.copyWith(
+                  selectedFlow: detail.summary.isTerminal ? null : detail,
+                  clearSelectedFlow: detail.summary.isTerminal,
+                  flows: _upsertOrRemoveFlow(latest.flows, detail.summary),
+                  triageQueue: _upsertOrRemoveTriageFlow(
+                    latest.triageQueue,
+                    detail.summary,
+                  ),
+                  isSaving: false,
                 ),
-                isSaving: false,
+                detail.summary,
               ),
             );
           }

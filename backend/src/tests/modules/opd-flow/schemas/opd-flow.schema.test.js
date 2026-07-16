@@ -1,5 +1,6 @@
 const {
   createOpdFlowSchema,
+  updateActiveEncounterContextSchema,
   encounterIdParamsSchema,
   resolveLegacyRouteParamsSchema,
   payConsultationSchema,
@@ -8,6 +9,8 @@ const {
   doctorReviewSchema,
   dispositionSchema,
   correctStageSchema,
+  cancelEncounterSchema,
+  closeEncounterSchema,
   listOpdFlowsQuerySchema
 } = require('@validations/opd-flow/opd-flow.schema');
 
@@ -93,6 +96,52 @@ describe('opd-flow.schema', () => {
 
       expect(result.success).toBe(true);
       expect(result.data.reuse_open_encounter).toBeUndefined();
+    });
+
+    it('accepts public insurance identifiers for consultation billing', () => {
+      const result = createOpdFlowSchema.safeParse({
+        patient_id: 'PAT0000003',
+        consultation_fee: '50000',
+        coverage_plan_id: 'CVP0000001',
+        insurance_company_id: 'INS0000001'
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data.coverage_plan_id).toBe('CVP0000001');
+      expect(result.data.insurance_company_id).toBe('INS0000001');
+    });
+  });
+
+  describe('updateActiveEncounterContextSchema', () => {
+    it('accepts insurance context changes', () => {
+      const result = updateActiveEncounterContextSchema.safeParse({
+        coverage_plan_id: 'CVP0000001',
+        insurance_company_id: 'INS0000001'
+      });
+
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('encounter lifecycle schemas', () => {
+    it('validates cancellation reasons', () => {
+      expect(
+        cancelEncounterSchema.safeParse({
+          reason_code: 'DUPLICATE_ENCOUNTER',
+          reason_notes: 'Superseded by ENC0000002'
+        }).success
+      ).toBe(true);
+      expect(
+        cancelEncounterSchema.safeParse({ reason_code: 'UNKNOWN' }).success
+      ).toBe(false);
+    });
+
+    it('accepts an optional close reason', () => {
+      expect(
+        closeEncounterSchema.safeParse({
+          reason_notes: 'Consultation completed elsewhere'
+        }).success
+      ).toBe(true);
     });
   });
 

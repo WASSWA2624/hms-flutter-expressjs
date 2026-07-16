@@ -300,6 +300,37 @@ describe('Visit Queue Service', () => {
       );
     });
 
+    it('should return the active queue entry when an appointment is queued twice', async () => {
+      const existing = {
+        id: 'queue-existing',
+        appointment_id: 'appointment-123',
+        patient_id: 'patient-123',
+        status: 'CONFIRMED'
+      };
+      visitQueueRepository.findMany.mockResolvedValueOnce([existing]);
+
+      const result = await createVisitQueue({
+        tenant_id: 'tenant-123',
+        patient_id: 'patient-123',
+        appointment_id: 'appointment-123',
+        status: 'CONFIRMED'
+      });
+
+      expect(result).toEqual(existing);
+      expect(visitQueueRepository.findMany).toHaveBeenCalledWith(
+        {
+          appointment_id: 'appointment-123',
+          status: { in: ['SCHEDULED', 'CONFIRMED', 'IN_PROGRESS'] }
+        },
+        0,
+        1,
+        { queued_at: 'desc' }
+      );
+      expect(visitQueueRepository.create).not.toHaveBeenCalled();
+      expect(createAuditLog).not.toHaveBeenCalled();
+      expect(publishDomainEvent).not.toHaveBeenCalled();
+    });
+
     it('should set queued_at to current time if not provided', async () => {
       const entryData = {
         tenant_id: 'tenant-123',

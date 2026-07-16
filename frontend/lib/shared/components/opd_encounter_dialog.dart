@@ -10,10 +10,8 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
-import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
-import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
-import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
+import 'package:hosspi_hms/features/opd/presentation/controllers/opd_encounter_dialog_controller.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -168,7 +166,6 @@ class OpdEncounterDialog extends ConsumerStatefulWidget {
     required this.providerSchedules,
     required this.appointments,
     this.activeFlows = const <OpdFlowSummary>[],
-    this.source,
     this.initialPatientId,
     this.initialPatient,
     this.initialAppointmentId,
@@ -186,7 +183,6 @@ class OpdEncounterDialog extends ConsumerStatefulWidget {
   final List<OpdProviderSchedule> providerSchedules;
   final List<OpdAppointment> appointments;
   final List<OpdFlowSummary> activeFlows;
-  final String? source;
   final String? initialPatientId;
   final Patient? initialPatient;
   final String? initialAppointmentId;
@@ -295,7 +291,8 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
 
   /// Blocks dismiss/close and competing footer actions while initial option
   /// loads or a mutation is in flight.
-  bool get _blocksDismiss => _isSaving || _isInitialLoading;
+  bool get _blocksDismiss =>
+      _isSaving || _isInitialLoading || _isResolvingActiveEncounter;
 
   @override
   void initState() {
@@ -505,9 +502,9 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         ? l10n.opdOpenActiveEncounterAction
         : l10n.opdStartEncounterAction;
     final IconData primaryActionIcon = isNewPatientMode
-        ? Icons.person_add_alt_1_outlined
+        ? AppActionIcons.add
         : hasActiveEncounter && !_forceNewEncounter
-        ? AppActionIcons.save
+        ? AppActionIcons.edit
         : Icons.play_arrow_outlined;
 
     return AppDialog(
@@ -522,7 +519,13 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         enabled: !_blocksDismiss,
         formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
-          if (_isInitialLoading) const LinearProgressIndicator(),
+          if (_isInitialLoading)
+            AppLoadingIndicator(
+              size: AppLoadingIndicatorSize.compact,
+              title: l10n.opdLoadingTitle,
+              body: l10n.opdLoadingBody,
+              semanticLabel: l10n.opdLoadingTitle,
+            ),
           if (_shouldShowActiveEncounterNotice()) _activeEncounterNotice(l10n),
           if (_showPatientSection)
             AppSectionPanel(
@@ -697,6 +700,10 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     final bool billingAlreadyPaid =
         activeEncounter != null &&
         opdFlowBillingState(activeEncounter) == OpdBillingState.paid;
+    final Locale locale = Localizations.localeOf(context);
+    String formatShare(num? value) => value == null
+        ? l10n.profileUnknownValue
+        : AppFormatters.currency(value, locale, currencyCode: _currency);
 
     return AppSectionPanel(
       title: l10n.opdBillingSectionTitle,
@@ -731,12 +738,11 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           AppFormInformationBanner.message(
             title: l10n.opdBillingSectionTitle,
             message: _payerContext?.insured == true
-                ? '${l10n.opdEngineResolvedFeeHint} '
-                      '${_payerContext?.payerLabel ?? ''} · '
-                      '${l10n.billingReceivePaymentPatientShareLabel}: '
-                      '${_resolvedConsultationLine?.patientShare ?? '-'} · '
-                      '${l10n.billingReceivePaymentInsurerShareLabel}: '
-                      '${_resolvedConsultationLine?.insurerShare ?? '-'}'
+                ? l10n.opdEngineResolvedFeeInsuredHint(
+                    _payerContext?.payerLabel ?? l10n.profileUnknownValue,
+                    formatShare(_resolvedConsultationLine?.patientShare),
+                    formatShare(_resolvedConsultationLine?.insurerShare),
+                  )
                 : l10n.opdEngineResolvedFeeHint,
           ),
         AppTextField(
@@ -887,7 +893,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: <Widget>[
                     Icon(
-                      Icons.info_outline,
+                      AppActionIcons.info,
                       size: 18,
                       color: colorScheme.onSecondaryContainer,
                     ),
@@ -995,7 +1001,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     final Patient? patient =
         widget.initialPatient ?? _patientByApiId(_patientId);
     final Result<OpdBillingDefaults> result = await ref
-        .read(opdRepositoryProvider)
+        .read(opdEncounterDialogControllerProvider)
         .getBillingDefaults(
           facilityId: patient?.facilityId,
           tenantId: patient?.tenantId,
@@ -1172,7 +1178,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       _failure = null;
     });
     final Result<Patient> result = await ref
-        .read(patientRepositoryProvider)
+        .read(opdEncounterDialogControllerProvider)
         .createPatient(_newPatientRegistrationPayload());
     if (!mounted) {
       return;
@@ -1266,7 +1272,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         requireGender: false,
         onLookupDuplicates: (PatientDuplicateQuery query) {
           return ref
-              .read(patientRepositoryProvider)
+              .read(opdEncounterDialogControllerProvider)
               .listDuplicateCandidates(query);
         },
       ),
@@ -1389,7 +1395,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     String? appointmentId,
   }) async {
     final Result<AppPage<OpdFlowSummary>> result = await ref
-        .read(opdRepositoryProvider)
+        .read(opdEncounterDialogControllerProvider)
         .listOpdFlows(
           OpdFlowQuery(
             search: search,
@@ -1561,8 +1567,8 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       return;
     }
     final ClinicalRequestPayerContext? payerContext = await ref
-        .read(insuranceCatalogRepositoryProvider)
-        .resolvePayerContextForPatient(patientId);
+        .read(opdEncounterDialogControllerProvider)
+        .resolvePayerContextForPatient(patientId!);
     if (!mounted) {
       return;
     }
@@ -1613,8 +1619,8 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
 
   Future<void> _loadPatientReferenceData() async {
     final Result<PatientReferenceData> result = await ref
-        .read(patientRepositoryProvider)
-        .loadReferenceData();
+        .read(opdEncounterDialogControllerProvider)
+        .loadPatientReferenceData();
     if (!mounted) {
       return;
     }
@@ -1638,7 +1644,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       _isLoadingPatients = true;
     });
     final Result<AppPage<Patient>> result = await ref
-        .read(patientRepositoryProvider)
+        .read(opdEncounterDialogControllerProvider)
         .listPatients(
           const PatientListQuery(
             isActive: true,
@@ -1674,7 +1680,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       _isLoadingAppointments = true;
     });
     final Result<AppPage<OpdAppointment>> result = await ref
-        .read(opdRepositoryProvider)
+        .read(opdEncounterDialogControllerProvider)
         .listAppointments(
           const OpdAppointmentQuery(pageRequest: AppPageRequest(pageSize: 50)),
         );
@@ -1708,7 +1714,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       _isLoadingProviders = true;
     });
     final Result<List<OpdProviderOption>> result = await ref
-        .read(opdRepositoryProvider)
+        .read(opdEncounterDialogControllerProvider)
         .listProviders();
     if (!mounted) {
       return;
@@ -1777,7 +1783,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         _patientMode != _WalkInPatientMode.newPatient;
 
     return <String, Object?>{
-      if (_isNonEmpty(widget.source)) 'source': widget.source,
       if (activeEncounter != null && !_forceNewEncounter)
         'existing_encounter_id': activeEncounter.apiId,
       if (activeEncounter != null && _forceNewEncounter) ...<String, Object?>{
@@ -1941,10 +1946,7 @@ class _ActiveEncounterCopyableDetail extends StatelessWidget {
 }
 
 class _CloseEncounterDialog extends StatefulWidget {
-  const _CloseEncounterDialog({
-    required this.flow,
-    required this.onConfirm,
-  });
+  const _CloseEncounterDialog({required this.flow, required this.onConfirm});
 
   final OpdFlowSummary flow;
   final Future<Result<OpdFlowDetail>> Function(Map<String, Object?> payload)
@@ -2033,9 +2035,7 @@ class _CloseEncounterDialogState extends State<_CloseEncounterDialog> {
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: !_isSaving,
-          onPressed: _isSaving
-              ? null
-              : () => Navigator.of(context).maybePop(),
+          onPressed: _isSaving ? null : () => Navigator.of(context).maybePop(),
         ),
         AppButton.primary(
           label: l10n.opdCloseEncounterAction,
@@ -2049,10 +2049,7 @@ class _CloseEncounterDialogState extends State<_CloseEncounterDialog> {
 }
 
 class _CancelEncounterDialog extends StatefulWidget {
-  const _CancelEncounterDialog({
-    required this.flow,
-    required this.onConfirm,
-  });
+  const _CancelEncounterDialog({required this.flow, required this.onConfirm});
 
   final OpdFlowSummary flow;
   final Future<Result<OpdFlowDetail>> Function(Map<String, Object?> payload)
@@ -2197,9 +2194,7 @@ class _CancelEncounterDialogState extends State<_CancelEncounterDialog> {
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: !_isSaving,
-          onPressed: _isSaving
-              ? null
-              : () => Navigator.of(context).maybePop(),
+          onPressed: _isSaving ? null : () => Navigator.of(context).maybePop(),
         ),
         AppButton.primary(
           label: l10n.opdCancelEncounterAction,

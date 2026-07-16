@@ -4,6 +4,7 @@ abstract final class RealtimeEvents {
   static const String pong = 'pong';
 
   static const String appointmentCreated = 'appointment.created';
+  static const String appointmentUpdated = 'appointment.updated';
   static const String appointmentRescheduled = 'appointment.rescheduled';
   static const String appointmentCanceled = 'appointment.canceled';
 

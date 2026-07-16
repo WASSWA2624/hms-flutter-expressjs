@@ -6,10 +6,15 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_encounter_flow.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart'
+    show opdFrontDeskActionRequirement;
+import 'package:hosspi_hms/shared/opd_actions/opd_queue_actions_dialog.dart'
+    show isOpdQueueTerminalStatus;
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 
 /// Shared appointment actions for OPD and Reception workspaces.
@@ -72,9 +77,11 @@ class _OpdAppointmentActionsDialogState
     final Locale locale = Localizations.localeOf(context);
     final String status = (widget.appointment.status ?? '').toUpperCase();
     final bool terminal = isOpdAppointmentTerminalStatus(status);
+    final bool alreadyQueued = _hasActiveLinkedQueueEntry();
     final bool canQueue =
         !terminal &&
         status != 'IN_PROGRESS' &&
+        !alreadyQueued &&
         widget.appointment.patientId != null &&
         widget.appointment.tenantId != null;
     final bool canCheckIn =
@@ -86,6 +93,7 @@ class _OpdAppointmentActionsDialogState
       title: Text(l10n.receptionAppointmentActionsAction),
       icon: const Icon(Icons.event_available_outlined),
       scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: !_isSaving,
       maxWidth: 680,
       content: AppFormSection(
@@ -131,54 +139,70 @@ class _OpdAppointmentActionsDialogState
             ],
             emptyValue: l10n.profileUnknownValue,
           ),
+          if (!terminal)
+            AppActionSection(
+              title: l10n.opdActionsColumnLabel,
+              minItemWidth: 180,
+              permissionActions: <AppPermissionActionItem>[
+                if (canQueue)
+                  AppPermissionActionItem(
+                    requirement: opdFrontDeskActionRequirement,
+                    label: l10n.opdQueueAction,
+                    icon: Icons.queue_outlined,
+                    fullWidth: true,
+                    isLoading: _activeAction == _AppointmentFooterAction.queue,
+                    enabled: !_isSaving,
+                    onPressed: _isSaving
+                        ? null
+                        : () => _run(
+                            _AppointmentFooterAction.queue,
+                            () => ref
+                                .read(opdWorkspaceControllerProvider.notifier)
+                                .assignAppointmentToQueue(widget.appointment),
+                          ),
+                  ),
+                if (canReschedule)
+                  AppPermissionActionItem(
+                    requirement: opdFrontDeskActionRequirement,
+                    label: l10n.opdRescheduleAction,
+                    icon: AppActionIcons.calendar,
+                    fullWidth: true,
+                    enabled: !_isSaving,
+                    onPressed: _isSaving ? null : _openReschedule,
+                  ),
+                if (canCancelAppointment)
+                  AppPermissionActionItem(
+                    requirement: opdFrontDeskActionRequirement,
+                    label: l10n.opdCancelAction,
+                    icon: AppActionIcons.delete,
+                    fullWidth: true,
+                    destructive: true,
+                    enabled: !_isSaving,
+                    onPressed: _isSaving ? null : _openCancel,
+                  ),
+                if (canCheckIn)
+                  AppPermissionActionItem(
+                    requirement: opdFrontDeskActionRequirement,
+                    label: l10n.opdCheckInAction,
+                    icon: Icons.login_outlined,
+                    variant: AppButtonVariant.primary,
+                    fullWidth: true,
+                    isLoading:
+                        _activeAction == _AppointmentFooterAction.checkIn,
+                    enabled: !_isSaving,
+                    onPressed: _isSaving ? null : _openCheckIn,
+                  ),
+              ],
+            ),
         ],
       ),
       actions: <Widget>[
-        if (canQueue)
-          AppButton.secondary(
-            label: l10n.opdQueueAction,
-            leadingIcon: Icons.queue_outlined,
-            enabled: !_isSaving,
-            isLoading: _activeAction == _AppointmentFooterAction.queue,
-            onPressed: _isSaving
-                ? null
-                : () => _run(
-                    _AppointmentFooterAction.queue,
-                    () => ref
-                        .read(opdWorkspaceControllerProvider.notifier)
-                        .assignAppointmentToQueue(widget.appointment),
-                  ),
-          ),
-        if (canReschedule)
-          AppButton.secondary(
-            label: l10n.opdRescheduleAction,
-            leadingIcon: Icons.edit_calendar_outlined,
-            enabled: !_isSaving,
-            onPressed: _isSaving ? null : _openReschedule,
-          ),
-        if (canCancelAppointment)
-          AppButton.secondary(
-            label: l10n.opdCancelAction,
-            leadingIcon: Icons.cancel_outlined,
-            enabled: !_isSaving,
-            onPressed: _isSaving ? null : _openCancel,
-          ),
         AppButton.secondary(
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: !_isSaving,
-          onPressed: _isSaving
-              ? null
-              : () => Navigator.of(context).pop(false),
+          onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
         ),
-        if (canCheckIn)
-          AppButton.primary(
-            label: l10n.opdCheckInAction,
-            leadingIcon: Icons.login_outlined,
-            enabled: !_isSaving,
-            isLoading: _activeAction == _AppointmentFooterAction.checkIn,
-            onPressed: _isSaving ? null : _openCheckIn,
-          ),
       ],
     );
   }
@@ -189,6 +213,10 @@ class _OpdAppointmentActionsDialogState
     }
     final OpdWorkspaceState? workspaceState = widget.workspaceState;
     if (workspaceState != null) {
+      setState(() {
+        _activeAction = _AppointmentFooterAction.checkIn;
+        _failure = null;
+      });
       final OpdEncounterDialogResult? dialogResult =
           await showOpdEncounterDialog(
             context: context,
@@ -202,15 +230,23 @@ class _OpdAppointmentActionsDialogState
               includeEncounterLifecycleCallbacks: false,
             ),
           );
-      if (!mounted || dialogResult == null) {
+      if (!mounted) {
         return;
       }
-      // Backend marks the appointment IN_PROGRESS on successful start; patch
-      // local appointments so reception/OPD desks stay in sync without reload.
-      ref
-          .read(opdWorkspaceControllerProvider.notifier)
-          .markAppointmentInProgress(widget.appointment);
-      Navigator.of(context).pop(true);
+      if (dialogResult == null) {
+        setState(() => _activeAction = null);
+        return;
+      }
+      if (dialogResult.action == OpdEncounterDialogAction.submit) {
+        // Fallback for sparse backend snapshots that omit the linked
+        // appointment identifier. Non-submit outcomes must never advance it.
+        ref
+            .read(opdWorkspaceControllerProvider.notifier)
+            .markAppointmentInProgress(widget.appointment);
+      }
+      Navigator.of(
+        context,
+      ).pop(dialogResult.action != OpdEncounterDialogAction.continueWorkflow);
       return;
     }
 
@@ -220,6 +256,24 @@ class _OpdAppointmentActionsDialogState
           .read(opdWorkspaceControllerProvider.notifier)
           .checkInAppointment(widget.appointment),
     );
+  }
+
+  bool _hasActiveLinkedQueueEntry() {
+    final OpdWorkspaceState? workspaceState = widget.workspaceState;
+    if (workspaceState == null) {
+      return false;
+    }
+    final Set<String> appointmentIds = <String>{
+      widget.appointment.id,
+      widget.appointment.apiId,
+      if (widget.appointment.publicId case final String publicId) publicId,
+    }.map((String id) => id.trim().toUpperCase()).toSet();
+    return workspaceState.queueEntries.items.any((OpdQueueEntry entry) {
+      final String? appointmentId = entry.appointmentId;
+      return appointmentId != null &&
+          appointmentIds.contains(appointmentId.trim().toUpperCase()) &&
+          !isOpdQueueTerminalStatus(entry.status);
+    });
   }
 
   Future<void> _openReschedule() async {
@@ -543,9 +597,7 @@ class _OpdCancelAppointmentDialogState
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: !_isSaving,
-          onPressed: _isSaving
-              ? null
-              : () => Navigator.of(context).pop(false),
+          onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
           label: l10n.opdCancelAction,

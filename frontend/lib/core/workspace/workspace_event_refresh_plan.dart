@@ -48,7 +48,9 @@ abstract final class WorkspaceEventRefreshPlan {
     }
     if (RealtimeEventGroups.opdFlow.contains(event) ||
         RealtimeEventGroups.encounters.contains(event)) {
-      return WorkspaceRefreshPlan.flowWorkspace;
+      return WorkspaceRefreshPlan.flowWorkspace.merge(
+        const WorkspaceRefreshPlan(appointments: true, queue: true),
+      );
     }
     if (RealtimeEventGroups.diagnostics.contains(event)) {
       return WorkspaceRefreshPlan.flowWorkspace;

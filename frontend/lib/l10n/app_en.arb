@@ -3439,7 +3439,7 @@
   "opdSavingStatus": "Saving",
   "opdStartWalkInAction": "Start OPD encounter",
   "opdStartEncounterAction": "Start encounter",
-  "opdOpenActiveEncounterAction": "Update encounter",
+  "opdOpenActiveEncounterAction": "Edit encounter",
   "opdStartEncounterTooltip": "Create or continue an OPD encounter",
   "opdSavedMessage": "OPD changes saved.",
   "opdArrivalsSummaryLabel": "Arrivals",
@@ -14873,6 +14873,21 @@
   "opdEngineResolvedFeeHint": "Fee resolved from the price book for this patient.",
   "@opdEngineResolvedFeeHint": {
     "description": "Hint when OPD consultation fee is engine-resolved."
+  },
+  "opdEngineResolvedFeeInsuredHint": "Fee resolved from the price book for {payer}. Patient share: {patientShare}. Insurer share: {insurerShare}.",
+  "@opdEngineResolvedFeeInsuredHint": {
+    "description": "OPD consultation fee breakdown resolved for an insured patient.",
+    "placeholders": {
+      "payer": {
+        "type": "String"
+      },
+      "patientShare": {
+        "type": "String"
+      },
+      "insurerShare": {
+        "type": "String"
+      }
+    }
   },
   "claimsEligibilityPendingSummaryLabel": "Eligibility pending",
   "@claimsEligibilityPendingSummaryLabel": {

@@ -2478,4 +2478,106 @@ describe('opd-flow.service', () => {
       })
     );
   });
+
+  it.each([
+    ['cancelEncounter', { reason_code: 'PATIENT_LEFT' }, 'CANCELLED', 'CANCELLED', 'NO_SHOW'],
+    ['closeEncounter', { reason_notes: 'Completed' }, 'CLOSED', 'COMPLETED', 'COMPLETED']
+  ])(
+    '%s finalizes the encounter and linked queue/appointment',
+    async (method, payload, encounterStatus, queueStatus, appointmentStatus) => {
+      const initialEncounter = {
+        id: 'enc-1',
+        human_friendly_id: 'ENC000001',
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1',
+        patient_id: 'patient-1',
+        provider_user_id: null,
+        encounter_type: 'OPD',
+        status: 'OPEN',
+        extension_json: {
+          opd_flow: {
+            stage: 'WAITING_VITALS',
+            visit_queue_id: 'queue-1',
+            appointment_id: 'appointment-1',
+            consultation: {}
+          }
+        }
+      };
+      const finalizedEncounter = {
+        ...initialEncounter,
+        status: encounterStatus,
+        tenant: null,
+        facility: null,
+        patient: null,
+        provider: null,
+        vital_signs: [],
+        clinical_notes: [],
+        diagnoses: [],
+        procedures: [],
+        care_plans: [],
+        alerts: [],
+        admissions: []
+      };
+      const tx = {
+        encounter: {
+          findFirst: jest
+            .fn()
+            .mockResolvedValueOnce(initialEncounter)
+            .mockResolvedValueOnce(finalizedEncounter),
+          update: jest.fn().mockResolvedValue(finalizedEncounter)
+        },
+        visit_queue: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'queue-1',
+            human_friendly_id: 'QUE000001',
+            status: queueStatus
+          }),
+          update: jest.fn().mockResolvedValue({ id: 'queue-1' })
+        },
+        appointment: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'appointment-1',
+            status: 'IN_PROGRESS'
+          }),
+          update: jest.fn().mockResolvedValue({ id: 'appointment-1' })
+        },
+        invoice: {
+          findFirst: jest.fn().mockResolvedValue(null)
+        },
+        payment: {
+          findFirst: jest.fn().mockResolvedValue(null)
+        },
+        emergency_case: {
+          findFirst: jest.fn().mockResolvedValue(null)
+        },
+        triage_assessment: {
+          findFirst: jest.fn().mockResolvedValue(null)
+        }
+      };
+      prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+      const result = await opdFlowService[method]('ENC000001', payload, {
+        user_id: 'actor-1',
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1'
+      });
+
+      expect(tx.visit_queue.update).toHaveBeenCalledWith({
+        where: { id: 'queue-1' },
+        data: { status: queueStatus }
+      });
+      expect(tx.appointment.update).toHaveBeenCalledWith({
+        where: { id: 'appointment-1' },
+        data: { status: appointmentStatus }
+      });
+      expect(tx.encounter.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'enc-1' },
+          data: expect.objectContaining({ status: encounterStatus })
+        })
+      );
+      expect(result.encounter.human_friendly_id).toBe('ENC000001');
+      expect(createAuditLog).toHaveBeenCalled();
+    }
+  );
 });

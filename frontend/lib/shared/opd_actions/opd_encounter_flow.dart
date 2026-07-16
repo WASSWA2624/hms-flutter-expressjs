@@ -4,100 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
+import 'package:hosspi_hms/features/opd/presentation/controllers/opd_encounter_dialog_controller.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart';
-
-Map<String, Object?> withoutEmptyOpdPayload(Map<String, Object?> payload) {
-  return <String, Object?>{
-    for (final MapEntry<String, Object?> entry in payload.entries)
-      if (!_opdPayloadValueIsEmpty(entry.value)) entry.key: entry.value,
-  };
-}
-
-bool _opdPayloadValueIsEmpty(Object? value) {
-  if (value == null) {
-    return true;
-  }
-  if (value is String) {
-    return value.trim().isEmpty;
-  }
-  if (value is Iterable) {
-    return value.isEmpty;
-  }
-  if (value is Map) {
-    return value.isEmpty;
-  }
-  return false;
-}
-
-Future<Result<OpdFlowDetail>> submitPatientOpdEncounter(
-  WidgetRef ref,
-  Patient patient,
-  Map<String, Object?> payload,
-) async {
-  final bool forceNewEncounter = payload['force_new_encounter'] == true;
-  final Object? existingEncounterId = payload['existing_encounter_id'];
-  final Result<OpdFlowDetail> result;
-  if (!forceNewEncounter &&
-      existingEncounterId is String &&
-      existingEncounterId.trim().isNotEmpty) {
-    result = await ref
-        .read(opdRepositoryProvider)
-        .updateActiveEncounter(
-          existingEncounterId.trim(),
-          withoutEmptyOpdPayload(
-            <String, Object?>{
-              'tenant_id': patient.tenantId,
-              'facility_id': patient.facilityId,
-              ...payload,
-            }..remove('existing_encounter_id'),
-          ),
-        );
-  } else {
-    result = await ref
-        .read(opdRepositoryProvider)
-        .startOpdFlow(
-          withoutEmptyOpdPayload(<String, Object?>{
-            'tenant_id': patient.tenantId,
-            'facility_id': patient.facilityId,
-            ...payload,
-          }),
-        );
-  }
-  return _patchOpdWorkspaceOnSuccess(ref, result);
-}
-
-Future<Result<OpdFlowDetail>> _persistPatientPinnedOpdMutation(
-  WidgetRef ref,
-  Future<Result<OpdFlowDetail>> Function() action,
-) async {
-  return _patchOpdWorkspaceOnSuccess(ref, await action());
-}
-
-Result<OpdFlowDetail> _patchOpdWorkspaceOnSuccess(
-  WidgetRef ref,
-  Result<OpdFlowDetail> result,
-) {
-  result.when(
-    success: (OpdFlowDetail detail) {
-      // Only patch when OPD workspace is already alive — do not bootstrap it
-      // from patient-registry so Cancel/failure and unloaded workspaces stay clean.
-      if (ref.exists(opdWorkspaceControllerProvider)) {
-        ref
-            .read(opdWorkspaceControllerProvider.notifier)
-            .applyFlowDetailPatchIfLoaded(detail);
-      }
-    },
-    failure: (_) {},
-  );
-  return result;
-}
 
 class PatientPinnedOpdEncounterDialog extends ConsumerStatefulWidget {
   const PatientPinnedOpdEncounterDialog({
@@ -131,10 +45,10 @@ class _PatientPinnedOpdEncounterDialogState
     final String search =
         widget.patient.effectiveIdentifier ?? widget.patient.id;
     final Result<List<OpdProviderSchedule>> scheduleResult = await ref
-        .read(opdRepositoryProvider)
+        .read(opdEncounterDialogControllerProvider)
         .listProviderSchedules();
     final Result<AppPage<OpdAppointment>> appointmentResult = await ref
-        .read(opdRepositoryProvider)
+        .read(opdEncounterDialogControllerProvider)
         .listAppointments(OpdAppointmentQuery(search: search));
     if (!mounted) {
       return;
@@ -214,25 +128,21 @@ class _PatientPinnedOpdEncounterDialogState
       appointments: _appointments,
       initialPatient: widget.patient,
       initialPatientId: patientApiId(widget.patient),
-      source: 'patient_registry',
       onExistingActiveEncounter: widget.onExistingActiveEncounter,
       onCancelEncounter: (String flowId, Map<String, Object?> payload) {
-        return _persistPatientPinnedOpdMutation(
-          ref,
-          () => ref
-              .read(opdRepositoryProvider)
-              .cancelEncounter(flowId, payload),
-        );
+        return ref
+            .read(opdEncounterDialogControllerProvider)
+            .cancelEncounter(flowId, payload);
       },
       onCloseEncounter: (String flowId, Map<String, Object?> payload) {
-        return _persistPatientPinnedOpdMutation(
-          ref,
-          () =>
-              ref.read(opdRepositoryProvider).closeEncounter(flowId, payload),
-        );
+        return ref
+            .read(opdEncounterDialogControllerProvider)
+            .closeEncounter(flowId, payload);
       },
       onSubmit: (Map<String, Object?> payload) {
-        return submitPatientOpdEncounter(ref, widget.patient, payload);
+        return ref
+            .read(opdEncounterDialogControllerProvider)
+            .submitPatientEncounter(widget.patient, payload);
       },
     );
   }
@@ -278,10 +188,7 @@ Future<void> openPatientOpdEncounterFlow(
     if (!context.mounted) {
       return;
     }
-    await showFlowActionsDialog(
-      context: context,
-      flow: result.flow!,
-    );
+    await showFlowActionsDialog(context: context, flow: result.flow!);
     if (!context.mounted) {
       return;
     }
@@ -308,10 +215,7 @@ Future<void> openPatientOpdEncounterFlow(
     return;
   }
 
-  await showFlowActionsDialog(
-    context: context,
-    flow: activeEncounter,
-  );
+  await showFlowActionsDialog(context: context, flow: activeEncounter);
 }
 
 OpdEncounterDialog buildOpdWorkspaceEncounterDialog({
@@ -335,7 +239,6 @@ OpdEncounterDialog buildOpdWorkspaceEncounterDialog({
     initialAppointmentId: initialAppointmentId,
     defaultArrivalMode: defaultArrivalMode,
     defaultProviderId: defaultProviderId,
-    source: 'opd_workspace',
     onSubmit: (Map<String, Object?> payload) {
       return ref
           .read(opdWorkspaceControllerProvider.notifier)

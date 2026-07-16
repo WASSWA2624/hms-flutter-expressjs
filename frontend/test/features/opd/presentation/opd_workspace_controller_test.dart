@@ -87,6 +87,341 @@ void main() {
       verifyNever(() => repository.updateAppointment(any(), any()));
     });
 
+    test(
+      'assignAppointmentToQueue patches the persisted queue entry',
+      () async {
+        final _MockOpdRepository repository = _MockOpdRepository();
+        const OpdAppointment appointment = OpdAppointment(
+          id: 'appointment-internal',
+          publicId: 'APT000001',
+          tenantId: 'TEN000001',
+          facilityId: 'FAC000001',
+          patientId: 'PAT000001',
+          providerUserId: 'USR000001',
+          status: 'SCHEDULED',
+        );
+        const OpdQueueEntry queued = OpdQueueEntry(
+          id: 'queue-internal',
+          publicId: 'QUE000001',
+          tenantId: 'TEN000001',
+          facilityId: 'FAC000001',
+          patientId: 'PAT000001',
+          appointmentId: 'APT000001',
+          providerUserId: 'USR000001',
+          status: 'CONFIRMED',
+        );
+        Map<String, Object?>? submittedPayload;
+        _stubInitialLoad(
+          repository,
+          appointments: <OpdAppointment>[appointment],
+        );
+        when(
+          () => repository.createVisitQueue(
+            any(),
+            idempotencyKey: any(named: 'idempotencyKey'),
+          ),
+        ).thenAnswer((Invocation invocation) async {
+          submittedPayload =
+              invocation.positionalArguments.single as Map<String, Object?>;
+          return const Result<OpdQueueEntry>.success(queued);
+        });
+
+        final ProviderContainer container = _testContainer(repository);
+        addTearDown(container.dispose);
+        await container.read(opdWorkspaceControllerProvider.future);
+
+        final AppFailure? failure = await container
+            .read(opdWorkspaceControllerProvider.notifier)
+            .assignAppointmentToQueue(appointment);
+
+        expect(failure, isNull);
+        expect(_workspaceState(container).queueEntries.items, <OpdQueueEntry>[
+          queued,
+        ]);
+        expect(submittedPayload, containsPair('tenant_id', 'TEN000001'));
+        expect(submittedPayload, containsPair('facility_id', 'FAC000001'));
+        expect(submittedPayload, containsPair('patient_id', 'PAT000001'));
+        expect(submittedPayload, containsPair('appointment_id', 'APT000001'));
+        expect(submittedPayload, containsPair('provider_user_id', 'USR000001'));
+      },
+    );
+
+    test('rescheduleAppointment patches only the persisted response', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      final DateTime originalStart = DateTime.utc(2026, 7, 20, 8);
+      final DateTime updatedStart = DateTime.utc(2026, 7, 21, 10);
+      final DateTime updatedEnd = DateTime.utc(2026, 7, 21, 10, 30);
+      final OpdAppointment appointment = OpdAppointment(
+        id: 'appointment-internal',
+        publicId: 'APT000001',
+        status: 'SCHEDULED',
+        scheduledStart: originalStart,
+      );
+      final OpdAppointment updated = appointment.copyWith(
+        scheduledStart: updatedStart,
+        scheduledEnd: updatedEnd,
+      );
+      Map<String, Object?>? submittedPayload;
+      _stubInitialLoad(repository, appointments: <OpdAppointment>[appointment]);
+      when(() => repository.updateAppointment(any(), any())).thenAnswer((
+        Invocation invocation,
+      ) async {
+        submittedPayload =
+            invocation.positionalArguments[1] as Map<String, Object?>;
+        return Result<OpdAppointment>.success(updated);
+      });
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .rescheduleAppointment(appointment, updatedStart, updatedEnd);
+
+      expect(failure, isNull);
+      expect(
+        _workspaceState(container).appointments.items.single.scheduledStart,
+        updatedStart,
+      );
+      expect(
+        submittedPayload,
+        containsPair('scheduled_start', updatedStart.toIso8601String()),
+      );
+      expect(
+        submittedPayload,
+        containsPair('scheduled_end', updatedEnd.toIso8601String()),
+      );
+      verify(() => repository.updateAppointment('APT000001', any())).called(1);
+    });
+
+    test('cancelAppointment patches the returned terminal row', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      const OpdAppointment appointment = OpdAppointment(
+        id: 'appointment-internal',
+        publicId: 'APT000001',
+        status: 'SCHEDULED',
+      );
+      const OpdAppointment cancelled = OpdAppointment(
+        id: 'appointment-internal',
+        publicId: 'APT000001',
+        status: 'CANCELLED',
+      );
+      _stubInitialLoad(repository, appointments: <OpdAppointment>[appointment]);
+      when(() => repository.cancelAppointment(any(), any())).thenAnswer(
+        (_) async => const Result<OpdAppointment>.success(cancelled),
+      );
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .cancelAppointment(appointment, 'Patient request');
+
+      expect(failure, isNull);
+      expect(
+        _workspaceState(container).appointments.items.single.status,
+        'CANCELLED',
+      );
+      verify(
+        () => repository.cancelAppointment('APT000001', 'Patient request'),
+      ).called(1);
+    });
+
+    test('failed appointment mutation leaves the row unchanged', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      const OpdAppointment appointment = OpdAppointment(
+        id: 'appointment-internal',
+        publicId: 'APT000001',
+        status: 'SCHEDULED',
+      );
+      _stubInitialLoad(repository, appointments: <OpdAppointment>[appointment]);
+      when(() => repository.cancelAppointment(any(), any())).thenAnswer(
+        (_) async => const Result<OpdAppointment>.failure(AppFailure.network()),
+      );
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .cancelAppointment(appointment, 'Patient request');
+
+      expect(failure, isNotNull);
+      expect(
+        _workspaceState(container).appointments.items.single,
+        same(appointment),
+      );
+    });
+
+    test('submitOpdEncounter patches the persisted flow immediately', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      const OpdAppointment appointment = OpdAppointment(
+        id: 'appointment-1',
+        publicId: 'APT000001',
+        status: 'SCHEDULED',
+      );
+      const OpdQueueEntry queueEntry = OpdQueueEntry(
+        id: 'queue-1',
+        publicId: 'QUE000001',
+        status: 'WAITING',
+      );
+      const OpdFlowDetail detail = OpdFlowDetail(
+        summary: OpdFlowSummary(
+          id: 'encounter-1',
+          publicId: 'ENC000001',
+          patientId: 'PAT000001',
+          status: 'OPEN',
+          stage: 'WAITING_VITALS',
+          appointmentId: 'APT000001',
+          visitQueueId: 'QUE000001',
+        ),
+      );
+      _stubInitialLoad(
+        repository,
+        appointments: const <OpdAppointment>[appointment],
+        queueEntries: const <OpdQueueEntry>[queueEntry],
+      );
+      when(
+        () => repository.startOpdFlow(
+          any(),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(detail));
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+
+      final Result<OpdFlowDetail> result = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .submitOpdEncounter(<String, Object?>{
+            'patient_id': 'PAT000001',
+            'arrival_mode': 'WALK_IN',
+          });
+
+      expect(result.isSuccess, isTrue);
+      expect(_workspaceState(container).flows.items, contains(detail.summary));
+      expect(
+        _workspaceState(container).triageQueue.items,
+        contains(detail.summary),
+      );
+      expect(_workspaceState(container).selectedFlow, detail);
+      expect(
+        _workspaceState(container).appointments.items.single.status,
+        'IN_PROGRESS',
+      );
+      expect(
+        _workspaceState(container).queueEntries.items.single.status,
+        'IN_PROGRESS',
+      );
+    });
+
+    test('submitOpdEncounter failure patches nothing', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      const OpdFlowSummary existing = OpdFlowSummary(
+        id: 'encounter-1',
+        publicId: 'ENC000001',
+        status: 'OPEN',
+        stage: 'WAITING_VITALS',
+      );
+      _stubInitialLoad(
+        repository,
+        flows: const <OpdFlowSummary>[existing],
+        triageQueue: const <OpdFlowSummary>[existing],
+      );
+      when(
+        () => repository.updateActiveEncounter(
+          any(),
+          any(),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<OpdFlowDetail>.failure(AppFailure.network()),
+      );
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+      final OpdWorkspaceState before = _workspaceState(container);
+
+      final Result<OpdFlowDetail> result = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .submitOpdEncounter(<String, Object?>{
+            'existing_encounter_id': 'ENC000001',
+            'patient_id': 'PAT000001',
+          });
+
+      expect(result.isFailure, isTrue);
+      expect(_workspaceState(container).flows, same(before.flows));
+      expect(_workspaceState(container).triageQueue, same(before.triageQueue));
+      expect(_workspaceState(container).selectedFlow, isNull);
+    });
+
+    test('closeOpdEncounter removes a persisted terminal flow', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      const OpdAppointment appointment = OpdAppointment(
+        id: 'appointment-1',
+        publicId: 'APT000001',
+        status: 'IN_PROGRESS',
+      );
+      const OpdQueueEntry queueEntry = OpdQueueEntry(
+        id: 'queue-1',
+        publicId: 'QUE000001',
+        status: 'IN_PROGRESS',
+      );
+      const OpdFlowSummary active = OpdFlowSummary(
+        id: 'encounter-1',
+        publicId: 'ENC000001',
+        status: 'OPEN',
+        stage: 'WAITING_VITALS',
+      );
+      const OpdFlowDetail closed = OpdFlowDetail(
+        summary: OpdFlowSummary(
+          id: 'encounter-1',
+          publicId: 'ENC000001',
+          status: 'CLOSED',
+          stage: 'DISCHARGED',
+          appointmentId: 'APT000001',
+          visitQueueId: 'QUE000001',
+        ),
+      );
+      _stubInitialLoad(
+        repository,
+        appointments: const <OpdAppointment>[appointment],
+        queueEntries: const <OpdQueueEntry>[queueEntry],
+        flows: const <OpdFlowSummary>[active],
+        triageQueue: const <OpdFlowSummary>[active],
+      );
+      when(
+        () => repository.closeEncounter(any(), any()),
+      ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(closed));
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+
+      final Result<OpdFlowDetail> result = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .closeOpdEncounter('ENC000001', const <String, Object?>{});
+
+      expect(result.isSuccess, isTrue);
+      expect(_workspaceState(container).flows.items, isEmpty);
+      expect(_workspaceState(container).triageQueue.items, isEmpty);
+      expect(_workspaceState(container).selectedFlow, isNull);
+      expect(
+        _workspaceState(container).appointments.items.single.status,
+        'COMPLETED',
+      );
+      expect(
+        _workspaceState(container).queueEntries.items.single.status,
+        'COMPLETED',
+      );
+    });
+
     test('disposeFlow sends route context for triage decisions', () async {
       final _MockOpdRepository repository = _MockOpdRepository();
       const OpdFlowSummary flow = OpdFlowSummary(

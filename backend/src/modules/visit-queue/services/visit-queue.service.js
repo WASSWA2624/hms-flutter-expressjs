@@ -103,6 +103,11 @@ const ALLOWED_VISIT_QUEUE_SORT_FIELDS = new Set([
   'queued_at',
   'status',
 ]);
+const ACTIVE_VISIT_QUEUE_STATUSES = Object.freeze([
+  'SCHEDULED',
+  'CONFIRMED',
+  'IN_PROGRESS',
+]);
 
 const resolveSortBy = (value, fallback = 'queued_at') => {
   const normalized = String(value || '').trim();
@@ -635,6 +640,23 @@ const getVisitQueueById = async (id) => {
  */
 const createVisitQueue = async (data, context = {}) => {
   const payload = await resolveVisitQueuePayloadIdentifiers(data);
+
+  // Treat repeat submissions as the same domain action when an active queue
+  // entry already exists for the appointment.
+  if (payload.appointment_id) {
+    const existingEntries = await visitQueueRepository.findMany(
+      {
+        appointment_id: payload.appointment_id,
+        status: { in: ACTIVE_VISIT_QUEUE_STATUSES },
+      },
+      0,
+      1,
+      { queued_at: 'desc' }
+    );
+    if (Array.isArray(existingEntries) && existingEntries.length > 0) {
+      return withVisitQueueProjection(existingEntries[0]);
+    }
+  }
 
   // Set queued_at to current time if not provided
   if (!payload.queued_at) {

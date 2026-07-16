@@ -1,20 +1,37 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/realtime/realtime_events.dart';
-import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 
 void main() {
   group('WorkspaceEventRefreshPlan', () {
     test('maps appointment events to appointment slices only', () {
+      for (final String event in <String>[
+        RealtimeEvents.appointmentCreated,
+        RealtimeEvents.appointmentUpdated,
+        RealtimeEvents.appointmentRescheduled,
+        RealtimeEvents.appointmentCanceled,
+      ]) {
+        final WorkspaceRefreshPlan plan =
+            WorkspaceEventRefreshPlan.forClinicalFlow(event);
+
+        expect(plan.appointments, isTrue, reason: event);
+        expect(plan.flows, isFalse, reason: event);
+        expect(plan.queue, isFalse, reason: event);
+      }
+    });
+
+    test('reconciles linked appointment and queue slices for OPD events', () {
       final WorkspaceRefreshPlan plan =
           WorkspaceEventRefreshPlan.forClinicalFlow(
-            RealtimeEvents.appointmentCreated,
+            RealtimeEvents.opdFlowUpdated,
           );
 
+      expect(plan.flows, isTrue);
+      expect(plan.triage, isTrue);
       expect(plan.appointments, isTrue);
-      expect(plan.flows, isFalse);
-      expect(plan.queue, isFalse);
+      expect(plan.queue, isTrue);
+      expect(plan.selectedDetail, isTrue);
     });
 
     test('maps lab workflow events to workbench slices', () {

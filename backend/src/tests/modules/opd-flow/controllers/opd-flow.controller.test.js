@@ -118,6 +118,74 @@ describe('opd-flow.controller', () => {
     expect(sendSuccess).toHaveBeenCalledWith(res, 201, 'messages.opd_flow.start.success', expect.any(Object));
   });
 
+  it('updates active encounter context', async () => {
+    opdFlowService.updateActiveEncounterContext.mockResolvedValue({
+      encounter: { id: 'enc-1' }
+    });
+    req.params.id = 'ENC000001';
+    req.body = { coverage_plan_id: 'CVP000001' };
+
+    await opdFlowController.updateActiveEncounterContext(req, res);
+
+    expect(opdFlowService.updateActiveEncounterContext).toHaveBeenCalledWith(
+      'ENC000001',
+      req.body,
+      expect.any(Object)
+    );
+    expect(sendSuccess).toHaveBeenCalledWith(
+      res,
+      200,
+      'messages.opd_flow.get.success',
+      expect.any(Object)
+    );
+  });
+
+  it.each([
+    ['cancelEncounter', 'cancelEncounter', 'messages.opd_flow.cancel.success'],
+    ['closeEncounter', 'closeEncounter', 'messages.opd_flow.close.success']
+  ])('delegates %s lifecycle action', async (controllerMethod, serviceMethod, message) => {
+    opdFlowService[serviceMethod].mockResolvedValue({
+      encounter: { id: 'enc-1' }
+    });
+    req.params.id = 'ENC000001';
+    req.body = { reason_notes: 'Documented reason' };
+
+    await opdFlowController[controllerMethod](req, res);
+
+    expect(opdFlowService[serviceMethod]).toHaveBeenCalledWith(
+      'ENC000001',
+      req.body,
+      expect.any(Object)
+    );
+    expect(sendSuccess).toHaveBeenCalledWith(
+      res,
+      200,
+      message,
+      expect.any(Object)
+    );
+  });
+
+  it('returns OPD billing defaults for the request scope', async () => {
+    opdFlowService.getBillingDefaults.mockResolvedValue({
+      standard_consultation_fee: '50000',
+      standard_consultation_currency: 'UGX'
+    });
+    req.query = {};
+
+    await opdFlowController.getBillingDefaults(req, res);
+
+    expect(opdFlowService.getBillingDefaults).toHaveBeenCalledWith(
+      { tenant_id: 'tenant-1', facility_id: 'facility-1' },
+      expect.any(Object)
+    );
+    expect(sendSuccess).toHaveBeenCalledWith(
+      res,
+      200,
+      'messages.opd_flow.billing_defaults.success',
+      expect.any(Object)
+    );
+  });
+
   it('delegates pay consultation endpoint and returns 200', async () => {
     opdFlowService.payConsultation.mockResolvedValue({ encounter: { id: 'enc-1' }, flow: { stage: 'WAITING_VITALS' } });
     req.params.id = 'enc-1';

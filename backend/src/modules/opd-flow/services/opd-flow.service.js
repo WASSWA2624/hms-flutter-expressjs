@@ -3078,12 +3078,21 @@ const startOpdFlow = async (data, context = {}) => {
         (flowState.stage === STAGES.WAITING_CONSULTATION_PAYMENT && requireConsultationPayment);
 
       if (needsBillingForPaymentStage) {
+        const consultationPaymentMode =
+          data.coverage_plan_id ||
+          data.insurance_company_id ||
+          normalizeUpper(data.pay_now?.method) === 'INSURANCE'
+            ? 'INSURANCE'
+            : 'SELF_PAY';
         const billingPayload = buildConsultationBillingPayload({
           consultationFee: consultationFee || '0.00',
           currency,
           paymentStatus: requireConsultationPayment ? 'PENDING' : 'PENDING',
           catalogItemId: consultationCatalogItemId,
-          payNow: data.pay_now || null
+          payNow: data.pay_now || null,
+          ...(consultationPaymentMode === 'INSURANCE'
+            ? { paymentMode: consultationPaymentMode }
+            : {})
         });
 
         if (billingPayload) {
@@ -3097,6 +3106,13 @@ const startOpdFlow = async (data, context = {}) => {
             catalogItemId: consultationCatalogItemId,
             actorUserId: context.user_id || null,
             currency,
+            ...(consultationPaymentMode === 'INSURANCE'
+              ? {
+                  paymentMode: consultationPaymentMode,
+                  coveragePlanId: data.coverage_plan_id || null,
+                  insuranceCompanyId: data.insurance_company_id || null
+                }
+              : {}),
             issuedAt: startedAt,
             description: 'Consultation fee'
           });
@@ -3399,16 +3415,33 @@ const updateActiveEncounterContext = async (id, data, context = {}) => {
       const consultationCatalogItemId =
         provider?.staff_profile?.id || facilityId || encounter.facility_id || null;
 
-      if ((!invoice && requiresInvoice) || (invoice && (data.consultation_fee !== undefined || data.currency || data.pay_now))) {
+      if (
+        (!invoice && requiresInvoice) ||
+        (invoice &&
+          (data.consultation_fee !== undefined ||
+            data.currency ||
+            data.pay_now ||
+            data.coverage_plan_id !== undefined ||
+            data.insurance_company_id !== undefined))
+      ) {
         const existingSnapshot =
           consultation.billing ||
           (consultation.invoice_id ? { invoice_id: consultation.invoice_id } : null);
+        const consultationPaymentMode =
+          data.coverage_plan_id ||
+          data.insurance_company_id ||
+          normalizeUpper(data.pay_now?.method) === 'INSURANCE'
+            ? 'INSURANCE'
+            : consultation.billing?.payment_mode || 'SELF_PAY';
         const billingPayload = buildConsultationBillingPayload({
           consultationFee: consultation.consultation_fee || '0.00',
           currency,
           paymentStatus: consultation.require_payment ? 'PENDING' : 'PENDING',
           catalogItemId: consultationCatalogItemId,
-          payNow: data.pay_now || null
+          payNow: data.pay_now || null,
+          ...(consultationPaymentMode === 'INSURANCE'
+            ? { paymentMode: consultationPaymentMode }
+            : {})
         });
 
         if (billingPayload) {
@@ -3423,6 +3456,19 @@ const updateActiveEncounterContext = async (id, data, context = {}) => {
             catalogItemId: consultationCatalogItemId,
             actorUserId: context.user_id || null,
             currency,
+            ...(consultationPaymentMode === 'INSURANCE'
+              ? {
+                  paymentMode: consultationPaymentMode,
+                  coveragePlanId:
+                    data.coverage_plan_id ||
+                    consultation.billing?.coverage_plan_id ||
+                    null,
+                  insuranceCompanyId:
+                    data.insurance_company_id ||
+                    consultation.billing?.insurance_company_id ||
+                    null
+                }
+              : {}),
             issuedAt: now,
             description: 'Consultation fee',
             mutableUpdate: Boolean(existingSnapshot)
