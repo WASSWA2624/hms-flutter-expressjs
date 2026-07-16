@@ -1,4 +1,4 @@
-"""Run each prompt-generator file as a separate Cursor agent chat."""
+"""Run each prompt file in prompts/ as a separate Cursor agent chat."""
 
 import asyncio
 import json
@@ -14,41 +14,17 @@ from cursor_sdk import (
 )
 
 
-PROMPTS_DIR = Path(__file__).parent / "prompt-generators"
+PROMPTS_DIR = Path(__file__).parent / "prompts"
 PROJECT_DIR = str(PROMPTS_DIR.parent)
 STATE_FILE = Path(__file__).parent / ".run_prompts_state.json"
-INCLUDED = {
-    "01-patients-prompt-generator.md",
-    "02-reception-prompt-generator.md",
-    "03-opd-prompt-generator.md",
-    "04-emergency-prompt-generator.md",
-    "05-ipd-prompt-generator.md",
-    "06-rooms-beds-prompt-generator.md",
-    "07-icu-prompt-generator.md",
-    "08-nursing-prompt-generator.md",
-    "09-clinical-prompt-generator.md",
-    "10-physiotherapy-prompt-generator.md",
-    "11-lab-prompt-generator.md",
-    "12-radiology-prompt-generator.md",
-    "13-pharmacy-prompt-generator.md",
-    "14-billing-prompt-generator.md",
-    "15-claims-prompt-generator.md",
-    "16-discharge-prompt-generator.md",
-    "17-theater-prompt-generator.md",
-    "18-operations-prompt-generator.md",
-    "19-housekeeping-prompt-generator.md",
-    "20-hr-prompt-generator.md",
-    "21-biomedical-prompt-generator.md",
-    "22-communications-prompt-generator.md",
-    "23-integrations-prompt-generator.md",
-    "24-subscriptions-prompt-generator.md",
-    "25-access-admin-prompt-generator.md",
-    "26-settings-prompt-generator.md",
-}
 MAX_CONCURRENCY = 5
 MAX_ATTEMPTS = 3
 # Agent runs can take much longer than the SDK defaults (60s unary / 600s stream).
 BRIDGE_TIMEOUT_SECONDS = None
+
+
+def _list_prompt_files() -> list[Path]:
+    return sorted(PROMPTS_DIR.glob("*.md"))
 
 
 def _load_finished() -> set[str]:
@@ -97,7 +73,7 @@ async def run_prompt(
     finished: set[str],
     finished_lock: asyncio.Lock,
 ) -> dict:
-    """Run a single prompt-generator file in a Cursor agent."""
+    """Run a single prompt file in a Cursor agent."""
     async with semaphore:
         name = file.name
         print(f"[START] {name}", flush=True)
@@ -162,19 +138,17 @@ async def main():
             "'cursor_...' example value."
         )
 
-    files = sorted(f for f in PROMPTS_DIR.glob("*.md") if f.name in INCLUDED)
-    missing = sorted(INCLUDED - {f.name for f in files})
-    if missing:
-        sys.exit(f"Missing included prompt-generator file(s): {', '.join(missing)}")
+    files = _list_prompt_files()
     if not files:
-        sys.exit("No included .md files found in prompt-generators/")
+        sys.exit(f"No .md files found in {PROMPTS_DIR}/")
 
-    finished = _load_finished() & INCLUDED
+    known = {f.name for f in files}
+    finished = _load_finished() & known
     pending = [f for f in files if f.name not in finished]
     skipped = len(files) - len(pending)
 
     print(
-        f"Found {len(files)} included prompt-generator files "
+        f"Found {len(files)} prompt file(s) in prompts/ "
         f"({skipped} already finished, {len(pending)} pending). "
         f"Running with concurrency={MAX_CONCURRENCY}...\n",
         flush=True,
@@ -210,11 +184,11 @@ async def main():
 
     errors = [r for r in results if r["status"] != "finished"]
     if errors:
-        print(f"\n{len(errors)} prompt-generator(s) did not finish successfully.")
+        print(f"\n{len(errors)} prompt(s) did not finish successfully.")
         print("Re-run the same command to retry only the failed ones.")
         sys.exit(1)
     else:
-        print(f"\nAll {len(results)} prompt-generators completed successfully.")
+        print(f"\nAll {len(results)} prompts completed successfully.")
         if STATE_FILE.exists():
             STATE_FILE.unlink()
 
