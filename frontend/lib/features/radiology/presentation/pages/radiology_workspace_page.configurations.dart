@@ -273,189 +273,223 @@ class _RadiologyConfigurationsDialogState
     final bool tableBusy = isLoadingCatalog || isMutating;
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
-    return AppListTable<RadiologyCatalogTest>(
-      items: tests,
-      isLoading: tableBusy,
-      maxVisibleItems: _maxVisibleItems,
-      maxTrailingActions: 3,
-      trailingActionsOverflowLabel: l10n.workspaceToolbarOverflowLabel,
-      shrinkWrap: true,
-      columnVisibilityController: _testColumnController,
-      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-      columnVisibilityTitle: l10n.radiologyTableColumnsTitle,
-      columnVisibilityApplyLabel: l10n.radiologyApplyColumnsAction,
-      columnVisibilityResetLabel: l10n.radiologyResetColumnsAction,
-      search: AppListTableSearch<RadiologyCatalogTest>(
-        controller: _searchController,
-        semanticLabel: l10n.radiologyConfigurationSearchLabel,
-        hintText: l10n.radiologyConfigurationSearchHint,
-        matcher: (RadiologyCatalogTest item, String query) =>
-            item.matchesSearch(query),
-        onChanged: (_) => setState(() {}),
-        showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.radiologyFiltersLabel,
-        advancedFilterTitle: l10n.radiologyFiltersLabel,
-        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-        advancedFilterResetLabel: l10n.radiologyClearFiltersAction,
-        enableDateFilter: false,
-        allFieldsLabel: l10n.labScopeAll,
-        filterGroups: <AppSearchBarFilterGroup>[
-          AppSearchBarFilterGroup(
-            key: _modalityFilterKey,
-            label: l10n.radiologyModalityLabel,
-            allLabel: l10n.labScopeAll,
-            choices: _modalityFilterChoices(tests),
-          ),
-        ],
-        filterValue: _filterValue,
-        onFilterChanged: (AppSearchBarFilterValue value) {
-          setState(() => _filterValue = value);
-        },
-        trailingActions: <AppSearchBarAction>[
-          if (_canEnableOfferings)
-            AppSearchBarAction(
-              icon: Icons.add_circle_outline,
-              label: l10n.radiologyEnableProcedureAction,
-              tooltip: l10n.radiologyEnableProcedureAction,
-              enabled: !tableBusy,
-              onPressed: tableBusy
-                  ? null
-                  : () => _openEnableProcedureDialog(context),
-            ),
-          if (_selectedOfferingIds.isNotEmpty)
-            AppSearchBarAction(
-              icon: Icons.delete_outline,
-              label: l10n.radiologyDeleteSelectedOfferingsAction,
-              tooltip: l10n.radiologyDeleteSelectedOfferingsAction,
-              enabled: !tableBusy,
-              destructive: true,
-              onPressed: tableBusy
-                  ? null
-                  : () => _openDeleteSelectedOfferingsDialog(context, tests),
-            ),
-          AppSearchBarAction(
-            icon: Icons.refresh_outlined,
-            label: l10n.commonRefreshActionLabel,
-            tooltip: l10n.commonRefreshActionLabel,
-            enabled: !tableBusy,
-            onPressed: tableBusy ? null : () => _refreshConfigurations(context),
-          ),
-        ],
-      ),
-      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-        title: l10n.radiologyNoImagingTestsTitle,
-        body: l10n.radiologyEnableOfferingNoItemsLabel,
-        icon: Icons.image_search_outlined,
-        minHeight: 180,
-      ),
-      columns: <AppListTableColumn<RadiologyCatalogTest>>[
-        _offeringSelectionColumn(context, tests, tableBusy),
-        AppListTableColumn<RadiologyCatalogTest>(
-          id: 'name',
-          label: l10n.radiologyTestNameLabel,
-          sortComparator:
-              (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
-                  appListTableCompareText(left.name, right.name),
-          cellBuilder: (BuildContext context, RadiologyCatalogTest item) {
-            final ThemeData theme = Theme.of(context);
-            return AppListItemRow(
-              title: item.name,
-              subtitle: _joinDisplay(<String?>[item.effectiveId, item.code]),
-              leadingIcon: _radiologyModalityIcon(item.modality),
-              padding: EdgeInsets.zero,
-              titleStyle: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            );
-          },
-        ),
-        AppListTableColumn<RadiologyCatalogTest>(
-          id: 'code',
-          label: l10n.radiologyTestCodeLabel,
-          sortComparator:
-              (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
-                  appListTableCompareText(left.code, right.code),
-          cellBuilder: (_, RadiologyCatalogTest item) =>
-              Text(item.code ?? l10n.profileUnknownValue),
-        ),
-        AppListTableColumn<RadiologyCatalogTest>(
-          id: 'modality',
-          label: l10n.radiologyModalityLabel,
-          sortComparator:
-              (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
-                  appListTableCompareText(left.modality, right.modality),
-          cellBuilder: (_, RadiologyCatalogTest item) =>
-              _ModalityLabel(modality: item.modality),
-        ),
-        AppListTableColumn<RadiologyCatalogTest>(
-          id: 'price',
-          label: l10n.clinicalRequestUnitPriceLabel,
-          sortComparator:
-              (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
-                  (left.unitPrice ?? 0).compareTo(right.unitPrice ?? 0),
-          cellBuilder: (BuildContext context, RadiologyCatalogTest item) =>
-              Text(_formatRadiologyCatalogUnitPrice(context, item, l10n)),
-        ),
-        _testActionsColumn(context, tableBusy),
-      ],
-      columnChoices: <AppListTableColumn<RadiologyCatalogTest>>[
-        AppListTableColumn<RadiologyCatalogTest>(
-          id: 'body_region',
-          label: l10n.radiologyBodyRegionLabel,
-          cellBuilder: (_, RadiologyCatalogTest item) =>
-              Text(item.bodyRegion ?? l10n.profileUnknownValue),
-        ),
-        AppListTableColumn<RadiologyCatalogTest>(
-          id: 'laterality',
-          label: l10n.radiologyLateralityLabel,
-          cellBuilder: (_, RadiologyCatalogTest item) =>
-              Text(item.laterality ?? l10n.profileUnknownValue),
-        ),
-      ],
-      mobileItemBuilder: (BuildContext context, RadiologyCatalogTest item) {
-        return Padding(
-          padding: EdgeInsets.all(theme.spacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Padding(
+          padding: EdgeInsets.only(bottom: theme.spacing.sm),
+          child: Row(
             children: <Widget>[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Checkbox(
-                    value: _selectedOfferingIds.contains(
-                      _offeringSelectionKey(item),
-                    ),
-                    onChanged: tableBusy
-                        ? null
-                        : (bool? value) => _toggleOfferingSelection(
-                            item,
-                            selected: value ?? false,
-                          ),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  Expanded(
-                    child: AppListItemRow(
-                      title: item.name,
-                      subtitle: _joinDisplay(<String?>[
-                        item.code,
-                        _modalityLabelOrNull(l10n, item.modality),
-                        _formatRadiologyCatalogUnitPrice(context, item, l10n),
-                      ]),
-                      leadingIcon: _radiologyModalityIcon(item.modality),
-                      padding: EdgeInsets.zero,
-                      titleStyle: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
+              Expanded(
+                child: Wrap(
+                  spacing: theme.spacing.xs,
+                  runSpacing: theme.spacing.xs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: <Widget>[
+                    if (_selectedOfferingIds.isNotEmpty)
+                      AppTabToolbarAction(
+                        label: l10n.radiologyDeleteSelectedOfferingsAction,
+                        icon: Icons.delete_outline,
+                        tooltip: l10n.radiologyDeleteSelectedOfferingsAction,
+                        enabled: !tableBusy,
+                        onPressed: tableBusy
+                            ? null
+                            : () => _openDeleteSelectedOfferingsDialog(
+                                context,
+                                tests,
+                              ),
                       ),
+                    AppTabToolbarAction(
+                      label: l10n.commonRefreshActionLabel,
+                      icon: Icons.refresh_outlined,
+                      tooltip: l10n.commonRefreshActionLabel,
+                      enabled: !tableBusy,
+                      onPressed: tableBusy
+                          ? null
+                          : () => _refreshConfigurations(context),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              SizedBox(height: theme.spacing.xs),
-              _testActionButtons(context, item, tableBusy),
+              if (_canEnableOfferings)
+                AppTabToolbarPrimary(
+                  label: l10n.radiologyEnableProcedureAction,
+                  icon: Icons.add_circle_outline,
+                  tooltip: l10n.radiologyEnableProcedureAction,
+                  enabled: !tableBusy,
+                  onPressed: tableBusy
+                      ? null
+                      : () => _openEnableProcedureDialog(context),
+                ),
             ],
           ),
-        );
-      },
+        ),
+        AppListTable<RadiologyCatalogTest>(
+          items: tests,
+          isLoading: tableBusy,
+          maxVisibleItems: _maxVisibleItems,
+          maxTrailingActions: 3,
+          trailingActionsOverflowLabel: l10n.workspaceToolbarOverflowLabel,
+          shrinkWrap: true,
+          columnVisibilityController: _testColumnController,
+          columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+          columnVisibilityTitle: l10n.radiologyTableColumnsTitle,
+          columnVisibilityApplyLabel: l10n.radiologyApplyColumnsAction,
+          columnVisibilityResetLabel: l10n.radiologyResetColumnsAction,
+          search: AppListTableSearch<RadiologyCatalogTest>(
+            controller: _searchController,
+            semanticLabel: l10n.radiologyConfigurationSearchLabel,
+            hintText: l10n.radiologyConfigurationSearchHint,
+            matcher: (RadiologyCatalogTest item, String query) =>
+                item.matchesSearch(query),
+            onChanged: (_) => setState(() {}),
+            showAdvancedFilterButton: true,
+            advancedFilterButtonLabel: l10n.radiologyFiltersLabel,
+            advancedFilterTitle: l10n.radiologyFiltersLabel,
+            advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+            advancedFilterResetLabel: l10n.radiologyClearFiltersAction,
+            enableDateFilter: false,
+            allFieldsLabel: l10n.labScopeAll,
+            filterGroups: <AppSearchBarFilterGroup>[
+              AppSearchBarFilterGroup(
+                key: _modalityFilterKey,
+                label: l10n.radiologyModalityLabel,
+                allLabel: l10n.labScopeAll,
+                choices: _modalityFilterChoices(tests),
+              ),
+            ],
+            filterValue: _filterValue,
+            onFilterChanged: (AppSearchBarFilterValue value) {
+              setState(() => _filterValue = value);
+            },
+          ),
+          emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+            title: l10n.radiologyNoImagingTestsTitle,
+            body: l10n.radiologyEnableOfferingNoItemsLabel,
+            icon: Icons.image_search_outlined,
+            minHeight: 180,
+          ),
+          columns: <AppListTableColumn<RadiologyCatalogTest>>[
+            _offeringSelectionColumn(context, tests, tableBusy),
+            AppListTableColumn<RadiologyCatalogTest>(
+              id: 'name',
+              label: l10n.radiologyTestNameLabel,
+              sortComparator:
+                  (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
+                      appListTableCompareText(left.name, right.name),
+              cellBuilder: (BuildContext context, RadiologyCatalogTest item) {
+                final ThemeData theme = Theme.of(context);
+                return AppListItemRow(
+                  title: item.name,
+                  subtitle: _joinDisplay(<String?>[
+                    item.effectiveId,
+                    item.code,
+                  ]),
+                  leadingIcon: _radiologyModalityIcon(item.modality),
+                  padding: EdgeInsets.zero,
+                  titleStyle: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                );
+              },
+            ),
+            AppListTableColumn<RadiologyCatalogTest>(
+              id: 'code',
+              label: l10n.radiologyTestCodeLabel,
+              sortComparator:
+                  (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
+                      appListTableCompareText(left.code, right.code),
+              cellBuilder: (_, RadiologyCatalogTest item) =>
+                  Text(item.code ?? l10n.profileUnknownValue),
+            ),
+            AppListTableColumn<RadiologyCatalogTest>(
+              id: 'modality',
+              label: l10n.radiologyModalityLabel,
+              sortComparator:
+                  (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
+                      appListTableCompareText(left.modality, right.modality),
+              cellBuilder: (_, RadiologyCatalogTest item) =>
+                  _ModalityLabel(modality: item.modality),
+            ),
+            AppListTableColumn<RadiologyCatalogTest>(
+              id: 'price',
+              label: l10n.clinicalRequestUnitPriceLabel,
+              sortComparator:
+                  (RadiologyCatalogTest left, RadiologyCatalogTest right) =>
+                      (left.unitPrice ?? 0).compareTo(right.unitPrice ?? 0),
+              cellBuilder:
+                  (BuildContext context, RadiologyCatalogTest item) => Text(
+                    _formatRadiologyCatalogUnitPrice(context, item, l10n),
+                  ),
+            ),
+            _testActionsColumn(context, tableBusy),
+          ],
+          columnChoices: <AppListTableColumn<RadiologyCatalogTest>>[
+            AppListTableColumn<RadiologyCatalogTest>(
+              id: 'body_region',
+              label: l10n.radiologyBodyRegionLabel,
+              cellBuilder: (_, RadiologyCatalogTest item) =>
+                  Text(item.bodyRegion ?? l10n.profileUnknownValue),
+            ),
+            AppListTableColumn<RadiologyCatalogTest>(
+              id: 'laterality',
+              label: l10n.radiologyLateralityLabel,
+              cellBuilder: (_, RadiologyCatalogTest item) =>
+                  Text(item.laterality ?? l10n.profileUnknownValue),
+            ),
+          ],
+          mobileItemBuilder:
+              (BuildContext context, RadiologyCatalogTest item) {
+                return Padding(
+                  padding: EdgeInsets.all(theme.spacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Checkbox(
+                            value: _selectedOfferingIds.contains(
+                              _offeringSelectionKey(item),
+                            ),
+                            onChanged: tableBusy
+                                ? null
+                                : (bool? value) => _toggleOfferingSelection(
+                                    item,
+                                    selected: value ?? false,
+                                  ),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                          Expanded(
+                            child: AppListItemRow(
+                              title: item.name,
+                              subtitle: _joinDisplay(<String?>[
+                                item.code,
+                                _modalityLabelOrNull(l10n, item.modality),
+                                _formatRadiologyCatalogUnitPrice(
+                                  context,
+                                  item,
+                                  l10n,
+                                ),
+                              ]),
+                              leadingIcon: _radiologyModalityIcon(
+                                item.modality,
+                              ),
+                              padding: EdgeInsets.zero,
+                              titleStyle: theme.textTheme.bodyMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: theme.spacing.xs),
+                      _testActionButtons(context, item, tableBusy),
+                    ],
+                  ),
+                );
+              },
+        ),
+      ],
     );
   }
 

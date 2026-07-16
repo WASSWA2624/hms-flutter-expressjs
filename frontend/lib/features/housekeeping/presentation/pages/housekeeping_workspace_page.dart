@@ -159,6 +159,7 @@ class _HousekeepingWorkspaceContentState
                     icon: _sectionIcon(section),
                     label: _sectionLabel(l10n, section),
                     count: _sectionCount(state, section),
+                    countTone: _sectionCountTone(section),
                   ),
               ],
               selectedId: _section.name,
@@ -302,6 +303,14 @@ int _sectionCount(
     HousekeepingSection.maintenance => state.overview.summaryValue(
       'open_requests',
     ),
+  };
+}
+
+AppTabCountTone _sectionCountTone(HousekeepingSection section) {
+  return switch (section) {
+    HousekeepingSection.tasks ||
+    HousekeepingSection.maintenance => AppTabCountTone.warning,
+    HousekeepingSection.schedules => AppTabCountTone.info,
   };
 }
 

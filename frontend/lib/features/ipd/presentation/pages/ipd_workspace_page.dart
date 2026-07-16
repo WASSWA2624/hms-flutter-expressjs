@@ -280,6 +280,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
                   icon: Icons.bed_outlined,
                   label: l10n.ipdAdmissionQueueTabLabel,
                   count: _tabCount(state.admissionQueueCount),
+                  countTone: AppTabCountTone.warning,
                 ),
                 AppTabItem(
                   id: IpdWorkspaceSection.activePatients.name,
@@ -292,12 +293,14 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
                   icon: Icons.swap_horiz,
                   label: l10n.ipdTransfersTabLabel,
                   count: _tabCount(state.transferPendingCount),
+                  countTone: AppTabCountTone.warning,
                 ),
                 AppTabItem(
                   id: IpdWorkspaceSection.dischargePlanned.name,
                   icon: Icons.fact_check_outlined,
                   label: l10n.ipdDischargeTabLabel,
                   count: _tabCount(state.dischargePlannedCount),
+                  countTone: AppTabCountTone.warning,
                 ),
                 AppTabItem(
                   id: IpdWorkspaceSection.bedBoard.name,

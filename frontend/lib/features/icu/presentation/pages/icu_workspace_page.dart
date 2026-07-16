@@ -244,6 +244,18 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
     };
   }
 
+  static AppTabCountTone _sectionCountTone(IcuWorkspaceSection section) {
+    return switch (section) {
+      IcuWorkspaceSection.critical => AppTabCountTone.danger,
+      IcuWorkspaceSection.active ||
+      IcuWorkspaceSection.transfers ||
+      IcuWorkspaceSection.discharge => AppTabCountTone.warning,
+      IcuWorkspaceSection.ended ||
+      IcuWorkspaceSection.all ||
+      IcuWorkspaceSection.beds => AppTabCountTone.info,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -270,6 +282,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
                     icon: _sectionIcon(section),
                     label: _sectionLabel(l10n, section),
                     count: _sectionCount(state, section),
+                    countTone: _sectionCountTone(section),
                   ),
               ],
               selectedId: _section.name,

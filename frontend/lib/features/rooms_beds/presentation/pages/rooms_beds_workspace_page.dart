@@ -198,6 +198,7 @@ class _RoomsBedsWorkspaceContentState
                   icon: _roomsBedsSectionIcon(section),
                   label: _roomsBedsSectionLabel(l10n, section),
                   count: roomsBedsSectionCount(state, section),
+                  countTone: _roomsBedsSectionCountTone(section),
                 ),
             ],
             selectedId: _section.name,
@@ -210,6 +211,38 @@ class _RoomsBedsWorkspaceContentState
                 }
               }
             },
+            secondaryActions: <Widget>[
+              if (canAdminBeds)
+                AppTabToolbarAction(
+                  label: l10n.tenantFacilityAddBedAction,
+                  icon: Icons.bed_outlined,
+                  tooltip: l10n.tenantFacilityAddBedAction,
+                  onPressed: () async {
+                    await showTenantFacilityBedFormDialog(
+                      context,
+                      state.referenceData.snapshot,
+                    );
+                    if (context.mounted) {
+                      await controller.refresh();
+                    }
+                  },
+                ),
+              if (canAdminBeds)
+                AppTabToolbarAction(
+                  label: l10n.roomsBedsManageCatalogAction,
+                  icon: Icons.apartment_outlined,
+                  tooltip: l10n.roomsBedsManageCatalogAction,
+                  onPressed: () =>
+                      context.go(AppRoutes.tenantFacilitySetup.location()),
+                ),
+              AppTabToolbarAction(
+                label: l10n.navigationSetupLabel,
+                icon: Icons.settings_outlined,
+                tooltip: l10n.navigationSetupLabel,
+                onPressed: () =>
+                    context.go(AppRoutes.tenantFacilitySetup.location()),
+              ),
+            ],
             primaryAction: canAdminBeds
                 ? AppTabToolbarPrimary(
                     label: l10n.tenantFacilityAddRoomAction,
@@ -322,38 +355,6 @@ class _RoomsBedsWorkspaceContentState
                   _showFailureIfNeeded(context, failure);
                 }
               },
-              trailingActions: <AppSearchBarAction>[
-                if (canAdminBeds)
-                  AppSearchBarAction(
-                    icon: Icons.bed_outlined,
-                    label: l10n.tenantFacilityAddBedAction,
-                    tooltip: l10n.tenantFacilityAddBedAction,
-                    onPressed: () async {
-                      await showTenantFacilityBedFormDialog(
-                        context,
-                        state.referenceData.snapshot,
-                      );
-                      if (context.mounted) {
-                        await controller.refresh();
-                      }
-                    },
-                  ),
-                if (canAdminBeds)
-                  AppSearchBarAction(
-                    icon: Icons.apartment_outlined,
-                    label: l10n.roomsBedsManageCatalogAction,
-                    tooltip: l10n.roomsBedsManageCatalogAction,
-                    onPressed: () =>
-                        context.go(AppRoutes.tenantFacilitySetup.location()),
-                  ),
-                AppSearchBarAction(
-                  icon: Icons.settings_outlined,
-                  label: l10n.navigationSetupLabel,
-                  tooltip: l10n.navigationSetupLabel,
-                  onPressed: () =>
-                      context.go(AppRoutes.tenantFacilitySetup.location()),
-                ),
-              ],
             ),
             itemKeyBuilder: (BedBoardItem item) => ValueKey<String>(item.id),
             onPageChanged: (AppPageRequest request) {
@@ -1358,6 +1359,16 @@ String _roomsBedsSectionLabel(AppLocalizations l10n, RoomsBedsSection section) {
     RoomsBedsSection.occupied => l10n.roomsBedsSectionOccupiedLabel,
     RoomsBedsSection.turnover => l10n.roomsBedsSectionTurnoverLabel,
     RoomsBedsSection.outOfService => l10n.roomsBedsSectionOutOfServiceLabel,
+  };
+}
+
+AppTabCountTone _roomsBedsSectionCountTone(RoomsBedsSection section) {
+  return switch (section) {
+    RoomsBedsSection.all => AppTabCountTone.info,
+    RoomsBedsSection.available => AppTabCountTone.info,
+    RoomsBedsSection.occupied => AppTabCountTone.info,
+    RoomsBedsSection.turnover => AppTabCountTone.warning,
+    RoomsBedsSection.outOfService => AppTabCountTone.danger,
   };
 }
 

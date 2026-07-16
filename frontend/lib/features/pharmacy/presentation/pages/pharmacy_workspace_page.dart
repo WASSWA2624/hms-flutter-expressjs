@@ -299,6 +299,16 @@ class _PharmacyWorkspaceContentState
     };
   }
 
+  static AppTabCountTone _sectionCountTone(PharmacyDeskSection section) {
+    return switch (section) {
+      PharmacyDeskSection.queue ||
+      PharmacyDeskSection.inProgress ||
+      PharmacyDeskSection.pendingPayment => AppTabCountTone.warning,
+      PharmacyDeskSection.completed ||
+      PharmacyDeskSection.allOrders => AppTabCountTone.info,
+    };
+  }
+
   static IconData _sectionIcon(PharmacyDeskSection section) {
     return switch (section) {
       PharmacyDeskSection.queue => Icons.medication_liquid_outlined,
@@ -457,6 +467,7 @@ class _PharmacyWorkspaceContentState
                   icon: _sectionIcon(section),
                   label: _sectionLabel(l10n, section),
                   count: _sectionCount(state.workbench.summary, section),
+                  countTone: _sectionCountTone(section),
                 ),
             ],
             selectedId: _section.name,

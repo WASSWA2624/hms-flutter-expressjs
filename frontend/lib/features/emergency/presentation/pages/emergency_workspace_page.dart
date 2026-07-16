@@ -208,6 +208,7 @@ class _EmergencyWorkspaceContentState
                     icon: _tabIcon(tab),
                     label: _tabLabel(tab),
                     count: _tabCount(state, tab),
+                    countTone: _tabCountTone(tab),
                   ),
               ],
               selectedId: _currentTab.name,
@@ -517,6 +518,17 @@ class _EmergencyWorkspaceContentState
       EmergencyBoardTab.handoff => state.handoffCount,
       EmergencyBoardTab.closed => state.closedCount,
       EmergencyBoardTab.all => state.allCount,
+    };
+  }
+
+  static AppTabCountTone _tabCountTone(EmergencyBoardTab tab) {
+    return switch (tab) {
+      EmergencyBoardTab.critical ||
+      EmergencyBoardTab.closed => AppTabCountTone.danger,
+      EmergencyBoardTab.active ||
+      EmergencyBoardTab.ambulance ||
+      EmergencyBoardTab.handoff => AppTabCountTone.warning,
+      EmergencyBoardTab.all => AppTabCountTone.info,
     };
   }
 

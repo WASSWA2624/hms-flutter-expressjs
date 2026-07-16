@@ -168,6 +168,13 @@ class _AccessAdminWorkspaceContentState
               state: state,
               controller: controller,
               canWrite: canWrite,
+              secondaryActions: <Widget>[
+                AppTabToolbarAction(
+                  label: context.l10n.commonRefreshActionLabel,
+                  icon: Icons.refresh,
+                  onPressed: controller.refresh,
+                ),
+              ],
               primaryAction: _primaryAction(
                 context,
                 state,
@@ -521,12 +528,14 @@ class _AccessAdminPanelTabBar extends ConsumerWidget {
     required this.state,
     required this.controller,
     required this.canWrite,
+    this.secondaryActions = const <Widget>[],
     this.primaryAction,
   });
 
   final AccessAdminWorkspaceState state;
   final AccessAdminWorkspaceController controller;
   final bool canWrite;
+  final List<Widget> secondaryActions;
   final Widget? primaryAction;
 
   @override
@@ -552,6 +561,7 @@ class _AccessAdminPanelTabBar extends ConsumerWidget {
       onTabTapped: state.isSaving
           ? (_) {}
           : (String tabId) => _onTabTapped(context, tabId),
+      secondaryActions: secondaryActions,
       primaryAction: primaryAction,
     );
   }
@@ -672,13 +682,6 @@ class _WorklistPanel extends StatelessWidget {
             ),
           );
         },
-        trailingActions: <AppSearchBarAction>[
-          AppSearchBarAction(
-            icon: Icons.refresh,
-            label: context.l10n.commonRefreshActionLabel,
-            onPressed: controller.refresh,
-          ),
-        ],
       ),
       mobileItemBuilder: (BuildContext context, AccessAdminItem item) {
         final bool isRole = state.query.resource == AccessAdminResource.roles;

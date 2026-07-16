@@ -289,6 +289,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
                   icon: _sectionIcon(scope),
                   label: _sectionLabel(l10n, scope),
                   count: _sectionCount(state, scope),
+                  countTone: _sectionCountTone(scope),
                 ),
             ],
             selectedId: section.name,
@@ -354,6 +355,18 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
       PhysiotherapyQueueScope.missed => state.missedCount,
       PhysiotherapyQueueScope.completed => state.completedCount,
       PhysiotherapyQueueScope.all => state.worklist.items.length,
+    };
+  }
+
+  static AppTabCountTone _sectionCountTone(PhysiotherapyQueueScope scope) {
+    return switch (scope) {
+      PhysiotherapyQueueScope.missed => AppTabCountTone.danger,
+      PhysiotherapyQueueScope.referrals ||
+      PhysiotherapyQueueScope.activePlans ||
+      PhysiotherapyQueueScope.followUpDue => AppTabCountTone.warning,
+      PhysiotherapyQueueScope.today ||
+      PhysiotherapyQueueScope.completed ||
+      PhysiotherapyQueueScope.all => AppTabCountTone.info,
     };
   }
 

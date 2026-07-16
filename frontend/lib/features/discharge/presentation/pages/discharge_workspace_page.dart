@@ -235,6 +235,15 @@ class _DischargeWorkspaceContentState
     };
   }
 
+  static AppTabCountTone _sectionCountTone(DischargeDeskSection section) {
+    return switch (section) {
+      DischargeDeskSection.planned ||
+      DischargeDeskSection.pendingClearance => AppTabCountTone.warning,
+      DischargeDeskSection.all ||
+      DischargeDeskSection.completed => AppTabCountTone.info,
+    };
+  }
+
   List<IpdAdmissionSummary> _buildRows(DischargeWorkspaceState state) {
     return switch (_section) {
       DischargeDeskSection.all => state.queue.items.toList(),
@@ -542,6 +551,7 @@ class _DischargeWorkspaceContentState
                     icon: _sectionIcon(section),
                     label: _sectionLabel(l10n, section),
                     count: _sectionCount(state, section),
+                    countTone: _sectionCountTone(section),
                   ),
               ],
               selectedId: _section.name,

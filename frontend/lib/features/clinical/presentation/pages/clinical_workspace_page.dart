@@ -244,6 +244,7 @@ class _ClinicalWorkspaceContentState
                     icon: _clinicalSectionIcon(section),
                     label: _clinicalSectionLabel(l10n, section),
                     count: _clinicalSectionCount(state, section),
+                    countTone: _clinicalSectionCountTone(section),
                   ),
               ],
               selectedId: _section.name,
@@ -344,6 +345,17 @@ int _clinicalSectionCount(
     ClinicalWorkspaceSection.resultsReady => state.resultsReadyCount,
     ClinicalWorkspaceSection.inConsultation => state.inConsultationCount,
     ClinicalWorkspaceSection.completed => state.completedCount,
+  };
+}
+
+AppTabCountTone _clinicalSectionCountTone(ClinicalWorkspaceSection section) {
+  return switch (section) {
+    ClinicalWorkspaceSection.urgent => AppTabCountTone.danger,
+    ClinicalWorkspaceSection.waitingReview ||
+    ClinicalWorkspaceSection.inConsultation => AppTabCountTone.warning,
+    ClinicalWorkspaceSection.all ||
+    ClinicalWorkspaceSection.resultsReady ||
+    ClinicalWorkspaceSection.completed => AppTabCountTone.info,
   };
 }
 

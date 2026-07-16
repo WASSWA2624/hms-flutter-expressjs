@@ -270,6 +270,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
                     icon: _sectionIcon(section),
                     label: _sectionLabel(l10n, section),
                     count: _sectionCount(state, section),
+                    countTone: _sectionCountTone(section),
                   ),
               ],
               selectedId: _section.name,
@@ -2003,6 +2004,16 @@ int _sectionCount(HrWorkspaceState state, HrDeskSection section) {
       summary.draftRosters + summary.unassignedShifts + summary.overdueShifts,
     HrDeskSection.payroll => summary.payrollDraftRuns,
     HrDeskSection.access => 0,
+  };
+}
+
+AppTabCountTone _sectionCountTone(HrDeskSection section) {
+  return switch (section) {
+    HrDeskSection.shiftRoster => AppTabCountTone.danger,
+    HrDeskSection.leaveRequests => AppTabCountTone.warning,
+    HrDeskSection.staffDirectory ||
+    HrDeskSection.payroll ||
+    HrDeskSection.access => AppTabCountTone.info,
   };
 }
 

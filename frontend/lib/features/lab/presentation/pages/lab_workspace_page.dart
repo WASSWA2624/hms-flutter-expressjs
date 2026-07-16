@@ -140,6 +140,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
                     icon: _sectionIcon(section),
                     label: _sectionLabel(l10n, section),
                     count: _sectionCount(state, section),
+                    countTone: _sectionCountTone(section),
                   ),
               ],
               selectedId: _section.name,
@@ -329,6 +330,17 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
       LabDeskSection.verification => state.summary.resultsForView(view),
       LabDeskSection.critical => state.summary.criticalForView(view),
       LabDeskSection.completed => state.summary.completedForView(view),
+    };
+  }
+
+  static AppTabCountTone _sectionCountTone(LabDeskSection section) {
+    return switch (section) {
+      LabDeskSection.critical => AppTabCountTone.danger,
+      LabDeskSection.collection ||
+      LabDeskSection.processing => AppTabCountTone.warning,
+      LabDeskSection.worklist ||
+      LabDeskSection.verification ||
+      LabDeskSection.completed => AppTabCountTone.info,
     };
   }
 
@@ -1155,131 +1167,154 @@ class _LabConfigurationsDialogState
                 failure: loadFailure,
               )
             else
-              AppListTable<LabCatalogItem>(
-                items: items,
-                maxVisibleItems: _maxVisibleCatalogItems,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                tableHorizontalMargin: 0,
-                columnVisibilityController: _columnVisibilityController,
-                columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-                columnVisibilityTitle: l10n.labTableColumnsTitle,
-                columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
-                columnVisibilityResetLabel: l10n.labResetColumnsAction,
-                search: AppListTableSearch<LabCatalogItem>(
-                  controller: _searchController,
-                  semanticLabel: l10n.labCatalogSearchLabel,
-                  hintText: l10n.labReferenceRangesSearchHint,
-                  matcher: (LabCatalogItem item, String query) =>
-                      item.matchesSearch(query),
-                  trailingActions: <AppSearchBarAction>[
-                    if (_canEnableOfferings)
-                      AppSearchBarAction(
-                        icon: showingTests
-                            ? Icons.add_circle_outline
-                            : Icons.add_box_outlined,
-                        label: showingTests
-                            ? l10n.labEnableTestAction
-                            : l10n.labEnablePanelAction,
-                        tooltip: showingTests
-                            ? l10n.labEnableTestAction
-                            : l10n.labEnablePanelAction,
-                        onPressed: () => showingTests
-                            ? _openEnableLabTestDialog(context, state)
-                            : _openEnableLabPanelDialog(context, state),
-                      ),
-                  ],
-                  showAdvancedFilterButton: true,
-                  advancedFilterButtonLabel: l10n.labFiltersLabel,
-                  advancedFilterTitle: l10n.labFiltersLabel,
-                  advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-                  advancedFilterResetLabel: l10n.opdClearFiltersAction,
-                  enableDateFilter: false,
-                  allFieldsLabel: l10n.labScopeAll,
-                  filterGroups: <AppSearchBarFilterGroup>[
-                    AppSearchBarFilterGroup(
-                      key: _categoryFilterKey,
-                      label: l10n.labCategoryLabel,
-                      allLabel: l10n.labScopeAll,
-                      choices: _filterChoices(
-                        _catalogItems(
-                          state,
-                        ).map((LabCatalogItem item) => item.category),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  if (_canEnableOfferings)
+                    Padding(
+                      padding: EdgeInsets.only(bottom: theme.spacing.sm),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: AppTabToolbarPrimary(
+                          label: showingTests
+                              ? l10n.labEnableTestAction
+                              : l10n.labEnablePanelAction,
+                          icon: showingTests
+                              ? Icons.add_circle_outline
+                              : Icons.add_box_outlined,
+                          tooltip: showingTests
+                              ? l10n.labEnableTestAction
+                              : l10n.labEnablePanelAction,
+                          onPressed: () => showingTests
+                              ? _openEnableLabTestDialog(context, state)
+                              : _openEnableLabPanelDialog(context, state),
+                        ),
                       ),
                     ),
-                    if (showingTests)
-                      AppSearchBarFilterGroup(
-                        key: _resultKindFilterKey,
-                        label: l10n.labResultKindLabel,
-                        allLabel: l10n.labScopeAll,
-                        choices: _filterChoices(
-                          state.catalogTests.map(
-                            (LabCatalogItem item) => item.resultKind,
+                  AppListTable<LabCatalogItem>(
+                    items: items,
+                    maxVisibleItems: _maxVisibleCatalogItems,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    tableHorizontalMargin: 0,
+                    columnVisibilityController: _columnVisibilityController,
+                    columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+                    columnVisibilityTitle: l10n.labTableColumnsTitle,
+                    columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
+                    columnVisibilityResetLabel: l10n.labResetColumnsAction,
+                    search: AppListTableSearch<LabCatalogItem>(
+                      controller: _searchController,
+                      semanticLabel: l10n.labCatalogSearchLabel,
+                      hintText: l10n.labReferenceRangesSearchHint,
+                      matcher: (LabCatalogItem item, String query) =>
+                          item.matchesSearch(query),
+                      showAdvancedFilterButton: true,
+                      advancedFilterButtonLabel: l10n.labFiltersLabel,
+                      advancedFilterTitle: l10n.labFiltersLabel,
+                      advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                      advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                      enableDateFilter: false,
+                      allFieldsLabel: l10n.labScopeAll,
+                      filterGroups: <AppSearchBarFilterGroup>[
+                        AppSearchBarFilterGroup(
+                          key: _categoryFilterKey,
+                          label: l10n.labCategoryLabel,
+                          allLabel: l10n.labScopeAll,
+                          choices: _filterChoices(
+                            _catalogItems(
+                              state,
+                            ).map((LabCatalogItem item) => item.category),
                           ),
                         ),
-                      ),
-                  ],
-                  filterValue: _filterValue,
-                  hasActiveFilters: _filterValue.isActive,
-                  onFilterChanged: (AppSearchBarFilterValue value) {
-                    setState(() => _filterValue = value);
-                  },
-                ),
-                emptyBuilder: (_) => AppMutedText(
-                  showingTests
-                      ? l10n.labNoOfferedTestsLabel
-                      : l10n.labNoOfferedPanelsLabel,
-                ),
-                columns: _defaultColumns(context, state, showingTests),
-                columnChoices: _additionalColumns(context, showingTests),
-                mobileItemBuilder: (BuildContext context, LabCatalogItem item) {
-                  return _CompactRecordRow(
-                    title: item.displayTitle,
-                    subtitle: _joinNonEmpty(<String?>[
-                      item.category,
-                      if (showingTests) item.specimenType,
-                      if (showingTests) _resultKindLabel(l10n, item.resultKind),
-                      showingTests
-                          ? _unitRangeSummary(context, item)
-                          : l10n.clinicalLabOrderItemCount(item.testCount),
-                    ]),
-                    trailing: Wrap(
-                      spacing: theme.spacing.xs,
-                      runSpacing: theme.spacing.xs,
-                      children: <Widget>[
-                        AppButton.tertiary(
-                          label: showingTests
-                              ? l10n.labConfigureTestAction
-                              : l10n.labUpdatePanelAction,
-                          leadingIcon: Icons.edit_outlined,
-                          onPressed: () => showingTests
-                              ? _openLabTestConfigurationDialog(
-                                  context,
-                                  state,
-                                  item,
-                                )
-                              : _openLabPanelDialog(context, state, item),
-                        ),
-                        AppButton(
-                          iconOnly: true,
-                          leadingIcon: Icons.delete_outline,
-                          label: showingTests
-                              ? l10n.labDeleteTestAction
-                              : l10n.labDeletePanelAction,
-                          semanticLabel: showingTests
-                              ? l10n.labDeleteTestAction
-                              : l10n.labDeletePanelAction,
-                          tooltip: showingTests
-                              ? l10n.labDeleteTestAction
-                              : l10n.labDeletePanelAction,
-                          onPressed: () => showingTests
-                              ? _openDeleteLabTestDialog(context, item)
-                              : _openDeleteLabPanelDialog(context, item),
-                        ),
+                        if (showingTests)
+                          AppSearchBarFilterGroup(
+                            key: _resultKindFilterKey,
+                            label: l10n.labResultKindLabel,
+                            allLabel: l10n.labScopeAll,
+                            choices: _filterChoices(
+                              state.catalogTests.map(
+                                (LabCatalogItem item) => item.resultKind,
+                              ),
+                            ),
+                          ),
                       ],
+                      filterValue: _filterValue,
+                      hasActiveFilters: _filterValue.isActive,
+                      onFilterChanged: (AppSearchBarFilterValue value) {
+                        setState(() => _filterValue = value);
+                      },
                     ),
-                  );
-                },
+                    emptyBuilder: (_) => AppMutedText(
+                      showingTests
+                          ? l10n.labNoOfferedTestsLabel
+                          : l10n.labNoOfferedPanelsLabel,
+                    ),
+                    columns: _defaultColumns(context, state, showingTests),
+                    columnChoices: _additionalColumns(context, showingTests),
+                    mobileItemBuilder:
+                        (BuildContext context, LabCatalogItem item) {
+                          return _CompactRecordRow(
+                            title: item.displayTitle,
+                            subtitle: _joinNonEmpty(<String?>[
+                              item.category,
+                              if (showingTests) item.specimenType,
+                              if (showingTests)
+                                _resultKindLabel(l10n, item.resultKind),
+                              showingTests
+                                  ? _unitRangeSummary(context, item)
+                                  : l10n.clinicalLabOrderItemCount(
+                                      item.testCount,
+                                    ),
+                            ]),
+                            trailing: Wrap(
+                              spacing: theme.spacing.xs,
+                              runSpacing: theme.spacing.xs,
+                              children: <Widget>[
+                                AppButton.tertiary(
+                                  label: showingTests
+                                      ? l10n.labConfigureTestAction
+                                      : l10n.labUpdatePanelAction,
+                                  leadingIcon: Icons.edit_outlined,
+                                  onPressed: () => showingTests
+                                      ? _openLabTestConfigurationDialog(
+                                          context,
+                                          state,
+                                          item,
+                                        )
+                                      : _openLabPanelDialog(
+                                          context,
+                                          state,
+                                          item,
+                                        ),
+                                ),
+                                AppButton(
+                                  iconOnly: true,
+                                  leadingIcon: Icons.delete_outline,
+                                  label: showingTests
+                                      ? l10n.labDeleteTestAction
+                                      : l10n.labDeletePanelAction,
+                                  semanticLabel: showingTests
+                                      ? l10n.labDeleteTestAction
+                                      : l10n.labDeletePanelAction,
+                                  tooltip: showingTests
+                                      ? l10n.labDeleteTestAction
+                                      : l10n.labDeletePanelAction,
+                                  onPressed: () => showingTests
+                                      ? _openDeleteLabTestDialog(
+                                          context,
+                                          item,
+                                        )
+                                      : _openDeleteLabPanelDialog(
+                                          context,
+                                          item,
+                                        ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                  ),
+                ],
               ),
             const Divider(height: 24),
             Text(

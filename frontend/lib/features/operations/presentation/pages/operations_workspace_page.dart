@@ -234,6 +234,16 @@ class _OperationsWorkspaceContentState
     };
   }
 
+  static AppTabCountTone _sectionCountTone(OperationsDeskSection section) {
+    return switch (section) {
+      OperationsDeskSection.open ||
+      OperationsDeskSection.inProgress => AppTabCountTone.warning,
+      OperationsDeskSection.allRequests ||
+      OperationsDeskSection.completed ||
+      OperationsDeskSection.assets => AppTabCountTone.info,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -294,6 +304,7 @@ class _OperationsWorkspaceContentState
                   icon: _sectionIcon(section),
                   label: _sectionLabel(l10n, section),
                   count: _sectionCount(state, section),
+                  countTone: _sectionCountTone(section),
                 ),
             ],
             selectedId: _section.name,

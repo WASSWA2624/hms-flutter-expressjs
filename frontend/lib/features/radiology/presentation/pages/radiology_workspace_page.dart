@@ -291,6 +291,15 @@ class _RadiologyWorkspaceContentState
     };
   }
 
+  static AppTabCountTone _sectionCountTone(RadiologyDeskSection section) {
+    return switch (section) {
+      RadiologyDeskSection.worklist ||
+      RadiologyDeskSection.reporting => AppTabCountTone.warning,
+      RadiologyDeskSection.released ||
+      RadiologyDeskSection.allOrders => AppTabCountTone.info,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -321,6 +330,7 @@ class _RadiologyWorkspaceContentState
                     icon: _sectionIcon(section),
                     label: _sectionLabel(l10n, section),
                     count: _sectionCount(state, section),
+                    countTone: _sectionCountTone(section),
                   ),
               ],
               selectedId: _section.name,

@@ -235,6 +235,15 @@ class _ClaimsWorkspaceContentState
     };
   }
 
+  static AppTabCountTone _sectionCountTone(ClaimsDeskSection section) {
+    return switch (section) {
+      ClaimsDeskSection.authorizations ||
+      ClaimsDeskSection.activeClaims => AppTabCountTone.warning,
+      ClaimsDeskSection.settled ||
+      ClaimsDeskSection.insuranceSetup => AppTabCountTone.info,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -251,6 +260,7 @@ class _ClaimsWorkspaceContentState
             icon: _sectionIcon(section),
             label: _sectionLabel(l10n, section),
             count: _sectionCount(state, section),
+            countTone: _sectionCountTone(section),
           ),
       ],
       selectedId: _section.name,

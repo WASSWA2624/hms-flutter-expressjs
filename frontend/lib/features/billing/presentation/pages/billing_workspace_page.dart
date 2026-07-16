@@ -294,6 +294,7 @@ class _BillingWorkspaceContentState
                   icon: billingQueueIcon(queue),
                   label: billingQueueLabel(context, queue),
                   count: state.overview.summary.countFor(queue),
+                  countTone: billingQueueCountTone(queue),
                 ),
             ],
             selectedId: _section.name,

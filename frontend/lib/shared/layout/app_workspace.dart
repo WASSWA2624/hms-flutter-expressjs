@@ -98,6 +98,7 @@ class AppWorkspace extends StatelessWidget {
     this.padding,
     this.scrollable = true,
     this.compactHeader = true,
+    this.showHeader = false,
     super.key,
   });
 
@@ -115,6 +116,10 @@ class AppWorkspace extends StatelessWidget {
   final EdgeInsets? padding;
   final bool scrollable;
   final bool compactHeader;
+
+  /// When false (default), the title/leading header is omitted. Toolbar actions
+  /// still render when present so refresh/global actions remain available.
+  final bool showHeader;
 
   @override
   Widget build(BuildContext context) {
@@ -140,31 +145,56 @@ class AppWorkspace extends StatelessWidget {
                 semanticLabel: title,
                 compact: compactHeader,
               ));
-    final List<Widget> children = <Widget>[
-      AppWorkspaceHeader(
-        title: title,
-        leading: effectiveLeading,
-        primaryAction: primaryAction,
-        secondaryActions: secondaryActions,
-        toolbar: toolbar,
-        compact: compactHeader,
-      ),
-    ];
+    final List<Widget> children = <Widget>[];
+
+    if (showHeader) {
+      children.add(
+        AppWorkspaceHeader(
+          title: title,
+          leading: effectiveLeading,
+          primaryAction: primaryAction,
+          secondaryActions: secondaryActions,
+          toolbar: toolbar,
+          compact: compactHeader,
+        ),
+      );
+    } else {
+      final AppWorkspaceToolbarConfig? toolbarOnly =
+          toolbar ??
+          (primaryAction != null || secondaryActions.isNotEmpty
+              ? AppWorkspaceToolbarConfig(
+                  primary: primaryAction,
+                  secondary: secondaryActions,
+                  showGlobalActions: false,
+                )
+              : null);
+      if (toolbarOnly != null && toolbarOnly.hasActions) {
+        children.add(
+          Consumer(
+            builder: (BuildContext context, WidgetRef ref, _) {
+              return AppWorkspaceToolbar(config: toolbarOnly);
+            },
+          ),
+        );
+      }
+    }
 
     if (filters != null) {
-      children
-        ..add(SizedBox(height: contentGap))
-        ..add(filters!);
+      if (children.isNotEmpty) {
+        children.add(SizedBox(height: contentGap));
+      }
+      children.add(filters!);
     }
 
     final Widget content = detail == null
         ? body
         : AppWorkspaceSplitContent(primary: body, detail: detail!);
-    children
-      ..add(SizedBox(height: contentGap))
-      // Non-scrollable workspaces must give [body] a bounded height so callers
-      // can use Expanded (e.g. tab strip + fill-height AppListTable).
-      ..add(scrollable ? content : Expanded(child: content));
+    if (children.isNotEmpty) {
+      children.add(SizedBox(height: contentGap));
+    }
+    // Non-scrollable workspaces must give [body] a bounded height so callers
+    // can use Expanded (e.g. tab strip + fill-height AppListTable).
+    children.add(scrollable ? content : Expanded(child: content));
 
     if (activity != null) {
       children

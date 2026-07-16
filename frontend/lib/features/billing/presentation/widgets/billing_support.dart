@@ -3,7 +3,7 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/components/app_currency_amount_field.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
 String billingMoney(BuildContext context, num value, String? currencyCode) {
@@ -110,6 +110,17 @@ IconData billingQueueIcon(BillingQueueType queue) {
     BillingQueueType.claimsPending => Icons.health_and_safety_outlined,
     BillingQueueType.approvalRequired => Icons.rule_outlined,
     BillingQueueType.overdue => Icons.warning_amber_outlined,
+  };
+}
+
+AppTabCountTone billingQueueCountTone(BillingQueueType queue) {
+  return switch (queue) {
+    BillingQueueType.overdue => AppTabCountTone.danger,
+    BillingQueueType.needsIssue ||
+    BillingQueueType.pendingPayment ||
+    BillingQueueType.claimsPending ||
+    BillingQueueType.approvalRequired => AppTabCountTone.warning,
+    BillingQueueType.all => AppTabCountTone.info,
   };
 }
 

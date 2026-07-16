@@ -214,7 +214,7 @@ class AppStateScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     if (variant == AppStateViewVariant.loading) {
       return Scaffold(
-        appBar: appBarTitle == null ? null : AppBar(title: Text(appBarTitle!)),
+        // Route title lives in the shell menu bar; avoid a second page header.
         body: AppLoadingSurface(
           child: AppLoadingIndicator.page(
             title: title,
@@ -227,7 +227,7 @@ class AppStateScaffold extends StatelessWidget {
     }
 
     return Scaffold(
-      appBar: appBarTitle == null ? null : AppBar(title: Text(appBarTitle!)),
+      // Route title lives in the shell menu bar; avoid a second page header.
       body: ResponsivePage(
         maxWidth: maxWidth,
         centerVertically: centerVertically,
@@ -276,7 +276,7 @@ class AppFailureStateScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: appBarTitle == null ? null : AppBar(title: Text(appBarTitle!)),
+      // Route title lives in the shell menu bar; avoid a second page header.
       body: ResponsivePage(
         maxWidth: maxWidth,
         centerVertically: centerVertically,

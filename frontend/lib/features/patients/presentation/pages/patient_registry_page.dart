@@ -184,6 +184,7 @@ class _PatientRegistryContentState
                     icon: _sectionIcon(section),
                     label: _sectionLabel(l10n, section),
                     count: _sectionCount(widget.state, section),
+                    countTone: _sectionCountTone(section),
                   ),
               ],
               selectedId: _section.name,
@@ -328,6 +329,15 @@ class _PatientRegistryContentState
       case PatientRegistrySection.balanceDue:
         return state.overview.unpaidInvoices;
     }
+  }
+
+  static AppTabCountTone _sectionCountTone(PatientRegistrySection section) {
+    return switch (section) {
+      PatientRegistrySection.balanceDue => AppTabCountTone.warning,
+      PatientRegistrySection.all ||
+      PatientRegistrySection.active ||
+      PatientRegistrySection.admitted => AppTabCountTone.info,
+    };
   }
 
   Future<void> _openRegisterPatientDialog(

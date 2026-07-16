@@ -129,6 +129,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
                     icon: _opdSectionIcon(section),
                     label: _opdSectionLabel(l10n, section),
                     count: _opdSectionCount(state, section, allItems),
+                    countTone: _opdSectionCountTone(section),
                   ),
               ],
               selectedId: _section.name,
@@ -1909,6 +1910,16 @@ int _opdSectionCount(
       state.summaryCounts.activeOpd > 0
           ? state.summaryCounts.activeOpd
           : state.activeFlowCount,
+  };
+}
+
+AppTabCountTone _opdSectionCountTone(OpdWorkspaceSection section) {
+  return switch (section) {
+    OpdWorkspaceSection.arrivals ||
+    OpdWorkspaceSection.queue ||
+    OpdWorkspaceSection.triage ||
+    OpdWorkspaceSection.active => AppTabCountTone.warning,
+    OpdWorkspaceSection.all => AppTabCountTone.info,
   };
 }
 

@@ -1,17 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 
-/// Maximum characters shown on toolbar action button labels.
-const int kAppTabToolbarLabelMaxLength = 10;
-
-/// Shortens toolbar action [label] to [kAppTabToolbarLabelMaxLength] characters.
-String appTabToolbarLabel(String label) {
-  final String trimmed = label.trim();
-  if (trimmed.length <= kAppTabToolbarLabelMaxLength) {
-    return trimmed;
-  }
-  return trimmed.substring(0, kAppTabToolbarLabelMaxLength);
-}
+/// Semantic tone for tab count superscripts.
+enum AppTabCountTone { info, warning, danger }
 
 @immutable
 final class AppTabItem {
@@ -19,6 +10,7 @@ final class AppTabItem {
     required this.id,
     required this.label,
     this.count,
+    this.countTone = AppTabCountTone.info,
     this.icon,
   });
 
@@ -26,17 +18,17 @@ final class AppTabItem {
   final String label;
   final int? count;
 
+  /// Color of the count superscript when [count] is non-null.
+  final AppTabCountTone countTone;
+
   /// Retained for call-site compatibility; not rendered in the tab chrome.
   final IconData? icon;
 }
 
 /// Section tabs with an optional dense action toolbar directly underneath.
 ///
-/// Layout:
-/// ```
-/// [ Tab ] [ Tab ] [ Tab ]     ← conspicuous active tab + optional counts
-/// Refresh  Assign     [CTA]   ← flat secondary actions + primary on the right
-/// ```
+/// The toolbar is omitted when both [primaryAction] and [secondaryActions] are
+/// empty.
 class AppTabStrip extends StatelessWidget {
   const AppTabStrip({
     required this.tabs,
@@ -82,6 +74,7 @@ class AppTabStrip extends StatelessWidget {
                   _AppTabChip(
                     label: tab.label,
                     count: tab.count,
+                    countTone: tab.countTone,
                     isSelected: selectedId == tab.id,
                     onTap: () => onTabTapped(tab.id),
                   ),
@@ -95,12 +88,13 @@ class AppTabStrip extends StatelessWidget {
               border: Border(bottom: BorderSide(color: hairline)),
             ),
             child: Padding(
-              padding: EdgeInsets.symmetric(vertical: theme.spacing.xs / 2),
+              padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
               child: Row(
                 children: <Widget>[
                   Expanded(
                     child: Wrap(
                       spacing: theme.spacing.xs,
+                      runSpacing: theme.spacing.xs,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: secondaryActions,
                     ),
@@ -141,7 +135,6 @@ class AppTabToolbarAction extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final String fullLabel = label.trim();
-    final String shortLabel = appTabToolbarLabel(fullLabel);
     final bool canPress = enabled && !isLoading && onPressed != null;
 
     final Widget button = TextButton(
@@ -149,12 +142,14 @@ class AppTabToolbarAction extends StatelessWidget {
       style: TextButton.styleFrom(
         foregroundColor: colorScheme.onSurfaceVariant,
         disabledForegroundColor: colorScheme.onSurface.withValues(alpha: 0.38),
-        padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
-        minimumSize: Size(theme.spacing.none, 28),
+        padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
+        minimumSize: Size(theme.spacing.none, 32),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         visualDensity: VisualDensity.compact,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -170,10 +165,10 @@ class AppTabToolbarAction extends StatelessWidget {
             )
           else if (icon != null) ...<Widget>[
             Icon(icon, size: 16),
-            SizedBox(width: theme.spacing.xs / 2),
+            SizedBox(width: theme.spacing.xs),
           ],
           Text(
-            shortLabel,
+            fullLabel,
             style: theme.textTheme.labelMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -189,15 +184,14 @@ class AppTabToolbarAction extends StatelessWidget {
       child: button,
     );
 
-    final String? tip = tooltip ?? (shortLabel != fullLabel ? fullLabel : null);
-    if (tip == null) {
+    if (tooltip == null) {
       return semantic;
     }
-    return Tooltip(message: tip, child: semantic);
+    return Tooltip(message: tooltip!, child: semantic);
   }
 }
 
-/// Dense filled primary CTA for the tab toolbar.
+/// Flat primary CTA for the tab toolbar (no elevation / 3D fill).
 class AppTabToolbarPrimary extends StatelessWidget {
   const AppTabToolbarPrimary({
     required this.label,
@@ -223,26 +217,23 @@ class AppTabToolbarPrimary extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final String fullLabel = label.trim();
-    final String shortLabel = appTabToolbarLabel(fullLabel);
     final bool canPress = enabled && !isLoading && onPressed != null;
 
-    final Widget button = FilledButton(
+    final Widget button = TextButton(
       onPressed: canPress ? onPressed : null,
-      style: FilledButton.styleFrom(
-        backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-        disabledBackgroundColor: colorScheme.onSurface.withValues(alpha: 0.12),
+      style: TextButton.styleFrom(
+        foregroundColor: colorScheme.primary,
         disabledForegroundColor: colorScheme.onSurface.withValues(alpha: 0.38),
         padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
-        minimumSize: const Size(0, 28),
+        minimumSize: Size(theme.spacing.none, 32),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         visualDensity: VisualDensity.compact,
+        backgroundColor: colorScheme.primary.withValues(alpha: 0.08),
         elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(theme.radius.sm),
-        ),
-        textStyle: theme.textTheme.labelMedium?.copyWith(
-          fontWeight: FontWeight.w700,
         ),
       ),
       child: Row(
@@ -254,14 +245,20 @@ class AppTabToolbarPrimary extends StatelessWidget {
               height: 14,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: colorScheme.onPrimary,
+                color: colorScheme.primary,
               ),
             )
           else if (icon != null) ...<Widget>[
             Icon(icon, size: 16),
-            SizedBox(width: theme.spacing.xs / 2),
+            SizedBox(width: theme.spacing.xs),
           ],
-          Text(shortLabel),
+          Text(
+            fullLabel,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ],
       ),
     );
@@ -273,12 +270,20 @@ class AppTabToolbarPrimary extends StatelessWidget {
       child: button,
     );
 
-    final String? tip = tooltip ?? (shortLabel != fullLabel ? fullLabel : null);
-    if (tip == null) {
+    if (tooltip == null) {
       return semantic;
     }
-    return Tooltip(message: tip, child: semantic);
+    return Tooltip(message: tooltip!, child: semantic);
   }
+}
+
+Color _countToneColor(ThemeData theme, AppTabCountTone tone) {
+  final AppStatusColors status = theme.statusColors;
+  return switch (tone) {
+    AppTabCountTone.info => status.info,
+    AppTabCountTone.warning => status.warning,
+    AppTabCountTone.danger => status.danger,
+  };
 }
 
 class _AppTabChip extends StatefulWidget {
@@ -286,11 +291,13 @@ class _AppTabChip extends StatefulWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
+    required this.countTone,
     this.count,
   });
 
   final String label;
   final int? count;
+  final AppTabCountTone countTone;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -311,10 +318,10 @@ class _AppTabChipState extends State<_AppTabChip> {
         : '$fullLabel (${widget.count})';
 
     final Color backgroundColor = widget.isSelected
-        ? colorScheme.primary.withValues(alpha: 0.12)
+        ? colorScheme.primary.withValues(alpha: 0.10)
         : _isHovered
-        ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
-        : Colors.transparent;
+        ? colorScheme.onSurface.withValues(alpha: 0.06)
+        : colorScheme.onSurface.withValues(alpha: 0.03);
     final Color foregroundColor = widget.isSelected
         ? colorScheme.primary
         : colorScheme.onSurfaceVariant;
@@ -330,55 +337,58 @@ class _AppTabChipState extends State<_AppTabChip> {
         onEnter: (_) => setState(() => _isHovered = true),
         onExit: (_) => setState(() => _isHovered = false),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOut,
+          margin: EdgeInsets.only(
+            right: theme.spacing.xs,
+            bottom: theme.spacing.xs / 2,
+            top: theme.spacing.xs / 2,
+          ),
           decoration: BoxDecoration(
             color: backgroundColor,
             borderRadius: BorderRadius.circular(theme.radius.sm),
-            border: Border(
-              bottom: BorderSide(
-                color: widget.isSelected
-                    ? colorScheme.primary
-                    : Colors.transparent,
-                width: 3,
-              ),
-            ),
           ),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(theme.radius.sm),
+              hoverColor: colorScheme.onSurface.withValues(alpha: 0.04),
+              splashColor: colorScheme.primary.withValues(alpha: 0.08),
               onTap: widget.onTap,
               child: Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: theme.spacing.sm,
-                  vertical: theme.spacing.xs,
+                  vertical: theme.spacing.xs + 2,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Text(
-                      fullLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: foregroundColor,
-                        fontWeight: fontWeight,
-                      ),
-                    ),
-                    if (widget.count != null) ...<Widget>[
-                      SizedBox(width: theme.spacing.xs / 2),
-                      Text(
-                        '${widget.count}',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: widget.isSelected
-                              ? colorScheme.primary
-                              : colorScheme.onSurfaceVariant.withValues(
-                                  alpha: 0.8,
-                                ),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 1),
+                      child: Text(
+                        fullLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: foregroundColor,
                           fontWeight: fontWeight,
                         ),
                       ),
-                    ],
+                    ),
+                    if (widget.count != null)
+                      Transform.translate(
+                        offset: const Offset(1, -4),
+                        child: Text(
+                          '${widget.count}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: _countToneColor(theme, widget.countTone),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 10,
+                            height: 1,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),

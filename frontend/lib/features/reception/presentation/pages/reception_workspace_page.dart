@@ -245,6 +245,7 @@ class _ReceptionWorkspaceContentState
                     icon: _sectionIcon(section),
                     label: _sectionLabel(l10n, section),
                     count: _sectionCount(state, section),
+                    countTone: _sectionCountTone(section),
                   ),
               ],
               selectedId: _section.name,
@@ -377,6 +378,15 @@ class _ReceptionWorkspaceContentState
             )
             .length;
     }
+  }
+
+  static AppTabCountTone _sectionCountTone(ReceptionDeskSection section) {
+    return switch (section) {
+      ReceptionDeskSection.appointments ||
+      ReceptionDeskSection.queue ||
+      ReceptionDeskSection.activeVisits ||
+      ReceptionDeskSection.paymentGate => AppTabCountTone.warning,
+    };
   }
 
   bool _isTerminalStatus(String? status) {

@@ -258,6 +258,15 @@ class _TheaterWorkspaceContentState
     };
   }
 
+  static AppTabCountTone _sectionCountTone(TheaterSection section) {
+    return switch (section) {
+      TheaterSection.scheduled ||
+      TheaterSection.inTheater ||
+      TheaterSection.recovery => AppTabCountTone.warning,
+      TheaterSection.all => AppTabCountTone.info,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -343,6 +352,7 @@ class _TheaterWorkspaceContentState
                   icon: _sectionIcon(section),
                   label: _sectionLabel(l10n, section),
                   count: _sectionCount(state, section),
+                  countTone: _sectionCountTone(section),
                 ),
             ],
             selectedId: _section.name,
