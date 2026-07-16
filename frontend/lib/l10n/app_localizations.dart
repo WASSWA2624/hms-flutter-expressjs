@@ -490,6 +490,132 @@ abstract class AppLocalizations {
   /// **'Arrival opened'**
   String get emergencyQuickArrivalOpenedMessage;
 
+  /// Title for creating an ambulance dispatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispatch ambulance'**
+  String get emergencyDispatchDialogTitle;
+
+  /// Accessibility label for the ambulance dispatch dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispatch an ambulance'**
+  String get emergencyDispatchDialogSemanticLabel;
+
+  /// Title for editing an ambulance dispatch status.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit dispatch status'**
+  String get emergencyDispatchEditDialogTitle;
+
+  /// Accessibility label for editing an ambulance dispatch status.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit ambulance dispatch status'**
+  String get emergencyDispatchEditDialogSemanticLabel;
+
+  /// Title for selecting the ambulance used to start a trip.
+  ///
+  /// In en, this message translates to:
+  /// **'Select ambulance'**
+  String get emergencyDispatchSelectAmbulanceDialogTitle;
+
+  /// Accessibility label for selecting an ambulance before starting a trip.
+  ///
+  /// In en, this message translates to:
+  /// **'Select an ambulance to start the trip'**
+  String get emergencyDispatchSelectAmbulanceDialogSemanticLabel;
+
+  /// Ambulance selector label in the dispatch dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Ambulance'**
+  String get emergencyDispatchAmbulanceLabel;
+
+  /// Ambulance public identifier field label when reference data is unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Ambulance ID'**
+  String get emergencyDispatchAmbulanceIdLabel;
+
+  /// Status field label in the ambulance dispatch dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispatch status'**
+  String get emergencyDispatchStatusLabel;
+
+  /// Primary action that persists an ambulance dispatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispatch'**
+  String get emergencyDispatchAction;
+
+  /// Primary action that starts a trip with the selected ambulance.
+  ///
+  /// In en, this message translates to:
+  /// **'Start trip'**
+  String get emergencyDispatchStartTripAction;
+
+  /// Success message after an ambulance dispatch is persisted.
+  ///
+  /// In en, this message translates to:
+  /// **'Ambulance dispatched'**
+  String get emergencyDispatchSucceededMessage;
+
+  /// Success message after a dispatch status edit is persisted.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispatch status edited'**
+  String get emergencyDispatchEditedMessage;
+
+  /// Success message after an ambulance trip is started.
+  ///
+  /// In en, this message translates to:
+  /// **'Trip started'**
+  String get emergencyDispatchTripStartedMessage;
+
+  /// Ambulance dispatch status indicating assignment.
+  ///
+  /// In en, this message translates to:
+  /// **'Dispatched'**
+  String get emergencyDispatchStatusDispatched;
+
+  /// Ambulance dispatch status indicating travel to the scene.
+  ///
+  /// In en, this message translates to:
+  /// **'En route'**
+  String get emergencyDispatchStatusEnRoute;
+
+  /// Ambulance dispatch status indicating arrival at the scene.
+  ///
+  /// In en, this message translates to:
+  /// **'On scene'**
+  String get emergencyDispatchStatusOnScene;
+
+  /// Ambulance dispatch status indicating patient transport.
+  ///
+  /// In en, this message translates to:
+  /// **'Transporting'**
+  String get emergencyDispatchStatusTransporting;
+
+  /// Ambulance dispatch status indicating availability.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get emergencyDispatchStatusAvailable;
+
+  /// Ambulance dispatch status indicating unavailability.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of service'**
+  String get emergencyDispatchStatusOutOfService;
+
+  /// Fallback label when an ambulance status is unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Status unavailable'**
+  String get emergencyDispatchStatusUnknown;
+
   /// Critical emergency priority option.
   ///
   /// In en, this message translates to:

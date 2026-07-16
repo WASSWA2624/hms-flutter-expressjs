@@ -224,6 +224,71 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emergencyQuickArrivalOpenedMessage => 'Arrival opened';
 
   @override
+  String get emergencyDispatchDialogTitle => 'Dispatch ambulance';
+
+  @override
+  String get emergencyDispatchDialogSemanticLabel => 'Dispatch an ambulance';
+
+  @override
+  String get emergencyDispatchEditDialogTitle => 'Edit dispatch status';
+
+  @override
+  String get emergencyDispatchEditDialogSemanticLabel =>
+      'Edit ambulance dispatch status';
+
+  @override
+  String get emergencyDispatchSelectAmbulanceDialogTitle => 'Select ambulance';
+
+  @override
+  String get emergencyDispatchSelectAmbulanceDialogSemanticLabel =>
+      'Select an ambulance to start the trip';
+
+  @override
+  String get emergencyDispatchAmbulanceLabel => 'Ambulance';
+
+  @override
+  String get emergencyDispatchAmbulanceIdLabel => 'Ambulance ID';
+
+  @override
+  String get emergencyDispatchStatusLabel => 'Dispatch status';
+
+  @override
+  String get emergencyDispatchAction => 'Dispatch';
+
+  @override
+  String get emergencyDispatchStartTripAction => 'Start trip';
+
+  @override
+  String get emergencyDispatchSucceededMessage => 'Ambulance dispatched';
+
+  @override
+  String get emergencyDispatchEditedMessage => 'Dispatch status edited';
+
+  @override
+  String get emergencyDispatchTripStartedMessage => 'Trip started';
+
+  @override
+  String get emergencyDispatchStatusDispatched => 'Dispatched';
+
+  @override
+  String get emergencyDispatchStatusEnRoute => 'En route';
+
+  @override
+  String get emergencyDispatchStatusOnScene => 'On scene';
+
+  @override
+  String get emergencyDispatchStatusTransporting => 'Transporting';
+
+  @override
+  String get emergencyDispatchStatusAvailable => 'Available';
+
+  @override
+  String get emergencyDispatchStatusOutOfService => 'Out of service';
+
+  @override
+  String get emergencyDispatchStatusUnknown => 'Status unavailable';
+
+  @override
   String get emergencyPriorityCriticalLabel => 'Critical';
 
   @override

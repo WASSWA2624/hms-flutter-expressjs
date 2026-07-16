@@ -246,13 +246,15 @@ List<AppSelectOption<String>> _quickArrivalTriageOptions(
 
 typedef DispatchSubmit = Future<AppFailure?> Function(DispatchInput input);
 
+enum DispatchDialogPurpose { dispatch, editStatus, selectAmbulance }
+
 Future<bool?> showEmergencyDispatchDialog({
   required BuildContext context,
   required EmergencyReferenceData referenceData,
   required DispatchSubmit onSubmit,
-  String title = EmergencyText.dispatchAmbulance,
-  String submitLabel = EmergencyText.dispatch,
-  String defaultStatus = 'DISPATCHED',
+  DispatchDialogPurpose purpose = DispatchDialogPurpose.dispatch,
+  String? initialAmbulanceId,
+  String initialStatus = 'DISPATCHED',
 }) {
   return showAppDialog<bool>(
     context: context,
@@ -260,9 +262,9 @@ Future<bool?> showEmergencyDispatchDialog({
     builder: (_) => DispatchDialog(
       referenceData: referenceData,
       onSubmit: onSubmit,
-      title: title,
-      submitLabel: submitLabel,
-      defaultStatus: defaultStatus,
+      purpose: purpose,
+      initialAmbulanceId: initialAmbulanceId,
+      initialStatus: initialStatus,
     ),
   );
 }
@@ -271,17 +273,17 @@ class DispatchDialog extends StatefulWidget {
   const DispatchDialog({
     required this.referenceData,
     required this.onSubmit,
-    this.title = EmergencyText.dispatchAmbulance,
-    this.submitLabel = EmergencyText.dispatch,
-    this.defaultStatus = 'DISPATCHED',
+    this.purpose = DispatchDialogPurpose.dispatch,
+    this.initialAmbulanceId,
+    this.initialStatus = 'DISPATCHED',
     super.key,
   });
 
   final EmergencyReferenceData referenceData;
   final DispatchSubmit onSubmit;
-  final String title;
-  final String submitLabel;
-  final String defaultStatus;
+  final DispatchDialogPurpose purpose;
+  final String? initialAmbulanceId;
+  final String initialStatus;
 
   @override
   State<DispatchDialog> createState() => _DispatchDialogState();
@@ -291,16 +293,17 @@ class _DispatchDialogState extends State<DispatchDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _ambulanceIdController = TextEditingController();
   String? _ambulanceId;
-  late String _status = widget.defaultStatus;
+  late String _status = widget.initialStatus;
   bool _isSubmitting = false;
   AppFailure? _failure;
 
   @override
   void initState() {
     super.initState();
+    _ambulanceId = widget.initialAmbulanceId;
     final List<EmergencyAmbulance> ambulances =
         widget.referenceData.availableAmbulances;
-    if (ambulances.length == 1) {
+    if (_ambulanceId == null && ambulances.length == 1) {
       _ambulanceId = ambulances.first.id;
     }
   }
@@ -313,11 +316,21 @@ class _DispatchDialogState extends State<DispatchDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     final List<EmergencyAmbulance> ambulances =
         widget.referenceData.availableAmbulances;
+    final bool showAmbulance =
+        widget.purpose != DispatchDialogPurpose.editStatus;
+    final bool showStatus =
+        widget.purpose != DispatchDialogPurpose.selectAmbulance;
     return AppDialog(
-      title: Text(widget.title),
-      icon: const Icon(Icons.airport_shuttle_outlined),
+      title: Text(_title(l10n)),
+      icon: Icon(
+        widget.purpose == DispatchDialogPurpose.editStatus
+            ? Icons.route_outlined
+            : Icons.airport_shuttle_outlined,
+      ),
+      semanticLabel: _semanticLabel(l10n),
       scrollable: true,
       pinActionsToBottom: true,
       closeEnabled: !_isSubmitting,
@@ -326,10 +339,10 @@ class _DispatchDialogState extends State<DispatchDialog> {
         enabled: !_isSubmitting,
         formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
-          if (ambulances.isNotEmpty)
+          if (showAmbulance && ambulances.isNotEmpty)
             AppSelectField<String>(
               value: _ambulanceId,
-              labelText: EmergencyText.ambulance,
+              labelText: l10n.emergencyDispatchAmbulanceLabel,
               isRequired: true,
               searchable: true,
               options: <AppSelectOption<String>>[
@@ -337,50 +350,88 @@ class _DispatchDialogState extends State<DispatchDialog> {
                   AppSelectOption<String>(
                     value: ambulance.id,
                     label: ambulance.displayTitle,
-                    trailingIcon: Text(apiLabel(ambulance.status ?? '')),
+                    trailingIcon: Text(
+                      _ambulanceStatusLabel(l10n, ambulance.status),
+                    ),
                   ),
               ],
-              validator: requiredSelect,
+              validator: (String? value) =>
+                  value == null ? l10n.validationRequired : null,
               onChanged: (String? value) {
                 setState(() {
                   _ambulanceId = value;
                 });
               },
             )
-          else
+          else if (showAmbulance)
             AppTextField(
               controller: _ambulanceIdController,
-              labelText: EmergencyText.ambulanceId,
+              labelText: l10n.emergencyDispatchAmbulanceIdLabel,
               isRequired: true,
-              validator: requiredText,
+              autofocus: true,
+              validator: (String? value) =>
+                  (value ?? '').trim().isEmpty ? l10n.validationRequired : null,
               inputFormatters: <TextInputFormatter>[
                 FilteringTextInputFormatter.deny(RegExp(r'\s')),
               ],
             ),
-          AppSelectField<String>(
-            value: _status,
-            labelText: EmergencyText.dispatchStatus,
-            isRequired: true,
-            options: ambulanceStatusOptions(),
-            validator: requiredSelect,
-            onChanged: (String? value) {
-              if (value != null) {
-                setState(() {
-                  _status = value;
-                });
-              }
-            },
-          ),
+          if (showStatus)
+            AppSelectField<String>(
+              value: _status,
+              labelText: l10n.emergencyDispatchStatusLabel,
+              isRequired: true,
+              options: _ambulanceStatusOptions(l10n),
+              validator: (String? value) =>
+                  value == null ? l10n.validationRequired : null,
+              onChanged: (String? value) {
+                if (value != null) {
+                  setState(() {
+                    _status = value;
+                  });
+                }
+              },
+            ),
         ],
       ),
       actions: clinicalActionDialogActions(
         context,
-        widget.submitLabel,
+        _submitLabel(l10n),
         _isSubmitting,
         _isSubmitting ? null : _submit,
-        submitLeadingIcon: Icons.airport_shuttle_outlined,
+        submitLeadingIcon: widget.purpose == DispatchDialogPurpose.editStatus
+            ? AppActionIcons.edit
+            : Icons.airport_shuttle_outlined,
       ),
     );
+  }
+
+  String _title(AppLocalizations l10n) {
+    return switch (widget.purpose) {
+      DispatchDialogPurpose.dispatch => l10n.emergencyDispatchDialogTitle,
+      DispatchDialogPurpose.editStatus => l10n.emergencyDispatchEditDialogTitle,
+      DispatchDialogPurpose.selectAmbulance =>
+        l10n.emergencyDispatchSelectAmbulanceDialogTitle,
+    };
+  }
+
+  String _semanticLabel(AppLocalizations l10n) {
+    return switch (widget.purpose) {
+      DispatchDialogPurpose.dispatch =>
+        l10n.emergencyDispatchDialogSemanticLabel,
+      DispatchDialogPurpose.editStatus =>
+        l10n.emergencyDispatchEditDialogSemanticLabel,
+      DispatchDialogPurpose.selectAmbulance =>
+        l10n.emergencyDispatchSelectAmbulanceDialogSemanticLabel,
+    };
+  }
+
+  String _submitLabel(AppLocalizations l10n) {
+    return switch (widget.purpose) {
+      DispatchDialogPurpose.dispatch => l10n.emergencyDispatchAction,
+      DispatchDialogPurpose.editStatus => l10n.patientsEditAction,
+      DispatchDialogPurpose.selectAmbulance =>
+        l10n.emergencyDispatchStartTripAction,
+    };
   }
 
   Future<void> _submit() async {
@@ -419,6 +470,47 @@ class _DispatchDialogState extends State<DispatchDialog> {
       _isSubmitting = false;
     });
   }
+}
+
+List<AppSelectOption<String>> _ambulanceStatusOptions(AppLocalizations l10n) {
+  return <AppSelectOption<String>>[
+    AppSelectOption<String>(
+      value: 'DISPATCHED',
+      label: l10n.emergencyDispatchStatusDispatched,
+    ),
+    AppSelectOption<String>(
+      value: 'EN_ROUTE',
+      label: l10n.emergencyDispatchStatusEnRoute,
+    ),
+    AppSelectOption<String>(
+      value: 'ON_SCENE',
+      label: l10n.emergencyDispatchStatusOnScene,
+    ),
+    AppSelectOption<String>(
+      value: 'TRANSPORTING',
+      label: l10n.emergencyDispatchStatusTransporting,
+    ),
+    AppSelectOption<String>(
+      value: 'AVAILABLE',
+      label: l10n.emergencyDispatchStatusAvailable,
+    ),
+    AppSelectOption<String>(
+      value: 'OUT_OF_SERVICE',
+      label: l10n.emergencyDispatchStatusOutOfService,
+    ),
+  ];
+}
+
+String _ambulanceStatusLabel(AppLocalizations l10n, String? status) {
+  return switch ((status ?? '').trim().toUpperCase()) {
+    'DISPATCHED' => l10n.emergencyDispatchStatusDispatched,
+    'EN_ROUTE' => l10n.emergencyDispatchStatusEnRoute,
+    'ON_SCENE' => l10n.emergencyDispatchStatusOnScene,
+    'TRANSPORTING' => l10n.emergencyDispatchStatusTransporting,
+    'AVAILABLE' => l10n.emergencyDispatchStatusAvailable,
+    'OUT_OF_SERVICE' => l10n.emergencyDispatchStatusOutOfService,
+    _ => l10n.emergencyDispatchStatusUnknown,
+  };
 }
 
 typedef HandoffSubmit = Future<AppFailure?> Function(HandoffInput input);

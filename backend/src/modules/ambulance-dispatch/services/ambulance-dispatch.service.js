@@ -89,25 +89,43 @@ const buildEmptyListResult = (page, limit) => ({
 const mapAmbulanceDispatchForDisplay = (record) => {
   if (!record || typeof record !== 'object') return record;
 
+  const { ambulance, emergency_case: emergencyCase } = record;
+  const dispatchId = resolveDisplayIdentifier(
+    record.human_friendly_id,
+    record.display_id,
+    record.id
+  );
+  const ambulanceId = resolveDisplayIdentifier(
+    record.ambulance_display_id,
+    ambulance?.human_friendly_id,
+    record.ambulance_id
+  );
+  const emergencyCaseId = resolveDisplayIdentifier(
+    record.emergency_case_display_id,
+    emergencyCase?.human_friendly_id,
+    record.emergency_case_id
+  );
+
   return {
-    ...record,
-    display_id: resolveDisplayIdentifier(record.display_id, record.human_friendly_id, record.id),
-    ambulance_display_id: resolveDisplayIdentifier(
-      record.ambulance_display_id,
-      record.ambulance?.human_friendly_id,
-      record.ambulance_id
-    ),
-    ambulance_display_label: sanitizeIdentifier(record.ambulance_display_label || record.ambulance?.identifier) || null,
-    emergency_case_display_id: resolveDisplayIdentifier(
-      record.emergency_case_display_id,
-      record.emergency_case?.human_friendly_id,
-      record.emergency_case_id
-    ),
+    human_friendly_id: dispatchId,
+    display_id: dispatchId,
+    ambulance_id: ambulanceId,
+    ambulance_display_id: ambulanceId,
+    ambulance_display_label: sanitizeIdentifier(
+      record.ambulance_display_label || ambulance?.identifier
+    ) || null,
+    emergency_case_id: emergencyCaseId,
+    emergency_case_display_id: emergencyCaseId,
     patient_display_id: resolveDisplayIdentifier(
       record.patient_display_id,
-      record.emergency_case?.patient?.human_friendly_id
+      emergencyCase?.patient?.human_friendly_id
     ),
-    patient_display_name: record.patient_display_name || resolvePatientDisplayName(record.emergency_case?.patient),
+    patient_display_name:
+      record.patient_display_name || resolvePatientDisplayName(emergencyCase?.patient),
+    status: record.status,
+    dispatched_at: record.dispatched_at,
+    created_at: record.created_at,
+    updated_at: record.updated_at,
   };
 };
 

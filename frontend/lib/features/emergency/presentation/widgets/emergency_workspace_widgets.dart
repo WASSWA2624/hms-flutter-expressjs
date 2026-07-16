@@ -1022,7 +1022,7 @@ class EmergencyAmbulanceActionCell extends ConsumerWidget {
         requirement: writeRequirement,
         builder: (BuildContext context, bool isAllowed) {
           return AppButton.primary(
-            label: EmergencyText.dispatch,
+            label: context.l10n.emergencyDispatchAction,
             leadingIcon: Icons.airport_shuttle_outlined,
             enabled: isAllowed && item.isOpen,
             onPressed: isAllowed && item.isOpen
@@ -1048,13 +1048,14 @@ class EmergencyAmbulanceActionCell extends ConsumerWidget {
     );
   }
 
-  Future<void> _ensureCaseSelected(BuildContext context, WidgetRef ref) async {
+  Future<bool> _ensureCaseSelected(BuildContext context, WidgetRef ref) async {
     final AppFailure? failure = await ref
         .read(emergencyWorkspaceControllerProvider.notifier)
         .selectCase(item);
     if (context.mounted && failure != null) {
       showFailureIfNeeded(context, failure);
     }
+    return failure == null;
   }
 
   Future<void> _openDispatch(
@@ -1062,8 +1063,8 @@ class EmergencyAmbulanceActionCell extends ConsumerWidget {
     WidgetRef ref,
     EmergencyReferenceData referenceData,
   ) async {
-    await _ensureCaseSelected(context, ref);
-    if (!context.mounted) {
+    final bool selected = await _ensureCaseSelected(context, ref);
+    if (!selected || !context.mounted) {
       return;
     }
 
@@ -1083,7 +1084,7 @@ class EmergencyAmbulanceActionCell extends ConsumerWidget {
       showFailureIfNeeded(
         context,
         null,
-        successMessage: 'Ambulance dispatched',
+        successMessage: context.l10n.emergencyDispatchSucceededMessage,
       );
     }
   }
@@ -1093,8 +1094,8 @@ class EmergencyAmbulanceActionCell extends ConsumerWidget {
     WidgetRef ref,
     EmergencyReferenceData referenceData,
   ) async {
-    await _ensureCaseSelected(context, ref);
-    if (!context.mounted) {
+    final bool selected = await _ensureCaseSelected(context, ref);
+    if (!selected || !context.mounted) {
       return;
     }
 
@@ -1109,17 +1110,18 @@ class EmergencyAmbulanceActionCell extends ConsumerWidget {
       final bool? saved = await showEmergencyDispatchDialog(
         context: context,
         referenceData: referenceData,
-        title: EmergencyText.selectAmbulance,
-        submitLabel: EmergencyText.startTrip,
-        defaultStatus: 'EN_ROUTE',
+        purpose: DispatchDialogPurpose.selectAmbulance,
+        initialStatus: 'EN_ROUTE',
         onSubmit: (DispatchInput input) {
-          return controller.startAmbulanceTrip(
-            ambulanceId: input.ambulanceId,
-          );
+          return controller.startAmbulanceTrip(ambulanceId: input.ambulanceId);
         },
       );
       if (saved == true && context.mounted) {
-        showFailureIfNeeded(context, null, successMessage: 'Trip started');
+        showFailureIfNeeded(
+          context,
+          null,
+          successMessage: context.l10n.emergencyDispatchTripStartedMessage,
+        );
       }
       return;
     }
@@ -1128,13 +1130,17 @@ class EmergencyAmbulanceActionCell extends ConsumerWidget {
       ambulanceId: ambulanceId,
     );
     if (context.mounted) {
-      showFailureIfNeeded(context, failure, successMessage: 'Trip started');
+      showFailureIfNeeded(
+        context,
+        failure,
+        successMessage: context.l10n.emergencyDispatchTripStartedMessage,
+      );
     }
   }
 
   Future<void> _completeTrip(BuildContext context, WidgetRef ref) async {
-    await _ensureCaseSelected(context, ref);
-    if (!context.mounted) {
+    final bool selected = await _ensureCaseSelected(context, ref);
+    if (!selected || !context.mounted) {
       return;
     }
 
@@ -1364,19 +1370,19 @@ class EmergencyActionPanel extends ConsumerWidget {
           onPressed: () => _openResponseDialog(context),
         ),
         AppActionItem(
-          label: EmergencyText.dispatch,
+          label: context.l10n.emergencyDispatchAction,
           leadingIcon: Icons.airport_shuttle_outlined,
-          enabled: canWriteEmergency && detail.summary.isOpen,
+          enabled: canWriteEmergency && detail.summary.isOpen && !hasDispatch,
           onPressed: () => _openDispatchDialog(context, referenceData),
         ),
         AppActionItem(
-          label: EmergencyText.dispatchStatus,
+          label: context.l10n.emergencyDispatchStatusLabel,
           leadingIcon: Icons.route_outlined,
           enabled: canWriteEmergency && detail.summary.isOpen && hasDispatch,
           onPressed: () => _openDispatchStatusDialog(context),
         ),
         AppActionItem(
-          label: EmergencyText.startTrip,
+          label: context.l10n.emergencyDispatchStartTripAction,
           leadingIcon: Icons.play_arrow_outlined,
           enabled: canWriteEmergency && detail.summary.isOpen && canStartTrip,
           onPressed: () => _startTrip(context, referenceData),
@@ -1541,40 +1547,31 @@ class EmergencyActionPanel extends ConsumerWidget {
       showFailureIfNeeded(
         context,
         null,
-        successMessage: 'Ambulance dispatched',
+        successMessage: context.l10n.emergencyDispatchSucceededMessage,
       );
     }
   }
 
   Future<void> _openDispatchStatusDialog(BuildContext context) async {
-    final AppLocalizations l10n = context.l10n;
     final EmergencyWorkspaceController controller = _controller(context);
-    final bool? saved = await showAppDialog<bool>(
+    final EmergencyAmbulanceDispatch? dispatch = detail.latestDispatch;
+    if (dispatch == null) {
+      return;
+    }
+    final bool? saved = await showEmergencyDispatchDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => AppSelectActionDialog<String>(
-        title: EmergencyText.updateDispatchStatus,
-        icon: const Icon(Icons.route_outlined),
-        fieldLabel: EmergencyText.dispatchStatus,
-        initialValue: normalizedOption(
-          detail.latestDispatch?.status,
-          fallback: 'EN_ROUTE',
-        ),
-        options: ambulanceStatusOptions(),
-        cancelLabel: l10n.commonCancelActionLabel,
-        submitLabel: EmergencyText.update,
-        requiredMessage: EmergencyText.required,
-        submitLeadingIcon: AppActionIcons.edit,
-        onSubmit: (String status) {
-          return controller.updateLatestDispatchStatus(status);
-        },
-      ),
+      referenceData: referenceData,
+      purpose: DispatchDialogPurpose.editStatus,
+      initialAmbulanceId: dispatch.ambulanceId ?? dispatch.ambulanceDisplayId,
+      initialStatus: normalizedOption(dispatch.status, fallback: 'EN_ROUTE'),
+      onSubmit: (DispatchInput input) =>
+          controller.updateLatestDispatchStatus(input.status),
     );
     if (saved == true && context.mounted) {
       showFailureIfNeeded(
         context,
         null,
-        successMessage: 'Dispatch status updated',
+        successMessage: context.l10n.emergencyDispatchEditedMessage,
       );
     }
   }
@@ -1592,17 +1589,18 @@ class EmergencyActionPanel extends ConsumerWidget {
       final bool? saved = await showEmergencyDispatchDialog(
         context: context,
         referenceData: referenceData,
-        title: EmergencyText.selectAmbulance,
-        submitLabel: EmergencyText.startTrip,
-        defaultStatus: 'EN_ROUTE',
+        purpose: DispatchDialogPurpose.selectAmbulance,
+        initialStatus: 'EN_ROUTE',
         onSubmit: (DispatchInput input) {
-          return controller.startAmbulanceTrip(
-            ambulanceId: input.ambulanceId,
-          );
+          return controller.startAmbulanceTrip(ambulanceId: input.ambulanceId);
         },
       );
       if (saved == true && context.mounted) {
-        showFailureIfNeeded(context, null, successMessage: 'Trip started');
+        showFailureIfNeeded(
+          context,
+          null,
+          successMessage: context.l10n.emergencyDispatchTripStartedMessage,
+        );
       }
       return;
     }
@@ -1611,7 +1609,11 @@ class EmergencyActionPanel extends ConsumerWidget {
       ambulanceId: ambulanceId,
     );
     if (context.mounted) {
-      showFailureIfNeeded(context, failure, successMessage: 'Trip started');
+      showFailureIfNeeded(
+        context,
+        failure,
+        successMessage: context.l10n.emergencyDispatchTripStartedMessage,
+      );
     }
   }
 

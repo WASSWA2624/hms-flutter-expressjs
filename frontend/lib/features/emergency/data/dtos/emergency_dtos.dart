@@ -200,7 +200,11 @@ final class EmergencyAmbulanceDto {
   EmergencyAmbulance toEntity() {
     final EmergencyJsonMap facility = _map(json['facility']);
     return EmergencyAmbulance(
-      id: _string(json['id']) ?? _string(json['display_id']) ?? '',
+      id:
+          _string(json['human_friendly_id']) ??
+          _string(json['display_id']) ??
+          _string(json['id']) ??
+          '',
       displayId:
           _string(json['display_id']) ?? _string(json['human_friendly_id']),
       identifier:
@@ -222,7 +226,11 @@ final class EmergencyAmbulanceDispatchDto {
 
   EmergencyAmbulanceDispatch toEntity() {
     return EmergencyAmbulanceDispatch(
-      id: _string(json['id']) ?? _string(json['display_id']) ?? '',
+      id:
+          _string(json['human_friendly_id']) ??
+          _string(json['display_id']) ??
+          _string(json['id']) ??
+          '',
       displayId:
           _string(json['display_id']) ?? _string(json['human_friendly_id']),
       emergencyCaseId: _string(json['emergency_case_id']),

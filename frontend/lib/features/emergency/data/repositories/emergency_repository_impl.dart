@@ -255,11 +255,11 @@ final class EmergencyRepositoryImpl implements EmergencyRepository {
           decoder: (Object? data) =>
               EmergencyAmbulanceDispatchDto(decodeDataMap(data)).toEntity(),
         );
-    final AppFailure? failure = _failureOrNull(result);
-    if (failure != null) {
-      return Result<EmergencyCaseDetail>.failure(failure);
-    }
-    return _loadDetailForCase(detail.summary);
+    return result.when(
+      success: (EmergencyAmbulanceDispatch dispatch) =>
+          Result<EmergencyCaseDetail>.success(_withDispatch(detail, dispatch)),
+      failure: Result<EmergencyCaseDetail>.failure,
+    );
   }
 
   @override
@@ -275,11 +275,11 @@ final class EmergencyRepositoryImpl implements EmergencyRepository {
           decoder: (Object? data) =>
               EmergencyAmbulanceDispatchDto(decodeDataMap(data)).toEntity(),
         );
-    final AppFailure? failure = _failureOrNull(result);
-    if (failure != null) {
-      return Result<EmergencyCaseDetail>.failure(failure);
-    }
-    return _loadDetailForCase(detail.summary);
+    return result.when(
+      success: (EmergencyAmbulanceDispatch dispatch) =>
+          Result<EmergencyCaseDetail>.success(_withDispatch(detail, dispatch)),
+      failure: Result<EmergencyCaseDetail>.failure,
+    );
   }
 
   @override
@@ -506,6 +506,22 @@ final class EmergencyRepositoryImpl implements EmergencyRepository {
                     _matchesCase(item, trip.emergencyCaseDisplayId)),
           )
           .firstOrNull,
+    );
+  }
+
+  EmergencyCaseDetail _withDispatch(
+    EmergencyCaseDetail detail,
+    EmergencyAmbulanceDispatch dispatch,
+  ) {
+    final List<EmergencyAmbulanceDispatch> dispatches =
+        <EmergencyAmbulanceDispatch>[
+          dispatch,
+          for (final EmergencyAmbulanceDispatch existing in detail.dispatches)
+            if (existing.id != dispatch.id) existing,
+        ];
+    return detail.copyWith(
+      summary: detail.summary.copyWith(latestDispatch: dispatch),
+      dispatches: dispatches,
     );
   }
 

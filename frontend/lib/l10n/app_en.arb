@@ -289,6 +289,90 @@
   "@emergencyQuickArrivalOpenedMessage": {
     "description": "Success message after an emergency quick arrival is persisted."
   },
+  "emergencyDispatchDialogTitle": "Dispatch ambulance",
+  "@emergencyDispatchDialogTitle": {
+    "description": "Title for creating an ambulance dispatch."
+  },
+  "emergencyDispatchDialogSemanticLabel": "Dispatch an ambulance",
+  "@emergencyDispatchDialogSemanticLabel": {
+    "description": "Accessibility label for the ambulance dispatch dialog."
+  },
+  "emergencyDispatchEditDialogTitle": "Edit dispatch status",
+  "@emergencyDispatchEditDialogTitle": {
+    "description": "Title for editing an ambulance dispatch status."
+  },
+  "emergencyDispatchEditDialogSemanticLabel": "Edit ambulance dispatch status",
+  "@emergencyDispatchEditDialogSemanticLabel": {
+    "description": "Accessibility label for editing an ambulance dispatch status."
+  },
+  "emergencyDispatchSelectAmbulanceDialogTitle": "Select ambulance",
+  "@emergencyDispatchSelectAmbulanceDialogTitle": {
+    "description": "Title for selecting the ambulance used to start a trip."
+  },
+  "emergencyDispatchSelectAmbulanceDialogSemanticLabel": "Select an ambulance to start the trip",
+  "@emergencyDispatchSelectAmbulanceDialogSemanticLabel": {
+    "description": "Accessibility label for selecting an ambulance before starting a trip."
+  },
+  "emergencyDispatchAmbulanceLabel": "Ambulance",
+  "@emergencyDispatchAmbulanceLabel": {
+    "description": "Ambulance selector label in the dispatch dialog."
+  },
+  "emergencyDispatchAmbulanceIdLabel": "Ambulance ID",
+  "@emergencyDispatchAmbulanceIdLabel": {
+    "description": "Ambulance public identifier field label when reference data is unavailable."
+  },
+  "emergencyDispatchStatusLabel": "Dispatch status",
+  "@emergencyDispatchStatusLabel": {
+    "description": "Status field label in the ambulance dispatch dialog."
+  },
+  "emergencyDispatchAction": "Dispatch",
+  "@emergencyDispatchAction": {
+    "description": "Primary action that persists an ambulance dispatch."
+  },
+  "emergencyDispatchStartTripAction": "Start trip",
+  "@emergencyDispatchStartTripAction": {
+    "description": "Primary action that starts a trip with the selected ambulance."
+  },
+  "emergencyDispatchSucceededMessage": "Ambulance dispatched",
+  "@emergencyDispatchSucceededMessage": {
+    "description": "Success message after an ambulance dispatch is persisted."
+  },
+  "emergencyDispatchEditedMessage": "Dispatch status edited",
+  "@emergencyDispatchEditedMessage": {
+    "description": "Success message after a dispatch status edit is persisted."
+  },
+  "emergencyDispatchTripStartedMessage": "Trip started",
+  "@emergencyDispatchTripStartedMessage": {
+    "description": "Success message after an ambulance trip is started."
+  },
+  "emergencyDispatchStatusDispatched": "Dispatched",
+  "@emergencyDispatchStatusDispatched": {
+    "description": "Ambulance dispatch status indicating assignment."
+  },
+  "emergencyDispatchStatusEnRoute": "En route",
+  "@emergencyDispatchStatusEnRoute": {
+    "description": "Ambulance dispatch status indicating travel to the scene."
+  },
+  "emergencyDispatchStatusOnScene": "On scene",
+  "@emergencyDispatchStatusOnScene": {
+    "description": "Ambulance dispatch status indicating arrival at the scene."
+  },
+  "emergencyDispatchStatusTransporting": "Transporting",
+  "@emergencyDispatchStatusTransporting": {
+    "description": "Ambulance dispatch status indicating patient transport."
+  },
+  "emergencyDispatchStatusAvailable": "Available",
+  "@emergencyDispatchStatusAvailable": {
+    "description": "Ambulance dispatch status indicating availability."
+  },
+  "emergencyDispatchStatusOutOfService": "Out of service",
+  "@emergencyDispatchStatusOutOfService": {
+    "description": "Ambulance dispatch status indicating unavailability."
+  },
+  "emergencyDispatchStatusUnknown": "Status unavailable",
+  "@emergencyDispatchStatusUnknown": {
+    "description": "Fallback label when an ambulance status is unavailable."
+  },
   "emergencyPriorityCriticalLabel": "Critical",
   "@emergencyPriorityCriticalLabel": {
     "description": "Critical emergency priority option."
