@@ -44,6 +44,12 @@ abstract final class AppActionIcons {
   /// Triage / OPD routing destination decision.
   static const IconData route = Icons.alt_route_outlined;
 
+  /// External facility referral from an encounter.
+  static const IconData referral = Icons.alt_route_outlined;
+
+  /// Schedule a clinical / OPD follow-up visit.
+  static const IconData followUp = Icons.event_repeat_outlined;
+
   /// Operational / maintenance triage (not clinical patient triage).
   static const IconData triage = Icons.rule_outlined;
 

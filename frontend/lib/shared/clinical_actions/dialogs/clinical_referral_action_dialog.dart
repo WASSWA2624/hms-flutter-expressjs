@@ -7,13 +7,19 @@ import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialo
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
+/// Shared external-referral dialog used by clinical and OPD encounter flows.
 class ClinicalReferralActionDialog extends StatefulWidget {
   const ClinicalReferralActionDialog({
     required this.onSubmit,
     this.title,
     this.submitLabel,
-    this.icon = const Icon(Icons.alt_route_outlined),
+    this.icon = const Icon(AppActionIcons.referral),
+    this.submitLeadingIcon = AppActionIcons.save,
     this.leadingContent = const <Widget>[],
+    this.scrollable = true,
+    this.pinActionsToBottom = true,
+    this.density = AppFormSectionDensity.compact,
+    this.maxWidth = 720,
     super.key,
   });
 
@@ -26,7 +32,12 @@ class ClinicalReferralActionDialog extends StatefulWidget {
   final String? title;
   final String? submitLabel;
   final Widget icon;
+  final IconData submitLeadingIcon;
   final List<Widget> leadingContent;
+  final bool scrollable;
+  final bool pinActionsToBottom;
+  final AppFormSectionDensity density;
+  final double maxWidth;
 
   @override
   State<ClinicalReferralActionDialog> createState() =>
@@ -63,17 +74,18 @@ class _ClinicalReferralActionDialogState
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final String title = widget.title ?? l10n.opdReferAction;
-    final String submitLabel = widget.submitLabel ?? l10n.opdReferAction;
+    final String submitLabel = widget.submitLabel ?? l10n.opdSaveReferralAction;
     return AppDialog(
       title: Text(title),
       icon: widget.icon,
-      maxWidth: 720,
-      scrollable: true,
+      maxWidth: widget.maxWidth,
+      scrollable: widget.scrollable,
+      pinActionsToBottom: widget.pinActionsToBottom,
       closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,
         child: AppFormSection(
-          density: AppFormSectionDensity.compact,
+          density: widget.density,
           children: <Widget>[
             if (_failure != null)
               AppFormInformationBanner.failure(
@@ -83,7 +95,7 @@ class _ClinicalReferralActionDialogState
             ...widget.leadingContent,
             AppFormSection(
               title: l10n.clinicalReferralDetailsTitle,
-              density: AppFormSectionDensity.compact,
+              density: widget.density,
               children: <Widget>[
                 AppTextField(
                   controller: _facilityController,
@@ -93,7 +105,6 @@ class _ClinicalReferralActionDialogState
                   enabled: !_isSaving,
                   isRequired: true,
                   textCapitalization: TextCapitalization.words,
-                  prefixIcon: const Icon(Icons.local_hospital_outlined),
                   validator: AppValidators.requiredText(
                     l10n.validationRequired,
                   ),
@@ -105,7 +116,6 @@ class _ClinicalReferralActionDialogState
                   isRequired: true,
                   maxLines: 3,
                   textCapitalization: TextCapitalization.sentences,
-                  prefixIcon: const Icon(Icons.notes_outlined),
                   validator: AppValidators.requiredText(
                     l10n.validationRequired,
                   ),
@@ -115,7 +125,7 @@ class _ClinicalReferralActionDialogState
             SizedBox(height: theme.spacing.sm),
             AppFormSection(
               title: l10n.clinicalReferralNotesTitle,
-              density: AppFormSectionDensity.compact,
+              density: widget.density,
               children: <Widget>[
                 AppTextField(
                   controller: _notesController,
@@ -123,7 +133,6 @@ class _ClinicalReferralActionDialogState
                   enabled: !_isSaving,
                   maxLines: 4,
                   textCapitalization: TextCapitalization.sentences,
-                  prefixIcon: const Icon(Icons.edit_note_outlined),
                 ),
               ],
             ),
@@ -135,7 +144,7 @@ class _ClinicalReferralActionDialogState
         submitLabel,
         _isSaving,
         _isSaving ? null : _submit,
-        submitLeadingIcon: Icons.alt_route_outlined,
+        submitLeadingIcon: widget.submitLeadingIcon,
       ),
     );
   }

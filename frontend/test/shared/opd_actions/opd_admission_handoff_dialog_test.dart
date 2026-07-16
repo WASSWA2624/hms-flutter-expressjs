@@ -6,7 +6,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
-import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_admission_handoff_dialog.dart';
 
 void main() {
   const OpdFlowSummary flow = OpdFlowSummary(
@@ -44,6 +44,19 @@ void main() {
       expect(dialog.closeEnabled, isTrue);
       expect(dialog.scrollable, isTrue);
       expect(dialog.pinActionsToBottom, isTrue);
+
+      // Footer order: Cancel (secondary) then Open admission (primary).
+      final List<AppButton> actions = tester
+          .widgetList<AppButton>(find.byType(AppButton))
+          .where(
+            (AppButton button) =>
+                button.label == 'Cancel' ||
+                button.label == 'Open inpatient admission',
+          )
+          .toList();
+      expect(actions, hasLength(2));
+      expect(actions.first.label, 'Cancel');
+      expect(actions.last.label, 'Open inpatient admission');
     },
   );
 
@@ -96,6 +109,17 @@ void main() {
     expect((dialog.title! as Text).data, 'Admission handoff');
     expect(find.text('ADMISSION HANDOFF'), findsOneWidget);
     expect(find.text('PATIENT EXAMPLE'), findsNothing);
+  });
+
+  testWidgets('opener uses a non-dismissible barrier', (WidgetTester tester) async {
+    await _pumpDialog(tester, flow: flow);
+
+    expect(
+      tester
+          .widgetList<ModalBarrier>(find.byType(ModalBarrier))
+          .any((ModalBarrier barrier) => barrier.dismissible),
+      isFalse,
+    );
   });
 
   testWidgets('remains usable on a compact dark high-text-scale surface', (

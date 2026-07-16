@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,11 +11,11 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
-import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_disposition_action_dialog.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_follow_up_action_dialog.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/opd_actions/opd_disposition_dialog.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_follow_up_dialog.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockOpdRepository extends Mock implements OpdRepository {}
@@ -28,6 +26,7 @@ void main() {
     registerFallbackValue(const OpdQueueQuery());
     registerFallbackValue(const OpdFlowQuery());
     registerFallbackValue(const OpdTriageQueueQuery());
+    registerFallbackValue(<String, Object?>{});
   });
 
   const OpdFlowSummary flow = OpdFlowSummary(
@@ -35,11 +34,11 @@ void main() {
     publicId: 'ENC000001',
     patientDisplayName: 'Patient Example',
     providerDisplayName: 'Provider Example',
-    stage: 'WAITING_DISPOSITION',
-    status: 'WITH_DOCTOR',
+    stage: 'WITH_DOCTOR',
+    status: 'OPEN',
   );
 
-  testWidgets('uses AppDialog with Save disposition and Cancel chrome', (
+  testWidgets('uses AppDialog with Save follow-up and Cancel chrome', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
@@ -50,31 +49,19 @@ void main() {
     final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
     expect(dialog.closeEnabled, isTrue);
     expect(dialog.pinActionsToBottom, isTrue);
-    expect(dialog.maxWidth, 720);
-    expect(find.byType(ClinicalDispositionActionDialog), findsOneWidget);
-    expect(find.byType(OpdDispositionDialog), findsOneWidget);
-    expect(find.text('DISPOSITION'), findsOneWidget);
-    expect(find.text('Save disposition'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.byType(ClinicalFollowUpActionDialog), findsOneWidget);
+    expect(find.text('FOLLOW UP'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Save follow-up'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
-    expect(find.byType(AppSelectField<String>), findsOneWidget);
-    expect(find.byIcon(AppActionIcons.complete), findsWidgets);
+    expect(find.byType(AppDateField), findsOneWidget);
+    expect(find.byType(AppTimeField), findsOneWidget);
+    expect(find.byIcon(AppActionIcons.followUp), findsWidgets);
     expect(find.byIcon(AppActionIcons.save), findsWidgets);
     expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
-
-    // Footer order: Cancel (secondary) then Save disposition (primary).
-    final List<String> footerLabels = tester
-        .widgetList<AppButton>(find.byType(AppButton))
-        .map((AppButton button) => button.label)
-        .where(
-          (String label) =>
-              label == 'Cancel' || label == 'Save disposition',
-        )
-        .toList();
-    expect(footerLabels, <String>['Cancel', 'Save disposition']);
   });
 
-  testWidgets('Cancel pops false without mutating disposition', (
+  testWidgets('Cancel pops false without creating a follow-up', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
@@ -92,8 +79,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
-    verifyNever(() => repository.disposition(any(), any()));
-    verifyNever(() => repository.doctorReview(any(), any()));
+    verifyNever(() => repository.createFollowUp(any()));
   });
 
   testWidgets('failure keeps the dialog open and preserves notes', (
@@ -101,8 +87,8 @@ void main() {
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
     _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[flow]);
-    when(() => repository.disposition(any(), any())).thenAnswer(
-      (_) async => const Result<OpdFlowDetail>.failure(AppFailure.network()),
+    when(() => repository.createFollowUp(any())).thenAnswer(
+      (_) async => const Result<void>.failure(AppFailure.network()),
     );
     bool? result;
 
@@ -114,179 +100,74 @@ void main() {
     );
 
     await tester.enterText(find.byType(AppTextField), 'Keep this note');
-    await tester.tap(find.widgetWithText(AppButton, 'Save disposition'));
+    await tester.tap(find.widgetWithText(AppButton, 'Save follow-up'));
     await tester.pumpAndSettle();
 
     expect(result, isNull);
     expect(find.byType(AppDialog), findsOneWidget);
-    expect(find.text('Save disposition'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Save follow-up'), findsOneWidget);
     expect(find.text('Keep this note'), findsOneWidget);
-    verify(() => repository.disposition('ENC000001', any())).called(1);
+    verify(() => repository.createFollowUp(any())).called(1);
   });
 
-  testWidgets('successful save pops true after persisted disposition', (
+  testWidgets('successful save pops true after persisted create', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
-    const OpdFlowDetail discharged = OpdFlowDetail(
-      summary: OpdFlowSummary(
-        id: 'encounter-1',
-        publicId: 'ENC000001',
-        stage: 'DISCHARGED',
-        status: 'COMPLETED',
-      ),
-    );
-    String? submittedDecision;
-    _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[flow]);
-    when(() => repository.disposition(any(), any())).thenAnswer((
-      Invocation invocation,
-    ) async {
-      final Map<String, Object?> payload =
-          invocation.positionalArguments[1] as Map<String, Object?>;
-      submittedDecision = payload['decision'] as String?;
-      return const Result<OpdFlowDetail>.success(discharged);
-    });
-    when(() => repository.getOpdFlow(any())).thenAnswer(
-      (_) async => const Result<OpdFlowDetail>.success(discharged),
-    );
-    bool? result;
-    String? callbackDecision;
-
-    await _pumpDialog(
-      tester,
-      flow: flow,
-      repository: repository,
-      onResult: (bool? value) => result = value,
-      onDispositionSubmitted: (String decision) {
-        callbackDecision = decision;
-      },
-    );
-
-    await tester.tap(find.widgetWithText(AppButton, 'Save disposition'));
-    await tester.pumpAndSettle();
-
-    expect(result, isTrue);
-    expect(find.byType(AppDialog), findsNothing);
-    expect(submittedDecision, 'DISCHARGE');
-    expect(callbackDecision, 'DISCHARGE');
-    verify(() => repository.disposition('ENC000001', any())).called(1);
-  });
-
-  testWidgets('includes pharmacy option when a pharmacy order exists', (
-    WidgetTester tester,
-  ) async {
-    final _MockOpdRepository repository = _MockOpdRepository();
-    _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[flow]);
-
-    await _pumpDialog(
-      tester,
-      flow: flow,
-      repository: repository,
-      hasPharmacyOrder: true,
-    );
-
-    final AppSelectField<String> field = tester.widget<AppSelectField<String>>(
-      find.byType(AppSelectField<String>),
-    );
-    expect(field.value, 'SEND_TO_PHARMACY');
-    expect(
-      field.options.map((AppSelectOption<String> option) => option.value),
-      contains('SEND_TO_PHARMACY'),
-    );
-  });
-
-  testWidgets('ADMIT disposition persists decision and returns true', (
-    WidgetTester tester,
-  ) async {
-    final _MockOpdRepository repository = _MockOpdRepository();
-    const OpdFlowDetail admitted = OpdFlowDetail(
-      summary: OpdFlowSummary(
-        id: 'encounter-1',
-        publicId: 'ENC000001',
-        stage: 'WAITING_DISPOSITION',
-        displayCode: 'ADMISSION_PENDING',
-      ),
-      admissions: <OpdRelatedRecord>[
+    const OpdFlowDetail refreshed = OpdFlowDetail(
+      summary: flow,
+      followUps: <OpdRelatedRecord>[
         OpdRelatedRecord(
-          id: 'ADM000001',
-          kind: 'admission',
-          status: 'ADMITTED',
+          id: 'follow-up-1',
+          kind: 'follow_up',
+          status: 'SCHEDULED',
+          title: 'Follow-up',
         ),
       ],
     );
     Map<String, Object?>? submittedPayload;
     _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[flow]);
-    when(() => repository.disposition(any(), any())).thenAnswer((
+    when(() => repository.createFollowUp(any())).thenAnswer((
       Invocation invocation,
     ) async {
       submittedPayload =
-          invocation.positionalArguments[1] as Map<String, Object?>;
-      return const Result<OpdFlowDetail>.success(admitted);
+          invocation.positionalArguments.single as Map<String, Object?>;
+      return const Result<void>.success(null);
     });
     when(() => repository.getOpdFlow(any())).thenAnswer(
-      (_) async => const Result<OpdFlowDetail>.success(admitted),
+      (_) async => const Result<OpdFlowDetail>.success(refreshed),
     );
     bool? result;
-    String? callbackDecision;
 
     await _pumpDialog(
       tester,
       flow: flow,
       repository: repository,
       onResult: (bool? value) => result = value,
-      onDispositionSubmitted: (String decision) {
-        callbackDecision = decision;
-      },
     );
 
-    final AppSelectField<String> field = tester.widget<AppSelectField<String>>(
-      find.byType(AppSelectField<String>),
-    );
-    field.onChanged?.call('ADMIT');
-    await tester.pump();
-
-    await tester.tap(find.widgetWithText(AppButton, 'Save disposition'));
+    await tester.tap(find.widgetWithText(AppButton, 'Save follow-up'));
     await tester.pumpAndSettle();
 
     expect(result, isTrue);
-    expect(callbackDecision, 'ADMIT');
-    expect(submittedPayload, containsPair('decision', 'ADMIT'));
-    verify(() => repository.disposition('ENC000001', any())).called(1);
-  });
+    expect(find.byType(AppDialog), findsNothing);
+    expect(submittedPayload, containsPair('encounter_id', 'ENC000001'));
+    expect(submittedPayload, containsPair('status', 'SCHEDULED'));
+    expect(submittedPayload?['scheduled_at'], isA<String>());
+    verify(() => repository.createFollowUp(any())).called(1);
+    verify(() => repository.getOpdFlow('ENC000001')).called(1);
 
-  testWidgets('blocks dismiss while disposition save is in flight', (
-    WidgetTester tester,
-  ) async {
-    final _MockOpdRepository repository = _MockOpdRepository();
-    final Completer<Result<OpdFlowDetail>> completer =
-        Completer<Result<OpdFlowDetail>>();
-    _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[flow]);
-    when(
-      () => repository.disposition(any(), any()),
-    ).thenAnswer((_) => completer.future);
-
-    await _pumpDialog(tester, flow: flow, repository: repository);
-
-    await tester.tap(find.widgetWithText(AppButton, 'Save disposition'));
-    await tester.pump();
-
-    final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
-    expect(dialog.closeEnabled, isFalse);
-    final AppButton cancel = tester.widget<AppButton>(
-      find.widgetWithText(AppButton, 'Cancel'),
+    final ProviderContainer container = ProviderScope.containerOf(
+      tester.element(find.byType(Scaffold)),
     );
-    expect(cancel.enabled, isFalse);
-
-    completer.complete(
-      const Result<OpdFlowDetail>.failure(AppFailure.network()),
+    final Result<OpdWorkspaceState> workspace = container
+        .read(opdWorkspaceControllerProvider)
+        .requireValue;
+    final OpdWorkspaceState state = workspace.when(
+      success: (OpdWorkspaceState value) => value,
+      failure: (AppFailure failure) => throw StateError(failure.toString()),
     );
-    await tester.pumpAndSettle();
-
-    expect(find.byType(AppDialog), findsOneWidget);
-    expect(
-      tester.widget<AppDialog>(find.byType(AppDialog)).closeEnabled,
-      isTrue,
-    );
+    expect(state.selectedFlow?.followUps.single.id, 'follow-up-1');
   });
 
   testWidgets('remains usable on a compact dark high-text-scale surface', (
@@ -309,9 +190,9 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
-    expect(find.text('DISPOSITION'), findsOneWidget);
-    expect(find.text('Save disposition'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('FOLLOW UP'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Save follow-up'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
   });
 }
 
@@ -320,8 +201,6 @@ Future<void> _pumpDialog(
   required OpdFlowSummary flow,
   required OpdRepository repository,
   ValueChanged<bool?>? onResult,
-  ValueChanged<String>? onDispositionSubmitted,
-  bool hasPharmacyOrder = false,
   bool dark = false,
   TextScaler textScaler = TextScaler.noScaling,
 }) async {
@@ -351,11 +230,9 @@ Future<void> _pumpDialog(
               return AppButton.primary(
                 label: 'Open',
                 onPressed: () async {
-                  final bool? value = await showOpdDispositionDialog(
+                  final bool? value = await showFollowUpDialog(
                     context: context,
                     flow: flow,
-                    hasPharmacyOrder: hasPharmacyOrder,
-                    onDispositionSubmitted: onDispositionSubmitted,
                   );
                   onResult?.call(value);
                 },

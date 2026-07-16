@@ -9,7 +9,8 @@
 
 const { z } = require('zod');
 const { 
-  uuidSchema, 
+  uuidSchema,
+  uuidOrFriendlyIdentifierSchema,
   listQuerySchema,
   isoDateSchema
 } = require('@lib/validation/zod');
@@ -23,7 +24,7 @@ const FOLLOW_UP_STATUS_VALUES = ['SCHEDULED', 'COMPLETED', 'CANCELLED'];
  * Used for POST /follow-ups endpoint
  */
 const createFollowUpSchema = z.object({
-  encounter_id: uuidSchema,
+  encounter_id: uuidOrFriendlyIdentifierSchema,
   scheduled_at: isoDateSchema,
   status: z.enum(FOLLOW_UP_STATUS_VALUES).optional().default('SCHEDULED'),
   notes: z.string().max(10000).optional().nullable()
@@ -62,7 +63,7 @@ const followUpIdParamsSchema = z.object({
  * Extends base listQuerySchema with follow-up-specific filters
  */
 const listFollowUpsQuerySchema = listQuerySchema.extend({
-  encounter_id: uuidSchema.optional(),
+  encounter_id: uuidOrFriendlyIdentifierSchema.optional(),
   status: z.enum(FOLLOW_UP_STATUS_VALUES).optional(),
   scheduled_before: isoDateSchema.optional(),
   scheduled_after: isoDateSchema.optional(),

@@ -3547,7 +3547,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdReferAction => 'Refer';
 
   @override
+  String get opdSaveReferralAction => 'Save referral';
+
+  @override
   String get opdFollowUpAction => 'Follow up';
+
+  @override
+  String get opdSaveFollowUpAction => 'Save follow-up';
 
   @override
   String get opdDispositionAction => 'Disposition';

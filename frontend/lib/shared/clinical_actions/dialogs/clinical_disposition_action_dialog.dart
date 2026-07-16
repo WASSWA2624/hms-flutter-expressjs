@@ -8,6 +8,9 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
 /// Shared disposition/outcome dialog used by clinical and OPD encounter flows.
+///
+/// Compose through [AppDialog] only. Footer is Cancel → primary via
+/// [clinicalActionDialogActions]. While saving, close and Cancel are disabled.
 class ClinicalDispositionActionDialog extends StatefulWidget {
   const ClinicalDispositionActionDialog({
     required this.reasons,
@@ -23,6 +26,7 @@ class ClinicalDispositionActionDialog extends StatefulWidget {
     this.scrollable = true,
     this.pinActionsToBottom = true,
     this.density = AppFormSectionDensity.compact,
+    this.maxWidth = 720,
     super.key,
   });
 
@@ -38,6 +42,7 @@ class ClinicalDispositionActionDialog extends StatefulWidget {
   final bool scrollable;
   final bool pinActionsToBottom;
   final AppFormSectionDensity density;
+  final double maxWidth;
   final Future<AppFailure?> Function({
     required String reason,
     required String notes,
@@ -87,6 +92,7 @@ class _ClinicalDispositionActionDialogState
     return AppDialog(
       title: Text(title),
       icon: widget.icon,
+      maxWidth: widget.maxWidth,
       scrollable: widget.scrollable,
       pinActionsToBottom: widget.pinActionsToBottom,
       closeEnabled: !_isSaving,

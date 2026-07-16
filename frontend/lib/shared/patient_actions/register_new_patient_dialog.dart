@@ -9,7 +9,6 @@ import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.da
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_form_fields.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
@@ -519,7 +518,7 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
 
     return AppDialog(
       title: Text(l10n.patientsRegisterNewPatientTitle),
-      icon: const Icon(Icons.person_add_alt_1_outlined),
+      icon: const Icon(AppActionIcons.personAdd),
       pinActionsToBottom: true,
       closeEnabled: !isBusy,
       maxWidth: 720,
@@ -531,7 +530,9 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
           scrollable: true,
           formStatus: appFormFailureStatus(
             context,
-            _registrationFormKey.currentState?.failure,
+            formState?.failure,
+            messageBuilder: (AppFailure failure) =>
+                failure.displayMessage(l10n),
           ),
           children: <Widget>[
             RegisterNewPatientForm(
@@ -545,20 +546,15 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
           ],
         ),
       ),
-      actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !isBusy,
-          onPressed: isBusy ? null : () => Navigator.of(context).maybePop(),
-        ),
-        AppButton.primary(
-          label: _duplicateSaveAnywayLabel(l10n),
-          leadingIcon: AppActionIcons.add,
-          isLoading: isBusy,
-          onPressed: isBusy ? null : _submit,
-        ),
-      ],
+      actions: buildAppDialogFormActions(
+        cancelLabel: l10n.commonCancelActionLabel,
+        submitLabel: _duplicateSaveAnywayLabel(l10n),
+        cancelIcon: AppActionIcons.cancel,
+        submitIcon: AppActionIcons.personAdd,
+        isSubmitting: isBusy,
+        onCancel: () => Navigator.of(context).pop(),
+        onSubmit: _submit,
+      ),
     );
   }
 
@@ -582,7 +578,7 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
     if (_isSaving) {
       return;
     }
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
 
@@ -635,7 +631,7 @@ class PatientDuplicateWarningPanel extends StatelessWidget {
       title: l10n.patientsDuplicateWarningTitle,
       message: l10n.patientsDuplicateWarningBody,
       variant: AppFormInformationVariant.warning,
-      icon: Icons.content_copy_outlined,
+      icon: AppActionIcons.copy,
       children: <Widget>[
         for (final PatientDuplicateCandidate duplicate in visible)
           _DuplicateCandidateLine(duplicate: duplicate),

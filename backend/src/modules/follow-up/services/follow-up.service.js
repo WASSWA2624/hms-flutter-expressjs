@@ -15,6 +15,10 @@ const { emitToUser, NOTIFICATION_EVENTS } = require("@lib/websocket");
 const {
   parseIpdMedicationReminderNote,
 } = require("@lib/clinical/ipdMedicationReminder");
+const {
+  resolveIdentifierForFilter,
+  resolveIdentifierForPayload,
+} = require("@lib/identifiers/service-identifier-resolution");
 
 const FOLLOW_UP_TRANSITIONS = Object.freeze({
   SCHEDULED: new Set(["COMPLETED", "CANCELLED"]),
@@ -199,7 +203,29 @@ const listFollowUps = async (filters, page, limit, sortBy, order) => {
     const orderBy = sortBy ? { [sortBy]: order } : { scheduled_at: "asc" };
     const whereClause = {};
 
-    if (filters.encounter_id) whereClause.encounter_id = filters.encounter_id;
+    if (filters.encounter_id) {
+      const encounterId = await resolveIdentifierForFilter({
+        value: filters.encounter_id,
+        model: "encounter",
+        where: { deleted_at: null },
+      });
+      if (encounterId === null) {
+        return {
+          followUps: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0,
+            hasNextPage: false,
+            hasPreviousPage: false,
+          },
+        };
+      }
+      if (encounterId !== undefined) {
+        whereClause.encounter_id = encounterId;
+      }
+    }
     if (filters.status)
       whereClause.status = normalizeStatus(filters.status, "SCHEDULED");
     if (filters.scheduled_before || filters.scheduled_after) {
@@ -260,6 +286,12 @@ const createFollowUp = async (data, userId, ipAddress) => {
     const payload = {
       ...data,
       status: normalizeStatus(data.status, "SCHEDULED"),
+      encounter_id: await resolveIdentifierForPayload({
+        value: data.encounter_id,
+        field: "encounter_id",
+        model: "encounter",
+        where: { deleted_at: null },
+      }),
     };
     const followUp = await followUpRepository.create(payload);
 

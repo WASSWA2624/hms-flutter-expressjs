@@ -38,6 +38,7 @@ class NursingVitalsDialog extends StatelessWidget {
       invalidDateMessage: l10n.nursingInvalidDateMessage,
       timePickerLabel: l10n.appTimePickerAction,
       invalidTimeMessage: l10n.appTimeInvalidMessage,
+      timeFormatHint: l10n.appTimeFormatHint,
       requiredMessage: l10n.validationRequired,
       initialValues: vital == null
           ? null

@@ -856,7 +856,7 @@ final class OpdWorkspaceController
     return _mutateRelatedFlowRecord(
       flow,
       () => _repository.createFollowUp(<String, Object?>{
-        'encounter_id': flow.id,
+        'encounter_id': flow.apiId,
         'scheduled_at': scheduledAt.toUtc().toIso8601String(),
         'status': 'SCHEDULED',
         'notes': notes,

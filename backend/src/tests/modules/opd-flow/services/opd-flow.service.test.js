@@ -1910,7 +1910,7 @@ describe('opd-flow.service', () => {
     ).rejects.toBeInstanceOf(HttpError);
   });
 
-  it('admits patient on disposition, closes encounter, and completes queue/appointment', async () => {
+  it('admits patient on disposition, keeps OPD open for IPD handoff', async () => {
     const tx = {
       encounter: {
         findFirst: jest
@@ -1937,14 +1937,17 @@ describe('opd-flow.service', () => {
           .mockResolvedValueOnce({
             id: 'enc-1',
             encounter_type: 'EMERGENCY',
-            status: 'CLOSED',
+            status: 'OPEN',
             extension_json: {
               opd_flow: {
-                stage: 'ADMITTED',
+                stage: 'WAITING_DISPOSITION',
                 review_completed: true,
+                admission_pending: true,
+                admission_id: 'adm-1',
                 visit_queue_id: 'vq-1',
                 appointment_id: 'apt-1',
                 emergency_case_id: 'ec-1',
+                disposition_decision: 'ADMIT',
                 consultation: {
                   invoice_id: null,
                   payment_id: null
@@ -2001,27 +2004,28 @@ describe('opd-flow.service', () => {
       expect.objectContaining({
         where: { id: 'enc-1' },
         data: expect.objectContaining({
-          status: 'CLOSED'
+          status: 'OPEN',
+          extension_json: expect.objectContaining({
+            opd_flow: expect.objectContaining({
+              admission_pending: true,
+              admission_id: 'adm-1',
+              disposition_decision: 'ADMIT',
+              stage: 'WAITING_DISPOSITION'
+            })
+          })
         })
       })
     );
-    expect(tx.visit_queue.update).toHaveBeenCalledWith({
-      where: { id: 'vq-1' },
-      data: { status: 'COMPLETED' }
-    });
-    expect(tx.appointment.update).toHaveBeenCalledWith({
-      where: { id: 'apt-1' },
-      data: { status: 'COMPLETED' }
-    });
-    expect(tx.emergency_case.update).toHaveBeenCalledWith({
-      where: { id: 'ec-1' },
-      data: { status: 'CLOSED' }
-    });
+    // OPD stays linked until inpatient care continues — do not close queue/visit yet.
+    expect(tx.visit_queue.update).not.toHaveBeenCalled();
+    expect(tx.appointment.update).not.toHaveBeenCalled();
+    expect(tx.emergency_case.update).not.toHaveBeenCalled();
     expect(ipdFlowService.emitAdmissionRefreshEvent).toHaveBeenCalledWith(
       'adm-1',
       expect.objectContaining({ user_id: 'doc-1' })
     );
-    expect(result.flow.stage).toBe('ADMITTED');
+    expect(result.flow.stage).toBe('WAITING_DISPOSITION');
+    expect(result.flow.admission_pending).toBe(true);
   });
 
   it('rejects disposition when flow is already terminal', async () => {
@@ -2080,12 +2084,26 @@ describe('opd-flow.service', () => {
             encounter_type: 'OPD',
             status: 'OPEN',
             ended_at: null,
+            provider_user_id: 'doc-1',
+            provider: {
+              id: 'doc-1',
+              human_friendly_id: 'DOC000001',
+              email: 'doctor@example.com',
+              profile: { first_name: 'Pat', last_name: 'Doctor' },
+              roles: [{ role: { name: 'DOCTOR' } }]
+            },
+            vital_signs: [{ id: 'vital-1', deleted_at: null }],
             extension_json: {
               opd_flow: {
                 stage: 'WAITING_DOCTOR_REVIEW',
                 next_step: 'DOCTOR_REVIEW',
                 visit_queue_id: 'vq-1',
-                appointment_id: 'apt-1'
+                appointment_id: 'apt-1',
+                consultation: {
+                  is_paid: true,
+                  payment_status: 'COMPLETED',
+                  require_payment: true
+                }
               }
             }
           }),

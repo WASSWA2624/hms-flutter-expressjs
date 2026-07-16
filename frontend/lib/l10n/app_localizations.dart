@@ -6838,11 +6838,23 @@ abstract class AppLocalizations {
   /// **'Refer'**
   String get opdReferAction;
 
+  /// Primary commit label for saving an OPD/clinical external referral.
+  ///
+  /// In en, this message translates to:
+  /// **'Save referral'**
+  String get opdSaveReferralAction;
+
   /// Action label to create a follow-up.
   ///
   /// In en, this message translates to:
   /// **'Follow up'**
   String get opdFollowUpAction;
+
+  /// Primary commit label for saving an OPD follow-up schedule.
+  ///
+  /// In en, this message translates to:
+  /// **'Save follow-up'**
+  String get opdSaveFollowUpAction;
 
   /// Action label to apply OPD disposition.
   ///

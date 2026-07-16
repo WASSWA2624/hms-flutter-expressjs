@@ -6,10 +6,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
+import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
+import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
@@ -26,6 +30,10 @@ import 'package:mocktail/mocktail.dart';
 class _MockPatientRepository extends Mock implements PatientRepository {}
 
 class _MockOpdRepository extends Mock implements OpdRepository {}
+
+class _MockClinicalRepository extends Mock implements ClinicalRepository {}
+
+class _MockApiClient extends Mock implements ApiClient {}
 
 void main() {
   setUpAll(() {
@@ -672,6 +680,7 @@ void main() {
     'RecordVitalsDialog exposes triage assessment and routing fields',
     (WidgetTester tester) async {
       final _MockOpdRepository opdRepository = _MockOpdRepository();
+      final _MockPatientRepository patientRepository = _MockPatientRepository();
 
       when(
         () => opdRepository.listProviders(search: any(named: 'search')),
@@ -693,7 +702,16 @@ void main() {
 
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [opdRepositoryProvider.overrideWithValue(opdRepository)],
+          overrides: [
+            opdRepositoryProvider.overrideWithValue(opdRepository),
+            patientRepositoryProvider.overrideWithValue(patientRepository),
+            clinicalRepositoryProvider.overrideWithValue(
+              _MockClinicalRepository(),
+            ),
+            insuranceCatalogRepositoryProvider.overrideWithValue(
+              InsuranceCatalogRepository(apiClient: _MockApiClient()),
+            ),
+          ],
           child: MaterialApp(
             theme: AppTheme.light,
             darkTheme: AppTheme.dark,
@@ -714,6 +732,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      expect(find.byType(AppRecordVitalsDialog), findsOneWidget);
       expect(find.text('Symptoms (optional)'), findsOneWidget);
       expect(find.text('Pain severity (optional)'), findsOneWidget);
       expect(find.text('Allergies (optional)'), findsOneWidget);
@@ -726,6 +745,7 @@ void main() {
     WidgetTester tester,
   ) async {
     final _MockOpdRepository opdRepository = _MockOpdRepository();
+    final _MockPatientRepository patientRepository = _MockPatientRepository();
 
     when(() => opdRepository.listProviders()).thenAnswer(
       (_) async =>
@@ -739,7 +759,16 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [opdRepositoryProvider.overrideWithValue(opdRepository)],
+        overrides: [
+          opdRepositoryProvider.overrideWithValue(opdRepository),
+          patientRepositoryProvider.overrideWithValue(patientRepository),
+          clinicalRepositoryProvider.overrideWithValue(
+            _MockClinicalRepository(),
+          ),
+          insuranceCatalogRepositoryProvider.overrideWithValue(
+            InsuranceCatalogRepository(apiClient: _MockApiClient()),
+          ),
+        ],
         child: MaterialApp(
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,

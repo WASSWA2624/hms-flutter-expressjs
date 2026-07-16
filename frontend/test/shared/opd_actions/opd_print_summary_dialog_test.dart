@@ -9,7 +9,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
-import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_print_summary_dialog.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -227,6 +227,52 @@ void main() {
     expect(find.text('Copy summary'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Print'), findsOneWidget);
+  });
+
+  testWidgets('Print failure keeps the dialog open and shows AppFailure', (
+    WidgetTester tester,
+  ) async {
+    bool? result;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          printFormTemplateContextReadyProvider.overrideWith(
+            (ref) async => throw StateError('print unavailable'),
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (BuildContext context) {
+                return AppButton.primary(
+                  label: 'Open',
+                  onPressed: () async {
+                    result = await showPrintOpdSummaryDialog(
+                      context: context,
+                      flow: flow,
+                      detail: detail,
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(AppButton, 'Print'));
+    await tester.pumpAndSettle();
+
+    expect(result, isNull);
+    expect(find.byType(AppDialog), findsOneWidget);
+    expect(find.byType(AppFormInformationBanner), findsOneWidget);
   });
 }
 

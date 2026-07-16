@@ -4088,7 +4088,9 @@
   "opdUpdateConsultationBillingAction": "Edit consultation billing",
   "opdCorrectStageAction": "Correct stage",
   "opdReferAction": "Refer",
+  "opdSaveReferralAction": "Save referral",
   "opdFollowUpAction": "Follow up",
+  "opdSaveFollowUpAction": "Save follow-up",
   "opdDispositionAction": "Disposition",
   "opdSaveDispositionAction": "Save disposition",
   "opdSaveRoutingDecisionAction": "Save routing decision",
@@ -4807,8 +4809,14 @@
   "@opdReferAction": {
     "description": "Action label to create a referral."
   },
+  "@opdSaveReferralAction": {
+    "description": "Primary commit label for saving an OPD/clinical external referral."
+  },
   "@opdFollowUpAction": {
     "description": "Action label to create a follow-up."
+  },
+  "@opdSaveFollowUpAction": {
+    "description": "Primary commit label for saving an OPD follow-up schedule."
   },
   "@opdDispositionAction": {
     "description": "Action label to apply OPD disposition."

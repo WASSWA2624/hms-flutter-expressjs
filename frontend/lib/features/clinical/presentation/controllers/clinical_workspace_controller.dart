@@ -711,7 +711,7 @@ final class ClinicalWorkspaceController
   }) {
     return _mutateSelectedEncounter(
       () => _repository.createFollowUp(<String, Object?>{
-        'encounter_id': _selectedEntry!.encounterId,
+        'encounter_id': _selectedEntry!.apiEncounterId,
         'scheduled_at': scheduledAt.toUtc().toIso8601String(),
         'status': 'SCHEDULED',
         'notes': notes,

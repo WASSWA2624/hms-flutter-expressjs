@@ -10,6 +10,10 @@ const { HttpError } = require("@lib/errors");
 // Mock dependencies
 jest.mock("@repositories/follow-up/follow-up.repository");
 jest.mock("@lib/audit");
+jest.mock("@lib/identifiers/service-identifier-resolution", () => ({
+  resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
+  resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
+}));
 jest.mock("@prisma/client", () => ({
   follow_up: {
     count: jest.fn(),
@@ -38,6 +42,10 @@ const prisma = require("@prisma/client");
 const { createAuditLog } = require("@lib/audit");
 const { emitToUser } = require("@lib/websocket");
 const {
+  resolveIdentifierForFilter,
+  resolveIdentifierForPayload,
+} = require("@lib/identifiers/service-identifier-resolution");
+const {
   listFollowUps,
   getFollowUpById,
   createFollowUp,
@@ -50,6 +58,8 @@ describe("Follow-up Service", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     createAuditLog.mockResolvedValue();
+    resolveIdentifierForFilter.mockImplementation(async ({ value }) => value);
+    resolveIdentifierForPayload.mockImplementation(async ({ value }) => value);
     prisma.follow_up.count.mockResolvedValue(0);
     prisma.follow_up.findMany.mockResolvedValue([]);
     prisma.follow_up.update.mockResolvedValue({});
@@ -117,14 +127,27 @@ describe("Follow-up Service", () => {
     it("should create follow-up and audit log", async () => {
       const mockFollowUp = { id: "fu-1" };
       followUpRepository.create.mockResolvedValue(mockFollowUp);
+      resolveIdentifierForPayload.mockResolvedValue("encounter-uuid-1");
 
       const result = await createFollowUp(
-        { encounter_id: "enc-1", scheduled_at: "2026-01-25" },
+        { encounter_id: "ENC000001", scheduled_at: "2026-01-25" },
         "user-1",
         "127.0.0.1",
       );
 
       expect(result).toEqual(mockFollowUp);
+      expect(resolveIdentifierForPayload).toHaveBeenCalledWith({
+        value: "ENC000001",
+        field: "encounter_id",
+        model: "encounter",
+        where: { deleted_at: null },
+      });
+      expect(followUpRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          encounter_id: "encounter-uuid-1",
+          status: "SCHEDULED",
+        }),
+      );
       expect(createAuditLog).toHaveBeenCalled();
     });
   });

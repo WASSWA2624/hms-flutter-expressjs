@@ -4,20 +4,40 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
+import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
+import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
+import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
+import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/components/app_record_vitals_dialog.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart';
+import 'package:hosspi_hms/shared/opd_actions/record_vitals_dialog.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockOpdRepository extends Mock implements OpdRepository {}
+
+class _MockPatientRepository extends Mock implements PatientRepository {}
+
+class _MockClinicalRepository extends Mock implements ClinicalRepository {}
+
+class _MockApiClient extends Mock implements ApiClient {}
+
+const OpdFlowSummary _flow = OpdFlowSummary(
+  id: 'encounter-1',
+  publicId: 'ENC000001',
+  patientDisplayName: 'Patient Example',
+  stage: 'WAITING_VITALS',
+  chiefComplaint: 'Headache',
+);
 
 void main() {
   setUpAll(() {
@@ -28,48 +48,61 @@ void main() {
     registerFallbackValue(<String, Object?>{});
   });
 
-  const OpdFlowSummary flow = OpdFlowSummary(
-    id: 'encounter-1',
-    publicId: 'ENC000001',
-    patientDisplayName: 'Patient Example',
-    stage: 'WAITING_DOCTOR_REVIEW',
-    status: 'WITH_DOCTOR',
-  );
+  test('buildAppVitalPayloads normalizes blood pressure to mmHg', () {
+    final List<Map<String, Object?>> payloads = buildAppVitalPayloads(
+      temperature: '',
+      systolic: '16',
+      diastolic: '10.7',
+      heartRate: '',
+      respiratoryRate: '',
+      oxygenSaturation: '',
+      weight: '',
+      height: '',
+      bloodPressureUnit: AppVitalsUnits.bloodPressureKpa,
+      temperatureUnit: AppVitalsUnits.temperatureCelsius,
+      weightUnit: AppVitalsUnits.weightKilograms,
+      heightUnit: AppVitalsUnits.heightCentimeters,
+      recordedAt: DateTime.utc(2026, 7, 17, 9),
+      normalizeBloodPressureToMmHg: true,
+    );
 
-  testWidgets('uses AppDialog with Correct stage and Cancel chrome', (
-    WidgetTester tester,
-  ) async {
-    final _MockOpdRepository repository = _MockOpdRepository();
-    _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[flow]);
-
-    await _pumpDialog(tester, flow: flow, repository: repository);
-
-    final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
-    expect(dialog.closeEnabled, isTrue);
-    expect(find.byType(CorrectStageDialog), findsOneWidget);
-    expect(find.text('CORRECT STAGE'), findsOneWidget);
-    expect(find.text('Correct stage'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
-    expect(find.text('Patient Example'), findsOneWidget);
-    expect(find.text('PATIENT EXAMPLE'), findsNothing);
-    expect(find.byType(AppSelectField<String>), findsOneWidget);
-    expect(find.byType(AppTextField), findsOneWidget);
-    expect(find.byIcon(AppActionIcons.move), findsWidgets);
-    expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
-    expect(find.byType(CircularProgressIndicator), findsNothing);
-    expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(payloads, hasLength(1));
+    expect(payloads.single['vital_type'], 'BLOOD_PRESSURE');
+    expect(payloads.single['unit'], AppVitalsUnits.bloodPressureMmHg);
+    expect(payloads.single['value'], isA<String>());
+    expect(payloads.single['systolic_value'], isNotNull);
+    expect(payloads.single['diastolic_value'], isNotNull);
   });
 
-  testWidgets('Cancel pops false without mutating the stage', (
+  testWidgets('composes AppRecordVitalsDialog with role-based title chrome', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
-    _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[flow]);
+    _stubWorkspaceLoad(repository);
+
+    await _pumpDialog(tester, flow: _flow, repository: repository);
+
+    expect(find.byType(AppRecordVitalsDialog), findsOneWidget);
+    expect(find.byType(AppDialog), findsOneWidget);
+    expect(find.text('RECORD VITALS'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Record vitals'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
+    expect(find.text('PATIENT EXAMPLE'), findsNothing);
+    expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
+    expect(find.byIcon(AppActionIcons.save), findsWidgets);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('Cancel pops false without recording vitals', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    _stubWorkspaceLoad(repository);
     bool? result;
 
     await _pumpDialog(
       tester,
-      flow: flow,
+      flow: _flow,
       repository: repository,
       onResult: (bool? value) => result = value,
     );
@@ -78,119 +111,83 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
-    verifyNever(() => repository.correctStage(any(), any()));
+    verifyNever(() => repository.recordVitals(any(), any()));
+    verifyNever(() => repository.routeTriage(any(), any()));
   });
 
-  testWidgets('failure keeps the dialog open and preserves reason', (
+  testWidgets('records vitals through the workspace controller on success', (
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
-    _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[flow]);
-    when(() => repository.correctStage(any(), any())).thenAnswer(
-      (_) async => const Result<OpdFlowDetail>.failure(AppFailure.network()),
-    );
-    bool? result;
-
-    await _pumpDialog(
-      tester,
-      flow: flow,
-      repository: repository,
-      onResult: (bool? value) => result = value,
-    );
-
-    await tester.enterText(find.byType(AppTextField), 'Keep this reason');
-    await tester.tap(find.widgetWithText(AppButton, 'Correct stage'));
-    await tester.pumpAndSettle();
-
-    expect(result, isNull);
-    expect(find.byType(AppDialog), findsOneWidget);
-    expect(find.text('Correct stage'), findsOneWidget);
-    expect(find.text('Keep this reason'), findsOneWidget);
-    expect(find.byType(AppFormInformationBanner), findsOneWidget);
-    verify(() => repository.correctStage('ENC000001', any())).called(1);
-  });
-
-  testWidgets('successful save pops true after persisted stage correction', (
-    WidgetTester tester,
-  ) async {
-    final _MockOpdRepository repository = _MockOpdRepository();
-    const OpdFlowDetail corrected = OpdFlowDetail(
-      summary: OpdFlowSummary(
-        id: 'encounter-1',
-        publicId: 'ENC000001',
-        stage: 'WAITING_CONSULTATION_PAYMENT',
-        status: 'OPEN',
-      ),
-    );
+    _stubWorkspaceLoad(repository);
     Map<String, Object?>? submittedPayload;
-    _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[flow]);
-    when(() => repository.correctStage(any(), any())).thenAnswer((
+    when(() => repository.recordVitals(any(), any())).thenAnswer((
       Invocation invocation,
     ) async {
       submittedPayload =
           invocation.positionalArguments[1] as Map<String, Object?>;
-      return const Result<OpdFlowDetail>.success(corrected);
+      return const Result<OpdFlowDetail>.success(
+        OpdFlowDetail(
+          summary: OpdFlowSummary(
+            id: 'encounter-1',
+            publicId: 'ENC000001',
+            stage: 'WAITING_DOCTOR_ASSIGNMENT',
+          ),
+        ),
+      );
     });
-    when(() => repository.getOpdFlow(any())).thenAnswer(
-      (_) async => const Result<OpdFlowDetail>.success(corrected),
-    );
-    bool? result;
 
+    bool? result;
     await _pumpDialog(
       tester,
-      flow: flow,
+      flow: _flow,
       repository: repository,
       onResult: (bool? value) => result = value,
     );
 
-    await tester.enterText(
-      find.byType(AppTextField),
-      'Moved back for payment',
-    );
-    await tester.tap(find.widgetWithText(AppButton, 'Correct stage'));
+    await _enterHeartRate(tester, '72');
+    await tester.tap(find.widgetWithText(AppButton, 'Record vitals'));
     await tester.pumpAndSettle();
 
     expect(result, isTrue);
-    expect(find.byType(AppDialog), findsNothing);
+    expect(submittedPayload, isNotNull);
+    expect(submittedPayload!['vitals'], isA<List<dynamic>>());
+    final List<dynamic> vitals = submittedPayload!['vitals']! as List<dynamic>;
+    expect(vitals, isNotEmpty);
     expect(
-      submittedPayload,
-      containsPair('stage_to', 'WAITING_CONSULTATION_PAYMENT'),
+      vitals.any(
+        (dynamic item) =>
+            item is Map && item['vital_type'] == 'HEART_RATE',
+      ),
+      isTrue,
     );
-    expect(
-      submittedPayload,
-      containsPair('reason', 'Moved back for payment'),
-    );
-    verify(() => repository.correctStage('ENC000001', any())).called(1);
   });
 
-  testWidgets('disables dismiss while saving', (WidgetTester tester) async {
+  testWidgets('keeps dialog open and patches nothing when record fails', (
+    WidgetTester tester,
+  ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
-    _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[flow]);
-    when(() => repository.correctStage(any(), any())).thenAnswer((_) async {
-      await Future<void>.delayed(const Duration(milliseconds: 200));
-      return const Result<OpdFlowDetail>.success(
-        OpdFlowDetail(summary: flow),
-      );
-    });
-
-    await _pumpDialog(tester, flow: flow, repository: repository);
-
-    await tester.enterText(find.byType(AppTextField), 'In flight');
-    await tester.tap(find.widgetWithText(AppButton, 'Correct stage'));
-    await tester.pump();
-
-    final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
-    expect(dialog.closeEnabled, isFalse);
-    final AppButton cancel = tester.widget<AppButton>(
-      find.widgetWithText(AppButton, 'Cancel'),
+    _stubWorkspaceLoad(repository);
+    when(() => repository.recordVitals(any(), any())).thenAnswer(
+      (_) async => const Result<OpdFlowDetail>.failure(AppFailure.network()),
     );
-    expect(cancel.enabled, isFalse);
-    final AppButton submit = tester.widget<AppButton>(
-      find.widgetWithText(AppButton, 'Correct stage'),
-    );
-    expect(submit.isLoading, isTrue);
 
+    bool? result;
+    await _pumpDialog(
+      tester,
+      flow: _flow,
+      repository: repository,
+      onResult: (bool? value) => result = value,
+    );
+
+    await _enterHeartRate(tester, '72');
+    await tester.tap(find.widgetWithText(AppButton, 'Record vitals'));
     await tester.pumpAndSettle();
+
+    expect(result, isNull);
+    expect(find.byType(RecordVitalsDialog), findsOneWidget);
+    expect(find.byType(AppFormInformationBanner), findsWidgets);
+    verifyNever(() => repository.routeTriage(any(), any()));
   });
 
   testWidgets('remains usable on a compact dark high-text-scale surface', (
@@ -202,21 +199,29 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
 
     final _MockOpdRepository repository = _MockOpdRepository();
-    _stubWorkspaceLoad(repository, flows: <OpdFlowSummary>[flow]);
+    _stubWorkspaceLoad(repository);
 
     await _pumpDialog(
       tester,
-      flow: flow,
+      flow: _flow,
       repository: repository,
       dark: true,
       textScaler: const TextScaler.linear(1.8),
     );
 
     expect(tester.takeException(), isNull);
-    expect(find.text('CORRECT STAGE'), findsOneWidget);
-    expect(find.text('Correct stage'), findsOneWidget);
-    expect(find.text('Cancel'), findsOneWidget);
+    expect(find.text('RECORD VITALS'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Record vitals'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
   });
+}
+
+Future<void> _enterHeartRate(WidgetTester tester, String value) async {
+  final Finder field = find.bySemanticsLabel('Heart rate beats per minute');
+  expect(field, findsOneWidget);
+  await tester.ensureVisible(field);
+  await tester.enterText(field, value);
+  await tester.pump();
 }
 
 Future<void> _pumpDialog(
@@ -234,6 +239,11 @@ Future<void> _pumpDialog(
           const SessionState.ready(),
         ),
         opdRepositoryProvider.overrideWithValue(repository),
+        patientRepositoryProvider.overrideWithValue(_MockPatientRepository()),
+        clinicalRepositoryProvider.overrideWithValue(_MockClinicalRepository()),
+        insuranceCatalogRepositoryProvider.overrideWithValue(
+          InsuranceCatalogRepository(apiClient: _MockApiClient()),
+        ),
       ],
       child: MaterialApp(
         theme: AppTheme.light,
@@ -253,7 +263,7 @@ Future<void> _pumpDialog(
               return AppButton.primary(
                 label: 'Open',
                 onPressed: () async {
-                  final bool? value = await showCorrectStageDialog(
+                  final bool? value = await showRecordVitalsDialog(
                     context: context,
                     flow: flow,
                   );
@@ -277,15 +287,13 @@ Future<void> _pumpDialog(
   await tester.pumpAndSettle();
 }
 
-void _stubWorkspaceLoad(
-  _MockOpdRepository repository, {
-  required List<OpdFlowSummary> flows,
-}) {
+void _stubWorkspaceLoad(_MockOpdRepository repository) {
   when(() => repository.listAppointments(any())).thenAnswer(
     (_) async => const Result<AppPage<OpdAppointment>>.success(
       AppPage<OpdAppointment>(
         items: <OpdAppointment>[],
-        request: AppPageRequest(pageSize: 12),
+        request: AppPageRequest(),
+        totalItemCount: 0,
       ),
     ),
   );
@@ -294,16 +302,17 @@ void _stubWorkspaceLoad(
       AppPage<OpdQueueEntry>(
         items: <OpdQueueEntry>[],
         request: AppPageRequest(pageSize: 12),
+        totalItemCount: 0,
       ),
     ),
   );
   when(() => repository.listOpdFlows(any())).thenAnswer(
     (Invocation invocation) async => Result<AppPage<OpdFlowSummary>>.success(
       AppPage<OpdFlowSummary>(
-        items: flows,
+        items: const <OpdFlowSummary>[_flow],
         request: (invocation.positionalArguments.single as OpdFlowQuery)
             .pageRequest,
-        totalItemCount: flows.length,
+        totalItemCount: 1,
       ),
     ),
   );
@@ -312,6 +321,7 @@ void _stubWorkspaceLoad(
       AppPage<OpdFlowSummary>(
         items: <OpdFlowSummary>[],
         request: AppPageRequest(pageSize: 12),
+        totalItemCount: 0,
       ),
     ),
   );
@@ -329,9 +339,8 @@ void _stubWorkspaceLoad(
     ),
   );
   when(() => repository.listProviderSchedules()).thenAnswer(
-    (_) async => const Result<List<OpdProviderSchedule>>.success(
-      <OpdProviderSchedule>[],
-    ),
+    (_) async =>
+        const Result<List<OpdProviderSchedule>>.success(<OpdProviderSchedule>[]),
   );
   when(() => repository.listProviders()).thenAnswer(
     (_) async =>
@@ -340,16 +349,5 @@ void _stubWorkspaceLoad(
   when(() => repository.listProviders(search: any(named: 'search'))).thenAnswer(
     (_) async =>
         const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
-  );
-  when(() => repository.getOpdFlow(any())).thenAnswer(
-    (Invocation invocation) async {
-      final String id = invocation.positionalArguments.first as String;
-      final OpdFlowSummary match = flows.firstWhere(
-        (OpdFlowSummary item) =>
-            item.id == id || item.publicId == id || item.apiId == id,
-        orElse: () => flows.first,
-      );
-      return Result<OpdFlowDetail>.success(OpdFlowDetail(summary: match));
-    },
   );
 }

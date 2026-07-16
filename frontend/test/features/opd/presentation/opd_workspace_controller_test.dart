@@ -736,6 +736,70 @@ void main() {
     });
 
     test(
+      'createFollowUp posts public encounter_id and patches follow-ups',
+      () async {
+        final _MockOpdRepository repository = _MockOpdRepository();
+        const OpdFlowSummary flow = OpdFlowSummary(
+          id: 'encounter-1',
+          publicId: 'ENC000001',
+          stage: 'WITH_DOCTOR',
+        );
+        const OpdFlowDetail refreshed = OpdFlowDetail(
+          summary: flow,
+          followUps: <OpdRelatedRecord>[
+            OpdRelatedRecord(
+              id: 'follow-up-1',
+              kind: 'follow_up',
+              status: 'SCHEDULED',
+            ),
+          ],
+        );
+        Map<String, Object?>? submittedPayload;
+        final DateTime scheduledAt = DateTime.utc(2026, 7, 24, 10);
+
+        _stubInitialLoad(repository, flows: <OpdFlowSummary>[flow]);
+        when(() => repository.createFollowUp(any())).thenAnswer((
+          Invocation invocation,
+        ) async {
+          submittedPayload =
+              invocation.positionalArguments.single as Map<String, Object?>;
+          return const Result<void>.success(null);
+        });
+        when(
+          () => repository.getOpdFlow(any()),
+        ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(refreshed));
+
+        final ProviderContainer container = _testContainer(repository);
+        addTearDown(container.dispose);
+        await container.read(opdWorkspaceControllerProvider.future);
+        clearInteractions(repository);
+
+        final AppFailure? failure = await container
+            .read(opdWorkspaceControllerProvider.notifier)
+            .createFollowUp(
+              flow: flow,
+              scheduledAt: scheduledAt,
+              notes: 'Return for review',
+            );
+
+        expect(failure, isNull);
+        expect(submittedPayload, containsPair('encounter_id', 'ENC000001'));
+        expect(submittedPayload, containsPair('status', 'SCHEDULED'));
+        expect(
+          submittedPayload,
+          containsPair('scheduled_at', scheduledAt.toUtc().toIso8601String()),
+        );
+        expect(submittedPayload, containsPair('notes', 'Return for review'));
+        verify(() => repository.createFollowUp(any())).called(1);
+        verify(() => repository.getOpdFlow('ENC000001')).called(1);
+        expect(
+          _workspaceState(container).selectedFlow?.followUps.single.id,
+          'follow-up-1',
+        );
+      },
+    );
+
+    test(
       'assignDoctor posts provider_user_id and patches flow plus queue row',
       () async {
         final _MockOpdRepository repository = _MockOpdRepository();

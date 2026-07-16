@@ -53,10 +53,17 @@ describe('Follow-up Schemas', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should reject invalid UUIDs', () => {
+    it('should reject invalid encounter identifiers', () => {
       const data = { ...validData, encounter_id: 'not-a-uuid' };
       const result = createFollowUpSchema.safeParse(data);
       expect(result.success).toBe(false);
+    });
+
+    it('should accept human-friendly encounter identifiers', () => {
+      const data = { ...validData, encounter_id: 'ENC000001' };
+      const result = createFollowUpSchema.safeParse(data);
+      expect(result.success).toBe(true);
+      expect(result.data.encounter_id).toBe('ENC000001');
     });
 
     it('should reject invalid date format', () => {

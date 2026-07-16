@@ -7,12 +7,14 @@ import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialo
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
+/// Shared follow-up scheduling dialog used by clinical, OPD, and physiotherapy.
 class ClinicalFollowUpActionDialog extends StatefulWidget {
   const ClinicalFollowUpActionDialog({
     required this.onSubmit,
     this.title,
     this.submitLabel,
-    this.icon = const Icon(Icons.event_repeat_outlined),
+    this.icon = const Icon(AppActionIcons.followUp),
+    this.submitLeadingIcon = AppActionIcons.save,
     this.initialScheduledAt,
     this.dateLabel,
     this.timeLabel,
@@ -20,6 +22,10 @@ class ClinicalFollowUpActionDialog extends StatefulWidget {
     this.datePickerButtonLabel,
     this.lastDate,
     this.leadingContent = const <Widget>[],
+    this.scrollable = true,
+    this.pinActionsToBottom = true,
+    this.density = AppFormSectionDensity.compact,
+    this.maxWidth = 720,
     super.key,
   });
 
@@ -31,6 +37,7 @@ class ClinicalFollowUpActionDialog extends StatefulWidget {
   final String? title;
   final String? submitLabel;
   final Widget icon;
+  final IconData submitLeadingIcon;
   final DateTime? initialScheduledAt;
   final String? dateLabel;
   final String? timeLabel;
@@ -38,6 +45,10 @@ class ClinicalFollowUpActionDialog extends StatefulWidget {
   final String? datePickerButtonLabel;
   final DateTime? lastDate;
   final List<Widget> leadingContent;
+  final bool scrollable;
+  final bool pinActionsToBottom;
+  final AppFormSectionDensity density;
+  final double maxWidth;
 
   @override
   State<ClinicalFollowUpActionDialog> createState() =>
@@ -78,17 +89,19 @@ class _ClinicalFollowUpActionDialogState
     final ThemeData theme = Theme.of(context);
     final DateTime today = _dateOnly(DateTime.now());
     final String title = widget.title ?? l10n.opdFollowUpAction;
-    final String submitLabel = widget.submitLabel ?? l10n.opdFollowUpAction;
+    final String submitLabel =
+        widget.submitLabel ?? l10n.opdSaveFollowUpAction;
     return AppDialog(
       title: Text(title),
       icon: widget.icon,
-      maxWidth: 720,
-      scrollable: true,
+      maxWidth: widget.maxWidth,
+      scrollable: widget.scrollable,
+      pinActionsToBottom: widget.pinActionsToBottom,
       closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,
         child: AppFormSection(
-          density: AppFormSectionDensity.compact,
+          density: widget.density,
           children: <Widget>[
             if (_failure != null)
               AppFormInformationBanner.failure(
@@ -98,7 +111,7 @@ class _ClinicalFollowUpActionDialogState
             ...widget.leadingContent,
             AppFormSection(
               title: l10n.clinicalFollowUpDetailsTitle,
-              density: AppFormSectionDensity.compact,
+              density: widget.density,
               children: <Widget>[
                 AppResponsiveFieldRow.two(
                   gap: AppResponsiveFieldRowGap.form,
@@ -157,7 +170,7 @@ class _ClinicalFollowUpActionDialogState
             SizedBox(height: theme.spacing.sm),
             AppFormSection(
               title: l10n.clinicalFollowUpNotesTitle,
-              density: AppFormSectionDensity.compact,
+              density: widget.density,
               children: <Widget>[
                 AppTextField(
                   controller: _notesController,
@@ -167,7 +180,7 @@ class _ClinicalFollowUpActionDialogState
                   enabled: !_isSaving,
                   maxLines: 4,
                   textCapitalization: TextCapitalization.sentences,
-                  prefixIcon: const Icon(Icons.edit_note_outlined),
+                  prefixIcon: const Icon(AppActionIcons.edit),
                 ),
               ],
             ),
@@ -179,7 +192,7 @@ class _ClinicalFollowUpActionDialogState
         submitLabel,
         _isSaving,
         _isSaving ? null : _submit,
-        submitLeadingIcon: Icons.event_repeat_outlined,
+        submitLeadingIcon: widget.submitLeadingIcon,
       ),
     );
   }

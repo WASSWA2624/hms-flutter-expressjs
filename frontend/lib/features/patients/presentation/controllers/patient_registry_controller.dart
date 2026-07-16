@@ -207,30 +207,29 @@ final class PatientRegistryController
 
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
     final Result<Patient> result = await _repository.createPatient(payload);
-    return result.when(
-      success: (Patient patient) async {
-        final PatientRegistryState latest = _currentState!;
-        final bool shouldInsert =
-            latest.query.pageRequest.pageIndex == 0 &&
-            _patientMatchesQuery(patient, latest.query);
-        _emit(
-          latest.copyWith(
-            page: shouldInsert
-                ? _upsertPatientInPage(latest.page, patient, insertOnTop: true)
-                : latest.page,
-          ),
-        );
-        await _refreshOverviewOnly();
-        _emit(_currentState!.copyWith(isSaving: false));
-        await _flushPendingRefresh();
-        return Result<Patient>.success(patient);
-      },
-      failure: (AppFailure failure) async {
-        _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
-        await _flushPendingRefresh();
-        return Result<Patient>.failure(failure);
-      },
+    if (result.isFailure) {
+      final AppFailure failure = (result as ResultFailure<Patient>).failure;
+      _emit(_currentState!.copyWith(isSaving: false, lastFailure: failure));
+      await _flushPendingRefresh();
+      return Result<Patient>.failure(failure);
+    }
+
+    final Patient patient = (result as ResultSuccess<Patient>).value;
+    final PatientRegistryState latest = _currentState!;
+    final bool shouldInsert =
+        latest.query.pageRequest.pageIndex == 0 &&
+        _patientMatchesQuery(patient, latest.query);
+    _emit(
+      latest.copyWith(
+        page: shouldInsert
+            ? _upsertPatientInPage(latest.page, patient, insertOnTop: true)
+            : latest.page,
+      ),
     );
+    await _refreshOverviewOnly();
+    _emit(_currentState!.copyWith(isSaving: false));
+    await _flushPendingRefresh();
+    return Result<Patient>.success(patient);
   }
 
   Future<AppFailure?> mergeDuplicateCandidate(
