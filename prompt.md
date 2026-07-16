@@ -1,15 +1,25 @@
-## Standardize Screen, Tabs, and Toolbar Layout
+To further standardize all tables across screens, implement the following unified structure and behavior:
 
-- **Eliminate all dedicated screen title/header areas**. No separate title bars should remain on any screen.
-- **Adopt the shared tab component for every screen**, ensuring tab buttons are rendered at the top, immediately followed by a toolbar beneath.
-- **Relocate all former screen title/header action buttons into the toolbar** below the tab buttons. The toolbar should be the only place for action buttons—there must be no stray buttons outside of this area.
-- **Toolbar buttons must be contextual to the active tab**. When users switch tabs, the toolbar should immediately reflect only the buttons relevant to that tab.
-- **Unify layout and styling across screens, including:**
-  - Consistent vertical padding above and below all tab button rows.
-  - Hide the toolbar entirely on tabs that require no action buttons—except that every screen must have at least one button displayed in the toolbar.
-- **For tabs containing tables:**
-  - Within the table area itself, display only the two buttons labeled **Filters** and **Settings**. Ensure "Filters" and "Settings" are used as the standardized, uniform labels. Move all other buttons to the toolbar beneath the tabs.
-  - If the screen’s header area previously included a "more" menu for additional actions (not inside a table), extract each individual menu item and move them directly into the toolbar beneath the tab buttons. Do not retain a separate "more" menu or standalone header actions—everything must be a distinct, visible button in the toolbar, contextual to the active tab.
-- **Follow consistent naming conventions** for all buttons and toolbars across every screen and tab, ensuring a cohesive user experience.
+1. Every table must include a global search bar, allowing users to search across all columns (both visible and hidden). This search bar should also contain:
+   - A filter button: Opens an advanced filter modal where users can apply specific filtering criteria.
+   - A settings button: Opens a dialog to select which columns are visible. User preferences for column visibility should persist for the session, so when a user returns, their column selections are remembered.
 
-**Objective:** All screens should present a consistent, clean layout. Tabs and toolbars must behave uniformly, with clearly contextual actions, leading to an intuitive and standardized interface throughout the application.
+2. Each table column should display only a single data field—avoid combining multiple parameters (e.g., don’t display both name and ID in a single column). Each column must be unique.
+
+3. Limit the table to five columns:
+   - The leftmost column is the row number.
+   - If the entity includes status and next-step actions:
+     - The last column should be “Next Step,” containing an explicit action button. Clicking this button either opens a contextual dialog for the action or navigates the user directly to the relevant resource or screen.
+     - The second-last column displays the current status with a clear, unambiguous label.
+
+4. Ensure all statuses and actions in the tables and screens are explicit and clearly labeled. Users should always know both the current status and the next required action without guessing or unnecessary navigation.
+
+5. Clicking any row (or “hero” area) in the table should open a modal dialog showing detailed information relevant to that entry, with clear actions available in the dialog for follow-up.
+
+6. For the three main columns after the number column, prioritize and display the three most important, context-relevant data fields. If more detail is required in a single column, display the primary value prominently and any secondary information in a smaller, less prominent style (smaller font, unbolded), to visually signal its lower importance.
+
+7. Tables must be responsive and maintain usability across different screen sizes.
+
+8. Where possible, reuse existing shared components (from the shared folder) for consistency and efficiency. Ensure all data is mapped correctly to its respective column throughout.
+
+Apply these standards to all screens utilizing tables to achieve a consistent, user-friendly, and actionable interface.
