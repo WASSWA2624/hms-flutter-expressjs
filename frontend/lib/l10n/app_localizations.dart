@@ -442,6 +442,108 @@ abstract class AppLocalizations {
   /// **'Emergency case'**
   String get emergencyCaseDialogTitle;
 
+  /// Action that opens emergency quick arrival.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick arrival'**
+  String get emergencyQuickArrivalAction;
+
+  /// Title for the emergency quick arrival dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick emergency arrival'**
+  String get emergencyQuickArrivalDialogTitle;
+
+  /// Accessibility label for the emergency quick arrival dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Create an emergency quick arrival'**
+  String get emergencyQuickArrivalDialogSemanticLabel;
+
+  /// Emergency priority field label in quick arrival.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority'**
+  String get emergencyQuickArrivalPriorityLabel;
+
+  /// Initial triage field label in quick arrival.
+  ///
+  /// In en, this message translates to:
+  /// **'Initial triage'**
+  String get emergencyQuickArrivalInitialTriageLabel;
+
+  /// Arrival notes field label in quick arrival.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival notes'**
+  String get emergencyQuickArrivalNotesLabel;
+
+  /// Primary action that creates the emergency arrival and opens its case.
+  ///
+  /// In en, this message translates to:
+  /// **'Open case'**
+  String get emergencyQuickArrivalOpenCaseAction;
+
+  /// Success message after an emergency quick arrival is persisted.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrival opened'**
+  String get emergencyQuickArrivalOpenedMessage;
+
+  /// Critical emergency priority option.
+  ///
+  /// In en, this message translates to:
+  /// **'Critical'**
+  String get emergencyPriorityCriticalLabel;
+
+  /// High emergency priority option.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get emergencyPriorityHighLabel;
+
+  /// Medium emergency priority option.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get emergencyPriorityMediumLabel;
+
+  /// Low emergency priority option.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get emergencyPriorityLowLabel;
+
+  /// Emergency triage level 1 option.
+  ///
+  /// In en, this message translates to:
+  /// **'Level 1'**
+  String get emergencyTriageLevel1Label;
+
+  /// Emergency triage level 2 option.
+  ///
+  /// In en, this message translates to:
+  /// **'Level 2'**
+  String get emergencyTriageLevel2Label;
+
+  /// Emergency triage level 3 option.
+  ///
+  /// In en, this message translates to:
+  /// **'Level 3'**
+  String get emergencyTriageLevel3Label;
+
+  /// Emergency triage level 4 option.
+  ///
+  /// In en, this message translates to:
+  /// **'Level 4'**
+  String get emergencyTriageLevel4Label;
+
+  /// Emergency triage level 5 option.
+  ///
+  /// In en, this message translates to:
+  /// **'Level 5'**
+  String get emergencyTriageLevel5Label;
+
   /// Semantic label for the emergency worklist search field.
   ///
   /// In en, this message translates to:

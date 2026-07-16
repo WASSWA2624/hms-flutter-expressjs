@@ -325,7 +325,7 @@ class _EmergencyWorkspaceContentState
       requirement: _writeRequirement,
       builder: (BuildContext context, bool isAllowed) {
         return AppTabToolbarPrimary(
-          label: EmergencyText.quickArrival,
+          label: context.l10n.emergencyQuickArrivalAction,
           icon: Icons.add_circle_outline,
           enabled: isAllowed,
           onPressed: () => _openQuickArrivalDialog(context),
@@ -422,19 +422,20 @@ class _EmergencyWorkspaceContentState
   }
 
   Future<void> _openQuickArrivalDialog(BuildContext context) async {
-    final bool? saved = await showAppDialog<bool>(
+    final bool? saved = await showEmergencyQuickArrivalDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => QuickArrivalDialog(
-        onSubmit: (EmergencyQuickArrivalInput input) {
-          return ref
-              .read(emergencyWorkspaceControllerProvider.notifier)
-              .createQuickArrival(input);
-        },
-      ),
+      onSubmit: (EmergencyQuickArrivalInput input) {
+        return ref
+            .read(emergencyWorkspaceControllerProvider.notifier)
+            .createQuickArrival(input);
+      },
     );
     if (saved == true && context.mounted) {
-      showFailureIfNeeded(context, null, successMessage: 'Arrival opened');
+      showFailureIfNeeded(
+        context,
+        null,
+        successMessage: context.l10n.emergencyQuickArrivalOpenedMessage,
+      );
     }
   }
 

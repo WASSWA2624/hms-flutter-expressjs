@@ -8,13 +8,18 @@
  */
 
 const emergencyCaseRepository = require('@repositories/emergency-case/emergency-case.repository');
+const patientRepository = require('@repositories/patient/patient.repository');
+const patientContactRepository = require('@repositories/patient-contact/patient-contact.repository');
+const triageAssessmentRepository = require('@repositories/triage-assessment/triage-assessment.repository');
+const emergencyResponseRepository = require('@modules/emergency-response/repositories/emergency-response.repository');
+const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 const { createAuditLog } = require('@lib/audit');
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const { resolveModelIdByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const {
   resolveIdentifierForFilter,
-  resolveIdentifierForPayload,
+  resolveIdentifierForPayload
 } = require('@lib/identifiers/service-identifier-resolution');
 
 const sanitizeIdentifier = (value) => (typeof value === 'string' ? value.trim() : '');
@@ -38,13 +43,63 @@ const resolvePatientDisplayName = (patient) => {
   return fullName || null;
 };
 
+const requirePublicIdentifier = (record, field) => {
+  const identifier = sanitizeIdentifier(record?.human_friendly_id);
+  if (!identifier) {
+    throw new HttpError('errors.server.unexpected', 500, [{ field }]);
+  }
+  return identifier;
+};
+
+const mapQuickArrivalCase = (record) => {
+  const caseId = requirePublicIdentifier(record, 'emergency_case_id');
+  const patientId = requirePublicIdentifier(record?.patient, 'patient_id');
+  const tenantId = requirePublicIdentifier(record?.tenant, 'tenant_id');
+  const facilityId = record?.facility
+    ? requirePublicIdentifier(record.facility, 'facility_id')
+    : null;
+
+  return {
+    human_friendly_id: caseId,
+    display_id: caseId,
+    tenant_id: tenantId,
+    tenant_display_id: tenantId,
+    facility_id: facilityId,
+    facility_display_id: facilityId,
+    patient_id: patientId,
+    patient_display_id: patientId,
+    patient_display_name: resolvePatientDisplayName(record.patient),
+    severity: record.severity,
+    status: record.status,
+    extension_json: record.extension_json || null,
+    created_at: record.created_at,
+    updated_at: record.updated_at
+  };
+};
+
+const mapQuickArrivalRelatedRecord = (record, emergencyCaseId) => {
+  if (!record) return null;
+  const displayId = requirePublicIdentifier(record, 'related_record_id');
+  return {
+    human_friendly_id: displayId,
+    display_id: displayId,
+    emergency_case_id: emergencyCaseId,
+    emergency_case_display_id: emergencyCaseId,
+    triage_level: record.triage_level,
+    response_at: record.response_at,
+    notes: record.notes,
+    created_at: record.created_at,
+    updated_at: record.updated_at
+  };
+};
+
 const EMERGENCY_CASE_STATUS_ALIAS_MAP = Object.freeze({
   OPEN: 'OPEN',
   CLOSED: 'CLOSED',
   CANCELLED: 'CANCELLED',
   PENDING: 'OPEN',
   IN_PROGRESS: 'OPEN',
-  COMPLETED: 'CLOSED',
+  COMPLETED: 'CLOSED'
 });
 
 const normalizeEmergencyCaseStatus = (value) => {
@@ -60,7 +115,7 @@ const EMERGENCY_HANDOFF_DESTINATION_ALIAS_MAP = Object.freeze({
   THEATER: 'THEATER',
   THEATRE: 'THEATER',
   REFERRAL: 'REFERRAL',
-  DISCHARGE: 'DISCHARGE',
+  DISCHARGE: 'DISCHARGE'
 });
 
 const normalizeHandoffDestination = (value) => {
@@ -74,7 +129,7 @@ const buildHandoffNote = (destination, notes) =>
 const buildWorkflowContext = (emergencyCase, user = {}) => ({
   user_id: user.id || user.user_id || user.userId || null,
   tenant_id: emergencyCase.tenant_id || user.tenant_id || null,
-  facility_id: emergencyCase.facility_id || user.facility_id || null,
+  facility_id: emergencyCase.facility_id || user.facility_id || null
 });
 
 const resolvePublicSnapshotId = (...values) => {
@@ -98,7 +153,7 @@ const buildEmptyListResult = (page, limit) => ({
   total: 0,
   page,
   limit,
-  totalPages: 0,
+  totalPages: 0
 });
 
 const extractHandoffSnapshot = (record) => {
@@ -115,7 +170,11 @@ const mapEmergencyCaseForDisplay = (record) => {
     ...record,
     handoff: extractHandoffSnapshot(record),
     display_id: resolveDisplayIdentifier(record.display_id, record.human_friendly_id, record.id),
-    tenant_display_id: resolveDisplayIdentifier(record.tenant_display_id, record.tenant?.human_friendly_id, record.tenant_id),
+    tenant_display_id: resolveDisplayIdentifier(
+      record.tenant_display_id,
+      record.tenant?.human_friendly_id,
+      record.tenant_id
+    ),
     facility_display_id: resolveDisplayIdentifier(
       record.facility_display_id,
       record.facility?.human_friendly_id,
@@ -126,7 +185,7 @@ const mapEmergencyCaseForDisplay = (record) => {
       record.patient?.human_friendly_id,
       record.patient_id
     ),
-    patient_display_name: record.patient_display_name || resolvePatientDisplayName(record.patient),
+    patient_display_name: record.patient_display_name || resolvePatientDisplayName(record.patient)
   };
 };
 
@@ -136,7 +195,7 @@ const resolveEmergencyCaseId = async (id) => {
 
   const resolvedId = await resolveModelIdByIdentifier({
     model: 'emergency_case',
-    identifier: normalized,
+    identifier: normalized
   });
 
   return resolvedId || normalized;
@@ -148,7 +207,7 @@ const resolveListFilters = async (filters = {}, page, limit) => {
   if (filters.tenant_id !== undefined) {
     const tenantId = await resolveIdentifierForFilter({
       value: filters.tenant_id,
-      model: 'tenant',
+      model: 'tenant'
     });
     if (tenantId === null) return buildEmptyListResult(page, limit);
     if (tenantId !== undefined) resolvedFilters.tenant_id = tenantId;
@@ -158,7 +217,7 @@ const resolveListFilters = async (filters = {}, page, limit) => {
     const facilityId = await resolveIdentifierForFilter({
       value: filters.facility_id,
       model: 'facility',
-      where: resolvedFilters.tenant_id ? { tenant_id: resolvedFilters.tenant_id } : {},
+      where: resolvedFilters.tenant_id ? { tenant_id: resolvedFilters.tenant_id } : {}
     });
     if (facilityId === null) return buildEmptyListResult(page, limit);
     if (facilityId !== undefined) resolvedFilters.facility_id = facilityId;
@@ -170,8 +229,8 @@ const resolveListFilters = async (filters = {}, page, limit) => {
       model: 'patient',
       where: {
         ...(resolvedFilters.tenant_id ? { tenant_id: resolvedFilters.tenant_id } : {}),
-        ...(resolvedFilters.facility_id ? { facility_id: resolvedFilters.facility_id } : {}),
-      },
+        ...(resolvedFilters.facility_id ? { facility_id: resolvedFilters.facility_id } : {})
+      }
     });
     if (patientId === null) return buildEmptyListResult(page, limit);
     if (patientId !== undefined) resolvedFilters.patient_id = patientId;
@@ -196,14 +255,14 @@ const resolveCreatePayload = async (data = {}) => {
   const tenantId = await resolveIdentifierForPayload({
     value: payload.tenant_id,
     field: 'tenant_id',
-    model: 'tenant',
+    model: 'tenant'
   });
   const facilityId = await resolveIdentifierForPayload({
     value: payload.facility_id,
     field: 'facility_id',
     model: 'facility',
     where: tenantId ? { tenant_id: tenantId } : {},
-    nullable: true,
+    nullable: true
   });
   const patientId = await resolveIdentifierForPayload({
     value: payload.patient_id,
@@ -211,8 +270,8 @@ const resolveCreatePayload = async (data = {}) => {
     model: 'patient',
     where: {
       ...(tenantId ? { tenant_id: tenantId } : {}),
-      ...(facilityId ? { facility_id: facilityId } : {}),
-    },
+      ...(facilityId ? { facility_id: facilityId } : {})
+    }
   });
 
   payload.tenant_id = tenantId;
@@ -243,20 +302,22 @@ const resolveUpdatePayload = async (data = {}, existing = null) => {
       field: 'facility_id',
       model: 'facility',
       where: tenantId ? { tenant_id: tenantId } : {},
-      nullable: true,
+      nullable: true
     });
   }
 
   if (payload.patient_id !== undefined) {
-    const effectiveFacilityId = hasFacilityField ? payload.facility_id : existing?.facility_id || null;
+    const effectiveFacilityId = hasFacilityField
+      ? payload.facility_id
+      : existing?.facility_id || null;
     payload.patient_id = await resolveIdentifierForPayload({
       value: payload.patient_id,
       field: 'patient_id',
       model: 'patient',
       where: {
         ...(tenantId ? { tenant_id: tenantId } : {}),
-        ...(effectiveFacilityId ? { facility_id: effectiveFacilityId } : {}),
-      },
+        ...(effectiveFacilityId ? { facility_id: effectiveFacilityId } : {})
+      }
     });
   }
 
@@ -289,7 +350,7 @@ const startEmergencyOpdFlow = async (emergencyCase, note, context) => {
       create_consultation_invoice: false,
       reuse_open_encounter: true,
       queued_at: new Date().toISOString(),
-      notes: note,
+      notes: note
     },
     context
   );
@@ -305,7 +366,7 @@ const startEmergencyIpdFlow = async (emergencyCase, context) => {
     {
       tenant_id: emergencyCase.tenant_id,
       facility_id: emergencyCase.facility_id || null,
-      patient_id: emergencyCase.patient_id,
+      patient_id: emergencyCase.patient_id
     },
     context
   );
@@ -346,7 +407,7 @@ const startEmergencyTheatreFlow = async (emergencyCase, note, context) => {
       patient_id: emergencyCase.patient_id,
       encounter_type: 'THEATRE',
       status: 'OPEN',
-      started_at: new Date().toISOString(),
+      started_at: new Date().toISOString()
     },
     context.user_id,
     context.ip_address
@@ -374,7 +435,7 @@ const startEmergencyTheatreFlow = async (emergencyCase, note, context) => {
       scheduled_at: new Date().toISOString(),
       status: 'SCHEDULED',
       workflow_stage: 'PRE_OP',
-      stage_notes: note,
+      stage_notes: note
     },
     context
   );
@@ -404,7 +465,7 @@ const HANDOFF_ROUTE_BY_DESTINATION = Object.freeze({
   OPD: 'opd',
   IPD: 'ipd',
   ICU: 'icu',
-  THEATER: 'theater',
+  THEATER: 'theater'
 });
 
 const HANDOFF_TERMINAL_DESTINATIONS = new Set(['REFERRAL', 'DISCHARGE']);
@@ -423,7 +484,7 @@ const buildReceivingWorkSnapshot = (destination, receivingWork) => {
     return {
       receiving_display_id: null,
       stage: null,
-      billing_deferred: false,
+      billing_deferred: false
     };
   }
 
@@ -442,7 +503,7 @@ const buildReceivingWorkSnapshot = (destination, receivingWork) => {
         receiving_display_id: encounterId,
         encounter_display_id: encounterId,
         stage: resolvePublicSnapshotId(flow.workflow_stage, flow.stage) || 'WAITING_VITALS',
-        billing_deferred: false,
+        billing_deferred: false
       };
     }
     case 'IPD': {
@@ -459,7 +520,7 @@ const buildReceivingWorkSnapshot = (destination, receivingWork) => {
         receiving_display_id: admissionId,
         admission_display_id: admissionId,
         stage: resolvePublicSnapshotId(flow.stage, flow.workflow_stage, admission?.status),
-        billing_deferred: true,
+        billing_deferred: true
       };
     }
     case 'ICU': {
@@ -482,7 +543,7 @@ const buildReceivingWorkSnapshot = (destination, receivingWork) => {
           icuStay.id
         ),
         stage: resolvePublicSnapshotId(flow.stage, flow.workflow_stage) || 'ICU',
-        billing_deferred: true,
+        billing_deferred: true
       };
     }
     case 'THEATER': {
@@ -501,14 +562,14 @@ const buildReceivingWorkSnapshot = (destination, receivingWork) => {
         stage:
           resolvePublicSnapshotId(theatre.workflow_stage, flow.workflow_stage, flow.stage) ||
           'PRE_OP',
-        billing_deferred: false,
+        billing_deferred: false
       };
     }
     default:
       return {
         receiving_display_id: null,
         stage: null,
-        billing_deferred: false,
+        billing_deferred: false
       };
   }
 };
@@ -534,7 +595,7 @@ const buildHandoffSnapshot = (destination, receivingWork, data = {}) => {
     notes: sanitizeText(data.notes),
     close_case: data.close_case !== false,
     handoff_at: new Date().toISOString(),
-    ...receiving,
+    ...receiving
   };
 };
 
@@ -565,7 +626,7 @@ const listEmergencyCases = async (
 
   const [items, total] = await Promise.all([
     emergencyCaseRepository.findMany(resolvedFilters, skip, limit, orderBy),
-    emergencyCaseRepository.count(resolvedFilters),
+    emergencyCaseRepository.count(resolvedFilters)
   ]);
 
   return {
@@ -573,7 +634,7 @@ const listEmergencyCases = async (
     total,
     page,
     limit,
-    totalPages: Math.ceil(total / limit),
+    totalPages: Math.ceil(total / limit)
   };
 };
 
@@ -612,10 +673,155 @@ const createEmergencyCase = async (data, user) => {
     resource_id: emergencyCase.id,
     user_id: user.id,
     tenant_id: emergencyCase.tenant_id || payload.tenant_id,
-    details: { data: payload },
+    details: { data: payload }
   });
 
   return mapEmergencyCaseForDisplay(emergencyCase);
+};
+
+/**
+ * Atomically create the incomplete patient, emergency case, and optional
+ * triage/response records used by emergency quick arrival.
+ */
+const createQuickArrival = async (data = {}, user = {}) => {
+  const tenantId = await resolveIdentifierForPayload({
+    value: data.tenant_id,
+    field: 'tenant_id',
+    model: 'tenant'
+  });
+  const facilityId = await resolveIdentifierForPayload({
+    value: data.facility_id,
+    field: 'facility_id',
+    model: 'facility',
+    where: tenantId ? { tenant_id: tenantId } : {},
+    nullable: true
+  });
+  const registeredAt = new Date();
+  const firstName = sanitizeIdentifier(data.first_name) || 'Emergency';
+  const lastName = sanitizeIdentifier(data.last_name) || `Patient ${registeredAt.getTime()}`;
+  const phone = sanitizeIdentifier(data.phone);
+  const notes = sanitizeText(data.notes);
+
+  const created = await prisma.$transaction(async (tx) => {
+    const patient = await patientRepository.create(
+      {
+        tenant_id: tenantId,
+        facility_id: facilityId,
+        first_name: firstName,
+        last_name: lastName,
+        gender: 'UNKNOWN',
+        is_active: true,
+        extension_json: {
+          registration: {
+            source: 'EMERGENCY',
+            status: 'INCOMPLETE',
+            requires_completion: true,
+            registered_at: registeredAt.toISOString(),
+            notes
+          }
+        }
+      },
+      tx
+    );
+
+    if (phone) {
+      await patientContactRepository.create(
+        {
+          tenant_id: tenantId,
+          patient_id: patient.id,
+          contact_type: 'PHONE',
+          value: phone,
+          is_primary: true
+        },
+        tx
+      );
+    }
+
+    const emergencyCase = await emergencyCaseRepository.create(
+      {
+        tenant_id: tenantId,
+        facility_id: facilityId,
+        patient_id: patient.id,
+        severity: data.severity,
+        status: 'OPEN'
+      },
+      tx
+    );
+
+    const triageAssessment = data.triage_level
+      ? await triageAssessmentRepository.create(
+          {
+            emergency_case_id: emergencyCase.id,
+            triage_level: data.triage_level,
+            notes
+          },
+          tx
+        )
+      : null;
+
+    const emergencyResponse = notes
+      ? await emergencyResponseRepository.create(
+          {
+            emergency_case_id: emergencyCase.id,
+            response_at: registeredAt,
+            notes
+          },
+          tx
+        )
+      : null;
+
+    const publicCase = mapQuickArrivalCase(emergencyCase);
+    return {
+      patient,
+      emergencyCase,
+      publicCase,
+      triageAssessment: mapQuickArrivalRelatedRecord(
+        triageAssessment,
+        publicCase.human_friendly_id
+      ),
+      emergencyResponse: mapQuickArrivalRelatedRecord(
+        emergencyResponse,
+        publicCase.human_friendly_id
+      )
+    };
+  });
+
+  await Promise.all([
+    createAuditLog({
+      action: 'CREATE',
+      resource: 'patient',
+      resource_id: created.patient.id,
+      user_id: user.id || user.user_id || user.userId || null,
+      tenant_id: tenantId,
+      details: {
+        source: 'EMERGENCY_QUICK_ARRIVAL',
+        patient_id: created.publicCase.patient_id
+      }
+    }),
+    createAuditLog({
+      action: 'CREATE',
+      resource: 'emergency_case',
+      resource_id: created.emergencyCase.id,
+      user_id: user.id || user.user_id || user.userId || null,
+      tenant_id: tenantId,
+      details: {
+        source: 'QUICK_ARRIVAL',
+        emergency_case_id: created.publicCase.human_friendly_id,
+        patient_id: created.publicCase.patient_id,
+        severity: created.publicCase.severity
+      }
+    })
+  ]);
+
+  return {
+    patient: {
+      human_friendly_id: created.publicCase.patient_id,
+      display_id: created.publicCase.patient_id
+    },
+    emergency_case: created.publicCase,
+    triage_assessment: created.triageAssessment,
+    emergency_response: created.emergencyResponse
+  };
 };
 
 /**
@@ -643,7 +849,7 @@ const updateEmergencyCase = async (id, data, user) => {
     resource_id: existing.id,
     user_id: user.id,
     tenant_id: existing.tenant_id,
-    details: { before: existing, after: payload },
+    details: { before: existing, after: payload }
   });
 
   return mapEmergencyCaseForDisplay(updated);
@@ -678,7 +884,7 @@ const handoffEmergencyCase = async (id, data = {}, user = {}) => {
   await getEmergencyResponseRepository().create({
     emergency_case_id: existing.id,
     response_at: new Date(),
-    notes: note,
+    notes: note
   });
 
   const closeCase = data.close_case !== false;
@@ -687,7 +893,7 @@ const handoffEmergencyCase = async (id, data = {}, user = {}) => {
       ? existing.extension_json
       : {};
   const updatePayload = {
-    extension_json: { ...existingExtension, handoff: snapshot },
+    extension_json: { ...existingExtension, handoff: snapshot }
   };
   if (closeCase) {
     updatePayload.status = 'CLOSED';
@@ -706,8 +912,8 @@ const handoffEmergencyCase = async (id, data = {}, user = {}) => {
       receiving_work: Boolean(receivingWork),
       receiving_display_id: snapshot.receiving_display_id,
       billing_deferred: snapshot.billing_deferred,
-      notes: sanitizeText(data.notes),
-    },
+      notes: sanitizeText(data.notes)
+    }
   });
 
   return mapEmergencyCaseForDisplay(updated);
@@ -736,7 +942,7 @@ const deleteEmergencyCase = async (id, user) => {
     resource_id: existing.id,
     user_id: user.id,
     tenant_id: existing.tenant_id,
-    details: { data: existing },
+    details: { data: existing }
   });
 
   return mapEmergencyCaseForDisplay(deleted);
@@ -746,7 +952,8 @@ module.exports = {
   listEmergencyCases,
   getEmergencyCaseById,
   createEmergencyCase,
+  createQuickArrival,
   updateEmergencyCase,
   handoffEmergencyCase,
-  deleteEmergencyCase,
+  deleteEmergencyCase
 };

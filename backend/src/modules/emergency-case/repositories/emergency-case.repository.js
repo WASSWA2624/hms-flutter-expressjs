@@ -165,9 +165,9 @@ const count = async (filters = {}) => {
  * @param {Object} data - Emergency case data
  * @returns {Promise<Object>} Created emergency case
  */
-const create = async (data) => {
+const create = async (data, dbClient = prisma) => {
   try {
-    return await prisma.emergency_case.create({
+    return await dbClient.emergency_case.create({
       data,
       include: DEFAULT_INCLUDE,
     });

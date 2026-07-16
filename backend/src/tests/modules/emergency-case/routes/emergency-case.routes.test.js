@@ -7,4 +7,13 @@ describe('emergency-case.routes contract', () => {
     expect(Array.isArray(subject.stack)).toBe(true);
     expect(subject.stack.length).toBeGreaterThan(0);
   });
+
+  it('registers the authenticated quick-arrival mutation route', () => {
+    const layer = subject.stack.find(
+      (candidate) => candidate.route?.path === '/quick-arrival' && candidate.route?.methods?.post === true
+    );
+
+    expect(layer).toBeDefined();
+    expect(layer.route.stack.length).toBeGreaterThanOrEqual(3);
+  });
 });

@@ -43,7 +43,11 @@ final class EmergencyCaseDto {
     final EmergencyJsonMap tenant = _map(json['tenant']);
     final EmergencyJsonMap facility = _map(json['facility']);
     final EmergencyJsonMap patient = _map(json['patient']);
-    final String id = _string(json['id']) ?? _string(json['display_id']) ?? '';
+    final String id =
+        _string(json['human_friendly_id']) ??
+        _string(json['display_id']) ??
+        _string(json['id']) ??
+        '';
     final String? firstName = _string(patient['first_name']);
     final String? lastName = _string(patient['last_name']);
     final String? nestedPatientName = _joinDisplay(<String?>[
@@ -80,6 +84,38 @@ final class EmergencyCaseDto {
   }
 }
 
+final class EmergencyQuickArrivalDto {
+  const EmergencyQuickArrivalDto(this.json);
+
+  final EmergencyJsonMap json;
+
+  factory EmergencyQuickArrivalDto.fromResponse(Object? responseData) {
+    return EmergencyQuickArrivalDto(decodeDataMap(responseData));
+  }
+
+  EmergencyCaseDetail toEntity() {
+    final EmergencyCaseSummary summary = EmergencyCaseDto(
+      _map(json['emergency_case']),
+    ).toEntity();
+    final EmergencyJsonMap triageJson = _map(json['triage_assessment']);
+    final EmergencyJsonMap responseJson = _map(json['emergency_response']);
+
+    return EmergencyCaseDetail(
+      summary: summary,
+      triageAssessments: triageJson.isEmpty
+          ? const <EmergencyTriageAssessment>[]
+          : <EmergencyTriageAssessment>[
+              EmergencyTriageAssessmentDto(triageJson).toEntity(),
+            ],
+      responses: responseJson.isEmpty
+          ? const <EmergencyResponseRecord>[]
+          : <EmergencyResponseRecord>[
+              EmergencyResponseRecordDto(responseJson).toEntity(),
+            ],
+    );
+  }
+}
+
 EmergencyHandoffOutcome? _handoffOutcome(EmergencyJsonMap json) {
   final EmergencyJsonMap handoff = _map(
     json['handoff'] ?? _map(json['extension_json'])['handoff'],
@@ -111,7 +147,11 @@ final class EmergencyTriageAssessmentDto {
 
   EmergencyTriageAssessment toEntity() {
     return EmergencyTriageAssessment(
-      id: _string(json['id']) ?? _string(json['display_id']) ?? '',
+      id:
+          _string(json['human_friendly_id']) ??
+          _string(json['display_id']) ??
+          _string(json['id']) ??
+          '',
       displayId:
           _string(json['display_id']) ?? _string(json['human_friendly_id']),
       emergencyCaseId: _string(json['emergency_case_id']),
@@ -133,7 +173,11 @@ final class EmergencyResponseRecordDto {
 
   EmergencyResponseRecord toEntity() {
     return EmergencyResponseRecord(
-      id: _string(json['id']) ?? _string(json['display_id']) ?? '',
+      id:
+          _string(json['human_friendly_id']) ??
+          _string(json['display_id']) ??
+          _string(json['id']) ??
+          '',
       displayId:
           _string(json['display_id']) ?? _string(json['human_friendly_id']),
       emergencyCaseId: _string(json['emergency_case_id']),

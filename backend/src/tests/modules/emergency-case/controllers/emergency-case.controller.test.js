@@ -121,7 +121,9 @@ describe('Emergency Case Controller', () => {
 
       await emergencyCaseController.getEmergencyCaseById(mockReq, mockRes);
 
-      expect(emergencyCaseService.getEmergencyCaseById).toHaveBeenCalledWith('test-id');
+      expect(emergencyCaseService.getEmergencyCaseById).toHaveBeenCalledWith(
+        'test-id'
+      );
       expect(sendSuccess).toHaveBeenCalledWith(
         mockRes,
         200,
@@ -159,6 +161,35 @@ describe('Emergency Case Controller', () => {
     });
   });
 
+  describe('createQuickArrival', () => {
+    it('creates a quick arrival and returns the persisted aggregate', async () => {
+      const arrivalData = {
+        tenant_id: 'TEN000001',
+        severity: 'CRITICAL',
+        triage_level: 'LEVEL_2'
+      };
+      const persisted = {
+        emergency_case: { human_friendly_id: 'EME000001' },
+        patient: { human_friendly_id: 'PAT000001' }
+      };
+      mockReq.body = arrivalData;
+      emergencyCaseService.createQuickArrival.mockResolvedValue(persisted);
+
+      await emergencyCaseController.createQuickArrival(mockReq, mockRes);
+
+      expect(emergencyCaseService.createQuickArrival).toHaveBeenCalledWith(
+        arrivalData,
+        mockReq.user
+      );
+      expect(sendSuccess).toHaveBeenCalledWith(
+        mockRes,
+        201,
+        'messages.emergency_case.create.success',
+        persisted
+      );
+    });
+  });
+
   describe('updateEmergencyCase', () => {
     it('should update emergency case', async () => {
       const updateData = { status: 'IN_PROGRESS' };
@@ -186,7 +217,11 @@ describe('Emergency Case Controller', () => {
 
   describe('handoffEmergencyCase', () => {
     it('should handoff emergency case', async () => {
-      const handoffData = { destination: 'OPD', notes: 'Accepted by OPD.', close_case: true };
+      const handoffData = {
+        destination: 'OPD',
+        notes: 'Accepted by OPD.',
+        close_case: true
+      };
       const mockUpdated = { id: 'test-id', status: 'CLOSED' };
 
       mockReq.params = { id: 'test-id' };

@@ -7,6 +7,7 @@
 
 const {
   createEmergencyCaseSchema,
+  createQuickArrivalSchema,
   updateEmergencyCaseSchema,
   handoffEmergencyCaseSchema,
   emergencyCaseIdParamsSchema,
@@ -42,15 +43,15 @@ describe('Emergency Case Schema Validation', () => {
 
     it('should accept all valid severity levels', () => {
       const severities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
-      
-      severities.forEach(severity => {
+
+      severities.forEach((severity) => {
         const data = {
           tenant_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
           patient_id: 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
           severity,
           status: 'PENDING'
         };
-        
+
         const result = createEmergencyCaseSchema.safeParse(data);
         expect(result.success).toBe(true);
       });
@@ -58,15 +59,15 @@ describe('Emergency Case Schema Validation', () => {
 
     it('should accept all valid statuses', () => {
       const statuses = ['PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
-      
-      statuses.forEach(status => {
+
+      statuses.forEach((status) => {
         const data = {
           tenant_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
           patient_id: 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
           severity: 'HIGH',
           status
         };
-        
+
         const result = createEmergencyCaseSchema.safeParse(data);
         expect(result.success).toBe(true);
       });
@@ -116,6 +117,47 @@ describe('Emergency Case Schema Validation', () => {
 
       const result = createEmergencyCaseSchema.safeParse(invalidData);
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe('createQuickArrivalSchema', () => {
+    it('accepts a complete quick-arrival payload and trims optional text', () => {
+      const result = createQuickArrivalSchema.safeParse({
+        tenant_id: 'TEN000001',
+        facility_id: 'FAC000001',
+        first_name: ' Jane ',
+        last_name: ' Doe ',
+        phone: ' +256700000000 ',
+        severity: 'CRITICAL',
+        triage_level: 'LEVEL_2',
+        notes: ' Chest pain '
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(
+        expect.objectContaining({
+          first_name: 'Jane',
+          last_name: 'Doe',
+          phone: '+256700000000',
+          notes: 'Chest pain'
+        })
+      );
+    });
+
+    it('allows anonymous arrival identity and rejects invalid triage', () => {
+      expect(
+        createQuickArrivalSchema.safeParse({
+          tenant_id: 'TEN000001',
+          severity: 'HIGH'
+        }).success
+      ).toBe(true);
+      expect(
+        createQuickArrivalSchema.safeParse({
+          tenant_id: 'TEN000001',
+          severity: 'HIGH',
+          triage_level: 'IMMEDIATE'
+        }).success
+      ).toBe(false);
     });
   });
 

@@ -133,116 +133,22 @@ final class EmergencyRepositoryImpl implements EmergencyRepository {
   @override
   Future<Result<EmergencyCaseDetail>> createQuickArrival(
     EmergencyQuickArrivalInput input,
-  ) async {
-    final DateTime registeredAt = DateTime.now().toUtc();
-    final String firstName = input.firstName.trim().isEmpty
-        ? 'Emergency'
-        : input.firstName.trim();
-    final String lastName = input.lastName.trim().isEmpty
-        ? 'Patient ${registeredAt.millisecondsSinceEpoch}'
-        : input.lastName.trim();
-
-    final Result<_EmergencyCreatedPatient> patientResult = await _apiClient
-        .post<_EmergencyCreatedPatient>(
-          ApiEndpoints.collection(HmsApiResource.patients),
-          data: _withoutEmpty(<String, Object?>{
-            'tenant_id': input.tenantId,
-            'facility_id': input.facilityId,
-            'first_name': firstName,
-            'last_name': lastName,
-            'gender': 'UNKNOWN',
-            'primary_phone': input.phone,
-            'is_active': true,
-            'extension_json': <String, Object?>{
-              'registration': <String, Object?>{
-                'source': 'EMERGENCY',
-                'status': 'INCOMPLETE',
-                'requires_completion': true,
-                'registered_at': registeredAt.toIso8601String(),
-                'notes': input.notes,
-              },
-            },
-          }),
-          decoder: (Object? data) =>
-              _EmergencyCreatedPatient.fromJson(decodeDataMap(data)),
-        );
-
-    final _EmergencyCreatedPatient? patient = _successOrNull(patientResult);
-    if (patient == null) {
-      return Result<EmergencyCaseDetail>.failure(
-        _failureOrNull(patientResult)!,
-      );
-    }
-
-    final String? tenantId = patient.tenantId ?? input.tenantId;
-    if ((tenantId ?? '').trim().isEmpty) {
-      return Result<EmergencyCaseDetail>.failure(
-        AppFailure.validation(validationFields: const <String>{'tenant_id'}),
-      );
-    }
-
-    final Result<EmergencyCaseSummary> emergencyCaseResult = await _apiClient
-        .post<EmergencyCaseSummary>(
-          ApiEndpoints.collection(HmsApiResource.emergencyCases),
-          data: _withoutEmpty(<String, Object?>{
-            'tenant_id': tenantId,
-            'facility_id': patient.facilityId ?? input.facilityId,
-            'patient_id': patient.id,
-            'severity': input.severity,
-            'status': 'OPEN',
-          }),
-          decoder: (Object? data) =>
-              EmergencyCaseDto.fromResponse(data).toEntity(),
-        );
-
-    final EmergencyCaseSummary? emergencyCase = _successOrNull(
-      emergencyCaseResult,
+  ) {
+    return _apiClient.post<EmergencyCaseDetail>(
+      ApiEndpoints.apiV1(<String>['emergency-cases', 'quick-arrival']),
+      data: _withoutEmpty(<String, Object?>{
+        'tenant_id': input.tenantId,
+        'facility_id': input.facilityId,
+        'first_name': input.firstName,
+        'last_name': input.lastName,
+        'phone': input.phone,
+        'severity': input.severity,
+        'triage_level': input.triageLevel,
+        'notes': input.notes,
+      }),
+      decoder: (Object? data) =>
+          EmergencyQuickArrivalDto.fromResponse(data).toEntity(),
     );
-    if (emergencyCase == null) {
-      return Result<EmergencyCaseDetail>.failure(
-        _failureOrNull(emergencyCaseResult)!,
-      );
-    }
-
-    final String? triageLevel = _nonEmpty(input.triageLevel);
-    if (triageLevel != null) {
-      final Result<EmergencyTriageAssessment> triageResult = await _apiClient
-          .post<EmergencyTriageAssessment>(
-            ApiEndpoints.collection(HmsApiResource.triageAssessments),
-            data: _withoutEmpty(<String, Object?>{
-              'emergency_case_id': emergencyCase.apiId,
-              'triage_level': triageLevel,
-              'notes': input.notes,
-            }),
-            decoder: (Object? data) =>
-                EmergencyTriageAssessmentDto(decodeDataMap(data)).toEntity(),
-          );
-      final AppFailure? triageFailure = _failureOrNull(triageResult);
-      if (triageFailure != null) {
-        return Result<EmergencyCaseDetail>.failure(triageFailure);
-      }
-    }
-
-    final String? notes = _nonEmpty(input.notes);
-    if (notes != null) {
-      final Result<EmergencyResponseRecord> responseResult = await _apiClient
-          .post<EmergencyResponseRecord>(
-            ApiEndpoints.collection(HmsApiResource.emergencyResponses),
-            data: <String, Object?>{
-              'emergency_case_id': emergencyCase.apiId,
-              'response_at': registeredAt.toIso8601String(),
-              'notes': notes,
-            },
-            decoder: (Object? data) =>
-                EmergencyResponseRecordDto(decodeDataMap(data)).toEntity(),
-          );
-      final AppFailure? responseFailure = _failureOrNull(responseResult);
-      if (responseFailure != null) {
-        return Result<EmergencyCaseDetail>.failure(responseFailure);
-      }
-    }
-
-    return _loadDetailForCase(emergencyCase);
   }
 
   @override
@@ -678,37 +584,4 @@ final class EmergencyRepositoryImpl implements EmergencyRepository {
     }
     return false;
   }
-}
-
-final class _EmergencyCreatedPatient {
-  const _EmergencyCreatedPatient({
-    required this.id,
-    this.tenantId,
-    this.facilityId,
-  });
-
-  final String id;
-  final String? tenantId;
-  final String? facilityId;
-
-  factory _EmergencyCreatedPatient.fromJson(EmergencyJsonMap json) {
-    return _EmergencyCreatedPatient(
-      id: _string(json['id']) ?? _string(json['human_friendly_id']) ?? '',
-      tenantId: _string(json['tenant_id']),
-      facilityId: _string(json['facility_id']),
-    );
-  }
-}
-
-String? _string(Object? value) {
-  if (value == null) {
-    return null;
-  }
-  final String normalized = value.toString().trim();
-  return normalized.isEmpty ? null : normalized;
-}
-
-String? _nonEmpty(String? value) {
-  final String normalized = value?.trim() ?? '';
-  return normalized.isEmpty ? null : normalized;
 }

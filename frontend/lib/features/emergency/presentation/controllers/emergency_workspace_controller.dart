@@ -11,7 +11,6 @@ import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
-import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/emergency/data/repositories/emergency_repository_impl.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
@@ -72,11 +71,7 @@ final class EmergencyWorkspaceController
   }
 
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(
-      showLoading: true,
-      refreshReferenceData: true,
-      plan: WorkspaceRefreshPlan.admissionManualRefresh,
-    );
+    return _syncVisibleData(showLoading: true, refreshReferenceData: true);
   }
 
   Future<AppFailure?> applySearch(String search) async {

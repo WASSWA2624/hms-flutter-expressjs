@@ -15,6 +15,7 @@ const { authorize } = require('@middlewares/auth.middleware');
 const { PERMISSIONS } = require('@config/permissions');
 const {
   createEmergencyCaseSchema,
+  createQuickArrivalSchema,
   updateEmergencyCaseSchema,
   handoffEmergencyCaseSchema,
   emergencyCaseIdParamsSchema,
@@ -25,7 +26,7 @@ const EMERGENCY_HANDOFF_WRITE_SCOPES = [
   PERMISSIONS.EMERGENCY_WRITE,
   PERMISSIONS.PATIENT_WRITE,
   PERMISSIONS.CLINICAL_WRITE,
-  PERMISSIONS.OPERATIONS_WRITE,
+  PERMISSIONS.OPERATIONS_WRITE
 ];
 
 /**
@@ -68,6 +69,20 @@ router.post(
   }),
   authorize(PERMISSIONS.EMERGENCY_WRITE, 'permission'),
   emergencyCaseController.createEmergencyCase
+);
+
+/**
+ * @route POST /api/v1/emergency-cases/quick-arrival
+ * @description Atomically create an incomplete patient and emergency arrival
+ * @access Private
+ */
+router.post(
+  '/quick-arrival',
+  validate({
+    body: createQuickArrivalSchema
+  }),
+  authorize(PERMISSIONS.EMERGENCY_WRITE, 'permission'),
+  emergencyCaseController.createQuickArrival
 );
 
 /**

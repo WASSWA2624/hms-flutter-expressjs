@@ -8,6 +8,10 @@
 const emergencyCaseService = require('../../../../modules/emergency-case/services/emergency-case.service');
 const emergencyCaseRepository = require('../../../../modules/emergency-case/repositories/emergency-case.repository');
 const emergencyResponseRepository = require('@modules/emergency-response/repositories/emergency-response.repository');
+const patientRepository = require('@repositories/patient/patient.repository');
+const patientContactRepository = require('@repositories/patient-contact/patient-contact.repository');
+const triageAssessmentRepository = require('@repositories/triage-assessment/triage-assessment.repository');
+const prisma = require('@prisma/client');
 const opdFlowService = require('@services/opd-flow/opd-flow.service');
 const ipdFlowService = require('@services/ipd-flow/ipd-flow.service');
 const encounterService = require('@services/encounter/encounter.service');
@@ -17,6 +21,12 @@ const { HttpError } = require('@lib/errors');
 
 // Mock dependencies
 jest.mock('../../../../modules/emergency-case/repositories/emergency-case.repository');
+jest.mock('@repositories/patient/patient.repository');
+jest.mock('@repositories/patient-contact/patient-contact.repository');
+jest.mock('@repositories/triage-assessment/triage-assessment.repository');
+jest.mock('@prisma/client', () => ({
+  $transaction: jest.fn()
+}));
 jest.mock('@modules/emergency-response/repositories/emergency-response.repository', () => ({
   create: jest.fn()
 }));
@@ -57,7 +67,7 @@ describe('Emergency Case Service', () => {
 
       expect(result.items).toEqual([
         expect.objectContaining(mockCases[0]),
-        expect.objectContaining(mockCases[1]),
+        expect.objectContaining(mockCases[1])
       ]);
       expect(result.items[0]).toEqual(expect.objectContaining({ display_id: '1' }));
       expect(result.total).toBe(2);
@@ -77,12 +87,9 @@ describe('Emergency Case Service', () => {
 
       await emergencyCaseService.listEmergencyCases(filters, 1, 20);
 
-      expect(emergencyCaseRepository.findMany).toHaveBeenCalledWith(
-        filters,
-        0,
-        20,
-        { created_at: 'desc' }
-      );
+      expect(emergencyCaseRepository.findMany).toHaveBeenCalledWith(filters, 0, 20, {
+        created_at: 'desc'
+      });
     });
 
     it('should calculate pagination correctly', async () => {
@@ -92,7 +99,9 @@ describe('Emergency Case Service', () => {
       const result = await emergencyCaseService.listEmergencyCases({}, 2, 10);
 
       expect(result.totalPages).toBe(3);
-      expect(emergencyCaseRepository.findMany).toHaveBeenCalledWith({}, 10, 10, { created_at: 'desc' });
+      expect(emergencyCaseRepository.findMany).toHaveBeenCalledWith({}, 10, 10, {
+        created_at: 'desc'
+      });
     });
   });
 
@@ -112,16 +121,16 @@ describe('Emergency Case Service', () => {
     it('should throw HttpError if emergency case not found', async () => {
       emergencyCaseRepository.findById.mockResolvedValue(null);
 
-      await expect(
-        emergencyCaseService.getEmergencyCaseById('non-existent')
-      ).rejects.toThrow(HttpError);
-      
-      await expect(
-        emergencyCaseService.getEmergencyCaseById('non-existent')
-      ).rejects.toMatchObject({
-        messageKey: 'errors.emergency_case.not_found',
-        statusCode: 404
-      });
+      await expect(emergencyCaseService.getEmergencyCaseById('non-existent')).rejects.toThrow(
+        HttpError
+      );
+
+      await expect(emergencyCaseService.getEmergencyCaseById('non-existent')).rejects.toMatchObject(
+        {
+          messageKey: 'errors.emergency_case.not_found',
+          statusCode: 404
+        }
+      );
     });
   });
 
@@ -165,9 +174,139 @@ describe('Emergency Case Service', () => {
     it('should throw error if create fails', async () => {
       emergencyCaseRepository.create.mockRejectedValue(new Error('DB Error'));
 
+      await expect(emergencyCaseService.createEmergencyCase({}, mockUser)).rejects.toThrow();
+    });
+  });
+
+  describe('createQuickArrival', () => {
+    it('creates and returns one atomic public-id arrival snapshot', async () => {
+      const tenantId = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+      const facilityId = 'b1eebc99-9c0b-4ef8-bb6d-6bb9bd380a11';
+      const tx = {};
+      const patient = {
+        id: 'patient-internal-id',
+        human_friendly_id: 'PAT000001'
+      };
+      const emergencyCase = {
+        id: 'case-internal-id',
+        human_friendly_id: 'EME000001',
+        tenant_id: tenantId,
+        facility_id: facilityId,
+        patient_id: patient.id,
+        severity: 'CRITICAL',
+        status: 'OPEN',
+        created_at: new Date('2026-07-16T12:00:00Z'),
+        updated_at: new Date('2026-07-16T12:00:00Z'),
+        tenant: { id: tenantId, human_friendly_id: 'TEN000001' },
+        facility: { id: facilityId, human_friendly_id: 'FAC000001' },
+        patient: {
+          ...patient,
+          first_name: 'Jane',
+          last_name: 'Doe'
+        }
+      };
+
+      prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+      patientRepository.create.mockResolvedValue(patient);
+      patientContactRepository.create.mockResolvedValue({ id: 'contact-id' });
+      emergencyCaseRepository.create.mockResolvedValue(emergencyCase);
+      triageAssessmentRepository.create.mockResolvedValue({
+        id: 'triage-internal-id',
+        human_friendly_id: 'TRA000001',
+        triage_level: 'LEVEL_2',
+        notes: 'Chest pain'
+      });
+      emergencyResponseRepository.create.mockResolvedValue({
+        id: 'response-internal-id',
+        human_friendly_id: 'ERS000001',
+        response_at: new Date('2026-07-16T12:00:00Z'),
+        notes: 'Chest pain'
+      });
+
+      const result = await emergencyCaseService.createQuickArrival(
+        {
+          tenant_id: tenantId,
+          facility_id: facilityId,
+          first_name: 'Jane',
+          last_name: 'Doe',
+          phone: '+256700000000',
+          severity: 'CRITICAL',
+          triage_level: 'LEVEL_2',
+          notes: 'Chest pain'
+        },
+        mockUser
+      );
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(patientRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenant_id: tenantId,
+          facility_id: facilityId,
+          first_name: 'Jane',
+          last_name: 'Doe'
+        }),
+        tx
+      );
+      expect(emergencyCaseRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          patient_id: patient.id,
+          severity: 'CRITICAL',
+          status: 'OPEN'
+        }),
+        tx
+      );
+      expect(result).toEqual(
+        expect.objectContaining({
+          patient: {
+            human_friendly_id: 'PAT000001',
+            display_id: 'PAT000001'
+          },
+          emergency_case: expect.objectContaining({
+            human_friendly_id: 'EME000001',
+            patient_id: 'PAT000001',
+            tenant_id: 'TEN000001',
+            facility_id: 'FAC000001'
+          }),
+          triage_assessment: expect.objectContaining({
+            human_friendly_id: 'TRA000001',
+            emergency_case_id: 'EME000001'
+          }),
+          emergency_response: expect.objectContaining({
+            human_friendly_id: 'ERS000001',
+            emergency_case_id: 'EME000001'
+          })
+        })
+      );
+      expect(JSON.stringify(result)).not.toContain('internal-id');
+    });
+
+    it('does not audit or return success when an atomic child write fails', async () => {
+      const tx = {};
+      prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+      patientRepository.create.mockResolvedValue({
+        id: 'patient-internal-id',
+        human_friendly_id: 'PAT000001'
+      });
+      emergencyCaseRepository.create.mockResolvedValue({
+        id: 'case-internal-id',
+        human_friendly_id: 'EME000001'
+      });
+      triageAssessmentRepository.create.mockRejectedValue(new Error('triage write failed'));
+
       await expect(
-        emergencyCaseService.createEmergencyCase({}, mockUser)
-      ).rejects.toThrow();
+        emergencyCaseService.createQuickArrival(
+          {
+            tenant_id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
+            severity: 'CRITICAL',
+            triage_level: 'LEVEL_2'
+          },
+          mockUser
+        )
+      ).rejects.toThrow('triage write failed');
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(emergencyResponseRepository.create).not.toHaveBeenCalled();
+      expect(createAuditLog).not.toHaveBeenCalled();
     });
   });
 
@@ -186,7 +325,11 @@ describe('Emergency Case Service', () => {
       emergencyCaseRepository.findById.mockResolvedValue(existingCase);
       emergencyCaseRepository.update.mockResolvedValue(updatedCase);
 
-      const result = await emergencyCaseService.updateEmergencyCase('test-id', updateData, mockUser);
+      const result = await emergencyCaseService.updateEmergencyCase(
+        'test-id',
+        updateData,
+        mockUser
+      );
 
       expect(result).toEqual(expect.objectContaining(updatedCase));
       expect(result).toEqual(expect.objectContaining({ display_id: 'test-id' }));
@@ -208,7 +351,7 @@ describe('Emergency Case Service', () => {
       await expect(
         emergencyCaseService.updateEmergencyCase('non-existent', {}, mockUser)
       ).rejects.toThrow(HttpError);
-      
+
       await expect(
         emergencyCaseService.updateEmergencyCase('non-existent', {}, mockUser)
       ).rejects.toMatchObject({
@@ -216,7 +359,6 @@ describe('Emergency Case Service', () => {
         statusCode: 404
       });
     });
-
   });
 
   describe('handoffEmergencyCase', () => {
@@ -236,7 +378,9 @@ describe('Emergency Case Service', () => {
         encounter: { id: 'ENC000001' },
         flow: { emergency_case_id: 'EME000001' }
       });
-      emergencyResponseRepository.create.mockResolvedValue({ id: 'response-id' });
+      emergencyResponseRepository.create.mockResolvedValue({
+        id: 'response-id'
+      });
       emergencyCaseRepository.update.mockResolvedValue(updatedCase);
 
       const result = await emergencyCaseService.handoffEmergencyCase(
@@ -327,7 +471,9 @@ describe('Emergency Case Service', () => {
         id: 'ADM000001',
         flow: { stage: 'ICU' }
       });
-      emergencyResponseRepository.create.mockResolvedValue({ id: 'response-id' });
+      emergencyResponseRepository.create.mockResolvedValue({
+        id: 'response-id'
+      });
       emergencyCaseRepository.update.mockResolvedValue(updatedCase);
 
       await emergencyCaseService.handoffEmergencyCase(
@@ -380,8 +526,12 @@ describe('Emergency Case Service', () => {
 
       emergencyCaseRepository.findById.mockResolvedValue(existingCase);
       encounterService.createEncounter.mockResolvedValue({ id: 'ENC000001' });
-      theatreFlowService.startTheatreFlow.mockResolvedValue({ id: 'THR000001' });
-      emergencyResponseRepository.create.mockResolvedValue({ id: 'response-id' });
+      theatreFlowService.startTheatreFlow.mockResolvedValue({
+        id: 'THR000001'
+      });
+      emergencyResponseRepository.create.mockResolvedValue({
+        id: 'response-id'
+      });
       emergencyCaseRepository.update.mockResolvedValue(updatedCase);
 
       await emergencyCaseService.handoffEmergencyCase(
@@ -439,7 +589,9 @@ describe('Emergency Case Service', () => {
       };
 
       emergencyCaseRepository.findById.mockResolvedValue(existingCase);
-      emergencyResponseRepository.create.mockResolvedValue({ id: 'response-id' });
+      emergencyResponseRepository.create.mockResolvedValue({
+        id: 'response-id'
+      });
       emergencyCaseRepository.update.mockImplementation(async (id, data) => ({
         ...existingCase,
         ...data
@@ -447,7 +599,11 @@ describe('Emergency Case Service', () => {
 
       const result = await emergencyCaseService.handoffEmergencyCase(
         'case-id',
-        { destination: 'REFERRAL', notes: 'Referred to district hospital.', close_case: true },
+        {
+          destination: 'REFERRAL',
+          notes: 'Referred to district hospital.',
+          close_case: true
+        },
         mockUser
       );
 
@@ -485,8 +641,13 @@ describe('Emergency Case Service', () => {
       };
 
       emergencyCaseRepository.findById.mockResolvedValue(existingCase);
-      opdFlowService.startOpdFlow.mockResolvedValue({ encounter: { id: 'ENC000009' }, flow: {} });
-      emergencyResponseRepository.create.mockResolvedValue({ id: 'response-id' });
+      opdFlowService.startOpdFlow.mockResolvedValue({
+        encounter: { id: 'ENC000009' },
+        flow: {}
+      });
+      emergencyResponseRepository.create.mockResolvedValue({
+        id: 'response-id'
+      });
       emergencyCaseRepository.update.mockImplementation(async (id, data) => ({
         ...existingCase,
         ...data
@@ -509,11 +670,7 @@ describe('Emergency Case Service', () => {
       emergencyCaseRepository.findById.mockResolvedValue(null);
 
       await expect(
-        emergencyCaseService.handoffEmergencyCase(
-          'missing-case',
-          { destination: 'OPD' },
-          mockUser
-        )
+        emergencyCaseService.handoffEmergencyCase('missing-case', { destination: 'OPD' }, mockUser)
       ).rejects.toThrow(HttpError);
     });
   });
@@ -553,7 +710,7 @@ describe('Emergency Case Service', () => {
       await expect(
         emergencyCaseService.deleteEmergencyCase('non-existent', mockUser)
       ).rejects.toThrow(HttpError);
-      
+
       await expect(
         emergencyCaseService.deleteEmergencyCase('non-existent', mockUser)
       ).rejects.toMatchObject({
@@ -561,6 +718,5 @@ describe('Emergency Case Service', () => {
         statusCode: 404
       });
     });
-
   });
 });

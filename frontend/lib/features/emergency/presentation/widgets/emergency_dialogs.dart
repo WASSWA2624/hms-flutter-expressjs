@@ -33,6 +33,17 @@ final class HandoffInput {
 typedef QuickArrivalSubmit =
     Future<AppFailure?> Function(EmergencyQuickArrivalInput input);
 
+Future<bool?> showEmergencyQuickArrivalDialog({
+  required BuildContext context,
+  required QuickArrivalSubmit onSubmit,
+}) {
+  return showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => QuickArrivalDialog(onSubmit: onSubmit),
+  );
+}
+
 class QuickArrivalDialog extends StatefulWidget {
   const QuickArrivalDialog({required this.onSubmit, super.key});
 
@@ -66,8 +77,9 @@ class _QuickArrivalDialogState extends State<QuickArrivalDialog> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     return AppDialog(
-      title: const Text(EmergencyText.quickEmergencyArrival),
+      title: Text(l10n.emergencyQuickArrivalDialogTitle),
       icon: const Icon(Icons.emergency_outlined),
+      semanticLabel: l10n.emergencyQuickArrivalDialogSemanticLabel,
       scrollable: true,
       pinActionsToBottom: true,
       closeEnabled: !_isSubmitting,
@@ -79,6 +91,7 @@ class _QuickArrivalDialogState extends State<QuickArrivalDialog> {
           AppTextField(
             controller: _firstNameController,
             labelText: l10n.patientsFirstNameLabel,
+            autofocus: true,
             textCapitalization: TextCapitalization.words,
             textInputAction: TextInputAction.next,
           ),
@@ -99,10 +112,11 @@ class _QuickArrivalDialogState extends State<QuickArrivalDialog> {
           ),
           AppSelectField<String>(
             value: _severity,
-            labelText: EmergencyText.priority,
+            labelText: l10n.emergencyQuickArrivalPriorityLabel,
             isRequired: true,
-            options: severityOptions(),
-            validator: requiredSelect,
+            options: _quickArrivalSeverityOptions(l10n),
+            validator: (String? value) =>
+                value == null ? l10n.validationRequired : null,
             onChanged: (String? value) {
               if (value != null) {
                 setState(() {
@@ -113,8 +127,8 @@ class _QuickArrivalDialogState extends State<QuickArrivalDialog> {
           ),
           AppSelectField<String>(
             value: _triageLevel,
-            labelText: EmergencyText.initialTriage,
-            options: triageOptions(),
+            labelText: l10n.emergencyQuickArrivalInitialTriageLabel,
+            options: _quickArrivalTriageOptions(l10n),
             onChanged: (String? value) {
               setState(() {
                 _triageLevel = value;
@@ -123,7 +137,7 @@ class _QuickArrivalDialogState extends State<QuickArrivalDialog> {
           ),
           AppTextField(
             controller: _notesController,
-            labelText: EmergencyText.arrivalNotes,
+            labelText: l10n.emergencyQuickArrivalNotesLabel,
             minLines: 3,
             maxLines: 5,
             textCapitalization: TextCapitalization.sentences,
@@ -132,7 +146,7 @@ class _QuickArrivalDialogState extends State<QuickArrivalDialog> {
       ),
       actions: clinicalActionDialogActions(
         context,
-        EmergencyText.openCase,
+        l10n.emergencyQuickArrivalOpenCaseAction,
         _isSubmitting,
         _isSubmitting ? null : _submit,
         submitLeadingIcon: AppActionIcons.add,
@@ -178,6 +192,56 @@ class _QuickArrivalDialogState extends State<QuickArrivalDialog> {
       _isSubmitting = false;
     });
   }
+}
+
+List<AppSelectOption<String>> _quickArrivalSeverityOptions(
+  AppLocalizations l10n,
+) {
+  return <AppSelectOption<String>>[
+    AppSelectOption<String>(
+      value: 'CRITICAL',
+      label: l10n.emergencyPriorityCriticalLabel,
+    ),
+    AppSelectOption<String>(
+      value: 'HIGH',
+      label: l10n.emergencyPriorityHighLabel,
+    ),
+    AppSelectOption<String>(
+      value: 'MEDIUM',
+      label: l10n.emergencyPriorityMediumLabel,
+    ),
+    AppSelectOption<String>(
+      value: 'LOW',
+      label: l10n.emergencyPriorityLowLabel,
+    ),
+  ];
+}
+
+List<AppSelectOption<String>> _quickArrivalTriageOptions(
+  AppLocalizations l10n,
+) {
+  return <AppSelectOption<String>>[
+    AppSelectOption<String>(
+      value: 'LEVEL_1',
+      label: l10n.emergencyTriageLevel1Label,
+    ),
+    AppSelectOption<String>(
+      value: 'LEVEL_2',
+      label: l10n.emergencyTriageLevel2Label,
+    ),
+    AppSelectOption<String>(
+      value: 'LEVEL_3',
+      label: l10n.emergencyTriageLevel3Label,
+    ),
+    AppSelectOption<String>(
+      value: 'LEVEL_4',
+      label: l10n.emergencyTriageLevel4Label,
+    ),
+    AppSelectOption<String>(
+      value: 'LEVEL_5',
+      label: l10n.emergencyTriageLevel5Label,
+    ),
+  ];
 }
 
 typedef DispatchSubmit = Future<AppFailure?> Function(DispatchInput input);

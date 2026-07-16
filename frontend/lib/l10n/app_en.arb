@@ -257,6 +257,74 @@
   "@emergencyCaseDialogTitle": {
     "description": "Title for the emergency case detail dialog."
   },
+  "emergencyQuickArrivalAction": "Quick arrival",
+  "@emergencyQuickArrivalAction": {
+    "description": "Action that opens emergency quick arrival."
+  },
+  "emergencyQuickArrivalDialogTitle": "Quick emergency arrival",
+  "@emergencyQuickArrivalDialogTitle": {
+    "description": "Title for the emergency quick arrival dialog."
+  },
+  "emergencyQuickArrivalDialogSemanticLabel": "Create an emergency quick arrival",
+  "@emergencyQuickArrivalDialogSemanticLabel": {
+    "description": "Accessibility label for the emergency quick arrival dialog."
+  },
+  "emergencyQuickArrivalPriorityLabel": "Priority",
+  "@emergencyQuickArrivalPriorityLabel": {
+    "description": "Emergency priority field label in quick arrival."
+  },
+  "emergencyQuickArrivalInitialTriageLabel": "Initial triage",
+  "@emergencyQuickArrivalInitialTriageLabel": {
+    "description": "Initial triage field label in quick arrival."
+  },
+  "emergencyQuickArrivalNotesLabel": "Arrival notes",
+  "@emergencyQuickArrivalNotesLabel": {
+    "description": "Arrival notes field label in quick arrival."
+  },
+  "emergencyQuickArrivalOpenCaseAction": "Open case",
+  "@emergencyQuickArrivalOpenCaseAction": {
+    "description": "Primary action that creates the emergency arrival and opens its case."
+  },
+  "emergencyQuickArrivalOpenedMessage": "Arrival opened",
+  "@emergencyQuickArrivalOpenedMessage": {
+    "description": "Success message after an emergency quick arrival is persisted."
+  },
+  "emergencyPriorityCriticalLabel": "Critical",
+  "@emergencyPriorityCriticalLabel": {
+    "description": "Critical emergency priority option."
+  },
+  "emergencyPriorityHighLabel": "High",
+  "@emergencyPriorityHighLabel": {
+    "description": "High emergency priority option."
+  },
+  "emergencyPriorityMediumLabel": "Medium",
+  "@emergencyPriorityMediumLabel": {
+    "description": "Medium emergency priority option."
+  },
+  "emergencyPriorityLowLabel": "Low",
+  "@emergencyPriorityLowLabel": {
+    "description": "Low emergency priority option."
+  },
+  "emergencyTriageLevel1Label": "Level 1",
+  "@emergencyTriageLevel1Label": {
+    "description": "Emergency triage level 1 option."
+  },
+  "emergencyTriageLevel2Label": "Level 2",
+  "@emergencyTriageLevel2Label": {
+    "description": "Emergency triage level 2 option."
+  },
+  "emergencyTriageLevel3Label": "Level 3",
+  "@emergencyTriageLevel3Label": {
+    "description": "Emergency triage level 3 option."
+  },
+  "emergencyTriageLevel4Label": "Level 4",
+  "@emergencyTriageLevel4Label": {
+    "description": "Emergency triage level 4 option."
+  },
+  "emergencyTriageLevel5Label": "Level 5",
+  "@emergencyTriageLevel5Label": {
+    "description": "Emergency triage level 5 option."
+  },
   "emergencySearchSemanticLabel": "Search emergency cases",
   "@emergencySearchSemanticLabel": {
     "description": "Semantic label for the emergency worklist search field."

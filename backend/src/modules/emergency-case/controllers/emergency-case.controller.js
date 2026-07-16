@@ -93,6 +93,16 @@ const createEmergencyCase = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Create an emergency quick arrival
+ * POST /api/v1/emergency-cases/quick-arrival
+ */
+const createQuickArrival = asyncHandler(async (req, res) => {
+  const arrival = await emergencyCaseService.createQuickArrival(req.body, req.user);
+
+  sendSuccess(res, 201, 'messages.emergency_case.create.success', arrival);
+});
+
+/**
  * Update emergency case
  * PUT /api/v1/emergency-cases/:id
  *
@@ -146,6 +156,7 @@ module.exports = {
   listEmergencyCases,
   getEmergencyCaseById,
   createEmergencyCase,
+  createQuickArrival,
   updateEmergencyCase,
   handoffEmergencyCase,
   deleteEmergencyCase

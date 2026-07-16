@@ -8,10 +8,7 @@
  */
 
 const { z } = require('zod');
-const { 
-  uuidOrFriendlyIdentifierSchema,
-  listQuerySchema
-} = require('@lib/validation/zod');
+const { uuidOrFriendlyIdentifierSchema, listQuerySchema } = require('@lib/validation/zod');
 
 const EMERGENCY_CASE_STATUS_VALUES = [
   'OPEN',
@@ -20,18 +17,10 @@ const EMERGENCY_CASE_STATUS_VALUES = [
   // Backward compatibility aliases
   'PENDING',
   'IN_PROGRESS',
-  'COMPLETED',
+  'COMPLETED'
 ];
 
-const EMERGENCY_HANDOFF_DESTINATION_VALUES = [
-  'OPD',
-  'IPD',
-  'ICU',
-  'THEATER',
-  'THEATRE',
-  'REFERRAL',
-  'DISCHARGE',
-];
+const EMERGENCY_HANDOFF_DESTINATION_VALUES = ['OPD', 'IPD', 'ICU', 'THEATER', 'THEATRE', 'REFERRAL', 'DISCHARGE'];
 
 // ==================== Body Schemas ====================
 
@@ -45,6 +34,21 @@ const createEmergencyCaseSchema = z.object({
   patient_id: uuidOrFriendlyIdentifierSchema,
   severity: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
   status: z.enum(EMERGENCY_CASE_STATUS_VALUES)
+});
+
+/**
+ * Create an incomplete patient and their emergency case as one arrival.
+ * Used for POST /emergency-cases/quick-arrival.
+ */
+const createQuickArrivalSchema = z.object({
+  tenant_id: uuidOrFriendlyIdentifierSchema,
+  facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  first_name: z.string().trim().max(120).optional().default(''),
+  last_name: z.string().trim().max(120).optional().default(''),
+  phone: z.string().trim().max(40).optional().nullable(),
+  severity: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']),
+  triage_level: z.enum(['LEVEL_1', 'LEVEL_2', 'LEVEL_3', 'LEVEL_4', 'LEVEL_5']).optional().nullable(),
+  notes: z.string().trim().max(5000).optional().nullable()
 });
 
 /**
@@ -66,7 +70,7 @@ const updateEmergencyCaseSchema = z.object({
 const handoffEmergencyCaseSchema = z.object({
   destination: z.enum(EMERGENCY_HANDOFF_DESTINATION_VALUES),
   notes: z.string().trim().max(5000).optional().nullable(),
-  close_case: z.boolean().optional().default(true),
+  close_case: z.boolean().optional().default(true)
 });
 
 // ==================== URL Params ====================
@@ -97,6 +101,7 @@ const listEmergencyCasesQuerySchema = listQuerySchema.extend({
 
 module.exports = {
   createEmergencyCaseSchema,
+  createQuickArrivalSchema,
   updateEmergencyCaseSchema,
   handoffEmergencyCaseSchema,
   emergencyCaseIdParamsSchema,
