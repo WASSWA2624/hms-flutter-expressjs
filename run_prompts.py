@@ -1,4 +1,4 @@
-"""Run each prompt file in prompts/ as a separate Cursor agent chat."""
+"""Run each prompt-generator file as a separate Cursor agent chat."""
 
 import asyncio
 import json
@@ -14,21 +14,36 @@ from cursor_sdk import (
 )
 
 
-PROMPTS_DIR = Path(__file__).parent / "prompts"
+PROMPTS_DIR = Path(__file__).parent / "prompt-generators"
 PROJECT_DIR = str(PROMPTS_DIR.parent)
 STATE_FILE = Path(__file__).parent / ".run_prompts_state.json"
 INCLUDED = {
-    "08-standardize-operations.md",
-    "09-standardize-pharmacy.md",
-    "10-standardize-rooms-beds.md",
-    "11-standardize-theater.md",
-    "12-standardize-billing.md",
-    "13-standardize-communications.md",
-    "16-standardize-integrations.md",
-    "17-standardize-nursing.md",
-    "18-standardize-physiotherapy.md",
-    "20-standardize-biomedical.md",
-    "23-standardize-mortuary.md",
+    "01-patients-prompt-generator.md",
+    "02-reception-prompt-generator.md",
+    "03-opd-prompt-generator.md",
+    "04-emergency-prompt-generator.md",
+    "05-ipd-prompt-generator.md",
+    "06-rooms-beds-prompt-generator.md",
+    "07-icu-prompt-generator.md",
+    "08-nursing-prompt-generator.md",
+    "09-clinical-prompt-generator.md",
+    "10-physiotherapy-prompt-generator.md",
+    "11-lab-prompt-generator.md",
+    "12-radiology-prompt-generator.md",
+    "13-pharmacy-prompt-generator.md",
+    "14-billing-prompt-generator.md",
+    "15-claims-prompt-generator.md",
+    "16-discharge-prompt-generator.md",
+    "17-theater-prompt-generator.md",
+    "18-operations-prompt-generator.md",
+    "19-housekeeping-prompt-generator.md",
+    "20-hr-prompt-generator.md",
+    "21-biomedical-prompt-generator.md",
+    "22-communications-prompt-generator.md",
+    "23-integrations-prompt-generator.md",
+    "24-subscriptions-prompt-generator.md",
+    "25-access-admin-prompt-generator.md",
+    "26-settings-prompt-generator.md",
 }
 MAX_CONCURRENCY = 5
 MAX_ATTEMPTS = 3
@@ -82,7 +97,7 @@ async def run_prompt(
     finished: set[str],
     finished_lock: asyncio.Lock,
 ) -> dict:
-    """Run a single prompt file in a Cursor agent."""
+    """Run a single prompt-generator file in a Cursor agent."""
     async with semaphore:
         name = file.name
         print(f"[START] {name}", flush=True)
@@ -150,16 +165,16 @@ async def main():
     files = sorted(f for f in PROMPTS_DIR.glob("*.md") if f.name in INCLUDED)
     missing = sorted(INCLUDED - {f.name for f in files})
     if missing:
-        sys.exit(f"Missing included prompt file(s): {', '.join(missing)}")
+        sys.exit(f"Missing included prompt-generator file(s): {', '.join(missing)}")
     if not files:
-        sys.exit("No included .md files found in prompts/")
+        sys.exit("No included .md files found in prompt-generators/")
 
     finished = _load_finished() & INCLUDED
     pending = [f for f in files if f.name not in finished]
     skipped = len(files) - len(pending)
 
     print(
-        f"Found {len(files)} included prompt files "
+        f"Found {len(files)} included prompt-generator files "
         f"({skipped} already finished, {len(pending)} pending). "
         f"Running with concurrency={MAX_CONCURRENCY}...\n",
         flush=True,
@@ -195,11 +210,11 @@ async def main():
 
     errors = [r for r in results if r["status"] != "finished"]
     if errors:
-        print(f"\n{len(errors)} prompt(s) did not finish successfully.")
+        print(f"\n{len(errors)} prompt-generator(s) did not finish successfully.")
         print("Re-run the same command to retry only the failed ones.")
         sys.exit(1)
     else:
-        print(f"\nAll {len(results)} prompts completed successfully.")
+        print(f"\nAll {len(results)} prompt-generators completed successfully.")
         if STATE_FILE.exists():
             STATE_FILE.unlink()
 
