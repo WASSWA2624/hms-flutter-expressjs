@@ -980,6 +980,7 @@ final class OpdWorkspaceState {
     this.summaryCounts = OpdFlowAggregateCounts.empty,
     this.clinicalAlertThresholds = const <OpdClinicalAlertThreshold>[],
     this.providerSchedules = const <OpdProviderSchedule>[],
+    this.queueProviderOptions = const <OpdProviderOption>[],
     this.availabilitySlots = const <OpdAvailabilitySlot>[],
     this.selectedFlow,
     this.lastFailure,
@@ -988,6 +989,7 @@ final class OpdWorkspaceState {
     this.isRefreshingFlows = false,
     this.isRefreshingTriageQueue = false,
     this.isRefreshingDetail = false,
+    this.isRefreshingQueueProviders = false,
     this.isSaving = false,
   });
 
@@ -1027,6 +1029,7 @@ final class OpdWorkspaceState {
   final OpdFlowAggregateCounts summaryCounts;
   final List<OpdClinicalAlertThreshold> clinicalAlertThresholds;
   final List<OpdProviderSchedule> providerSchedules;
+  final List<OpdProviderOption> queueProviderOptions;
   final List<OpdAvailabilitySlot> availabilitySlots;
   final OpdFlowDetail? selectedFlow;
   final Object? lastFailure;
@@ -1035,6 +1038,7 @@ final class OpdWorkspaceState {
   final bool isRefreshingFlows;
   final bool isRefreshingTriageQueue;
   final bool isRefreshingDetail;
+  final bool isRefreshingQueueProviders;
   final bool isSaving;
 
   int get arrivalCount => appointments.items
@@ -1100,6 +1104,7 @@ final class OpdWorkspaceState {
     OpdFlowAggregateCounts? summaryCounts,
     List<OpdClinicalAlertThreshold>? clinicalAlertThresholds,
     List<OpdProviderSchedule>? providerSchedules,
+    List<OpdProviderOption>? queueProviderOptions,
     List<OpdAvailabilitySlot>? availabilitySlots,
     OpdFlowDetail? selectedFlow,
     Object? lastFailure,
@@ -1108,6 +1113,7 @@ final class OpdWorkspaceState {
     bool? isRefreshingFlows,
     bool? isRefreshingTriageQueue,
     bool? isRefreshingDetail,
+    bool? isRefreshingQueueProviders,
     bool? isSaving,
     bool clearSelectedFlow = false,
     bool clearLastFailure = false,
@@ -1125,6 +1131,7 @@ final class OpdWorkspaceState {
       clinicalAlertThresholds:
           clinicalAlertThresholds ?? this.clinicalAlertThresholds,
       providerSchedules: providerSchedules ?? this.providerSchedules,
+      queueProviderOptions: queueProviderOptions ?? this.queueProviderOptions,
       availabilitySlots: availabilitySlots ?? this.availabilitySlots,
       selectedFlow: clearSelectedFlow
           ? null
@@ -1137,6 +1144,8 @@ final class OpdWorkspaceState {
       isRefreshingTriageQueue:
           isRefreshingTriageQueue ?? this.isRefreshingTriageQueue,
       isRefreshingDetail: isRefreshingDetail ?? this.isRefreshingDetail,
+      isRefreshingQueueProviders:
+          isRefreshingQueueProviders ?? this.isRefreshingQueueProviders,
       isSaving: isSaving ?? this.isSaving,
     );
   }

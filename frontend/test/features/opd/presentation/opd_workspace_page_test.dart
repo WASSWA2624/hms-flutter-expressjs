@@ -142,6 +142,10 @@ void _stubWorkspace(_MockOpdRepository repository) {
       <OpdProviderSchedule>[],
     ),
   );
+  when(() => repository.listProviders()).thenAnswer(
+    (_) async =>
+        const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+  );
 }
 
 Future<GoRouter> _pumpOpdWorkspace(
@@ -344,6 +348,10 @@ void main() {
     expect(find.text('Ann Arrival'), findsOneWidget);
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
     expect(find.text('Refresh'), findsOneWidget);
+
+    await tester.tap(find.text('Quinn Queue'));
+    await tester.pumpAndSettle();
+    expect(find.text('QUEUE ACTIONS'), findsOneWidget);
   });
 
   testWidgets('settings modal uses Table Settings title', (
@@ -359,5 +367,62 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(AppDialog), findsOneWidget);
     expect(find.text('TABLE SETTINGS'), findsOneWidget);
+  });
+
+  testWidgets('queue row opens the shared queue action hub and move child', (
+    WidgetTester tester,
+  ) async {
+    await _pumpOpdWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Quinn Queue'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('QUEUE ACTIONS'), findsOneWidget);
+    expect(find.text('Prioritize'), findsOneWidget);
+    expect(find.text('Move'), findsOneWidget);
+    expect(find.text('Start consultation'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+
+    await tester.tap(find.text('Move'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('MOVE QUEUE ENTRY'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    verify(() => repository.listProviders()).called(1);
+  });
+
+  testWidgets('cancelling queue actions performs no mutation', (
+    WidgetTester tester,
+  ) async {
+    await _pumpOpdWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Quinn Queue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('QUEUE ACTIONS'), findsNothing);
+    verifyNever(
+      () => repository.updateVisitQueue(
+        any(),
+        any(),
+        idempotencyKey: any(named: 'idempotencyKey'),
+      ),
+    );
+    verifyNever(
+      () => repository.prioritizeVisitQueue(
+        any(),
+        any(),
+        idempotencyKey: any(named: 'idempotencyKey'),
+      ),
+    );
+    verifyNever(
+      () => repository.startOpdFlow(
+        any(),
+        idempotencyKey: any(named: 'idempotencyKey'),
+      ),
+    );
   });
 }

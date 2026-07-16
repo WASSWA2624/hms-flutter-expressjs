@@ -3392,10 +3392,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdQueueActionsTitle => 'Queue actions';
 
   @override
+  String get opdPrioritizeQueueTitle => 'Prioritize queue entry';
+
+  @override
+  String get opdPrioritizeQueueDescription =>
+      'Optionally record why this queue entry should be prioritized.';
+
+  @override
+  String get opdMoveQueueTitle => 'Move queue entry';
+
+  @override
   String get opdFlowActionsTitle => 'Flow actions';
 
   @override
   String get opdStartConsultationAction => 'Start consultation';
+
+  @override
+  String get opdStartConsultationConfirmationMessage =>
+      'Start an OPD consultation for this queue entry?';
 
   @override
   String get opdAssignDoctorAction => 'Assign doctor';

@@ -6550,6 +6550,24 @@ abstract class AppLocalizations {
   /// **'Queue actions'**
   String get opdQueueActionsTitle;
 
+  /// Dialog title for prioritizing an OPD queue entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Prioritize queue entry'**
+  String get opdPrioritizeQueueTitle;
+
+  /// Guidance shown when optionally recording an OPD queue prioritization reason.
+  ///
+  /// In en, this message translates to:
+  /// **'Optionally record why this queue entry should be prioritized.'**
+  String get opdPrioritizeQueueDescription;
+
+  /// Dialog title for moving an OPD queue entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Move queue entry'**
+  String get opdMoveQueueTitle;
+
   /// Dialog title for the OPD queue/flow stage actions hub.
   ///
   /// In en, this message translates to:
@@ -6561,6 +6579,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start consultation'**
   String get opdStartConsultationAction;
+
+  /// Confirmation prompt before starting an OPD consultation from a queue entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Start an OPD consultation for this queue entry?'**
+  String get opdStartConsultationConfirmationMessage;
 
   /// Action label to assign doctor.
   ///

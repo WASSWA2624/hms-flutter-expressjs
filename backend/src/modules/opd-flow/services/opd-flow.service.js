@@ -2695,7 +2695,17 @@ const startOpdFlow = async (data, context = {}) => {
         });
 
         if (existingQueueFlow && !forceNewEncounter) {
-          return { existingEncounterId: existingQueueFlow.id };
+          const queueStatusChanged = requestedVisitQueue.status !== 'IN_PROGRESS';
+          if (queueStatusChanged) {
+            await tx.visit_queue.update({
+              where: { id: requestedVisitQueue.id },
+              data: { status: 'IN_PROGRESS' }
+            });
+          }
+          return {
+            existingEncounterId: existingQueueFlow.id,
+            queueStatusChanged
+          };
         }
       }
 
@@ -3205,7 +3215,21 @@ const startOpdFlow = async (data, context = {}) => {
   }
 
   if (startedResult.existingEncounterId) {
-    return getOpdFlowById(startedResult.existingEncounterId);
+    const snapshot = await getOpdFlowById(startedResult.existingEncounterId);
+    if (startedResult.queueStatusChanged) {
+      const stage = snapshot?.flow?.stage || null;
+      await publishOpdRealtimeUpdates({
+        snapshot,
+        transition: {
+          action: 'REUSE_QUEUE_FLOW',
+          stage_from: stage,
+          stage_to: stage,
+          occurred_at: startedAt.toISOString()
+        },
+        context
+      });
+    }
+    return snapshot;
   }
 
   createAuditLog({

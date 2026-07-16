@@ -3941,8 +3941,12 @@
   "opdPrioritizeAction": "Prioritize",
   "opdMoveQueueAction": "Move",
   "opdQueueActionsTitle": "Queue actions",
+  "opdPrioritizeQueueTitle": "Prioritize queue entry",
+  "opdPrioritizeQueueDescription": "Optionally record why this queue entry should be prioritized.",
+  "opdMoveQueueTitle": "Move queue entry",
   "opdFlowActionsTitle": "Flow actions",
   "opdStartConsultationAction": "Start consultation",
+  "opdStartConsultationConfirmationMessage": "Start an OPD consultation for this queue entry?",
   "opdAssignDoctorAction": "Assign doctor",
   "opdChangeDoctorAction": "Change doctor",
   "opdPayConsultationAction": "Pay consultation",
@@ -4622,11 +4626,23 @@
   "@opdQueueActionsTitle": {
     "description": "Dialog title for OPD queue actions (move / prioritize / start)."
   },
+  "@opdPrioritizeQueueTitle": {
+    "description": "Dialog title for prioritizing an OPD queue entry."
+  },
+  "@opdPrioritizeQueueDescription": {
+    "description": "Guidance shown when optionally recording an OPD queue prioritization reason."
+  },
+  "@opdMoveQueueTitle": {
+    "description": "Dialog title for moving an OPD queue entry."
+  },
   "@opdFlowActionsTitle": {
     "description": "Dialog title for the OPD queue/flow stage actions hub."
   },
   "@opdStartConsultationAction": {
     "description": "Action label to start consultation."
+  },
+  "@opdStartConsultationConfirmationMessage": {
+    "description": "Confirmation prompt before starting an OPD consultation from a queue entry."
   },
   "@opdAssignDoctorAction": {
     "description": "Action label to assign doctor."

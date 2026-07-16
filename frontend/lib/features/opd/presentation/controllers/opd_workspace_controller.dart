@@ -12,14 +12,14 @@ import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/realtime/realtime_service.dart';
 import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
-import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_bootstrap_helpers.dart';
+import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
+import 'package:hosspi_hms/core/workspace/workspace_realtime_sync.dart';
+import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
-import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
-import 'package:hosspi_hms/core/workspace/workspace_realtime_sync.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_realtime_delta_applier.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
@@ -37,6 +37,7 @@ final class OpdWorkspaceController
   final WorkspaceAdaptivePolling _adaptivePolling = WorkspaceAdaptivePolling();
   bool _isSyncing = false;
   bool _refreshPending = false;
+  bool _queueProviderOptionsLoaded = false;
   WorkspaceRefreshPlan? _pendingRefreshPlan;
 
   @override
@@ -112,11 +113,7 @@ final class OpdWorkspaceController
   }
 
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(
-      showLoading: true,
-      refreshProviders: true,
-      plan: WorkspaceRefreshPlan.full,
-    );
+    return _syncVisibleData(showLoading: true, refreshProviders: true);
   }
 
   Future<AppFailure?> applySearch(String value) async {
@@ -556,6 +553,53 @@ final class OpdWorkspaceController
     );
   }
 
+  Future<AppFailure?> ensureQueueProviderOptionsLoaded() async {
+    final OpdWorkspaceState? current = _currentState;
+    if (current == null ||
+        current.isRefreshingQueueProviders ||
+        _queueProviderOptionsLoaded) {
+      return null;
+    }
+
+    _emit(
+      current.copyWith(
+        isRefreshingQueueProviders: true,
+        clearLastFailure: true,
+      ),
+    );
+    final Result<List<OpdProviderOption>> result = await _repository
+        .listProviders();
+    return result.when(
+      success: (List<OpdProviderOption> providers) {
+        _queueProviderOptionsLoaded = true;
+        final OpdWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              queueProviderOptions: List<OpdProviderOption>.unmodifiable(
+                providers,
+              ),
+              isRefreshingQueueProviders: false,
+            ),
+          );
+        }
+        return null;
+      },
+      failure: (AppFailure failure) {
+        final OpdWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              isRefreshingQueueProviders: false,
+              lastFailure: failure,
+            ),
+          );
+        }
+        return failure;
+      },
+    );
+  }
+
   Future<AppFailure?> moveQueueEntry(
     OpdQueueEntry entry,
     Map<String, Object?> payload,
@@ -579,7 +623,6 @@ final class OpdWorkspaceController
     return _mutateQueue(
       () => _repository.prioritizeVisitQueue(entry.apiId, <String, Object?>{
         'reason': reason,
-        'status': 'CONFIRMED',
       }, idempotencyKey: key),
     );
   }
@@ -1298,9 +1341,7 @@ final class OpdWorkspaceController
     String flowId,
     Map<String, Object?> payload,
   ) {
-    return _mutateFlowDetail(
-      () => _repository.closeEncounter(flowId, payload),
-    );
+    return _mutateFlowDetail(() => _repository.closeEncounter(flowId, payload));
   }
 
   /// Patches flows/triage from an already-persisted detail when this workspace

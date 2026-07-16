@@ -2569,6 +2569,10 @@ class _OpdPatientActionsDialogState
     if (flow != null) {
       return FlowActionsDialog(flow: flow);
     }
+    final OpdQueueEntry? queueEntry = widget.item.queueEntry;
+    if (queueEntry != null) {
+      return QueueActionsDialog(entry: queueEntry);
+    }
 
     final AppLocalizations l10n = context.l10n;
     return AppDialog(
@@ -2620,7 +2624,6 @@ class _OpdPatientActionsDialogState
   List<AppPermissionActionItem> _actions(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final OpdAppointment? appointment = widget.item.appointment;
-    final OpdQueueEntry? queueEntry = widget.item.queueEntry;
     final bool terminal = _isCompletedStatus(widget.item.status);
     final String inactiveReason = l10n.opdInactiveEncounterActionReason;
     final List<AppPermissionActionItem> actions = <AppPermissionActionItem>[];
@@ -2708,41 +2711,6 @@ class _OpdPatientActionsDialogState
       ]);
     }
 
-    if (queueEntry != null) {
-      actions.addAll(<AppPermissionActionItem>[
-        action(
-          requirement: opdFrontDeskActionRequirement,
-          label: l10n.opdStartConsultationAction,
-          icon: Icons.play_arrow_outlined,
-          variant: AppButtonVariant.primary,
-          enabled: !terminal,
-          onPressed: () => _run(
-            () => ref
-                .read(opdWorkspaceControllerProvider.notifier)
-                .startOpdFromQueue(queueEntry),
-          ),
-        ),
-        action(
-          requirement: opdFrontDeskActionRequirement,
-          label: l10n.opdPrioritizeAction,
-          icon: Icons.priority_high_outlined,
-          enabled: !terminal,
-          onPressed: () => _run(
-            () => ref
-                .read(opdWorkspaceControllerProvider.notifier)
-                .prioritizeQueueEntry(queueEntry, null),
-          ),
-        ),
-        action(
-          requirement: opdFrontDeskActionRequirement,
-          label: l10n.opdMoveQueueAction,
-          icon: Icons.sync_alt_outlined,
-          enabled: !terminal,
-          onPressed: () => _openQueueActions(queueEntry),
-        ),
-      ]);
-    }
-
     return actions;
   }
 
@@ -2784,16 +2752,6 @@ class _OpdPatientActionsDialogState
     );
     if (mounted) {
       Navigator.of(context).pop(activeChanged == true);
-    }
-  }
-
-  Future<void> _openQueueActions(OpdQueueEntry entry) async {
-    final bool? changed = await showQueueActionsDialog(
-      context: context,
-      entry: entry,
-    );
-    if (changed == true && mounted) {
-      Navigator.of(context).pop(true);
     }
   }
 

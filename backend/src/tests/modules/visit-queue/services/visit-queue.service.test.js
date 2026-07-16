@@ -14,6 +14,15 @@ const {
 // Mock dependencies
 jest.mock('@repositories/visit-queue/visit-queue.repository');
 jest.mock('@lib/audit');
+jest.mock('@lib/websocket', () => ({
+  publishDomainEvent: jest.fn(),
+  VISIT_QUEUE_EVENTS: {
+    VISIT_QUEUE_CREATED: 'visit_queue.created',
+    VISIT_QUEUE_UPDATED: 'visit_queue.updated',
+    VISIT_QUEUE_DELETED: 'visit_queue.deleted',
+    VISIT_QUEUE_POSITION_CHANGED: 'visit_queue.position_changed',
+  },
+}));
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   resolveModelIdByIdentifier: jest.fn(),
   resolveModelRecordByIdentifier: jest.fn(),
@@ -21,12 +30,14 @@ jest.mock('@lib/identifiers/resolve-entity-id', () => ({
 
 const visitQueueRepository = require('@repositories/visit-queue/visit-queue.repository');
 const { createAuditLog } = require('@lib/audit');
+const { publishDomainEvent } = require('@lib/websocket');
 const {
   listVisitQueues,
   getVisitQueueById,
   createVisitQueue,
   updateVisitQueue,
-  deleteVisitQueue
+  deleteVisitQueue,
+  prioritizeVisitQueue
 } = require('@services/visit-queue/visit-queue.service');
 
 describe('Visit Queue Service', () => {
@@ -535,6 +546,64 @@ describe('Visit Queue Service', () => {
             status: 'CANCELLED',
             queued_at: expect.any(Date)
           }
+        })
+      );
+    });
+  });
+
+  describe('prioritizeVisitQueue', () => {
+    it('publishes only public identifiers in the realtime resource payload', async () => {
+      const beforeEntry = {
+        id: 'queue-internal',
+        human_friendly_id: 'QUE000001',
+        tenant_id: 'tenant-internal',
+        facility_id: 'facility-internal',
+        patient_id: 'patient-internal',
+        patient_human_friendly_id: 'PAT000001',
+        appointment_id: 'appointment-internal',
+        appointment_human_friendly_id: 'APT000001',
+        provider_user_id: 'provider-internal',
+        provider_human_friendly_id: 'USR000001',
+        status: 'SCHEDULED',
+        queued_at: new Date('2026-01-19T10:00:00.000Z')
+      };
+      const updatedEntry = {
+        ...beforeEntry,
+        queued_at: new Date('2026-01-19T11:00:00.000Z')
+      };
+      visitQueueRepository.findById.mockResolvedValue(beforeEntry);
+      visitQueueRepository.update.mockResolvedValue(updatedEntry);
+      visitQueueRepository.findRealtimeRecipientUserIds.mockResolvedValue([]);
+
+      await prioritizeVisitQueue(
+        'QUE000001',
+        { reason: 'Urgent review' },
+        { user_id: 'actor-internal' }
+      );
+
+      expect(visitQueueRepository.update).toHaveBeenCalledWith(
+        'queue-internal',
+        expect.objectContaining({
+          status: 'SCHEDULED',
+          queued_at: expect.any(Date)
+        })
+      );
+      expect(publishDomainEvent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          resource_id: 'QUE000001',
+          affected: {
+            queue_id: 'QUE000001',
+            patient_id: 'PAT000001',
+            appointment_id: 'APT000001',
+            provider_user_id: 'USR000001'
+          },
+          payload: expect.objectContaining({
+            queue_id: 'QUE000001',
+            queue_public_id: 'QUE000001',
+            patient_id: 'PAT000001',
+            appointment_id: 'APT000001',
+            provider_user_id: 'USR000001'
+          })
         })
       );
     });

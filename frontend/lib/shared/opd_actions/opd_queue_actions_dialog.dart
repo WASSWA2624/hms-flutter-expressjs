@@ -4,15 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
-import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart'
+    show opdFrontDeskActionRequirement;
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 
@@ -40,243 +42,296 @@ bool isOpdQueueTerminalStatus(String? status) {
   };
 }
 
-enum _QueueFooterAction { prioritize, start, move }
-
-class QueueActionsDialog extends ConsumerStatefulWidget {
+class QueueActionsDialog extends ConsumerWidget {
   const QueueActionsDialog({required this.entry, super.key});
 
   final OpdQueueEntry entry;
 
   @override
-  ConsumerState<QueueActionsDialog> createState() => _QueueActionsDialogState();
-}
-
-class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _reasonController;
-  List<OpdProviderOption> _providerOptions = const <OpdProviderOption>[];
-  String? _status;
-  String? _providerId;
-  bool _isLoadingProviders = false;
-  _QueueFooterAction? _activeAction;
-  AppFailure? _failure;
-
-  bool get _isSaving => _activeAction != null;
-  bool get _isBusy => _isSaving || _isLoadingProviders;
-
-  @override
-  void initState() {
-    super.initState();
-    _reasonController = TextEditingController();
-    _status = widget.entry.status;
-    _providerId = widget.entry.providerUserId;
-    unawaited(_loadProviderOptions());
-  }
-
-  @override
-  void dispose() {
-    _reasonController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final Locale locale = Localizations.localeOf(context);
-    final bool terminal = isOpdQueueTerminalStatus(widget.entry.status);
+    final bool terminal = isOpdQueueTerminalStatus(entry.status);
 
     return AppDialog(
       title: Text(l10n.opdQueueActionsTitle),
       icon: const Icon(Icons.queue_outlined),
       scrollable: true,
-      closeEnabled: !_isBusy,
+      pinActionsToBottom: true,
+      maxWidth: 680,
+      content: AppFormSection(
+        density: AppFormSectionDensity.compact,
+        children: <Widget>[
+          AppTriageSummaryPanel(
+            items: <AppInfoTileData>[
+              AppInfoTileData(
+                label: l10n.opdPatientColumnLabel,
+                value: entry.displayTitle,
+              ),
+              AppInfoTileData(
+                label: l10n.opdQueueStatusLabel,
+                value: opdStageDisplayLabel(l10n, entry.status),
+              ),
+              AppInfoTileData(
+                label: l10n.opdProviderColumnLabel,
+                value: entry.providerDisplayName ?? l10n.profileUnknownValue,
+              ),
+              AppInfoTileData(
+                label: l10n.opdTimeColumnLabel,
+                value: entry.queuedAt == null
+                    ? l10n.profileUnknownValue
+                    : AppFormatters.dateTime(entry.queuedAt!, locale),
+              ),
+            ],
+            emptyValue: l10n.profileUnknownValue,
+          ),
+          if (!terminal)
+            AppActionSection(
+              title: l10n.opdActionsColumnLabel,
+              minItemWidth: 180,
+              permissionActions: <AppPermissionActionItem>[
+                AppPermissionActionItem(
+                  requirement: opdFrontDeskActionRequirement,
+                  label: l10n.opdPrioritizeAction,
+                  icon: Icons.priority_high_outlined,
+                  fullWidth: true,
+                  onPressed: () => _openPrioritize(context, ref),
+                ),
+                AppPermissionActionItem(
+                  requirement: opdFrontDeskActionRequirement,
+                  label: l10n.opdMoveQueueAction,
+                  icon: Icons.sync_alt_outlined,
+                  fullWidth: true,
+                  onPressed: () => _openMove(context),
+                ),
+                AppPermissionActionItem(
+                  requirement: opdFrontDeskActionRequirement,
+                  label: l10n.opdStartConsultationAction,
+                  icon: Icons.play_arrow_outlined,
+                  variant: AppButtonVariant.primary,
+                  fullWidth: true,
+                  onPressed: () => _openStart(context, ref),
+                ),
+              ],
+            ),
+        ],
+      ),
+      actions: <Widget>[
+        AppButton.secondary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          onPressed: () => Navigator.of(context).pop(false),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _openPrioritize(BuildContext context, WidgetRef ref) async {
+    final AppLocalizations l10n = context.l10n;
+    final bool? changed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AppTextActionDialog(
+        title: l10n.opdPrioritizeQueueTitle,
+        description: l10n.opdPrioritizeQueueDescription,
+        fieldLabel: l10n.opdFieldOptionalLabel(l10n.opdReasonLabel),
+        submitLabel: l10n.opdPrioritizeAction,
+        submitLeadingIcon: Icons.priority_high_outlined,
+        icon: const Icon(Icons.priority_high_outlined),
+        isRequired: false,
+        onSubmit: (String reason) => ref
+            .read(opdWorkspaceControllerProvider.notifier)
+            .prioritizeQueueEntry(entry, reason),
+      ),
+    );
+    if (changed == true && context.mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  Future<void> _openStart(BuildContext context, WidgetRef ref) async {
+    final AppLocalizations l10n = context.l10n;
+    final bool? changed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.opdStartConsultationAction,
+        body: l10n.opdStartConsultationConfirmationMessage,
+        submitLabel: l10n.opdStartConsultationAction,
+        submitLeadingIcon: Icons.play_arrow_outlined,
+        icon: const Icon(Icons.play_arrow_outlined),
+        onConfirm: () => ref
+            .read(opdWorkspaceControllerProvider.notifier)
+            .startOpdFromQueue(entry),
+      ),
+    );
+    if (changed == true && context.mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  Future<void> _openMove(BuildContext context) async {
+    final bool? changed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _MoveQueueDialog(entry: entry),
+    );
+    if (changed == true && context.mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+}
+
+class _MoveQueueDialog extends ConsumerStatefulWidget {
+  const _MoveQueueDialog({required this.entry});
+
+  final OpdQueueEntry entry;
+
+  @override
+  ConsumerState<_MoveQueueDialog> createState() => _MoveQueueDialogState();
+}
+
+class _MoveQueueDialogState extends ConsumerState<_MoveQueueDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  String? _status;
+  String? _providerId;
+  bool _isSaving = false;
+  AppFailure? _failure;
+
+  @override
+  void initState() {
+    super.initState();
+    _status = _queueStatuses.contains(widget.entry.status)
+        ? widget.entry.status
+        : null;
+    _providerId = widget.entry.providerUserId;
+    unawaited(
+      Future<void>.microtask(
+        () => ref
+            .read(opdWorkspaceControllerProvider.notifier)
+            .ensureQueueProviderOptionsLoaded(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final AsyncValue<Result<OpdWorkspaceState>> workspace = ref.watch(
+      opdWorkspaceControllerProvider,
+    );
+    OpdWorkspaceState? workspaceState;
+    workspace.asData?.value.when(
+      success: (OpdWorkspaceState value) => workspaceState = value,
+      failure: (_) {},
+    );
+    final bool isLoadingProviders =
+        workspace.isLoading ||
+        (workspaceState?.isRefreshingQueueProviders ?? false);
+    final bool isBusy = _isSaving || isLoadingProviders;
+    final List<OpdProviderOption> providers =
+        workspaceState?.queueProviderOptions ?? const <OpdProviderOption>[];
+    final List<OpdProviderSchedule> schedules =
+        workspaceState?.providerSchedules ?? const <OpdProviderSchedule>[];
+    final Object? providerFailure = workspaceState?.lastFailure;
+    final AppFailure? displayFailure =
+        _failure ??
+        (providerFailure is AppFailure &&
+                providers.isEmpty &&
+                !isLoadingProviders
+            ? providerFailure
+            : null);
+
+    return AppDialog(
+      title: Text(l10n.opdMoveQueueTitle),
+      icon: const Icon(Icons.sync_alt_outlined),
+      scrollable: true,
+      closeEnabled: !isBusy,
       maxWidth: 680,
       content: Form(
         key: _formKey,
         child: AppFormSection(
           density: AppFormSectionDensity.compact,
           children: <Widget>[
-            if (_failure != null)
+            if (displayFailure != null)
               AppFormInformationBanner.failure(
                 context: context,
-                failure: _failure!,
+                failure: displayFailure,
               ),
-            if (_isLoadingProviders) const LinearProgressIndicator(),
-            AppTriageSummaryPanel(
-              items: <AppInfoTileData>[
-                AppInfoTileData(
-                  label: l10n.opdQueueStatusLabel,
-                  value: opdStageDisplayLabel(
-                    l10n,
-                    _status ?? widget.entry.status,
-                  ),
-                ),
-                AppInfoTileData(
-                  label: l10n.opdProviderColumnLabel,
-                  value:
-                      widget.entry.providerDisplayName ??
-                      l10n.profileUnknownValue,
-                ),
-                AppInfoTileData(
-                  label: l10n.opdTimeColumnLabel,
-                  value: widget.entry.queuedAt == null
-                      ? l10n.profileUnknownValue
-                      : AppFormatters.dateTime(widget.entry.queuedAt!, locale),
-                ),
-              ],
-              emptyValue: l10n.profileUnknownValue,
-            ),
+            if (isLoadingProviders)
+              AppLoadingIndicator(
+                size: AppLoadingIndicatorSize.compact,
+                title: l10n.opdLoadingTitle,
+                body: l10n.opdLoadingBody,
+              ),
             AppSelectField<String>(
               value: _status,
               labelText: l10n.opdFieldRequiredLabel(l10n.opdQueueStatusLabel),
-              enabled: !terminal && !_isBusy,
+              isRequired: true,
+              enabled: !isBusy,
+              validator: (String? value) =>
+                  value == null ? l10n.validationRequired : null,
               onChanged: (String? value) => setState(() => _status = value),
               options: <AppSelectOption<String>>[
                 for (final String value in _queueStatuses)
                   AppSelectOption<String>(
                     value: value,
-                    label: AppDisplay.apiLabel(value),
+                    label: opdStageDisplayLabel(l10n, value),
                   ),
               ],
             ),
             AppSelectField<String>.searchable(
               value: _providerId,
               options: opdProviderSelectOptions(
-                providers: _providerOptions,
-                schedules: const <OpdProviderSchedule>[],
+                providers: providers,
+                schedules: schedules,
+                unknownProviderLabel: l10n.profileUnknownValue,
               ),
-              labelText: l10n.opdFieldOptionalLabel(l10n.opdSearchProviderLabel),
-              helperText: _providerOptions.isEmpty && !_isLoadingProviders
+              labelText: l10n.opdFieldOptionalLabel(
+                l10n.opdSearchProviderLabel,
+              ),
+              helperText:
+                  providers.isEmpty && schedules.isEmpty && !isLoadingProviders
                   ? l10n.opdNoProvidersHelper
                   : l10n.opdSearchProviderHelper,
               semanticLabel: l10n.opdFieldOptionalLabel(
                 l10n.opdSearchProviderLabel,
               ),
-              enabled: !_isBusy,
-              isLoading: _isLoadingProviders,
+              enabled: !isBusy,
+              isLoading: isLoadingProviders,
               onChanged: (String? value) {
                 setState(() {
                   _providerId = value;
                 });
               },
             ),
-            AppTextField(
-              controller: _reasonController,
-              labelText: l10n.opdFieldOptionalLabel(l10n.opdReasonLabel),
-              enabled: !_isBusy,
-              maxLines: 3,
-            ),
           ],
         ),
       ),
-      actions: <Widget>[
-        if (!terminal)
-          AppButton.secondary(
-            label: l10n.opdPrioritizeAction,
-            leadingIcon: Icons.priority_high_outlined,
-            enabled: !_isBusy,
-            isLoading: _activeAction == _QueueFooterAction.prioritize,
-            onPressed: _isBusy
-                ? null
-                : () => _runInModal(
-                    _QueueFooterAction.prioritize,
-                    () => ref
-                        .read(opdWorkspaceControllerProvider.notifier)
-                        .prioritizeQueueEntry(
-                          widget.entry,
-                          _reasonController.text.trim(),
-                        ),
-                  ),
-          ),
-        if (!terminal)
-          AppButton.secondary(
-            label: l10n.opdStartConsultationAction,
-            leadingIcon: Icons.play_arrow_outlined,
-            enabled: !_isBusy,
-            isLoading: _activeAction == _QueueFooterAction.start,
-            onPressed: _isBusy
-                ? null
-                : () => _runInModal(
-                    _QueueFooterAction.start,
-                    () => ref
-                        .read(opdWorkspaceControllerProvider.notifier)
-                        .startOpdFromQueue(widget.entry),
-                  ),
-          ),
-        AppButton.secondary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !_isBusy,
-          onPressed: _isBusy ? null : () => Navigator.of(context).pop(false),
-        ),
-        if (!terminal)
-          AppButton.primary(
-            label: l10n.opdMoveQueueAction,
-            leadingIcon: Icons.sync_alt_outlined,
-            enabled: !_isBusy,
-            isLoading: _activeAction == _QueueFooterAction.move,
-            onPressed: _isBusy ? null : _submitMove,
-          ),
-      ],
-    );
-  }
-
-  Future<void> _loadProviderOptions() async {
-    setState(() {
-      _isLoadingProviders = true;
-      _failure = null;
-    });
-    final Result<List<OpdProviderOption>> result = await ref
-        .read(opdRepositoryProvider)
-        .listProviders();
-    if (!mounted) {
-      return;
-    }
-
-    result.when(
-      success: (List<OpdProviderOption> providers) {
-        setState(() {
-          _providerOptions = dedupeOpdProviderOptions(providers);
-          _isLoadingProviders = false;
-        });
-      },
-      failure: (AppFailure failure) {
-        setState(() {
-          _failure = failure;
-          _isLoadingProviders = false;
-        });
-      },
-    );
-  }
-
-  Future<void> _submitMove() async {
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-    await _runInModal(
-      _QueueFooterAction.move,
-      () => ref.read(opdWorkspaceControllerProvider.notifier).moveQueueEntry(
-        widget.entry,
-        <String, Object?>{
-          'status': _status,
-          'provider_user_id': _providerId,
-        },
+      actions: clinicalActionDialogActions(
+        context,
+        l10n.opdMoveQueueAction,
+        isBusy,
+        isBusy ? null : _submit,
+        submitLeadingIcon: Icons.sync_alt_outlined,
       ),
     );
   }
 
-  Future<void> _runInModal(
-    _QueueFooterAction action,
-    Future<AppFailure?> Function() run,
-  ) async {
-    if (_isSaving) {
+  Future<void> _submit() async {
+    if (_isSaving || !(_formKey.currentState?.validate() ?? false)) {
       return;
     }
     setState(() {
-      _activeAction = action;
+      _isSaving = true;
       _failure = null;
     });
-    final AppFailure? failure = await run();
+    final AppFailure? failure = await ref
+        .read(opdWorkspaceControllerProvider.notifier)
+        .moveQueueEntry(widget.entry, <String, Object?>{
+          'status': _status,
+          'provider_user_id': _providerId,
+        });
     if (!mounted) {
       return;
     }
@@ -286,7 +341,7 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
     }
     setState(() {
       _failure = failure;
-      _activeAction = null;
+      _isSaving = false;
     });
   }
 }

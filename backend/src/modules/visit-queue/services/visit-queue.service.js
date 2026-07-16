@@ -42,7 +42,11 @@ const publishVisitQueueRealtimeEvent = async (event, entry = {}, actorUserId = n
     const patientId = compactId(entry?.patient_id);
     const appointmentId = compactId(entry?.appointment_id);
     const occurredAt = new Date().toISOString();
-    const queuePublicId = compactId(entry?.display_id || entry?.human_friendly_id || queueId);
+    const queuePublicId = compactId(entry?.display_id || entry?.human_friendly_id);
+    if (!queuePublicId) return;
+    const patientPublicId = compactId(entry?.patient_human_friendly_id);
+    const appointmentPublicId = compactId(entry?.appointment_human_friendly_id);
+    const providerPublicId = compactId(entry?.provider_human_friendly_id);
     const recipientUserIds = await visitQueueRepository.findRealtimeRecipientUserIds({
       tenantId,
       facilityId,
@@ -56,23 +60,23 @@ const publishVisitQueueRealtimeEvent = async (event, entry = {}, actorUserId = n
       facility_id: facilityId,
       actor_user_id: actorUserId,
       resource_type: 'visit_queue',
-      resource_id: queueId,
+      resource_id: queuePublicId,
       affected: {
-        queue_id: queueId,
-        patient_id: patientId,
-        appointment_id: appointmentId,
-        provider_user_id: providerUserId
+        queue_id: queuePublicId,
+        patient_id: patientPublicId,
+        appointment_id: appointmentPublicId,
+        provider_user_id: providerPublicId
       },
       recipient_user_ids: recipientUserIds,
       payload: buildRealtimeEntityEnvelope(
         event === VISIT_QUEUE_EVENTS.VISIT_QUEUE_DELETED ? 'remove' : 'upsert',
         entry,
         {
-          queue_id: queueId,
+          queue_id: queuePublicId,
           queue_public_id: queuePublicId,
-          patient_id: patientId,
-          appointment_id: appointmentId,
-          provider_user_id: providerUserId,
+          patient_id: patientPublicId,
+          appointment_id: appointmentPublicId,
+          provider_user_id: providerPublicId,
           tenant_id: tenantId,
           facility_id: facilityId,
           status: entry?.status || null,
@@ -799,7 +803,8 @@ const prioritizeVisitQueue = async (id, data = {}, context = {}) => {
   const updateData = {
     // Keep queue recency at the front when prioritized.
     queued_at: new Date(),
-    status: data.status || 'CONFIRMED'
+    // Prioritization changes ordering, not workflow state.
+    status: data.status || beforeEntry.status
   };
 
   const updatedEntry = await visitQueueRepository.update(beforeEntry.id, updateData);
