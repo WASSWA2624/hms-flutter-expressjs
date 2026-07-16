@@ -27,6 +27,10 @@ class _MockCommunicationsRepository extends Mock
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
+Finder _tableRowInkWell() => find.byWidgetPredicate(
+  (Widget widget) => widget.runtimeType.toString() == 'TableRowInkWell',
+);
+
 Finder _tabToolbarRefresh() => find.descendant(
   of: find.byType(AppTabStrip),
   matching: find.byWidgetPredicate(
@@ -360,6 +364,56 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('Communication filters'), findsNothing);
     expect(find.text('Table settings'), findsNothing);
+  });
+
+  testWidgets('tapping a notification row opens the detail dialog', (
+    WidgetTester tester,
+  ) async {
+    await _pumpCommunicationsWorkspace(tester, repository: repository);
+
+    await tester.tap(_tab('Notifications'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(_tableRowInkWell().first);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppDialog), findsWidgets);
+    expect(find.text('Mark read'), findsWidgets);
+    expect(find.text('Archive'), findsWidgets);
+  });
+
+  testWidgets('deliveries table shows next action entry', (
+    WidgetTester tester,
+  ) async {
+    await _pumpCommunicationsWorkspace(tester, repository: repository);
+
+    await tester.tap(_tab('Deliveries'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('View error'), findsWidgets);
+    expect(find.text('nurse@example.com'), findsWidgets);
+  });
+
+  testWidgets('read-only notification dialog hides write actions', (
+    WidgetTester tester,
+  ) async {
+    await _pumpCommunicationsWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: _communicationsReadOnlyPolicy(),
+      initialLocation: '/communications?panel=notifications',
+      initialQuery: CommunicationsWorkspaceQuery.fromUri(
+        Uri.parse('/communications?panel=notifications'),
+      ),
+    );
+
+    await tester.tap(_tableRowInkWell().first);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppDialog), findsWidgets);
+    expect(find.text('Mark read'), findsNothing);
+    expect(find.text('Mark unread'), findsNothing);
+    expect(find.text('Archive'), findsNothing);
   });
 
   testWidgets('New group appears in tab toolbar not conversation list', (

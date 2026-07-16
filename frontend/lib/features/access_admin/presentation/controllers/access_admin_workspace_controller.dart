@@ -133,6 +133,18 @@ final class AccessAdminWorkspaceController
     );
   }
 
+  Future<AppFailure?> applyRoleScopeFilter(String? roleScope) {
+    final AccessAdminWorkspaceState? current = _currentState;
+    if (current == null) return refresh();
+    return _loadQuery(
+      current.query.copyWith(
+        roleScope: roleScope,
+        pageRequest: current.query.pageRequest.first(),
+      ),
+      clearSelectedItem: true,
+    );
+  }
+
   Future<AppFailure?> applyContext({String? tenantId, String? facilityId}) {
     final AccessAdminWorkspaceState? current = _currentState;
     if (current == null) return refresh();

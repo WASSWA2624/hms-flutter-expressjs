@@ -9,14 +9,13 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
-import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/communications/domain/entities/communications_entities.dart';
 import 'package:hosspi_hms/features/communications/presentation/controllers/communications_workspace_controller.dart';
+import 'package:hosspi_hms/features/communications/presentation/widgets/communications_detail_dialogs.dart';
 import 'package:hosspi_hms/features/communications/presentation/widgets/communications_inbox_panel.dart';
 import 'package:hosspi_hms/features/communications/presentation/widgets/communications_new_conversation_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -78,6 +77,7 @@ class _CommunicationsWorkspaceContentState
   _routeSubscription;
   String? _appliedRouteSignature;
   String? _syncedRouteSignature;
+  String? _openedDialogSignature;
 
   @override
   void initState() {
@@ -177,6 +177,7 @@ class _CommunicationsWorkspaceContentState
         _querySignature(widget.initialQuery)) {
       _scheduleRouteQuery(widget.initialQuery);
     }
+    _scheduleDeepLinkDialog(widget.state, oldWidget.state);
   }
 
   @override
@@ -200,6 +201,81 @@ class _CommunicationsWorkspaceContentState
     if (mounted && context.mounted) {
       _showFailureIfNeeded(context, failure);
     }
+  }
+
+  void _scheduleDeepLinkDialog(
+    CommunicationsWorkspaceState state, [
+    CommunicationsWorkspaceState? previousState,
+  ]) {
+    final String? dialogSignature = _targetedDialogSignature(
+      state.query,
+      state,
+    );
+    if (dialogSignature == null || dialogSignature == _openedDialogSignature) {
+      return;
+    }
+    if (previousState != null &&
+        _targetedDialogSignature(previousState.query, previousState) ==
+            dialogSignature) {
+      return;
+    }
+    _openedDialogSignature = dialogSignature;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_openDeepLinkedDialog(state));
+    });
+  }
+
+  Future<void> _openDeepLinkedDialog(CommunicationsWorkspaceState state) async {
+    switch (state.query.panel) {
+      case CommunicationsPanel.notifications:
+        final NotificationItem? notification = state.selectedNotification;
+        if (notification == null) {
+          return;
+        }
+        await showCommunicationsNotificationDetailDialog(
+          context,
+          ref,
+          state,
+          notification,
+          canWrite: ref
+              .read(appAccessPolicyProvider)
+              .grants(AppPermissions.communicationsWrite),
+        );
+      case CommunicationsPanel.templates:
+        final CommunicationTemplate? template = state.selectedTemplate;
+        if (template == null) {
+          return;
+        }
+        await showCommunicationsTemplateDetailDialog(
+          context,
+          ref,
+          state,
+          template,
+        );
+      case CommunicationsPanel.inbox:
+      case CommunicationsPanel.deliveries:
+        return;
+    }
+  }
+
+  String? _targetedDialogSignature(
+    CommunicationsWorkspaceQuery query,
+    CommunicationsWorkspaceState state,
+  ) {
+    return switch (query.panel) {
+      CommunicationsPanel.notifications =>
+        query.notificationId != null && state.selectedNotification != null
+            ? 'notification:${query.notificationId}'
+            : null,
+      CommunicationsPanel.templates =>
+        query.templateId != null && state.selectedTemplate != null
+            ? 'template:${query.templateId}'
+            : null,
+      CommunicationsPanel.inbox || CommunicationsPanel.deliveries => null,
+    };
   }
 
   Widget? _buildPrimaryAction(
@@ -265,6 +341,7 @@ class _CommunicationsWorkspaceContentState
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final bool canWrite = policy.grants(AppPermissions.communicationsWrite);
     final Object? lastFailure = state.lastFailure;
+    _scheduleDeepLinkDialog(state);
 
     return AppWorkspace(
       title: l10n.communicationsWorkspaceTitle,
@@ -310,9 +387,6 @@ class _CommunicationsWorkspaceContentState
           ),
         ],
       ),
-      detail: state.query.panel == CommunicationsPanel.inbox
-          ? null
-          : _CommunicationsDetailPanel(state: state, canWrite: canWrite),
     );
   }
 }
@@ -387,9 +461,6 @@ class _NotificationsTable extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final CommunicationsWorkspaceController controller = ref.read(
-      communicationsWorkspaceControllerProvider.notifier,
-    );
 
     return AppListTable<NotificationItem>(
       page: state.notifications,
@@ -398,6 +469,7 @@ class _NotificationsTable extends ConsumerWidget {
       columnVisibilityStorageKey: 'communications_notifications',
       columnWidthStorageKey: 'communications_cw_notifications',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       search: _tableSearch<NotificationItem>(
@@ -405,6 +477,7 @@ class _NotificationsTable extends ConsumerWidget {
         ref,
         state,
         searchController,
+        matcher: _notificationSearchMatcher,
       ),
       itemKeyBuilder: (NotificationItem item) => ValueKey<String>(item.id),
       previousPageLabel: l10n.communicationsPreviousPageLabel,
@@ -412,8 +485,24 @@ class _NotificationsTable extends ConsumerWidget {
       pageLabelBuilder: (AppPage<NotificationItem> page) {
         return _pageLabel(context, page);
       },
-      onPageChanged: controller.changePage,
-      onRowSelected: controller.selectNotification,
+      onPageChanged: (AppPageRequest request) {
+        unawaited(
+          ref
+              .read(communicationsWorkspaceControllerProvider.notifier)
+              .changePage(request),
+        );
+      },
+      onRowSelected: (NotificationItem item) {
+        unawaited(
+          showCommunicationsNotificationDetailDialog(
+            context,
+            ref,
+            state,
+            item,
+            canWrite: _canWrite(ref),
+          ),
+        );
+      },
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.communicationsNoNotificationsTitle,
         body: l10n.communicationsNoNotificationsBody,
@@ -447,30 +536,7 @@ class _NotificationsTable extends ConsumerWidget {
                 right.notificationType,
               ),
           cellBuilder: (BuildContext context, NotificationItem item) {
-            return Text(_apiLabel(context, item.notificationType));
-          },
-        ),
-        AppListTableColumn<NotificationItem>(
-          id: 'priority',
-          label: l10n.communicationsPriorityColumnLabel,
-          sortComparator: (NotificationItem left, NotificationItem right) =>
-              appListTableCompareText(left.priority, right.priority),
-          cellBuilder: (BuildContext context, NotificationItem item) {
-            return AppWorkspaceStatusBadge(
-              status: _priorityStatus(context, item.priority),
-            );
-          },
-        ),
-        AppListTableColumn<NotificationItem>(
-          id: 'state',
-          label: l10n.communicationsStateColumnLabel,
-          sortComparator: (NotificationItem left, NotificationItem right) =>
-              appListTableCompareText(
-                _readStateLabel(context, left),
-                _readStateLabel(context, right),
-              ),
-          cellBuilder: (BuildContext context, NotificationItem item) {
-            return AppWorkspaceStatusBadge(status: _readStatus(context, item));
+            return Text(communicationsApiLabel(context, item.notificationType));
           },
         ),
         AppListTableColumn<NotificationItem>(
@@ -479,7 +545,92 @@ class _NotificationsTable extends ConsumerWidget {
           sortComparator: (NotificationItem left, NotificationItem right) =>
               appListTableCompareDateTime(left.createdAt, right.createdAt),
           cellBuilder: (BuildContext context, NotificationItem item) {
-            return Text(_dateTimeLabel(context, item.createdAt));
+            return Text(communicationsDateTimeLabel(context, item.createdAt));
+          },
+        ),
+        AppListTableColumn<NotificationItem>(
+          id: 'status',
+          label: l10n.communicationsStateColumnLabel,
+          sortComparator: (NotificationItem left, NotificationItem right) =>
+              appListTableCompareText(
+                communicationsReadStateLabel(context, left),
+                communicationsReadStateLabel(context, right),
+              ),
+          cellBuilder: (BuildContext context, NotificationItem item) {
+            return AppWorkspaceStatusBadge(
+              status: communicationsReadStatus(context, item),
+            );
+          },
+        ),
+        AppListTableColumn<NotificationItem>(
+          id: 'next_action',
+          label: l10n.communicationsNextActionColumnLabel,
+          alwaysVisible: true,
+          sortComparator: (NotificationItem left, NotificationItem right) =>
+              appListTableCompareText(
+                _notificationNextActionLabel(context, left, _canWrite(ref)),
+                _notificationNextActionLabel(context, right, _canWrite(ref)),
+              ),
+          cellBuilder: (BuildContext context, NotificationItem item) {
+            return _NotificationNextActionCell(
+              item: item,
+              state: state,
+              canWrite: _canWrite(ref),
+            );
+          },
+        ),
+      ],
+      columnChoices: <AppListTableColumn<NotificationItem>>[
+        AppListTableColumn<NotificationItem>(
+          id: 'priority',
+          label: l10n.communicationsPriorityColumnLabel,
+          sortComparator: (NotificationItem left, NotificationItem right) =>
+              appListTableCompareText(left.priority, right.priority),
+          cellBuilder: (BuildContext context, NotificationItem item) {
+            return AppWorkspaceStatusBadge(
+              status: communicationsPriorityStatus(context, item.priority),
+            );
+          },
+        ),
+        AppListTableColumn<NotificationItem>(
+          id: 'delivery_status',
+          label: l10n.communicationsDeliveryStatusColumnLabel,
+          sortComparator: (NotificationItem left, NotificationItem right) =>
+              appListTableCompareText(
+                left.effectiveDeliveryStatus,
+                right.effectiveDeliveryStatus,
+              ),
+          cellBuilder: (BuildContext context, NotificationItem item) {
+            return AppWorkspaceStatusBadge(
+              status: communicationsDeliveryStatus(
+                context,
+                item.effectiveDeliveryStatus,
+              ),
+            );
+          },
+        ),
+        AppListTableColumn<NotificationItem>(
+          id: 'context',
+          label: l10n.communicationsContextLabel,
+          sortComparator: (NotificationItem left, NotificationItem right) =>
+              appListTableCompareText(
+                communicationsJoinDisplay(<String?>[
+                  left.contextType,
+                  left.contextPublicId,
+                ]),
+                communicationsJoinDisplay(<String?>[
+                  right.contextType,
+                  right.contextPublicId,
+                ]),
+              ),
+          cellBuilder: (BuildContext context, NotificationItem item) {
+            return Text(
+              communicationsJoinDisplay(<String?>[
+                    item.contextType,
+                    item.contextPublicId,
+                  ]) ??
+                  context.l10n.profileUnknownValue,
+            );
           },
         ),
       ],
@@ -495,11 +646,24 @@ class _NotificationsTable extends ConsumerWidget {
               spacing: Theme.of(context).spacing.xs,
               runSpacing: Theme.of(context).spacing.xs,
               children: <Widget>[
-                AppWorkspaceStatusBadge(
-                  status: _priorityStatus(context, item.priority),
+                AppInlineMetaText(
+                  icon: Icons.category_outlined,
+                  label: communicationsApiLabel(context, item.notificationType),
                 ),
-                AppWorkspaceStatusBadge(status: _readStatus(context, item)),
+                AppInlineMetaText(
+                  icon: Icons.schedule_outlined,
+                  label: communicationsDateTimeLabel(context, item.createdAt),
+                ),
+                AppWorkspaceStatusBadge(
+                  status: communicationsReadStatus(context, item),
+                ),
               ],
+            ),
+            SizedBox(height: Theme.of(context).spacing.xs),
+            _NotificationNextActionCell(
+              item: item,
+              state: state,
+              canWrite: _canWrite(ref),
             ),
           ],
         );
@@ -523,9 +687,6 @@ class _DeliveriesTable extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final CommunicationsWorkspaceController controller = ref.read(
-      communicationsWorkspaceControllerProvider.notifier,
-    );
 
     return AppListTable<NotificationDelivery>(
       page: state.deliveries,
@@ -534,6 +695,7 @@ class _DeliveriesTable extends ConsumerWidget {
       columnVisibilityStorageKey: 'communications_deliveries',
       columnWidthStorageKey: 'communications_cw_deliveries',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       search: _tableSearch<NotificationDelivery>(
@@ -541,6 +703,7 @@ class _DeliveriesTable extends ConsumerWidget {
         ref,
         state,
         searchController,
+        matcher: _deliverySearchMatcher,
       ),
       itemKeyBuilder: (NotificationDelivery item) => ValueKey<String>(item.id),
       previousPageLabel: l10n.communicationsPreviousPageLabel,
@@ -548,8 +711,18 @@ class _DeliveriesTable extends ConsumerWidget {
       pageLabelBuilder: (AppPage<NotificationDelivery> page) {
         return _pageLabel(context, page);
       },
-      onPageChanged: controller.changePage,
-      onRowSelected: controller.selectDelivery,
+      onPageChanged: (AppPageRequest request) {
+        unawaited(
+          ref
+              .read(communicationsWorkspaceControllerProvider.notifier)
+              .changePage(request),
+        );
+      },
+      onRowSelected: (NotificationDelivery item) {
+        unawaited(
+          showCommunicationsDeliveryDetailDialog(context, ref, state, item),
+        );
+      },
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.communicationsNoDeliveriesTitle,
         body: l10n.communicationsNoDeliveriesBody,
@@ -580,7 +753,7 @@ class _DeliveriesTable extends ConsumerWidget {
               (NotificationDelivery left, NotificationDelivery right) =>
                   appListTableCompareText(left.channel, right.channel),
           cellBuilder: (BuildContext context, NotificationDelivery item) {
-            return Text(_apiLabel(context, item.channel));
+            return Text(communicationsApiLabel(context, item.channel));
           },
         ),
         AppListTableColumn<NotificationDelivery>(
@@ -589,11 +762,11 @@ class _DeliveriesTable extends ConsumerWidget {
           sortComparator:
               (NotificationDelivery left, NotificationDelivery right) =>
                   appListTableCompareText(
-                    _deliveryRecipient(left),
-                    _deliveryRecipient(right),
+                    communicationsDeliveryRecipient(left),
+                    communicationsDeliveryRecipient(right),
                   ),
           cellBuilder: (_, NotificationDelivery item) {
-            return Text(_deliveryRecipient(item));
+            return Text(communicationsDeliveryRecipient(item));
           },
         ),
         AppListTableColumn<NotificationDelivery>(
@@ -604,10 +777,26 @@ class _DeliveriesTable extends ConsumerWidget {
                   appListTableCompareText(left.status, right.status),
           cellBuilder: (BuildContext context, NotificationDelivery item) {
             return AppWorkspaceStatusBadge(
-              status: _deliveryStatus(context, item.status),
+              status: communicationsDeliveryStatus(context, item.status),
             );
           },
         ),
+        AppListTableColumn<NotificationDelivery>(
+          id: 'next_action',
+          label: l10n.communicationsNextActionColumnLabel,
+          alwaysVisible: true,
+          sortComparator:
+              (NotificationDelivery left, NotificationDelivery right) =>
+                  appListTableCompareNumber(
+                    _deliveryNextActionLabel(context, left).length,
+                    _deliveryNextActionLabel(context, right).length,
+                  ),
+          cellBuilder: (BuildContext context, NotificationDelivery item) {
+            return _DeliveryNextActionCell(item: item, state: state);
+          },
+        ),
+      ],
+      columnChoices: <AppListTableColumn<NotificationDelivery>>[
         AppListTableColumn<NotificationDelivery>(
           id: 'attempts',
           label: l10n.communicationsAttemptsColumnLabel,
@@ -622,11 +811,57 @@ class _DeliveriesTable extends ConsumerWidget {
             return Text(item.attemptCount.toString());
           },
         ),
+        AppListTableColumn<NotificationDelivery>(
+          id: 'sent_at',
+          label: l10n.communicationsSentAtLabel,
+          sortComparator:
+              (NotificationDelivery left, NotificationDelivery right) =>
+                  appListTableCompareDateTime(left.sentAt, right.sentAt),
+          cellBuilder: (BuildContext context, NotificationDelivery item) {
+            return Text(communicationsDateTimeLabel(context, item.sentAt));
+          },
+        ),
+        AppListTableColumn<NotificationDelivery>(
+          id: 'delivered_at',
+          label: l10n.communicationsDeliveredAtLabel,
+          sortComparator:
+              (NotificationDelivery left, NotificationDelivery right) =>
+                  appListTableCompareDateTime(
+                    left.deliveredAt,
+                    right.deliveredAt,
+                  ),
+          cellBuilder: (BuildContext context, NotificationDelivery item) {
+            return Text(communicationsDateTimeLabel(context, item.deliveredAt));
+          },
+        ),
+        AppListTableColumn<NotificationDelivery>(
+          id: 'failed_at',
+          label: l10n.communicationsFailedAtLabel,
+          sortComparator:
+              (NotificationDelivery left, NotificationDelivery right) =>
+                  appListTableCompareDateTime(left.failedAt, right.failedAt),
+          cellBuilder: (BuildContext context, NotificationDelivery item) {
+            return Text(communicationsDateTimeLabel(context, item.failedAt));
+          },
+        ),
+        AppListTableColumn<NotificationDelivery>(
+          id: 'provider',
+          label: l10n.communicationsProviderLabel,
+          sortComparator:
+              (NotificationDelivery left, NotificationDelivery right) =>
+                  appListTableCompareText(
+                    left.providerName,
+                    right.providerName,
+                  ),
+          cellBuilder: (BuildContext context, NotificationDelivery item) {
+            return Text(item.providerName ?? context.l10n.profileUnknownValue);
+          },
+        ),
       ],
       mobileItemBuilder: (BuildContext context, NotificationDelivery item) {
         return AppListItemRow(
           title: item.notificationTitle ?? context.l10n.profileUnknownValue,
-          subtitle: _deliveryRecipient(item),
+          subtitle: communicationsDeliveryRecipient(item),
           leadingIcon: Icons.mark_email_read_outlined,
           details: <Widget>[
             Wrap(
@@ -634,14 +869,16 @@ class _DeliveriesTable extends ConsumerWidget {
               runSpacing: Theme.of(context).spacing.xs,
               children: <Widget>[
                 AppWorkspaceStatusBadge(
-                  status: _deliveryStatus(context, item.status),
+                  status: communicationsDeliveryStatus(context, item.status),
                 ),
                 AppInlineMetaText(
                   icon: Icons.send_outlined,
-                  label: _apiLabel(context, item.channel),
+                  label: communicationsApiLabel(context, item.channel),
                 ),
               ],
             ),
+            SizedBox(height: Theme.of(context).spacing.xs),
+            _DeliveryNextActionCell(item: item, state: state),
           ],
         );
       },
@@ -664,9 +901,6 @@ class _TemplatesTable extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
-    final CommunicationsWorkspaceController controller = ref.read(
-      communicationsWorkspaceControllerProvider.notifier,
-    );
 
     return AppListTable<CommunicationTemplate>(
       page: state.templates,
@@ -675,6 +909,7 @@ class _TemplatesTable extends ConsumerWidget {
       columnVisibilityStorageKey: 'communications_templates',
       columnWidthStorageKey: 'communications_cw_templates',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       search: _tableSearch<CommunicationTemplate>(
@@ -682,6 +917,7 @@ class _TemplatesTable extends ConsumerWidget {
         ref,
         state,
         searchController,
+        matcher: _templateSearchMatcher,
       ),
       itemKeyBuilder: (CommunicationTemplate item) => ValueKey<String>(item.id),
       previousPageLabel: l10n.communicationsPreviousPageLabel,
@@ -689,8 +925,18 @@ class _TemplatesTable extends ConsumerWidget {
       pageLabelBuilder: (AppPage<CommunicationTemplate> page) {
         return _pageLabel(context, page);
       },
-      onPageChanged: controller.changePage,
-      onRowSelected: controller.selectTemplate,
+      onPageChanged: (AppPageRequest request) {
+        unawaited(
+          ref
+              .read(communicationsWorkspaceControllerProvider.notifier)
+              .changePage(request),
+        );
+      },
+      onRowSelected: (CommunicationTemplate item) {
+        unawaited(
+          showCommunicationsTemplateDetailDialog(context, ref, state, item),
+        );
+      },
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.communicationsNoTemplatesTitle,
         body: l10n.communicationsNoTemplatesBody,
@@ -718,7 +964,7 @@ class _TemplatesTable extends ConsumerWidget {
               (CommunicationTemplate left, CommunicationTemplate right) =>
                   appListTableCompareText(left.channel, right.channel),
           cellBuilder: (BuildContext context, CommunicationTemplate item) {
-            return Text(_apiLabel(context, item.channel));
+            return Text(communicationsApiLabel(context, item.channel));
           },
         ),
         AppListTableColumn<CommunicationTemplate>(
@@ -732,7 +978,7 @@ class _TemplatesTable extends ConsumerWidget {
                   ),
           cellBuilder: (BuildContext context, CommunicationTemplate item) {
             return AppWorkspaceStatusBadge(
-              status: _templateStatus(context, item),
+              status: communicationsTemplateStatus(context, item),
             );
           },
         ),
@@ -751,6 +997,18 @@ class _TemplatesTable extends ConsumerWidget {
           },
         ),
       ],
+      columnChoices: <AppListTableColumn<CommunicationTemplate>>[
+        AppListTableColumn<CommunicationTemplate>(
+          id: 'subject',
+          label: l10n.communicationsSubjectLabel,
+          sortComparator:
+              (CommunicationTemplate left, CommunicationTemplate right) =>
+                  appListTableCompareText(left.subject, right.subject),
+          cellBuilder: (BuildContext context, CommunicationTemplate item) {
+            return Text(item.subject ?? context.l10n.profileUnknownValue);
+          },
+        ),
+      ],
       mobileItemBuilder: (BuildContext context, CommunicationTemplate item) {
         return AppListItemRow(
           title: item.name,
@@ -761,7 +1019,9 @@ class _TemplatesTable extends ConsumerWidget {
               spacing: Theme.of(context).spacing.xs,
               runSpacing: Theme.of(context).spacing.xs,
               children: <Widget>[
-                AppWorkspaceStatusBadge(status: _templateStatus(context, item)),
+                AppWorkspaceStatusBadge(
+                  status: communicationsTemplateStatus(context, item),
+                ),
                 AppInlineMetaText(
                   icon: Icons.dynamic_form_outlined,
                   label: item.variableCount.toString(),
@@ -775,382 +1035,20 @@ class _TemplatesTable extends ConsumerWidget {
   }
 }
 
-class _CommunicationsDetailPanel extends ConsumerWidget {
-  const _CommunicationsDetailPanel({
-    required this.state,
-    required this.canWrite,
-  });
-
-  final CommunicationsWorkspaceState state;
-  final bool canWrite;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return switch (state.query.panel) {
-      CommunicationsPanel.inbox => const SizedBox.shrink(),
-      CommunicationsPanel.notifications => _notificationDetail(context, ref),
-      CommunicationsPanel.deliveries => _deliveryDetail(context),
-      CommunicationsPanel.templates => _templateDetail(context),
-    };
-  }
-
-  Widget _notificationDetail(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final NotificationItem? notification = state.selectedNotification;
-    if (notification == null) {
-      return AppWorkspaceDetailPanel(
-        title: l10n.communicationsNotificationDetailTitle,
-        child: AppWorkspaceStatePanel.empty(
-          title: l10n.communicationsNoNotificationSelectedTitle,
-          body: l10n.communicationsNoNotificationSelectedBody,
-          icon: Icons.notifications_none_outlined,
-          minHeight: 220,
-        ),
-      );
-    }
-
-    final CommunicationsWorkspaceController controller = ref.read(
-      communicationsWorkspaceControllerProvider.notifier,
-    );
-    return AppWorkspaceDetailPanel(
-      title: l10n.communicationsNotificationDetailTitle,
-      actions: <Widget>[
-        if (canWrite && !notification.isRead)
-          AppButton.secondary(
-            label: l10n.communicationsMarkReadAction,
-            leadingIcon: Icons.mark_email_read_outlined,
-            enabled: !state.isSaving,
-            onPressed: () => _confirmAction(
-              context,
-              title: l10n.communicationsMarkReadDialogTitle,
-              body: l10n.communicationsMarkNotificationReadDialogBody,
-              submitLabel: l10n.communicationsMarkReadAction,
-              icon: const Icon(Icons.mark_email_read_outlined),
-              onConfirm: controller.markSelectedNotificationRead,
-            ),
-          ),
-        if (canWrite && notification.isRead)
-          AppButton.secondary(
-            label: l10n.communicationsMarkUnreadAction,
-            leadingIcon: Icons.mark_email_unread_outlined,
-            enabled: !state.isSaving,
-            onPressed: () => _confirmAction(
-              context,
-              title: l10n.communicationsMarkUnreadDialogTitle,
-              body: l10n.communicationsMarkNotificationUnreadDialogBody,
-              submitLabel: l10n.communicationsMarkUnreadAction,
-              icon: const Icon(Icons.mark_email_unread_outlined),
-              onConfirm: controller.markSelectedNotificationUnread,
-            ),
-          ),
-      ],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppListItemText(
-            title: notification.title,
-            subtitle: notification.message,
-            titleStyle: Theme.of(context).textTheme.titleMedium,
-            titleMaxLines: 3,
-            subtitleMaxLines: 6,
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          Wrap(
-            spacing: Theme.of(context).spacing.xs,
-            runSpacing: Theme.of(context).spacing.xs,
-            children: <Widget>[
-              AppWorkspaceStatusBadge(
-                status: _priorityStatus(context, notification.priority),
-              ),
-              AppWorkspaceStatusBadge(
-                status: _readStatus(context, notification),
-              ),
-              AppWorkspaceStatusBadge(
-                status: _deliveryStatus(
-                  context,
-                  notification.effectiveDeliveryStatus,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          AppInfoTileGrid(
-            emptyValue: l10n.profileUnknownValue,
-            items: <AppInfoTileData>[
-              AppInfoTileData(
-                label: l10n.communicationsTypeLabel,
-                value: _apiLabel(context, notification.notificationType),
-                icon: Icons.category_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.communicationsContextLabel,
-                value: _joinDisplay(<String?>[
-                  notification.contextType,
-                  notification.contextPublicId,
-                ]),
-                icon: Icons.link_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.communicationsCreatedAtLabel,
-                value: _dateTimeLabel(context, notification.createdAt),
-                icon: Icons.event_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.communicationsReadAtLabel,
-                value: _dateTimeLabel(context, notification.readAt),
-                icon: Icons.mark_email_read_outlined,
-              ),
-            ],
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          _LinkedRecordAction(targetPath: notification.targetPath),
-          if (notification.deliveries.isNotEmpty) ...<Widget>[
-            SizedBox(height: Theme.of(context).spacing.md),
-            _DeliveryHistory(deliveries: notification.deliveries),
-          ],
-          SizedBox(height: Theme.of(context).spacing.md),
-          if (canWrite)
-            AppButton.secondary(
-              label: l10n.communicationsArchiveAction,
-              leadingIcon: Icons.archive_outlined,
-              enabled: !state.isSaving,
-              onPressed: () => _confirmAction(
-                context,
-                title: l10n.communicationsArchiveDialogTitle,
-                body: l10n.communicationsArchiveNotificationDialogBody,
-                submitLabel: l10n.communicationsArchiveAction,
-                icon: const Icon(Icons.archive_outlined),
-                onConfirm: controller.archiveSelectedNotification,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _deliveryDetail(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final NotificationDelivery? delivery = state.selectedDelivery;
-    if (delivery == null) {
-      return AppWorkspaceDetailPanel(
-        title: l10n.communicationsDeliveryDetailTitle,
-        child: AppWorkspaceStatePanel.empty(
-          title: l10n.communicationsNoDeliverySelectedTitle,
-          body: l10n.communicationsNoDeliverySelectedBody,
-          icon: Icons.mark_email_read_outlined,
-          minHeight: 220,
-        ),
-      );
-    }
-
-    return AppWorkspaceDetailPanel(
-      title: l10n.communicationsDeliveryDetailTitle,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppWorkspaceStatusBadge(
-            status: _deliveryStatus(context, delivery.status),
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          AppInfoTileGrid(
-            emptyValue: l10n.profileUnknownValue,
-            items: <AppInfoTileData>[
-              AppInfoTileData(
-                label: l10n.communicationsNotificationLabel,
-                value: delivery.notificationTitle,
-                icon: Icons.notifications_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.communicationsChannelLabel,
-                value: _apiLabel(context, delivery.channel),
-                icon: Icons.send_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.communicationsRecipientLabel,
-                value: _deliveryRecipient(delivery),
-                icon: Icons.person_outline,
-              ),
-              AppInfoTileData(
-                label: l10n.communicationsAttemptsLabel,
-                value: delivery.attemptCount.toString(),
-                icon: Icons.replay_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.communicationsProviderLabel,
-                value: delivery.providerName,
-                icon: Icons.cloud_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.communicationsSentAtLabel,
-                value: _dateTimeLabel(context, delivery.sentAt),
-                icon: Icons.schedule_send_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.communicationsDeliveredAtLabel,
-                value: _dateTimeLabel(context, delivery.deliveredAt),
-                icon: Icons.done_all_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.communicationsFailedAtLabel,
-                value: _dateTimeLabel(context, delivery.failedAt),
-                icon: Icons.error_outline,
-              ),
-            ],
-          ),
-          if (_nonEmpty(delivery.errorMessage) != null) ...<Widget>[
-            SizedBox(height: Theme.of(context).spacing.md),
-            AppMessagePanel(
-              title: l10n.communicationsDeliveryErrorTitle,
-              message: delivery.errorMessage!,
-              tone: AppWorkspaceStatusTone.error,
-              icon: Icons.error_outline,
-            ),
-          ],
-          SizedBox(height: Theme.of(context).spacing.md),
-          _LinkedRecordAction(targetPath: delivery.targetPath),
-        ],
-      ),
-    );
-  }
-
-  Widget _templateDetail(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final CommunicationTemplate? template = state.selectedTemplate;
-    if (template == null) {
-      return AppWorkspaceDetailPanel(
-        title: l10n.communicationsTemplateDetailTitle,
-        child: AppWorkspaceStatePanel.empty(
-          title: l10n.communicationsNoTemplateSelectedTitle,
-          body: l10n.communicationsNoTemplateSelectedBody,
-          icon: Icons.description_outlined,
-          minHeight: 220,
-        ),
-      );
-    }
-
-    return AppWorkspaceDetailPanel(
-      title: l10n.communicationsTemplateDetailTitle,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppListItemText(
-            title: template.name,
-            subtitle: template.description,
-            titleStyle: Theme.of(context).textTheme.titleMedium,
-            titleMaxLines: 2,
-            subtitleMaxLines: 4,
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          AppInfoTileGrid(
-            emptyValue: l10n.profileUnknownValue,
-            items: <AppInfoTileData>[
-              AppInfoTileData(
-                label: l10n.communicationsChannelLabel,
-                value: _apiLabel(context, template.channel),
-                icon: Icons.send_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.communicationsSubjectLabel,
-                value: template.subject,
-                icon: Icons.subject_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.communicationsVariablesLabel,
-                value: template.variableCount.toString(),
-                icon: Icons.dynamic_form_outlined,
-              ),
-              AppInfoTileData(
-                label: l10n.communicationsStatusLabel,
-                value: _templateStatus(context, template).label,
-                icon: Icons.flag_outlined,
-              ),
-            ],
-          ),
-          SizedBox(height: Theme.of(context).spacing.md),
-          AppSectionPanel(
-            title: l10n.communicationsPreviewTitle,
-            leadingIcon: Icons.preview_outlined,
-            children: <Widget>[
-              Text(
-                template.previewSubject ??
-                    template.subject ??
-                    l10n.profileUnknownValue,
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              Text(
-                template.previewBody ??
-                    template.body ??
-                    l10n.profileUnknownValue,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LinkedRecordAction extends StatelessWidget {
-  const _LinkedRecordAction({required this.targetPath});
-
-  final String? targetPath;
-
-  @override
-  Widget build(BuildContext context) {
-    final String? path = _internalPath(targetPath);
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: AppButton.secondary(
-        label: context.l10n.communicationsOpenLinkedRecordAction,
-        leadingIcon: Icons.open_in_new_outlined,
-        enabled: path != null,
-        onPressed: path == null ? null : () => context.go(path),
-      ),
-    );
-  }
-}
-
-class _DeliveryHistory extends StatelessWidget {
-  const _DeliveryHistory({required this.deliveries});
-
-  final List<NotificationDelivery> deliveries;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppSectionPanel(
-      title: l10n.communicationsDeliveryHistoryTitle,
-      leadingIcon: Icons.mark_email_read_outlined,
-      children: <Widget>[
-        for (final NotificationDelivery delivery in deliveries)
-          AppListItemRow(
-            title: _apiLabel(context, delivery.channel),
-            subtitle: _deliveryRecipient(delivery),
-            leadingIcon: Icons.send_outlined,
-            padding: EdgeInsets.zero,
-            trailing: AppWorkspaceStatusBadge(
-              status: _deliveryStatus(context, delivery.status),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 AppListTableSearch<T> _tableSearch<T>(
   BuildContext context,
   WidgetRef ref,
   CommunicationsWorkspaceState state,
-  TextEditingController controller,
-) {
+  TextEditingController controller, {
+  required AppListTableSearchMatcher<T> matcher,
+}) {
   final AppLocalizations l10n = context.l10n;
   return AppListTableSearch<T>(
     controller: controller,
     semanticLabel: l10n.communicationsSearchSemanticLabel,
     hintText: l10n.communicationsSearchHint,
     clearLabel: l10n.communicationsClearSearchAction,
-    matcher: (_, _) => true,
+    matcher: matcher,
     onSubmitted: (String value) {
       ref
           .read(communicationsWorkspaceControllerProvider.notifier)
@@ -1162,8 +1060,8 @@ AppListTableSearch<T> _tableSearch<T>(
           .applySearch('');
     },
     showAdvancedFilterButton: true,
-    advancedFilterButtonLabel: l10n.communicationsAdvancedFiltersLabel,
-    advancedFilterTitle: l10n.communicationsAdvancedFiltersTitle,
+    advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+    advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
     advancedFilterApplyLabel: l10n.communicationsApplyFiltersAction,
     advancedFilterResetLabel: l10n.communicationsResetFiltersAction,
     enableDateFilter: false,
@@ -1182,6 +1080,186 @@ AppListTableSearch<T> _tableSearch<T>(
           );
     },
   );
+}
+
+bool _canWrite(WidgetRef ref) {
+  return ref
+      .read(appAccessPolicyProvider)
+      .grants(AppPermissions.communicationsWrite);
+}
+
+class _NotificationNextActionCell extends ConsumerWidget {
+  const _NotificationNextActionCell({
+    required this.item,
+    required this.state,
+    required this.canWrite,
+  });
+
+  final NotificationItem item;
+  final CommunicationsWorkspaceState state;
+  final bool canWrite;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final String label = _notificationNextActionLabel(context, item, canWrite);
+    return AppButton.tertiary(
+      label: label,
+      enabled: !state.isSaving,
+      onPressed: () {
+        if (canWrite) {
+          unawaited(_handleNotificationNextAction(context, ref, state, item));
+          return;
+        }
+        unawaited(
+          showCommunicationsNotificationDetailDialog(
+            context,
+            ref,
+            state,
+            item,
+            canWrite: false,
+          ),
+        );
+      },
+    );
+  }
+}
+
+String _notificationNextActionLabel(
+  BuildContext context,
+  NotificationItem item,
+  bool canWrite,
+) {
+  if (!canWrite) {
+    return context.l10n.communicationsViewNotificationAction;
+  }
+  return item.isRead
+      ? context.l10n.communicationsMarkUnreadAction
+      : context.l10n.communicationsMarkReadAction;
+}
+
+Future<void> _handleNotificationNextAction(
+  BuildContext context,
+  WidgetRef ref,
+  CommunicationsWorkspaceState state,
+  NotificationItem item,
+) async {
+  final CommunicationsWorkspaceController controller = ref.read(
+    communicationsWorkspaceControllerProvider.notifier,
+  );
+  controller.selectNotification(item);
+  final Future<AppFailure?> Function() action = item.isRead
+      ? controller.markSelectedNotificationUnread
+      : controller.markSelectedNotificationRead;
+  await showCommunicationsConfirmAction(
+    context,
+    title: item.isRead
+        ? context.l10n.communicationsMarkUnreadDialogTitle
+        : context.l10n.communicationsMarkReadDialogTitle,
+    body: item.isRead
+        ? context.l10n.communicationsMarkNotificationUnreadDialogBody
+        : context.l10n.communicationsMarkNotificationReadDialogBody,
+    submitLabel: _notificationNextActionLabel(context, item, true),
+    icon: Icon(
+      item.isRead
+          ? Icons.mark_email_unread_outlined
+          : Icons.mark_email_read_outlined,
+    ),
+    onConfirm: action,
+  );
+}
+
+class _DeliveryNextActionCell extends ConsumerWidget {
+  const _DeliveryNextActionCell({required this.item, required this.state});
+
+  final NotificationDelivery item;
+  final CommunicationsWorkspaceState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final String? path = communicationsInternalPath(item.targetPath);
+    return AppButton.tertiary(
+      label: _deliveryNextActionLabel(context, item),
+      onPressed: path != null
+          ? () => context.go(path)
+          : () => unawaited(
+              showCommunicationsDeliveryDetailDialog(context, ref, state, item),
+            ),
+    );
+  }
+}
+
+String _deliveryNextActionLabel(
+  BuildContext context,
+  NotificationDelivery item,
+) {
+  if (communicationsInternalPath(item.targetPath) != null) {
+    return context.l10n.communicationsOpenLinkedRecordAction;
+  }
+  final String status = (item.status ?? '').trim().toUpperCase();
+  if (<String>{'FAILED', 'BOUNCED', 'ERROR'}.contains(status)) {
+    return context.l10n.communicationsViewDeliveryErrorAction;
+  }
+  return context.l10n.communicationsViewDeliveryAction;
+}
+
+bool _notificationSearchMatcher(NotificationItem item, String query) {
+  return _matchesQuery(query, <String?>[
+    item.title,
+    item.message,
+    item.notificationType,
+    item.priority,
+    item.contextType,
+    item.contextPublicId,
+    item.deliveryStatus,
+    for (final NotificationDelivery delivery in item.deliveries) ...<String?>[
+      delivery.status,
+      delivery.channel,
+      delivery.providerName,
+      delivery.errorMessage,
+      delivery.recipientTarget,
+    ],
+  ]);
+}
+
+bool _deliverySearchMatcher(NotificationDelivery item, String query) {
+  return _matchesQuery(query, <String?>[
+    item.notificationTitle,
+    item.errorMessage,
+    item.channel,
+    item.status,
+    item.providerName,
+    item.recipientTarget,
+    item.recipient?.displayName,
+    item.attemptCount.toString(),
+  ]);
+}
+
+bool _templateSearchMatcher(CommunicationTemplate item, String query) {
+  return _matchesQuery(query, <String?>[
+    item.name,
+    item.description,
+    item.channel,
+    item.subject,
+    item.previewSubject,
+    item.previewBody,
+    item.body,
+    item.variableCount.toString(),
+    item.isActive ? 'active' : 'inactive',
+  ]);
+}
+
+bool _matchesQuery(String query, Iterable<String?> values) {
+  final String needle = query.trim().toLowerCase();
+  if (needle.isEmpty) {
+    return true;
+  }
+  for (final String? value in values) {
+    final String normalized = value?.trim().toLowerCase() ?? '';
+    if (normalized.contains(needle)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 List<AppSearchBarFilterGroup> _filterGroups(
@@ -1240,32 +1318,6 @@ AppSearchBarFilterValue _filterValue(CommunicationsWorkspaceQuery query) {
   );
 }
 
-Future<void> _confirmAction(
-  BuildContext context, {
-  required String title,
-  required String body,
-  required String submitLabel,
-  required Widget icon,
-  required Future<AppFailure?> Function() onConfirm,
-}) async {
-  final bool? changed = await showAppDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => AppConfirmActionDialog(
-      title: title,
-      body: body,
-      submitLabel: submitLabel,
-      icon: icon,
-      onConfirm: onConfirm,
-    ),
-  );
-  if (changed == true && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.communicationsActionSavedMessage)),
-    );
-  }
-}
-
 void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
   if (failure == null) {
     return;
@@ -1315,127 +1367,6 @@ String _pageLabel<T>(BuildContext context, AppPage<T> page) {
   );
 }
 
-String _deliveryRecipient(NotificationDelivery delivery) {
-  return _joinDisplay(<String?>[
-        delivery.recipient?.displayName,
-        delivery.recipientTarget,
-      ]) ??
-      '';
-}
-
-String _dateTimeLabel(BuildContext context, DateTime? value) {
-  if (value == null) {
-    return context.l10n.profileUnknownValue;
-  }
-  return AppFormatters.dateTime(
-    value.toLocal(),
-    Localizations.localeOf(context),
-  );
-}
-
-AppWorkspaceStatus _readStatus(BuildContext context, NotificationItem item) {
-  return AppWorkspaceStatus(
-    label: _readStateLabel(context, item),
-    tone: item.isRead
-        ? AppWorkspaceStatusTone.success
-        : AppWorkspaceStatusTone.warning,
-    icon: item.isRead
-        ? Icons.mark_email_read_outlined
-        : Icons.mark_email_unread_outlined,
-  );
-}
-
-String _readStateLabel(BuildContext context, NotificationItem item) {
-  return item.isRead
-      ? context.l10n.communicationsReadStatus
-      : context.l10n.communicationsUnreadStatus;
-}
-
-AppWorkspaceStatus _priorityStatus(BuildContext context, String? value) {
-  final String normalized = (value ?? '').trim().toUpperCase();
-  return AppWorkspaceStatus(
-    label: _apiLabel(context, value),
-    tone: switch (normalized) {
-      'HIGH' || 'URGENT' || 'CRITICAL' => AppWorkspaceStatusTone.error,
-      'MEDIUM' || 'NORMAL' => AppWorkspaceStatusTone.warning,
-      'LOW' => AppWorkspaceStatusTone.neutral,
-      _ => AppWorkspaceStatusTone.info,
-    },
-    icon: switch (normalized) {
-      'HIGH' || 'URGENT' || 'CRITICAL' => Icons.priority_high_outlined,
-      _ => Icons.low_priority_outlined,
-    },
-  );
-}
-
-AppWorkspaceStatus _deliveryStatus(BuildContext context, String? value) {
-  final String normalized = (value ?? '').trim().toUpperCase();
-  return AppWorkspaceStatus(
-    label: _apiLabel(context, value),
-    tone: switch (normalized) {
-      'DELIVERED' || 'SENT' || 'SUCCESS' => AppWorkspaceStatusTone.success,
-      'FAILED' || 'BOUNCED' || 'ERROR' => AppWorkspaceStatusTone.error,
-      'RETRYING' || 'PENDING' || 'QUEUED' => AppWorkspaceStatusTone.warning,
-      _ => AppWorkspaceStatusTone.neutral,
-    },
-  );
-}
-
-AppWorkspaceStatus _templateStatus(
-  BuildContext context,
-  CommunicationTemplate template,
-) {
-  return AppWorkspaceStatus(
-    label: template.isActive
-        ? context.l10n.communicationsActiveStatus
-        : context.l10n.communicationsInactiveStatus,
-    tone: template.isActive
-        ? AppWorkspaceStatusTone.success
-        : AppWorkspaceStatusTone.neutral,
-    icon: template.isActive
-        ? Icons.check_circle_outline
-        : Icons.pause_circle_outline,
-  );
-}
-
-String _apiLabel(BuildContext context, String? value) {
-  final String normalized = value?.trim() ?? '';
-  if (normalized.isEmpty) {
-    return context.l10n.profileUnknownValue;
-  }
-
-  return normalized
-      .replaceAll(RegExp(r'[_-]+'), ' ')
-      .split(RegExp(r'\s+'))
-      .where((String word) => word.isNotEmpty)
-      .map((String word) {
-        final String lower = word.toLowerCase();
-        return '${lower.substring(0, 1).toUpperCase()}${lower.substring(1)}';
-      })
-      .join(' ');
-}
-
-String? _joinDisplay(Iterable<String?> values) {
-  final String joined = values
-      .map((String? value) => value?.trim() ?? '')
-      .where((String value) => value.isNotEmpty)
-      .join(_listSeparator);
-  return joined.isEmpty ? null : joined;
-}
-
-String? _nonEmpty(String? value) {
-  final String? normalized = value?.trim();
-  return normalized == null || normalized.isEmpty ? null : normalized;
-}
-
-String? _internalPath(String? value) {
-  final String? path = _nonEmpty(value);
-  if (path == null || !path.startsWith('/')) {
-    return null;
-  }
-  return path;
-}
-
 bool _hasRouteQuery(CommunicationsWorkspaceQuery query) {
   return query.panel != CommunicationsPanel.inbox ||
       query.hasActiveFilters ||
@@ -1461,5 +1392,4 @@ const String _queueFilterKey = 'queue';
 const String _flagFilterKey = 'flag';
 const String _unreadFlagValue = 'unread';
 const String _sensitiveFlagValue = 'sensitive';
-const String _listSeparator = ' | ';
 const String _signatureSeparator = '::';

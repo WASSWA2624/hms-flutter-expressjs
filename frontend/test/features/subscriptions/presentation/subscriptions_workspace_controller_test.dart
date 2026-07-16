@@ -34,7 +34,7 @@ void main() {
         _stubWorkspace(repository);
         when(
           () => repository.resolveLegacyRoute(
-            SubscriptionResource.subscriptions,
+            SubscriptionResource.subscriptionPlans,
             'SUB-001',
           ),
         ).thenAnswer(
@@ -74,7 +74,7 @@ void main() {
         expect(failure, isNull);
         verify(
           () => repository.resolveLegacyRoute(
-            SubscriptionResource.subscriptions,
+            SubscriptionResource.subscriptionPlans,
             'SUB-001',
           ),
         ).called(1);

@@ -739,7 +739,47 @@ bool matchesIntegrationSearch(IntegrationWorkItem item, String query) {
     ?item.displayId,
     ?item.owner,
     ?item.errorSummary,
+    ?item.integration?.integrationType,
+    ?item.integration?.tenantLabel,
+    ?item.integration?.tenantId,
+    ?item.integration?.name,
+    ?item.integration?.displayId,
+    '${item.integration?.webhookSubscriptionCount ?? 0}',
+    '${item.integration?.logCount ?? 0}',
+    '${item.integration?.hasConfig ?? false}',
+    ?item.apiKey?.maskedValue,
+    ?item.apiKey?.userId,
+    ?item.apiKey?.name,
+    ?item.apiKey?.displayId,
+    ?item.apiKey?.humanFriendlyId,
+    ?item.webhook?.event,
+    ?item.webhook?.integrationLabel,
+    ?item.webhook?.targetHost,
+    ?item.webhook?.targetUrl,
+    ?item.webhook?.integrationStatus,
+    ?item.log?.message,
+    ?item.log?.integrationType,
+    ?item.log?.integrationLabel,
+    ?item.interop?.title,
+    ?item.interop?.scope,
+    ?item.interop?.unavailableReason,
   ];
+
+  for (final DateTime? date in <DateTime?>[
+    item.lastEventAt,
+    item.integration?.createdAt,
+    item.integration?.updatedAt,
+    item.apiKey?.expiresAt,
+    item.apiKey?.lastUsedAt,
+    item.webhook?.createdAt,
+    item.log?.loggedAt,
+    item.interop?.updatedAt,
+  ]) {
+    if (date != null) {
+      values.add(date.toIso8601String());
+      values.add(date.toLocal().toString());
+    }
+  }
 
   return values.any((String value) => value.toLowerCase().contains(normalized));
 }

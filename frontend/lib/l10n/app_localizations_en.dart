@@ -13972,6 +13972,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get reportsNameColumnLabel => 'Name';
 
   @override
+  String get reportsNextActionColumnLabel => 'Next action';
+
+  @override
   String get reportsStatusColumnLabel => 'Status';
 
   @override
@@ -14432,6 +14435,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get communicationsArchiveAction => 'Archive';
+
+  @override
+  String get communicationsNextActionColumnLabel => 'Action';
+
+  @override
+  String get communicationsViewNotificationAction => 'View notification';
+
+  @override
+  String get communicationsViewDeliveryAction => 'View delivery';
+
+  @override
+  String get communicationsViewDeliveryErrorAction => 'View error';
+
+  @override
+  String get communicationsDeliveryStatusColumnLabel => 'Delivery status';
 
   @override
   String get communicationsUnarchiveAction => 'Unarchive';
@@ -19667,6 +19685,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessAdminColumnFacility => 'Facility';
+
+  @override
+  String get accessAdminManageUserAction => 'Manage user';
+
+  @override
+  String get accessAdminEntitlementPlanColumnLabel => 'Plan';
+
+  @override
+  String get accessAdminEntitlementDenialColumnLabel => 'Denial';
+
+  @override
+  String get accessAdminPermissionCodeColumnLabel => 'Permission code';
+
+  @override
+  String get accessAdminModuleSlugColumnLabel => 'Module slug';
+
+  @override
+  String get accessAdminNextActionColumnLabel => 'Action';
 
   @override
   String get accessAdminColumnRoles => 'Roles';

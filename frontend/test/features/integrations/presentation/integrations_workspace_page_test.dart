@@ -17,7 +17,7 @@ import 'package:hosspi_hms/features/integrations/domain/repositories/integration
 import 'package:hosspi_hms/features/integrations/presentation/pages/integrations_workspace_page.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace_toolbar.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -294,6 +294,37 @@ void main() {
     expect(find.byTooltip('Failed'), findsOneWidget);
   });
 
+  testWidgets(
+    'integrations table uses standardized search chrome and columns',
+    (WidgetTester tester) async {
+      await _pumpIntegrationsWorkspace(tester, repository: repository);
+
+      final AppListTable<IntegrationWorkItem> table = _table(tester);
+      expect(table.search?.advancedFilterTitle, 'Advanced filters');
+      expect(table.columnVisibilityTitle, 'Table Settings');
+      expect(table.columnChoices, isNotNull);
+      expect(table.columns.length, 5);
+      expect(
+        table.columns.map((AppListTableColumn<IntegrationWorkItem> c) => c.id),
+        <String>['name', 'type', 'last_updated', 'status', 'next_action'],
+      );
+      expect(
+        find.descendant(
+          of: find.byType(DataTable),
+          matching: find.text('Next action'),
+        ),
+        findsOneWidget,
+      );
+
+      final bool Function(IntegrationWorkItem, String) matcher =
+          table.search!.matcher;
+      final IntegrationWorkItem integrationItem =
+          IntegrationWorkItem.integration(_integration);
+      expect(matcher(integrationItem, 'Main Hospital'), isTrue);
+      expect(matcher(integrationItem, 'nonexistent-xyz-query'), isFalse);
+    },
+  );
+
   testWidgets('switching tabs updates section query and columns', (
     WidgetTester tester,
   ) async {
@@ -306,12 +337,14 @@ void main() {
       _table(tester).columnVisibilityStorageKey,
       'integrations_integrations',
     );
+    expect(_table(tester).columns.length, 5);
     expect(
       _table(
         tester,
       ).columns.map((AppListTableColumn<IntegrationWorkItem> c) => c.id),
-      containsAll(<String>['name', 'type', 'has_config', 'webhook_count']),
+      <String>['name', 'type', 'last_updated', 'status', 'next_action'],
     );
+    expect(_table(tester).columnChoices?.length, greaterThan(5));
 
     await tester.tap(_tab('API keys'));
     await tester.pumpAndSettle();
@@ -321,11 +354,12 @@ void main() {
     expect(find.byTooltip('Create API key'), findsOneWidget);
     expect(find.byTooltip('Create integration'), findsNothing);
     expect(_table(tester).columnVisibilityStorageKey, 'integrations_apiKeys');
+    expect(_table(tester).columns.length, 5);
     expect(
       _table(
         tester,
       ).columns.map((AppListTableColumn<IntegrationWorkItem> c) => c.id),
-      containsAll(<String>['name', 'key_id', 'permissions', 'expires_at']),
+      <String>['name', 'key_id', 'last_used', 'status', 'next_action'],
     );
 
     await tester.tap(_tab('Webhooks'));
@@ -334,11 +368,12 @@ void main() {
     expect(harness.router.state.uri.queryParameters['section'], 'webhooks');
     expect(find.text('payment.completed'), findsOneWidget);
     expect(find.byTooltip('Create webhook'), findsOneWidget);
+    expect(_table(tester).columns.length, 5);
     expect(
       _table(
         tester,
       ).columns.map((AppListTableColumn<IntegrationWorkItem> c) => c.id),
-      containsAll(<String>['event', 'target_host', 'integration_status']),
+      <String>['event', 'integration', 'target_host', 'status', 'next_action'],
     );
 
     await tester.tap(_tab('Logs'));
@@ -349,11 +384,12 @@ void main() {
     expect(find.byTooltip('Create API key'), findsNothing);
     expect(find.byTooltip('Create webhook'), findsNothing);
     expect(_table(tester).columnVisibilityStorageKey, 'integrations_logs');
+    expect(_table(tester).columns.length, 5);
     expect(
       _table(
         tester,
       ).columns.map((AppListTableColumn<IntegrationWorkItem> c) => c.id),
-      containsAll(<String>['integration', 'message', 'integration_type']),
+      <String>['integration', 'message', 'logged_at', 'status', 'next_action'],
     );
 
     await tester.tap(_tab('Interop'));
@@ -361,16 +397,12 @@ void main() {
 
     expect(harness.router.state.uri.queryParameters['section'], 'interop');
     expect(_table(tester).columnVisibilityStorageKey, 'integrations_interop');
+    expect(_table(tester).columns.length, 5);
     expect(
       _table(
         tester,
       ).columns.map((AppListTableColumn<IntegrationWorkItem> c) => c.id),
-      containsAll(<String>[
-        'title',
-        'scope',
-        'next_action',
-        'unavailable_reason',
-      ]),
+      <String>['title', 'scope', 'last_updated', 'status', 'next_action'],
     );
   });
 
@@ -423,17 +455,20 @@ void main() {
     expect(find.byTooltip('Refresh'), findsOneWidget);
   });
 
-  testWidgets('narrow viewport keeps tab strip and list', (
-    WidgetTester tester,
-  ) async {
-    await _pumpIntegrationsWorkspace(
-      tester,
-      repository: repository,
-      physicalSize: const Size(720, 900),
-    );
+  testWidgets(
+    'narrow viewport keeps tab strip and list with next-action control',
+    (WidgetTester tester) async {
+      await _pumpIntegrationsWorkspace(
+        tester,
+        repository: repository,
+        physicalSize: const Size(720, 900),
+      );
 
-    expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(_tab('Integrations'), findsOneWidget);
-    expect(find.text('Lab HL7 Feed'), findsOneWidget);
-  });
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(_tab('Integrations'), findsOneWidget);
+      expect(find.text('Lab HL7 Feed'), findsOneWidget);
+      expect(find.byType(AppWorkspaceStatusBadge), findsWidgets);
+      expect(find.text('Monitor'), findsWidgets);
+    },
+  );
 }

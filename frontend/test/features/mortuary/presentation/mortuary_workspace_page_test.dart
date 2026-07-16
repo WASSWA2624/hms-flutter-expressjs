@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/mortuary/presentation/pages/mortuary_workspa
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -217,6 +218,12 @@ Future<_Harness> _pumpMortuaryWorkspace(
   return _Harness(repository: repository, router: router);
 }
 
+AppListTable<MortuaryWorkspaceItem> _table(WidgetTester tester) {
+  return tester.widget<AppListTable<MortuaryWorkspaceItem>>(
+    find.byType(AppListTable<MortuaryWorkspaceItem>),
+  );
+}
+
 void main() {
   late _MockMortuaryRepository repository;
 
@@ -269,7 +276,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Receive case'), findsOneWidget);
-    expect(find.text('Assign storage'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(AppTabStrip),
+        matching: find.text('Assign storage'),
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets('storage tab shows assign storage primary', (
@@ -280,7 +293,13 @@ void main() {
     await tester.tap(find.text('Storage').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Assign storage'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppTabStrip),
+        matching: find.text('Assign storage'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Receive case'), findsNothing);
   });
 
@@ -291,6 +310,95 @@ void main() {
 
     expect(find.text('Filters'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
+    expect(_table(tester).columnVisibilityLabel, 'Settings');
+    expect(_table(tester).columnVisibilityTitle, 'Table Settings');
+    expect(_table(tester).columnVisibilityStorageKey, 'mortuary_overview');
+    expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+    expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
+    expect(_table(tester).columns.length, 5);
+    expect(
+      _table(tester).columns.any(
+        (AppListTableColumn<MortuaryWorkspaceItem> column) =>
+            column.id == 'next_action' && column.alwaysVisible,
+      ),
+      isTrue,
+    );
+    expect(find.text('Deceased'), findsOneWidget);
+    expect(find.text('Case'), findsOneWidget);
+    expect(find.text('Source'), findsOneWidget);
+    expect(find.text('Status'), findsOneWidget);
+    expect(find.text('Next action'), findsOneWidget);
+    expect(
+      _table(tester).columns.any(
+        (AppListTableColumn<MortuaryWorkspaceItem> column) =>
+            column.id == 'storage',
+      ),
+      isFalse,
+    );
+    expect(
+      _table(tester).columns.any(
+        (AppListTableColumn<MortuaryWorkspaceItem> column) =>
+            column.id == 'date',
+      ),
+      isFalse,
+    );
+  });
+
+  testWidgets('storage tab shows five panel-specific default columns', (
+    WidgetTester tester,
+  ) async {
+    await _pumpMortuaryWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Storage').first);
+    await tester.pumpAndSettle();
+
+    expect(_table(tester).columnVisibilityStorageKey, 'mortuary_storage');
+    expect(_table(tester).columns.length, 5);
+    expect(
+      _table(tester).columns.map(
+        (AppListTableColumn<MortuaryWorkspaceItem> column) => column.id,
+      ),
+      <String>['deceased', 'storage', 'status', 'date', 'next_action'],
+    );
+    expect(
+      _table(tester).columns.any(
+        (AppListTableColumn<MortuaryWorkspaceItem> column) =>
+            column.id == 'source',
+      ),
+      isFalse,
+    );
+  });
+
+  testWidgets('next action button opens detail dialog', (
+    WidgetTester tester,
+  ) async {
+    await _pumpMortuaryWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Assign storage').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Case detail'), findsOneWidget);
+    verify(
+      () => repository.getItem(
+        resource: any(named: 'resource'),
+        id: any(named: 'id'),
+        baseQuery: any(named: 'baseQuery'),
+      ),
+    ).called(1);
+  });
+
+  testWidgets('mobile viewport shows status badge and next action', (
+    WidgetTester tester,
+  ) async {
+    await _pumpMortuaryWorkspace(
+      tester,
+      repository: repository,
+      viewport: const Size(390, 844),
+    );
+
+    expect(find.byType(AppWorkspaceStatusBadge), findsWidgets);
+    expect(find.text('Assign storage'), findsOneWidget);
+    expect(find.text('Amina K.'), findsOneWidget);
   });
 
   testWidgets('filter dialog excludes panel filter group', (

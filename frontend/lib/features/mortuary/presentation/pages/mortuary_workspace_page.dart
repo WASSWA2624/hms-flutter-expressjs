@@ -296,6 +296,7 @@ class _MortuaryWorkspaceContentState
             SizedBox(height: theme.spacing.sm),
             _MortuaryWorklist(
               state: state,
+              panel: _currentPanel,
               controller: controller,
               searchController: _searchController,
               tableColumnController: _tableColumnController,
@@ -542,9 +543,216 @@ int _panelCount(MortuaryWorkspaceState state, String panel) {
   return 0;
 }
 
+enum _MortuaryTableColumnId {
+  deceased,
+  reference,
+  source,
+  storage,
+  status,
+  nextAction,
+  date,
+  billingStatus,
+  facility,
+  identification,
+  event,
+  actor,
+  location,
+  notes,
+  recipient,
+  verification,
+  funeralService,
+  request,
+  scheduled,
+  requestedBy,
+  completed,
+}
+
+const List<_MortuaryTableColumnId> _mortuaryCasePanelDefaultColumns =
+    <_MortuaryTableColumnId>[
+      _MortuaryTableColumnId.deceased,
+      _MortuaryTableColumnId.reference,
+      _MortuaryTableColumnId.source,
+      _MortuaryTableColumnId.status,
+      _MortuaryTableColumnId.nextAction,
+    ];
+
+const List<_MortuaryTableColumnId> _mortuaryCasePanelAllColumns =
+    <_MortuaryTableColumnId>[
+      _MortuaryTableColumnId.deceased,
+      _MortuaryTableColumnId.reference,
+      _MortuaryTableColumnId.source,
+      _MortuaryTableColumnId.storage,
+      _MortuaryTableColumnId.status,
+      _MortuaryTableColumnId.nextAction,
+      _MortuaryTableColumnId.date,
+      _MortuaryTableColumnId.billingStatus,
+      _MortuaryTableColumnId.facility,
+      _MortuaryTableColumnId.identification,
+    ];
+
+List<_MortuaryTableColumnId> _mortuaryDefaultColumnsForPanel(String panel) {
+  return switch (panel) {
+    mortuaryPanelStorage => const <_MortuaryTableColumnId>[
+      _MortuaryTableColumnId.deceased,
+      _MortuaryTableColumnId.storage,
+      _MortuaryTableColumnId.status,
+      _MortuaryTableColumnId.date,
+      _MortuaryTableColumnId.nextAction,
+    ],
+    mortuaryPanelCustody => const <_MortuaryTableColumnId>[
+      _MortuaryTableColumnId.deceased,
+      _MortuaryTableColumnId.event,
+      _MortuaryTableColumnId.actor,
+      _MortuaryTableColumnId.date,
+      _MortuaryTableColumnId.status,
+    ],
+    mortuaryPanelRelease => const <_MortuaryTableColumnId>[
+      _MortuaryTableColumnId.deceased,
+      _MortuaryTableColumnId.recipient,
+      _MortuaryTableColumnId.status,
+      _MortuaryTableColumnId.date,
+      _MortuaryTableColumnId.nextAction,
+    ],
+    mortuaryPanelReporting => const <_MortuaryTableColumnId>[
+      _MortuaryTableColumnId.deceased,
+      _MortuaryTableColumnId.request,
+      _MortuaryTableColumnId.scheduled,
+      _MortuaryTableColumnId.status,
+      _MortuaryTableColumnId.nextAction,
+    ],
+    _ => _mortuaryCasePanelDefaultColumns,
+  };
+}
+
+List<_MortuaryTableColumnId> _mortuaryAllColumnsForPanel(String panel) {
+  return switch (panel) {
+    mortuaryPanelStorage => const <_MortuaryTableColumnId>[
+      _MortuaryTableColumnId.deceased,
+      _MortuaryTableColumnId.storage,
+      _MortuaryTableColumnId.status,
+      _MortuaryTableColumnId.date,
+      _MortuaryTableColumnId.nextAction,
+      _MortuaryTableColumnId.reference,
+      _MortuaryTableColumnId.source,
+      _MortuaryTableColumnId.facility,
+      _MortuaryTableColumnId.billingStatus,
+    ],
+    mortuaryPanelCustody => const <_MortuaryTableColumnId>[
+      _MortuaryTableColumnId.deceased,
+      _MortuaryTableColumnId.event,
+      _MortuaryTableColumnId.actor,
+      _MortuaryTableColumnId.date,
+      _MortuaryTableColumnId.status,
+      _MortuaryTableColumnId.location,
+      _MortuaryTableColumnId.reference,
+      _MortuaryTableColumnId.notes,
+    ],
+    mortuaryPanelRelease => const <_MortuaryTableColumnId>[
+      _MortuaryTableColumnId.deceased,
+      _MortuaryTableColumnId.recipient,
+      _MortuaryTableColumnId.status,
+      _MortuaryTableColumnId.date,
+      _MortuaryTableColumnId.nextAction,
+      _MortuaryTableColumnId.reference,
+      _MortuaryTableColumnId.verification,
+      _MortuaryTableColumnId.funeralService,
+    ],
+    mortuaryPanelReporting => const <_MortuaryTableColumnId>[
+      _MortuaryTableColumnId.deceased,
+      _MortuaryTableColumnId.request,
+      _MortuaryTableColumnId.scheduled,
+      _MortuaryTableColumnId.status,
+      _MortuaryTableColumnId.nextAction,
+      _MortuaryTableColumnId.requestedBy,
+      _MortuaryTableColumnId.reference,
+      _MortuaryTableColumnId.completed,
+    ],
+    _ => _mortuaryCasePanelAllColumns,
+  };
+}
+
+String _mortuaryColumnId(_MortuaryTableColumnId column) {
+  return switch (column) {
+    _MortuaryTableColumnId.nextAction => 'next_action',
+    _MortuaryTableColumnId.billingStatus => 'billing_status',
+    _MortuaryTableColumnId.funeralService => 'funeral_service',
+    _MortuaryTableColumnId.requestedBy => 'requested_by',
+    _ => column.name,
+  };
+}
+
+String _mortuaryColumnLabel(
+  AppLocalizations l10n,
+  _MortuaryTableColumnId column,
+) {
+  return switch (column) {
+    _MortuaryTableColumnId.deceased => l10n.mortuaryDeceasedColumnLabel,
+    _MortuaryTableColumnId.reference => l10n.mortuaryReferenceColumnLabel,
+    _MortuaryTableColumnId.source => l10n.mortuarySourceColumnLabel,
+    _MortuaryTableColumnId.storage => l10n.mortuaryStorageColumnLabel,
+    _MortuaryTableColumnId.status => l10n.mortuaryStatusColumnLabel,
+    _MortuaryTableColumnId.nextAction => l10n.mortuaryNextActionColumnLabel,
+    _MortuaryTableColumnId.date => l10n.mortuaryDateColumnLabel,
+    _MortuaryTableColumnId.billingStatus => l10n.mortuaryBillingColumnLabel,
+    _MortuaryTableColumnId.facility => l10n.mortuaryFacilityFieldLabel,
+    _MortuaryTableColumnId.identification =>
+      l10n.mortuaryIdentificationFieldLabel,
+    _MortuaryTableColumnId.event => l10n.mortuaryEventColumnLabel,
+    _MortuaryTableColumnId.actor => l10n.mortuaryActorColumnLabel,
+    _MortuaryTableColumnId.location => l10n.mortuaryLocationColumnLabel,
+    _MortuaryTableColumnId.notes => l10n.mortuaryReasonColumnLabel,
+    _MortuaryTableColumnId.recipient => l10n.mortuaryRecipientColumnLabel,
+    _MortuaryTableColumnId.verification =>
+      l10n.mortuaryDiagnosticsRefColumnLabel,
+    _MortuaryTableColumnId.funeralService =>
+      l10n.mortuaryFuneralServiceColumnLabel,
+    _MortuaryTableColumnId.request => l10n.mortuaryReasonColumnLabel,
+    _MortuaryTableColumnId.scheduled => l10n.mortuaryDateColumnLabel,
+    _MortuaryTableColumnId.requestedBy => l10n.mortuaryRequestedByColumnLabel,
+    _MortuaryTableColumnId.completed => l10n.mortuaryDateColumnLabel,
+  };
+}
+
+String? _mortuaryPanelStatus(MortuaryWorkspaceItem item, String panel) {
+  return switch (panel) {
+    mortuaryPanelStorage =>
+      item.storageSlotStatus ?? item.storageAssignment?.status ?? item.status,
+    mortuaryPanelRelease => item.releaseStatus ?? item.status,
+    _ => item.caseStatus ?? item.status,
+  };
+}
+
+DateTime? _mortuaryPanelDate(MortuaryWorkspaceItem item, String panel) {
+  return switch (panel) {
+    mortuaryPanelStorage =>
+      item.timelineAt ?? item.storageAssignment?.assignedAt,
+    mortuaryPanelCustody => item.eventAt ?? item.timelineAt,
+    mortuaryPanelRelease =>
+      item.releasedAt ?? item.approvedAt ?? item.timelineAt,
+    mortuaryPanelReporting => item.scheduledAt,
+    _ => item.timelineAt,
+  };
+}
+
+bool _mortuaryPanelShowsNextAction(String panel) {
+  return panel == mortuaryPanelOverview ||
+      panel == mortuaryPanelIntake ||
+      panel == mortuaryPanelStorage ||
+      panel == mortuaryPanelRelease ||
+      panel == mortuaryPanelReporting;
+}
+
+bool _mortuaryNextActionEnabled(
+  AppLocalizations l10n,
+  MortuaryWorkspaceItem item,
+) {
+  return _nextActionLabel(l10n, item) != l10n.mortuaryNextActionReleased;
+}
+
 class _MortuaryWorklist extends StatelessWidget {
   const _MortuaryWorklist({
     required this.state,
+    required this.panel,
     required this.controller,
     required this.searchController,
     required this.tableColumnController,
@@ -552,6 +760,7 @@ class _MortuaryWorklist extends StatelessWidget {
   });
 
   final MortuaryWorkspaceState state;
+  final String panel;
   final MortuaryWorkspaceController controller;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<MortuaryWorkspaceItem>
@@ -561,17 +770,39 @@ class _MortuaryWorklist extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final List<AppListTableColumn<MortuaryWorkspaceItem>> columns = _columns(
-      context,
-    );
+    final List<AppListTableColumn<MortuaryWorkspaceItem>> defaultColumns =
+        <AppListTableColumn<MortuaryWorkspaceItem>>[
+          for (final _MortuaryTableColumnId column
+              in _mortuaryDefaultColumnsForPanel(panel))
+            _mortuaryDataColumn(
+              context,
+              panel: panel,
+              column: column,
+              onItemSelected: onItemSelected,
+            ),
+        ];
+    final List<AppListTableColumn<MortuaryWorkspaceItem>> columnChoices =
+        <AppListTableColumn<MortuaryWorkspaceItem>>[
+          for (final _MortuaryTableColumnId column
+              in _mortuaryAllColumnsForPanel(panel))
+            _mortuaryDataColumn(
+              context,
+              panel: panel,
+              column: column,
+              onItemSelected: onItemSelected,
+            ),
+        ];
 
     return AppListTable<MortuaryWorkspaceItem>(
+      key: ValueKey<String>('mortuary_table_$panel'),
       page: state.items,
-      columns: columns,
-      columnChoices: columns,
+      columns: defaultColumns,
+      columnChoices: columnChoices,
       columnVisibilityController: tableColumnController,
+      columnVisibilityStorageKey: 'mortuary_$panel',
+      columnWidthStorageKey: 'mortuary_cw_$panel',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-      columnVisibilityTitle: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
       columnVisibilityApplyLabel: l10n.mortuaryApplyFiltersAction,
       columnVisibilityResetLabel: l10n.mortuaryResetFiltersAction,
       isLoading: state.isRefreshing,
@@ -593,7 +824,9 @@ class _MortuaryWorklist extends StatelessWidget {
         controller: searchController,
         semanticLabel: l10n.mortuarySearchLabel,
         hintText: l10n.mortuarySearchHint,
-        matcher: _matchesSearch,
+        matcher: (MortuaryWorkspaceItem item, String query) {
+          return _matchesSearch(item, query, context: context, panel: panel);
+        },
         onSubmitted: (String value) {
           unawaited(controller.applySearch(value));
         },
@@ -602,7 +835,7 @@ class _MortuaryWorklist extends StatelessWidget {
         },
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.mortuaryFiltersLabel,
-        advancedFilterTitle: l10n.mortuaryFiltersLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.mortuaryApplyFiltersAction,
         advancedFilterResetLabel: l10n.mortuaryResetFiltersAction,
         searchFieldLabel: l10n.mortuarySearchFieldLabel,
@@ -627,154 +860,247 @@ class _MortuaryWorklist extends StatelessWidget {
         );
       },
       mobileItemBuilder: (BuildContext context, MortuaryWorkspaceItem item) {
-        return _MortuaryMobileListItem(item: item);
+        return _mortuaryMobileItemBuilder(
+          context,
+          panel: panel,
+          item: item,
+          onItemSelected: onItemSelected,
+        );
       },
     );
   }
-
-  List<AppListTableColumn<MortuaryWorkspaceItem>> _columns(
-    BuildContext context,
-  ) {
-    final AppLocalizations l10n = context.l10n;
-    return <AppListTableColumn<MortuaryWorkspaceItem>>[
-      AppListTableColumn<MortuaryWorkspaceItem>(
-        id: 'reference',
-        label: l10n.mortuaryReferenceColumnLabel,
-        sortComparator:
-            (MortuaryWorkspaceItem left, MortuaryWorkspaceItem right) {
-              return appListTableCompareText(
-                left.effectiveDisplayId,
-                right.effectiveDisplayId,
-              );
-            },
-        cellBuilder: (_, MortuaryWorkspaceItem item) {
-          return _ReferenceCell(item: item);
-        },
-      ),
-      AppListTableColumn<MortuaryWorkspaceItem>(
-        id: 'deceased',
-        label: l10n.mortuaryDeceasedColumnLabel,
-        sortComparator:
-            (MortuaryWorkspaceItem left, MortuaryWorkspaceItem right) {
-              return appListTableCompareText(
-                left.effectiveDeceasedLabel,
-                right.effectiveDeceasedLabel,
-              );
-            },
-        cellBuilder: (_, MortuaryWorkspaceItem item) {
-          return _TwoLineCell(
-            title:
-                item.effectiveDeceasedLabel ??
-                l10n.mortuaryUnknownDeceasedLabel,
-            subtitle: item.patientLabel ?? item.deceasedProfileId,
-          );
-        },
-      ),
-      AppListTableColumn<MortuaryWorkspaceItem>(
-        id: 'source',
-        label: l10n.mortuarySourceColumnLabel,
-        cellBuilder: (_, MortuaryWorkspaceItem item) {
-          return _SourceCell(item: item);
-        },
-      ),
-      AppListTableColumn<MortuaryWorkspaceItem>(
-        id: 'storage',
-        label: l10n.mortuaryStorageColumnLabel,
-        cellBuilder: (_, MortuaryWorkspaceItem item) {
-          return _TwoLineCell(
-            title: item.storageLabel ?? l10n.mortuaryUnknownValueLabel,
-            subtitle: _displayCode(
-              item.storageSlotStatus ?? item.storageAssignment?.status,
-            ),
-          );
-        },
-      ),
-      AppListTableColumn<MortuaryWorkspaceItem>(
-        id: 'status',
-        label: l10n.mortuaryStatusColumnLabel,
-        cellBuilder: (_, MortuaryWorkspaceItem item) {
-          return Wrap(
-            spacing: Theme.of(context).spacing.xs,
-            runSpacing: Theme.of(context).spacing.xs,
-            children: <Widget>[
-              AppWorkspaceStatusBadge(
-                status: AppWorkspaceStatus(
-                  label:
-                      _displayCode(item.caseStatus ?? item.status) ??
-                      l10n.mortuaryUnknownValueLabel,
-                  tone: _statusTone(item.caseStatus ?? item.status),
-                ),
-              ),
-              if ((item.caseBillingStatus ?? item.billingStatus) != null)
-                AppWorkspaceStatusBadge(
-                  status: AppWorkspaceStatus(
-                    label:
-                        _displayCode(
-                          item.caseBillingStatus ?? item.billingStatus,
-                        ) ??
-                        l10n.mortuaryUnknownValueLabel,
-                    tone: _billingTone(
-                      item.caseBillingStatus ?? item.billingStatus,
-                    ),
-                  ),
-                ),
-            ],
-          );
-        },
-      ),
-      AppListTableColumn<MortuaryWorkspaceItem>(
-        id: 'date',
-        label: l10n.mortuaryDateColumnLabel,
-        sortComparator:
-            (MortuaryWorkspaceItem left, MortuaryWorkspaceItem right) {
-              return appListTableCompareDateTime(
-                left.timelineAt,
-                right.timelineAt,
-              );
-            },
-        cellBuilder: (_, MortuaryWorkspaceItem item) {
-          return Text(_formatDateTime(context, item.timelineAt));
-        },
-      ),
-      AppListTableColumn<MortuaryWorkspaceItem>(
-        id: 'nextAction',
-        label: l10n.mortuaryNextActionColumnLabel,
-        cellBuilder: (_, MortuaryWorkspaceItem item) {
-          return Text(_nextActionLabel(l10n, item));
-        },
-      ),
-    ];
-  }
 }
 
-class _MortuaryMobileListItem extends StatelessWidget {
-  const _MortuaryMobileListItem({required this.item});
+AppListTableColumn<MortuaryWorkspaceItem> _mortuaryDataColumn(
+  BuildContext context, {
+  required String panel,
+  required _MortuaryTableColumnId column,
+  required ValueChanged<MortuaryWorkspaceItem> onItemSelected,
+}) {
+  final AppLocalizations l10n = context.l10n;
+  return AppListTableColumn<MortuaryWorkspaceItem>(
+    id: _mortuaryColumnId(column),
+    label: _mortuaryColumnLabel(l10n, column),
+    alwaysVisible:
+        column == _MortuaryTableColumnId.status ||
+        column == _MortuaryTableColumnId.nextAction,
+    sortComparator: _mortuarySortComparator(panel, column),
+    cellBuilder: (_, MortuaryWorkspaceItem item) {
+      return switch (column) {
+        _MortuaryTableColumnId.deceased => AppListItemText(
+          title:
+              item.effectiveDeceasedLabel ?? l10n.mortuaryUnknownDeceasedLabel,
+          subtitle: item.patientLabel ?? item.deceasedProfileId,
+        ),
+        _MortuaryTableColumnId.reference => _ReferenceCell(item: item),
+        _MortuaryTableColumnId.source => AppListItemText(
+          title: item.sourceLabel ?? l10n.mortuaryUnknownValueLabel,
+          subtitle: item.receivedFrom,
+        ),
+        _MortuaryTableColumnId.storage => AppListItemText(
+          title: item.storageLabel ?? l10n.mortuaryUnknownValueLabel,
+          subtitle: _displayCode(
+            item.storageSlotStatus ?? item.storageAssignment?.status,
+          ),
+        ),
+        _MortuaryTableColumnId.status => AppWorkspaceStatusBadge(
+          status: AppWorkspaceStatus(
+            label:
+                _displayCode(_mortuaryPanelStatus(item, panel)) ??
+                l10n.mortuaryUnknownValueLabel,
+            tone: _statusTone(_mortuaryPanelStatus(item, panel)),
+          ),
+        ),
+        _MortuaryTableColumnId.nextAction => _MortuaryNextActionButton(
+          label: _nextActionLabel(l10n, item),
+          enabled: _mortuaryNextActionEnabled(l10n, item),
+          onPressed: () => onItemSelected(item),
+        ),
+        _MortuaryTableColumnId.date => Text(
+          _formatDateTime(context, _mortuaryPanelDate(item, panel)),
+        ),
+        _MortuaryTableColumnId.billingStatus => AppWorkspaceStatusBadge(
+          status: AppWorkspaceStatus(
+            label:
+                _displayCode(item.caseBillingStatus ?? item.billingStatus) ??
+                l10n.mortuaryUnknownValueLabel,
+            tone: _billingTone(item.caseBillingStatus ?? item.billingStatus),
+          ),
+        ),
+        _MortuaryTableColumnId.facility => Text(
+          item.facilityLabel ?? l10n.mortuaryUnknownValueLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        _MortuaryTableColumnId.identification => AppWorkspaceStatusBadge(
+          status: AppWorkspaceStatus(
+            label:
+                _displayCode(item.caseIdentificationStatus) ??
+                l10n.mortuaryUnknownValueLabel,
+            tone: _identificationTone(item.caseIdentificationStatus),
+          ),
+        ),
+        _MortuaryTableColumnId.event => Text(
+          _displayCode(item.eventType) ?? l10n.mortuaryUnknownValueLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        _MortuaryTableColumnId.actor => AppListItemText(
+          title: item.actorName ?? l10n.mortuaryUnknownValueLabel,
+          subtitle: item.actorRole,
+        ),
+        _MortuaryTableColumnId.location => Text(
+          item.locationLabel ?? l10n.mortuaryUnknownValueLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        _MortuaryTableColumnId.notes => Text(
+          item.notes ?? item.reason ?? l10n.mortuaryUnknownValueLabel,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        _MortuaryTableColumnId.recipient => AppListItemText(
+          title: item.recipientName ?? l10n.mortuaryUnknownValueLabel,
+          subtitle: item.recipientRelationship,
+        ),
+        _MortuaryTableColumnId.verification => Text(
+          item.verificationReference ?? l10n.mortuaryUnknownValueLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        _MortuaryTableColumnId.funeralService => Text(
+          item.funeralServiceName ?? l10n.mortuaryUnknownValueLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        _MortuaryTableColumnId.request => AppListItemText(
+          title: item.requestReason ?? l10n.mortuaryUnknownValueLabel,
+          subtitle: item.diagnosticsReferenceId,
+        ),
+        _MortuaryTableColumnId.scheduled => Text(
+          _formatDateTime(context, item.scheduledAt),
+        ),
+        _MortuaryTableColumnId.requestedBy => Text(
+          item.requestedByName ?? l10n.mortuaryUnknownValueLabel,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        _MortuaryTableColumnId.completed => Text(
+          _formatDateTime(context, item.completedAt),
+        ),
+      };
+    },
+  );
+}
 
-  final MortuaryWorkspaceItem item;
+int Function(MortuaryWorkspaceItem, MortuaryWorkspaceItem)?
+_mortuarySortComparator(String panel, _MortuaryTableColumnId column) {
+  return switch (column) {
+    _MortuaryTableColumnId.deceased =>
+      (MortuaryWorkspaceItem left, MortuaryWorkspaceItem right) {
+        return appListTableCompareText(
+          left.effectiveDeceasedLabel,
+          right.effectiveDeceasedLabel,
+        );
+      },
+    _MortuaryTableColumnId.reference =>
+      (MortuaryWorkspaceItem left, MortuaryWorkspaceItem right) {
+        return appListTableCompareText(
+          left.effectiveDisplayId,
+          right.effectiveDisplayId,
+        );
+      },
+    _MortuaryTableColumnId.date =>
+      (MortuaryWorkspaceItem left, MortuaryWorkspaceItem right) {
+        return appListTableCompareDateTime(
+          _mortuaryPanelDate(left, panel),
+          _mortuaryPanelDate(right, panel),
+        );
+      },
+    _MortuaryTableColumnId.scheduled =>
+      (MortuaryWorkspaceItem left, MortuaryWorkspaceItem right) {
+        return appListTableCompareDateTime(left.scheduledAt, right.scheduledAt);
+      },
+    _MortuaryTableColumnId.completed =>
+      (MortuaryWorkspaceItem left, MortuaryWorkspaceItem right) {
+        return appListTableCompareDateTime(left.completedAt, right.completedAt);
+      },
+    _ => null,
+  };
+}
+
+class _MortuaryNextActionButton extends StatelessWidget {
+  const _MortuaryNextActionButton({
+    required this.label,
+    required this.onPressed,
+    this.enabled = true,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      title: Text(
-        item.effectiveDeceasedLabel ?? l10n.mortuaryUnknownDeceasedLabel,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
+    return TextButton(
+      onPressed: enabled ? onPressed : null,
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
-      subtitle: Text(
-        <String>[
-          _mortuaryPublicIdentifier(item) ?? l10n.mortuaryUnknownValueLabel,
-          if (item.storageLabel != null) item.storageLabel!,
-          _displayCode(item.caseStatus ?? item.status) ??
-              l10n.mortuaryUnknownValueLabel,
-        ].join(' | '),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      ),
-      trailing: const Icon(Icons.chevron_right),
+      child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
     );
   }
+}
+
+Widget _mortuaryMobileItemBuilder(
+  BuildContext context, {
+  required String panel,
+  required MortuaryWorkspaceItem item,
+  required ValueChanged<MortuaryWorkspaceItem> onItemSelected,
+}) {
+  final AppLocalizations l10n = context.l10n;
+  final String? status = _mortuaryPanelStatus(item, panel);
+  final String subtitle = switch (panel) {
+    mortuaryPanelStorage =>
+      _joinValues(<String?>[item.storageLabel, _displayCode(status)]) ??
+          l10n.mortuaryUnknownValueLabel,
+    mortuaryPanelCustody =>
+      _joinValues(<String?>[_displayCode(item.eventType), item.actorName]) ??
+          l10n.mortuaryUnknownValueLabel,
+    mortuaryPanelRelease =>
+      _joinValues(<String?>[item.recipientName, item.recipientRelationship]) ??
+          l10n.mortuaryUnknownValueLabel,
+    mortuaryPanelReporting =>
+      _joinValues(<String?>[item.requestReason, item.diagnosticsReferenceId]) ??
+          l10n.mortuaryUnknownValueLabel,
+    _ =>
+      _joinValues(<String?>[
+            _mortuaryPublicIdentifier(item),
+            item.sourceLabel,
+          ]) ??
+          l10n.mortuaryUnknownValueLabel,
+  };
+
+  return AppListItemRow(
+    title: item.effectiveDeceasedLabel ?? l10n.mortuaryUnknownDeceasedLabel,
+    subtitle: subtitle,
+    trailing: AppWorkspaceStatusBadge(
+      status: AppWorkspaceStatus(
+        label: _displayCode(status) ?? l10n.mortuaryUnknownValueLabel,
+        tone: _statusTone(status),
+      ),
+    ),
+    details: <Widget>[
+      if (_mortuaryPanelShowsNextAction(panel))
+        _MortuaryNextActionButton(
+          label: _nextActionLabel(l10n, item),
+          enabled: _mortuaryNextActionEnabled(l10n, item),
+          onPressed: () => onItemSelected(item),
+        ),
+    ],
+  );
 }
 
 class _MortuaryDetailPanel extends StatelessWidget {
@@ -1325,39 +1651,6 @@ class _DocumentsSection extends StatelessWidget {
   }
 }
 
-class _SourceCell extends StatelessWidget {
-  const _SourceCell({required this.item});
-
-  final MortuaryWorkspaceItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final String title = item.sourceLabel ?? l10n.mortuaryUnknownValueLabel;
-    final bool copyable = (item.sourceReferenceId ?? '').trim().isNotEmpty;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        if (copyable)
-          AppCopyableIdentifier(value: title)
-        else
-          Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
-        if ((item.receivedFrom ?? '').trim().isNotEmpty)
-          Text(
-            item.receivedFrom!,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-      ],
-    );
-  }
-}
-
 class _ReferenceCell extends StatelessWidget {
   const _ReferenceCell({required this.item});
 
@@ -1381,41 +1674,6 @@ class _ReferenceCell extends StatelessWidget {
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _TwoLineCell extends StatelessWidget {
-  const _TwoLineCell({required this.title, this.subtitle});
-
-  final String title;
-  final String? subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        if (subtitle != null && subtitle!.trim().isNotEmpty)
-          Text(
-            subtitle!,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
       ],
     );
   }
@@ -1586,23 +1844,79 @@ List<AppSearchBarFilterChoice> _lookupChoices(
   ];
 }
 
-bool _matchesSearch(MortuaryWorkspaceItem item, String query) {
+bool _matchesSearch(
+  MortuaryWorkspaceItem item,
+  String query, {
+  required BuildContext context,
+  required String panel,
+}) {
   final String normalized = query.trim().toLowerCase();
   if (normalized.isEmpty) {
     return true;
   }
-  return <String?>[
-    item.effectiveDisplayId,
-    item.effectiveDeceasedLabel,
-    item.patientLabel,
-    item.sourceLabel,
-    item.storageLabel,
-    item.caseStatus,
-    item.caseBillingStatus,
-    item.facilityLabel,
-  ].whereType<String>().any((String value) {
+  return _mortuarySearchHaystack(context, panel, item).any((String value) {
     return value.toLowerCase().contains(normalized);
   });
+}
+
+List<String> _mortuarySearchHaystack(
+  BuildContext context,
+  String panel,
+  MortuaryWorkspaceItem item,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return <String?>[
+        item.effectiveDisplayId,
+        item.id,
+        item.effectiveDeceasedLabel,
+        item.patientLabel,
+        item.deceasedProfileId,
+        item.sourceLabel,
+        item.receivedFrom,
+        item.sourceReferenceId,
+        item.sourceDepartment,
+        item.sourceWorkflow,
+        item.storageLabel,
+        item.storageSlotStatus,
+        item.storageAssignment?.status,
+        item.caseStatus,
+        item.status,
+        item.caseBillingStatus,
+        item.billingStatus,
+        item.caseIdentificationStatus,
+        item.identificationStatus,
+        item.facilityLabel,
+        item.eventType,
+        item.actorName,
+        item.actorRole,
+        item.locationLabel,
+        item.reason,
+        item.notes,
+        item.recipientName,
+        item.recipientRelationship,
+        item.verificationReference,
+        item.funeralServiceName,
+        item.requestReason,
+        item.diagnosticsReferenceId,
+        item.requestedByName,
+        item.releaseStatus,
+        _resourceLabel(l10n, item.resource),
+        _nextActionLabel(l10n, item),
+        _formatDateTime(context, item.timelineAt),
+        _formatDateTime(context, item.eventAt),
+        _formatDateTime(context, item.scheduledAt),
+        _formatDateTime(context, item.completedAt),
+        _formatDateTime(context, item.releasedAt),
+        _formatDateTime(context, item.approvedAt),
+        _formatDateTime(context, item.storageAssignment?.assignedAt),
+        _displayCode(item.caseStatus ?? item.status),
+        _displayCode(item.caseBillingStatus ?? item.billingStatus),
+        _displayCode(item.eventType),
+      ]
+      .whereType<String>()
+      .map((String value) => value.trim())
+      .where((String value) => value.isNotEmpty)
+      .toList(growable: false);
 }
 
 String _panelLabel(AppLocalizations l10n, String id) {

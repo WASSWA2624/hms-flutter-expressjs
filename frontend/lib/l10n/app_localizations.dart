@@ -26013,6 +26013,12 @@ abstract class AppLocalizations {
   /// **'Name'**
   String get reportsNameColumnLabel;
 
+  /// Reports worklist next-action column label.
+  ///
+  /// In en, this message translates to:
+  /// **'Next action'**
+  String get reportsNextActionColumnLabel;
+
   /// Report table status column label.
   ///
   /// In en, this message translates to:
@@ -26888,6 +26894,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Archive'**
   String get communicationsArchiveAction;
+
+  /// Column label for the next action in communications tables.
+  ///
+  /// In en, this message translates to:
+  /// **'Action'**
+  String get communicationsNextActionColumnLabel;
+
+  /// Action label for opening a notification detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'View notification'**
+  String get communicationsViewNotificationAction;
+
+  /// Action label for opening a delivery detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'View delivery'**
+  String get communicationsViewDeliveryAction;
+
+  /// Action label for opening a failed delivery error dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'View error'**
+  String get communicationsViewDeliveryErrorAction;
+
+  /// Column label for notification delivery status.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery status'**
+  String get communicationsDeliveryStatusColumnLabel;
 
   /// Action label for unarchiving a communication.
   ///
@@ -36596,6 +36632,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Facility'**
   String get accessAdminColumnFacility;
+
+  /// Next-action column header for user rows on the access admin workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage user'**
+  String get accessAdminManageUserAction;
+
+  /// Plan column header for module entitlement rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Plan'**
+  String get accessAdminEntitlementPlanColumnLabel;
+
+  /// Denial reason column header for module entitlement rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Denial'**
+  String get accessAdminEntitlementDenialColumnLabel;
+
+  /// Permission code column header on the permissions workspace table.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission code'**
+  String get accessAdminPermissionCodeColumnLabel;
+
+  /// Optional module slug column for entitlement rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Module slug'**
+  String get accessAdminModuleSlugColumnLabel;
+
+  /// Generic next-action column header when a verb-specific label is not used.
+  ///
+  /// In en, this message translates to:
+  /// **'Action'**
+  String get accessAdminNextActionColumnLabel;
 
   /// Roles column header on the manage users table.
   ///

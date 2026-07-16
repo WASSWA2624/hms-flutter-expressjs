@@ -20,6 +20,8 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
+part 'subscriptions_workspace_table_columns.dart';
+
 class SubscriptionsWorkspacePage extends ConsumerStatefulWidget {
   const SubscriptionsWorkspacePage({this.initialQuery, super.key});
 
@@ -774,6 +776,8 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
     final controller = ref.read(
       subscriptionsWorkspaceControllerProvider.notifier,
     );
+    final SubscriptionResource resource = state.query.resource;
+    final String resourceKey = _subscriptionResourceStorageKey(resource);
 
     return AppListTable<SubscriptionItem>(
       page: state.items,
@@ -782,17 +786,27 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
       physics: const NeverScrollableScrollPhysics(),
       columnVisibilityController: columnVisibilityController,
       columnVisibilityLabel: context.l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: context.l10n.commonTableSettingsTitle,
+      columnVisibilityStorageKey: 'subscriptions_ws_$resourceKey',
+      columnWidthStorageKey: 'subscriptions_cw_$resourceKey',
       search: AppListTableSearch<SubscriptionItem>(
         controller: searchController,
         semanticLabel: _SubscriptionsText.searchLabel,
         hintText: _SubscriptionsText.searchHint,
         clearLabel: _SubscriptionsText.clearSearch,
-        matcher: (_, _) => true,
+        matcher: (SubscriptionItem item, String query) {
+          return _matchesSubscriptionTableSearch(
+            context,
+            item,
+            query,
+            resource,
+          );
+        },
         onSubmitted: controller.applySearch,
         onClear: () => controller.applySearch(''),
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: _SubscriptionsText.filters,
-        advancedFilterTitle: _SubscriptionsText.filters,
+        advancedFilterButtonLabel: context.l10n.commonFiltersActionLabel,
+        advancedFilterTitle: context.l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: _SubscriptionsText.applyFilters,
         advancedFilterResetLabel: _SubscriptionsText.clearFilters,
         enableDateFilter: false,
@@ -858,7 +872,7 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
       ),
       initialSortColumnKey:
           state.query.resource == SubscriptionResource.subscriptionPlans
-          ? _PlanColumnIds.monthlyPrice
+          ? _SubscriptionColumnIds.monthlyPrice
           : null,
       rowColorBuilder:
           state.query.resource == SubscriptionResource.subscriptionPlans
@@ -876,233 +890,16 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
               ).rowTint;
             }
           : null,
-      columns: _worklistColumns(state.query.resource),
+      columns: _subscriptionWorklistColumns(context, resource),
+      columnChoices: _subscriptionWorklistColumnChoices(context, resource),
       mobileItemBuilder: (BuildContext context, SubscriptionItem item) {
         return Padding(
           padding: EdgeInsets.symmetric(vertical: Theme.of(context).spacing.sm),
-          child: _SubscriptionMobileTile(item: item),
+          child: _SubscriptionMobileTile(item: item, resource: resource),
         );
       },
     );
   }
-}
-
-List<AppListTableColumn<SubscriptionItem>> _worklistColumns(
-  SubscriptionResource resource,
-) {
-  return switch (resource) {
-    SubscriptionResource.subscriptionPlans =>
-      <AppListTableColumn<SubscriptionItem>>[
-        AppListTableColumn<SubscriptionItem>(
-          id: _PlanColumnIds.planName,
-          label: _SubscriptionsText.plan,
-          sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-            return appListTableCompareText(left.name, right.name);
-          },
-          cellBuilder: (BuildContext context, SubscriptionItem item) {
-            return Text(
-              item.name ?? item.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
-            );
-          },
-        ),
-        AppListTableColumn<SubscriptionItem>(
-          id: _PlanColumnIds.planId,
-          label: _SubscriptionsText.planId,
-          sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-            return appListTableCompareText(
-              left.effectiveDisplayId,
-              right.effectiveDisplayId,
-            );
-          },
-          cellBuilder: (BuildContext context, SubscriptionItem item) {
-            return Text(
-              item.effectiveDisplayId,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            );
-          },
-        ),
-        AppListTableColumn<SubscriptionItem>(
-          id: _PlanColumnIds.monthlyPrice,
-          label: _SubscriptionsText.monthlyPriceUsd,
-          numeric: true,
-          sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-            return appListTableCompareNumber(
-              left.resolvedMonthlyPrice,
-              right.resolvedMonthlyPrice,
-            );
-          },
-          cellBuilder: (BuildContext context, SubscriptionItem item) {
-            return Text(
-              _money(context, item.resolvedMonthlyPrice, item.currency),
-            );
-          },
-        ),
-        AppListTableColumn<SubscriptionItem>(
-          id: _PlanColumnIds.annualPrice,
-          label: _SubscriptionsText.annualPriceUsd,
-          numeric: true,
-          sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-            return appListTableCompareNumber(
-              left.resolvedAnnualPrice,
-              right.resolvedAnnualPrice,
-            );
-          },
-          cellBuilder: (BuildContext context, SubscriptionItem item) {
-            return Text(
-              _money(context, item.resolvedAnnualPrice, item.currency),
-            );
-          },
-        ),
-      ],
-    SubscriptionResource.subscriptions =>
-      <AppListTableColumn<SubscriptionItem>>[
-        AppListTableColumn<SubscriptionItem>(
-          label: _SubscriptionsText.tenant,
-          sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-            return appListTableCompareText(left.tenantLabel, right.tenantLabel);
-          },
-          cellBuilder: (BuildContext context, SubscriptionItem item) {
-            return _CopyableRecordCell(
-              title: item.tenantLabel ?? _SubscriptionsText.notRecorded,
-              identifier: item.effectiveDisplayId,
-              dense: true,
-            );
-          },
-        ),
-        AppListTableColumn<SubscriptionItem>(
-          label: _SubscriptionsText.plan,
-          sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-            return appListTableCompareText(left.planLabel, right.planLabel);
-          },
-          cellBuilder: (BuildContext context, SubscriptionItem item) {
-            return Text(
-              item.planLabel ?? _SubscriptionsText.notRecorded,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
-            );
-          },
-        ),
-        AppListTableColumn<SubscriptionItem>(
-          label: _SubscriptionsText.status,
-          sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-            return appListTableCompareText(
-              left.primaryStatus,
-              right.primaryStatus,
-            );
-          },
-          cellBuilder: (BuildContext context, SubscriptionItem item) {
-            return _StatusBadge(status: item.primaryStatus);
-          },
-        ),
-        AppListTableColumn<SubscriptionItem>(
-          label: _SubscriptionsText.amount,
-          numeric: true,
-          sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-            return appListTableCompareNumber(
-              left.totalAmount ?? left.price,
-              right.totalAmount ?? right.price,
-            );
-          },
-          cellBuilder: (BuildContext context, SubscriptionItem item) {
-            return Text(_amountOrLimit(context, item));
-          },
-        ),
-        AppListTableColumn<SubscriptionItem>(
-          label: _SubscriptionsText.expiryDate,
-          sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-            return appListTableCompareDateTime(
-              _timelineDate(left),
-              _timelineDate(right),
-            );
-          },
-          cellBuilder: (BuildContext context, SubscriptionItem item) {
-            return Text(_date(context, _timelineDate(item)));
-          },
-        ),
-      ],
-    _ => <AppListTableColumn<SubscriptionItem>>[
-      AppListTableColumn<SubscriptionItem>(
-        label: _SubscriptionsText.record,
-        sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-          return appListTableCompareText(
-            _primaryRecordLabel(left),
-            _primaryRecordLabel(right),
-          );
-        },
-        cellBuilder: (BuildContext context, SubscriptionItem item) {
-          return _CopyableRecordCell(
-            title: _primaryRecordLabel(item),
-            identifier: item.effectiveDisplayId,
-            dense: true,
-          );
-        },
-      ),
-      AppListTableColumn<SubscriptionItem>(
-        label: _SubscriptionsText.status,
-        sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-          return appListTableCompareText(
-            left.primaryStatus,
-            right.primaryStatus,
-          );
-        },
-        cellBuilder: (BuildContext context, SubscriptionItem item) {
-          return _StatusBadge(status: item.primaryStatus);
-        },
-      ),
-      AppListTableColumn<SubscriptionItem>(
-        label: _SubscriptionsText.plan,
-        sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-          return appListTableCompareText(
-            _uniquePlanLabel(left),
-            _uniquePlanLabel(right),
-          );
-        },
-        cellBuilder: (BuildContext context, SubscriptionItem item) {
-          return _PlanBadge(
-            label: _uniquePlanLabel(item),
-            code: item.tierCode ?? item.planCode,
-          );
-        },
-      ),
-      AppListTableColumn<SubscriptionItem>(
-        label: _SubscriptionsText.amountLimit,
-        numeric: true,
-        sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-          return appListTableCompareNumber(
-            left.totalAmount ?? left.price,
-            right.totalAmount ?? right.price,
-          );
-        },
-        cellBuilder: (BuildContext context, SubscriptionItem item) {
-          return Text(_amountOrLimit(context, item));
-        },
-      ),
-      AppListTableColumn<SubscriptionItem>(
-        label: _SubscriptionsText.renewalExpiry,
-        sortComparator: (SubscriptionItem left, SubscriptionItem right) {
-          return appListTableCompareDateTime(
-            _timelineDate(left),
-            _timelineDate(right),
-          );
-        },
-        cellBuilder: (BuildContext context, SubscriptionItem item) {
-          return Text(_date(context, _timelineDate(item)));
-        },
-      ),
-    ],
-  };
 }
 
 class _SubscriptionDetailPanel extends ConsumerWidget {
@@ -1893,9 +1690,10 @@ class _TimelinePanel extends StatelessWidget {
 }
 
 class _SubscriptionMobileTile extends StatelessWidget {
-  const _SubscriptionMobileTile({required this.item});
+  const _SubscriptionMobileTile({required this.item, required this.resource});
 
   final SubscriptionItem item;
+  final SubscriptionResource resource;
 
   @override
   Widget build(BuildContext context) {
@@ -1903,40 +1701,241 @@ class _SubscriptionMobileTile extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
-        Icon(_resourceIcon(item.resource), size: 22),
+        Icon(_resourceIcon(resource), size: 22),
         SizedBox(width: theme.spacing.sm),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                _primaryRecordLabel(item),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              SizedBox(height: theme.spacing.xs),
-              Wrap(
-                spacing: theme.spacing.xs,
-                runSpacing: theme.spacing.xs,
-                children: <Widget>[
-                  _StatusBadge(status: item.primaryStatus),
-                  _PlanBadge(
-                    label: _uniquePlanLabel(item),
-                    code: item.tierCode ?? item.planCode,
-                  ),
-                ],
-              ),
-              SizedBox(height: theme.spacing.xs),
-              Text(
-                _date(context, _timelineDate(item)),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+        Expanded(child: _buildContent(context, theme)),
+        Icon(Icons.chevron_right, color: theme.colorScheme.onSurfaceVariant),
+      ],
+    );
+  }
+
+  Widget _buildContent(BuildContext context, ThemeData theme) {
+    return switch (resource) {
+      SubscriptionResource.subscriptionPlans => _buildPlanTile(context, theme),
+      SubscriptionResource.subscriptions => _buildSubscriptionTile(
+        context,
+        theme,
+      ),
+      SubscriptionResource.modules => _buildModuleTile(context, theme),
+      SubscriptionResource.moduleSubscriptions => _buildModuleSubscriptionTile(
+        context,
+        theme,
+      ),
+      SubscriptionResource.subscriptionInvoices => _buildInvoiceTile(
+        context,
+        theme,
+      ),
+      SubscriptionResource.licenses => _buildLicenseTile(context, theme),
+    };
+  }
+
+  Widget _buildPlanTile(BuildContext context, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        AppListItemText(
+          title: item.name ?? item.title,
+          subtitle: item.code,
+          titleStyle: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Wrap(
+          spacing: theme.spacing.xs,
+          runSpacing: theme.spacing.xs,
+          children: <Widget>[
+            _PlanBadge(
+              label: _uniquePlanLabel(item),
+              code: item.tierCode ?? item.code,
+            ),
+          ],
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(
+          '${_money(context, item.resolvedMonthlyPrice, item.currency)} · '
+          '${_money(context, item.resolvedAnnualPrice, item.currency)}',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubscriptionTile(BuildContext context, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          item.tenantLabel ?? _SubscriptionsText.notRecorded,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(
+          item.planLabel ?? _SubscriptionsText.notRecorded,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Wrap(
+          spacing: theme.spacing.xs,
+          runSpacing: theme.spacing.xs,
+          children: <Widget>[_subscriptionStatusCell(item)],
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(
+          '${_money(context, item.totalAmount ?? item.price, item.currency)} · '
+          '${_date(context, _timelineDate(item))}',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModuleTile(BuildContext context, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        AppListItemText(
+          title: item.name ?? item.title,
+          subtitle: item.code,
+          titleStyle: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Wrap(
+          spacing: theme.spacing.xs,
+          runSpacing: theme.spacing.xs,
+          children: <Widget>[
+            _subscriptionStatusCell(item),
+            _PlanBadge(
+              label: _uniquePlanLabel(item),
+              code: item.tierCode ?? item.code,
+            ),
+          ],
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(
+          _amountOrLimit(context, item),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModuleSubscriptionTile(BuildContext context, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          item.moduleLabel ?? item.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(
+          item.tenantLabel ?? _SubscriptionsText.notRecorded,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Wrap(
+          spacing: theme.spacing.xs,
+          runSpacing: theme.spacing.xs,
+          children: <Widget>[_subscriptionStatusCell(item)],
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(
+          _date(context, _timelineDate(item)),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInvoiceTile(BuildContext context, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          item.invoiceDisplayId ?? _SubscriptionsText.notRecorded,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(
+          item.tenantLabel ?? _SubscriptionsText.notRecorded,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Wrap(
+          spacing: theme.spacing.xs,
+          runSpacing: theme.spacing.xs,
+          children: <Widget>[_subscriptionStatusCell(item)],
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(
+          _money(context, item.totalAmount ?? item.price, item.currency),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLicenseTile(BuildContext context, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          item.licenseType ?? _SubscriptionsText.notRecorded,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(
+          item.tenantLabel ?? _SubscriptionsText.notRecorded,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Wrap(
+          spacing: theme.spacing.xs,
+          runSpacing: theme.spacing.xs,
+          children: <Widget>[_subscriptionStatusCell(item)],
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(
+          _date(context, _licenseExpiresAt(item)),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -2030,10 +2029,12 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppStatusBadge(
-      label: _statusLabel(status),
-      tone: _statusTone(status),
-      icon: _statusIcon(status),
+    return AppWorkspaceStatusBadge(
+      status: AppWorkspaceStatus(
+        label: _statusLabel(status),
+        tone: _statusTone(status),
+        icon: _statusIcon(status),
+      ),
     );
   }
 }
@@ -4573,18 +4574,6 @@ String? _querySignature(SubscriptionsWorkspaceQuery? query) {
   ].join('::');
 }
 
-String _primaryRecordLabel(SubscriptionItem item) {
-  return switch (item.resource) {
-    SubscriptionResource.subscriptions => item.tenantLabel ?? item.title,
-    SubscriptionResource.subscriptionPlans => item.name ?? item.title,
-    SubscriptionResource.modules => item.name ?? item.title,
-    SubscriptionResource.moduleSubscriptions => item.moduleLabel ?? item.title,
-    SubscriptionResource.subscriptionInvoices =>
-      item.invoiceDisplayId ?? item.title,
-    SubscriptionResource.licenses => item.licenseType ?? item.title,
-  };
-}
-
 String _uniquePlanLabel(SubscriptionItem item) {
   return switch (item.resource) {
     SubscriptionResource.subscriptionPlans =>
@@ -4798,13 +4787,6 @@ final class _LimitRow {
   final int? limit;
 }
 
-abstract final class _PlanColumnIds {
-  static const String planName = 'plan_name';
-  static const String planId = 'plan_id';
-  static const String monthlyPrice = 'monthly_price';
-  static const String annualPrice = 'annual_price';
-}
-
 abstract final class _FilterKeys {
   static const String resource = 'resource';
   static const String status = 'status';
@@ -4939,7 +4921,6 @@ abstract final class _SubscriptionsText {
   static const String searchHint =
       'Tenant, plan, module, invoice, status, or date';
   static const String clearSearch = 'Clear subscription search';
-  static const String filters = 'Subscription filters';
   static const String applyFilters = 'Apply filters';
   static const String clearFilters = 'Clear filters';
   static const String all = 'All';

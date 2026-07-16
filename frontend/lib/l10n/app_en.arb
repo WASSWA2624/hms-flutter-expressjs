@@ -17971,6 +17971,10 @@
   "@reportsNameColumnLabel": {
     "description": "Report table name column label."
   },
+  "reportsNextActionColumnLabel": "Next action",
+  "@reportsNextActionColumnLabel": {
+    "description": "Reports worklist next-action column label."
+  },
   "reportsStatusColumnLabel": "Status",
   "@reportsStatusColumnLabel": {
     "description": "Report table status column label."
@@ -18576,6 +18580,26 @@
   "communicationsArchiveAction": "Archive",
   "@communicationsArchiveAction": {
     "description": "Action label for archiving a communication."
+  },
+  "communicationsNextActionColumnLabel": "Action",
+  "@communicationsNextActionColumnLabel": {
+    "description": "Column label for the next action in communications tables."
+  },
+  "communicationsViewNotificationAction": "View notification",
+  "@communicationsViewNotificationAction": {
+    "description": "Action label for opening a notification detail dialog."
+  },
+  "communicationsViewDeliveryAction": "View delivery",
+  "@communicationsViewDeliveryAction": {
+    "description": "Action label for opening a delivery detail dialog."
+  },
+  "communicationsViewDeliveryErrorAction": "View error",
+  "@communicationsViewDeliveryErrorAction": {
+    "description": "Action label for opening a failed delivery error dialog."
+  },
+  "communicationsDeliveryStatusColumnLabel": "Delivery status",
+  "@communicationsDeliveryStatusColumnLabel": {
+    "description": "Column label for notification delivery status."
   },
   "communicationsUnarchiveAction": "Unarchive",
   "@communicationsUnarchiveAction": {
@@ -25202,6 +25226,30 @@
   "accessAdminColumnFacility": "Facility",
   "@accessAdminColumnFacility": {
     "description": "Facility column header on the manage users table."
+  },
+  "accessAdminManageUserAction": "Manage user",
+  "@accessAdminManageUserAction": {
+    "description": "Next-action column header for user rows on the access admin workspace."
+  },
+  "accessAdminEntitlementPlanColumnLabel": "Plan",
+  "@accessAdminEntitlementPlanColumnLabel": {
+    "description": "Plan column header for module entitlement rows."
+  },
+  "accessAdminEntitlementDenialColumnLabel": "Denial",
+  "@accessAdminEntitlementDenialColumnLabel": {
+    "description": "Denial reason column header for module entitlement rows."
+  },
+  "accessAdminPermissionCodeColumnLabel": "Permission code",
+  "@accessAdminPermissionCodeColumnLabel": {
+    "description": "Permission code column header on the permissions workspace table."
+  },
+  "accessAdminModuleSlugColumnLabel": "Module slug",
+  "@accessAdminModuleSlugColumnLabel": {
+    "description": "Optional module slug column for entitlement rows."
+  },
+  "accessAdminNextActionColumnLabel": "Action",
+  "@accessAdminNextActionColumnLabel": {
+    "description": "Generic next-action column header when a verb-specific label is not used."
   },
   "accessAdminColumnRoles": "Roles",
   "@accessAdminColumnRoles": {

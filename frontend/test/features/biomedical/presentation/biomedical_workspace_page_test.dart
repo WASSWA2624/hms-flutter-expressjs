@@ -110,10 +110,33 @@ Future<_Harness> _pumpBiomedicalWorkspace(
   BiomedicalRouteQuery? initialQuery,
   String initialLocation = '/biomedical',
   Size viewport = const Size(1440, 900),
+  List<BiomedicalAsset>? assets,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubWorkspace(repository);
+  if (assets != null) {
+    when(() => repository.getWorkspace(any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      final BiomedicalWorkspaceQuery query =
+          invocation.positionalArguments.single as BiomedicalWorkspaceQuery;
+      return Result<BiomedicalWorkbench>.success(
+        BiomedicalWorkbench(
+          summary: const BiomedicalSummary(openWorkOrders: 1),
+          queues: const <BiomedicalQueueSummary>[],
+          panels: const <BiomedicalPanelSummary>[],
+          lookups: BiomedicalLookupData.empty,
+          assets: AppPage<BiomedicalAsset>(
+            items: assets,
+            request: query.pageRequest,
+            totalItemCount: assets.length,
+          ),
+        ),
+      );
+    });
+  } else {
+    _stubWorkspace(repository);
+  }
 
   tester.view.physicalSize = viewport;
   tester.view.devicePixelRatio = 1;
@@ -189,9 +212,11 @@ void main() {
     expect(find.text('Analytics'), findsWidgets);
     expect(find.byTooltip('Register asset'), findsOneWidget);
     expect(find.text('Asset tag'), findsOneWidget);
-    expect(find.text('Risk'), findsOneWidget);
-    // Default max visible columns is 5; registry's 6th/7th stay hidden.
+    expect(find.text('Location'), findsOneWidget);
+    expect(find.text('Next action'), findsOneWidget);
+    expect(find.text('Risk'), findsNothing);
     expect(find.text('Owner'), findsNothing);
+    expect(find.text('Category'), findsNothing);
     expect(find.text('Next due'), findsNothing);
     expect(find.text('Defibrillator'), findsOneWidget);
   });
@@ -280,6 +305,58 @@ void main() {
     expect(find.byTooltip('Register asset'), findsNothing);
     expect(find.byTooltip('Create work order'), findsNothing);
     expect(find.byTooltip('Refresh'), findsWidgets);
+  });
+
+  testWidgets('preventive tab shows next due and next action columns', (
+    WidgetTester tester,
+  ) async {
+    await _pumpBiomedicalWorkspace(tester, repository: repository);
+
+    await tester.tap(find.text('Preventive').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Next due'), findsOneWidget);
+    expect(find.text('Next action'), findsOneWidget);
+  });
+
+  testWidgets('table settings opens column visibility dialog', (
+    WidgetTester tester,
+  ) async {
+    await _pumpBiomedicalWorkspace(tester, repository: repository);
+
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('TABLE SETTINGS'), findsOneWidget);
+  });
+
+  testWidgets('work order next action opens action dialog', (
+    WidgetTester tester,
+  ) async {
+    const BiomedicalAsset workOrderAsset = BiomedicalAsset(
+      id: 'WO-001',
+      humanFriendlyId: 'WO-001',
+      resource: BiomedicalResources.workOrders,
+      title: 'Pump repair',
+      status: 'OPEN',
+      priority: 'HIGH',
+      facilityLabel: 'ICU',
+    );
+
+    await _pumpBiomedicalWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/biomedical?panel=work-orders',
+      initialQuery: BiomedicalRouteQuery.fromUri(
+        Uri.parse('/biomedical?panel=work-orders'),
+      ),
+      assets: const <BiomedicalAsset>[workOrderAsset],
+    );
+
+    await tester.tap(find.text('Work order follow-up').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('START WORK ORDER'), findsOneWidget);
   });
 
   testWidgets('filter dialog excludes panel filter', (

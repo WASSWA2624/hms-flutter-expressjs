@@ -8,11 +8,11 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 import 'package:hosspi_hms/features/reports/presentation/controllers/reports_workspace_controller.dart';
+import 'package:hosspi_hms/features/reports/presentation/widgets/reports_workspace_table_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -117,7 +117,7 @@ class _ReportsWorkspaceContentState
         l10n,
         summaryNotifications: _summaryNotifications(context, state),
         secondary: <Widget>[
-          if (_canWriteReports(policy) && state.selectedItem?.canRun == true)
+          if (canWriteReports(policy) && state.selectedItem?.canRun == true)
             AppButton.secondary(
               label: l10n.reportsRunAction,
               leadingIcon: Icons.play_arrow_outlined,
@@ -144,12 +144,15 @@ class _ReportsWorkspaceContentState
             searchController: _searchController,
             reportTableColumns: _reportTableColumns,
             complianceTableColumns: _complianceTableColumns,
+            policy: policy,
           ),
           if (!state.query.panel.isCompliance) ...<Widget>[
             SizedBox(height: Theme.of(context).spacing.lg),
             _ReportSchedulesPanel(
               state: state,
+              searchController: _searchController,
               columnVisibilityController: _scheduleTableColumns,
+              policy: policy,
             ),
           ],
         ],
@@ -219,6 +222,7 @@ class _ReportsPrimaryPanel extends ConsumerWidget {
     required this.searchController,
     required this.reportTableColumns,
     required this.complianceTableColumns,
+    required this.policy,
   });
 
   final ReportsWorkspaceState state;
@@ -227,6 +231,7 @@ class _ReportsPrimaryPanel extends ConsumerWidget {
   reportTableColumns;
   final AppListTableColumnVisibilityController<ComplianceLogItem>
   complianceTableColumns;
+  final AppAccessPolicy policy;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -236,6 +241,7 @@ class _ReportsPrimaryPanel extends ConsumerWidget {
         state: state,
         searchController: searchController,
         columnVisibilityController: complianceTableColumns,
+        policy: policy,
       );
     }
 
@@ -243,6 +249,7 @@ class _ReportsPrimaryPanel extends ConsumerWidget {
       state: state,
       searchController: searchController,
       columnVisibilityController: reportTableColumns,
+      policy: policy,
     );
   }
 }
@@ -252,12 +259,14 @@ class _ReportItemsPanel extends ConsumerWidget {
     required this.state,
     required this.searchController,
     required this.columnVisibilityController,
+    required this.policy,
   });
 
   final ReportsWorkspaceState state;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<ReportsWorkspaceItem>
   columnVisibilityController;
+  final AppAccessPolicy policy;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -265,6 +274,9 @@ class _ReportItemsPanel extends ConsumerWidget {
     final ReportsWorkspaceController controller = ref.read(
       reportsWorkspaceControllerProvider.notifier,
     );
+    final bool canWrite = canWriteReports(policy);
+    final bool canExport = canExportEvidence(policy);
+    final String storageKey = 'reports_items_${state.query.panel.serverValue}';
 
     return AppWorkspaceDetailPanel(
       title: _panelLabel(l10n, state.query.panel),
@@ -275,11 +287,17 @@ class _ReportItemsPanel extends ConsumerWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         columnVisibilityController: columnVisibilityController,
+        columnVisibilityStorageKey: storageKey,
+        columnWidthStorageKey:
+            'reports_items_cw_${state.query.panel.serverValue}',
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        columnVisibilityTitle: l10n.commonTableSettingsTitle,
         search: _reportSearch(context, state, searchController, controller),
         itemKeyBuilder: (ReportsWorkspaceItem item) =>
             ValueKey<String>(item.id),
-        onRowSelected: controller.selectItem,
+        onRowSelected: (ReportsWorkspaceItem item) {
+          unawaited(openReportDetailDialog(context, ref, state, item, policy));
+        },
         previousPageLabel: l10n.reportsPreviousPageLabel,
         nextPageLabel: l10n.reportsNextPageLabel,
         pageLabelBuilder: (AppPage<ReportsWorkspaceItem> page) {
@@ -291,9 +309,42 @@ class _ReportItemsPanel extends ConsumerWidget {
           body: l10n.reportsNoItemsBody,
           icon: Icons.analytics_outlined,
         ),
-        columns: _reportColumns(context),
+        columns: reportItemColumns(
+          context,
+          ref,
+          l10n,
+          canWrite: canWrite,
+          canExport: canExport,
+          isSaving: state.isSaving,
+          onNextAction:
+              (BuildContext actionContext, WidgetRef actionRef, item) {
+                return _handleReportNextAction(
+                  actionContext,
+                  actionRef,
+                  state,
+                  item,
+                  policy,
+                );
+              },
+        ),
+        columnChoices: reportItemColumnChoices(context, l10n),
         mobileItemBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-          return _ReportMobileTile(item: item);
+          return ReportMobileTile(
+            item: item,
+            state: state,
+            policy: policy,
+            onNextAction:
+                (BuildContext actionContext, WidgetRef actionRef, item) {
+                  return _handleReportNextAction(
+                    actionContext,
+                    actionRef,
+                    state,
+                    item,
+                    policy,
+                  );
+                },
+            openDetailDialog: openReportDetailDialog,
+          );
         },
       ),
     );
@@ -311,12 +362,14 @@ class _ReportItemsPanel extends ConsumerWidget {
       semanticLabel: l10n.reportsSearchLabel,
       hintText: l10n.reportsSearchHint,
       clearLabel: l10n.reportsClearSearchLabel,
-      matcher: (_, _) => true,
+      matcher: (ReportsWorkspaceItem item, String query) {
+        return matchesReportItemSearch(context, item, query);
+      },
       onSubmitted: controller.applySearch,
       onClear: () => controller.applySearch(''),
       showAdvancedFilterButton: true,
-      advancedFilterButtonLabel: l10n.reportsFiltersLabel,
-      advancedFilterTitle: l10n.reportsFiltersLabel,
+      advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+      advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
       advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
       advancedFilterResetLabel: l10n.opdClearFiltersAction,
       dateFilterLabel: l10n.reportsDateFilterLabel,
@@ -375,12 +428,14 @@ class _ComplianceLogPanel extends ConsumerWidget {
     required this.state,
     required this.searchController,
     required this.columnVisibilityController,
+    required this.policy,
   });
 
   final ReportsWorkspaceState state;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<ComplianceLogItem>
   columnVisibilityController;
+  final AppAccessPolicy policy;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -388,6 +443,9 @@ class _ComplianceLogPanel extends ConsumerWidget {
     final ReportsWorkspaceController controller = ref.read(
       reportsWorkspaceControllerProvider.notifier,
     );
+    final bool canExport = canExportEvidence(policy);
+    final String storageKey =
+        'reports_compliance_${state.query.panel.serverValue}';
 
     return AppWorkspaceDetailPanel(
       title: _panelLabel(l10n, state.query.panel),
@@ -398,18 +456,24 @@ class _ComplianceLogPanel extends ConsumerWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         columnVisibilityController: columnVisibilityController,
+        columnVisibilityStorageKey: storageKey,
+        columnWidthStorageKey:
+            'reports_compliance_cw_${state.query.panel.serverValue}',
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        columnVisibilityTitle: l10n.commonTableSettingsTitle,
         search: AppListTableSearch<ComplianceLogItem>(
           controller: searchController,
           semanticLabel: l10n.reportsSearchLabel,
           hintText: l10n.reportsComplianceSearchHint,
           clearLabel: l10n.reportsClearSearchLabel,
-          matcher: (_, _) => true,
+          matcher: (ComplianceLogItem item, String query) {
+            return matchesComplianceLogSearch(context, item, query);
+          },
           onSubmitted: controller.applySearch,
           onClear: () => controller.applySearch(''),
           showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.reportsFiltersLabel,
-          advancedFilterTitle: l10n.reportsFiltersLabel,
+          advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+          advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
           advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
           advancedFilterResetLabel: l10n.opdClearFiltersAction,
           dateFilterLabel: l10n.reportsDateFilterLabel,
@@ -444,7 +508,11 @@ class _ComplianceLogPanel extends ConsumerWidget {
           },
         ),
         itemKeyBuilder: (ComplianceLogItem item) => ValueKey<String>(item.id),
-        onRowSelected: controller.selectComplianceLog,
+        onRowSelected: (ComplianceLogItem item) {
+          unawaited(
+            openComplianceDetailDialog(context, ref, state, item, policy),
+          );
+        },
         previousPageLabel: l10n.reportsPreviousPageLabel,
         nextPageLabel: l10n.reportsNextPageLabel,
         pageLabelBuilder: (AppPage<ComplianceLogItem> page) {
@@ -456,9 +524,40 @@ class _ComplianceLogPanel extends ConsumerWidget {
           body: l10n.reportsNoComplianceLogsBody,
           icon: Icons.manage_search_outlined,
         ),
-        columns: _complianceColumns(context),
+        columns: complianceLogColumns(
+          context,
+          ref,
+          l10n,
+          canExport: canExport,
+          onNextAction:
+              (BuildContext actionContext, WidgetRef actionRef, item) {
+                return _handleComplianceNextAction(
+                  actionContext,
+                  actionRef,
+                  state,
+                  item,
+                  policy,
+                );
+              },
+        ),
+        columnChoices: complianceLogColumnChoices(context, l10n),
         mobileItemBuilder: (BuildContext context, ComplianceLogItem item) {
-          return _ComplianceMobileTile(item: item);
+          return ComplianceMobileTile(
+            item: item,
+            state: state,
+            policy: policy,
+            onNextAction:
+                (BuildContext actionContext, WidgetRef actionRef, item) {
+                  return _handleComplianceNextAction(
+                    actionContext,
+                    actionRef,
+                    state,
+                    item,
+                    policy,
+                  );
+                },
+            openDetailDialog: openComplianceDetailDialog,
+          );
         },
       ),
     );
@@ -468,12 +567,16 @@ class _ComplianceLogPanel extends ConsumerWidget {
 class _ReportSchedulesPanel extends ConsumerWidget {
   const _ReportSchedulesPanel({
     required this.state,
+    required this.searchController,
     required this.columnVisibilityController,
+    required this.policy,
   });
 
   final ReportsWorkspaceState state;
+  final TextEditingController searchController;
   final AppListTableColumnVisibilityController<ReportsWorkspaceItem>
   columnVisibilityController;
+  final AppAccessPolicy policy;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -481,6 +584,8 @@ class _ReportSchedulesPanel extends ConsumerWidget {
     final ReportsWorkspaceController controller = ref.read(
       reportsWorkspaceControllerProvider.notifier,
     );
+    final bool canWrite = canWriteReports(policy);
+    final bool canExport = canExportEvidence(policy);
 
     return AppWorkspaceDetailPanel(
       title: l10n.reportsSchedulesTitle,
@@ -491,10 +596,26 @@ class _ReportSchedulesPanel extends ConsumerWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         columnVisibilityController: columnVisibilityController,
+        columnVisibilityStorageKey: 'reports_schedules',
+        columnWidthStorageKey: 'reports_schedules_cw',
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+        columnVisibilityTitle: l10n.commonTableSettingsTitle,
+        search: AppListTableSearch<ReportsWorkspaceItem>(
+          controller: searchController,
+          semanticLabel: l10n.reportsSearchLabel,
+          hintText: l10n.reportsSearchHint,
+          clearLabel: l10n.reportsClearSearchLabel,
+          matcher: (ReportsWorkspaceItem item, String query) {
+            return matchesReportItemSearch(context, item, query);
+          },
+          onSubmitted: controller.applySearch,
+          onClear: () => controller.applySearch(''),
+        ),
         itemKeyBuilder: (ReportsWorkspaceItem item) =>
             ValueKey<String>(item.id),
-        onRowSelected: controller.selectItem,
+        onRowSelected: (ReportsWorkspaceItem item) {
+          unawaited(openReportDetailDialog(context, ref, state, item, policy));
+        },
         previousPageLabel: l10n.reportsPreviousPageLabel,
         nextPageLabel: l10n.reportsNextPageLabel,
         pageLabelBuilder: (AppPage<ReportsWorkspaceItem> page) {
@@ -507,9 +628,41 @@ class _ReportSchedulesPanel extends ConsumerWidget {
           icon: Icons.schedule_outlined,
           minHeight: 180,
         ),
-        columns: _scheduleColumns(context),
+        columns: scheduleColumns(
+          context,
+          ref,
+          l10n,
+          canWrite: canWrite,
+          canExport: canExport,
+          isSaving: state.isSaving,
+          onNextAction:
+              (BuildContext actionContext, WidgetRef actionRef, item) {
+                return _handleReportNextAction(
+                  actionContext,
+                  actionRef,
+                  state,
+                  item,
+                  policy,
+                );
+              },
+        ),
         mobileItemBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-          return _ReportMobileTile(item: item);
+          return ReportMobileTile(
+            item: item,
+            state: state,
+            policy: policy,
+            onNextAction:
+                (BuildContext actionContext, WidgetRef actionRef, item) {
+                  return _handleReportNextAction(
+                    actionContext,
+                    actionRef,
+                    state,
+                    item,
+                    policy,
+                  );
+                },
+            openDetailDialog: openReportDetailDialog,
+          );
         },
       ),
     );
@@ -534,7 +687,7 @@ class _ReportsDetailPanel extends ConsumerWidget {
       }
       return _ComplianceDetailPanel(
         item: item,
-        canExport: _canExportEvidence(policy),
+        canExport: canExportEvidence(policy),
       );
     }
 
@@ -548,8 +701,8 @@ class _ReportsDetailPanel extends ConsumerWidget {
 
     return _ReportDetailPanel(
       item: item,
-      canWrite: _canWriteReports(policy),
-      canExport: _canExportEvidence(policy),
+      canWrite: canWriteReports(policy),
+      canExport: canExportEvidence(policy),
     );
   }
 }
@@ -559,11 +712,13 @@ class _ReportDetailPanel extends ConsumerWidget {
     required this.item,
     required this.canWrite,
     required this.canExport,
+    this.isDialog = false,
   });
 
   final ReportsWorkspaceItem item;
   final bool canWrite;
   final bool canExport;
+  final bool isDialog;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -571,87 +726,134 @@ class _ReportDetailPanel extends ConsumerWidget {
     final ReportsWorkspaceState? state = _currentState(ref);
     final bool isSaving = state?.isSaving ?? false;
 
+    final List<Widget> actions = <Widget>[
+      if (canWrite && item.canRun)
+        AppReportActionButton.preview(
+          label: l10n.reportsRunAction,
+          enabled: !isSaving,
+          onPressed: () => _openRunDialog(context, ref, state),
+        ),
+      if (canWrite && item.canSchedule)
+        AppReportActionButton.export(
+          label: l10n.reportsScheduleAction,
+          enabled: !isSaving,
+          icon: Icons.schedule_outlined,
+          onPressed: () => _openScheduleDialog(context, ref, item, state),
+        ),
+      if (canWrite && item.canRetry)
+        AppReportActionButton.preview(
+          label: l10n.reportsRetryAction,
+          enabled: !isSaving,
+          icon: Icons.replay_outlined,
+          onPressed: () => _openRetryDialog(context, ref, state),
+        ),
+      if (canWrite && item.canCancel)
+        AppReportActionButton(
+          label: l10n.reportsCancelRunAction,
+          kind: AppReportActionKind.preview,
+          icon: Icons.cancel_outlined,
+          enabled: !isSaving,
+          onPressed: () => _confirmCancelRun(context, ref, isDialog: isDialog),
+        ),
+      if (canExport && item.downloadAvailable)
+        AppReportActionButton.download(
+          label: l10n.reportsDownloadAction,
+          enabled: !isSaving,
+          onPressed: () => _downloadSelectedRun(context, ref),
+        ),
+      if (canExport)
+        AppReportActionButton.print(
+          label: l10n.reportsPrintAction,
+          enabled: !isSaving,
+          onPressed: () => _printReportItem(context, ref, item),
+        ),
+    ];
+
+    final Widget preview = AppReportPreviewPanel(
+      title: item.title,
+      selectable: true,
+      child: _ReportPreviewBody(item: item),
+    );
+
+    if (isDialog) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (actions.isNotEmpty) ...<Widget>[
+            Wrap(
+              spacing: Theme.of(context).spacing.sm,
+              runSpacing: Theme.of(context).spacing.sm,
+              children: actions,
+            ),
+            SizedBox(height: Theme.of(context).spacing.md),
+          ],
+          preview,
+        ],
+      );
+    }
+
     return AppWorkspaceDetailPanel(
       title: l10n.reportsPreviewTitle,
-      actions: <Widget>[
-        if (canWrite && item.canRun)
-          AppReportActionButton.preview(
-            label: l10n.reportsRunAction,
-            enabled: !isSaving,
-            onPressed: () => _openRunDialog(context, ref, state),
-          ),
-        if (canWrite && item.canSchedule)
-          AppReportActionButton.export(
-            label: l10n.reportsScheduleAction,
-            enabled: !isSaving,
-            icon: Icons.schedule_outlined,
-            onPressed: () => _openScheduleDialog(context, ref, item, state),
-          ),
-        if (canWrite && item.canRetry)
-          AppReportActionButton.preview(
-            label: l10n.reportsRetryAction,
-            enabled: !isSaving,
-            icon: Icons.replay_outlined,
-            onPressed: () => _openRetryDialog(context, ref, state),
-          ),
-        if (canWrite && item.canCancel)
-          AppReportActionButton(
-            label: l10n.reportsCancelRunAction,
-            kind: AppReportActionKind.preview,
-            icon: Icons.cancel_outlined,
-            enabled: !isSaving,
-            onPressed: () => _confirmCancelRun(context, ref),
-          ),
-        if (canExport && item.downloadAvailable)
-          AppReportActionButton.download(
-            label: l10n.reportsDownloadAction,
-            enabled: !isSaving,
-            onPressed: () => _downloadSelectedRun(context, ref),
-          ),
-        if (canExport)
-          AppReportActionButton.print(
-            label: l10n.reportsPrintAction,
-            enabled: !isSaving,
-            onPressed: () => _printReportItem(context, ref, item),
-          ),
-      ],
-      child: AppReportPreviewPanel(
-        title: item.title,
-        selectable: true,
-        child: _ReportPreviewBody(item: item),
-      ),
+      actions: actions,
+      child: preview,
     );
   }
 }
 
 class _ComplianceDetailPanel extends ConsumerWidget {
-  const _ComplianceDetailPanel({required this.item, required this.canExport});
+  const _ComplianceDetailPanel({
+    required this.item,
+    required this.canExport,
+    this.isDialog = false,
+  });
 
   final ComplianceLogItem item;
   final bool canExport;
+  final bool isDialog;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final List<Widget> actions = <Widget>[
+      if (canExport)
+        AppReportActionButton.print(
+          label: l10n.reportsPrintAction,
+          onPressed: () => _printComplianceItem(context, ref, item),
+        ),
+      if (canExport)
+        AppReportActionButton.export(
+          label: l10n.reportsExportEvidenceAction,
+          onPressed: () => _confirmExportEvidence(context, ref, item),
+        ),
+    ];
+
+    final Widget preview = AppReportPreviewPanel(
+      title: item.title,
+      selectable: true,
+      child: _CompliancePreviewBody(item: item),
+    );
+
+    if (isDialog) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          if (actions.isNotEmpty) ...<Widget>[
+            Wrap(
+              spacing: Theme.of(context).spacing.sm,
+              runSpacing: Theme.of(context).spacing.sm,
+              children: actions,
+            ),
+            SizedBox(height: Theme.of(context).spacing.md),
+          ],
+          preview,
+        ],
+      );
+    }
+
     return AppWorkspaceDetailPanel(
       title: l10n.reportsComplianceDetailTitle,
-      actions: <Widget>[
-        if (canExport)
-          AppReportActionButton.print(
-            label: l10n.reportsPrintAction,
-            onPressed: () => _printComplianceItem(context, ref, item),
-          ),
-        if (canExport)
-          AppReportActionButton.export(
-            label: l10n.reportsExportEvidenceAction,
-            onPressed: () => _confirmExportEvidence(context, ref, item),
-          ),
-      ],
-      child: AppReportPreviewPanel(
-        title: item.title,
-        selectable: true,
-        child: _CompliancePreviewBody(item: item),
-      ),
+      actions: actions,
+      child: preview,
     );
   }
 }
@@ -822,106 +1024,6 @@ final class _PreviewRow {
 
   final String label;
   final String? value;
-}
-
-class _ReportMobileTile extends StatelessWidget {
-  const _ReportMobileTile({required this.item});
-
-  final ReportsWorkspaceItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    return _MobileTile(
-      title: item.title,
-      subtitle: _joinDisplay(<String?>[
-        item.subtitle,
-        item.reference,
-        _dateTime(context, item.occurredAt),
-      ]),
-      status: _status(context, item.status),
-      icon: _itemIcon(item.kind),
-    );
-  }
-}
-
-class _ComplianceMobileTile extends StatelessWidget {
-  const _ComplianceMobileTile({required this.item});
-
-  final ComplianceLogItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    return _MobileTile(
-      title: item.title,
-      subtitle: _joinDisplay(<String?>[
-        item.subtitle,
-        item.recordReference,
-        _dateTime(context, item.occurredAt),
-      ]),
-      status: _status(context, item.action ?? item.scope ?? item.purpose),
-      icon: Icons.manage_search_outlined,
-    );
-  }
-}
-
-class _MobileTile extends StatelessWidget {
-  const _MobileTile({
-    required this.title,
-    required this.icon,
-    this.subtitle,
-    this.status,
-  });
-
-  final String title;
-  final String? subtitle;
-  final AppWorkspaceStatus? status;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.sm,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Icon(icon, size: theme.appTokens.listIconSize),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall,
-                ),
-                if (subtitle != null && subtitle!.isNotEmpty) ...<Widget>[
-                  SizedBox(height: theme.spacing.xs),
-                  Text(
-                    subtitle!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-                if (status != null) ...<Widget>[
-                  SizedBox(height: theme.spacing.xs),
-                  AppWorkspaceStatusBadge(status: status!),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _ReportsTimelinePanel extends StatelessWidget {
@@ -1226,196 +1328,124 @@ class _ScheduleReportDialogState extends ConsumerState<_ScheduleReportDialog> {
   }
 }
 
-List<AppListTableColumn<ReportsWorkspaceItem>> _reportColumns(
+Future<void> openReportDetailDialog(
   BuildContext context,
-) {
-  final AppLocalizations l10n = context.l10n;
-  return <AppListTableColumn<ReportsWorkspaceItem>>[
-    AppListTableColumn<ReportsWorkspaceItem>(
-      label: l10n.reportsNameColumnLabel,
-      sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
-        return appListTableCompareText(left.title, right.title);
-      },
-      cellBuilder: (_, ReportsWorkspaceItem item) => _TwoLineCell(
-        title: item.title,
-        subtitle: item.subtitle,
-        icon: _itemIcon(item.kind),
-      ),
-    ),
-    AppListTableColumn<ReportsWorkspaceItem>(
-      label: l10n.reportsStatusColumnLabel,
-      sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
-        return appListTableCompareText(left.status, right.status);
-      },
-      cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-        return AppWorkspaceStatusBadge(status: _status(context, item.status));
-      },
-    ),
-    AppListTableColumn<ReportsWorkspaceItem>(
-      label: l10n.reportsReferenceLabel,
-      sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
-        return appListTableCompareText(left.reference, right.reference);
-      },
-      cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-        return Text(_valueOrUnknown(context, item.reference));
-      },
-    ),
-    AppListTableColumn<ReportsWorkspaceItem>(
-      label: l10n.reportsOwnerLabel,
-      sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
-        return appListTableCompareText(left.ownerLabel, right.ownerLabel);
-      },
-      cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-        return Text(_valueOrUnknown(context, item.ownerLabel));
-      },
-    ),
-    AppListTableColumn<ReportsWorkspaceItem>(
-      label: l10n.reportsUpdatedColumnLabel,
-      sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
-        return appListTableCompareDateTime(left.occurredAt, right.occurredAt);
-      },
-      cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-        return Text(_dateTime(context, item.occurredAt));
-      },
-    ),
-  ];
-}
-
-List<AppListTableColumn<ReportsWorkspaceItem>> _scheduleColumns(
-  BuildContext context,
-) {
-  final AppLocalizations l10n = context.l10n;
-  return <AppListTableColumn<ReportsWorkspaceItem>>[
-    AppListTableColumn<ReportsWorkspaceItem>(
-      label: l10n.reportsNameColumnLabel,
-      sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
-        return appListTableCompareText(left.title, right.title);
-      },
-      cellBuilder: (_, ReportsWorkspaceItem item) => _TwoLineCell(
-        title: item.title,
-        subtitle: item.subtitle,
-        icon: Icons.schedule_outlined,
-      ),
-    ),
-    AppListTableColumn<ReportsWorkspaceItem>(
-      label: l10n.reportsStatusColumnLabel,
-      sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
-        return appListTableCompareText(left.status, right.status);
-      },
-      cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-        return AppWorkspaceStatusBadge(status: _status(context, item.status));
-      },
-    ),
-    AppListTableColumn<ReportsWorkspaceItem>(
-      label: l10n.reportsFormatColumnLabel,
-      cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-        return Text(_valueOrUnknown(context, item.format));
-      },
-    ),
-    AppListTableColumn<ReportsWorkspaceItem>(
-      label: l10n.reportsUpdatedColumnLabel,
-      sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
-        return appListTableCompareDateTime(left.occurredAt, right.occurredAt);
-      },
-      cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-        return Text(_dateTime(context, item.occurredAt));
-      },
-    ),
-  ];
-}
-
-List<AppListTableColumn<ComplianceLogItem>> _complianceColumns(
-  BuildContext context,
-) {
-  final AppLocalizations l10n = context.l10n;
-  return <AppListTableColumn<ComplianceLogItem>>[
-    AppListTableColumn<ComplianceLogItem>(
-      label: l10n.reportsEventColumnLabel,
-      sortComparator: (ComplianceLogItem left, ComplianceLogItem right) {
-        return appListTableCompareText(left.title, right.title);
-      },
-      cellBuilder: (_, ComplianceLogItem item) => _TwoLineCell(
-        title: item.title,
-        subtitle: item.subtitle,
-        icon: Icons.manage_search_outlined,
-      ),
-    ),
-    AppListTableColumn<ComplianceLogItem>(
-      label: l10n.reportsUserColumnLabel,
-      sortComparator: (ComplianceLogItem left, ComplianceLogItem right) {
-        return appListTableCompareText(left.userLabel, right.userLabel);
-      },
-      cellBuilder: (BuildContext context, ComplianceLogItem item) {
-        return Text(_valueOrUnknown(context, item.userLabel));
-      },
-    ),
-    AppListTableColumn<ComplianceLogItem>(
-      label: l10n.reportsRecordColumnLabel,
-      sortComparator: (ComplianceLogItem left, ComplianceLogItem right) {
-        return appListTableCompareText(
-          left.recordReference,
-          right.recordReference,
-        );
-      },
-      cellBuilder: (BuildContext context, ComplianceLogItem item) {
-        return Text(_valueOrUnknown(context, item.recordReference));
-      },
-    ),
-    AppListTableColumn<ComplianceLogItem>(
-      label: l10n.reportsTimestampColumnLabel,
-      sortComparator: (ComplianceLogItem left, ComplianceLogItem right) {
-        return appListTableCompareDateTime(left.occurredAt, right.occurredAt);
-      },
-      cellBuilder: (BuildContext context, ComplianceLogItem item) {
-        return Text(_dateTime(context, item.occurredAt));
-      },
-    ),
-  ];
-}
-
-class _TwoLineCell extends StatelessWidget {
-  const _TwoLineCell({required this.title, this.subtitle, this.icon});
-
-  final String title;
-  final String? subtitle;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        if (icon != null) ...<Widget>[
-          Icon(icon, size: theme.appTokens.listIconSize),
-          SizedBox(width: theme.spacing.xs),
-        ],
-        Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleSmall,
-              ),
-              if (subtitle != null && subtitle!.isNotEmpty)
-                Text(
-                  subtitle!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
+  WidgetRef ref,
+  ReportsWorkspaceState state,
+  ReportsWorkspaceItem item,
+  AppAccessPolicy policy,
+) async {
+  ref.read(reportsWorkspaceControllerProvider.notifier).selectItem(item);
+  if (!context.mounted) {
+    return;
   }
+
+  final AppLocalizations l10n = context.l10n;
+  await showAppDialog<void>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: Text(l10n.reportsPreviewTitle),
+      icon: const Icon(Icons.preview_outlined),
+      scrollable: true,
+      maxWidth: 960,
+      content: _ReportDetailPanel(
+        item: item,
+        canWrite: canWriteReports(policy),
+        canExport: canExportEvidence(policy),
+        isDialog: true,
+      ),
+    ),
+  );
+}
+
+Future<void> openComplianceDetailDialog(
+  BuildContext context,
+  WidgetRef ref,
+  ReportsWorkspaceState state,
+  ComplianceLogItem item,
+  AppAccessPolicy policy,
+) async {
+  ref
+      .read(reportsWorkspaceControllerProvider.notifier)
+      .selectComplianceLog(item);
+  if (!context.mounted) {
+    return;
+  }
+
+  final AppLocalizations l10n = context.l10n;
+  await showAppDialog<void>(
+    context: context,
+    builder: (_) => AppDialog(
+      title: Text(l10n.reportsComplianceDetailTitle),
+      icon: const Icon(Icons.manage_search_outlined),
+      scrollable: true,
+      maxWidth: 960,
+      content: _ComplianceDetailPanel(
+        item: item,
+        canExport: canExportEvidence(policy),
+        isDialog: true,
+      ),
+    ),
+  );
+}
+
+Future<void> _handleReportNextAction(
+  BuildContext context,
+  WidgetRef ref,
+  ReportsWorkspaceState state,
+  ReportsWorkspaceItem item,
+  AppAccessPolicy policy,
+) async {
+  final ReportsWorkspaceController controller = ref.read(
+    reportsWorkspaceControllerProvider.notifier,
+  );
+  controller.selectItem(item);
+  final ReportsWorkspaceState current = _currentState(ref) ?? state;
+  final bool canWrite = canWriteReports(policy);
+  final bool canExport = canExportEvidence(policy);
+
+  if (item.kind == ReportItemKind.definition && canWrite && item.canRun) {
+    await _openRunDialog(context, ref, current);
+    return;
+  }
+  if (item.kind == ReportItemKind.definition && canWrite && item.canSchedule) {
+    await _openScheduleDialog(context, ref, item, current);
+    return;
+  }
+  if (item.kind == ReportItemKind.run && canWrite && item.canRetry) {
+    await _openRetryDialog(context, ref, current);
+    return;
+  }
+  if (item.kind == ReportItemKind.run && canWrite && item.canCancel) {
+    await _confirmCancelRun(context, ref);
+    return;
+  }
+  if (item.kind == ReportItemKind.run && canExport && item.downloadAvailable) {
+    await _downloadSelectedRun(context, ref);
+    return;
+  }
+  if (item.isSchedule && canWrite) {
+    await _openScheduleDialog(context, ref, item, current);
+    return;
+  }
+  await openReportDetailDialog(context, ref, current, item, policy);
+}
+
+Future<void> _handleComplianceNextAction(
+  BuildContext context,
+  WidgetRef ref,
+  ReportsWorkspaceState state,
+  ComplianceLogItem item,
+  AppAccessPolicy policy,
+) async {
+  ref
+      .read(reportsWorkspaceControllerProvider.notifier)
+      .selectComplianceLog(item);
+  if (!canExportEvidence(policy)) {
+    await openComplianceDetailDialog(context, ref, state, item, policy);
+    return;
+  }
+  await _confirmExportEvidence(context, ref, item);
 }
 
 Future<void> _openRunDialog(
@@ -1464,7 +1494,11 @@ Future<void> _openScheduleDialog(
   );
 }
 
-Future<void> _confirmCancelRun(BuildContext context, WidgetRef ref) async {
+Future<void> _confirmCancelRun(
+  BuildContext context,
+  WidgetRef ref, {
+  bool isDialog = false,
+}) async {
   final AppLocalizations l10n = context.l10n;
   final bool? confirmed = await showAppDialog<bool>(
     context: context,
@@ -1493,6 +1527,9 @@ Future<void> _confirmCancelRun(BuildContext context, WidgetRef ref) async {
       .cancelSelectedRun();
   if (context.mounted) {
     _showFailureIfNeeded(context, failure);
+    if (failure == null && isDialog && Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
   }
 }
 
@@ -1709,24 +1746,6 @@ ReportsWorkspaceState? _currentState(WidgetRef ref) {
   };
 }
 
-bool _canWriteReports(AppAccessPolicy policy) {
-  return policy.grantsAny(const <AppPermission>[
-    AppPermissions.reportsWrite,
-    AppPermissions.tenantAdmin,
-    AppPermissions.facilityAdmin,
-    AppPermissions.systemAdmin,
-  ]);
-}
-
-bool _canExportEvidence(AppAccessPolicy policy) {
-  return policy.grantsAny(const <AppPermission>[
-    AppPermissions.evidenceExport,
-    AppPermissions.tenantAdmin,
-    AppPermissions.facilityAdmin,
-    AppPermissions.systemAdmin,
-  ]);
-}
-
 String _panelLabel(AppLocalizations l10n, ReportsWorkspacePanel panel) {
   return switch (panel) {
     ReportsWorkspacePanel.overview => l10n.reportsPanelOverview,
@@ -1877,17 +1896,6 @@ IconData _panelIcon(ReportsWorkspacePanel panel) {
   };
 }
 
-IconData _itemIcon(ReportItemKind kind) {
-  return switch (kind) {
-    ReportItemKind.definition => Icons.article_outlined,
-    ReportItemKind.run => Icons.outbox_outlined,
-    ReportItemKind.schedule => Icons.schedule_outlined,
-    ReportItemKind.dashboardWidget => Icons.dashboard_customize_outlined,
-    ReportItemKind.kpiSnapshot => Icons.bar_chart_outlined,
-    ReportItemKind.analyticsEvent => Icons.insights_outlined,
-  };
-}
-
 IconData _resourceIcon(ReportsWorkspaceResource? resource) {
   return switch (resource) {
     ReportsWorkspaceResource.reportDefinitions => Icons.article_outlined,
@@ -1913,14 +1921,6 @@ IconData _statusIcon(String? value) {
     'PAUSED' => Icons.pending_actions_outlined,
     _ => Icons.radio_button_unchecked,
   };
-}
-
-AppWorkspaceStatus _status(BuildContext context, String? value) {
-  return AppWorkspaceStatus(
-    label: _valueOrUnknown(context, _apiLabel(value)),
-    tone: _statusTone(value),
-    icon: _statusIcon(value),
-  );
 }
 
 AppWorkspaceStatusTone _statusTone(String? value) {

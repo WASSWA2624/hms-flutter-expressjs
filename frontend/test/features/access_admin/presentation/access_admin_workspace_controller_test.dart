@@ -60,5 +60,41 @@ void main() {
         ),
       ).called(greaterThanOrEqualTo(1));
     });
+
+    test('applyRoleScopeFilter updates query roleScope', () async {
+      final _MockAccessAdminRepository repository =
+          _MockAccessAdminRepository();
+      when(() => repository.getWorkspace(any())).thenAnswer(
+        (_) async => const Result<AccessAdminWorkspaceData>.success(
+          AccessAdminWorkspaceData(),
+        ),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          accessAdminRepositoryProvider.overrideWithValue(repository),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(accessAdminWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(accessAdminWorkspaceControllerProvider.notifier)
+          .applyRoleScopeFilter('facility');
+
+      expect(failure, isNull);
+      verify(
+        () => repository.getWorkspace(
+          any(
+            that: predicate<AccessAdminWorkspaceQuery>(
+              (AccessAdminWorkspaceQuery query) =>
+                  query.resource == AccessAdminResource.users &&
+                  query.roleScope == 'facility',
+            ),
+          ),
+        ),
+      ).called(greaterThanOrEqualTo(1));
+    });
   });
 }

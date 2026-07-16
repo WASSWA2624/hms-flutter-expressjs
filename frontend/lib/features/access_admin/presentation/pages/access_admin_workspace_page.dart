@@ -15,6 +15,7 @@ import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_en
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_workspace_table.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -123,11 +124,15 @@ class _AccessAdminWorkspaceContent extends ConsumerStatefulWidget {
 class _AccessAdminWorkspaceContentState
     extends ConsumerState<_AccessAdminWorkspaceContent> {
   late final TextEditingController _searchController;
+  late final AppListTableColumnVisibilityController<AccessAdminItem>
+  _tableColumnController;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: widget.state.query.search);
+    _tableColumnController =
+        AppListTableColumnVisibilityController<AccessAdminItem>();
   }
 
   @override
@@ -142,6 +147,7 @@ class _AccessAdminWorkspaceContentState
   @override
   void dispose() {
     _searchController.dispose();
+    _tableColumnController.dispose();
     super.dispose();
   }
 
@@ -202,9 +208,18 @@ class _AccessAdminWorkspaceContentState
                 state: state,
                 controller: controller,
                 searchController: _searchController,
+                columnVisibilityController: _tableColumnController,
                 canWrite: canWrite,
                 onItemSelected: (AccessAdminItem item) {
                   unawaited(_openDetailDialog(context, item, canWrite));
+                },
+                onRoleEdit: (AccessAdminItem role) {
+                  unawaited(
+                    openAccessAdminEditRoleDialog(context, ref, state, role),
+                  );
+                },
+                onShowFailure: (AppFailure failure) {
+                  _showSnack(context, context.l10n.failureMessage(failure));
                 },
               ),
           ],
@@ -611,144 +626,137 @@ class _WorklistPanel extends StatelessWidget {
     required this.state,
     required this.controller,
     required this.searchController,
+    required this.columnVisibilityController,
     required this.canWrite,
     required this.onItemSelected,
+    required this.onRoleEdit,
+    required this.onShowFailure,
   });
 
   final AccessAdminWorkspaceState state;
   final AccessAdminWorkspaceController controller;
   final TextEditingController searchController;
+  final AppListTableColumnVisibilityController<AccessAdminItem>
+  columnVisibilityController;
   final bool canWrite;
   final ValueChanged<AccessAdminItem> onItemSelected;
+  final ValueChanged<AccessAdminItem> onRoleEdit;
+  final ValueChanged<AppFailure> onShowFailure;
+
+  Future<void> _toggleUserStatus(AccessAdminItem item) async {
+    final String nextStatus = item.status == 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    final AppFailure? failure = await controller.setUserStatus(
+      item,
+      nextStatus,
+    );
+    if (failure != null) {
+      onShowFailure(failure);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     final AppPage<AccessAdminItem> page = state.data.page;
+    final AccessAdminResource resource = state.query.resource;
+
     if (page.items.isEmpty && !state.isRefreshing) {
       return AppStateView(
-        title: context.l10n.accessAdminEmptyTitle,
-        body: context.l10n.accessAdminEmptyBody,
+        title: l10n.accessAdminEmptyTitle,
+        body: l10n.accessAdminEmptyBody,
         variant: AppStateViewVariant.empty,
       );
     }
+
+    final List<AppListTableColumn<AccessAdminItem>> columns =
+        accessAdminDefaultColumns(
+          context,
+          resource: resource,
+          canWrite: canWrite,
+          onUserStatusToggle: _toggleUserStatus,
+          onRoleEdit: onRoleEdit,
+          onRegistrationActivate: controller.activateRegistration,
+        );
+    final List<AppListTableColumn<AccessAdminItem>> columnChoices =
+        accessAdminColumnChoices(
+          context,
+          resource: resource,
+          canWrite: canWrite,
+          onUserStatusToggle: _toggleUserStatus,
+          onRoleEdit: onRoleEdit,
+          onRegistrationActivate: controller.activateRegistration,
+        );
 
     return AppListTable<AccessAdminItem>(
       page: page,
       isLoading: state.isRefreshing,
       onRowSelected: onItemSelected,
       onPageChanged: controller.changePage,
+      columnVisibilityController: columnVisibilityController,
+      columnVisibilityStorageKey: accessAdminColumnVisibilityStorageKey(
+        resource,
+      ),
+      columnWidthStorageKey: accessAdminColumnWidthStorageKey(resource),
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columns: columns,
+      columnChoices: columnChoices,
       search: AppListTableSearch<AccessAdminItem>(
         controller: searchController,
-        semanticLabel: context.l10n.accessAdminSearchLabel,
-        hintText: context.l10n.accessAdminSearchHint,
+        semanticLabel: l10n.accessAdminSearchLabel,
+        hintText: l10n.accessAdminSearchHint,
         isLoading: state.isRefreshing,
         onSubmitted: controller.applySearch,
         onClear: () => unawaited(controller.applySearch('')),
         enableDateFilter: false,
-        matcher: (AccessAdminItem item, String query) {
-          final String normalizedQuery = query.trim().toLowerCase();
-          if (normalizedQuery.isEmpty) return true;
-          return item.title.toLowerCase().contains(normalizedQuery) ||
-              item.effectiveDisplayId.toLowerCase().contains(normalizedQuery) ||
-              (item.subtitle ?? '').toLowerCase().contains(normalizedQuery) ||
-              (item.email ?? '').toLowerCase().contains(normalizedQuery) ||
-              (item.name ?? '').toLowerCase().contains(normalizedQuery);
-        },
-        filterGroups: <AppSearchBarFilterGroup>[
-          if (state.query.resource == AccessAdminResource.users)
-            AppSearchBarFilterGroup(
-              key: 'status',
-              label: context.l10n.accessAdminStatusLabel,
-              allLabel: context.l10n.accessAdminAllStatusesLabel,
-              choices: state.data.lookups.userStatuses
-                  .map(
-                    (String value) =>
-                        AppSearchBarFilterChoice(value: value, label: value),
-                  )
-                  .toList(growable: false),
-            ),
-        ],
-        filterValue: AppSearchBarFilterValue(
-          options: <String, String>{
-            if (state.query.status != null) 'status': state.query.status!,
-          },
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.accessAdminFiltersAction,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        matcher: (AccessAdminItem item, String query) =>
+            accessAdminSearchMatcher(context, resource, item, query),
+        filterGroups: accessAdminFilterGroups(
+          l10n,
+          resource,
+          state.data.lookups,
         ),
-        hasActiveFilters: state.query.status != null,
+        filterValue: accessAdminFilterValue(state.query, resource),
+        hasActiveFilters: accessAdminHasActiveFilters(state.query, resource),
         onFilterChanged: (AppSearchBarFilterValue value) {
-          final String? status = value.options['status'];
-          unawaited(
-            controller.applyStatusFilter(
-              status?.isNotEmpty == true ? status : null,
-            ),
-          );
+          if (resource == AccessAdminResource.users ||
+              resource == AccessAdminResource.demoUsers) {
+            final String? status = value.options[accessAdminStatusFilterKey];
+            unawaited(
+              controller.applyStatusFilter(
+                status?.isNotEmpty == true ? status : null,
+              ),
+            );
+            return;
+          }
+          if (resource == AccessAdminResource.roles) {
+            final String? roleScope =
+                value.options[accessAdminRoleScopeFilterKey];
+            unawaited(
+              controller.applyRoleScopeFilter(
+                roleScope?.isNotEmpty == true ? roleScope : null,
+              ),
+            );
+          }
         },
       ),
       mobileItemBuilder: (BuildContext context, AccessAdminItem item) {
-        final bool isRole = state.query.resource == AccessAdminResource.roles;
-        return ListTile(
-          title: Text(item.title),
-          subtitle: Text(item.subtitle ?? item.effectiveDisplayId),
-          trailing: isRole
-              ? Chip(
-                  label: Text(
-                    item.isFacilityScopedRole
-                        ? context.l10n.accessAdminRoleScopeFacilityBadge
-                        : context.l10n.accessAdminRoleScopeTenantBadge,
-                    style: Theme.of(context).textTheme.labelSmall,
-                  ),
-                  visualDensity: VisualDensity.compact,
-                )
-              : Text(item.status ?? ''),
+        return accessAdminMobileListItem(
+          context,
+          resource: resource,
+          item: item,
+          canWrite: canWrite,
           onTap: () => onItemSelected(item),
+          onUserStatusToggle: _toggleUserStatus,
+          onRoleEdit: onRoleEdit,
+          onRegistrationActivate: controller.activateRegistration,
         );
       },
-      columns: <AppListTableColumn<AccessAdminItem>>[
-        AppListTableColumn<AccessAdminItem>(
-          label: context.l10n.accessAdminColumnId,
-          cellBuilder: (BuildContext context, AccessAdminItem item) =>
-              Text(item.effectiveDisplayId),
-        ),
-        AppListTableColumn<AccessAdminItem>(
-          label: context.l10n.accessAdminColumnName,
-          cellBuilder: (BuildContext context, AccessAdminItem item) =>
-              Text(item.title),
-        ),
-        if (state.query.resource == AccessAdminResource.roles)
-          AppListTableColumn<AccessAdminItem>(
-            label: context.l10n.accessAdminColumnScope,
-            cellBuilder: (BuildContext context, AccessAdminItem item) {
-              final bool isFacility = item.isFacilityScopedRole;
-              return Chip(
-                avatar: Icon(
-                  isFacility
-                      ? Icons.local_hospital_outlined
-                      : Icons.domain_outlined,
-                  size: 16,
-                ),
-                label: Text(
-                  isFacility
-                      ? (item.facilityName?.trim().isNotEmpty == true
-                            ? '${context.l10n.accessAdminRoleScopeFacilityBadge} · ${item.facilityName}'
-                            : context.l10n.accessAdminRoleScopeFacilityBadge)
-                      : context.l10n.accessAdminRoleScopeTenantBadge,
-                  style: Theme.of(context).textTheme.labelSmall,
-                ),
-                visualDensity: VisualDensity.compact,
-              );
-            },
-          ),
-        AppListTableColumn<AccessAdminItem>(
-          label: context.l10n.accessAdminColumnDetails,
-          cellBuilder: (BuildContext context, AccessAdminItem item) =>
-              Text(item.subtitle ?? '—'),
-        ),
-        if (state.query.resource != AccessAdminResource.roles)
-          AppListTableColumn<AccessAdminItem>(
-            label: context.l10n.accessAdminColumnStatus,
-            cellBuilder: (BuildContext context, AccessAdminItem item) =>
-                Text(item.status ?? '—'),
-          ),
-      ],
     );
   }
 }
@@ -776,6 +784,14 @@ class _DetailContent extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final bool isRole = item.resource == AccessAdminResource.roles;
+    final bool isPermission = item.resource == AccessAdminResource.permissions;
+    final bool isEntitlement =
+        item.resource == AccessAdminResource.moduleEntitlements;
+    final bool isRegistration =
+        item.resource == AccessAdminResource.registrationFollowUps;
+    final bool isUserLike =
+        item.resource == AccessAdminResource.users ||
+        item.resource == AccessAdminResource.demoUsers;
 
     final List<AppPermissionAssignmentOption> rolePermissionOptions =
         rolePermissions
@@ -805,11 +821,7 @@ class _DetailContent extends ConsumerWidget {
         if (isRole) ...<Widget>[
           _DetailRow(
             label: l10n.accessAdminColumnScope,
-            value: item.isFacilityScopedRole
-                ? (item.facilityName?.trim().isNotEmpty == true
-                      ? '${l10n.accessAdminRoleScopeFacilityBadge} · ${item.facilityName}'
-                      : l10n.accessAdminRoleScopeFacilityBadge)
-                : l10n.accessAdminRoleScopeTenantBadge,
+            value: accessAdminRoleScopeLabel(context, item),
           ),
           if ((item.subtitle ?? '').trim().isNotEmpty)
             _DetailRow(
@@ -837,7 +849,52 @@ class _DetailContent extends ConsumerWidget {
             initiallyExpandAll: rolePermissionOptions.length <= 24,
             emptyMessage: l10n.accessAdminRoleDetailNoPermissionsMessage,
           ),
-        ] else ...<Widget>[
+        ] else if (isPermission) ...<Widget>[
+          if ((item.subtitle ?? '').trim().isNotEmpty)
+            _DetailRow(
+              label: l10n.accessAdminColumnDetails,
+              value: item.subtitle!,
+            ),
+          if (item.permissionName != null || item.name != null)
+            _DetailRow(
+              label: l10n.accessAdminPermissionCodeColumnLabel,
+              value: l10n.permissionCatalogLabelForCode(
+                item.permissionName ?? item.name!,
+              ),
+            ),
+          if (item.status != null)
+            _DetailRow(label: l10n.accessAdminStatusLabel, value: item.status!),
+        ] else if (isEntitlement) ...<Widget>[
+          if (item.moduleGroup != null)
+            _DetailRow(
+              label: l10n.accessAdminColumnDetails,
+              value: item.moduleGroup!,
+            ),
+          if (item.planLabel != null)
+            _DetailRow(
+              label: l10n.accessAdminEntitlementPlanColumnLabel,
+              value: item.planLabel!,
+            ),
+          _DetailRow(
+            label: l10n.accessAdminColumnStatus,
+            value: accessAdminEntitlementActiveLabel(context, item.isActive),
+          ),
+          if (item.entitlementDenied)
+            _DetailRow(
+              label: l10n.accessAdminEntitlementDenialColumnLabel,
+              value: item.entitlementDenialReason ?? '—',
+            ),
+        ] else if (isRegistration) ...<Widget>[
+          if (item.email != null)
+            _DetailRow(label: l10n.accessAdminEmailLabel, value: item.email!),
+          if ((item.subtitle ?? '').trim().isNotEmpty)
+            _DetailRow(
+              label: l10n.accessAdminColumnDetails,
+              value: item.subtitle!,
+            ),
+          if (item.status != null)
+            _DetailRow(label: l10n.accessAdminStatusLabel, value: item.status!),
+        ] else if (isUserLike) ...<Widget>[
           if (item.email != null)
             _DetailRow(label: l10n.accessAdminEmailLabel, value: item.email!),
           if (item.phone != null)
@@ -908,7 +965,7 @@ class _DetailContent extends ConsumerWidget {
               style: theme.textTheme.bodySmall,
             ),
           ),
-        if (canWrite && !isRole) ...<Widget>[
+        if (canWrite && (isRegistration || isUserLike)) ...<Widget>[
           SizedBox(height: theme.spacing.lg),
           Wrap(
             spacing: theme.spacing.sm,

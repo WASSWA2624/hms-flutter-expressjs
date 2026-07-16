@@ -1708,9 +1708,7 @@ class _DrugStockPanelState extends ConsumerState<_DrugStockPanel> {
         },
         onPageChanged: controller.changeDrugPage,
         onRowSelected: (_) {
-          unawaited(
-            openPharmacyCatalogDialog(context, ref),
-          );
+          unawaited(openPharmacyCatalogDialog(context, ref));
         },
         emptyBuilder: (_) => AppWorkspaceStatePanel.state(
           variant: AppStateViewVariant.empty,
