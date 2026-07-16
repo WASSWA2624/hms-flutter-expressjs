@@ -1,44 +1,42 @@
 # Patient encounter dialogs — standardization
 
-Standardize every definition in [`dialog-inventory/02-patient-encounter-flow.md`](dialog-inventory/02-patient-encounter-flow.md) so each patient encounter flow behaves like one product surface.
+Deeply refactor the 41 definitions in [`dialog-inventory/02-patient-encounter-flow.md`](dialog-inventory/02-patient-encounter-flow.md) into one reusable product surface. This is structural, not cosmetic.
 
 ## Scope
 
-Change only the 41 inventoried definitions and their listed call sites. Do not expand to the full dialog catalog unless the inventory is updated. Do not create a new shell, use raw `AlertDialog`/`showDialog` in feature presentation code, or duplicate shared clinical UI.
+Change inventoried definitions, listed call sites, and shared primitives needed for consolidation. Do not touch unrelated dialogs, create another shell, use raw `AlertDialog`/`showDialog`, or retain duplication to minimize the diff.
 
-## Implementation rules
+## Requirements
 
-1. **Shells and helpers**
+1. **Use established shells**
    - Compose [`AppDialog`](frontend/lib/shared/components/app_dialog.dart) through `showAppDialog`.
-   - Prefer `showAppWorkspaceMutationDialog`, `AppConfirmActionDialog` variants, and existing openers in `shared/opd_actions`, `shared/patient_actions`, or `shared/components`.
-   - Keep `frontend/test/shared/layout/workspace_ui_pattern_test.dart` green.
+   - Prefer `showAppWorkspaceMutationDialog`, `showAppWorkspaceActionDialog`, `AppConfirmActionDialog` variants, and existing `show*`/`open*` encounter helpers.
+   - Preserve each row’s purpose, call sites, resolved contextual IDs, and permission wrappers.
 
-2. **Actions**
-   - Use [`AppButton`](frontend/lib/shared/components/app_button.dart), [`AppActionIcons`](frontend/lib/shared/icons/app_action_icons.dart), shared action builders, and `context.l10n`.
-   - Prefer one clear committing action. Order actions left to right: dialog-specific secondary actions, **Cancel**, then the primary/confirm action. If multiple mutations are unavoidable, order them Create → Edit → Delete and keep the primary last.
-   - Label dismissal **Cancel**, never Close; it must not commit. Label editing **Edit**, never Update.
-   - Use `AppButton.primary` for commit, `isLoading` while submitting, and established error-colored delete patterns for destructive confirmation.
-   - A confirmation footer contains one domain verb/Confirm plus Cancel—never both Save and Confirm.
+2. **Reuse before creating**
+   - Inventory repeated shells, sections, rows, forms, states, and action groups. Choose one canonical implementation per pattern, migrate every applicable flow, and remove superseded local versions.
+   - Search shared barrels and encounter flows before adding widgets. Extend canonical APIs; never copy, trivially wrap, or locally redefine them.
+   - Details: `AppPatientDetails`, `AppPatientDetailDialog`, `AppSectionPanel`, `AppContentPanel`, `AppInfoSheetGrid`/`Row`, `AppInfoTileGrid`, and `AppExpandableRecordSection`.
+   - Action groups: `AppActionPanel`/`Section`, permission action components, `clinicalActionDialogActions`, `buildAppDialogFormActions`, and `buildAppDialogWizardActions`.
+   - Clinical UI: `OpdEncounterDialog`, `FlowActionsDialog`, shared OPD openers, triage components, `AppRecordVitalsDialog`, `AppVitalsForm`, `AppStatusBadge`, shared fields, and `AppFormInformationBanner`.
+   - If none exists, create one configurable, domain-neutral primitive under `frontend/lib/shared/` for every matching flow. Keep domain behavior in controllers.
 
-3. **Titles**
-   - Use general role-based titles such as “OPD Flow” or “Patient Details,” never a patient name.
-   - Pass titles through `AppDialog` for `toDialogTitleUppercase`; add a meaningful shell icon where sibling dialogs use one.
+3. **Loading and actions**
+   - Use the app’s existing spinner only: `AppLoadingIndicator` or `AppLoadingSurface`; use `AppButton.isLoading` for submission. Do not introduce `CircularProgressIndicator` or another loader.
+   - While loading or saving, disable Cancel, close, and competing actions; apply `closeEnabled: false` and `barrierDismissible: false`.
+   - Order actions left to right: secondary actions, **Cancel**, primary commit. Prefer one commit; use Create → Edit → Delete only when multiple mutations are essential.
+   - Use `AppButton`, `AppActionIcons`, and localized labels. Say **Cancel**, not Close, and **Edit**, not Update. Confirmation dialogs have one domain verb/Confirm plus Cancel.
 
-4. **Loading**
-   - Use `AppButton.isLoading`, `AppLoadingIndicator`, or `AppLoadingSurface`.
-   - During initial load or mutation, disable Cancel, close, and competing actions; use `closeEnabled: false` and `barrierDismissible: false` where applicable.
+4. **Titles**
+   - Use general role-based titles, never patient names. Pass titles through `AppDialog` for uppercase normalization and reuse sibling icon conventions.
 
-5. **Reuse**
-   - Reuse `AppPatientDetails`, `AppPatientDetailDialog`, `OpdEncounterDialog`, `FlowActionsDialog`, shared OPD action dialogs, `AppTriageActionDialog`, record-vitals components, `AppVitalsForm`, `AppStatusBadge`, and shared form/layout helpers.
-   - If two dialogs need the same section, extract it once under `frontend/lib/shared/`.
+5. **Backend correctness and sync**
+   - Follow [the API contract](.cursor/api-contract.mdc) and [`instant_ui_sync.mdc`](frontend/.cursor/instant_ui_sync.mdc).
+   - Trace every loading and mutating action end to end: dialog → workspace controller → repository/DTO → real backend route/schema/service. Match IDs, `snake_case` payloads, auth, envelopes, and response decoding; fix either side when mismatched.
+   - Widgets never call APIs or own competing server data. Mutate over HTTP; WebSockets only reconcile.
+   - On failure, keep the dialog open, show `AppFailure` through shared failure UI, and patch nothing. Never fake or silently ignore success.
+   - On persisted success only, immediately patch every affected Riverpod slice, then use the smallest targeted refresh/realtime reconciliation. Dialogs, parent workspaces, pinned views, lists, details, and badges must agree with backend truth without a full reload.
 
-6. **Behavior and data**
-   - Open with resolved patient, encounter, queue, bed, or appointment IDs.
-   - Preserve each inventory row’s purpose, listed call sites, and existing permission wrappers.
-   - Follow [`frontend/.cursor/instant_ui_sync.mdc`](frontend/.cursor/instant_ui_sync.mdc): mutate through repository REST APIs; match backend routes, DTOs, auth, and response parsing.
-   - Never fake success or silently ignore failure. Show the shared failure UI, patch nothing, and allow retry or Cancel.
-   - On confirmed success only, update all affected Riverpod state immediately and invalidate/refetch as needed. Dialogs, parent workspaces, pinned views, badges, and related lists must match persisted backend state without a full reload. Avoid competing local copies of server entities.
+## Verification
 
-## Done when
-
-Every inventoried dialog uses an approved shell, consistent title/actions/loading, shared components, working real API calls, visible failures, and synchronized Riverpod/backend state while remaining reachable from every listed call site.
+Keep the workspace pattern test green. Add focused widget, controller, DTO, backend route/schema, and service tests. Verify every happy-path API call succeeds and cancel/failure neither patches nor dismisses. Confirm equivalent flows share primitives, spacing, sections, actions, loading/error behavior, and responsive layout without duplicate UI.
