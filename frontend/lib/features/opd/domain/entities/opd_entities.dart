@@ -87,14 +87,32 @@ final class OpdFlowQuery {
   }
 }
 
+/// Routable worklist sections for the OPD workspace tab strip.
+enum OpdWorkspaceSection { all, arrivals, queue, triage, active }
+
+OpdWorkspaceSection _parseOpdSection(String raw) {
+  return switch (raw.trim().toLowerCase()) {
+    'arrivals' || 'appointments' => OpdWorkspaceSection.arrivals,
+    'queue' || 'desk-queue' || 'desk_queue' => OpdWorkspaceSection.queue,
+    'triage' => OpdWorkspaceSection.triage,
+    'active' ||
+    'active_flow' ||
+    'encounters' ||
+    'flows' => OpdWorkspaceSection.active,
+    _ => OpdWorkspaceSection.all,
+  };
+}
+
 /// Parsed deep-link parameters for the OPD workspace route (`/opd?id=&panel=`).
 ///
+/// `section` selects a worklist tab (e.g. `arrivals`, `queue`, `triage`).
 /// `flowId` deep-links to a specific OPD encounter (opens its action dialog).
 /// `panel` pre-selects a worklist filter (e.g. `vitals`, `doctor`, `lab`).
 /// `search` pre-fills the worklist search box.
 @immutable
 final class OpdWorkspaceQuery {
   const OpdWorkspaceQuery({
+    this.section = OpdWorkspaceSection.all,
     this.flowId = '',
     this.panel = '',
     this.search = '',
@@ -113,6 +131,7 @@ final class OpdWorkspaceQuery {
     }
 
     return OpdWorkspaceQuery(
+      section: _parseOpdSection(pick(<String>['section', 'tab'])),
       flowId: pick(<String>[
         'id',
         'flow',
@@ -125,14 +144,18 @@ final class OpdWorkspaceQuery {
     );
   }
 
+  final OpdWorkspaceSection section;
   final String flowId;
   final String panel;
   final String search;
 
   bool get hasRouteTargeting =>
-      flowId.isNotEmpty || panel.isNotEmpty || search.isNotEmpty;
+      section != OpdWorkspaceSection.all ||
+      flowId.isNotEmpty ||
+      panel.isNotEmpty ||
+      search.isNotEmpty;
 
-  String get signature => '$flowId|$panel|$search';
+  String get signature => '${section.name}|$flowId|$panel|$search';
 }
 
 @immutable

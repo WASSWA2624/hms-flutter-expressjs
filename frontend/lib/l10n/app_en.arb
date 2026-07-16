@@ -2914,6 +2914,26 @@
   "opdDescription": "Arrivals, queues, and OPD clinical handoffs.",
   "opdLoadingTitle": "Loading OPD flow",
   "opdLoadingBody": "Loading OPD queue and encounters...",
+  "opdSectionAllLabel": "All worklist",
+  "@opdSectionAllLabel": {
+    "description": "Tab label for showing all OPD worklist items"
+  },
+  "opdSectionArrivalsLabel": "Arrivals",
+  "@opdSectionArrivalsLabel": {
+    "description": "Tab label for showing appointment arrivals"
+  },
+  "opdSectionQueueLabel": "Queue",
+  "@opdSectionQueueLabel": {
+    "description": "Tab label for showing visit queue entries"
+  },
+  "opdSectionTriageLabel": "Triage",
+  "@opdSectionTriageLabel": {
+    "description": "Tab label for showing triage queue flows"
+  },
+  "opdSectionActiveLabel": "Active",
+  "@opdSectionActiveLabel": {
+    "description": "Tab label for showing active OPD encounters"
+  },
   "receptionTitle": "Reception desk",
   "@receptionTitle": {
     "description": "Title for the reception front-desk workspace."

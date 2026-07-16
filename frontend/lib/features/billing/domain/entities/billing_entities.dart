@@ -94,6 +94,7 @@ final class BillingWorkspaceQuery {
               'pending-payment': BillingQueueType.pendingPayment,
               'claims-pending': BillingQueueType.claimsPending,
               'approval-required': BillingQueueType.approvalRequired,
+              'overdue': BillingQueueType.overdue,
             };
         queue = slugMap[queueRaw.toLowerCase()] ?? BillingQueueType.all;
       }

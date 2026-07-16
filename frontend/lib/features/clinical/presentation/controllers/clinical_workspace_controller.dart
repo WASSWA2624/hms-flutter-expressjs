@@ -130,10 +130,7 @@ final class ClinicalWorkspaceController
   }
 
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(
-      showLoading: true,
-      refreshReferenceData: true,
-    );
+    return _syncVisibleData(showLoading: true, refreshReferenceData: true);
   }
 
   Future<AppFailure?> applySearch(

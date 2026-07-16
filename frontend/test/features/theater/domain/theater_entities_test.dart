@@ -1,7 +1,32 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/features/theater/domain/entities/theater_entities.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 
 void main() {
+  group('TheaterSection', () {
+    test('queryValue serializes canonical section params', () {
+      expect(TheaterSection.scheduled.queryValue, 'scheduled');
+      expect(TheaterSection.inTheater.queryValue, 'in-theater');
+      expect(TheaterSection.recovery.queryValue, 'recovery');
+      expect(TheaterSection.all.queryValue, 'all');
+    });
+
+    test('fromQuery parses all supported variants', () {
+      expect(TheaterSectionX.fromQuery('scheduled'), TheaterSection.scheduled);
+      expect(TheaterSectionX.fromQuery('in-theater'), TheaterSection.inTheater);
+      expect(TheaterSectionX.fromQuery('in_theater'), TheaterSection.inTheater);
+      expect(TheaterSectionX.fromQuery('intheater'), TheaterSection.inTheater);
+      expect(TheaterSectionX.fromQuery('recovery'), TheaterSection.recovery);
+      expect(TheaterSectionX.fromQuery('post-op'), TheaterSection.recovery);
+      expect(TheaterSectionX.fromQuery('post_op'), TheaterSection.recovery);
+      expect(TheaterSectionX.fromQuery('pacu'), TheaterSection.recovery);
+      expect(TheaterSectionX.fromQuery('all'), TheaterSection.all);
+      expect(TheaterSectionX.fromQuery(null), TheaterSection.all);
+      expect(TheaterSectionX.fromQuery(''), TheaterSection.all);
+      expect(TheaterSectionX.fromQuery('unknown'), TheaterSection.all);
+    });
+  });
+
   group('TheaterBoardQuery', () {
     test('fromUri parses case id and panel', () {
       final TheaterBoardQuery query = TheaterBoardQuery.fromUri(
@@ -11,6 +36,38 @@ void main() {
       expect(query.focusCaseId, 'TC0000123');
       expect(query.focusPanel, TheaterDetailPanel.anesthesia);
       expect(query.hasRouteTargeting, isTrue);
+    });
+
+    test('fromUri parses section=in-theater for tab deep linking', () {
+      final TheaterBoardQuery query = TheaterBoardQuery.fromUri(
+        Uri.parse('/theater?section=in-theater&search=Ada'),
+      );
+
+      expect(query.section, 'in-theater');
+      expect(query.search, 'Ada');
+      expect(
+        TheaterSectionX.fromQuery(query.section),
+        TheaterSection.inTheater,
+      );
+      expect(query.hasRouteTargeting, isTrue);
+    });
+
+    test('fromUri defaults section to all when omitted', () {
+      final TheaterBoardQuery query = TheaterBoardQuery.fromUri(
+        Uri.parse('/theater'),
+      );
+
+      expect(query.section, 'all');
+      expect(TheaterSectionX.fromQuery(query.section), TheaterSection.all);
+      expect(query.hasRouteTargeting, isFalse);
+    });
+
+    test('copyWith preserves and overrides section', () {
+      const TheaterBoardQuery original = TheaterBoardQuery(
+        section: 'scheduled',
+      );
+      expect(original.copyWith().section, 'scheduled');
+      expect(original.copyWith(section: 'recovery').section, 'recovery');
     });
 
     test('toCaseQuery defaults to active queue scope', () {
@@ -40,6 +97,27 @@ void main() {
       expect(query.initialEmergencyCaseId, 'EMC-009');
       expect(query.scheduleAction, 'schedule');
       expect(query.shouldOpenScheduleDialog, isTrue);
+    });
+  });
+
+  group('TheaterWorkspaceState.recoveryCount', () {
+    test('counts POST_OP and PACU_HANDOFF cases', () {
+      const TheaterWorkspaceState state = TheaterWorkspaceState(
+        cases: AppPage<TheaterCase>(
+          items: <TheaterCase>[
+            TheaterCase(id: '1', workflowStage: 'POST_OP'),
+            TheaterCase(id: '2', workflowStage: 'PACU_HANDOFF'),
+            TheaterCase(id: '3', workflowStage: 'INTRA_OP'),
+            TheaterCase(id: '4', status: 'SCHEDULED'),
+          ],
+          request: AppPageRequest(),
+          totalItemCount: 4,
+        ),
+        query: TheaterCaseQuery(),
+      );
+
+      expect(state.recoveryCount, 2);
+      expect(state.scheduledCount, 1);
     });
   });
 

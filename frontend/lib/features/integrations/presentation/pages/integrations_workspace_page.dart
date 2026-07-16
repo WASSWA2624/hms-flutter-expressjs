@@ -93,6 +93,20 @@ class _IntegrationsWorkspaceContentState
         AppListTableColumnVisibilityController<IntegrationWorkItem>();
     _section = _sectionFromFilter(widget.state.query.filter);
     _scheduleRouteQuery(widget.initialQuery);
+    if ((widget.initialQuery == null ||
+            !widget.initialQuery!.hasRouteTargeting) &&
+        widget.state.query.filter == IntegrationWorkspaceFilter.all) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        unawaited(
+          ref
+              .read(integrationsWorkspaceControllerProvider.notifier)
+              .applyFilter(_filterForSection(_section)),
+        );
+      });
+    }
   }
 
   @override
@@ -754,6 +768,18 @@ List<AppListTableColumn<IntegrationWorkItem>> _webhooksSectionColumns(
           AppWorkspaceStatusBadge(status: _statusFor(context, item)),
     ),
     AppListTableColumn<IntegrationWorkItem>(
+      id: 'integration_status',
+      label:
+          '${l10n.integrationsIntegrationLabel} ${l10n.integrationsStatusColumnLabel}',
+      sortComparator: (IntegrationWorkItem a, IntegrationWorkItem b) =>
+          appListTableCompareText(
+            a.webhook?.integrationStatus,
+            b.webhook?.integrationStatus,
+          ),
+      cellBuilder: (BuildContext context, IntegrationWorkItem item) =>
+          Text(_fallback(context, item.webhook?.integrationStatus)),
+    ),
+    AppListTableColumn<IntegrationWorkItem>(
       id: 'created_at',
       label: l10n.integrationsLastEventColumnLabel,
       sortComparator: (IntegrationWorkItem a, IntegrationWorkItem b) =>
@@ -804,6 +830,17 @@ List<AppListTableColumn<IntegrationWorkItem>> _logsSectionColumns(
           appListTableCompareDateTime(a.log?.loggedAt, b.log?.loggedAt),
       cellBuilder: (BuildContext context, IntegrationWorkItem item) =>
           Text(_dateTimeLabel(context, item.log?.loggedAt)),
+    ),
+    AppListTableColumn<IntegrationWorkItem>(
+      id: 'integration_type',
+      label: l10n.integrationsTypeColumnLabel,
+      sortComparator: (IntegrationWorkItem a, IntegrationWorkItem b) =>
+          appListTableCompareText(
+            a.log?.integrationType,
+            b.log?.integrationType,
+          ),
+      cellBuilder: (BuildContext context, IntegrationWorkItem item) =>
+          Text(_scopeLabel(context, item.log?.integrationType ?? '')),
     ),
     AppListTableColumn<IntegrationWorkItem>(
       id: 'requires_attention',

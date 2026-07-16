@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,53 +22,13 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
-class CommunicationsWorkspacePage extends ConsumerStatefulWidget {
+class CommunicationsWorkspacePage extends ConsumerWidget {
   const CommunicationsWorkspacePage({required this.initialQuery, super.key});
 
   final CommunicationsWorkspaceQuery initialQuery;
 
   @override
-  ConsumerState<CommunicationsWorkspacePage> createState() =>
-      _CommunicationsWorkspacePageState();
-}
-
-class _CommunicationsWorkspacePageState
-    extends ConsumerState<CommunicationsWorkspacePage> {
-  String? _appliedRouteSignature;
-
-  @override
-  void initState() {
-    super.initState();
-    _scheduleRouteQuery(widget.initialQuery);
-  }
-
-  @override
-  void didUpdateWidget(covariant CommunicationsWorkspacePage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (_querySignature(oldWidget.initialQuery) !=
-        _querySignature(widget.initialQuery)) {
-      _scheduleRouteQuery(widget.initialQuery);
-    }
-  }
-
-  void _scheduleRouteQuery(CommunicationsWorkspaceQuery query) {
-    final String signature = _querySignature(query);
-    if (_appliedRouteSignature == signature || !_hasRouteQuery(query)) {
-      return;
-    }
-    _appliedRouteSignature = signature;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      ref
-          .read(communicationsWorkspaceControllerProvider.notifier)
-          .applyRouteQuery(query);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final AsyncValue<Result<CommunicationsWorkspaceState>> workspace = ref
         .watch(communicationsWorkspaceControllerProvider);
@@ -81,16 +43,23 @@ class _CommunicationsWorkspacePageState
         ref.read(communicationsWorkspaceControllerProvider.notifier).refresh();
       },
       dataBuilder: (BuildContext context, CommunicationsWorkspaceState state) {
-        return _CommunicationsWorkspaceContent(state: state);
+        return _CommunicationsWorkspaceContent(
+          state: state,
+          initialQuery: initialQuery,
+        );
       },
     );
   }
 }
 
 class _CommunicationsWorkspaceContent extends ConsumerStatefulWidget {
-  const _CommunicationsWorkspaceContent({required this.state});
+  const _CommunicationsWorkspaceContent({
+    required this.state,
+    required this.initialQuery,
+  });
 
   final CommunicationsWorkspaceState state;
+  final CommunicationsWorkspaceQuery initialQuery;
 
   @override
   ConsumerState<_CommunicationsWorkspaceContent> createState() =>
@@ -100,8 +69,6 @@ class _CommunicationsWorkspaceContent extends ConsumerStatefulWidget {
 class _CommunicationsWorkspaceContentState
     extends ConsumerState<_CommunicationsWorkspaceContent> {
   late final TextEditingController _searchController;
-  late final AppListTableColumnVisibilityController<CommunicationsConversation>
-  _conversationColumns;
   late final AppListTableColumnVisibilityController<NotificationItem>
   _notificationColumns;
   late final AppListTableColumnVisibilityController<NotificationDelivery>
@@ -110,13 +77,13 @@ class _CommunicationsWorkspaceContentState
   _templateColumns;
   ProviderSubscription<AsyncValue<Result<CommunicationsWorkspaceState>>>?
   _routeSubscription;
+  String? _appliedRouteSignature;
+  String? _syncedRouteSignature;
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: widget.state.query.search);
-    _conversationColumns =
-        AppListTableColumnVisibilityController<CommunicationsConversation>();
     _notificationColumns =
         AppListTableColumnVisibilityController<NotificationItem>();
     _deliveryColumns =
@@ -152,9 +119,26 @@ class _CommunicationsWorkspaceContentState
         _syncRoute(nextState.query);
       },
     );
+    _scheduleRouteQuery(widget.initialQuery);
   }
 
-  String? _syncedRouteSignature;
+  void _scheduleRouteQuery(CommunicationsWorkspaceQuery query) {
+    final String signature = _querySignature(query);
+    if (_appliedRouteSignature == signature || !_hasRouteQuery(query)) {
+      return;
+    }
+    _appliedRouteSignature = signature;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(
+        ref
+            .read(communicationsWorkspaceControllerProvider.notifier)
+            .applyRouteQuery(query),
+      );
+    });
+  }
 
   void _syncRoute(CommunicationsWorkspaceQuery query) {
     final String signature = _querySignature(query);
@@ -190,17 +174,24 @@ class _CommunicationsWorkspaceContentState
         _searchController.text != nextSearch) {
       _searchController.text = nextSearch;
     }
+    if (_querySignature(oldWidget.initialQuery) !=
+        _querySignature(widget.initialQuery)) {
+      _scheduleRouteQuery(widget.initialQuery);
+    }
   }
 
   @override
   void dispose() {
     _routeSubscription?.close();
     _searchController.dispose();
-    _conversationColumns.dispose();
     _notificationColumns.dispose();
     _deliveryColumns.dispose();
     _templateColumns.dispose();
     super.dispose();
+  }
+
+  Future<void> _openNewConversation(BuildContext context, WidgetRef ref) async {
+    await showCommunicationsNewDirectMessageDialog(context, ref);
   }
 
   @override
@@ -267,8 +258,7 @@ class _CommunicationsWorkspaceContentState
                 AppButton.primary(
                   label: l10n.communicationsNewMessageAction,
                   leadingIcon: Icons.add_comment_outlined,
-                  onPressed: () =>
-                      showCommunicationsNewDirectMessageDialog(context, ref),
+                  onPressed: () => _openNewConversation(context, ref),
                 ),
               ],
             ],
@@ -278,7 +268,6 @@ class _CommunicationsWorkspaceContentState
             state: state,
             searchController: _searchController,
             canWrite: canWrite,
-            conversationColumns: _conversationColumns,
             notificationColumns: _notificationColumns,
             deliveryColumns: _deliveryColumns,
             templateColumns: _templateColumns,
@@ -350,7 +339,6 @@ class _CommunicationsListPanel extends ConsumerWidget {
     required this.state,
     required this.searchController,
     required this.canWrite,
-    required this.conversationColumns,
     required this.notificationColumns,
     required this.deliveryColumns,
     required this.templateColumns,
@@ -359,8 +347,6 @@ class _CommunicationsListPanel extends ConsumerWidget {
   final CommunicationsWorkspaceState state;
   final TextEditingController searchController;
   final bool canWrite;
-  final AppListTableColumnVisibilityController<CommunicationsConversation>
-  conversationColumns;
   final AppListTableColumnVisibilityController<NotificationItem>
   notificationColumns;
   final AppListTableColumnVisibilityController<NotificationDelivery>

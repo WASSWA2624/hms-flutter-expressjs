@@ -136,6 +136,9 @@ class _RoomsBedsWorkspaceContentState
     if (_searchController.text != search) {
       _searchController.value = TextEditingValue(text: search);
     }
+    if (oldWidget.state.query.section != widget.state.query.section) {
+      _section = widget.state.query.section;
+    }
   }
 
   @override

@@ -55,9 +55,14 @@ class _PharmacyCatalogDialogState
   @override
   void initState() {
     super.initState();
-    ref
-        .read(pharmacyWorkspaceControllerProvider.notifier)
-        .prepareCatalogTab(widget.initialTab);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      ref
+          .read(pharmacyWorkspaceControllerProvider.notifier)
+          .prepareCatalogTab(widget.initialTab);
+    });
   }
 
   @override

@@ -9,7 +9,6 @@ import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
-import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/claims/data/repositories/claims_repository_impl.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
@@ -299,7 +298,7 @@ final class ClaimsWorkspaceController
           'status': status,
           if (status == 'APPROVED' || status == 'PARTIAL')
             'approved_at': _nowIso(),
-          if (approvedAmount != null) 'approved_amount': approvedAmount,
+          'approved_amount': ?approvedAmount,
         });
 
     return result.when<Future<AppFailure?>>(

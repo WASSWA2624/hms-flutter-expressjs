@@ -233,6 +233,14 @@ class _BillingWorkspaceContentState
     GoRouter.of(context).replace<void>(location);
   }
 
+  void _selectQueue(BillingQueueType queue) {
+    if (_section != queue) {
+      setState(() => _section = queue);
+    }
+    _updateUrlForQueue(queue);
+    ref.read(billingWorkspaceControllerProvider.notifier).applyQueue(queue);
+  }
+
   @override
   Widget build(BuildContext context) {
     final BillingWorkspaceState state = widget.state;
@@ -297,11 +305,7 @@ class _BillingWorkspaceContentState
                     for (final BillingQueueType queue
                         in BillingQueueType.values) {
                       if (queue.name == tabId) {
-                        setState(() => _section = queue);
-                        _updateUrlForQueue(queue);
-                        ref
-                            .read(billingWorkspaceControllerProvider.notifier)
-                            .applyQueue(queue);
+                        _selectQueue(queue);
                         break;
                       }
                     }
@@ -330,7 +334,6 @@ class _BillingWorkspaceContentState
   ) {
     final AppLocalizations l10n = context.l10n;
     final BillingSummary summary = state.overview.summary;
-    final controller = ref.read(billingWorkspaceControllerProvider.notifier);
 
     return <AppWorkspaceSummaryNotification>[
       if (summary.workloadCount > 0)
@@ -338,7 +341,7 @@ class _BillingWorkspaceContentState
           label: l10n.billingAllWorkItems,
           count: summary.workloadCount,
           icon: Icons.inventory_2_outlined,
-          onSelected: () => controller.applyQueue(BillingQueueType.all),
+          onSelected: () => _selectQueue(BillingQueueType.all),
         ),
       if (summary.pendingPayment > 0)
         AppWorkspaceSummaryNotification(
@@ -346,15 +349,14 @@ class _BillingWorkspaceContentState
           count: summary.pendingPayment,
           icon: Icons.payments_outlined,
           tone: AppWorkspaceStatusTone.warning,
-          onSelected: () =>
-              controller.applyQueue(BillingQueueType.pendingPayment),
+          onSelected: () => _selectQueue(BillingQueueType.pendingPayment),
         ),
       if (summary.needsIssue > 0)
         AppWorkspaceSummaryNotification(
           label: l10n.billingIssueQueue,
           count: summary.needsIssue,
           icon: Icons.receipt_long_outlined,
-          onSelected: () => controller.applyQueue(BillingQueueType.needsIssue),
+          onSelected: () => _selectQueue(BillingQueueType.needsIssue),
         ),
       if (summary.claimsPending > 0)
         AppWorkspaceSummaryNotification(
@@ -362,16 +364,14 @@ class _BillingWorkspaceContentState
           count: summary.claimsPending,
           icon: Icons.health_and_safety_outlined,
           tone: AppWorkspaceStatusTone.info,
-          onSelected: () =>
-              controller.applyQueue(BillingQueueType.claimsPending),
+          onSelected: () => _selectQueue(BillingQueueType.claimsPending),
         ),
       if (summary.approvalRequired > 0)
         AppWorkspaceSummaryNotification(
           label: l10n.billingApprovals,
           count: summary.approvalRequired,
           icon: Icons.rule_outlined,
-          onSelected: () =>
-              controller.applyQueue(BillingQueueType.approvalRequired),
+          onSelected: () => _selectQueue(BillingQueueType.approvalRequired),
         ),
       if (summary.overdue > 0)
         AppWorkspaceSummaryNotification(
@@ -379,7 +379,7 @@ class _BillingWorkspaceContentState
           count: summary.overdue,
           icon: Icons.warning_amber_outlined,
           tone: AppWorkspaceStatusTone.error,
-          onSelected: () => controller.applyQueue(BillingQueueType.overdue),
+          onSelected: () => _selectQueue(BillingQueueType.overdue),
         ),
     ];
   }
@@ -802,34 +802,29 @@ class _BillingMobileTile extends StatelessWidget {
         horizontal: theme.spacing.sm,
         vertical: theme.spacing.sm,
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Icon(Icons.receipt_long_outlined, color: theme.colorScheme.primary),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  billingPatientName(context, item),
-                  style: theme.textTheme.titleSmall,
-                ),
-                SizedBox(height: theme.spacing.xs),
-                Text(
-                  billingJoinDisplay(<String?>[
-                    item.effectivePatientNumber,
-                    item.effectiveDisplayId,
-                    item.encounterDisplayId ?? item.encounterId,
-                    billingInvoiceSourceLabel(context, item),
-                    billingMoney(context, item.balanceDue, item.currency),
-                  ]),
-                  style: theme.textTheme.bodySmall,
-                ),
-              ],
-            ),
+          Text(
+            billingPatientName(context, item),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleSmall,
           ),
-          SizedBox(width: theme.spacing.sm),
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            billingJoinDisplay(<String?>[
+              item.effectivePatientNumber,
+              item.effectiveDisplayId,
+              item.encounterDisplayId ?? item.encounterId,
+              billingInvoiceSourceLabel(context, item),
+              billingMoney(context, item.balanceDue, item.currency),
+            ]),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall,
+          ),
+          SizedBox(height: theme.spacing.sm),
           BillingGateBadge(state: item.clearanceState),
         ],
       ),

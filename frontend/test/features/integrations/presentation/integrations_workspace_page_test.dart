@@ -1,0 +1,413 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/core/storage/storage_providers.dart';
+import 'package:hosspi_hms/features/integrations/data/repositories/integrations_repository_impl.dart';
+import 'package:hosspi_hms/features/integrations/domain/entities/integration_entities.dart';
+import 'package:hosspi_hms/features/integrations/domain/repositories/integrations_repository.dart';
+import 'package:hosspi_hms/features/integrations/presentation/pages/integrations_workspace_page.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _MockIntegrationsRepository extends Mock
+    implements IntegrationsRepository {}
+
+const IntegrationRecord _integration = IntegrationRecord(
+  id: 'integration-1',
+  name: 'Lab HL7 Feed',
+  integrationType: 'HL7',
+  status: 'ACTIVE',
+  tenantLabel: 'Main Hospital',
+  hasConfig: true,
+  webhookSubscriptionCount: 1,
+  logCount: 2,
+);
+
+const IntegrationRecord _warningIntegration = IntegrationRecord(
+  id: 'integration-2',
+  name: 'Inactive Bridge',
+  integrationType: 'FHIR',
+  status: 'INACTIVE',
+  tenantLabel: 'Main Hospital',
+);
+
+const IntegrationRecord _failedIntegration = IntegrationRecord(
+  id: 'integration-3',
+  name: 'Failed Sync',
+  integrationType: 'LAB',
+  status: 'FAILED',
+  tenantLabel: 'Main Hospital',
+  requiresAttention: true,
+);
+
+const ApiKeyRecord _apiKey = ApiKeyRecord(
+  id: 'api-key-1',
+  name: 'Billing Export Key',
+  userId: 'user-1',
+  isActive: true,
+  humanFriendlyId: 'key_billing',
+);
+
+const WebhookSubscriptionRecord _webhook = WebhookSubscriptionRecord(
+  id: 'webhook-1',
+  event: 'payment.completed',
+  integrationLabel: 'Lab HL7 Feed',
+  targetHost: 'hooks.example.com',
+  integrationStatus: 'ACTIVE',
+  isActive: true,
+);
+
+const IntegrationLogRecord _log = IntegrationLogRecord(
+  id: 'log-1',
+  integrationLabel: 'Lab HL7 Feed',
+  integrationType: 'HL7',
+  status: 'SUCCESS',
+  message: 'Message accepted',
+);
+
+const InteropCapabilityStatus _interop = InteropCapabilityStatus(
+  id: 'fhir',
+  title: 'FHIR_EXCHANGE',
+  scope: 'FHIR_EXPORT_IMPORT',
+  status: 'READY',
+  nextAction: 'RUN_AVAILABLE_ACTION',
+);
+
+AppAccessPolicy _integrationsWritePolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['ADMIN']),
+      permissions: <AppPermission>{
+        AppPermissions.integrationRead,
+        AppPermissions.integrationWrite,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(
+          code: 'integrations-core',
+          licenseStatus: 'ACTIVE',
+        ),
+      ],
+    ),
+  );
+}
+
+AppAccessPolicy _integrationsReadOnlyPolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['NURSE']),
+      permissions: <AppPermission>{AppPermissions.integrationRead},
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(
+          code: 'integrations-core',
+          licenseStatus: 'ACTIVE',
+        ),
+      ],
+    ),
+  );
+}
+
+void _stubWorkspace(_MockIntegrationsRepository repository) {
+  when(() => repository.listIntegrations()).thenAnswer(
+    (_) async => const Result<List<IntegrationRecord>>.success(
+      <IntegrationRecord>[
+        _integration,
+        _warningIntegration,
+        _failedIntegration,
+      ],
+    ),
+  );
+  when(() => repository.listApiKeys()).thenAnswer(
+    (_) async =>
+        const Result<List<ApiKeyRecord>>.success(<ApiKeyRecord>[_apiKey]),
+  );
+  when(() => repository.listApiKeyPermissions()).thenAnswer(
+    (_) async => const Result<List<ApiKeyPermissionRecord>>.success(
+      <ApiKeyPermissionRecord>[],
+    ),
+  );
+  when(() => repository.listPermissionOptions()).thenAnswer(
+    (_) async => const Result<List<IntegrationPermissionOption>>.success(
+      <IntegrationPermissionOption>[],
+    ),
+  );
+  when(() => repository.listWebhooks()).thenAnswer(
+    (_) async => const Result<List<WebhookSubscriptionRecord>>.success(
+      <WebhookSubscriptionRecord>[_webhook],
+    ),
+  );
+  when(() => repository.listLogs()).thenAnswer(
+    (_) async => const Result<List<IntegrationLogRecord>>.success(
+      <IntegrationLogRecord>[_log],
+    ),
+  );
+  when(
+    () => repository.interopCapabilities(),
+  ).thenReturn(const <InteropCapabilityStatus>[_interop]);
+}
+
+class _Harness {
+  const _Harness({required this.repository, required this.router});
+
+  final _MockIntegrationsRepository repository;
+  final GoRouter router;
+}
+
+Future<_Harness> _pumpIntegrationsWorkspace(
+  WidgetTester tester, {
+  required _MockIntegrationsRepository repository,
+  IntegrationWorkspaceQuery? initialQuery,
+  String initialLocation = '/integrations',
+  AppAccessPolicy? accessPolicy,
+  Size physicalSize = const Size(1440, 900),
+}) async {
+  SharedPreferences.setMockInitialValues(<String, Object>{});
+  final SharedPreferences preferences = await SharedPreferences.getInstance();
+  _stubWorkspace(repository);
+
+  tester.view.physicalSize = physicalSize;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
+  final GoRouter router = GoRouter(
+    initialLocation: initialLocation,
+    routes: <RouteBase>[
+      GoRoute(
+        path: '/integrations',
+        builder: (BuildContext context, GoRouterState state) {
+          return Scaffold(
+            body: IntegrationsWorkspacePage(
+              initialQuery:
+                  initialQuery ?? IntegrationWorkspaceQuery.fromUri(state.uri),
+            ),
+          );
+        },
+      ),
+    ],
+  );
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        integrationsRepositoryProvider.overrideWithValue(repository),
+        sharedPreferencesProvider.overrideWithValue(preferences),
+        initialSessionStateProvider.overrideWithValue(
+          const SessionState.ready(),
+        ),
+        appAccessPolicyProvider.overrideWithValue(
+          accessPolicy ?? _integrationsWritePolicy(),
+        ),
+      ],
+      child: MaterialApp.router(
+        routerConfig: router,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+      ),
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
+  await tester.pumpAndSettle();
+  return _Harness(repository: repository, router: router);
+}
+
+AppListTable<IntegrationWorkItem> _table(WidgetTester tester) {
+  return tester.widget<AppListTable<IntegrationWorkItem>>(
+    find.byType(AppListTable<IntegrationWorkItem>),
+  );
+}
+
+void main() {
+  late _MockIntegrationsRepository repository;
+
+  setUp(() {
+    repository = _MockIntegrationsRepository();
+  });
+
+  testWidgets('renders AppTabStrip with five section tabs and counts', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIntegrationsWorkspace(tester, repository: repository);
+
+    expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.textContaining('Integrations (3)'), findsOneWidget);
+    expect(find.textContaining('API keys (1)'), findsOneWidget);
+    expect(find.textContaining('Webhooks (1)'), findsOneWidget);
+    expect(find.textContaining('Logs (1)'), findsOneWidget);
+    expect(find.textContaining('Interop (1)'), findsOneWidget);
+    expect(find.text('Lab HL7 Feed'), findsOneWidget);
+    expect(find.textContaining('Create integration'), findsOneWidget);
+  });
+
+  testWidgets('toolbar shows only status-based summary badges', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIntegrationsWorkspace(tester, repository: repository);
+
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Notifications').first);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Active'), findsWidgets);
+    expect(find.text('Warnings'), findsOneWidget);
+    expect(find.text('Failed'), findsOneWidget);
+    expect(find.text('Total items'), findsNothing);
+  });
+
+  testWidgets('switching tabs updates section query and columns', (
+    WidgetTester tester,
+  ) async {
+    final _Harness harness = await _pumpIntegrationsWorkspace(
+      tester,
+      repository: repository,
+    );
+
+    expect(
+      _table(tester).columnVisibilityStorageKey,
+      'integrations_integrations',
+    );
+    expect(
+      _table(
+        tester,
+      ).columns.map((AppListTableColumn<IntegrationWorkItem> c) => c.id),
+      containsAll(<String>['name', 'type', 'has_config', 'webhook_count']),
+    );
+
+    await tester.tap(find.textContaining('API keys (1)').first);
+    await tester.pumpAndSettle();
+
+    expect(harness.router.state.uri.queryParameters['section'], 'api-keys');
+    expect(find.text('Billing Export Key'), findsOneWidget);
+    expect(find.textContaining('Create API key'), findsOneWidget);
+    expect(find.textContaining('Create integration'), findsNothing);
+    expect(_table(tester).columnVisibilityStorageKey, 'integrations_apiKeys');
+    expect(
+      _table(
+        tester,
+      ).columns.map((AppListTableColumn<IntegrationWorkItem> c) => c.id),
+      containsAll(<String>['name', 'key_id', 'permissions', 'expires_at']),
+    );
+
+    await tester.tap(find.textContaining('Webhooks (1)').first);
+    await tester.pumpAndSettle();
+
+    expect(harness.router.state.uri.queryParameters['section'], 'webhooks');
+    expect(find.text('payment.completed'), findsOneWidget);
+    expect(find.textContaining('Create webhook'), findsOneWidget);
+    expect(
+      _table(
+        tester,
+      ).columns.map((AppListTableColumn<IntegrationWorkItem> c) => c.id),
+      containsAll(<String>['event', 'target_host', 'integration_status']),
+    );
+
+    await tester.tap(find.textContaining('Logs (1)').first);
+    await tester.pumpAndSettle();
+
+    expect(harness.router.state.uri.queryParameters['section'], 'logs');
+    expect(find.textContaining('Create integration'), findsNothing);
+    expect(find.textContaining('Create API key'), findsNothing);
+    expect(find.textContaining('Create webhook'), findsNothing);
+    expect(_table(tester).columnVisibilityStorageKey, 'integrations_logs');
+    expect(
+      _table(
+        tester,
+      ).columns.map((AppListTableColumn<IntegrationWorkItem> c) => c.id),
+      containsAll(<String>['integration', 'message', 'integration_type']),
+    );
+
+    await tester.tap(find.textContaining('Interop (1)').first);
+    await tester.pumpAndSettle();
+
+    expect(harness.router.state.uri.queryParameters['section'], 'interop');
+    expect(_table(tester).columnVisibilityStorageKey, 'integrations_interop');
+    expect(
+      _table(
+        tester,
+      ).columns.map((AppListTableColumn<IntegrationWorkItem> c) => c.id),
+      containsAll(<String>[
+        'title',
+        'scope',
+        'next_action',
+        'unavailable_reason',
+      ]),
+    );
+  });
+
+  testWidgets('deep link section=api-keys selects API Keys tab', (
+    WidgetTester tester,
+  ) async {
+    final _Harness harness = await _pumpIntegrationsWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/integrations?section=api-keys',
+      initialQuery: IntegrationWorkspaceQuery.fromUri(
+        Uri.parse('/integrations?section=api-keys'),
+      ),
+    );
+
+    expect(harness.router.state.uri.queryParameters['section'], 'api-keys');
+    expect(find.text('Billing Export Key'), findsOneWidget);
+    expect(find.textContaining('Create API key'), findsOneWidget);
+    expect(find.text('Lab HL7 Feed'), findsNothing);
+    expect(_table(tester).columnVisibilityStorageKey, 'integrations_apiKeys');
+  });
+
+  testWidgets('deep link via IntegrationWorkspaceQuery filter selects tab', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIntegrationsWorkspace(
+      tester,
+      repository: repository,
+      initialQuery: const IntegrationWorkspaceQuery(
+        filter: IntegrationWorkspaceFilter.apiKeys,
+      ),
+    );
+
+    expect(find.text('Billing Export Key'), findsOneWidget);
+    expect(find.textContaining('Create API key'), findsOneWidget);
+    expect(_table(tester).columnVisibilityStorageKey, 'integrations_apiKeys');
+  });
+
+  testWidgets('hides create actions when user lacks write permission', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIntegrationsWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: _integrationsReadOnlyPolicy(),
+    );
+
+    expect(find.textContaining('Integrations (3)'), findsOneWidget);
+    expect(find.textContaining('Create integration'), findsNothing);
+  });
+
+  testWidgets('narrow viewport keeps tab strip and list', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIntegrationsWorkspace(
+      tester,
+      repository: repository,
+      physicalSize: const Size(720, 900),
+    );
+
+    expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.textContaining('Integrations (3)'), findsOneWidget);
+    expect(find.text('Lab HL7 Feed'), findsOneWidget);
+  });
+}

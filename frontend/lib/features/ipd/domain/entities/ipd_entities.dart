@@ -11,8 +11,6 @@ enum IpdQueueScope {
   all,
 }
 
-enum IpdBoardMode { patientBoard, bedBoard }
-
 enum IpdWorkspaceSection {
   admissionQueue,
   activePatients,
@@ -92,19 +90,24 @@ final class IpdAdmissionQuery {
           params['admissionId'] ??
           params['admission_id'],
     );
+    final IpdWorkspaceSection section = IpdWorkspaceSectionX.fromQueryParam(
+      params['section'],
+    );
     return IpdAdmissionQuery(
       search: admissionId ?? params['search'] ?? '',
+      scope: section.queueScope ?? IpdQueueScope.admissionQueue,
       wardId: _nonEmpty(params['wardId'] ?? params['ward']),
       focusAdmissionId: admissionId,
       focusPanel: IpdDetailPanelX.fromToken(params['panel']),
-      section: IpdWorkspaceSectionX.fromQueryParam(params['section']),
+      section: section,
     );
   }
 
   bool get hasRouteTargeting {
     return search.trim().isNotEmpty ||
         wardId != null ||
-        focusAdmissionId != null;
+        focusAdmissionId != null ||
+        section != IpdWorkspaceSection.admissionQueue;
   }
 
   IpdAdmissionQuery copyWith({

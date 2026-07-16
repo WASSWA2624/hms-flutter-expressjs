@@ -83,4 +83,35 @@ void main() {
       expect(override.isComplete, isTrue);
     });
   });
+
+  group('IpdWorkspaceSectionX', () {
+    test('maps queue scopes and bed board', () {
+      expect(
+        IpdWorkspaceSection.admissionQueue.queueScope,
+        IpdQueueScope.admissionQueue,
+      );
+      expect(
+        IpdWorkspaceSection.activePatients.queueScope,
+        IpdQueueScope.activePatients,
+      );
+      expect(IpdWorkspaceSection.bedBoard.queueScope, isNull);
+      expect(IpdWorkspaceSection.bedBoard.isBedBoard, isTrue);
+      expect(IpdWorkspaceSection.activePatients.isBedBoard, isFalse);
+    });
+
+    test('fromQueryParam accepts aliases', () {
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('active-patients'),
+        IpdWorkspaceSection.activePatients,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('beds'),
+        IpdWorkspaceSection.bedBoard,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('unknown'),
+        IpdWorkspaceSection.admissionQueue,
+      );
+    });
+  });
 }

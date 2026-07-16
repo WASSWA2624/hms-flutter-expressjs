@@ -11,7 +11,6 @@ import 'package:hosspi_hms/core/security/session_isolation.dart';
 import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
-import 'package:hosspi_hms/core/workspace/workspace_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
@@ -80,10 +79,7 @@ final class TheaterWorkspaceController
   }
 
   Future<AppFailure?> refresh() {
-    return _syncVisibleData(
-      showLoading: true,
-      plan: WorkspaceRefreshPlan.admissionManualRefresh,
-    );
+    return _syncVisibleData(showLoading: true);
   }
 
   Future<AppFailure?> applySearch(String value) async {
@@ -105,7 +101,10 @@ final class TheaterWorkspaceController
     return _refreshCases(showLoading: true);
   }
 
-  Future<AppFailure?> applyStatus(String? status) async {
+  Future<AppFailure?> applyStatus(
+    String? status, {
+    bool clearStage = false,
+  }) async {
     final TheaterWorkspaceState? current = _currentState;
     if (current == null) {
       return refresh();
@@ -116,6 +115,7 @@ final class TheaterWorkspaceController
         query: current.query.copyWith(
           status: status,
           clearStatus: status == null,
+          clearStage: clearStage,
           pageRequest: current.query.pageRequest.first(),
         ),
         isRefreshing: true,
@@ -125,7 +125,10 @@ final class TheaterWorkspaceController
     return _refreshCases(showLoading: true);
   }
 
-  Future<AppFailure?> applyStage(String? stage) async {
+  Future<AppFailure?> applyStage(
+    String? stage, {
+    bool clearStatus = false,
+  }) async {
     final TheaterWorkspaceState? current = _currentState;
     if (current == null) {
       return refresh();
@@ -136,6 +139,7 @@ final class TheaterWorkspaceController
         query: current.query.copyWith(
           stage: stage,
           clearStage: stage == null,
+          clearStatus: clearStatus,
           pageRequest: current.query.pageRequest.first(),
         ),
         isRefreshing: true,
@@ -515,7 +519,7 @@ final class TheaterWorkspaceController
     bool showLoading = false,
     WorkspaceRefreshPlan plan = WorkspaceRefreshPlan.admissionManualRefresh,
   }) async {
-    if (plan.isEmpty) {
+    if (!ref.mounted || plan.isEmpty) {
       return null;
     }
     final TheaterWorkspaceState? current = _currentState;
@@ -546,6 +550,9 @@ final class TheaterWorkspaceController
         final AppFailure? failure = await _refreshCases(
           showLoading: showLoading,
         );
+        if (!ref.mounted) {
+          return null;
+        }
         if (failure != null) {
           return failure;
         }
@@ -557,6 +564,9 @@ final class TheaterWorkspaceController
           final Result<TheaterCase> detailResult = await _repository.getCase(
             selected.effectiveDisplayId,
           );
+          if (!ref.mounted) {
+            return null;
+          }
           detailResult.when(
             success: (TheaterCase detail) {
               final TheaterWorkspaceState? latest = _currentState;
@@ -576,16 +586,23 @@ final class TheaterWorkspaceController
 
       return null;
     } finally {
-      final TheaterWorkspaceState? latest = _currentState;
-      if (showLoading && latest != null) {
-        _emit(latest.copyWith(isRefreshing: false, isRefreshingDetail: false));
-      }
-      _isSyncing = false;
-      if (_pendingRefresh.refreshPending &&
-          !(_currentState?.isMutating ?? false)) {
-        final WorkspaceRefreshPlan pendingPlan = _pendingRefresh.takePending();
-        if (!pendingPlan.isEmpty) {
-          unawaited(_syncVisibleData(plan: pendingPlan));
+      if (!ref.mounted) {
+        _isSyncing = false;
+      } else {
+        final TheaterWorkspaceState? latest = _currentState;
+        if (showLoading && latest != null) {
+          _emit(
+            latest.copyWith(isRefreshing: false, isRefreshingDetail: false),
+          );
+        }
+        _isSyncing = false;
+        if (_pendingRefresh.refreshPending &&
+            !(_currentState?.isMutating ?? false)) {
+          final WorkspaceRefreshPlan pendingPlan = _pendingRefresh
+              .takePending();
+          if (!pendingPlan.isEmpty) {
+            unawaited(_syncVisibleData(plan: pendingPlan));
+          }
         }
       }
     }
@@ -720,6 +737,9 @@ final class TheaterWorkspaceController
   }
 
   TheaterWorkspaceState? get _currentState {
+    if (!ref.mounted) {
+      return null;
+    }
     final Result<TheaterWorkspaceState>? currentResult = state.asData?.value;
     return switch (currentResult) {
       ResultSuccess<TheaterWorkspaceState>(value: final value) => value,
@@ -728,6 +748,9 @@ final class TheaterWorkspaceController
   }
 
   void _emit(TheaterWorkspaceState nextState) {
+    if (!ref.mounted) {
+      return;
+    }
     state = AsyncData<Result<TheaterWorkspaceState>>(
       Result<TheaterWorkspaceState>.success(nextState),
     );

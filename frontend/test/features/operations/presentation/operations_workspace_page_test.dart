@@ -281,8 +281,9 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(router.state.uri.queryParameters['section'], 'assets');
-    expect(find.text('Backup Generator'), findsOneWidget);
-    expect(find.text('GEN-01'), findsOneWidget);
+    expect(find.text('No assets registered'), findsNothing);
+    expect(find.text('Backup Generator (GEN-01)'), findsOneWidget);
+    expect(find.text('GEN-01'), findsWidgets);
     expect(find.text('Generator alarm'), findsNothing);
     expect(find.text('Pump seal leak'), findsNothing);
   });
@@ -333,8 +334,10 @@ void main() {
       ),
     );
 
-    expect(find.text('Backup Generator'), findsOneWidget);
-    expect(find.text('GEN-01'), findsOneWidget);
+    expect(find.text('Tag'), findsOneWidget);
+    expect(find.text('No assets registered'), findsNothing);
+    expect(find.text('Backup Generator (GEN-01)'), findsOneWidget);
+    expect(find.text('GEN-01'), findsWidgets);
     expect(find.text('Generator alarm'), findsNothing);
   });
 }

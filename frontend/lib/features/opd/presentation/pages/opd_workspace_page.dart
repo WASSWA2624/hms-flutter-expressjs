@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart' show setEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
+import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -72,6 +73,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
   _tableColumnController;
   final ValueNotifier<AppPageRequest> _tablePageNotifier =
       ValueNotifier<AppPageRequest>(const AppPageRequest(pageSize: 12));
+  late OpdWorkspaceSection _section;
   String? _appliedRouteSignature;
 
   @override
@@ -79,9 +81,8 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     super.initState();
     _searchController = TextEditingController();
     _tableColumnController =
-        AppListTableColumnVisibilityController<_OpdTableItem>(
-          storageKey: 'opd.worklist',
-        );
+        AppListTableColumnVisibilityController<_OpdTableItem>();
+    _section = widget.initialQuery?.section ?? OpdWorkspaceSection.all;
     _searchController.addListener(_resetTablePage);
     _scheduleRouteQuery(widget.initialQuery);
   }
@@ -108,68 +109,95 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final OpdWorkspaceState state = widget.state;
-    final OpdWorkspaceController controller = ref.read(
-      opdWorkspaceControllerProvider.notifier,
-    );
-    return AppWorkspace(
-      title: l10n.opdTitle,
-      leadingIcon: AppRouteIcons.opd,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        summaryNotifications: _opdBackendSummaryNotifications(
-          context,
-          state.summaryCounts,
-        ),
-        primary: AppAccessActionGate(
-          requirement: opdEncounterPermissionRequirement,
-          builder: (BuildContext context, bool isAllowed) {
-            return AppButton.primary(
-              label: l10n.opdStartWalkInAction,
-              leadingIcon: opdEncounterIcon,
-              semanticLabel: l10n.opdStartWalkInAction,
-              tooltip: l10n.opdStartEncounterTooltip,
-              enabled: isAllowed,
-              onPressed: () {
-                unawaited(
-                  openOpdWorkspaceEncounterFlow(context, ref, widget.state),
+    final List<_OpdTableItem> allItems = _tableItems(context, state);
+
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: AppTabStrip(
+                    tabs: <AppTabItem>[
+                      for (final OpdWorkspaceSection section
+                          in OpdWorkspaceSection.values)
+                        AppTabItem(
+                          id: section.name,
+                          icon: _opdSectionIcon(section),
+                          label:
+                              '${_opdSectionLabel(l10n, section)} (${_opdSectionCount(state, section, allItems)})',
+                        ),
+                    ],
+                    selectedId: _section.name,
+                    onTabTapped: (String tabId) {
+                      for (final OpdWorkspaceSection section
+                          in OpdWorkspaceSection.values) {
+                        if (section.name == tabId) {
+                          _handleTabChanged(section);
+                          break;
+                        }
+                      }
+                    },
+                  ),
+                ),
+                SizedBox(width: theme.spacing.sm),
+                AppAccessActionGate(
+                  requirement: opdEncounterPermissionRequirement,
+                  builder: (BuildContext context, bool isAllowed) {
+                    return AppButton.primary(
+                      label: l10n.opdStartWalkInAction,
+                      leadingIcon: opdEncounterIcon,
+                      semanticLabel: l10n.opdStartWalkInAction,
+                      tooltip: l10n.opdStartEncounterTooltip,
+                      enabled: isAllowed,
+                      onPressed: () {
+                        unawaited(
+                          openOpdWorkspaceEncounterFlow(
+                            context,
+                            ref,
+                            widget.state,
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
+            ),
+            SizedBox(height: theme.spacing.md),
+            ValueListenableBuilder<_OpdTableFilter>(
+              valueListenable: _filterNotifier,
+              builder: (BuildContext context, _OpdTableFilter filter, _) {
+                return ValueListenableBuilder<AppPageRequest>(
+                  valueListenable: _tablePageNotifier,
+                  builder:
+                      (
+                        BuildContext context,
+                        AppPageRequest tablePageRequest,
+                        _,
+                      ) {
+                        return _OpdWorkspaceBody(
+                          state: state,
+                          section: _section,
+                          filter: filter,
+                          searchController: _searchController,
+                          columnVisibilityController: _tableColumnController,
+                          pageRequest: tablePageRequest,
+                          onPageChanged: _setTablePage,
+                          onFilterChanged: _setFilter,
+                        );
+                      },
                 );
               },
-            );
-          },
+            ),
+          ],
         ),
-        onRefresh: () async {
-          final AppFailure? failure = await controller.refresh();
-          if (context.mounted) {
-            _showFailureIfNeeded(context, failure);
-          }
-        },
-        isRefreshing:
-            state.isRefreshingAppointments ||
-            state.isRefreshingQueue ||
-            state.isRefreshingFlows ||
-            state.isRefreshingTriageQueue,
-      ),
-
-      body: ValueListenableBuilder<_OpdTableFilter>(
-        valueListenable: _filterNotifier,
-        builder: (BuildContext context, _OpdTableFilter filter, _) {
-          return ValueListenableBuilder<AppPageRequest>(
-            valueListenable: _tablePageNotifier,
-            builder:
-                (BuildContext context, AppPageRequest tablePageRequest, _) {
-                  return _OpdWorkspaceBody(
-                    state: state,
-                    filter: filter,
-                    searchController: _searchController,
-                    columnVisibilityController: _tableColumnController,
-                    pageRequest: tablePageRequest,
-                    onPageChanged: _setTablePage,
-                    onFilterChanged: _setFilter,
-                  );
-                },
-          );
-        },
       ),
     );
   }
@@ -182,153 +210,25 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     _tablePageNotifier.value = _tablePageNotifier.value.first();
   }
 
-  List<AppWorkspaceSummaryNotification> _opdBackendSummaryNotifications(
-    BuildContext context,
-    OpdFlowAggregateCounts counts,
-  ) {
-    final List<AppWorkspaceSummaryNotification> notifications =
-        <AppWorkspaceSummaryNotification>[];
-
-    void addCard(
-      String key,
-      int value,
-      IconData icon, {
-      AppWorkspaceStatusTone? tone,
-      _OpdTableFilter filter = const _OpdTableFilter(),
-    }) {
-      if (value <= 0) {
-        return;
-      }
-      notifications.add(
-        AppWorkspaceSummaryNotification(
-          label: opdSummaryCountLabel(context.l10n, key),
-          count: value,
-          icon: icon,
-          tone: tone ?? AppWorkspaceStatusTone.neutral,
-          onSelected: () => _applySummaryFilter(filter),
-        ),
-      );
+  void _handleTabChanged(OpdWorkspaceSection section) {
+    if (section == _section) {
+      return;
     }
-
-    addCard('all_patients', counts.allPatients, Icons.groups_outlined);
-    addCard(
-      'all_opd_patients',
-      counts.allOpdPatients,
-      Icons.local_hospital_outlined,
-    );
-    addCard(
-      'active_opd',
-      counts.activeOpd,
-      Icons.medical_services_outlined,
-      tone: AppWorkspaceStatusTone.success,
-      filter: const _OpdTableFilter(category: _opdCategoryActiveFlow),
-    );
-    addCard(
-      'vitals_needed',
-      counts.vitalsNeeded,
-      Icons.monitor_heart_outlined,
-      tone: AppWorkspaceStatusTone.warning,
-      filter: const _OpdTableFilter(
-        category: _opdCategoryActiveFlow,
-        statuses: <String>{'VITALS_NEEDED', 'WAITING_VITALS'},
-      ),
-    );
-    addCard(
-      'doctor_needed',
-      counts.doctorNeeded,
-      Icons.assignment_ind_outlined,
-      tone: AppWorkspaceStatusTone.warning,
-      filter: const _OpdTableFilter(
-        category: _opdCategoryActiveFlow,
-        statuses: <String>{'DOCTOR_NEEDED', 'WAITING_DOCTOR_ASSIGNMENT'},
-      ),
-    );
-    addCard(
-      'with_doctor',
-      counts.withDoctor,
-      Icons.medical_services_outlined,
-      tone: AppWorkspaceStatusTone.info,
-      filter: const _OpdTableFilter(
-        category: _opdCategoryActiveFlow,
-        statuses: <String>{'WITH_DOCTOR', 'WAITING_DOCTOR_REVIEW'},
-      ),
-    );
-    addCard(
-      'lab_pending',
-      counts.labPending,
-      Icons.science_outlined,
-      tone: AppWorkspaceStatusTone.info,
-      filter: const _OpdTableFilter(
-        category: _opdCategoryActiveFlow,
-        statuses: <String>{
-          'LAB_PENDING',
-          'SAMPLE_PENDING',
-          'IN_LAB',
-          'LAB_REQUESTED',
-          'LAB_AND_RADIOLOGY_REQUESTED',
-        },
-      ),
-    );
-    addCard(
-      'imaging_pending',
-      counts.imagingPending,
-      Icons.biotech_outlined,
-      tone: AppWorkspaceStatusTone.info,
-      filter: const _OpdTableFilter(
-        category: _opdCategoryActiveFlow,
-        statuses: <String>{
-          'IMAGING_PENDING',
-          'REPORT_PENDING',
-          'RADIOLOGY_REQUESTED',
-          'LAB_AND_RADIOLOGY_REQUESTED',
-        },
-      ),
-    );
-    addCard(
-      'pharmacy_pending',
-      counts.pharmacyPending,
-      Icons.medication_outlined,
-      tone: AppWorkspaceStatusTone.warning,
-      filter: const _OpdTableFilter(
-        category: _opdCategoryActiveFlow,
-        statuses: <String>{'PHARMACY_PENDING', 'PHARMACY_REQUESTED'},
-      ),
-    );
-    addCard(
-      'decision_needed',
-      counts.decisionNeeded,
-      Icons.task_alt_outlined,
-      tone: AppWorkspaceStatusTone.info,
-      filter: const _OpdTableFilter(
-        category: _opdCategoryActiveFlow,
-        statuses: <String>{
-          'DECISION_NEEDED',
-          'RESULTS_READY',
-          'REPORT_READY',
-          'MEDICINES_DISPENSED',
-          'WAITING_DISPOSITION',
-        },
-      ),
-    );
-    addCard(
-      'admission_pending',
-      counts.admissionPending,
-      Icons.bed_outlined,
-      tone: AppWorkspaceStatusTone.warning,
-      filter: const _OpdTableFilter(
-        category: _opdCategoryActiveFlow,
-        statuses: <String>{'ADMISSION_PENDING'},
-      ),
-    );
-
-    return notifications;
+    setState(() => _section = section);
+    _updateUrlForSection(section);
+    _setFilter(const _OpdTableFilter());
+    _searchController.clear();
   }
 
-  void _applySummaryFilter(_OpdTableFilter filter) {
-    if (filter.search.trim().isEmpty && _searchController.text.isNotEmpty) {
-      _searchController.clear();
+  void _updateUrlForSection(OpdWorkspaceSection section) {
+    if (!mounted) {
+      return;
     }
-    _setFilter(filter);
+    final String tab = _opdSectionQueryValue(section);
+    final String location = AppRoutes.opd.location(
+      queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
+    );
+    GoRouter.of(context).replace<void>(location);
   }
 
   void _setTablePage(AppPageRequest request) {
@@ -362,6 +262,9 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
   }
 
   Future<void> _applyRouteQuery(OpdWorkspaceQuery query) async {
+    if (query.section != OpdWorkspaceSection.all && query.section != _section) {
+      setState(() => _section = query.section);
+    }
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;
     }
@@ -397,6 +300,7 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
 class _OpdWorkspaceBody extends StatefulWidget {
   const _OpdWorkspaceBody({
     required this.state,
+    required this.section,
     required this.filter,
     required this.searchController,
     required this.columnVisibilityController,
@@ -406,6 +310,7 @@ class _OpdWorkspaceBody extends StatefulWidget {
   });
 
   final OpdWorkspaceState state;
+  final OpdWorkspaceSection section;
   final _OpdTableFilter filter;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<_OpdTableItem>
@@ -433,18 +338,25 @@ class _OpdWorkspaceBodyState extends State<_OpdWorkspaceBody> {
   @override
   Widget build(BuildContext context) {
     final List<_OpdTableItem> allItems = _getAllItems(context);
-    final List<_OpdTableItem> items = allItems
+    final String? sectionCategory = _opdSectionCategory(widget.section);
+    final List<_OpdTableItem> sectionItems = sectionCategory == null
+        ? allItems
+        : allItems
+              .where((_OpdTableItem item) => item.category == sectionCategory)
+              .toList(growable: false);
+    final List<_OpdTableItem> items = sectionItems
         .where((_OpdTableItem item) => widget.filter.matches(item))
         .toList(growable: false);
 
     return _OpdMainTable(
       state: widget.state,
+      section: widget.section,
       page: _tablePage(items, widget.pageRequest),
       searchController: widget.searchController,
       columnVisibilityController: widget.columnVisibilityController,
       filter: widget.filter,
-      filterItems: allItems,
-      statuses: _tableStatuses(allItems),
+      filterItems: sectionItems,
+      statuses: _tableStatuses(sectionItems),
       onPageChanged: widget.onPageChanged,
       onFilterChanged: widget.onFilterChanged,
       isLoading:
@@ -1960,6 +1872,101 @@ const List<_OpdTableColumnId> _defaultOpdTableColumns = <_OpdTableColumnId>[
   _OpdTableColumnId.provider,
 ];
 
+String? _opdSectionCategory(OpdWorkspaceSection section) {
+  return switch (section) {
+    OpdWorkspaceSection.all => null,
+    OpdWorkspaceSection.arrivals => _opdCategoryArrival,
+    OpdWorkspaceSection.queue => _opdCategoryQueue,
+    OpdWorkspaceSection.triage => _opdCategoryTriage,
+    OpdWorkspaceSection.active => _opdCategoryActiveFlow,
+  };
+}
+
+IconData _opdSectionIcon(OpdWorkspaceSection section) {
+  return switch (section) {
+    OpdWorkspaceSection.all => Icons.dashboard_outlined,
+    OpdWorkspaceSection.arrivals => Icons.event_outlined,
+    OpdWorkspaceSection.queue => Icons.queue_outlined,
+    OpdWorkspaceSection.triage => Icons.monitor_heart_outlined,
+    OpdWorkspaceSection.active => Icons.medical_services_outlined,
+  };
+}
+
+String _opdSectionLabel(AppLocalizations l10n, OpdWorkspaceSection section) {
+  return switch (section) {
+    OpdWorkspaceSection.all => l10n.opdSectionAllLabel,
+    OpdWorkspaceSection.arrivals => l10n.opdSectionArrivalsLabel,
+    OpdWorkspaceSection.queue => l10n.opdSectionQueueLabel,
+    OpdWorkspaceSection.triage => l10n.opdSectionTriageLabel,
+    OpdWorkspaceSection.active => l10n.opdSectionActiveLabel,
+  };
+}
+
+int _opdSectionCount(
+  OpdWorkspaceState state,
+  OpdWorkspaceSection section,
+  List<_OpdTableItem> allItems,
+) {
+  return switch (section) {
+    OpdWorkspaceSection.all => allItems.length,
+    OpdWorkspaceSection.arrivals => state.arrivalCount,
+    OpdWorkspaceSection.queue => state.queueCount,
+    OpdWorkspaceSection.triage => state.triageQueueCount,
+    OpdWorkspaceSection.active =>
+      state.summaryCounts.activeOpd > 0
+          ? state.summaryCounts.activeOpd
+          : state.activeFlowCount,
+  };
+}
+
+String _opdSectionQueryValue(OpdWorkspaceSection section) {
+  return switch (section) {
+    OpdWorkspaceSection.all => '',
+    OpdWorkspaceSection.arrivals => 'arrivals',
+    OpdWorkspaceSection.queue => 'queue',
+    OpdWorkspaceSection.triage => 'triage',
+    OpdWorkspaceSection.active => 'active',
+  };
+}
+
+List<_OpdTableColumnId> _opdDefaultColumnsForSection(
+  OpdWorkspaceSection section,
+) {
+  return switch (section) {
+    OpdWorkspaceSection.all => _defaultOpdTableColumns,
+    OpdWorkspaceSection.arrivals => const <_OpdTableColumnId>[
+      _OpdTableColumnId.patientNumber,
+      _OpdTableColumnId.patientName,
+      _OpdTableColumnId.visitType,
+      _OpdTableColumnId.arrivalTime,
+      _OpdTableColumnId.nextStep,
+    ],
+    OpdWorkspaceSection.queue => const <_OpdTableColumnId>[
+      _OpdTableColumnId.patientNumber,
+      _OpdTableColumnId.patientName,
+      _OpdTableColumnId.queueStatus,
+      _OpdTableColumnId.provider,
+      _OpdTableColumnId.nextStep,
+    ],
+    OpdWorkspaceSection.triage => const <_OpdTableColumnId>[
+      _OpdTableColumnId.patientNumber,
+      _OpdTableColumnId.patientName,
+      _OpdTableColumnId.queueStatus,
+      _OpdTableColumnId.waitingTime,
+      _OpdTableColumnId.provider,
+      _OpdTableColumnId.nextStep,
+    ],
+    OpdWorkspaceSection.active => const <_OpdTableColumnId>[
+      _OpdTableColumnId.patientNumber,
+      _OpdTableColumnId.patientName,
+      _OpdTableColumnId.queueStatus,
+      _OpdTableColumnId.nextStep,
+      _OpdTableColumnId.provider,
+      _OpdTableColumnId.encounter,
+    ],
+  };
+}
+
 const List<_OpdTableColumnId> _availableOpdTableColumns = <_OpdTableColumnId>[
   _OpdTableColumnId.patientNumber,
   _OpdTableColumnId.patientName,
@@ -2093,6 +2100,7 @@ _OpdTableFilter _opdFilterForPanel(String panel) {
 class _OpdMainTable extends ConsumerWidget {
   const _OpdMainTable({
     required this.state,
+    required this.section,
     required this.page,
     required this.searchController,
     required this.columnVisibilityController,
@@ -2105,6 +2113,7 @@ class _OpdMainTable extends ConsumerWidget {
   });
 
   final OpdWorkspaceState state;
+  final OpdWorkspaceSection section;
   final AppPage<_OpdTableItem> page;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<_OpdTableItem>
@@ -2125,7 +2134,8 @@ class _OpdMainTable extends ConsumerWidget {
       child: AppListTable<_OpdTableItem>(
         page: page,
         columnVisibilityController: columnVisibilityController,
-        columnVisibilityStorageKey: 'opd.worklist',
+        columnVisibilityStorageKey: 'opd_${section.name}',
+        columnWidthStorageKey: 'opd_cw_${section.name}',
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
         isLoading: isLoading,
         shrinkWrap: true,
@@ -2137,7 +2147,9 @@ class _OpdMainTable extends ConsumerWidget {
           minHeight: 260,
         ),
         columns: <AppListTableColumn<_OpdTableItem>>[
-          for (final _OpdTableColumnId column in _defaultOpdTableColumns)
+          for (final _OpdTableColumnId column in _opdDefaultColumnsForSection(
+            section,
+          ))
             _opdDataColumn(context, column),
         ],
         columnChoices: <AppListTableColumn<_OpdTableItem>>[
@@ -3031,10 +3043,6 @@ AppWorkspaceStatusTone _stageTone(String? value) {
     'WAITING_DISPOSITION' => AppWorkspaceStatusTone.info,
     _ => AppWorkspaceStatusTone.neutral,
   };
-}
-
-void _showFailureIfNeeded(BuildContext context, AppFailure? failure) {
-  showAppFailureSnackBar(context, failure);
 }
 
 const String _opdCategoryArrival = 'ARRIVAL';

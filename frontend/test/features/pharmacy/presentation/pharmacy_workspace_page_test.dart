@@ -32,7 +32,6 @@ const PharmacyOrder _readyOrder = PharmacyOrder(
   status: 'ORDERED',
   itemCount: 1,
   quantityPrescribedTotal: 24,
-  quantityDispensedTotal: 0,
 );
 
 const PharmacyOrder _partialOrder = PharmacyOrder(
@@ -66,7 +65,6 @@ const PharmacyOrder _pendingPaymentOrder = PharmacyOrder(
   paymentStatus: 'PENDING',
   itemCount: 1,
   quantityPrescribedTotal: 5,
-  quantityDispensedTotal: 0,
 );
 
 const List<PharmacyOrder> _allOrders = <PharmacyOrder>[
@@ -275,9 +273,9 @@ void main() {
     expect(find.text('Noah Ready'), findsOneWidget);
     expect(find.text('Amina Partial'), findsNothing);
     expect(find.textContaining('Dispense'), findsWidgets);
-    expect(find.text('Low stock'), findsOneWidget);
-    expect(find.text('Almost out'), findsOneWidget);
-    expect(find.text('Expiring soon'), findsOneWidget);
+    // Inventory alerts live in the toolbar overflow (showsNotifications).
+    expect(find.textContaining('Ready ('), findsOneWidget);
+    expect(find.textContaining('All orders ('), findsOneWidget);
   });
 
   testWidgets('switching tabs updates URL and applies filter', (

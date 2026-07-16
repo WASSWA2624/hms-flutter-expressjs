@@ -549,19 +549,23 @@ class _OperationsAssetsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     return AppListTable<OperationsAsset>(
-      items: state.assets.items,
+      page: state.assets,
       isLoading: state.isRefreshing,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       columnVisibilityStorageKey: 'operations_assets',
       columnWidthStorageKey: 'operations_cw_assets',
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.operationsNoAssetsTitle,
         body: l10n.operationsNoAssetsBody,
       ),
+      itemKeyBuilder: (OperationsAsset asset) => ValueKey<String>(asset.id),
       columns: <AppListTableColumn<OperationsAsset>>[
         AppListTableColumn<OperationsAsset>(
+          id: 'asset_name',
           label: l10n.operationsAssetNameColumnLabel,
+          alwaysVisible: true,
           cellBuilder: (BuildContext context, OperationsAsset asset) {
             return _CopyableSubtitleCell(
               title: asset.effectiveLabel,
@@ -570,18 +574,21 @@ class _OperationsAssetsPanel extends StatelessWidget {
           },
         ),
         AppListTableColumn<OperationsAsset>(
+          id: 'asset_tag',
           label: l10n.operationsAssetTagColumnLabel,
           cellBuilder: (BuildContext context, OperationsAsset asset) {
             return Text(_display(asset.assetTag, l10n.operationsUnknownValue));
           },
         ),
         AppListTableColumn<OperationsAsset>(
+          id: 'asset_status',
           label: l10n.operationsStatusColumnLabel,
           cellBuilder: (BuildContext context, OperationsAsset asset) {
             return _OperationStatusBadge(status: asset.status);
           },
         ),
         AppListTableColumn<OperationsAsset>(
+          id: 'asset_location',
           label: l10n.operationsLocationColumnLabel,
           cellBuilder: (BuildContext context, OperationsAsset asset) {
             return Text(

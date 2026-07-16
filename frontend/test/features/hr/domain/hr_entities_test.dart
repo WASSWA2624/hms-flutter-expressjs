@@ -106,7 +106,10 @@ void main() {
     });
 
     test('fromQuery resolves aliases', () {
-      expect(HrDeskSection.fromQuery('leave-requests'), HrDeskSection.leaveRequests);
+      expect(
+        HrDeskSection.fromQuery('leave-requests'),
+        HrDeskSection.leaveRequests,
+      );
       expect(HrDeskSection.fromQuery('leaves'), HrDeskSection.leaveRequests);
       expect(HrDeskSection.fromQuery('roster'), HrDeskSection.shiftRoster);
       expect(HrDeskSection.fromQuery('roles'), HrDeskSection.access);

@@ -9,6 +9,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 import 'package:hosspi_hms/features/claims/presentation/claims_access.dart';
@@ -84,6 +85,16 @@ class _ClaimsWorkspaceContentState
     _tableColumnController =
         AppListTableColumnVisibilityController<ClaimsQueueItem>();
     _scheduleRouteQuery(widget.initialQuery);
+    if (widget.initialQuery?.section.isNotEmpty != true) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        unawaited(
+          ref
+              .read(claimsWorkspaceControllerProvider.notifier)
+              .applyFilter(_defaultFilterForSection(_section)),
+        );
+      });
+    }
   }
 
   @override
@@ -229,9 +240,39 @@ class _ClaimsWorkspaceContentState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final bool isMobile = AppBreakpoints.of(context).isMobile;
     final ClaimsWorkspaceState state = widget.state;
     final ClaimsWorkspaceController controller = ref.read(
       claimsWorkspaceControllerProvider.notifier,
+    );
+    final Widget primaryAction = _buildPrimaryActionButton(
+      l10n,
+      state,
+      controller,
+    );
+    final Widget tabStrip = AppTabStrip(
+      tabs: <AppTabItem>[
+        for (final ClaimsDeskSection section in ClaimsDeskSection.values)
+          AppTabItem(
+            id: section.name,
+            icon: _sectionIcon(section),
+            label:
+                '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
+          ),
+      ],
+      selectedId: _section.name,
+      onTabTapped: (String tabId) {
+        for (final ClaimsDeskSection section in ClaimsDeskSection.values) {
+          if (section.name == tabId) {
+            setState(() => _section = section);
+            _updateUrlForSection(section);
+            unawaited(
+              controller.applyFilter(_defaultFilterForSection(section)),
+            );
+            break;
+          }
+        }
+      },
     );
 
     return ResponsivePage(
@@ -243,42 +284,20 @@ class _ClaimsWorkspaceContentState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: AppTabStrip(
-                    tabs: <AppTabItem>[
-                      for (final ClaimsDeskSection section
-                          in ClaimsDeskSection.values)
-                        AppTabItem(
-                          id: section.name,
-                          icon: _sectionIcon(section),
-                          label:
-                              '${_sectionLabel(l10n, section)} (${_sectionCount(state, section)})',
-                        ),
-                    ],
-                    selectedId: _section.name,
-                    onTabTapped: (String tabId) {
-                      for (final ClaimsDeskSection section
-                          in ClaimsDeskSection.values) {
-                        if (section.name == tabId) {
-                          setState(() => _section = section);
-                          _updateUrlForSection(section);
-                          unawaited(
-                            controller.applyFilter(
-                              _defaultFilterForSection(section),
-                            ),
-                          );
-                          break;
-                        }
-                      }
-                    },
-                  ),
-                ),
-                SizedBox(width: theme.spacing.sm),
-                _buildPrimaryActionButton(l10n, state, controller),
+            if (isMobile) ...<Widget>[
+              tabStrip,
+              if (_section != ClaimsDeskSection.settled) ...<Widget>[
+                SizedBox(height: theme.spacing.sm),
+                Align(alignment: Alignment.centerRight, child: primaryAction),
               ],
-            ),
+            ] else
+              Row(
+                children: <Widget>[
+                  Expanded(child: tabStrip),
+                  SizedBox(width: theme.spacing.sm),
+                  primaryAction,
+                ],
+              ),
             SizedBox(height: theme.spacing.md),
             if (_section == ClaimsDeskSection.authorizations ||
                 _section == ClaimsDeskSection.activeClaims) ...<Widget>[

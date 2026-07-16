@@ -35,6 +35,7 @@ final class RoomsBedsQuery {
 
   factory RoomsBedsQuery.fromUri(Uri uri) {
     final Map<String, String> params = uri.queryParameters;
+    final String? statusRaw = _nonEmpty(params['status']);
     return RoomsBedsQuery(
       section: _parseRoomsBedsSection(params['section'] ?? params['tab'] ?? ''),
       search: params['search'] ?? '',
@@ -42,7 +43,9 @@ final class RoomsBedsQuery {
       wardId: _nonEmpty(params['wardId'] ?? params['ward']),
       roomId: _nonEmpty(params['roomId'] ?? params['room']),
       bedId: _nonEmpty(params['bedId'] ?? params['bed']),
-      status: BedSetupStatusX.fromApiValue(params['status']),
+      status: statusRaw == null
+          ? null
+          : BedSetupStatusX.fromApiValue(statusRaw),
     );
   }
 

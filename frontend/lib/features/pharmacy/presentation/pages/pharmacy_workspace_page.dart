@@ -117,6 +117,11 @@ class _PharmacyWorkspaceContentState
         '';
     if (section == 'inventory' || section == 'stock') {
       _handledSectionDeepLink = true;
+      // Defer dialog open so prepareCatalogTab does not run mid-build.
+      await Future<void>.delayed(Duration.zero);
+      if (!mounted) {
+        return;
+      }
       await openPharmacyCatalogDialog(
         context,
         ref,
@@ -2656,7 +2661,7 @@ List<AppListTableColumn<PharmacyOrder>> _columnsForSection(
     PharmacyDeskSection.queue => base,
     PharmacyDeskSection.inProgress => base,
     PharmacyDeskSection.pendingPayment => <AppListTableColumn<PharmacyOrder>>[
-      ...base,
+      ...base.take(4),
       ..._optionalPharmacyWorklistColumns(
         context,
       ).where((AppListTableColumn<PharmacyOrder> c) => c.id == 'ordered_at'),

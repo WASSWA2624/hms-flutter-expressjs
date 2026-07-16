@@ -4324,6 +4324,36 @@ abstract class AppLocalizations {
   /// **'Loading OPD queue and encounters...'**
   String get opdLoadingBody;
 
+  /// Tab label for showing all OPD worklist items
+  ///
+  /// In en, this message translates to:
+  /// **'All worklist'**
+  String get opdSectionAllLabel;
+
+  /// Tab label for showing appointment arrivals
+  ///
+  /// In en, this message translates to:
+  /// **'Arrivals'**
+  String get opdSectionArrivalsLabel;
+
+  /// Tab label for showing visit queue entries
+  ///
+  /// In en, this message translates to:
+  /// **'Queue'**
+  String get opdSectionQueueLabel;
+
+  /// Tab label for showing triage queue flows
+  ///
+  /// In en, this message translates to:
+  /// **'Triage'**
+  String get opdSectionTriageLabel;
+
+  /// Tab label for showing active OPD encounters
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get opdSectionActiveLabel;
+
   /// Title for the reception front-desk workspace.
   ///
   /// In en, this message translates to:

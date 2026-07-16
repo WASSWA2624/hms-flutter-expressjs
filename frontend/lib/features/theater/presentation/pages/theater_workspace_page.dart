@@ -59,6 +59,10 @@ class _TheaterWorkspacePageState extends ConsumerState<TheaterWorkspacePage> {
     final TheaterWorkspaceController controller = ref.read(
       theaterWorkspaceControllerProvider.notifier,
     );
+    await ref.read(theaterWorkspaceControllerProvider.future);
+    if (!mounted) {
+      return;
+    }
     if (query.focusCaseId == null && query.search.isNotEmpty) {
       await controller.applyBoardQuery(query);
     }
@@ -217,13 +221,13 @@ class _TheaterWorkspaceContentState
     );
     switch (section) {
       case TheaterSection.scheduled:
-        controller.applyStatus('SCHEDULED');
+        unawaited(controller.applyStatus('SCHEDULED', clearStage: true));
       case TheaterSection.inTheater:
-        controller.applyStatus('IN_PROGRESS');
+        unawaited(controller.applyStatus('IN_PROGRESS', clearStage: true));
       case TheaterSection.recovery:
-        controller.applyStage('POST_OP');
+        unawaited(controller.applyStage('POST_OP', clearStatus: true));
       case TheaterSection.all:
-        controller.clearFilters();
+        unawaited(controller.clearFilters());
     }
   }
 

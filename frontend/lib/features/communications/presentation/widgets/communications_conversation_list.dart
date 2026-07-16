@@ -40,23 +40,13 @@ class CommunicationsConversationList extends ConsumerWidget {
         if (canWrite)
           Padding(
             padding: EdgeInsets.only(bottom: theme.spacing.sm),
-            child: Wrap(
-              spacing: theme.spacing.xs,
-              runSpacing: theme.spacing.xs,
-              children: <Widget>[
-                AppButton.primary(
-                  label: context.l10n.communicationsNewMessageAction,
-                  leadingIcon: Icons.edit_outlined,
-                  onPressed: () =>
-                      showCommunicationsNewDirectMessageDialog(context, ref),
-                ),
-                AppButton.secondary(
-                  label: context.l10n.communicationsNewGroupAction,
-                  leadingIcon: Icons.group_add_outlined,
-                  onPressed: () =>
-                      showCommunicationsNewGroupDialog(context, ref),
-                ),
-              ],
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: AppButton.secondary(
+                label: context.l10n.communicationsNewGroupAction,
+                leadingIcon: Icons.group_add_outlined,
+                onPressed: () => showCommunicationsNewGroupDialog(context, ref),
+              ),
             ),
           ),
         AppSearchBar(

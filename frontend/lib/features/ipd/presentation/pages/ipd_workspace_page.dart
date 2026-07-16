@@ -121,6 +121,12 @@ class _IpdWorkspacePageState extends ConsumerState<IpdWorkspacePage> {
       ipdWorkspaceControllerProvider.notifier,
     );
     await controller.applyRouteQuery(query);
+    if (!mounted) {
+      return;
+    }
+    if (query.section.isBedBoard) {
+      await controller.loadBedBoard();
+    }
     if (!mounted || query.focusAdmissionId == null) {
       return;
     }
@@ -132,7 +138,8 @@ class _IpdWorkspacePageState extends ConsumerState<IpdWorkspacePage> {
       return null;
     }
     return '${query.search}|${query.wardId}|${query.scope.name}'
-        '|${query.focusAdmissionId}|${query.focusPanel?.name}';
+        '|${query.section.name}|${query.focusAdmissionId}'
+        '|${query.focusPanel?.name}';
   }
 
   @override
@@ -152,16 +159,20 @@ class _IpdWorkspacePageState extends ConsumerState<IpdWorkspacePage> {
         ref.read(ipdWorkspaceControllerProvider.notifier).refresh();
       },
       dataBuilder: (BuildContext context, IpdWorkspaceState data) {
-        return _IpdWorkspaceContent(state: data);
+        return _IpdWorkspaceContent(
+          state: data,
+          initialQuery: widget.initialQuery,
+        );
       },
     );
   }
 }
 
 class _IpdWorkspaceContent extends ConsumerStatefulWidget {
-  const _IpdWorkspaceContent({required this.state});
+  const _IpdWorkspaceContent({required this.state, this.initialQuery});
 
   final IpdWorkspaceState state;
+  final IpdAdmissionQuery? initialQuery;
 
   @override
   ConsumerState<_IpdWorkspaceContent> createState() =>
@@ -172,7 +183,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<IpdAdmissionSummary>
   _tableColumnController;
-  IpdWorkspaceSection _section = IpdWorkspaceSection.admissionQueue;
+  late IpdWorkspaceSection _section;
 
   @override
   void initState() {
@@ -180,24 +191,33 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<IpdAdmissionSummary>();
-    _section = widget.state.query.section;
+    _section = widget.initialQuery?.section ?? widget.state.query.section;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _applySectionFilter(_section);
+    });
+  }
+
+  void _applySectionFilter(IpdWorkspaceSection section) {
+    final IpdWorkspaceController controller = ref.read(
+      ipdWorkspaceControllerProvider.notifier,
+    );
+    final IpdQueueScope? scope = section.queueScope;
+    if (scope != null) {
+      if (scope != widget.state.query.scope) {
+        unawaited(controller.applyScope(scope));
+      }
+    } else if (section.isBedBoard) {
+      unawaited(controller.loadBedBoard());
+    }
   }
 
   void _selectSection(IpdWorkspaceSection section) {
     if (_section == section) return;
     setState(() => _section = section);
-
-    final IpdWorkspaceController controller = ref.read(
-      ipdWorkspaceControllerProvider.notifier,
-    );
-
-    final IpdQueueScope? scope = section.queueScope;
-    if (scope != null) {
-      unawaited(controller.applyScope(scope));
-    } else if (section.isBedBoard) {
-      unawaited(controller.loadBedBoard());
-    }
-
+    _applySectionFilter(section);
     _updateUrlForSection(section);
   }
 

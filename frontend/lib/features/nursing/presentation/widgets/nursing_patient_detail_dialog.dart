@@ -14,12 +14,15 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
+import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_discharge_clearance_dialog.dart';
+import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_escalation_dialog.dart';
+import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_handover_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_medication_dialog.dart';
-import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_handover_dialog.dart';
+import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_note_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_print_summary_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_transfer_dialog.dart';
-import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_discharge_clearance_dialog.dart';
+import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_vitals_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -394,54 +397,12 @@ Future<void> _openVitalsDialog(
   BuildContext context, {
   NursingVitalSign? vital,
 }) async {
-  final AppLocalizations l10n = context.l10n;
   await nursingShowActionResult(
     context,
     showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => AppRecordVitalsDialog(
-        title: vital == null
-            ? l10n.nursingActionRecordVitals
-            : l10n.opdEditVitalsAction,
-        submitLabel: vital == null
-            ? l10n.nursingActionRecordVitals
-            : l10n.opdEditVitalsAction,
-        cancelLabel: l10n.commonCancelActionLabel,
-        temperatureLabel: l10n.patientsTemperatureLabel,
-        systolicLabel: l10n.nursingSystolicLabel,
-        diastolicLabel: l10n.nursingDiastolicLabel,
-        heartRateLabel: l10n.patientsHeartRateLabel,
-        respiratoryRateLabel: l10n.patientsRespiratoryRateLabel,
-        oxygenSaturationLabel: l10n.patientsOxygenSaturationLabel,
-        weightLabel: l10n.patientsWeightLabel,
-        heightLabel: l10n.patientsHeightLabel,
-        bloodPressureLabel: l10n.patientsBloodPressureLabel,
-        unitLabel: l10n.nursingVitalUnitLabel,
-        recordedDateLabel: l10n.nursingRecordedAtLabel,
-        recordedTimeLabel: l10n.opdTimeColumnLabel,
-        datePickerLabel: l10n.nursingDatePickerLabel,
-        invalidDateMessage: l10n.nursingInvalidDateMessage,
-        timePickerLabel: l10n.appTimePickerAction,
-        invalidTimeMessage: l10n.appTimeInvalidMessage,
-        requiredMessage: l10n.validationRequired,
-        initialValues: vital == null
-            ? null
-            : AppRecordVitalsInitialValues(
-                id: vital.id,
-                vitalType: vital.vitalType,
-                value: vital.value,
-                unit: vital.unit,
-                systolicValue: vital.systolicValue,
-                diastolicValue: vital.diastolicValue,
-                recordedAt: vital.recordedAt,
-              ),
-        onSubmit: (List<Map<String, Object?>> payloads) {
-          return ProviderScope.containerOf(context, listen: false)
-              .read(nursingWorkspaceControllerProvider.notifier)
-              .recordVitalSet(payloads);
-        },
-      ),
+      builder: (_) => NursingVitalsDialog(vital: vital),
     ),
   );
 }
@@ -452,17 +413,7 @@ Future<void> _openNoteDialog(BuildContext context) async {
     showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => ClinicalFreeTextActionDialog(
-        title: context.l10n.nursingActionAddNote,
-        label: context.l10n.nursingNoteLabel,
-        submitLabel: context.l10n.nursingActionAddNote,
-        icon: const Icon(Icons.note_add_outlined),
-        onSubmit: (String note) {
-          return ProviderScope.containerOf(context, listen: false)
-              .read(nursingWorkspaceControllerProvider.notifier)
-              .addNursingNote(note);
-        },
-      ),
+      builder: (_) => const NursingNoteDialog(),
     ),
   );
 }
@@ -520,7 +471,7 @@ Future<void> _openEscalationDialog(BuildContext context) async {
     showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const NursingHandoverDialog(escalation: true),
+      builder: (_) => const NursingEscalationDialog(),
     ),
   );
 }

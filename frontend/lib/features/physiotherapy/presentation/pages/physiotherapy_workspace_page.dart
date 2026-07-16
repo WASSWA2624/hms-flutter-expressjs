@@ -300,7 +300,7 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
                     },
                   ),
                 ),
-                SizedBox(width: theme.spacing.sm),
+                SizedBox(width: theme.spacing.md),
                 _primaryActionForSection(context, ref, section, state),
               ],
             ),

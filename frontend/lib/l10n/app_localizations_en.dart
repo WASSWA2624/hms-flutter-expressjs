@@ -2234,6 +2234,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdLoadingBody => 'Loading OPD queue and encounters...';
 
   @override
+  String get opdSectionAllLabel => 'All worklist';
+
+  @override
+  String get opdSectionArrivalsLabel => 'Arrivals';
+
+  @override
+  String get opdSectionQueueLabel => 'Queue';
+
+  @override
+  String get opdSectionTriageLabel => 'Triage';
+
+  @override
+  String get opdSectionActiveLabel => 'Active';
+
+  @override
   String get receptionTitle => 'Reception desk';
 
   @override

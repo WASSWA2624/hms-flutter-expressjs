@@ -92,5 +92,27 @@ void main() {
         isNull,
       );
     });
+
+    test('parses section query and syncs queue scope', () {
+      final IpdAdmissionQuery active = IpdAdmissionQuery.fromUri(
+        Uri.parse('/ipd?section=active'),
+      );
+      expect(active.section, IpdWorkspaceSection.activePatients);
+      expect(active.scope, IpdQueueScope.activePatients);
+      expect(active.hasRouteTargeting, isTrue);
+
+      final IpdAdmissionQuery transfers = IpdAdmissionQuery.fromUri(
+        Uri.parse('/ipd?section=transfer_pending'),
+      );
+      expect(transfers.section, IpdWorkspaceSection.transferPending);
+      expect(transfers.scope, IpdQueueScope.transferPending);
+
+      final IpdAdmissionQuery bedBoard = IpdAdmissionQuery.fromUri(
+        Uri.parse('/ipd?section=bed-board'),
+      );
+      expect(bedBoard.section, IpdWorkspaceSection.bedBoard);
+      expect(bedBoard.scope, IpdQueueScope.admissionQueue);
+      expect(bedBoard.hasRouteTargeting, isTrue);
+    });
   });
 }
