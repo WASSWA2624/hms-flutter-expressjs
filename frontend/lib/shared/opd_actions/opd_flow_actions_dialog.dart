@@ -119,39 +119,54 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     final OpdWorkspaceState? workspaceState = _workspaceState(ref);
     final OpdFlowDetail? selected = workspaceState?.selectedFlow;
     final bool isRefreshingDetail = workspaceState?.isRefreshingDetail ?? false;
     final bool isSaving = workspaceState?.isSaving ?? false;
+    final bool isBusy = isSaving || isRefreshingDetail;
+    final Object? rawFailure = workspaceState?.lastFailure;
+    final AppFailure? failure = rawFailure is AppFailure ? rawFailure : null;
     final OpdFlowDetail? detail =
         selected == null || !_isSameFlow(selected.summary, widget.flow)
         ? null
         : selected;
     final OpdFlowSummary flow = detail?.summary ?? widget.flow;
-    final bool isLoadingDetail = detail == null && !isSaving;
 
     return AppDialog(
-      title: Text(context.l10n.opdEncounterDialogTitle),
+      title: Text(l10n.opdEncounterDialogTitle),
       icon: const Icon(Icons.medical_services_outlined),
       maxWidth: 860,
       scrollable: true,
-      closeEnabled: !isSaving,
+      closeEnabled: !isBusy,
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
         children: <Widget>[
+          if (failure != null)
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: failure,
+            ),
           OpdActionContextPanel(flow: flow, detail: detail),
-          if (isSaving || isRefreshingDetail || isLoadingDetail)
-            const LinearProgressIndicator(),
+          if (isBusy) const LinearProgressIndicator(),
           if (detail != null && opdDetailHasClinicalRecords(detail))
             OpdEncounterClinicalServicesPanel(detail: detail, flow: flow),
           _actionGrid(
             context,
             flow,
             detail,
-            actionsEnabled: !isSaving && !isRefreshingDetail,
+            actionsEnabled: !isBusy,
           ),
         ],
       ),
+      actions: <Widget>[
+        AppButton.secondary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !isBusy,
+          onPressed: isBusy ? null : () => Navigator.of(context).pop(false),
+        ),
+      ],
     );
   }
 
@@ -235,6 +250,18 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
                 editing: hasVitals,
               ),
             ),
+    );
+
+    AppPermissionActionItem routeDecisionAction() => AppPermissionActionItem(
+      requirement: opdVitalsActionRequirement,
+      label: l10n.opdRouteDecisionLabel,
+      icon: Icons.alt_route_outlined,
+      fullWidth: true,
+      hideWhenDenied: true,
+      enabled: actionsEnabled && !terminal,
+      onPressed: terminal
+          ? null
+          : () => _openNested(context, RoutingDecisionDialog(flow: flow)),
     );
 
     AppPermissionActionItem assignDoctorAction() => AppPermissionActionItem(
@@ -388,6 +415,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         <String, AppPermissionActionItem Function()>{
           'billing': billingAction,
           'vitals': vitalsAction,
+          'route_decision': routeDecisionAction,
           'assign_doctor': assignDoctorAction,
           'doctor_review': doctorReviewAction,
           'handoff': departmentHandoffAction,
@@ -501,6 +529,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
               (nextActionKey == 'vitals' ||
                   <String>{'WAITING_VITALS', 'VITALS_NEEDED'}.contains(stage) ||
                   hasVitals),
+        'route_decision' => !terminal && hasVitals,
         'assign_doctor' =>
           !terminal &&
               (nextActionKey == 'assign_doctor' ||
@@ -677,6 +706,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
   ) async {
     final bool? openIpd = await showAppDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (_) => _OpdAdmissionHandoffDialog(flow: flow),
     );
     if (!context.mounted) {
@@ -1184,11 +1214,11 @@ class _ConsultationPaymentDialogState
     final OpdFlowSummary flow = _currentFlow;
     final OpdFlowDetail? detail = _currentDetail;
     final bool alreadyPaid = opdFlowBillingState(flow) == OpdBillingState.paid;
-    final String actionLabel = alreadyPaid
+    final String submitLabel = alreadyPaid
         ? l10n.opdUpdateConsultationBillingAction
         : l10n.opdPayConsultationAction;
     return AppDialog(
-      title: Text(actionLabel),
+      title: Text(l10n.opdManageConsultationBillingAction),
       icon: const Icon(Icons.payments_outlined),
       scrollable: true,
       closeEnabled: !_isSaving,
@@ -1292,27 +1322,29 @@ class _ConsultationPaymentDialogState
           ],
         ),
       ),
-      actions: <Widget>[
-        AppButton.primary(
-          label: actionLabel,
-          leadingIcon: Icons.payments_outlined,
-          isLoading: _isSaving,
-          onPressed: _submit,
-        ),
-      ],
+      actions: clinicalActionDialogActions(
+        context,
+        submitLabel,
+        _isSaving,
+        _isSaving ? null : _submit,
+        submitLeadingIcon: Icons.payments_outlined,
+      ),
     );
   }
 
   Future<void> _submit() async {
+    if (_isSaving) {
+      return;
+    }
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
     if (_method == 'INSURANCE' && !_coverageVerified) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.opdCoverageVerificationRequiredMessage),
-        ),
-      );
+      setState(() {
+        _failure = AppFailure.validation(
+          detailMessage: context.l10n.opdCoverageVerificationRequiredMessage,
+        );
+      });
       return;
     }
     setState(() {
@@ -1406,7 +1438,7 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
     );
     return AppDialog(
       title: Text(l10n.opdCorrectStageAction),
-      icon: const Icon(Icons.edit_note_outlined),
+      icon: const Icon(Icons.sync_alt_outlined),
       scrollable: true,
       closeEnabled: !_isSaving,
       content: Form(
@@ -1462,9 +1494,17 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
         ),
       ),
       actions: <Widget>[
+        AppButton.secondary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !_isSaving,
+          onPressed: _isSaving
+              ? null
+              : () => Navigator.of(context).pop(false),
+        ),
         AppButton.primary(
           label: l10n.opdSaveAction,
-          leadingIcon: Icons.save_outlined,
+          leadingIcon: AppActionIcons.save,
           isLoading: _isSaving,
           onPressed: _submit,
         ),
@@ -1473,6 +1513,9 @@ class _CorrectStageDialogState extends ConsumerState<CorrectStageDialog> {
   }
 
   Future<void> _submit() async {
+    if (_isSaving) {
+      return;
+    }
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
@@ -1532,11 +1575,12 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
     final String actionLabel = _isNonEmpty(widget.flow.providerUserId)
         ? l10n.opdChangeDoctorAction
         : l10n.opdAssignDoctorAction;
+    final bool isBusy = _isSaving || _isLoadingProviders;
     return AppDialog(
       title: Text(actionLabel),
       icon: const Icon(Icons.assignment_ind_outlined),
       scrollable: true,
-      closeEnabled: !_isSaving,
+      closeEnabled: !isBusy,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -1547,6 +1591,7 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
                 failure: _failure!,
               ),
             OpdActionContextPanel(flow: widget.flow, showTitle: false),
+            if (_isLoadingProviders) const LinearProgressIndicator(),
             _ProviderSelectField(
               value: _providerId,
               providers: _providerOptions,
@@ -1557,7 +1602,7 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
               ),
               helperText: l10n.opdSearchProviderHelper,
               emptyHelperText: l10n.opdNoProvidersHelper,
-              enabled: !_isSaving,
+              enabled: !isBusy,
               isLoading: _isLoadingProviders,
               onChanged: (String? value) {
                 setState(() {
@@ -1569,11 +1614,20 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
         ),
       ),
       actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !isBusy,
+          onPressed: isBusy
+              ? null
+              : () => Navigator.of(context).pop(false),
+        ),
         AppButton.primary(
           label: actionLabel,
           leadingIcon: Icons.assignment_ind_outlined,
           isLoading: _isSaving,
-          onPressed: _submit,
+          enabled: !isBusy,
+          onPressed: isBusy ? null : _submit,
         ),
       ],
     );
@@ -1582,6 +1636,7 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
   Future<void> _loadProviderOptions() async {
     setState(() {
       _isLoadingProviders = true;
+      _failure = null;
     });
     final List<Object> results = await Future.wait(<Future<Object>>[
       ref.read(opdRepositoryProvider).listProviders(),
@@ -1596,26 +1651,33 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
     final Result<List<OpdProviderSchedule>> scheduleResult =
         results[1] as Result<List<OpdProviderSchedule>>;
 
+    AppFailure? loadFailure;
     providerResult.when(
       success: (List<OpdProviderOption> providers) {
         _providerOptions = dedupeOpdProviderOptions(providers);
       },
       failure: (AppFailure failure) {
-        _failure = failure;
+        loadFailure = failure;
       },
     );
     scheduleResult.when(
       success: (List<OpdProviderSchedule> schedules) {
         _providerSchedules = schedules;
       },
-      failure: (_) {},
+      failure: (AppFailure failure) {
+        loadFailure ??= failure;
+      },
     );
     setState(() {
+      _failure = loadFailure;
       _isLoadingProviders = false;
     });
   }
 
   Future<void> _submit() async {
+    if (_isSaving || _isLoadingProviders) {
+      return;
+    }
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
@@ -1645,6 +1707,18 @@ class _AssignDoctorDialogState extends ConsumerState<AssignDoctorDialog> {
   }
 }
 
+/// Opens [RoutingDecisionDialog] with mutating-dialog dismiss rules.
+Future<bool?> showRoutingDecisionDialog({
+  required BuildContext context,
+  required OpdFlowSummary flow,
+}) {
+  return showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => RoutingDecisionDialog(flow: flow),
+  );
+}
+
 class RoutingDecisionDialog extends ConsumerStatefulWidget {
   const RoutingDecisionDialog({required this.flow, super.key});
 
@@ -1657,7 +1731,7 @@ class RoutingDecisionDialog extends ConsumerStatefulWidget {
 
 class _RoutingDecisionDialogState extends ConsumerState<RoutingDecisionDialog> {
   late final TextEditingController _notesController;
-  String _decision = 'CONSULTATION';
+  late String _decision;
   bool _isSaving = false;
   AppFailure? _failure;
 
@@ -1665,6 +1739,12 @@ class _RoutingDecisionDialogState extends ConsumerState<RoutingDecisionDialog> {
   void initState() {
     super.initState();
     _notesController = TextEditingController();
+    final String existingRoute = (widget.flow.lastRouteTo ?? '')
+        .trim()
+        .toUpperCase();
+    _decision = _triageRouteOptions.contains(existingRoute)
+        ? existingRoute
+        : 'CONSULTATION';
   }
 
   @override
@@ -1706,18 +1786,20 @@ class _RoutingDecisionDialogState extends ConsumerState<RoutingDecisionDialog> {
           ),
         ],
       ),
-      actions: <Widget>[
-        AppButton.primary(
-          label: l10n.opdRouteDecisionLabel,
-          leadingIcon: Icons.alt_route_outlined,
-          isLoading: _isSaving,
-          onPressed: _submit,
-        ),
-      ],
+      actions: clinicalActionDialogActions(
+        context,
+        l10n.opdRouteDecisionLabel,
+        _isSaving,
+        _isSaving ? null : _submit,
+        submitLeadingIcon: Icons.alt_route_outlined,
+      ),
     );
   }
 
   Future<void> _submit() async {
+    if (_isSaving) {
+      return;
+    }
     setState(() {
       _isSaving = true;
       _failure = null;
@@ -1739,7 +1821,7 @@ class _RoutingDecisionDialogState extends ConsumerState<RoutingDecisionDialog> {
   }
 }
 
-class OpdDispositionDialog extends ConsumerWidget {
+class OpdDispositionDialog extends ConsumerStatefulWidget {
   const OpdDispositionDialog({
     required this.flow,
     required this.hasPharmacyOrder,
@@ -1752,35 +1834,148 @@ class OpdDispositionDialog extends ConsumerWidget {
   final ValueChanged<String>? onDispositionSubmitted;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OpdDispositionDialog> createState() =>
+      _OpdDispositionDialogState();
+}
+
+class _OpdDispositionDialogState extends ConsumerState<OpdDispositionDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final TextEditingController _notesController;
+  late final List<String> _reasons;
+  late String? _reason;
+  bool _isSaving = false;
+  AppFailure? _failure;
+
+  @override
+  void initState() {
+    super.initState();
+    _notesController = TextEditingController();
+    _reasons = _opdDispositionOptions(
+      hasPharmacyOrder: widget.hasPharmacyOrder,
+    );
+    final String preferred = widget.hasPharmacyOrder
+        ? 'SEND_TO_PHARMACY'
+        : 'DISCHARGE';
+    _reason = _reasons.contains(preferred)
+        ? preferred
+        : (_reasons.isEmpty ? null : _reasons.first);
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final String actionLabel = clinicalDispositionActionLabel(
       l10n,
       sourceQueue: 'OPD',
-      status: flow.status,
-      stage: flow.stage,
+      status: widget.flow.status,
+      stage: widget.flow.stage,
       isOpdContext: true,
     );
-    return ClinicalDispositionActionDialog(
-      title: actionLabel,
-      reasonLabel: _opdRequiredFieldLabel(l10n, l10n.opdDecisionLabel),
-      notesLabel: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
-      submitLabel: actionLabel,
-      initialReason: hasPharmacyOrder ? 'SEND_TO_PHARMACY' : 'DISCHARGE',
-      reasons: _opdDispositionOptions(hasPharmacyOrder: hasPharmacyOrder),
-      leadingContent: <Widget>[
-        OpdActionContextPanel(flow: flow, showTitle: false),
+    return AppDialog(
+      title: Text(actionLabel),
+      icon: const Icon(Icons.task_alt_outlined),
+      scrollable: true,
+      closeEnabled: !_isSaving,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          density: AppFormSectionDensity.compact,
+          children: <Widget>[
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
+            OpdActionContextPanel(flow: widget.flow, showTitle: false),
+            AppSelectField<String>.searchable(
+              value: _reason,
+              labelText: _opdRequiredFieldLabel(l10n, l10n.opdDecisionLabel),
+              enabled: !_isSaving,
+              isRequired: true,
+              menuHeight: 320,
+              options: <AppSelectOption<String>>[
+                for (final String reason in _reasons)
+                  AppSelectOption<String>(
+                    value: reason,
+                    label: clinicalActionApiLabel(reason),
+                    leadingIcon: const Icon(Icons.fact_check_outlined),
+                  ),
+              ],
+              validator: AppValidators.requiredValue<String>(
+                l10n.validationRequired,
+              ),
+              onChanged: (String? value) => setState(() => _reason = value),
+            ),
+            AppTextField(
+              controller: _notesController,
+              labelText: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
+              enabled: !_isSaving,
+              maxLines: 3,
+              textCapitalization: TextCapitalization.sentences,
+            ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.secondary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !_isSaving,
+          onPressed: _isSaving
+              ? null
+              : () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: actionLabel,
+          leadingIcon: Icons.task_alt_outlined,
+          isLoading: _isSaving,
+          onPressed: _submit,
+        ),
       ],
-      onSubmit: ({required String reason, required String notes}) {
-        onDispositionSubmitted?.call(reason);
-        return ref
-            .read(opdWorkspaceControllerProvider.notifier)
-            .completeDisposition(flow, <String, Object?>{
-              'decision': reason,
-              'notes': notes,
-            });
-      },
     );
+  }
+
+  Future<void> _submit() async {
+    if (_isSaving) {
+      return;
+    }
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+    final String? reason = _reason?.trim();
+    if (reason == null || reason.isEmpty) {
+      setState(() => _failure = AppFailure.validation());
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final AppFailure? failure = await ref
+        .read(opdWorkspaceControllerProvider.notifier)
+        .completeDisposition(widget.flow, <String, Object?>{
+          'decision': reason,
+          'notes': _notesController.text.trim(),
+        });
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      widget.onDispositionSubmitted?.call(reason);
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
   }
 }
 
@@ -1809,8 +2004,9 @@ class _OpdAdmissionHandoffDialog extends StatelessWidget {
         ],
       ),
       actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.opdAdmissionHandoffStayAction,
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
           onPressed: () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
@@ -1860,7 +2056,9 @@ class FollowUpDialog extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
     return ClinicalFollowUpActionDialog(
+      title: l10n.opdFollowUpAction,
       leadingContent: <Widget>[
         OpdActionContextPanel(flow: flow, showTitle: false),
       ],
@@ -1873,7 +2071,7 @@ class FollowUpDialog extends ConsumerWidget {
   }
 }
 
-class PrintOpdSummaryDialog extends ConsumerWidget {
+class PrintOpdSummaryDialog extends ConsumerStatefulWidget {
   const PrintOpdSummaryDialog({
     required this.flow,
     required this.detail,
@@ -1884,14 +2082,27 @@ class PrintOpdSummaryDialog extends ConsumerWidget {
   final OpdFlowDetail? detail;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PrintOpdSummaryDialog> createState() =>
+      _PrintOpdSummaryDialogState();
+}
+
+class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
+  bool _isCopying = false;
+  bool _isPrinting = false;
+
+  bool get _isBusy => _isCopying || _isPrinting;
+
+  @override
+  Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final OpdFlowSummary flow = widget.flow;
     final String summary = _printSummary(context);
     return AppDialog(
       title: Text(l10n.opdPrintSummaryAction),
-      icon: const Icon(Icons.print_outlined),
+      icon: const Icon(AppActionIcons.print),
       maxWidth: 720,
       scrollable: true,
+      closeEnabled: !_isBusy,
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
         children: <Widget>[
@@ -1905,43 +2116,86 @@ class PrintOpdSummaryDialog extends ConsumerWidget {
       actions: <Widget>[
         AppReportActionButton.copy(
           label: l10n.opdCopySummaryAction,
-          onPressed: () async {
-            await Clipboard.setData(ClipboardData(text: summary));
-            if (context.mounted) {
-              Navigator.of(context).pop(false);
-            }
-          },
+          enabled: !_isBusy,
+          isLoading: _isCopying,
+          onPressed: _isBusy ? null : () => _copySummary(summary),
+        ),
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !_isBusy,
+          onPressed: _isBusy ? null : () => Navigator.of(context).pop(false),
         ),
         AppReportActionButton.print(
           label: l10n.opdPrintAction,
-          onPressed: () async {
-            await printFormTemplateDocument(
-              ref: ref,
-              context: context,
-              title: l10n.opdPrintSummaryAction,
-              patientContext: buildPrintFormPatientContext(
-                l10n,
-                patientName: flow.patientDisplayName ?? flow.displayTitle,
-                patientId: flow.patientDisplayId,
-                encounterId: flow.publicId,
-              ),
-              bodyHtml:
-                  '<div class="print-template-note">${printHtmlEscape(summary)}</div>',
-              includeSignatures: true,
-            );
-            if (!context.mounted) {
-              return;
-            }
-            Navigator.of(context).pop(false);
-          },
+          enabled: !_isBusy,
+          isLoading: _isPrinting,
+          onPressed: _isBusy ? null : () => _printSummaryDocument(summary),
         ),
       ],
     );
   }
 
+  Future<void> _copySummary(String summary) async {
+    if (_isBusy) {
+      return;
+    }
+    setState(() => _isCopying = true);
+    try {
+      await Clipboard.setData(ClipboardData(text: summary));
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pop(false);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _isCopying = false);
+      _showFailureIfNeeded(context, const AppFailure.unexpected());
+    }
+  }
+
+  Future<void> _printSummaryDocument(String summary) async {
+    if (_isBusy) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final OpdFlowSummary flow = widget.flow;
+    setState(() => _isPrinting = true);
+    try {
+      await printFormTemplateDocument(
+        ref: ref,
+        context: context,
+        title: l10n.opdPrintSummaryAction,
+        patientContext: buildPrintFormPatientContext(
+          l10n,
+          patientName: flow.patientDisplayName ?? flow.displayTitle,
+          patientId: flow.patientDisplayId,
+          encounterId: flow.publicId,
+        ),
+        bodyHtml:
+            '<div class="print-template-note">${printHtmlEscape(summary)}</div>',
+        includeSignatures: true,
+      );
+      if (!mounted) {
+        return;
+      }
+      // Print is client-side only — no Riverpod patch; dismiss without saved signal.
+      Navigator.of(context).pop(false);
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      setState(() => _isPrinting = false);
+      _showFailureIfNeeded(context, const AppFailure.unexpected());
+    }
+  }
+
   String _printSummary(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final OpdFlowDetail? value = detail;
+    final OpdFlowSummary flow = widget.flow;
+    final OpdFlowDetail? value = widget.detail;
     final List<String> lines = <String>[
       flow.displayTitle,
       _joinDisplay(<String?>[
@@ -2128,14 +2382,15 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
           _notesSection(context),
         ],
       ),
-      actions: <Widget>[
-        AppButton.primary(
-          label: actionLabel,
-          leadingIcon: Icons.save_outlined,
-          isLoading: _isSaving,
-          onPressed: _submit,
-        ),
-      ],
+      actions: clinicalActionDialogActions(
+        context,
+        actionLabel,
+        _isSaving,
+        _isSaving ? null : _submit,
+        submitLeadingIcon: editingVitals
+            ? AppActionIcons.edit
+            : AppActionIcons.save,
+      ),
     );
   }
 
@@ -2331,6 +2586,9 @@ class _RecordVitalsDialogState extends ConsumerState<RecordVitalsDialog> {
   }
 
   Future<void> _submit() async {
+    if (_isSaving) {
+      return;
+    }
     final AppLocalizations l10n = context.l10n;
     if (!validateAndSaveAppForm(_formKey)) {
       setState(() {

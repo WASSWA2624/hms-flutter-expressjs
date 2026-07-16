@@ -14,11 +14,13 @@ List<Widget> clinicalActionDialogActions(
   final AppLocalizations l10n = context.l10n;
   return <Widget>[
     if (showCancel)
-      AppButton.tertiary(
+      AppButton.secondary(
         label: l10n.commonCancelActionLabel,
         leadingIcon: AppActionIcons.cancel,
         enabled: !isSaving,
-        onPressed: () => Navigator.of(context).pop(false),
+        onPressed: isSaving
+            ? null
+            : () => Navigator.of(context).pop(false),
       ),
     AppButton.primary(
       label: submitLabel,

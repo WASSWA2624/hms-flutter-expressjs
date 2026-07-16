@@ -10,6 +10,9 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 class ClinicalReferralActionDialog extends StatefulWidget {
   const ClinicalReferralActionDialog({
     required this.onSubmit,
+    this.title,
+    this.submitLabel,
+    this.icon = const Icon(Icons.alt_route_outlined),
     this.leadingContent = const <Widget>[],
     super.key,
   });
@@ -20,6 +23,9 @@ class ClinicalReferralActionDialog extends StatefulWidget {
     required String notes,
   })
   onSubmit;
+  final String? title;
+  final String? submitLabel;
+  final Widget icon;
   final List<Widget> leadingContent;
 
   @override
@@ -56,9 +62,10 @@ class _ClinicalReferralActionDialogState
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final String submitLabel = widget.submitLabel ?? l10n.opdReferAction;
     return AppDialog(
-      title: Text(l10n.opdReferAction),
-      icon: const Icon(Icons.alt_route_outlined),
+      title: Text(widget.title ?? l10n.opdReferralsTitle),
+      icon: widget.icon,
       maxWidth: 720,
       scrollable: true,
       closeEnabled: !_isSaving,
@@ -122,14 +129,18 @@ class _ClinicalReferralActionDialogState
       ),
       actions: clinicalActionDialogActions(
         context,
-        l10n.opdReferAction,
+        submitLabel,
         _isSaving,
-        _submit,
+        _isSaving ? null : _submit,
+        submitLeadingIcon: Icons.alt_route_outlined,
       ),
     );
   }
 
   Future<void> _submit() async {
+    if (_isSaving) {
+      return;
+    }
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }

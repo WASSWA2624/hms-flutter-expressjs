@@ -89,19 +89,6 @@ class PatientDetailQuickActions extends ConsumerWidget {
           onPressed: () => onAction(PatientQuickAction.triage),
           requirement: opdEncounterPermissionRequirement,
         ),
-      if (!hasActiveOpdEncounter && !hasActiveOpdWorkItem)
-        AppPermissionActionItem(
-          label: l10n.patientsQuickBillingAction,
-          icon: Icons.receipt_long_outlined,
-          tooltip: l10n.patientsBillingDialogTitle,
-          onPressed: () => onAction(PatientQuickAction.billing),
-          requirement: const AccessRequirement(
-            anyPermissions: <AppPermission>[
-              AppPermissions.billingWrite,
-              AppPermissions.clinicalWrite,
-            ],
-          ),
-        ),
       if (hasActiveOpdEncounter && !hasActiveOpdWorkItem)
         AppPermissionActionItem(
           label: l10n.patientsQuickViewActiveOpdAction,

@@ -413,7 +413,7 @@ void main() {
 
       expect(find.byType(PatientTenantSelectField), findsOneWidget);
       expect(find.byType(PatientFacilitySelectField), findsOneWidget);
-      expect(find.text('Cancel'), findsNothing);
+      expect(find.text('Cancel'), findsOneWidget);
     },
   );
 

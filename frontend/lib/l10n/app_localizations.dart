@@ -5902,6 +5902,18 @@ abstract class AppLocalizations {
   /// **'Additional notes'**
   String get clinicalReferralNotesTitle;
 
+  /// Section title for follow-up date and time fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up schedule'**
+  String get clinicalFollowUpDetailsTitle;
+
+  /// Section title for optional follow-up notes.
+  ///
+  /// In en, this message translates to:
+  /// **'Additional notes'**
+  String get clinicalFollowUpNotesTitle;
+
   /// Title for the reusable OPD encounter context panel.
   ///
   /// In en, this message translates to:
@@ -6334,10 +6346,10 @@ abstract class AppLocalizations {
   /// **'Manage consultation billing'**
   String get opdManageConsultationBillingAction;
 
-  /// Action label to update OPD consultation billing.
+  /// Action label to edit OPD consultation billing.
   ///
   /// In en, this message translates to:
-  /// **'Update consultation billing'**
+  /// **'Edit consultation billing'**
   String get opdUpdateConsultationBillingAction;
 
   /// Action label to correct OPD stage.

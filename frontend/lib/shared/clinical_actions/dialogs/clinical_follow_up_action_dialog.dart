@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -74,14 +75,18 @@ class _ClinicalFollowUpActionDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final DateTime today = _dateOnly(DateTime.now());
     return AppDialog(
       title: Text(widget.title ?? l10n.opdFollowUpAction),
       icon: widget.icon,
+      maxWidth: 720,
+      scrollable: true,
       closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,
         child: AppFormSection(
+          density: AppFormSectionDensity.spacious,
           children: <Widget>[
             if (_failure != null)
               AppFormInformationBanner.failure(
@@ -89,60 +94,74 @@ class _ClinicalFollowUpActionDialogState
                 failure: _failure!,
               ),
             ...widget.leadingContent,
-            AppResponsiveFieldRow.two(
-              gap: AppResponsiveFieldRowGap.form,
-              left: AppDateField(
-                value: _followUpDate,
-                labelText: widget.dateLabel ?? l10n.opdFollowUpDateLabel,
-                hintText: l10n.appDateFormatHint,
-                firstDate: today,
-                lastDate:
-                    widget.lastDate ??
-                    _dateOnly(today.add(const Duration(days: 365))),
-                currentDate: today,
-                pickerButtonLabel:
-                    widget.datePickerButtonLabel ??
-                    l10n.opdDatePickerButtonLabel,
-                invalidDateMessage: l10n.appDateInvalidMessage,
-                enabled: !_isSaving,
-                isRequired: true,
-                validator: AppValidators.requiredValue<DateTime>(
-                  l10n.validationRequired,
+            AppFormSection(
+              title: l10n.clinicalFollowUpDetailsTitle,
+              density: AppFormSectionDensity.compact,
+              children: <Widget>[
+                AppResponsiveFieldRow.two(
+                  gap: AppResponsiveFieldRowGap.form,
+                  left: AppDateField(
+                    value: _followUpDate,
+                    labelText: widget.dateLabel ?? l10n.opdFollowUpDateLabel,
+                    hintText: l10n.appDateFormatHint,
+                    firstDate: today,
+                    lastDate:
+                        widget.lastDate ??
+                        _dateOnly(today.add(const Duration(days: 365))),
+                    currentDate: today,
+                    pickerButtonLabel:
+                        widget.datePickerButtonLabel ??
+                        l10n.opdDatePickerButtonLabel,
+                    invalidDateMessage: l10n.appDateInvalidMessage,
+                    enabled: !_isSaving,
+                    isRequired: true,
+                    validator: AppValidators.requiredValue<DateTime>(
+                      l10n.validationRequired,
+                    ),
+                    onChanged: (DateTime? value) {
+                      if (value == null) {
+                        return;
+                      }
+                      setState(() => _followUpDate = _dateOnly(value));
+                    },
+                  ),
+                  right: AppTimeField(
+                    value: _followUpTime,
+                    labelText: widget.timeLabel ?? l10n.opdFollowUpTimeLabel,
+                    hintText: l10n.appTimeFormatHint,
+                    hourLabelText: l10n.appTimeHourLabel,
+                    minuteLabelText: l10n.appTimeMinuteLabel,
+                    pickerButtonLabel: l10n.appTimePickerAction,
+                    invalidTimeMessage: l10n.appTimeInvalidMessage,
+                    enabled: !_isSaving,
+                    isRequired: true,
+                    validator: AppValidators.requiredValue<AppTimeValue>(
+                      l10n.validationRequired,
+                    ),
+                    onChanged: (AppTimeValue? value) {
+                      if (value == null) {
+                        return;
+                      }
+                      setState(() => _followUpTime = value);
+                    },
+                  ),
                 ),
-                onChanged: (DateTime? value) {
-                  if (value == null) {
-                    return;
-                  }
-                  setState(() => _followUpDate = _dateOnly(value));
-                },
-              ),
-              right: AppTimeField(
-                value: _followUpTime,
-                labelText: widget.timeLabel ?? l10n.opdFollowUpTimeLabel,
-                hintText: l10n.appTimeFormatHint,
-                hourLabelText: l10n.appTimeHourLabel,
-                minuteLabelText: l10n.appTimeMinuteLabel,
-                pickerButtonLabel: l10n.appTimePickerAction,
-                invalidTimeMessage: l10n.appTimeInvalidMessage,
-                enabled: !_isSaving,
-                isRequired: true,
-                validator: AppValidators.requiredValue<AppTimeValue>(
-                  l10n.validationRequired,
-                ),
-                onChanged: (AppTimeValue? value) {
-                  if (value == null) {
-                    return;
-                  }
-                  setState(() => _followUpTime = value);
-                },
-              ),
+              ],
             ),
-            AppTextField(
-              controller: _notesController,
-              labelText: widget.notesLabel ?? l10n.opdNotesLabel,
-              enabled: !_isSaving,
-              maxLines: 3,
-              textCapitalization: TextCapitalization.sentences,
+            SizedBox(height: theme.spacing.sm),
+            AppFormSection(
+              title: l10n.clinicalFollowUpNotesTitle,
+              density: AppFormSectionDensity.compact,
+              children: <Widget>[
+                AppTextField(
+                  controller: _notesController,
+                  labelText: widget.notesLabel ?? l10n.opdNotesLabel,
+                  enabled: !_isSaving,
+                  maxLines: 4,
+                  textCapitalization: TextCapitalization.sentences,
+                  prefixIcon: const Icon(Icons.edit_note_outlined),
+                ),
+              ],
             ),
           ],
         ),
@@ -151,12 +170,16 @@ class _ClinicalFollowUpActionDialogState
         context,
         widget.submitLabel ?? l10n.opdFollowUpAction,
         _isSaving,
-        _submit,
+        _isSaving ? null : _submit,
+        submitLeadingIcon: Icons.event_repeat_outlined,
       ),
     );
   }
 
   Future<void> _submit() async {
+    if (_isSaving) {
+      return;
+    }
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }

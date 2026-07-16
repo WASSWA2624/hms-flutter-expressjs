@@ -3043,6 +3043,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalReferralNotesTitle => 'Additional notes';
 
   @override
+  String get clinicalFollowUpDetailsTitle => 'Follow-up schedule';
+
+  @override
+  String get clinicalFollowUpNotesTitle => 'Additional notes';
+
+  @override
   String get opdEncounterContextTitle => 'Encounter context';
 
   @override
@@ -3282,8 +3288,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Manage consultation billing';
 
   @override
-  String get opdUpdateConsultationBillingAction =>
-      'Update consultation billing';
+  String get opdUpdateConsultationBillingAction => 'Edit consultation billing';
 
   @override
   String get opdCorrectStageAction => 'Correct stage';

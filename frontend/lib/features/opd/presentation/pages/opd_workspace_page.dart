@@ -2733,9 +2733,15 @@ class _OpdPatientActionsDialogState
           label: l10n.opdRescheduleAction,
           icon: Icons.edit_calendar_outlined,
           enabled: !terminal,
-          onPressed: () => _openNested(
-            OpdRescheduleAppointmentDialog(appointment: appointment),
-          ),
+          onPressed: () async {
+            final bool? changed = await showOpdRescheduleAppointmentDialog(
+              context: context,
+              appointment: appointment,
+            );
+            if (changed == true && context.mounted) {
+              Navigator.of(context).pop(true);
+            }
+          },
         ),
         action(
           requirement: opdFrontDeskActionRequirement,

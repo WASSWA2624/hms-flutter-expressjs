@@ -6,6 +6,7 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_encounter_flow.dart';
@@ -70,16 +71,18 @@ class _OpdAppointmentActionsDialogState
     final bool canQueue =
         !terminal &&
         status != 'IN_PROGRESS' &&
-        widget.appointment.patientId != null;
+        widget.appointment.patientId != null &&
+        widget.appointment.tenantId != null;
     final bool canCheckIn =
         !terminal && status != 'IN_PROGRESS' && status != 'COMPLETED';
     final bool canReschedule = !terminal;
-    final bool canCancel = !terminal && status != 'CANCELLED';
+    final bool canCancelAppointment = !terminal && status != 'CANCELLED';
 
     return AppDialog(
-      title: Text(widget.appointment.displayTitle),
+      title: Text(l10n.receptionAppointmentActionsAction),
       icon: const Icon(Icons.event_available_outlined),
       scrollable: true,
+      closeEnabled: !_isSaving,
       maxWidth: 680,
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
@@ -89,8 +92,13 @@ class _OpdAppointmentActionsDialogState
               context: context,
               failure: _failure!,
             ),
+          if (_isSaving) const LinearProgressIndicator(),
           AppTriageSummaryPanel(
             items: <AppInfoTileData>[
+              AppInfoTileData(
+                label: l10n.opdPatientColumnLabel,
+                value: widget.appointment.displayTitle,
+              ),
               AppInfoTileData(
                 label: l10n.opdStatusColumnLabel,
                 value: opdStageDisplayLabel(
@@ -127,39 +135,52 @@ class _OpdAppointmentActionsDialogState
           AppButton.secondary(
             label: l10n.opdQueueAction,
             leadingIcon: Icons.queue_outlined,
-            isLoading: _isSaving,
-            onPressed: () => _run(
-              () => ref
-                  .read(opdWorkspaceControllerProvider.notifier)
-                  .assignAppointmentToQueue(widget.appointment),
-            ),
+            enabled: !_isSaving,
+            onPressed: _isSaving
+                ? null
+                : () => _run(
+                    () => ref
+                        .read(opdWorkspaceControllerProvider.notifier)
+                        .assignAppointmentToQueue(widget.appointment),
+                  ),
           ),
         if (canReschedule)
           AppButton.secondary(
             label: l10n.opdRescheduleAction,
             leadingIcon: Icons.edit_calendar_outlined,
             enabled: !_isSaving,
-            onPressed: _openReschedule,
+            onPressed: _isSaving ? null : _openReschedule,
           ),
-        if (canCancel)
+        if (canCancelAppointment)
           AppButton.secondary(
             label: l10n.opdCancelAction,
             leadingIcon: Icons.cancel_outlined,
             enabled: !_isSaving,
-            onPressed: _openCancel,
+            onPressed: _isSaving ? null : _openCancel,
           ),
+        AppButton.secondary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !_isSaving,
+          onPressed: _isSaving
+              ? null
+              : () => Navigator.of(context).pop(false),
+        ),
         if (canCheckIn)
           AppButton.primary(
             label: l10n.opdCheckInAction,
             leadingIcon: Icons.login_outlined,
             isLoading: _isSaving,
-            onPressed: _openCheckIn,
+            onPressed: _isSaving ? null : _openCheckIn,
           ),
       ],
     );
   }
 
   Future<void> _openCheckIn() async {
+    if (_isSaving) {
+      return;
+    }
     final OpdWorkspaceState? workspaceState = widget.workspaceState;
     if (workspaceState != null) {
       final OpdEncounterDialogResult? dialogResult =
@@ -190,11 +211,12 @@ class _OpdAppointmentActionsDialogState
   }
 
   Future<void> _openReschedule() async {
-    final bool? changed = await showAppDialog<bool>(
+    if (_isSaving) {
+      return;
+    }
+    final bool? changed = await showOpdRescheduleAppointmentDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) =>
-          OpdRescheduleAppointmentDialog(appointment: widget.appointment),
+      appointment: widget.appointment,
     );
     if (changed == true && mounted) {
       Navigator.of(context).pop(true);
@@ -202,6 +224,9 @@ class _OpdAppointmentActionsDialogState
   }
 
   Future<void> _openCancel() async {
+    if (_isSaving) {
+      return;
+    }
     final bool? changed = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -214,6 +239,9 @@ class _OpdAppointmentActionsDialogState
   }
 
   Future<void> _run(Future<AppFailure?> Function() action) async {
+    if (_isSaving) {
+      return;
+    }
     setState(() {
       _isSaving = true;
       _failure = null;
@@ -231,6 +259,18 @@ class _OpdAppointmentActionsDialogState
       _isSaving = false;
     });
   }
+}
+
+/// Opens the OPD appointment reschedule dialog (mutating; not barrier-dismissible).
+Future<bool?> showOpdRescheduleAppointmentDialog({
+  required BuildContext context,
+  required OpdAppointment appointment,
+}) {
+  return showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => OpdRescheduleAppointmentDialog(appointment: appointment),
+  );
 }
 
 class OpdRescheduleAppointmentDialog extends ConsumerStatefulWidget {
@@ -272,6 +312,7 @@ class _OpdRescheduleAppointmentDialogState
     return AppDialog(
       title: Text(l10n.opdRescheduleAction),
       icon: const Icon(Icons.edit_calendar_outlined),
+      closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -340,18 +381,20 @@ class _OpdRescheduleAppointmentDialogState
           ],
         ),
       ),
-      actions: <Widget>[
-        AppButton.primary(
-          label: l10n.opdRescheduleAction,
-          leadingIcon: Icons.edit_calendar_outlined,
-          isLoading: _isSaving,
-          onPressed: _submit,
-        ),
-      ],
+      actions: clinicalActionDialogActions(
+        context,
+        l10n.opdRescheduleAction,
+        _isSaving,
+        _submit,
+        submitLeadingIcon: Icons.edit_calendar_outlined,
+      ),
     );
   }
 
   Future<void> _submit() async {
+    if (_isSaving) {
+      return;
+    }
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
@@ -420,9 +463,11 @@ class _OpdCancelAppointmentDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
     return AppDialog(
       title: Text(l10n.opdCancelAction),
       icon: const Icon(Icons.cancel_outlined),
+      closeEnabled: !_isSaving,
       content: AppFormSection(
         children: <Widget>[
           if (_failure != null)
@@ -441,9 +486,16 @@ class _OpdCancelAppointmentDialogState
         ],
       ),
       actions: <Widget>[
+        AppButton.secondary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !_isSaving,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         AppButton.primary(
           label: l10n.opdCancelAction,
           leadingIcon: Icons.cancel_outlined,
+          color: colorScheme.error,
           isLoading: _isSaving,
           onPressed: _submit,
         ),

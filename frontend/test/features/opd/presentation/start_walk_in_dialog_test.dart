@@ -438,6 +438,11 @@ void main() {
           <OpdProviderOption>[],
         ),
       );
+      when(() => opdRepository.listProviderSchedules()).thenAnswer(
+        (_) async => const Result<List<OpdProviderSchedule>>.success(
+          <OpdProviderSchedule>[],
+        ),
+      );
 
       await tester.pumpWidget(
         ProviderScope(
@@ -478,6 +483,11 @@ void main() {
     when(() => opdRepository.listProviders()).thenAnswer(
       (_) async =>
           const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+    );
+    when(() => opdRepository.listProviderSchedules()).thenAnswer(
+      (_) async => const Result<List<OpdProviderSchedule>>.success(
+        <OpdProviderSchedule>[],
+      ),
     );
 
     await tester.pumpWidget(
@@ -644,7 +654,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
-      await tester.tap(find.widgetWithText(AppButton, 'Doctor review'));
+      final Finder doctorReviewAction = find.widgetWithText(
+        AppButton,
+        'Doctor review',
+      );
+      await tester.ensureVisible(doctorReviewAction);
+      await tester.pumpAndSettle();
+      await tester.tap(doctorReviewAction);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
 
@@ -652,6 +668,8 @@ void main() {
       expect(find.textContaining('Dizziness'), findsOneWidget);
       expect(find.textContaining('Fall risk'), findsOneWidget);
 
+      await tester.ensureVisible(find.widgetWithText(AppButton, 'Doctor review').last);
+      await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(AppButton, 'Doctor review').last);
       await tester.pump();
 

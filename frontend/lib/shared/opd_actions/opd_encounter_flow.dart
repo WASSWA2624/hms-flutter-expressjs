@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
@@ -131,14 +130,23 @@ class _PatientPinnedOpdEncounterDialogState
     });
   }
 
+  void _retryLoad() {
+    setState(() {
+      _isLoading = true;
+      _failure = null;
+    });
+    unawaited(_loadEncounterData());
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    if (_isLoading) {
+    if (_isLoading || _failure != null) {
       return AppDialog(
-        title: Text(l10n.opdCheckInAction),
-        icon: const Icon(Icons.login_outlined),
+        title: Text(l10n.opdWalkInDialogTitle),
+        icon: const Icon(opdEncounterIcon),
         scrollable: true,
+        closeEnabled: !_isLoading,
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -147,11 +155,28 @@ class _PatientPinnedOpdEncounterDialogState
                 context: context,
                 failure: _failure!,
               ),
-            const LinearProgressIndicator(),
-            SizedBox(height: Theme.of(context).spacing.md),
-            const AppPatientDetailSkeleton(),
+            if (_isLoading)
+              AppLoadingIndicator(
+                size: AppLoadingIndicatorSize.compact,
+                title: l10n.opdLoadingTitle,
+                body: l10n.opdLoadingBody,
+              ),
           ],
         ),
+        actions: <Widget>[
+          AppButton.tertiary(
+            label: l10n.commonCancelActionLabel,
+            leadingIcon: AppActionIcons.cancel,
+            enabled: !_isLoading,
+            onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+          ),
+          if (_failure != null && !_isLoading)
+            AppButton.primary(
+              label: l10n.commonRetryActionLabel,
+              leadingIcon: AppActionIcons.refresh,
+              onPressed: _retryLoad,
+            ),
+        ],
       );
     }
 
@@ -284,15 +309,15 @@ OpdEncounterDialog buildOpdWorkspaceEncounterDialog({
     onCancelEncounter: includeEncounterLifecycleCallbacks
         ? (String flowId, Map<String, Object?> payload) {
             return ref
-                .read(opdRepositoryProvider)
-                .cancelEncounter(flowId, payload);
+                .read(opdWorkspaceControllerProvider.notifier)
+                .cancelOpdEncounter(flowId, payload);
           }
         : null,
     onCloseEncounter: includeEncounterLifecycleCallbacks
         ? (String flowId, Map<String, Object?> payload) {
             return ref
-                .read(opdRepositoryProvider)
-                .closeEncounter(flowId, payload);
+                .read(opdWorkspaceControllerProvider.notifier)
+                .closeOpdEncounter(flowId, payload);
           }
         : null,
   );

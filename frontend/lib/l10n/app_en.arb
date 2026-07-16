@@ -3687,6 +3687,14 @@
   "@clinicalReferralNotesTitle": {
     "description": "Section title for optional referral notes."
   },
+  "clinicalFollowUpDetailsTitle": "Follow-up schedule",
+  "@clinicalFollowUpDetailsTitle": {
+    "description": "Section title for follow-up date and time fields."
+  },
+  "clinicalFollowUpNotesTitle": "Additional notes",
+  "@clinicalFollowUpNotesTitle": {
+    "description": "Section title for optional follow-up notes."
+  },
   "opdEncounterContextTitle": "Encounter context",
   "opdCopyPatientIdAction": "Copy patient ID",
   "opdCopyEncounterIdAction": "Copy encounter ID",
@@ -3781,7 +3789,7 @@
   "opdChangeDoctorAction": "Change doctor",
   "opdPayConsultationAction": "Pay consultation",
   "opdManageConsultationBillingAction": "Manage consultation billing",
-  "opdUpdateConsultationBillingAction": "Update consultation billing",
+  "opdUpdateConsultationBillingAction": "Edit consultation billing",
   "opdCorrectStageAction": "Correct stage",
   "opdReferAction": "Refer",
   "opdFollowUpAction": "Follow up",
@@ -4472,7 +4480,7 @@
     "description": "Action label to manage OPD consultation billing."
   },
   "@opdUpdateConsultationBillingAction": {
-    "description": "Action label to update OPD consultation billing."
+    "description": "Action label to edit OPD consultation billing."
   },
   "@opdCorrectStageAction": {
     "description": "Action label to correct OPD stage."

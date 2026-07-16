@@ -22,6 +22,7 @@ import 'package:hosspi_hms/shared/forms/app_form_section.dart';
 import 'package:hosspi_hms/shared/forms/app_form_shell.dart';
 import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
 import 'package:hosspi_hms/shared/forms/app_validators.dart';
+import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 import 'package:hosspi_hms/shared/patient_actions/patient_identifier_type_labels.dart';
 import 'package:hosspi_hms/shared/patient_actions/patient_registration_scope.dart';
 
@@ -395,6 +396,7 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
       _isCheckingDuplicates = true;
       _failure = null;
     });
+    widget.onDuplicateStateChanged?.call();
 
     final Result<AppPage<PatientDuplicateCandidate>> result =
         await widget.onLookupDuplicates!(
@@ -417,6 +419,7 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
             _isCheckingDuplicates = false;
             _duplicateCandidates = const <PatientDuplicateCandidate>[];
           });
+          widget.onDuplicateStateChanged?.call();
           return true;
         }
 
@@ -433,6 +436,7 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
           _isCheckingDuplicates = false;
           _failure = failure;
         });
+        widget.onDuplicateStateChanged?.call();
         return false;
       },
     );
@@ -491,16 +495,17 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
     final RegisterNewPatientFormState? formState =
         _registrationFormKey.currentState;
     final bool isCheckingDuplicates = formState?.isCheckingDuplicates ?? false;
+    final bool isBusy = _isSaving || isCheckingDuplicates;
 
     return AppDialog(
       title: Text(l10n.patientsRegisterNewPatientTitle),
       icon: const Icon(Icons.person_add_alt_1_outlined),
-      closeEnabled: !_isSaving && !isCheckingDuplicates,
+      closeEnabled: !isBusy,
       content: SizedBox(
         height: _formBodyHeight(context),
         child: AppFormShell(
           formKey: _formKey,
-          enabled: !_isSaving && !isCheckingDuplicates,
+          enabled: !isBusy,
           scrollable: true,
           formStatus: appFormFailureStatus(
             context,
@@ -519,11 +524,17 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
         ),
       ),
       actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !isBusy,
+          onPressed: isBusy ? null : () => Navigator.of(context).maybePop(),
+        ),
         AppButton.primary(
           label: _duplicateSaveAnywayLabel(l10n),
           leadingIcon: Icons.person_add_alt_1_outlined,
-          isLoading: _isSaving || isCheckingDuplicates,
-          onPressed: _submit,
+          isLoading: isBusy,
+          onPressed: isBusy ? null : _submit,
         ),
       ],
     );
@@ -546,6 +557,9 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
   }
 
   Future<void> _submit() async {
+    if (_isSaving) {
+      return;
+    }
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
@@ -556,16 +570,16 @@ class _RegisterNewPatientDialogState extends State<RegisterNewPatientDialog> {
       return;
     }
 
+    setState(() => _isSaving = true);
+    formState.clearFailure();
+
     final bool canContinue = await formState.prepareSubmit();
     if (!canContinue) {
       if (mounted) {
-        setState(() {});
+        setState(() => _isSaving = false);
       }
       return;
     }
-
-    setState(() => _isSaving = true);
-    formState.clearFailure();
 
     final Result<Patient> result = await widget.onSubmit(
       formState.buildPayload(),

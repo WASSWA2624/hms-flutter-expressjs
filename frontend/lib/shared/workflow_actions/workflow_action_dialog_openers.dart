@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace_feedback.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action_registry.dart';
@@ -39,12 +41,17 @@ Future<bool?> _openAssignDoctorDialog(
       .getOpdFlow(flowId);
 
   OpdFlowSummary? flow;
+  AppFailure? loadFailure;
   result.when(
     success: (OpdFlowDetail detail) => flow = detail.summary,
-    failure: (_) {},
+    failure: (AppFailure failure) => loadFailure = failure,
   );
 
-  if (flow == null || !context.mounted) return null;
+  if (!context.mounted) return null;
+  if (flow == null) {
+    showAppFailureSnackBar(context, loadFailure ?? const AppFailure.unexpected());
+    return null;
+  }
 
   return showAppDialog<bool>(
     context: context,

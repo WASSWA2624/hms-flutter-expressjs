@@ -515,7 +515,7 @@ final class OpdWorkspaceController
     final String? tenantId = appointment.tenantId;
     final String? patientId = appointment.patientId;
     if (tenantId == null || patientId == null) {
-      return null;
+      return AppFailure.validation();
     }
 
     final String key = createIdempotencyKey();
@@ -713,7 +713,7 @@ final class OpdWorkspaceController
     return _mutateRelatedFlowRecord(
       flow,
       () => _repository.createReferral(<String, Object?>{
-        'encounter_id': flow.id,
+        'encounter_id': flow.apiId,
         'external_facility_name': externalFacilityName,
         'reason': reason,
         'notes': notes,
@@ -1258,6 +1258,24 @@ final class OpdWorkspaceController
         ...payload,
         'reuse_open_encounter': !forceNewEncounter,
       }, idempotencyKey: key),
+    );
+  }
+
+  Future<Result<OpdFlowDetail>> cancelOpdEncounter(
+    String flowId,
+    Map<String, Object?> payload,
+  ) {
+    return _mutateFlowDetail(
+      () => _repository.cancelEncounter(flowId, payload),
+    );
+  }
+
+  Future<Result<OpdFlowDetail>> closeOpdEncounter(
+    String flowId,
+    Map<String, Object?> payload,
+  ) {
+    return _mutateFlowDetail(
+      () => _repository.closeEncounter(flowId, payload),
     );
   }
 

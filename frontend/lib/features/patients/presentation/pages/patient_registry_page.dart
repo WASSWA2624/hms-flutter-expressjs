@@ -2205,9 +2205,8 @@ Future<bool?> _openPatientTriageQuickDialog(
   required Patient patient,
   required PatientReferenceData referenceData,
 }) {
-  return showAppDialog<bool>(
+  return showAppTriageActionDialog<bool>(
     context: context,
-    barrierDismissible: false,
     builder: (_) => _PatientTriageQuickDialog(
       patient: patient,
       referenceData: referenceData,
@@ -2236,7 +2235,6 @@ class _PatientTriageQuickDialogState
     return AppTriageActionDialog(
       title: l10n.patientsTriageDialogTitle,
       submitLabel: l10n.patientsQuickTriageAction,
-      cancelLabel: l10n.commonCancelActionLabel,
       requiredMessage: l10n.validationRequired,
       prioritySectionTitle: l10n.patientsTriagePrioritySectionTitle,
       severityLabel: l10n.patientsEmergencySeverityLabel,
@@ -2269,6 +2267,7 @@ class _PatientTriageQuickDialogState
       failureBodyBuilder: _workflowFailureMessage,
       formStatusSectionsBuilder: _workflowFailureSections,
       leadingSectionsBuilder: _workflowFields,
+      isBusy: _isLoadingProviders,
       onSubmit: _submitTriage,
     );
   }

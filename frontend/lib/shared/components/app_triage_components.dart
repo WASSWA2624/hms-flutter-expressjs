@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
@@ -129,16 +130,30 @@ final class AppTriageVitalsInput {
 typedef AppTriageSubmitCallback =
     Future<AppFailure?> Function(AppTriageActionInput input);
 
+/// Opens [AppTriageActionDialog] (or a thin wrapper that builds it) with
+/// mutating-dialog dismiss rules: barrier taps do not close the route.
+Future<T?> showAppTriageActionDialog<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+}) {
+  return showAppDialog<T>(
+    context: context,
+    barrierDismissible: false,
+    builder: builder,
+  );
+}
+
 class AppTriageActionDialog extends StatefulWidget {
   const AppTriageActionDialog({
     required this.title,
     required this.submitLabel,
-    required this.cancelLabel,
     required this.requiredMessage,
     required this.triageLevelLabel,
     required this.triageLevelOptions,
     required this.onSubmit,
+    this.cancelLabel,
     this.icon = const Icon(Icons.monitor_heart_outlined),
+    this.submitLeadingIcon = AppActionIcons.save,
     this.initialTriageLevel,
     this.triageLevelRequired = true,
     this.severityLabel,
@@ -168,6 +183,7 @@ class AppTriageActionDialog extends StatefulWidget {
     this.leadingSectionsBuilder,
     this.formStatusSectionsBuilder,
     this.failureBodyBuilder,
+    this.isBusy = false,
     this.maxWidth = 780,
     super.key,
   });
@@ -175,7 +191,10 @@ class AppTriageActionDialog extends StatefulWidget {
   final String title;
   final Widget icon;
   final String submitLabel;
-  final String cancelLabel;
+  final IconData submitLeadingIcon;
+
+  /// Defaults to localized Cancel when null.
+  final String? cancelLabel;
   final String requiredMessage;
   final String triageLevelLabel;
   final List<AppTriageOption> triageLevelOptions;
@@ -210,6 +229,10 @@ class AppTriageActionDialog extends StatefulWidget {
   final List<Widget> Function(BuildContext context)? formStatusSectionsBuilder;
   final String? Function(BuildContext context, AppFailure failure)?
   failureBodyBuilder;
+
+  /// Parent-driven busy flag (e.g. reference data load). Blocks dismiss and
+  /// form edits alongside in-dialog submit loading.
+  final bool isBusy;
   final AppTriageSubmitCallback onSubmit;
   final double maxWidth;
 
@@ -296,11 +319,14 @@ class _AppTriageActionDialogState extends State<AppTriageActionDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final bool enabled = !_isSaving;
+    final bool enabled = !_isSaving && !widget.isBusy;
+    final String cancelLabel =
+        widget.cancelLabel ?? context.l10n.commonCancelActionLabel;
     return AppDialog(
       title: Text(widget.title),
       icon: widget.icon,
       scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: enabled,
       maxWidth: widget.maxWidth,
       content: AppFormShell(
@@ -363,18 +389,16 @@ class _AppTriageActionDialogState extends State<AppTriageActionDialog> {
       ),
       actions: <Widget>[
         AppButton.tertiary(
-          label: widget.cancelLabel,
+          label: cancelLabel,
           leadingIcon: AppActionIcons.cancel,
           enabled: enabled,
-          onPressed: _isSaving
-              ? null
-              : () => Navigator.of(context).maybePop(false),
+          onPressed: enabled ? () => Navigator.of(context).pop(false) : null,
         ),
         AppButton.primary(
           label: widget.submitLabel,
-          leadingIcon: AppActionIcons.save,
+          leadingIcon: widget.submitLeadingIcon,
           isLoading: _isSaving,
-          onPressed: _isSaving ? null : _submit,
+          onPressed: enabled ? _submit : null,
         ),
       ],
     );
@@ -451,6 +475,9 @@ class _AppTriageActionDialogState extends State<AppTriageActionDialog> {
   }
 
   Future<void> _submit() async {
+    if (_isSaving || widget.isBusy) {
+      return;
+    }
     if (!validateAndSaveAppForm(_formKey)) {
       return;
     }

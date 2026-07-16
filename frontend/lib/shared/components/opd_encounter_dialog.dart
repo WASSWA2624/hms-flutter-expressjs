@@ -27,6 +27,7 @@ import 'package:hosspi_hms/shared/components/app_copyable_identifier.dart';
 import 'package:hosspi_hms/shared/components/app_currency_amount_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
+import 'package:hosspi_hms/shared/components/app_loading_indicator.dart';
 import 'package:hosspi_hms/shared/components/app_payment_method.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/components/app_switch_field.dart';
@@ -36,6 +37,7 @@ import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/app_form_section.dart';
 import 'package:hosspi_hms/shared/forms/app_form_shell.dart';
 import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
+import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
@@ -498,7 +500,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     final IconData primaryActionIcon = isNewPatientMode
         ? Icons.person_add_alt_1_outlined
         : hasActiveEncounter && !_forceNewEncounter
-        ? Icons.save_outlined
+        ? AppActionIcons.save
         : Icons.play_arrow_outlined;
 
     return AppDialog(
@@ -544,7 +546,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           if (!_forceNewEncounter)
             AppButton.secondary(
               label: l10n.opdStartNewEncounterAction,
-              leadingIcon: Icons.add_circle_outline,
+              leadingIcon: AppActionIcons.add,
               enabled: !_isSaving,
               onPressed: _promptStartNewEncounter,
             ),
@@ -557,18 +559,24 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           if (widget.onCloseEncounter != null)
             AppButton.secondary(
               label: l10n.opdCloseEncounterAction,
-              leadingIcon: Icons.check_circle_outline,
+              leadingIcon: AppActionIcons.success,
               enabled: !_isSaving,
               onPressed: _promptCloseEncounter,
             ),
           if (widget.onCancelEncounter != null)
             AppButton.secondary(
               label: l10n.opdCancelEncounterAction,
-              leadingIcon: Icons.cancel_outlined,
+              leadingIcon: AppActionIcons.delete,
               enabled: !_isSaving,
               onPressed: _promptCancelEncounter,
             ),
         ],
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !_isSaving,
+          onPressed: _isSaving ? null : () => Navigator.of(context).maybePop(),
+        ),
         AppButton.primary(
           label: primaryActionLabel,
           leadingIcon: primaryActionIcon,
@@ -826,25 +834,9 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     if (_isResolvingActiveEncounter && flow == null) {
       return Padding(
         padding: EdgeInsets.only(bottom: theme.spacing.md),
-        child: Row(
-          children: <Widget>[
-            SizedBox.square(
-              dimension: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: colorScheme.primary,
-              ),
-            ),
-            SizedBox(width: theme.spacing.sm),
-            Expanded(
-              child: Text(
-                l10n.opdActiveEncounterCheckingLabel,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ],
+        child: AppLoadingIndicator(
+          size: AppLoadingIndicatorSize.compact,
+          title: l10n.opdActiveEncounterCheckingLabel,
         ),
       );
     }
@@ -1055,17 +1047,25 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     if (flow == null || widget.onCloseEncounter == null) {
       return;
     }
-    final Map<String, Object?>? payload =
-        await showAppDialog<Map<String, Object?>>(
-          context: context,
-          builder: (_) => _CloseEncounterDialog(flow: flow),
-        );
-    if (payload == null || !mounted) {
+    final OpdFlowDetail? detail = await showAppDialog<OpdFlowDetail>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _CloseEncounterDialog(
+        flow: flow,
+        onConfirm: (Map<String, Object?> payload) {
+          return widget.onCloseEncounter!(flow.apiId, payload);
+        },
+      ),
+    );
+    if (detail == null || !mounted) {
       return;
     }
-    await _runEncounterMutation(
-      action: OpdEncounterDialogAction.closed,
-      request: () => widget.onCloseEncounter!(flow.apiId, payload),
+    widget.onSuccess?.call();
+    Navigator.of(context).pop(
+      OpdEncounterDialogResult(
+        action: OpdEncounterDialogAction.closed,
+        flow: detail.summary,
+      ),
     );
   }
 
@@ -1074,45 +1074,25 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     if (flow == null || widget.onCancelEncounter == null) {
       return;
     }
-    final Map<String, Object?>? payload =
-        await showAppDialog<Map<String, Object?>>(
-          context: context,
-          builder: (_) => _CancelEncounterDialog(l10n: context.l10n),
-        );
-    if (payload == null || !mounted) {
-      return;
-    }
-    await _runEncounterMutation(
-      action: OpdEncounterDialogAction.cancelled,
-      request: () => widget.onCancelEncounter!(flow.apiId, payload),
+    final OpdFlowDetail? detail = await showAppDialog<OpdFlowDetail>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => _CancelEncounterDialog(
+        flow: flow,
+        onConfirm: (Map<String, Object?> payload) {
+          return widget.onCancelEncounter!(flow.apiId, payload);
+        },
+      ),
     );
-  }
-
-  Future<void> _runEncounterMutation({
-    required OpdEncounterDialogAction action,
-    required Future<Result<OpdFlowDetail>> Function() request,
-  }) async {
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final Result<OpdFlowDetail> result = await request();
-    if (!mounted) {
+    if (detail == null || !mounted) {
       return;
     }
-    result.when(
-      success: (OpdFlowDetail detail) {
-        widget.onSuccess?.call();
-        Navigator.of(
-          context,
-        ).pop(OpdEncounterDialogResult(action: action, flow: detail.summary));
-      },
-      failure: (AppFailure failure) {
-        setState(() {
-          _failure = failure;
-          _isSaving = false;
-        });
-      },
+    widget.onSuccess?.call();
+    Navigator.of(context).pop(
+      OpdEncounterDialogResult(
+        action: OpdEncounterDialogAction.cancelled,
+        flow: detail.summary,
+      ),
     );
   }
 
@@ -1137,15 +1117,19 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       return;
     }
     return result.when(
-      success: (OpdFlowDetail _) {
+      success: (OpdFlowDetail detail) {
         final OpdFlowSummary? activeEncounter = _activeEncounter;
-        if (activeEncounter != null) {
+        final bool reusingActive =
+            activeEncounter != null && !_forceNewEncounter;
+        if (reusingActive) {
           widget.onExistingActiveEncounter?.call(activeEncounter);
         }
         widget.onSuccess?.call();
-        Navigator.of(
-          context,
-        ).pop(OpdEncounterDialogResult(flow: activeEncounter));
+        Navigator.of(context).pop(
+          OpdEncounterDialogResult(
+            flow: reusingActive ? activeEncounter : detail.summary,
+          ),
+        );
       },
       failure: (AppFailure failure) {
         setState(() {
@@ -1933,9 +1917,14 @@ class _ActiveEncounterCopyableDetail extends StatelessWidget {
 }
 
 class _CloseEncounterDialog extends StatefulWidget {
-  const _CloseEncounterDialog({required this.flow});
+  const _CloseEncounterDialog({
+    required this.flow,
+    required this.onConfirm,
+  });
 
   final OpdFlowSummary flow;
+  final Future<Result<OpdFlowDetail>> Function(Map<String, Object?> payload)
+  onConfirm;
 
   @override
   State<_CloseEncounterDialog> createState() => _CloseEncounterDialogState();
@@ -1943,6 +1932,8 @@ class _CloseEncounterDialog extends StatefulWidget {
 
 class _CloseEncounterDialogState extends State<_CloseEncounterDialog> {
   late final TextEditingController _reasonController;
+  bool _isSaving = false;
+  AppFailure? _failure;
 
   @override
   void initState() {
@@ -1956,14 +1947,48 @@ class _CloseEncounterDialogState extends State<_CloseEncounterDialog> {
     super.dispose();
   }
 
+  Future<void> _submit() async {
+    if (_isSaving) {
+      return;
+    }
+    final String notes = _reasonController.text.trim();
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final Result<OpdFlowDetail> result = await widget.onConfirm(
+      <String, Object?>{'reason_notes': notes.isEmpty ? null : notes},
+    );
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (OpdFlowDetail detail) {
+        Navigator.of(context).pop(detail);
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _failure = failure;
+          _isSaving = false;
+        });
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     return AppDialog(
       title: Text(l10n.opdCloseEncounterAction),
-      icon: const Icon(Icons.check_circle_outline),
+      icon: const Icon(AppActionIcons.success),
+      closeEnabled: !_isSaving,
       content: AppFormSection(
         children: <Widget>[
+          if (_failure != null)
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _failure!,
+            ),
           AppFormInformationBanner.message(
             title: l10n.clinicalEncounterNumberLabel,
             message: widget.flow.apiId,
@@ -1972,18 +1997,22 @@ class _CloseEncounterDialogState extends State<_CloseEncounterDialog> {
             controller: _reasonController,
             labelText: l10n.opdEncounterCloseReasonLabel,
             maxLines: 3,
+            enabled: !_isSaving,
           ),
         ],
       ),
       actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !_isSaving,
+          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+        ),
         AppButton.primary(
           label: l10n.opdCloseEncounterAction,
-          leadingIcon: Icons.check_circle_outline,
-          onPressed: () {
-            Navigator.of(context).pop(<String, Object?>{
-              'reason_notes': _reasonController.text.trim(),
-            });
-          },
+          leadingIcon: AppActionIcons.success,
+          isLoading: _isSaving,
+          onPressed: _submit,
         ),
       ],
     );
@@ -1991,9 +2020,14 @@ class _CloseEncounterDialogState extends State<_CloseEncounterDialog> {
 }
 
 class _CancelEncounterDialog extends StatefulWidget {
-  const _CancelEncounterDialog({required this.l10n});
+  const _CancelEncounterDialog({
+    required this.flow,
+    required this.onConfirm,
+  });
 
-  final AppLocalizations l10n;
+  final OpdFlowSummary flow;
+  final Future<Result<OpdFlowDetail>> Function(Map<String, Object?> payload)
+  onConfirm;
 
   @override
   State<_CancelEncounterDialog> createState() => _CancelEncounterDialogState();
@@ -2002,6 +2036,9 @@ class _CancelEncounterDialog extends StatefulWidget {
 class _CancelEncounterDialogState extends State<_CancelEncounterDialog> {
   late final TextEditingController _notesController;
   String _reasonCode = _opdEncounterCancelReasonCodes.first;
+  bool _isSaving = false;
+  AppFailure? _failure;
+  String? _validationMessage;
 
   @override
   void initState() {
@@ -2015,38 +2052,97 @@ class _CancelEncounterDialogState extends State<_CancelEncounterDialog> {
     super.dispose();
   }
 
-  String _reasonLabel(String code) {
+  String _reasonLabel(AppLocalizations l10n, String code) {
     return switch (code) {
-      'PATIENT_LEFT' => widget.l10n.opdEncounterCancelReasonPatientLeft,
-      'DUPLICATE_ENCOUNTER' => widget.l10n.opdEncounterCancelReasonDuplicate,
-      'ENTERED_IN_ERROR' => widget.l10n.opdEncounterCancelReasonEnteredInError,
-      'PATIENT_ALREADY_SEEN' => widget.l10n.opdEncounterCancelReasonAlreadySeen,
-      _ => widget.l10n.opdEncounterCancelReasonOther,
+      'PATIENT_LEFT' => l10n.opdEncounterCancelReasonPatientLeft,
+      'DUPLICATE_ENCOUNTER' => l10n.opdEncounterCancelReasonDuplicate,
+      'ENTERED_IN_ERROR' => l10n.opdEncounterCancelReasonEnteredInError,
+      'PATIENT_ALREADY_SEEN' => l10n.opdEncounterCancelReasonAlreadySeen,
+      _ => l10n.opdEncounterCancelReasonOther,
     };
+  }
+
+  Future<void> _submit() async {
+    if (_isSaving) {
+      return;
+    }
+    final AppLocalizations l10n = context.l10n;
+    final String notes = _notesController.text.trim();
+    if (_reasonCode == 'OTHER' && notes.isEmpty) {
+      setState(() {
+        _validationMessage = l10n.opdEncounterCancelReasonNotesRequiredMessage;
+        _failure = null;
+      });
+      return;
+    }
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+      _validationMessage = null;
+    });
+    final Result<OpdFlowDetail> result = await widget.onConfirm(
+      <String, Object?>{
+        'reason_code': _reasonCode,
+        'reason_notes': notes.isEmpty ? null : notes,
+      },
+    );
+    if (!mounted) {
+      return;
+    }
+    result.when(
+      success: (OpdFlowDetail detail) {
+        Navigator.of(context).pop(detail);
+      },
+      failure: (AppFailure failure) {
+        setState(() {
+          _failure = failure;
+          _isSaving = false;
+        });
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = widget.l10n;
+    final AppLocalizations l10n = context.l10n;
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
     return AppDialog(
       title: Text(l10n.opdCancelEncounterAction),
-      icon: const Icon(Icons.cancel_outlined),
+      icon: Icon(AppActionIcons.delete, color: colorScheme.error),
+      closeEnabled: !_isSaving,
       content: AppFormSection(
         children: <Widget>[
+          if (_failure != null)
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _failure!,
+            ),
+          if (_validationMessage != null)
+            AppFormInformationBanner.message(
+              message: _validationMessage!,
+              variant: AppFormInformationVariant.error,
+              icon: AppActionIcons.error,
+            ),
+          AppFormInformationBanner.message(
+            title: l10n.clinicalEncounterNumberLabel,
+            message: widget.flow.apiId,
+          ),
           AppSelectField<String>.searchable(
             value: _reasonCode,
             labelText: l10n.opdEncounterCancelReasonCodeLabel,
+            enabled: !_isSaving,
             options: _opdEncounterCancelReasonCodes
                 .map(
                   (String code) => AppSelectOption<String>(
                     value: code,
-                    label: _reasonLabel(code),
+                    label: _reasonLabel(l10n, code),
                   ),
                 )
                 .toList(growable: false),
             onChanged: (String? value) {
               setState(() {
                 _reasonCode = value ?? _reasonCode;
+                _validationMessage = null;
               });
             },
           ),
@@ -2055,44 +2151,45 @@ class _CancelEncounterDialogState extends State<_CancelEncounterDialog> {
               controller: _notesController,
               labelText: l10n.opdEncounterCancelReasonNotesLabel,
               maxLines: 3,
+              enabled: !_isSaving,
+              onChanged: (_) {
+                if (_validationMessage != null) {
+                  setState(() => _validationMessage = null);
+                }
+              },
             ),
         ],
       ),
       actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !_isSaving,
+          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+        ),
         AppButton.primary(
           label: l10n.opdCancelEncounterAction,
-          leadingIcon: Icons.cancel_outlined,
-          onPressed: () {
-            final String notes = _notesController.text.trim();
-            if (_reasonCode == 'OTHER' && notes.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    l10n.opdEncounterCancelReasonNotesRequiredMessage,
-                  ),
-                ),
-              );
-              return;
-            }
-            Navigator.of(context).pop(<String, Object?>{
-              'reason_code': _reasonCode,
-              'reason_notes': notes.isEmpty ? null : notes,
-            });
-          },
+          leadingIcon: AppActionIcons.delete,
+          color: colorScheme.error,
+          isLoading: _isSaving,
+          onPressed: _submit,
         ),
       ],
     );
   }
 }
 
+/// Opens [OpdEncounterDialog] through the shared [showAppDialog] shell.
+///
+/// Barrier dismiss is always disabled so encounter mutations cannot be
+/// abandoned mid-flight without an explicit Cancel action.
 Future<OpdEncounterDialogResult?> showOpdEncounterDialog({
   required BuildContext context,
   required OpdEncounterDialog dialog,
-  bool barrierDismissible = false,
 }) {
   return showAppDialog<OpdEncounterDialogResult>(
     context: context,
-    barrierDismissible: barrierDismissible,
+    barrierDismissible: false,
     builder: (_) => dialog,
   );
 }
