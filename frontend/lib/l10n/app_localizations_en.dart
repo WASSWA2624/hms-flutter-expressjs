@@ -3359,6 +3359,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdCancelAction => 'Cancel appointment';
 
   @override
+  String get opdCancelAppointmentConfirmBody =>
+      'Cancel this appointment and mark it as cancelled? Linked front-desk queue actions for this booking will no longer be available.';
+
+  @override
   String get opdCheckInAction => 'Start OPD encounter';
 
   @override
@@ -3438,6 +3442,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opdDispositionAction => 'Disposition';
+
+  @override
+  String get opdSaveDispositionAction => 'Save disposition';
 
   @override
   String get opdAmountLabel => 'Amount';

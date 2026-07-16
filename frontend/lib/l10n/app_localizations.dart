@@ -6484,6 +6484,12 @@ abstract class AppLocalizations {
   /// **'Cancel appointment'**
   String get opdCancelAction;
 
+  /// Confirmation body for the OPD cancel-appointment dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this appointment and mark it as cancelled? Linked front-desk queue actions for this booking will no longer be available.'**
+  String get opdCancelAppointmentConfirmBody;
+
   /// Action label to check in an appointment.
   ///
   /// In en, this message translates to:
@@ -6639,6 +6645,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Disposition'**
   String get opdDispositionAction;
+
+  /// Primary commit label for saving an OPD disposition decision.
+  ///
+  /// In en, this message translates to:
+  /// **'Save disposition'**
+  String get opdSaveDispositionAction;
 
   /// Amount field label.
   ///

@@ -357,7 +357,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     AppPermissionActionItem admissionHandoffAction() => AppPermissionActionItem(
       requirement: opdAdmissionHandoffRequirement,
       label: l10n.opdOpenAdmissionAction,
-      icon: Icons.bed_outlined,
+      icon: AppActionIcons.bed,
       fullWidth: true,
       hideWhenDenied: true,
       enabled: actionsEnabled,
@@ -533,14 +533,18 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           'print': () => AppPermissionActionItem(
             requirement: opdVitalsActionRequirement,
             label: l10n.opdPrintSummaryAction,
-            icon: Icons.print_outlined,
+            icon: AppActionIcons.print,
             fullWidth: true,
             hideWhenDenied: true,
             enabled: actionsEnabled,
             onPressed: actionsEnabled
-                ? () => _openNested(
+                ? () => _openNestedOpener(
                     context,
-                    PrintOpdSummaryDialog(flow: flow, detail: detail),
+                    () => showPrintOpdSummaryDialog(
+                      context: context,
+                      flow: flow,
+                      detail: detail,
+                    ),
                   )
                 : null,
           ),
@@ -1985,7 +1989,8 @@ Future<bool?> showOpdDispositionDialog({
   );
 }
 
-class OpdDispositionDialog extends ConsumerStatefulWidget {
+/// OPD disposition outcome dialog — reuses [ClinicalDispositionActionDialog].
+class OpdDispositionDialog extends ConsumerWidget {
   const OpdDispositionDialog({
     required this.flow,
     required this.hasPharmacyOrder,
@@ -1998,163 +2003,70 @@ class OpdDispositionDialog extends ConsumerStatefulWidget {
   final ValueChanged<String>? onDispositionSubmitted;
 
   @override
-  ConsumerState<OpdDispositionDialog> createState() =>
-      _OpdDispositionDialogState();
-}
-
-class _OpdDispositionDialogState extends ConsumerState<OpdDispositionDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _notesController;
-  late final List<String> _reasons;
-  late String? _reason;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  OpdFlowSummary get _currentFlow {
-    final OpdWorkspaceState? workspaceState = _workspaceState(ref);
-    final OpdFlowDetail? selected = workspaceState?.selectedFlow;
-    if (selected != null && _isSameFlow(selected.summary, widget.flow)) {
-      return selected.summary;
-    }
-    return widget.flow;
-  }
-
-  OpdFlowDetail? get _currentDetail {
-    final OpdWorkspaceState? workspaceState = _workspaceState(ref);
-    final OpdFlowDetail? selected = workspaceState?.selectedFlow;
-    if (selected != null && _isSameFlow(selected.summary, widget.flow)) {
-      return selected;
-    }
-    return null;
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _notesController = TextEditingController();
-    _reasons = _opdDispositionOptions(
-      hasPharmacyOrder: widget.hasPharmacyOrder,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final OpdFlowSummary currentFlow = _dispositionCurrentFlow(ref, flow);
+    final OpdFlowDetail? currentDetail = _dispositionCurrentDetail(ref, flow);
+    final List<String> reasons = _opdDispositionOptions(
+      hasPharmacyOrder: hasPharmacyOrder,
     );
-    final String preferred = widget.hasPharmacyOrder
+    final String preferred = hasPharmacyOrder
         ? 'SEND_TO_PHARMACY'
         : 'DISCHARGE';
-    _reason = _reasons.contains(preferred)
-        ? preferred
-        : (_reasons.isEmpty ? null : _reasons.first);
-  }
-
-  @override
-  void dispose() {
-    _notesController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final OpdFlowSummary flow = _currentFlow;
-    final String actionLabel = clinicalDispositionActionLabel(
+    final String title = clinicalDispositionActionLabel(
       l10n,
       sourceQueue: 'OPD',
-      status: flow.status,
-      stage: flow.stage,
+      status: currentFlow.status,
+      stage: currentFlow.stage,
       isOpdContext: true,
     );
-    return AppDialog(
-      title: Text(actionLabel),
-      icon: const Icon(Icons.task_alt_outlined),
-      scrollable: true,
-      closeEnabled: !_isSaving,
-      content: Form(
-        key: _formKey,
-        child: AppFormSection(
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            if (_failure != null)
-              AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
-              ),
-            OpdActionContextPanel(
-              flow: flow,
-              detail: _currentDetail,
-              showTitle: false,
-            ),
-            AppSelectField<String>.searchable(
-              value: _reason,
-              labelText: _opdRequiredFieldLabel(l10n, l10n.opdDecisionLabel),
-              enabled: !_isSaving,
-              isRequired: true,
-              menuHeight: 320,
-              options: <AppSelectOption<String>>[
-                for (final String reason in _reasons)
-                  AppSelectOption<String>(
-                    value: reason,
-                    label: clinicalActionApiLabel(reason),
-                    leadingIcon: const Icon(Icons.fact_check_outlined),
-                  ),
-              ],
-              validator: AppValidators.requiredValue<String>(
-                l10n.validationRequired,
-              ),
-              onChanged: (String? value) => setState(() => _reason = value),
-            ),
-            AppTextField(
-              controller: _notesController,
-              labelText: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
-              enabled: !_isSaving,
-              maxLines: 3,
-              textCapitalization: TextCapitalization.sentences,
-            ),
-          ],
+    return ClinicalDispositionActionDialog(
+      title: title,
+      submitLabel: l10n.opdSaveDispositionAction,
+      submitLeadingIcon: AppActionIcons.save,
+      reasons: reasons,
+      initialReason: reasons.contains(preferred) ? preferred : null,
+      reasonLabel: _opdRequiredFieldLabel(l10n, l10n.opdDecisionLabel),
+      notesLabel: _opdOptionalFieldLabel(l10n, l10n.opdNotesLabel),
+      leadingContent: <Widget>[
+        OpdActionContextPanel(
+          flow: currentFlow,
+          detail: currentDetail,
+          showTitle: false,
         ),
-      ),
-      actions: clinicalActionDialogActions(
-        context,
-        actionLabel,
-        _isSaving,
-        _isSaving ? null : _submit,
-        submitLeadingIcon: Icons.task_alt_outlined,
-      ),
+      ],
+      onSubmit: ({required String reason, required String notes}) async {
+        final AppFailure? failure = await ref
+            .read(opdWorkspaceControllerProvider.notifier)
+            .completeDisposition(currentFlow, <String, Object?>{
+              'decision': reason,
+              'notes': notes,
+            });
+        if (failure == null) {
+          onDispositionSubmitted?.call(reason);
+        }
+        return failure;
+      },
     );
   }
+}
 
-  Future<void> _submit() async {
-    if (_isSaving) {
-      return;
-    }
-    if (!(_formKey.currentState?.validate() ?? false)) {
-      return;
-    }
-    final String? reason = _reason?.trim();
-    if (reason == null || reason.isEmpty) {
-      setState(() => _failure = AppFailure.validation());
-      return;
-    }
-
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .completeDisposition(_currentFlow, <String, Object?>{
-          'decision': reason,
-          'notes': _notesController.text.trim(),
-        });
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      widget.onDispositionSubmitted?.call(reason);
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
+OpdFlowSummary _dispositionCurrentFlow(WidgetRef ref, OpdFlowSummary flow) {
+  final OpdWorkspaceState? workspaceState = _workspaceState(ref);
+  final OpdFlowDetail? selected = workspaceState?.selectedFlow;
+  if (selected != null && _isSameFlow(selected.summary, flow)) {
+    return selected.summary;
   }
+  return flow;
+}
+
+OpdFlowDetail? _dispositionCurrentDetail(WidgetRef ref, OpdFlowSummary flow) {
+  final OpdWorkspaceState? workspaceState = _workspaceState(ref);
+  final OpdFlowDetail? selected = workspaceState?.selectedFlow;
+  if (selected != null && _isSameFlow(selected.summary, flow)) {
+    return selected;
+  }
+  return null;
 }
 
 /// Opens [_OpdAdmissionHandoffDialog] after an `ADMIT` disposition succeeds.
@@ -2182,27 +2094,19 @@ class _OpdAdmissionHandoffDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppDialog(
-      title: Text(l10n.opdAdmissionHandoffTitle),
-      icon: const Icon(Icons.bed_outlined),
+    return AppConfirmActionDialog(
+      title: l10n.opdAdmissionHandoffTitle,
+      body: l10n.opdAdmissionHandoffBody,
+      submitLabel: l10n.opdOpenAdmissionAction,
+      icon: const Icon(AppActionIcons.bed),
+      submitLeadingIcon: AppActionIcons.bed,
       maxWidth: 560,
-      content: AppFormSection(
-        density: AppFormSectionDensity.compact,
-        children: <Widget>[
-          OpdActionContextPanel(flow: flow, showTitle: false),
-          Text(
-            l10n.opdAdmissionHandoffBody,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ],
-      ),
-      actions: clinicalActionDialogActions(
-        context,
-        l10n.opdOpenAdmissionAction,
-        false,
-        () => Navigator.of(context).pop(true),
-        submitLeadingIcon: Icons.bed_outlined,
-      ),
+      sectionDensity: AppFormSectionDensity.compact,
+      scrollable: true,
+      pinActionsToBottom: true,
+      leadingContent: <Widget>[
+        OpdActionContextPanel(flow: flow, showTitle: false),
+      ],
     );
   }
 }
@@ -2274,10 +2178,27 @@ class FollowUpDialog extends ConsumerWidget {
   }
 }
 
+/// Opens [PrintOpdSummaryDialog] with non-dismissible barrier rules.
+///
+/// Print/copy are client-side only — there is no print-audit API and no
+/// Riverpod patch on success. Returns `false` after print so parents do not
+/// treat the action as a persisted mutation.
+Future<bool?> showPrintOpdSummaryDialog({
+  required BuildContext context,
+  required OpdFlowSummary flow,
+  OpdFlowDetail? detail,
+}) {
+  return showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => PrintOpdSummaryDialog(flow: flow, detail: detail),
+  );
+}
+
 class PrintOpdSummaryDialog extends ConsumerStatefulWidget {
   const PrintOpdSummaryDialog({
     required this.flow,
-    required this.detail,
+    this.detail,
     super.key,
   });
 
@@ -2300,12 +2221,17 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final OpdFlowSummary flow = widget.flow;
-    final String summary = _printSummary(context);
+    final String summary = buildOpdPrintSummaryText(
+      context: context,
+      flow: flow,
+      detail: widget.detail,
+    );
     return AppDialog(
       title: Text(l10n.opdPrintSummaryAction),
       icon: const Icon(AppActionIcons.print),
       maxWidth: 720,
       scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: !_isBusy,
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
@@ -2318,6 +2244,7 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
           OpdActionContextPanel(flow: flow, showTitle: false),
           AppReportPreviewPanel(
             selectable: true,
+            semanticLabel: l10n.opdPrintSummaryAction,
             child: Text(summary, style: Theme.of(context).textTheme.bodyMedium),
           ),
         ],
@@ -2326,6 +2253,7 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
       actions: <Widget>[
         AppReportActionButton.copy(
           label: l10n.opdCopySummaryAction,
+          icon: AppActionIcons.copy,
           enabled: !_isBusy,
           isLoading: _isCopying,
           onPressed: _isBusy ? null : () => _copySummary(summary),
@@ -2338,6 +2266,7 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
         ),
         AppReportActionButton.print(
           label: l10n.opdPrintAction,
+          icon: AppActionIcons.print,
           enabled: !_isBusy,
           isLoading: _isPrinting,
           onPressed: _isBusy ? null : () => _printSummaryDocument(summary),
@@ -2412,50 +2341,54 @@ class _PrintOpdSummaryDialogState extends ConsumerState<PrintOpdSummaryDialog> {
       });
     }
   }
+}
 
-  String _printSummary(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final OpdFlowSummary flow = widget.flow;
-    final OpdFlowDetail? value = widget.detail;
-    final List<String> lines = <String>[
-      flow.displayTitle,
-      _joinDisplay(<String?>[
-        flow.patientIdentifier,
-        flow.patientPhone,
-        flow.assignedStaffLabel ?? flow.providerDisplayName,
-      ]),
-      '${l10n.opdStageLabel}: '
-          '${opdStageDisplayLabel(l10n, flow.displayCode ?? flow.stage)}',
-      '${l10n.opdNextStepColumnLabel}: '
-          '${opdNextStepDisplayLabel(l10n, flow.displayNextStep ?? flow.nextStep)}',
-      '${l10n.opdTriageLevelLabel}: ${triageLevelDisplayLabel(l10n, flow.triageLevel, emptyAsPending: false)}',
-      '${l10n.opdRouteDecisionLabel}: ${_apiLabel(flow.lastRouteTo ?? '')}',
-      if (_isNonEmpty(flow.chiefComplaint))
-        '${l10n.opdChiefComplaintLabel}: ${flow.chiefComplaint}',
-      if (_isNonEmpty(flow.triageNotes))
-        '${l10n.opdTriageNotesLabel}: ${flow.triageNotes}',
-      '${l10n.opdPaymentStatusLabel}: ${opdFlowBillingDisplay(context, flow).label}',
-      '${l10n.opdVitalsSummaryLabel}: ${value?.vitalSigns.length ?? 0}',
-      '${l10n.opdClinicalNotesSummaryLabel}: ${value?.clinicalNotes.length ?? 0}',
-      '${l10n.opdServicesSummaryLabel}: ${(value?.labOrders.length ?? 0) + (value?.radiologyOrders.length ?? 0) + (value?.pharmacyOrders.length ?? 0)}',
-      if (value != null && value.vitalSigns.isNotEmpty) '',
-      if (value != null && value.vitalSigns.isNotEmpty)
-        l10n.opdVitalsSummaryLabel,
-      if (value != null)
-        for (final OpdRelatedRecord vital in value.vitalSigns)
-          _joinDisplay(<String?>[vital.title, vital.subtitle]),
-      if (value != null && value.timeline.isNotEmpty) '',
-      if (value != null && value.timeline.isNotEmpty) l10n.opdTimelineTitle,
-      if (value != null)
-        for (final OpdTimelineItem item in value.timeline)
-          _joinDisplay(<String?>[
-            _apiLabel(item.action),
-            opdStageDisplayLabel(l10n, item.stage),
-            item.notes,
-          ]),
-    ];
-    return lines.where((String line) => line.trim().isNotEmpty).join('\n');
-  }
+/// Builds the plain-text OPD summary preview used by [PrintOpdSummaryDialog].
+@visibleForTesting
+String buildOpdPrintSummaryText({
+  required BuildContext context,
+  required OpdFlowSummary flow,
+  OpdFlowDetail? detail,
+}) {
+  final AppLocalizations l10n = context.l10n;
+  final OpdFlowDetail? value = detail;
+  final List<String> lines = <String>[
+    flow.displayTitle,
+    _joinDisplay(<String?>[
+      flow.patientIdentifier,
+      flow.patientPhone,
+      flow.assignedStaffLabel ?? flow.providerDisplayName,
+    ]),
+    '${l10n.opdStageLabel}: '
+        '${opdStageDisplayLabel(l10n, flow.displayCode ?? flow.stage)}',
+    '${l10n.opdNextStepColumnLabel}: '
+        '${opdNextStepDisplayLabel(l10n, flow.displayNextStep ?? flow.nextStep)}',
+    '${l10n.opdTriageLevelLabel}: ${triageLevelDisplayLabel(l10n, flow.triageLevel, emptyAsPending: false)}',
+    '${l10n.opdRouteDecisionLabel}: ${_apiLabel(flow.lastRouteTo ?? '')}',
+    if (_isNonEmpty(flow.chiefComplaint))
+      '${l10n.opdChiefComplaintLabel}: ${flow.chiefComplaint}',
+    if (_isNonEmpty(flow.triageNotes))
+      '${l10n.opdTriageNotesLabel}: ${flow.triageNotes}',
+    '${l10n.opdPaymentStatusLabel}: ${opdFlowBillingDisplay(context, flow).label}',
+    '${l10n.opdVitalsSummaryLabel}: ${value?.vitalSigns.length ?? 0}',
+    '${l10n.opdClinicalNotesSummaryLabel}: ${value?.clinicalNotes.length ?? 0}',
+    '${l10n.opdServicesSummaryLabel}: ${(value?.labOrders.length ?? 0) + (value?.radiologyOrders.length ?? 0) + (value?.pharmacyOrders.length ?? 0)}',
+    if (value != null && value.vitalSigns.isNotEmpty) '',
+    if (value != null && value.vitalSigns.isNotEmpty) l10n.opdVitalsSummaryLabel,
+    if (value != null)
+      for (final OpdRelatedRecord vital in value.vitalSigns)
+        _joinDisplay(<String?>[vital.title, vital.subtitle]),
+    if (value != null && value.timeline.isNotEmpty) '',
+    if (value != null && value.timeline.isNotEmpty) l10n.opdTimelineTitle,
+    if (value != null)
+      for (final OpdTimelineItem item in value.timeline)
+        _joinDisplay(<String?>[
+          _apiLabel(item.action),
+          opdStageDisplayLabel(l10n, item.stage),
+          item.notes,
+        ]),
+  ];
+  return lines.where((String line) => line.trim().isNotEmpty).join('\n');
 }
 
 /// Opens [RecordVitalsDialog] with mutating-dialog dismiss rules.

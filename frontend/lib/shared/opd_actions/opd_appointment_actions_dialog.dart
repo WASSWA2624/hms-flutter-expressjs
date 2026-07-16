@@ -379,8 +379,9 @@ class _OpdRescheduleAppointmentDialogState
     final Locale locale = Localizations.localeOf(context);
     return AppDialog(
       title: Text(l10n.opdRescheduleAction),
-      icon: const Icon(Icons.edit_calendar_outlined),
+      icon: const Icon(AppActionIcons.calendar),
       scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: !_isSaving,
       maxWidth: 680,
       content: AppFormShell(
@@ -478,10 +479,10 @@ class _OpdRescheduleAppointmentDialogState
       ),
       actions: clinicalActionDialogActions(
         context,
-        l10n.opdRescheduleAction,
+        l10n.patientsEditAction,
         _isSaving,
         _isSaving ? null : _submit,
-        submitLeadingIcon: Icons.edit_calendar_outlined,
+        submitLeadingIcon: AppActionIcons.edit,
       ),
     );
   }
@@ -490,7 +491,7 @@ class _OpdRescheduleAppointmentDialogState
     if (_isSaving) {
       return;
     }
-    if (!(_formKey.currentState?.validate() ?? false)) {
+    if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
     final DateTime? start = _combine(_date, _startTime);
@@ -551,6 +552,7 @@ class OpdCancelAppointmentDialog extends ConsumerStatefulWidget {
 
 class _OpdCancelAppointmentDialogState
     extends ConsumerState<OpdCancelAppointmentDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _reasonController;
   bool _isSaving = false;
   AppFailure? _failure;
@@ -570,43 +572,82 @@ class _OpdCancelAppointmentDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final Locale locale = Localizations.localeOf(context);
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     return AppDialog(
       title: Text(l10n.opdCancelAction),
       icon: Icon(AppActionIcons.delete, color: colorScheme.error),
+      scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: !_isSaving,
-      content: AppFormSection(
+      maxWidth: 680,
+      content: AppFormShell(
+        formKey: _formKey,
+        enabled: !_isSaving,
+        density: AppFormSectionDensity.compact,
+        formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
-          if (_failure != null)
-            AppFormInformationBanner.failure(
-              context: context,
-              failure: _failure!,
-            ),
-          AppTextField(
-            controller: _reasonController,
-            labelText: l10n.opdFieldOptionalLabel(
-              l10n.opdCancellationReasonLabel,
-            ),
-            enabled: !_isSaving,
-            maxLines: 3,
+          AppTriageSummaryPanel(
+            items: <AppInfoTileData>[
+              AppInfoTileData(
+                label: l10n.opdPatientColumnLabel,
+                value: widget.appointment.displayTitle,
+              ),
+              AppInfoTileData(
+                label: l10n.opdStatusColumnLabel,
+                value: opdStageDisplayLabel(
+                  l10n,
+                  widget.appointment.status ?? '',
+                ),
+              ),
+              AppInfoTileData(
+                label: l10n.opdProviderColumnLabel,
+                value:
+                    widget.appointment.providerDisplayName ??
+                    l10n.profileUnknownValue,
+              ),
+              AppInfoTileData(
+                label: l10n.opdTimeColumnLabel,
+                value: widget.appointment.scheduledStart == null
+                    ? l10n.profileUnknownValue
+                    : AppFormatters.dateTime(
+                        widget.appointment.scheduledStart!,
+                        locale,
+                      ),
+              ),
+            ],
+            emptyValue: l10n.profileUnknownValue,
+          ),
+          AppFormInformationBanner.message(
+            message: l10n.opdCancelAppointmentConfirmBody,
+            variant: AppFormInformationVariant.warning,
+            icon: Icons.warning_amber_outlined,
+          ),
+          AppFormSection(
+            density: AppFormSectionDensity.compact,
+            children: <Widget>[
+              AppTextField(
+                controller: _reasonController,
+                labelText: l10n.opdFieldOptionalLabel(
+                  l10n.opdCancellationReasonLabel,
+                ),
+                enabled: !_isSaving,
+                maxLines: 3,
+                textCapitalization: TextCapitalization.sentences,
+                prefixIcon: const Icon(Icons.notes_outlined),
+              ),
+            ],
           ),
         ],
       ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !_isSaving,
-          onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.opdCancelAction,
-          leadingIcon: AppActionIcons.delete,
-          color: colorScheme.error,
-          isLoading: _isSaving,
-          onPressed: _isSaving ? null : _submit,
-        ),
-      ],
+      actions: clinicalActionDialogActions(
+        context,
+        l10n.opdCancelAction,
+        _isSaving,
+        _isSaving ? null : _submit,
+        submitLeadingIcon: AppActionIcons.delete,
+        destructive: true,
+      ),
     );
   }
 
@@ -618,9 +659,13 @@ class _OpdCancelAppointmentDialogState
       _isSaving = true;
       _failure = null;
     });
+    final String reason = _reasonController.text.trim();
     final AppFailure? failure = await ref
         .read(opdWorkspaceControllerProvider.notifier)
-        .cancelAppointment(widget.appointment, _reasonController.text.trim());
+        .cancelAppointment(
+          widget.appointment,
+          reason.isEmpty ? null : reason,
+        );
     if (!mounted) {
       return;
     }

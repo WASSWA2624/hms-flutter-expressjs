@@ -315,6 +315,47 @@ describe('Appointment Service', () => {
       expect(opdFlowService.startOpdFlow).not.toHaveBeenCalled();
     });
 
+    it('should audit schedule changes as RESCHEDULE', async () => {
+      const before = {
+        id: appointmentId,
+        status: 'SCHEDULED',
+        scheduled_start: '2026-07-20T08:00:00.000Z',
+        scheduled_end: '2026-07-20T08:30:00.000Z',
+      };
+      const after = {
+        ...before,
+        scheduled_start: '2026-07-21T10:00:00.000Z',
+        scheduled_end: '2026-07-21T10:30:00.000Z',
+      };
+      const scheduleUpdate = {
+        scheduled_start: after.scheduled_start,
+        scheduled_end: after.scheduled_end,
+        status: 'SCHEDULED',
+      };
+
+      appointmentRepository.findById
+        .mockResolvedValueOnce(before)
+        .mockResolvedValueOnce(after);
+      appointmentRepository.update.mockResolvedValue(after);
+
+      const result = await appointmentService.updateAppointment(
+        appointmentId,
+        scheduleUpdate,
+        'user-id',
+        '127.0.0.1'
+      );
+
+      expect(result).toEqual(after);
+      expect(createAuditLog).toHaveBeenCalledWith({
+        user_id: 'user-id',
+        action: 'RESCHEDULE',
+        entity: 'appointment',
+        entity_id: appointmentId,
+        diff: { before, after },
+        ip_address: '127.0.0.1',
+      });
+    });
+
     it('should auto-start OPD flow when status transitions to IN_PROGRESS', async () => {
       const inProgressBefore = {
         id: appointmentId,

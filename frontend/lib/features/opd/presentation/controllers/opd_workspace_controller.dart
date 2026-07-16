@@ -525,8 +525,10 @@ final class OpdWorkspaceController
     OpdAppointment appointment,
     String? reason,
   ) {
+    final String? normalizedReason =
+        reason == null || reason.trim().isEmpty ? null : reason.trim();
     return _mutateAppointment(
-      () => _repository.cancelAppointment(appointment.apiId, reason),
+      () => _repository.cancelAppointment(appointment.apiId, normalizedReason),
     );
   }
 

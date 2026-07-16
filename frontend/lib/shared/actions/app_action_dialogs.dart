@@ -8,18 +8,26 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 
 /// Shared confirmation dialog for module actions that either return a boolean
 /// confirmation or run an async action before closing.
+///
+/// Optional [leadingContent] inserts domain-neutral context above the body
+/// (for example encounter summary panels) without forking the confirm shell.
 class AppConfirmActionDialog extends StatefulWidget {
   const AppConfirmActionDialog({
     required this.title,
     required this.body,
     required this.submitLabel,
     this.onConfirm,
-    this.icon = const Icon(Icons.help_outline),
+    this.icon = const Icon(AppActionIcons.help),
     this.highlightedText,
+    this.leadingContent = const <Widget>[],
     this.destructive = false,
     this.submitLeadingIcon,
     this.cancelLeadingIcon = AppActionIcons.cancel,
     this.maxWidth = 600,
+    this.sectionDensity = AppFormSectionDensity.regular,
+    this.scrollable = false,
+    this.pinActionsToBottom = false,
+    this.initialMaximized = false,
     super.key,
   });
 
@@ -28,10 +36,15 @@ class AppConfirmActionDialog extends StatefulWidget {
   final String submitLabel;
   final Widget icon;
   final String? highlightedText;
+  final List<Widget> leadingContent;
   final bool destructive;
   final IconData? submitLeadingIcon;
   final IconData cancelLeadingIcon;
   final double maxWidth;
+  final AppFormSectionDensity sectionDensity;
+  final bool scrollable;
+  final bool pinActionsToBottom;
+  final bool initialMaximized;
   final Future<AppFailure?> Function()? onConfirm;
 
   @override
@@ -51,15 +64,19 @@ class _AppConfirmActionDialogState extends State<AppConfirmActionDialog> {
       title: Text(widget.title),
       icon: _resolveHeaderIcon(colorScheme),
       maxWidth: widget.maxWidth,
-      initialMaximized: false,
+      initialMaximized: widget.initialMaximized,
+      scrollable: widget.scrollable,
+      pinActionsToBottom: widget.pinActionsToBottom,
       closeEnabled: !_isSaving,
       content: AppFormSection(
+        density: widget.sectionDensity,
         children: <Widget>[
           if (_failure != null)
             AppFormInformationBanner.failure(
               context: context,
               failure: _failure!,
             ),
+          ...widget.leadingContent,
           if (widget.destructive)
             _DestructiveConfirmationBody(
               body: widget.body,

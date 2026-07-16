@@ -87,6 +87,34 @@ describe('publishAuditRealtime', () => {
     );
   });
 
+  test('maps reschedule actions to appointment.rescheduled', async () => {
+    const { auditRealtime, publishCrudRealtimeEvent } = loadAuditRealtime();
+
+    await auditRealtime.publishAuditRealtime(
+      {
+        action: 'RESCHEDULE',
+        entity: 'appointment',
+        entity_id: 'appointment-1',
+        user_id: 'user-1',
+        diff: {
+          after: {
+            tenant_id: 'tenant-1',
+            facility_id: 'facility-1',
+            scheduled_start: '2026-07-21T10:00:00.000Z',
+          },
+        },
+      },
+      'tenant-1',
+      'UPDATE'
+    );
+
+    expect(publishCrudRealtimeEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'appointment.rescheduled',
+      })
+    );
+  });
+
   test('skips entities with bespoke realtime publishers', async () => {
     const { auditRealtime, publishCrudRealtimeEvent } = loadAuditRealtime();
 

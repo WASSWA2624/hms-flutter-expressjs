@@ -34,6 +34,8 @@ abstract final class AppActionIcons {
   static const IconData warning = Icons.warning_amber_outlined;
   static const IconData error = Icons.error_outline;
   static const IconData success = Icons.check_circle_outline;
+  static const IconData complete = Icons.task_alt_outlined;
+  static const IconData decision = Icons.fact_check_outlined;
   static const IconData help = Icons.help_outline;
   static const IconData openInNew = Icons.open_in_new;
   static const IconData copy = Icons.copy_outlined;
@@ -41,4 +43,6 @@ abstract final class AppActionIcons {
   static const IconData chevronRight = Icons.chevron_right;
   static const IconData expandMore = Icons.expand_more;
   static const IconData expandLess = Icons.expand_less;
+  /// Inpatient / bed / admission handoff actions.
+  static const IconData bed = Icons.bed_outlined;
 }

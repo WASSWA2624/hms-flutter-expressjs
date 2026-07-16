@@ -158,6 +158,31 @@ const withAppointmentProjectionList = (appointments = []) =>
     withAppointmentProjection(appointment)
   );
 
+const toComparableInstant = (value) => {
+  if (value == null || value === '') return null;
+  const date = value instanceof Date ? value : new Date(value);
+  const time = date.getTime();
+  return Number.isNaN(time) ? null : time;
+};
+
+const didAppointmentScheduleChange = (before = {}, payload = {}) => {
+  if (
+    Object.prototype.hasOwnProperty.call(payload, 'scheduled_start') &&
+    toComparableInstant(payload.scheduled_start) !==
+      toComparableInstant(before.scheduled_start)
+  ) {
+    return true;
+  }
+  if (
+    Object.prototype.hasOwnProperty.call(payload, 'scheduled_end') &&
+    toComparableInstant(payload.scheduled_end) !==
+      toComparableInstant(before.scheduled_end)
+  ) {
+    return true;
+  }
+  return false;
+};
+
 const buildEmptyListResult = (page, limit) => ({
   appointments: [],
   pagination: {
@@ -548,11 +573,13 @@ const updateAppointment = async (id, data, userId, ipAddress) => {
     const updatedAppointment = await appointmentRepository.update(before.id, payload);
     const appointment = await appointmentRepository.findById(updatedAppointment.id, APPOINTMENT_INCLUDE);
     const projectedAppointment = withAppointmentProjection(appointment || updatedAppointment);
+    const scheduleChanged = didAppointmentScheduleChange(before, payload);
 
-    // Create audit log (non-blocking)
+    // Create audit log (non-blocking). Schedule edits emit RESCHEDULE so
+    // audit-driven realtime publishes appointment.rescheduled for desks.
     createAuditLog({
       user_id: userId,
-      action: 'UPDATE',
+      action: scheduleChanged ? 'RESCHEDULE' : 'UPDATE',
       entity: 'appointment',
       entity_id: updatedAppointment.id,
       diff: { before, after: projectedAppointment },

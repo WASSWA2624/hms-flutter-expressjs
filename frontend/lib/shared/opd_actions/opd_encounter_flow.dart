@@ -1,19 +1,19 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hosspi_hms/core/errors/app_failure.dart';
-import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_encounter_dialog_controller.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart';
 
-class PatientPinnedOpdEncounterDialog extends ConsumerStatefulWidget {
+/// Patient-registry host for the shared OPD encounter surface with a pinned patient.
+///
+/// Does not own a parallel clinical body — it composes [OpdEncounterDialog] with
+/// patient identity already resolved. Prefer [showPatientPinnedOpdEncounterDialog]
+/// / [openPatientOpdEncounterFlow] at call sites.
+class PatientPinnedOpdEncounterDialog extends ConsumerWidget {
   const PatientPinnedOpdEncounterDialog({
     required this.patient,
     this.onExistingActiveEncounter,
@@ -24,130 +24,52 @@ class PatientPinnedOpdEncounterDialog extends ConsumerStatefulWidget {
   final ValueChanged<OpdFlowSummary>? onExistingActiveEncounter;
 
   @override
-  ConsumerState<PatientPinnedOpdEncounterDialog> createState() =>
-      _PatientPinnedOpdEncounterDialogState();
-}
-
-class _PatientPinnedOpdEncounterDialogState
-    extends ConsumerState<PatientPinnedOpdEncounterDialog> {
-  bool _isLoading = true;
-  List<OpdProviderSchedule> _providerSchedules = const <OpdProviderSchedule>[];
-  List<OpdAppointment> _appointments = const <OpdAppointment>[];
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_loadEncounterData());
-  }
-
-  Future<void> _loadEncounterData() async {
-    final String search =
-        widget.patient.effectiveIdentifier ?? widget.patient.id;
-    final Result<List<OpdProviderSchedule>> scheduleResult = await ref
-        .read(opdEncounterDialogControllerProvider)
-        .listProviderSchedules();
-    final Result<AppPage<OpdAppointment>> appointmentResult = await ref
-        .read(opdEncounterDialogControllerProvider)
-        .listAppointments(OpdAppointmentQuery(search: search));
-    if (!mounted) {
-      return;
-    }
-    AppFailure? failure;
-    var schedules = const <OpdProviderSchedule>[];
-    var appointments = const <OpdAppointment>[];
-    scheduleResult.when(
-      success: (List<OpdProviderSchedule> value) => schedules = value,
-      failure: (AppFailure value) => failure = value,
-    );
-    appointmentResult.when(
-      success: (AppPage<OpdAppointment> value) => appointments = value.items,
-      failure: (AppFailure value) => failure ??= value,
-    );
-    setState(() {
-      _providerSchedules = schedules;
-      _appointments = appointments;
-      _failure = failure;
-      _isLoading = false;
-    });
-  }
-
-  void _retryLoad() {
-    setState(() {
-      _isLoading = true;
-      _failure = null;
-    });
-    unawaited(_loadEncounterData());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    if (_isLoading || _failure != null) {
-      return AppDialog(
-        title: Text(l10n.opdWalkInDialogTitle),
-        icon: const Icon(opdEncounterIcon),
-        scrollable: true,
-        pinActionsToBottom: true,
-        closeEnabled: !_isLoading,
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            if (_failure != null)
-              AppFormInformationBanner.failure(
-                context: context,
-                failure: _failure!,
-              ),
-            if (_isLoading)
-              AppLoadingIndicator(
-                size: AppLoadingIndicatorSize.compact,
-                title: l10n.opdLoadingTitle,
-                body: l10n.opdLoadingBody,
-              ),
-          ],
-        ),
-        actions: <Widget>[
-          AppButton.secondary(
-            label: l10n.commonCancelActionLabel,
-            leadingIcon: AppActionIcons.cancel,
-            enabled: !_isLoading,
-            onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
-          ),
-          if (_failure != null && !_isLoading)
-            AppButton.primary(
-              label: l10n.commonRetryActionLabel,
-              leadingIcon: AppActionIcons.refresh,
-              onPressed: _retryLoad,
-            ),
-        ],
-      );
-    }
-
-    return OpdEncounterDialog(
-      providerSchedules: _providerSchedules,
-      appointments: _appointments,
-      initialPatient: widget.patient,
-      initialPatientId: patientApiId(widget.patient),
-      onExistingActiveEncounter: widget.onExistingActiveEncounter,
-      onCancelEncounter: (String flowId, Map<String, Object?> payload) {
-        return ref
-            .read(opdEncounterDialogControllerProvider)
-            .cancelEncounter(flowId, payload);
-      },
-      onCloseEncounter: (String flowId, Map<String, Object?> payload) {
-        return ref
-            .read(opdEncounterDialogControllerProvider)
-            .closeEncounter(flowId, payload);
-      },
-      onSubmit: (Map<String, Object?> payload) {
-        return ref
-            .read(opdEncounterDialogControllerProvider)
-            .submitPatientEncounter(widget.patient, payload);
-      },
+  Widget build(BuildContext context, WidgetRef ref) {
+    return buildPatientPinnedOpdEncounterDialog(
+      ref: ref,
+      patient: patient,
+      onExistingActiveEncounter: onExistingActiveEncounter,
     );
   }
 }
 
+/// Builds the canonical [OpdEncounterDialog] for a patient-registry pin.
+///
+/// Schedules, appointments, and providers are loaded by the encounter dialog
+/// through [OpdEncounterDialogController]; callers only pass resolved patient IDs.
+OpdEncounterDialog buildPatientPinnedOpdEncounterDialog({
+  required WidgetRef ref,
+  required Patient patient,
+  ValueChanged<OpdFlowSummary>? onExistingActiveEncounter,
+}) {
+  return OpdEncounterDialog(
+    providerSchedules: const <OpdProviderSchedule>[],
+    appointments: const <OpdAppointment>[],
+    initialPatient: patient,
+    initialPatientId: patientApiId(patient),
+    onExistingActiveEncounter: onExistingActiveEncounter,
+    onCancelEncounter: (String flowId, Map<String, Object?> payload) {
+      return ref
+          .read(opdEncounterDialogControllerProvider)
+          .cancelEncounter(flowId, payload);
+    },
+    onCloseEncounter: (String flowId, Map<String, Object?> payload) {
+      return ref
+          .read(opdEncounterDialogControllerProvider)
+          .closeEncounter(flowId, payload);
+    },
+    onSubmit: (Map<String, Object?> payload) {
+      return ref
+          .read(opdEncounterDialogControllerProvider)
+          .submitPatientEncounter(patient, payload);
+    },
+  );
+}
+
+/// Opens the pinned-patient OPD encounter through the shared [showAppDialog] shell.
+///
+/// Prefer [openPatientOpdEncounterFlow] when a [WidgetRef] is available so the
+/// encounter opens via [showOpdEncounterDialog] / [buildPatientPinnedOpdEncounterDialog].
 Future<OpdEncounterDialogResult?> showPatientPinnedOpdEncounterDialog({
   required BuildContext context,
   required Patient patient,
@@ -170,14 +92,16 @@ Future<void> openPatientOpdEncounterFlow(
   required Future<void> Function() onSaved,
 }) async {
   OpdFlowSummary? activeEncounterToOpen;
-  final OpdEncounterDialogResult? result =
-      await showPatientPinnedOpdEncounterDialog(
-        context: context,
-        patient: patient,
-        onExistingActiveEncounter: (OpdFlowSummary flow) {
-          activeEncounterToOpen = flow;
-        },
-      );
+  final OpdEncounterDialogResult? result = await showOpdEncounterDialog(
+    context: context,
+    dialog: buildPatientPinnedOpdEncounterDialog(
+      ref: ref,
+      patient: patient,
+      onExistingActiveEncounter: (OpdFlowSummary flow) {
+        activeEncounterToOpen = flow;
+      },
+    ),
+  );
 
   if (result == null || !context.mounted) {
     return;

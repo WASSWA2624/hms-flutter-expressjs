@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 
 enum AppReportActionKind { print, export, download, copy, preview }
 
@@ -272,11 +273,11 @@ class _ReportSummaryTile extends StatelessWidget {
 
 IconData _defaultIcon(AppReportActionKind kind) {
   return switch (kind) {
-    AppReportActionKind.print => Icons.print_outlined,
+    AppReportActionKind.print => AppActionIcons.print,
     AppReportActionKind.export => Icons.ios_share_outlined,
-    AppReportActionKind.download => Icons.file_download_outlined,
-    AppReportActionKind.copy => Icons.copy_outlined,
-    AppReportActionKind.preview => Icons.visibility_outlined,
+    AppReportActionKind.download => AppActionIcons.download,
+    AppReportActionKind.copy => AppActionIcons.copy,
+    AppReportActionKind.preview => AppActionIcons.visibility,
   };
 }
 

@@ -10,8 +10,10 @@ List<Widget> clinicalActionDialogActions(
   VoidCallback? onSubmit, {
   bool showCancel = true,
   IconData? submitLeadingIcon,
+  bool destructive = false,
 }) {
   final AppLocalizations l10n = context.l10n;
+  final ColorScheme colorScheme = Theme.of(context).colorScheme;
   return <Widget>[
     if (showCancel)
       AppButton.secondary(
@@ -24,7 +26,9 @@ List<Widget> clinicalActionDialogActions(
       ),
     AppButton.primary(
       label: submitLabel,
-      leadingIcon: submitLeadingIcon,
+      leadingIcon:
+          submitLeadingIcon ?? (destructive ? AppActionIcons.delete : null),
+      color: destructive ? colorScheme.error : null,
       isLoading: isSaving,
       enabled: onSubmit != null,
       onPressed: onSubmit,

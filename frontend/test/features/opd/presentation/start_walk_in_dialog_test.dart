@@ -78,6 +78,11 @@ void main() {
       (_) async =>
           const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
     );
+    when(() => opdRepository.listProviderSchedules()).thenAnswer(
+      (_) async => const Result<List<OpdProviderSchedule>>.success(
+        <OpdProviderSchedule>[],
+      ),
+    );
     when(() => opdRepository.listOpdFlows(any())).thenAnswer(
       (_) async => const Result<AppPage<OpdFlowSummary>>.success(
         AppPage<OpdFlowSummary>(
@@ -1147,6 +1152,11 @@ void _stubStartDialogLookups({
   when(() => opdRepository.listProviders()).thenAnswer(
     (_) async =>
         const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+  );
+  when(() => opdRepository.listProviderSchedules()).thenAnswer(
+    (_) async => const Result<List<OpdProviderSchedule>>.success(
+      <OpdProviderSchedule>[],
+    ),
   );
   when(
     () => opdRepository.getBillingDefaults(

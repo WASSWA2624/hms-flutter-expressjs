@@ -7,6 +7,7 @@ import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialo
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
+/// Shared disposition/outcome dialog used by clinical and OPD encounter flows.
 class ClinicalDispositionActionDialog extends StatefulWidget {
   const ClinicalDispositionActionDialog({
     required this.reasons,
@@ -16,8 +17,12 @@ class ClinicalDispositionActionDialog extends StatefulWidget {
     this.notesLabel,
     this.submitLabel,
     this.initialReason,
-    this.icon = const Icon(Icons.task_alt_outlined),
+    this.icon = const Icon(AppActionIcons.complete),
+    this.submitLeadingIcon = AppActionIcons.complete,
     this.leadingContent = const <Widget>[],
+    this.scrollable = true,
+    this.pinActionsToBottom = true,
+    this.density = AppFormSectionDensity.compact,
     super.key,
   });
 
@@ -28,7 +33,11 @@ class ClinicalDispositionActionDialog extends StatefulWidget {
   final String? submitLabel;
   final String? initialReason;
   final Widget icon;
+  final IconData submitLeadingIcon;
   final List<Widget> leadingContent;
+  final bool scrollable;
+  final bool pinActionsToBottom;
+  final AppFormSectionDensity density;
   final Future<AppFailure?> Function({
     required String reason,
     required String notes,
@@ -72,13 +81,19 @@ class _ClinicalDispositionActionDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final String title = widget.title ?? l10n.clinicalCompleteDispositionAction;
+    final String submitLabel =
+        widget.submitLabel ?? l10n.clinicalCompleteDispositionAction;
     return AppDialog(
-      title: Text(widget.title ?? l10n.clinicalCompleteDispositionAction),
+      title: Text(title),
       icon: widget.icon,
+      scrollable: widget.scrollable,
+      pinActionsToBottom: widget.pinActionsToBottom,
       closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,
         child: AppFormSection(
+          density: widget.density,
           children: <Widget>[
             if (_failure != null)
               AppFormInformationBanner.failure(
@@ -111,20 +126,24 @@ class _ClinicalDispositionActionDialogState
       ),
       actions: clinicalActionDialogActions(
         context,
-        widget.submitLabel ?? l10n.clinicalCompleteDispositionAction,
+        submitLabel,
         _isSaving,
-        _submit,
+        _isSaving ? null : _submit,
+        submitLeadingIcon: widget.submitLeadingIcon,
       ),
     );
   }
 
   Future<void> _submit() async {
+    if (_isSaving) {
+      return;
+    }
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
 
-    final String? reason = _reason;
-    if (reason == null || reason.trim().isEmpty) {
+    final String? reason = _reason?.trim();
+    if (reason == null || reason.isEmpty) {
       setState(() => _failure = AppFailure.validation());
       return;
     }
@@ -161,7 +180,7 @@ List<AppSelectOption<String>> _dispositionReasonOptions(List<String> reasons) {
       AppSelectOption<String>(
         value: reason,
         label: clinicalActionApiLabel(reason),
-        leadingIcon: const Icon(Icons.fact_check_outlined),
+        leadingIcon: const Icon(AppActionIcons.decision),
       ),
   ];
 }

@@ -30,6 +30,7 @@ const UPDATE_ACTION_ALIASES = new Set([
   'FINALIZE',
   'REASSIGN',
   'RELEASE',
+  'RESCHEDULE',
   'RESOLVE',
   'RESTORE',
   'START',

@@ -217,6 +217,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   List<Patient> _patientOptions = const <Patient>[];
   List<OpdAppointment> _appointmentOptions = const <OpdAppointment>[];
   List<OpdProviderOption> _providerOptions = const <OpdProviderOption>[];
+  List<OpdProviderSchedule> _providerSchedules = const <OpdProviderSchedule>[];
   PatientReferenceData _patientReferenceData = const PatientReferenceData();
   _WalkInPatientMode _patientMode = _WalkInPatientMode.existing;
   bool _isLoadingPatients = false;
@@ -307,6 +308,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       ...widget.appointments,
       if (widget.initialAppointment != null) widget.initialAppointment!,
     ]);
+    _providerSchedules = widget.providerSchedules;
     _patientId = _initialPatientApiId();
     _appointmentId = _initialAppointmentApiId();
     _providerId =
@@ -678,7 +680,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         _ProviderSelectField(
           value: _providerId,
           providers: _providerOptionsForDialog(),
-          schedules: widget.providerSchedules,
+          schedules: _providerSchedules,
           labelText: _opdOptionalFieldLabel(l10n, l10n.opdSearchProviderLabel),
           helperText: l10n.opdSearchProviderHelper,
           emptyHelperText: l10n.opdNoProvidersHelper,
@@ -1713,17 +1715,32 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     setState(() {
       _isLoadingProviders = true;
     });
-    final Result<List<OpdProviderOption>> result = await ref
-        .read(opdEncounterDialogControllerProvider)
+    final OpdEncounterDialogController controller = ref.read(
+      opdEncounterDialogControllerProvider,
+    );
+    final Future<Result<List<OpdProviderOption>>> providersFuture = controller
         .listProviders();
+    final Future<Result<List<OpdProviderSchedule>>> schedulesFuture = controller
+        .listProviderSchedules();
+    final Result<List<OpdProviderOption>> providersResult =
+        await providersFuture;
+    final Result<List<OpdProviderSchedule>> schedulesResult =
+        await schedulesFuture;
     if (!mounted) {
       return;
     }
 
-    result.when(
+    providersResult.when(
       success: (List<OpdProviderOption> providers) {
+        var schedules = _providerSchedules;
+        schedulesResult.when(
+          success: (List<OpdProviderSchedule> value) => schedules = value,
+          // Schedules only annotate availability; keep seeded schedules on failure.
+          failure: (_) {},
+        );
         setState(() {
           _providerOptions = dedupeOpdProviderOptions(providers);
+          _providerSchedules = schedules;
           _applyProviderDefaultsToState(_providerId);
           _isLoadingProviders = false;
         });
