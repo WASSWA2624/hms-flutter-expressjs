@@ -17,10 +17,18 @@ from cursor_sdk import (
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 PROJECT_DIR = str(PROMPTS_DIR.parent)
 STATE_FILE = Path(__file__).parent / ".run_prompts_state.json"
-EXCLUDED = {
-    "01-patients-screen.md",
-    "02-standardize-opd.md",
-    "TEMP_01-patients-screen.md",
+INCLUDED = {
+    "08-standardize-operations.md",
+    "09-standardize-pharmacy.md",
+    "10-standardize-rooms-beds.md",
+    "11-standardize-theater.md",
+    "12-standardize-billing.md",
+    "13-standardize-communications.md",
+    "16-standardize-integrations.md",
+    "17-standardize-nursing.md",
+    "18-standardize-physiotherapy.md",
+    "20-standardize-biomedical.md",
+    "23-standardize-mortuary.md",
 }
 MAX_CONCURRENCY = 5
 MAX_ATTEMPTS = 3
@@ -139,16 +147,19 @@ async def main():
             "'cursor_...' example value."
         )
 
-    files = sorted(f for f in PROMPTS_DIR.glob("*.md") if f.name not in EXCLUDED)
+    files = sorted(f for f in PROMPTS_DIR.glob("*.md") if f.name in INCLUDED)
+    missing = sorted(INCLUDED - {f.name for f in files})
+    if missing:
+        sys.exit(f"Missing included prompt file(s): {', '.join(missing)}")
     if not files:
-        sys.exit("No .md files found in prompts/")
+        sys.exit("No included .md files found in prompts/")
 
-    finished = _load_finished()
+    finished = _load_finished() & INCLUDED
     pending = [f for f in files if f.name not in finished]
     skipped = len(files) - len(pending)
 
     print(
-        f"Found {len(files)} prompt files "
+        f"Found {len(files)} included prompt files "
         f"({skipped} already finished, {len(pending)} pending). "
         f"Running with concurrency={MAX_CONCURRENCY}...\n",
         flush=True,
@@ -159,7 +170,9 @@ async def main():
 
     semaphore = asyncio.Semaphore(MAX_CONCURRENCY)
     finished_lock = asyncio.Lock()
-    results: list[dict] = [{"file": name, "status": "finished"} for name in sorted(finished)]
+    results: list[dict] = [
+        {"file": name, "status": "finished"} for name in sorted(finished)
+    ]
 
     async with await AsyncClient.launch_bridge(
         workspace=PROJECT_DIR,
