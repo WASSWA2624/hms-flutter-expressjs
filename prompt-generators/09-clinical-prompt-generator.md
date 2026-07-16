@@ -4,7 +4,7 @@
 
 # Table Standardization Prompt Generator — Clinical
 
-You are a coding AI agent acting as a **prompt generator**. Your job is to audit the codebase for the **Clinical** screen, then produce a comprehensive, context-aware refactoring prompt that another coding AI agent can execute autonomously — and save that prompt to the `prompts/` folder.
+You are a coding AI agent acting as a **prompt generator**. Your job is to audit the codebase for the **Clinical** screen, then produce a comprehensive, context-aware refactoring prompt that another coding AI agent can execute autonomously — and save that prompt to `prompts/09-clinical-prompt.md` (same name as this generator file, without `-generator`).
 
 The generated prompt **MUST** be fully compliant with the table rules in `prompt.md` (Table Standardization). Every acceptance criterion in the generated prompt must map back to those rules.
 
@@ -276,13 +276,10 @@ after implementation. Treat `prompt.md` as the normative table contract.
 
 ## Step 3: Save the Output
 
-- List files in `prompts/`.
-- Find the highest numeric prefix (two-digit).
-- Save as `prompts/{NN}-standardize-clinical-tables.md` using the next number.
-  - Feature slug for this screen: `clinical`
-  - Example: `prompts/28-standardize-clinical-tables.md`
-
-If a standardize-tables prompt for this screen already exists, **replace/update it** when it is clearly the same screen's table standardization prompt; otherwise create the next numbered file and mention the older file in a short note at the top of the new prompt.
+- **Output path (fixed):** `prompts/09-clinical-prompt.md`
+- This mirrors this generator file (`prompt-generators/09-clinical-prompt-generator.md`) with `-generator` removed from the filename.
+- **Replace/update** that file if it already exists; do not invent a different name or numeric prefix.
+- Do not save under alternate names such as `standardize-*-tables.md` unless you are explicitly retiring a legacy file — in that case, note the legacy path at the top of the new prompt and delete or redirect the old file.
 
 ---
 
@@ -306,4 +303,4 @@ This file is already bound to **Clinical** (`/clinical`). Run it as a prompt. Th
 
 1. Audit `frontend/lib/features/clinical/presentation/pages/clinical_workspace_page.dart` and related `clinical` files against Mortuary/Emergency references + `prompt.md`.
 2. Produce a self-contained, agent-executable table-standardization prompt.
-3. Save it under `prompts/` with the next numeric prefix.
+3. Save it to `prompts/09-clinical-prompt.md`.
