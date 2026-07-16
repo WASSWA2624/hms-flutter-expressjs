@@ -5,6 +5,7 @@ import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_scope_n
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_columns.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 
 void main() {
   group('nursingScopeToQueryValue / nursingScopeFromQueryValue', () {
@@ -154,11 +155,25 @@ void main() {
   });
 
   group('nursingTabItems', () {
-    test('exposes seven scope tabs', () async {
-      final AppLocalizations l10n = await AppLocalizations.delegate.load(
-        const Locale('en'),
+    late AppLocalizations l10n;
+
+    setUpAll(() async {
+      l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    });
+
+    NursingWorkspaceState emptyState() {
+      return const NursingWorkspaceState(
+        query: NursingWorklistQuery(),
+        worklist: AppPage<NursingPatientSummary>(
+          items: <NursingPatientSummary>[],
+          request: AppPageRequest(),
+          totalItemCount: 0,
+        ),
       );
-      final List<AppTabItem> tabs = nursingTabItems(l10n);
+    }
+
+    test('exposes seven scope tabs', () {
+      final List<AppTabItem> tabs = nursingTabItems(l10n, emptyState());
       expect(tabs, hasLength(7));
       expect(tabs.map((AppTabItem t) => t.id).toList(), <String>[
         'all',
@@ -169,6 +184,41 @@ void main() {
         'transfer-pending',
         'discharge-pending',
       ]);
+    });
+
+    test('omits zero counts and maps tones from workspace state', () {
+      final List<AppTabItem> emptyTabs = nursingTabItems(l10n, emptyState());
+      for (final AppTabItem tab in emptyTabs) {
+        expect(tab.count, isNull);
+      }
+
+      const NursingPatientSummary urgentPatient = NursingPatientSummary(
+        id: 'adm-urgent',
+        admissionId: 'adm-urgent',
+        displayId: 'ADM-URGENT',
+        patientDisplayId: 'PT-URGENT',
+        patientDisplayName: 'Urgent Patient',
+        stage: 'ADMITTED_IN_BED',
+        admissionStatus: 'ADMITTED_IN_BED',
+        wardDisplayName: 'Ward C',
+        bedDisplayLabel: 'Bed 3',
+        hasActiveBed: true,
+        hasCriticalAlert: true,
+        criticalSeverity: 'CRITICAL',
+      );
+      const NursingWorkspaceState state = NursingWorkspaceState(
+        query: NursingWorklistQuery(),
+        worklist: AppPage<NursingPatientSummary>(
+          items: <NursingPatientSummary>[urgentPatient],
+          request: AppPageRequest(),
+          totalItemCount: 1,
+        ),
+      );
+      final List<AppTabItem> tabs = nursingTabItems(l10n, state);
+      expect(tabs[0].count, 1);
+      expect(tabs[0].countTone, AppTabCountTone.info);
+      expect(tabs[2].count, 1);
+      expect(tabs[2].countTone, AppTabCountTone.danger);
     });
   });
 }

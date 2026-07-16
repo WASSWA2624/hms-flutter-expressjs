@@ -10,7 +10,9 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
@@ -95,6 +97,17 @@ class _RadiologyWorkspaceContent extends ConsumerStatefulWidget {
 class _RadiologyWorkspaceContentState
     extends ConsumerState<_RadiologyWorkspaceContent> {
   static const Duration _searchDebounceDuration = Duration(milliseconds: 220);
+
+  static const AccessRequirement _requestRequirement = AccessRequirement(
+    anyPermissions: <AppPermission>[
+      AppPermissions.clinicalWrite,
+      AppPermissions.radiologyWrite,
+    ],
+  );
+
+  static const AccessRequirement _workRequirement = AccessRequirement(
+    anyPermissions: <AppPermission>[AppPermissions.radiologyWrite],
+  );
 
   late final TextEditingController _searchController;
   late final AppListTableColumnVisibilityController<RadiologyOrder>
@@ -300,6 +313,132 @@ class _RadiologyWorkspaceContentState
     };
   }
 
+  Widget _buildPrimaryAction(
+    AppLocalizations l10n,
+    RadiologyWorkspaceState state,
+    AppAccessPolicy accessPolicy,
+  ) {
+    final bool canRequest = _requestRequirement.isAllowed(accessPolicy);
+    if (!canRequest) {
+      return AppTabToolbarPrimary(
+        label: l10n.commonRefreshActionLabel,
+        icon: Icons.refresh_outlined,
+        semanticLabel: l10n.commonRefreshActionLabel,
+        tooltip: l10n.commonRefreshActionLabel,
+        isLoading: state.isRefreshing,
+        enabled: !state.isRefreshing,
+        onPressed: state.isRefreshing
+            ? null
+            : () {
+                unawaited(
+                  ref
+                      .read(radiologyWorkspaceControllerProvider.notifier)
+                      .refresh(),
+                );
+              },
+      );
+    }
+
+    return AppAccessActionGate(
+      requirement: _requestRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        return AppTabToolbarPrimary(
+          label: l10n.radiologyRequestImagingAction,
+          icon: Icons.add,
+          semanticLabel: l10n.radiologyRequestImagingAction,
+          tooltip: l10n.radiologyRequestImagingAction,
+          enabled: isAllowed && !state.isMutating,
+          onPressed: isAllowed && !state.isMutating
+              ? () => _showCreateOrderDialog(context, ref)
+              : null,
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildSecondaryActions(
+    AppLocalizations l10n,
+    RadiologyWorkspaceState state,
+    AppAccessPolicy accessPolicy,
+  ) {
+    final bool canRequest = _requestRequirement.isAllowed(accessPolicy);
+    final bool isPatientsView =
+        state.query.view == RadiologyWorkbenchView.patients;
+    final String viewLabel = isPatientsView
+        ? l10n.radiologyOrdersViewAction
+        : l10n.radiologyPatientsViewAction;
+    final AppTabToolbarAction viewToggle = AppTabToolbarAction(
+      label: viewLabel,
+      icon: Icons.swap_horiz_outlined,
+      semanticLabel: viewLabel,
+      tooltip: viewLabel,
+      onPressed: state.isMutating
+          ? null
+          : () {
+              unawaited(
+                ref
+                    .read(radiologyWorkspaceControllerProvider.notifier)
+                    .applyView(
+                      isPatientsView
+                          ? RadiologyWorkbenchView.orders
+                          : RadiologyWorkbenchView.patients,
+                    ),
+              );
+            },
+    );
+    final AppTabToolbarAction refreshAction = AppTabToolbarAction(
+      label: l10n.commonRefreshActionLabel,
+      icon: Icons.refresh_outlined,
+      semanticLabel: l10n.commonRefreshActionLabel,
+      tooltip: l10n.commonRefreshActionLabel,
+      isLoading: state.isRefreshing,
+      enabled: !state.isRefreshing,
+      onPressed: state.isRefreshing
+          ? null
+          : () {
+              unawaited(
+                ref
+                    .read(radiologyWorkspaceControllerProvider.notifier)
+                    .refresh(),
+              );
+            },
+    );
+    final Widget configurationsAction = AppAccessActionGate(
+      requirement: _workRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        return AppTabToolbarAction(
+          label: l10n.radiologyConfigurationsAction,
+          icon: Icons.tune_outlined,
+          semanticLabel: l10n.radiologyConfigurationsAction,
+          tooltip: l10n.radiologyConfigurationsAction,
+          enabled: isAllowed && !state.isMutating,
+          onPressed: isAllowed && !state.isMutating
+              ? () => _showRadiologyConfigurationsDialog(
+                  context,
+                  ref,
+                  tenantId: accessPolicy.tenantId,
+                )
+              : null,
+        );
+      },
+    );
+
+    return switch (_section) {
+      RadiologyDeskSection.worklist => <Widget>[
+        viewToggle,
+        if (canRequest) refreshAction,
+        configurationsAction,
+      ],
+      RadiologyDeskSection.reporting || RadiologyDeskSection.released =>
+        <Widget>[viewToggle, if (canRequest) refreshAction],
+      RadiologyDeskSection.allOrders => <Widget>[
+        viewToggle,
+        if (canRequest) refreshAction,
+        configurationsAction,
+      ],
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -307,11 +446,8 @@ class _RadiologyWorkspaceContentState
     final RadiologyWorkspaceState state = widget.state;
     final controller = ref.read(radiologyWorkspaceControllerProvider.notifier);
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final bool canRequest = accessPolicy.grantsAny(const <AppPermission>[
-      AppPermissions.clinicalWrite,
-      AppPermissions.radiologyWrite,
-    ]);
-    final bool canWork = accessPolicy.grants(AppPermissions.radiologyWrite);
+    final bool canRequest = _requestRequirement.isAllowed(accessPolicy);
+    final bool canWork = _workRequirement.isAllowed(accessPolicy);
     final AppFailure? lastFailure = state.lastFailure;
 
     return ResponsivePage(
@@ -345,53 +481,12 @@ class _RadiologyWorkspaceContentState
                   }
                 }
               },
-              secondaryActions: <Widget>[
-                AppTabToolbarAction(
-                  label: state.query.view == RadiologyWorkbenchView.patients
-                      ? l10n.radiologyOrdersViewAction
-                      : l10n.radiologyPatientsViewAction,
-                  icon: Icons.swap_horiz_outlined,
-                  semanticLabel:
-                      state.query.view == RadiologyWorkbenchView.patients
-                      ? l10n.radiologyOrdersViewAction
-                      : l10n.radiologyPatientsViewAction,
-                  tooltip: state.query.view == RadiologyWorkbenchView.patients
-                      ? l10n.radiologyOrdersViewAction
-                      : l10n.radiologyPatientsViewAction,
-                  onPressed: state.isMutating
-                      ? null
-                      : () => controller.applyView(
-                          state.query.view == RadiologyWorkbenchView.patients
-                              ? RadiologyWorkbenchView.orders
-                              : RadiologyWorkbenchView.patients,
-                        ),
-                ),
-                if (canWork)
-                  AppTabToolbarAction(
-                    label: l10n.radiologyConfigurationsAction,
-                    icon: Icons.tune_outlined,
-                    semanticLabel: l10n.radiologyConfigurationsAction,
-                    tooltip: l10n.radiologyConfigurationsAction,
-                    enabled: !state.isMutating,
-                    onPressed: state.isMutating
-                        ? null
-                        : () => _showRadiologyConfigurationsDialog(
-                            context,
-                            ref,
-                            tenantId: accessPolicy.tenantId,
-                          ),
-                  ),
-              ],
-              primaryAction: canRequest
-                  ? AppTabToolbarPrimary(
-                      label: l10n.radiologyRequestImagingAction,
-                      icon: Icons.add,
-                      semanticLabel: l10n.radiologyRequestImagingAction,
-                      tooltip: l10n.radiologyRequestImagingAction,
-                      enabled: !state.isMutating,
-                      onPressed: () => _showCreateOrderDialog(context, ref),
-                    )
-                  : null,
+              primaryAction: _buildPrimaryAction(l10n, state, accessPolicy),
+              secondaryActions: _buildSecondaryActions(
+                l10n,
+                state,
+                accessPolicy,
+              ),
             ),
             SizedBox(height: theme.spacing.sm),
             if (lastFailure != null) ...<Widget>[

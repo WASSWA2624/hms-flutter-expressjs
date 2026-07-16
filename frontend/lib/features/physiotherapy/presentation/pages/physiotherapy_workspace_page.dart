@@ -153,8 +153,10 @@ class _PhysiotherapyWorkspacePageState
     return switch (value) {
       'referrals' => PhysiotherapyQueueScope.referrals,
       'today' => PhysiotherapyQueueScope.today,
-      'active-plans' => PhysiotherapyQueueScope.activePlans,
-      'follow-up' => PhysiotherapyQueueScope.followUpDue,
+      'active-plans' || 'active_plans' => PhysiotherapyQueueScope.activePlans,
+      'follow-up' ||
+      'follow_up' ||
+      'follow-up-due' => PhysiotherapyQueueScope.followUpDue,
       'missed' => PhysiotherapyQueueScope.missed,
       'completed' => PhysiotherapyQueueScope.completed,
       _ => null,
@@ -268,17 +270,9 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
       physiotherapyWorkspaceControllerProvider.notifier,
     );
 
-    return AppWorkspace(
-      title: l10n.physiotherapyTitle,
-      leadingIcon: Icons.accessibility_new_outlined,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        onRefresh: () async {
-          await controller.refresh();
-        },
-        isRefreshing: state.isRefreshing,
-      ),
-      body: Column(
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           AppTabStrip(
@@ -308,6 +302,16 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
               section,
               state,
             ),
+            secondaryActions: <Widget>[
+              AppTabToolbarAction(
+                label: l10n.commonRefreshActionLabel,
+                icon: Icons.refresh,
+                isLoading: state.isRefreshing,
+                onPressed: state.isRefreshing
+                    ? null
+                    : () => unawaited(controller.refresh()),
+              ),
+            ],
           ),
           SizedBox(height: theme.spacing.sm),
           _buildWorklist(context, ref, controller),

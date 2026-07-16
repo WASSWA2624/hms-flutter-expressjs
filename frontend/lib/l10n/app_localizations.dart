@@ -12619,7 +12619,7 @@ abstract class AppLocalizations {
   /// Semantic label for clinical workspace filters.
   ///
   /// In en, this message translates to:
-  /// **'Clinical filters'**
+  /// **'Filters'**
   String get clinicalFiltersLabel;
 
   /// Clinical worklist search field label.
@@ -17197,7 +17197,7 @@ abstract class AppLocalizations {
   /// Localized text for radiologyFiltersLabel.
   ///
   /// In en, this message translates to:
-  /// **'Radiology filters'**
+  /// **'Filters'**
   String get radiologyFiltersLabel;
 
   /// Localized text for radiologySearchLabel.
@@ -21447,6 +21447,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Laboratory filters'**
   String get labFiltersLabel;
+
+  /// Advanced filters button label for the laboratory worklist table chrome.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get labWorklistFiltersLabel;
 
   /// Localized text for labSearchLabel.
   ///

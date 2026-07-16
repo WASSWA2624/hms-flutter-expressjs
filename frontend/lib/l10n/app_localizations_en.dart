@@ -6819,7 +6819,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalPatientIdCopiedMessage => 'Patient ID copied.';
 
   @override
-  String get clinicalFiltersLabel => 'Clinical filters';
+  String get clinicalFiltersLabel => 'Filters';
 
   @override
   String get clinicalSearchLabel => 'Search clinical worklist';
@@ -9274,7 +9274,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get radiologyUnsyncedSummaryLabel => 'PACS sync due';
 
   @override
-  String get radiologyFiltersLabel => 'Radiology filters';
+  String get radiologyFiltersLabel => 'Filters';
 
   @override
   String get radiologySearchLabel => 'Search radiology';
@@ -11560,6 +11560,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get labFiltersLabel => 'Laboratory filters';
+
+  @override
+  String get labWorklistFiltersLabel => 'Filters';
 
   @override
   String get labSearchLabel => 'Search laboratory';

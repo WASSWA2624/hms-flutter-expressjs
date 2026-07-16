@@ -216,6 +216,7 @@ Future<GoRouter> _pumpRadiologyWorkspace(
   RadiologyWorkspaceQuery? initialQuery,
   String initialLocation = '/radiology',
   Size viewport = const Size(1440, 900),
+  AppAccessPolicy? policy,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -251,7 +252,9 @@ Future<GoRouter> _pumpRadiologyWorkspace(
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
         ),
-        appAccessPolicyProvider.overrideWithValue(_radiologyWritePolicy()),
+        appAccessPolicyProvider.overrideWithValue(
+          policy ?? _radiologyWritePolicy(),
+        ),
       ],
       child: MaterialApp.router(
         routerConfig: router,
@@ -264,6 +267,35 @@ Future<GoRouter> _pumpRadiologyWorkspace(
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
   return router;
+}
+
+AppListTable<RadiologyOrder> _table(WidgetTester tester) {
+  return tester.widget<AppListTable<RadiologyOrder>>(
+    find.byType(AppListTable<RadiologyOrder>),
+  );
+}
+
+AppAccessPolicy _radiologyReadOnlyPolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['RADIOLOGIST']),
+      permissions: <AppPermission>{
+        AppPermissions.clinicalRead,
+        AppPermissions.radiologyRead,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(
+          code: 'radiology-workflows',
+          licenseStatus: 'ACTIVE',
+        ),
+        AppModuleEntitlement(
+          code: 'encounters-vitals',
+          licenseStatus: 'ACTIVE',
+        ),
+      ],
+    ),
+  );
 }
 
 void main() {
@@ -293,6 +325,9 @@ void main() {
     expect(find.byTooltip('Request imaging'), findsOneWidget);
     expect(find.byTooltip('Configurations'), findsOneWidget);
     expect(find.byTooltip('Orders view'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(_table(tester).columnVisibilityLabel, 'Settings');
+    expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
   });
 
   testWidgets('switching tabs applies stage filters and updates URL', (
@@ -354,6 +389,43 @@ void main() {
     expect(find.text('Finn Finalized'), findsOneWidget);
   });
 
+  testWidgets('toolbar actions change with the active tab', (
+    WidgetTester tester,
+  ) async {
+    final GoRouter router = await _pumpRadiologyWorkspace(
+      tester,
+      repository: repository,
+    );
+
+    expect(find.byTooltip('Request imaging'), findsOneWidget);
+    expect(find.byTooltip('Configurations'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Orders view'), findsOneWidget);
+
+    await tester.tap(find.textContaining('Reporting').first);
+    await tester.pumpAndSettle();
+
+    expect(router.state.uri.queryParameters['section'], 'reporting');
+    expect(find.byTooltip('Request imaging'), findsOneWidget);
+    expect(find.byTooltip('Configurations'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
+
+    await tester.tap(find.textContaining('Released').first);
+    await tester.pumpAndSettle();
+
+    expect(router.state.uri.queryParameters['section'], 'released');
+    expect(find.byTooltip('Configurations'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
+
+    await tester.tap(find.textContaining('All orders').first);
+    await tester.pumpAndSettle();
+
+    expect(router.state.uri.queryParameters['section'], 'all');
+    expect(find.byTooltip('Configurations'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Request imaging'), findsOneWidget);
+  });
+
   testWidgets('deep link section=reporting selects Reporting tab', (
     WidgetTester tester,
   ) async {
@@ -376,6 +448,8 @@ void main() {
     expect(find.text('Rita Reporting'), findsOneWidget);
     expect(find.text('Olivia Ordered'), findsNothing);
     expect(find.byTooltip('Request imaging'), findsOneWidget);
+    expect(find.byTooltip('Configurations'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
   });
 
   testWidgets('view toggle switches between patients and orders labels', (
@@ -422,6 +496,21 @@ void main() {
     );
     expect(find.text('Rita Reporting'), findsOneWidget);
     expect(find.text('Olivia Ordered'), findsNothing);
+  });
+
+  testWidgets('read-only users keep view toggle and refresh toolbar actions', (
+    WidgetTester tester,
+  ) async {
+    await _pumpRadiologyWorkspace(
+      tester,
+      repository: repository,
+      policy: _radiologyReadOnlyPolicy(),
+    );
+
+    expect(find.byTooltip('Request imaging'), findsNothing);
+    expect(find.byTooltip('Configurations'), findsNothing);
+    expect(find.byTooltip('Orders view'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
   });
 
   testWidgets('AppTabStrip renders on narrow mobile viewport', (

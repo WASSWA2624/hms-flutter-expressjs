@@ -259,11 +259,118 @@ void main() {
   ) async {
     await _pumpClinicalWorkspace(tester);
 
-    await tester.tap(find.text('Clinical filters'));
+    await tester.tap(find.text('Filters'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Queue scope'), findsNothing);
+  });
+
+  testWidgets('All tab shows Refresh primary without navigation secondaries', (
+    tester,
+  ) async {
+    await _pumpClinicalWorkspace(tester);
+
+    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.text('Refresh'), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(AppTabStrip), matching: find.text('OPD')),
+      findsNothing,
+    );
+    expect(
+      find.descendant(of: find.byType(AppTabStrip), matching: find.text('Lab')),
+      findsNothing,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppTabStrip),
+        matching: find.text('Discharge'),
+      ),
+      findsNothing,
+    );
+    expect(find.text('Filters'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Clinical workspace'), findsNothing);
+    expect(find.text('Provider worklist'), findsNothing);
+  });
+
+  testWidgets(
+    'Waiting review, Urgent, and In consultation show OPD secondary',
+    (tester) async {
+      await _pumpClinicalWorkspace(tester);
+
+      for (final String tabLabel in <String>[
+        'Waiting review',
+        'Urgent',
+        'In consultation',
+      ]) {
+        await tester.tap(_tab(tabLabel));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Refresh'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(AppTabStrip),
+            matching: find.text('OPD'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppTabStrip),
+            matching: find.text('Lab'),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppTabStrip),
+            matching: find.text('Discharge'),
+          ),
+          findsNothing,
+        );
+      }
+    },
+  );
+
+  testWidgets('Results ready tab shows Lab secondary', (tester) async {
+    await _pumpClinicalWorkspace(tester);
+
+    await tester.tap(_tab('Results ready'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Refresh'), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(AppTabStrip), matching: find.text('Lab')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: find.byType(AppTabStrip), matching: find.text('OPD')),
+      findsNothing,
+    );
+  });
+
+  testWidgets('Completed tab shows Discharge secondary', (tester) async {
+    await _pumpClinicalWorkspace(tester);
+
+    await tester.tap(_tab('Completed'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Refresh'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppTabStrip),
+        matching: find.text('Discharge'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: find.byType(AppTabStrip), matching: find.text('OPD')),
+      findsNothing,
+    );
   });
 }
 

@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/nursing/presentation/pages/nursing_workspace
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -239,12 +240,28 @@ void main() {
     await _pumpNursingWorkspace(tester, repository: repository);
 
     expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.byType(AppWorkspaceToolbar), findsNothing);
     expect(find.textContaining('All'), findsWidgets);
     expect(find.textContaining('Urgent'), findsWidgets);
     expect(find.textContaining('Medication due'), findsWidgets);
     expect(find.byTooltip('Record vitals'), findsOneWidget);
+    expect(find.byTooltip('Shift context'), findsOneWidget);
+    expect(find.byTooltip('Add note'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
     expect(find.text('Routine Patient'), findsOneWidget);
     expect(find.text('Med Due Patient'), findsOneWidget);
+  });
+
+  testWidgets('does not paint a dedicated nursing title header', (
+    WidgetTester tester,
+  ) async {
+    await _pumpNursingWorkspace(tester, repository: repository);
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+
+    expect(find.text(l10n.nursingTitle), findsNothing);
+    expect(find.byType(AppWorkspaceHeader), findsNothing);
   });
 
   testWidgets('switching tabs updates scope query parameter', (

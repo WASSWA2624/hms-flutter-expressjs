@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:hosspi_hms/app/router/app_route_icons.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -22,7 +21,6 @@ import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_note_di
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_patient_detail_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_scope_navigation.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_shift_context_dialog.dart';
-import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_summary_notifications.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_transfer_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_vitals_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_filters.dart';
@@ -279,110 +277,122 @@ class _NursingWorkspaceContentState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final NursingWorkspaceState state = widget.state;
     final NursingWorkspaceController controller = ref.read(
       nursingWorkspaceControllerProvider.notifier,
     );
+    final bool isRefreshing = state.isRefreshing || state.isRefreshingDetail;
 
-    return AppWorkspace(
-      title: l10n.nursingTitle,
-      leadingIcon: AppRouteIcons.nursing,
+    return ResponsivePage(
+      maxWidth: PageMaxWidth.dataHeavy,
       scrollable: false,
-      toolbar: appWorkspaceToolbarWithLabels(
-        l10n,
-        summaryNotifications: nursingSummaryNotifications(
-          l10n: l10n,
-          state: state,
-          onTabTapped: _onTabTapped,
+      child: SizedBox(
+        width: double.infinity,
+        height: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            AppTabStrip(
+              tabs: nursingTabItems(l10n, state),
+              selectedId: nursingScopeToQueryValue(_scope),
+              onTabTapped: _onTabTapped,
+              primaryAction: AppAccessActionGate(
+                requirement: writeRequirement,
+                builder: (BuildContext context, bool isAllowed) {
+                  return AppTabToolbarPrimary(
+                    label: nursingPrimaryActionLabel(l10n, _scope),
+                    icon: nursingPrimaryActionIcon(_scope),
+                    enabled: isAllowed && !state.isSaving,
+                    onPressed: isAllowed ? _executePrimaryAction : null,
+                  );
+                },
+              ),
+              secondaryActions: <Widget>[
+                AppTabToolbarAction(
+                  label: l10n.nursingShiftContextTitle,
+                  icon: Icons.assignment_ind_outlined,
+                  tooltip: l10n.nursingShiftContextTitle,
+                  semanticLabel: l10n.nursingShiftContextTitle,
+                  onPressed: _openShiftContextDialog,
+                ),
+                AppAccessActionGate(
+                  requirement: writeRequirement,
+                  builder: (BuildContext context, bool isAllowed) {
+                    return AppTabToolbarAction(
+                      label: l10n.nursingActionAddNote,
+                      icon: Icons.note_add_outlined,
+                      tooltip: l10n.nursingActionAddNote,
+                      semanticLabel: l10n.nursingActionAddNote,
+                      enabled: isAllowed && !state.isSaving,
+                      onPressed: isAllowed ? _openNoteDialog : null,
+                    );
+                  },
+                ),
+                AppTabToolbarAction(
+                  label: l10n.commonRefreshActionLabel,
+                  icon: Icons.refresh,
+                  tooltip: l10n.commonRefreshActionLabel,
+                  semanticLabel: l10n.commonRefreshActionLabel,
+                  enabled: !isRefreshing,
+                  isLoading: isRefreshing,
+                  onPressed: isRefreshing
+                      ? null
+                      : () async {
+                          final AppFailure? failure = await controller
+                              .refresh();
+                          if (context.mounted) {
+                            nursingShowFailureIfNeeded(context, failure);
+                          }
+                        },
+                ),
+              ],
+            ),
+            SizedBox(height: theme.spacing.sm),
+            Expanded(
+              child: NursingWorklistPanel(
+                state: state,
+                scope: _scope,
+                searchController: _searchController,
+                filterValue: _filterValue,
+                onFilterChanged: (AppSearchBarFilterValue value) {
+                  setState(() {
+                    _filterValue = value;
+                  });
+                  controller
+                      .applyAdvancedFilters(
+                        searchField: value.field,
+                        scope: nursingScopeFromFilterValue(
+                          value.option('scope'),
+                        ),
+                        patient: value.text('patient'),
+                        admission: value.text('admission'),
+                        encounter: value.text('encounter'),
+                        ward: value.text('ward'),
+                        room: value.text('room'),
+                        bed: value.text('bed'),
+                        observation: value.text('observation'),
+                        taskType: value.text('task_type'),
+                        status: value.option('status'),
+                        priority: value.option('priority'),
+                        assignedNurse: value.text('assigned_nurse'),
+                        shift: value.text('shift'),
+                        transferStatus: value.option('transfer_status'),
+                        handoverStatus: value.option('handover_status'),
+                        dischargeStatus: value.option('discharge_status'),
+                        dateFrom: value.dateFrom,
+                        dateTo: value.dateTo,
+                      )
+                      .then((AppFailure? failure) {
+                        if (context.mounted) {
+                          nursingShowFailureIfNeeded(context, failure);
+                        }
+                      });
+                },
+              ),
+            ),
+          ],
         ),
-        secondary: <Widget>[
-          AppButton.secondary(
-            leadingIcon: Icons.assignment_ind_outlined,
-            label: l10n.nursingShiftContextTitle,
-            semanticLabel: l10n.nursingShiftContextTitle,
-            tooltip: l10n.nursingShiftContextTitle,
-            onPressed: () => _openShiftContextDialog(),
-          ),
-          AppAccessActionGate(
-            requirement: writeRequirement,
-            builder: (BuildContext context, bool isAllowed) {
-              return AppButton.secondary(
-                label: l10n.nursingActionAddNote,
-                leadingIcon: Icons.note_add_outlined,
-                enabled: isAllowed && !state.isSaving,
-                onPressed: () => _openNoteDialog(),
-              );
-            },
-          ),
-        ],
-        onRefresh: () async {
-          final AppFailure? failure = await controller.refresh();
-          if (context.mounted) {
-            nursingShowFailureIfNeeded(context, failure);
-          }
-        },
-        isRefreshing: state.isRefreshing || state.isRefreshingDetail,
-      ),
-      body: Column(
-        children: <Widget>[
-          AppTabStrip(
-            tabs: nursingTabItems(l10n),
-            selectedId: nursingScopeToQueryValue(_scope),
-            onTabTapped: _onTabTapped,
-            primaryAction: AppAccessActionGate(
-              requirement: writeRequirement,
-              builder: (BuildContext context, bool isAllowed) {
-                return AppTabToolbarPrimary(
-                  label: nursingPrimaryActionLabel(l10n, _scope),
-                  icon: nursingPrimaryActionIcon(_scope),
-                  enabled: isAllowed && !state.isSaving,
-                  onPressed: isAllowed ? _executePrimaryAction : null,
-                );
-              },
-            ),
-          ),
-          SizedBox(height: Theme.of(context).spacing.sm),
-          Expanded(
-            child: NursingWorklistPanel(
-              state: state,
-              scope: _scope,
-              searchController: _searchController,
-              filterValue: _filterValue,
-              onFilterChanged: (AppSearchBarFilterValue value) {
-                setState(() {
-                  _filterValue = value;
-                });
-                controller
-                    .applyAdvancedFilters(
-                      searchField: value.field,
-                      scope: nursingScopeFromFilterValue(value.option('scope')),
-                      patient: value.text('patient'),
-                      admission: value.text('admission'),
-                      encounter: value.text('encounter'),
-                      ward: value.text('ward'),
-                      room: value.text('room'),
-                      bed: value.text('bed'),
-                      observation: value.text('observation'),
-                      taskType: value.text('task_type'),
-                      status: value.option('status'),
-                      priority: value.option('priority'),
-                      assignedNurse: value.text('assigned_nurse'),
-                      shift: value.text('shift'),
-                      transferStatus: value.option('transfer_status'),
-                      handoverStatus: value.option('handover_status'),
-                      dischargeStatus: value.option('discharge_status'),
-                      dateFrom: value.dateFrom,
-                      dateTo: value.dateTo,
-                    )
-                    .then((AppFailure? failure) {
-                      if (context.mounted) {
-                        nursingShowFailureIfNeeded(context, failure);
-                      }
-                    });
-              },
-            ),
-          ),
-        ],
       ),
     );
   }

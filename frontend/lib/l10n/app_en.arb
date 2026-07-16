@@ -8655,7 +8655,7 @@
   "@clinicalPatientIdCopiedMessage": {
     "description": "Snackbar message after copying a clinical patient ID."
   },
-  "clinicalFiltersLabel": "Clinical filters",
+  "clinicalFiltersLabel": "Filters",
   "@clinicalFiltersLabel": {
     "description": "Semantic label for clinical workspace filters."
   },
@@ -11827,7 +11827,7 @@
   "@radiologyUnsyncedSummaryLabel": {
     "description": "Localized text for radiologyUnsyncedSummaryLabel."
   },
-  "radiologyFiltersLabel": "Radiology filters",
+  "radiologyFiltersLabel": "Filters",
   "@radiologyFiltersLabel": {
     "description": "Localized text for radiologyFiltersLabel."
   },
@@ -14772,6 +14772,10 @@
   "labFiltersLabel": "Laboratory filters",
   "@labFiltersLabel": {
     "description": "Localized text for labFiltersLabel."
+  },
+  "labWorklistFiltersLabel": "Filters",
+  "@labWorklistFiltersLabel": {
+    "description": "Advanced filters button label for the laboratory worklist table chrome."
   },
   "labSearchLabel": "Search laboratory",
   "@labSearchLabel": {

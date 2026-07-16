@@ -18,6 +18,7 @@ import 'package:hosspi_hms/features/physiotherapy/presentation/pages/physiothera
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -231,6 +232,7 @@ void main() {
     await _pumpPhysiotherapyWorkspace(tester, repository: repository);
 
     expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.byType(AppWorkspaceToolbar), findsNothing);
     expect(find.byType(AppListTable<TherapyWorkItem>), findsOneWidget);
     expect(find.textContaining('Referrals'), findsWidgets);
     expect(find.textContaining('Today'), findsWidgets);
@@ -240,10 +242,24 @@ void main() {
     expect(find.textContaining('Completed'), findsWidgets);
     expect(find.text('Rita Referral'), findsOneWidget);
     expect(find.byTooltip('Schedule session'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byType(AppTabToolbarAction), findsOneWidget);
     expect(
       _table(tester).columnVisibilityStorageKey,
       'physiotherapy_referrals',
     );
+    expect(_table(tester).columnVisibilityLabel, 'Settings');
+    expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+  });
+
+  testWidgets('does not paint a dedicated physiotherapy title header', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPhysiotherapyWorkspace(tester, repository: repository);
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+    expect(find.text(l10n.physiotherapyTitle), findsNothing);
   });
 
   testWidgets('switching tabs updates section query and storage keys', (
@@ -272,6 +288,7 @@ void main() {
     expect(router.state.uri.queryParameters['section'], 'today');
     expect(_table(tester).columnVisibilityStorageKey, 'physiotherapy_today');
     expect(find.byTooltip('Record session'), findsWidgets);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
     final List<PhysiotherapyWorklistQuery> todayQueries = verify(
       () => repository.listWorkItems(captureAny()),
     ).captured.cast<PhysiotherapyWorklistQuery>();
@@ -298,6 +315,7 @@ void main() {
       'physiotherapy_activePlans',
     );
     expect(find.byTooltip('Schedule session'), findsWidgets);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
 
     clearInteractions(repository);
     _stubWorkItems(repository, items: <TherapyWorkItem>[_followUpItem]);
@@ -307,6 +325,7 @@ void main() {
 
     expect(router.state.uri.queryParameters['section'], 'follow-up');
     expect(find.byTooltip('Schedule follow-up'), findsWidgets);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
 
     clearInteractions(repository);
     _stubWorkItems(repository, items: <TherapyWorkItem>[_missedItem]);
@@ -316,6 +335,7 @@ void main() {
 
     expect(router.state.uri.queryParameters['section'], 'missed');
     expect(find.byTooltip('Mark attendance'), findsWidgets);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
 
     clearInteractions(repository);
     _stubWorkItems(repository, items: <TherapyWorkItem>[_completedItem]);
@@ -325,6 +345,7 @@ void main() {
 
     expect(router.state.uri.queryParameters['section'], 'completed');
     expect(find.byTooltip('Print instructions'), findsWidgets);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
   });
 
   testWidgets('deep link section=today selects Today tab', (
