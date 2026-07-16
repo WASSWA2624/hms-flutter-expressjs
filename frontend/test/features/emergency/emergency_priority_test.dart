@@ -31,15 +31,23 @@ void main() {
       'patches summary priority, board row, and critical badge on success',
       () async {
         final _MockEmergencyRepository repository = _MockEmergencyRepository();
-        _stubInitialLoad(repository);
+        var persisted = false;
+        _stubInitialLoad(
+          repository,
+          boardSummary: () =>
+              persisted ? _updatedDetail().summary : _originalDetail().summary,
+          detail: () =>
+              persisted ? _updatedDetail() : _originalDetail(),
+        );
         when(
           () => repository.updateCasePriority(
             detail: any(named: 'detail'),
             severity: 'MEDIUM',
           ),
-        ).thenAnswer(
-          (_) async => Result<EmergencyCaseDetail>.success(_updatedDetail()),
-        );
+        ).thenAnswer((_) async {
+          persisted = true;
+          return Result<EmergencyCaseDetail>.success(_updatedDetail());
+        });
         final ProviderContainer container = _container(repository);
         await container.read(emergencyWorkspaceControllerProvider.future);
         await container
@@ -56,6 +64,12 @@ void main() {
         expect(state.board.items.single.severity, 'MEDIUM');
         expect(state.criticalCount, 0);
         expect(state.isSaving, isFalse);
+        verify(
+          () => repository.updateCasePriority(
+            detail: any(named: 'detail'),
+            severity: 'MEDIUM',
+          ),
+        ).called(1);
       },
     );
 
@@ -114,7 +128,6 @@ void main() {
               );
             },
           ),
-          size: const Size(800, 600),
           padding: EdgeInsets.zero,
         );
 
@@ -162,7 +175,6 @@ void main() {
             );
           },
         ),
-        size: const Size(800, 600),
         padding: EdgeInsets.zero,
       );
 
@@ -252,7 +264,6 @@ void main() {
             );
           },
         ),
-        size: const Size(800, 600),
         padding: EdgeInsets.zero,
       );
 
@@ -285,14 +296,20 @@ ProviderContainer _container(_MockEmergencyRepository repository) {
   return container;
 }
 
-void _stubInitialLoad(_MockEmergencyRepository repository) {
+void _stubInitialLoad(
+  _MockEmergencyRepository repository, {
+  EmergencyCaseSummary Function()? boardSummary,
+  EmergencyCaseDetail Function()? detail,
+}) {
   when(() => repository.listEmergencyBoard(any())).thenAnswer((invocation) {
     final EmergencyBoardQuery query =
         invocation.positionalArguments.single as EmergencyBoardQuery;
     return Future<Result<AppPage<EmergencyCaseSummary>>>.value(
       Result<AppPage<EmergencyCaseSummary>>.success(
         AppPage<EmergencyCaseSummary>(
-          items: <EmergencyCaseSummary>[_originalDetail().summary],
+          items: <EmergencyCaseSummary>[
+            boardSummary?.call() ?? _originalDetail().summary,
+          ],
           request: query.pageRequest,
           totalItemCount: 1,
         ),
@@ -304,7 +321,9 @@ void _stubInitialLoad(_MockEmergencyRepository repository) {
         const Result<EmergencyReferenceData>.success(EmergencyReferenceData()),
   );
   when(() => repository.loadEmergencyDetail(any())).thenAnswer(
-    (_) async => Result<EmergencyCaseDetail>.success(_originalDetail()),
+    (_) async => Result<EmergencyCaseDetail>.success(
+      detail?.call() ?? _originalDetail(),
+    ),
   );
 }
 

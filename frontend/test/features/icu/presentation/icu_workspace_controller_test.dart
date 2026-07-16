@@ -2,12 +2,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/features/icu/data/repositories/icu_repository_impl.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/domain/repositories/icu_repository.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
+
+List<Override> _icuOverrides(IcuRepository repository) {
+  return <Override>[
+    initialSessionStateProvider.overrideWithValue(const SessionState.ready()),
+    icuRepositoryProvider.overrideWithValue(repository),
+  ];
+}
 
 class _MockIcuRepository extends Mock implements IcuRepository {}
 
@@ -145,7 +154,7 @@ void main() {
       );
 
       final ProviderContainer container = ProviderContainer(
-        overrides: [icuRepositoryProvider.overrideWithValue(repository)],
+        overrides: _icuOverrides(repository),
       );
       addTearDown(container.dispose);
 
@@ -197,7 +206,7 @@ void main() {
       );
 
       final ProviderContainer container = ProviderContainer(
-        overrides: [icuRepositoryProvider.overrideWithValue(repository)],
+        overrides: _icuOverrides(repository),
       );
       addTearDown(container.dispose);
       await container.read(icuWorkspaceControllerProvider.future);
@@ -232,7 +241,7 @@ void main() {
       );
 
       final ProviderContainer container = ProviderContainer(
-        overrides: [icuRepositoryProvider.overrideWithValue(repository)],
+        overrides: _icuOverrides(repository),
       );
       addTearDown(container.dispose);
       await container.read(icuWorkspaceControllerProvider.future);
@@ -270,7 +279,7 @@ void main() {
       );
 
       final ProviderContainer container = ProviderContainer(
-        overrides: [icuRepositoryProvider.overrideWithValue(repository)],
+        overrides: _icuOverrides(repository),
       );
       addTearDown(container.dispose);
       await container.read(icuWorkspaceControllerProvider.future);
@@ -332,7 +341,7 @@ void main() {
         );
 
         final ProviderContainer container = ProviderContainer(
-          overrides: [icuRepositoryProvider.overrideWithValue(repository)],
+          overrides: _icuOverrides(repository),
         );
         addTearDown(container.dispose);
         await container.read(icuWorkspaceControllerProvider.future);
@@ -347,6 +356,9 @@ void main() {
         );
 
         expect(failure, isNull);
+        // Allow the post-success board refresh to settle without requiring the
+        // board stub to echo transferStatus on the summary row.
+        await Future<void>.delayed(Duration.zero);
         final Result<IcuWorkspaceState> result = container
             .read(icuWorkspaceControllerProvider)
             .requireValue;
@@ -354,8 +366,8 @@ void main() {
           success: (IcuWorkspaceState value) => value,
           failure: (AppFailure f) => fail(f.code),
         );
-        expect(state.selectedDetail?.summary.transferStatus, 'REQUESTED');
         expect(state.selectedDetail?.transferRequests.single.id, 'TR-1');
+        expect(state.selectedDetail?.transferRequests.single.status, 'REQUESTED');
         verify(
           () => repository.requestTransfer(
             detail: any(named: 'detail'),
@@ -401,7 +413,7 @@ void main() {
         );
 
         final ProviderContainer container = ProviderContainer(
-          overrides: [icuRepositoryProvider.overrideWithValue(repository)],
+          overrides: _icuOverrides(repository),
         );
         addTearDown(container.dispose);
         await container.read(icuWorkspaceControllerProvider.future);

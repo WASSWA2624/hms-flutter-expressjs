@@ -331,8 +331,12 @@ describe("ipd-flow.service", () => {
     });
     expect(flow).toEqual(
       expect.objectContaining({
-        id: "adm-1",
+        id: "ADM0000001",
         human_friendly_id: "ADM0000001",
+        flow: expect.objectContaining({
+          has_active_bed: false,
+          stage: "ADMITTED_PENDING_BED",
+        }),
       }),
     );
 

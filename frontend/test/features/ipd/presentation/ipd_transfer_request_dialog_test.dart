@@ -7,6 +7,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/ipd/data/repositories/ipd_repository_impl.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/domain/repositories/ipd_repository.dart';
+import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_transfer_request_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -65,7 +66,6 @@ void main() {
       expect(find.text('REQUEST TRANSFER'), findsOneWidget);
       expect(find.text('Request transfer'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
-      expect(find.text('Target ward'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.transfer), findsWidgets);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
 
@@ -77,6 +77,8 @@ void main() {
       final AppSelectField<String> field = tester.widget<AppSelectField<String>>(
         find.byType(AppSelectField<String>),
       );
+      expect(field.labelText, 'Target ward');
+      expect(field.hintText, 'Select a ward');
       expect(
         field.options.map((AppSelectOption<String> option) => option.value),
         <String>['ward-b', 'ward-c'],
@@ -118,7 +120,7 @@ void main() {
     );
 
     await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
-    await tester.pumpAndSettle();
+    await _pumpDialogFrames(tester);
 
     expect(result, isFalse);
     verifyNever(() => repository.requestTransfer(any(), any()));
@@ -149,7 +151,7 @@ void main() {
     await tester.pump();
 
     await tester.tap(find.widgetWithText(AppButton, 'Request transfer'));
-    await tester.pumpAndSettle();
+    await _pumpDialogFrames(tester);
 
     expect(result, isNull);
     expect(find.byType(AppDialog), findsOneWidget);
@@ -202,7 +204,7 @@ void main() {
     await tester.pump();
 
     await tester.tap(find.widgetWithText(AppButton, 'Request transfer'));
-    await tester.pumpAndSettle();
+    await _pumpDialogFrames(tester);
 
     expect(result, isTrue);
     expect(find.byType(AppDialog), findsNothing);
@@ -285,7 +287,9 @@ Future<void> _pumpDialog(
 }) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [ipdRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        ipdRepositoryProvider.overrideWithValue(repository),
+      ],
       child: MaterialApp(
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
@@ -324,7 +328,21 @@ Future<void> _pumpDialog(
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  await tester.pump();
+
+  // Ensure the workspace controller has loaded before mutating dialogs open.
+  // Avoid pumpAndSettle — adaptive polling keeps the binding unsettled.
+  final ProviderContainer container = ProviderScope.containerOf(
+    tester.element(find.byType(Scaffold)),
+  );
+  await container.read(ipdWorkspaceControllerProvider.future);
+  await tester.pump();
+
   await tester.tap(find.widgetWithText(AppButton, 'Open transfer'));
-  await tester.pumpAndSettle();
+  await _pumpDialogFrames(tester);
+}
+
+Future<void> _pumpDialogFrames(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
 }

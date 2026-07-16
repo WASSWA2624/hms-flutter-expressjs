@@ -7,4 +7,12 @@ describe('maintenance-request.routes contract', () => {
     expect(Array.isArray(subject.stack)).toBe(true);
     expect(subject.stack.length).toBeGreaterThan(0);
   });
+
+  it('registers POST /:id/triage', () => {
+    const routes = subject.stack.filter((layer) => layer.route);
+    const triage = routes.find(
+      (layer) => layer.route.path === '/:id/triage' && layer.route.methods.post
+    );
+    expect(triage).toBeDefined();
+  });
 });

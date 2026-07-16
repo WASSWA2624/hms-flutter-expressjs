@@ -278,4 +278,98 @@ describe('Maintenance Request Service', () => {
       ).rejects.toThrow(HttpError);
     });
   });
+
+  describe('triageMaintenanceRequest', () => {
+    it('should triage an open request, append summary metadata, and audit', async () => {
+      const mockBefore = {
+        id: '1',
+        status: 'OPEN',
+        description: 'Leaking tap',
+        asset: { tenant_id: 'tenant-1' },
+      };
+      const mockAfter = {
+        id: '1',
+        status: 'IN_PROGRESS',
+        description:
+          'Leaking tap\n\n[TRIAGE] assigned_engineer_id=engineer-1; sla_hours=24; triage_summary=Leak confirmed',
+        asset: { tenant_id: 'tenant-1' },
+      };
+
+      maintenanceRequestRepository.findById.mockResolvedValue(mockBefore);
+      maintenanceRequestRepository.update.mockResolvedValue(mockAfter);
+      resolveIdentifierForFilter.mockResolvedValue('engineer-1');
+
+      const result = await maintenanceRequestService.triageMaintenanceRequest(
+        'MR-001',
+        {
+          status: 'IN_PROGRESS',
+          triage_summary: 'Leak confirmed',
+          assigned_engineer: 'USR000001',
+          sla_hours: 24,
+        },
+        mockUserId,
+        mockIpAddress
+      );
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          id: '1',
+          human_friendly_id: '1',
+          status: 'IN_PROGRESS',
+        })
+      );
+      expect(maintenanceRequestRepository.update).toHaveBeenCalledWith(
+        'MR-001',
+        expect.objectContaining({
+          status: 'IN_PROGRESS',
+          description: expect.stringContaining('[TRIAGE]'),
+        })
+      );
+      expect(createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: mockUserId,
+          action: 'UPDATE',
+          entity: 'maintenance_request',
+          entity_id: '1',
+          diff: expect.objectContaining({
+            metadata: expect.objectContaining({
+              assigned_engineer_id: 'engineer-1',
+              sla_hours: 24,
+              triage_summary: 'Leak confirmed',
+            }),
+          }),
+        })
+      );
+    });
+
+    it('should reject triage for terminal statuses', async () => {
+      maintenanceRequestRepository.findById.mockResolvedValue({
+        id: '1',
+        status: 'COMPLETED',
+      });
+
+      await expect(
+        maintenanceRequestService.triageMaintenanceRequest(
+          '1',
+          { status: 'IN_PROGRESS' },
+          mockUserId,
+          mockIpAddress
+        )
+      ).rejects.toThrow(HttpError);
+      expect(maintenanceRequestRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('should throw HttpError when maintenance request not found', async () => {
+      maintenanceRequestRepository.findById.mockResolvedValue(null);
+
+      await expect(
+        maintenanceRequestService.triageMaintenanceRequest(
+          'missing',
+          { status: 'OPEN' },
+          mockUserId,
+          mockIpAddress
+        )
+      ).rejects.toThrow(HttpError);
+    });
+  });
 });

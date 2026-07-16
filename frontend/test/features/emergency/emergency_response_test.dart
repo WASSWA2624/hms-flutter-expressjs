@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/features/emergency/data/dtos/emergency_dtos.dart';
+import 'package:hosspi_hms/features/emergency/data/repositories/emergency_repository_impl.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
 import 'package:hosspi_hms/features/emergency/domain/repositories/emergency_repository.dart';
 import 'package:hosspi_hms/features/emergency/presentation/controllers/emergency_workspace_controller.dart';

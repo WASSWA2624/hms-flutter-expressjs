@@ -240,6 +240,36 @@ void main() {
     );
 
     await container.read(ipdWorkspaceControllerProvider.future);
+    clearInteractions(repo);
+    when(() => repo.listAdmissions(any())).thenAnswer(
+      (invocation) async => Result<AppPage<IpdAdmissionSummary>>.success(
+        AppPage<IpdAdmissionSummary>(
+          items: <IpdAdmissionSummary>[released],
+          request:
+              (invocation.positionalArguments.single as IpdAdmissionQuery)
+                  .pageRequest,
+          totalItemCount: 1,
+        ),
+      ),
+    );
+    when(() => repo.listWards(search: any(named: 'search'))).thenAnswer(
+      (_) async => const Result<List<IpdWardOption>>.success(<IpdWardOption>[]),
+    );
+    when(
+      () => repo.listBeds(
+        search: any(named: 'search'),
+        status: any(named: 'status'),
+        wardId: any(named: 'wardId'),
+      ),
+    ).thenAnswer(
+      (_) async => const Result<List<IpdBedOption>>.success(<IpdBedOption>[]),
+    );
+    when(() => repo.releaseBed(any(), any())).thenAnswer(
+      (_) async => Result<IpdAdmissionDetail>.success(
+        IpdAdmissionDetail(summary: released),
+      ),
+    );
+
     final IpdWorkspaceController controller = container.read(
       ipdWorkspaceControllerProvider.notifier,
     );
@@ -252,14 +282,14 @@ void main() {
     expect(state!.selectedAdmission?.summary.hasActiveBed, isFalse);
     expect(state.admissions.items.single.hasActiveBed, isFalse);
     verify(() => repo.releaseBed('adm-1', any())).called(1);
-    verify(() => repo.listWards(search: any(named: 'search'))).called(greaterThan(0));
+    verify(() => repo.listWards(search: any(named: 'search'))).called(1);
     verify(
       () => repo.listBeds(
         search: any(named: 'search'),
         status: any(named: 'status'),
         wardId: any(named: 'wardId'),
       ),
-    ).called(greaterThan(0));
+    ).called(1);
   });
 
   test('releaseBed failure patches nothing', () async {

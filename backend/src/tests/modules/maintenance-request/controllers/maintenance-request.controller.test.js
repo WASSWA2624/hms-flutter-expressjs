@@ -191,4 +191,39 @@ describe('Maintenance Request Controller', () => {
       expect(sendNoContent).toHaveBeenCalledWith(mockRes);
     });
   });
+
+  describe('triageMaintenanceRequest', () => {
+    it('should triage maintenance request', async () => {
+      const mockBody = {
+        status: 'IN_PROGRESS',
+        triage_summary: 'Leak confirmed',
+        sla_hours: 24,
+      };
+      const mockTriaged = {
+        id: 'MR-001',
+        human_friendly_id: 'MR-001',
+        status: 'IN_PROGRESS',
+      };
+
+      maintenanceRequestService.triageMaintenanceRequest.mockResolvedValue(mockTriaged);
+
+      mockReq.params = { id: 'MR-001' };
+      mockReq.body = mockBody;
+
+      await maintenanceRequestController.triageMaintenanceRequest(mockReq, mockRes);
+
+      expect(maintenanceRequestService.triageMaintenanceRequest).toHaveBeenCalledWith(
+        'MR-001',
+        mockBody,
+        'user-123',
+        '127.0.0.1'
+      );
+      expect(sendSuccess).toHaveBeenCalledWith(
+        mockRes,
+        200,
+        'messages.maintenance_request.triage.success',
+        mockTriaged
+      );
+    });
+  });
 });

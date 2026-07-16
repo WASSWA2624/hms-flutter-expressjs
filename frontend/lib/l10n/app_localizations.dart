@@ -28291,11 +28291,23 @@ abstract class AppLocalizations {
   /// **'SLA hours'**
   String get housekeepingSlaHoursFieldLabel;
 
-  /// Localized text for housekeepingTriageSubmitAction.
+  /// Primary commit label for the housekeeping maintenance triage dialog.
   ///
   /// In en, this message translates to:
-  /// **'Save triage'**
+  /// **'Triage maintenance request'**
   String get housekeepingTriageSubmitAction;
+
+  /// Validation message when the housekeeping triage note exceeds the max length.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage note must be at most 10000 characters.'**
+  String get housekeepingTriageSummaryMaxLengthMessage;
+
+  /// Validation message when housekeeping SLA hours are missing or not a positive integer.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a positive number of SLA hours.'**
+  String get housekeepingSlaHoursInvalidMessage;
 
   /// Localized text for housekeepingPickDateAction.
   ///

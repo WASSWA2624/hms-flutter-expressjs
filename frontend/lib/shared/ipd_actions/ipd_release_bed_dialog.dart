@@ -4,7 +4,6 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 
 /// Opens the IPD release-bed confirmation dialog (mutating; not barrier-dismissible).
 ///

@@ -15190,7 +15190,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get housekeepingSlaHoursFieldLabel => 'SLA hours';
 
   @override
-  String get housekeepingTriageSubmitAction => 'Save triage';
+  String get housekeepingTriageSubmitAction => 'Triage maintenance request';
+
+  @override
+  String get housekeepingTriageSummaryMaxLengthMessage =>
+      'Triage note must be at most 10000 characters.';
+
+  @override
+  String get housekeepingSlaHoursInvalidMessage =>
+      'Enter a positive number of SLA hours.';
 
   @override
   String get housekeepingPickDateAction => 'Pick date';

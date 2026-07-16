@@ -317,9 +317,10 @@ void main() {
 
       expect(find.byType(AppDialog), findsOneWidget);
       expect(find.text('HANDOFF'), findsOneWidget);
-      expect(find.text('Destination'), findsOneWidget);
-      expect(find.text('Handoff notes'), findsOneWidget);
+      expect(find.textContaining('Destination'), findsWidgets);
+      expect(find.textContaining('Handoff notes'), findsWidgets);
       expect(find.text('Close emergency case'), findsOneWidget);
+      expect(find.text('OPD'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.handoff), findsWidgets);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
 

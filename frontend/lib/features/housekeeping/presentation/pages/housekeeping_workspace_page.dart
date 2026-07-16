@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
@@ -13,6 +12,7 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/housekeeping/domain/entities/housekeeping_entities.dart';
 import 'package:hosspi_hms/features/housekeeping/presentation/controllers/housekeeping_workspace_controller.dart';
+import 'package:hosspi_hms/features/housekeeping/presentation/widgets/housekeeping_triage_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -1332,7 +1332,7 @@ class _DetailActions extends ConsumerWidget {
         if (item.isMaintenanceRequest)
           AppActionItem(
             label: l10n.housekeepingTriageAction,
-            leadingIcon: Icons.rule_outlined,
+            leadingIcon: AppActionIcons.triage,
             enabled:
                 capabilities.canManage &&
                 !isSaving &&
@@ -1773,112 +1773,6 @@ class _AssignFormState extends State<_AssignForm> {
   }
 }
 
-class _TriageForm extends StatefulWidget {
-  const _TriageForm({required this.item, super.key});
-
-  final HousekeepingWorkItem item;
-
-  @override
-  State<_TriageForm> createState() => _TriageFormState();
-}
-
-class _TriageFormState extends State<_TriageForm> {
-  final TextEditingController _summaryController = TextEditingController();
-  final TextEditingController _slaController = TextEditingController();
-  late String _status = _triageStatusFromItem(widget.item);
-
-  HousekeepingMaintenanceTriageDraft toDraft() {
-    return HousekeepingMaintenanceTriageDraft(
-      status: _status,
-      summary: _emptyToNull(_summaryController.text),
-      slaHours: int.tryParse(_slaController.text.trim()),
-    );
-  }
-
-  @override
-  void dispose() {
-    _summaryController.dispose();
-    _slaController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final HousekeepingWorkItem item = widget.item;
-    return AppFormSection(
-      children: <Widget>[
-        AppInfoTileGrid(
-          maxColumns: 2,
-          items: <AppInfoTileData>[
-            AppInfoTileData(
-              label: l10n.housekeepingReferenceLabel,
-              value: item.effectiveDisplayId,
-              icon: Icons.tag_outlined,
-              copyable: true,
-            ),
-            AppInfoTileData(
-              label: l10n.housekeepingLocationLabel,
-              value: _locationLabel(l10n, item),
-              icon: Icons.meeting_room_outlined,
-            ),
-            AppInfoTileData(
-              label: l10n.housekeepingStatusFieldLabel,
-              value: _statusLabel(l10n, item),
-              icon: _statusIcon(item),
-            ),
-            AppInfoTileData(
-              label: l10n.housekeepingDueLabel,
-              value: _dateTimeLabel(context, _primaryDate(item)),
-              icon: Icons.schedule_outlined,
-            ),
-          ],
-        ),
-        AppSelectField<String>(
-          value: _status,
-          labelText: l10n.housekeepingStatusFieldLabel,
-          options: <AppSelectOption<String>>[
-            AppSelectOption<String>(
-              value: 'OPEN',
-              label: l10n.housekeepingStatusOpenLabel,
-            ),
-            AppSelectOption<String>(
-              value: 'IN_PROGRESS',
-              label: l10n.housekeepingStatusInProgressLabel,
-            ),
-          ],
-          onChanged: (String? value) {
-            if (value != null) {
-              setState(() => _status = value);
-            }
-          },
-        ),
-        AppTextField(
-          controller: _summaryController,
-          labelText: l10n.housekeepingTriageSummaryFieldLabel,
-          maxLines: 4,
-        ),
-        AppTextField(
-          controller: _slaController,
-          labelText: l10n.housekeepingSlaHoursFieldLabel,
-          keyboardType: TextInputType.number,
-          inputFormatters: <TextInputFormatter>[
-            FilteringTextInputFormatter.digitsOnly,
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-String _triageStatusFromItem(HousekeepingWorkItem item) {
-  final String normalized = (item.status ?? '').trim().toUpperCase();
-  if (normalized == 'OPEN' || normalized == 'IN_PROGRESS') {
-    return normalized;
-  }
-  return 'IN_PROGRESS';
-}
-
 class _ConfirmationForm extends StatelessWidget {
   const _ConfirmationForm({
     required this.body,
@@ -2059,45 +1953,8 @@ Future<void> _showTriageDialog(
   BuildContext context,
   WidgetRef ref,
   HousekeepingWorkItem item,
-) async {
-  if (!item.isMaintenanceRequest || _isMaintenanceTerminal(item)) {
-    return;
-  }
-
-  final l10n = context.l10n;
-  final GlobalKey<_TriageFormState> fieldsKey = GlobalKey<_TriageFormState>();
-
-  final bool? saved = await showAppWorkspaceMutationDialog(
-    context: context,
-    title: Text(l10n.housekeepingTriageDialogTitle),
-    icon: const Icon(Icons.rule_outlined),
-    cancelLabel: l10n.commonCancelActionLabel,
-    cancelIcon: AppActionIcons.cancel,
-    submitLabel: l10n.housekeepingTriageSubmitAction,
-    submitIcon: AppActionIcons.save,
-    buildFields:
-        (
-          BuildContext context,
-          GlobalKey<FormState> formKey,
-          bool _, [
-          AppFailure? failure,
-        ]) {
-          return _TriageForm(key: fieldsKey, item: item);
-        },
-    onSubmit: () {
-      final _TriageFormState? fields = fieldsKey.currentState;
-      if (fields == null) {
-        return Future<AppFailure?>.value(const AppFailure.unexpected());
-      }
-      return ref
-          .read(housekeepingWorkspaceControllerProvider.notifier)
-          .triageMaintenanceRequest(item, fields.toDraft());
-    },
-  );
-
-  if (saved == true && context.mounted) {
-    _showMutationResult(context, null);
-  }
+) {
+  return showHousekeepingTriageDialog(context, ref, item);
 }
 
 Future<void> _confirmTaskAction(
@@ -2506,11 +2363,6 @@ bool _isMaintenanceTerminal(HousekeepingWorkItem item) {
 
 String _normalizedStatus(HousekeepingWorkItem item) {
   return (item.status ?? '').trim().toUpperCase();
-}
-
-String? _emptyToNull(String value) {
-  final String normalized = value.trim();
-  return normalized.isEmpty ? null : normalized;
 }
 
 bool _notEmpty(String? value) {

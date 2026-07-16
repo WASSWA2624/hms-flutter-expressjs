@@ -8,6 +8,7 @@
 const {
   createMaintenanceRequestSchema,
   updateMaintenanceRequestSchema,
+  triageMaintenanceRequestSchema,
   maintenanceRequestIdParamsSchema,
   listMaintenanceRequestsQuerySchema,
   maintenanceStatusEnum
@@ -117,6 +118,49 @@ describe('Maintenance Request Schemas', () => {
       };
 
       expect(() => updateMaintenanceRequestSchema.parse(invalidData)).toThrow();
+    });
+  });
+
+  describe('triageMaintenanceRequestSchema', () => {
+    it('should validate a complete triage body', () => {
+      const validData = {
+        status: 'IN_PROGRESS',
+        triage_summary: 'Leak confirmed on ward 3',
+        assigned_engineer: 'USR000001',
+        sla_hours: 24,
+      };
+
+      expect(() => triageMaintenanceRequestSchema.parse(validData)).not.toThrow();
+    });
+
+    it('should allow an empty triage body', () => {
+      expect(() => triageMaintenanceRequestSchema.parse({})).not.toThrow();
+    });
+
+    it('should reject terminal status values', () => {
+      expect(() =>
+        triageMaintenanceRequestSchema.parse({ status: 'COMPLETED' })
+      ).toThrow();
+      expect(() =>
+        triageMaintenanceRequestSchema.parse({ status: 'CANCELLED' })
+      ).toThrow();
+    });
+
+    it('should reject non-positive sla_hours', () => {
+      expect(() =>
+        triageMaintenanceRequestSchema.parse({ sla_hours: 0 })
+      ).toThrow();
+      expect(() =>
+        triageMaintenanceRequestSchema.parse({ sla_hours: -1 })
+      ).toThrow();
+    });
+
+    it('should reject triage_summary longer than 10000 characters', () => {
+      expect(() =>
+        triageMaintenanceRequestSchema.parse({
+          triage_summary: 'x'.repeat(10001),
+        })
+      ).toThrow();
     });
   });
 

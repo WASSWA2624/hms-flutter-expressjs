@@ -818,7 +818,7 @@ class _AssignBedDialogState extends ConsumerState<_AssignBedDialog> {
         title: Text(l10n.icuAssignBedDialogTitle),
         icon: const Icon(Icons.bed_outlined),
         closeEnabled: false,
-        scrollable: true,
+        initialMaximized: false,
         pinActionsToBottom: true,
         content: const Center(child: AppLoadingIndicator.compact()),
         actions: clinicalActionDialogActions(
@@ -835,12 +835,10 @@ class _AssignBedDialogState extends ConsumerState<_AssignBedDialog> {
       return AppDialog(
         title: Text(l10n.icuAssignBedDialogTitle),
         icon: const Icon(Icons.bed_outlined),
-        closeEnabled: true,
-        scrollable: true,
+        initialMaximized: false,
         pinActionsToBottom: true,
         content: AppFormShell(
           formKey: _loadFailureFormKey,
-          enabled: true,
           formStatus: appFormFailureStatus(context, _loadFailure),
           children: const <Widget>[],
         ),
@@ -857,7 +855,6 @@ class _AssignBedDialogState extends ConsumerState<_AssignBedDialog> {
     return ClinicalAdmissionActionDialog(
       title: l10n.icuAssignBedDialogTitle,
       submitLabel: l10n.icuActionAssignBed,
-      icon: const Icon(Icons.bed_outlined),
       submitLeadingIcon: Icons.bed_outlined,
       initialMaximized: false,
       maxWidth: 560,
