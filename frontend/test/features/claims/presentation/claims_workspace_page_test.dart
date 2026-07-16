@@ -275,7 +275,7 @@ void main() {
     expect(find.textContaining('Settled'), findsWidgets);
     expect(find.textContaining('Insurance Setup'), findsWidgets);
     expect(find.text('AUTH-PENDING'), findsOneWidget);
-    expect(find.textContaining('Request authorization'), findsOneWidget);
+    expect(find.byTooltip('Request authorization'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byType(DataTable),
@@ -316,7 +316,7 @@ void main() {
     );
     expect(find.text('CLM-SUB'), findsOneWidget);
     expect(find.text('AUTH-PENDING'), findsNothing);
-    expect(find.textContaining('Prepare claim'), findsOneWidget);
+    expect(find.byTooltip('Prepare claim'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byType(DataTable),
@@ -337,8 +337,8 @@ void main() {
 
     expect(harness.router.state.uri.queryParameters['section'], 'settled');
     expect(find.text('CLM-PAID'), findsOneWidget);
-    expect(find.textContaining('Prepare claim'), findsNothing);
-    expect(find.textContaining('Request authorization'), findsNothing);
+    expect(find.byTooltip('Prepare claim'), findsNothing);
+    expect(find.byTooltip('Request authorization'), findsNothing);
     expect(
       find.descendant(
         of: find.byType(DataTable),
@@ -366,7 +366,7 @@ void main() {
     );
     expect(find.text('CLM-SUB'), findsOneWidget);
     expect(find.text('AUTH-PENDING'), findsNothing);
-    expect(find.textContaining('Prepare claim'), findsOneWidget);
+    expect(find.byTooltip('Prepare claim'), findsOneWidget);
   });
 
   testWidgets('default route lands on Authorizations without section param', (
@@ -382,7 +382,7 @@ void main() {
       isFalse,
     );
     expect(find.text('AUTH-PENDING'), findsOneWidget);
-    expect(find.textContaining('Request authorization'), findsOneWidget);
+    expect(find.byTooltip('Request authorization'), findsOneWidget);
   });
 
   testWidgets('Insurance Setup tab shows catalog actions, not queue table', (
@@ -503,7 +503,7 @@ void main() {
     expect(find.byType(DataTable), findsNothing);
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.textContaining('AUTH-PENDING'), findsOneWidget);
-    expect(find.textContaining('Request authorization'), findsOneWidget);
+    expect(find.byTooltip('Request authorization'), findsOneWidget);
   });
 
   testWidgets('tab switch applies filter via repository', (

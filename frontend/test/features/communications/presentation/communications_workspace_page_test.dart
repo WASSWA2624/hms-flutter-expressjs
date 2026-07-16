@@ -229,12 +229,12 @@ void main() {
     await _pumpCommunicationsWorkspace(tester, repository: repository);
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.textContaining('Messages (1)'), findsOneWidget);
-    expect(find.textContaining('Notifications (1)'), findsOneWidget);
-    expect(find.textContaining('Deliveries (1)'), findsOneWidget);
-    expect(find.textContaining('Templates (1)'), findsOneWidget);
+    expect(find.text('Messages'), findsOneWidget);
+    expect(find.text('Notifications'), findsOneWidget);
+    expect(find.text('Deliveries'), findsOneWidget);
+    expect(find.text('Templates'), findsOneWidget);
     expect(find.text('Critical lab follow-up'), findsOneWidget);
-    expect(find.textContaining('New message'), findsOneWidget);
+    expect(find.byTooltip('New message'), findsOneWidget);
   });
 
   testWidgets('New message primary action only shows on inbox with write', (
@@ -242,12 +242,12 @@ void main() {
   ) async {
     await _pumpCommunicationsWorkspace(tester, repository: repository);
 
-    expect(find.textContaining('New message'), findsOneWidget);
+    expect(find.byTooltip('New message'), findsOneWidget);
 
-    await tester.tap(find.textContaining('Notifications (1)').first);
+    await tester.tap(find.text('Notifications').first);
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('New message'), findsNothing);
+    expect(find.byTooltip('New message'), findsNothing);
     expect(find.text('Critical lab result'), findsWidgets);
   });
 
@@ -260,8 +260,8 @@ void main() {
       accessPolicy: _communicationsReadOnlyPolicy(),
     );
 
-    expect(find.textContaining('New message'), findsNothing);
-    expect(find.textContaining('Messages (1)'), findsOneWidget);
+    expect(find.byTooltip('New message'), findsNothing);
+    expect(find.text('Messages'), findsOneWidget);
   });
 
   testWidgets('switching tabs updates the panel query parameter', (
@@ -272,7 +272,7 @@ void main() {
       repository: repository,
     );
 
-    await tester.tap(find.textContaining('Deliveries (1)').first);
+    await tester.tap(find.text('Deliveries').first);
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['panel'], 'deliveries');
@@ -294,7 +294,7 @@ void main() {
 
     expect(harness.router.state.uri.queryParameters['panel'], 'notifications');
     expect(find.text('Critical lab result'), findsWidgets);
-    expect(find.textContaining('New message'), findsNothing);
+    expect(find.byTooltip('New message'), findsNothing);
     expect(find.text('Critical lab follow-up'), findsNothing);
   });
 
@@ -304,7 +304,7 @@ void main() {
       repository: repository,
     );
 
-    await tester.tap(find.textContaining('Templates (1)').first);
+    await tester.tap(find.text('Templates').first);
     await tester.pumpAndSettle();
 
     expect(harness.router.state.uri.queryParameters['panel'], 'templates');
@@ -323,6 +323,6 @@ void main() {
 
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.text('Critical lab follow-up'), findsOneWidget);
-    expect(find.textContaining('New message'), findsOneWidget);
+    expect(find.byTooltip('New message'), findsOneWidget);
   });
 }
