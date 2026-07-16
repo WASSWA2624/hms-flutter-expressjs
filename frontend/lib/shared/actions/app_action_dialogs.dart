@@ -11,15 +11,26 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 ///
 /// Optional [leadingContent] inserts domain-neutral context above the body
 /// (for example encounter summary panels) without forking the confirm shell.
+///
+/// Optional [noteFieldLabel] adds a free-text field below the body for
+/// cancellation notes and similar confirm-with-reason flows. Prefer
+/// [onConfirmWithNote] when the field is present; [onConfirm] ignores the note.
 class AppConfirmActionDialog extends StatefulWidget {
   const AppConfirmActionDialog({
     required this.title,
     required this.body,
     required this.submitLabel,
     this.onConfirm,
+    this.onConfirmWithNote,
     this.icon = const Icon(AppActionIcons.help),
     this.highlightedText,
     this.leadingContent = const <Widget>[],
+    this.noteFieldLabel,
+    this.noteIsRequired = false,
+    this.noteMinLines,
+    this.noteMaxLines = 3,
+    this.notePrefixIcon,
+    this.noteAutofocus = false,
     this.destructive = false,
     this.submitLeadingIcon,
     this.cancelLeadingIcon = AppActionIcons.cancel,
@@ -37,6 +48,12 @@ class AppConfirmActionDialog extends StatefulWidget {
   final Widget icon;
   final String? highlightedText;
   final List<Widget> leadingContent;
+  final String? noteFieldLabel;
+  final bool noteIsRequired;
+  final int? noteMinLines;
+  final int noteMaxLines;
+  final Widget? notePrefixIcon;
+  final bool noteAutofocus;
   final bool destructive;
   final IconData? submitLeadingIcon;
   final IconData cancelLeadingIcon;
@@ -46,19 +63,74 @@ class AppConfirmActionDialog extends StatefulWidget {
   final bool pinActionsToBottom;
   final bool initialMaximized;
   final Future<AppFailure?> Function()? onConfirm;
+  final Future<AppFailure?> Function(String note)? onConfirmWithNote;
+
+  bool get _hasNoteField =>
+      noteFieldLabel != null && noteFieldLabel!.trim().isNotEmpty;
 
   @override
   State<AppConfirmActionDialog> createState() => _AppConfirmActionDialogState();
 }
 
 class _AppConfirmActionDialogState extends State<AppConfirmActionDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final TextEditingController _noteController;
   bool _isSaving = false;
   AppFailure? _failure;
+
+  @override
+  void initState() {
+    super.initState();
+    _noteController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final AppLocalizations l10n = context.l10n;
+    final List<Widget> children = <Widget>[
+      if (_failure != null)
+        AppFormInformationBanner.failure(
+          context: context,
+          failure: _failure!,
+        ),
+      ...widget.leadingContent,
+      if (widget.destructive)
+        _DestructiveConfirmationBody(
+          body: widget.body,
+          highlightedText: widget.highlightedText,
+        )
+      else
+        Text(
+          widget.body,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+            height: 1.45,
+          ),
+        ),
+      if (widget._hasNoteField)
+        AppTextField(
+          controller: _noteController,
+          labelText: widget.noteFieldLabel!,
+          prefixIcon: widget.notePrefixIcon,
+          minLines: widget.noteMinLines,
+          maxLines: widget.noteMaxLines,
+          enabled: !_isSaving,
+          isRequired: widget.noteIsRequired,
+          autofocus: widget.noteAutofocus,
+          textCapitalization: TextCapitalization.sentences,
+          validator: widget.noteIsRequired
+              ? AppValidators.requiredText(l10n.validationRequired)
+              : null,
+        ),
+    ];
 
     return AppDialog(
       title: Text(widget.title),
@@ -68,30 +140,17 @@ class _AppConfirmActionDialogState extends State<AppConfirmActionDialog> {
       scrollable: widget.scrollable,
       pinActionsToBottom: widget.pinActionsToBottom,
       closeEnabled: !_isSaving,
-      content: AppFormSection(
-        density: widget.sectionDensity,
-        children: <Widget>[
-          if (_failure != null)
-            AppFormInformationBanner.failure(
-              context: context,
-              failure: _failure!,
-            ),
-          ...widget.leadingContent,
-          if (widget.destructive)
-            _DestructiveConfirmationBody(
-              body: widget.body,
-              highlightedText: widget.highlightedText,
+      content: widget._hasNoteField
+          ? AppFormShell(
+              formKey: _formKey,
+              enabled: !_isSaving,
+              density: widget.sectionDensity,
+              children: children,
             )
-          else
-            Text(
-              widget.body,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                height: 1.45,
-              ),
+          : AppFormSection(
+              density: widget.sectionDensity,
+              children: children,
             ),
-        ],
-      ),
       actions: _actionDialogButtons(
         context,
         submitLabel: widget.submitLabel,
@@ -125,8 +184,15 @@ class _AppConfirmActionDialogState extends State<AppConfirmActionDialog> {
   }
 
   Future<void> _submit() async {
+    if (widget._hasNoteField &&
+        !(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    final Future<AppFailure?> Function(String note)? onConfirmWithNote =
+        widget.onConfirmWithNote;
     final Future<AppFailure?> Function()? onConfirm = widget.onConfirm;
-    if (onConfirm == null) {
+    if (onConfirmWithNote == null && onConfirm == null) {
       Navigator.of(context).pop(true);
       return;
     }
@@ -135,7 +201,9 @@ class _AppConfirmActionDialogState extends State<AppConfirmActionDialog> {
       _isSaving = true;
       _failure = null;
     });
-    final AppFailure? failure = await onConfirm();
+    final AppFailure? failure = onConfirmWithNote != null
+        ? await onConfirmWithNote(_noteController.text.trim())
+        : await onConfirm!();
     if (!mounted) {
       return;
     }
@@ -152,6 +220,9 @@ class _AppConfirmActionDialogState extends State<AppConfirmActionDialog> {
 
 /// Shared free-text action dialog for notes, summaries, handovers, and similar
 /// module workflows.
+///
+/// Optional [leadingContent] inserts domain-neutral context above the field
+/// (for example encounter identity banners) without forking the text shell.
 class AppTextActionDialog extends StatefulWidget {
   const AppTextActionDialog({
     required this.title,
@@ -162,6 +233,7 @@ class AppTextActionDialog extends StatefulWidget {
     this.semanticLabel,
     this.description,
     this.sectionTitle,
+    this.leadingContent = const <Widget>[],
     this.initialValue,
     this.prefixIcon,
     this.minLines = 3,
@@ -178,6 +250,7 @@ class AppTextActionDialog extends StatefulWidget {
   final String? semanticLabel;
   final String? sectionTitle;
   final String? description;
+  final List<Widget> leadingContent;
   final String fieldLabel;
   final String submitLabel;
   final Widget icon;
@@ -547,6 +620,7 @@ class _AppTextActionDialogState extends State<AppTextActionDialog> {
               context: context,
               failure: _failure!,
             ),
+          ...widget.leadingContent,
           if (widget.sectionTitle != null &&
               widget.sectionTitle!.trim().isNotEmpty)
             Text(
@@ -630,7 +704,7 @@ List<Widget> _actionDialogButtons(
       label: l10n.commonCancelActionLabel,
       leadingIcon: cancelLeadingIcon,
       enabled: !isSaving,
-      onPressed: () => Navigator.of(context).pop(false),
+      onPressed: isSaving ? null : () => Navigator.of(context).pop(false),
     ),
     AppButton.primary(
       label: submitLabel,
@@ -639,7 +713,7 @@ List<Widget> _actionDialogButtons(
           (destructive ? AppActionIcons.delete : null),
       color: destructive ? colorScheme.error : null,
       isLoading: isSaving,
-      onPressed: onSubmit,
+      onPressed: isSaving ? null : onSubmit,
     ),
   ];
 }

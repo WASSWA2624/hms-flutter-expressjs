@@ -20,6 +20,10 @@ abstract final class AppActionIcons {
   static const IconData notificationsActive =
       Icons.notifications_active_outlined;
   static const IconData person = Icons.person_outline;
+
+  /// Register / admit a person (IPD start admission, patient create).
+  static const IconData personAdd = Icons.person_add_alt_1_outlined;
+
   static const IconData logout = Icons.logout_outlined;
   static const IconData lock = Icons.lock_outline;
   static const IconData visibility = Icons.visibility_outlined;
@@ -67,6 +71,12 @@ abstract final class AppActionIcons {
 
   /// Visit-queue / worklist row actions hub.
   static const IconData queue = Icons.queue_outlined;
+
+  /// Appointment row actions hub (reception / OPD desks).
+  static const IconData appointment = Icons.event_available_outlined;
+
+  /// Reschedule an existing appointment (date/time edit).
+  static const IconData reschedule = Icons.edit_calendar_outlined;
 
   /// Move / reassign a queue entry (stage or provider).
   static const IconData move = Icons.sync_alt_outlined;

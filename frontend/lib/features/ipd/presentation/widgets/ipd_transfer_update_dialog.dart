@@ -25,6 +25,7 @@ class TransferUpdateDialog extends ConsumerWidget {
 
     return AppTransferUpdateDialog(
       title: l10n.ipdManageTransferAction,
+      semanticLabel: l10n.ipdManageTransferAction,
       actionLabel: l10n.ipdTransferActionFieldLabel,
       destinationBedLabel: l10n.ipdDestinationBedFieldLabel,
       destinationBedHint: l10n.ipdSelectBedHint,

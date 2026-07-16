@@ -395,6 +395,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emergencyResponseMarkedMessage => 'Response marked';
 
   @override
+  String get emergencyTriageAction => 'Triage';
+
+  @override
+  String get emergencyTriageDialogTitle => 'Record triage';
+
+  @override
+  String get emergencyTriageDialogSemanticLabel =>
+      'Record emergency triage assessment';
+
+  @override
+  String get emergencySaveTriageAction => 'Save triage';
+
+  @override
+  String get emergencyTriageNotesLabel => 'Triage notes';
+
+  @override
+  String get emergencyTriageRecordedMessage => 'Triage recorded';
+
+  @override
   String get emergencySearchSemanticLabel => 'Search emergency cases';
 
   @override
@@ -3348,6 +3367,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdCancelEncounterAction => 'Cancel encounter';
 
   @override
+  String get opdCancelEncounterConfirmBody =>
+      'Cancel this OPD encounter? The visit will be marked cancelled and removed from the active queue. This cannot be undone.';
+
+  @override
   String get opdCreatePatientAction => 'Create patient';
 
   @override
@@ -3451,6 +3474,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdAppointmentEndLabel => 'End time';
 
   @override
+  String get opdAppointmentEndAfterStartMessage =>
+      'End time must be after start time.';
+
+  @override
   String get opdDateTimeHint => 'YYYY-MM-DDTHH:MM:SS';
 
   @override
@@ -3473,6 +3500,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get opdQueueActionsTitle => 'Queue actions';
+
+  @override
+  String get opdAppointmentActionsTitle => 'Appointment actions';
 
   @override
   String get opdPrioritizeQueueTitle => 'Prioritize queue entry';

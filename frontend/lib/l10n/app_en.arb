@@ -509,6 +509,30 @@
   "@emergencyResponseMarkedMessage": {
     "description": "Success message after an emergency clinical response is persisted."
   },
+  "emergencyTriageAction": "Triage",
+  "@emergencyTriageAction": {
+    "description": "Action that opens the emergency triage assessment dialog."
+  },
+  "emergencyTriageDialogTitle": "Record triage",
+  "@emergencyTriageDialogTitle": {
+    "description": "Title for the emergency triage assessment dialog."
+  },
+  "emergencyTriageDialogSemanticLabel": "Record emergency triage assessment",
+  "@emergencyTriageDialogSemanticLabel": {
+    "description": "Accessibility label for the emergency triage assessment dialog."
+  },
+  "emergencySaveTriageAction": "Save triage",
+  "@emergencySaveTriageAction": {
+    "description": "Primary action that persists an emergency triage assessment."
+  },
+  "emergencyTriageNotesLabel": "Triage notes",
+  "@emergencyTriageNotesLabel": {
+    "description": "Notes field label in the emergency triage assessment dialog."
+  },
+  "emergencyTriageRecordedMessage": "Triage recorded",
+  "@emergencyTriageRecordedMessage": {
+    "description": "Success message after an emergency triage assessment is persisted."
+  },
   "emergencySearchSemanticLabel": "Search emergency cases",
   "@emergencySearchSemanticLabel": {
     "description": "Semantic label for the emergency worklist search field."
@@ -4002,6 +4026,7 @@
   "opdContinueEncounterAction": "Continue encounter",
   "opdCloseEncounterAction": "Close encounter",
   "opdCancelEncounterAction": "Cancel encounter",
+  "opdCancelEncounterConfirmBody": "Cancel this OPD encounter? The visit will be marked cancelled and removed from the active queue. This cannot be undone.",
   "opdCreatePatientAction": "Create patient",
   "opdEncounterCancelReasonPatientLeft": "Patient left before consultation",
   "opdEncounterCancelReasonDuplicate": "Duplicate encounter",
@@ -4034,6 +4059,10 @@
   "opdCheckInAction": "Start OPD encounter",
   "opdAppointmentStartLabel": "Start time",
   "opdAppointmentEndLabel": "End time",
+  "opdAppointmentEndAfterStartMessage": "End time must be after start time.",
+  "@opdAppointmentEndAfterStartMessage": {
+    "description": "Validation message when appointment end is not after start."
+  },
   "opdDateTimeHint": "YYYY-MM-DDTHH:MM:SS",
   "opdSaveAction": "Save",
   "opdCancellationReasonLabel": "Cancellation reason",
@@ -4042,6 +4071,10 @@
   "opdPrioritizeAction": "Prioritize",
   "opdMoveQueueAction": "Move",
   "opdQueueActionsTitle": "Queue actions",
+  "opdAppointmentActionsTitle": "Appointment actions",
+  "@opdAppointmentActionsTitle": {
+    "description": "Title for the shared OPD/reception appointment actions hub dialog."
+  },
   "opdPrioritizeQueueTitle": "Prioritize queue entry",
   "opdPrioritizeQueueDescription": "Optionally record why this queue entry should be prioritized.",
   "opdMoveQueueTitle": "Move queue entry",
@@ -4610,6 +4643,9 @@
   },
   "@opdCancelEncounterAction": {
     "description": "Action that cancels an active OPD encounter with a reason."
+  },
+  "@opdCancelEncounterConfirmBody": {
+    "description": "Warning shown before cancelling an active OPD encounter."
   },
   "@opdCreatePatientAction": {
     "description": "Primary action for creating a patient before starting OPD."

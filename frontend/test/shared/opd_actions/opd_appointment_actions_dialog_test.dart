@@ -2,19 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
+import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
+import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
+import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_appointment_actions_dialog.dart';
+import 'package:mocktail/mocktail.dart';
+
+class _MockOpdRepository extends Mock implements OpdRepository {}
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(const OpdAppointmentQuery());
+    registerFallbackValue(const OpdQueueQuery());
+    registerFallbackValue(const OpdFlowQuery());
+    registerFallbackValue(const OpdTriageQueueQuery());
+    registerFallbackValue(<String, Object?>{});
+  });
+
   const OpdAppointment appointment = OpdAppointment(
     id: 'appointment-internal',
     publicId: 'APT000001',
@@ -31,7 +50,7 @@ void main() {
   testWidgets('uses the shared action hub with a Cancel-only footer', (
     WidgetTester tester,
   ) async {
-    await _pumpDialog(tester, appointment);
+    await _pumpMountedDialog(tester, appointment);
 
     final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
     expect(dialog.closeEnabled, isTrue);
@@ -45,12 +64,21 @@ void main() {
     expect(find.text('Start OPD encounter'), findsOneWidget);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
+    expect(find.byIcon(AppActionIcons.appointment), findsOneWidget);
+    expect(find.byIcon(AppActionIcons.queue), findsWidgets);
+    expect(find.byIcon(AppActionIcons.start), findsWidgets);
+    expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(find.byType(LinearProgressIndicator), findsNothing);
   });
 
   testWidgets('hides mutation actions after the appointment is terminal', (
     WidgetTester tester,
   ) async {
-    await _pumpDialog(tester, appointment.copyWith(status: 'COMPLETED'));
+    await _pumpMountedDialog(
+      tester,
+      appointment.copyWith(status: 'COMPLETED'),
+    );
 
     expect(find.byType(AppActionSection), findsNothing);
     expect(find.text('Start OPD encounter'), findsNothing);
@@ -62,7 +90,7 @@ void main() {
   testWidgets('permission gate hides appointment mutations when denied', (
     WidgetTester tester,
   ) async {
-    await _pumpDialog(
+    await _pumpMountedDialog(
       tester,
       appointment,
       policy: AppAccessPolicy.fromSession(
@@ -84,7 +112,7 @@ void main() {
   testWidgets('hides Queue when the appointment already has an active entry', (
     WidgetTester tester,
   ) async {
-    await _pumpDialog(
+    await _pumpMountedDialog(
       tester,
       appointment,
       workspaceState: OpdWorkspaceState.empty().copyWith(
@@ -106,6 +134,132 @@ void main() {
     expect(find.text('Start OPD encounter'), findsOneWidget);
   });
 
+  testWidgets('Cancel pops false without mutating the appointment', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    _stubWorkspaceLoad(repository, appointments: <OpdAppointment>[appointment]);
+    bool? result;
+
+    await _pumpOpenedDialog(
+      tester,
+      appointment: appointment,
+      repository: repository,
+      onResult: (bool? value) => result = value,
+    );
+
+    await tester.tap(find.widgetWithText(AppButton, 'Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(result, isFalse);
+    verifyNever(
+      () => repository.createVisitQueue(
+        any(),
+        idempotencyKey: any(named: 'idempotencyKey'),
+      ),
+    );
+    verifyNever(
+      () => repository.startOpdFlow(
+        any(),
+        idempotencyKey: any(named: 'idempotencyKey'),
+      ),
+    );
+  });
+
+  testWidgets('Queue failure keeps the hub open and patches nothing', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    _stubWorkspaceLoad(repository, appointments: <OpdAppointment>[appointment]);
+    when(
+      () => repository.createVisitQueue(
+        any(),
+        idempotencyKey: any(named: 'idempotencyKey'),
+      ),
+    ).thenAnswer(
+      (_) async => const Result<OpdQueueEntry>.failure(AppFailure.network()),
+    );
+    bool? result;
+
+    await _pumpOpenedDialog(
+      tester,
+      appointment: appointment,
+      repository: repository,
+      onResult: (bool? value) => result = value,
+    );
+
+    await tester.tap(find.text('Queue'));
+    await tester.pumpAndSettle();
+
+    expect(result, isNull);
+    expect(find.text('APPOINTMENT ACTIONS'), findsOneWidget);
+    expect(find.byType(AppFormInformationBanner), findsOneWidget);
+    verify(
+      () => repository.createVisitQueue(
+        any(),
+        idempotencyKey: any(named: 'idempotencyKey'),
+      ),
+    ).called(1);
+  });
+
+  testWidgets('Queue success closes the hub after persisted patch', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    const OpdQueueEntry queued = OpdQueueEntry(
+      id: 'queue-internal',
+      publicId: 'QUE000001',
+      tenantId: 'TEN000001',
+      facilityId: 'FAC000001',
+      patientId: 'PAT000001',
+      appointmentId: 'APT000001',
+      providerUserId: 'USR000001',
+      status: 'CONFIRMED',
+    );
+    _stubWorkspaceLoad(repository, appointments: <OpdAppointment>[appointment]);
+    when(
+      () => repository.createVisitQueue(
+        any(),
+        idempotencyKey: any(named: 'idempotencyKey'),
+      ),
+    ).thenAnswer((_) async => const Result<OpdQueueEntry>.success(queued));
+    bool? result;
+
+    await _pumpOpenedDialog(
+      tester,
+      appointment: appointment,
+      repository: repository,
+      onResult: (bool? value) => result = value,
+    );
+
+    await tester.tap(find.text('Queue'));
+    await tester.pumpAndSettle();
+
+    expect(result, isTrue);
+  });
+
+  testWidgets('Reschedule opens the canonical child dialog', (
+    WidgetTester tester,
+  ) async {
+    await _pumpMountedDialog(tester, appointment);
+    await tester.tap(find.text('Reschedule'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('RESCHEDULE'), findsOneWidget);
+    expect(find.text('Cancel'), findsWidgets);
+  });
+
+  testWidgets('Cancel appointment opens the canonical child dialog', (
+    WidgetTester tester,
+  ) async {
+    await _pumpMountedDialog(tester, appointment);
+    await tester.tap(find.text('Cancel appointment'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('CANCEL APPOINTMENT'), findsOneWidget);
+    expect(find.text('Cancel'), findsWidgets);
+  });
+
   testWidgets('remains usable on a compact dark high-text-scale surface', (
     WidgetTester tester,
   ) async {
@@ -114,7 +268,7 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
-    await _pumpDialog(
+    await _pumpMountedDialog(
       tester,
       appointment,
       dark: true,
@@ -127,7 +281,7 @@ void main() {
   });
 }
 
-Future<void> _pumpDialog(
+Future<void> _pumpMountedDialog(
   WidgetTester tester,
   OpdAppointment appointment, {
   AppAccessPolicy? policy,
@@ -162,6 +316,117 @@ Future<void> _pumpDialog(
     ),
   );
   await tester.pumpAndSettle();
+}
+
+Future<void> _pumpOpenedDialog(
+  WidgetTester tester, {
+  required OpdAppointment appointment,
+  required OpdRepository repository,
+  ValueChanged<bool?>? onResult,
+}) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        appAccessPolicyProvider.overrideWithValue(_frontDeskPolicy()),
+        initialSessionStateProvider.overrideWithValue(
+          const SessionState.ready(),
+        ),
+        opdRepositoryProvider.overrideWithValue(repository),
+      ],
+      child: MaterialApp(
+        theme: AppTheme.light,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (BuildContext context) {
+              return AppButton.primary(
+                label: 'Open',
+                onPressed: () async {
+                  final bool? value = await showOpdAppointmentActionsDialog(
+                    context: context,
+                    appointment: appointment,
+                  );
+                  onResult?.call(value);
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pumpAndSettle();
+
+  final ProviderContainer container = ProviderScope.containerOf(
+    tester.element(find.byType(Scaffold)),
+  );
+  await container.read(opdWorkspaceControllerProvider.future);
+
+  await tester.tap(find.widgetWithText(AppButton, 'Open'));
+  await tester.pumpAndSettle();
+}
+
+void _stubWorkspaceLoad(
+  _MockOpdRepository repository, {
+  required List<OpdAppointment> appointments,
+}) {
+  when(() => repository.listAppointments(any())).thenAnswer(
+    (Invocation invocation) async => Result<AppPage<OpdAppointment>>.success(
+      AppPage<OpdAppointment>(
+        items: appointments,
+        request: (invocation.positionalArguments.single as OpdAppointmentQuery)
+            .pageRequest,
+        totalItemCount: appointments.length,
+      ),
+    ),
+  );
+  when(() => repository.listVisitQueues(any())).thenAnswer(
+    (_) async => const Result<AppPage<OpdQueueEntry>>.success(
+      AppPage<OpdQueueEntry>(
+        items: <OpdQueueEntry>[],
+        request: AppPageRequest(pageSize: 12),
+      ),
+    ),
+  );
+  when(() => repository.listOpdFlows(any())).thenAnswer(
+    (_) async => const Result<AppPage<OpdFlowSummary>>.success(
+      AppPage<OpdFlowSummary>(
+        items: <OpdFlowSummary>[],
+        request: AppPageRequest(pageSize: 12),
+      ),
+    ),
+  );
+  when(() => repository.listTriageQueue(any())).thenAnswer(
+    (_) async => const Result<AppPage<OpdFlowSummary>>.success(
+      AppPage<OpdFlowSummary>(
+        items: <OpdFlowSummary>[],
+        request: AppPageRequest(pageSize: 12),
+      ),
+    ),
+  );
+  when(() => repository.getOpdSummaryCounts()).thenAnswer(
+    (_) async =>
+        const Result<OpdFlowAggregateCounts>.success(OpdFlowAggregateCounts()),
+  );
+  when(
+    () => repository.listClinicalAlertThresholds(
+      vitalType: any(named: 'vitalType'),
+    ),
+  ).thenAnswer(
+    (_) async => const Result<List<OpdClinicalAlertThreshold>>.success(
+      <OpdClinicalAlertThreshold>[],
+    ),
+  );
+  when(() => repository.listProviderSchedules()).thenAnswer(
+    (_) async => const Result<List<OpdProviderSchedule>>.success(
+      <OpdProviderSchedule>[],
+    ),
+  );
+  when(() => repository.listProviders()).thenAnswer(
+    (_) async =>
+        const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+  );
 }
 
 AppAccessPolicy _frontDeskPolicy() {

@@ -153,6 +153,7 @@ class AppTriageActionDialog extends StatefulWidget {
     required this.triageLevelOptions,
     required this.onSubmit,
     this.cancelLabel,
+    this.semanticLabel,
     this.icon = const Icon(Icons.monitor_heart_outlined),
     this.submitLeadingIcon = AppActionIcons.save,
     this.initialTriageLevel,
@@ -190,6 +191,7 @@ class AppTriageActionDialog extends StatefulWidget {
   });
 
   final String title;
+  final String? semanticLabel;
   final Widget icon;
   final String submitLabel;
   final IconData submitLeadingIcon;
@@ -325,6 +327,7 @@ class _AppTriageActionDialogState extends State<AppTriageActionDialog> {
         widget.cancelLabel ?? context.l10n.commonCancelActionLabel;
     return AppDialog(
       title: Text(widget.title),
+      semanticLabel: widget.semanticLabel,
       icon: widget.icon,
       scrollable: true,
       pinActionsToBottom: true,
@@ -414,6 +417,7 @@ class _AppTriageActionDialogState extends State<AppTriageActionDialog> {
   }
 
   Widget _vitalsSection(bool enabled) {
+    final l10n = context.l10n;
     return AppFormSection(
       title: widget.vitalsSectionTitle,
       density: AppFormSectionDensity.compact,
@@ -429,14 +433,16 @@ class _AppTriageActionDialogState extends State<AppTriageActionDialog> {
           weightController: _weightController,
           heightController: _heightController,
           bloodPressureLabel: widget.bloodPressureLabel,
-          temperatureLabel: widget.temperatureLabel ?? 'Temperature',
-          systolicLabel: widget.systolicLabel ?? 'Systolic',
-          diastolicLabel: widget.diastolicLabel ?? 'Diastolic',
-          heartRateLabel: widget.heartRateLabel ?? 'Heart rate',
+          temperatureLabel:
+              widget.temperatureLabel ?? l10n.patientsTemperatureLabel,
+          systolicLabel: widget.systolicLabel ?? l10n.patientsSystolicLabel,
+          diastolicLabel: widget.diastolicLabel ?? l10n.patientsDiastolicLabel,
+          heartRateLabel: widget.heartRateLabel ?? l10n.patientsHeartRateLabel,
           respiratoryRateLabel:
-              widget.respiratoryRateLabel ?? 'Respiratory rate',
+              widget.respiratoryRateLabel ?? l10n.patientsRespiratoryRateLabel,
           oxygenSaturationLabel:
-              widget.oxygenSaturationLabel ?? 'Oxygen saturation',
+              widget.oxygenSaturationLabel ??
+              l10n.patientsOxygenSaturationLabel,
           weightLabel: widget.weightLabel,
           heightLabel: widget.heightLabel,
           unitLabel: widget.unitLabel,

@@ -14,7 +14,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/opd_actions/opd_appointment_actions_dialog.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_reschedule_appointment_dialog.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockOpdRepository extends Mock implements OpdRepository {}
@@ -53,7 +53,7 @@ void main() {
     expect(find.text('Patient Example'), findsOneWidget);
     expect(find.byType(AppDateField), findsOneWidget);
     expect(find.byType(AppTimeField), findsNWidgets(2));
-    expect(find.byIcon(AppActionIcons.calendar), findsWidgets);
+    expect(find.byIcon(AppActionIcons.reschedule), findsWidgets);
     expect(find.byIcon(AppActionIcons.edit), findsWidgets);
     expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
   });
@@ -135,6 +135,36 @@ void main() {
     expect(result, isTrue);
     expect(find.byType(AppDialog), findsNothing);
     verify(() => repository.updateAppointment('APT000001', any())).called(1);
+  });
+
+  testWidgets('end-before-start validation does not call the API', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    _stubWorkspaceLoad(repository, appointments: <OpdAppointment>[appointment]);
+    bool? result;
+
+    await _pumpDialog(
+      tester,
+      appointment: appointment,
+      repository: repository,
+      onResult: (bool? value) => result = value,
+    );
+
+    final Finder endTimeField = find.byType(AppTimeField).last;
+    await tester.enterText(
+      find.descendant(of: endTimeField, matching: find.byType(TextFormField)).first,
+      '07',
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(AppButton, 'Edit'));
+    await tester.pumpAndSettle();
+
+    expect(result, isNull);
+    expect(find.byType(AppDialog), findsOneWidget);
+    expect(find.text('End time must be after start time.'), findsWidgets);
+    verifyNever(() => repository.updateAppointment(any(), any()));
   });
 
   testWidgets('remains usable on a compact dark high-text-scale surface', (

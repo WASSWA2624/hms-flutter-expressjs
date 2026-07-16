@@ -2681,7 +2681,7 @@ class _OpdPatientActionsDialogState
         action(
           requirement: opdFrontDeskActionRequirement,
           label: l10n.opdRescheduleAction,
-          icon: Icons.edit_calendar_outlined,
+          icon: AppActionIcons.reschedule,
           enabled: !terminal,
           onPressed: () async {
             final bool? changed = await showOpdRescheduleAppointmentDialog(
@@ -2696,7 +2696,7 @@ class _OpdPatientActionsDialogState
         action(
           requirement: opdFrontDeskActionRequirement,
           label: l10n.opdCancelAction,
-          icon: Icons.cancel_outlined,
+          icon: AppActionIcons.delete,
           enabled: !terminal && status != 'CANCELLED',
           onPressed: () async {
             final bool? changed = await showOpdCancelAppointmentDialog(

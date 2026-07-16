@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
@@ -79,6 +81,31 @@ void main() {
 
     expect(result, isNull);
     expect(find.byType(AppDialog), findsOneWidget);
+  });
+
+  testWidgets('blocks close and Cancel while saving', (WidgetTester tester) async {
+    final Completer<AppFailure?> completer = Completer<AppFailure?>();
+
+    await _pumpOpener(
+      tester,
+      onSubmit: ({required String action, String? toBedId}) {
+        return completer.future;
+      },
+    );
+
+    await tester.tap(find.widgetWithText(AppButton, 'Edit'));
+    await tester.pump();
+
+    final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
+    expect(dialog.closeEnabled, isFalse);
+
+    final AppButton cancel = tester.widget<AppButton>(
+      find.widgetWithText(AppButton, 'Cancel'),
+    );
+    expect(cancel.enabled, isFalse);
+
+    completer.complete(null);
+    await tester.pumpAndSettle();
   });
 
   testWidgets('success pops true with selected action', (

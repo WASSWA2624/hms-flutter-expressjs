@@ -15,6 +15,9 @@ List<Widget> clinicalActionDialogActions(
   /// (e.g. parent reference-data load). [isSaving] still drives isLoading.
   bool enabled = true,
   String? cancelLabel,
+  /// Value popped when Cancel is pressed. Defaults to `false` for bool
+  /// confirmation dialogs; pass `null` when the route returns an entity.
+  Object? cancelResult = false,
 }) {
   final bool canInteract = enabled && !isSaving;
   final ColorScheme colorScheme = Theme.of(context).colorScheme;
@@ -25,7 +28,7 @@ List<Widget> clinicalActionDialogActions(
         leadingIcon: AppActionIcons.cancel,
         enabled: canInteract,
         onPressed: canInteract
-            ? () => Navigator.of(context).pop(false)
+            ? () => Navigator.of(context).pop(cancelResult)
             : null,
       ),
     AppButton.primary(

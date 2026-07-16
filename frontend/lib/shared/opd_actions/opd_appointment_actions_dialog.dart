@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
-import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_encounter_flow.dart';
@@ -15,13 +15,17 @@ import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart'
     show opdFrontDeskActionRequirement;
 import 'package:hosspi_hms/shared/opd_actions/opd_queue_actions_dialog.dart'
     show isOpdQueueTerminalStatus;
+import 'package:hosspi_hms/shared/opd_actions/opd_reschedule_appointment_dialog.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
+
+export 'opd_reschedule_appointment_dialog.dart';
 
 /// Shared appointment actions for OPD and Reception workspaces.
 Future<bool?> showOpdAppointmentActionsDialog({
   required BuildContext context,
   required OpdAppointment appointment,
   OpdWorkspaceState? workspaceState,
+  AccessRequirement actionRequirement = opdFrontDeskActionRequirement,
 }) {
   return showAppDialog<bool>(
     context: context,
@@ -29,6 +33,7 @@ Future<bool?> showOpdAppointmentActionsDialog({
     builder: (_) => OpdAppointmentActionsDialog(
       appointment: appointment,
       workspaceState: workspaceState,
+      actionRequirement: actionRequirement,
     ),
   );
 }
@@ -51,6 +56,7 @@ class OpdAppointmentActionsDialog extends ConsumerStatefulWidget {
   const OpdAppointmentActionsDialog({
     required this.appointment,
     this.workspaceState,
+    this.actionRequirement = opdFrontDeskActionRequirement,
     super.key,
   });
 
@@ -58,6 +64,9 @@ class OpdAppointmentActionsDialog extends ConsumerStatefulWidget {
 
   /// When set, check-in opens the encounter dialog; otherwise direct check-in.
   final OpdWorkspaceState? workspaceState;
+
+  /// Front-desk write gate. Reception passes `receptionFrontDeskWriteRequirement`.
+  final AccessRequirement actionRequirement;
 
   @override
   ConsumerState<OpdAppointmentActionsDialog> createState() =>
@@ -90,8 +99,8 @@ class _OpdAppointmentActionsDialogState
     final bool canCancelAppointment = !terminal && status != 'CANCELLED';
 
     return AppDialog(
-      title: Text(l10n.receptionAppointmentActionsAction),
-      icon: const Icon(Icons.event_available_outlined),
+      title: Text(l10n.opdAppointmentActionsTitle),
+      icon: const Icon(AppActionIcons.appointment),
       scrollable: true,
       pinActionsToBottom: true,
       closeEnabled: !_isSaving,
@@ -146,9 +155,9 @@ class _OpdAppointmentActionsDialogState
               permissionActions: <AppPermissionActionItem>[
                 if (canQueue)
                   AppPermissionActionItem(
-                    requirement: opdFrontDeskActionRequirement,
+                    requirement: widget.actionRequirement,
                     label: l10n.opdQueueAction,
-                    icon: Icons.queue_outlined,
+                    icon: AppActionIcons.queue,
                     fullWidth: true,
                     isLoading: _activeAction == _AppointmentFooterAction.queue,
                     enabled: !_isSaving,
@@ -163,16 +172,16 @@ class _OpdAppointmentActionsDialogState
                   ),
                 if (canReschedule)
                   AppPermissionActionItem(
-                    requirement: opdFrontDeskActionRequirement,
+                    requirement: widget.actionRequirement,
                     label: l10n.opdRescheduleAction,
-                    icon: AppActionIcons.calendar,
+                    icon: AppActionIcons.reschedule,
                     fullWidth: true,
                     enabled: !_isSaving,
                     onPressed: _isSaving ? null : _openReschedule,
                   ),
                 if (canCancelAppointment)
                   AppPermissionActionItem(
-                    requirement: opdFrontDeskActionRequirement,
+                    requirement: widget.actionRequirement,
                     label: l10n.opdCancelAction,
                     icon: AppActionIcons.delete,
                     fullWidth: true,
@@ -182,9 +191,9 @@ class _OpdAppointmentActionsDialogState
                   ),
                 if (canCheckIn)
                   AppPermissionActionItem(
-                    requirement: opdFrontDeskActionRequirement,
+                    requirement: widget.actionRequirement,
                     label: l10n.opdCheckInAction,
-                    icon: Icons.login_outlined,
+                    icon: AppActionIcons.start,
                     variant: AppButtonVariant.primary,
                     fullWidth: true,
                     isLoading:
@@ -196,6 +205,8 @@ class _OpdAppointmentActionsDialogState
             ),
         ],
       ),
+      // Cancel-only hub footer; domain mutations open child dialogs or run
+      // in-body actions (queue / start encounter) with AppButton.isLoading.
       actions: <Widget>[
         AppButton.secondary(
           label: l10n.commonCancelActionLabel,
@@ -328,206 +339,6 @@ class _OpdAppointmentActionsDialogState
   }
 }
 
-/// Opens the OPD appointment reschedule dialog (mutating; not barrier-dismissible).
-Future<bool?> showOpdRescheduleAppointmentDialog({
-  required BuildContext context,
-  required OpdAppointment appointment,
-}) {
-  return showAppDialog<bool>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => OpdRescheduleAppointmentDialog(appointment: appointment),
-  );
-}
-
-class OpdRescheduleAppointmentDialog extends ConsumerStatefulWidget {
-  const OpdRescheduleAppointmentDialog({required this.appointment, super.key});
-
-  final OpdAppointment appointment;
-
-  @override
-  ConsumerState<OpdRescheduleAppointmentDialog> createState() =>
-      _OpdRescheduleAppointmentDialogState();
-}
-
-class _OpdRescheduleAppointmentDialogState
-    extends ConsumerState<OpdRescheduleAppointmentDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late DateTime? _date;
-  late AppTimeValue? _startTime;
-  late AppTimeValue? _endTime;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    final DateTime start =
-        widget.appointment.scheduledStart?.toLocal() ??
-        DateTime.now().add(const Duration(hours: 1));
-    final DateTime end =
-        widget.appointment.scheduledEnd?.toLocal() ??
-        start.add(const Duration(minutes: 30));
-    _date = DateTime(start.year, start.month, start.day);
-    _startTime = AppTimeValue(hour: start.hour, minute: start.minute);
-    _endTime = AppTimeValue(hour: end.hour, minute: end.minute);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final Locale locale = Localizations.localeOf(context);
-    return AppDialog(
-      title: Text(l10n.opdRescheduleAction),
-      icon: const Icon(AppActionIcons.calendar),
-      scrollable: true,
-      pinActionsToBottom: true,
-      closeEnabled: !_isSaving,
-      maxWidth: 680,
-      content: AppFormShell(
-        formKey: _formKey,
-        enabled: !_isSaving,
-        density: AppFormSectionDensity.compact,
-        formStatus: appFormFailureStatus(context, _failure),
-        children: <Widget>[
-          AppTriageSummaryPanel(
-            items: <AppInfoTileData>[
-              AppInfoTileData(
-                label: l10n.opdPatientColumnLabel,
-                value: widget.appointment.displayTitle,
-              ),
-              AppInfoTileData(
-                label: l10n.opdProviderColumnLabel,
-                value:
-                    widget.appointment.providerDisplayName ??
-                    l10n.profileUnknownValue,
-              ),
-              AppInfoTileData(
-                label: l10n.opdTimeColumnLabel,
-                value: widget.appointment.scheduledStart == null
-                    ? l10n.profileUnknownValue
-                    : AppFormatters.dateTime(
-                        widget.appointment.scheduledStart!,
-                        locale,
-                      ),
-              ),
-            ],
-            emptyValue: l10n.profileUnknownValue,
-          ),
-          AppFormSection(
-            density: AppFormSectionDensity.compact,
-            children: <Widget>[
-              AppDateField(
-                value: _date,
-                firstDate: DateTime.now().subtract(const Duration(days: 1)),
-                lastDate: DateTime.now().add(const Duration(days: 365)),
-                labelText: l10n.opdFieldRequiredLabel(
-                  l10n.patientsAppointmentDateLabel,
-                ),
-                pickerButtonLabel: l10n.patientsDatePickerAction,
-                invalidDateMessage: l10n.appDateInvalidMessage,
-                enabled: !_isSaving,
-                isRequired: true,
-                validator: (DateTime? value) =>
-                    value == null ? l10n.validationRequired : null,
-                onChanged: (DateTime? value) => setState(() => _date = value),
-              ),
-              AppResponsiveFieldRow(
-                gap: AppResponsiveFieldRowGap.form,
-                children: <Widget>[
-                  AppTimeField(
-                    value: _startTime,
-                    labelText: l10n.opdFieldRequiredLabel(
-                      l10n.opdAppointmentStartLabel,
-                    ),
-                    pickerButtonLabel: l10n.appTimePickerAction,
-                    invalidTimeMessage: l10n.patientsTimeInvalidMessage,
-                    hintText: l10n.patientsTimeHint,
-                    hourLabelText: l10n.appTimeHourLabel,
-                    minuteLabelText: l10n.appTimeMinuteLabel,
-                    enabled: !_isSaving,
-                    isRequired: true,
-                    validator: (AppTimeValue? value) =>
-                        value == null ? l10n.validationRequired : null,
-                    onChanged: (AppTimeValue? value) {
-                      setState(() => _startTime = value);
-                    },
-                  ),
-                  AppTimeField(
-                    value: _endTime,
-                    labelText: l10n.opdFieldRequiredLabel(
-                      l10n.opdAppointmentEndLabel,
-                    ),
-                    pickerButtonLabel: l10n.appTimePickerAction,
-                    invalidTimeMessage: l10n.patientsTimeInvalidMessage,
-                    hintText: l10n.patientsTimeHint,
-                    hourLabelText: l10n.appTimeHourLabel,
-                    minuteLabelText: l10n.appTimeMinuteLabel,
-                    enabled: !_isSaving,
-                    isRequired: true,
-                    validator: (AppTimeValue? value) =>
-                        value == null ? l10n.validationRequired : null,
-                    onChanged: (AppTimeValue? value) {
-                      setState(() => _endTime = value);
-                    },
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-      actions: clinicalActionDialogActions(
-        context,
-        l10n.patientsEditAction,
-        _isSaving,
-        _isSaving ? null : _submit,
-        submitLeadingIcon: AppActionIcons.edit,
-      ),
-    );
-  }
-
-  Future<void> _submit() async {
-    if (_isSaving) {
-      return;
-    }
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    final DateTime? start = _combine(_date, _startTime);
-    final DateTime? end = _combine(_date, _endTime);
-    if (start == null || end == null || !end.isAfter(start)) {
-      setState(() => _failure = AppFailure.validation());
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .rescheduleAppointment(widget.appointment, start, end);
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
-  }
-
-  DateTime? _combine(DateTime? date, AppTimeValue? time) {
-    if (date == null || time == null) {
-      return null;
-    }
-    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
-  }
-}
-
 /// Opens the OPD cancel-appointment dialog (mutating; not barrier-dismissible).
 Future<bool?> showOpdCancelAppointmentDialog({
   required BuildContext context,
@@ -540,142 +351,63 @@ Future<bool?> showOpdCancelAppointmentDialog({
   );
 }
 
-class OpdCancelAppointmentDialog extends ConsumerStatefulWidget {
+/// Confirm cancellation of an OPD appointment with optional reason capture.
+class OpdCancelAppointmentDialog extends ConsumerWidget {
   const OpdCancelAppointmentDialog({required this.appointment, super.key});
 
   final OpdAppointment appointment;
 
   @override
-  ConsumerState<OpdCancelAppointmentDialog> createState() =>
-      _OpdCancelAppointmentDialogState();
-}
-
-class _OpdCancelAppointmentDialogState
-    extends ConsumerState<OpdCancelAppointmentDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _reasonController;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    _reasonController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _reasonController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final Locale locale = Localizations.localeOf(context);
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    return AppDialog(
-      title: Text(l10n.opdCancelAction),
-      icon: Icon(AppActionIcons.delete, color: colorScheme.error),
+    return AppConfirmActionDialog(
+      title: l10n.opdCancelAction,
+      body: l10n.opdCancelAppointmentConfirmBody,
+      submitLabel: l10n.opdCancelAction,
+      icon: const Icon(AppActionIcons.delete),
+      submitLeadingIcon: AppActionIcons.delete,
+      destructive: true,
       scrollable: true,
       pinActionsToBottom: true,
-      closeEnabled: !_isSaving,
       maxWidth: 680,
-      content: AppFormShell(
-        formKey: _formKey,
-        enabled: !_isSaving,
-        density: AppFormSectionDensity.compact,
-        formStatus: appFormFailureStatus(context, _failure),
-        children: <Widget>[
-          AppTriageSummaryPanel(
-            items: <AppInfoTileData>[
-              AppInfoTileData(
-                label: l10n.opdPatientColumnLabel,
-                value: widget.appointment.displayTitle,
-              ),
-              AppInfoTileData(
-                label: l10n.opdStatusColumnLabel,
-                value: opdStageDisplayLabel(
-                  l10n,
-                  widget.appointment.status ?? '',
-                ),
-              ),
-              AppInfoTileData(
-                label: l10n.opdProviderColumnLabel,
-                value:
-                    widget.appointment.providerDisplayName ??
-                    l10n.profileUnknownValue,
-              ),
-              AppInfoTileData(
-                label: l10n.opdTimeColumnLabel,
-                value: widget.appointment.scheduledStart == null
-                    ? l10n.profileUnknownValue
-                    : AppFormatters.dateTime(
-                        widget.appointment.scheduledStart!,
-                        locale,
-                      ),
-              ),
-            ],
-            emptyValue: l10n.profileUnknownValue,
-          ),
-          AppFormInformationBanner.message(
-            message: l10n.opdCancelAppointmentConfirmBody,
-            variant: AppFormInformationVariant.warning,
-            icon: Icons.warning_amber_outlined,
-          ),
-          AppFormSection(
-            density: AppFormSectionDensity.compact,
-            children: <Widget>[
-              AppTextField(
-                controller: _reasonController,
-                labelText: l10n.opdFieldOptionalLabel(
-                  l10n.opdCancellationReasonLabel,
-                ),
-                enabled: !_isSaving,
-                maxLines: 3,
-                textCapitalization: TextCapitalization.sentences,
-                prefixIcon: const Icon(Icons.notes_outlined),
-              ),
-            ],
-          ),
-        ],
+      sectionDensity: AppFormSectionDensity.compact,
+      leadingContent: <Widget>[
+        AppTriageSummaryPanel(
+          items: <AppInfoTileData>[
+            AppInfoTileData(
+              label: l10n.opdPatientColumnLabel,
+              value: appointment.displayTitle,
+            ),
+            AppInfoTileData(
+              label: l10n.opdStatusColumnLabel,
+              value: opdStageDisplayLabel(l10n, appointment.status ?? ''),
+            ),
+            AppInfoTileData(
+              label: l10n.opdProviderColumnLabel,
+              value:
+                  appointment.providerDisplayName ?? l10n.profileUnknownValue,
+            ),
+            AppInfoTileData(
+              label: l10n.opdTimeColumnLabel,
+              value: appointment.scheduledStart == null
+                  ? l10n.profileUnknownValue
+                  : AppFormatters.dateTime(appointment.scheduledStart!, locale),
+            ),
+          ],
+          emptyValue: l10n.profileUnknownValue,
+        ),
+      ],
+      noteFieldLabel: l10n.opdFieldOptionalLabel(
+        l10n.opdCancellationReasonLabel,
       ),
-      actions: clinicalActionDialogActions(
-        context,
-        l10n.opdCancelAction,
-        _isSaving,
-        _isSaving ? null : _submit,
-        submitLeadingIcon: AppActionIcons.delete,
-        destructive: true,
-      ),
+      notePrefixIcon: const Icon(Icons.notes_outlined),
+      noteMaxLines: 3,
+      onConfirmWithNote: (String note) {
+        return ref
+            .read(opdWorkspaceControllerProvider.notifier)
+            .cancelAppointment(appointment, note.isEmpty ? null : note);
+      },
     );
-  }
-
-  Future<void> _submit() async {
-    if (_isSaving) {
-      return;
-    }
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final String reason = _reasonController.text.trim();
-    final AppFailure? failure = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .cancelAppointment(
-          widget.appointment,
-          reason.isEmpty ? null : reason,
-        );
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
   }
 }

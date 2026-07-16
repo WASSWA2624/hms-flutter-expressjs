@@ -298,6 +298,49 @@ void main() {
       );
     });
 
+    test('rescheduleAppointment matches persisted rows by public id', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      final DateTime originalStart = DateTime.utc(2026, 7, 20, 8);
+      final DateTime updatedStart = DateTime.utc(2026, 7, 21, 10);
+      final DateTime updatedEnd = DateTime.utc(2026, 7, 21, 10, 30);
+      final OpdAppointment appointment = OpdAppointment(
+        id: 'appointment-internal',
+        publicId: 'APT000001',
+        status: 'SCHEDULED',
+        scheduledStart: originalStart,
+      );
+      final OpdAppointment updated = OpdAppointment(
+        id: 'appointment-alternate-internal',
+        publicId: 'APT000001',
+        status: 'SCHEDULED',
+        scheduledStart: updatedStart,
+        scheduledEnd: updatedEnd,
+      );
+      _stubInitialLoad(repository, appointments: <OpdAppointment>[appointment]);
+      when(() => repository.updateAppointment(any(), any())).thenAnswer(
+        (_) async => Result<OpdAppointment>.success(updated),
+      );
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .rescheduleAppointment(appointment, updatedStart, updatedEnd);
+
+      expect(failure, isNull);
+      expect(_workspaceState(container).appointments.items, hasLength(1));
+      expect(
+        _workspaceState(container).appointments.items.single.scheduledStart,
+        updatedStart,
+      );
+      expect(
+        _workspaceState(container).appointments.items.single.id,
+        'appointment-alternate-internal',
+      );
+    });
+
     test('cancelAppointment patches the returned terminal row', () async {
       final _MockOpdRepository repository = _MockOpdRepository();
       const OpdAppointment appointment = OpdAppointment(

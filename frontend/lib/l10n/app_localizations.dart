@@ -820,6 +820,42 @@ abstract class AppLocalizations {
   /// **'Response marked'**
   String get emergencyResponseMarkedMessage;
 
+  /// Action that opens the emergency triage assessment dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage'**
+  String get emergencyTriageAction;
+
+  /// Title for the emergency triage assessment dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Record triage'**
+  String get emergencyTriageDialogTitle;
+
+  /// Accessibility label for the emergency triage assessment dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Record emergency triage assessment'**
+  String get emergencyTriageDialogSemanticLabel;
+
+  /// Primary action that persists an emergency triage assessment.
+  ///
+  /// In en, this message translates to:
+  /// **'Save triage'**
+  String get emergencySaveTriageAction;
+
+  /// Notes field label in the emergency triage assessment dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage notes'**
+  String get emergencyTriageNotesLabel;
+
+  /// Success message after an emergency triage assessment is persisted.
+  ///
+  /// In en, this message translates to:
+  /// **'Triage recorded'**
+  String get emergencyTriageRecordedMessage;
+
   /// Semantic label for the emergency worklist search field.
   ///
   /// In en, this message translates to:
@@ -6466,6 +6502,12 @@ abstract class AppLocalizations {
   /// **'Cancel encounter'**
   String get opdCancelEncounterAction;
 
+  /// Warning shown before cancelling an active OPD encounter.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel this OPD encounter? The visit will be marked cancelled and removed from the active queue. This cannot be undone.'**
+  String get opdCancelEncounterConfirmBody;
+
   /// Primary action for creating a patient before starting OPD.
   ///
   /// In en, this message translates to:
@@ -6658,6 +6700,12 @@ abstract class AppLocalizations {
   /// **'End time'**
   String get opdAppointmentEndLabel;
 
+  /// Validation message when appointment end is not after start.
+  ///
+  /// In en, this message translates to:
+  /// **'End time must be after start time.'**
+  String get opdAppointmentEndAfterStartMessage;
+
   /// Date-time input hint for OPD forms.
   ///
   /// In en, this message translates to:
@@ -6705,6 +6753,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Queue actions'**
   String get opdQueueActionsTitle;
+
+  /// Title for the shared OPD/reception appointment actions hub dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Appointment actions'**
+  String get opdAppointmentActionsTitle;
 
   /// Dialog title for prioritizing an OPD queue entry.
   ///

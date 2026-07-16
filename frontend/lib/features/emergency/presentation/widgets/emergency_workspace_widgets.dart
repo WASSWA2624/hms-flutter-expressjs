@@ -313,13 +313,28 @@ List<AppSelectOption<String>> severityOptions(AppLocalizations l10n) {
   ];
 }
 
-List<AppSelectOption<String>> triageOptions() {
-  return const <AppSelectOption<String>>[
-    AppSelectOption<String>(value: 'LEVEL_1', label: EmergencyText.level1),
-    AppSelectOption<String>(value: 'LEVEL_2', label: EmergencyText.level2),
-    AppSelectOption<String>(value: 'LEVEL_3', label: EmergencyText.level3),
-    AppSelectOption<String>(value: 'LEVEL_4', label: EmergencyText.level4),
-    AppSelectOption<String>(value: 'LEVEL_5', label: EmergencyText.level5),
+List<AppSelectOption<String>> triageOptions(AppLocalizations l10n) {
+  return <AppSelectOption<String>>[
+    AppSelectOption<String>(
+      value: 'LEVEL_1',
+      label: l10n.emergencyTriageLevel1Label,
+    ),
+    AppSelectOption<String>(
+      value: 'LEVEL_2',
+      label: l10n.emergencyTriageLevel2Label,
+    ),
+    AppSelectOption<String>(
+      value: 'LEVEL_3',
+      label: l10n.emergencyTriageLevel3Label,
+    ),
+    AppSelectOption<String>(
+      value: 'LEVEL_4',
+      label: l10n.emergencyTriageLevel4Label,
+    ),
+    AppSelectOption<String>(
+      value: 'LEVEL_5',
+      label: l10n.emergencyTriageLevel5Label,
+    ),
   ];
 }
 
@@ -1354,7 +1369,7 @@ class EmergencyActionPanel extends ConsumerWidget {
           onPressed: () => _openPriorityDialog(context),
         ),
         AppActionItem(
-          label: EmergencyText.triage,
+          label: context.l10n.emergencyTriageAction,
           leadingIcon: Icons.monitor_heart_outlined,
           enabled: canWriteEmergency && detail.summary.isOpen,
           onPressed: () => _openTriageDialog(context),
@@ -1464,17 +1479,20 @@ class EmergencyActionPanel extends ConsumerWidget {
     final bool? changed = await showAppTriageActionDialog<bool>(
       context: context,
       builder: (_) => AppTriageActionDialog(
-        title: EmergencyText.recordTriage,
+        title: l10n.emergencyTriageDialogTitle,
+        semanticLabel: l10n.emergencyTriageDialogSemanticLabel,
+        icon: const Icon(Icons.monitor_heart_outlined),
         cancelLabel: l10n.commonCancelActionLabel,
-        submitLabel: EmergencyText.saveTriage,
-        requiredMessage: EmergencyText.required,
-        triageLevelLabel: 'Triage level',
-        triageLevelOptions: triageActionOptions(triageOptions()),
+        submitLabel: l10n.emergencySaveTriageAction,
+        requiredMessage: l10n.validationRequired,
+        triageLevelLabel: l10n.patientsTriageLevelLabel,
+        triageLevelOptions: triageActionOptions(triageOptions(l10n)),
         initialTriageLevel: normalizedOption(
           detail.latestTriage?.triageLevel,
           fallback: 'LEVEL_2',
         ),
-        notesLabel: 'Triage notes',
+        notesSectionTitle: l10n.patientsNotesSectionTitle,
+        notesLabel: l10n.emergencyTriageNotesLabel,
         initialNotes: detail.latestTriage?.notes,
         onSubmit: (AppTriageActionInput input) {
           return controller.recordTriage(
@@ -1488,7 +1506,11 @@ class EmergencyActionPanel extends ConsumerWidget {
       return;
     }
 
-    showFailureIfNeeded(context, null, successMessage: 'Triage recorded');
+    showFailureIfNeeded(
+      context,
+      null,
+      successMessage: l10n.emergencyTriageRecordedMessage,
+    );
   }
 
   Future<void> _openResponseDialog(BuildContext context) async {

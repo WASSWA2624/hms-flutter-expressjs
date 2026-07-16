@@ -1256,6 +1256,7 @@ Future<void> _showTransferUpdateDialog(
   final bool? saved = await showAppTransferUpdateDialog(
     context: context,
     title: l10n.roomsBedsManageTransferAction,
+    semanticLabel: l10n.roomsBedsManageTransferAction,
     actionLabel: l10n.ipdTransferActionFieldLabel,
     destinationBedLabel: l10n.ipdDestinationBedFieldLabel,
     destinationBedHint: l10n.ipdSelectBedHint,

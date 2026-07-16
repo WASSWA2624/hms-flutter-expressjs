@@ -16,12 +16,11 @@ import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.da
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
-import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_resolve.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
-import 'package:hosspi_hms/shared/components/app_copyable_identifier.dart';
 import 'package:hosspi_hms/shared/components/app_currency_amount_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
@@ -37,12 +36,13 @@ import 'package:hosspi_hms/shared/forms/app_form_shell.dart';
 import 'package:hosspi_hms/shared/forms/app_responsive_field_row.dart';
 import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_billing_state.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/patient_actions/patient_actions.dart';
 
-const IconData opdEncounterIcon = Icons.person_add_alt_1_outlined;
+const IconData opdEncounterIcon = AppActionIcons.personAdd;
 
 const AccessRequirement opdEncounterPermissionRequirement = AccessRequirement(
   anyRoles: <AppRole>[
@@ -95,17 +95,17 @@ class _WalkInModeSelector extends StatelessWidget {
         ButtonSegment<_WalkInPatientMode>(
           value: _WalkInPatientMode.existing,
           label: _WalkInTabLabel(existingLabel),
-          icon: const Icon(Icons.badge_outlined),
+          icon: const Icon(AppActionIcons.person),
         ),
         ButtonSegment<_WalkInPatientMode>(
           value: _WalkInPatientMode.appointment,
           label: _WalkInTabLabel(appointmentLabel),
-          icon: const Icon(Icons.event_available_outlined),
+          icon: const Icon(AppActionIcons.calendar),
         ),
         ButtonSegment<_WalkInPatientMode>(
           value: _WalkInPatientMode.newPatient,
           label: _WalkInTabLabel(newPatientLabel),
-          icon: const Icon(Icons.person_add_alt_1_outlined),
+          icon: const Icon(AppActionIcons.personAdd),
         ),
       ],
       selected: <_WalkInPatientMode>{value},
@@ -507,7 +507,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         ? AppActionIcons.add
         : hasActiveEncounter && !_forceNewEncounter
         ? AppActionIcons.edit
-        : Icons.play_arrow_outlined;
+        : AppActionIcons.start;
 
     return AppDialog(
       title: Text(l10n.opdWalkInDialogTitle),
@@ -566,7 +566,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
             ),
           AppButton.secondary(
             label: l10n.opdContinueEncounterAction,
-            leadingIcon: Icons.play_arrow_outlined,
+            leadingIcon: AppActionIcons.start,
             enabled: !_blocksDismiss,
             onPressed: _continueWorkflow,
           ),
@@ -757,7 +757,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           title: l10n.opdPaymentRequiredLabel,
           value: _requireConsultationPayment,
           enabled: !_blocksDismiss && !billingAlreadyPaid,
-          secondary: const Icon(Icons.payments_outlined),
+          secondary: const Icon(AppActionIcons.payment),
           onChanged: (bool value) {
             setState(() {
               _requireConsultationPayment = value;
@@ -771,7 +771,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           title: l10n.patientsMarkPaymentReceivedLabel,
           value: _payNow,
           enabled: !_blocksDismiss && !billingAlreadyPaid,
-          secondary: const Icon(Icons.point_of_sale_outlined),
+          secondary: const Icon(AppActionIcons.payment),
           onChanged: (bool value) {
             setState(() {
               _payNow = value;
@@ -848,7 +848,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
 
   Widget _activeEncounterNotice(AppLocalizations l10n) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
     final OpdFlowSummary? flow = _activeEncounter;
     if (_isResolvingActiveEncounter && flow == null) {
       return Padding(
@@ -874,127 +873,78 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       l10n,
       flow.displayNextStep ?? flow.nextStep,
     );
+    final String? patientId =
+        patient?.effectiveIdentifier ??
+        _firstNonEmptyText(<String?>[
+          patient?.publicId,
+          patient?.id,
+          flow.patientIdentifier,
+          flow.patientId,
+        ]);
+    final List<OpdEncounterSummaryPair> pairs = <OpdEncounterSummaryPair>[
+      OpdEncounterSummaryPair(
+        label: l10n.clinicalEncounterNumberLabel,
+        value: flow.apiId,
+        copyable: true,
+      ),
+      if (patientId != null)
+        OpdEncounterSummaryPair(
+          label: l10n.opdPatientIdLabel,
+          value: patientId,
+          copyable: true,
+        ),
+      OpdEncounterSummaryPair(
+        label: l10n.opdNextStepColumnLabel,
+        value: nextStepLabel.isEmpty
+            ? l10n.profileUnknownValue
+            : nextStepLabel,
+      ),
+      OpdEncounterSummaryPair(
+        label: l10n.opdVisitTypeColumnLabel,
+        value: opdArrivalModeDisplayLabel(
+          l10n,
+          _firstNonEmptyText(<String?>[flow.arrivalMode, flow.encounterType]),
+        ),
+      ),
+      OpdEncounterSummaryPair(
+        label: l10n.opdProviderColumnLabel,
+        value: flow.providerDisplayName ?? l10n.profileUnknownValue,
+      ),
+      OpdEncounterSummaryPair(
+        label: l10n.opdPayerBillingColumnLabel,
+        value: _flowBillingLabel(context, flow),
+      ),
+      OpdEncounterSummaryPair(
+        label: l10n.opdTimeColumnLabel,
+        value: _formatDateTime(context, flow.startedAt),
+      ),
+    ];
 
     return Padding(
       padding: EdgeInsets.only(bottom: theme.spacing.md),
-      child: SizedBox(
-        width: double.infinity,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: colorScheme.secondaryContainer.withValues(alpha: 0.28),
-            border: Border.all(color: colorScheme.outlineVariant),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(theme.spacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                Wrap(
-                  spacing: theme.spacing.sm,
-                  runSpacing: theme.spacing.xs,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: <Widget>[
-                    Icon(
-                      AppActionIcons.info,
-                      size: 18,
-                      color: colorScheme.onSecondaryContainer,
-                    ),
-                    Text(
-                      l10n.opdActiveEncounterFoundTitle,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: colorScheme.onSecondaryContainer,
-                      ),
-                    ),
-                    AppWorkspaceStatusBadge(
-                      status: AppWorkspaceStatus(
-                        label: stageLabel,
-                        tone: AppWorkspaceStatusTone.warning,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: theme.spacing.xs),
-                Text(
-                  l10n.opdActiveEncounterFoundBody,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          AppFormInformationBanner.message(
+            title: l10n.opdActiveEncounterFoundTitle,
+            message: l10n.opdActiveEncounterFoundBody,
+            variant: AppFormInformationVariant.warning,
+            icon: AppActionIcons.info,
+            children: <Widget>[
+              Align(
+                alignment: Alignment.centerLeft,
+                child: AppWorkspaceStatusBadge(
+                  status: AppWorkspaceStatus(
+                    label: stageLabel,
+                    tone: AppWorkspaceStatusTone.warning,
                   ),
                 ),
-                SizedBox(height: theme.spacing.md),
-                LayoutBuilder(
-                  builder: (BuildContext context, BoxConstraints constraints) {
-                    final double maxWidth = constraints.maxWidth;
-                    final int columns = maxWidth >= 900
-                        ? 3
-                        : maxWidth >= 560
-                        ? 2
-                        : 1;
-                    final double itemWidth = columns == 1
-                        ? maxWidth
-                        : (maxWidth - theme.spacing.lg * (columns - 1)) /
-                              columns;
-                    final List<Widget> details = <Widget>[
-                      _ActiveEncounterCopyableDetail(
-                        label: l10n.clinicalEncounterNumberLabel,
-                        value: flow.apiId,
-                      ),
-                      if (patient != null)
-                        _ActiveEncounterCopyableDetail(
-                          label: l10n.opdPatientIdLabel,
-                          value:
-                              patient.effectiveIdentifier ??
-                              _firstNonEmptyText(<String?>[
-                                patient.publicId,
-                                patient.id,
-                              ]) ??
-                              l10n.profileUnknownValue,
-                        ),
-                      _ActiveEncounterDetail(
-                        label: l10n.opdNextStepColumnLabel,
-                        value: nextStepLabel.isEmpty
-                            ? l10n.profileUnknownValue
-                            : nextStepLabel,
-                      ),
-                      _ActiveEncounterDetail(
-                        label: l10n.opdVisitTypeColumnLabel,
-                        value: opdArrivalModeDisplayLabel(
-                          l10n,
-                          _firstNonEmptyText(<String?>[
-                            flow.arrivalMode,
-                            flow.encounterType,
-                          ]),
-                        ),
-                      ),
-                      _ActiveEncounterDetail(
-                        label: l10n.opdProviderColumnLabel,
-                        value:
-                            flow.providerDisplayName ??
-                            l10n.profileUnknownValue,
-                      ),
-                      _ActiveEncounterDetail(
-                        label: l10n.opdPayerBillingColumnLabel,
-                        value: _flowBillingLabel(context, flow),
-                      ),
-                      _ActiveEncounterDetail(
-                        label: l10n.opdTimeColumnLabel,
-                        value: _formatDateTime(context, flow.startedAt),
-                      ),
-                    ];
-
-                    return Wrap(
-                      spacing: theme.spacing.lg,
-                      runSpacing: theme.spacing.sm,
-                      children: <Widget>[
-                        for (final Widget detail in details)
-                          SizedBox(width: itemWidth, child: detail),
-                      ],
-                    );
-                  },
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ),
+          SizedBox(height: theme.spacing.sm),
+          OpdEncounterSummaryRow(pairs: pairs),
+        ],
       ),
     );
   }
@@ -1053,7 +1003,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         highlightedText: flow.apiId,
         submitLabel: context.l10n.opdStartNewEncounterConfirmAction,
         destructive: true,
-        icon: const Icon(Icons.add_circle_outline),
+        icon: const Icon(AppActionIcons.add),
       ),
     );
     if (!mounted || confirmed != true) {
@@ -1070,24 +1020,32 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     if (flow == null || widget.onCloseEncounter == null) {
       return;
     }
-    final OpdFlowDetail? detail = await showAppDialog<OpdFlowDetail>(
+    OpdFlowDetail? closedDetail;
+    final bool? confirmed = await showOpdCloseEncounterDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => _CloseEncounterDialog(
-        flow: flow,
-        onConfirm: (Map<String, Object?> payload) {
-          return widget.onCloseEncounter!(flow.apiId, payload);
-        },
-      ),
+      flow: flow,
+      onConfirm: (Map<String, Object?> payload) async {
+        final Result<OpdFlowDetail> result = await widget.onCloseEncounter!(
+          flow.apiId,
+          payload,
+        );
+        return result.when(
+          success: (OpdFlowDetail detail) {
+            closedDetail = detail;
+            return null;
+          },
+          failure: (AppFailure failure) => failure,
+        );
+      },
     );
-    if (detail == null || !mounted) {
+    if (confirmed != true || closedDetail == null || !mounted) {
       return;
     }
     widget.onSuccess?.call();
     Navigator.of(context).pop(
       OpdEncounterDialogResult(
         action: OpdEncounterDialogAction.closed,
-        flow: detail.summary,
+        flow: closedDetail!.summary,
       ),
     );
   }
@@ -1097,24 +1055,32 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     if (flow == null || widget.onCancelEncounter == null) {
       return;
     }
-    final OpdFlowDetail? detail = await showAppDialog<OpdFlowDetail>(
+    OpdFlowDetail? cancelledDetail;
+    final bool? confirmed = await showOpdCancelEncounterDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => _CancelEncounterDialog(
-        flow: flow,
-        onConfirm: (Map<String, Object?> payload) {
-          return widget.onCancelEncounter!(flow.apiId, payload);
-        },
-      ),
+      flow: flow,
+      onConfirm: (Map<String, Object?> payload) async {
+        final Result<OpdFlowDetail> result = await widget.onCancelEncounter!(
+          flow.apiId,
+          payload,
+        );
+        return result.when(
+          success: (OpdFlowDetail detail) {
+            cancelledDetail = detail;
+            return null;
+          },
+          failure: (AppFailure failure) => failure,
+        );
+      },
     );
-    if (detail == null || !mounted) {
+    if (confirmed != true || cancelledDetail == null || !mounted) {
       return;
     }
     widget.onSuccess?.call();
     Navigator.of(context).pop(
       OpdEncounterDialogResult(
         action: OpdEncounterDialogAction.cancelled,
-        flow: detail.summary,
+        flow: cancelledDetail!.summary,
       ),
     );
   }
@@ -1590,13 +1556,14 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           ),
         ];
     final List<ClinicalRequestBillingLineItem> resolved =
-        await resolveClinicalRequestBillingLineItems(
-          context: context,
-          catalogFallbackItems: fallbackItems,
-          payerContext: payerContext,
-          billingEntity: 'FACILITY',
-          currency: _currency,
-        );
+        await ref
+            .read(opdEncounterDialogControllerProvider)
+            .resolveConsultationBillingLineItems(
+              catalogFallbackItems: fallbackItems,
+              payerContext: payerContext,
+              billingEntity: 'FACILITY',
+              currency: _currency,
+            );
     if (!mounted || resolved.isEmpty) {
       return;
     }
@@ -1884,193 +1851,83 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   }
 }
 
-class _ActiveEncounterDetail extends StatelessWidget {
-  const _ActiveEncounterDetail({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        SizedBox(height: theme.spacing.xs / 2),
-        Text(
-          value,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
+/// Opens the OPD close-encounter confirmation (mutating; not barrier-dismissible).
+///
+/// On persisted success pops `true`; Cancel pops `false`; failure keeps the
+/// dialog open with shared failure UI and patches nothing.
+Future<bool?> showOpdCloseEncounterDialog({
+  required BuildContext context,
+  required OpdFlowSummary flow,
+  required Future<AppFailure?> Function(Map<String, Object?> payload) onConfirm,
+}) {
+  return showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _CloseEncounterDialog(flow: flow, onConfirm: onConfirm),
+  );
 }
 
-class _ActiveEncounterCopyableDetail extends StatelessWidget {
-  const _ActiveEncounterCopyableDetail({
-    required this.label,
-    required this.value,
-  });
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        SizedBox(height: theme.spacing.xs / 2),
-        AppCopyableIdentifier(
-          value: value,
-          copiedMessage: context.l10n.identifierCopiedMessage,
-          textStyle: theme.textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _CloseEncounterDialog extends StatefulWidget {
+/// Confirm closing an OPD encounter with optional reason notes.
+///
+/// Composes the shared [AppTextActionDialog] shell (Cancel + domain close verb).
+class _CloseEncounterDialog extends StatelessWidget {
   const _CloseEncounterDialog({required this.flow, required this.onConfirm});
 
   final OpdFlowSummary flow;
-  final Future<Result<OpdFlowDetail>> Function(Map<String, Object?> payload)
-  onConfirm;
-
-  @override
-  State<_CloseEncounterDialog> createState() => _CloseEncounterDialogState();
-}
-
-class _CloseEncounterDialogState extends State<_CloseEncounterDialog> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  late final TextEditingController _reasonController;
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  void initState() {
-    super.initState();
-    _reasonController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _reasonController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submit() async {
-    if (_isSaving) {
-      return;
-    }
-    final String notes = _reasonController.text.trim();
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final Result<OpdFlowDetail> result = await widget.onConfirm(
-      <String, Object?>{'reason_notes': notes.isEmpty ? null : notes},
-    );
-    if (!mounted) {
-      return;
-    }
-    result.when(
-      success: (OpdFlowDetail detail) {
-        Navigator.of(context).pop(detail);
-      },
-      failure: (AppFailure failure) {
-        setState(() {
-          _failure = failure;
-          _isSaving = false;
-        });
-      },
-    );
-  }
+  final Future<AppFailure?> Function(Map<String, Object?> payload) onConfirm;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppDialog(
-      title: Text(l10n.opdCloseEncounterAction),
+    return AppTextActionDialog(
+      title: l10n.opdCloseEncounterAction,
       icon: const Icon(AppActionIcons.success),
-      closeEnabled: !_isSaving,
-      pinActionsToBottom: true,
-      content: AppFormShell(
-        formKey: _formKey,
-        enabled: !_isSaving,
-        density: AppFormSectionDensity.compact,
-        formStatus: appFormFailureStatus(context, _failure),
-        children: <Widget>[
-          AppFormInformationBanner.message(
-            title: l10n.clinicalEncounterNumberLabel,
-            message: widget.flow.apiId,
-          ),
-          AppTextField(
-            controller: _reasonController,
-            labelText: l10n.opdEncounterCloseReasonLabel,
-            maxLines: 3,
-            enabled: !_isSaving,
-            textCapitalization: TextCapitalization.sentences,
-            prefixIcon: const Icon(Icons.notes_outlined),
-          ),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !_isSaving,
-          onPressed: _isSaving ? null : () => Navigator.of(context).maybePop(),
-        ),
-        AppButton.primary(
-          label: l10n.opdCloseEncounterAction,
-          leadingIcon: AppActionIcons.success,
-          isLoading: _isSaving,
-          onPressed: _isSaving ? null : _submit,
+      submitLeadingIcon: AppActionIcons.success,
+      fieldLabel: l10n.opdEncounterCloseReasonLabel,
+      submitLabel: l10n.opdCloseEncounterAction,
+      isRequired: false,
+      maxLines: 3,
+      prefixIcon: const Icon(AppActionIcons.edit),
+      leadingContent: <Widget>[
+        AppFormInformationBanner.message(
+          title: l10n.clinicalEncounterNumberLabel,
+          message: flow.apiId,
         ),
       ],
+      onSubmit: (String notes) {
+        return onConfirm(<String, Object?>{
+          'reason_notes': notes.isEmpty ? null : notes,
+        });
+      },
     );
   }
 }
 
+/// Opens the OPD cancel-encounter confirmation (mutating; not barrier-dismissible).
+///
+/// On persisted success pops `true`; Cancel pops `false`; failure keeps the
+/// dialog open with shared failure UI and patches nothing.
+Future<bool?> showOpdCancelEncounterDialog({
+  required BuildContext context,
+  required OpdFlowSummary flow,
+  required Future<AppFailure?> Function(Map<String, Object?> payload) onConfirm,
+}) {
+  return showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _CancelEncounterDialog(flow: flow, onConfirm: onConfirm),
+  );
+}
+
+/// Confirm cancelling an OPD encounter with a required reason code.
+///
+/// Destructive primary commit + Cancel. Widgets never call APIs; [onConfirm]
+/// owns the HTTP mutation and Riverpod patch on persisted success only.
 class _CancelEncounterDialog extends StatefulWidget {
   const _CancelEncounterDialog({required this.flow, required this.onConfirm});
 
   final OpdFlowSummary flow;
-  final Future<Result<OpdFlowDetail>> Function(Map<String, Object?> payload)
-  onConfirm;
+  final Future<AppFailure?> Function(Map<String, Object?> payload) onConfirm;
 
   @override
   State<_CancelEncounterDialog> createState() => _CancelEncounterDialogState();
@@ -2124,7 +1981,7 @@ class _CancelEncounterDialogState extends State<_CancelEncounterDialog> {
       _failure = null;
       _validationMessage = null;
     });
-    final Result<OpdFlowDetail> result = await widget.onConfirm(
+    final AppFailure? failure = await widget.onConfirm(
       <String, Object?>{
         'reason_code': _reasonCode,
         'reason_notes': notes.isEmpty ? null : notes,
@@ -2133,17 +1990,14 @@ class _CancelEncounterDialogState extends State<_CancelEncounterDialog> {
     if (!mounted) {
       return;
     }
-    result.when(
-      success: (OpdFlowDetail detail) {
-        Navigator.of(context).pop(detail);
-      },
-      failure: (AppFailure failure) {
-        setState(() {
-          _failure = failure;
-          _isSaving = false;
-        });
-      },
-    );
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
   }
 
   @override
@@ -2154,7 +2008,9 @@ class _CancelEncounterDialogState extends State<_CancelEncounterDialog> {
       title: Text(l10n.opdCancelEncounterAction),
       icon: Icon(AppActionIcons.delete, color: colorScheme.error),
       closeEnabled: !_isSaving,
+      scrollable: true,
       pinActionsToBottom: true,
+      maxWidth: 680,
       content: AppFormShell(
         formKey: _formKey,
         enabled: !_isSaving,
@@ -2167,9 +2023,11 @@ class _CancelEncounterDialogState extends State<_CancelEncounterDialog> {
               variant: AppFormInformationVariant.error,
               icon: AppActionIcons.error,
             ),
+          OpdActionContextPanel(flow: widget.flow, showTitle: false),
           AppFormInformationBanner.message(
-            title: l10n.clinicalEncounterNumberLabel,
-            message: widget.flow.apiId,
+            message: l10n.opdCancelEncounterConfirmBody,
+            variant: AppFormInformationVariant.warning,
+            icon: AppActionIcons.warning,
           ),
           AppSelectField<String>.searchable(
             value: _reasonCode,
@@ -2197,7 +2055,7 @@ class _CancelEncounterDialogState extends State<_CancelEncounterDialog> {
               maxLines: 3,
               enabled: !_isSaving,
               textCapitalization: TextCapitalization.sentences,
-              prefixIcon: const Icon(Icons.notes_outlined),
+              prefixIcon: const Icon(AppActionIcons.edit),
               onChanged: (_) {
                 if (_validationMessage != null) {
                   setState(() => _validationMessage = null);
@@ -2206,38 +2064,39 @@ class _CancelEncounterDialogState extends State<_CancelEncounterDialog> {
             ),
         ],
       ),
-      actions: <Widget>[
-        AppButton.secondary(
-          label: l10n.commonCancelActionLabel,
-          leadingIcon: AppActionIcons.cancel,
-          enabled: !_isSaving,
-          onPressed: _isSaving ? null : () => Navigator.of(context).maybePop(),
-        ),
-        AppButton.primary(
-          label: l10n.opdCancelEncounterAction,
-          leadingIcon: AppActionIcons.delete,
-          color: colorScheme.error,
-          isLoading: _isSaving,
-          onPressed: _isSaving ? null : _submit,
-        ),
-      ],
+      actions: clinicalActionDialogActions(
+        context,
+        l10n.opdCancelEncounterAction,
+        _isSaving,
+        _isSaving ? null : _submit,
+        submitLeadingIcon: AppActionIcons.delete,
+        destructive: true,
+      ),
     );
   }
 }
 
-/// Opens [OpdEncounterDialog] through the shared [showAppDialog] shell.
+/// Opens the OPD encounter workspace through the shared [showAppDialog] shell.
 ///
-/// Canonical entry point for OPD encounter start/check-in from workspace,
-/// appointment actions, and related flows. Barrier dismiss is always disabled
-/// so in-flight loads/mutations cannot be abandoned without an explicit Cancel;
-/// the dialog disables close and competing footer actions while busy.
+/// Canonical opener for start / check-in / pinned-patient encounter flows.
+/// Callers must pass a fully configured host — typically [OpdEncounterDialog]
+/// or the pinned-patient host from `opd_encounter_flow.dart` — with already
+/// resolved contextual IDs (`human_friendly_id` / domain IDs). This opener does
+/// not load, mutate, or patch Riverpod; the hosted dialog owns commits.
+///
+/// Barrier dismiss is always disabled so in-flight loads/mutations cannot be
+/// abandoned without an explicit Cancel. While busy, the hosted dialog sets
+/// `closeEnabled: false` and disables Cancel / competing footer actions.
 Future<OpdEncounterDialogResult?> showOpdEncounterDialog({
   required BuildContext context,
-  required OpdEncounterDialog dialog,
+  required Widget dialog,
+  RouteSettings? routeSettings,
 }) {
   return showAppDialog<OpdEncounterDialogResult>(
     context: context,
     barrierDismissible: false,
+    routeSettings:
+        routeSettings ?? const RouteSettings(name: 'showOpdEncounterDialog'),
     builder: (_) => dialog,
   );
 }

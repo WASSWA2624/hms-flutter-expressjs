@@ -80,6 +80,7 @@ void main() {
       expect(find.text('START ADMISSION'), findsOneWidget);
       expect(find.text('Start admission'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
+      expect(find.byIcon(AppActionIcons.personAdd), findsWidgets);
       expect(find.byIcon(AppActionIcons.add), findsWidgets);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
       expect(find.text('Ada Active'), findsNothing);
@@ -407,12 +408,9 @@ Future<void> _pumpDialog(
                     if (!context.mounted) {
                       return;
                     }
-                    final bool? value = await showAppDialog<bool>(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (_) => const IpdStartAdmissionDialog(
-                        referenceData: _referenceData,
-                      ),
+                    final bool? value = await showIpdStartAdmissionDialog(
+                      context,
+                      referenceData: _referenceData,
                     );
                     onResult?.call(value);
                   },

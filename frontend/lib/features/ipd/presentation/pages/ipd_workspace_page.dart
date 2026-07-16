@@ -375,7 +375,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
       builder: (BuildContext context, bool isAllowed) {
         return AppTabToolbarPrimary(
           label: l10n.ipdStartAdmissionAction,
-          icon: Icons.person_add_alt_1_outlined,
+          icon: AppActionIcons.personAdd,
           tooltip: l10n.ipdStartAdmissionAction,
           semanticLabel: l10n.ipdStartAdmissionAction,
           enabled: isAllowed && !state.isSaving,
@@ -410,7 +410,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
           builder: (BuildContext context, bool isAllowed) {
             return AppTabToolbarAction(
               label: l10n.ipdStartAdmissionAction,
-              icon: Icons.person_add_alt_1_outlined,
+              icon: AppActionIcons.personAdd,
               tooltip: l10n.ipdStartAdmissionAction,
               semanticLabel: l10n.ipdStartAdmissionAction,
               enabled: isAllowed && !state.isSaving,
@@ -427,11 +427,9 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
 
   Future<void> _openStartAdmissionDialog(BuildContext context) async {
     final IpdWorkspaceState state = widget.state;
-    final bool? saved = await showAppDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) =>
-          IpdStartAdmissionDialog(referenceData: state.referenceData),
+    final bool? saved = await showIpdStartAdmissionDialog(
+      context,
+      referenceData: state.referenceData,
     );
     if (saved == true && context.mounted) {
       _showSaved(context);
@@ -1072,7 +1070,7 @@ class _IpdDetailActions extends ConsumerWidget {
         if (canOperate && hasOpenTransfer && !terminal)
           AppActionItem(
             label: l10n.ipdManageTransferAction,
-            leadingIcon: Icons.move_down_outlined,
+            leadingIcon: AppActionIcons.transfer,
             enabled: canOperate && actionsEnabled,
             onPressed: () => _openTransferUpdateDialog(context, ref),
           ),

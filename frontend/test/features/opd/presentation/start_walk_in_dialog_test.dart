@@ -554,7 +554,10 @@ void main() {
       expect(find.text('Active OPD encounter found'), findsOneWidget);
       expect(find.text('Next step'), findsOneWidget);
       expect(find.text('Continue encounter'), findsOneWidget);
+      expect(find.byType(OpdEncounterSummaryRow), findsOneWidget);
       expect(find.byType(AppCopyableIdentifier), findsWidgets);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byType(LinearProgressIndicator), findsNothing);
 
       await tester.tap(find.text('Edit encounter').last);
       await tester.pumpAndSettle();

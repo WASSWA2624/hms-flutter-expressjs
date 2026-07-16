@@ -66,19 +66,18 @@ OpdEncounterDialog buildPatientPinnedOpdEncounterDialog({
   );
 }
 
-/// Opens the pinned-patient OPD encounter through the shared [showAppDialog] shell.
+/// Opens the pinned-patient OPD encounter through [showOpdEncounterDialog].
 ///
 /// Prefer [openPatientOpdEncounterFlow] when a [WidgetRef] is available so the
-/// encounter opens via [showOpdEncounterDialog] / [buildPatientPinnedOpdEncounterDialog].
+/// encounter opens via [buildPatientPinnedOpdEncounterDialog] directly.
 Future<OpdEncounterDialogResult?> showPatientPinnedOpdEncounterDialog({
   required BuildContext context,
   required Patient patient,
   ValueChanged<OpdFlowSummary>? onExistingActiveEncounter,
 }) {
-  return showAppDialog<OpdEncounterDialogResult>(
+  return showOpdEncounterDialog(
     context: context,
-    barrierDismissible: false,
-    builder: (_) => PatientPinnedOpdEncounterDialog(
+    dialog: PatientPinnedOpdEncounterDialog(
       patient: patient,
       onExistingActiveEncounter: onExistingActiveEncounter,
     ),

@@ -210,7 +210,7 @@ abstract final class OpdRealtimeDeltaApplier {
   ) {
     final List<OpdAppointment> items = List<OpdAppointment>.from(page.items);
     final int index = items.indexWhere(
-      (OpdAppointment item) => item.id == appointment.id,
+      (OpdAppointment item) => _sameAppointment(item, appointment),
     );
     if (index >= 0) {
       items[index] = appointment;
@@ -222,6 +222,23 @@ abstract final class OpdRealtimeDeltaApplier {
       request: page.request,
       totalItemCount: page.totalItemCount,
     );
+  }
+
+  static bool _sameAppointment(OpdAppointment left, OpdAppointment right) {
+    if (left.id.isNotEmpty && left.id == right.id) {
+      return true;
+    }
+    final String? leftPublic = left.publicId?.trim();
+    final String? rightPublic = right.publicId?.trim();
+    if (leftPublic != null &&
+        leftPublic.isNotEmpty &&
+        rightPublic != null &&
+        rightPublic.isNotEmpty &&
+        leftPublic.toUpperCase() == rightPublic.toUpperCase()) {
+      return true;
+    }
+    return left.apiId.isNotEmpty &&
+        left.apiId.toUpperCase() == right.apiId.toUpperCase();
   }
 
   static AppPage<OpdQueueEntry> _upsertQueueEntry(

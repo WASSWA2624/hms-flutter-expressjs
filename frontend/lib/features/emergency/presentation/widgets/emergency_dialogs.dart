@@ -129,7 +129,7 @@ class _QuickArrivalDialogState extends State<QuickArrivalDialog> {
           AppSelectField<String>(
             value: _triageLevel,
             labelText: l10n.emergencyQuickArrivalInitialTriageLabel,
-            options: _quickArrivalTriageOptions(l10n),
+            options: triageOptions(l10n),
             onChanged: (String? value) {
               setState(() {
                 _triageLevel = value;
@@ -248,33 +248,6 @@ List<AppSelectOption<String>> _quickArrivalSeverityOptions(
   AppLocalizations l10n,
 ) {
   return severityOptions(l10n);
-}
-
-List<AppSelectOption<String>> _quickArrivalTriageOptions(
-  AppLocalizations l10n,
-) {
-  return <AppSelectOption<String>>[
-    AppSelectOption<String>(
-      value: 'LEVEL_1',
-      label: l10n.emergencyTriageLevel1Label,
-    ),
-    AppSelectOption<String>(
-      value: 'LEVEL_2',
-      label: l10n.emergencyTriageLevel2Label,
-    ),
-    AppSelectOption<String>(
-      value: 'LEVEL_3',
-      label: l10n.emergencyTriageLevel3Label,
-    ),
-    AppSelectOption<String>(
-      value: 'LEVEL_4',
-      label: l10n.emergencyTriageLevel4Label,
-    ),
-    AppSelectOption<String>(
-      value: 'LEVEL_5',
-      label: l10n.emergencyTriageLevel5Label,
-    ),
-  ];
 }
 
 typedef DispatchSubmit = Future<AppFailure?> Function(DispatchInput input);

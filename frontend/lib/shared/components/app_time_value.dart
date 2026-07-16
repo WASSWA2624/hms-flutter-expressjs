@@ -25,6 +25,26 @@ class AppTimeValue {
 
   TimeOfDay toTimeOfDay() => TimeOfDay(hour: hour, minute: minute);
 
+  /// Combines a calendar date with this clock time (local).
+  DateTime? combineWithDate(DateTime? date) {
+    if (date == null) {
+      return null;
+    }
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+      hour,
+      minute,
+      second,
+    );
+  }
+
+  /// Combines a calendar date with an optional clock time (local).
+  static DateTime? combine(DateTime? date, AppTimeValue? time) {
+    return time?.combineWithDate(date);
+  }
+
   int get totalMinutes => hour * 60 + minute;
 
   int get totalSeconds => hour * 3600 + minute * 60 + second;

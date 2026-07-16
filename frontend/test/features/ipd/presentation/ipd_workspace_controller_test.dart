@@ -9,12 +9,19 @@ import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_c
 import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
+import 'package:hosspi_hms/features/rooms_beds/data/repositories/rooms_beds_repository_impl.dart';
+import 'package:hosspi_hms/features/rooms_beds/domain/entities/rooms_beds_entities.dart';
+import 'package:hosspi_hms/features/rooms_beds/domain/repositories/rooms_beds_repository.dart';
+import 'package:hosspi_hms/features/rooms_beds/presentation/controllers/rooms_beds_workspace_controller.dart';
+import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockIpdRepository extends Mock implements IpdRepository {}
 
 class _MockPatientRepository extends Mock implements PatientRepository {}
+
+class _MockRoomsBedsRepository extends Mock implements RoomsBedsRepository {}
 
 IpdAdmissionSummary _summary({
   String id = 'adm-1',
@@ -207,6 +214,121 @@ void main() {
     expect(state!.selectedAdmission, isNotNull);
     expect(state.selectedAdmission!.summary.id, 'adm-1');
     verify(() => repo.startAdmission(any())).called(1);
+  });
+
+  test(
+    'startAdmission with bed patches admission and reconciles rooms/beds',
+    () async {
+      final _MockIpdRepository repo = _MockIpdRepository();
+      final _MockRoomsBedsRepository roomsBeds = _MockRoomsBedsRepository();
+      _stubRoomsBedsWorkspace(roomsBeds);
+      when(() => repo.startAdmission(any())).thenAnswer(
+        (_) async => Result<IpdAdmissionDetail>.success(
+          IpdAdmissionDetail(
+            summary: _summary(
+              stage: 'ADMITTED_IN_BED',
+            ).copyWith(hasActiveBed: true, bedId: 'bed-1'),
+          ),
+        ),
+      );
+
+      final ProviderContainer container = ProviderContainer(
+        overrides: [
+          ipdRepositoryProvider.overrideWithValue(repo),
+          roomsBedsRepositoryProvider.overrideWithValue(roomsBeds),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Ensure IPD load stubs are registered on this repo instance.
+      when(() => repo.listAdmissions(any())).thenAnswer(
+        (invocation) async => Result<AppPage<IpdAdmissionSummary>>.success(
+          AppPage<IpdAdmissionSummary>(
+            items: const <IpdAdmissionSummary>[],
+            request:
+                (invocation.positionalArguments.single as IpdAdmissionQuery)
+                    .pageRequest,
+            totalItemCount: 0,
+          ),
+        ),
+      );
+      when(() => repo.listWards(search: any(named: 'search'))).thenAnswer(
+        (_) async =>
+            const Result<List<IpdWardOption>>.success(<IpdWardOption>[]),
+      );
+      when(
+        () => repo.listBeds(
+          search: any(named: 'search'),
+          status: any(named: 'status'),
+          wardId: any(named: 'wardId'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<List<IpdBedOption>>.success(<IpdBedOption>[]),
+      );
+      when(
+        () => repo.listBedBoard(
+          wardId: any(named: 'wardId'),
+          status: any(named: 'status'),
+          statusAny: any(named: 'statusAny'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const Result<List<IpdBedBoardEntry>>.success(<IpdBedBoardEntry>[]),
+      );
+
+      await container.read(ipdWorkspaceControllerProvider.future);
+      await container.read(roomsBedsWorkspaceControllerProvider.future);
+
+      clearInteractions(roomsBeds);
+
+      final IpdWorkspaceController controller = container.read(
+        ipdWorkspaceControllerProvider.notifier,
+      );
+      final AppFailure? failure = await controller.startAdmission(
+        <String, Object?>{
+          'patient_id': 'pat-1',
+          'bed_id': 'bed-1',
+        },
+      );
+      expect(failure, isNull);
+
+      final IpdWorkspaceState? state = readState(container);
+      expect(state!.selectedAdmission?.summary.hasActiveBed, isTrue);
+      expect(state.selectedAdmission?.summary.bedId, 'bed-1');
+
+      // Allow unawaited rooms/beds reconcile to run.
+      await Future<void>.delayed(Duration.zero);
+      verify(
+        () => roomsBeds.loadSetup(facilityId: any(named: 'facilityId')),
+      ).called(greaterThanOrEqualTo(1));
+    },
+  );
+
+  test('startAdmission failure patches nothing', () async {
+    final _MockIpdRepository repo = _MockIpdRepository();
+    final ProviderContainer container = buildContainer(repo);
+    when(() => repo.startAdmission(any())).thenAnswer(
+      (_) async => const Result<IpdAdmissionDetail>.failure(
+        AppFailure.network(),
+      ),
+    );
+
+    await container.read(ipdWorkspaceControllerProvider.future);
+    final IpdWorkspaceController controller = container.read(
+      ipdWorkspaceControllerProvider.notifier,
+    );
+
+    final AppFailure? failure = await controller.startAdmission(
+      <String, Object?>{'patient_id': 'pat-1'},
+    );
+    expect(failure, isNotNull);
+
+    final IpdWorkspaceState? state = readState(container);
+    expect(state!.selectedAdmission, isNull);
+    expect(state.admissions.items, isEmpty);
+    expect(state.isSaving, isFalse);
+    expect(state.lastFailure, isNotNull);
   });
 
   test('searchPatients delegates to the patient repository', () async {
@@ -607,4 +729,69 @@ void main() {
 
     expect(state.admissionQueueCount, 2);
   });
+}
+
+void _stubRoomsBedsWorkspace(_MockRoomsBedsRepository repository) {
+  when(
+    () => repository.loadSetup(facilityId: any(named: 'facilityId')),
+  ).thenAnswer(
+    (_) async => Result<FacilitySetupSnapshot>.success(
+      const FacilitySetupSnapshot(
+        tenant: TenantProfile(id: 'TEN-001', name: 'Tenant'),
+        facility: FacilityProfile(
+          id: 'FAC-001',
+          tenantId: 'TEN-001',
+          name: 'Main',
+          type: FacilitySetupType.hospital,
+        ),
+        facilities: <FacilityProfile>[
+          FacilityProfile(
+            id: 'FAC-001',
+            tenantId: 'TEN-001',
+            name: 'Main',
+            type: FacilitySetupType.hospital,
+          ),
+        ],
+        wards: <WardProfile>[
+          WardProfile(
+            id: 'WRD-001',
+            tenantId: 'TEN-001',
+            facilityId: 'FAC-001',
+            name: 'General',
+            type: WardSetupType.general,
+          ),
+        ],
+        rooms: <RoomProfile>[
+          RoomProfile(
+            id: 'ROM-001',
+            tenantId: 'TEN-001',
+            facilityId: 'FAC-001',
+            name: 'Room A',
+            wardId: 'WRD-001',
+          ),
+        ],
+        beds: <BedProfile>[
+          BedProfile(
+            id: 'BED-001',
+            tenantId: 'TEN-001',
+            facilityId: 'FAC-001',
+            wardId: 'WRD-001',
+            label: 'A1',
+            status: BedSetupStatus.available,
+            roomId: 'ROM-001',
+          ),
+        ],
+      ),
+    ),
+  );
+  when(() => repository.loadAdmissionContext(any())).thenAnswer(
+    (_) async => const Result<BedAdmissionContext>.success(
+      BedAdmissionContext(admissionId: 'ADM-001'),
+    ),
+  );
+  when(() => repository.listBedAssignmentsForBed(any())).thenAnswer(
+    (_) async => const Result<List<BedAssignmentRecord>>.success(
+      <BedAssignmentRecord>[],
+    ),
+  );
 }

@@ -16,6 +16,7 @@ import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.da
 import 'package:hosspi_hms/features/patients/presentation/controllers/patient_registry_controller.dart';
 import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
 import 'package:hosspi_hms/features/reception/presentation/reception_access.dart';
+import 'package:hosspi_hms/features/reception/presentation/widgets/reception_appointment_actions_dialog.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_patient_actions.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_queue_actions_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -1069,7 +1070,7 @@ class _ReceptionWorkspaceContentState
 
   Future<void> _openRowDetail(_ReceptionDeskRow row) async {
     if (row.appointment != null) {
-      final bool? changed = await showOpdAppointmentActionsDialog(
+      final bool? changed = await showReceptionAppointmentActionsDialog(
         context: context,
         appointment: row.appointment!,
         workspaceState: widget.state,
@@ -1086,7 +1087,7 @@ class _ReceptionWorkspaceContentState
         row.queueEntry!,
       );
       if (linkedAppointment != null) {
-        final bool? changed = await showOpdAppointmentActionsDialog(
+        final bool? changed = await showReceptionAppointmentActionsDialog(
           context: context,
           appointment: linkedAppointment,
           workspaceState: widget.state,

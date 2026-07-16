@@ -1749,8 +1749,11 @@ final class OpdWorkspaceController
     AppPage<OpdAppointment> page,
     OpdAppointment appointment,
   ) {
+    final bool existed = page.items.any(
+      (OpdAppointment item) => _sameAppointment(item, appointment),
+    );
     final List<OpdAppointment> items = page.items
-        .where((OpdAppointment item) => item.id != appointment.id)
+        .where((OpdAppointment item) => !_sameAppointment(item, appointment))
         .toList(growable: true);
     items.insert(0, appointment);
     return AppPage<OpdAppointment>(
@@ -1758,13 +1761,25 @@ final class OpdWorkspaceController
       request: page.request,
       totalItemCount: page.totalItemCount == null
           ? null
-          : page.totalItemCount! +
-                (page.items.any(
-                      (OpdAppointment item) => item.id == appointment.id,
-                    )
-                    ? 0
-                    : 1),
+          : page.totalItemCount! + (existed ? 0 : 1),
     );
+  }
+
+  bool _sameAppointment(OpdAppointment left, OpdAppointment right) {
+    if (left.id.isNotEmpty && left.id == right.id) {
+      return true;
+    }
+    final String? leftPublic = left.publicId?.trim();
+    final String? rightPublic = right.publicId?.trim();
+    if (leftPublic != null &&
+        leftPublic.isNotEmpty &&
+        rightPublic != null &&
+        rightPublic.isNotEmpty &&
+        leftPublic.toUpperCase() == rightPublic.toUpperCase()) {
+      return true;
+    }
+    return left.apiId.isNotEmpty &&
+        left.apiId.toUpperCase() == right.apiId.toUpperCase();
   }
 
   AppPage<OpdQueueEntry> _upsertQueueEntry(

@@ -12,13 +12,10 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
-import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/utils/app_display.dart';
-import 'package:hosspi_hms/features/claims/data/repositories/insurance_catalog_repository.dart';
-import 'package:hosspi_hms/features/clinical/data/repositories/clinical_repository_impl.dart';
-import 'package:hosspi_hms/features/clinical/domain/repositories/clinical_repository.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
+import 'package:hosspi_hms/features/opd/presentation/controllers/opd_encounter_dialog_controller.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -132,11 +129,17 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final AsyncValue<Result<OpdWorkspaceState>> workspace = ref.watch(
+      opdWorkspaceControllerProvider,
+    );
     final OpdWorkspaceState? workspaceState = _workspaceState(ref);
     final OpdFlowDetail? selected = workspaceState?.selectedFlow;
     final bool isRefreshingDetail = workspaceState?.isRefreshingDetail ?? false;
     final bool isSaving = workspaceState?.isSaving ?? false;
-    final bool isBusy = isSaving || isRefreshingDetail;
+    final bool isWorkspaceBootstrapping =
+        workspace.isLoading && workspaceState == null;
+    final bool isBusy =
+        isSaving || isRefreshingDetail || isWorkspaceBootstrapping;
     final Object? rawFailure = workspaceState?.lastFailure;
     final AppFailure? failure = rawFailure is AppFailure ? rawFailure : null;
     final OpdFlowDetail? detail =
@@ -144,13 +147,15 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         ? null
         : selected;
     final OpdFlowSummary flow = detail?.summary ?? widget.flow;
-    final bool isInitialLoad = isRefreshingDetail && detail == null;
+    final bool isInitialLoad =
+        detail == null && (isRefreshingDetail || isWorkspaceBootstrapping);
 
     return AppDialog(
       title: Text(l10n.opdFlowActionsTitle),
       icon: const Icon(Icons.medical_services_outlined),
       maxWidth: 860,
       scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: !isBusy,
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
@@ -161,14 +166,12 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
               failure: failure,
             ),
           OpdActionContextPanel(flow: flow, detail: detail),
-          if (isInitialLoad)
+          if (isBusy)
             AppLoadingIndicator(
               size: AppLoadingIndicatorSize.compact,
               title: l10n.opdLoadingTitle,
               body: l10n.opdLoadingBody,
-            )
-          else if (isBusy)
-            const LinearProgressIndicator(),
+            ),
           if (detail != null && opdDetailHasClinicalRecords(detail))
             OpdEncounterClinicalServicesPanel(detail: detail, flow: flow),
           if (!isInitialLoad)
@@ -245,7 +248,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           : consultationPaid
           ? l10n.opdUpdateConsultationBillingAction
           : l10n.opdManageConsultationBillingAction,
-      icon: Icons.payments_outlined,
+      icon: AppActionIcons.payment,
       fullWidth: true,
       hideWhenDenied: true,
       enabled: actionsEnabled && !terminal,
@@ -336,7 +339,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       return AppPermissionActionItem(
         requirement: opdDoctorActionRequirement,
         label: label,
-        icon: Icons.task_alt_outlined,
+        icon: AppActionIcons.complete,
         fullWidth: true,
         hideWhenDenied: true,
         enabled: actionsEnabled && !terminal && canDispose,
@@ -446,7 +449,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           'diagnosis': () => AppPermissionActionItem(
             requirement: opdDoctorActionRequirement,
             label: l10n.clinicalAddDiagnosisAction,
-            icon: Icons.rule_outlined,
+            icon: AppActionIcons.triage,
             fullWidth: true,
             hideWhenDenied: true,
             enabled: actionsEnabled,
@@ -641,7 +644,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     return AppPermissionActionItem(
       requirement: opdStageCorrectionRequirement,
       label: context.l10n.opdCorrectStageAction,
-      icon: Icons.sync_alt_outlined,
+      icon: AppActionIcons.move,
       fullWidth: true,
       hideWhenDenied: true,
       enabled: actionsEnabled,
@@ -850,8 +853,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     BuildContext context,
   ) async {
     final Result<ClinicalActionReferenceData> result = await ref
-        .read(clinicalRepositoryProvider)
-        .loadReferenceData();
+        .read(opdEncounterDialogControllerProvider)
+        .loadClinicalReferenceData();
     if (!mounted) {
       return null;
     }
@@ -868,7 +871,9 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     BuildContext context,
     OpdFlowSummary flow,
   ) async {
-    final ClinicalRepository repository = ref.read(clinicalRepositoryProvider);
+    final OpdEncounterDialogController dialogController = ref.read(
+      opdEncounterDialogControllerProvider,
+    );
     await _openNested(
       context,
       ClinicalDiagnosisActionDialog(
@@ -879,7 +884,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
               required String termType,
               String source = 'ALL',
             }) {
-              return repository.searchClinicalTerms(
+              return dialogController.searchClinicalTerms(
                 termType: termType,
                 query: query,
                 limit: limit ?? 20,
@@ -928,7 +933,9 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     BuildContext context,
     OpdFlowSummary flow,
   ) async {
-    final ClinicalRepository repository = ref.read(clinicalRepositoryProvider);
+    final OpdEncounterDialogController dialogController = ref.read(
+      opdEncounterDialogControllerProvider,
+    );
     await _openNested(
       context,
       ClinicalProcedureActionDialog(
@@ -939,7 +946,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
               required String termType,
               String source = 'ALL',
             }) {
-              return repository.searchClinicalTerms(
+              return dialogController.searchClinicalTerms(
                 termType: termType,
                 query: query,
                 limit: limit ?? 20,
@@ -979,14 +986,15 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     OpdFlowSummary flow,
   ) async {
     final String actionLabel = context.l10n.clinicalRequestLabAction;
+    final OpdEncounterDialogController dialogController = ref.read(
+      opdEncounterDialogControllerProvider,
+    );
     final ClinicalActionReferenceData? referenceData =
         await _loadClinicalReferenceData(context);
     if (!mounted || !context.mounted || referenceData == null) {
       return;
     }
-    final ClinicalRepository repository = ref.read(clinicalRepositoryProvider);
-    final ClinicalRequestPayerContext? payerContext = await ref
-        .read(insuranceCatalogRepositoryProvider)
+    final ClinicalRequestPayerContext? payerContext = await dialogController
         .resolvePayerContextForPatient(flow.patientDisplayId ?? flow.patientId);
     if (!mounted || !context.mounted) {
       return;
@@ -1008,14 +1016,12 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
               int? limit,
               String source = 'ALL',
             }) {
-              return repository.searchClinicalTerms(
+              return dialogController.searchClinicalTerms(
                 termType: termType,
                 query: query,
                 limit: limit ?? 80,
                 source: source,
-                facilityId:
-                    flow.facilityId ??
-                    ref.read(sessionStateProvider).session?.user?.facilityId,
+                facilityId: flow.facilityId,
               );
             },
         onRequest:
@@ -1067,14 +1073,15 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     OpdFlowSummary flow,
   ) async {
     final String actionLabel = context.l10n.clinicalRequestRadiologyAction;
+    final OpdEncounterDialogController dialogController = ref.read(
+      opdEncounterDialogControllerProvider,
+    );
     final ClinicalActionReferenceData? referenceData =
         await _loadClinicalReferenceData(context);
     if (!mounted || !context.mounted || referenceData == null) {
       return;
     }
-    final ClinicalRepository repository = ref.read(clinicalRepositoryProvider);
-    final ClinicalRequestPayerContext? payerContext = await ref
-        .read(insuranceCatalogRepositoryProvider)
+    final ClinicalRequestPayerContext? payerContext = await dialogController
         .resolvePayerContextForPatient(flow.patientDisplayId ?? flow.patientId);
     if (!mounted || !context.mounted) {
       return;
@@ -1096,14 +1103,12 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
               int? limit,
               String source = 'ALL',
             }) {
-              return repository.searchClinicalTerms(
+              return dialogController.searchClinicalTerms(
                 termType: termType,
                 query: query,
                 limit: limit ?? 80,
                 source: source,
-                facilityId:
-                    flow.facilityId ??
-                    ref.read(sessionStateProvider).session?.user?.facilityId,
+                facilityId: flow.facilityId,
               );
             },
         onSubmit:
@@ -1141,13 +1146,15 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
     OpdFlowSummary flow,
   ) async {
     final String actionLabel = context.l10n.clinicalPrescribeAction;
+    final OpdEncounterDialogController dialogController = ref.read(
+      opdEncounterDialogControllerProvider,
+    );
     final ClinicalActionReferenceData? referenceData =
         await _loadClinicalReferenceData(context);
     if (!mounted || !context.mounted || referenceData == null) {
       return;
     }
-    final ClinicalRequestPayerContext? payerContext = await ref
-        .read(insuranceCatalogRepositoryProvider)
+    final ClinicalRequestPayerContext? payerContext = await dialogController
         .resolvePayerContextForPatient(flow.patientDisplayId ?? flow.patientId);
     if (!mounted || !context.mounted) {
       return;
@@ -3530,7 +3537,7 @@ String _opdOptionalFieldLabel(AppLocalizations l10n, String label) {
 
 IconData _flowStageIcon(String value) {
   return switch (value.toUpperCase()) {
-    'WAITING_CONSULTATION_PAYMENT' => Icons.payments_outlined,
+    'WAITING_CONSULTATION_PAYMENT' => AppActionIcons.payment,
     'WAITING_VITALS' => Icons.monitor_heart_outlined,
     'WAITING_DOCTOR_ASSIGNMENT' => Icons.assignment_ind_outlined,
     'WAITING_DOCTOR_REVIEW' => Icons.medical_services_outlined,
@@ -3538,10 +3545,10 @@ IconData _flowStageIcon(String value) {
     'RADIOLOGY_REQUESTED' => Icons.biotech_outlined,
     'LAB_AND_RADIOLOGY_REQUESTED' => Icons.hub_outlined,
     'PHARMACY_REQUESTED' => Icons.local_pharmacy_outlined,
-    'WAITING_DISPOSITION' => Icons.task_alt_outlined,
-    'ADMITTED' => Icons.bed_outlined,
-    'DISCHARGED' => Icons.logout_outlined,
-    _ => Icons.sync_alt_outlined,
+    'WAITING_DISPOSITION' => AppActionIcons.complete,
+    'ADMITTED' => AppActionIcons.bed,
+    'DISCHARGED' => AppActionIcons.logout,
+    _ => AppActionIcons.move,
   };
 }
 

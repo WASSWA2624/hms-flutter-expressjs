@@ -12,13 +12,33 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_action_models.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_admission_action_dialog.dart';
+import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/app_form_section.dart';
 import 'package:hosspi_hms/shared/forms/app_validators.dart';
 import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 
+/// Opens [IpdStartAdmissionDialog] with mutating-dialog dismiss rules.
+///
+/// Composes through [showAppDialog]. Mutation is delegated to
+/// [IpdWorkspaceController.startAdmission].
+Future<bool?> showIpdStartAdmissionDialog(
+  BuildContext context, {
+  required IpdReferenceData referenceData,
+}) {
+  return showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => IpdStartAdmissionDialog(referenceData: referenceData),
+  );
+}
+
 /// Admission-desk dialog to start a new IPD admission (flow §2/§3).
+///
+/// Reuses [ClinicalAdmissionActionDialog] for shell, loading, footer, and
+/// failure presentation. Patient search and mutation stay on the workspace
+/// controller — the widget never calls repositories directly.
 class IpdStartAdmissionDialog extends ConsumerStatefulWidget {
   const IpdStartAdmissionDialog({required this.referenceData, super.key});
 
@@ -31,8 +51,6 @@ class IpdStartAdmissionDialog extends ConsumerStatefulWidget {
 
 class _IpdStartAdmissionDialogState
     extends ConsumerState<IpdStartAdmissionDialog> {
-  static const IconData _dialogIcon = Icons.person_add_alt_1_outlined;
-
   Timer? _debounce;
 
   List<Patient> _results = <Patient>[];
@@ -52,7 +70,7 @@ class _IpdStartAdmissionDialogState
     return ClinicalAdmissionActionDialog(
       title: l10n.ipdStartAdmissionTitle,
       submitLabel: l10n.ipdStartAdmissionAction,
-      icon: const Icon(_dialogIcon),
+      icon: const Icon(AppActionIcons.personAdd),
       submitLeadingIcon: AppActionIcons.add,
       referenceData: ipdAdmissionReferenceData(context, widget.referenceData),
       bedRequired: false,

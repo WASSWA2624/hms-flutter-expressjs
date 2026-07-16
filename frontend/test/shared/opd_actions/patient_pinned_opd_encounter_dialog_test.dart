@@ -28,6 +28,7 @@ void main() {
     registerFallbackValue(const OpdAppointmentQuery());
     registerFallbackValue(const OpdFlowQuery());
     registerFallbackValue(const PatientDuplicateQuery());
+    registerFallbackValue(<String, Object?>{});
   });
 
   const Patient patient = Patient(
@@ -105,10 +106,27 @@ void main() {
       expect(find.text('Start encounter'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
+      expect(find.byIcon(AppActionIcons.start), findsWidgets);
       expect(
         tester.widget<AppDialog>(find.byType(AppDialog)).closeEnabled,
         isTrue,
       );
+
+      final Iterable<AppButton> footerButtons = tester
+          .widgetList<AppButton>(find.byType(AppButton))
+          .where(
+            (AppButton button) =>
+                button.label == 'Cancel' || button.label == 'Start encounter',
+          );
+      expect(footerButtons.map((AppButton button) => button.label).toList(), [
+        'Cancel',
+        'Start encounter',
+      ]);
+
+      final ModalRoute<Object?>? route = ModalRoute.of(
+        tester.element(find.byType(AppDialog)),
+      );
+      expect(route?.settings.name, 'showOpdEncounterDialog');
     },
   );
 
@@ -261,6 +279,146 @@ void main() {
     expect(find.byType(AppFormInformationBanner), findsWidgets);
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets(
+    'pinned submit success dismisses through controller startOpdFlow',
+    (WidgetTester tester) async {
+      final _MockPatientRepository patientRepository = _MockPatientRepository();
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+      _stubLookups(
+        patientRepository: patientRepository,
+        opdRepository: opdRepository,
+      );
+      when(
+        () => opdRepository.startOpdFlow(
+          any(),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<OpdFlowDetail>.success(
+          OpdFlowDetail(
+            summary: OpdFlowSummary(
+              id: 'encounter-1',
+              publicId: 'ENC000001',
+              facilityId: 'FAC000001',
+              patientId: 'PAT000001',
+              status: 'OPEN',
+              stage: 'WAITING_VITALS',
+            ),
+          ),
+        ),
+      );
+
+      OpdEncounterDialogResult? result;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            patientRepositoryProvider.overrideWithValue(patientRepository),
+            opdRepositoryProvider.overrideWithValue(opdRepository),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: Builder(
+              builder: (BuildContext context) {
+                return Scaffold(
+                  body: AppButton.primary(
+                    label: 'Open pinned encounter',
+                    leadingIcon: Icons.open_in_new,
+                    onPressed: () async {
+                      result = await showPatientPinnedOpdEncounterDialog(
+                        context: context,
+                        patient: patient,
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open pinned encounter'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(AppButton, 'Start encounter'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsNothing);
+      expect(result, isNotNull);
+      expect(result!.flow?.publicId, 'ENC000001');
+      verify(
+        () => opdRepository.startOpdFlow(
+          any(),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      ).called(1);
+    },
+  );
+
+  testWidgets('pinned submit failure keeps dialog open and patches nothing', (
+    WidgetTester tester,
+  ) async {
+    final _MockPatientRepository patientRepository = _MockPatientRepository();
+    final _MockOpdRepository opdRepository = _MockOpdRepository();
+    _stubLookups(
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+    );
+    when(
+      () => opdRepository.startOpdFlow(
+        any(),
+        idempotencyKey: any(named: 'idempotencyKey'),
+      ),
+    ).thenAnswer(
+      (_) async => const Result<OpdFlowDetail>.failure(AppFailure.network()),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          patientRepositoryProvider.overrideWithValue(patientRepository),
+          opdRepositoryProvider.overrideWithValue(opdRepository),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: Builder(
+            builder: (BuildContext context) {
+              return Scaffold(
+                body: AppButton.primary(
+                  label: 'Open pinned encounter',
+                  leadingIcon: Icons.open_in_new,
+                  onPressed: () {
+                    unawaited(
+                      showPatientPinnedOpdEncounterDialog(
+                        context: context,
+                        patient: patient,
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open pinned encounter'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(AppButton, 'Start encounter'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppDialog), findsOneWidget);
+    expect(find.byType(PatientPinnedOpdEncounterDialog), findsOneWidget);
+    expect(find.byType(AppFormInformationBanner), findsWidgets);
+    expect(find.text('Start encounter'), findsOneWidget);
   });
 }
 

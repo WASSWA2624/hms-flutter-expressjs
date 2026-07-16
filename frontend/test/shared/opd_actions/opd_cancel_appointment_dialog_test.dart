@@ -11,6 +11,7 @@ import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -39,21 +40,39 @@ void main() {
     scheduledEnd: scheduledEnd,
   );
 
-  testWidgets('uses AppDialog with destructive Cancel appointment commit', (
+  testWidgets(
+    'uses AppConfirmActionDialog with destructive Cancel appointment commit',
+    (WidgetTester tester) async {
+      await _pumpDialog(tester, appointment: appointment);
+
+      expect(find.byType(OpdCancelAppointmentDialog), findsOneWidget);
+      expect(find.byType(AppConfirmActionDialog), findsOneWidget);
+      final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
+      expect(dialog.closeEnabled, isTrue);
+      expect(dialog.pinActionsToBottom, isTrue);
+      expect(find.text('CANCEL APPOINTMENT'), findsOneWidget);
+      expect(
+        find.widgetWithText(AppButton, 'Cancel appointment'),
+        findsOneWidget,
+      );
+      expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
+      expect(find.text('Patient Example'), findsOneWidget);
+      expect(find.byType(AppTextField), findsOneWidget);
+      expect(find.byIcon(AppActionIcons.delete), findsWidgets);
+      expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
+    },
+  );
+
+  testWidgets('title never uses a patient display name', (
     WidgetTester tester,
   ) async {
     await _pumpDialog(tester, appointment: appointment);
 
     final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
-    expect(dialog.closeEnabled, isTrue);
-    expect(dialog.pinActionsToBottom, isTrue);
+    expect(dialog.title, isA<Text>());
+    expect((dialog.title! as Text).data, 'Cancel appointment');
     expect(find.text('CANCEL APPOINTMENT'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Cancel appointment'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
-    expect(find.text('Patient Example'), findsOneWidget);
-    expect(find.byType(AppTextField), findsOneWidget);
-    expect(find.byIcon(AppActionIcons.delete), findsWidgets);
-    expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
+    expect(find.text('PATIENT EXAMPLE'), findsNothing);
   });
 
   testWidgets('Cancel pops false without mutating the appointment', (
@@ -99,9 +118,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(result, isNull);
-    expect(find.byType(AppDialog), findsOneWidget);
+    expect(find.byType(AppConfirmActionDialog), findsOneWidget);
     expect(find.text('Patient request'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Cancel appointment'), findsOneWidget);
+    expect(
+      find.widgetWithText(AppButton, 'Cancel appointment'),
+      findsOneWidget,
+    );
     verify(
       () => repository.cancelAppointment('APT000001', 'Patient request'),
     ).called(1);
@@ -133,6 +155,41 @@ void main() {
     verify(() => repository.cancelAppointment('APT000001', null)).called(1);
   });
 
+  testWidgets('blocks dismiss while cancel mutation is in flight', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    final OpdAppointment cancelled = appointment.copyWith(status: 'CANCELLED');
+    _stubWorkspaceLoad(repository, appointments: <OpdAppointment>[appointment]);
+    when(() => repository.cancelAppointment(any(), any())).thenAnswer((
+      _,
+    ) async {
+      await Future<void>.delayed(const Duration(milliseconds: 80));
+      return Result<OpdAppointment>.success(cancelled);
+    });
+
+    await _pumpDialog(
+      tester,
+      appointment: appointment,
+      repository: repository,
+    );
+
+    await tester.tap(find.widgetWithText(AppButton, 'Cancel appointment'));
+    await tester.pump();
+
+    final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
+    expect(dialog.closeEnabled, isFalse);
+    expect(
+      tester
+          .widget<AppButton>(find.widgetWithText(AppButton, 'Cancel'))
+          .enabled,
+      isFalse,
+    );
+
+    await tester.pumpAndSettle();
+    expect(find.byType(AppDialog), findsNothing);
+  });
+
   testWidgets('remains usable on a compact dark high-text-scale surface', (
     WidgetTester tester,
   ) async {
@@ -149,8 +206,12 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
+    expect(find.byType(AppConfirmActionDialog), findsOneWidget);
     expect(find.text('CANCEL APPOINTMENT'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Cancel appointment'), findsOneWidget);
+    expect(
+      find.widgetWithText(AppButton, 'Cancel appointment'),
+      findsOneWidget,
+    );
     expect(find.widgetWithText(AppButton, 'Cancel'), findsOneWidget);
   });
 }
@@ -232,31 +293,34 @@ void _stubWorkspaceLoad(
     ),
   );
   when(() => repository.listVisitQueues(any())).thenAnswer(
-    (Invocation invocation) async => const Result<AppPage<OpdQueueEntry>>.success(
-      AppPage<OpdQueueEntry>(
-        items: <OpdQueueEntry>[],
-        request: AppPageRequest(pageSize: 12),
-        totalItemCount: 0,
-      ),
-    ),
+    (Invocation invocation) async =>
+        const Result<AppPage<OpdQueueEntry>>.success(
+          AppPage<OpdQueueEntry>(
+            items: <OpdQueueEntry>[],
+            request: AppPageRequest(pageSize: 12),
+            totalItemCount: 0,
+          ),
+        ),
   );
   when(() => repository.listOpdFlows(any())).thenAnswer(
-    (Invocation invocation) async => const Result<AppPage<OpdFlowSummary>>.success(
-      AppPage<OpdFlowSummary>(
-        items: <OpdFlowSummary>[],
-        request: AppPageRequest(),
-        totalItemCount: 0,
-      ),
-    ),
+    (Invocation invocation) async =>
+        const Result<AppPage<OpdFlowSummary>>.success(
+          AppPage<OpdFlowSummary>(
+            items: <OpdFlowSummary>[],
+            request: AppPageRequest(),
+            totalItemCount: 0,
+          ),
+        ),
   );
   when(() => repository.listTriageQueue(any())).thenAnswer(
-    (Invocation invocation) async => const Result<AppPage<OpdFlowSummary>>.success(
-      AppPage<OpdFlowSummary>(
-        items: <OpdFlowSummary>[],
-        request: AppPageRequest(pageSize: 12),
-        totalItemCount: 0,
-      ),
-    ),
+    (Invocation invocation) async =>
+        const Result<AppPage<OpdFlowSummary>>.success(
+          AppPage<OpdFlowSummary>(
+            items: <OpdFlowSummary>[],
+            request: AppPageRequest(pageSize: 12),
+            totalItemCount: 0,
+          ),
+        ),
   );
   when(() => repository.getOpdSummaryCounts()).thenAnswer(
     (_) async =>
@@ -272,8 +336,9 @@ void _stubWorkspaceLoad(
     ),
   );
   when(() => repository.listProviderSchedules()).thenAnswer(
-    (_) async =>
-        const Result<List<OpdProviderSchedule>>.success(<OpdProviderSchedule>[]),
+    (_) async => const Result<List<OpdProviderSchedule>>.success(
+      <OpdProviderSchedule>[],
+    ),
   );
   when(() => repository.listProviders()).thenAnswer(
     (_) async =>

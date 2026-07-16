@@ -284,6 +284,7 @@ final class IpdWorkspaceController
       return refresh();
     }
 
+    final bool assignedBed = _payloadHasBedId(payload);
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
     final Result<IpdAdmissionDetail> result = await _repository.startAdmission(
       payload,
@@ -307,6 +308,11 @@ final class IpdWorkspaceController
         }
         unawaited(_refreshWorklist(showLoading: false));
         unawaited(_loadBedBoardIfActive());
+        // Bed occupancy also appears on rooms & beds boards; realtime excludes
+        // the mutating user, so reconcile from HTTP success when a bed was set.
+        if (assignedBed || detail.summary.hasActiveBed) {
+          _reconcileRoomsBedsWorkspace();
+        }
         return null;
       },
       failure: (AppFailure failure) {
@@ -317,6 +323,14 @@ final class IpdWorkspaceController
         return failure;
       },
     );
+  }
+
+  bool _payloadHasBedId(Map<String, Object?> payload) {
+    final Object? bedId = payload['bed_id'];
+    if (bedId is! String) {
+      return false;
+    }
+    return bedId.trim().isNotEmpty;
   }
 
   Future<AppFailure?> loadBedBoard({bool force = false}) async {
