@@ -178,7 +178,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workspaceGlobalHousekeepingRequestAction => 'Request maintenance';
 
   @override
-  String get commonTableSettingsActionLabel => 'Table settings';
+  String get commonTableSettingsActionLabel => 'Settings';
 
   @override
   String get emergencyCaseDialogTitle => 'Emergency case';
@@ -2315,6 +2315,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get receptionScheduleAppointmentAction => 'Schedule appointment';
 
   @override
+  String get receptionFiltersLabel => 'Filters';
+
+  @override
+  String get receptionClearFiltersAction => 'Clear filters';
+
+  @override
   String get receptionAppointmentActionsAction => 'Appointment actions';
 
   @override
@@ -2416,10 +2422,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdCompletedFlowSummaryLabel => 'Completed';
 
   @override
-  String get opdFiltersLabel => 'OPD filters';
+  String get opdFiltersLabel => 'Filters';
 
   @override
-  String get opdFilterAction => 'Filter OPD table';
+  String get opdFilterAction => 'Filters';
 
   @override
   String get opdFilterDialogTitle => 'Filter OPD table';
@@ -3661,7 +3667,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsClearFiltersAction => 'Clear';
 
   @override
-  String get patientsAdvancedFiltersAction => 'Advanced filters';
+  String get patientsAdvancedFiltersAction => 'Filters';
 
   @override
   String get patientsAdvancedFiltersTitle => 'Advanced filters';
@@ -7466,7 +7472,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ipdCriticalAlertsSummaryLabel => 'Critical alerts';
 
   @override
-  String get ipdFiltersLabel => 'Inpatient filters';
+  String get ipdFiltersLabel => 'Filters';
 
   @override
   String get ipdSearchLabel => 'Search admissions';

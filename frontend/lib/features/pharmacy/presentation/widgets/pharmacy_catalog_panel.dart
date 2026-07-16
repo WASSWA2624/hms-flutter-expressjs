@@ -1742,10 +1742,7 @@ Widget? _catalogToolbar({
       children: <Widget>[
         Expanded(
           child: showSelection
-              ? Align(
-                  alignment: Alignment.centerLeft,
-                  child: selectionAction,
-                )
+              ? Align(alignment: Alignment.centerLeft, child: selectionAction)
               : const SizedBox.shrink(),
         ),
         if (showAdd)

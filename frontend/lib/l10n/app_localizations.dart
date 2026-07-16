@@ -403,7 +403,7 @@ abstract class AppLocalizations {
   /// Label for opening a worklist table column settings dialog.
   ///
   /// In en, this message translates to:
-  /// **'Table settings'**
+  /// **'Settings'**
   String get commonTableSettingsActionLabel;
 
   /// Title for the emergency case detail dialog.
@@ -4474,6 +4474,18 @@ abstract class AppLocalizations {
   /// **'Schedule appointment'**
   String get receptionScheduleAppointmentAction;
 
+  /// Label for the reception desk table Filters control.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get receptionFiltersLabel;
+
+  /// Action to clear advanced filters on the reception desk table.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filters'**
+  String get receptionClearFiltersAction;
+
   /// Action to open check-in, reschedule, cancel, and queue for an appointment.
   ///
   /// In en, this message translates to:
@@ -4675,13 +4687,13 @@ abstract class AppLocalizations {
   /// Semantic label for OPD filters.
   ///
   /// In en, this message translates to:
-  /// **'OPD filters'**
+  /// **'Filters'**
   String get opdFiltersLabel;
 
   /// Action label for opening the OPD table filter dialog.
   ///
   /// In en, this message translates to:
-  /// **'Filter OPD table'**
+  /// **'Filters'**
   String get opdFilterAction;
 
   /// OPD table filter dialog title.
@@ -7072,10 +7084,10 @@ abstract class AppLocalizations {
   /// **'Clear'**
   String get patientsClearFiltersAction;
 
-  /// Open patient registry advanced filters action label.
+  /// Table chrome Filters button on Patients registry.
   ///
   /// In en, this message translates to:
-  /// **'Advanced filters'**
+  /// **'Filters'**
   String get patientsAdvancedFiltersAction;
 
   /// Patient registry advanced filters dialog title.
@@ -13783,7 +13795,7 @@ abstract class AppLocalizations {
   /// Semantic label for inpatient workspace filters.
   ///
   /// In en, this message translates to:
-  /// **'Inpatient filters'**
+  /// **'Filters'**
   String get ipdFiltersLabel;
 
   /// IPD admission search field label.

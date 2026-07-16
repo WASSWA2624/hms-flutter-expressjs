@@ -394,9 +394,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
       AppGlobalHousekeepingRequestAction(
         label: l10n.workspaceGlobalHousekeepingRequestAction,
       ),
-      AppGlobalFaultReportAction(
-        label: l10n.workspaceGlobalFaultReportAction,
-      ),
+      AppGlobalFaultReportAction(label: l10n.workspaceGlobalFaultReportAction),
     ];
   }
 

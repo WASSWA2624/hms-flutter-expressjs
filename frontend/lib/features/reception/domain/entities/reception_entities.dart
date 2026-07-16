@@ -46,3 +46,38 @@ final class ReceptionWorkspaceQuery {
 
 /// Desk worklist sections for high-volume reception workflows.
 enum ReceptionDeskSection { appointments, queue, activeVisits, paymentGate }
+
+/// Canonical `section` query value written by the Reception workspace URL.
+String receptionDeskSectionToQueryValue(ReceptionDeskSection section) {
+  return switch (section) {
+    ReceptionDeskSection.appointments => 'appointments',
+    ReceptionDeskSection.queue => 'desk-queue',
+    ReceptionDeskSection.activeVisits => 'active',
+    ReceptionDeskSection.paymentGate => 'payment-gate',
+  };
+}
+
+/// Resolves a deep-link / alias `section` query value to a desk section.
+ReceptionDeskSection? receptionDeskSectionFromQuery(String raw) {
+  switch (raw.trim().toLowerCase()) {
+    case 'appointments':
+    case 'meetings':
+      return ReceptionDeskSection.appointments;
+    case 'queue':
+    case 'desk_queue':
+    case 'desk-queue':
+      return ReceptionDeskSection.queue;
+    case 'in-progress':
+    case 'active':
+    case 'visits':
+    case 'turnaround_pressure':
+      return ReceptionDeskSection.activeVisits;
+    case 'payment':
+    case 'payment-gate':
+    case 'follow-up':
+    case 'no_show_pressure':
+      return ReceptionDeskSection.paymentGate;
+    default:
+      return null;
+  }
+}

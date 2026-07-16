@@ -3,7 +3,6 @@ import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/router/shell_route_access.dart';
 import 'package:hosspi_hms/core/network/idempotency.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
-import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/workspace/realtime_delta.dart';
@@ -50,6 +49,94 @@ void main() {
       expect(query.section, 'queue');
       expect(query.search, 'Ada');
       expect(query.hasRouteTargeting, isTrue);
+    });
+
+    test('parses canonical section query aliases', () {
+      expect(
+        ReceptionWorkspaceQuery.fromUri(
+          Uri.parse('/reception?section=desk-queue'),
+        ).section,
+        'desk-queue',
+      );
+      expect(
+        ReceptionWorkspaceQuery.fromUri(
+          Uri.parse('/reception?section=active'),
+        ).section,
+        'active',
+      );
+      expect(
+        ReceptionWorkspaceQuery.fromUri(
+          Uri.parse('/reception?section=payment-gate'),
+        ).section,
+        'payment-gate',
+      );
+      expect(
+        ReceptionWorkspaceQuery.fromUri(
+          Uri.parse('/reception?section=appointments'),
+        ).section,
+        'appointments',
+      );
+    });
+  });
+
+  group('ReceptionDeskSection query mapping', () {
+    test('writes canonical section query values', () {
+      expect(
+        receptionDeskSectionToQueryValue(ReceptionDeskSection.appointments),
+        'appointments',
+      );
+      expect(
+        receptionDeskSectionToQueryValue(ReceptionDeskSection.queue),
+        'desk-queue',
+      );
+      expect(
+        receptionDeskSectionToQueryValue(ReceptionDeskSection.activeVisits),
+        'active',
+      );
+      expect(
+        receptionDeskSectionToQueryValue(ReceptionDeskSection.paymentGate),
+        'payment-gate',
+      );
+    });
+
+    test('resolves canonical and alias section query values', () {
+      expect(
+        receptionDeskSectionFromQuery('appointments'),
+        ReceptionDeskSection.appointments,
+      );
+      expect(
+        receptionDeskSectionFromQuery('meetings'),
+        ReceptionDeskSection.appointments,
+      );
+      expect(
+        receptionDeskSectionFromQuery('desk-queue'),
+        ReceptionDeskSection.queue,
+      );
+      expect(
+        receptionDeskSectionFromQuery('desk_queue'),
+        ReceptionDeskSection.queue,
+      );
+      expect(
+        receptionDeskSectionFromQuery('queue'),
+        ReceptionDeskSection.queue,
+      );
+      expect(
+        receptionDeskSectionFromQuery('active'),
+        ReceptionDeskSection.activeVisits,
+      );
+      expect(
+        receptionDeskSectionFromQuery('in-progress'),
+        ReceptionDeskSection.activeVisits,
+      );
+      expect(
+        receptionDeskSectionFromQuery('payment-gate'),
+        ReceptionDeskSection.paymentGate,
+      );
+      expect(
+        receptionDeskSectionFromQuery('follow-up'),
+        ReceptionDeskSection.paymentGate,
+      );
+      expect(receptionDeskSectionFromQuery('unknown'), isNull);
     });
   });
 

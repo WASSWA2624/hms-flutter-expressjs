@@ -123,7 +123,10 @@ final class MortuaryRouteQuery {
   }
 
   bool get hasRouteTargeting =>
-      panel.isNotEmpty || search.isNotEmpty || queue.isNotEmpty || id.isNotEmpty;
+      panel.isNotEmpty ||
+      search.isNotEmpty ||
+      queue.isNotEmpty ||
+      id.isNotEmpty;
 
   String get signature => '$panel|$search|$queue|$id';
 }

@@ -197,21 +197,7 @@ class _PatientRegistryContentState
                   }
                 }
               },
-              primaryAction: AppAccessActionGate(
-                requirement: _PatientRegistryContent._writeRequirement,
-                builder: (BuildContext context, bool isAllowed) {
-                  return AppTabToolbarPrimary(
-                    icon: Icons.person_add_alt_1_outlined,
-                    label: l10n.patientsRegisterPatientAction,
-                    semanticLabel: l10n.patientsRegisterPatientAction,
-                    tooltip: l10n.patientsRegisterPatientAction,
-                    enabled: isAllowed,
-                    onPressed: () {
-                      _openRegisterPatientDialog(context, ref);
-                    },
-                  );
-                },
-              ),
+              primaryAction: _buildPrimaryAction(l10n),
             ),
             SizedBox(height: theme.spacing.sm),
             _PatientList(
@@ -223,6 +209,33 @@ class _PatientRegistryContentState
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPrimaryAction(AppLocalizations l10n) {
+    return switch (_section) {
+      PatientRegistrySection.all ||
+      PatientRegistrySection.active ||
+      PatientRegistrySection.admitted ||
+      PatientRegistrySection.balanceDue => _registerPatientPrimaryAction(l10n),
+    };
+  }
+
+  Widget _registerPatientPrimaryAction(AppLocalizations l10n) {
+    return AppAccessActionGate(
+      requirement: _PatientRegistryContent._writeRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        return AppTabToolbarPrimary(
+          icon: Icons.person_add_alt_1_outlined,
+          label: l10n.patientsRegisterPatientAction,
+          semanticLabel: l10n.patientsRegisterPatientAction,
+          tooltip: l10n.patientsRegisterPatientAction,
+          enabled: isAllowed,
+          onPressed: () {
+            _openRegisterPatientDialog(context, ref);
+          },
+        );
+      },
     );
   }
 

@@ -49,8 +49,7 @@ class AppTabStrip extends StatelessWidget {
   /// Left-aligned flat toolbar actions (no background).
   final List<Widget> secondaryActions;
 
-  bool get _hasToolbar =>
-      primaryAction != null || secondaryActions.isNotEmpty;
+  bool get _hasToolbar => primaryAction != null || secondaryActions.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -89,15 +88,17 @@ class AppTabStrip extends StatelessWidget {
             ),
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
-              child: Row(
+              child: Wrap(
+                spacing: theme.spacing.xs,
+                runSpacing: theme.spacing.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                alignment: WrapAlignment.spaceBetween,
                 children: <Widget>[
-                  Expanded(
-                    child: Wrap(
-                      spacing: theme.spacing.xs,
-                      runSpacing: theme.spacing.xs,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: secondaryActions,
-                    ),
+                  Wrap(
+                    spacing: theme.spacing.xs,
+                    runSpacing: theme.spacing.xs,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: secondaryActions,
                   ),
                   ?primaryAction,
                 ],

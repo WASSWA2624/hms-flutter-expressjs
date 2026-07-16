@@ -31,6 +31,7 @@ import 'package:hosspi_hms/features/patients/presentation/widgets/patient_widget
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/test_harness.dart';
@@ -1213,6 +1214,132 @@ void main() {
     expect(find.textContaining(RegExp(r'1 of [2-9]')), findsOneWidget);
     expect(find.textContaining(RegExp(r'2 of [2-9]')), findsWidgets);
   });
+
+  testWidgets(
+    'renders AppTabStrip with tabs, Register patient toolbar, and Filters/Settings',
+    (WidgetTester tester) async {
+      final patientRepository = _MockPatientRepository();
+      final opdRepository = _MockOpdRepository();
+      final patient = Patient(
+        id: 'patient-1',
+        publicId: 'PAT-1001',
+        firstName: 'Amina',
+        lastName: 'Kato',
+      );
+
+      _stubPatientRegistry(patientRepository, patient);
+      _stubProviderLookup(opdRepository);
+
+      await _pumpPatientRegistry(
+        tester,
+        patientRepository: patientRepository,
+        opdRepository: opdRepository,
+        size: const Size(1280, 900),
+        useRouter: true,
+      );
+
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(_patientTabLabel('All patients'), findsOneWidget);
+      expect(_patientTabLabel('Active'), findsOneWidget);
+      expect(_patientTabLabel('Admitted'), findsOneWidget);
+      expect(_patientTabLabel('Balance due'), findsOneWidget);
+      expect(find.byTooltip('Register patient'), findsOneWidget);
+      expect(find.byTooltip('Filters'), findsOneWidget);
+      expect(find.text('Advanced filters'), findsNothing);
+      expect(find.byTooltip('Table settings'), findsOneWidget);
+      expect(find.byType(AppListTable<Patient>), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'switching tabs updates section query and keeps Register patient toolbar',
+    (WidgetTester tester) async {
+      final patientRepository = _MockPatientRepository();
+      final opdRepository = _MockOpdRepository();
+      final patient = Patient(
+        id: 'patient-1',
+        publicId: 'PAT-1001',
+        firstName: 'Amina',
+        lastName: 'Kato',
+      );
+
+      _stubPatientRegistry(patientRepository, patient);
+      _stubProviderLookup(opdRepository);
+
+      final GoRouter? router = await _pumpPatientRegistry(
+        tester,
+        patientRepository: patientRepository,
+        opdRepository: opdRepository,
+        size: const Size(1280, 900),
+        useRouter: true,
+      );
+
+      clearInteractions(patientRepository);
+      _stubPatientRegistry(patientRepository, patient);
+
+      await tester.tap(_patientTabLabel('Active'));
+      await tester.pumpAndSettle();
+
+      expect(router, isNotNull);
+      expect(router!.state.uri.queryParameters['section'], 'active');
+      expect(find.byTooltip('Register patient'), findsOneWidget);
+
+      final List<PatientListQuery> queries = verify(
+        () => patientRepository.listPatients(captureAny()),
+      ).captured.cast<PatientListQuery>();
+      expect(
+        queries.any(
+          (PatientListQuery query) =>
+              query.section == PatientRegistrySection.active ||
+              query.isActive == true,
+        ),
+        isTrue,
+      );
+    },
+  );
+
+  testWidgets('deep link section=admitted selects Admitted tab', (
+    WidgetTester tester,
+  ) async {
+    final patientRepository = _MockPatientRepository();
+    final opdRepository = _MockOpdRepository();
+    final patient = Patient(
+      id: 'patient-1',
+      publicId: 'PAT-1001',
+      firstName: 'Amina',
+      lastName: 'Kato',
+    );
+
+    _stubPatientRegistry(patientRepository, patient);
+    _stubProviderLookup(opdRepository);
+
+    await _pumpPatientRegistry(
+      tester,
+      patientRepository: patientRepository,
+      opdRepository: opdRepository,
+      size: const Size(1280, 900),
+      useRouter: true,
+      initialLocation: '/patients?section=admitted',
+      initialQuery: PatientListQuery.fromUri(
+        Uri.parse('/patients?section=admitted'),
+      ),
+    );
+
+    expect(find.byTooltip('Register patient'), findsOneWidget);
+    expect(_patientTabLabel('Admitted'), findsOneWidget);
+
+    final List<PatientListQuery> queries = verify(
+      () => patientRepository.listPatients(captureAny()),
+    ).captured.cast<PatientListQuery>();
+    expect(
+      queries.any(
+        (PatientListQuery query) =>
+            query.section == PatientRegistrySection.admitted ||
+            query.hasActiveAdmission == true,
+      ),
+      isTrue,
+    );
+  });
 }
 
 Future<void> _fillRegisterPatientBasics(
@@ -1348,7 +1475,7 @@ void _stubProviderLookup(_MockOpdRepository opdRepository) {
   );
 }
 
-Future<void> _pumpPatientRegistry(
+Future<GoRouter?> _pumpPatientRegistry(
   WidgetTester tester, {
   required PatientRepository patientRepository,
   required OpdRepository opdRepository,
@@ -1356,47 +1483,92 @@ Future<void> _pumpPatientRegistry(
   DischargeRepository? dischargeRepository,
   required Size size,
   List<String> roles = const <String>['DOCTOR'],
+  bool useRouter = false,
+  String initialLocation = '/patients',
+  PatientListQuery? initialQuery,
 }) async {
   setTestViewport(tester, size);
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        initialSessionStateProvider.overrideWithValue(
-          SessionState.authenticated(
-            session: AuthSession(
-              tokens: SessionTokens(accessToken: 'test-access-token'),
-              subject: 'doctor@example.com',
-              user: AuthUserProfile(
-                id: 'user-1',
-                email: 'doctor@example.com',
-                roles: roles,
-              ),
-            ),
+
+  final overrides = [
+    initialSessionStateProvider.overrideWithValue(
+      SessionState.authenticated(
+        session: AuthSession(
+          tokens: SessionTokens(accessToken: 'test-access-token'),
+          subject: 'doctor@example.com',
+          user: AuthUserProfile(
+            id: 'user-1',
+            email: 'doctor@example.com',
+            roles: roles,
           ),
         ),
-        secureSessionStorageProvider.overrideWithValue(
-          _TestSecureSessionStorage(),
+      ),
+    ),
+    secureSessionStorageProvider.overrideWithValue(_TestSecureSessionStorage()),
+    appPreferencesStoreProvider.overrideWithValue(_TestAppPreferencesStore()),
+    patientRepositoryProvider.overrideWithValue(patientRepository),
+    opdRepositoryProvider.overrideWithValue(opdRepository),
+    if (ipdRepository != null)
+      ipdRepositoryProvider.overrideWithValue(ipdRepository),
+    if (dischargeRepository != null)
+      dischargeRepositoryProvider.overrideWithValue(dischargeRepository),
+  ];
+
+  if (!useRouter) {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: overrides,
+        child: MaterialApp(
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          supportedLocales: AppLocalizations.supportedLocales,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          home: Scaffold(body: PatientRegistryPage(initialQuery: initialQuery)),
         ),
-        appPreferencesStoreProvider.overrideWithValue(
-          _TestAppPreferencesStore(),
-        ),
-        patientRepositoryProvider.overrideWithValue(patientRepository),
-        opdRepositoryProvider.overrideWithValue(opdRepository),
-        if (ipdRepository != null)
-          ipdRepositoryProvider.overrideWithValue(ipdRepository),
-        if (dischargeRepository != null)
-          dischargeRepositoryProvider.overrideWithValue(dischargeRepository),
-      ],
-      child: MaterialApp(
+      ),
+    );
+    await tester.pumpAndSettle();
+    return null;
+  }
+
+  final GoRouter router = GoRouter(
+    initialLocation: initialLocation,
+    routes: <RouteBase>[
+      GoRoute(
+        path: '/patients',
+        builder: (BuildContext context, GoRouterState state) {
+          return Scaffold(
+            body: PatientRegistryPage(
+              initialQuery: initialQuery ?? PatientListQuery.fromUri(state.uri),
+            ),
+          );
+        },
+      ),
+    ],
+  );
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: overrides,
+      child: MaterialApp.router(
         theme: AppTheme.light,
         darkTheme: AppTheme.dark,
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: const Scaffold(body: PatientRegistryPage()),
+        routerConfig: router,
       ),
     ),
   );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
+  return router;
+}
+
+Finder _patientTabLabel(String label) {
+  return find.descendant(
+    of: find.byType(AppTabStrip),
+    matching: find.text(label),
+  );
 }
 
 Result<Patient> _registeredPatientResult(Map<String, Object?> payload) {

@@ -34,14 +34,12 @@ class IpdBedBoardPanel extends ConsumerStatefulWidget {
     required this.state,
     required this.canManageBeds,
     required this.onOpenAdmission,
-    required this.onManageBeds,
     super.key,
   });
 
   final IpdWorkspaceState state;
   final bool canManageBeds;
   final ValueChanged<IpdBedBoardEntry> onOpenAdmission;
-  final VoidCallback onManageBeds;
 
   @override
   ConsumerState<IpdBedBoardPanel> createState() => _IpdBedBoardPanelState();
@@ -49,17 +47,22 @@ class IpdBedBoardPanel extends ConsumerStatefulWidget {
 
 class _IpdBedBoardPanelState extends ConsumerState<IpdBedBoardPanel> {
   late final TextEditingController _searchController;
+  late final AppListTableColumnVisibilityController<IpdBedBoardEntry>
+  _columnVisibilityController;
   String _search = '';
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController();
+    _columnVisibilityController =
+        AppListTableColumnVisibilityController<IpdBedBoardEntry>();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _columnVisibilityController.dispose();
     super.dispose();
   }
 
@@ -75,173 +78,166 @@ class _IpdBedBoardPanelState extends ConsumerState<IpdBedBoardPanel> {
         .where((IpdBedBoardEntry bed) => bed.matchesSearch(_search))
         .toList(growable: false);
 
-    return AppWorkspaceDetailPanel(
-      title: l10n.ipdBedBoardTitle,
-      description: l10n.ipdBedBoardDescription,
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.ipdBedBoardManageBedsAction,
-          leadingIcon: Icons.open_in_new,
-          onPressed: widget.onManageBeds,
-        ),
-      ],
-      child: AppListTable<IpdBedBoardEntry>(
-        items: beds,
-        isLoading: state.isLoadingBedBoard,
-        itemKeyBuilder: (IpdBedBoardEntry bed) => ValueKey<String>(bed.id),
-        search: AppListTableSearch<IpdBedBoardEntry>(
-          controller: _searchController,
-          semanticLabel: l10n.ipdBedBoardSearchLabel,
-          hintText: l10n.ipdBedBoardSearchHint,
-          matcher: (_, _) => true,
-          onSubmitted: (String value) => setState(() => _search = value),
-          onChanged: (String value) => setState(() => _search = value),
-          onClear: () => setState(() => _search = ''),
-          showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.ipdFiltersLabel,
-          advancedFilterTitle: l10n.ipdFiltersLabel,
-          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-          advancedFilterResetLabel: l10n.opdClearFiltersAction,
-          enableDateFilter: false,
-          allFieldsLabel: l10n.ipdAllWardsOption,
-          filterGroups: <AppSearchBarFilterGroup>[
-            AppSearchBarFilterGroup(
-              key: _wardFilterKey,
-              label: l10n.ipdWardFilterLabel,
-              allLabel: l10n.ipdAllWardsOption,
-              choices: <AppSearchBarFilterChoice>[
-                for (final IpdWardOption ward in state.referenceData.wards)
-                  AppSearchBarFilterChoice(
-                    value: ward.id,
-                    label: ward.displayTitle,
-                    icon: Icons.local_hospital_outlined,
-                  ),
-              ],
-            ),
-            AppSearchBarFilterGroup(
-              key: _statusFilterKey,
-              label: l10n.ipdBedStatusFilterLabel,
-              allLabel: l10n.ipdScopeAll,
-              choices: <AppSearchBarFilterChoice>[
-                for (final String status in _bedStatuses)
-                  AppSearchBarFilterChoice(
-                    value: status,
-                    label: bedStatusLabel(context, status),
-                    icon: Icons.filter_list,
-                  ),
-              ],
-            ),
-          ],
-          filterValue: AppSearchBarFilterValue(
-            options: <String, String>{
-              if (state.bedBoardWardId != null)
-                _wardFilterKey: state.bedBoardWardId!,
-              if (state.bedBoardStatus != null)
-                _statusFilterKey: state.bedBoardStatus!,
-            },
-          ),
-          hasActiveFilters:
-              state.bedBoardWardId != null || state.bedBoardStatus != null,
-          onFilterChanged: (AppSearchBarFilterValue value) async {
-            final String? nextWard = value.option(_wardFilterKey);
-            final String? nextStatus = value.option(_statusFilterKey);
-            AppFailure? failure;
-            if (nextWard != state.bedBoardWardId) {
-              failure = await controller.applyBedBoardWard(nextWard);
-            }
-            if (nextStatus != state.bedBoardStatus) {
-              failure ??= await controller.applyBedBoardStatus(nextStatus);
-            }
-            if (context.mounted) {
-              _showFailure(context, failure);
-            }
-          },
-        ),
-        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-          title: l10n.ipdBedBoardEmptyTitle,
-          body: l10n.ipdBedBoardEmptyBody,
-          icon: Icons.bed_outlined,
-        ),
-        columns: <AppListTableColumn<IpdBedBoardEntry>>[
-          AppListTableColumn<IpdBedBoardEntry>(
-            label: l10n.ipdBedColumnLabel,
-            sortComparator: (IpdBedBoardEntry a, IpdBedBoardEntry b) =>
-                appListTableCompareText(a.bedLabel, b.bedLabel),
-            cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
-              return Text(
-                bed.bedLabel,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
-              );
-            },
-          ),
-          AppListTableColumn<IpdBedBoardEntry>(
-            label: l10n.ipdWardColumnLabel,
-            sortComparator: (IpdBedBoardEntry a, IpdBedBoardEntry b) =>
-                appListTableCompareText(a.wardDisplayName, b.wardDisplayName),
-            cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
-              return Text(
-                bed.wardDisplayName ?? context.l10n.profileUnknownValue,
-              );
-            },
-          ),
-          AppListTableColumn<IpdBedBoardEntry>(
-            label: l10n.ipdRoomColumnLabel,
-            cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
-              return Text(
-                bed.roomDisplayName ?? context.l10n.profileUnknownValue,
-              );
-            },
-          ),
-          AppListTableColumn<IpdBedBoardEntry>(
-            label: l10n.opdStatusColumnLabel,
-            sortComparator: (IpdBedBoardEntry a, IpdBedBoardEntry b) =>
-                appListTableCompareText(a.status, b.status),
-            cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
-              return AppWorkspaceStatusBadge(
-                status: AppWorkspaceStatus(
-                  label: bedStatusLabel(context, bed.status),
-                  tone: _bedStatusTone(bed.status),
+    return AppListTable<IpdBedBoardEntry>(
+      items: beds,
+      isLoading: state.isLoadingBedBoard,
+      itemKeyBuilder: (IpdBedBoardEntry bed) => ValueKey<String>(bed.id),
+      columnVisibilityController: _columnVisibilityController,
+      columnVisibilityStorageKey: 'ipd_bed_board',
+      columnWidthStorageKey: 'ipd_bed_board_cw',
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      search: AppListTableSearch<IpdBedBoardEntry>(
+        controller: _searchController,
+        semanticLabel: l10n.ipdBedBoardSearchLabel,
+        hintText: l10n.ipdBedBoardSearchHint,
+        matcher: (_, _) => true,
+        onSubmitted: (String value) => setState(() => _search = value),
+        onChanged: (String value) => setState(() => _search = value),
+        onClear: () => setState(() => _search = ''),
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.ipdFiltersLabel,
+        advancedFilterTitle: l10n.ipdFiltersLabel,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        enableDateFilter: false,
+        allFieldsLabel: l10n.ipdAllWardsOption,
+        filterGroups: <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: _wardFilterKey,
+            label: l10n.ipdWardFilterLabel,
+            allLabel: l10n.ipdAllWardsOption,
+            choices: <AppSearchBarFilterChoice>[
+              for (final IpdWardOption ward in state.referenceData.wards)
+                AppSearchBarFilterChoice(
+                  value: ward.id,
+                  label: ward.displayTitle,
+                  icon: Icons.local_hospital_outlined,
                 ),
-              );
-            },
+            ],
           ),
-          AppListTableColumn<IpdBedBoardEntry>(
-            label: l10n.ipdCurrentPatientColumnLabel,
-            cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
-              if (bed.occupantPatientName == null &&
-                  bed.occupantAdmissionDisplayId == null) {
-                return const Text('—');
-              }
-              return _BedOccupantCell(bed: bed);
-            },
-          ),
-          AppListTableColumn<IpdBedBoardEntry>(
-            label: l10n.ipdNextActionColumnLabel,
-            cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
-              return _BedActionMenu(
-                bed: bed,
-                canManageBeds: widget.canManageBeds,
-                enabled: !state.isSaving,
-                onAction: (_BedAction action) =>
-                    _runAction(context, controller, bed, action),
-              );
-            },
+          AppSearchBarFilterGroup(
+            key: _statusFilterKey,
+            label: l10n.ipdBedStatusFilterLabel,
+            allLabel: l10n.ipdScopeAll,
+            choices: <AppSearchBarFilterChoice>[
+              for (final String status in _bedStatuses)
+                AppSearchBarFilterChoice(
+                  value: status,
+                  label: bedStatusLabel(context, status),
+                  icon: Icons.filter_list,
+                ),
+            ],
           ),
         ],
-        mobileItemBuilder: (BuildContext context, IpdBedBoardEntry bed) {
-          return _BedBoardMobileRow(
-            bed: bed,
-            canManageBeds: widget.canManageBeds,
-            enabled: !state.isSaving,
-            onAction: (_BedAction action) =>
-                _runAction(context, controller, bed, action),
-          );
+        filterValue: AppSearchBarFilterValue(
+          options: <String, String>{
+            if (state.bedBoardWardId != null)
+              _wardFilterKey: state.bedBoardWardId!,
+            if (state.bedBoardStatus != null)
+              _statusFilterKey: state.bedBoardStatus!,
+          },
+        ),
+        hasActiveFilters:
+            state.bedBoardWardId != null || state.bedBoardStatus != null,
+        onFilterChanged: (AppSearchBarFilterValue value) async {
+          final String? nextWard = value.option(_wardFilterKey);
+          final String? nextStatus = value.option(_statusFilterKey);
+          AppFailure? failure;
+          if (nextWard != state.bedBoardWardId) {
+            failure = await controller.applyBedBoardWard(nextWard);
+          }
+          if (nextStatus != state.bedBoardStatus) {
+            failure ??= await controller.applyBedBoardStatus(nextStatus);
+          }
+          if (context.mounted) {
+            _showFailure(context, failure);
+          }
         },
       ),
+      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+        title: l10n.ipdBedBoardEmptyTitle,
+        body: l10n.ipdBedBoardEmptyBody,
+        icon: Icons.bed_outlined,
+      ),
+      columns: <AppListTableColumn<IpdBedBoardEntry>>[
+        AppListTableColumn<IpdBedBoardEntry>(
+          label: l10n.ipdBedColumnLabel,
+          sortComparator: (IpdBedBoardEntry a, IpdBedBoardEntry b) =>
+              appListTableCompareText(a.bedLabel, b.bedLabel),
+          cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
+            return Text(
+              bed.bedLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+            );
+          },
+        ),
+        AppListTableColumn<IpdBedBoardEntry>(
+          label: l10n.ipdWardColumnLabel,
+          sortComparator: (IpdBedBoardEntry a, IpdBedBoardEntry b) =>
+              appListTableCompareText(a.wardDisplayName, b.wardDisplayName),
+          cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
+            return Text(
+              bed.wardDisplayName ?? context.l10n.profileUnknownValue,
+            );
+          },
+        ),
+        AppListTableColumn<IpdBedBoardEntry>(
+          label: l10n.ipdRoomColumnLabel,
+          cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
+            return Text(
+              bed.roomDisplayName ?? context.l10n.profileUnknownValue,
+            );
+          },
+        ),
+        AppListTableColumn<IpdBedBoardEntry>(
+          label: l10n.opdStatusColumnLabel,
+          sortComparator: (IpdBedBoardEntry a, IpdBedBoardEntry b) =>
+              appListTableCompareText(a.status, b.status),
+          cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
+            return AppWorkspaceStatusBadge(
+              status: AppWorkspaceStatus(
+                label: bedStatusLabel(context, bed.status),
+                tone: _bedStatusTone(bed.status),
+              ),
+            );
+          },
+        ),
+        AppListTableColumn<IpdBedBoardEntry>(
+          label: l10n.ipdCurrentPatientColumnLabel,
+          cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
+            if (bed.occupantPatientName == null &&
+                bed.occupantAdmissionDisplayId == null) {
+              return const Text('—');
+            }
+            return _BedOccupantCell(bed: bed);
+          },
+        ),
+        AppListTableColumn<IpdBedBoardEntry>(
+          label: l10n.ipdNextActionColumnLabel,
+          cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
+            return _BedActionMenu(
+              bed: bed,
+              canManageBeds: widget.canManageBeds,
+              enabled: !state.isSaving,
+              onAction: (_BedAction action) =>
+                  _runAction(context, controller, bed, action),
+            );
+          },
+        ),
+      ],
+      mobileItemBuilder: (BuildContext context, IpdBedBoardEntry bed) {
+        return _BedBoardMobileRow(
+          bed: bed,
+          canManageBeds: widget.canManageBeds,
+          enabled: !state.isSaving,
+          onAction: (_BedAction action) =>
+              _runAction(context, controller, bed, action),
+        );
+      },
     );
   }
 

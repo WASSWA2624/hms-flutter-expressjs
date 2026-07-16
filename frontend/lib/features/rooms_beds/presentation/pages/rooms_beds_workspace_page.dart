@@ -203,8 +203,7 @@ class _RoomsBedsWorkspaceContentState
             ],
             selectedId: _section.name,
             onTabTapped: (String tabId) {
-              for (final RoomsBedsSection section
-                  in RoomsBedsSection.values) {
+              for (final RoomsBedsSection section in RoomsBedsSection.values) {
                 if (section.name == tabId) {
                   _handleTabChanged(section);
                   break;

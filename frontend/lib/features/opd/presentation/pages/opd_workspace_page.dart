@@ -112,6 +112,8 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     final ThemeData theme = Theme.of(context);
     final OpdWorkspaceState state = widget.state;
     final List<_OpdTableItem> allItems = _tableItems(context, state);
+    final ({Widget primary, List<Widget> secondary}) toolbar =
+        _opdToolbarForSection(context, ref, _section, state);
 
     return ResponsivePage(
       maxWidth: PageMaxWidth.dataHeavy,
@@ -142,27 +144,8 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
                   }
                 }
               },
-              primaryAction: AppAccessActionGate(
-                requirement: opdEncounterPermissionRequirement,
-                builder: (BuildContext context, bool isAllowed) {
-                  return AppTabToolbarPrimary(
-                    label: l10n.opdStartWalkInAction,
-                    icon: opdEncounterIcon,
-                    semanticLabel: l10n.opdStartWalkInAction,
-                    tooltip: l10n.opdStartEncounterTooltip,
-                    enabled: isAllowed,
-                    onPressed: () {
-                      unawaited(
-                        openOpdWorkspaceEncounterFlow(
-                          context,
-                          ref,
-                          widget.state,
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
+              primaryAction: toolbar.primary,
+              secondaryActions: toolbar.secondary,
             ),
             SizedBox(height: theme.spacing.sm),
             ValueListenableBuilder<_OpdTableFilter>(
@@ -194,6 +177,63 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
         ),
       ),
     );
+  }
+
+  ({Widget primary, List<Widget> secondary}) _opdToolbarForSection(
+    BuildContext context,
+    WidgetRef ref,
+    OpdWorkspaceSection section,
+    OpdWorkspaceState state,
+  ) {
+    final AppLocalizations l10n = context.l10n;
+    final bool isRefreshing =
+        state.isRefreshingAppointments ||
+        state.isRefreshingQueue ||
+        state.isRefreshingFlows ||
+        state.isRefreshingTriageQueue;
+
+    final Widget primary = switch (section) {
+      OpdWorkspaceSection.all ||
+      OpdWorkspaceSection.arrivals ||
+      OpdWorkspaceSection.queue ||
+      OpdWorkspaceSection.triage ||
+      OpdWorkspaceSection.active => AppAccessActionGate(
+        requirement: opdEncounterPermissionRequirement,
+        builder: (BuildContext context, bool isAllowed) {
+          return AppTabToolbarPrimary(
+            label: l10n.opdStartWalkInAction,
+            icon: opdEncounterIcon,
+            semanticLabel: l10n.opdStartWalkInAction,
+            tooltip: l10n.opdStartEncounterTooltip,
+            enabled: isAllowed,
+            onPressed: () {
+              unawaited(openOpdWorkspaceEncounterFlow(context, ref, state));
+            },
+          );
+        },
+      ),
+    };
+
+    final List<Widget> secondary = switch (section) {
+      OpdWorkspaceSection.all ||
+      OpdWorkspaceSection.arrivals ||
+      OpdWorkspaceSection.queue ||
+      OpdWorkspaceSection.triage ||
+      OpdWorkspaceSection.active => <Widget>[
+        AppTabToolbarAction(
+          label: l10n.commonRefreshActionLabel,
+          icon: Icons.refresh,
+          isLoading: isRefreshing,
+          onPressed: () {
+            unawaited(
+              ref.read(opdWorkspaceControllerProvider.notifier).refresh(),
+            );
+          },
+        ),
+      ],
+    };
+
+    return (primary: primary, secondary: secondary);
   }
 
   void _setFilter(_OpdTableFilter filter) {

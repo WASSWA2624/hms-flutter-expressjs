@@ -302,7 +302,12 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
                 }
               }
             },
-            primaryAction: _primaryActionForSection(context, ref, section, state),
+            primaryAction: _primaryActionForSection(
+              context,
+              ref,
+              section,
+              state,
+            ),
           ),
           SizedBox(height: theme.spacing.sm),
           _buildWorklist(context, ref, controller),

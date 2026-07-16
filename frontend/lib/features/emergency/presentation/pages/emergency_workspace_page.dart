@@ -89,7 +89,7 @@ class _EmergencyWorkspaceContentState
     _columnVisibilityController =
         AppListTableColumnVisibilityController<EmergencyCaseSummary>();
     _currentTab =
-        _tabFromScopeValue(widget.initialQuery.scope) ??
+        emergencyTabFromScopeValue(widget.initialQuery.scope) ??
         EmergencyBoardTab.active;
     if (widget.initialQuery.hasRouteTargeting) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -112,10 +112,10 @@ class _EmergencyWorkspaceContentState
       emergencyWorkspaceControllerProvider.notifier,
     );
 
-    final EmergencyBoardTab? scopeTab = _tabFromScopeValue(query.scope);
+    final EmergencyBoardTab? scopeTab = emergencyTabFromScopeValue(query.scope);
     if (scopeTab != null) {
       setState(() => _currentTab = scopeTab);
-      await controller.applyScope(_boardScopeForTab(scopeTab));
+      await controller.applyScope(emergencyBoardScopeForTab(scopeTab));
     }
 
     final String searchTerm = query.caseId.isNotEmpty
@@ -206,36 +206,28 @@ class _EmergencyWorkspaceContentState
                   AppTabItem(
                     id: tab.name,
                     icon: _tabIcon(tab),
-                    label: _tabLabel(tab),
+                    label: emergencyTabLabel(tab),
                     count: _tabCount(state, tab),
                     countTone: _tabCountTone(tab),
                   ),
               ],
               selectedId: _currentTab.name,
               onTabTapped: (String tabId) {
-                for (final EmergencyBoardTab tab
-                    in EmergencyBoardTab.values) {
+                for (final EmergencyBoardTab tab in EmergencyBoardTab.values) {
                   if (tab.name == tabId) {
                     setState(() => _currentTab = tab);
                     _updateUrlForTab(tab);
-                    controller.applyScope(_boardScopeForTab(tab));
+                    controller.applyScope(emergencyBoardScopeForTab(tab));
                     break;
                   }
                 }
               },
-              primaryAction: _currentTab != EmergencyBoardTab.closed
-                  ? AppAccessActionGate(
-                      requirement: _writeRequirement,
-                      builder: (BuildContext context, bool isAllowed) {
-                        return AppTabToolbarPrimary(
-                          label: EmergencyText.quickArrival,
-                          icon: Icons.add_circle_outline,
-                          enabled: isAllowed,
-                          onPressed: () => _openQuickArrivalDialog(context),
-                        );
-                      },
-                    )
-                  : null,
+              primaryAction: _buildPrimaryAction(context),
+              secondaryActions: _buildSecondaryActions(
+                context,
+                state,
+                controller,
+              ),
             ),
             SizedBox(height: theme.spacing.sm),
             AppListTable<EmergencyCaseSummary>(
@@ -283,6 +275,40 @@ class _EmergencyWorkspaceContentState
         ),
       ),
     );
+  }
+
+  Widget? _buildPrimaryAction(BuildContext context) {
+    if (!emergencyShowsQuickArrival(_currentTab)) {
+      return null;
+    }
+    return AppAccessActionGate(
+      requirement: _writeRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        return AppTabToolbarPrimary(
+          label: EmergencyText.quickArrival,
+          icon: Icons.add_circle_outline,
+          enabled: isAllowed,
+          onPressed: () => _openQuickArrivalDialog(context),
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildSecondaryActions(
+    BuildContext context,
+    EmergencyWorkspaceState state,
+    EmergencyWorkspaceController controller,
+  ) {
+    return <Widget>[
+      AppTabToolbarAction(
+        label: context.l10n.commonRefreshActionLabel,
+        icon: Icons.refresh,
+        enabled: !state.isRefreshingBoard,
+        onPressed: state.isRefreshingBoard
+            ? null
+            : () => unawaited(controller.refresh()),
+      ),
+    ];
   }
 
   List<EmergencyCaseSummary> _buildRows(EmergencyWorkspaceState state) {
@@ -551,17 +577,6 @@ class _EmergencyWorkspaceContentState
     }
   }
 
-  static String _tabLabel(EmergencyBoardTab tab) {
-    return switch (tab) {
-      EmergencyBoardTab.active => 'Active cases',
-      EmergencyBoardTab.critical => EmergencyText.critical,
-      EmergencyBoardTab.ambulance => EmergencyText.ambulance,
-      EmergencyBoardTab.handoff => 'Handoff ready',
-      EmergencyBoardTab.closed => EmergencyText.closed,
-      EmergencyBoardTab.all => EmergencyText.all,
-    };
-  }
-
   static IconData _tabIcon(EmergencyBoardTab tab) {
     return switch (tab) {
       EmergencyBoardTab.active => Icons.emergency_outlined,
@@ -572,28 +587,47 @@ class _EmergencyWorkspaceContentState
       EmergencyBoardTab.all => Icons.inventory_2_outlined,
     };
   }
+}
 
-  static EmergencyBoardScope _boardScopeForTab(EmergencyBoardTab tab) {
-    return switch (tab) {
-      EmergencyBoardTab.active => EmergencyBoardScope.active,
-      EmergencyBoardTab.critical => EmergencyBoardScope.critical,
-      EmergencyBoardTab.ambulance => EmergencyBoardScope.ambulance,
-      EmergencyBoardTab.handoff => EmergencyBoardScope.handoff,
-      EmergencyBoardTab.closed => EmergencyBoardScope.closed,
-      EmergencyBoardTab.all => EmergencyBoardScope.all,
-    };
-  }
+/// Tab label used by [AppTabStrip] for the Emergency board.
+String emergencyTabLabel(EmergencyBoardTab tab) {
+  return switch (tab) {
+    EmergencyBoardTab.active => EmergencyText.activeCases,
+    EmergencyBoardTab.critical => EmergencyText.critical,
+    EmergencyBoardTab.ambulance => EmergencyText.ambulance,
+    EmergencyBoardTab.handoff => EmergencyText.handoffReady,
+    EmergencyBoardTab.closed => EmergencyText.closed,
+    EmergencyBoardTab.all => EmergencyText.all,
+  };
+}
 
-  static EmergencyBoardTab? _tabFromScopeValue(String value) {
-    final String normalized = value.trim().toLowerCase();
-    if (normalized.isEmpty) {
-      return null;
-    }
-    for (final EmergencyBoardTab tab in EmergencyBoardTab.values) {
-      if (tab.name == normalized) {
-        return tab;
-      }
-    }
+/// Whether the tab toolbar shows Quick arrival as the primary action.
+bool emergencyShowsQuickArrival(EmergencyBoardTab tab) {
+  return tab != EmergencyBoardTab.closed;
+}
+
+/// Maps a board tab to the repository / controller scope value.
+EmergencyBoardScope emergencyBoardScopeForTab(EmergencyBoardTab tab) {
+  return switch (tab) {
+    EmergencyBoardTab.active => EmergencyBoardScope.active,
+    EmergencyBoardTab.critical => EmergencyBoardScope.critical,
+    EmergencyBoardTab.ambulance => EmergencyBoardScope.ambulance,
+    EmergencyBoardTab.handoff => EmergencyBoardScope.handoff,
+    EmergencyBoardTab.closed => EmergencyBoardScope.closed,
+    EmergencyBoardTab.all => EmergencyBoardScope.all,
+  };
+}
+
+/// Resolves a URL `scope` / `board` / `tab` query value to a board tab.
+EmergencyBoardTab? emergencyTabFromScopeValue(String value) {
+  final String normalized = value.trim().toLowerCase();
+  if (normalized.isEmpty) {
     return null;
   }
+  for (final EmergencyBoardTab tab in EmergencyBoardTab.values) {
+    if (tab.name == normalized) {
+      return tab;
+    }
+  }
+  return null;
 }

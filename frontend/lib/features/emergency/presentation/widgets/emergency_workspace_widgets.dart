@@ -16,13 +16,14 @@ import 'package:hosspi_hms/features/emergency/presentation/widgets/emergency_dia
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
+import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 
 abstract final class EmergencyText {
   static const String active = 'Active';
+  static const String activeCases = 'Active cases';
   static const String all = 'All';
   static const String allBoard = 'All emergency records';
   static const String ambulance = 'Ambulance';
@@ -32,7 +33,6 @@ abstract final class EmergencyText {
   static const String billingDeferredMessage =
       'Stabilize first — billing for this admission can be completed later in '
       'the Billing workspace.';
-  static const String boardScope = 'Board scope';
   static const String cancel = 'Cancel';
   static const String careBeforeBilling = 'Care before billing';
   static const String caseLabel = 'Case';
@@ -51,6 +51,7 @@ abstract final class EmergencyText {
   static const String handoffOutcome = 'Handoff outcome';
   static const String handoffOutcomeDescription =
       'The receiving workflow created when this case was handed off.';
+  static const String handoffReady = 'Handoff ready';
   static const String handoffTerminalDescription =
       'This case was closed at handoff. No downstream encounter was created.';
   static const String handoffTime = 'Handoff time';
@@ -278,35 +279,6 @@ Color? rowColor(BuildContext context, EmergencyCaseSummary item) {
     return null;
   }
   return Theme.of(context).colorScheme.errorContainer.withValues(alpha: 0.20);
-}
-
-List<AppSelectOption<EmergencyBoardScope>> scopeOptions() {
-  return const <AppSelectOption<EmergencyBoardScope>>[
-    AppSelectOption<EmergencyBoardScope>(
-      value: EmergencyBoardScope.active,
-      label: EmergencyText.active,
-    ),
-    AppSelectOption<EmergencyBoardScope>(
-      value: EmergencyBoardScope.critical,
-      label: EmergencyText.critical,
-    ),
-    AppSelectOption<EmergencyBoardScope>(
-      value: EmergencyBoardScope.ambulance,
-      label: EmergencyText.ambulance,
-    ),
-    AppSelectOption<EmergencyBoardScope>(
-      value: EmergencyBoardScope.handoff,
-      label: EmergencyText.handoff,
-    ),
-    AppSelectOption<EmergencyBoardScope>(
-      value: EmergencyBoardScope.closed,
-      label: EmergencyText.closed,
-    ),
-    AppSelectOption<EmergencyBoardScope>(
-      value: EmergencyBoardScope.all,
-      label: EmergencyText.all,
-    ),
-  ];
 }
 
 List<AppSelectOption<String>> severityOptions() {

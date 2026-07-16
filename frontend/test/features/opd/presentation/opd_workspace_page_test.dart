@@ -231,6 +231,9 @@ void main() {
     expect(find.text('Tina Triage'), findsOneWidget);
     expect(find.text('Alex Active'), findsOneWidget);
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.text('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Filters'), findsOneWidget);
+    expect(find.byTooltip('Table settings'), findsOneWidget);
   });
 
   testWidgets('switching tabs filters by category and updates URL', (
@@ -249,6 +252,8 @@ void main() {
     expect(find.text('Quinn Queue'), findsNothing);
     expect(find.text('Tina Triage'), findsNothing);
     expect(find.text('Alex Active'), findsNothing);
+    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.text('Refresh'), findsOneWidget);
 
     await tester.tap(find.textContaining('Queue').first);
     await tester.pumpAndSettle();
@@ -256,6 +261,8 @@ void main() {
     expect(router.state.uri.queryParameters['section'], 'queue');
     expect(find.text('Quinn Queue'), findsOneWidget);
     expect(find.text('Ann Arrival'), findsNothing);
+    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.text('Refresh'), findsOneWidget);
 
     await tester.tap(find.textContaining('Triage').first);
     await tester.pumpAndSettle();
@@ -263,6 +270,8 @@ void main() {
     expect(router.state.uri.queryParameters['section'], 'triage');
     expect(find.text('Tina Triage'), findsOneWidget);
     expect(find.text('Alex Active'), findsNothing);
+    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.text('Refresh'), findsOneWidget);
 
     await tester.tap(find.textContaining('Active').first);
     await tester.pumpAndSettle();
@@ -270,6 +279,8 @@ void main() {
     expect(router.state.uri.queryParameters['section'], 'active');
     expect(find.text('Alex Active'), findsOneWidget);
     expect(find.text('Tina Triage'), findsNothing);
+    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.text('Refresh'), findsOneWidget);
 
     await tester.tap(find.textContaining('All worklist').first);
     await tester.pumpAndSettle();
@@ -279,6 +290,8 @@ void main() {
     expect(find.text('Quinn Queue'), findsOneWidget);
     expect(find.text('Tina Triage'), findsOneWidget);
     expect(find.text('Alex Active'), findsOneWidget);
+    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.text('Refresh'), findsOneWidget);
   });
 
   testWidgets('deep link section=triage selects Triage tab', (
@@ -296,6 +309,8 @@ void main() {
     expect(find.text('Ann Arrival'), findsNothing);
     expect(find.text('Quinn Queue'), findsNothing);
     expect(find.text('Alex Active'), findsNothing);
+    expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.text('Refresh'), findsOneWidget);
   });
 
   testWidgets('search filters within the active tab subset', (
@@ -327,5 +342,6 @@ void main() {
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.text('Ann Arrival'), findsOneWidget);
     expect(find.byType(AppTabToolbarPrimary), findsOneWidget);
+    expect(find.text('Refresh'), findsOneWidget);
   });
 }

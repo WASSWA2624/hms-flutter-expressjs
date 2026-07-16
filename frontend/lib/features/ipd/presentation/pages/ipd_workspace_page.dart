@@ -317,18 +317,11 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
                     );
                 _selectSection(section);
               },
-              primaryAction: AppAccessActionGate(
-                requirement: _ipdOperationalWriteRequirement,
-                builder: (BuildContext context, bool isAllowed) {
-                  return AppTabToolbarPrimary(
-                    label: l10n.ipdStartAdmissionAction,
-                    icon: Icons.person_add_alt_1_outlined,
-                    enabled: isAllowed && !state.isSaving,
-                    onPressed: isAllowed
-                        ? () => unawaited(_openStartAdmissionDialog(context))
-                        : null,
-                  );
-                },
+              primaryAction: _buildPrimaryAction(l10n, state, canManageBeds),
+              secondaryActions: _buildSecondaryActions(
+                l10n,
+                state,
+                canManageBeds,
               ),
             ),
             SizedBox(height: theme.spacing.sm),
@@ -336,7 +329,6 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
               IpdBedBoardPanel(
                 state: state,
                 canManageBeds: canManageBeds,
-                onManageBeds: () => context.go(AppRoutes.roomsBeds.path),
                 onOpenAdmission: (IpdBedBoardEntry bed) {
                   final String? admissionId =
                       bed.occupantAdmissionId ?? bed.occupantAdmissionDisplayId;
@@ -350,6 +342,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
             else
               _IpdBoardPanel(
                 state: state,
+                section: _section,
                 searchController: _searchController,
                 columnVisibilityController: _tableColumnController,
               ),
@@ -357,6 +350,73 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
         ),
       ),
     );
+  }
+
+  Widget? _buildPrimaryAction(
+    AppLocalizations l10n,
+    IpdWorkspaceState state,
+    bool canManageBeds,
+  ) {
+    if (_section.isBedBoard && canManageBeds) {
+      return AppTabToolbarPrimary(
+        label: l10n.ipdBedBoardManageBedsAction,
+        icon: Icons.open_in_new,
+        tooltip: l10n.ipdBedBoardManageBedsAction,
+        semanticLabel: l10n.ipdBedBoardManageBedsAction,
+        onPressed: () => context.go(AppRoutes.roomsBeds.path),
+      );
+    }
+    return AppAccessActionGate(
+      requirement: _ipdOperationalWriteRequirement,
+      builder: (BuildContext context, bool isAllowed) {
+        return AppTabToolbarPrimary(
+          label: l10n.ipdStartAdmissionAction,
+          icon: Icons.person_add_alt_1_outlined,
+          tooltip: l10n.ipdStartAdmissionAction,
+          semanticLabel: l10n.ipdStartAdmissionAction,
+          enabled: isAllowed && !state.isSaving,
+          onPressed: isAllowed
+              ? () => unawaited(_openStartAdmissionDialog(context))
+              : null,
+        );
+      },
+    );
+  }
+
+  List<Widget> _buildSecondaryActions(
+    AppLocalizations l10n,
+    IpdWorkspaceState state,
+    bool canManageBeds,
+  ) {
+    return <Widget>[
+      AppTabToolbarAction(
+        label: l10n.commonRefreshActionLabel,
+        icon: Icons.refresh,
+        tooltip: l10n.commonRefreshActionLabel,
+        semanticLabel: l10n.commonRefreshActionLabel,
+        onPressed: () {
+          unawaited(
+            ref.read(ipdWorkspaceControllerProvider.notifier).refresh(),
+          );
+        },
+      ),
+      if (_section.isBedBoard && canManageBeds)
+        AppAccessActionGate(
+          requirement: _ipdOperationalWriteRequirement,
+          builder: (BuildContext context, bool isAllowed) {
+            return AppTabToolbarAction(
+              label: l10n.ipdStartAdmissionAction,
+              icon: Icons.person_add_alt_1_outlined,
+              tooltip: l10n.ipdStartAdmissionAction,
+              semanticLabel: l10n.ipdStartAdmissionAction,
+              enabled: isAllowed && !state.isSaving,
+              onPressed: isAllowed
+                  ? () => unawaited(_openStartAdmissionDialog(context))
+                  : null,
+            );
+          },
+        ),
+    ];
   }
 
   static int? _tabCount(int count) => count > 0 ? count : null;
@@ -378,11 +438,13 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
 class _IpdBoardPanel extends ConsumerWidget {
   const _IpdBoardPanel({
     required this.state,
+    required this.section,
     required this.searchController,
     required this.columnVisibilityController,
   });
 
   final IpdWorkspaceState state;
+  final IpdWorkspaceSection section;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<IpdAdmissionSummary>
   columnVisibilityController;
@@ -398,6 +460,8 @@ class _IpdBoardPanel extends ConsumerWidget {
       page: state.admissions,
       isLoading: state.isRefreshing,
       columnVisibilityController: columnVisibilityController,
+      columnVisibilityStorageKey: 'ipd_${section.name}',
+      columnWidthStorageKey: 'ipd_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       search: AppListTableSearch<IpdAdmissionSummary>(
         controller: searchController,

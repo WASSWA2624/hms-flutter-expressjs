@@ -73,9 +73,13 @@ class _ReceptionWorkspaceContent extends ConsumerStatefulWidget {
 
 class _ReceptionWorkspaceContentState
     extends ConsumerState<_ReceptionWorkspaceContent> {
+  static const String _statusFilterKey = 'status';
+  static const String _stageFilterKey = 'stage';
+
   late final TextEditingController _searchController;
   late ReceptionDeskSection _section;
   String? _appliedRouteSignature;
+  AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
   late final AppListTableColumnVisibilityController<_ReceptionDeskRow>
   _columnVisibilityController;
 
@@ -140,9 +144,14 @@ class _ReceptionWorkspaceContentState
     }
     _appliedRouteSignature = query.signature;
 
-    final ReceptionDeskSection? section = _sectionFromQuery(query.section);
+    final ReceptionDeskSection? section = receptionDeskSectionFromQuery(
+      query.section,
+    );
     if (section != null) {
-      setState(() => _section = section);
+      setState(() {
+        _section = section;
+        _filterValue = AppSearchBarFilterValue.empty;
+      });
     }
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;
@@ -160,44 +169,11 @@ class _ReceptionWorkspaceContentState
     if (!mounted) {
       return;
     }
-    final String tab = _sectionToQueryValue(section);
+    final String tab = receptionDeskSectionToQueryValue(section);
     final String location = AppRoutes.reception.location(
       queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
     GoRouter.of(context).replace<void>(location);
-  }
-
-  static String _sectionToQueryValue(ReceptionDeskSection section) {
-    return switch (section) {
-      ReceptionDeskSection.appointments => 'appointments',
-      ReceptionDeskSection.queue => 'desk-queue',
-      ReceptionDeskSection.activeVisits => 'active',
-      ReceptionDeskSection.paymentGate => 'payment-gate',
-    };
-  }
-
-  ReceptionDeskSection? _sectionFromQuery(String raw) {
-    switch (raw.trim().toLowerCase()) {
-      case 'appointments':
-      case 'meetings':
-        return ReceptionDeskSection.appointments;
-      case 'queue':
-      case 'desk_queue':
-      case 'desk-queue':
-        return ReceptionDeskSection.queue;
-      case 'in-progress':
-      case 'active':
-      case 'visits':
-      case 'turnaround_pressure':
-        return ReceptionDeskSection.activeVisits;
-      case 'payment':
-      case 'payment-gate':
-      case 'follow-up':
-      case 'no_show_pressure':
-        return ReceptionDeskSection.paymentGate;
-      default:
-        return null;
-    }
   }
 
   OpdFlowSummary? _findFlow(String id) {
@@ -225,7 +201,8 @@ class _ReceptionWorkspaceContentState
         state.isRefreshingQueue ||
         state.isRefreshingFlows;
 
-    final List<_ReceptionDeskRow> rows = _buildRows(state);
+    final List<_ReceptionDeskRow> sectionRows = _buildSectionRows(state);
+    final List<_ReceptionDeskRow> rows = _applyStatusFilter(sectionRows);
     final List<AppListTableColumn<_ReceptionDeskRow>> columns =
         _columnsForSection(l10n);
 
@@ -253,25 +230,17 @@ class _ReceptionWorkspaceContentState
                 for (final ReceptionDeskSection section
                     in ReceptionDeskSection.values) {
                   if (section.name == tabId) {
-                    setState(() => _section = section);
+                    setState(() {
+                      _section = section;
+                      _filterValue = AppSearchBarFilterValue.empty;
+                    });
                     _updateUrlForSection(section);
                     break;
                   }
                 }
               },
-              primaryAction: AppAccessActionGate(
-                requirement: receptionFrontDeskWriteRequirement,
-                builder: (BuildContext context, bool isAllowed) {
-                  return AppTabToolbarPrimary(
-                    label: l10n.receptionRegisterPatientAction,
-                    icon: Icons.person_add_alt_1_outlined,
-                    enabled: isAllowed,
-                    onPressed: isAllowed
-                        ? () => unawaited(_openRegisterPatient())
-                        : null,
-                  );
-                },
-              ),
+              primaryAction: _buildPrimaryAction(l10n, isRefreshing),
+              secondaryActions: _buildSecondaryActions(l10n, isRefreshing),
             ),
             SizedBox(height: theme.spacing.sm),
             AppListTable<_ReceptionDeskRow>(
@@ -292,8 +261,29 @@ class _ReceptionWorkspaceContentState
                 controller: _searchController,
                 semanticLabel: l10n.receptionSearchHint,
                 hintText: l10n.receptionSearchHint,
+                clearLabel: l10n.receptionClearFiltersAction,
                 isLoading: isRefreshing,
                 matcher: _searchMatcher,
+                showAdvancedFilterButton: true,
+                advancedFilterButtonLabel: l10n.receptionFiltersLabel,
+                advancedFilterTitle: l10n.receptionFiltersLabel,
+                advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                advancedFilterResetLabel: l10n.receptionClearFiltersAction,
+                enableDateFilter: false,
+                allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+                filterGroups: <AppSearchBarFilterGroup>[
+                  AppSearchBarFilterGroup(
+                    key: _filterGroupKey,
+                    label: _filterGroupLabel(l10n),
+                    allLabel: l10n.opdAllFieldsFilterLabel,
+                    choices: _statusFilterChoices(sectionRows, l10n),
+                  ),
+                ],
+                filterValue: _filterValue,
+                hasActiveFilters: _filterValue.isActive,
+                onFilterChanged: (AppSearchBarFilterValue value) {
+                  setState(() => _filterValue = value);
+                },
               ),
               emptyBuilder: (_) => AppStateView(
                 title: l10n.receptionEmptyTitle,
@@ -306,6 +296,117 @@ class _ReceptionWorkspaceContentState
         ),
       ),
     );
+  }
+
+  String get _filterGroupKey {
+    return switch (_section) {
+      ReceptionDeskSection.appointments ||
+      ReceptionDeskSection.queue => _statusFilterKey,
+      ReceptionDeskSection.activeVisits ||
+      ReceptionDeskSection.paymentGate => _stageFilterKey,
+    };
+  }
+
+  String _filterGroupLabel(AppLocalizations l10n) {
+    return switch (_section) {
+      ReceptionDeskSection.appointments ||
+      ReceptionDeskSection.queue => l10n.receptionStatusLabel,
+      ReceptionDeskSection.activeVisits ||
+      ReceptionDeskSection.paymentGate => l10n.receptionCurrentStepLabel,
+    };
+  }
+
+  Widget _buildPrimaryAction(AppLocalizations l10n, bool isRefreshing) {
+    return switch (_section) {
+      ReceptionDeskSection.appointments => AppAccessActionGate(
+        requirement: receptionFrontDeskWriteRequirement,
+        builder: (BuildContext context, bool isAllowed) {
+          return AppTabToolbarPrimary(
+            label: l10n.receptionScheduleAppointmentAction,
+            icon: Icons.calendar_month_outlined,
+            enabled: isAllowed && !isRefreshing,
+            onPressed: isAllowed && !isRefreshing
+                ? () => unawaited(_scheduleAppointment())
+                : null,
+          );
+        },
+      ),
+      ReceptionDeskSection.queue ||
+      ReceptionDeskSection.activeVisits => AppAccessActionGate(
+        requirement: receptionFrontDeskWriteRequirement,
+        builder: (BuildContext context, bool isAllowed) {
+          return AppTabToolbarPrimary(
+            label: l10n.receptionRegisterPatientAction,
+            icon: Icons.person_add_alt_1_outlined,
+            enabled: isAllowed && !isRefreshing,
+            onPressed: isAllowed && !isRefreshing
+                ? () => unawaited(_openRegisterPatient())
+                : null,
+          );
+        },
+      ),
+      ReceptionDeskSection.paymentGate => AppTabToolbarPrimary(
+        label: l10n.navigationBillingLabel,
+        icon: Icons.payments_outlined,
+        enabled: !isRefreshing,
+        onPressed: isRefreshing
+            ? null
+            : () => context.go(AppRoutes.billing.location()),
+      ),
+    };
+  }
+
+  List<Widget> _buildSecondaryActions(
+    AppLocalizations l10n,
+    bool isRefreshing,
+  ) {
+    final AppTabToolbarAction refreshAction = AppTabToolbarAction(
+      label: l10n.commonRefreshActionLabel,
+      icon: Icons.refresh,
+      isLoading: isRefreshing,
+      enabled: !isRefreshing,
+      onPressed: isRefreshing ? null : () => unawaited(_refreshWorkspace()),
+    );
+
+    return switch (_section) {
+      ReceptionDeskSection.appointments => <Widget>[
+        AppAccessActionGate(
+          requirement: receptionFrontDeskWriteRequirement,
+          builder: (BuildContext context, bool isAllowed) {
+            return AppTabToolbarAction(
+              label: l10n.receptionRegisterPatientAction,
+              icon: Icons.person_add_alt_1_outlined,
+              enabled: isAllowed && !isRefreshing,
+              onPressed: isAllowed && !isRefreshing
+                  ? () => unawaited(_openRegisterPatient())
+                  : null,
+            );
+          },
+        ),
+        refreshAction,
+        AppTabToolbarAction(
+          label: l10n.receptionOpenRegistryAction,
+          icon: Icons.badge_outlined,
+          enabled: !isRefreshing,
+          onPressed: isRefreshing
+              ? null
+              : () => context.go(AppRoutes.patients.location()),
+        ),
+      ],
+      ReceptionDeskSection.queue ||
+      ReceptionDeskSection.activeVisits ||
+      ReceptionDeskSection.paymentGate => <Widget>[
+        refreshAction,
+        AppTabToolbarAction(
+          label: l10n.receptionOpenOpdAction,
+          icon: Icons.local_hospital_outlined,
+          enabled: !isRefreshing,
+          onPressed: isRefreshing
+              ? null
+              : () => context.go(AppRoutes.opd.location()),
+        ),
+      ],
+    };
   }
 
   static bool _searchMatcher(_ReceptionDeskRow row, String query) {
@@ -324,7 +425,7 @@ class _ReceptionWorkspaceContentState
     );
   }
 
-  List<_ReceptionDeskRow> _buildRows(OpdWorkspaceState state) {
+  List<_ReceptionDeskRow> _buildSectionRows(OpdWorkspaceState state) {
     switch (_section) {
       case ReceptionDeskSection.appointments:
         return <_ReceptionDeskRow>[
@@ -351,6 +452,47 @@ class _ReceptionWorkspaceContentState
               _ReceptionDeskRow.flow(flow),
         ];
     }
+  }
+
+  List<_ReceptionDeskRow> _applyStatusFilter(List<_ReceptionDeskRow> rows) {
+    final String? selected = _filterValue.option(_filterGroupKey);
+    if (selected == null || selected.isEmpty) {
+      return rows;
+    }
+    final String needle = selected.toUpperCase();
+    return <_ReceptionDeskRow>[
+      for (final _ReceptionDeskRow row in rows)
+        if ((row.status ?? '').toUpperCase() == needle) row,
+    ];
+  }
+
+  List<AppSearchBarFilterChoice> _statusFilterChoices(
+    List<_ReceptionDeskRow> rows,
+    AppLocalizations l10n,
+  ) {
+    final Set<String> seen = <String>{};
+    final List<AppSearchBarFilterChoice> choices = <AppSearchBarFilterChoice>[];
+    for (final _ReceptionDeskRow row in rows) {
+      final String? status = row.status?.trim();
+      if (status == null || status.isEmpty) {
+        continue;
+      }
+      final String key = status.toUpperCase();
+      if (!seen.add(key)) {
+        continue;
+      }
+      choices.add(
+        AppSearchBarFilterChoice(
+          value: key,
+          label: opdStageDisplayLabel(l10n, status),
+        ),
+      );
+    }
+    choices.sort(
+      (AppSearchBarFilterChoice a, AppSearchBarFilterChoice b) =>
+          a.label.compareTo(b.label),
+    );
+    return choices;
   }
 
   int _sectionCount(OpdWorkspaceState state, ReceptionDeskSection section) {
@@ -723,6 +865,33 @@ class _ReceptionWorkspaceContentState
       ReceptionDeskSection.activeVisits => Icons.pending_actions_outlined,
       ReceptionDeskSection.paymentGate => Icons.payments_outlined,
     };
+  }
+
+  Future<void> _refreshWorkspace() async {
+    final AppFailure? failure = await ref
+        .read(opdWorkspaceControllerProvider.notifier)
+        .refresh();
+    if (!mounted) {
+      return;
+    }
+    _showFailureIfNeeded(context, failure);
+  }
+
+  Future<void> _scheduleAppointment() async {
+    final bool scheduled = await openReceptionScheduleAppointment(
+      context: context,
+      ref: ref,
+    );
+    if (!scheduled || !mounted) {
+      return;
+    }
+    final AppFailure? failure = await ref
+        .read(opdWorkspaceControllerProvider.notifier)
+        .refresh();
+    if (!mounted) {
+      return;
+    }
+    _showFailureIfNeeded(context, failure);
   }
 
   Future<void> _openPatientDetail(_ReceptionDeskRow row) async {

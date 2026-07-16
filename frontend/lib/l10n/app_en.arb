@@ -229,7 +229,7 @@
   "@workspaceGlobalHousekeepingRequestAction": {
     "description": "Global toolbar action to request housekeeping or maintenance."
   },
-  "commonTableSettingsActionLabel": "Table settings",
+  "commonTableSettingsActionLabel": "Settings",
   "@commonTableSettingsActionLabel": {
     "description": "Label for opening a worklist table column settings dialog."
   },
@@ -3014,6 +3014,14 @@
   "@receptionScheduleAppointmentAction": {
     "description": "Toolbar action to schedule an appointment from reception."
   },
+  "receptionFiltersLabel": "Filters",
+  "@receptionFiltersLabel": {
+    "description": "Label for the reception desk table Filters control."
+  },
+  "receptionClearFiltersAction": "Clear filters",
+  "@receptionClearFiltersAction": {
+    "description": "Action to clear advanced filters on the reception desk table."
+  },
   "receptionAppointmentActionsAction": "Appointment actions",
   "@receptionAppointmentActionsAction": {
     "description": "Action to open check-in, reschedule, cancel, and queue for an appointment."
@@ -3113,8 +3121,8 @@
   "opdQueueSummaryLabel": "Queue",
   "opdActiveFlowSummaryLabel": "Active flows",
   "opdCompletedFlowSummaryLabel": "Completed",
-  "opdFiltersLabel": "OPD filters",
-  "opdFilterAction": "Filter OPD table",
+  "opdFiltersLabel": "Filters",
+  "opdFilterAction": "Filters",
   "opdFilterDialogTitle": "Filter OPD table",
   "opdSearchFieldFilterLabel": "Search in",
   "opdAllFieldsFilterLabel": "All fields",
@@ -4737,9 +4745,9 @@
   "@patientsClearFiltersAction": {
     "description": "Clear patient registry filters action label."
   },
-  "patientsAdvancedFiltersAction": "Advanced filters",
+  "patientsAdvancedFiltersAction": "Filters",
   "@patientsAdvancedFiltersAction": {
-    "description": "Open patient registry advanced filters action label."
+    "description": "Table chrome Filters button on Patients registry."
   },
   "patientsAdvancedFiltersTitle": "Advanced filters",
   "@patientsAdvancedFiltersTitle": {
@@ -9511,7 +9519,7 @@
   "@ipdCriticalAlertsSummaryLabel": {
     "description": "Summary card label for critical alerts."
   },
-  "ipdFiltersLabel": "Inpatient filters",
+  "ipdFiltersLabel": "Filters",
   "@ipdFiltersLabel": {
     "description": "Semantic label for inpatient workspace filters."
   },

@@ -382,9 +382,7 @@ class _IntegrationsWorkspaceContentState
                 if (section.name == tabId) {
                   setState(() => _section = section);
                   _updateUrlForSection(section);
-                  unawaited(
-                    controller.applyFilter(_filterForSection(section)),
-                  );
+                  unawaited(controller.applyFilter(_filterForSection(section)));
                   break;
                 }
               }

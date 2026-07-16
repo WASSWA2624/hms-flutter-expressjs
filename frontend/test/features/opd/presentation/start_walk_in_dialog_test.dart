@@ -800,13 +800,13 @@ void main() {
     expect(find.textContaining('25,000'), findsWidgets);
     expect(find.textContaining('20,000'), findsWidgets);
 
-    final Finder tableFilterButton = find.byTooltip('Filter OPD table').last;
+    final Finder tableFilterButton = find.byTooltip('Filters').last;
     await tester.ensureVisible(tableFilterButton);
     await tester.tap(tableFilterButton);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('OPD filters'), findsOneWidget);
+    expect(find.text('Filters'), findsWidgets);
     expect(find.text('Search in'), findsOneWidget);
     expect(find.text('Arrival date'), findsOneWidget);
     expect(find.text('From'), findsOneWidget);

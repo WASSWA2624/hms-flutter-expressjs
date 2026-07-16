@@ -149,9 +149,7 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
                   if (section.name == tabId) {
                     setState(() => _section = section);
                     _updateUrlForSection(section);
-                    unawaited(
-                      controller.applyScope(_scopeForSection(section)),
-                    );
+                    unawaited(controller.applyScope(_scopeForSection(section)));
                     break;
                   }
                 }
@@ -1300,10 +1298,7 @@ class _LabConfigurationsDialogState
                                       ? l10n.labDeleteTestAction
                                       : l10n.labDeletePanelAction,
                                   onPressed: () => showingTests
-                                      ? _openDeleteLabTestDialog(
-                                          context,
-                                          item,
-                                        )
+                                      ? _openDeleteLabTestDialog(context, item)
                                       : _openDeleteLabPanelDialog(
                                           context,
                                           item,

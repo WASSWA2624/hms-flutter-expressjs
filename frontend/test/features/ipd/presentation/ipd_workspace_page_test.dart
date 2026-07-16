@@ -97,6 +97,35 @@ AppAccessPolicy _ipdWritePolicy() {
   );
 }
 
+AppAccessPolicy _ipdBedManagePolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['FACILITY_ADMIN']),
+      permissions: <AppPermission>{
+        AppPermissions.clinicalRead,
+        AppPermissions.clinicalWrite,
+        AppPermissions.operationsWrite,
+        AppPermissions.facilityAdmin,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(
+          code: 'inpatient-bed-management',
+          licenseStatus: 'ACTIVE',
+        ),
+        AppModuleEntitlement(
+          code: 'encounters-vitals',
+          licenseStatus: 'ACTIVE',
+        ),
+        AppModuleEntitlement(
+          code: 'facilities-maintenance',
+          licenseStatus: 'ACTIVE',
+        ),
+      ],
+    ),
+  );
+}
+
 List<IpdAdmissionSummary> _itemsForScope(IpdQueueScope scope) {
   return switch (scope) {
     IpdQueueScope.admissionQueue => <IpdAdmissionSummary>[_queueAdmission],
@@ -198,6 +227,7 @@ Future<GoRouter> _pumpIpdWorkspace(
   IpdAdmissionQuery? initialQuery,
   String initialLocation = '/ipd',
   Size viewport = const Size(1440, 900),
+  AppAccessPolicy? accessPolicy,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -238,7 +268,9 @@ Future<GoRouter> _pumpIpdWorkspace(
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
         ),
-        appAccessPolicyProvider.overrideWithValue(_ipdWritePolicy()),
+        appAccessPolicyProvider.overrideWithValue(
+          accessPolicy ?? _ipdWritePolicy(),
+        ),
       ],
       child: MaterialApp.router(
         routerConfig: router,
@@ -374,6 +406,7 @@ void main() {
 
     expect(find.byType(IpdBedBoardPanel), findsOneWidget);
     expect(find.byType(AppListTable<IpdAdmissionSummary>), findsNothing);
+    expect(find.byType(AppListTable<IpdBedBoardEntry>), findsOneWidget);
     verify(
       () => repository.listBedBoard(
         wardId: any(named: 'wardId'),
@@ -382,7 +415,10 @@ void main() {
         limit: any(named: 'limit'),
       ),
     ).called(greaterThanOrEqualTo(1));
+    // Doctor policy: Manage beds denied → Start admission remains primary.
     expect(find.byTooltip('Start admission'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.text('Live ward bed occupancy and operations.'), findsNothing);
   });
 
   testWidgets('Bed Board tab loads bed board and updates URL', (
@@ -408,6 +444,61 @@ void main() {
         limit: any(named: 'limit'),
       ),
     ).called(greaterThanOrEqualTo(1));
+  });
+
+  testWidgets(
+    'Bed board toolbar shows Manage beds for admins and hides panel header',
+    (WidgetTester tester) async {
+      await _pumpIpdWorkspace(
+        tester,
+        repository: repository,
+        accessPolicy: _ipdBedManagePolicy(),
+        initialLocation: '/ipd?section=bed-board',
+        initialQuery: IpdAdmissionQuery.fromUri(
+          Uri.parse('/ipd?section=bed-board'),
+        ),
+      );
+
+      expect(find.byType(IpdBedBoardPanel), findsOneWidget);
+      expect(find.byTooltip('Manage beds'), findsOneWidget);
+      expect(find.byTooltip('Refresh'), findsOneWidget);
+      expect(find.byTooltip('Start admission'), findsOneWidget);
+      expect(
+        find.text('Live ward bed occupancy and operations.'),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets('switching to Bed board changes toolbar primary action', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIpdWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: _ipdBedManagePolicy(),
+    );
+
+    expect(find.byTooltip('Start admission'), findsOneWidget);
+    expect(find.byTooltip('Manage beds'), findsNothing);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
+
+    await tester.tap(find.textContaining('Bed board').first);
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Manage beds'), findsOneWidget);
+    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Start admission'), findsOneWidget);
+  });
+
+  testWidgets('queue tabs expose Refresh in the tab toolbar', (
+    WidgetTester tester,
+  ) async {
+    await _pumpIpdWorkspace(tester, repository: repository);
+
+    expect(find.byTooltip('Refresh'), findsOneWidget);
+    expect(find.byTooltip('Start admission'), findsOneWidget);
+    expect(find.byTooltip('Filters'), findsOneWidget);
   });
 
   testWidgets('search filters table rows via applySearch', (

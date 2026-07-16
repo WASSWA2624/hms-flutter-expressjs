@@ -313,8 +313,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
                         return AppTabToolbarPrimary(
                           label: l10n.icuActionStartStay,
                           icon: Icons.play_circle_outline,
-                          enabled:
-                              isAllowed && canStartStay && !state.isSaving,
+                          enabled: isAllowed && canStartStay && !state.isSaving,
                           onPressed: () => _confirmAction(
                             context: context,
                             title: l10n.icuStartStayTitle,
