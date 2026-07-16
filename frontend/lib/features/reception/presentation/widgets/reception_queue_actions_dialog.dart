@@ -48,7 +48,7 @@ class _ReceptionQueueActionsDialogState
     final bool terminal = _isTerminalStatus(widget.entry.status);
 
     return AppDialog(
-      title: Text(widget.entry.displayTitle),
+      title: Text(l10n.opdQueueActionsTitle),
       icon: const Icon(Icons.queue_outlined),
       scrollable: true,
       closeEnabled: !_isSaving,
@@ -61,8 +61,13 @@ class _ReceptionQueueActionsDialogState
               context: context,
               failure: _failure!,
             ),
+          if (_isSaving) const LinearProgressIndicator(),
           AppTriageSummaryPanel(
             items: <AppInfoTileData>[
+              AppInfoTileData(
+                label: l10n.opdPatientColumnLabel,
+                value: widget.entry.displayTitle,
+              ),
               AppInfoTileData(
                 label: l10n.opdStatusColumnLabel,
                 value: opdStageDisplayLabel(l10n, widget.entry.status ?? ''),
@@ -96,6 +101,16 @@ class _ReceptionQueueActionsDialogState
           ),
         ],
       ),
+      actions: <Widget>[
+        AppButton.secondary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !_isSaving,
+          onPressed: _isSaving
+              ? null
+              : () => Navigator.of(context).pop(false),
+        ),
+      ],
     );
   }
 
@@ -160,6 +175,9 @@ class _ReceptionQueueActionsDialogState
   }
 
   Future<void> _openMoveQueue() async {
+    if (_isSaving) {
+      return;
+    }
     final bool? changed = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,

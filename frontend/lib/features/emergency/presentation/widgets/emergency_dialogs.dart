@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/features/emergency/domain/entities/emergency_entities.dart';
 import 'package:hosspi_hms/features/emergency/presentation/widgets/emergency_workspace_widgets.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
@@ -26,8 +29,13 @@ final class HandoffInput {
   final bool closeCase;
 }
 
+typedef QuickArrivalSubmit =
+    Future<AppFailure?> Function(EmergencyQuickArrivalInput input);
+
 class QuickArrivalDialog extends StatefulWidget {
-  const QuickArrivalDialog({super.key});
+  const QuickArrivalDialog({required this.onSubmit, super.key});
+
+  final QuickArrivalSubmit onSubmit;
 
   @override
   State<QuickArrivalDialog> createState() => _QuickArrivalDialogState();
@@ -41,6 +49,8 @@ class _QuickArrivalDialogState extends State<QuickArrivalDialog> {
   final TextEditingController _notesController = TextEditingController();
   String _severity = 'CRITICAL';
   String? _triageLevel = 'LEVEL_2';
+  bool _isSubmitting = false;
+  AppFailure? _failure;
 
   @override
   void dispose() {
@@ -53,12 +63,17 @@ class _QuickArrivalDialogState extends State<QuickArrivalDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     return AppDialog(
       title: const Text(EmergencyText.quickEmergencyArrival),
       icon: const Icon(Icons.emergency_outlined),
       scrollable: true,
+      pinActionsToBottom: true,
+      closeEnabled: !_isSubmitting,
       content: AppFormShell(
         formKey: _formKey,
+        enabled: !_isSubmitting,
+        formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
           AppTextField(
             controller: _firstNameController,
@@ -116,24 +131,34 @@ class _QuickArrivalDialogState extends State<QuickArrivalDialog> {
       ),
       actions: <Widget>[
         AppButton.tertiary(
-          label: EmergencyText.cancel,
-          onPressed: () => Navigator.of(context).pop(),
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !_isSubmitting,
+          onPressed: _isSubmitting
+              ? null
+              : () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
           label: EmergencyText.openCase,
-          leadingIcon: Icons.add_circle_outline,
-          onPressed: _submit,
+          leadingIcon: AppActionIcons.add,
+          isLoading: _isSubmitting,
+          onPressed: _isSubmitting ? null : _submit,
         ),
       ],
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
 
-    Navigator.of(context).pop(
+    setState(() {
+      _isSubmitting = true;
+      _failure = null;
+    });
+
+    final AppFailure? failure = await widget.onSubmit(
       EmergencyQuickArrivalInput(
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
@@ -143,12 +168,29 @@ class _QuickArrivalDialogState extends State<QuickArrivalDialog> {
         notes: nonEmpty(_notesController.text),
       ),
     );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+
+    setState(() {
+      _failure = failure;
+      _isSubmitting = false;
+    });
   }
 }
+
+typedef DispatchSubmit = Future<AppFailure?> Function(DispatchInput input);
 
 class DispatchDialog extends StatefulWidget {
   const DispatchDialog({
     required this.referenceData,
+    required this.onSubmit,
     this.title = 'Dispatch ambulance',
     this.submitLabel = 'Dispatch',
     this.defaultStatus = 'DISPATCHED',
@@ -156,6 +198,7 @@ class DispatchDialog extends StatefulWidget {
   });
 
   final EmergencyReferenceData referenceData;
+  final DispatchSubmit onSubmit;
   final String title;
   final String submitLabel;
   final String defaultStatus;
@@ -169,6 +212,8 @@ class _DispatchDialogState extends State<DispatchDialog> {
   final TextEditingController _ambulanceIdController = TextEditingController();
   String? _ambulanceId;
   late String _status = widget.defaultStatus;
+  bool _isSubmitting = false;
+  AppFailure? _failure;
 
   @override
   void initState() {
@@ -188,19 +233,24 @@ class _DispatchDialogState extends State<DispatchDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     final List<EmergencyAmbulance> ambulances =
         widget.referenceData.availableAmbulances;
     return AppDialog(
       title: Text(widget.title),
       icon: const Icon(Icons.airport_shuttle_outlined),
       scrollable: true,
+      pinActionsToBottom: true,
+      closeEnabled: !_isSubmitting,
       content: AppFormShell(
         formKey: _formKey,
+        enabled: !_isSubmitting,
+        formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
           if (ambulances.isNotEmpty)
             AppSelectField<String>(
               value: _ambulanceId,
-              labelText: 'Ambulance',
+              labelText: EmergencyText.ambulance,
               isRequired: true,
               searchable: true,
               options: <AppSelectOption<String>>[
@@ -230,7 +280,7 @@ class _DispatchDialogState extends State<DispatchDialog> {
             ),
           AppSelectField<String>(
             value: _status,
-            labelText: 'Dispatch status',
+            labelText: EmergencyText.dispatchStatus,
             isRequired: true,
             options: ambulanceStatusOptions(),
             validator: requiredSelect,
@@ -246,19 +296,24 @@ class _DispatchDialogState extends State<DispatchDialog> {
       ),
       actions: <Widget>[
         AppButton.tertiary(
-          label: EmergencyText.cancel,
-          onPressed: () => Navigator.of(context).pop(),
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !_isSubmitting,
+          onPressed: _isSubmitting
+              ? null
+              : () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
           label: widget.submitLabel,
           leadingIcon: Icons.airport_shuttle_outlined,
-          onPressed: _submit,
+          isLoading: _isSubmitting,
+          onPressed: _isSubmitting ? null : _submit,
         ),
       ],
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
@@ -267,14 +322,38 @@ class _DispatchDialogState extends State<DispatchDialog> {
     if (ambulanceId == null) {
       return;
     }
-    Navigator.of(
-      context,
-    ).pop(DispatchInput(ambulanceId: ambulanceId, status: _status));
+
+    setState(() {
+      _isSubmitting = true;
+      _failure = null;
+    });
+
+    final AppFailure? failure = await widget.onSubmit(
+      DispatchInput(ambulanceId: ambulanceId, status: _status),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+
+    setState(() {
+      _failure = failure;
+      _isSubmitting = false;
+    });
   }
 }
 
+typedef HandoffSubmit = Future<AppFailure?> Function(HandoffInput input);
+
 class HandoffDialog extends StatefulWidget {
-  const HandoffDialog({super.key});
+  const HandoffDialog({required this.onSubmit, super.key});
+
+  final HandoffSubmit onSubmit;
 
   @override
   State<HandoffDialog> createState() => _HandoffDialogState();
@@ -285,6 +364,8 @@ class _HandoffDialogState extends State<HandoffDialog> {
   final TextEditingController _notesController = TextEditingController();
   String _destination = 'OPD';
   bool _closeCase = true;
+  bool _isSubmitting = false;
+  AppFailure? _failure;
 
   @override
   void dispose() {
@@ -294,16 +375,21 @@ class _HandoffDialogState extends State<HandoffDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
     return AppDialog(
       title: const Text(EmergencyText.recordHandoff),
       icon: const Icon(Icons.output_outlined),
       scrollable: true,
+      pinActionsToBottom: true,
+      closeEnabled: !_isSubmitting,
       content: AppFormShell(
         formKey: _formKey,
+        enabled: !_isSubmitting,
+        formStatus: appFormFailureStatus(context, _failure),
         children: <Widget>[
           AppSelectField<String>(
             value: _destination,
-            labelText: 'Destination',
+            labelText: EmergencyText.handoffDestination,
             isRequired: true,
             options: handoffOptions(),
             validator: requiredSelect,
@@ -317,7 +403,7 @@ class _HandoffDialogState extends State<HandoffDialog> {
           ),
           AppTextField(
             controller: _notesController,
-            labelText: 'Handoff notes',
+            labelText: EmergencyText.handoffNotes,
             minLines: 3,
             maxLines: 5,
             textCapitalization: TextCapitalization.sentences,
@@ -337,28 +423,53 @@ class _HandoffDialogState extends State<HandoffDialog> {
       ),
       actions: <Widget>[
         AppButton.tertiary(
-          label: EmergencyText.cancel,
-          onPressed: () => Navigator.of(context).pop(),
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !_isSubmitting,
+          onPressed: _isSubmitting
+              ? null
+              : () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
           label: EmergencyText.recordHandoff,
           leadingIcon: Icons.output_outlined,
-          onPressed: _submit,
+          isLoading: _isSubmitting,
+          onPressed: _isSubmitting ? null : _submit,
         ),
       ],
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
-    Navigator.of(context).pop(
+
+    setState(() {
+      _isSubmitting = true;
+      _failure = null;
+    });
+
+    final AppFailure? failure = await widget.onSubmit(
       HandoffInput(
         destination: _destination,
         notes: nonEmpty(_notesController.text),
         closeCase: _closeCase,
       ),
     );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+
+    setState(() {
+      _failure = failure;
+      _isSubmitting = false;
+    });
   }
 }

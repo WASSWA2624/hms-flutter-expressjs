@@ -1354,10 +1354,21 @@ class _IpdDetailActions extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) async {
+    final AppLocalizations l10n = context.l10n;
+    final IpdAdmissionSummary summary = admission.summary;
     final bool? saved = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => ReleaseBedDialog(admission: admission.summary),
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.ipdReleaseBedAction,
+        body: l10n.ipdReleaseBedConfirmationBody,
+        submitLabel: l10n.ipdReleaseBedAction,
+        icon: const Icon(Icons.cleaning_services_outlined),
+        submitLeadingIcon: Icons.cleaning_services_outlined,
+        onConfirm: () => ref
+            .read(ipdWorkspaceControllerProvider.notifier)
+            .releaseBed(summary),
+      ),
     );
     if (saved == true && context.mounted) {
       _showSaved(context);
@@ -2016,73 +2027,6 @@ class _IpdKeyValueTile extends StatelessWidget {
   }
 }
 
-class ReleaseBedDialog extends ConsumerStatefulWidget {
-  const ReleaseBedDialog({required this.admission, super.key});
-
-  final IpdAdmissionSummary admission;
-
-  @override
-  ConsumerState<ReleaseBedDialog> createState() => _ReleaseBedDialogState();
-}
-
-class _ReleaseBedDialogState extends ConsumerState<ReleaseBedDialog> {
-  bool _isSaving = false;
-  AppFailure? _failure;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    return AppDialog(
-      title: Text(l10n.ipdReleaseBedAction),
-      icon: const Icon(Icons.cleaning_services_outlined),
-      content: AppFormSection(
-        children: <Widget>[
-          if (_failure != null)
-            AppFormInformationBanner.failure(
-              context: context,
-              failure: _failure!,
-            ),
-          Text(l10n.ipdReleaseBedConfirmationBody),
-        ],
-      ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        AppButton.primary(
-          label: l10n.ipdReleaseBedAction,
-          leadingIcon: Icons.cleaning_services_outlined,
-          isLoading: _isSaving,
-          onPressed: _submit,
-        ),
-      ],
-    );
-  }
-
-  Future<void> _submit() async {
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    final AppFailure? failure = await ref
-        .read(ipdWorkspaceControllerProvider.notifier)
-        .releaseBed(widget.admission);
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      Navigator.of(context).pop(true);
-      return;
-    }
-    setState(() {
-      _failure = failure;
-      _isSaving = false;
-    });
-  }
-}
-
 class RequestTherapyDialog extends ConsumerStatefulWidget {
   const RequestTherapyDialog({required this.admission, super.key});
 
@@ -2212,6 +2156,7 @@ class _TransferRequestDialogState extends ConsumerState<TransferRequestDialog> {
     return AppDialog(
       title: Text(l10n.ipdRequestTransferAction),
       icon: const Icon(Icons.swap_horiz),
+      closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -2244,7 +2189,9 @@ class _TransferRequestDialogState extends ConsumerState<TransferRequestDialog> {
                         ward.id,
                   ),
               ],
-              onChanged: (String? value) => setState(() => _wardId = value),
+              onChanged: _isSaving
+                  ? null
+                  : (String? value) => setState(() => _wardId = value),
             ),
           ],
         ),
@@ -2252,20 +2199,26 @@ class _TransferRequestDialogState extends ConsumerState<TransferRequestDialog> {
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
           enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: _isSaving
+              ? null
+              : () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
           label: l10n.ipdRequestTransferAction,
           leadingIcon: Icons.swap_horiz,
           isLoading: _isSaving,
-          onPressed: _submit,
+          onPressed: _isSaving ? null : _submit,
         ),
       ],
     );
   }
 
   Future<void> _submit() async {
+    if (_isSaving) {
+      return;
+    }
     if (!(_formKey.currentState?.validate() ?? false) || _wardId == null) {
       return;
     }
@@ -2335,6 +2288,7 @@ class _TransferUpdateDialogState extends ConsumerState<TransferUpdateDialog> {
     return AppDialog(
       title: Text(l10n.ipdManageTransferAction),
       icon: const Icon(Icons.move_down_outlined),
+      closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -2366,11 +2320,13 @@ class _TransferUpdateDialogState extends ConsumerState<TransferUpdateDialog> {
                   label: l10n.ipdTransferCancelAction,
                 ),
               ],
-              onChanged: (String? value) {
-                if (value != null) {
-                  setState(() => _action = value);
-                }
-              },
+              onChanged: _isSaving
+                  ? null
+                  : (String? value) {
+                      if (value != null) {
+                        setState(() => _action = value);
+                      }
+                    },
             ),
             if (_action == _transferComplete)
               AppSelectField<String>.searchable(
@@ -2394,7 +2350,9 @@ class _TransferUpdateDialogState extends ConsumerState<TransferUpdateDialog> {
                           bed.id,
                     ),
                 ],
-                onChanged: (String? value) => setState(() => _bedId = value),
+                onChanged: _isSaving
+                    ? null
+                    : (String? value) => setState(() => _bedId = value),
               ),
           ],
         ),
@@ -2402,20 +2360,26 @@ class _TransferUpdateDialogState extends ConsumerState<TransferUpdateDialog> {
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
           enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: _isSaving
+              ? null
+              : () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
           label: l10n.ipdManageTransferAction,
           leadingIcon: Icons.move_down_outlined,
           isLoading: _isSaving,
-          onPressed: _submit,
+          onPressed: _isSaving ? null : _submit,
         ),
       ],
     );
   }
 
   Future<void> _submit() async {
+    if (_isSaving) {
+      return;
+    }
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }

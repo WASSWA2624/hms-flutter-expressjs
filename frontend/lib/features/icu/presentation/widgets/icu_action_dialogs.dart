@@ -464,6 +464,8 @@ class _TransferRequestDialogState
     return AppDialog(
       title: Text(l10n.icuTransferDialogTitle),
       icon: const Icon(Icons.compare_arrows_outlined),
+      scrollable: true,
+      closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,
         child: AppFormSection(
@@ -507,12 +509,20 @@ class _TransferRequestDialogState
           ],
         ),
       ),
-      actions: _dialogActions(
-        context,
-        l10n.icuTransferRequestActionLabel,
-        _isSaving,
-        _submit,
-      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !_isSaving,
+          onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: l10n.icuTransferRequestActionLabel,
+          leadingIcon: Icons.compare_arrows_outlined,
+          isLoading: _isSaving,
+          onPressed: _isSaving ? null : _submit,
+        ),
+      ],
     );
   }
 
@@ -829,6 +839,7 @@ class _AssignBedDialog extends ConsumerStatefulWidget {
 }
 
 class _AssignBedDialogState extends ConsumerState<_AssignBedDialog> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _bedController;
   String? _bedId;
   bool _isSaving = false;
@@ -866,50 +877,78 @@ class _AssignBedDialogState extends ConsumerState<_AssignBedDialog> {
     final List<IcuBed> beds = (state?.bedBoard.beds ?? const <IcuBed>[])
         .where((IcuBed bed) => bed.isAvailable)
         .toList(growable: false);
+    final bool isLoadingBeds = state?.isRefreshingBeds ?? false;
+    final bool isBusy = _isSaving || isLoadingBeds;
 
     return AppDialog(
       title: Text(l10n.icuAssignBedDialogTitle),
       icon: const Icon(Icons.bed_outlined),
       scrollable: true,
-      content: AppFormSection(
-        children: <Widget>[
-          if (_failure != null)
-            AppFormInformationBanner.failure(
-              context: context,
-              failure: _failure!,
-            ),
-          if (beds.isEmpty)
-            AppTextField(
-              controller: _bedController,
-              labelText: l10n.icuTransferSelectBedLabel,
-              enabled: !_isSaving,
-            )
-          else
-            AppSelectField<String>.searchable(
-              value: _bedId,
-              labelText: l10n.icuTransferSelectBedLabel,
-              enabled: !_isSaving,
-              options: <AppSelectOption<String>>[
-                for (final IcuBed bed in beds)
-                  AppSelectOption<String>(
-                    value: bed.id,
-                    label: bed.locationLabel,
-                  ),
-              ],
-              onChanged: (String? value) => setState(() => _bedId = value),
-            ),
-        ],
+      closeEnabled: !isBusy,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          children: <Widget>[
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
+            if (isLoadingBeds)
+              const AppLoadingIndicator.compact()
+            else if (beds.isEmpty)
+              AppTextField(
+                controller: _bedController,
+                labelText: l10n.icuTransferSelectBedLabel,
+                enabled: !_isSaving,
+                isRequired: true,
+                validator: AppValidators.requiredText(l10n.validationRequired),
+              )
+            else
+              AppSelectField<String>.searchable(
+                value: _bedId,
+                labelText: l10n.icuTransferSelectBedLabel,
+                enabled: !_isSaving,
+                options: <AppSelectOption<String>>[
+                  for (final IcuBed bed in beds)
+                    AppSelectOption<String>(
+                      value: bed.id,
+                      label: bed.locationLabel,
+                    ),
+                ],
+                onChanged: (String? value) => setState(() => _bedId = value),
+                validator: (String? value) {
+                  if ((value ?? '').trim().isEmpty) {
+                    return l10n.validationRequired;
+                  }
+                  return null;
+                },
+              ),
+          ],
+        ),
       ),
-      actions: _dialogActions(
-        context,
-        l10n.icuActionAssignBed,
-        _isSaving,
-        _submit,
-      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !isBusy,
+          onPressed: isBusy ? null : () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: l10n.icuActionAssignBed,
+          leadingIcon: Icons.bed_outlined,
+          isLoading: _isSaving,
+          enabled: !isLoadingBeds,
+          onPressed: isBusy ? null : _submit,
+        ),
+      ],
     );
   }
 
   Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
     final String bedId = _bedId ?? _bedController.text.trim();
     if (bedId.isEmpty) {
       setState(() => _failure = AppFailure.validation());
@@ -922,6 +961,10 @@ class _AssignBedDialogState extends ConsumerState<_AssignBedDialog> {
     final AppFailure? failure = await ref
         .read(icuWorkspaceControllerProvider.notifier)
         .assignBed(bedId);
+    _finishSubmit(failure);
+  }
+
+  void _finishSubmit(AppFailure? failure) {
     if (!mounted) {
       return;
     }

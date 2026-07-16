@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
-import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
@@ -423,21 +422,19 @@ class _EmergencyWorkspaceContentState
   }
 
   Future<void> _openQuickArrivalDialog(BuildContext context) async {
-    final EmergencyQuickArrivalInput? input =
-        await showAppDialog<EmergencyQuickArrivalInput>(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => const QuickArrivalDialog(),
-        );
-    if (input == null || !context.mounted) {
-      return;
-    }
-
-    final AppFailure? failure = await ref
-        .read(emergencyWorkspaceControllerProvider.notifier)
-        .createQuickArrival(input);
-    if (context.mounted) {
-      showFailureIfNeeded(context, failure, successMessage: 'Arrival opened');
+    final bool? saved = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => QuickArrivalDialog(
+        onSubmit: (EmergencyQuickArrivalInput input) {
+          return ref
+              .read(emergencyWorkspaceControllerProvider.notifier)
+              .createQuickArrival(input);
+        },
+      ),
+    );
+    if (saved == true && context.mounted) {
+      showFailureIfNeeded(context, null, successMessage: 'Arrival opened');
     }
   }
 

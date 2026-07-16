@@ -560,9 +560,9 @@ final class OpdWorkspaceController
     );
   }
 
-  Future<AppFailure?> startOpdFromQueue(OpdQueueEntry entry) {
+  Future<AppFailure?> startOpdFromQueue(OpdQueueEntry entry) async {
     final String key = createIdempotencyKey();
-    return _mutateFlow(
+    final AppFailure? failure = await _mutateFlow(
       () => _repository.startOpdFlow(<String, Object?>{
         'arrival_mode': 'WALK_IN',
         'visit_queue_id': entry.apiId,
@@ -570,6 +570,23 @@ final class OpdWorkspaceController
         'reuse_open_encounter': true,
       }, idempotencyKey: key),
     );
+    if (failure != null) {
+      return failure;
+    }
+    // Backend marks the linked visit queue IN_PROGRESS; patch local queue
+    // immediately so reception/OPD desks stay in sync without a full reload.
+    final OpdWorkspaceState? latest = _currentState;
+    if (latest != null) {
+      _emit(
+        latest.copyWith(
+          queueEntries: _upsertQueueEntry(
+            latest.queueEntries,
+            entry.copyWith(status: 'IN_PROGRESS'),
+          ),
+        ),
+      );
+    }
+    return null;
   }
 
   Future<AppFailure?> assignDoctor(OpdFlowSummary flow, String providerUserId) {

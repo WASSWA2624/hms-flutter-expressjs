@@ -185,6 +185,7 @@ class _ReceptionPatientPickerDialogState
       title: Text(l10n.receptionScheduleAppointmentAction),
       icon: const Icon(Icons.event_available_outlined),
       scrollable: true,
+      closeEnabled: !_isLoading,
       maxWidth: 560,
       content: AppFormSection(
         density: AppFormSectionDensity.compact,
@@ -197,7 +198,7 @@ class _ReceptionPatientPickerDialogState
           AppTextField(
             controller: _searchController,
             labelText: l10n.receptionPatientPickerSearchHint,
-            prefixIcon: const Icon(Icons.search),
+            prefixIcon: const Icon(AppActionIcons.search),
             onChanged: (String value) {
               _debounce?.cancel();
               _debounce = Timer(const Duration(milliseconds: 250), () {
@@ -205,8 +206,12 @@ class _ReceptionPatientPickerDialogState
               });
             },
           ),
-          if (_isLoading) const LinearProgressIndicator(),
-          if (!_isLoading && _patients.isEmpty)
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.all(12),
+              child: Center(child: AppLoadingIndicator.compact()),
+            )
+          else if (_patients.isEmpty)
             Text(
               l10n.receptionPatientPickerEmpty,
               style: theme.textTheme.bodyMedium?.copyWith(
@@ -230,7 +235,11 @@ class _ReceptionPatientPickerDialogState
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCancelActionLabel,
-          onPressed: () => Navigator.of(context).maybePop(),
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !_isLoading,
+          onPressed: _isLoading
+              ? null
+              : () => Navigator.of(context).maybePop(),
         ),
       ],
     );

@@ -6298,6 +6298,12 @@ abstract class AppLocalizations {
   /// **'Move'**
   String get opdMoveQueueAction;
 
+  /// Dialog title for OPD queue actions (move / prioritize / start).
+  ///
+  /// In en, this message translates to:
+  /// **'Queue actions'**
+  String get opdQueueActionsTitle;
+
   /// Action label to start consultation.
   ///
   /// In en, this message translates to:

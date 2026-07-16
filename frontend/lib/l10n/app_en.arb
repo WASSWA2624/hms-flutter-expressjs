@@ -3775,6 +3775,7 @@
   "opdReasonLabel": "Reason",
   "opdPrioritizeAction": "Prioritize",
   "opdMoveQueueAction": "Move",
+  "opdQueueActionsTitle": "Queue actions",
   "opdStartConsultationAction": "Start consultation",
   "opdAssignDoctorAction": "Assign doctor",
   "opdChangeDoctorAction": "Change doctor",
@@ -4451,6 +4452,9 @@
   },
   "@opdMoveQueueAction": {
     "description": "Action label to move a queue entry."
+  },
+  "@opdQueueActionsTitle": {
+    "description": "Dialog title for OPD queue actions (move / prioritize / start)."
   },
   "@opdStartConsultationAction": {
     "description": "Action label to start consultation."

@@ -2880,7 +2880,8 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
   bool _isLoadingProviders = false;
   bool _isSaving = false;
   AppFailure? _failure;
-  String? _successMessage;
+
+  bool get _isBusy => _isSaving || _isLoadingProviders;
 
   @override
   void initState() {
@@ -2903,9 +2904,10 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
     final bool terminal = _isCompletedStatus(widget.entry.status);
 
     return AppDialog(
-      title: Text(widget.entry.displayTitle),
+      title: Text(l10n.opdQueueActionsTitle),
       icon: const Icon(Icons.queue_outlined),
       scrollable: true,
+      closeEnabled: !_isBusy,
       maxWidth: 680,
       content: Form(
         key: _formKey,
@@ -2916,11 +2918,6 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
               AppFormInformationBanner.failure(
                 context: context,
                 failure: _failure!,
-              ),
-            if (_successMessage != null)
-              AppFormInformationBanner.message(
-                message: _successMessage!,
-                variant: AppFormInformationVariant.success,
               ),
             AppTriageSummaryPanel(
               items: <AppInfoTileData>[
@@ -2944,7 +2941,7 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
             AppSelectField<String>(
               value: _status,
               labelText: _opdRequiredFieldLabel(l10n, l10n.opdQueueStatusLabel),
-              enabled: !terminal && !_isSaving,
+              enabled: !terminal && !_isBusy,
               onChanged: (String? value) => setState(() => _status = value),
               options: _statusOptions(_queueStatuses),
             ),
@@ -2958,7 +2955,7 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
               ),
               helperText: l10n.opdSearchProviderHelper,
               emptyHelperText: l10n.opdNoProvidersHelper,
-              enabled: !_isSaving,
+              enabled: !_isBusy,
               isLoading: _isLoadingProviders,
               onChanged: (String? value) {
                 setState(() {
@@ -2969,7 +2966,7 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
             AppTextField(
               controller: _reasonController,
               labelText: _opdOptionalFieldLabel(l10n, l10n.opdReasonLabel),
-              enabled: !_isSaving,
+              enabled: !_isBusy,
               maxLines: 3,
             ),
           ],
@@ -2980,37 +2977,43 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
           AppButton.secondary(
             label: l10n.opdPrioritizeAction,
             leadingIcon: Icons.priority_high_outlined,
-            isLoading: _isSaving,
-            onPressed: () => _runInModal(
-              action: () => ref
-                  .read(opdWorkspaceControllerProvider.notifier)
-                  .prioritizeQueueEntry(
-                    widget.entry,
-                    _reasonController.text.trim(),
+            enabled: !_isBusy,
+            onPressed: _isBusy
+                ? null
+                : () => _runInModal(
+                    () => ref
+                        .read(opdWorkspaceControllerProvider.notifier)
+                        .prioritizeQueueEntry(
+                          widget.entry,
+                          _reasonController.text.trim(),
+                        ),
                   ),
-              successMessage: l10n.opdSavedMessage,
-              successStatus: 'CONFIRMED',
-            ),
           ),
         if (!terminal)
           AppButton.secondary(
+            label: l10n.opdStartConsultationAction,
+            leadingIcon: Icons.play_arrow_outlined,
+            enabled: !_isBusy,
+            onPressed: _isBusy
+                ? null
+                : () => _runInModal(
+                    () => ref
+                        .read(opdWorkspaceControllerProvider.notifier)
+                        .startOpdFromQueue(widget.entry),
+                  ),
+          ),
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !_isBusy,
+          onPressed: _isBusy ? null : () => Navigator.of(context).pop(false),
+        ),
+        if (!terminal)
+          AppButton.primary(
             label: l10n.opdMoveQueueAction,
             leadingIcon: Icons.sync_alt_outlined,
             isLoading: _isSaving,
-            onPressed: _submitMove,
-          ),
-        if (!terminal)
-          AppButton.primary(
-            label: l10n.opdStartConsultationAction,
-            leadingIcon: Icons.play_arrow_outlined,
-            isLoading: _isSaving,
-            onPressed: () => _runInModal(
-              action: () => ref
-                  .read(opdWorkspaceControllerProvider.notifier)
-                  .startOpdFromQueue(widget.entry),
-              successMessage: l10n.opdStartConsultationAction,
-              successStatus: 'IN_PROGRESS',
-            ),
+            onPressed: _isBusy ? null : _submitMove,
           ),
       ],
     );
@@ -3048,37 +3051,30 @@ class _QueueActionsDialogState extends ConsumerState<QueueActionsDialog> {
       return;
     }
     await _runInModal(
-      action: () => ref
-          .read(opdWorkspaceControllerProvider.notifier)
-          .moveQueueEntry(widget.entry, <String, Object?>{
-            'status': _status,
-            'provider_user_id': _providerId,
-          }),
-      successMessage: context.l10n.opdSavedMessage,
-      successStatus: _status,
+      () => ref.read(opdWorkspaceControllerProvider.notifier).moveQueueEntry(
+        widget.entry,
+        <String, Object?>{
+          'status': _status,
+          'provider_user_id': _providerId,
+        },
+      ),
     );
   }
 
-  Future<void> _runInModal({
-    required Future<AppFailure?> Function() action,
-    required String successMessage,
-    String? successStatus,
-  }) async {
+  Future<void> _runInModal(Future<AppFailure?> Function() action) async {
+    if (_isSaving) {
+      return;
+    }
     setState(() {
       _isSaving = true;
       _failure = null;
-      _successMessage = null;
     });
     final AppFailure? failure = await action();
     if (!mounted) {
       return;
     }
     if (failure == null) {
-      setState(() {
-        _successMessage = successMessage;
-        _status = successStatus ?? _status;
-        _isSaving = false;
-      });
+      Navigator.of(context).pop(true);
       return;
     }
     setState(() {

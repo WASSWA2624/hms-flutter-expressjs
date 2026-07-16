@@ -173,7 +173,11 @@ class AppTextActionDialog extends StatefulWidget {
   State<AppTextActionDialog> createState() => _AppTextActionDialogState();
 }
 
-/// Shared select-only dialog for simple action modals that return a value.
+/// Shared select-only dialog for simple action modals.
+///
+/// Without [onSubmit], pops the selected value. With [onSubmit], runs the
+/// mutation in-dialog (loading, failure banner, blocked dismiss) and pops
+/// `true` on success.
 class AppSelectActionDialog<T> extends StatefulWidget {
   const AppSelectActionDialog({
     required this.title,
@@ -188,6 +192,8 @@ class AppSelectActionDialog<T> extends StatefulWidget {
     this.isRequired = true,
     this.scrollable = false,
     this.maxWidth = 600,
+    this.onSubmit,
+    this.submitLeadingIcon,
     super.key,
   });
 
@@ -203,6 +209,8 @@ class AppSelectActionDialog<T> extends StatefulWidget {
   final bool isRequired;
   final bool scrollable;
   final double maxWidth;
+  final Future<AppFailure?> Function(T value)? onSubmit;
+  final IconData? submitLeadingIcon;
 
   @override
   State<AppSelectActionDialog<T>> createState() =>
@@ -212,6 +220,10 @@ class AppSelectActionDialog<T> extends StatefulWidget {
 class _AppSelectActionDialogState<T> extends State<AppSelectActionDialog<T>> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   T? _value;
+  bool _isSaving = false;
+  AppFailure? _failure;
+
+  bool get _mutatesInDialog => widget.onSubmit != null;
 
   @override
   void initState() {
@@ -227,21 +239,39 @@ class _AppSelectActionDialogState<T> extends State<AppSelectActionDialog<T>> {
       scrollable: widget.scrollable,
       maxWidth: widget.maxWidth,
       initialMaximized: false,
+      closeEnabled: !_isSaving,
       content: AppFormShell(
         formKey: _formKey,
-        children: <Widget>[_selectField()],
+        children: <Widget>[
+          if (_failure != null)
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _failure!,
+            ),
+          _selectField(),
+        ],
       ),
-      actions: <Widget>[
-        AppButton.tertiary(
-          label: widget.cancelLabel,
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        AppButton.primary(
-          label: widget.submitLabel,
-          leadingIcon: Icons.save_outlined,
-          onPressed: _submit,
-        ),
-      ],
+      actions: _mutatesInDialog
+          ? _actionDialogButtons(
+              context,
+              submitLabel: widget.submitLabel,
+              isSaving: _isSaving,
+              onSubmit: _submit,
+              submitLeadingIcon:
+                  widget.submitLeadingIcon ?? AppActionIcons.edit,
+            )
+          : <Widget>[
+              AppButton.secondary(
+                label: widget.cancelLabel,
+                leadingIcon: AppActionIcons.cancel,
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              AppButton.primary(
+                label: widget.submitLabel,
+                leadingIcon: widget.submitLeadingIcon ?? AppActionIcons.save,
+                onPressed: _submit,
+              ),
+            ],
     );
   }
 
@@ -251,6 +281,7 @@ class _AppSelectActionDialogState<T> extends State<AppSelectActionDialog<T>> {
         value: _value,
         labelText: widget.fieldLabel,
         isRequired: widget.isRequired,
+        enabled: !_isSaving,
         options: widget.options,
         validator: widget.isRequired ? _requiredSelect : null,
         onChanged: _handleChanged,
@@ -261,6 +292,7 @@ class _AppSelectActionDialogState<T> extends State<AppSelectActionDialog<T>> {
       value: _value,
       labelText: widget.fieldLabel,
       isRequired: widget.isRequired,
+      enabled: !_isSaving,
       options: widget.options,
       validator: widget.isRequired ? _requiredSelect : null,
       onChanged: _handleChanged,
@@ -277,10 +309,37 @@ class _AppSelectActionDialogState<T> extends State<AppSelectActionDialog<T>> {
         : null;
   }
 
-  void _submit() {
-    if (_formKey.currentState?.validate() ?? false) {
-      Navigator.of(context).pop(_value);
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
     }
+    final T? value = _value;
+    if (value == null) {
+      return;
+    }
+
+    final Future<AppFailure?> Function(T value)? onSubmit = widget.onSubmit;
+    if (onSubmit == null) {
+      Navigator.of(context).pop(value);
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    final AppFailure? failure = await onSubmit(value);
+    if (!mounted) {
+      return;
+    }
+    if (failure == null) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() {
+      _failure = failure;
+      _isSaving = false;
+    });
   }
 }
 

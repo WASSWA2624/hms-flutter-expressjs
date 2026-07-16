@@ -1574,8 +1574,6 @@ String _patientAgeLabel(BuildContext context, DateTime? dateOfBirth) {
   return today.difference(dateOfBirth).inDays.clamp(0, 30).toString();
 }
 
-enum _PatientLegacyQuickAction { triage, billing }
-
 Future<void> _openPatientQuickAction(
   BuildContext context,
   WidgetRef ref,
@@ -1698,6 +1696,22 @@ Future<void> _openPatientQuickAction(
             patient: patient,
             referenceData: referenceData,
           ),
+        ),
+      );
+    case PatientQuickAction.triage:
+      await refreshIfChanged(
+        await _openPatientTriageQuickDialog(
+          context,
+          patient: patient,
+          referenceData: referenceData,
+        ),
+      );
+    case PatientQuickAction.billing:
+      await refreshIfChanged(
+        await _openPatientFlowQuickDialog(
+          context,
+          patient: patient,
+          referenceData: referenceData,
         ),
       );
     case PatientQuickAction.admission:
@@ -1947,18 +1961,21 @@ class _PatientAppointmentQuickDialogState
     super.dispose();
   }
 
+  bool get _isBusy => _isSaving || _isLoadingProviders;
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return AppDialog(
       title: Text(l10n.patientsAppointmentDialogTitle),
-      icon: const Icon(Icons.event_available_outlined),
+      icon: const Icon(AppActionIcons.calendar),
       scrollable: true,
-      closeEnabled: !_isSaving,
+      pinActionsToBottom: true,
+      closeEnabled: !_isBusy,
       maxWidth: 720,
       content: AppFormShell(
         formKey: _formKey,
-        enabled: !_isSaving,
+        enabled: !_isBusy,
         density: AppFormSectionDensity.compact,
         formStatus: appFormFailureStatus(
           context,
@@ -1979,7 +1996,7 @@ class _PatientAppointmentQuickDialogState
                 labelText: l10n.patientsAppointmentDateLabel,
                 pickerButtonLabel: l10n.patientsDatePickerAction,
                 invalidDateMessage: l10n.appDateInvalidMessage,
-                enabled: !_isSaving,
+                enabled: !_isBusy,
                 isRequired: true,
                 validator: AppValidators.requiredValue(l10n.validationRequired),
                 onChanged: (DateTime? value) => setState(() => _date = value),
@@ -1995,7 +2012,7 @@ class _PatientAppointmentQuickDialogState
                     hintText: l10n.patientsTimeHint,
                     hourLabelText: l10n.appTimeHourLabel,
                     minuteLabelText: l10n.appTimeMinuteLabel,
-                    enabled: !_isSaving,
+                    enabled: !_isBusy,
                     isRequired: true,
                     validator: (AppTimeValue? value) =>
                         value == null ? l10n.validationRequired : null,
@@ -2006,7 +2023,7 @@ class _PatientAppointmentQuickDialogState
                   AppTextField(
                     controller: _durationController,
                     labelText: l10n.patientsAppointmentDurationLabel,
-                    enabled: !_isSaving,
+                    enabled: !_isBusy,
                     isRequired: true,
                     keyboardType: TextInputType.number,
                     validator: _durationValidator(context),
@@ -2022,7 +2039,7 @@ class _PatientAppointmentQuickDialogState
           AppTextField(
             controller: _reasonController,
             labelText: l10n.patientsAppointmentReasonLabel,
-            enabled: !_isSaving,
+            enabled: !_isBusy,
             maxLines: 3,
           ),
         ],
@@ -2030,14 +2047,17 @@ class _PatientAppointmentQuickDialogState
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCancelActionLabel,
-          enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).maybePop(false),
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !_isBusy,
+          onPressed: _isBusy
+              ? null
+              : () => Navigator.of(context).maybePop(false),
         ),
         AppButton.primary(
           label: l10n.patientsQuickAppointmentAction,
-          leadingIcon: Icons.event_available_outlined,
+          leadingIcon: AppActionIcons.calendar,
           isLoading: _isSaving,
-          onPressed: _submit,
+          onPressed: _isBusy ? null : _submit,
         ),
       ],
     );
@@ -2048,7 +2068,7 @@ class _PatientAppointmentQuickDialogState
       facilities: widget.referenceData.facilities,
       value: _facilityId,
       labelText: context.l10n.patientsFacilityLabel,
-      enabled: !_isSaving,
+      enabled: !_isBusy,
       onChanged: (String? value) => setState(() => _facilityId = value),
     );
   }
@@ -2057,7 +2077,7 @@ class _PatientAppointmentQuickDialogState
     return AppSelectField<String>.searchable(
       value: _status,
       labelText: context.l10n.patientsAppointmentStatusLabel,
-      enabled: !_isSaving,
+      enabled: !_isBusy,
       onChanged: (String? value) =>
           setState(() => _status = value ?? 'SCHEDULED'),
       options: _simpleStatusOptions(const <String>['SCHEDULED', 'CONFIRMED']),
@@ -2069,7 +2089,7 @@ class _PatientAppointmentQuickDialogState
       value: _providerId,
       labelText: context.l10n.patientsProviderLabel,
       helperText: context.l10n.patientsProviderOptionalHelper,
-      enabled: !_isSaving,
+      enabled: !_isBusy,
       isLoading: _isLoadingProviders,
       onChanged: (String? value) => setState(() => _providerId = value),
       options: _providerSelectOptions(
@@ -2178,6 +2198,21 @@ class _PatientTriageQuickDialog extends ConsumerStatefulWidget {
   @override
   ConsumerState<_PatientTriageQuickDialog> createState() =>
       _PatientTriageQuickDialogState();
+}
+
+Future<bool?> _openPatientTriageQuickDialog(
+  BuildContext context, {
+  required Patient patient,
+  required PatientReferenceData referenceData,
+}) {
+  return showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _PatientTriageQuickDialog(
+      patient: patient,
+      referenceData: referenceData,
+    ),
+  );
 }
 
 class _PatientTriageQuickDialogState
@@ -2518,12 +2553,15 @@ class _PatientAdmissionQuickDialogState
     final l10n = context.l10n;
     return ClinicalAdmissionActionDialog(
       key: ValueKey<String?>(_facilityId),
+      title: l10n.patientsAdmissionDialogTitle,
+      submitLabel: l10n.patientsQuickAdmissionAction,
+      icon: const Icon(Icons.local_hospital_outlined),
       referenceData: _clinicalAdmissionReferenceData(),
       requiresBed: false,
       reasonLabel: l10n.patientsAdmissionReasonLabel,
       reasonRequired: true,
       notesLabel: l10n.opdFieldOptionalLabel(l10n.patientsNotesLabel),
-      showCancelButton: false,
+      initialMaximized: false,
       submitLeadingIcon: Icons.local_hospital_outlined,
       leadingSectionsBuilder: _workflowFields,
       onSubmit: _submitAdmission,
@@ -2677,16 +2715,29 @@ class _PatientAdmissionQuickDialogState
   }
 }
 
+Future<bool?> _openPatientFlowQuickDialog(
+  BuildContext context, {
+  required Patient patient,
+  required PatientReferenceData referenceData,
+}) {
+  return showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => _PatientFlowQuickDialog(
+      patient: patient,
+      referenceData: referenceData,
+    ),
+  );
+}
+
 class _PatientFlowQuickDialog extends ConsumerStatefulWidget {
   const _PatientFlowQuickDialog({
     required this.patient,
     required this.referenceData,
-    required this.action,
   });
 
   final Patient patient;
   final PatientReferenceData referenceData;
-  final _PatientLegacyQuickAction action;
 
   @override
   ConsumerState<_PatientFlowQuickDialog> createState() =>
@@ -2701,21 +2752,19 @@ class _PatientFlowQuickDialogState
   final TextEditingController _transactionRefController =
       TextEditingController();
   String? _facilityId;
-  String? _providerId;
   String _currency = appDefaultCurrencyCode;
   String _paymentMethod = 'CASH';
   bool _markPaid = false;
-  List<OpdProviderOption> _providers = const <OpdProviderOption>[];
-  bool _isLoadingProviders = false;
   bool _isSaving = false;
   AppFailure? _failure;
+
+  static const IconData _dialogIcon = Icons.receipt_long_outlined;
 
   @override
   void initState() {
     super.initState();
     _facilityId = widget.patient.facilityId;
     _currency = ref.read(effectiveDefaultCurrencyProvider);
-    unawaited(_loadProviders());
   }
 
   @override
@@ -2730,9 +2779,10 @@ class _PatientFlowQuickDialogState
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     return AppDialog(
-      title: Text(_dialogTitle(l10n)),
-      icon: Icon(_dialogIcon),
+      title: Text(l10n.patientsBillingDialogTitle),
+      icon: const Icon(_dialogIcon),
       scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: !_isSaving,
       maxWidth: 780,
       content: AppFormShell(
@@ -2746,16 +2796,41 @@ class _PatientFlowQuickDialogState
               _workflowFailureMessage(context, failure),
         ),
         children: <Widget>[
+          if (widget.referenceData.facilities.length > 1)
+            AppFormSection(
+              title: l10n.patientsWorkflowSectionTitle,
+              density: AppFormSectionDensity.compact,
+              children: <Widget>[_facilitySelect(context)],
+            ),
           AppFormSection(
-            title: l10n.patientsWorkflowSectionTitle,
+            title: l10n.patientsBillingSectionTitle,
             density: AppFormSectionDensity.compact,
             children: <Widget>[
-              if (widget.referenceData.facilities.length > 1)
-                _facilitySelect(context),
-              if (_usesProvider) _providerSelect(context),
+              _consultationFeeField(context),
+              AppCheckboxField(
+                title: l10n.patientsMarkPaymentReceivedLabel,
+                value: _markPaid,
+                enabled: !_isSaving,
+                onChanged: (bool value) => setState(() => _markPaid = value),
+              ),
+              if (_markPaid)
+                AppResponsiveFieldRow.two(
+                  left: AppSelectField<String>.searchable(
+                    value: _paymentMethod,
+                    labelText: l10n.patientsPaymentMethodLabel,
+                    enabled: !_isSaving,
+                    onChanged: (String? value) =>
+                        setState(() => _paymentMethod = value ?? 'CASH'),
+                    options: _paymentMethodSelectOptions(),
+                  ),
+                  right: AppTextField(
+                    controller: _transactionRefController,
+                    labelText: l10n.patientsTransactionReferenceLabel,
+                    enabled: !_isSaving,
+                  ),
+                ),
             ],
           ),
-          ..._modeFields(context),
           AppFormSection(
             title: l10n.patientsNotesSectionTitle,
             density: AppFormSectionDensity.compact,
@@ -2773,81 +2848,23 @@ class _PatientFlowQuickDialogState
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
           enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).maybePop(false),
+          onPressed: _isSaving
+              ? null
+              : () => Navigator.of(context).maybePop(false),
         ),
         AppButton.primary(
-          label: _primaryActionLabel(l10n),
+          label: l10n.patientsQuickBillingAction,
           leadingIcon: _dialogIcon,
           isLoading: _isSaving,
-          onPressed: _submit,
+          onPressed: _isSaving ? null : _submit,
         ),
       ],
     );
   }
 
-  bool get _usesProvider => widget.action != _PatientLegacyQuickAction.billing;
-
-  IconData get _dialogIcon {
-    return switch (widget.action) {
-      _PatientLegacyQuickAction.triage => Icons.monitor_heart_outlined,
-      _PatientLegacyQuickAction.billing => Icons.receipt_long_outlined,
-    };
-  }
-
-  String _dialogTitle(AppLocalizations l10n) {
-    return switch (widget.action) {
-      _PatientLegacyQuickAction.triage => l10n.patientsTriageDialogTitle,
-      _PatientLegacyQuickAction.billing => l10n.patientsBillingDialogTitle,
-    };
-  }
-
-  String _primaryActionLabel(AppLocalizations l10n) {
-    return switch (widget.action) {
-      _PatientLegacyQuickAction.triage => l10n.patientsQuickTriageAction,
-      _PatientLegacyQuickAction.billing => l10n.patientsQuickBillingAction,
-    };
-  }
-
-  List<Widget> _modeFields(BuildContext context) {
-    final l10n = context.l10n;
-    return switch (widget.action) {
-      _PatientLegacyQuickAction.billing => <Widget>[
-        AppFormSection(
-          title: l10n.patientsBillingSectionTitle,
-          density: AppFormSectionDensity.compact,
-          children: <Widget>[
-            _consultationFeeField(context, required: true),
-            AppCheckboxField(
-              title: l10n.patientsMarkPaymentReceivedLabel,
-              value: _markPaid,
-              enabled: !_isSaving,
-              onChanged: (bool value) => setState(() => _markPaid = value),
-            ),
-            if (_markPaid)
-              AppResponsiveFieldRow.two(
-                left: AppSelectField<String>.searchable(
-                  value: _paymentMethod,
-                  labelText: l10n.patientsPaymentMethodLabel,
-                  enabled: !_isSaving,
-                  onChanged: (String? value) =>
-                      setState(() => _paymentMethod = value ?? 'CASH'),
-                  options: _paymentMethodSelectOptions(),
-                ),
-                right: AppTextField(
-                  controller: _transactionRefController,
-                  labelText: l10n.patientsTransactionReferenceLabel,
-                  enabled: !_isSaving,
-                ),
-              ),
-          ],
-        ),
-      ],
-      _ => const <Widget>[],
-    };
-  }
-
-  Widget _consultationFeeField(BuildContext context, {required bool required}) {
+  Widget _consultationFeeField(BuildContext context) {
     final l10n = context.l10n;
     return AppCurrencyAmountField(
       amountController: _feeController,
@@ -2855,10 +2872,8 @@ class _PatientFlowQuickDialogState
       amountLabelText: l10n.patientsConsultationFeeLabel,
       currencyLabelText: l10n.patientsCurrencyLabel,
       enabled: !_isSaving,
-      isRequired: required,
-      validator: required
-          ? AppValidators.requiredText(l10n.validationRequired)
-          : null,
+      isRequired: true,
+      validator: AppValidators.requiredText(l10n.validationRequired),
       onCurrencyChanged: (String? value) {
         setState(() {
           _currency = value ?? appDefaultCurrencyCode;
@@ -2879,42 +2894,6 @@ class _PatientFlowQuickDialogState
     );
   }
 
-  Widget _providerSelect(BuildContext context) {
-    return AppSelectField<String>.searchable(
-      value: _providerId,
-      labelText: context.l10n.patientsProviderLabel,
-      helperText: context.l10n.patientsProviderOptionalHelper,
-      enabled: !_isSaving,
-      isLoading: _isLoadingProviders,
-      onChanged: (String? value) => setState(() => _providerId = value),
-      options: _providerSelectOptions(_providers),
-    );
-  }
-
-  Future<void> _loadProviders() async {
-    setState(() => _isLoadingProviders = true);
-    final Result<List<OpdProviderOption>> result = await ref
-        .read(opdRepositoryProvider)
-        .listProviders();
-    if (!mounted) {
-      return;
-    }
-    result.when(
-      success: (List<OpdProviderOption> providers) {
-        setState(() {
-          _providers = dedupeOpdProviderOptions(providers);
-          _isLoadingProviders = false;
-        });
-      },
-      failure: (AppFailure failure) {
-        setState(() {
-          _failure = failure;
-          _isLoadingProviders = false;
-        });
-      },
-    );
-  }
-
   Future<void> _submit() async {
     if (!validateAndSaveAppForm(_formKey)) {
       return;
@@ -2924,12 +2903,7 @@ class _PatientFlowQuickDialogState
       _failure = null;
     });
 
-    final AppFailure? failure = await (switch (widget.action) {
-      _PatientLegacyQuickAction.billing => _submitBilling(),
-      _ => Future<AppFailure?>.value(
-        AppFailure.validation(validationFields: const <String>{'action'}),
-      ),
-    });
+    final AppFailure? failure = await _submitBilling();
 
     if (!mounted) {
       return;
@@ -2975,7 +2949,6 @@ class _PatientFlowQuickDialogState
       'tenant_id': widget.patient.tenantId,
       'facility_id': _facilityId,
       'patient_id': widget.patient.id,
-      'provider_user_id': _providerId,
       'queued_at': DateTime.now().toUtc().toIso8601String(),
       'reuse_open_encounter': true,
       'notes': _notesController.text.trim(),

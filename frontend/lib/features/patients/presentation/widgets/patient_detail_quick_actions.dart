@@ -14,6 +14,8 @@ import 'package:hosspi_hms/shared/components/opd_encounter_dialog.dart';
 
 enum PatientQuickAction {
   appointment,
+  triage,
+  billing,
   opdCheckIn,
   opdActions,
   admission,
@@ -77,6 +79,27 @@ class PatientDetailQuickActions extends ConsumerWidget {
           onPressed: () => onAction(PatientQuickAction.appointment),
           requirement: const AccessRequirement(
             allPermissions: <AppPermission>[AppPermissions.patientWrite],
+          ),
+        ),
+      if (!hasActiveOpdEncounter && !hasActiveOpdWorkItem)
+        AppPermissionActionItem(
+          label: l10n.patientsQuickTriageAction,
+          icon: Icons.monitor_heart_outlined,
+          tooltip: l10n.patientsTriageDialogTitle,
+          onPressed: () => onAction(PatientQuickAction.triage),
+          requirement: opdEncounterPermissionRequirement,
+        ),
+      if (!hasActiveOpdEncounter && !hasActiveOpdWorkItem)
+        AppPermissionActionItem(
+          label: l10n.patientsQuickBillingAction,
+          icon: Icons.receipt_long_outlined,
+          tooltip: l10n.patientsBillingDialogTitle,
+          onPressed: () => onAction(PatientQuickAction.billing),
+          requirement: const AccessRequirement(
+            anyPermissions: <AppPermission>[
+              AppPermissions.billingWrite,
+              AppPermissions.clinicalWrite,
+            ],
           ),
         ),
       if (hasActiveOpdEncounter && !hasActiveOpdWorkItem)

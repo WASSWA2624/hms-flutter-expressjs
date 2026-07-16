@@ -1774,17 +1774,24 @@ class _AssignFormState extends State<_AssignForm> {
 }
 
 class _TriageForm extends StatefulWidget {
-  const _TriageForm();
+  const _TriageForm({super.key});
 
   @override
   State<_TriageForm> createState() => _TriageFormState();
 }
 
 class _TriageFormState extends State<_TriageForm> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _summaryController = TextEditingController();
   final TextEditingController _slaController = TextEditingController();
   String _status = 'IN_PROGRESS';
+
+  HousekeepingMaintenanceTriageDraft toDraft() {
+    return HousekeepingMaintenanceTriageDraft(
+      status: _status,
+      summary: _emptyToNull(_summaryController.text),
+      slaHours: int.tryParse(_slaController.text.trim()),
+    );
+  }
 
   @override
   void dispose() {
@@ -1796,8 +1803,7 @@ class _TriageFormState extends State<_TriageForm> {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    return AppFormShell(
-      formKey: _formKey,
+    return AppFormSection(
       children: <Widget>[
         AppSelectField<String>(
           value: _status,
@@ -1830,24 +1836,6 @@ class _TriageFormState extends State<_TriageForm> {
           inputFormatters: <TextInputFormatter>[
             FilteringTextInputFormatter.digitsOnly,
           ],
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.housekeepingTriageSubmitAction,
-          submitIcon: Icons.rule_outlined,
-          onCancel: () => Navigator.of(context).maybePop(),
-          onSubmit: () {
-            if (!validateAndSaveAppForm(_formKey)) {
-              return;
-            }
-            Navigator.of(context).pop(
-              HousekeepingMaintenanceTriageDraft(
-                status: _status,
-                summary: _emptyToNull(_summaryController.text),
-                slaHours: int.tryParse(_slaController.text.trim()),
-              ),
-            );
-          },
         ),
       ],
     );
@@ -2036,23 +2024,39 @@ Future<void> _showTriageDialog(
   HousekeepingWorkItem item,
 ) async {
   final l10n = context.l10n;
-  final HousekeepingMaintenanceTriageDraft? draft =
-      await showAppWorkspaceActionDialog<HousekeepingMaintenanceTriageDraft>(
-        context: context,
-        title: Text(l10n.housekeepingTriageDialogTitle),
-        icon: const Icon(Icons.rule_outlined),
-        content: const _TriageForm(),
-      );
-  if (draft == null || !context.mounted) {
-    return;
+  final GlobalKey<_TriageFormState> fieldsKey = GlobalKey<_TriageFormState>();
+
+  final bool? saved = await showAppWorkspaceMutationDialog(
+    context: context,
+    title: Text(l10n.housekeepingTriageDialogTitle),
+    icon: const Icon(Icons.rule_outlined),
+    cancelLabel: l10n.commonCancelActionLabel,
+    cancelIcon: AppActionIcons.cancel,
+    submitLabel: l10n.housekeepingTriageSubmitAction,
+    submitIcon: Icons.rule_outlined,
+    buildFields:
+        (
+          BuildContext context,
+          GlobalKey<FormState> formKey,
+          bool isSubmitting, [
+          AppFailure? failure,
+        ]) {
+          return _TriageForm(key: fieldsKey);
+        },
+    onSubmit: () {
+      final _TriageFormState? fields = fieldsKey.currentState;
+      if (fields == null) {
+        return Future<AppFailure?>.value(const AppFailure.unexpected());
+      }
+      return ref
+          .read(housekeepingWorkspaceControllerProvider.notifier)
+          .triageMaintenanceRequest(item, fields.toDraft());
+    },
+  );
+
+  if (saved == true && context.mounted) {
+    _showMutationResult(context, null);
   }
-  final AppFailure? failure = await ref
-      .read(housekeepingWorkspaceControllerProvider.notifier)
-      .triageMaintenanceRequest(item, draft);
-  if (!context.mounted) {
-    return;
-  }
-  _showMutationResult(context, failure);
 }
 
 Future<void> _confirmTaskAction(

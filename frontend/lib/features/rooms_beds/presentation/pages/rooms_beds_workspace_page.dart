@@ -1149,8 +1149,8 @@ class _TransferFormState extends State<_TransferForm> {
   }
 }
 
-class _TransferUpdateForm extends StatefulWidget {
-  const _TransferUpdateForm({
+class _TransferUpdateDialog extends StatefulWidget {
+  const _TransferUpdateDialog({
     required this.controller,
     required this.item,
     required this.admissionId,
@@ -1165,10 +1165,10 @@ class _TransferUpdateForm extends StatefulWidget {
   final String? transferStatus;
 
   @override
-  State<_TransferUpdateForm> createState() => _TransferUpdateFormState();
+  State<_TransferUpdateDialog> createState() => _TransferUpdateDialogState();
 }
 
-class _TransferUpdateFormState extends State<_TransferUpdateForm> {
+class _TransferUpdateDialogState extends State<_TransferUpdateDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late String _action;
   String? _bedId;
@@ -1187,67 +1187,98 @@ class _TransferUpdateFormState extends State<_TransferUpdateForm> {
     final List<BedBoardItem> destinationBeds = widget.controller
         .availableDestinationBeds(excludeBedId: widget.item.id);
 
-    return AppFormShell(
-      formKey: _formKey,
-      formStatus: appFormFailureStatus(context, _failure),
-      children: <Widget>[
-        AppSelectField<String>(
-          labelText: l10n.ipdTransferActionFieldLabel,
-          value: _action,
-          options: <AppSelectOption<String>>[
-            AppSelectOption<String>(
-              value: 'APPROVE',
-              label: l10n.ipdTransferApproveAction,
-            ),
-            AppSelectOption<String>(
-              value: 'START',
-              label: l10n.ipdTransferStartAction,
-            ),
-            AppSelectOption<String>(
-              value: 'COMPLETE',
-              label: l10n.ipdTransferCompleteAction,
-            ),
-            AppSelectOption<String>(
-              value: 'CANCEL',
-              label: l10n.ipdTransferCancelAction,
-            ),
-          ],
-          onChanged: (String? value) {
-            if (value != null) {
-              setState(() => _action = value);
-            }
-          },
-        ),
-        if (roomsBedsTransferRequiresDestinationBed(_action))
-          AppSelectField<String>(
-            labelText: l10n.ipdDestinationBedFieldLabel,
-            value: _bedId,
-            isRequired: true,
-            options: <AppSelectOption<String>>[
-              for (final BedBoardItem bed in destinationBeds)
+    return AppDialog(
+      title: Text(l10n.roomsBedsManageTransferAction),
+      icon: const Icon(Icons.move_down_outlined),
+      scrollable: true,
+      closeEnabled: !_isSubmitting,
+      content: Form(
+        key: _formKey,
+        child: AppFormSection(
+          children: <Widget>[
+            if (_failure != null)
+              AppFormInformationBanner.failure(
+                context: context,
+                failure: _failure!,
+              ),
+            AppSelectField<String>(
+              labelText: l10n.ipdTransferActionFieldLabel,
+              value: _action,
+              enabled: !_isSubmitting,
+              options: <AppSelectOption<String>>[
                 AppSelectOption<String>(
-                  value: bed.id,
-                  label: _joinDisplay(<String?>[bed.label, bed.ward?.name]),
+                  value: 'APPROVE',
+                  label: l10n.ipdTransferApproveAction,
                 ),
-            ],
-            validator: AppValidators.requiredValue<String>(
-              l10n.roomsBedsRequiredMessage(l10n.ipdDestinationBedFieldLabel),
+                AppSelectOption<String>(
+                  value: 'START',
+                  label: l10n.ipdTransferStartAction,
+                ),
+                AppSelectOption<String>(
+                  value: 'COMPLETE',
+                  label: l10n.ipdTransferCompleteAction,
+                ),
+                AppSelectOption<String>(
+                  value: 'CANCEL',
+                  label: l10n.ipdTransferCancelAction,
+                ),
+              ],
+              onChanged: _isSubmitting
+                  ? null
+                  : (String? value) {
+                      if (value != null) {
+                        setState(() => _action = value);
+                      }
+                    },
             ),
-            onChanged: (String? value) => setState(() => _bedId = value),
-          ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.roomsBedsManageTransferAction,
-          submitIcon: Icons.move_down_outlined,
-          isSubmitting: _isSubmitting,
-          onCancel: () => Navigator.of(context).pop(false),
-          onSubmit: _submit,
+            if (roomsBedsTransferRequiresDestinationBed(_action))
+              AppSelectField<String>(
+                labelText: l10n.ipdDestinationBedFieldLabel,
+                value: _bedId,
+                enabled: !_isSubmitting,
+                isRequired: true,
+                options: <AppSelectOption<String>>[
+                  for (final BedBoardItem bed in destinationBeds)
+                    AppSelectOption<String>(
+                      value: bed.id,
+                      label: _joinDisplay(<String?>[bed.label, bed.ward?.name]),
+                    ),
+                ],
+                validator: AppValidators.requiredValue<String>(
+                  l10n.roomsBedsRequiredMessage(
+                    l10n.ipdDestinationBedFieldLabel,
+                  ),
+                ),
+                onChanged: _isSubmitting
+                    ? null
+                    : (String? value) => setState(() => _bedId = value),
+              ),
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        AppButton.tertiary(
+          label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
+          enabled: !_isSubmitting,
+          onPressed: _isSubmitting
+              ? null
+              : () => Navigator.of(context).pop(false),
+        ),
+        AppButton.primary(
+          label: l10n.roomsBedsManageTransferAction,
+          leadingIcon: Icons.move_down_outlined,
+          isLoading: _isSubmitting,
+          onPressed: _isSubmitting ? null : _submit,
         ),
       ],
     );
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) {
+      return;
+    }
     if (!validateAndSaveAppForm(_formKey)) {
       return;
     }
@@ -1379,11 +1410,10 @@ Future<void> _showTransferUpdateDialog(
   BedBoardItem item,
   String admissionId,
 ) async {
-  final AppLocalizations l10n = context.l10n;
-  final bool? saved = await showAppWorkspaceActionDialog<bool>(
+  final bool? saved = await showAppDialog<bool>(
     context: context,
-    title: Text(l10n.roomsBedsTransferUpdateDialogTitle),
-    content: _TransferUpdateForm(
+    barrierDismissible: false,
+    builder: (_) => _TransferUpdateDialog(
       controller: controller,
       item: item,
       admissionId: admissionId,

@@ -16,6 +16,7 @@ List<Widget> clinicalActionDialogActions(
     if (showCancel)
       AppButton.tertiary(
         label: l10n.commonCancelActionLabel,
+        leadingIcon: AppActionIcons.cancel,
         enabled: !isSaving,
         onPressed: () => Navigator.of(context).pop(false),
       ),

@@ -3263,6 +3263,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdMoveQueueAction => 'Move';
 
   @override
+  String get opdQueueActionsTitle => 'Queue actions';
+
+  @override
   String get opdStartConsultationAction => 'Start consultation';
 
   @override

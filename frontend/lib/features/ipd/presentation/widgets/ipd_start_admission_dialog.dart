@@ -107,6 +107,7 @@ class _IpdStartAdmissionDialogState
       title: Text(l10n.ipdStartAdmissionTitle),
       icon: const Icon(Icons.person_add_alt_1_outlined),
       scrollable: true,
+      closeEnabled: !_isSaving,
       maxWidth: 560,
       content: Form(
         key: _formKey,
@@ -122,7 +123,7 @@ class _IpdStartAdmissionDialogState
               labelText: l10n.ipdStartAdmissionPatientLabel,
               hintText: l10n.ipdStartAdmissionPatientHint,
               enabled: !_isSaving,
-              prefixIcon: const Icon(Icons.search),
+              prefixIcon: const Icon(AppActionIcons.search),
               onChanged: _onSearchChanged,
             ),
             if (_selectedPatient != null)
@@ -135,7 +136,7 @@ class _IpdStartAdmissionDialogState
             else if (_isSearching)
               const Padding(
                 padding: EdgeInsets.all(12),
-                child: Center(child: CircularProgressIndicator()),
+                child: Center(child: AppLoadingIndicator.compact()),
               )
             else if (_results.isEmpty &&
                 _searchController.text.trim().length >= 2)
@@ -155,10 +156,12 @@ class _IpdStartAdmissionDialogState
                   for (final Patient patient in _results)
                     _PatientResultTile(
                       patient: patient,
-                      onTap: () => setState(() {
-                        _selectedPatient = patient;
-                        _results = <Patient>[];
-                      }),
+                      onTap: _isSaving
+                          ? null
+                          : () => setState(() {
+                                _selectedPatient = patient;
+                                _results = <Patient>[];
+                              }),
                     ),
                 ],
               ),
@@ -201,15 +204,16 @@ class _IpdStartAdmissionDialogState
       actions: <Widget>[
         AppButton.tertiary(
           label: l10n.commonCancelActionLabel,
+          leadingIcon: AppActionIcons.cancel,
           enabled: !_isSaving,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
           label: l10n.ipdStartAdmissionAction,
-          leadingIcon: Icons.person_add_alt_1_outlined,
+          leadingIcon: AppActionIcons.add,
           isLoading: _isSaving,
           enabled: _selectedPatient != null && !_isSaving,
-          onPressed: _submit,
+          onPressed: _isSaving || _selectedPatient == null ? null : _submit,
         ),
       ],
     );
@@ -259,7 +263,7 @@ class _PatientResultTile extends StatelessWidget {
   const _PatientResultTile({required this.patient, required this.onTap});
 
   final Patient patient;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -273,7 +277,7 @@ class _PatientResultTile extends StatelessWidget {
         ),
         child: Row(
           children: <Widget>[
-            const Icon(Icons.person_outline, size: 20),
+            const Icon(AppActionIcons.person, size: 20),
             SizedBox(width: theme.spacing.sm),
             Expanded(
               child: Column(
@@ -325,7 +329,7 @@ class _SelectedPatientTile extends StatelessWidget {
         child: Row(
           children: <Widget>[
             Icon(
-              Icons.check_circle,
+              AppActionIcons.success,
               color: theme.colorScheme.primary,
               size: 20,
             ),
@@ -357,7 +361,7 @@ class _SelectedPatientTile extends StatelessWidget {
             if (onClear != null)
               AppButton(
                 iconOnly: true,
-                icon: Icons.close,
+                icon: AppActionIcons.cancel,
                 label: context.l10n.commonCancelActionLabel,
                 semanticLabel: context.l10n.commonCancelActionLabel,
                 tooltip: context.l10n.commonCancelActionLabel,

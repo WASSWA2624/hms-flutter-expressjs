@@ -11,6 +11,7 @@ import 'package:hosspi_hms/shared/components/app_select_field.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/components/app_vitals_form.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 @immutable
@@ -363,14 +364,17 @@ class _AppTriageActionDialogState extends State<AppTriageActionDialog> {
       actions: <Widget>[
         AppButton.tertiary(
           label: widget.cancelLabel,
+          leadingIcon: AppActionIcons.cancel,
           enabled: enabled,
-          onPressed: () => Navigator.of(context).maybePop(false),
+          onPressed: _isSaving
+              ? null
+              : () => Navigator.of(context).maybePop(false),
         ),
         AppButton.primary(
           label: widget.submitLabel,
-          leadingIcon: Icons.save_outlined,
+          leadingIcon: AppActionIcons.save,
           isLoading: _isSaving,
-          onPressed: _submit,
+          onPressed: _isSaving ? null : _submit,
         ),
       ],
     );
