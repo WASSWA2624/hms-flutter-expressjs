@@ -11,6 +11,7 @@ Source of truth: [`../prompt.md`](../prompt.md). Scope: entire repo. UI dialogs 
 | [02-patient-encounter-flow.md](02-patient-encounter-flow.md) | Patient / encounter flow dialogs |
 | [02-patient-encounter-flow-prompts.md](02-patient-encounter-flow-prompts.md) | Agent prompts (one per row) → [`../prompts/NN-*.md`](../prompts/) |
 | [03-detail-viewers.md](03-detail-viewers.md) | Detail viewer dialogs |
+| [03-detail-viewers-prompts.md](03-detail-viewers-prompts.md) | Agent prompts (one per row) → [`../prompts/detail-viewers/NN-*.md`](../prompts/detail-viewers/) |
 | [04-actions-confirmations.md](04-actions-confirmations.md) | Action / confirmation dialogs |
 | [05-forms-editors.md](05-forms-editors.md) | Form / editor dialogs |
 | [06-alerts-system.md](06-alerts-system.md) | Alerts / errors / system dialogs |
