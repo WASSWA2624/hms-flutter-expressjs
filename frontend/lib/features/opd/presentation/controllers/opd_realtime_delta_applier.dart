@@ -160,7 +160,7 @@ abstract final class OpdRealtimeDeltaApplier {
     OpdFlowSummary summary,
   ) {
     return OpdFlowDetail(
-      summary: summary,
+      summary: _mergePreferringAssignedStaff(detail.summary, summary),
       consultationInvoiceId: detail.consultationInvoiceId,
       consultationPaymentId: detail.consultationPaymentId,
       consultationPaymentStatus: detail.consultationPaymentStatus,
@@ -182,6 +182,54 @@ abstract final class OpdRealtimeDeltaApplier {
       pharmacyOrders: detail.pharmacyOrders,
       admissions: detail.admissions,
     );
+  }
+
+  static OpdFlowSummary _mergePreferringAssignedStaff(
+    OpdFlowSummary previous,
+    OpdFlowSummary next,
+  ) {
+    final bool nextIsPlaceholder = _isAssignedStaffPlaceholder(
+      next.assignedStaffLabel,
+    );
+    final bool previousHasName =
+        !_isAssignedStaffPlaceholder(previous.assignedStaffLabel) &&
+        ((previous.assignedStaffLabel ?? '').trim().isNotEmpty ||
+            (previous.assignedStaffDisplayName ?? '').trim().isNotEmpty ||
+            (previous.providerDisplayName ?? '').trim().isNotEmpty);
+
+    if (!nextIsPlaceholder || !previousHasName) {
+      return next.copyWith(
+        providerUserId: next.providerUserId ?? previous.providerUserId,
+        providerDisplayName:
+            next.providerDisplayName ?? previous.providerDisplayName,
+        assignedStaffDisplayName:
+            next.assignedStaffDisplayName ?? previous.assignedStaffDisplayName,
+        assignedStaffLabel:
+            nextIsPlaceholder
+                ? previous.assignedStaffLabel
+                : (next.assignedStaffLabel ?? previous.assignedStaffLabel),
+      );
+    }
+
+    return next.copyWith(
+      providerUserId: next.providerUserId ?? previous.providerUserId,
+      providerDisplayName:
+          previous.providerDisplayName ?? next.providerDisplayName,
+      assignedStaffDisplayName:
+          previous.assignedStaffDisplayName ?? next.assignedStaffDisplayName,
+      assignedStaffRole: previous.assignedStaffRole ?? next.assignedStaffRole,
+      assignedStaffType: previous.assignedStaffType ?? next.assignedStaffType,
+      assignedStaffLabel: previous.assignedStaffLabel ?? next.assignedStaffLabel,
+    );
+  }
+
+  static bool _isAssignedStaffPlaceholder(String? label) {
+    final String normalized = (label ?? '').trim().toLowerCase();
+    return normalized.isEmpty ||
+        normalized == 'assigned staff unknown' ||
+        normalized == 'doctor needed' ||
+        normalized == 'with doctor' ||
+        normalized == 'doctor assigned';
   }
 
   static OpdFlowSummary? _findFlow(AppPage<OpdFlowSummary> page, String id) {

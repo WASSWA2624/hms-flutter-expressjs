@@ -2371,7 +2371,10 @@ describe('opd-flow.service', () => {
         findFirst: jest
           .fn()
           .mockResolvedValueOnce(null)
-          .mockResolvedValueOnce({ id: 'doc-global-1' })
+          .mockResolvedValueOnce({
+            id: 'doc-global-1',
+            staff_profile: { practitioner_type: 'DOCTOR' }
+          })
       },
       appointment: {
         findFirst: jest.fn().mockResolvedValue(null)
@@ -2403,7 +2406,10 @@ describe('opd-flow.service', () => {
       where: { id: 'enc-1' },
       data: { provider_user_id: 'doc-global-1' }
     });
-    expect(result.flow.stage).toBe('WAITING_DOCTOR_REVIEW');
+    // Display resolution prioritizes missing vitals over doctor-review stage.
+    expect(result.flow.display_code).toBe('VITALS_NEEDED');
+    expect(result.encounter.provider_user_id).toBe('doc-global-1');
+    expect(result.flow.assigned_staff_label).toBeTruthy();
   });
 
   it('sets HIGH notification priority for emergency-driven OPD transitions', async () => {

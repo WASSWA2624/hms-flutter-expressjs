@@ -97,7 +97,7 @@ List<OpdEncounterSummaryPair> buildOpdEncounterSummaryPairs({
   );
   final String assignedLabel =
       _firstNonEmpty(<String?>[
-        flow.assignedStaffLabel,
+        _usableAssignedStaffLabel(flow.assignedStaffLabel),
         flow.assignedStaffDisplayName,
         flow.providerDisplayName,
       ]) ??
@@ -464,6 +464,23 @@ String _timelineStepLabel(AppLocalizations l10n, OpdTimelineItem item) {
     return stageLabel;
   }
   return AppDisplay.apiLabel(item.action);
+}
+
+/// Drops backend/UI placeholder labels so a real provider name can surface.
+String? _usableAssignedStaffLabel(String? label) {
+  final String normalized = (label ?? '').trim();
+  if (normalized.isEmpty) {
+    return null;
+  }
+  switch (normalized.toLowerCase()) {
+    case 'assigned staff unknown':
+    case 'doctor needed':
+    case 'with doctor':
+    case 'doctor assigned':
+      return null;
+    default:
+      return normalized;
+  }
 }
 
 String? _firstNonEmpty(Iterable<String?> values) {

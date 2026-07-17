@@ -1732,7 +1732,20 @@ const resolveOpdDisplayState = (encounter, flow = null) => {
     assigned_staff: assignedStaff.display_name ? assignedStaff : null,
     assigned_staff_role: assignedStaff.role || null,
     assigned_staff_type: assignedStaff.type || null,
-    assigned_staff_label: assignedStaff.label || (code === 'DOCTOR_NEEDED' ? 'Doctor needed' : code === 'WITH_DOCTOR' ? 'With doctor' : 'Assigned staff unknown'),
+    // Prefer a real staff label. When a provider is assigned but the relation was
+    // not loaded, avoid the misleading "Assigned staff unknown" placeholder used
+    // by clients as a display value.
+    assigned_staff_label:
+      assignedStaff.label ||
+      (providerAssigned
+        ? code === 'WITH_DOCTOR'
+          ? 'With doctor'
+          : 'Doctor assigned'
+        : code === 'DOCTOR_NEEDED'
+          ? 'Doctor needed'
+          : code === 'WITH_DOCTOR'
+            ? 'With doctor'
+            : null),
     lab_state: labState,
     radiology_state: radiologyState,
     pharmacy_state: pharmacyState,
@@ -2312,6 +2325,7 @@ const listOpdFlows = async (
   const orderBy = { [sortBy]: order };
 
   const flowDisplayInclude = {
+    provider: PROVIDER_INCLUDE,
     vital_signs: { where: { deleted_at: null }, orderBy: { recorded_at: 'asc' } },
     admissions: {
       where: { deleted_at: null },
@@ -4146,13 +4160,21 @@ const assignDoctor = async (id, data, context = {}) => {
     });
 
     if (flow.visit_queue_id) {
-      await tx.visit_queue.update({
-        where: { id: flow.visit_queue_id },
-        data: {
-          provider_user_id: provider.id,
-          status: 'IN_PROGRESS'
-        }
-      });
+      const visitQueue = await resolveVisitQueueByIdentifier(
+        tx,
+        flow.visit_queue_id,
+        encounter.tenant_id,
+        encounter.facility_id
+      );
+      if (visitQueue) {
+        await tx.visit_queue.update({
+          where: { id: visitQueue.id },
+          data: {
+            provider_user_id: provider.id,
+            status: 'IN_PROGRESS'
+          }
+        });
+      }
     }
 
     if (flow.stage === STAGES.WAITING_DOCTOR_ASSIGNMENT) {

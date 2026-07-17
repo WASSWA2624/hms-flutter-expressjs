@@ -1598,17 +1598,28 @@ final class OpdWorkspaceController
                     detail.summary,
                   ),
                   isSaving: false,
+                  clearLastFailure: true,
                 ),
                 detail.summary,
               ),
             );
           }
-          await _flushPendingRefresh();
+          // Background refresh must not turn a persisted mutation into a
+          // user-visible failure (e.g. after assign-doctor succeeds).
+          try {
+            await _flushPendingRefresh();
+          } catch (_) {}
+          final OpdWorkspaceState? afterFlush = _currentState;
+          if (afterFlush?.lastFailure != null) {
+            _emit(afterFlush!.copyWith(clearLastFailure: true));
+          }
           return Result<OpdFlowDetail>.success(detail);
         },
         failure: (AppFailure failure) async {
           _emitMutationFailure(failure);
-          await _flushPendingRefresh();
+          try {
+            await _flushPendingRefresh();
+          } catch (_) {}
           if (failure.category == AppFailureCategory.notFound) {
             unawaited(
               _syncVisibleData(
@@ -1623,7 +1634,9 @@ final class OpdWorkspaceController
     } catch (error, stackTrace) {
       final AppFailure failure = mapToFailure(error, stackTrace);
       _emitMutationFailure(failure);
-      await _flushPendingRefresh();
+      try {
+        await _flushPendingRefresh();
+      } catch (_) {}
       return Result<OpdFlowDetail>.failure(failure);
     }
   }
@@ -1699,7 +1712,10 @@ final class OpdWorkspaceController
       if (flow.id == selected.summary.id ||
           flow.publicId == selected.summary.publicId) {
         return OpdFlowDetail(
-          summary: flow,
+          summary: _mergeFlowSummaryPreferringAssignedStaff(
+            previous: selected.summary,
+            next: flow,
+          ),
           consultationInvoiceId: selected.consultationInvoiceId,
           consultationPaymentId: selected.consultationPaymentId,
           consultationPaymentStatus: selected.consultationPaymentStatus,
@@ -1725,6 +1741,65 @@ final class OpdWorkspaceController
     }
 
     return selected;
+  }
+
+  /// List/realtime snapshots sometimes omit provider relations and fall back to
+  /// placeholder assigned-staff labels. Keep richer detail values in that case.
+  OpdFlowSummary _mergeFlowSummaryPreferringAssignedStaff({
+    required OpdFlowSummary previous,
+    required OpdFlowSummary next,
+  }) {
+    final bool nextLabelIsPlaceholder = _isAssignedStaffPlaceholder(
+      next.assignedStaffLabel,
+    );
+    final bool previousHasStaff =
+        _hasAssignedStaffSignal(previous) &&
+        !_isAssignedStaffPlaceholder(previous.assignedStaffLabel);
+
+    if (!nextLabelIsPlaceholder || !previousHasStaff) {
+      return next.copyWith(
+        providerUserId: next.providerUserId ?? previous.providerUserId,
+        providerDisplayName:
+            next.providerDisplayName ?? previous.providerDisplayName,
+        assignedStaffDisplayName:
+            next.assignedStaffDisplayName ?? previous.assignedStaffDisplayName,
+        assignedStaffRole: next.assignedStaffRole ?? previous.assignedStaffRole,
+        assignedStaffType: next.assignedStaffType ?? previous.assignedStaffType,
+        assignedStaffLabel:
+            nextLabelIsPlaceholder
+                ? previous.assignedStaffLabel
+                : (next.assignedStaffLabel ?? previous.assignedStaffLabel),
+        visitQueueId: next.visitQueueId ?? previous.visitQueueId,
+      );
+    }
+
+    return next.copyWith(
+      providerUserId: next.providerUserId ?? previous.providerUserId,
+      providerDisplayName:
+          previous.providerDisplayName ?? next.providerDisplayName,
+      assignedStaffDisplayName:
+          previous.assignedStaffDisplayName ?? next.assignedStaffDisplayName,
+      assignedStaffRole: previous.assignedStaffRole ?? next.assignedStaffRole,
+      assignedStaffType: previous.assignedStaffType ?? next.assignedStaffType,
+      assignedStaffLabel: previous.assignedStaffLabel ?? next.assignedStaffLabel,
+      visitQueueId: next.visitQueueId ?? previous.visitQueueId,
+    );
+  }
+
+  bool _hasAssignedStaffSignal(OpdFlowSummary flow) {
+    return (flow.providerUserId ?? '').trim().isNotEmpty ||
+        (flow.providerDisplayName ?? '').trim().isNotEmpty ||
+        (flow.assignedStaffDisplayName ?? '').trim().isNotEmpty ||
+        (flow.assignedStaffLabel ?? '').trim().isNotEmpty;
+  }
+
+  bool _isAssignedStaffPlaceholder(String? label) {
+    final String normalized = (label ?? '').trim().toLowerCase();
+    return normalized.isEmpty ||
+        normalized == 'assigned staff unknown' ||
+        normalized == 'doctor needed' ||
+        normalized == 'with doctor' ||
+        normalized == 'doctor assigned';
   }
 
   AppPage<OpdFlowSummary> _stableFlowPage(
