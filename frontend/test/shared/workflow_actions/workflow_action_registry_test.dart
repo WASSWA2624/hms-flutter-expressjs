@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action_executor.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action_registry.dart';
@@ -189,6 +194,55 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('nursing'), findsOneWidget);
       });
+
+      testWidgets(
+        'receptionist denied RECORD_VITALS falls back to Change doctor',
+        (tester) async {
+          late WorkflowAction? action;
+          final AppAccessPolicy policy = AppAccessPolicy.fromSession(
+            AuthSession(
+              tokens: SessionTokens(accessToken: 'access-token'),
+              user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
+              permissions: <AppPermission>{
+                AppPermissions.patientRead,
+                AppPermissions.patientWrite,
+              },
+              moduleEntitlements: const <AppModuleEntitlement>[
+                AppModuleEntitlement(
+                  code: 'scheduling-queue',
+                  licenseStatus: 'ACTIVE',
+                ),
+              ],
+            ),
+          );
+
+          await tester.pumpWidget(
+            MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              home: Builder(
+                builder: (BuildContext context) {
+                  action = WorkflowActionRegistry.instance.resolve(
+                    context,
+                    const WorkflowActionContext(
+                      encounterId: 'enc-123',
+                      nextStep: 'RECORD_VITALS',
+                      assignedStaffId: 'USR-DOC001',
+                    ),
+                    policy: policy,
+                  );
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final WorkflowAction resolved = action!;
+          expect(resolved.code, 'ASSIGN_DOCTOR');
+          expect(resolved.isAvailable, isTrue);
+          expect(resolved.label, 'Change doctor');
+        },
+      );
     });
   });
 

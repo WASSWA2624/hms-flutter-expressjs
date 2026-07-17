@@ -148,7 +148,56 @@ final class WorkflowActionRegistry {
   ///
   /// Returns a fully-populated action with route, label, icon, access
   /// requirement, and availability. Applies authorization check via [policy].
+  ///
+  /// When the next clinical/nursing step is denied, front-desk users are
+  /// remapped to an available reception action (assign/change doctor) so the
+  /// worklist Action column is never blank for receptionists.
   WorkflowAction? resolve(
+    BuildContext context,
+    WorkflowActionContext actionContext, {
+    AppAccessPolicy? policy,
+  }) {
+    final WorkflowAction? action = _resolveExact(
+      context,
+      actionContext,
+      policy: policy,
+    );
+    if (action == null ||
+        policy == null ||
+        !action.isPermissionDenied ||
+        !_isClinicalOwnedAction(action.code)) {
+      return action;
+    }
+
+    final WorkflowAction? frontDeskFallback = _resolveExact(
+      context,
+      WorkflowActionContext(
+        encounterId: actionContext.encounterId,
+        patientId: actionContext.patientId,
+        admissionId: actionContext.admissionId,
+        orderId: actionContext.orderId,
+        invoiceId: actionContext.invoiceId,
+        queueEntryId: actionContext.queueEntryId,
+        assignedStaffId: actionContext.assignedStaffId,
+        sourceModule: actionContext.sourceModule,
+        nextStep: 'ASSIGN_DOCTOR',
+      ),
+      policy: policy,
+    );
+    if (frontDeskFallback == null || !frontDeskFallback.isAvailable) {
+      return action;
+    }
+
+    final String? assignedStaffId = actionContext.assignedStaffId?.trim();
+    if (assignedStaffId != null && assignedStaffId.isNotEmpty) {
+      return frontDeskFallback.copyWith(
+        label: context.l10n.opdChangeDoctorAction,
+      );
+    }
+    return frontDeskFallback;
+  }
+
+  WorkflowAction? _resolveExact(
     BuildContext context,
     WorkflowActionContext actionContext, {
     AppAccessPolicy? policy,
@@ -208,6 +257,23 @@ final class WorkflowActionRegistry {
     }
 
     return action;
+  }
+
+  bool _isClinicalOwnedAction(String canonicalCode) {
+    return const <String>{
+      'RECORD_VITALS',
+      'NURSING_ASSESSMENT',
+      'DOCTOR_REVIEW',
+      'REVIEW_RESULTS',
+      'REVIEW_REPORT',
+      'MEDICINES_DISPENSED',
+      'COLLECT_SAMPLE',
+      'LAB_AND_RADIOLOGY_REQUESTED',
+      'PERFORM_IMAGING',
+      'DISPENSE_MEDICINE',
+      'DISPOSITION',
+      'ADMISSION_HANDOFF',
+    }.contains(canonicalCode);
   }
 
   /// All registered canonical action codes.
@@ -389,10 +455,16 @@ final List<WorkflowActionDefinition> _doctorAssignmentActions =
         icon: Icons.assignment_ind_outlined,
         targetModule: 'opd',
         mode: WorkflowActionMode.dialog,
+        // Match OPD Flow Actions front-desk gate (roles + scheduling module).
+        // Permission-only checks over-deny receptionists when patient-registry
+        // is not in the entitlement map even though they can assign doctors.
         accessRequirement: const AccessRequirement(
-          anyPermissions: <AppPermission>[
-            AppPermissions.clinicalRead,
-            AppPermissions.patientRead,
+          anyRoles: <AppRole>[
+            AppRole.superAdmin,
+            AppRole.tenantAdmin,
+            AppRole.facilityAdmin,
+            AppRole.receptionist,
+            AppRole.nurse,
           ],
           activeModules: <String>['scheduling-queue'],
         ),

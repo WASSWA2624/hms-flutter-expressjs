@@ -226,7 +226,10 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
       }
     }
 
-    AppPermissionActionItem primaryAction(AppPermissionActionItem action) {
+    AppPermissionActionItem primaryAction(
+      AppPermissionActionItem action, {
+      required String key,
+    }) {
       return AppPermissionActionItem(
         requirement: action.requirement,
         label: action.label,
@@ -236,7 +239,9 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         enabled: actionsEnabled && action.enabled,
         isLoading: action.isLoading,
         fullWidth: action.fullWidth,
-        hideWhenDenied: action.hideWhenDenied,
+        // Billing next-step stays visible (disabled) when denied. Clinical
+        // next-steps stay role-gated so receptionists only see front-desk work.
+        hideWhenDenied: key == 'billing' ? false : action.hideWhenDenied,
         tooltip: action.tooltip,
         semanticLabel: action.semanticLabel,
       );
@@ -544,7 +549,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
             actionsEnabled: actionsEnabled,
           ),
           'print': () => AppPermissionActionItem(
-            requirement: opdVitalsActionRequirement,
+            requirement: opdFrontDeskActionRequirement,
             label: l10n.opdPrintSummaryAction,
             icon: AppActionIcons.print,
             fullWidth: true,
@@ -572,16 +577,12 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
           !terminal &&
               (nextActionKey == 'vitals' ||
                   <String>{'WAITING_VITALS', 'VITALS_NEEDED'}.contains(stage) ||
+                  displayCode == 'VITALS_NEEDED' ||
                   hasVitals),
         'route_decision' => !terminal && hasVitals,
-        'assign_doctor' =>
-          !terminal &&
-              (nextActionKey == 'assign_doctor' ||
-                  <String>{
-                    'WAITING_DOCTOR_ASSIGNMENT',
-                    'DOCTOR_NEEDED',
-                  }.contains(stage) ||
-                  !hasAssignedProvider),
+        // Keep Assign/Change doctor available for the whole active encounter so
+        // front-desk users still have actions after a provider is assigned.
+        'assign_doctor' => !terminal,
         'doctor_review' =>
           !terminal &&
               (nextActionKey == 'doctor_review' ||
@@ -590,6 +591,7 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
                     'WITH_DOCTOR',
                     'WAITING_DISPOSITION',
                   }.contains(stage) ||
+                  displayCode == 'WITH_DOCTOR' ||
                   clinicalStage),
         'handoff' => !terminal && servicePendingStage,
         'diagnosis' ||
@@ -636,7 +638,10 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
         continue;
       }
       final AppPermissionActionItem action = factory();
-      addAction(key, key == nextActionKey ? primaryAction(action) : action);
+      addAction(
+        key,
+        key == nextActionKey ? primaryAction(action, key: key) : action,
+      );
     }
 
     return AppActionSection(

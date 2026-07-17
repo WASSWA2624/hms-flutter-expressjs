@@ -96,7 +96,7 @@ void main() {
     expect(find.text('Cancel'), findsOneWidget);
   });
 
-  testWidgets('permission gate hides billing when denied', (
+  testWidgets('permission gate keeps next billing action visible but disabled', (
     WidgetTester tester,
   ) async {
     await _pumpDialog(
@@ -112,9 +112,75 @@ void main() {
       ),
     );
 
-    expect(find.text('Pay consultation'), findsNothing);
+    // Next-step actions stay visible when denied so Flow Actions is never empty.
+    expect(find.widgetWithText(AppButton, 'Pay consultation'), findsOneWidget);
+    final AppButton billingButton = tester.widget<AppButton>(
+      find.widgetWithText(AppButton, 'Pay consultation'),
+    );
+    expect(billingButton.onPressed, isNull);
     expect(find.text('Cancel'), findsOneWidget);
   });
+
+  testWidgets(
+    'receptionist at vitals-needed sees only front-desk actions',
+    (WidgetTester tester) async {
+      const OpdFlowSummary vitalsNeeded = OpdFlowSummary(
+        id: 'encounter-1',
+        publicId: 'ENC000001',
+        patientDisplayName: 'Patient Example',
+        stage: 'WAITING_VITALS',
+        displayCode: 'VITALS_NEEDED',
+        displayNextStep: 'RECORD_VITALS',
+        providerUserId: 'USR-DOC001',
+        providerDisplayName: 'Jordan Demo',
+        assignedStaffLabel: 'Doctor: Jordan Demo',
+        consultationPaymentRequired: false,
+        consultationPaid: false,
+      );
+
+      await _pumpDialog(
+        tester,
+        vitalsNeeded,
+        detail: const OpdFlowDetail(summary: vitalsNeeded),
+        policy: _receptionistPolicy(),
+      );
+
+      expect(find.widgetWithText(AppButton, 'Record vitals'), findsNothing);
+      expect(find.widgetWithText(AppButton, 'Change doctor'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'nurse at vitals-needed sees record vitals and change doctor',
+    (WidgetTester tester) async {
+      const OpdFlowSummary vitalsNeeded = OpdFlowSummary(
+        id: 'encounter-1',
+        publicId: 'ENC000001',
+        patientDisplayName: 'Patient Example',
+        stage: 'WAITING_VITALS',
+        displayCode: 'VITALS_NEEDED',
+        displayNextStep: 'RECORD_VITALS',
+        providerUserId: 'USR-DOC001',
+        providerDisplayName: 'Jordan Demo',
+        assignedStaffLabel: 'Doctor: Jordan Demo',
+        consultationPaymentRequired: false,
+        consultationPaid: false,
+      );
+
+      await _pumpDialog(
+        tester,
+        vitalsNeeded,
+        detail: const OpdFlowDetail(summary: vitalsNeeded),
+        policy: _nursePolicy(),
+      );
+
+      expect(find.widgetWithText(AppButton, 'Record vitals'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Change doctor'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+    },
+  );
 
   testWidgets('shows shared loading while encounter detail refreshes', (
     WidgetTester tester,
@@ -296,13 +362,46 @@ AppAccessPolicy _billingFrontDeskPolicy() {
       permissions: <AppPermission>{
         AppPermissions.patientRead,
         AppPermissions.patientWrite,
-        AppPermissions.clinicalRead,
-        AppPermissions.clinicalWrite,
         AppPermissions.billingWrite,
       },
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
         AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+      ],
+    ),
+  );
+}
+
+AppAccessPolicy _receptionistPolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['RECEPTIONIST']),
+      permissions: <AppPermission>{
+        AppPermissions.profileRead,
+        AppPermissions.patientRead,
+        AppPermissions.patientWrite,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
+      ],
+    ),
+  );
+}
+
+AppAccessPolicy _nursePolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['NURSE']),
+      permissions: <AppPermission>{
+        AppPermissions.patientRead,
+        AppPermissions.clinicalRead,
+        AppPermissions.clinicalWrite,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(code: 'scheduling-queue', licenseStatus: 'ACTIVE'),
+        AppModuleEntitlement(code: 'encounters-vitals', licenseStatus: 'ACTIVE'),
       ],
     ),
   );
