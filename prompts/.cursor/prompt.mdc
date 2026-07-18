@@ -7,34 +7,34 @@ alwaysApply: false
 
 # Prompt Definition Standards
 
-Define prompts an agent can execute without guessing goal, scope, or acceptance criteria.
+Define prompts an agent can execute without guessing goal or scope.
 
 ## Required Structure
 
-- Prompt files must use the `.md` extension and stay under 501 words.
+- Prompt files must use `.md` and stay under 501 words.
 - Start with a specific H1 title and one-paragraph objective.
 - Include `Context`, `Requirements`, `Constraints`, `Acceptance Criteria`, and `Relevant Files`.
-- Number requirements and make them independently testable; make acceptance criteria observable.
+- Number requirements; make acceptance criteria observable.
 
 ## Implementation Requirements
 
-- Reuse existing components, services, utilities, models, and patterns before creating new ones.
+- Reuse existing components, services, utilities, and models before creating new ones.
 - Generalize shared behavior; must not duplicate components, logic, contracts, validation, or authorization.
 - Frontend changes must wire the relevant backend routes, contracts, permissions, validation, and errors.
 - Protected behavior must define RBAC role permissions and ABAC resource/context checks enforced by the backend; frontend guards are not a security boundary.
-- Frontend data must be correct and synced with backend data in real time; refresh affected views after mutations and reconcile stale state from the backend.
+- Frontend data must be correct and synced with backend data in real time; refresh affected views after mutations.
 - Require clear, simple, efficient UI: familiar controls, concise labels, visible feedback, fewest practical steps, no redundant fetches or rebuilds.
 - Specify permissions, validation, loading, empty, error, and success states when relevant.
 
 ## Writing Requirements
 
-- Use concrete imperative language and define ambiguous terms.
-- Reference existing rules rather than duplicating them.
+- Use imperative language; define ambiguous terms.
+- Reference existing rules instead of duplicating them.
 - Separate required behavior from optional enhancements.
-- Avoid vague terms, unneeded implementation prescriptions, and unrelated refactoring.
+- Avoid vague terms and unrelated refactoring.
 
 ## Verification
 
-- Name the expected tests, analysis, generation, or manual checks.
-- Verify integration, reuse, RBAC, ABAC, duplication avoidance, data sync, and UI states when applicable.
-- Ensure every acceptance criterion traces to a requirement.
+- Name expected tests, analysis, or manual checks.
+- Verify integration, reuse, RBAC, ABAC, duplication avoidance, data sync, and UI states.
+- Trace every acceptance criterion to a requirement.
