@@ -36,7 +36,7 @@ Use this order:
 
 ## Quality requirements
 
-- Keep the complete file under 501 words, including frontmatter.
+- Keep the complete file under 251 words, including frontmatter.
 - Write professionally with concise, direct language.
 - Make every instruction actionable and testable.
 - Use specific file paths, patterns, commands, or conditions where useful.
