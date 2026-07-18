@@ -11,24 +11,24 @@ Release and per-feature gates only; detailed standards live in owner files in [`
 
 ## Release readiness
 
-- [ ] Structure, layer boundaries, and dependencies match their owner rules.
-- [ ] Theme/tokens, components, and layouts follow [`design-system.mdc`](./design-system.mdc), [`components.mdc`](./components.mdc), [`layouts.mdc`](./layouts.mdc).
-- [ ] No hard-coded user-facing strings or `_FeatureText` copy classes.
-- [ ] Layouts adapt across mobile, tablet, desktop; no hard-coded colors, spacing, or typography.
-- [ ] Reusable widgets live in `frontend/lib/shared/`; catalog checked first.
-- [ ] Auth/permissions align with backend entitlements; menus/routes/actions hidden for unauthorized users (RBAC+ABAC).
-- [ ] UI/API use `human_friendly_id` only ([`data_modeling.mdc`](./data_modeling.mdc)).
-- [ ] Subscription ∩ role permission intersection enforced ([`permissions.mdc`](./permissions.mdc)).
-- [ ] API integration per [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc).
-- [ ] `flutter analyze` and `flutter test` pass ([`ci_cd_quality_gates.mdc`](./ci_cd_quality_gates.mdc)).
+- [ ] Structure, layer boundaries, and dependencies must match their owner rules.
+- [ ] Theme/tokens, components, and layouts must follow [`design-system.mdc`](./design-system.mdc), [`components.mdc`](./components.mdc), [`layouts.mdc`](./layouts.mdc).
+- [ ] User-facing strings must not be hard-coded; `_FeatureText` copy classes must not be used.
+- [ ] Layouts must adapt across mobile, tablet, desktop; colors, spacing, and typography must not be hard-coded.
+- [ ] Reusable widgets must live in `frontend/lib/shared/`; the catalog should be checked first.
+- [ ] Auth/permissions must align with backend entitlements; menus/routes/actions must be hidden for unauthorized users (RBAC+ABAC).
+- [ ] UI/API must use `human_friendly_id` only ([`data_modeling.mdc`](./data_modeling.mdc)).
+- [ ] Subscription ∩ role permission intersection must be enforced ([`permissions.mdc`](./permissions.mdc)).
+- [ ] API integration must follow [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc).
+- [ ] `flutter analyze` and `flutter test` must pass ([`ci_cd_quality_gates.mdc`](./ci_cd_quality_gates.mdc)).
 
 ## Per-feature gate
 
-- [ ] Standard `data/domain/presentation` structure; shared components reused.
-- [ ] Queue screens follow [`ui-workspace.mdc`](./ui-workspace.mdc); feedback per [`ui-feedback.mdc`](./ui-feedback.mdc).
-- [ ] No raw UUIDs, enum codes, or magic constants in presentation.
-- [ ] Shared-data mutations follow [`instant_ui_sync.mdc`](./instant_ui_sync.mdc); cancel/failure never patches or refreshes.
-- [ ] Tests cover controller logic and critical UI.
+- [ ] Features must use standard `data/domain/presentation` structure and should reuse shared components.
+- [ ] Queue screens must follow [`ui-workspace.mdc`](./ui-workspace.mdc); feedback must follow [`ui-feedback.mdc`](./ui-feedback.mdc).
+- [ ] Presentation must not expose raw UUIDs, enum codes, or magic constants.
+- [ ] Shared-data mutations must follow [`instant_ui_sync.mdc`](./instant_ui_sync.mdc); cancel/failure must not patch or refresh.
+- [ ] Tests must cover controller logic and critical UI.
 
 ## Related
 

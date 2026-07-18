@@ -11,6 +11,8 @@ Entry point to Flutter technical standards for HOSSPI HMS (`frontend/`).
 
 ## Conflict order
 
+When rules conflict, you must apply this order:
+
 1. Security, privacy, and safety rules.
 2. [`.cursor/api-contract.mdc`](../../.cursor/api-contract.mdc) for HTTP and cross-stack behavior.
 3. [`instant_ui_sync.mdc`](./instant_ui_sync.mdc), then [`realtime_sync.mdc`](./realtime_sync.mdc).
@@ -20,9 +22,9 @@ Entry point to Flutter technical standards for HOSSPI HMS (`frontend/`).
 
 ## Invariants
 
-- Prioritize performance, uniform reusable UI in `frontend/lib/shared/`, real-time sync, full responsiveness, and simple, intuitive workflows.
-- Reference entities by `human_friendly_id` only; never expose raw table IDs.
-- Effective access = role/module/user grants ∩ subscription package ∩ assigned modules ∩ ABAC scope, defined in [`.cursor/access/`](../../.cursor/access/).
+- You must prioritize performance, uniform reusable UI in `frontend/lib/shared/`, real-time sync, full responsiveness, and simple workflows.
+- Entities must be referenced by `human_friendly_id` only; raw table IDs must not be exposed.
+- Effective access must equal role/module/user grants ∩ subscription package ∩ assigned modules ∩ ABAC scope, defined in [`.cursor/access/`](../../.cursor/access/).
 
 ## Owner map
 
