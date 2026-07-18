@@ -2,7 +2,7 @@
 Use this workflow to execute each HOSSPI HMS frontend plan safely and consistently.
 
 ## Applicable Rules
-You must follow [`scope.mdc`](../.cursor/scope.mdc), [`project_structure.mdc`](../.cursor/project_structure.mdc), [`architecture.mdc`](../.cursor/architecture.mdc), [`checklists.mdc`](../.cursor/checklists.mdc), and [`index.md`](../.cursor/index.mdc).
+You must follow [`scope.mdc`](../.cursor/scope.mdc), [`project_structure.mdc`](../.cursor/project_structure.mdc), [`architecture.mdc`](../.cursor/architecture.mdc), [`checklists.mdc`](../.cursor/checklists.mdc), and [`index.mdc`](../.cursor/index.mdc).
 
 ## Required Workflow
 1. Read the rules referenced by the current step.

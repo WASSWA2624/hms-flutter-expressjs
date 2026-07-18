@@ -2,7 +2,7 @@
 Verify the completed starter against every plan, rule, contract, and quality gate.
 
 ## Applicable Rules
-You must follow [`00-execution-policy.md`](./00-execution-policy.md), [`checklists.mdc`](../.cursor/checklists.mdc), [`validation-snapshot-2026-05-14.md`](../.cursor/reference/validation-snapshot-2026-05-14.md), [`scope.mdc`](../.cursor/scope.mdc), and [`ci_cd_quality_gates.mdc`](../.cursor/ci_cd_quality_gates.mdc).
+You must follow [`00-execution-policy.md`](./00-execution-policy.md), [`checklists.mdc`](../.cursor/checklists.mdc), [`validation-snapshot-2026-05-14.mdc`](../.cursor/reference/validation-snapshot-2026-05-14.mdc), [`scope.mdc`](../.cursor/scope.mdc), and [`ci_cd_quality_gates.mdc`](../.cursor/ci_cd_quality_gates.mdc).
 
 ## Validation
 1. Confirm all rules are consistent and every plan references relevant rules.
@@ -15,7 +15,7 @@ You must follow [`00-execution-policy.md`](./00-execution-policy.md), [`checklis
    ```
 3. Test `320px` mobile and large desktop layouts, including menu bar and expanded/collapsed side navigation.
 4. Confirm API-contract readiness and reusability.
-5. Update `frontend/.cursor/reference/validation-snapshot-2026-05-14.md` with actual results.
+5. Update `frontend/.cursor/reference/validation-snapshot-2026-05-14.mdc` with actual results.
 
 ## Acceptance Criteria
 - Steps `00` through `23` must be executable in order.
