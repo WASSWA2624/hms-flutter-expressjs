@@ -1,42 +1,41 @@
-# Patient encounter dialogs — standardization
+# Inventory Reception Screen Action Buttons
 
-Refactor the 41 definitions in [`dialog-inventory/02-patient-encounter-flow.md`](dialog-inventory/02-patient-encounter-flow.md) into one reusable product surface. This is structural, not cosmetic.
+Produce a complete inventory of every action button on the `/reception` workspace, including buttons inside modal dialogs and any nested dialogs those modals open.
 
-## Scope
+## Context
 
-Change inventoried definitions, listed call sites, and shared primitives for consolidation. Do not touch unrelated dialogs, create another shell, use raw `AlertDialog`/`showDialog`, or keep duplication to shrink the diff.
+- Route: `/reception` (`AppRoutes.reception`).
+- Primary page: `ReceptionWorkspacePage` and its widgets under `frontend/lib/features/reception/`.
+- Reception composes shared OPD, patient, billing, and workflow dialogs; include those when opened from reception.
 
 ## Requirements
 
-1. **Use established shells**
-   - Compose [`AppDialog`](frontend/lib/shared/components/app_dialog.dart) through `showAppDialog`.
-   - Prefer `showAppWorkspaceMutationDialog`, `showAppWorkspaceActionDialog`, `AppConfirmActionDialog` variants, and existing `show*`/`open*` encounter helpers.
-   - Preserve each row’s purpose, call sites, resolved contextual IDs, and permission wrappers.
+1. Review the reception workspace UI and every dialog reachable from it (including nested dialogs).
+2. List each action button with: visible label (or icon-only description), location (page chrome, row/toolbar, dialog name), and whether it opens a modal.
+3. When a button opens a modal, name the dialog and recursively list that dialog’s action buttons the same way.
+4. Include primary, secondary, text, icon, and `WorkflowActionButton` actions; exclude non-action chrome (close affordances that only dismiss without a labeled action may be noted once per dialog).
+5. Deliver the inventory as a structured list grouped by surface (workspace → dialog → nested dialog).
 
-2. **Reuse before creating**
-   - Inventory repeated shells, sections, rows, forms, states, and action groups. Choose one canonical implementation per pattern, migrate every applicable flow, and remove superseded local versions.
-   - Search shared barrels and encounter flows before adding widgets. Extend canonical APIs; never copy, trivially wrap, or locally redefine them.
-   - Details: `AppPatientDetails`, `AppPatientDetailDialog`, `AppSectionPanel`, `AppContentPanel`, `AppInfoSheetGrid`/`Row`, `AppInfoTileGrid`, and `AppExpandableRecordSection`.
-   - Action groups: `AppActionPanel`/`Section`, permission action components, `clinicalActionDialogActions`, `buildAppDialogFormActions`, and `buildAppDialogWizardActions`.
-   - Clinical UI: `OpdEncounterDialog`, `FlowActionsDialog`, shared OPD openers, triage components, `AppRecordVitalsDialog`, `AppVitalsForm`, `AppStatusBadge`, shared fields, and `AppFormInformationBanner`.
-   - If none exists, create one configurable, domain-neutral primitive under `frontend/lib/shared/` for every matching flow. Keep domain behavior in controllers.
+## Constraints
 
-3. **Loading and actions**
-   - Use the app’s existing spinner only: `AppLoadingIndicator` or `AppLoadingSurface`; use `AppButton.isLoading` for submission. Do not introduce `CircularProgressIndicator` or another loader.
-   - While loading or saving, disable Cancel, close, and competing actions; apply `closeEnabled: false` and `barrierDismissible: false`.
-   - Order actions left to right: secondary actions, **Cancel**, primary commit. Prefer one commit; use Create → Edit → Delete only when multiple mutations are essential.
-   - Every `AppButton` needs a leading icon and localized label. Use `AppActionIcons` for shared verbs; match sibling encounter flows for domain actions. No iconless buttons or one-off Material icons when a shared mapping exists. Say **Cancel**, not Close, and **Edit**, not Update. Confirmation dialogs have one domain verb/Confirm plus Cancel.
+- Read-only audit; do not change code, copy, or behavior.
+- Scope is `/reception` and dialogs opened from it only.
+- Prefer source of truth in Dart presentation widgets over runtime speculation.
+- Follow existing prompt standards in `prompts/.cursor/prompt.mdc` for clarity; this prompt is inventory-only.
 
-4. **Titles**
-   - Use general role-based titles, never patient names. Pass titles through `AppDialog` for uppercase normalization and reuse sibling icon conventions.
+## Acceptance Criteria
 
-5. **Backend correctness and sync**
-   - Follow [the API contract](.cursor/api-contract.mdc) and [`instant_ui_sync.mdc`](frontend/.cursor/instant_ui_sync.mdc).
-   - Trace every load/mutate path end to end: dialog → workspace controller → repository/DTO → real backend route/schema/service. Match IDs, `snake_case` payloads, auth, envelopes, and response decoding; fix either side on mismatch.
-   - Widgets never call APIs or own competing server data. Mutate over HTTP; WebSockets only reconcile.
-   - On failure, keep the dialog open, show `AppFailure` through shared failure UI, and patch nothing. Never fake or silently ignore success.
-   - On persisted success only, immediately patch every affected Riverpod slice, then apply the smallest targeted refresh/realtime reconciliation. Dialogs, parent workspaces, pinned views, lists, details, and badges must match backend truth without a full reload.
+- Every reception-reachable action button appears exactly once in the inventory under its surface.
+- Every button that opens a modal names that modal; nested modal buttons are listed under their parent modal.
+- Grouping makes parent → child dialog relationships obvious.
+- No implementation or refactor recommendations unless a button cannot be identified from source.
 
-## Verification
+## Relevant Files
 
-Keep the workspace pattern test green. Add focused widget, controller, DTO, backend route/schema, and service tests. Verify happy-path API calls succeed and cancel/failure neither patches nor dismisses. Confirm equivalent flows share primitives, spacing, sections, action icons/labels, loading/error behavior, and responsive layout without duplicates.
+- `frontend/lib/features/reception/presentation/pages/reception_workspace_page.dart`
+- `frontend/lib/features/reception/presentation/widgets/reception_queue_actions_dialog.dart`
+- `frontend/lib/features/reception/presentation/widgets/reception_appointment_actions_dialog.dart`
+- `frontend/lib/features/reception/presentation/widgets/reception_patient_actions.dart`
+- `frontend/lib/features/reception/presentation/widgets/reception_billing_guidance.dart`
+- `frontend/lib/shared/opd_actions/` (dialogs composed by reception)
+- `frontend/lib/shared/workflow_actions/workflow_action_button.dart`
